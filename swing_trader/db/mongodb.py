@@ -15,23 +15,6 @@ class MongoDBClient:
 
     def insert_stock_data(self, symbol, data):
         collection = self.db['stock_data']
-        normalized_data = []
-        for row in data:
-            normalized_row = {}
-            for k, v in row.items():
-                key = k.lower()
-                if key.endswith(f"_{symbol.lower()}"):
-                    key = key.replace(f"_{symbol.lower()}", "")
-                if key == "date" or key == "datetime":
-                    normalized_row["date"] = v
-                elif key in ["close", "high", "low", "open", "volume"]:
-                    normalized_row[key] = v
-            normalized_row["symbol"] = symbol  # Add symbol to each row
-            # Only add if all required fields are present
-            if all(field in normalized_row for field in ["date", "close", "high", "low", "open", "volume", "symbol"]):
-                normalized_data.append(normalized_row)
-        if normalized_data:
-            collection.insert_many(normalized_data)
 
     def find_stock_data(self, symbol, start=None, end=None):
         collection = self.db['stock_data']
