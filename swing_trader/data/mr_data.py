@@ -3,6 +3,9 @@ import yfinance as yf
 import pandas as pd
 from dotenv import load_dotenv
 from pymongo import MongoClient
+import pandas_market_calendars as mcal
+import ta
+
 
 class MrData:
     def __init__(self):
@@ -29,8 +32,14 @@ class MrData:
     def get_missing_dates(existing_docs, start, end):
         db_dates = set(doc['Date'] for doc in existing_docs)
         wanted_dates = pd.date_range(start, end, freq='B').strftime('%Y-%m-%d').tolist()
-        missing_dates = [date for date in wanted_dates if date not in db_dates]
-        return wanted_dates, missing_dates
+
+        # Get NYSE trading days (removes holidays)
+        nyse = mcal.get_calendar('NYSE')
+        trading_days = nyse.schedule(start_date=start, end_date=end).index.strftime('%Y-%m-%d').tolist()
+
+        # Only consider missing dates that are actual trading days
+        missing_dates = [date for date in trading_days if date not in db_dates]
+        return trading_days, missing_dates
 
     def fetch_yf_data(self, ticker, min_date, max_date):
         return yf.download(
@@ -80,3 +89,30 @@ class MrData:
             return df.reset_index(drop=True)
         else:
             return pd.DataFrame(columns=['Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
+
+    def enrich_ticker_with_indicators(self, ticker):
+        collection = self.db['stock_data']
+        docs = list(collection.find({'Ticker': ticker}))
+        if not docs:
+            print(f"No data found for ticker {ticker}.")
+            return
+        df = pd.DataFrame(docs)
+        df = df.sort_values('Date').reset_index(drop=True)
+        df = ta.add_all_ta_features(
+            df,
+            open="Open",
+            high="High",
+            low="Low",
+            close="Close",
+            volume="Volume",
+            fillna=True
+        )
+        indicator_cols = [col for col in df.columns if
+                          col not in ['_id', 'Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
+        for _, row in df.iterrows():
+            update_fields = {col: row[col] for col in indicator_cols}
+            collection.update_one(
+                {"_id": row["_id"]},
+                {"$set": update_fields}
+            )
+        print(f"Updated {len(df)} documents for {ticker} with technical indicators.")

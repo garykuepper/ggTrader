@@ -1,11 +1,24 @@
-import pandas as pd
-from datetime import datetime, timedelta
-from swing_trader.data.mr_data import MrData
-from swing_trader.strategy.swing_strategy import SwingStrategy
+
 from swing_trader.backtest.backtester import Backtester
-import pandas_market_calendars as mcal
+from swing_trader.data.mr_data import MrData
+from datetime import datetime, timedelta
 
 mr_data = MrData()
+start_date = datetime(2015, 1, 1)
+end_date = datetime.today() - timedelta(days=1)
 
-df = mr_data.get_stock_data('SPY', '2015-01-01', '2017-12-31')
-print(df.head())
+for ticker in ["SSO", "SH","SPY"]:
+    mr_data.get_stock_data(ticker, start_date, end_date)
+
+
+bt = Backtester(
+    db=mr_data.db,
+    signal_ticker="SPY",
+    signal_field="strat_swing_signal",
+    target_field="strat_swing_target",
+    initial_cash=10000
+)
+
+results = bt.run(start_date, end_date, benchmark_ticker="SPY")
+bt.plot_equity_curve(results)
+
