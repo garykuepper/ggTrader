@@ -10,10 +10,19 @@ class Backtester:
         self.collection = db["stock_data"]
         self.prices = {}
 
+
+    # TODO: THis whole logic needs to be cleaned up like wtf
+
     def run(self, start_date, end_date, benchmark_ticker="SPY"):
         signal_df = self._load_signals(start_date, end_date)
+
+        # Shows unique tickers in the signal DataFrame
+        # TODO: Load tickets into database if not present
+
         tickers = signal_df[self.target_field].dropna().unique().tolist()
+
         tickers += [self.signal_ticker, benchmark_ticker]  # Ensure benchmark & signal ticker are included
+
         self._load_price_data(tickers, start_date, end_date)
         result_df = self._simulate_trades(signal_df)
         benchmark_df = self._get_benchmark(benchmark_ticker, start_date, end_date)
@@ -45,6 +54,8 @@ class Backtester:
 
 
     def _load_price_data(self, tickers, start_date, end_date):
+
+        # TODO: Probably a better way to do this
         start_str = start_date.strftime('%Y-%m-%d')
         end_str = end_date.strftime('%Y-%m-%d')
 
@@ -75,8 +86,11 @@ class Backtester:
             signal = row[self.signal_field]
             target = row.get(self.target_field)
 
+            # TODO: Logic needs cleaning up
+
             if signal in ["BUY", "SELL"] and target:
                 cash, position = self._open_position(cash, position, target, date, signal)
+
             elif signal == "HOLD":
                 cash, position = self._close_position(cash, position, date)
 
@@ -173,6 +187,8 @@ class Backtester:
 
     def plot_equity_curve(self, df):
         import matplotlib.pyplot as plt
+
+        # TODO: Plot buy and sell signals
 
         if "Benchmark" not in df.columns:
             print("⚠️ No Benchmark data found — plotting strategy only.")

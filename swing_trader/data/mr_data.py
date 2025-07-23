@@ -77,6 +77,9 @@ class MrData:
         return new_docs
 
     def get_stock_data(self, ticker, start, end):
+
+        # TODO: Validate start and end dates
+        # TODO: Apply indicators to the data and save to the database
         collection = self.db['stock_data']
         existing_docs = self.get_existing_docs(collection, ticker, start, end)
         wanted_dates, missing_dates = self.get_missing_dates(existing_docs, start, end)
