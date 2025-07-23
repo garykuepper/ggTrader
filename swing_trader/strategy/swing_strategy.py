@@ -63,3 +63,10 @@ class SwingStrategy:
             return "SELL", self.short_ticker
         else:
             return "HOLD", None
+
+    def get_signals(self):
+        df = self._load_signal_data()
+        if df is None:
+            return pd.DataFrame(columns=["Ticker", "Date", "strat_swing_signal", "strat_swing_target"])
+
+        return df[["Ticker", "Date", "strat_swing_signal", "strat_swing_target"]].reset_index(drop=True)

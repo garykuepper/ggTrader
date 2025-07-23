@@ -41,7 +41,8 @@ class MrData:
         missing_dates = [date for date in trading_days if date not in db_dates]
         return trading_days, missing_dates
 
-    def fetch_yf_data(self, ticker, min_date, max_date):
+    @staticmethod
+    def fetch_yf_data(ticker, min_date, max_date):
         return yf.download(
             ticker,
             start=min_date,
@@ -68,13 +69,7 @@ class MrData:
             end=(pd.to_datetime(max_date) + pd.Timedelta(days=1)).strftime('%Y-%m-%d'),
             auto_adjust=True
         )
-        df_new = self.format_yf_download(raw_df, ticker)
-        df_new = df_new[df_new['Date'].isin(missing_dates)]
-        new_docs = df_new.to_dict(orient='records')
-        if new_docs:
-            collection.insert_many(new_docs)
-            print(f"Inserted {len(new_docs)} new records for {ticker} into MongoDB.")
-        return new_docs
+        return self.insert_new_docs(collection, raw_df, missing_dates, ticker)
 
     def get_stock_data(self, ticker, start, end):
 
@@ -82,7 +77,9 @@ class MrData:
         # TODO: Apply indicators to the data and save to the database
         collection = self.db['stock_data']
         existing_docs = self.get_existing_docs(collection, ticker, start, end)
+        print(f"Found {len(existing_docs)} existing documents for {ticker} between {start} and {end}.")
         wanted_dates, missing_dates = self.get_missing_dates(existing_docs, start, end)
+        print(f"Missing dates for {ticker}: {len(missing_dates)}")
         new_docs = self.download_and_insert_missing(collection, ticker, missing_dates)
         docs = existing_docs + new_docs
         if docs:
@@ -119,3 +116,33 @@ class MrData:
                 {"$set": update_fields}
             )
         print(f"Updated {len(df)} documents for {ticker} with technical indicators.")
+
+    def get_stock_data_collection(self, ticker):
+        collection = self.db['stock_data']
+        docs = list(collection.find({'Ticker': ticker}))
+
+        if not docs:
+            print(f"No data found for ticker {ticker}.")
+            return
+
+        df = pd.DataFrame(docs)
+        df = df.drop(columns=['_id'], errors='ignore')
+        return df.reset_index(drop=True)
+
+    def get_stock_price(self, ticker, date):
+        collection = self.db['stock_data']
+        nyse = mcal.get_calendar('NYSE')
+        date = pd.to_datetime(date)
+        # Get all valid trading days up to and including the given date
+        trading_days = nyse.valid_days(end_date=date, start_date=date - pd.Timedelta(days=30))
+        if len(trading_days) == 0:
+            print(f"No trading days found before {date.strftime('%Y-%m-%d')}.")
+            return None
+        # Find the most recent trading day on or before the given date
+        prev_trading_day = trading_days[-1].strftime('%Y-%m-%d')
+        doc = collection.find_one({"Ticker": ticker, "Date": prev_trading_day})
+        if doc:
+            return doc.get("Close")
+        else:
+            print(f"No data found for {ticker} on or before {date.strftime('%Y-%m-%d')}.")
+            return None
