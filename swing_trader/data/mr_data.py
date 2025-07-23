@@ -146,3 +146,4 @@ class MrData:
         else:
             print(f"No data found for {ticker} on or before {date.strftime('%Y-%m-%d')}.")
             return None
+

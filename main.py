@@ -6,10 +6,8 @@ from swing_trader.strategy.swing_strategy import SwingStrategy
 
 mr_data = MrData()
 
-# TODO: Use datetime objects for start and end dates
-
 # Create datetime objects
-start_dt = datetime(2019, 1, 5)
+start_dt = datetime(2016, 1, 5)
 # end_dt = datetime(2024, 4, 1)
 end_dt = datetime.today() - timedelta(days=1)
 
@@ -22,14 +20,15 @@ for ticker in ["SSO", "SH", "SPY"]:
     mr_data.get_stock_data(ticker, start_date, end_date)
 
 # Enrich the tickers with indicators
+# print("Enriching tickers with indicators...")
 # mr_data.enrich_ticker_with_indicators(ticker="SSO")
 # mr_data.enrich_ticker_with_indicators(ticker="SH")
-# mr_data.enrich_ticker_with_indicators(ticker="SPY")
+mr_data.enrich_ticker_with_indicators(ticker="SPY")
 
 spy_data = mr_data.get_stock_data_collection(ticker="SPY")
 
 # Display the last 10 rows of SPY data
-# print(spy_data[['Ticker', 'Date', 'Close', 'momentum_rsi']].tail(10))
+print(spy_data[['Ticker', 'Date', 'Close', 'momentum_rsi', 'trend_macd']].tail(10))
 
 strat = SwingStrategy(
     db=mr_data.db,
@@ -37,7 +36,8 @@ strat = SwingStrategy(
     long_ticker="SSO",
     short_ticker="SH"
 )
-# strat.generate_signals()
+print("Generating swing signals...")
+strat.generate_signals()
 
 sigs = strat.get_signals()
 
@@ -86,7 +86,7 @@ for _, row in filtered.iterrows():
         qty = portfolio.cash / price
         portfolio.add_position(ticker='SSO', quantity=qty, bought_price=price)
         value = qty * price
-        transactions.append(['BUY','SSO', row['Date'], qty, f"${price:,.2f}", f"${value:,.2f}"])
+        transactions.append(['BUY', 'SSO', row['Date'], qty, f"${price:,.2f}", f"${value:,.2f}"])
 
     elif cur_signal == 'SELL':
 
@@ -108,8 +108,8 @@ for _, row in filtered.iterrows():
 
 # Print transaction table
 print(tabulate(
-    transactions,
-    headers=['Action', 'Ticker','Date', 'Quantity', 'Price', 'Value'],
+    transactions[-10:],
+    headers=['Action', 'Ticker', 'Date', 'Quantity', 'Price', 'Value'],
     floatfmt=('.0f', '', '.2f', '.2f', '.2f'),
     tablefmt='github'
 ))

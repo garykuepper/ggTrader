@@ -1,5 +1,8 @@
 import pandas as pd
 
+RSI_HIGH = 75
+RSI_LOW = 25
+
 class SwingStrategy:
     def __init__(self, db, signal_ticker, long_ticker, short_ticker):
         self.db = db
@@ -20,6 +23,10 @@ class SwingStrategy:
             return
 
         updated = 0
+        window = 10
+        df['macd_sma_5'] = df['trend_macd'].rolling(window=window).mean()
+        df['rsi_sma_5'] = df['momentum_rsi'].rolling(window=window).mean()
+        df['macd_signal_sma_5'] = df['trend_macd_signal'].rolling(window=window).mean()
 
         for _, row in df.iterrows():
             signal, target = self._determine_signal(row)
@@ -54,12 +61,20 @@ class SwingStrategy:
     def _determine_signal(self, row):
         ema_fast = row["trend_ema_fast"]
         ema_slow = row["trend_ema_slow"]
-        macd = row["trend_macd"]
-        macd_sig = row["trend_macd_signal"]
+        # macd = row["trend_macd"]
+        # macd_sig = row["trend_macd_signal"]
+        # rsi = row.get("momentum_rsi", None)  # Add RSI to required indicators!
 
-        if ema_fast > ema_slow and macd > macd_sig:
+        # Use the 5-day SMA of MACD and RSI for the strategy
+        macd = row["macd_sma_5"]
+        macd_sig = row["macd_signal_sma_5"]
+        rsi = row["rsi_sma_5"]
+
+
+
+        if ema_fast > ema_slow and macd > macd_sig and rsi > RSI_HIGH:
             return "BUY", self.long_ticker
-        elif ema_fast < ema_slow and macd < macd_sig:
+        elif ema_fast < ema_slow and macd < macd_sig and rsi < RSI_LOW:
             return "SELL", self.short_ticker
         else:
             return "HOLD", None
