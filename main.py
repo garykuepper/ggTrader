@@ -4,7 +4,7 @@ from swing_trader.strategy.swing_strategy import SwingStrategy
 from datetime import datetime, timedelta
 from swing_trader.backtest.backtester import Backtester
 
-start_dt = datetime(2015, 1, 5)
+start_dt = datetime(2018, 1, 1)
 end_dt = datetime.today() - timedelta(days=1)
 start_date = start_dt.strftime("%Y-%m-%d")
 end_date = end_dt.strftime("%Y-%m-%d")
@@ -15,8 +15,8 @@ strategy = SwingStrategy(
     signal_ticker="SPY",
     long_ticker="SSO",
     short_ticker="SH",
-    rsi_high=75,
-    rsi_low=25
+    rsi_high=70,
+    rsi_low=30
 )
 
 backtester = Backtester(
