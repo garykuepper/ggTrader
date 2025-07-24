@@ -5,6 +5,9 @@ class Portfolio:
         self.cash = cash  # Use initial cash passed
         self.history = []
 
+    def get_cash(self):
+        return self.cash
+
     def add_position(self, ticker, quantity, bought_price):
         if ticker in self.positions:
             pos = self.positions[ticker]

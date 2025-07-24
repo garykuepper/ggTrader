@@ -90,32 +90,7 @@ class MrData:
         else:
             return pd.DataFrame(columns=['Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
 
-    def enrich_ticker_with_indicators(self, ticker):
-        collection = self.db['stock_data']
-        docs = list(collection.find({'Ticker': ticker}))
-        if not docs:
-            print(f"No data found for ticker {ticker}.")
-            return
-        df = pd.DataFrame(docs)
-        df = df.sort_values('Date').reset_index(drop=True)
-        df = ta.add_all_ta_features(
-            df,
-            open="Open",
-            high="High",
-            low="Low",
-            close="Close",
-            volume="Volume",
-            fillna=True
-        )
-        indicator_cols = [col for col in df.columns if
-                          col not in ['_id', 'Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
-        for _, row in df.iterrows():
-            update_fields = {col: row[col] for col in indicator_cols}
-            collection.update_one(
-                {"_id": row["_id"]},
-                {"$set": update_fields}
-            )
-        print(f"Updated {len(df)} documents for {ticker} with technical indicators.")
+
 
     def get_stock_data_collection(self, ticker):
         collection = self.db['stock_data']
@@ -147,3 +122,45 @@ class MrData:
             print(f"No data found for {ticker} on or before {date.strftime('%Y-%m-%d')}.")
             return None
 
+    def _update_collection_with_df(self, collection, df, update_fields):
+        for _, row in df.iterrows():
+            fields = {field: row[field] for field in update_fields}
+            collection.update_one({"_id": row["_id"]}, {"$set": fields})
+
+    def enrich_ticker_with_all_indicators(self, ticker):
+        collection = self.db['stock_data']
+        docs = list(collection.find({'Ticker': ticker}))
+        if not docs:
+            print(f"No data found for ticker {ticker}.")
+            return
+        df = pd.DataFrame(docs).sort_values('Date').reset_index(drop=True)
+        df = ta.add_all_ta_features(
+            df,
+            open="Open", high="High", low="Low", close="Close", volume="Volume", fillna=True
+        )
+        indicator_cols = [col for col in df.columns if col not in ['_id', 'Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
+        self._update_collection_with_df(collection, df, indicator_cols)
+        print(f"Updated {len(df)} documents for {ticker} with technical indicators.")
+
+    def enrich_ticker_with_indicator(self, ticker, indicator_func, output_fields):
+        collection = self.db['stock_data']
+        docs = list(collection.find({'Ticker': ticker}))
+        if not docs:
+            print(f"No data found for ticker {ticker}.")
+            return
+        df = pd.DataFrame(docs).sort_values('Date').reset_index(drop=True)
+        df = indicator_func(df)
+        self._update_collection_with_df(collection, df, output_fields)
+        print(f"Updated {len(df)} documents for {ticker} with {', '.join(output_fields)}.")
+
+    @staticmethod
+    def add_rsi(df, period=14):
+        df['momentum_rsi'] = ta.momentum.RSIIndicator(df['Close'].rolling(5).mean(), window=period).rsi()
+        return df
+
+    @staticmethod
+    def add_macd(df):
+        macd = ta.trend.MACD(df['Close'].rolling(5).mean(), window_slow=26, window_fast=12, window_sign=9)
+        df['trend_macd'] = macd.macd()
+        df['trend_macd_signal'] = macd.macd_signal()
+        return df
