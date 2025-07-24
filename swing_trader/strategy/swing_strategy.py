@@ -71,7 +71,6 @@ class SwingStrategy:
         rsi = row["rsi_sma_5"]
 
 
-
         if ema_fast > ema_slow and macd > macd_sig and rsi > RSI_HIGH:
             return "BUY", self.long_ticker
         elif ema_fast < ema_slow and macd < macd_sig and rsi < RSI_LOW:
