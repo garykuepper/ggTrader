@@ -9,6 +9,7 @@ import ta
 
 class MrData:
     """Class to manage stock data retrieval and storage in MongoDB."""
+
     # TODO: Should MrData enrich the data with all indicators? Or another class?  This should only be for data retrieval and storage.
 
     def __init__(self):
@@ -17,6 +18,7 @@ class MrData:
         self.client = MongoClient(mongo_uri)
         self.db = self.client['ggTrader']
 
+    # yf.download returns a MultiIndex DataFrame with Ticker as the first level.
     @staticmethod
     def format_yf_download(df, ticker):
         df.columns = df.columns.droplevel('Ticker')
@@ -25,6 +27,16 @@ class MrData:
         df['Date'] = df['Date'].astype(str)
         df['Ticker'] = ticker
         return df[['Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
+
+    # TODO: Not being used, but can fetch data and format it and update download_and_insert_missing.
+    @staticmethod
+    def fetch_yf_data(ticker, min_date, max_date):
+        return yf.download(
+            ticker,
+            start=min_date,
+            end=(pd.to_datetime(max_date) + pd.Timedelta(days=1)).strftime('%Y-%m-%d'),
+            auto_adjust=True
+        )
 
     @staticmethod
     def get_existing_docs(collection, ticker, start, end):
@@ -44,15 +56,7 @@ class MrData:
         missing_dates = [date for date in trading_days if date not in db_dates]
         return trading_days, missing_dates
 
-    @staticmethod
-    def fetch_yf_data(ticker, min_date, max_date):
-        return yf.download(
-            ticker,
-            start=min_date,
-            end=(pd.to_datetime(max_date) + pd.Timedelta(days=1)).strftime('%Y-%m-%d'),
-            auto_adjust=True
-        )
-
+    # If the ticker is not in the database, it will download the data from Yahoo Finance and insert it into MongoDB.
     def insert_new_docs(self, collection, df_new, missing_dates, ticker):
         df_new = self.format_yf_download(df_new, ticker)
         df_new = df_new[df_new['Date'].isin(missing_dates)]
@@ -127,7 +131,6 @@ class MrData:
         for _, row in df.iterrows():
             fields = {field: row[field] for field in update_fields}
             collection.update_one({"_id": row["_id"]}, {"$set": fields})
-
 
     def enrich_ticker_with_all_indicators(self, ticker):
         collection = self.db['stock_data']

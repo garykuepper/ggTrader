@@ -13,7 +13,7 @@ class Backtester:
         self.tickers = tickers
         self.strategy = strategy
         self.portfolio = portfolio
-        self.initial_cash = self.portfolio.get_cash()
+        self.initial_cash = self.portfolio.initial_cash()
         self.start_date = start_date
         self.end_date = end_date
         self.mr_data = MrData()

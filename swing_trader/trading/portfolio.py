@@ -11,10 +11,7 @@ class Portfolio:
     #  Add a method to get the history of positions
     #  Add a method to calc cagr for the portfolio? Would need to store the start and end date
 
-    def get_cash(self):
-        return self.cash
-
-    def add_position(self, ticker, quantity, bought_price):
+    def add_position(self, ticker, quantity, bought_price, date=None):
         if ticker in self.positions:
             pos = self.positions[ticker]
             old_qty = pos['quantity']
@@ -42,8 +39,9 @@ class Portfolio:
                 raise ValueError("Cannot add negative quantity for new position")
 
         self.cash -= quantity * bought_price
+        self.record_transaction("BUY", ticker, quantity, bought_price, date)
 
-    def remove_position(self, ticker, quantity, price):
+    def remove_position(self, ticker, quantity, price, date=None):
         if ticker in self.positions:
             pos = self.positions[ticker]
             if quantity >= pos['quantity']:
@@ -52,6 +50,7 @@ class Portfolio:
                 pos['quantity'] -= quantity
                 pos['total_value'] = pos['quantity'] * pos['current_price']
             self.cash += quantity * price
+            self.record_transaction("SELL", ticker, quantity, price, date)
         else:
             raise ValueError(f"Position for {ticker} does not exist.")
 
@@ -67,3 +66,43 @@ class Portfolio:
     def total_portfolio_value(self):
         positions_value = sum(pos['total_value'] for pos in self.positions.values())
         return self.cash + positions_value
+
+    def get_profit_loss(self):
+        total_value = self.total_portfolio_value()
+        profit_loss = total_value - self.initial_cash
+        return profit_loss
+
+    def get_profit_loss_percentage(self):
+        profit_loss = self.get_profit_loss()
+        if self.initial_cash == 0:
+            return 0.0
+        return (profit_loss / self.initial_cash) * 100
+
+    def get_cash(self):
+        return self.cash
+
+    def get_initial_cash(self):
+        return self.initial_cash
+
+    def get_positions(self):
+        return self.positions
+
+    def get_history(self):
+        return self.history
+
+    def __str__(self):
+        return f"Portfolio(name={self.name}, cash={self.cash}, positions={self.positions})"
+
+    def __repr__(self):
+        return self.__str__()
+
+    def record_transaction(self, action, ticker, quantity, price, date=None):
+        self.history.append({
+            "action": action,
+            "ticker": ticker,
+            "quantity": quantity,
+            "price": price,
+            "value": quantity * price,
+            "cash_after": self.cash,
+            "date": date
+        })
