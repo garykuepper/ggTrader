@@ -22,22 +22,21 @@ class SwingStrategy:
         df = self._load_signal_data()
         if df is None:
             return
+
+
         df['signal_score'] = 0
         df['signal_score'] += (df['trend_ema_fast'] > df['trend_ema_slow']).astype(int)
         df['signal_score'] += (df['trend_macd'] > df['trend_macd_signal']).astype(int)
-        df['signal_score'] += df['momentum_rsi'].between(50, self.rsi_high).astype(int)
+        df['signal_score'] += (df['momentum_rsi'] < self.rsi_high).astype(int)
 
         # Compute signal conditions vectorized
-        buy_mask = (df['trend_ema_fast'] > df['trend_ema_slow']) & (df['trend_macd'] > df['trend_macd_signal']) & (
-            df['momentum_rsi'].between(50, self.rsi_high))
+        buy_mask = ((df['trend_ema_fast'] > df['trend_ema_slow'])
+                    & (df['trend_macd'] > df['trend_macd_signal'])
+                    & (df['momentum_rsi'] < self.rsi_high))
 
-        # === Exit Signal (new) ===
-        df['exit_signal'] = (
-                (df['trend_macd'] < df['trend_macd_signal']) |
-                (df['momentum_rsi'] < 50))
-
-        sell_mask = ((df['trend_ema_fast'] < df['trend_ema_slow']) & (df['trend_macd'] < df['trend_macd_signal']) & (
-                df['momentum_rsi'] < self.rsi_low))
+        sell_mask = ((df['trend_ema_fast'] < df['trend_ema_slow'])
+                     & (df['trend_macd'] < df['trend_macd_signal'])
+                     & (df['momentum_rsi'] < self.rsi_low))
         df['strat_swing_signal'] = 'HOLD'
         df.loc[buy_mask, 'strat_swing_signal'] = 'BUY'
         df.loc[sell_mask, 'strat_swing_signal'] = 'SELL'

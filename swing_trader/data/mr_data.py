@@ -8,6 +8,9 @@ import ta
 
 
 class MrData:
+    """Class to manage stock data retrieval and storage in MongoDB."""
+    # TODO: Should MrData enrich the data with all indicators? Or another class?  This should only be for data retrieval and storage.
+
     def __init__(self):
         load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'config', '.env'))
         mongo_uri = os.getenv('MONGO_URI')
@@ -74,7 +77,7 @@ class MrData:
     def get_stock_data(self, ticker, start, end):
 
         # TODO: Validate start and end dates
-        # TODO: Apply indicators to the data and save to the database
+
         collection = self.db['stock_data']
         existing_docs = self.get_existing_docs(collection, ticker, start, end)
         print(f"Found {len(existing_docs)} existing documents for {ticker} between {start} and {end}.")
@@ -124,6 +127,7 @@ class MrData:
         for _, row in df.iterrows():
             fields = {field: row[field] for field in update_fields}
             collection.update_one({"_id": row["_id"]}, {"$set": fields})
+
 
     def enrich_ticker_with_all_indicators(self, ticker):
         collection = self.db['stock_data']

@@ -98,3 +98,11 @@ class Backtester:
         ]
         print("\nPerformance Summary:")
         print(tabulate(summary, tablefmt="github"))
+
+    @staticmethod
+    def calculate_cagr(start_value, end_value, start_date, end_date):
+        delta_days = (end_date - start_date).days
+        years = delta_days / 365.25
+        if start_value <= 0 or years <= 0:
+            return None
+        return (end_value / start_value) ** (1 / years) - 1

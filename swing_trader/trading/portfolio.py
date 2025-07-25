@@ -4,6 +4,12 @@ class Portfolio:
         self.positions = {}
         self.cash = cash  # Use initial cash passed
         self.history = []
+        self.initial_cash = cash  # Store initial cash for calculations
+
+    # TODO: Add a history of transactions to the portfolio
+    #  Add a method to get the history of transactions
+    #  Add a method to get the history of positions
+    #  Add a method to calc cagr for the portfolio? Would need to store the start and end date
 
     def get_cash(self):
         return self.cash
