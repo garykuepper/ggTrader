@@ -55,7 +55,8 @@ class Portfolio:
             pos['current_price'] = price
             pos['total_value'] = pos['quantity'] * price
         else:
-            raise ValueError(f"Position for {ticker} does not exist.")
+            # raise ValueError(f"Position for {ticker} does not exist.")
+            print(f"Position for {ticker} does not exist.")
 
     def total_portfolio_value(self):
         positions_value = sum(pos['total_value'] for pos in self.positions.values())

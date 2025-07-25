@@ -90,8 +90,6 @@ class MrData:
         else:
             return pd.DataFrame(columns=['Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
 
-
-
     def get_stock_data_collection(self, ticker):
         collection = self.db['stock_data']
         docs = list(collection.find({'Ticker': ticker}))
@@ -138,7 +136,8 @@ class MrData:
             df,
             open="Open", high="High", low="Low", close="Close", volume="Volume", fillna=True
         )
-        indicator_cols = [col for col in df.columns if col not in ['_id', 'Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
+        indicator_cols = [col for col in df.columns if
+                          col not in ['_id', 'Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
         self._update_collection_with_df(collection, df, indicator_cols)
         print(f"Updated {len(df)} documents for {ticker} with technical indicators.")
 
@@ -155,12 +154,15 @@ class MrData:
 
     @staticmethod
     def add_rsi(df, period=14):
-        df['momentum_rsi'] = ta.momentum.RSIIndicator(df['Close'].rolling(5).mean(), window=period).rsi()
+        df['momentum_rsi'] = ta.momentum.RSIIndicator(df['Close'], window=period).rsi()
         return df
 
     @staticmethod
-    def add_macd(df):
-        macd = ta.trend.MACD(df['Close'].rolling(5).mean(), window_slow=26, window_fast=12, window_sign=9)
+    def add_macd(df, window_slow=26, window_fast=12, window_sign=9):
+        macd = ta.trend.MACD(df['Close'],
+                             window_slow=window_slow,
+                             window_fast=window_fast,
+                             window_sign=window_sign)
         df['trend_macd'] = macd.macd()
         df['trend_macd_signal'] = macd.macd_signal()
         return df

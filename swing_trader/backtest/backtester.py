@@ -4,7 +4,7 @@ from swing_trader.trading.portfolio import Portfolio
 
 
 class Backtester:
-    def __init__(self, db, tickers, strategy, portfolio,  start_date=None, end_date=None):
+    def __init__(self, db, tickers, strategy, portfolio, start_date=None, end_date=None):
         self.filtered_signals = None
         self.bh_value = 0.0
         self.final_value = 0.0
@@ -23,8 +23,13 @@ class Backtester:
             print(f"Downloading data for {ticker} from {self.start_date} to {self.end_date}...")
             self.mr_data.get_stock_data(ticker, self.start_date, self.end_date)
             print(f"Enriching {ticker} with indicators...")
-            self.mr_data.enrich_ticker_with_indicator(ticker, self.mr_data.add_rsi, ['momentum_rsi'])
-            self.mr_data.enrich_ticker_with_indicator(ticker, self.mr_data.add_macd, ['trend_macd', 'trend_macd_signal'])
+            self.mr_data.enrich_ticker_with_indicator(ticker,
+                                                      lambda df: self.mr_data.add_rsi(df, period=21), ['momentum_rsi'])
+            self.mr_data.enrich_ticker_with_indicator(
+                ticker,
+                lambda df: self.mr_data.add_macd(df, window_slow=26, window_fast=12, window_sign=9),
+                ['trend_macd', 'trend_macd_signal']
+            )
 
     def run_strategy(self):
         print("Generating swing signals...")
@@ -66,12 +71,12 @@ class Backtester:
             cur_signal = row['strat_swing_signal']
             if prev_signal == cur_signal or cur_signal == 'HOLD':
                 continue
-            txn = self.signal_transaction(self.portfolio, cur_signal, 'SSO', row['Date'])
+            txn = self.signal_transaction(self.portfolio, cur_signal, self.strategy.get_long_ticker(), row['Date'])
             if txn:
                 transactions.append(txn)
             prev_signal = cur_signal
 
-        self.update_portfolio_price(self.portfolio, 'SSO', self.end_date)
+        self.update_portfolio_price(self.portfolio, self.strategy.get_long_ticker(), self.end_date)
         self.update_portfolio_price(bh_portfolio, 'SPY', self.end_date)
 
         self.transactions = transactions
@@ -80,7 +85,7 @@ class Backtester:
 
     def report(self):
         print(tabulate(
-            self.transactions[-10:],
+            self.transactions[-20:],
             headers=['Action', 'Ticker', 'Date', 'Quantity', 'Price', 'Value'],
             floatfmt=('.0f', '', '.2f', '.2f', '.2f'),
             tablefmt='github'

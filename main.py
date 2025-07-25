@@ -8,20 +8,24 @@ start_dt = datetime(2018, 1, 1)
 end_dt = datetime.today() - timedelta(days=1)
 start_date = start_dt.strftime("%Y-%m-%d")
 end_date = end_dt.strftime("%Y-%m-%d")
+signal_ticker = "SPY"
+long_ticker = "UPRO"
+# long_ticker = "SSO"
+
 
 portfolio = Portfolio(cash=10000.0, name="Strategy Portfolio")
 strategy = SwingStrategy(
     db=MrData().db,
-    signal_ticker="SPY",
-    long_ticker="SSO",
+    signal_ticker=signal_ticker,
+    long_ticker=long_ticker,
     short_ticker="SH",
-    rsi_high=70,
-    rsi_low=30
+    rsi_high=75,
+    rsi_low=25
 )
 
 backtester = Backtester(
     db=MrData().db,
-    tickers=["SSO", "SPY"],
+    tickers=[long_ticker, signal_ticker],
     strategy=strategy,
     portfolio=portfolio,
     start_date=start_date,

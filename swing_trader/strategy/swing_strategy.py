@@ -12,7 +12,8 @@ class SwingStrategy:
             "trend_ema_fast",
             "trend_ema_slow",
             "trend_macd",
-            "trend_macd_signal"
+            "trend_macd_signal",
+            "momentum_rsi",
         ]
         self.rsi_high = rsi_high
         self.rsi_low = rsi_low
@@ -21,15 +22,22 @@ class SwingStrategy:
         df = self._load_signal_data()
         if df is None:
             return
-
-        window = 10
-        df['macd_sma_5'] = df['trend_macd'].rolling(window=window).mean()
-        df['rsi_sma_5'] = df['momentum_rsi'].rolling(window=window).mean()
-        df['macd_signal_sma_5'] = df['trend_macd_signal'].rolling(window=window).mean()
+        df['signal_score'] = 0
+        df['signal_score'] += (df['trend_ema_fast'] > df['trend_ema_slow']).astype(int)
+        df['signal_score'] += (df['trend_macd'] > df['trend_macd_signal']).astype(int)
+        df['signal_score'] += df['momentum_rsi'].between(50, self.rsi_high).astype(int)
 
         # Compute signal conditions vectorized
-        buy_mask = (df['trend_ema_fast'] > df['trend_ema_slow']) & (df['macd_sma_5'] > df['macd_signal_sma_5']) & (df['rsi_sma_5'] > self.rsi_high)
-        sell_mask = (df['trend_ema_fast'] < df['trend_ema_slow']) & (df['macd_sma_5'] < df['macd_signal_sma_5']) & (df['rsi_sma_5'] < self.rsi_low)
+        buy_mask = (df['trend_ema_fast'] > df['trend_ema_slow']) & (df['trend_macd'] > df['trend_macd_signal']) & (
+            df['momentum_rsi'].between(50, self.rsi_high))
+
+        # === Exit Signal (new) ===
+        df['exit_signal'] = (
+                (df['trend_macd'] < df['trend_macd_signal']) |
+                (df['momentum_rsi'] < 50))
+
+        sell_mask = ((df['trend_ema_fast'] < df['trend_ema_slow']) & (df['trend_macd'] < df['trend_macd_signal']) & (
+                df['momentum_rsi'] < self.rsi_low))
         df['strat_swing_signal'] = 'HOLD'
         df.loc[buy_mask, 'strat_swing_signal'] = 'BUY'
         df.loc[sell_mask, 'strat_swing_signal'] = 'SELL'
@@ -57,32 +65,12 @@ class SwingStrategy:
             return None
 
         df = pd.DataFrame(docs).sort_values("Date").reset_index(drop=True)
-
+        # print(df.columns)  # Should include 'momentum_rsi', 'trend_macd', etc.
         if not all(col in df.columns for col in self.required_indicators):
             print(f"⚠️ Missing required indicators. Run enrichment first.")
             return None
 
         return df
-
-    # def _determine_signal(self, row):
-    #     ema_fast = row["trend_ema_fast"]
-    #     ema_slow = row["trend_ema_slow"]
-    #     # macd = row["trend_macd"]
-    #     # macd_sig = row["trend_macd_signal"]
-    #     # rsi = row.get("momentum_rsi", None)  # Add RSI to required indicators!
-    #
-    #     # Use the 5-day SMA of MACD and RSI for the strategy
-    #     macd = row["macd_sma_5"]
-    #     macd_sig = row["macd_signal_sma_5"]
-    #     rsi = row["rsi_sma_5"]
-    #
-    #
-    #     if ema_fast > ema_slow and macd > macd_sig and rsi > self.rsi_high:
-    #         return "BUY", self.long_ticker
-    #     elif ema_fast < ema_slow and macd < macd_sig and rsi < self.rsi_low:
-    #         return "SELL", self.short_ticker
-    #     else:
-    #         return "HOLD", None
 
     def get_signals(self):
         df = self._load_signal_data()
@@ -90,3 +78,9 @@ class SwingStrategy:
             return pd.DataFrame(columns=["Ticker", "Date", "strat_swing_signal", "strat_swing_target"])
 
         return df[["Ticker", "Date", "strat_swing_signal", "strat_swing_target"]].reset_index(drop=True)
+
+    def get_long_ticker(self):
+        return self.long_ticker
+
+    def get_short_ticker(self):
+        return self.short_ticker
