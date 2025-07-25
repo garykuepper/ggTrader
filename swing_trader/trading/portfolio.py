@@ -5,6 +5,8 @@ class Portfolio:
         self.cash = cash  # Use initial cash passed
         self.history = []
         self.initial_cash = cash  # Store initial cash for calculations
+        self.start_date = None
+        self.end_date = None
 
     # TODO: Add a history of transactions to the portfolio
     #  Add a method to get the history of transactions
@@ -12,6 +14,12 @@ class Portfolio:
     #  Add a method to calc cagr for the portfolio? Would need to store the start and end date
 
     def add_position(self, ticker, quantity, bought_price, date=None):
+
+        if self.start_date is None and date is not None:
+            self.start_date = date
+        if date is not None:
+            self.end_date = date
+
         if ticker in self.positions:
             pos = self.positions[ticker]
             old_qty = pos['quantity']
@@ -87,6 +95,11 @@ class Portfolio:
     def get_positions(self):
         return self.positions
 
+    def update_all_prices(self, price_lookup: dict):
+        for ticker, price in price_lookup.items():
+            self.update_prices(ticker, price)
+
+
     def get_history(self):
         return self.history
 
@@ -106,3 +119,17 @@ class Portfolio:
             "cash_after": self.cash,
             "date": date
         })
+
+    def set_dates(self, start_date, end_date):
+        self.start_date = start_date
+        self.end_date = end_date
+
+    def get_cagr(self):
+        if not self.start_date or not self.end_date:
+            return None
+        delta_days = (self.end_date - self.start_date).days
+        years = delta_days / 365.25
+        if self.initial_cash <= 0 or years <= 0:
+            return None
+        end_value = self.total_portfolio_value()
+        return (end_value / self.initial_cash) ** (1 / years) - 1

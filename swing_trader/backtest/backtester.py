@@ -13,7 +13,7 @@ class Backtester:
         self.tickers = tickers
         self.strategy = strategy
         self.portfolio = portfolio
-        self.initial_cash = self.portfolio.initial_cash()
+        self.initial_cash = self.portfolio.get_initial_cash()
         self.start_date = start_date
         self.end_date = end_date
         self.mr_data = MrData()
@@ -49,13 +49,13 @@ class Backtester:
     def signal_transaction(self, portfolio, signal, ticker, date):
         price = self.mr_data.get_stock_price(ticker, date)
         if signal == "BUY":
-            qty = portfolio.cash / price
-            portfolio.add_position(ticker, qty, price)
-            return self.add_transaction("BUY", ticker, date, qty, price)
-        elif signal == "SELL" and ticker in portfolio.positions:
-            qty = portfolio.positions[ticker]["quantity"]
-            portfolio.remove_position(ticker, qty, price)
-            return self.add_transaction("SELL", ticker, date, qty, price)
+            qty = portfolio.get_cash() / price
+            portfolio.add_position(ticker, qty, price, date=date)  # date passed
+            return portfolio.history[-1]  # last transaction
+        elif signal == "SELL" and ticker in portfolio.get_positions():
+            qty = portfolio.get_positions()[ticker]["quantity"]
+            portfolio.remove_position(ticker, qty, price, date=date)
+            return portfolio.history[-1]
         return None
 
     def simulate_portfolios(self):
@@ -99,10 +99,4 @@ class Backtester:
         print("\nPerformance Summary:")
         print(tabulate(summary, tablefmt="github"))
 
-    @staticmethod
-    def calculate_cagr(start_value, end_value, start_date, end_date):
-        delta_days = (end_date - start_date).days
-        years = delta_days / 365.25
-        if start_value <= 0 or years <= 0:
-            return None
-        return (end_value / start_value) ** (1 / years) - 1
+
