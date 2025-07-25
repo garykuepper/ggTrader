@@ -2,7 +2,6 @@ from swing_trader.data.mr_data import MrData
 from tabulate import tabulate
 from swing_trader.trading.portfolio import Portfolio
 
-
 class Backtester:
     def __init__(self, db, tickers, strategy, portfolio, start_date=None, end_date=None):
         self.filtered_signals = None
@@ -85,16 +84,29 @@ class Backtester:
 
     def report(self):
         print(tabulate(
-            self.transactions[-20:],
-            headers=['Action', 'Ticker', 'Date', 'Quantity', 'Price', 'Value'],
-            floatfmt=('.0f', '', '.2f', '.2f', '.2f'),
-            tablefmt='github'
+            self.transactions[-20:],  # list of dicts
+            headers="keys",           # tells tabulate to use dict keys
+            tablefmt="github"
         ))
+
+
         performance = (self.final_value / self.bh_value - 1) * 100
+        strategy_cagr = self.portfolio.get_cagr()
+        bh_portfolio = Portfolio(cash=self.initial_cash, name="Buy and Hold Portfolio")
+        bh_price = self.mr_data.get_stock_price("SPY", self.start_date)
+        bh_qty = self.initial_cash / bh_price
+        bh_portfolio.add_position("SPY", bh_qty, bh_price, date=self.start_date)
+
+        bh_portfolio.update_prices("SPY", self.mr_data.get_stock_price("SPY", self.end_date))
+        bh_portfolio.end_date = self.end_date
+        bh_cagr = bh_portfolio.get_cagr()
+
         summary = [
             ["Final Portfolio Value", f"${self.final_value:,.2f}"],
             ["Buy and Hold Portfolio Value", f"${self.bh_value:,.2f}"],
-            ["Relative Performance", f"{performance:.2f}%"]
+            ["Relative Performance", f"{performance:.2f}%"],
+            ["Strategy CAGR", f"{strategy_cagr:.2%}"],
+            ["Buy & Hold CAGR", f"{bh_cagr:.2%}"]
         ]
         print("\nPerformance Summary:")
         print(tabulate(summary, tablefmt="github"))

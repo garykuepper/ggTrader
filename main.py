@@ -16,6 +16,7 @@ short_ticker = "SH"
 # TODO: Add Parameters for ema, macd, rsi in strategy?
 #  Have the strategy inputs be the indicators to use?
 #  Strategy takes in the database and tickers, so can create the indicators there since the strategy can adjust them?
+#  swing_rsi,  swing_macd, swing_ema_fast, swing_ema_slow,  then add them to database.
 
 portfolio = Portfolio(cash=10000.0, name="Strategy Portfolio")
 strategy = SwingStrategy(

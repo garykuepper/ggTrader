@@ -1,3 +1,6 @@
+
+from datetime import datetime
+
 class Portfolio:
     def __init__(self, cash=10000.0, name="portfolio"):
         self.name = name
@@ -124,12 +127,23 @@ class Portfolio:
         self.start_date = start_date
         self.end_date = end_date
 
+
     def get_cagr(self):
         if not self.start_date or not self.end_date:
             return None
+
+        # Convert strings to datetime objects
+        if isinstance(self.start_date, str):
+            self.start_date = datetime.strptime(self.start_date, "%Y-%m-%d")
+        if isinstance(self.end_date, str):
+            self.end_date = datetime.strptime(self.end_date, "%Y-%m-%d")
+
         delta_days = (self.end_date - self.start_date).days
         years = delta_days / 365.25
+
         if self.initial_cash <= 0 or years <= 0:
             return None
+
         end_value = self.total_portfolio_value()
         return (end_value / self.initial_cash) ** (1 / years) - 1
+
