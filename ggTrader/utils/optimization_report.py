@@ -179,7 +179,27 @@ class OptimizationReport:
         # Detect strategy type for parameter display
         first_result = results[0]
 
-        if 'fast_sma' in first_result and 'slow_sma' in first_result:
+        if 'ema_fast' in first_result and 'ema_slow' in first_result and 'macd_fast' in first_result:
+            # EMA MACD Strategy
+            performers_data = [
+                ["Highest Return", f"{best_return['total_return']:+.1f}%",
+                 f"EMA: {best_return['ema_fast']}-{best_return['ema_slow']}, MACD: {best_return['macd_fast']}-{best_return['macd_slow']}-{best_return['macd_signal']}",
+                 f"${best_return['final_value']:,.0f}"],
+                ["Best Sharpe", f"{best_sharpe['sharpe_ratio']:.2f}",
+                 f"EMA: {best_sharpe['ema_fast']}-{best_sharpe['ema_slow']}, MACD: {best_sharpe['macd_fast']}-{best_sharpe['macd_slow']}-{best_sharpe['macd_signal']}",
+                 f"${best_sharpe['final_value']:,.0f}"],
+                ["Most Trades", f"{best_trades['total_trades']}",
+                 f"EMA: {best_trades['ema_fast']}-{best_trades['ema_slow']}, MACD: {best_trades['macd_fast']}-{best_trades['macd_slow']}-{best_trades['macd_signal']}",
+                 f"${best_trades['final_value']:,.0f}"],
+                ["Best Win Rate", f"{best_winrate['win_rate']:.1f}%",
+                 f"EMA: {best_winrate['ema_fast']}-{best_winrate['ema_slow']}, MACD: {best_winrate['macd_fast']}-{best_winrate['macd_slow']}-{best_winrate['macd_signal']}",
+                 f"${best_winrate['final_value']:,.0f}"],
+                ["Min Drawdown", f"{min_drawdown['max_drawdown']:.1f}%",
+                 f"EMA: {min_drawdown['ema_fast']}-{min_drawdown['ema_slow']}, MACD: {min_drawdown['macd_fast']}-{min_drawdown['macd_slow']}-{min_drawdown['macd_signal']}",
+                 f"${min_drawdown['final_value']:,.0f}"]
+            ]
+
+        elif 'fast_sma' in first_result and 'slow_sma' in first_result:
             # SMA Strategy
             performers_data = [
                 ["Highest Return", f"{best_return['total_return']:+.1f}%",
@@ -332,7 +352,10 @@ class OptimizationReport:
             # Strategy-specific parameter analysis
             first_result = results[0]
 
-            if 'fast_sma' in first_result:
+            if 'ema_fast' in first_result and 'ema_slow' in first_result and 'macd_fast' in first_result:
+                # EMA MACD analysis
+                print(f"🔧 **Best parameters:** EMA: {best_result['ema_fast']}-{best_result['ema_slow']}, MACD: {best_result['macd_fast']}-{best_result['macd_slow']}-{best_result['macd_signal']}, Position: {best_result['position_pct']:.0%}, Stop: {best_result['stop_loss_pct']:.0%}")
+            elif 'fast_sma' in first_result:
                 # SMA analysis
                 print(f"🔧 **Best parameters:** Fast SMA: {best_result['fast_sma']}, Slow SMA: {best_result['slow_sma']}, Position: {best_result['position_pct']:.0%}")
             elif 'atr_period' in first_result and 'breakout_lookback' in first_result:

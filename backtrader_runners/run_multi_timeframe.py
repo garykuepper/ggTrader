@@ -6,7 +6,7 @@ from tabulate import tabulate
 from ggTrader.data_manager.universal_data_manager import UniversalDataManager
 from ggTrader.utils.optimization_report import OptimizationReport
 from ggTrader.utils.backtrader_utils import BacktraderUtils
-from ggTrader.strats.multi_timeframe_strategy import MultiTimeFrameStrategy
+from ggTrader.strats.multi_timeframe import MultiTimeFrameStrategy
 
 symbol = "LTCUSDT"
 interval = "5m"

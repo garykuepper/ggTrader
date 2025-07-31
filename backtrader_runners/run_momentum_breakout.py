@@ -6,7 +6,7 @@ from tabulate import tabulate
 from ggTrader.data_manager.universal_data_manager import UniversalDataManager
 from ggTrader.utils.optimization_report import OptimizationReport
 from ggTrader.utils.backtrader_utils import BacktraderUtils
-from ggTrader.strats.momentum_breakout_strategy import MomentumBreakoutStrategy
+from ggTrader.strats.momentum_breakout import MomentumBreakoutStrategy
 
 symbol = "UPRO"
 interval = "1d"

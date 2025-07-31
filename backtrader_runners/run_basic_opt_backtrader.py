@@ -5,34 +5,14 @@ from dotenv import load_dotenv
 from ggTrader.data_manager.universal_data_manager import UniversalDataManager
 from ggTrader.utils.optimization_report import OptimizationReport
 from ggTrader.utils.backtrader_utils import BacktraderUtils
-
+from ggTrader.strats.simple_sma import SimpleSMAStrategy
 load_dotenv()
 mongo_uri = os.getenv('MONGO_URI', "mongodb://localhost:27017/")
 
-class OptimizedSMAStrategy(bt.Strategy):
-    """SMA crossover strategy with optimizable parameters"""
-    params = (
-        ('sma_fast', 10),
-        ('sma_slow', 30),
-        ('position_pct', 0.95),
-    )
-
-    def __init__(self):
-        self.sma_fast = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.sma_fast)
-        self.sma_slow = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.sma_slow)
-        self.crossover = bt.indicators.CrossOver(self.sma_fast, self.sma_slow)
-
-    def next(self):
-        if not self.position:
-            if self.crossover > 0:
-                cash = self.broker.getcash()
-                price = self.data.close[0]
-                size = (cash * self.params.position_pct) / price
-                if size > 0:
-                    self.buy(size=size)
-        else:
-            if self.crossover < 0:
-                self.close()
+# Configure optimization parameters
+fast_range = range(5, 25, 3)
+slow_range = range(25, 60, 5)
+position_range = [0.8, 0.9, 0.95]
 
 def run_optimization():
     """Run parameter optimization with comprehensive analysis"""
@@ -60,10 +40,7 @@ def run_optimization():
 
     report.print_data_summary(df)
 
-    # Configure optimization parameters
-    fast_range = range(5, 25, 3)
-    slow_range = range(25, 60, 5)
-    position_range = [0.8, 0.9, 0.95]
+
 
     report.print_optimization_config(fast_range, slow_range, position_range)
 
@@ -72,7 +49,7 @@ def run_optimization():
     cerebro = bt_utils.add_standard_analyzers(cerebro, risk_free_rate=0.02)
 
     cerebro.optstrategy(
-        OptimizedSMAStrategy,
+        SimpleSMAStrategy,
         sma_fast=fast_range,
         sma_slow=slow_range,
         position_pct=position_range
