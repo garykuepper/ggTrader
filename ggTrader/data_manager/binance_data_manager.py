@@ -39,6 +39,7 @@ class BinanceDataManager(DataManager):
             'taker_buy_base_volume', 'taker_buy_quote_volume', 'ignore'
         ])
         df['datetime'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df.rename(columns={'quote_asset_volume': 'volume'}, inplace=True)
         df.set_index('datetime', inplace=True)
         return df[['open', 'high', 'low', 'close', 'volume']].astype(float)
 
