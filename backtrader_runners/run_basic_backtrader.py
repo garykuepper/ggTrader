@@ -5,55 +5,75 @@ from dotenv import load_dotenv
 from ggTrader.data_manager.universal_data_manager import UniversalDataManager
 from ggTrader.strats.simple_sma import SimpleSMAStrategy
 from ggTrader.utils.backtrader_utils import BacktraderUtils
+from ggTrader.strats.ema_macd import EMAMACDStrategy
+
 load_dotenv()
 mongo_uri = os.getenv('MONGO_URI', "mongodb://localhost:27017/")
 
-symbol= "SPY"
-market= "stock"
-interval = "1d"
-date_range = 365*5
-# Configure optimization parameters
-fast_range = 5
-slow_range = 25
-position_range = .95
+# =============================================================================
+# CONFIGURATION - Change strategy and parameters here
+# =============================================================================
+# STRATEGY = SimpleSMAStrategy  # Change this to your desired strategy class
+#
+# STRATEGY_PARAMS = {
+#     'sma_fast': 5,
+#     'sma_slow': 25,
+#     'position_pct': 0.95
+# }
+STRATEGY = EMAMACDStrategy  # Change this to your desired strategy class
+
+STRATEGY_PARAMS = {
+    'ema_fast': 12,         # Fast EMA period
+    'ema_slow': 26,         # Slow EMA period
+    'macd_fast': 12,       # MACD fast EMA period
+    'macd_slow': 26,       # MACD slow EMA period
+    'macd_signal': 9,      # MACD signal line EMA period
+    'position_pct': 0.95   # Position sizing percentage
+}
+# Data configuration
+SYMBOL = "BTCUSDT"
+MARKET = "crypto"
+INTERVAL = "1h"
+START_DATE = "2025-07-20"
+END_DATE = "2025-07-29"
+
+# Broker configuration
+INITIAL_CASH = 10000.0
+COMMISSION = 0.001
+# =============================================================================
 
 
 def run_backtest():
-    """Run the backtest"""
-    print("Starting Backtest with Universal Data Manager...")
+    """Run the backtest with configurable strategy"""
+    print(f"Starting Backtest with {STRATEGY.__name__}...")
 
     # Initialize data manager
     dm = UniversalDataManager(mongo_uri=mongo_uri)
     bt_utils = BacktraderUtils()
+
     # Fetch data
     print("Fetching data...")
-    df = dm.load_or_fetch("BTCUSDT", "1h", "2025-07-20", "2025-07-29", market="crypto")
-
+    df = dm.load_or_fetch(SYMBOL, INTERVAL, START_DATE, END_DATE, market=MARKET)
 
     print(f"Data shape: {df.shape}")
     print(f"Date range: {df.index[0]} to {df.index[-1]}")
     print(f"Price range: ${df['close'].min():.2f} - ${df['close'].max():.2f}")
+
     # Create backtrader cerebro engine
     cerebro = bt.Cerebro()
 
-    # Add strategy
-    cerebro.addstrategy(SimpleSMAStrategy,
-                        sma_fast=fast_range,
-                        sma_slow=slow_range,
-                        position_pct=position_range)
+    # Add strategy with parameters
+    cerebro.addstrategy(STRATEGY, **STRATEGY_PARAMS)
 
     # Convert and add data
     data = bt_utils.create_backtrader_data(df)
     cerebro.adddata(data)
 
-
-    # Set initial cash
-    cerebro.broker.setcash(10000.0)
-
-    # Set commission (0.1%)
-    cerebro.broker.setcommission(commission=0.001)
-    # Allow fractional shares
+    # Set broker configuration
+    cerebro.broker.setcash(INITIAL_CASH)
+    cerebro.broker.setcommission(commission=COMMISSION)
     cerebro.broker.set_filler(bt.broker.fillers.FixedBarPerc(perc=100.0))
+
     # Add analyzers
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
@@ -99,7 +119,7 @@ def run_backtest():
         win_rate = (won_trades / total_trades) * 100
         print(f"Win Rate: {win_rate:.1f}%")
 
-    # Plot results (optional)
+    # Plot results
     try:
         print("\nGenerating plot...")
         cerebro.plot(style='candlestick', volume=False, figsize=(15, 8))

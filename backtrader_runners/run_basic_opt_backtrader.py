@@ -1,104 +1,49 @@
-import os
 import backtrader as bt
-from datetime import datetime, timedelta
-from dotenv import load_dotenv
+import pandas as pd
+
+from ggTrader.strats.ema_macd_rsi import EmaMacdRsiStrategy  # if saved as a separate file
 from ggTrader.data_manager.universal_data_manager import UniversalDataManager
-from ggTrader.utils.optimization_report import OptimizationReport
-from ggTrader.utils.backtrader_utils import BacktraderUtils
-from ggTrader.strats.simple_sma import SimpleSMAStrategy
+
+import os
+from dotenv import load_dotenv
+from tabulate import tabulate
 load_dotenv()
 mongo_uri = os.getenv('MONGO_URI', "mongodb://localhost:27017/")
+dm = UniversalDataManager(mongo_uri=mongo_uri)
+your_dataframe = dm.load_or_fetch("SPY", "1d", "2020-01-01", "2023-01-01", market="stock")
+# Sample data (replace with your real data)
+data = bt.feeds.PandasData(dataname=your_dataframe)
 
-# Configure optimization parameters
-fast_range = range(5, 25, 3)
-slow_range = range(25, 60, 5)
-position_range = [0.8, 0.9, 0.95]
+# Initialize Cerebro
+cerebro = bt.Cerebro()  # Set to 1 to avoid multiprocessing issues with some analyzers
+cerebro.adddata(data)
 
-def run_optimization():
-    """Run parameter optimization with comprehensive analysis"""
-    report = OptimizationReport()
-    bt_utils = BacktraderUtils()
+# Optimization: vary fast/slow EMAs and RSI period
+cerebro.optstrategy(
+    EmaMacdRsiStrategy,
+    ema_fast=range(5, 15, 2),
+    ema_slow=range(20, 40, 5),
+    rsi_period=range(10, 20, 2),
+)
 
-    print("# 🚀 ENHANCED BACKTRADER OPTIMIZATION")
-    print("*SMA Crossover Strategy Parameter Optimization*")
+# Add analyzers (e.g., Sharpe Ratio)
+cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
 
-    # Initialize data manager
-    dm = UniversalDataManager(mongo_uri=mongo_uri)
+# Run optimization
+results = cerebro.run()
 
-    # Fetch data
-    print("\n## 📈 Fetching Historical Data...")
-    end_date = datetime.now().strftime('%Y-%m-%d')
-    start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+# Flatten the nested results
+flat_results = [res[0] for res in results]
 
-    df = dm.load_or_fetch("SPY", "1d", start_date, end_date, market="stock")
+# Sort and display results by Sharpe Ratio
+sorted_by_sharpe = sorted(
+    flat_results,
+    key=lambda strat: strat.analyzers.sharpe.get_analysis().get('sharperatio', float('-inf')),
+    reverse=True
+)
 
-    # Validate data using utility
-    is_valid, message = bt_utils.validate_data_for_optimization(df, min_length=100)
-    if not is_valid:
-        print(f"❌ **Error:** {message}")
-        return
-
-    report.print_data_summary(df)
-
-
-
-    report.print_optimization_config(fast_range, slow_range, position_range)
-
-    # Setup cerebro using utility
-    cerebro = bt_utils.setup_cerebro(initial_cash=10000.0, commission=0.001)
-    cerebro = bt_utils.add_standard_analyzers(cerebro, risk_free_rate=0.02)
-
-    cerebro.optstrategy(
-        SimpleSMAStrategy,
-        sma_fast=fast_range,
-        sma_slow=slow_range,
-        position_pct=position_range
-    )
-
-    # Add data using utility
-    data = bt_utils.create_backtrader_data(df)
-    cerebro.adddata(data)
-
-    # Run optimization
-    total_combinations = bt_utils.calculate_parameter_combinations(fast_range, slow_range, position_range)
-    print(f"\n🔄 **Running optimization with {total_combinations:,} parameter combinations...**")
-
-    results = cerebro.run()
-    print(f"✅ **Optimization completed!** Analyzing {len(results):,} results...")
-
-    # Process results
-    optimization_results = []
-    initial_value = 10000.0
-
-    for result in results:
-        strategy = result[0]
-
-        # Extract parameters
-        params = {
-            'fast_sma': strategy.params.sma_fast,
-            'slow_sma': strategy.params.sma_slow,
-            'position_pct': strategy.params.position_pct
-        }
-
-        # Extract standard results using utility
-        strategy_results = bt_utils.extract_strategy_results(strategy, initial_value)
-
-        # Combine parameters and results
-        result_entry = {**params, **strategy_results}
-        optimization_results.append(result_entry)
-
-    # Sort by return
-    optimization_results.sort(key=lambda x: x['total_return'], reverse=True)
-
-    # Display results using the report class
-    report.format_results_table(optimization_results, "TOP 20 OPTIMIZATION RESULTS (by Total Return)", 20)
-    report.format_best_performers_table(optimization_results)
-    report.format_summary_stats_table(optimization_results)
-    report.print_performance_distribution(optimization_results)
-    report.print_optimization_analysis(optimization_results)
-    report.print_completion_summary()
-
-    return optimization_results
-
-if __name__ == "__main__":
-    results = run_optimization()
+# Print top 5 parameter sets
+for strat in sorted_by_sharpe[:5]:
+    p = strat.params
+    sharpe = strat.analyzers.sharpe.get_analysis().get('sharperatio', None)
+    print(f"Fast: {p.ema_fast}, Slow: {p.ema_slow}, RSI: {p.rsi_period}, Sharpe: {sharpe}")
