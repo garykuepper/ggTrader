@@ -3,10 +3,10 @@ import requests
 import pandas as pd
 import time
 from datetime import datetime, timedelta
-from base_data_manager import DataManager
-from provider_config import PROVIDER_CAPABILITIES
-from rate_limiter import RateLimiter
-from metadata_helper import MetadataTracker
+from ggTrader.data_manager.base_data_manager import DataManager
+from ggTrader.utils.config import PROVIDER_CAPABILITIES
+from ggTrader.utils.rate_limiter import RateLimiter
+from ggTrader.utils.metadata_helper import MetadataTracker
 
 class BinanceDataManager(DataManager):
     def __init__(self, symbol='BTCUSDT', interval='1m', mongo_uri="mongodb://localhost:27017/"):
@@ -22,7 +22,7 @@ class BinanceDataManager(DataManager):
 
     def fetch_batch(self, start_time, end_time, limit=1000):
         self.ratelimiter.wait()
-        url = 'https://api.binance.com/api/v3/klines'
+        url = 'https://api.binance.us/api/v3/klines'
         params = {
             'symbol': self.symbol,
             'interval': self.interval,
@@ -44,9 +44,22 @@ class BinanceDataManager(DataManager):
 
     def fetch(self, start_date, end_date):
         all_data = []
-        start_time = datetime.strptime(start_date, "%Y-%m-%d")
-        end_time = datetime.strptime(end_date, "%Y-%m-%d")
-        delta = timedelta(minutes=1000)
+        start_time = self._convert_to_datetime(start_date)
+        end_time = self._convert_to_datetime(end_date)
+
+        # Parse interval to get appropriate deltas
+        interval_minutes = self._parse_interval_to_minutes(self.interval)
+
+        # Set batch size based on interval (aim for reasonable API call sizes)
+        if interval_minutes >= 1440:  # 1d or larger
+            batch_size_minutes = interval_minutes * 500  # 500 intervals per batch
+        elif interval_minutes >= 60:  # 1h or larger
+            batch_size_minutes = interval_minutes * 1000  # 1000 intervals per batch
+        else:  # smaller than 1h
+            batch_size_minutes = interval_minutes * 1000  # 1000 intervals per batch
+
+        delta = timedelta(minutes=batch_size_minutes)
+        increment = timedelta(minutes=interval_minutes)
 
         while start_time < end_time:
             batch_end = min(start_time + delta, end_time)
@@ -55,7 +68,8 @@ class BinanceDataManager(DataManager):
             if df.empty:
                 break
             all_data.append(df)
-            start_time = df.index[-1] + timedelta(minutes=1)
+            start_time = df.index[-1] + increment
+
         final_df = pd.concat(all_data) if all_data else pd.DataFrame()
         if not final_df.empty:
             self.metadata_tracker.update_metadata(self.symbol, self.interval, self.provider)

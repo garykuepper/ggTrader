@@ -1,7 +1,7 @@
 # universal_data_manager.py
-from binance_data_manager import BinanceDataManager
-from yahoo_data_manager import YahooDataManager
-from provider_config import PROVIDER_CAPABILITIES
+from ggTrader.data_manager.binance_data_manager import BinanceDataManager
+from ggTrader.data_manager.yahoo_data_manager import YahooDataManager
+from ggTrader.utils.config import PROVIDER_CAPABILITIES
 
 class UniversalDataManager:
     def __init__(self, mongo_uri="mongodb://localhost:27017/"):

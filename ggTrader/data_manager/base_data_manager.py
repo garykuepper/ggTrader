@@ -3,6 +3,7 @@ import pandas as pd
 from pymongo import MongoClient, ASCENDING
 from datetime import datetime
 from abc import ABC, abstractmethod
+import pandas_market_calendars as mcal
 
 class DataManager(ABC):
     def __init__(self, symbol, interval, market, provider, mongo_uri="mongodb://localhost:27017/"):
@@ -23,21 +24,33 @@ class DataManager(ABC):
         if df.empty:
             return
 
-        df = df.copy()
-        df["symbol"] = self.symbol
-        df["interval"] = self.interval
-        df["provider"] = self.provider
-        df.reset_index(inplace=True)
+        # Flatten MultiIndex columns if they exist
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = [col[0] for col in df.columns]
 
-        records = df.to_dict("records")
+        records = df.reset_index().to_dict("records")
         for record in records:
-            record["datetime"] = pd.to_datetime(record["datetime"])
+            # Handle both 'datetime' column and index-based datetime
+            if "datetime" in record:
+                record["datetime"] = pd.to_datetime(record["datetime"])
+            elif "Date" in record:  # Yahoo Finance uses 'Date' as column name after reset_index
+                record["datetime"] = pd.to_datetime(record["Date"])
+                del record["Date"]  # Remove the original Date column
+            else:
+                # If no datetime column found, skip this record or raise error
+                continue
 
-        try:
-            self.collection.insert_many(records, ordered=False)
-        except Exception as e:
-            if "duplicate key error" not in str(e):
-                raise
+            record["symbol"] = self.symbol
+            record["interval"] = self.interval
+            record["provider"] = self.provider
+
+        if records:
+            try:
+                self.collection.insert_many(records, ordered=False)
+            except Exception as e:
+                # Handle duplicate key errors gracefully
+                if "duplicate key error" not in str(e).lower():
+                    print(f"Error inserting records: {e}")
 
     def load_from_db(self, start_date, end_date):
         query = {
@@ -56,32 +69,79 @@ class DataManager(ABC):
         df = df[["open", "high", "low", "close", "volume"]]
         return df.sort_index()
 
+    def _get_trading_days(self, start_date, end_date):
+        """Get valid trading days for the given date range."""
+        if self.market == 'stock':
+            # Use NYSE calendar for stock market
+            nyse = mcal.get_calendar('NYSE')
+            schedule = nyse.schedule(start_date=start_date, end_date=end_date)
+            return schedule.index.date
+        else:
+            # For crypto, all days are trading days
+            return pd.date_range(start=start_date, end=end_date, freq='D').date
+
     def get_missing_ranges(self, start_date, end_date):
         existing = self.load_from_db(start_date, end_date)
-        if existing.empty:
-            return [(start_date, end_date)]
+        print(f"Existing data shape: {existing.shape}")
 
-        expected = pd.date_range(start=start_date, end=end_date, freq=self.interval)
+        if existing.empty:
+            # Check if the entire range is during non-trading days
+            if self.market == 'stock' and self.interval == '1d':
+                trading_days = self._get_trading_days(start_date, end_date)
+                if len(trading_days) == 0:
+                    return []  # No trading days in range
+            return [(pd.to_datetime(start_date), pd.to_datetime(end_date))]
+
+        # For daily stock data, only consider trading days
+        if self.market == 'stock' and self.interval == '1d':
+            trading_days = self._get_trading_days(start_date, end_date)
+            expected = pd.to_datetime(trading_days)
+        else:
+            expected = pd.date_range(start=start_date, end=end_date, freq=self.interval)
+
         missing = expected.difference(existing.index)
+
         if missing.empty:
             return []
 
+        # Group consecutive missing timestamps into ranges
         ranges = []
-        current_start = missing[0]
-        for i in range(1, len(missing)):
-            if (missing[i] - missing[i - 1]) != pd.Timedelta(self.interval):
-                ranges.append((current_start, missing[i - 1]))
-                current_start = missing[i]
-        ranges.append((current_start, missing[-1]))
-        return [(d[0].strftime("%Y-%m-%d %H:%M:%S"), d[1].strftime("%Y-%m-%d %H:%M:%S")) for d in ranges]
+        if len(missing) > 0:
+            start_gap = missing[0]
+            end_gap = missing[0]
+
+            for i in range(1, len(missing)):
+                # For daily intervals, check if dates are consecutive trading days
+                if self.interval == '1d':
+                    if missing[i] <= missing[i-1] + pd.Timedelta(days=7):  # Allow for weekends/holidays
+                        end_gap = missing[i]
+                    else:
+                        ranges.append((start_gap, end_gap))
+                        start_gap = missing[i]
+                        end_gap = missing[i]
+                else:
+                    # Check if current timestamp is consecutive to previous
+                    if missing[i] == missing[i-1] + pd.Timedelta(self.interval):
+                        end_gap = missing[i]
+                    else:
+                        ranges.append((start_gap, end_gap))
+                        start_gap = missing[i]
+                        end_gap = missing[i]
+
+            # Add the last range
+            ranges.append((start_gap, end_gap))
+
+        print(f"Missing ranges: {ranges}")
+        return ranges
 
     def load_or_fetch(self, start_date, end_date):
         df = self.load_from_db(start_date, end_date)
         missing_ranges = self.get_missing_ranges(start_date, end_date)
         for start, end in missing_ranges:
             new_data = self.fetch(start, end)
-            self.save_to_db(new_data)
-            df = pd.concat([df, new_data])
+            if not new_data.empty:  # Only process non-empty data
+                self.save_to_db(new_data)
+                df = pd.concat([df, new_data])
         return df.sort_index()
 
     def force_update(self, start_date, end_date):
@@ -92,3 +152,31 @@ class DataManager(ABC):
     @abstractmethod
     def fetch(self, start_date, end_date):
         pass
+
+    @staticmethod
+    def _convert_to_datetime(date_input):
+        """Convert string date or datetime object to datetime object."""
+        if isinstance(date_input, str):
+            # Try parsing with time first, then date-only format
+            try:
+                return datetime.strptime(date_input, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return datetime.strptime(date_input, "%Y-%m-%d")
+        elif isinstance(date_input, datetime):
+            return date_input
+        else:
+            raise ValueError(f"Invalid date format: {date_input}. Expected string 'YYYY-MM-DD' or datetime object.")
+
+    @staticmethod
+    def _parse_interval_to_minutes(interval):
+        """Convert interval string to minutes."""
+        if interval.endswith('m'):
+            return int(interval[:-1])
+        elif interval.endswith('h'):
+            return int(interval[:-1]) * 60
+        elif interval.endswith('d'):
+            return int(interval[:-1]) * 1440
+        elif interval.endswith('w'):
+            return int(interval[:-1]) * 10080
+        else:
+            raise ValueError(f"Unsupported interval format: {interval}")
