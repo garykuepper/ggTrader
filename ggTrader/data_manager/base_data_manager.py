@@ -5,8 +5,9 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 import pandas_market_calendars as mcal
 
+
 class DataManager(ABC):
-    def __init__(self, symbol, interval, market, provider, mongo_uri="mongodb://localhost:27017/"):
+    def __init__(self, symbol, interval, market, provider, mongo_uri=None):
         self.symbol = symbol.upper()
         self.interval = interval
         self.market = market
@@ -97,9 +98,24 @@ class DataManager(ABC):
             trading_days = self._get_trading_days(start_date, end_date)
             expected = pd.to_datetime(trading_days)
         else:
-            expected = pd.date_range(start=start_date, end=end_date, freq=self.interval)
+            # Handle deprecated frequency aliases
+            freq_mapping = {
+                'm': 'ME',  # month end frequency
+                'M': 'ME',  # month end frequency
+            }
+
+            # Check if interval is a time-based frequency (like 5m for 5 minutes)
+            if self.interval.endswith('m') and len(self.interval) > 1 and self.interval[:-1].isdigit():
+                # This is a minute-based interval like "5m", "15m", etc.
+                mapped_freq = self.interval  # Keep as is for minute intervals
+            else:
+                # This is a period-based frequency that might need mapping
+                mapped_freq = freq_mapping.get(self.interval, self.interval)
+
+            expected = pd.date_range(start=start_date, end=end_date, freq=mapped_freq)
 
         missing = expected.difference(existing.index)
+        # ... rest of the method remains the same
 
         if missing.empty:
             return []
@@ -113,7 +129,7 @@ class DataManager(ABC):
             for i in range(1, len(missing)):
                 # For daily intervals, check if dates are consecutive trading days
                 if self.interval == '1d':
-                    if missing[i] <= missing[i-1] + pd.Timedelta(days=7):  # Allow for weekends/holidays
+                    if missing[i] <= missing[i - 1] + pd.Timedelta(days=7):  # Allow for weekends/holidays
                         end_gap = missing[i]
                     else:
                         ranges.append((start_gap, end_gap))
@@ -121,7 +137,7 @@ class DataManager(ABC):
                         end_gap = missing[i]
                 else:
                     # Check if current timestamp is consecutive to previous
-                    if missing[i] == missing[i-1] + pd.Timedelta(self.interval):
+                    if missing[i] == missing[i - 1] + pd.Timedelta(self.interval):
                         end_gap = missing[i]
                     else:
                         ranges.append((start_gap, end_gap))
@@ -137,13 +153,21 @@ class DataManager(ABC):
     def load_or_fetch(self, start_date, end_date):
         df = self.load_from_db(start_date, end_date)
         missing_ranges = self.get_missing_ranges(start_date, end_date)
+
         for start, end in missing_ranges:
             new_data = self.fetch(start, end)
             if not new_data.empty:  # Only process non-empty data
+                # Remove duplicate columns before saving and concatenating
+                new_data = new_data.loc[:, ~new_data.columns.duplicated()]
                 self.save_to_db(new_data)
-                df = pd.concat([df, new_data])
-        return df.sort_index()
 
+                # Also ensure existing df has no duplicate columns
+                if not df.empty:
+                    df = df.loc[:, ~df.columns.duplicated()]
+
+                df = pd.concat([df, new_data])
+
+        return df.sort_index()
     def force_update(self, start_date, end_date):
         fresh = self.fetch(start_date, end_date)
         self.save_to_db(fresh)
@@ -170,13 +194,18 @@ class DataManager(ABC):
     @staticmethod
     def _parse_interval_to_minutes(interval):
         """Convert interval string to minutes."""
-        if interval.endswith('m'):
-            return int(interval[:-1])
-        elif interval.endswith('h'):
-            return int(interval[:-1]) * 60
-        elif interval.endswith('d'):
-            return int(interval[:-1]) * 1440
-        elif interval.endswith('w'):
-            return int(interval[:-1]) * 10080
-        else:
-            raise ValueError(f"Unsupported interval format: {interval}")
+        try:
+            if interval.endswith('m'):
+                return int(interval[:-1])
+            elif interval.endswith('h'):
+                return int(interval[:-1]) * 60
+            elif interval.endswith('d'):
+                return int(interval[:-1]) * 1440
+            elif interval.endswith('w'):
+                return int(interval[:-1]) * 10080
+            else:
+                raise ValueError(f"Unsupported interval format: {interval}")
+        except ValueError as e:
+            if "invalid literal for int()" in str(e):
+                raise ValueError(f"Unsupported interval format: {interval}")
+            raise

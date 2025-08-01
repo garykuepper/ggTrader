@@ -14,11 +14,13 @@ pd.set_option('future.no_silent_downcasting', True)
 
 
 
-symbol = "ETHUSDT"
+symbol = "PEPEUSDT"
 interval = "1h"
 
 end_date = datetime.combine(date.today() - timedelta(days=1), time.min)
 start_date = end_date - timedelta(days=30)
+time_diff = end_date - start_date
+num_days = time_diff.days
 marketType = "crypto"
 # Initialize UniversalDataManager to handle data loading and fetching
 dm = UniversalDataManager()
@@ -83,8 +85,8 @@ t.sleep(1)
 
 print("Best parameters:")
 print(study.best_params)
-print(f"Best total profit: {study.best_value:.2f}")
-
+print(f"Best total profit: ${study.best_value:.2f}")
+print(f"Best daily profit: ${study.best_value/num_days:.2f}")
 # Save the best parameters
 best_params = study.best_params
 dm.save_optimization_parameters(

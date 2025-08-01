@@ -16,7 +16,7 @@ class YahooDataManager(DataManager):
         self.metadata_tracker = MetadataTracker(self.db, 'stock')
 
     def fetch(self, start_date, end_date):
-        df = yf.download(self.symbol, start=start_date, end=end_date, interval=self.interval, auto_adjust=True, progress=False)
+        df = yf.download(self.symbol, start=start_date, end=end_date, interval=self.interval, auto_adjust=True, progress=False, multi_level_index=False)
 
         if df.empty:
             return df

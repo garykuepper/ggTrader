@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from tabulate import tabulate
 import mplfinance as mpf
 from datetime import datetime, timedelta
+from backtrader_runners.run_momentum_breakout import ema_fast_range
 from ggTrader.data_manager.universal_data_manager import UniversalDataManager
-
 pd.set_option('future.no_silent_downcasting', True)
 
 import os
@@ -27,9 +27,9 @@ db_name = os.getenv('DB_NAME')
 # # Set the 'date' column as the DataFrame index for easier plotting and time-based operations
 # df = df.set_index('date')
 
-symbol = "XRPUSDT"
-interval = "5m"
-end_date = datetime.now() - timedelta(hours=1)
+symbol = "PEPEUSDT"
+interval = "1h"
+end_date = (datetime.now() - timedelta(hours=1)).replace(second=0, microsecond=0)
 start_date = end_date - timedelta(days=7)
 time_diff = end_date - start_date
 num_days = time_diff.days
@@ -37,19 +37,17 @@ print(F"From {start_date} to {end_date}")
 marketType = "crypto"
 # ema_fast_range = 8
 # ema_slow_range = 10
+# Initialize UniversalDataManager to handle data loading and fetching
 dm = UniversalDataManager()
-
 # Change these lines:
 latest = dm.get_latest_optimization_parameters(symbol, "ema_crossover", interval)
 ema_fast = latest["parameters"]["ema_fast"]  # Use ema_fast, not ema_fast_range
 ema_slow = latest["parameters"]["ema_slow"]  # Use ema_slow, not ema_slow_range
 
-
-
-# Get the specific data manager for this symbol/market
-specific_dm = dm.get_manager(symbol, interval, marketType)
+print(F"Parameters Loaded: {latest["parameters"]}")
 
 df = dm.load_or_fetch(symbol, interval, start_date, end_date, market=marketType)
+
 
 # And update the EMA calculations:
 df['ema_fast'] = EMAIndicator(df['close'], window=ema_fast).ema_indicator()
@@ -77,9 +75,8 @@ print(tabulate(signals, headers='keys', tablefmt='github'))
 print("\n")
 
 print(df.columns)
-buy_signals = df.loc[cross_up, ['close']].reset_index().rename(columns={'datetime': 'buy_date', 'close': 'buy_price'})
-sell_signals = df.loc[cross_down, ['close']].reset_index().rename(
-    columns={'datetime': 'sell_date', 'close': 'sell_price'})
+buy_signals = df.loc[cross_up, ['close']].reset_index().rename(columns={'datetime':'buy_date', 'close':'buy_price'})
+sell_signals = df.loc[cross_down, ['close']].reset_index().rename(columns={'datetime':'sell_date', 'close':'sell_price'})
 
 # Merge buy with next sell after buy_date
 trades = pd.merge_asof(buy_signals.sort_values('buy_date'),
@@ -93,10 +90,13 @@ profit = []
 cash = starting_cash
 
 for i, row in trades.iterrows():
-    shares_bought = cash / row['buy_price']
+
+    shares_bought = cash/row['buy_price']
     sell_value = shares_bought * row['sell_price']
     profit.append(sell_value - cash)
     cash = sell_value
+
+
 
 trades['profit'] = profit
 totalProfit = trades['profit'].sum()
@@ -107,6 +107,7 @@ print(f"Total Profit: ${totalProfit:.2f}")
 print(f"Daily Profit: ${dailyProfit:.2f}")
 print(f"Start Cash:   ${starting_cash:.2f}")
 print(f"Num of Days:   {num_days}")
+print(F"Parameters Loaded: {latest["parameters"]}")
 # # Plot the selected columns
 # ax = woot.plot(title="EMA Crossovers (Boolean Method)")
 #
@@ -167,7 +168,7 @@ bearish_scatter = mpf.make_addplot(bearish_markers, type='scatter', markersize=7
 #     figsize=(12,8),
 #     tight_layout=True
 # )
-# At the end of your script, before it exits:
+# At the very end of your script:
 try:
     dm.close()
 except:

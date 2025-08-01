@@ -1,4 +1,5 @@
 import requests
+from tabulate import tabulate
 
 def get_binance_pair(symbol):
     url = f"https://api.binance.us/api/v3/ticker/24hr?symbol={symbol}"
@@ -22,12 +23,17 @@ def get_top_binance_us_pairs(top_n=10):
         # Sort by quoteVolume (24h volume in quote currency, usually USDT or USD)
         sorted_pairs = sorted(usdt_pairs, key=lambda x: float(x['quoteVolume']), reverse=True)
 
-        print(f"\n🔝 Top {top_n} most active Binance.US trading pairs (by 24h volume):\n")
-        for i, pair in enumerate(sorted_pairs[:top_n]):
-            symbol = pair['symbol']
-            volume = float(pair['quoteVolume'])
-            price_change = float(pair['priceChangePercent'])
-            print(f"{i+1}. {symbol:<10} | Volume: ${volume:,.2f} | Change: {price_change:.2f}%")
+        print(f"\n🔝 Top {top_n} most active Binance.US trading pairs (by 24h volume):\n")# Create a list of dictionaries with the desired columns
+        table_data = []
+        for pair in sorted_pairs[:top_n]:
+            table_data.append({
+                'Symbol': pair['symbol'],
+                'Volume': f"${float(pair['quoteVolume']):,.2f}",
+                'Change': f"{float(pair['priceChangePercent']):.2f}%",
+                'Price': f"${float(pair['lastPrice']):.4f}"
+            })
+
+        print(tabulate(table_data, headers="keys", tablefmt="github"))
     except Exception as e:
         print(f"⚠️ Error fetching Binance.US data: {e}")
 
@@ -70,22 +76,22 @@ def get_top_active_coins(top_n=10, vs_currency='usd'):
 
 
 # Run it
-get_top_binance_us_pairs()
-pair_data = get_binance_pair("BTCUSDT")
-kline_data = get_binance_kline(symbol='BTCUSDT', interval='1d', limit=1)
-for row in pair_data.items():
-    print(f"{row[0]}: {row[1]}")
+get_top_binance_us_pairs(top_n=20)
+# pair_data = get_binance_pair("BTCUSDT")
+# kline_data = get_binance_kline(symbol='BTCUSDT', interval='1d', limit=1)
+# for row in pair_data.items():
+#     print(f"{row[0]}: {row[1]}")
+#
+# if kline_data:
+#     kline = kline_data[0]
+#     print(f"\nLatest Kline Data for BTCUSDT:")
+#     print(f"Timestamp: {kline[0]}")
+#     print(f"Open: {kline[1]}")
+#     print(f"High: {kline[2]}")
+#     print(f"Low: {kline[3]}")
+#     print(f"Close: {kline[4]}")
+#     print(f"Volume (Base): {kline[5]}")
+#     print(f"Quote Volume (USDT/USD): {kline[7]}")
 
-if kline_data:
-    kline = kline_data[0]
-    print(f"\nLatest Kline Data for BTCUSDT:")
-    print(f"Timestamp: {kline[0]}")
-    print(f"Open: {kline[1]}")
-    print(f"High: {kline[2]}")
-    print(f"Low: {kline[3]}")
-    print(f"Close: {kline[4]}")
-    print(f"Volume (Base): {kline[5]}")
-    print(f"Quote Volume (USDT/USD): {kline[7]}")
 
-
-get_top_active_coins()
+# get_top_active_coins()

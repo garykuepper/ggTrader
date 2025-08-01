@@ -16,7 +16,7 @@ dm = UniversalDataManager(mongo_uri=mongo_uri)
 #                       market="crypto")
 # # print(df.tail())
 
-df = dm.load_or_fetch("SPY", "1d", "2025-07-01", "2025-07-29", market="stock")
+df = dm.load_or_fetch("XRPUSDT", "1d", "2025-07-01", "2025-07-29", market="crypto")
 print(df.tail())
 print(df.columns)
 # Plot all columns

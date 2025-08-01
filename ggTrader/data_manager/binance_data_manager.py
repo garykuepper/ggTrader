@@ -9,7 +9,7 @@ from ggTrader.utils.rate_limiter import RateLimiter
 from ggTrader.utils.metadata_helper import MetadataTracker
 
 class BinanceDataManager(DataManager):
-    def __init__(self, symbol='BTCUSDT', interval='1m', mongo_uri="mongodb://localhost:27017/"):
+    def __init__(self, symbol=None, interval=None, mongo_uri=None):
         super().__init__(symbol, interval, market='crypto', provider='binance', mongo_uri=mongo_uri)
 
         if self.interval not in PROVIDER_CAPABILITIES['binance']['intervals']:
