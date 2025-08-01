@@ -8,15 +8,7 @@ from backtrader_runners.run_momentum_breakout import ema_fast_range
 from ggTrader.data_manager.universal_data_manager import UniversalDataManager
 pd.set_option('future.no_silent_downcasting', True)
 
-import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Get MongoDB URI from environment variables
-mongo_uri = os.getenv('MONGO_URI')
-db_name = os.getenv('DB_NAME')
 
 # # Load CSV data into a DataFrame
 # df = pd.read_csv("yf_BTC_1m_5d.csv")
@@ -27,7 +19,7 @@ db_name = os.getenv('DB_NAME')
 # # Set the 'date' column as the DataFrame index for easier plotting and time-based operations
 # df = df.set_index('date')
 
-symbol = "PEPEUSDT"
+symbol = "AVAXUSDT"
 interval = "1h"
 end_date = (datetime.now() - timedelta(hours=1)).replace(second=0, microsecond=0)
 start_date = end_date - timedelta(days=7)

@@ -20,9 +20,10 @@ def get_top_binance_us_pairs(top_n=10):
         data = response.json()
         # Filter for only USDT pairs
         usdt_pairs = [pair for pair in data if pair['symbol'].endswith('USDT')]
+
         # Sort by quoteVolume (24h volume in quote currency, usually USDT or USD)
         sorted_pairs = sorted(usdt_pairs, key=lambda x: float(x['quoteVolume']), reverse=True)
-
+        print(sorted_pairs[:1])
         print(f"\n🔝 Top {top_n} most active Binance.US trading pairs (by 24h volume):\n")# Create a list of dictionaries with the desired columns
         table_data = []
         for pair in sorted_pairs[:top_n]:
@@ -64,6 +65,7 @@ def get_top_active_coins(top_n=10, vs_currency='usd'):
 
         print(f"\n🔝 Top {top_n} active coins by 24h volume on CoinGecko:\n")
         for i, coin in enumerate(data):
+
             name = coin['name']
             symbol = coin['symbol'].upper()
             volume = coin['total_volume']

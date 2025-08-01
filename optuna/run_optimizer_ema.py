@@ -14,7 +14,7 @@ pd.set_option('future.no_silent_downcasting', True)
 
 
 
-symbol = "PEPEUSDT"
+symbol = "AVAXUSDT"
 interval = "1h"
 
 end_date = datetime.combine(date.today() - timedelta(days=1), time.min)
