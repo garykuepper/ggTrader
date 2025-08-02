@@ -1,7 +1,7 @@
 # universal_data_manager.py
-from ggTrader.data_manager.binance_data_manager import BinanceDataManager
-from ggTrader.data_manager.yahoo_data_manager import YahooDataManager
-from ggTrader.utils.config import PROVIDER_CAPABILITIES
+from old.ggTrader_old.data_manager.binance_data_manager import BinanceDataManager
+from old.ggTrader_old.data_manager.yahoo_data_manager import YahooDataManager
+from old.ggTrader_old.utils.config import PROVIDER_CAPABILITIES
 from pymongo import MongoClient
 from datetime import datetime
 import os

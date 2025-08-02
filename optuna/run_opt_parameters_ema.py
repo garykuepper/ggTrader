@@ -1,11 +1,8 @@
 import pandas as pd
 from ta.trend import EMAIndicator
-import matplotlib.pyplot as plt
 from tabulate import tabulate
-import mplfinance as mpf
 from datetime import datetime, timedelta
-from backtrader_runners.run_momentum_breakout import ema_fast_range
-from ggTrader.data_manager.universal_data_manager import UniversalDataManager
+from old.ggTrader_old.data_manager import UniversalDataManager
 pd.set_option('future.no_silent_downcasting', True)
 
 

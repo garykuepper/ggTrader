@@ -1,9 +1,8 @@
 # yahoo_data_manager.py
 import yfinance as yf
-from ggTrader.data_manager.base_data_manager import DataManager
-from ggTrader.utils.config import PROVIDER_CAPABILITIES
-from ggTrader.utils.rate_limiter import RateLimiter
-from ggTrader.utils.metadata_helper import MetadataTracker
+from old.ggTrader_old.data_manager.base_data_manager import DataManager
+from old.ggTrader_old.utils.config import PROVIDER_CAPABILITIES
+from old.ggTrader_old.utils.metadata_helper import MetadataTracker
 import pandas as pd
 
 class YahooDataManager(DataManager):

@@ -1,8 +1,8 @@
-from swing_trader.data.mr_data import MrData
-from swing_trader.trading.portfolio import Portfolio
-from swing_trader.strategy.swing_strategy import SwingStrategy
+from old.swing_trader.data import MrData
+from old.swing_trader.trading.portfolio import Portfolio
+from old.swing_trader.strategy.swing_strategy import SwingStrategy
 from datetime import datetime, timedelta
-from swing_trader.backtest.backtester import Backtester
+from old.swing_trader.backtest.backtester import Backtester
 
 start_dt = datetime(2018, 1, 1)
 end_dt = datetime.today() - timedelta(days=1)

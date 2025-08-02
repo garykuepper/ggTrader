@@ -1,9 +1,8 @@
 import pytest
 import pandas as pd
-from datetime import datetime, timedelta
-from unittest.mock import Mock, MagicMock, patch
-import pymongo
-from ggTrader.data_manager.base_data_manager import DataManager
+from datetime import datetime
+from unittest.mock import MagicMock, patch
+from old.ggTrader_old.data_manager.base_data_manager import DataManager
 
 
 class ConcreteDataManager(DataManager):
@@ -28,7 +27,7 @@ class ConcreteDataManager(DataManager):
 @pytest.fixture
 def mock_mongo_client():
     """Mock MongoDB client to avoid actual database connections"""
-    with patch('ggTrader.data_manager.base_data_manager.MongoClient') as mock_client:
+    with patch('ggTrader_old.data_manager.base_data_manager.MongoClient') as mock_client:
         mock_db = MagicMock()
         mock_collection = MagicMock()
         mock_client.return_value.__getitem__.return_value = mock_db
@@ -215,7 +214,7 @@ class TestDatabaseOperations:
 class TestTradingDays:
     """Test trading days calculation"""
 
-    @patch('ggTrader.data_manager.base_data_manager.mcal')
+    @patch('ggTrader_old.data_manager.base_data_manager.mcal')
     def test_get_trading_days_stock_market(self, mock_mcal, data_manager):
         """Test getting trading days for stock market"""
         # Mock NYSE calendar
@@ -282,7 +281,7 @@ class TestMissingRanges:
 
         assert len(missing_ranges) == 0
 
-    @patch('ggTrader.data_manager.base_data_manager.mcal')
+    @patch('ggTrader_old.data_manager.base_data_manager.mcal')
     def test_get_missing_ranges_stock_daily_no_trading_days(self, mock_mcal, data_manager, mock_mongo_client):
         """Test missing ranges for stock daily data when no trading days exist"""
         mock_client, mock_db, mock_collection = mock_mongo_client

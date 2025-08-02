@@ -1,12 +1,11 @@
 import backtrader as bt
-import pandas as pd
 
-from ggTrader.strats.ema_macd_rsi import EmaMacdRsiStrategy  # if saved as a separate file
-from ggTrader.data_manager.universal_data_manager import UniversalDataManager
+from old.ggTrader_old.strats.ema_macd_rsi import EmaMacdRsiStrategy  # if saved as a separate file
+from old.ggTrader_old.data_manager import UniversalDataManager
 
 import os
 from dotenv import load_dotenv
-from tabulate import tabulate
+
 load_dotenv()
 mongo_uri = os.getenv('MONGO_URI', "mongodb://localhost:27017/")
 dm = UniversalDataManager(mongo_uri=mongo_uri)

@@ -3,7 +3,7 @@ from optuna.samplers import RandomSampler
 from ta.trend import EMAIndicator
 import optuna
 import time as t
-from ggTrader.data_manager.universal_data_manager import UniversalDataManager
+from old.ggTrader_old.data_manager import UniversalDataManager
 from datetime import datetime, timedelta, date, time
 
 pd.set_option('future.no_silent_downcasting', True)

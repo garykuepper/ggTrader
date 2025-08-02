@@ -1,15 +1,14 @@
 # tests/test_universal_data_manager_optimization.py
 import pytest
-import pandas as pd
-from datetime import datetime, timedelta
-from unittest.mock import Mock, MagicMock, patch
-from ggTrader.data_manager.universal_data_manager import UniversalDataManager
+from datetime import datetime
+from unittest.mock import MagicMock, patch
+from old.ggTrader_old.data_manager import UniversalDataManager
 
 
 @pytest.fixture
 def mock_mongo_setup():
     """Mock MongoDB setup for optimization tests"""
-    with patch('ggTrader.data_manager.universal_data_manager.MongoClient') as mock_client:
+    with patch('ggTrader_old.data_manager.universal_data_manager.MongoClient') as mock_client:
         mock_db = MagicMock()
         mock_optimization_collection = MagicMock()
 
@@ -309,7 +308,7 @@ class TestOptimizationIntegration:
 # Standalone test script you can run directly
 def test_optimization_manually():
     """Manual test script you can run to test with real database"""
-    from ggTrader.data_manager.universal_data_manager import UniversalDataManager
+    from old.ggTrader_old.data_manager import UniversalDataManager
 
     print("Testing optimization parameter functionality...")
 

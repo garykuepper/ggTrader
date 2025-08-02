@@ -1,11 +1,10 @@
 import os
-import backtrader as bt
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from ggTrader.data_manager.universal_data_manager import UniversalDataManager
-from ggTrader.utils.optimization_report import OptimizationReport
-from ggTrader.utils.backtrader_utils import BacktraderUtils
-from ggTrader.strats.ema_macd import EMAMACDStrategy
+from old.ggTrader_old.data_manager import UniversalDataManager
+from old.ggTrader_old.utils.optimization_report import OptimizationReport
+from old.ggTrader_old.utils.backtrader_utils import BacktraderUtils
+from old.ggTrader_old.strats.ema_macd import EMAMACDStrategy
 
 # Configuration parameters
 symbol = "SPY"

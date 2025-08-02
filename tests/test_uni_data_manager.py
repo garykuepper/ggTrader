@@ -1,8 +1,7 @@
 import os
-import pandas as pd
 import pytest
 from dotenv import load_dotenv
-from ggTrader.data_manager.universal_data_manager import UniversalDataManager
+from old.ggTrader_old.data_manager import UniversalDataManager
 import time
 from datetime import datetime, timedelta
 

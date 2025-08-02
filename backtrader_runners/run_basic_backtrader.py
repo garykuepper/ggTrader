@@ -1,11 +1,9 @@
 import os
 import backtrader as bt
-import pandas as pd
 from dotenv import load_dotenv
-from ggTrader.data_manager.universal_data_manager import UniversalDataManager
-from ggTrader.strats.simple_sma import SimpleSMAStrategy
-from ggTrader.utils.backtrader_utils import BacktraderUtils
-from ggTrader.strats.ema_macd import EMAMACDStrategy
+from old.ggTrader_old.data_manager import UniversalDataManager
+from old.ggTrader_old.utils.backtrader_utils import BacktraderUtils
+from old.ggTrader_old.strats.ema_macd import EMAMACDStrategy
 
 load_dotenv()
 mongo_uri = os.getenv('MONGO_URI', "mongodb://localhost:27017/")

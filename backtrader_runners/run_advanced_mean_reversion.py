@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from tabulate import tabulate
 
-from ggTrader.data_manager.universal_data_manager import UniversalDataManager
-from ggTrader.utils.optimization_report import OptimizationReport
-from ggTrader.utils.backtrader_utils import BacktraderUtils
-from ggTrader.strats.advanced_mean_reversion import AdvancedMeanReversionStrategy
+from old.ggTrader_old.data_manager import UniversalDataManager
+from old.ggTrader_old.utils.optimization_report import OptimizationReport
+from old.ggTrader_old.utils.backtrader_utils import BacktraderUtils
+from old.ggTrader_old.strats.advanced_mean_reversion import AdvancedMeanReversionStrategy
 
 symbol= "SPY"
 interval = "1d"

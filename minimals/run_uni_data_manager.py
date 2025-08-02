@@ -1,8 +1,6 @@
 import os
 from dotenv import load_dotenv
-from ggTrader.data_manager.universal_data_manager import UniversalDataManager
-import matplotlib.pyplot as plt
-import mplfinance as mpf
+from old.ggTrader_old.data_manager import UniversalDataManager
 
 load_dotenv()
 mongo_uri = os.getenv('MONGO_URI', "mongodb://localhost:27017/")
