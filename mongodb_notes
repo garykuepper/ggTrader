@@ -1,0 +1,14 @@
+{ "date": { "$exists": true } }
+
+
+
+To query between a time frame
+start_date = datetime(2025, 8, 1)
+end_date = datetime(2025, 8, 5)
+
+results = collection.find({
+    'date': {
+        '$gte': start_date,
+        '$lt': end_date
+    }
+})
