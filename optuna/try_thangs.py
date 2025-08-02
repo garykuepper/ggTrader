@@ -16,14 +16,14 @@ load_dotenv()
 mongo_uri = os.getenv('MONGO_URI')
 db_name = os.getenv('DB_NAME')
 
-# # Load CSV data into a DataFrame
-# df = pd.read_csv("yf_BTC_1m_5d.csv")
-#
-# # Convert the 'date' column to datetime objects for proper time series handling
-# df['date'] = pd.to_datetime(df['date'])
-#
-# # Set the 'date' column as the DataFrame index for easier plotting and time-based operations
-# df = df.set_index('date')
+# Load CSV data into a DataFrame
+df = pd.read_csv("yf_BTC_1m_5d.csv")
+
+# Convert the 'date' column to datetime objects for proper time series handling
+df['date'] = pd.to_datetime(df['date'])
+
+# Set the 'date' column as the DataFrame index for easier plotting and time-based operations
+df = df.set_index('date')
 
 symbol = "XRPUSDT"
 interval = "5m"
@@ -33,21 +33,21 @@ time_diff = end_date - start_date
 num_days = time_diff.days
 print(F"From {start_date} to {end_date}")
 marketType = "crypto"
-# ema_fast_range = 8
-# ema_slow_range = 10
-dm = UniversalDataManager()
+ema_fast_range = 8
+ema_slow_range = 10
+# dm = UniversalDataManager()
 
 # Change these lines:
-latest = dm.get_latest_optimization_parameters(symbol, "ema_crossover", interval)
-ema_fast = latest["parameters"]["ema_fast"]  # Use ema_fast, not ema_fast_range
-ema_slow = latest["parameters"]["ema_slow"]  # Use ema_slow, not ema_slow_range
+# latest = dm.get_latest_optimization_parameters(symbol, "ema_crossover", interval)
+# ema_fast = latest["parameters"]["ema_fast"]  # Use ema_fast, not ema_fast_range
+# ema_slow = latest["parameters"]["ema_slow"]  # Use ema_slow, not ema_slow_range
 
 
 
 # Get the specific data manager for this symbol/market
-specific_dm = dm.get_manager(symbol, interval, marketType)
-
-df = dm.load_or_fetch(symbol, interval, start_date, end_date, market=marketType)
+# specific_dm = dm.get_manager(symbol, interval, marketType)
+#
+# df = dm.load_or_fetch(symbol, interval, start_date, end_date, market=marketType)
 
 # And update the EMA calculations:
 df['ema_fast'] = EMAIndicator(df['close'], window=ema_fast).ema_indicator()
