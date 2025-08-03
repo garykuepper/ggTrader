@@ -17,9 +17,7 @@ def yf_download_df(symbol, interval, start_date, end_date):
 
     df['symbol'] = symbol
     df['interval'] = interval
-
     df.columns = df.columns.str.lower()
-
     return df
 
 
@@ -36,7 +34,6 @@ def mongodb_to_df(results):
         # If index is DatetimeIndex and naive, localize it
         if df.index.tz is None:
             df.index = df.index.tz_localize('UTC')
-
     else:
         raise KeyError("'date' column or index not found in DataFrame")
 
@@ -60,7 +57,7 @@ def df_to_mongodb_format(df):
 
 
 def find_missing_dates(request_dates, available_dates):
-    print(available_dates)
+
     if request_dates.empty:
         missing_list = [[]]
         dates_only = []
@@ -78,7 +75,7 @@ def find_missing_dates(request_dates, available_dates):
     missing_dates = request_dates.difference(available_dates)
     missing_list = [[d.date()] for d in missing_dates]
     dates_only = [d[0] for d in missing_list]
-    print(dates_only)
+
     return missing_list, dates_only
 
 
@@ -171,9 +168,9 @@ def get_collection():
 
 # Stock Data
 symbol = "SPY"
-interval = "1h"
+interval = "15m"
 end_date = datetime(2025, 7, 11)
-start_date = end_date - timedelta(days=2)
+start_date = end_date - timedelta(days=1)
 
 collection = get_collection()
 
