@@ -366,8 +366,8 @@ class CryptoDataManager(DataManager):
             'Spread %': f"{spread_pct*100:.3f}%"
         }
 
-    def print_top_pairs(self, top_n=10, quote=None):
-        top_pairs = self.get_24hr_top_binance(top_n, quote=quote)
+    def print_top_pairs(self, top_n=10, quote=None, min_volume=None):
+        top_pairs = self.get_24hr_top_binance(top_n, quote=quote, min_volume=min_volume)
         if not top_pairs:
             print("No data available.")
             return
