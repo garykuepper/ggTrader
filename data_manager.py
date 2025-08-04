@@ -137,6 +137,13 @@ class DataManager():
                 df[col] = df[col].astype(float)
         return df
 
+    @staticmethod
+    def ensure_utc_timezone(df):
+        """Ensure DataFrame index has UTC timezone."""
+        if df.index.tz is None:
+            df.index = df.index.tz_localize('UTC')
+        return df
+
 class StockDataManager(DataManager):
 
     def __init__(self):
@@ -315,21 +322,49 @@ class CryptoDataManager(DataManager):
             return pd.DataFrame()
 
     @staticmethod
-    def get_24hr_top_binance(top_n=10, quote=None):
+    def get_24hr_top_binance(top_n=10, quote=None, min_change=.5, min_trades=50, min_volume=0):
         url = "https://api.binance.us/api/v3/ticker/24hr"
         try:
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-            # Optionally filter for quote asset
             if quote:
                 data = [x for x in data if x['symbol'].endswith(quote)]
+            # Filter using all criteria
+            data = [
+                x for x in data
+                if float(x['quoteVolume']) > min_volume
+                   and float(x['lastPrice']) > 0
+                   and int(x.get('count', 0)) > min_trades
+                   and abs(float(x['priceChangePercent'])) > min_change
+            ]
             sorted_pairs = sorted(data, key=lambda x: float(x['quoteVolume']), reverse=True)
             return sorted_pairs[:top_n]
         except Exception as e:
             print(f"⚠️ Error fetching Binance.US data: {e}")
             return []
 
+    @staticmethod
+    def calculate_spread_pct(pair):
+        try:
+            bid = float(pair.get('bidPrice', 0))
+            ask = float(pair.get('askPrice', 0))
+            last = float(pair.get('lastPrice', 1)) or 1
+            return abs(ask - bid) / last if last else 0
+        except Exception:
+            return 0
+
+    @staticmethod
+    def format_pair_row(pair, spread_pct):
+        return {
+            'Symbol': pair['symbol'],
+            'Volume': f"${float(pair['quoteVolume']):,.2f}",
+            'Change': f"{float(pair['priceChangePercent']):.2f}%",
+            'Price': f"${float(pair['lastPrice']):.4f}",
+            'Wt. Price': f"${float(pair['weightedAvgPrice']):.4f}",
+            'Trades': pair.get('count', 0),
+            'Spread %': f"{spread_pct*100:.3f}%"
+        }
 
     def print_top_pairs(self, top_n=10, quote=None):
         top_pairs = self.get_24hr_top_binance(top_n, quote=quote)
@@ -339,12 +374,7 @@ class CryptoDataManager(DataManager):
 
         table_data = []
         for pair in top_pairs:
-            table_data.append({
-                'Symbol': pair['symbol'],
-                'Volume': f"${float(pair['quoteVolume']):,.2f}",
-                'Change': f"{float(pair['priceChangePercent']):.2f}%",
-                'Price': f"${float(pair['lastPrice']):.4f}",
-                'Wt. Price': f"${float(pair['weightedAvgPrice']):.4f}"
-            })
+            spread_pct = self.calculate_spread_pct(pair)
+            table_data.append(self.format_pair_row(pair, spread_pct))
 
         print(tabulate(table_data, headers="keys", tablefmt="github"))

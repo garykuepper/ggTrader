@@ -21,12 +21,12 @@ print("Crypto Data...")
 cm = CryptoDataManager()
 
 symbol = "BTCUSDT"
-interval = '1h'
+interval = '1d'
 end_date = datetime(2025, 7, 28)
-start_date = end_date - timedelta(days=3)
+start_date = end_date - timedelta(days=30)
 cm_data = cm.get_crypto_data(symbol, interval, start_date, end_date)
 
 print(tabulate(cm_data, headers='keys', tablefmt='github'))
 
 print("Top Pairs:")
-cm.print_top_pairs(top_n=20)
+cm.print_top_pairs(top_n=20, quote="USDT")
