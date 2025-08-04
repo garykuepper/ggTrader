@@ -20,7 +20,7 @@ print(tabulate(mm, headers='keys', tablefmt='github'))
 print("Crypto Data...")
 cm = CryptoDataManager()
 
-symbol = "BTCUSDT"
+symbol = "XRPUSDT"
 interval = '1d'
 end_date = datetime(2025, 7, 28)
 start_date = end_date - timedelta(days=30)
