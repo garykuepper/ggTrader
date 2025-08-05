@@ -285,8 +285,9 @@ class CryptoDataManager(DataManager):
 
         missing_df = pd.concat(dfs) if dfs else pd.DataFrame()
         # For missing_df (downloaded)
-        if missing_df.index.tz is None:
+        if isinstance(missing_df.index, pd.DatetimeIndex) and missing_df.index.tz is None:
             missing_df.index = missing_df.index.tz_localize('UTC')
+
         return missing_df
 
     def get_binance_klines_paginated(self, symbol, interval, start_time, end_time, limit=1000):

@@ -3,18 +3,26 @@ from optuna.samplers import RandomSampler
 from ta.trend import EMAIndicator
 import optuna
 import time
-
+from data_manager import CryptoDataManager, StockDataManager
+from datetime import datetime, timedelta
 # Load and preprocess data once
-df = pd.read_csv("yf_ltc_5y.csv")
-df['date'] = pd.to_datetime(df['date'])
-df = df.set_index('date')
+# df = pd.read_csv("yf_ltc_5y.csv")
+# df['date'] = pd.to_datetime(df['date'])
+# df = df.set_index('date')
 
-starting_cash = 10000
+symbol = 'LTCUSDT'
+interval = '4h'
+end_date = datetime(2025, 8, 5)
+start_date = end_date - timedelta(days=30)
+
+df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
+
+starting_cash = 1000
 
 def objective(trial):
     # Suggest EMA window parameters
-    fast_window = trial.suggest_int('fast_window', 6, 20)
-    slow_window = trial.suggest_int('slow_window', fast_window + 1, 35)  # slow > fast
+    fast_window = trial.suggest_int('fast_window', 5, 20)
+    slow_window = trial.suggest_int('slow_window', fast_window + 5, 40)  # slow > fast
 
     # Calculate EMAs with trial parameters
     df['ema_fast'] = EMAIndicator(df['close'], window=fast_window).ema_indicator()

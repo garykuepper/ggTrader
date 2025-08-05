@@ -21,22 +21,31 @@ def get_top_binance_us_pairs(top_n=10):
         # Filter for only USDT pairs
         usdt_pairs = [pair for pair in data if pair['symbol'].endswith('USDT')]
 
-        # Sort by quoteVolume (24h volume in quote currency, usually USDT or USD)
+        # Sort by quoteVolume descending
         sorted_pairs = sorted(usdt_pairs, key=lambda x: float(x['quoteVolume']), reverse=True)
-        print(sorted_pairs[:1])
-        print(f"\n🔝 Top {top_n} most active Binance.US trading pairs (by 24h volume):\n")# Create a list of dictionaries with the desired columns
+
         table_data = []
         for pair in sorted_pairs[:top_n]:
+            symbol = pair['symbol']
+            # Split base and quote assets
+            base_asset = symbol[:-4]  # Remove 'USDT' suffix
+            quote_asset = 'USDT'
             table_data.append({
-                'Symbol': pair['symbol'],
-                'Volume': f"${float(pair['quoteVolume']):,.2f}",
-                'Change': f"{float(pair['priceChangePercent']):.2f}%",
-                'Price': f"${float(pair['lastPrice']):.4f}"
+                'Symbol': symbol,
+                'Base': base_asset,
+                'Quote': quote_asset,
+                'Price': f"${float(pair['lastPrice']):.4f}",
+                'Volume (Quote)': f"${float(pair['quoteVolume']):,.2f}",
+                '24h Change %': f"{float(pair['priceChangePercent']):.2f}%",
+                '24h High': f"${float(pair['highPrice']):.4f}",
+                '24h Low': f"${float(pair['lowPrice']):.4f}",
             })
 
+        print(f"\n🔝 Top {top_n} Binance.US USDT trading pairs by 24h volume:\n")
         print(tabulate(table_data, headers="keys", tablefmt="github"))
     except Exception as e:
         print(f"⚠️ Error fetching Binance.US data: {e}")
+
 
 def get_binance_kline(symbol, interval='1m', limit=1000):
     url = f"https://api.binance.us/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
