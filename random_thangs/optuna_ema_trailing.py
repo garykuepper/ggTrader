@@ -3,16 +3,18 @@ from optuna.samplers import RandomSampler
 from ta.trend import EMAIndicator
 import optuna
 import time
-from data_manager import CryptoDataManager
-from datetime import datetime, timedelta
+from data_manager import CryptoDataManager, StockDataManager
+from datetime import datetime, timedelta, timezone
 
 # Load data once
-symbol = 'BNBUSDT'
-interval = '4h'
-end_date = datetime(2025, 8, 5)
-start_date = end_date - timedelta(days=60)
+symbol = 'UPRO'
+interval = '1d'
+end_date = datetime.now(timezone.utc)
+start_date = end_date - timedelta(days=200)
 
-df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
+df = StockDataManager().get_stock_data(symbol, interval, start_date, end_date)
+
+# df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
 starting_cash = 1000
 
 def objective(trial):
@@ -20,7 +22,7 @@ def objective(trial):
     fast_window = trial.suggest_int('fast_window', 5, 15)
     slow_window = trial.suggest_int('slow_window', 20, 30)  # slow > fast
     trailing_pct = trial.suggest_float('trailing_pct', 0.005, 0.10)
-    min_hold_bars = trial.suggest_int('min_hold_bars', 3, 12)
+    min_hold_bars = trial.suggest_int('min_hold_bars', 2, 6)
 
     # Calculate EMAs
     df['ema_fast'] = EMAIndicator(df['close'], window=fast_window).ema_indicator()

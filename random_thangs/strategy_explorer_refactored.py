@@ -3,8 +3,8 @@ import numpy as np
 from ta.trend import EMAIndicator, SMAIndicator
 import mplfinance as mpf
 from tabulate import tabulate
-from data_manager import CryptoDataManager
-from datetime import datetime, timedelta
+from data_manager import CryptoDataManager, StockDataManager
+from datetime import datetime, timedelta, timezone
 
 # --- Helper functions ---
 def add_indicator(df, col_name, indicator_class, window):
@@ -128,16 +128,16 @@ def simulate_trades(df, cross_up, cross_down, trailing_pct=None, min_hold_bars=0
     return trades_df
 
 # --- Main ---
-symbol = 'BNBUSDT'
-interval = '4h'
-end_date = datetime(2025, 8, 5)
-start_date = end_date - timedelta(days=60)
-ema_fast_window = 5
+symbol = 'UPRO'
+interval = '1d'
+end_date = datetime.now(timezone.utc)
+start_date = end_date - timedelta(days=200)
+ema_fast_window = 7
 ema_slow_window = 20
-trailing_pct = 0.0565
-min_hold_bars = 7
-df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
-
+trailing_pct = 0.0293
+min_hold_bars = 2
+# df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
+df = StockDataManager().get_stock_data(symbol, interval, start_date, end_date)
 # Add indicators
 add_indicator(df, 'ema_fast', EMAIndicator, ema_fast_window )
 add_indicator(df, 'ema_slow', EMAIndicator, ema_slow_window)
