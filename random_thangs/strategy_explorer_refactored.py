@@ -128,14 +128,14 @@ def simulate_trades(df, cross_up, cross_down, trailing_pct=None, min_hold_bars=0
     return trades_df
 
 # --- Main ---
-symbol = 'UPRO'
-interval = '1d'
+symbol = 'TQQQ'
+interval = '4h'
 end_date = datetime.now(timezone.utc)
-start_date = end_date - timedelta(days=200)
-ema_fast_window = 7
-ema_slow_window = 20
-trailing_pct = 0.0293
-min_hold_bars = 2
+start_date = end_date - timedelta(days=30*6)
+ema_fast_window = 10
+ema_slow_window = 25
+trailing_pct = 0.05
+min_hold_bars = 5
 # df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
 df = StockDataManager().get_stock_data(symbol, interval, start_date, end_date)
 # Add indicators
