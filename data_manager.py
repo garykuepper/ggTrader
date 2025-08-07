@@ -51,6 +51,9 @@ class DataManager():
 
     def fetch_data_db(self, query):
         pass
+    def get_market_day(self, symbol, date):
+
+        return self.fetch_market_data_db(symbol, '1d', date, date)
 
     def fetch_market_data_db(self, symbol, interval, start_date, end_date):
         """
