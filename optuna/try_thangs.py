@@ -17,7 +17,7 @@ mongo_uri = os.getenv('MONGO_URI')
 db_name = os.getenv('DB_NAME')
 
 # Load CSV data into a DataFrame
-df = pd.read_csv("yf_BTC_1m_5d.csv")
+df = pd.read_csv("../dl_data/yf_BTC_1m_5d.csv")
 
 # Convert the 'date' column to datetime objects for proper time series handling
 df['date'] = pd.to_datetime(df['date'])
