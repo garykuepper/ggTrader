@@ -11,7 +11,7 @@ symbol = 'ADAUSDT'
 interval = '4h'
 # end_date = datetime.now(timezone.utc)
 end_date = datetime(2025, 8 , 1)
-start_date = end_date - timedelta(days=30*6)
+start_date = end_date - timedelta(days=30*12)
 
 # df = StockDataManager().get_stock_data(symbol, interval, start_date, end_date)
 df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)

@@ -91,9 +91,9 @@ Best total profit: 800.33
 
 ADAUSDT
 Best parameters:
-fast_window: 9
-slow_window: 21
-trailing_pct: 0.0715
-min_hold_bars: 4
-Best total profit: 976.11
-Best total profit: 976.11
+fast_window: 13
+slow_window: 23
+trailing_pct: 0.0777
+min_hold_bars: 5
+Best total profit: 2158.26
+Best total profit: 2158.26
