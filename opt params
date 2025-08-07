@@ -1,0 +1,99 @@
+BTC
+
+Best parameters:
+fast_window: 10
+slow_window: 21
+trailing_pct: 0.0501
+min_hold_bars: 2
+Best total profit: 260.51
+Best total profit: 260.51
+
+TQQQ
+Best parameters:
+fast_window: 5
+slow_window: 29
+trailing_pct: 0.0246
+min_hold_bars: 3
+Best total profit: 304.01
+Best total profit: 304.01
+
+SSO
+Best parameters:
+fast_window: 14
+slow_window: 23
+trailing_pct: 0.0713
+min_hold_bars: 2
+Best total profit: 186.12
+Best total profit: 186.12
+
+XRPUSDT
+Best parameters:
+fast_window: 6
+slow_window: 27
+trailing_pct: 0.0452
+min_hold_bars: 3
+Best total profit: 644.33
+Best total profit: 644.33
+
+ETHUSDT
+Best parameters:
+fast_window: 15
+slow_window: 30
+trailing_pct: 0.0931
+min_hold_bars: 2
+Best total profit: 753.31
+Best total profit: 753.31
+
+SOLUSDT
+Best parameters:
+fast_window: 10
+slow_window: 30
+trailing_pct: 0.0417
+min_hold_bars: 2
+Best total profit: 482.34
+Best total profit: 482.34
+
+BNBUSDT
+Best parameters:
+fast_window: 15
+slow_window: 27
+trailing_pct: 0.0815
+min_hold_bars: 6
+Best total profit: 578.89
+Best total profit: 578.89
+
+PENGUUSDT
+Best parameters:
+fast_window: 5
+slow_window: 28
+trailing_pct: 0.0476
+min_hold_bars: 3
+Best total profit: 993.37
+Best total profit: 993.37
+
+HBARUSDT
+Best parameters:
+fast_window: 12
+slow_window: 27
+trailing_pct: 0.0741
+min_hold_bars: 2
+Best total profit: 790.29
+Best total profit: 790.29
+
+DOGEUSDT
+Best parameters:
+fast_window: 14
+slow_window: 20
+trailing_pct: 0.0903
+min_hold_bars: 2
+Best total profit: 800.33
+Best total profit: 800.33
+
+ADAUSDT
+Best parameters:
+fast_window: 9
+slow_window: 21
+trailing_pct: 0.0715
+min_hold_bars: 4
+Best total profit: 976.11
+Best total profit: 976.11

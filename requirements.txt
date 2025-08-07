@@ -6,3 +6,4 @@ pymongo
 pandas_market_calendars
 tabulate
 ta
+optuna

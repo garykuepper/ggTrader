@@ -128,14 +128,14 @@ def simulate_trades(df, cross_up, cross_down, trailing_pct=None, min_hold_bars=0
     return trades_df
 
 # --- Main ---
-symbol = 'BTC'
+symbol = 'ADAUSDT'
 interval = '4h'
 end_date = datetime.now(timezone.utc)
-start_date = end_date - timedelta(days=30*6)
-ema_fast_window = 10
-ema_slow_window = 25
-trailing_pct = 0.05
-min_hold_bars = 5
+start_date = end_date - timedelta(days=30*2)
+ema_fast_window = 9
+ema_slow_window = 21
+trailing_pct = 0.0715
+min_hold_bars = 4
 df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
 # df = StockDataManager().get_stock_data(symbol, interval, start_date, end_date)
 # Add indicators

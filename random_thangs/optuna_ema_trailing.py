@@ -7,13 +7,14 @@ from data_manager import CryptoDataManager, StockDataManager
 from datetime import datetime, timedelta, timezone
 
 # Load data once
-symbol = 'TQQQ'
+symbol = 'ADAUSDT'
 interval = '4h'
-end_date = datetime.now(timezone.utc)
+# end_date = datetime.now(timezone.utc)
+end_date = datetime(2025, 8 , 1)
 start_date = end_date - timedelta(days=30*6)
 
-df = StockDataManager().get_stock_data(symbol, interval, start_date, end_date)
-# df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
+# df = StockDataManager().get_stock_data(symbol, interval, start_date, end_date)
+df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
 
 starting_cash = 1000
 
