@@ -68,7 +68,7 @@ def get_most_active_stocks():
 def main():
     # get_most_active_stocks()
     # get_ticker("SPY")
-    csv_file = "../yf_ltc_5y.csv"
+    csv_file = "../../dl_data/yf_ltc_5y.csv"
     end_date = datetime(2025, 8, 3)
     start_date = end_date - timedelta(days=365*5)
     download_yf("BTC-USD", "1d",  csv_file, start_date=start_date,end_date=end_date)

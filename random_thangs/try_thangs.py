@@ -7,7 +7,7 @@ from tabulate import tabulate
 import mplfinance as mpf
 
 # Load CSV data into a DataFrame
-df = pd.read_csv("yf_UPRO_5y.csv")
+df = pd.read_csv("../dl_data/yf_UPRO_5y.csv")
 
 # Convert the 'date' column to datetime objects for proper time series handling
 df['date'] = pd.to_datetime(df['date'])
