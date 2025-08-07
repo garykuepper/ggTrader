@@ -29,18 +29,16 @@ class Portfolio:
 
 
     def has_sufficient_cash(self, cost):
-        if cost > self.cash:
-            return False
-        return True
+        # Can be simplified to:
+        return cost <= self.cash
 
     def remove_position(self, ticker):
         position = self.get_position(ticker)
-        self.cash += position['current_value']
-        for position in self.positions:
-            if position['symbol'] == ticker:
-                self.positions.remove(position)
-                print(f"Removed {position['qty']} {position['symbol']} from portfolio. Cash: {self.cash}")
-        self.trades.append(position | {'trade_type': 'SELL'})
+        if position:
+            self.cash += position['current_value']
+            self.positions = [pos for pos in self.positions if pos['symbol'] != ticker]
+            print(f"Removed {position['qty']} {position['symbol']} from portfolio. Cash: {self.cash}")
+            self.trades.append(position | {'trade_type': 'SELL'})
 
     def update_position(self, ticker, qty, current_price, entry_price):
         for position in self.positions:
