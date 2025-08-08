@@ -3,3 +3,4 @@ pandas
 pymongo
 python-dotenv
 ta
+yfinance
