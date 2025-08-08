@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
 import yfinance as yf
-from datetime import datetime, timedelta
-from pymongo import MongoClient
+from datetime import datetime, timedelta, timezone
+from pymongo import MongoClient, UpdateOne
 from tabulate import tabulate
 import pandas_market_calendars as mcal
 import pandas as pd
@@ -19,38 +19,73 @@ class DataManager():
         self.db = self.client['market_data']
         self.collection = None
 
+    def ensure_unique_index(self):
+        """
+        Create a unique index on (symbol, interval, date) for the active collection (one-time).
+        Safe to call multiple times; MongoDB will no-op if it exists.
+        """
+        if self.collection is None:
+            return
+        try:
+            self.collection.create_index(
+                [('symbol', 1), ('interval', 1), ('date', 1)],
+                unique=True,
+                name='uniq_symbol_interval_date'
+            )
+        except Exception as e:
+            print(f"Index creation error: {e}")
+
+    @staticmethod
+    def normalize_symbol(sym: str) -> str:
+        """
+        Normalize a crypto symbol to Binance format, e.g.:
+        BTC-USD -> BTCUSDT, btcusd -> BTCUSDT, BTCUSDT -> BTCUSDT
+        """
+        s = (sym or "").strip().upper()
+        if '-' in s:
+            s = s.replace('-', '')
+        if s.endswith('USD') and not s.endswith('USDT'):
+            s = s[:-3] + 'USDT'
+        return s
+
     @staticmethod
     def find_missing_dates(request_dates, available_dates):
         """
         Takes request_dates and available_dates (either DataFrame, Series, or DatetimeIndex).
-        Returns missing dates between request_dates and available_dates as a list.
+        Returns (missing_list, dates_only) where dates_only are plain date objects.
         """
-        # Ensure both are DatetimeIndex
+        # Extract indices
         if isinstance(request_dates, (pd.DataFrame, pd.Series)):
             request_dates = request_dates.index
         if isinstance(available_dates, (pd.DataFrame, pd.Series)):
             available_dates = available_dates.index
 
-        if len(request_dates) == 0:
+        # Handle None or empty
+        if request_dates is None or len(request_dates) == 0:
             return [[]], []
 
-        # Normalize timezones
-        request_dates = request_dates.tz_convert('UTC') if request_dates.tz else request_dates.tz_localize('UTC')
-        available_dates = available_dates.tz_convert('UTC') if available_dates.tz else available_dates.tz_localize(
-            'UTC')
+        if available_dates is None:
+            available_dates = pd.DatetimeIndex([])
 
-        # Normalize to date (remove times)
-        request_dates = request_dates.normalize()
-        available_dates = available_dates.normalize()
+        # Normalize to UTC
+        def to_utc_idx(idx: pd.DatetimeIndex) -> pd.DatetimeIndex:
+            if not isinstance(idx, pd.DatetimeIndex):
+                idx = pd.DatetimeIndex(idx)
+            if idx.tz is None:
+                return idx.tz_localize('UTC')
+            return idx.tz_convert('UTC')
+
+        request_dates = to_utc_idx(request_dates).normalize()
+        available_dates = to_utc_idx(available_dates).normalize()
 
         missing_dates = request_dates.difference(available_dates)
         missing_list = [[d.date()] for d in missing_dates]
         dates_only = [d[0] for d in missing_list]
-
         return missing_list, dates_only
 
     def fetch_data_db(self, query):
         pass
+
     def get_market_day(self, symbol, date):
 
         return self.fetch_market_data_db(symbol, '1d', date, date)
@@ -75,17 +110,22 @@ class DataManager():
     def mongodb_fmt_to_df(results):
 
         if not results:
-            return pd.DataFrame().set_index(pd.DatetimeIndex([]))
+            return pd.DataFrame().set_index(pd.DatetimeIndex([], name='date'))
         df = pd.DataFrame(results)
-        # If 'date' is already the index, access it accordingly
+
+        # Ensure 'date' column exists and is datetime with UTC
         if 'date' in df.columns:
-            if df['date'].dt.tz is None:
+            df['date'] = pd.to_datetime(df['date'], utc=False, errors='coerce')
+            if isinstance(df['date'].dtype, pd.DatetimeTZDtype):
+                df['date'] = df['date'].dt.tz_convert('UTC')
+            else:
                 df['date'] = df['date'].dt.tz_localize('UTC')
             df = df.set_index('date')
         elif isinstance(df.index, pd.DatetimeIndex):
-            # If index is DatetimeIndex and naive, localize it
             if df.index.tz is None:
                 df.index = df.index.tz_localize('UTC')
+            else:
+                df.index = df.index.tz_convert('UTC')
         else:
             raise KeyError("'date' column or index not found in DataFrame")
 
@@ -112,46 +152,69 @@ class DataManager():
         return combined_df
 
     def insert_market_data_to_mdb(self, df):
-        records = self.df_to_mdb_fmt(df)
+        if df is None or df.empty:
+            print("Upserted 0 documents.")
+            return
+        # Prepare records
+        df = df.copy()
+        df['date'] = df.index
+        records = df.to_dict('records')
+
+        ops = []
         for record in records:
-            self.collection.update_one(
-                {'symbol': record['symbol'], 'date': record['date'], 'interval': record['interval']},
-                # unique key filter
-                {'$set': record},  # update with new data
-                upsert=True  # insert if not exists
-            )
-        print(f"Upserted {len(records)} documents.")
+            filt = {'symbol': record['symbol'], 'date': record['date'], 'interval': record['interval']}
+            ops.append(UpdateOne(filt, {'$set': record}, upsert=True))
+        if ops:
+            res = self.collection.bulk_write(ops, ordered=False)
+            print(f"Upserted {len(records)} documents (acknowledged).")
+        else:
+            print("Upserted 0 documents.")
 
     def get_missing_dates(self, symbol, interval, start_date, end_date, dates_only):
-        pass
+        raise NotImplementedError("Subclasses must implement get_missing_dates()")
 
     @staticmethod
     def to_datetime(dt):
-
+        """
+        Convert a date or datetime to a timezone-aware UTC datetime.
+        This standardizes all internal datetime handling and prevents
+        naive vs aware comparison issues.
+        """
         if isinstance(dt, datetime):
-            return dt
+            d = dt
         else:
-            return datetime.combine(dt, datetime.min.time())
+            d = datetime.combine(dt, datetime.min.time())
+
+        if d.tzinfo is None:
+            return d.replace(tzinfo=timezone.utc)
+        return d.astimezone(timezone.utc)
+
 
     @staticmethod
     def convert_ohlcv_to_float(df):
         for col in ['open', 'high', 'low', 'close', 'volume']:
             if col in df.columns:
-                df[col] = df[col].astype(float)
+                df[col] = pd.to_numeric(df[col], errors='coerce')
         return df
 
     @staticmethod
     def ensure_utc_timezone(df):
         """Ensure DataFrame index has UTC timezone."""
-        if df.index.tz is None:
-            df.index = df.index.tz_localize('UTC')
+        if isinstance(df.index, pd.DatetimeIndex):
+            if df.index.tz is None:
+                df.index = df.index.tz_localize('UTC')
+            else:
+                df.index = df.index.tz_convert('UTC')
         return df
+
 
 class StockDataManager(DataManager):
 
     def __init__(self):
         super().__init__()
         self.collection = self.db['stock_data']
+        # One-time unique index on (symbol, interval, date)
+        self.ensure_unique_index()
 
     @staticmethod
     def get_market_days(start_date, end_date):
@@ -184,7 +247,7 @@ class StockDataManager(DataManager):
         missing_list, dates_only = self.find_missing_dates(market_days, from_mongodb_df)
 
         # For df with timezone-naive index
-        if from_mongodb_df.index.tz is None:
+        if not from_mongodb_df.empty and isinstance(from_mongodb_df.index, pd.DatetimeIndex) and from_mongodb_df.index.tz is None:
             from_mongodb_df.index = from_mongodb_df.index.tz_localize('UTC')
 
         # if none missing just return
@@ -208,7 +271,7 @@ class StockDataManager(DataManager):
 
         missing_df = pd.concat(dfs) if dfs else pd.DataFrame()
         # For missing_df (downloaded)
-        if missing_df.index.tz is None:
+        if isinstance(missing_df.index, pd.DatetimeIndex) and missing_df.index.tz is None:
             missing_df.index = missing_df.index.tz_localize('UTC')
         return missing_df
 
@@ -220,6 +283,8 @@ class CryptoDataManager(DataManager):
         self.api_key = os.getenv('BINANCE_API_KEY')
         self.collection = self.db['crypto_data']
         self.binance_url = 'https://api.binance.us/api/v3/klines'
+        # One-time unique index on (symbol, interval, date)
+        self.ensure_unique_index()
 
     # Implement crypto-specific methods if needed
     # For example, fetching crypto data from an API or database
@@ -229,13 +294,16 @@ class CryptoDataManager(DataManager):
         """
         Fetch crypto data from MongoDB or download it if not available.
         """
+        # # Normalize once and use consistently (DB queries + downloads)
+        # symbol_norm = self.normalize_symbol(symbol)
+
         # Fetch from MongoDB
         from_mongodb_df = self.fetch_market_data_db(symbol, interval, start_date, end_date)
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
         missing_list, dates_only = self.find_missing_dates(date_range, from_mongodb_df)
 
         # For df with timezone-naive index
-        if from_mongodb_df.index.tz is None:
+        if not from_mongodb_df.empty and isinstance(from_mongodb_df.index, pd.DatetimeIndex) and from_mongodb_df.index.tz is None:
             from_mongodb_df.index = from_mongodb_df.index.tz_localize('UTC')
 
         # if none missing just return
@@ -253,7 +321,8 @@ class CryptoDataManager(DataManager):
 
     def get_binance_klines(self, symbol, interval, start_time, end_time, limit=1000):
         url = self.binance_url
-        params = {'symbol': symbol, 'interval': interval, 'limit': limit,
+        api_symbol = self.normalize_symbol(symbol)
+        params = {'symbol': api_symbol, 'interval': interval, 'limit': limit,
                   'startTime': int(self.to_datetime(start_time).timestamp() * 1000),
                   'endTime': int(self.to_datetime(end_time).timestamp() * 1000)}
 
@@ -261,9 +330,15 @@ class CryptoDataManager(DataManager):
         if self.api_key:
             headers['X-MBX-APIKEY'] = self.api_key  # Add your API key to the headers
 
-        resp = requests.get(url, params=params, headers=headers)
+        resp = requests.get(url, params=params, headers=headers, timeout=15)
         resp.raise_for_status()
         data = resp.json()
+
+        # Empty response: return an empty DF with expected schema
+        if not data:
+            cols = ['open', 'high', 'low', 'close', 'volume', 'symbol', 'interval']
+            return pd.DataFrame(columns=cols).set_index(pd.DatetimeIndex([], name='date'))
+
         cols = [
             'open_time', 'open', 'high', 'low', 'close', 'volume',
             'close_time', 'quote_asset_volume', 'num_trades',
@@ -271,12 +346,16 @@ class CryptoDataManager(DataManager):
         ]
 
         df = pd.DataFrame(data, columns=cols)
-        df['volume'] = df['quote_asset_volume'].astype(float)  # Ensure volume is float
+        # Use quote asset volume as 'volume' (value traded)
+        df['volume'] = pd.to_numeric(df['quote_asset_volume'], errors='coerce')
         df = self.convert_ohlcv_to_float(df)
-        df['symbol'] = symbol
+        df['symbol'] = api_symbol
         df['interval'] = interval
-        df['date'] = pd.to_datetime(df['open_time'], unit='ms').dt.floor('s')
-        new_df = df[['symbol', 'date', 'open', 'high', 'low', 'close', 'volume','interval']]
+
+        # FIX: use .dt.floor for Series, preserving UTC tz-awareness
+        df['date'] = pd.to_datetime(df['open_time'], unit='ms', utc=True).dt.floor('s')
+
+        new_df = df[['symbol', 'date', 'open', 'high', 'low', 'close', 'volume', 'interval']]
         new_df = new_df.set_index('date')
         return new_df
 
@@ -302,21 +381,29 @@ class CryptoDataManager(DataManager):
         start_dt = self.to_datetime(start_time)
         end_dt = self.to_datetime(end_time)
 
+        # Defensive: ensure both are UTC-aware even if to_datetime changes later
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(tzinfo=timezone.utc)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=timezone.utc)
+
         while True:
             df = self.get_binance_klines(symbol, interval, start_dt, end_dt, limit=limit)
             if df.empty:
                 break
             all_dfs.append(df)
             last_idx = df.index[-1]
-            # Add one interval to avoid overlap, but not more than end_dt
+
+            # Stop if we've reached or passed the requested end
             if last_idx >= end_dt:
                 break
-            # Increment start_dt to the last returned candle's open + 1 second to prevent overlap
+
+            # Advance start to avoid overlap (maintains timezone-awareness)
             start_dt = last_idx + timedelta(seconds=1)
-            # Safety check to avoid infinite loop
+
+            # Safety checks
             if start_dt >= end_dt:
                 break
-            # Optional: If less than limit rows were returned, we've reached the end
             if len(df) < limit:
                 break
 
@@ -325,11 +412,12 @@ class CryptoDataManager(DataManager):
         else:
             return pd.DataFrame()
 
+
     @staticmethod
     def get_24hr_top_binance(top_n=10, quote=None, min_change=.5, min_trades=50, min_volume=0):
         url = "https://api.binance.us/api/v3/ticker/24hr"
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=15)
             response.raise_for_status()
             data = response.json()
             if quote:

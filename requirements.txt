@@ -1,9 +1,10 @@
-pandas~=2.3.1
-yfinance~=0.2.65
-python-dotenv~=1.1.1
+pandas
+yfinance
+python-dotenv
 alpaca-py
 pymongo
 pandas_market_calendars
 tabulate
 ta
 optuna
+mplfinance
