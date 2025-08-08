@@ -2,7 +2,7 @@ from tabulate import tabulate
 
 import pandas as pd
 
-from portfolio import Portfolio
+from portfolio import Portfolio, Position
 
 
 
