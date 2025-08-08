@@ -207,6 +207,43 @@ class DataManager():
                 df.index = df.index.tz_convert('UTC')
         return df
 
+    # === New: Load latest optimized params (shared by scripts) ===
+    def get_latest_strategy_params(self, strategy: str, interval: str):
+        """
+        Return the most recent optimized parameters for the given (strategy, interval),
+        or None if not found.
+
+        Expected return format:
+        {
+            'ema_fast': int,
+            'ema_slow': int,
+            'trailing_pct': float
+        }
+        """
+        try:
+            coll = self.db['strategy_optimizations']
+            doc = coll.find_one(
+                {'strategy': strategy, 'interval': interval},
+                sort=[('saved_at', -1)],
+                projection={'_id': 0, 'params': 1}
+            )
+            if not doc or 'params' not in doc or not isinstance(doc['params'], dict):
+                return None
+
+            params = doc['params']
+            out = {}
+            if 'ema_fast' in params:
+                out['ema_fast'] = int(params['ema_fast'])
+            if 'ema_slow' in params:
+                out['ema_slow'] = int(params['ema_slow'])
+            if 'trailing_pct' in params:
+                out['trailing_pct'] = float(params['trailing_pct'])
+
+            return out if out else None
+        except Exception as e:
+            print(f"⚠️ Failed to load latest strategy params: {e}")
+            return None
+
 
 class StockDataManager(DataManager):
 
@@ -287,17 +324,11 @@ class CryptoDataManager(DataManager):
         self.ensure_unique_index()
 
     # Implement crypto-specific methods if needed
-    # For example, fetching crypto data from an API or database
-    # and inserting it into MongoDB.
 
     def get_crypto_data(self, symbol, interval, start_date, end_date):
         """
         Fetch crypto data from MongoDB or download it if not available.
         """
-        # # Normalize once and use consistently (DB queries + downloads)
-        # symbol_norm = self.normalize_symbol(symbol)
-
-        # Fetch from MongoDB
         from_mongodb_df = self.fetch_market_data_db(symbol, interval, start_date, end_date)
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
         missing_list, dates_only = self.find_missing_dates(date_range, from_mongodb_df)
@@ -318,6 +349,12 @@ class CryptoDataManager(DataManager):
         combined_df = (pd.concat([from_mongodb_df, missing_df]).sort_index())
 
         return self.remove_duplicates(combined_df)
+
+    def build_price_data(self, symbols, interval, start_date, end_date):
+        """
+        Load price data for a list of symbols and return a dict[symbol] -> DataFrame.
+        """
+        return {sym: self.get_crypto_data(sym, interval, start_date, end_date) for sym in symbols}
 
     def get_binance_klines(self, symbol, interval, start_time, end_time, limit=1000):
         url = self.binance_url
@@ -414,7 +451,7 @@ class CryptoDataManager(DataManager):
 
 
     @staticmethod
-    def get_24hr_top_binance(top_n=10, quote=None, min_change=.5, min_trades=50, min_volume=0):
+    def get_24hr_top_binance(top_n=10, quote=None, min_change=0.0, min_trades=50, min_volume=100000):
         url = "https://api.binance.us/api/v3/ticker/24hr"
         try:
             response = requests.get(url, timeout=15)
@@ -434,6 +471,29 @@ class CryptoDataManager(DataManager):
             return sorted_pairs[:top_n]
         except Exception as e:
             print(f"⚠️ Error fetching Binance.US data: {e}")
+            return []
+
+    @staticmethod
+    def get_top_binance_usdt_symbols(top_n=10, min_change=0.5, min_trades=50, min_volume=0):
+        """
+        Return a deduped list of the top USDT pairs on Binance.US by 24h quote volume.
+        Filters out leveraged/ETF-like products and stablecoin-to-stablecoin pairs.
+        """
+        try:
+            top_pairs = CryptoDataManager.get_24hr_top_binance(
+                top_n=top_n * 2,  # overfetch to allow filtering
+                quote='USDT',
+                min_change=min_change,
+                min_trades=min_trades,
+                min_volume=min_volume
+            )
+            raw_symbols = [p.get('symbol', '') for p in top_pairs if isinstance(p, dict)]
+            banned_fragments = ('UPUSDT', 'DOWNUSDT', 'BULLUSDT', 'BEARUSDT', 'USDCUSDT')
+            filtered = [s for s in raw_symbols if s.endswith('USDT') and not any(b in s for b in banned_fragments)]
+            deduped = list(dict.fromkeys(filtered))
+            return deduped[:top_n]
+        except Exception as e:
+            print(f"⚠️ Failed to derive top Binance.US USDT symbols: {e}")
             return []
 
     @staticmethod

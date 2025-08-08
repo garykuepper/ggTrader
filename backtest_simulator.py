@@ -6,8 +6,31 @@ import mplfinance as mpf
 from portfolio import Portfolio, Position
 
 
+def _interval_to_timedelta(interval: str) -> pd.Timedelta:
+    # Basic mapper; extend as needed
+    mapping = {
+        '1m': pd.Timedelta(minutes=1),
+        '5m': pd.Timedelta(minutes=5),
+        '15m': pd.Timedelta(minutes=15),
+        '30m': pd.Timedelta(minutes=30),
+        '1h': pd.Timedelta(hours=1),
+        '2h': pd.Timedelta(hours=2),
+        '4h': pd.Timedelta(hours=4),
+        '6h': pd.Timedelta(hours=6),
+        '12h': pd.Timedelta(hours=12),
+        '1d': pd.Timedelta(days=1),
+    }
+    return mapping.get(str(interval).lower(), pd.Timedelta(hours=1))  # default to 1h
+
+
+def _bars_per_year(interval: str) -> float:
+    delta = _interval_to_timedelta(interval)
+    seconds_per_year = 365.0 * 24 * 3600
+    return float(seconds_per_year / delta.total_seconds()) if delta.total_seconds() else 365.0
+
+
 class BacktestSimulator:
-    def __init__(self, symbol_strategy_map, price_data_map, position_pct_map, initial_cash=10000):
+    def __init__(self, symbol_strategy_map, price_data_map, position_pct_map, initial_cash=10000, interval='1d', fee_pct=0.0, verbose=True):
         self.symbol_strategy_map = symbol_strategy_map
         self.price_data_map = price_data_map
         self.position_pct_map = position_pct_map
@@ -15,6 +38,55 @@ class BacktestSimulator:
         self.initial_cash = initial_cash
         self.trades = []
         self.equity_curve = []  # list of {'date': <ts>, 'equity': <float>}
+        self.interval = str(interval).lower()
+        self.fee_pct = float(max(fee_pct, 0.0))
+        self.verbose = verbose
+
+    @classmethod
+    def run_with_uniform_params(
+        cls,
+        symbols,
+        price_data_map,
+        ema_fast,
+        ema_slow,
+        trailing_pct,
+        initial_cash=1000.0,
+        interval='1d',
+        fee_pct=0.0,
+        verbose=True
+    ):
+        """
+        Build equal-weight position sizing and one EMAStrategy per symbol with the same params,
+        then run the backtest and return the simulator instance.
+        """
+        if not symbols:
+            raise ValueError("symbols list is empty; cannot compute equal position size.")
+
+        pos_pct = 1.0 / len(symbols)
+        position_pct_map = {s: pos_pct for s in symbols}
+
+        from trading_strategy import EMAStrategy
+        symbol_strategy_map = {}
+        for sym in symbols:
+            params = {'ema_fast': ema_fast, 'ema_slow': ema_slow}
+            strategy_name = f"{sym} EMA({ema_fast},{ema_slow})"
+            symbol_strategy_map[sym] = EMAStrategy(strategy_name, params, trailing_pct=trailing_pct)
+
+        sim = cls(
+            symbol_strategy_map=symbol_strategy_map,
+            price_data_map=price_data_map,
+            position_pct_map=position_pct_map,
+            initial_cash=initial_cash,
+            interval=interval,
+            fee_pct=fee_pct,
+            verbose=verbose
+        )
+        sim.run()
+        return sim
+
+    def _print(self, msg):
+        if self.verbose:
+            print(msg)
 
     def run(self):
         all_dates = set()
@@ -50,12 +122,16 @@ class BacktestSimulator:
                     position = self.portfolio.get_position_by_symbol(symbol)
                     if position.trailing_stop and position.trailing_stop.is_triggered(row['close']):
                         qty_to_report = position.qty
-                        print(f"{date} {symbol} TRAILING STOP SELL @ {row['close']:.2f} "
-                              f"(stop: {position.trailing_stop.stop_price:.2f}) total: {position.current_value:.2f}")
+                        fee = float(position.current_value) * self.fee_pct
+                        self._print(f"{date} {symbol} TRAILING STOP SELL @ {row['close']:.2f} "
+                                    f"(stop: {position.trailing_stop.stop_price:.2f}) total: {position.current_value - fee:.2f} (after fee)")
+                        # Exit position (this will add full proceeds)
                         self.portfolio.exit_position_by_symbol(symbol)
+                        # Deduct fee from cash since proceeds already credited
+                        self.portfolio.cash -= fee
                         self.trades.append({
                             'date': date, 'symbol': symbol, 'action': 'trailing_stop_sell',
-                            'price': float(row['close']), 'qty': float(qty_to_report)
+                            'price': float(row['close']), 'qty': float(qty_to_report), 'fee': float(fee)
                         })
                         continue
 
@@ -71,13 +147,31 @@ class BacktestSimulator:
                     qty = cash_to_use / price
                     if qty <= 0:
                         continue
+                    est_cost = qty * price
+                    fee = est_cost * self.fee_pct
+                    total_cost = est_cost + fee
+                    # Adjust qty if fee pushes us over cash
+                    if total_cost > self.portfolio.cash and price > 0:
+                        qty = self.portfolio.cash * position_pct / (price * (1.0 + self.fee_pct))
+                        est_cost = qty * price
+                        fee = est_cost * self.fee_pct
+                        total_cost = est_cost + fee
+                    # If still not enough cash, skip
+                    if total_cost <= 0 or total_cost > self.portfolio.cash:
+                        continue
+
                     pos = Position(symbol, qty, price, date, trailing_pct=self.symbol_strategy_map[symbol].trailing_pct)
                     if self.portfolio.enter_position(pos):
-                        total = qty * price
-                        print(f"{date} {symbol} BUY  @ {price:.2f} total: {total:.2f}")
-                        self.trades.append({'date': date, 'symbol': symbol, 'action': 'buy', 'price': price, 'qty': float(qty)})
+                        # Deduct fee after portfolio already deducted est_cost
+                        self.portfolio.cash -= fee
+                        total = est_cost + fee
+                        self._print(f"{date} {symbol} BUY  @ {price:.2f} total: {total:.2f} (incl fee {fee:.2f})")
+                        self.trades.append({
+                            'date': date, 'symbol': symbol, 'action': 'buy',
+                            'price': price, 'qty': float(qty), 'fee': float(fee)
+                        })
                     else:
-                        print(f"{date} {symbol} BUY signal but insufficient cash.")
+                        self._print(f"{date} {symbol} BUY signal but insufficient cash.")
 
                 # Exit if signaled
                 elif signal == -1:
@@ -85,13 +179,17 @@ class BacktestSimulator:
                     if position:
                         price = float(row['close'])
                         qty_to_report = position.qty
-                        total = position.current_value
-                        print(f"{date} {symbol} SELL @ {price:.2f} total: {total:.2f}")
+                        proceeds = float(qty_to_report * price)
+                        fee = proceeds * self.fee_pct
+                        total_after_fee = proceeds - fee
+                        self._print(f"{date} {symbol} SELL @ {price:.2f} total: {total_after_fee:.2f} (after fee {fee:.2f})")
+                        # Exit position (adds full proceeds), then deduct fee
                         self.portfolio.exit_position_by_symbol(symbol)
-                        self.trades.append({'date': date, 'symbol': symbol, 'action': 'sell', 'price': price, 'qty': float(qty_to_report)})
-                    else:
-                        # no position to sell; skip
-                        pass
+                        self.portfolio.cash -= fee
+                        self.trades.append({
+                            'date': date, 'symbol': symbol, 'action': 'sell',
+                            'price': price, 'qty': float(qty_to_report), 'fee': float(fee)
+                        })
 
             # capture equity at end of this date
             self.equity_curve.append({'date': date, 'equity': float(self.portfolio.total_equity())})
@@ -102,7 +200,7 @@ class BacktestSimulator:
               f"Positions value: {self.portfolio.total_positions_value():.2f} | "
               f"Total equity: {self.portfolio.total_equity():.2f}")
 
-    # ===== New: Performance reporting =====
+    # ===== Performance reporting =====
 
     def _build_round_trips(self):
         """
@@ -111,12 +209,9 @@ class BacktestSimulator:
         """
         if not self.trades:
             return []
-
-        # Ensure trades are sorted by date
         trades_sorted = sorted(self.trades, key=lambda x: x['date'])
         open_by_symbol = {}
         trips = []
-
         for t in trades_sorted:
             action = t.get('action')
             sym = t.get('symbol')
@@ -128,8 +223,11 @@ class BacktestSimulator:
                     qty = float(min(buy.get('qty', 0.0), t.get('qty', 0.0)) or 0.0)
                     buy_price = float(buy.get('price', 0.0) or 0.0)
                     sell_price = float(t.get('price', 0.0) or 0.0)
+                    fee_buy = float(buy.get('fee', 0.0))
+                    fee_sell = float(t.get('fee', 0.0))
                     if qty > 0 and buy_price > 0 and sell_price > 0:
-                        pnl = qty * (sell_price - buy_price)
+                        gross_pnl = qty * (sell_price - buy_price)
+                        net_pnl = gross_pnl - fee_buy - fee_sell
                         ret = (sell_price / buy_price) - 1.0
                         holding_days = None
                         try:
@@ -143,7 +241,7 @@ class BacktestSimulator:
                             'qty': qty,
                             'buy_price': buy_price,
                             'sell_price': sell_price,
-                            'pnl': pnl,
+                            'pnl': net_pnl,
                             'return_pct': ret * 100.0,
                             'action_exit': action,
                             'holding_days': holding_days
@@ -162,14 +260,12 @@ class BacktestSimulator:
 
     @staticmethod
     def _max_drawdown(equity):
-        """
-        Max drawdown from an equity series.
-        """
         if equity.empty:
             return 0.0, pd.Timedelta(0)
         roll_max = equity.cummax()
         drawdown = (equity - roll_max) / roll_max
         mdd = drawdown.min()
+        # crude duration estimate
         dd_periods = (drawdown != 0).astype(int)
         max_duration = pd.Timedelta(0)
         if not dd_periods.empty:
@@ -181,6 +277,7 @@ class BacktestSimulator:
                     max_duration = max(max_duration, idx - current_start)
                     current_start = None
         return float(mdd), max_duration
+
 
     def performance_summary(self):
         trips = self._build_round_trips()
@@ -214,20 +311,30 @@ class BacktestSimulator:
                 'Total PnL': round(total_pnl, 2),
             })
 
-        per_symbol_df = pd.DataFrame(rows).sort_values(['Symbol']).reset_index(drop=True)
+        # Ensure a consistent schema even when there are no trades
+        cols = [
+            'Symbol', 'Trades', 'Wins', 'Losses', 'Win Rate %',
+            'Avg Win', 'Avg Loss', 'Avg Trade Return %', 'Total PnL'
+        ]
+        per_symbol_df = pd.DataFrame(rows, columns=cols)
+        if not per_symbol_df.empty and 'Symbol' in per_symbol_df.columns:
+            per_symbol_df = per_symbol_df.sort_values('Symbol').reset_index(drop=True)
 
         final_equity = float(equity.iloc[-1]) if not equity.empty else float(self.portfolio.total_equity())
         total_pnl = final_equity - float(self.initial_cash)
         total_return_pct = (final_equity / float(self.initial_cash) - 1.0) * 100.0 if self.initial_cash else 0.0
 
         if not equity.empty and len(equity) >= 2:
-            daily_returns = equity.pct_change().dropna()
-            ann_factor = 365.0
-            vol_annual = float(daily_returns.std() * np.sqrt(ann_factor)) if not daily_returns.empty else 0.0
-            sharpe = float((daily_returns.mean() * ann_factor) / vol_annual) if vol_annual > 0 else 0.0
-            days = (equity.index[-1] - equity.index[0]).days or 1
-            years = days / 365.0
+            bar_returns = equity.pct_change().dropna()
+            bars_per_year = _bars_per_year(self.interval)
+            vol_annual = float(bar_returns.std() * np.sqrt(bars_per_year)) if not bar_returns.empty else 0.0
+            sharpe = float((bar_returns.mean() * bars_per_year) / vol_annual) if vol_annual > 0 else 0.0
+
+            # Exact years between first and last timestamp
+            elapsed = (equity.index[-1] - equity.index[0]).total_seconds()
+            years = elapsed / (365.0 * 24 * 3600) if elapsed > 0 else 0.0
             cagr = (final_equity / float(self.initial_cash)) ** (1.0 / years) - 1.0 if years > 0 else 0.0
+
             mdd, mdd_dur = self._max_drawdown(equity)
         else:
             vol_annual = 0.0
@@ -260,8 +367,7 @@ class BacktestSimulator:
         print("\nPortfolio performance")
         print(tabulate(portfolio_df, headers="keys", tablefmt="github", showindex=False))
 
-    # ===== New: Charting with mplfinance =====
-
+    # ===== Charting remains unchanged =====
     def _get_symbol_trades(self, symbol, start=None, end=None):
         """
         Return buy and sell dates for a symbol within optional window.
