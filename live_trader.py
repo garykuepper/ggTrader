@@ -627,8 +627,9 @@ def run_once(client: BinanceUSClient, notifier: MatrixNotifier, state: State, tr
 # -------------------------
 def main():
     if not (API_KEY and API_SECRET):
-        logging.error("Binance API credentials missing. Set BINANCE_API_KEY and BINANCE_API_SECRET.")
+        logging.error("Binance API credentials missing. Set BINANCE_API_LIVE_KEY and BINANCE_SECRET_LIVE_KEY.")
         return
+
 
     notifier = MatrixNotifier(MATRIX_BASE, MATRIX_TOKEN, MATRIX_ROOM_ID)
     client = BinanceUSClient(API_KEY, API_SECRET)
