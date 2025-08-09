@@ -1,165 +1,118 @@
+from datetime import datetime, timezone
 from tabulate import tabulate
-
-from trailing_stop import TrailingStop
+from position import Position
 
 
 class Portfolio:
 
     def __init__(self, cash=1000):
-        self.positions = {}
-        self.account_value = 0
         self.cash = cash
+        self.positions = []
+        self.trades = []
+        self.total_value = cash
+        self.positions_value = 0
 
-    def enter_position(self, position):
-        """
-        Deduct cash for the position's cost and add the position if sufficient cash.
-        Returns True if entered, False otherwise.
-        """
-        cost = position.qty * position.bought_price
-        if cost > self.cash + 1e-9:
+    def deposit_cash(self, amount: float) -> None:
+        self.cash += amount
+
+    def withdraw_cash(self, amount: float) -> None:
+        self.cash -= amount
+
+    def open_position(self, position: Position) -> None:
+        if not self.check_sufficient_cash(position.cost):
+            print("Insufficient cash")
+            return
+        self.positions.append(position)
+        self.cash -= position.value
+        self.calc_positions_value()
+        self.trades.append(position)
+
+    def check_sufficient_cash(self, amount: float) -> bool:
+        return self.cash >= amount
+
+    def close_position(self, symbol: str) -> None:
+        position = self.get_position(symbol)
+        if position is None:
+            print("No position")
+            return
+        position.status = 'closed'
+        position.sold_date = datetime.now(timezone.utc).replace(microsecond=0)
+        self.cash += position.value
+        self.positions = [p for p in self.positions if p.symbol != symbol]
+        self.calc_positions_value()
+
+    def get_position(self, symbol: str) -> Position:
+        for position in self.positions:
+            if position.symbol == symbol:
+                return position
+        return None
+
+    def has_position(self, symbol: str) -> bool:
+        if self.get_position(symbol) is None:
             return False
-        self.cash -= cost
-        self.positions[position.symbol] = position
         return True
 
-    def get_position_by_symbol(self, symbol):
-        return self.positions.get(symbol, None)
+    def update_position_price(self, ticker: str, price: float) -> None:
+        position = self.get_position(ticker)
+        position.update_position_value(price)
+        self.calc_positions_value()
+        self.calc_portfolio_value()
 
-    def position_exists(self, symbol):
-        return self.get_position_by_symbol(symbol) is not None
+    def print_positions(self):
+        table = []
+        for position in self.positions:
+            table.append(position.__dict__)
+        print("\nPositions:")
+        print(tabulate(table, headers='keys', tablefmt='github'))
 
-    def exit_position_by_symbol(self, symbol):
-        position = self.get_position_by_symbol(symbol)
-        if position:
-            self.cash += position.current_value
-            del self.positions[symbol]
-            return True
-        return False
+    def print_trade_history(self):
+        table = []
+        for trade in self.trades:
+            table.append(trade.__dict__)
+        print("\nTrade History:")
+        print(tabulate(table, headers='keys', tablefmt='github'))
 
-    def update_position(self, symbol, qty=None, bought_price=None, date=None, current_price=None):
-        """
-        Use Position.update_price when changing current price to keep trailing stop in sync.
-        """
-        position = self.positions.get(symbol)
-        if not position:
-            return False
-        if qty is not None:
-            position.qty = qty
-        if bought_price is not None:
-            position.bought_price = bought_price
-            position.current_price = bought_price
-        if date is not None:
-            position.date = date
-        if current_price is not None:
-            position.update_price(current_price)
-        position.cost = position.qty * position.bought_price
-        position.current_value = position.qty * position.current_price
-        return True
+    def calc_positions_value(self):
+        self.positions_value = 0
+        for position in self.positions:
+            self.positions_value += position.value
 
-    def get_all_positions(self):
-        return self.positions
+    def calc_portfolio_value(self):
+        self.total_value = self.cash + self.positions_value
 
-    def get_position_value(self, symbol):
-        position = self.get_position_by_symbol(symbol)
-        return position.current_value if position else 0.0
+    def print_acct(self):
 
-    def print_all_positions(self):
-        rows = []
-        for pos in self.positions.values():
-            rows.append({
-                "Symbol": pos.symbol,
-                "Qty": pos.qty,
-                "Bought Price": pos.bought_price,
-                "Date": pos.date,
-                "Current Price": pos.current_price,
-                "Cost": pos.cost,
-                "Current Value": pos.current_value
-            })
-        print(tabulate(rows, headers="keys", tablefmt="github"))
+        data = [
+            ["Cash", self.cash],
+            ["Position Value", self.positions_value],
+            ["Total Value", self.total_value]
+        ]
+        print("\nAccount Summary:")
+        print(tabulate(data))
 
-    def total_positions_value(self):
-        return sum(p.current_value for p in self.positions.values())
-
-    def total_equity(self):
-        return self.cash + self.total_positions_value()
-
-    def check_all_stops(self, current_prices):
-        """
-        Check all positions for stop triggers (e.g., trailing stops).
-        current_prices: dict mapping symbol to current price
-        """
-        for symbol, position in list(self.positions.items()):
-            price = current_prices.get(symbol)
-            if price is None:
-                continue
-            position.update_price(price)
-            if position.trailing_stop and position.trailing_stop.is_triggered(price):
-                print(f"STOP triggered for {symbol} at {price:.2f} (stop: {position.trailing_stop.stop_price:.2f})")
-                self.exit_position_by_symbol(symbol)
-
-
-class Position:
-
-    def __init__(self, symbol, qty, bought_price, date, trailing_pct=None):
-        self.symbol = symbol
-        self.qty = qty
-        self.bought_price = bought_price
-        self.date = date
-        self.current_price = bought_price
-        self.cost = qty * bought_price
-        self.current_value = qty * self.current_price
-        self.trailing_stop = TrailingStop(trailing_pct, bought_price) if trailing_pct else None
-
-    def update_price(self, price):
-        self.current_price = price
-        self.current_value = self.qty * self.current_price
-        if self.trailing_stop:
-            self.trailing_stop.update(price)
-
-    def __repr__(self):
-        return (f"Position(symbol={self.symbol}, qty={self.qty}, "
-                f"bought_price={self.bought_price}, date={self.date}, "
-                f"current_price={self.current_price}, current_value={self.current_value})")
-
-
-class StockPosition(Position):
-    def __init__(self, symbol, qty, bought_price, date, trailing_pct=None):
-        super().__init__(symbol, qty, bought_price, date, trailing_pct)
-        # Add stock-specific attributes or methods here
-
-
-class OptionPosition(Position):
-    def __init__(self, symbol, qty, bought_price, date, expiry, strike, option_type, trailing_pct=None):
-        super().__init__(symbol, qty, bought_price, date, trailing_pct)
-        self.expiry = expiry
-        self.strike = strike
-        self.option_type = option_type  # 'call' or 'put'
-        # Add option-specific logic here
-
-
-class CryptoPosition(Position):
-    def __init__(self, symbol, qty, bought_price, date, trailing_pct=None):
-        super().__init__(symbol, qty, bought_price, date, trailing_pct)
-        # Add crypto-specific attributes or methods here
-
-
-class FixedStopPosition(Position):
-    def __init__(self, symbol, qty, bought_price, date, stop_price):
-        super().__init__(symbol, qty, bought_price, date)
-        self.stop_price = stop_price
-
-    def is_stop_triggered(self, current_price):
-        return current_price is not None and current_price <= self.stop_price
-
-
-class TimeStopPosition(Position):
-    def __init__(self, symbol, qty, bought_price, date, max_days):
-        super().__init__(symbol, qty, bought_price, date)
-        self.max_days = max_days
-        self.days_held = 0
-
-    def update_days_held(self):
-        self.days_held += 1
-
-    def is_stop_triggered(self):
-        return self.days_held >= self.max_days
+# position1 = Position('AAPL', 2, 74,
+#                      datetime(2024, 8, 1).replace(tzinfo=timezone.utc))
+# position2 = Position('GOOG', 3.1, 24,
+#                      datetime(2024, 9, 1).replace(tzinfo=timezone.utc))
+# position3 = Position('MSFT', 2.45, 34,
+#                      datetime(2024, 10, 1).replace(tzinfo=timezone.utc))
+# port = Portfolio()
+#
+# port.open_position(position1)
+# port.open_position(position2)
+# port.open_position(position3)
+#
+# port.print_positions()
+# port.print_acct()
+#
+# port.update_position_price('GOOG', 100)
+#
+# port.print_positions()
+# port.print_acct()
+#
+# port.close_position('GOOG')
+#
+# port.print_positions()
+# port.print_acct()
+#
+# port.print_trade_history()
