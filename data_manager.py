@@ -34,19 +34,9 @@ class DataManager():
         if len(request_dates) == 0:
             return [[]], []
 
-        # Normalize timezones
-        request_dates = request_dates.tz_convert('UTC') if request_dates.tz else request_dates.tz_localize('UTC')
-        available_dates = available_dates.tz_convert('UTC') if available_dates.tz else available_dates.tz_localize(
-            'UTC')
-
-        # Normalize to date (remove times)
-        request_dates = request_dates.normalize()
-        available_dates = available_dates.normalize()
-
         missing_dates = request_dates.difference(available_dates)
-        missing_list = [[d.date()] for d in missing_dates]
+        missing_list = [[d.replace(minute=0, second=0, microsecond=0)] for d in missing_dates]
         dates_only = [d[0] for d in missing_list]
-
         return missing_list, dates_only
 
     def fetch_data_db(self, query):
@@ -144,6 +134,21 @@ class DataManager():
             df.index = df.index.tz_localize('UTC')
         return df
 
+    @staticmethod
+    def interval_to_timedelta(interval):
+        """Convert Binance interval string to timedelta."""
+        unit = interval[-1]
+        value = int(interval[:-1])
+        if unit == 'm':
+            return timedelta(minutes=value)
+        elif unit == 'h':
+            return timedelta(hours=value)
+        elif unit == 'd':
+            return timedelta(days=value)
+        elif unit == 'w':
+            return timedelta(weeks=value)
+        else:
+            raise ValueError(f"Unknown interval: {interval}")
 class StockDataManager(DataManager):
 
     def __init__(self):
@@ -228,9 +233,8 @@ class CryptoDataManager(DataManager):
         """
         # Fetch from MongoDB
         from_mongodb_df = self.fetch_market_data_db(symbol, interval, start_date, end_date)
-        date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+        date_range = pd.date_range(start=start_date, end=end_date, freq=interval)
         missing_list, dates_only = self.find_missing_dates(date_range, from_mongodb_df)
-
         # For df with timezone-naive index
         if from_mongodb_df.index.tz is None:
             from_mongodb_df.index = from_mongodb_df.index.tz_localize('UTC')
@@ -240,11 +244,17 @@ class CryptoDataManager(DataManager):
             return from_mongodb_df
 
         missing_df = self.get_missing_dates(symbol, interval, start_date, end_date, dates_only)
-        print(f"Missing dates: {missing_df}")
+        if not missing_df.empty:
+            print(f"Missing dates: {missing_df}")
         # insert missing into db
         self.insert_market_data_to_mdb(missing_df)
+        # Before concatenation, filter out empty DataFrames
+        dfs_to_concat = [df for df in [from_mongodb_df, missing_df] if not df.empty]
+        if dfs_to_concat:
+            combined_df = pd.concat(dfs_to_concat).sort_index()
+        else:
+            combined_df = pd.DataFrame()
         # join and sort
-        combined_df = (pd.concat([from_mongodb_df, missing_df]).sort_index())
 
         return self.remove_duplicates(combined_df)
 
@@ -273,21 +283,24 @@ class CryptoDataManager(DataManager):
         df['symbol'] = symbol
         df['interval'] = interval
         df['date'] = pd.to_datetime(df['open_time'], unit='ms').dt.floor('s')
-        new_df = df[['symbol', 'date', 'open', 'high', 'low', 'close', 'volume','interval']]
+        new_df = df[['symbol', 'date', 'open', 'high', 'low', 'close', 'volume', 'interval']]
         new_df = new_df.set_index('date')
         return new_df
 
     def get_missing_dates(self, symbol, interval, start_date, end_date, dates_only):
         dfs = []
+        # print(dates_only)
         for date in dates_only:
-            df = self.get_binance_klines_paginated(symbol, interval, date, date + timedelta(days=1))
+            delta = self.interval_to_timedelta(interval)
+            df = self.get_binance_klines_paginated(symbol, interval, date, date + delta)
             dfs.append(df)
 
         missing_df = pd.concat(dfs) if dfs else pd.DataFrame()
-        # For missing_df (downloaded)
         if isinstance(missing_df.index, pd.DatetimeIndex) and missing_df.index.tz is None:
             missing_df.index = missing_df.index.tz_localize('UTC')
-
+        # Drop duplicates
+        missing_df = missing_df[~missing_df.index.duplicated(keep='first')]
+        missing_df = missing_df.drop_duplicates(subset=['symbol', 'interval'])
         return missing_df
 
     def get_binance_klines_paginated(self, symbol, interval, start_time, end_time, limit=1000):
@@ -296,8 +309,12 @@ class CryptoDataManager(DataManager):
         Returns a single DataFrame.
         """
         all_dfs = []
-        start_dt = self.to_datetime(start_time)
-        end_dt = self.to_datetime(end_time)
+        start_dt = start_time
+        end_dt = end_time
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(tzinfo=pd.Timestamp.utcnow().tz)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=pd.Timestamp.utcnow().tz)
 
         while True:
             df = self.get_binance_klines(symbol, interval, start_dt, end_dt, limit=limit)
@@ -306,6 +323,8 @@ class CryptoDataManager(DataManager):
             all_dfs.append(df)
             last_idx = df.index[-1]
             # Add one interval to avoid overlap, but not more than end_dt
+            if last_idx.tzinfo is None:
+                last_idx = last_idx.replace(tzinfo=pd.Timestamp.utcnow().tz)
             if last_idx >= end_dt:
                 break
             # Increment start_dt to the last returned candle's open + 1 second to prevent overlap
@@ -364,7 +383,7 @@ class CryptoDataManager(DataManager):
             'Price': f"${float(pair['lastPrice']):.4f}",
             'Wt. Price': f"${float(pair['weightedAvgPrice']):.4f}",
             'Trades': pair.get('count', 0),
-            'Spread %': f"{spread_pct*100:.3f}%"
+            'Spread %': f"{spread_pct * 100:.3f}%"
         }
 
     def print_top_pairs(self, top_n=10, quote=None, min_volume=None):
