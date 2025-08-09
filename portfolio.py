@@ -16,12 +16,14 @@ class Portfolio:
         self.positions.append(position)
         self.cash -= position.value
         self.calc_positions_value()
-
+        self.trades.append({"trade": "BUY"} | position.as_dict())
 
     def remove_position(self, symbol):
         position = self.get_position(symbol)
+        self.trades.append({"trade": "SELL"} | position.as_dict())
         self.cash += position.value
-        del position
+        self.positions = [p for p in self.positions if p.symbol != symbol]
+        self.calc_positions_value()
 
     def get_position(self, symbol):
         for position in self.positions:
@@ -41,6 +43,12 @@ class Portfolio:
         for position in self.positions:
             table.append(position.as_dict())
 
+        print(tabulate(table, headers='keys', tablefmt='github'))
+
+    def print_trades(self):
+        table = []
+        for trade in self.trades:
+            table.append(trade)
         print(tabulate(table, headers='keys', tablefmt='github'))
 
     def calc_positions_value(self):
@@ -73,5 +81,14 @@ port.print_acct()
 
 port.update_position_price('GOOG', 100)
 
+port.print_positions()
+port.print_acct()
+
+port.print_trades()
+
+port.remove_position('GOOG')
+print("\n")
+
+port.print_trades()
 port.print_positions()
 port.print_acct()
