@@ -4,6 +4,7 @@ from tabulate import tabulate
 from typing import Dict, Optional, Union, List, Any
 from dataclasses import dataclass
 from trailing_stop import TrailingStop
+import numpy as np  # added
 
 
 @dataclass
@@ -123,26 +124,49 @@ class EMAStrategy(TradingStrategy):
         row = self.get_latest_signal_row()
         return float(row['close']) if row is not None else None
 
+    def _bar_price(self, row: pd.Series, mode: str) -> float:
+        """
+        Compute a representative price for trailing stop update/trigger according to mode.
+        Fallback to 'close' if needed.
+        """
+        close = float(row['close']) if 'close' in row and pd.notna(row['close']) else np.nan
+        if mode == 'ohlc4':
+            vals = []
+            for k in ('open', 'high', 'low', 'close'):
+                if k in row and pd.notna(row[k]):
+                    vals.append(float(row[k]))
+            if vals:
+                return float(np.mean(vals))
+            return close if not np.isnan(close) else 0.0
+        elif mode == 'hl2':
+            h = float(row['high']) if 'high' in row and pd.notna(row['high']) else np.nan
+            l = float(row['low']) if 'low' in row and pd.notna(row['low']) else np.nan
+            if not np.isnan(h) and not np.isnan(l):
+                return (h + l) / 2.0
+            return close if not np.isnan(close) else 0.0
+        elif mode == 'close':
+            return close if not np.isnan(close) else 0.0
+        else:
+            # default handled separately for "highlow"
+            return close if not np.isnan(close) else 0.0
+
     def backtest(
         self,
         price_df: pd.DataFrame,
         starting_cash: float = 1000.0,
         min_hold_bars: int = 0,
-        use_trailing: bool = True
+        use_trailing: bool = True,
+        trailing_price_mode: str = "highlow"  # new: 'highlow' (default), 'ohlc4', 'hl2', 'close'
     ) -> Dict[str, Any]:
         """
         Simple long-only backtest:
         - Enter on +1 (golden cross), exit on next -1 (death cross).
-        - Optional trailing stop using high/low/open path between signals.
+        - Optional trailing stop:
+          highlow: update with bar high, trigger with bar low (original behavior).
+          ohlc4:   use (O+H+L+C)/4 for update & trigger.
+          hl2:     use (H+L)/2 for update & trigger.
+          close:   use Close for update & trigger.
         - Compounds the cash across trades.
-
-        Returns:
-            {
-              'final_cash': float,
-              'total_return_pct': float,
-              'trades': List[TradeResult],
-              'signal_df': DataFrame
-            }
         """
         df = self.find_crossovers(price_df).copy()
         if df.empty:
@@ -155,40 +179,43 @@ class EMAStrategy(TradingStrategy):
         cash = float(starting_cash)
 
         for buy_time in buy_times:
-            # planned exit = first sell signal at/after buy_time; if none, end of data
             future_sells = sell_times[sell_times >= buy_time]
             planned_exit_time = future_sells[0] if len(future_sells) > 0 else df.index[-1]
 
             buy_price = float(df.at[buy_time, 'close'])
             planned_exit_price = float(df.at[planned_exit_time, 'close'])
 
-            # Default outcome: exit on signal
             exit_time = planned_exit_time
             exit_price = planned_exit_price
             exit_reason = "signal"
 
-            # Optional trailing handling in the slice between buy and planned exit
-            if use_trailing and all(c in df.columns for c in ('high', 'low', 'open')):
+            if use_trailing and all(c in df.columns for c in ('high', 'low', 'open', 'close')):
                 window = df.loc[buy_time:planned_exit_time]
                 if not window.empty:
                     ts = TrailingStop(self.trailing_pct, initial_price=buy_price)
                     bars_held = 0
-                    for i, (ts_time, row) in enumerate(window.iterrows()):
-                        # enforce minimum hold bars
+                    for ts_time, row in window.iterrows():
+                        # Determine update and trigger prices based on mode
+                        if trailing_price_mode == 'highlow':
+                            upd_price = float(row['high']) if pd.notna(row['high']) else float(row['close'])
+                            trig_price = float(row['low']) if pd.notna(row['low']) else float(row['close'])
+                        else:
+                            # averaged modes use the same representative price for both update and trigger
+                            rep = self._bar_price(row, trailing_price_mode)
+                            upd_price = rep
+                            trig_price = rep
+
+                        # Update trailing stop every bar
+                        ts.update(upd_price)
+
+                        # Enforce minimum hold bars before allowing triggers
                         if bars_held < min_hold_bars:
                             bars_held += 1
-                            # still update trailing with the high to track progress
-                            _ = ts.update(float(row['high']) if pd.notna(row['high']) else float(row['close']))
                             continue
 
-                        # Update with high; check trigger with low
-                        _ = ts.update(float(row['high']) if pd.notna(row['high']) else float(row['close']))
-                        stop_price = ts.stop_price
-                        price_low = float(row['low']) if pd.notna(row['low']) else float(row['close'])
-
-                        if price_low <= stop_price:
-                            # Realistic exit near open of the bar that triggered (simplified)
+                        if trig_price <= ts.stop_price:
                             exit_time = ts_time
+                            # Exit price choice: keep using bar open for realism
                             exit_price = float(row['open']) if pd.notna(row['open']) else float(row['close'])
                             exit_reason = "trailing"
                             break

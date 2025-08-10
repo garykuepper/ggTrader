@@ -215,6 +215,16 @@ class StockDataManager(DataManager):
         return missing_df
 
 
+# Python
+import os
+import time
+from datetime import timedelta, timezone, datetime
+from typing import Optional
+
+import pandas as pd
+import requests
+from requests.adapters import HTTPAdapter, Retry
+
 class CryptoDataManager(DataManager):
 
     def __init__(self):
@@ -223,9 +233,24 @@ class CryptoDataManager(DataManager):
         self.collection = self.db['crypto_data']
         self.binance_url = 'https://api.binance.us/api/v3/klines'
 
-    # Implement crypto-specific methods if needed
-    # For example, fetching crypto data from an API or database
-    # and inserting it into MongoDB.
+        # NEW: robust HTTP session with retries and backoff
+        self._session = requests.Session()
+        retries = Retry(
+            total=5,
+            connect=5,
+            read=5,
+            backoff_factor=0.5,
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=("GET", "POST", "DELETE"),
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10)
+        self._session.mount("https://", adapter)
+        self._session.mount("http://", adapter)
+        if self.api_key:
+            self._session.headers.update({'X-MBX-APIKEY': self.api_key})
+        # Default timeout (seconds) for all HTTP calls from this manager
+        self._http_timeout = 20
 
     def get_crypto_data(self, symbol, interval, start_date, end_date):
         """
@@ -258,49 +283,81 @@ class CryptoDataManager(DataManager):
 
         return self.remove_duplicates(combined_df)
 
-    def get_binance_klines(self, symbol, interval, start_time, end_time, limit=1000):
+    def get_binance_klines(self, symbol, interval, start_time, end_time, limit=1000) -> pd.DataFrame:
+        """
+        Fetch one page of klines from Binance US with proper timeout and retries.
+        Returns an OHLCV DataFrame indexed by UTC datetime ('date').
+        """
         url = self.binance_url
-        params = {'symbol': symbol, 'interval': interval, 'limit': limit,
-                  'startTime': int(self.to_datetime(start_time).timestamp() * 1000),
-                  'endTime': int(self.to_datetime(end_time).timestamp() * 1000)}
+        # Normalize to UTC aware datetimes
+        sdt = self.to_datetime(start_time)
+        edt = self.to_datetime(end_time)
+        if sdt.tzinfo is None:
+            sdt = sdt.replace(tzinfo=timezone.utc)
+        if edt.tzinfo is None:
+            edt = edt.replace(tzinfo=timezone.utc)
 
-        headers = {}
-        if self.api_key:
-            headers['X-MBX-APIKEY'] = self.api_key  # Add your API key to the headers
+        params = {
+            'symbol': symbol,
+            'interval': interval,
+            'limit': min(int(limit), 1000),
+            'startTime': int(sdt.timestamp() * 1000),
+            'endTime': int(edt.timestamp() * 1000),
+        }
 
-        resp = requests.get(url, params=params, headers=headers)
-        resp.raise_for_status()
-        data = resp.json()
+        try:
+            resp = self._session.get(url, params=params, timeout=self._http_timeout)
+            resp.raise_for_status()
+            data = resp.json()
+        except requests.exceptions.RequestException as e:
+            # Graceful failure: return empty frame so pagination logic can stop/continue
+            # You can log this if you have logging configured.
+            # print(f"Binance request failed: {e}")
+            return pd.DataFrame()
+
+        if not data:
+            return pd.DataFrame()
+
         cols = [
             'open_time', 'open', 'high', 'low', 'close', 'volume',
             'close_time', 'quote_asset_volume', 'num_trades',
             'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
         ]
 
+        # Binance returns a list of lists; construct then coerce types
         df = pd.DataFrame(data, columns=cols)
-        df['volume'] = df['quote_asset_volume'].astype(float)  # Ensure volume is float
-        df = self.convert_ohlcv_to_float(df)
+
+        # Convert types safely
+        numeric_cols = ['open', 'high', 'low', 'close', 'quote_asset_volume']
+        for c in numeric_cols:
+            df[c] = pd.to_numeric(df[c], errors='coerce')
+
+        # Use quote_asset_volume as 'volume' to be consistent with your code
+        df['volume'] = df['quote_asset_volume']
+
         df['symbol'] = symbol
         df['interval'] = interval
-        df['date'] = pd.to_datetime(df['open_time'], unit='ms').dt.floor('s')
+        # Force UTC timezone and floor to seconds
+        df['date'] = pd.to_datetime(df['open_time'], unit='ms', utc=True).dt.floor('s')
         new_df = df[['symbol', 'date', 'open', 'high', 'low', 'close', 'volume', 'interval']]
         new_df = new_df.set_index('date')
         return new_df
 
     def get_missing_dates(self, symbol, interval, start_date, end_date, dates_only):
         dfs = []
-        # print(dates_only)
+        delta = self.interval_to_timedelta(interval)
         for date in dates_only:
-            delta = self.interval_to_timedelta(interval)
             df = self.get_binance_klines_paginated(symbol, interval, date, date + delta)
-            dfs.append(df)
+            if not df.empty:
+                dfs.append(df)
 
         missing_df = pd.concat(dfs) if dfs else pd.DataFrame()
         if isinstance(missing_df.index, pd.DatetimeIndex) and missing_df.index.tz is None:
             missing_df.index = missing_df.index.tz_localize('UTC')
-        # Drop duplicates
-        missing_df = missing_df[~missing_df.index.duplicated(keep='first')]
-        missing_df = missing_df.drop_duplicates(subset=['symbol', 'interval'])
+        # Drop duplicates by index and symbol/interval
+        if not missing_df.empty:
+            missing_df = missing_df[~missing_df.index.duplicated(keep='first')]
+            missing_df = missing_df.drop_duplicates(subset=['symbol', 'interval'])
         return missing_df
 
     def get_binance_klines_paginated(self, symbol, interval, start_time, end_time, limit=1000):
@@ -309,35 +366,66 @@ class CryptoDataManager(DataManager):
         Returns a single DataFrame.
         """
         all_dfs = []
-        start_dt = start_time
-        end_dt = end_time
-        if start_dt.tzinfo is None:
-            start_dt = start_dt.replace(tzinfo=pd.Timestamp.utcnow().tz)
-        if end_dt.tzinfo is None:
-            end_dt = end_dt.replace(tzinfo=pd.Timestamp.utcnow().tz)
 
-        while True:
+        # Normalize inputs to UTC-aware datetimes
+        start_dt = self.to_datetime(start_time)
+        end_dt = self.to_datetime(end_time)
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(tzinfo=timezone.utc)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=timezone.utc)
+
+        # Safety controls
+        max_pages = 5000  # hard cap to avoid infinite loops in worst cases
+        page = 0
+
+        # Determine natural candle step for forward progress
+        step_td = self.interval_to_timedelta(interval)
+        if step_td <= timedelta(0):
+            step_td = timedelta(seconds=1)
+
+        while start_dt < end_dt and page < max_pages:
             df = self.get_binance_klines(symbol, interval, start_dt, end_dt, limit=limit)
+            page += 1
+
             if df.empty:
+                # No more data available or request failed; stop pagination for this slice
                 break
+
             all_dfs.append(df)
+
+            # Forward progress based on the last returned candle open time
             last_idx = df.index[-1]
-            # Add one interval to avoid overlap, but not more than end_dt
             if last_idx.tzinfo is None:
-                last_idx = last_idx.replace(tzinfo=pd.Timestamp.utcnow().tz)
+                last_idx = last_idx.tz_localize('UTC')
+
+            # If we've reached or passed end, stop
             if last_idx >= end_dt:
                 break
-            # Increment start_dt to the last returned candle's open + 1 second to prevent overlap
-            start_dt = last_idx + timedelta(seconds=1)
-            # Safety check to avoid infinite loop
-            if start_dt >= end_dt:
-                break
-            # Optional: If less than limit rows were returned, we've reached the end
+
+            # Move start forward to the next candle open to avoid overlap
+            # Increment by the natural interval (safer than +1s)
+            start_dt = last_idx + step_td
+
+            # Extra guard: if somehow start_dt did not advance, bump by one second
+            if start_dt <= last_idx:
+                start_dt = last_idx + timedelta(seconds=1)
+
+            # If the API returned fewer rows than limit, we likely reached the end
             if len(df) < limit:
-                break
+                # However, we might still be within the [start_dt, end_dt) range;
+                # try one more small step to ensure completeness.
+                # If this fetch returns empty, the next loop iteration will break.
+                continue
+
+            # Respectful small delay to avoid hitting rate limits in tight loops
+            time.sleep(0.05)
 
         if all_dfs:
-            return pd.concat(all_dfs).sort_index()
+            out = pd.concat(all_dfs).sort_index()
+            # Deduplicate: same candle can appear across overlapping pages
+            out = out[~out.index.duplicated(keep='first')]
+            return out
         else:
             return pd.DataFrame()
 
