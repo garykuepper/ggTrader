@@ -14,8 +14,8 @@ pd.set_option('future.no_silent_downcasting', True)
 
 
 
-symbol = "ETHUSDT"
-interval = "1h"
+symbol = "ADAUSDT"
+interval = "4h"
 
 end_date = datetime.combine(date.today() - timedelta(days=1), time.min)
 start_date = end_date - timedelta(days=30)

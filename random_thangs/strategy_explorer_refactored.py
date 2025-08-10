@@ -128,7 +128,7 @@ def simulate_trades(df, cross_up, cross_down, trailing_pct=None, min_hold_bars=0
     return trades_df
 
 # --- Main ---
-symbol = 'BTC'
+symbol = 'BTCUSDT'
 interval = '4h'
 end_date = datetime.now(timezone.utc)
 start_date = end_date - timedelta(days=30*6)
