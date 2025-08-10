@@ -5,13 +5,20 @@ import optuna
 import time
 from data_manager import CryptoDataManager, StockDataManager
 from datetime import datetime, timedelta, timezone
+def align_to_binance_interval(dt: datetime, hours: int) -> datetime:
+    """Align a datetime to the previous N-hour boundary (UTC)."""
+    dt = dt.astimezone(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    aligned_hour = (dt.hour // hours) * hours
+    return dt.replace(hour=aligned_hour, tzinfo=timezone.utc)
 
 # Load data once
-symbol = 'ADAUSDT'
+symbol = 'BTCUSDT'
 interval = '4h'
-# end_date = datetime.now(timezone.utc)
-end_date = datetime(2025, 8 , 1)
-start_date = end_date - timedelta(days=30*12)
+interval_hours = 4
+
+end_date = align_to_binance_interval(datetime.now(timezone.utc), interval_hours)
+
+start_date = end_date - timedelta(days=30*2)
 
 # df = StockDataManager().get_stock_data(symbol, interval, start_date, end_date)
 df = CryptoDataManager().get_crypto_data(symbol, interval, start_date, end_date)
@@ -21,16 +28,17 @@ starting_cash = 1000
 def objective(trial):
     # Suggest hyperparameters
     fast_window = trial.suggest_int('fast_window', 5, 15)
-    slow_window = trial.suggest_int('slow_window', 20, 30)  # slow > fast
-    trailing_pct = trial.suggest_float('trailing_pct', 0.005, 0.10)
-    min_hold_bars = trial.suggest_int('min_hold_bars', 2, 6)
+    slow_window = trial.suggest_int('slow_window', 25, 60)  # slow > fast
+    trailing_pct = trial.suggest_float('trailing_pct', 0.01, 0.10,step=0.01)
+    min_hold_bars = trial.suggest_int('min_hold_bars', 1, 6)
 
     # Calculate EMAs
     df['ema_fast'] = EMAIndicator(df['close'], window=fast_window).ema_indicator()
     df['ema_slow'] = EMAIndicator(df['close'], window=slow_window).ema_indicator()
 
-    ema_fast_above = df['ema_fast'] > df['ema_slow']
+    ema_fast_above = (df['ema_fast'] > df['ema_slow']).astype('boolean')
     shifted = ema_fast_above.shift(1).fillna(False).astype(bool)
+
 
     cross_up = ema_fast_above & (~shifted)
     cross_down = (~ema_fast_above) & shifted
@@ -90,8 +98,8 @@ def objective(trial):
     return sum(profit)
 
 # Create and run Optuna study with RandomSampler
-study = optuna.create_study(direction='maximize', sampler=RandomSampler())
-study.optimize(objective, n_trials=1000, n_jobs=-1)
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=50, n_jobs=-1)
 
 time.sleep(1)
 

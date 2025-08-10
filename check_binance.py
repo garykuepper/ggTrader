@@ -35,4 +35,5 @@ def account_status():
 
 if __name__ == "__main__":
     data = account_status()
-    print(data)
+    for key in data.keys():
+        print(f"{key}: {data[key]}")
