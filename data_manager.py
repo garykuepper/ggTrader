@@ -343,6 +343,7 @@ class CryptoDataManager(DataManager):
         new_df = new_df.set_index('date')
         return new_df
 
+
     def get_missing_dates(self, symbol, interval, start_date, end_date, dates_only):
         dfs = []
         delta = self.interval_to_timedelta(interval)
@@ -354,10 +355,13 @@ class CryptoDataManager(DataManager):
         missing_df = pd.concat(dfs) if dfs else pd.DataFrame()
         if isinstance(missing_df.index, pd.DatetimeIndex) and missing_df.index.tz is None:
             missing_df.index = missing_df.index.tz_localize('UTC')
-        # Drop duplicates by index and symbol/interval
+
         if not missing_df.empty:
+            # Deduplicate by timestamp only; do NOT drop by ['symbol','interval'] (that collapses all rows).
             missing_df = missing_df[~missing_df.index.duplicated(keep='first')]
-            missing_df = missing_df.drop_duplicates(subset=['symbol', 'interval'])
+            # Ensure chronological order
+            missing_df = missing_df.sort_index()
+
         return missing_df
 
     def get_binance_klines_paginated(self, symbol, interval, start_time, end_time, limit=1000):

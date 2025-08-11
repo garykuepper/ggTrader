@@ -103,7 +103,7 @@ result = strategy.backtest(df, starting_cash=1000,
 print(f"Final cash: {result['final_cash']:.2f} (Return: {result['total_return_pct']:.2f}%)")
 # Inspect signals or trades
 signals = result['signal_df']
-# print(tabulate(signals.tail(10), headers='keys', tablefmt='github'))
+print(tabulate(signals.tail(10), headers='keys', tablefmt='github'))
 print(f"Trades: {len(result['trades'])}")
 for t in result['trades'][-3:]:
     print(f"{t.buy_time} buy {t.buy_price:.4f} -> {t.exit_time} {t.exit_price:.4f} ({t.exit_reason})")

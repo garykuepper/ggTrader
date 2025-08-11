@@ -30,13 +30,13 @@ class Portfolio:
     def check_sufficient_cash(self, amount: float) -> bool:
         return self.cash >= amount
 
-    def close_position(self, symbol: str) -> None:
+    def close_position(self, symbol: str, date: datetime) -> None:
         position = self.get_position(symbol)
         if position is None:
             print("No position")
             return
         position.status = 'closed'
-        position.sold_date = datetime.now(timezone.utc).replace(microsecond=0)
+        position.sold_date = date
         self.cash += position.value
         self.positions = [p for p in self.positions if p.symbol != symbol]
         self.calc_positions_value()

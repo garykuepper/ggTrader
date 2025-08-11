@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 from data_manager import CryptoDataManager
 from tabulate import tabulate
 import numpy as np
-
 import ta
 
 
@@ -56,12 +55,17 @@ def plot_crossover(data: pd.DataFrame):
     cross_up_y = plot_data['Close'].where(plot_data['crossover'] == 1)
     cross_dn_y = plot_data['Close'].where(plot_data['crossover'] == -1)
 
+    # Base addplots: EMAs
     apds = [
         mpf.make_addplot(plot_data['ema_fast']),
         mpf.make_addplot(plot_data['ema_slow']),
-        mpf.make_addplot(cross_up_y, type='scatter', marker='^', markersize=80, color='green'),
-        mpf.make_addplot(cross_dn_y, type='scatter', marker='v', markersize=80, color='red'),
     ]
+
+    # Only add scatter markers if there is at least one point to plot
+    if not cross_up_y.dropna().empty:
+        apds.append(mpf.make_addplot(cross_up_y, type='scatter', marker='^', markersize=80, color='green'))
+    if not cross_dn_y.dropna().empty:
+        apds.append(mpf.make_addplot(cross_dn_y, type='scatter', marker='v', markersize=80, color='red'))
 
     mpf.plot(
         plot_data[['Open', 'High', 'Low', 'Close', 'Volume']],  # be explicit
@@ -76,6 +80,8 @@ def plot_crossover(data: pd.DataFrame):
 
 def get_latest_signal(data: pd.DataFrame):
     cross_df = data[data['crossover'] != 0]
+    if cross_df.empty:
+        return 0  # No signal available
     return cross_df.iloc[-1]['crossover']
 
 
@@ -99,7 +105,7 @@ interval = "4h"
 # get closest hour
 end_date = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
 end_date = align_to_binance_4h(end_date)
-start_date = end_date - timedelta(days=30 * 2)
+start_date = end_date - timedelta(days=30 * 3)
 
 # ema
 ema_fast = 10
@@ -116,7 +122,6 @@ print_crossover(data)
 plot_crossover(data)
 signal = get_latest_signal(data)
 
-print(signal)
 
 signal_table = get_crossover_table(data).copy()
 p.print_acct()
@@ -125,7 +130,7 @@ for row in signal_table.itertuples():
     if p.has_position(symbol):
         p.update_position_price(symbol, row.close)
     if row.crossover == -1:
-        p.close_position(symbol)
+        p.close_position(symbol, row.Index)
 
     if row.crossover == 1:
         qty = p.cash / row.close
