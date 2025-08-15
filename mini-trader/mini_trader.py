@@ -70,12 +70,45 @@ class MiniTrader:
                   )
 
 class Position:
-    def __init__(self, symbol, shares, price, date):
+    def __init__(self, symbol: str, qty: float, price: float, date: datetime):
+        self.symbol = symbol
+        self.qty = qty
+        self.price = price
+        self.date = date
+        self.cost = qty * price
+        self.current_value = qty * price
+        self.profit = 0
+        self.status = "open"
+
+    def open_position(self):
         pass
+    def close_position(self):
+        self.status = "closed"
+        pass
+
+    def update_price(self, price: float):
+        self.price = price
+        self.current_value = self.qty * price
+        self.profit = self.current_value - self.cost
+
 
 class Portfolio:
     def __init__(self):
+        self.trades = []
+        self.positions = []
+
+    def add_position(self, position: Position):
         pass
+
+    def remove_position(self, position: Position):
+        pass
+
+    def get_positions(self, symbol: str):
+        for position in self.positions:
+            if position.symbol == symbol:
+                return position
+        print(f"Position for {symbol} not found")
+        return None
 
 symbol = "BTC-USD"
 interval = "1d"
