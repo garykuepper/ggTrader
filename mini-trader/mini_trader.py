@@ -15,7 +15,7 @@ class MiniTrader:
                  symbol: str,
                  interval: str,
                  start_date: datetime,
-                 end_date: datetime,):
+                 end_date: datetime, ):
         self.symbol = symbol
         self.interval = interval
         self.start_date = start_date
@@ -32,8 +32,10 @@ class MiniTrader:
                                 auto_adjust=True)
 
     def calc_signals(self, ema_fast, ema_slow):
-        self.signal_data['ema_fast'] = EMAIndicator(close=self.data["Close"], window=ema_fast, fillna=False).ema_indicator()
-        self.signal_data['ema_slow'] = EMAIndicator(close=self.data["Close"], window=ema_slow, fillna=False).ema_indicator()
+        self.signal_data['ema_fast'] = EMAIndicator(close=self.data["Close"], window=ema_fast,
+                                                    fillna=False).ema_indicator()
+        self.signal_data['ema_slow'] = EMAIndicator(close=self.data["Close"], window=ema_slow,
+                                                    fillna=False).ema_indicator()
         # Compute crossover points: +1 when fast crosses above slow (bullish), -1 when below (bearish)
 
         signal = (self.signal_data['ema_fast'] > self.signal_data['ema_slow']).astype(int)
@@ -46,7 +48,6 @@ class MiniTrader:
         self.signal_data['sell_marker'] = self.data["Close"].where(cross_down)
 
     def plot_data(self):
-
         ema_fast = self.signal_data['ema_fast']
         ema_slow = self.signal_data['ema_slow']
         buy_markers = self.signal_data['buy_marker']
@@ -69,13 +70,16 @@ class MiniTrader:
                   tight_layout=True
                   )
 
+
 class Position:
     def __init__(self, symbol, shares, price, date):
         pass
 
+
 class Portfolio:
     def __init__(self):
         pass
+
 
 symbol = "BTC-USD"
 interval = "1d"
