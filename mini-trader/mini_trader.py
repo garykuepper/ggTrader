@@ -41,7 +41,7 @@ class MiniTrader:
                            auto_adjust=True)
 
     @staticmethod
-    def calc_signals(ema_fast, ema_slow, data):
+    def calc_signals(ema_fast: int, ema_slow: int, data: pd.DataFrame):
         signal_data = pd.DataFrame(index=data.index)
         signal_data['ema_fast'] = EMAIndicator(close=data["Close"], window=ema_fast,
                                                fillna=False).ema_indicator()
@@ -128,8 +128,8 @@ class MiniTrader:
     def backtest(signal_data: pd.DataFrame,
                  data: pd.DataFrame,
                  symbol: str,
-                 trail_percentage=3,
-                 hold_min=5,
+                 trail_percentage: float=3,
+                 hold_min: int=5,
                  print_position=False,
                  print_trades=False,):
         portfolio = Portfolio(hold_min=hold_min)
@@ -151,6 +151,32 @@ class MiniTrader:
         if print_trades:
             portfolio.print_trades()
         return portfolio.profit
+
+    @staticmethod
+    def calculate_sharpe_ratio(returns: list, risk_free_rate: float = 0.001) -> float:
+        """
+        Calculate Sharpe ratio from a list of returns.
+
+        Args:
+            returns: List of profit/return values
+            risk_free_rate: Risk-free rate for excess return calculation
+
+        Returns:
+            Sharpe ratio (float)
+        """
+        if len(returns) == 0:
+            return -float("inf")
+
+        returns_series = pd.Series(returns)
+        avg_return = returns_series.mean()
+        std_dev = returns_series.std()
+        excess_return = avg_return - risk_free_rate
+
+        epsilon = 0.0001
+        sharpe_ratio = excess_return / max(std_dev, epsilon) if std_dev > epsilon else 0
+
+        return sharpe_ratio
+
 
 
 class Position:
@@ -269,20 +295,17 @@ class Portfolio:
 
 def objective(trial):
     max_window = 200
-    max_fast_window = math.floor(max_window * 0.35)
+    max_fast_window = math.floor(max_window / 3)
     fast_window = trial.suggest_int('fast_window', 12, max_fast_window, step=2)
-    slow_window = trial.suggest_int('slow_window', fast_window + 10, max_window, step=2)  # slow > fast
-    trail_pct = trial.suggest_int('trail_pct', 2, 8)
-    hold_min = trial.suggest_int('hold_min', 2, 8)
+    slow_window = trial.suggest_int('slow_window', fast_window + 10, max_window, step=2)
+    trail_pct = trial.suggest_int('trail_pct', 3, 6)
+    hold_min = trial.suggest_int('hold_min', 2, 6)
     signals = mt.calc_signals(fast_window, slow_window, data)
 
-    # return mt.backtest(signals.copy(), data.copy())
-    # Parameters
-    risk_free_rate = 0.001  # Example: 2% annual risk-free rate (adjust based on region or needs)
+    # Rolling window backtesting
     num_of_pts = len(data)
     window_min_pts = math.floor(num_of_pts / 2)
     step = math.floor(window_min_pts / 10)
-    # Rolling window backtesting
     returns = []
 
     for i in range(num_of_pts - 1, window_min_pts, -step):
@@ -295,25 +318,8 @@ def objective(trial):
         )
         returns.append(profit)
 
-    # Ensure returns are a non-empty collection
-    if len(returns) == 0:
-        return -float("inf")
-    # Sharpe ratio cannot be calculated without data
-
-    # Convert profits to a Pandas Series
-    returns_series = pd.Series(returns)
-
-    # Calculate average return and volatility (standard deviation)
-    avg_return = returns_series.mean()
-    std_dev = returns_series.std()
-
-    # Excess return (over risk-free rate)
-    excess_return = avg_return - risk_free_rate
-
-    # Calculate Sharpe ratio
-    epsilon = 0.0001
-    sharpe_ratio = excess_return / max(std_dev, epsilon) if std_dev > epsilon else 0
-
+    # Use the static method
+    sharpe_ratio = mt.calculate_sharpe_ratio(returns)
 
     total_profit = mt.backtest(signals, data, symbol, trail_percentage=trail_pct, hold_min=hold_min)
 
@@ -321,14 +327,14 @@ def objective(trial):
         return -float("inf")
 
     return sharpe_ratio
-    # return total_profit
+
 
 
 def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
 
-symbol = "DOGE-USD"
+symbol = "BTC-USD"
 interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
