@@ -26,6 +26,8 @@ class MiniTrader:
 
     def get_data(self):
         self.data = self.get_yf_data(self.symbol, self.interval, self.start_date, self.end_date)
+        if self.data.empty:
+            raise ValueError("No data available.")
         return self.data
 
     def update_data(self, data: pd.DataFrame):
@@ -295,11 +297,11 @@ class Portfolio:
 
 def objective(trial):
     max_window = 200
-    max_fast_window = math.floor(max_window / 3)
-    fast_window = trial.suggest_int('fast_window', 12, max_fast_window, step=2)
-    slow_window = trial.suggest_int('slow_window', fast_window + 10, max_window, step=2)
-    trail_pct = trial.suggest_int('trail_pct', 3, 6)
-    hold_min = trial.suggest_int('hold_min', 2, 6)
+    max_fast_window = math.floor(max_window * 0.5)
+    fast_window = trial.suggest_int('fast_window', 20, max_fast_window, step=5)
+    slow_window = trial.suggest_int('slow_window', fast_window + 10, max_window, step=5)
+    trail_pct = trial.suggest_int('trail_pct', 3, 8)
+    hold_min = trial.suggest_int('hold_min', 2, 8)
     signals = mt.calc_signals(fast_window, slow_window, data)
 
     # Rolling window backtesting
@@ -334,7 +336,7 @@ def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
 
-symbol = "BTC-USD"
+symbol = "XLM-USD"
 interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
@@ -357,7 +359,10 @@ profit = mt.backtest(signals, data, symbol,
                      hold_min=study.best_params['hold_min'],
                      print_trades=True,
                      print_position=True,)
-best_parameters = {**study.best_params, "Best Sharpe Ratio": study.best_value, "Total Profit": profit}
+best_parameters = {**study.best_params,
+                   "Best Sharpe Ratio": round(study.best_value,3),
+                   "Total Profit, $": round(profit,2),
+                   "Daily Profit, $":  round(profit / days,2)}
 
 print(f"Start date:  {start_date}")
 print(f"End date:    {end_date}")
@@ -367,4 +372,4 @@ print("Best parameters:")
 print(tabulate(best_parameters.items(), headers=["Parameter", "Value"], tablefmt="github"))
 
 mt.signal_data = signals
-mt.plot_data(num_of_pts=400)
+mt.plot_data(num_of_pts=500)
