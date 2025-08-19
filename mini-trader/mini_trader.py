@@ -360,13 +360,13 @@ def objective(trial):
     fast_window = trial.suggest_int('fast_window', 10, max_fast_window, step=5)
     slow_window = trial.suggest_int('slow_window', fast_window + 10, max_window, step=5)
     trail_pct = trial.suggest_int('trail_pct', 3, 8)
-    hold_min = trial.suggest_int('hold_min', 2, 8)
+    hold_min = trial.suggest_int('hold_min', 3, 8)
     # trail_pct = 5
     # hold_min = 4
     ema_strategy = EMAStrategy(data, fast_window, slow_window)
     signals = ema_strategy.calc_signals()
 
-    # Rolling window backtesting
+    # Rolling window backtesting to prevent overfitting
     num_of_pts = len(data)
     window_min_pts = math.floor(num_of_pts / 2)
     step = math.floor(window_min_pts / 10)
@@ -390,14 +390,14 @@ def objective(trial):
     if total_profit <= 0 or sharpe_ratio <= 0:
         return -float("inf")
 
-    return sharpe_ratio
+    return round(sharpe_ratio, 3)
 
 
 def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
 
-symbol = "LTC-USD"
+symbol = "BTC-USD"
 interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
