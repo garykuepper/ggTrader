@@ -1,13 +1,21 @@
 import pandas as pd
 import yfinance as yf
 import mplfinance as mpf
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 import math
 import optuna
 from ta.trend import EMAIndicator
 from tabulate import tabulate
 
+
+# TODO:  Turn Backtest into a class
+# TODO:  Add data as own class
+# TODO: Make position data class
+# TODO: Make generic StopPolicy class for trailing stops
+# TODO: Strategy Abstract class, with generate_signals() method
+# TODO: Performance Metrics and Plotting
+# TODO: Optimize class for optuna
 
 class MiniTrader:
 
@@ -73,25 +81,32 @@ class MiniTrader:
         apds = [
             mpf.make_addplot(signals_slice['ema_fast'], width=1.2),
             mpf.make_addplot(signals_slice['ema_slow'], width=1.2),
-            mpf.make_addplot(
-                signals_slice['buy_marker'],
-                type="scatter",
-                marker="^",
-                color="green",
-                markersize=80,
-                edgecolors="black",
-                linewidths=1.5
-            ),
-            mpf.make_addplot(
-                signals_slice['sell_marker'],
-                type="scatter",
-                marker="v",
-                color="red",
-                markersize=80,
-                edgecolors="black",
-                linewidths=1.5
-            ),
         ]
+        # Only add scatter plots if there is at least one non-NaN point
+        if 'buy_marker' in signals_slice and signals_slice['buy_marker'].notna().any():
+            apds.append(
+                mpf.make_addplot(
+                    signals_slice['buy_marker'],
+                    type="scatter",
+                    marker="^",
+                    color="green",
+                    markersize=80,
+                    edgecolors="black",
+                    linewidths=1.5
+                )
+            )
+        if 'sell_marker' in signals_slice and signals_slice['sell_marker'].notna().any():
+            apds.append(
+                mpf.make_addplot(
+                    signals_slice['sell_marker'],
+                    type="scatter",
+                    marker="v",
+                    color="red",
+                    markersize=80,
+                    edgecolors="black",
+                    linewidths=1.5
+                )
+            )
 
         try:
             mpf.plot(
@@ -397,11 +412,12 @@ def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
 
-symbol = "ETH-USD"
+symbol = "BTC-USD"
 interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
-end_date = datetime(2025, 8, 1)
+# end_date = datetime(2025, 8, 1)
+end_date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
 days = days_min(pts_per_day[interval], 365 * 5)
 start_date = end_date - timedelta(days=days)
