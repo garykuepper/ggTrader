@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Config
 # ----------------------------
 QUOTE_CCY = os.getenv("KRAKEN_QUOTE", "USD")  # change to 'USDT' if you want tether pairs
-EXCLUDE_BASES = {"USDT", "USDC", "DAI", "USDP", "TUSD"}  # stablecoins to drop from BASE side
+EXCLUDE_BASES = {"USDT", "USDC", "DAI", "USDP", "TUSD", "EUR", "GBP", "AUD" }  # stablecoins to drop from BASE side
 TOP_N = 30
 
 # ----------------------------

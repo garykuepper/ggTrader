@@ -2,7 +2,7 @@ import pandas as pd
 import yfinance as yf
 import mplfinance as mpf
 from datetime import datetime, timedelta
-import time as t
+import time
 import math
 import optuna
 from ta.trend import EMAIndicator
@@ -397,7 +397,7 @@ def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
 
-symbol = "BTC-USD"
+symbol = "ETH-USD"
 interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
@@ -411,8 +411,8 @@ data = mt.get_data()
 
 study = optuna.create_study(direction="maximize")
 study.optimize(objective, n_trials=200, n_jobs=-1)
-
-t.sleep(1)
+# pause to let study print
+time.sleep(1)
 ema_strategy = EMAStrategy(data, study.best_params['fast_window'], study.best_params['slow_window'])
 signals = ema_strategy.calc_signals()
 profit = mt.backtest(signals, data, symbol,
