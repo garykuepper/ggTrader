@@ -415,7 +415,7 @@ def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
 
-symbol = "ETH-USD"
+symbol = "BTC-USD"
 interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
@@ -428,9 +428,8 @@ start_date = end_date - timedelta(days=days)
 mt = MiniTrader(symbol, interval, start_date, end_date)
 data = mt.get_data()
 
-storage = "sqlite:///ema_optuna.db"  # file-based SQLite
-study = optuna.create_study(direction="maximize",
-                            storage=storage,)
+# storage = "sqlite:///ema_optuna.db"  # file-based SQLite
+study = optuna.create_study(direction="maximize")
 study.optimize(objective, n_trials=200, n_jobs=-1)
 
 # pause to let study print
