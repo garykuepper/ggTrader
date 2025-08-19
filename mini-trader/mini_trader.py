@@ -115,7 +115,8 @@ class MiniTrader:
                  trail_percentage: float = 3,
                  hold_min: int = 5,
                  print_position=False,
-                 print_trades=False, ):
+                 print_trades=False,
+                 position_share_pct: float = 1.0, ):
         portfolio = Portfolio()
 
         for row in signal_data.itertuples():
@@ -125,8 +126,13 @@ class MiniTrader:
                 portfolio.update_position_price(symbol, price, date, trail_percentage)
 
             if pd.notna(row.buy_marker) and not portfolio.in_position(symbol):
-                qty = portfolio.cash / price
-                portfolio.add_position(Position(symbol, qty, price, date, trail_percentage, hold_min))
+                # Allocate only a percentage of current equity; cap by available cash (no margin).
+                target_allocation = portfolio.get_total_value() * max(0.0, min(1.0, position_share_pct))
+                invest_amount = min(portfolio.cash, target_allocation)
+                if invest_amount > 0:
+                    qty = invest_amount / price
+                    portfolio.add_position(
+                        Position(symbol, qty, price, date, trail_percentage, hold_min, pos_pct=position_share_pct))
 
             elif pd.notna(row.sell_marker) and portfolio.in_position(symbol):
                 portfolio.remove_position(portfolio.get_position(symbol), date=date)
@@ -163,7 +169,13 @@ class MiniTrader:
 
 
 class Position:
-    def __init__(self, symbol: str, qty: float, price: float, date: datetime, trail_pct: float, hold_min: int
+    def __init__(self, symbol: str,
+                 qty: float,
+                 price: float,
+                 date: datetime,
+                 trail_pct: float,
+                 hold_min: int,
+                 pos_pct: float = 1.0,
                  ):
         self.symbol = symbol
         self.qty = qty
@@ -173,6 +185,7 @@ class Position:
         self.current_value = qty * price
         self.profit = 0
         self.status = "open"
+        self.position_pct = pos_pct
         self.trailing_stop = TrailingStop(ts_pct=trail_pct, hold_min=hold_min)
 
     def open_position(self):
@@ -267,7 +280,7 @@ class Portfolio:
 
 
 class TrailingStop:
-    def __init__(self, ts_pct: int=5, hold_min: int=4):
+    def __init__(self, ts_pct: int = 5, hold_min: int = 4):
         self.trailing_stop_pct = ts_pct
         self.hold_min = hold_min
         self.level = None
@@ -397,7 +410,7 @@ mt = MiniTrader(symbol, interval, start_date, end_date)
 data = mt.get_data()
 
 study = optuna.create_study(direction="maximize")
-study.optimize(objective, n_trials=100, n_jobs=-1)
+study.optimize(objective, n_trials=200, n_jobs=-1)
 
 t.sleep(1)
 ema_strategy = EMAStrategy(data, study.best_params['fast_window'], study.best_params['slow_window'])
