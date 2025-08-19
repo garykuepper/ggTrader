@@ -145,6 +145,7 @@ def format_table_row(index, pair_info, tickers, cmc_data):
     return [
         index + 1,
         f"{alt}",  # e.g., XBTUSD / ETHUSDT
+        cmc_key,
         c.get("rank", "N/A"),
         f"{quote_volume_24h:,.2f} {quote}",
         f"{c.get('volume_24h', 0):,.2f}" if c else 'N/A',
@@ -161,11 +162,11 @@ def create_table(rows, tickers, cmc_data, limit=TOP_N):
 
 def display_table(table, quote_ccy):
     headers = [
-        'Rank', f'Pair (quote={quote_ccy})', 'CMC Rank',
+        'Rank', f'Pair (quote={quote_ccy})', 'CMC Symbol', 'CMC Rank',
         f'Kraken 24h Vol (quote)', 'CMC Vol (USD)',
         'Vol Δ 24h %', 'Price Δ 24h %', 'Price Δ 7d %'
     ]
-    alignments = ('right', 'left', 'right', 'right', 'right', 'right', 'right', 'right')
+    alignments = ('right', 'left', 'left', 'right', 'right', 'right', 'right', 'right', 'right')
     print(tabulate(table, headers=headers, tablefmt='github', colalign=alignments))
 
 # ----------------------------

@@ -42,15 +42,16 @@ class MiniTrader:
                            multi_level_index=False,
                            auto_adjust=True)
 
-    def plot_data(self, num_of_pts=200):
+    @staticmethod
+    def plot_data(data: pd.DataFrame, signal_data: pd.DataFrame, symbol: str, num_of_pts=200):
 
-        if self.data.empty or self.signal_data.empty:
+        if data.empty or signal_data.empty:
             print("Error: No data available to plot.")
             return
 
-        total_pts = len(self.signal_data)
+        total_pts = len(data)
         if total_pts == 0:
-            print("Error: Signal data is empty. Cannot generate plot.")
+            print("Error: Data is empty. Cannot generate plot.")
             return
 
         start_plot = max(0, total_pts - num_of_pts)
@@ -58,8 +59,8 @@ class MiniTrader:
             print("Error: Not enough data points to plot.")
             return
 
-        data_slice = self.data.iloc[start_plot:]
-        signals_slice = self.signal_data.iloc[start_plot:]
+        data_slice = data.iloc[start_plot:]
+        signals_slice = signal_data.reindex(data_slice.index)
 
         # Additional checks for empty or all-NaN data
         if data_slice.empty or not data_slice['Close'].notna().any():
@@ -98,7 +99,7 @@ class MiniTrader:
                 type='candle',
                 addplot=apds,
                 style='yahoo',
-                title=f"Trading Chart for {self.symbol} ({self.interval})",
+                title=f"Trading Chart for {symbol} ",
                 volume=True,
                 figsize=(13, 7),
                 tight_layout=True
@@ -115,7 +116,7 @@ class MiniTrader:
                  hold_min: int = 5,
                  print_position=False,
                  print_trades=False, ):
-        portfolio = Portfolio(hold_min=hold_min)
+        portfolio = Portfolio()
 
         for row in signal_data.itertuples():
             price = data.loc[row.Index, 'Close']
@@ -193,13 +194,12 @@ class Position:
 
 
 class Portfolio:
-    def __init__(self, cash=1000, hold_min=5):
+    def __init__(self, cash=1000):
         self.trades = []
         self.positions = []
         self.cash = cash
         self.profit = 0
         self.start_cash = cash
-        self.hold_min = hold_min
         self.transaction_fee = 0.004  # max maker fee
 
     def add_position(self, position: Position):
@@ -267,12 +267,16 @@ class Portfolio:
 
 
 class TrailingStop:
-    def __init__(self, ts_pct: int, hold_min: int):
+    def __init__(self, ts_pct: int=5, hold_min: int=4):
         self.trailing_stop_pct = ts_pct
         self.hold_min = hold_min
         self.level = None
         self.consec_hits = 0
         self.triggered = False
+
+    def __repr__(self):
+        level_str = "None" if self.level is None else f"{self.level:.2f}"
+        return f"Triggered: {self.triggered}, Level: {level_str}, Consec Hits: {self.consec_hits}"
 
     def update(self, price: float):
         """
@@ -340,10 +344,12 @@ class EMAStrategy(Strategy):
 def objective(trial):
     max_window = 200
     max_fast_window = math.floor(max_window * 0.5)
-    fast_window = trial.suggest_int('fast_window', 20, max_fast_window, step=5)
+    fast_window = trial.suggest_int('fast_window', 10, max_fast_window, step=5)
     slow_window = trial.suggest_int('slow_window', fast_window + 10, max_window, step=5)
     trail_pct = trial.suggest_int('trail_pct', 3, 8)
     hold_min = trial.suggest_int('hold_min', 2, 8)
+    # trail_pct = 5
+    # hold_min = 4
     ema_strategy = EMAStrategy(data, fast_window, slow_window)
     signals = ema_strategy.calc_signals()
 
@@ -378,7 +384,7 @@ def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
 
-symbol = "BTC-USD"
+symbol = "LTC-USD"
 interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
@@ -412,6 +418,5 @@ print(f"Num of Days: {days}")
 
 print("Best parameters:")
 print(tabulate(best_parameters.items(), headers=["Parameter", "Value"], tablefmt="github"))
-
-mt.signal_data = signals
-mt.plot_data(num_of_pts=500)
+# print(tabulate(signals.tail(500), headers="keys", tablefmt="github"))
+mt.plot_data(data, signals, symbol, num_of_pts=400)
