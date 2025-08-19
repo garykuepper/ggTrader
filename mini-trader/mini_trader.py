@@ -23,13 +23,16 @@ class MiniTrader:
                  symbol: str,
                  interval: str,
                  start_date: datetime,
-                 end_date: datetime, ):
+                 end_date: datetime ):
+
+        if start_date >= end_date:
+            raise ValueError("Start date must be before end date")
+
         self.symbol = symbol
         self.interval = interval
         self.start_date = start_date
         self.end_date = end_date
         self.data = pd.DataFrame()
-        self.total_profit = 0
         self.signal_data = pd.DataFrame()
 
     def get_data(self):
@@ -222,13 +225,13 @@ class Position:
 
 
 class Portfolio:
-    def __init__(self, cash=1000):
+    def __init__(self, cash: int=1000, transaction_fee: float=0.004):
         self.trades = []
         self.positions = []
         self.cash = cash
         self.profit = 0
         self.start_cash = cash
-        self.transaction_fee = 0.004  # max maker fee
+        self.transaction_fee = transaction_fee  # max maker fee
 
     def add_position(self, position: Position):
         self.cash -= position.cost * (1 + self.transaction_fee)
@@ -373,7 +376,7 @@ def objective(trial):
     max_window = 200
     max_fast_window = math.floor(max_window * 0.5)
     fast_window = trial.suggest_int('fast_window', 10, max_fast_window, step=5)
-    slow_window = trial.suggest_int('slow_window', fast_window + 10, max_window, step=5)
+    slow_window = trial.suggest_int('slow_window', fast_window + 20, max_window, step=5)
     trail_pct = trial.suggest_int('trail_pct', 3, 8)
     hold_min = trial.suggest_int('hold_min', 3, 8)
     # trail_pct = 5
@@ -412,7 +415,7 @@ def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
 
-symbol = "BTC-USD"
+symbol = "ETH-USD"
 interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
@@ -425,8 +428,11 @@ start_date = end_date - timedelta(days=days)
 mt = MiniTrader(symbol, interval, start_date, end_date)
 data = mt.get_data()
 
-study = optuna.create_study(direction="maximize")
+storage = "sqlite:///ema_optuna.db"  # file-based SQLite
+study = optuna.create_study(direction="maximize",
+                            storage=storage,)
 study.optimize(objective, n_trials=200, n_jobs=-1)
+
 # pause to let study print
 time.sleep(1)
 ema_strategy = EMAStrategy(data, study.best_params['fast_window'], study.best_params['slow_window'])
