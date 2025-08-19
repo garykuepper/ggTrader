@@ -21,8 +21,8 @@ class MiniTrader:
         self.start_date = start_date
         self.end_date = end_date
         self.data = pd.DataFrame()
-        self.signal_data = pd.DataFrame()
         self.total_profit = 0
+        self.signal_data = pd.DataFrame()
 
     def get_data(self):
         self.data = self.get_yf_data(self.symbol, self.interval, self.start_date, self.end_date)
@@ -41,25 +41,6 @@ class MiniTrader:
                            end=end_date,
                            multi_level_index=False,
                            auto_adjust=True)
-
-    @staticmethod
-    def calc_signals(ema_fast: int, ema_slow: int, data: pd.DataFrame):
-        signal_data = pd.DataFrame(index=data.index)
-        signal_data['ema_fast'] = EMAIndicator(close=data["Close"], window=ema_fast,
-                                               fillna=False).ema_indicator()
-        signal_data['ema_slow'] = EMAIndicator(close=data["Close"], window=ema_slow,
-                                               fillna=False).ema_indicator()
-        # Compute crossover points: +1 when fast crosses above slow (bullish), -1 when below (bearish)
-
-        signal = (signal_data['ema_fast'] > signal_data['ema_slow']).astype(int)
-        cross = signal.diff()
-        cross_up = cross == 1
-        cross_down = cross == -1
-
-        # Create series for markers positioned at the price level on crossover bars
-        signal_data['buy_marker'] = data["Close"].where(cross_up)
-        signal_data['sell_marker'] = data["Close"].where(cross_down)
-        return signal_data
 
     def plot_data(self, num_of_pts=200):
 
@@ -130,10 +111,10 @@ class MiniTrader:
     def backtest(signal_data: pd.DataFrame,
                  data: pd.DataFrame,
                  symbol: str,
-                 trail_percentage: float=3,
-                 hold_min: int=5,
+                 trail_percentage: float = 3,
+                 hold_min: int = 5,
                  print_position=False,
-                 print_trades=False,):
+                 print_trades=False, ):
         portfolio = Portfolio(hold_min=hold_min)
 
         for row in signal_data.itertuples():
@@ -144,7 +125,7 @@ class MiniTrader:
 
             if pd.notna(row.buy_marker) and not portfolio.in_position(symbol):
                 qty = portfolio.cash / price
-                portfolio.add_position(Position(symbol, qty, price, date))
+                portfolio.add_position(Position(symbol, qty, price, date, trail_percentage, hold_min))
 
             elif pd.notna(row.sell_marker) and portfolio.in_position(symbol):
                 portfolio.remove_position(portfolio.get_position(symbol), date=date)
@@ -180,9 +161,9 @@ class MiniTrader:
         return sharpe_ratio
 
 
-
 class Position:
-    def __init__(self, symbol: str, qty: float, price: float, date: datetime):
+    def __init__(self, symbol: str, qty: float, price: float, date: datetime, trail_pct: float, hold_min: int
+                 ):
         self.symbol = symbol
         self.qty = qty
         self.price = price
@@ -191,10 +172,7 @@ class Position:
         self.current_value = qty * price
         self.profit = 0
         self.status = "open"
-        self.trailing_stop = None
-        self.ts_triggered = False
-        self.ts_consec_hits = 0
-
+        self.trailing_stop = TrailingStop(ts_pct=trail_pct, hold_min=hold_min)
 
     def open_position(self):
         pass
@@ -207,10 +185,8 @@ class Position:
         self.price = new_price
         self.current_value = self.qty * new_price
         self.profit = self.current_value - self.cost
-        if trail_percentage > 0:
-            trailing_stop_candidate = new_price * (1 - trail_percentage / 100)
-            if self.trailing_stop is None or trailing_stop_candidate > self.trailing_stop:
-                self.trailing_stop = trailing_stop_candidate
+        if self.trailing_stop:
+            self.trailing_stop.update(new_price)
 
     def update_date(self, date: datetime):
         self.date = date
@@ -282,17 +258,83 @@ class Portfolio:
     def check_trailing_stop(self, position: Position, date: datetime):
         """
         Check if the current price has hit the trailing stop for the position.
-        If the stop is hit, automatically close the position.
+        If the stop is hit for 'hold_min' consecutive bars, automatically close the position.
         """
+        if not position:
+            return
+        if position.trailing_stop and position.trailing_stop.check(position.price):
+            self.remove_position(position, date)
 
-        if position.trailing_stop and position.price <= position.trailing_stop:
-            # print(f"Trailing stop hit for {position.symbol} at {position.price:.2f}. Closing position.")
-            position.ts_consec_hits += 1
-            if position.ts_consec_hits >= self.hold_min:
-                position.ts_triggered = True
-                self.remove_position(position, date)
+
+class TrailingStop:
+    def __init__(self, ts_pct: int, hold_min: int):
+        self.trailing_stop_pct = ts_pct
+        self.hold_min = hold_min
+        self.level = None
+        self.consec_hits = 0
+        self.triggered = False
+
+    def update(self, price: float):
+        """
+        Update the trailing stop level based on the latest price.
+        Only ratchets upward (for long positions).
+        """
+        candidate = price * (1 - self.trailing_stop_pct / 100.0)
+        if self.level is None or candidate > self.level:
+            self.level = candidate
+
+    def check(self, price: float) -> bool:
+        """
+        Check if current price has hit or fallen below the trailing stop level.
+        Requires 'hold_min' consecutive hits to trigger.
+        Returns True when the stop is triggered for exit.
+        """
+        if self.level is None:
+            return False
+
+        if price <= self.level:
+            self.consec_hits += 1
+            if self.consec_hits >= self.hold_min:
+                self.triggered = True
+                return True
         else:
-            position.ts_consec_hits = 0
+            # Reset consecutive hit counter if price recovers above the stop
+            self.consec_hits = 0
+
+        return False
+
+
+class Strategy:
+    def __init__(self, df: pd.DataFrame):
+        self.df = df
+        self.signal_data = pd.DataFrame(index=df.index)
+
+    def calc_signals(self):
+        pass
+
+
+class EMAStrategy(Strategy):
+    def __init__(self, df: pd.DataFrame, fast_window: int, slow_window: int):
+        super().__init__(df)
+        self.fast_window = fast_window
+        self.slow_window = slow_window
+
+    def calc_signals(self):
+        self.signal_data['ema_fast'] = EMAIndicator(close=self.df["Close"], window=self.fast_window,
+                                                    fillna=False).ema_indicator()
+        self.signal_data['ema_slow'] = EMAIndicator(close=self.df["Close"], window=self.slow_window,
+                                                    fillna=False).ema_indicator()
+        # Compute crossover points: +1 when fast crosses above slow (bullish), -1 when below (bearish)
+
+        signal = (self.signal_data['ema_fast'] > self.signal_data['ema_slow']).astype(int)
+        cross = signal.diff()
+        cross_up = cross == 1
+        cross_down = cross == -1
+
+        # Create series for markers positioned at the price level on crossover bars
+        self.signal_data['buy_marker'] = self.df["Close"].where(cross_up)
+        self.signal_data['sell_marker'] = self.df["Close"].where(cross_down)
+        return self.signal_data
 
 
 def objective(trial):
@@ -302,7 +344,8 @@ def objective(trial):
     slow_window = trial.suggest_int('slow_window', fast_window + 10, max_window, step=5)
     trail_pct = trial.suggest_int('trail_pct', 3, 8)
     hold_min = trial.suggest_int('hold_min', 2, 8)
-    signals = mt.calc_signals(fast_window, slow_window, data)
+    ema_strategy = EMAStrategy(data, fast_window, slow_window)
+    signals = ema_strategy.calc_signals()
 
     # Rolling window backtesting
     num_of_pts = len(data)
@@ -331,12 +374,11 @@ def objective(trial):
     return sharpe_ratio
 
 
-
 def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
 
-symbol = "XLM-USD"
+symbol = "BTC-USD"
 interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
@@ -352,17 +394,17 @@ study = optuna.create_study(direction="maximize")
 study.optimize(objective, n_trials=100, n_jobs=-1)
 
 t.sleep(1)
-
-signals = mt.calc_signals(study.best_params['fast_window'], study.best_params['slow_window'], data)
+ema_strategy = EMAStrategy(data, study.best_params['fast_window'], study.best_params['slow_window'])
+signals = ema_strategy.calc_signals()
 profit = mt.backtest(signals, data, symbol,
                      trail_percentage=study.best_params['trail_pct'],
                      hold_min=study.best_params['hold_min'],
                      print_trades=True,
-                     print_position=True,)
+                     print_position=True, )
 best_parameters = {**study.best_params,
-                   "Best Sharpe Ratio": round(study.best_value,3),
-                   "Total Profit, $": round(profit,2),
-                   "Daily Profit, $":  round(profit / days,2)}
+                   "Best Sharpe Ratio": round(study.best_value, 3),
+                   "Total Profit, $": round(profit, 2),
+                   "Daily Profit, $": round(profit / days, 2)}
 
 print(f"Start date:  {start_date}")
 print(f"End date:    {end_date}")
