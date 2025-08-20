@@ -23,7 +23,7 @@ class MiniTrader:
                  symbol: str,
                  interval: str,
                  start_date: datetime,
-                 end_date: datetime ):
+                 end_date: datetime):
 
         if start_date >= end_date:
             raise ValueError("Start date must be before end date")
@@ -143,6 +143,7 @@ class MiniTrader:
             if portfolio.in_position(symbol):
                 portfolio.update_position_price(symbol, price, date, trail_percentage)
 
+            # Open position
             if pd.notna(row.buy_marker) and not portfolio.in_position(symbol):
                 # Allocate only a percentage of current equity; cap by available cash (no margin).
                 target_allocation = portfolio.get_total_value() * max(0.0, min(1.0, position_share_pct))
@@ -151,9 +152,10 @@ class MiniTrader:
                     qty = invest_amount / price
                     portfolio.add_position(
                         Position(symbol, qty, price, date, trail_percentage, hold_min, pos_pct=position_share_pct))
-
+            # Close Position
             elif pd.notna(row.sell_marker) and portfolio.in_position(symbol):
                 portfolio.remove_position(portfolio.get_position(symbol), date=date)
+
         if print_position:
             portfolio.print_positions()
         if print_trades:
@@ -161,7 +163,7 @@ class MiniTrader:
         return portfolio.profit
 
     @staticmethod
-    def calculate_sharpe_ratio(returns: list, risk_free_rate: float = 0.001) -> float:
+    def calculate_sharpe_ratio(returns: list, risk_free_rate: float = 0.01) -> float:
         """
         Calculate Sharpe ratio from a list of returns.
 
@@ -225,7 +227,7 @@ class Position:
 
 
 class Portfolio:
-    def __init__(self, cash: int=1000, transaction_fee: float=0.004):
+    def __init__(self, cash: int = 1000, transaction_fee: float = 0.004):
         self.trades = []
         self.positions = []
         self.cash = cash
@@ -373,12 +375,14 @@ class EMAStrategy(Strategy):
 
 
 def objective(trial):
-    max_window = 200
-    max_fast_window = math.floor(max_window * 0.5)
-    fast_window = trial.suggest_int('fast_window', 10, max_fast_window, step=5)
-    slow_window = trial.suggest_int('slow_window', fast_window + 20, max_window, step=5)
-    trail_pct = trial.suggest_int('trail_pct', 3, 8)
-    hold_min = trial.suggest_int('hold_min', 3, 8)
+    max_window = 100
+    min_fast_window = 10
+    max_fast_window = int(math.floor(max_window * 0.5))
+    fast_window = trial.suggest_int('fast_window', min_fast_window, max_fast_window, step=2)
+    min_slow_window = int(math.floor((fast_window * 1.4)/2.0)*2)
+    slow_window = trial.suggest_int('slow_window', min_slow_window, max_window, step=2)
+    trail_pct = trial.suggest_int('trail_pct', 2, 8)
+    hold_min = trial.suggest_int('hold_min', 2, 8)
     # trail_pct = 5
     # hold_min = 4
     ema_strategy = EMAStrategy(data, fast_window, slow_window)
@@ -386,14 +390,15 @@ def objective(trial):
 
     # Rolling window backtesting to prevent overfitting
     num_of_pts = len(data)
-    window_min_pts = math.floor(num_of_pts / 2)
+    window_min_pts = math.floor(num_of_pts / 4)
     step = math.floor(window_min_pts / 10)
     returns = []
 
-    for i in range(num_of_pts - 1, window_min_pts, -step):
+    for start_idx in range(0, num_of_pts - window_min_pts, step):
+        end_idx = start_idx + window_min_pts
         profit = mt.backtest(
-            signals.iloc[i - window_min_pts:i],
-            data.iloc[i - window_min_pts:i],
+            signals.iloc[start_idx:end_idx],
+            data.iloc[start_idx:end_idx],
             symbol=symbol,
             trail_percentage=trail_pct,
             hold_min=hold_min
@@ -405,14 +410,21 @@ def objective(trial):
 
     total_profit = mt.backtest(signals, data, symbol, trail_percentage=trail_pct, hold_min=hold_min)
 
-    if total_profit <= 0 or sharpe_ratio <= 0:
-        return -float("inf")
+    # if total_profit <= 0:
+    #     return -1e10
 
     return round(sharpe_ratio, 3)
+    # return total_profit
 
 
 def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
+
+
+def nearest_4hr(date: datetime):
+    hour = date.hour
+    floored_hour = (hour // 4) * 4
+    return date.replace(hour=floored_hour)
 
 
 symbol = "BTC-USD"
@@ -420,7 +432,7 @@ interval = "4h"
 
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
 # end_date = datetime(2025, 8, 1)
-end_date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+end_date = nearest_4hr(datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0))
 
 days = days_min(pts_per_day[interval], 365 * 5)
 start_date = end_date - timedelta(days=days)
@@ -428,12 +440,18 @@ start_date = end_date - timedelta(days=days)
 mt = MiniTrader(symbol, interval, start_date, end_date)
 data = mt.get_data()
 
-# storage = "sqlite:///ema_optuna.db"  # file-based SQLite
-study = optuna.create_study(direction="maximize")
-study.optimize(objective, n_trials=200, n_jobs=-1)
+storage = "sqlite:///ema_optuna.db"  # file-based SQLite
+
+name = f"{symbol}-{interval}-{end_date.strftime('%Y-%m-%d-%H')}"
+study = optuna.create_study(direction="maximize",
+                            storage=storage,
+                            study_name=name,
+                            load_if_exists=True)
+study.optimize(objective, n_trials=100, n_jobs=-1)
 
 # pause to let study print
 time.sleep(1)
+
 ema_strategy = EMAStrategy(data, study.best_params['fast_window'], study.best_params['slow_window'])
 signals = ema_strategy.calc_signals()
 profit = mt.backtest(signals, data, symbol,
@@ -449,8 +467,8 @@ best_parameters = {**study.best_params,
 print(f"Start date:  {start_date}")
 print(f"End date:    {end_date}")
 print(f"Num of Days: {days}")
-
+print(f"Study name:  {name}")
 print("Best parameters:")
 print(tabulate(best_parameters.items(), headers=["Parameter", "Value"], tablefmt="github"))
-# print(tabulate(signals.tail(500), headers="keys", tablefmt="github"))
-mt.plot_data(data, signals, symbol, num_of_pts=400)
+# print(tabulate(data.tail(10), headers="keys", tablefmt="github"))
+# mt.plot_data(data, signals, symbol, num_of_pts=400)
