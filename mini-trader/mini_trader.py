@@ -9,14 +9,6 @@ from ta.trend import EMAIndicator
 from tabulate import tabulate
 
 
-# TODO:  Turn Backtest into a class
-# TODO:  Add data as own class
-# TODO: Make position data class
-# TODO: Make generic StopPolicy class for trailing stops
-# TODO: Strategy Abstract class, with generate_signals() method
-# TODO: Performance Metrics and Plotting
-# TODO: Optimize class for optuna
-
 class MiniTrader:
 
     def __init__(self,
@@ -134,8 +126,9 @@ class MiniTrader:
                  hold_min: int = 5,
                  print_position=False,
                  print_trades=False,
-                 position_share_pct: float = 1.0, ):
-        portfolio = Portfolio()
+                 position_share_pct: float = 1.0,
+                 starting_cash: int = 1000, ):
+        portfolio = Portfolio(cash=starting_cash)
 
         for row in signal_data.itertuples():
             price = data.loc[row.Index, 'Close']
@@ -168,7 +161,7 @@ class MiniTrader:
         Calculate Sharpe ratio from a list of returns.
 
         Args:
-            returns: List of profit/return values
+            returns: List of profit/return pct values
             risk_free_rate: Risk-free rate for excess return calculation
 
         Returns:
@@ -208,6 +201,10 @@ class Position:
         self.position_pct = pos_pct
         self.trailing_stop = TrailingStop(ts_pct=trail_pct, hold_min=hold_min)
 
+    # TODO: Add explicit immutable entry fields
+    # TODO: Add Position.entry_date and Position.entry_price on creation to make trade snapshots unambiguous
+    # TODO: Consider adding a unique trade_id here for reliable entry↔exit matching in trade records
+
     def open_position(self):
         pass
 
@@ -240,12 +237,23 @@ class Portfolio:
         self.positions.append(position)
         self.trades.append(position.__dict__.copy())
 
+    # TODO: Replace Position.__dict__ snapshots with immutable trade records (dicts with primitives only)
+    # TODO: When opening a position, append an entry snapshot with fields:
+    # TODO:   {symbol, qty, entry_price, entry_date, exit_price=None, exit_date=None, profit=None, fees, position_pct, trailing_stop_level, trailing_stop_consec_hits, trailing_stop_triggered}
+    # TODO: Snapshot trailing-stop primitive fields at entry (do NOT store the TrailingStop object)
+    # TODO: Consider using a unique trade_id for each trade so that the entry record can be updated in-place at exit
+
     def remove_position(self, position: Position, date: datetime):
         self.cash += position.current_value - (position.current_value * self.transaction_fee)
 
         position.close_position(date=date)
         self.trades.append(position.__dict__.copy())
         self.positions.remove(position)
+
+    # TODO: When closing a position, UPDATE the corresponding entry snapshot in self.trades (preferred) OR append an exit snapshot that contains only primitive fields
+    # TODO: Exit snapshot must include: exit_price, exit_date, profit, fees (buy_fee, sell_fee), net_profit, trailing_stop_level_at_exit, trailing_stop_consec_hits_at_exit, trailing_stop_triggered_at_exit
+    # TODO: Do NOT append live objects (e.g., TrailingStop) to trades — snapshot primitive values instead
+    # TODO: Add unit tests to ensure trade snapshots remain immutable after TrailingStop updates
 
     def update_position_price(self, symbol: str, price: float, date: datetime, trail_percentage: float = 0):
         position = self.get_position(symbol)
@@ -339,6 +347,8 @@ class TrailingStop:
             self.consec_hits = 0
 
         return False
+    # TODO: Document TrailingStop semantics: "level is ratcheted upward only; check requires `hold_min` consecutive bars at/below level to trigger."
+    # TODO: Snapshot trailing stop primitive fields into trade records at entry and at exit to preserve the stop state for that trade
 
 
 class Strategy:
@@ -379,7 +389,7 @@ def objective(trial):
     min_fast_window = 10
     max_fast_window = int(math.floor(max_window * 0.5))
     fast_window = trial.suggest_int('fast_window', min_fast_window, max_fast_window, step=2)
-    min_slow_window = int(math.floor((fast_window * 1.4)/2.0)*2)
+    min_slow_window = int(math.floor((fast_window * 1.4) / 2.0) * 2)
     slow_window = trial.suggest_int('slow_window', min_slow_window, max_window, step=2)
     trail_pct = trial.suggest_int('trail_pct', 2, 8)
     hold_min = trial.suggest_int('hold_min', 2, 8)
@@ -396,6 +406,7 @@ def objective(trial):
 
     for start_idx in range(0, num_of_pts - window_min_pts, step):
         end_idx = start_idx + window_min_pts
+        starting_cash = 1000
         profit = mt.backtest(
             signals.iloc[start_idx:end_idx],
             data.iloc[start_idx:end_idx],
@@ -403,18 +414,17 @@ def objective(trial):
             trail_percentage=trail_pct,
             hold_min=hold_min
         )
-        returns.append(profit)
+        profit_pct = profit / starting_cash
+        returns.append(profit_pct)
 
     # Use the static method
     sharpe_ratio = mt.calculate_sharpe_ratio(returns)
 
-    total_profit = mt.backtest(signals, data, symbol, trail_percentage=trail_pct, hold_min=hold_min)
-
+    # total_profit = mt.backtest(signals, data, symbol, trail_percentage=trail_pct, hold_min=hold_min)
     # if total_profit <= 0:
     #     return -1e10
-
-    return round(sharpe_ratio, 3)
     # return total_profit
+    return round(sharpe_ratio, 4)
 
 
 def days_min(pts_per_day, num_pts):
@@ -442,7 +452,7 @@ data = mt.get_data()
 
 storage = "sqlite:///ema_optuna.db"  # file-based SQLite
 
-name = f"{symbol}-{interval}-{end_date.strftime('%Y-%m-%d-%H')}"
+name = f"{symbol}-{interval}-{end_date.strftime('%Y-%m-%d-%H')}_100_window"
 study = optuna.create_study(direction="maximize",
                             storage=storage,
                             study_name=name,
