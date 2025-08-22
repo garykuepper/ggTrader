@@ -7,6 +7,7 @@ import math
 import optuna
 from ta.trend import EMAIndicator
 from tabulate import tabulate
+from ta.volatility import AverageTrueRange
 
 
 class MiniTrader:
@@ -127,15 +128,20 @@ class MiniTrader:
                  print_position=False,
                  print_trades=False,
                  position_share_pct: float = 1.0,
-                 starting_cash: int = 1000, ):
+                 starting_cash: int = 1000,
+                 cooldown_days: int = 1):
         portfolio = Portfolio(cash=starting_cash)
-
+        latest_buy_signal_date = None
+        latest_sell_signal_date = None
         for row in signal_data.itertuples():
             price = data.loc[row.Index, 'Close']
             date = row.Index
             if portfolio.in_position(symbol):
                 portfolio.update_position_price(symbol, price, date, trail_percentage)
-
+            if pd.notna(row.buy_marker):
+                latest_buy_signal_date = date
+            if pd.notna(row.sell_marker):
+                latest_sell_signal_date = date
             # Open position
             if pd.notna(row.buy_marker) and not portfolio.in_position(symbol):
                 # Allocate only a percentage of current equity; cap by available cash (no margin).
@@ -144,10 +150,32 @@ class MiniTrader:
                 if invest_amount > 0:
                     qty = invest_amount / price
                     portfolio.add_position(
-                        Position(symbol, qty, price, date, trail_percentage, hold_min, pos_pct=position_share_pct))
+                        Position(symbol, qty, price, date, trail_percentage, hold_min, share_pct=position_share_pct))
             # Close Position
             elif pd.notna(row.sell_marker) and portfolio.in_position(symbol):
                 portfolio.remove_position(portfolio.get_position(symbol), date=date)
+
+            # Re-entry
+            # if trades is not empty, and if the latest trade is not none.
+
+            if (latest_buy_signal_date is not None and latest_sell_signal_date is not None) and (latest_buy_signal_date > latest_sell_signal_date):
+                latest_buy = True
+            else:
+                latest_buy = False
+
+            if portfolio.trades and portfolio.trades[-1].exit_date is not None and latest_buy:
+                exit_date = portfolio.trades[-1].exit_date
+                cooldown = date - exit_date
+                if cooldown > timedelta(days=cooldown_days):
+                     # Allocate only a percentage of current equity; cap by available cash (no margin).
+                    target_allocation = portfolio.get_total_value() * max(0.0, min(1.0, position_share_pct))
+                    invest_amount = min(portfolio.cash, target_allocation)
+                    if invest_amount > 0:
+                        qty = invest_amount / price
+                        portfolio.add_position(
+                            Position(symbol, qty, price, date, trail_percentage, hold_min,
+                                     share_pct=position_share_pct))
+
 
         if print_position:
             portfolio.print_positions()
@@ -188,18 +216,22 @@ class Position:
                  date: datetime,
                  trail_pct: float,
                  hold_min: int,
-                 pos_pct: float = 1.0,
+                 share_pct: float = 1.0,
                  ):
         self.symbol = symbol
         self.qty = qty
-        self.price = price
-        self.date = date
-        self.cost = qty * price
+        self.entry_price = price
+        self.entry_date = date
+        self.exit_price = None
+        self.exit_date = None
+        self.current_price = price
         self.current_value = qty * price
+        self.cost = qty * price
         self.profit = 0
+        self.profit_pct = self.profit / self.cost
         self.status = "open"
-        self.position_pct = pos_pct
-        self.trailing_stop = TrailingStop(ts_pct=trail_pct, hold_min=hold_min)
+        self.share_pct = share_pct
+        self.trailing_stop = FixedPctTrailingStop(ts_pct=trail_pct, hold_min=hold_min)
 
     # TODO: Add explicit immutable entry fields
     # TODO: Add Position.entry_date and Position.entry_price on creation to make trade snapshots unambiguous
@@ -210,17 +242,15 @@ class Position:
 
     def close_position(self, date: datetime):
         self.status = "closed"
-        self.date = date
+        self.exit_date = date
 
-    def update_price(self, new_price: float, trail_percentage: float = 0):
-        self.price = new_price
+    def update_price(self, new_price: float, date: datetime=None):
+        self.current_price = new_price
         self.current_value = self.qty * new_price
         self.profit = self.current_value - self.cost
+        self.profit_pct = self.profit / self.cost
         if self.trailing_stop:
-            self.trailing_stop.update(new_price)
-
-    def update_date(self, date: datetime):
-        self.date = date
+            self.trailing_stop.update(new_price, date)
 
 
 class Portfolio:
@@ -235,7 +265,7 @@ class Portfolio:
     def add_position(self, position: Position):
         self.cash -= position.cost * (1 + self.transaction_fee)
         self.positions.append(position)
-        self.trades.append(position.__dict__.copy())
+        self.trades.append(position)
 
     # TODO: Replace Position.__dict__ snapshots with immutable trade records (dicts with primitives only)
     # TODO: When opening a position, append an entry snapshot with fields:
@@ -245,9 +275,10 @@ class Portfolio:
 
     def remove_position(self, position: Position, date: datetime):
         self.cash += position.current_value - (position.current_value * self.transaction_fee)
-
-        position.close_position(date=date)
-        self.trades.append(position.__dict__.copy())
+        position.exit_date = date
+        position.status = 'closed'
+        position.exit_price = position.current_price
+        # self.trades.append(position.__dict__.copy())
         self.positions.remove(position)
 
     # TODO: When closing a position, UPDATE the corresponding entry snapshot in self.trades (preferred) OR append an exit snapshot that contains only primitive fields
@@ -258,7 +289,7 @@ class Portfolio:
     def update_position_price(self, symbol: str, price: float, date: datetime, trail_percentage: float = 0):
         position = self.get_position(symbol)
         if position:
-            position.update_price(price, trail_percentage)
+            position.update_price(price, date)
         # Check for trailing stop trigger
         self.check_trailing_stop(position, date)
         self.profit = self.get_total_value() - self.start_cash
@@ -286,7 +317,7 @@ class Portfolio:
     def print_trades(self):
         trades = []
         for trade in self.trades:
-            trades.append(trade)
+            trades.append(trade.__dict__)
         print("\nTrades:")
         print(tabulate(trades, headers="keys", tablefmt="github"))
 
@@ -303,37 +334,29 @@ class Portfolio:
         """
         if not position:
             return
-        if position.trailing_stop and position.trailing_stop.check(position.price):
+        if position.trailing_stop and position.trailing_stop.check(position.current_price):
             self.remove_position(position, date)
 
 
 class TrailingStop:
-    def __init__(self, ts_pct: int = 5, hold_min: int = 4):
-        self.trailing_stop_pct = ts_pct
-        self.hold_min = hold_min
+    def __init__(self, hold_min: int = 4):
         self.level = None
         self.consec_hits = 0
         self.triggered = False
+        self.hold_min = hold_min
+        self.date = None
 
     def __repr__(self):
         level_str = "None" if self.level is None else f"{self.level:.2f}"
         return f"Triggered: {self.triggered}, Level: {level_str}, Consec Hits: {self.consec_hits}"
 
-    def update(self, price: float):
+    def update(self, price: float, date: datetime):
         """
-        Update the trailing stop level based on the latest price.
-        Only ratchets upward (for long positions).
+        Base update method to be overridden by subclasses.
         """
-        candidate = price * (1 - self.trailing_stop_pct / 100.0)
-        if self.level is None or candidate > self.level:
-            self.level = candidate
+        raise NotImplementedError("Subclasses should implement this!")
 
     def check(self, price: float) -> bool:
-        """
-        Check if current price has hit or fallen below the trailing stop level.
-        Requires 'hold_min' consecutive hits to trigger.
-        Returns True when the stop is triggered for exit.
-        """
         if self.level is None:
             return False
 
@@ -343,13 +366,54 @@ class TrailingStop:
                 self.triggered = True
                 return True
         else:
-            # Reset consecutive hit counter if price recovers above the stop
             self.consec_hits = 0
 
         return False
-    # TODO: Document TrailingStop semantics: "level is ratcheted upward only; check requires `hold_min` consecutive bars at/below level to trigger."
-    # TODO: Snapshot trailing stop primitive fields into trade records at entry and at exit to preserve the stop state for that trade
 
+
+class FixedPctTrailingStop(TrailingStop):
+    def __init__(self, ts_pct: float = 5, hold_min: int = 4):
+        super().__init__(hold_min=hold_min)
+        self.trailing_stop_pct = ts_pct
+
+    def update(self, price: float, date: datetime):
+        candidate = price * (1 - self.trailing_stop_pct / 100.0)
+        if self.level is None or candidate > self.level:
+            self.level = candidate
+            self.date = date
+
+
+
+
+class ATRTrailingStop(TrailingStop):
+    def __init__(self, df, atr_window=14, atr_multiplier=3, hold_min=4):
+        super().__init__(hold_min=hold_min)
+        self.df = df
+        self.atr_window = atr_window
+        self.atr_multiplier = atr_multiplier
+        self.atr_values = self._calculate_atr()
+
+    def _calculate_atr(self):
+        atr_indicator = AverageTrueRange(
+            high=self.df['High'],
+            low=self.df['Low'],
+            close=self.df['Close'],
+            window=self.atr_window
+        )
+        return atr_indicator.average_true_range()
+
+    def update(self, price: float, date: datetime):
+        if self.atr_values.index.get_loc(pd.Timestamp(date)) < self.atr_window:
+            return
+
+        atr = self.atr_values.loc[date]
+        close_price = price
+
+        candidate = close_price - (atr * self.atr_multiplier)
+
+        if self.level is None or candidate > self.level:
+            self.level = candidate
+            self.date = date
 
 class Strategy:
     def __init__(self, df: pd.DataFrame):
@@ -371,28 +435,35 @@ class EMAStrategy(Strategy):
                                                     fillna=False).ema_indicator()
         self.signal_data['ema_slow'] = EMAIndicator(close=self.df["Close"], window=self.slow_window,
                                                     fillna=False).ema_indicator()
-        # Compute crossover points: +1 when fast crosses above slow (bullish), -1 when below (bearish)
 
         signal = (self.signal_data['ema_fast'] > self.signal_data['ema_slow']).astype(int)
         cross = signal.diff()
+
         cross_up = cross == 1
         cross_down = cross == -1
 
-        # Create series for markers positioned at the price level on crossover bars
+        # Markers at price level on crossover bars
         self.signal_data['buy_marker'] = self.df["Close"].where(cross_up)
         self.signal_data['sell_marker'] = self.df["Close"].where(cross_down)
+
+        # Single signal column: 1 for buy, -1 for sell, 0 for hold
+        self.signal_data['signal'] = 0
+        self.signal_data.loc[cross_up, 'signal'] = 1
+        self.signal_data.loc[cross_down, 'signal'] = -1
+
         return self.signal_data
 
 
 def objective(trial):
     max_window = 100
-    min_fast_window = 10
+    min_fast_window = 20
     max_fast_window = int(math.floor(max_window * 0.5))
     fast_window = trial.suggest_int('fast_window', min_fast_window, max_fast_window, step=2)
     min_slow_window = int(math.floor((fast_window * 1.4) / 2.0) * 2)
     slow_window = trial.suggest_int('slow_window', min_slow_window, max_window, step=2)
-    trail_pct = trial.suggest_int('trail_pct', 2, 8)
-    hold_min = trial.suggest_int('hold_min', 2, 8)
+    trail_pct = trial.suggest_int('trail_pct', 2, 10)
+    hold_min = trial.suggest_int('hold_min', 1, 8)
+    cooldown_days = trial.suggest_int('cooldown_days', 1, 7)
     # trail_pct = 5
     # hold_min = 4
     ema_strategy = EMAStrategy(data, fast_window, slow_window)
@@ -400,8 +471,8 @@ def objective(trial):
 
     # Rolling window backtesting to prevent overfitting
     num_of_pts = len(data)
-    window_min_pts = math.floor(num_of_pts / 4)
-    step = math.floor(window_min_pts / 10)
+    window_min_pts = math.floor(num_of_pts / 2)
+    step = math.floor(window_min_pts / 20)
     returns = []
 
     for start_idx in range(0, num_of_pts - window_min_pts, step):
@@ -412,7 +483,8 @@ def objective(trial):
             data.iloc[start_idx:end_idx],
             symbol=symbol,
             trail_percentage=trail_pct,
-            hold_min=hold_min
+            hold_min=hold_min,
+            cooldown_days=cooldown_days
         )
         profit_pct = profit / starting_cash
         returns.append(profit_pct)
@@ -437,9 +509,9 @@ def nearest_4hr(date: datetime):
     return date.replace(hour=floored_hour)
 
 
-symbol = "BTC-USD"
+symbol = "ETC-USD"
 interval = "4h"
-
+position_share_pct = 1
 pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
 # end_date = datetime(2025, 8, 1)
 end_date = nearest_4hr(datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0))
@@ -449,10 +521,10 @@ start_date = end_date - timedelta(days=days)
 
 mt = MiniTrader(symbol, interval, start_date, end_date)
 data = mt.get_data()
-
+# TODO: Change data to utility function
 storage = "sqlite:///ema_optuna.db"  # file-based SQLite
 
-name = f"{symbol}-{interval}-{end_date.strftime('%Y-%m-%d-%H')}_100_window"
+name = f"{symbol}-{interval}-{end_date.strftime('%Y-%m-%d-%H')}"
 study = optuna.create_study(direction="maximize",
                             storage=storage,
                             study_name=name,
@@ -481,4 +553,4 @@ print(f"Study name:  {name}")
 print("Best parameters:")
 print(tabulate(best_parameters.items(), headers=["Parameter", "Value"], tablefmt="github"))
 # print(tabulate(data.tail(10), headers="keys", tablefmt="github"))
-# mt.plot_data(data, signals, symbol, num_of_pts=400)
+mt.plot_data(data, signals, symbol, num_of_pts=400)
