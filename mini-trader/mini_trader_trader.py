@@ -9,6 +9,15 @@ from ta.trend import EMAIndicator
 from tabulate import tabulate
 
 
+def get_yf_data(symbol: str, interval: str, start_date: datetime, end_date: datetime):
+    return yf.download(symbol,
+                       interval=interval,
+                       start=start_date,
+                       end=end_date,
+                       multi_level_index=False,
+                       auto_adjust=True)
+
+
 class MiniTrader:
 
     def __init__(self,
@@ -35,15 +44,6 @@ class MiniTrader:
 
     def update_data(self, data: pd.DataFrame):
         self.data = data
-
-    @staticmethod
-    def get_yf_data(symbol: str, interval: str, start_date: datetime, end_date: datetime):
-        return yf.download(symbol,
-                           interval=interval,
-                           start=start_date,
-                           end=end_date,
-                           multi_level_index=False,
-                           auto_adjust=True)
 
     @staticmethod
     def plot_data(data: pd.DataFrame, signal_data: pd.DataFrame, symbol: str, num_of_pts=200):
@@ -352,9 +352,9 @@ class TrailingStop:
 
 
 class Strategy:
-    def __init__(self, df: pd.DataFrame):
-        self.ohlc_data = df
-        self.signal_data = pd.DataFrame(index=df.index)
+    def __init__(self, ohlc_data: pd.DataFrame):
+        self.ohlc_data = ohlc_data
+        self.signal_data = pd.DataFrame(index=ohlc_data.index)
 
     def calc_signals(self):
         pass
@@ -381,113 +381,74 @@ class EMAStrategy(Strategy):
         # Create series for markers positioned at the price level on crossover bars
         self.signal_data['buy_marker'] = self.ohlc_data["Close"].where(cross_up)
         self.signal_data['sell_marker'] = self.ohlc_data["Close"].where(cross_down)
+        self.signal_data['signal'] = cross.where(cross.isin([1, -1]), 0)
+
         return self.signal_data
 
-class Trader:
 
-    def __init__(self):
+from dataclasses import dataclass
+
+
+@dataclass
+class TickerParameters:
+    symbol: str
+    interval: str = "1d"
+    cooldown_period: int = 0
+    hold_min_periods: int = 0
+    ema_fast_window: int = 12
+    ema_slow_window: int = 26
+    trailing_stop_pct: int = 3
+    position_share_pct: float = 1.0
+
+
+class Backtest:
+
+    def __init__(self, symbols: list, interval: str, start_date: datetime, end_date: datetime ):
+        self.symbols = symbols
+        self.interval = interval
+        self.start_date = start_date
+        self.end_date = end_date
+        self.ticker_params = {}
+        self.ohlc_data_dict = {}
+        self.signal_data_dict = {}
+        self.portfolio = Portfolio(cash=1000)
+
+    def run(self):
+        # get ohlc and signal data for each symbol
+        for symbol in self.symbols:
+            self.ohlc_data_dict[symbol] = get_yf_data(symbol, self.interval, self.start_date, self.end_date)
+            self.signal_data_dict[symbol] = EMAStrategy(self.ohlc_data_dict[symbol], 12, 26).calc_signals()
+        # loop through each date in the ohlc data
+        first_ohlc = next(iter(self.ohlc_data_dict.values()))
+        date_index = first_ohlc.index
+        for date in date_index:
+            for symbol in self.symbols:
+                # check if in position
+                signal = self.signal_data_dict[symbol].loc[date, 'signal']
+                close = self.ohlc_data_dict[symbol].loc[date, 'Close']
+
+                if self.portfolio.in_position(symbol):
+                    self.portfolio.update_position_price(symbol, close, date)
+                    if self.should_exit(signal):
+                        self.portfolio.remove_position(self.portfolio.get_position(symbol), date=date)
+
+                # if not in position check if should enter
+                else:
+                    if self.should_enter(signal):
+                        # TODO: Position Sizing
+                        self.portfolio.add_position(Position(symbol, 1, close, date, 3, 5))
+
+    @staticmethod
+    def should_exit(signal):
+        if signal == -1:
+            return True
+        return False
+
+    @staticmethod
+    def should_enter(signal):
+        if signal == 1:
+            return True
+        return False
+
+    def reentry(self):
         pass
-
-    def backtest(self, symbols: list, interval: str, start_date: datetime, end_date: datetime,):
-        pass
-
-
-
-def objective(trial):
-    max_window = 100
-    min_fast_window = 10
-    max_fast_window = int(math.floor(max_window * 0.5))
-    fast_window = trial.suggest_int('fast_window', min_fast_window, max_fast_window, step=2)
-    min_slow_window = int(math.floor((fast_window * 1.4) / 2.0) * 2)
-    slow_window = trial.suggest_int('slow_window', min_slow_window, max_window, step=2)
-    trail_pct = trial.suggest_int('trail_pct', 2, 8)
-    hold_min = trial.suggest_int('hold_min', 2, 8)
-    # trail_pct = 5
-    # hold_min = 4
-    ema_strategy = EMAStrategy(data, fast_window, slow_window)
-    signals = ema_strategy.calc_signals()
-
-    # Rolling window backtesting to prevent overfitting
-    num_of_pts = len(data)
-    window_min_pts = math.floor(num_of_pts / 4)
-    step = math.floor(window_min_pts / 10)
-    returns = []
-
-    for start_idx in range(0, num_of_pts - window_min_pts, step):
-        end_idx = start_idx + window_min_pts
-        starting_cash = 1000
-        profit = mt.backtest(
-            signals.iloc[start_idx:end_idx],
-            data.iloc[start_idx:end_idx],
-            symbol=symbol,
-            trail_percentage=trail_pct,
-            hold_min=hold_min
-        )
-        profit_pct = profit / starting_cash
-        returns.append(profit_pct)
-
-    # Use the static method
-    sharpe_ratio = mt.calculate_sharpe_ratio(returns)
-
-    # total_profit = mt.backtest(signals, data, symbol, trail_percentage=trail_pct, hold_min=hold_min)
-    # if total_profit <= 0:
-    #     return -1e10
-    # return total_profit
-    return round(sharpe_ratio, 4)
-
-
-def days_min(pts_per_day, num_pts):
-    return int(math.floor(num_pts / pts_per_day))
-
-
-def nearest_4hr(date: datetime):
-    hour = date.hour
-    floored_hour = (hour // 4) * 4
-    return date.replace(hour=floored_hour)
-
-
-symbol = "BTC-USD"
-interval = "4h"
-
-pts_per_day = {"1d": 1, "1h": 24, "4h": 6}
-# end_date = datetime(2025, 8, 1)
-end_date = nearest_4hr(datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0))
-
-days = days_min(pts_per_day[interval], 365 * 5)
-start_date = end_date - timedelta(days=days)
-
-mt = MiniTrader(symbol, interval, start_date, end_date)
-data = mt.get_data()
-
-storage = "sqlite:///ema_optuna.db"  # file-based SQLite
-
-name = f"{symbol}-{interval}-{end_date.strftime('%Y-%m-%d-%H')}_100_window"
-study = optuna.create_study(direction="maximize",
-                            storage=storage,
-                            study_name=name,
-                            load_if_exists=True)
-study.optimize(objective, n_trials=100, n_jobs=-1)
-
-# pause to let study print
-time.sleep(1)
-
-ema_strategy = EMAStrategy(data, study.best_params['fast_window'], study.best_params['slow_window'])
-signals = ema_strategy.calc_signals()
-profit = mt.backtest(signals, data, symbol,
-                     trail_percentage=study.best_params['trail_pct'],
-                     hold_min=study.best_params['hold_min'],
-                     print_trades=True,
-                     print_position=True, )
-best_parameters = {**study.best_params,
-                   "Best Sharpe Ratio": round(study.best_value, 3),
-                   "Total Profit, $": round(profit, 2),
-                   "Daily Profit, $": round(profit / days, 2)}
-
-print(f"Start date:  {start_date}")
-print(f"End date:    {end_date}")
-print(f"Num of Days: {days}")
-print(f"Study name:  {name}")
-print("Best parameters:")
-print(tabulate(best_parameters.items(), headers=["Parameter", "Value"], tablefmt="github"))
-# print(tabulate(data.tail(10), headers="keys", tablefmt="github"))
-# mt.plot_data(data, signals, symbol, num_of_pts=400)
