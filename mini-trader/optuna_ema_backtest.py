@@ -16,10 +16,10 @@ def nearest_4hr(date: datetime):
 
 
 # ---------- Configuration ----------
-SYMBOLS = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD']
+SYMBOLS = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD','DOGE-USD', 'LTC-USD','SHIB-USD','XLM-USD','LINK-USD']
 INTERVAL = '4h'
 END_DATE = nearest_4hr(datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0))
-DAYS_OF_HISTORY = 365  # lower -> faster
+DAYS_OF_HISTORY = 180  # lower -> faster
 START_DATE = END_DATE - timedelta(days=DAYS_OF_HISTORY)
 
 STORAGE = "sqlite:///ema_multi_symbol_cached.db"
@@ -81,7 +81,7 @@ def make_objective(symbols, interval, ohlc_cache, bar_delta):
 
     def objective(trial):
         # EMA windows
-        max_window = 100
+        max_window = 200
         min_fast = 20
         max_fast = int(math.floor(max_window * 0.5))
         fast_w = trial.suggest_int("fast_window", min_fast, max_fast, step=2)
@@ -89,8 +89,8 @@ def make_objective(symbols, interval, ohlc_cache, bar_delta):
         slow_w = trial.suggest_int("slow_window", min_slow, max_window, step=2)
 
         # other params to optimize
-        cooldown_period = trial.suggest_int("cooldown_period", 0, 10)  # in bars
-        hold_min_periods = trial.suggest_int("hold_min_periods", 1, 8)  # trailing stop hold min
+        cooldown_period = trial.suggest_int("cooldown_period", 1, 10)  # in bars
+        hold_min_periods = trial.suggest_int("hold_min_periods", 1, 10)  # trailing stop hold min
         trail_pct = trial.suggest_int("trail_pct", 1, 10)  # trailing stop percent
 
         # Build Backtest and inject cached OHLC to avoid downloads
@@ -127,7 +127,7 @@ def make_objective(symbols, interval, ohlc_cache, bar_delta):
 
 # ---------- Run Optuna ----------
 def main():
-    study_name = f"{END_DATE.strftime('%Y-%m-%d-%H')}"
+    study_name = f"{END_DATE.strftime('%Y-%m-%d-%H')}_bro_dude"
     study = optuna.create_study(direction="maximize", storage=STORAGE, study_name=study_name, load_if_exists=True)
     obj = make_objective(SYMBOLS, INTERVAL, ohlc_cache, BAR_DELTA)
     study.optimize(obj, n_trials=N_TRIALS, n_jobs=N_JOBS)

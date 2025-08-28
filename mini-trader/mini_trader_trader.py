@@ -157,6 +157,7 @@ class Position:
                  trail_pct: float,
                  hold_min: int,
                  share_pct: int = 100,
+                 trailing_stop=None,
                  ):
         self.symbol = symbol
         self.qty = qty
@@ -167,7 +168,11 @@ class Position:
         self.current_price = price
         self.status = "open"
         self.share_pct = share_pct
-        self.trailing_stop = FixedPctTrailingStop(ts_pct=trail_pct, hold_min=hold_min)
+        # Accept an injected trailing_stop. If none provided, fall back to FixedPctTrailingStop
+        if trailing_stop is None:
+            self.trailing_stop = FixedPctTrailingStop(ts_pct=trail_pct, hold_min=hold_min)
+        else:
+            self.trailing_stop = trailing_stop
 
     @property
     def cost(self) -> float:
@@ -366,7 +371,7 @@ class FixedPctTrailingStop(TrailingStop):
 
 
 class ATRTrailingStop(TrailingStop):
-    def __init__(self, df, atr_window=14, atr_multiplier=3, hold_min=4):
+    def __init__(self, df, atr_window=14, atr_multiplier=3.0, hold_min=4):
         super().__init__(hold_min=hold_min)
         self.df = df
         self.atr_window = atr_window
@@ -459,7 +464,11 @@ class Backtest:
                  end_date: datetime,
                  cooldown_period: int = 2,
                  hold_min_periods: int = 2,
-                 trail_pct: int = 3, ):
+                 trail_pct: int = 3,
+                 use_atr_trailing_stop: bool = False,
+                 atr_window: int = 14,
+                 atr_multiplier: float = 3.0, ):
+
         self.symbols = symbols
         self.interval = interval
         self.start_date = start_date
@@ -473,6 +482,10 @@ class Backtest:
         self.cooldown_period = cooldown_period
         self.hold_min = hold_min_periods
         self.trail_pct = trail_pct
+        # ATR trailing stop config
+        self.use_atr_trailing_stop = use_atr_trailing_stop
+        self.atr_window = atr_window
+        self.atr_multiplier = atr_multiplier
 
     def fetch_ohlc_data(self):
         for symbol in self.symbols:
@@ -519,12 +532,24 @@ class Backtest:
                 # if not in position check if should enter
                 else:
                     if self.should_enter(signal, symbol, date):
-                        position_share_pct = 20
+                        position_share_pct = 10
                         qty = self.position_sizing(position_share_pct, close)
                         if qty == 0:
                             continue
                         else:
-                            self.portfolio.add_position(Position(symbol, qty, close, date, self.trail_pct, self.hold_min, position_share_pct))
+                            # Construct trailing stop according to configuration
+                            trailing_stop_obj = None
+                            if self.use_atr_trailing_stop:
+                                # Create ATRTrailingStop using this symbol's OHLC df and current ATR params
+                                df = self.ohlc_data_dict[symbol]
+                                trailing_stop_obj = ATRTrailingStop(df,
+                                                                    atr_window=self.atr_window,
+                                                                    atr_multiplier=self.atr_multiplier,
+                                                                    hold_min=self.hold_min)
+                            # If not using ATR trailing stop, Position will construct a FixedPctTrailingStop internally
+                            self.portfolio.add_position(
+                                Position(symbol, qty, close, date, self.trail_pct, self.hold_min, position_share_pct,
+                                         trailing_stop=trailing_stop_obj))
 
             # record equity at the end of the bar
             self.portfolio.record_equity(date)
@@ -602,49 +627,6 @@ class Backtest:
         self.portfolio.print_positions()
 
 
-def objective(trial):
-    max_window = 100
-    min_fast_window = 10
-    max_fast_window = int(math.floor(max_window * 0.5))
-    fast_window = trial.suggest_int('fast_window', min_fast_window, max_fast_window, step=2)
-    min_slow_window = int(math.floor((fast_window * 1.4) / 2.0) * 2)
-    slow_window = trial.suggest_int('slow_window', min_slow_window, max_window, step=2)
-    trail_pct = trial.suggest_int('trail_pct', 2, 8)
-    hold_min = trial.suggest_int('hold_min', 2, 8)
-    # trail_pct = 5
-    # hold_min = 4
-    ema_strategy = EMAStrategy(data, fast_window, slow_window)
-    signals = ema_strategy.calc_signals()
-
-    # Rolling window backtesting to prevent overfitting
-    num_of_pts = len(data)
-    window_min_pts = math.floor(num_of_pts / 4)
-    step = math.floor(window_min_pts / 10)
-    returns = []
-
-    for start_idx in range(0, num_of_pts - window_min_pts, step):
-        end_idx = start_idx + window_min_pts
-        starting_cash = 1000
-        profit = mt.backtest(
-            signals.iloc[start_idx:end_idx],
-            data.iloc[start_idx:end_idx],
-            symbol=symbol,
-            trail_percentage=trail_pct,
-            hold_min=hold_min
-        )
-        profit_pct = profit / starting_cash
-        returns.append(profit_pct)
-
-    # Use the static method
-    sharpe_ratio = mt.calculate_sharpe_ratio(returns)
-
-    # total_profit = mt.backtest(signals, data, symbol, trail_percentage=trail_pct, hold_min=hold_min)
-    # if total_profit <= 0:
-    #     return -1e10
-    # return total_profit
-    return round(sharpe_ratio, 4)
-
-
 def days_min(pts_per_day, num_pts):
     return int(math.floor(num_pts / pts_per_day))
 
@@ -654,31 +636,43 @@ def nearest_4hr(date: datetime):
     floored_hour = (hour // 4) * 4
     return date.replace(hour=floored_hour)
 
-symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD']
-# symbols = ['BTC-USD', 'ETH-USD']
-# symbols = ['BTC-USD']
-end_date = nearest_4hr(datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0))
-start_date = end_date - timedelta(days=180)
-backtest = Backtest(symbols,
-                    '4h',
-                    start_date,
-                    end_date,
-                    cooldown_period=8,
-                    hold_min_periods=4,
-                    trail_pct=7)
-backtest.fetch_ohlc_data()
-backtest.calc_signals(fast_window=48, slow_window=98)
-backtest.run()
-backtest.print_trades()
-backtest.print_positions()
-profit = backtest.portfolio.profit
-profit_pct = backtest.portfolio.profit_pct * 100
 
-ppyear = _periods_per_year_from_interval('4h' if backtest.interval is None else backtest.interval)
-sr = sharpe_ratio(backtest.portfolio.equity_curve.sort_index(), periods_per_year=ppyear, rf_annual=0.01)
+def main():
+    symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD', 'DOGE-USD', 'LTC-USD', 'SHIB-USD', 'XLM-USD']
 
-print(f"Start: {start_date}")
-print(f"End:   {end_date}")
-print(f"Total Profit: $ {profit:.2f}")
-print(f"Profit Pct:   % {profit_pct:.2f}")
-print(f"Sharpe Ratio: {sr:.3f}")
+    # symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD']
+    # symbols = ['BTC-USD', 'ETH-USD']
+    # symbols = ['BTC-USD']
+    end_date = nearest_4hr(datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0))
+    start_date = end_date - timedelta(days=180)
+    backtest = Backtest(symbols,
+                        '4h',
+                        start_date,
+                        end_date,
+                        cooldown_period=4,
+                        hold_min_periods=4,
+                        trail_pct=4,
+                        use_atr_trailing_stop=False,  # Enable ATR trailing stop here
+                        atr_window=14,
+                        atr_multiplier=1.5)
+
+    backtest.fetch_ohlc_data()
+    backtest.calc_signals(fast_window=44, slow_window=82)
+    backtest.run()
+    backtest.print_trades()
+    backtest.print_positions()
+    profit = backtest.portfolio.profit
+    profit_pct = backtest.portfolio.profit_pct * 100
+
+    ppyear = _periods_per_year_from_interval('4h' if backtest.interval is None else backtest.interval)
+    sr = sharpe_ratio(backtest.portfolio.equity_curve.sort_index(), periods_per_year=ppyear, rf_annual=0.01)
+
+    print(f"Start: {start_date}")
+    print(f"End:   {end_date}")
+    print(f"Total Profit: $ {profit:.2f}")
+    print(f"Profit Pct:   % {profit_pct:.2f}")
+    print(f"Sharpe Ratio: {sr:.3f}")
+
+
+if __name__ == "__main__":
+    main()
