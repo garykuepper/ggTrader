@@ -6,6 +6,7 @@ import time
 import math
 import optuna
 from ta.trend import EMAIndicator
+from ta.volatility import AverageTrueRange
 from tabulate import tabulate
 
 
@@ -144,7 +145,7 @@ class MiniTrader:
                 if invest_amount > 0:
                     qty = invest_amount / price
                     portfolio.add_position(
-                        Position(symbol, qty, price, date, trail_percentage, hold_min, pos_pct=position_share_pct))
+                        Position(symbol, qty, price, date, trail_percentage, hold_min, position_share_pct))
             # Close Position
             elif pd.notna(row.sell_marker) and portfolio.in_position(symbol):
                 portfolio.remove_position(portfolio.get_position(symbol), date=date)
@@ -188,18 +189,22 @@ class Position:
                  date: datetime,
                  trail_pct: float,
                  hold_min: int,
-                 pos_pct: float = 1.0,
+                 share_pct: float = 1.0,
                  ):
         self.symbol = symbol
         self.qty = qty
-        self.price = price
-        self.date = date
-        self.cost = qty * price
+        self.entry_price = price
+        self.entry_date = date
+        self.exit_price = None
+        self.exit_date = None
+        self.current_price = price
         self.current_value = qty * price
+        self.cost = qty * price
         self.profit = 0
+        self.profit_pct = self.profit / self.cost
         self.status = "open"
-        self.position_pct = pos_pct
-        self.trailing_stop = TrailingStop(ts_pct=trail_pct, hold_min=hold_min)
+        self.share_pct = share_pct
+        self.trailing_stop = FixedPctTrailingStop(ts_pct=trail_pct, hold_min=hold_min)
 
     # TODO: Add explicit immutable entry fields
     # TODO: Add Position.entry_date and Position.entry_price on creation to make trade snapshots unambiguous
@@ -210,17 +215,15 @@ class Position:
 
     def close_position(self, date: datetime):
         self.status = "closed"
-        self.date = date
+        self.exit_date = date
 
-    def update_price(self, new_price: float, trail_percentage: float = 0):
-        self.price = new_price
+    def update_price(self, new_price: float, date: datetime=None):
+        self.current_price = new_price
         self.current_value = self.qty * new_price
         self.profit = self.current_value - self.cost
+        self.profit_pct = self.profit / self.cost
         if self.trailing_stop:
-            self.trailing_stop.update(new_price)
-
-    def update_date(self, date: datetime):
-        self.date = date
+            self.trailing_stop.update(new_price, date)
 
 
 class Portfolio:
@@ -235,7 +238,7 @@ class Portfolio:
     def add_position(self, position: Position):
         self.cash -= position.cost * (1 + self.transaction_fee)
         self.positions.append(position)
-        self.trades.append(position.__dict__.copy())
+        self.trades.append(position)
 
     # TODO: Replace Position.__dict__ snapshots with immutable trade records (dicts with primitives only)
     # TODO: When opening a position, append an entry snapshot with fields:
@@ -245,9 +248,10 @@ class Portfolio:
 
     def remove_position(self, position: Position, date: datetime):
         self.cash += position.current_value - (position.current_value * self.transaction_fee)
-
-        position.close_position(date=date)
-        self.trades.append(position.__dict__.copy())
+        position.exit_date = date
+        position.status = 'closed'
+        position.exit_price = position.current_price
+        # self.trades.append(position.__dict__.copy())
         self.positions.remove(position)
 
     # TODO: When closing a position, UPDATE the corresponding entry snapshot in self.trades (preferred) OR append an exit snapshot that contains only primitive fields
@@ -258,7 +262,7 @@ class Portfolio:
     def update_position_price(self, symbol: str, price: float, date: datetime, trail_percentage: float = 0):
         position = self.get_position(symbol)
         if position:
-            position.update_price(price, trail_percentage)
+            position.update_price(price, date)
         # Check for trailing stop trigger
         self.check_trailing_stop(position, date)
         self.profit = self.get_total_value() - self.start_cash
@@ -286,7 +290,7 @@ class Portfolio:
     def print_trades(self):
         trades = []
         for trade in self.trades:
-            trades.append(trade)
+            trades.append(trade.__dict__)
         print("\nTrades:")
         print(tabulate(trades, headers="keys", tablefmt="github"))
 
@@ -303,37 +307,30 @@ class Portfolio:
         """
         if not position:
             return
-        if position.trailing_stop and position.trailing_stop.check(position.price):
+        if position.trailing_stop and position.trailing_stop.check(position.current_price):
             self.remove_position(position, date)
 
 
+
 class TrailingStop:
-    def __init__(self, ts_pct: int = 5, hold_min: int = 4):
-        self.trailing_stop_pct = ts_pct
-        self.hold_min = hold_min
+    def __init__(self, hold_min: int = 4):
         self.level = None
         self.consec_hits = 0
         self.triggered = False
+        self.hold_min = hold_min
+        self.date = None
 
     def __repr__(self):
         level_str = "None" if self.level is None else f"{self.level:.2f}"
         return f"Triggered: {self.triggered}, Level: {level_str}, Consec Hits: {self.consec_hits}"
 
-    def update(self, price: float):
+    def update(self, price: float, date: datetime):
         """
-        Update the trailing stop level based on the latest price.
-        Only ratchets upward (for long positions).
+        Base update method to be overridden by subclasses.
         """
-        candidate = price * (1 - self.trailing_stop_pct / 100.0)
-        if self.level is None or candidate > self.level:
-            self.level = candidate
+        raise NotImplementedError("Subclasses should implement this!")
 
     def check(self, price: float) -> bool:
-        """
-        Check if current price has hit or fallen below the trailing stop level.
-        Requires 'hold_min' consecutive hits to trigger.
-        Returns True when the stop is triggered for exit.
-        """
         if self.level is None:
             return False
 
@@ -343,13 +340,54 @@ class TrailingStop:
                 self.triggered = True
                 return True
         else:
-            # Reset consecutive hit counter if price recovers above the stop
             self.consec_hits = 0
 
         return False
-    # TODO: Document TrailingStop semantics: "level is ratcheted upward only; check requires `hold_min` consecutive bars at/below level to trigger."
-    # TODO: Snapshot trailing stop primitive fields into trade records at entry and at exit to preserve the stop state for that trade
 
+
+class FixedPctTrailingStop(TrailingStop):
+    def __init__(self, ts_pct: float = 5, hold_min: int = 4):
+        super().__init__(hold_min=hold_min)
+        self.trailing_stop_pct = ts_pct
+
+    def update(self, price: float, date: datetime):
+        candidate = price * (1 - self.trailing_stop_pct / 100.0)
+        if self.level is None or candidate > self.level:
+            self.level = candidate
+            self.date = date
+
+
+
+
+class ATRTrailingStop(TrailingStop):
+    def __init__(self, df, atr_window=14, atr_multiplier=3, hold_min=4):
+        super().__init__(hold_min=hold_min)
+        self.df = df
+        self.atr_window = atr_window
+        self.atr_multiplier = atr_multiplier
+        self.atr_values = self._calculate_atr()
+
+    def _calculate_atr(self):
+        atr_indicator = AverageTrueRange(
+            high=self.df['High'],
+            low=self.df['Low'],
+            close=self.df['Close'],
+            window=self.atr_window
+        )
+        return atr_indicator.average_true_range()
+
+    def update(self, price: float, date: datetime):
+        if self.atr_values.index.get_loc(pd.Timestamp(date)) < self.atr_window:
+            return
+
+        atr = self.atr_values.loc[date]
+        close_price = price
+
+        candidate = close_price - (atr * self.atr_multiplier)
+
+        if self.level is None or candidate > self.level:
+            self.level = candidate
+            self.date = date
 
 class Strategy:
     def __init__(self, df: pd.DataFrame):
