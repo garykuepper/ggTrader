@@ -232,6 +232,7 @@ class Portfolio:
         self.start_cash = cash
         self.transaction_fee = transaction_fee  # max maker fee
         self.equity_curve = pd.Series(dtype=float)
+        self.profit_per_symbol = {}
 
     def add_position(self, position: Position):
         self.cash -= position.cost * (1 + self.transaction_fee)
@@ -304,6 +305,30 @@ class Portfolio:
         for position in self.positions:
             total_value += position.current_value
         return total_value
+
+
+    def get_profit_per_symbol(self):
+        from collections import defaultdict
+
+        profit_per_symbol = defaultdict(float)
+
+        for trade in self.trades:
+            symbol = trade.symbol
+            profit_per_symbol[symbol] += trade.profit
+
+        return dict(profit_per_symbol)
+
+    def print_profit_per_symbol(self):
+        print("\nProfit per Symbol:")
+        profits = self.get_profit_per_symbol()
+        if not profits:
+            print("  (no trades)")
+            return
+
+        table = []
+        for symbol,profit in sorted(profits.items(), key=lambda x: x[1], reverse=True):
+            table.append([symbol, f"${profit:,.2f}"])
+        print(tabulate(table, headers=["Symbol", "Profit"], tablefmt="github"))
 
     def check_trailing_stop(self, position: Position, date: datetime):
         """
@@ -638,7 +663,8 @@ def nearest_4hr(date: datetime):
 
 
 def main():
-    symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD', 'DOGE-USD', 'LTC-USD', 'SHIB-USD', 'XLM-USD']
+    symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD', 'DOGE-USD', 'LTC-USD', 'SHIB-USD', 'XLM-USD',
+               'LINK-USD']
 
     # symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD']
     # symbols = ['BTC-USD', 'ETH-USD']
@@ -654,7 +680,7 @@ def main():
                         trail_pct=4,
                         use_atr_trailing_stop=False,  # Enable ATR trailing stop here
                         atr_window=14,
-                        atr_multiplier=1.5)
+                        atr_multiplier=3.0)
 
     backtest.fetch_ohlc_data()
     backtest.calc_signals(fast_window=44, slow_window=82)
@@ -672,7 +698,7 @@ def main():
     print(f"Total Profit: $ {profit:.2f}")
     print(f"Profit Pct:   % {profit_pct:.2f}")
     print(f"Sharpe Ratio: {sr:.3f}")
-
+    backtest.portfolio.print_profit_per_symbol()
 
 if __name__ == "__main__":
     main()
