@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import yfinance as yf
 import mplfinance as mpf
@@ -8,6 +9,7 @@ import optuna
 from ta.trend import EMAIndicator
 from ta.volatility import AverageTrueRange
 from tabulate import tabulate
+from dataclasses import dataclass
 
 
 def get_yf_data(symbol: str, interval: str, start_date: datetime, end_date: datetime):
@@ -91,41 +93,35 @@ def plot_data(data: pd.DataFrame, signal_data: pd.DataFrame, symbol: str, num_of
         print(f"data_slice shape: {data_slice.shape}, signals_slice shape: {signals_slice.shape}")
 
 
-def backtest(signal_data: pd.DataFrame,
-             data: pd.DataFrame,
-             symbol: str,
-             trail_percentage: float = 3,
-             hold_min: int = 5,
-             print_position=False,
-             print_trades=False,
-             position_share_pct: float = 1.0,
-             starting_cash: int = 1000, ):
-    portfolio = Portfolio(cash=starting_cash)
+def sharpe_ratio(equity_curve: pd.Series, periods_per_year=6 * 365, rf_annual=0.01) -> float:
+    """
+    Compute Sharpe from equity curve (per-bar equity). Uses log returns.
+    periods_per_year: for 4H bars ~ 6/day * 365 = 2190
+    """
+    if len(equity_curve) < 3:
+        return 0.0
+    rets = np.log(equity_curve / equity_curve.shift(1)).dropna()
+    rf_per_period = (1 + rf_annual) ** (1 / periods_per_year) - 1
+    excess = rets - rf_per_period
+    mu = excess.mean()
+    sigma = excess.std(ddof=1)
+    return 0.0 if sigma == 0 or np.isnan(sigma) else float((mu / sigma) * np.sqrt(periods_per_year))
 
-    for row in signal_data.itertuples():
-        price = data.loc[row.Index, 'Close']
-        date = row.Index
-        if portfolio.in_position(symbol):
-            portfolio.update_position_price(symbol, price, date, trail_percentage)
 
-        # Open position
-        if pd.notna(row.buy_marker) and not portfolio.in_position(symbol):
-            # Allocate only a percentage of current equity; cap by available cash (no margin).
-            target_allocation = portfolio.get_total_value() * max(0.0, min(1.0, position_share_pct))
-            invest_amount = min(portfolio.cash, target_allocation)
-            if invest_amount > 0:
-                qty = invest_amount / price
-                portfolio.add_position(
-                    Position(symbol, qty, price, date, trail_percentage, hold_min, pos_pct=position_share_pct))
-        # Close Position
-        elif pd.notna(row.sell_marker) and portfolio.in_position(symbol):
-            portfolio.remove_position(portfolio.get_position(symbol), date=date)
-
-    if print_position:
-        portfolio.print_positions()
-    if print_trades:
-        portfolio.print_trades()
-    return portfolio.profit
+# Compute Sharpe from equity curve
+def _periods_per_year_from_interval(interval: str) -> int:
+    # Handles "4h", "1h", "1d" and similar
+    if interval.endswith("h"):
+        hours = int(interval[:-1])
+        per_day = 24 // max(1, hours)
+        return per_day * 365
+    if interval.endswith("d"):
+        days = int(interval[:-1])
+        per_day = 1 // max(1, days) if days > 0 else 1
+        return per_day * 365
+    # Fallbacks for your common choices
+    mapping = {"4h": 6 * 365, "1h": 24 * 365, "1d": 365}
+    return mapping.get(interval, 6 * 365)
 
 
 def calculate_sharpe_ratio(returns: list, risk_free_rate: float = 0.01) -> float:
@@ -160,7 +156,7 @@ class Position:
                  date: datetime,
                  trail_pct: float,
                  hold_min: int,
-                 share_pct: float = 1.0,
+                 share_pct: int = 100,
                  ):
         self.symbol = symbol
         self.qty = qty
@@ -169,13 +165,25 @@ class Position:
         self.exit_price = None
         self.exit_date = None
         self.current_price = price
-        self.current_value = qty * price
-        self.cost = qty * price
-        self.profit = 0
-        self.profit_pct = self.profit / self.cost
         self.status = "open"
         self.share_pct = share_pct
         self.trailing_stop = FixedPctTrailingStop(ts_pct=trail_pct, hold_min=hold_min)
+
+    @property
+    def cost(self) -> float:
+        return self.qty * self.entry_price
+
+    @property
+    def current_value(self) -> float:
+        return self.qty * self.current_price
+
+    @property
+    def profit(self) -> float:
+        return self.current_value - self.cost
+
+    @property
+    def profit_pct(self) -> float:
+        return self.profit / self.cost
 
     # TODO: Add explicit immutable entry fields
     # TODO: Add Position.entry_date and Position.entry_price on creation to make trade snapshots unambiguous
@@ -190,21 +198,35 @@ class Position:
 
     def update_price(self, new_price: float, date: datetime = None):
         self.current_price = new_price
-        self.current_value = self.qty * new_price
-        self.profit = self.current_value - self.cost
-        self.profit_pct = self.profit / self.cost
         if self.trailing_stop:
             self.trailing_stop.update(new_price, date)
+
+    def as_dict(self):
+        return {
+            "symbol": self.symbol,
+            "qty": self.qty,
+            "entry_price": self.entry_price,
+            "exit_price": self.exit_price,
+            "entry_date": self.entry_date,
+            "exit_date": self.exit_date,
+            "cost": self.cost,
+            "current_value": self.current_value,
+            "current_price": self.current_price,
+            "profit": self.profit,
+            "profit_pct": self.profit_pct,
+            "status": self.status,
+            "trailing_triggered": self.trailing_stop.triggered,
+        }
 
 
 class Portfolio:
     def __init__(self, cash: int = 1000, transaction_fee: float = 0.004):
-        self.trades = []
-        self.positions = []
+        self.trades: list[Position] = []
+        self.positions: list[Position] = []
         self.cash = cash
-        self.profit = 0
         self.start_cash = cash
         self.transaction_fee = transaction_fee  # max maker fee
+        self.equity_curve = pd.Series(dtype=float)
 
     def add_position(self, position: Position):
         self.cash -= position.cost * (1 + self.transaction_fee)
@@ -217,7 +239,7 @@ class Portfolio:
     # TODO: Snapshot trailing-stop primitive fields at entry (do NOT store the TrailingStop object)
     # TODO: Consider using a unique trade_id for each trade so that the entry record can be updated in-place at exit
 
-    def remove_position(self, position: Position, date: datetime):
+    def close_position(self, position: Position, date: datetime):
         self.cash += position.current_value - (position.current_value * self.transaction_fee)
         position.exit_date = date
         position.status = 'closed'
@@ -230,13 +252,20 @@ class Portfolio:
     # TODO: Do NOT append live objects (e.g., TrailingStop) to trades — snapshot primitive values instead
     # TODO: Add unit tests to ensure trade snapshots remain immutable after TrailingStop updates
 
-    def update_position_price(self, symbol: str, price: float, date: datetime, trail_percentage: float = 0):
+    def update_position_price(self, symbol: str, price: float, date: datetime):
         position = self.get_position(symbol)
         if position:
             position.update_price(price, date)
         # Check for trailing stop trigger
         self.check_trailing_stop(position, date)
-        self.profit = self.get_total_value() - self.start_cash
+
+    @property
+    def profit(self):
+        return self.get_total_value() - self.start_cash
+
+    @property
+    def profit_pct(self):
+        return self.profit / self.start_cash
 
     def get_position(self, symbol: str):
         for position in self.positions:
@@ -254,14 +283,14 @@ class Portfolio:
     def print_positions(self):
         pos = []
         for position in self.positions:
-            pos.append(position.__dict__)
+            pos.append(position.as_dict())
         print("\nPositions:")
         print(tabulate(pos, headers="keys", tablefmt="github"))
 
     def print_trades(self):
         trades = []
         for trade in self.trades:
-            trades.append(trade.__dict__)
+            trades.append(trade.as_dict())
         print("\nTrades:")
         print(tabulate(trades, headers="keys", tablefmt="github"))
 
@@ -279,7 +308,16 @@ class Portfolio:
         if not position:
             return
         if position.trailing_stop and position.trailing_stop.check(position.current_price):
-            self.remove_position(position, date)
+            self.close_position(position, date)
+
+    def record_equity(self, date: datetime):
+        """
+        Snapshot total equity at the end of a bar.
+        """
+        ts = pd.Timestamp(date)
+        total = self.get_total_value()
+        # Ensure monotonic index insertion
+        self.equity_curve.loc[ts] = float(total)
 
 
 class TrailingStop:
@@ -345,10 +383,17 @@ class ATRTrailingStop(TrailingStop):
         return atr_indicator.average_true_range()
 
     def update(self, price: float, date: datetime):
-        if self.atr_values.index.get_loc(pd.Timestamp(date)) < self.atr_window:
+        ts = pd.Timestamp(date)
+        # Guard: if timestamp not in ATR series (tz or missing), skip update
+        if ts not in self.atr_values.index:
+            # Optionally try to align by normalizing tz or using asof:
+            # ts = self.atr_values.index.asof(ts)
+            return
+        idx = self.atr_values.index.get_loc(ts)
+        if idx < self.atr_window:
             return
 
-        atr = self.atr_values.loc[date]
+        atr = self.atr_values.iloc[idx]
         close_price = price
 
         candidate = close_price - (atr * self.atr_multiplier)
@@ -393,9 +438,6 @@ class EMAStrategy(Strategy):
         return self.signal_data
 
 
-from dataclasses import dataclass
-
-
 @dataclass
 class TickerParameters:
     symbol: str
@@ -410,7 +452,14 @@ class TickerParameters:
 
 class Backtest:
 
-    def __init__(self, symbols: list, interval: str, start_date: datetime, end_date: datetime):
+    def __init__(self,
+                 symbols: list,
+                 interval: str,
+                 start_date: datetime,
+                 end_date: datetime,
+                 cooldown_period: int = 2,
+                 hold_min_periods: int = 2,
+                 trail_pct: int = 3, ):
         self.symbols = symbols
         self.interval = interval
         self.start_date = start_date
@@ -419,19 +468,31 @@ class Backtest:
         self.ohlc_data_dict = {}
         self.signal_data_dict = {}
         self.portfolio = Portfolio(cash=1000)
+        self.next_entry_time = {sym: datetime.min for sym in self.symbols}
+        self.bar_delta = None
+        self.cooldown_period = cooldown_period
+        self.hold_min = hold_min_periods
+        self.trail_pct = trail_pct
 
     def fetch_ohlc_data(self):
         for symbol in self.symbols:
             self.ohlc_data_dict[symbol] = get_yf_data(symbol, self.interval, self.start_date, self.end_date)
+        first_ohlc = next(iter(self.ohlc_data_dict.values()))
+        date_index = first_ohlc.index
+        self.bar_delta = date_index[1] - date_index[0]
 
-    def calc_signals(self):
+    def calc_signals(self, fast_window=25, slow_window=80):
         for symbol in self.symbols:
-            self.signal_data_dict[symbol] = EMAStrategy(self.ohlc_data_dict[symbol], 20, 50).calc_signals()
+            self.signal_data_dict[symbol] = EMAStrategy(self.ohlc_data_dict[symbol], fast_window,
+                                                        slow_window).calc_signals()
+
+    def prep_data(self, fast_window=25, slow_window=80):
+        self.fetch_ohlc_data()
+        self.calc_signals(fast_window, slow_window)
 
     def run(self):
         # get ohlc and signal data for each symbol
-        self.fetch_ohlc_data()
-        self.calc_signals()
+
         # loop through each date in the ohlc data
         first_ohlc = next(iter(self.ohlc_data_dict.values()))
         date_index = first_ohlc.index
@@ -440,63 +501,184 @@ class Backtest:
                 # check if in position
                 signal = self.signal_data_dict[symbol].loc[date, 'signal']
                 close = self.ohlc_data_dict[symbol].loc[date, 'Close']
-
                 if self.portfolio.in_position(symbol):
-
                     self.portfolio.update_position_price(symbol, close, date)  # Also checks trailing_stop
+                    # If trailing stop auto-closed the position, skip further exit handling for this symbol/date
+                    if not self.portfolio.in_position(symbol):
+                        # mark cooldown starting from the close timestamp if the position just closed
+                        # record when we can re-enter this symbol
+                        self.next_entry_time[symbol] = date + (self.bar_delta * self.cooldown_period)
+                        continue
                     if self.should_exit(signal):
-                        self.portfolio.remove_position(self.portfolio.get_position(symbol), date=date)
+                        position = self.portfolio.get_position(symbol)
+                        if position:
+                            self.portfolio.close_position(position, date=date)
+                            # set cooldown following the explicit close as well
+                            self.next_entry_time[symbol] = date + (self.bar_delta * self.cooldown_period)
 
                 # if not in position check if should enter
                 else:
-                    if self.should_enter(signal):
-                        position_share_pct = .2
+                    if self.should_enter(signal, symbol, date):
+                        position_share_pct = 20
                         qty = self.position_sizing(position_share_pct, close)
                         if qty == 0:
                             continue
                         else:
-                            self.portfolio.add_position(Position(symbol, qty, close, date, 3, 3,position_share_pct))
+                            self.portfolio.add_position(Position(symbol, qty, close, date, self.trail_pct, self.hold_min, position_share_pct))
+
+            # record equity at the end of the bar
+            self.portfolio.record_equity(date)
 
     def position_sizing(self, position_share_pct, price):
-        target_allocation = self.portfolio.get_total_value() * max(0.0, min(1.0, position_share_pct))
-        invest_amount = min(self.portfolio.cash, target_allocation)
+        # position_share_pct expected as percent (0-100)
+        pct = max(0.0, min(100.0, position_share_pct)) / 100.0
+        target_allocation = self.portfolio.get_total_value() * pct
+        # Account for buy fees so we don't over-allocate causing negative cash
+        max_affordable = self.portfolio.cash / (1.0 + self.portfolio.transaction_fee)
+        invest_amount = min(max_affordable, target_allocation)
         if invest_amount > 0:
             qty = invest_amount / price
             return qty
         return 0
 
-    @staticmethod
-    def should_exit(signal):
-        # TODO: Trailing stop triggers when price is updated.  Maybe I should make this more clear?
+    # Helper: coerce various datetime-like objects to timezone-aware pandas.Timestamp in UTC
+    def _to_timestamp_utc(self, obj):
+        """
+        Convert obj (datetime, pd.Timestamp, etc.) to a timezone-aware pd.Timestamp in UTC.
+        If obj is None, returns None.
+        """
+        if obj is None:
+            return None
+        ts = pd.Timestamp(obj)
+        # Localize naive -> UTC, convert aware -> UTC
+        if ts.tz is None:
+            try:
+                ts = ts.tz_localize('UTC')
+            except Exception:
+                # In case Timestamp.min or other extreme values raise; fallback to UTC attach
+                ts = pd.Timestamp(ts.to_pydatetime()).tz_localize('UTC')
+        else:
+            ts = ts.tz_convert('UTC')
+        return ts
+
+    def _sentinel_next_entry(self):
+        # Return a safe timezone-aware minimal timestamp sentinel (UTC)
+        # Use a small fixed early date rather than pd.Timestamp.min which can be problematic across versions
+        return pd.Timestamp("1970-01-01T00:00:00Z")
+
+    def should_exit(self, signal):
         if signal == -1:
             return True
         return False
 
-    @staticmethod
-    def should_enter(signal):
-        # TODO: Add re-entry logic.  if today - exit date > cooldown and if still buy --> reenter
-        # exit date --> find index integer,  then cooldown would be the number of periods determined by the interval
-        if signal == 1:
+    def should_enter(self, signal, symbol, date):
+        # Only enter on buy signal AND after the cooldown has expired for this symbol
+        if signal != 1:
+            return False
+
+        # Get next allowed entry time; use timezone-aware sentinel if missing
+        raw_next_allowed = self.next_entry_time.get(symbol, None)
+        if raw_next_allowed is None:
+            next_allowed_ts = self._sentinel_next_entry()
+        else:
+            next_allowed_ts = self._to_timestamp_utc(raw_next_allowed)
+
+        # If bar_delta is None (not yet computed) or cooldown is zero, allow entry
+        if self.bar_delta is None or self.cooldown_period <= 0:
             return True
-        return False
+
+        # Normalize current bar timestamp to UTC and compare
+        date_ts = self._to_timestamp_utc(date)
+        if date_ts is None:
+            # Defensive: if we couldn't convert, disallow to be safe
+            return False
+
+        return date_ts >= next_allowed_ts
 
     def print_trades(self):
         self.portfolio.print_trades()
 
-    def reentry(self):
-        pass
+    def print_positions(self):
+        self.portfolio.print_positions()
 
 
-symbols = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'ADA-USD', 'SOL-USD','XRP-USD']
+def objective(trial):
+    max_window = 100
+    min_fast_window = 10
+    max_fast_window = int(math.floor(max_window * 0.5))
+    fast_window = trial.suggest_int('fast_window', min_fast_window, max_fast_window, step=2)
+    min_slow_window = int(math.floor((fast_window * 1.4) / 2.0) * 2)
+    slow_window = trial.suggest_int('slow_window', min_slow_window, max_window, step=2)
+    trail_pct = trial.suggest_int('trail_pct', 2, 8)
+    hold_min = trial.suggest_int('hold_min', 2, 8)
+    # trail_pct = 5
+    # hold_min = 4
+    ema_strategy = EMAStrategy(data, fast_window, slow_window)
+    signals = ema_strategy.calc_signals()
+
+    # Rolling window backtesting to prevent overfitting
+    num_of_pts = len(data)
+    window_min_pts = math.floor(num_of_pts / 4)
+    step = math.floor(window_min_pts / 10)
+    returns = []
+
+    for start_idx in range(0, num_of_pts - window_min_pts, step):
+        end_idx = start_idx + window_min_pts
+        starting_cash = 1000
+        profit = mt.backtest(
+            signals.iloc[start_idx:end_idx],
+            data.iloc[start_idx:end_idx],
+            symbol=symbol,
+            trail_percentage=trail_pct,
+            hold_min=hold_min
+        )
+        profit_pct = profit / starting_cash
+        returns.append(profit_pct)
+
+    # Use the static method
+    sharpe_ratio = mt.calculate_sharpe_ratio(returns)
+
+    # total_profit = mt.backtest(signals, data, symbol, trail_percentage=trail_pct, hold_min=hold_min)
+    # if total_profit <= 0:
+    #     return -1e10
+    # return total_profit
+    return round(sharpe_ratio, 4)
+
+
+def days_min(pts_per_day, num_pts):
+    return int(math.floor(num_pts / pts_per_day))
+
+
+def nearest_4hr(date: datetime):
+    hour = date.hour
+    floored_hour = (hour // 4) * 4
+    return date.replace(hour=floored_hour)
+
+symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD']
 # symbols = ['BTC-USD', 'ETH-USD']
-end_date = datetime(2025, 8, 1)
-start_date = end_date - timedelta(days=30)
-backtest = Backtest(symbols, '4h', start_date, end_date)
+# symbols = ['BTC-USD']
+end_date = nearest_4hr(datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0))
+start_date = end_date - timedelta(days=180)
+backtest = Backtest(symbols,
+                    '4h',
+                    start_date,
+                    end_date,
+                    cooldown_period=8,
+                    hold_min_periods=4,
+                    trail_pct=7)
+backtest.fetch_ohlc_data()
+backtest.calc_signals(fast_window=48, slow_window=98)
 backtest.run()
 backtest.print_trades()
+backtest.print_positions()
 profit = backtest.portfolio.profit
-profit_pct = profit / backtest.portfolio.start_cash  * 100
+profit_pct = backtest.portfolio.profit_pct * 100
+
+ppyear = _periods_per_year_from_interval('4h' if backtest.interval is None else backtest.interval)
+sr = sharpe_ratio(backtest.portfolio.equity_curve.sort_index(), periods_per_year=ppyear, rf_annual=0.01)
+
 print(f"Start: {start_date}")
 print(f"End:   {end_date}")
 print(f"Total Profit: $ {profit:.2f}")
 print(f"Profit Pct:   % {profit_pct:.2f}")
+print(f"Sharpe Ratio: {sr:.3f}")
