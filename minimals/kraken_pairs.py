@@ -14,6 +14,7 @@ TOP_N = 30
 
 # ----------------------------
 # CoinMarketCap helpers
+
 # ----------------------------
 def setup_cmc_headers():
     load_dotenv()

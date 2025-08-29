@@ -1,6 +1,8 @@
 # python
 import time
 import math
+from turtledemo.penrose import start
+
 import optuna
 import pandas as pd
 from datetime import datetime, timedelta, timezone
@@ -16,10 +18,10 @@ def nearest_4hr(date: datetime):
 
 
 # ---------- Configuration ----------
-SYMBOLS = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD']
+SYMBOLS = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD','DOGE-USD', 'LTC-USD','SHIB-USD','XLM-USD','LINK-USD']
 INTERVAL = '4h'
 END_DATE = nearest_4hr(datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0))
-DAYS_OF_HISTORY = 365  # lower -> faster
+DAYS_OF_HISTORY = 180*4  # lower -> faster
 START_DATE = END_DATE - timedelta(days=DAYS_OF_HISTORY)
 
 STORAGE = "sqlite:///ema_multi_symbol_cached.db"
@@ -30,7 +32,7 @@ N_JOBS = -1  # increase to parallelize trials (be careful with memory & CPU)
 print("Downloading data for all symbols (one-time)...")
 ohlc_cache = {}
 for sym in SYMBOLS:
-    print(f"  fetching {sym} ...")
+
     df = get_yf_data(sym, INTERVAL, START_DATE, END_DATE)
     if df is None or df.empty:
         raise RuntimeError(f"No data for {sym} - check symbol/interval/dates")
@@ -42,7 +44,7 @@ date_index = _any_df.index
 if len(date_index) < 2:
     raise RuntimeError("Downloaded data has fewer than 2 rows; cannot compute bar spacing")
 BAR_DELTA = date_index[1] - date_index[0]
-print("Data downloaded. Bar delta:", BAR_DELTA)
+print("\nData downloaded. Bar delta:", BAR_DELTA)
 
 
 # ----- thangs
@@ -87,15 +89,24 @@ def make_objective(symbols, interval, ohlc_cache, bar_delta):
         fast_w = trial.suggest_int("fast_window", min_fast, max_fast, step=2)
         min_slow = max(fast_w + 2, int(math.floor((fast_w * 1.4) / 2.0) * 2))
         slow_w = trial.suggest_int("slow_window", min_slow, max_window, step=2)
-
+        # atr_multi = trial.suggest_float("atr_multiplier", 0.4, 2.0, step=0.2)
+        # atr_window = trial.suggest_int("atr_window", 10, 36, step=2)
         # other params to optimize
-        cooldown_period = trial.suggest_int("cooldown_period", 0, 10)  # in bars
-        hold_min_periods = trial.suggest_int("hold_min_periods", 1, 8)  # trailing stop hold min
-        trail_pct = trial.suggest_int("trail_pct", 1, 10)  # trailing stop percent
+        cooldown_period = trial.suggest_int("cooldown_period", 4, 12)  # in bars
+        hold_min_periods = trial.suggest_int("hold_min_periods", 1, 6)  # trailing stop hold min
+        trail_pct = trial.suggest_float("trail_pct", 1, 10, step=0.5)  # trailing stop percent
+        # trail_pct = 0
+        atr_multi = 1.0
+        atr_window = 14
+
 
         # Build Backtest and inject cached OHLC to avoid downloads
         bt = Backtest(symbols=symbols, interval=interval, start_date=START_DATE, end_date=END_DATE,
-                      cooldown_period=cooldown_period, hold_min_periods=hold_min_periods, trail_pct=trail_pct)
+                      cooldown_period=cooldown_period, hold_min_periods=hold_min_periods, trail_pct=trail_pct,
+                      use_atr_trailing_stop=False,  # Enable ATR trailing stop here
+                      atr_window=atr_window,
+                      atr_multiplier=atr_multi)
+
 
         # Inject the cached data and bar_delta directly
         bt.ohlc_data_dict = {sym: ohlc_cache[sym] for sym in symbols}
@@ -127,7 +138,10 @@ def make_objective(symbols, interval, ohlc_cache, bar_delta):
 
 # ---------- Run Optuna ----------
 def main():
-    study_name = f"{END_DATE.strftime('%Y-%m-%d-%H')}"
+
+    start = START_DATE.strftime('%Y-%m-%d-%H')
+    end = END_DATE.strftime('%Y-%m-%d-%H')
+    study_name = f"{start}_{end}_"
     study = optuna.create_study(direction="maximize", storage=STORAGE, study_name=study_name, load_if_exists=True)
     obj = make_objective(SYMBOLS, INTERVAL, ohlc_cache, BAR_DELTA)
     study.optimize(obj, n_trials=N_TRIALS, n_jobs=N_JOBS)
