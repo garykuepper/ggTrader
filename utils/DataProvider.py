@@ -96,7 +96,7 @@ class DataProvider(ABC):
             return df
         last_ts = df.index[-1]
         now_utc = datetime.now(timezone.utc)
-        if last_ts > now_utc or (now_utc - last_ts) < self._interval_to_timedelta(interval):
+        if last_ts > now_utc:
             return df.iloc[:-1]
         return df
 

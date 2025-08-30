@@ -10,23 +10,8 @@ from ta.trend import EMAIndicator
 from ta.volatility import AverageTrueRange
 from tabulate import tabulate
 from dataclasses import dataclass
-from utils.DataProvider import DataProvider, KrakenProvider
-
-def get_yf_data(symbol: str, interval: str, start_date: datetime, end_date: datetime):
-    start = start_date.strftime('%Y-%m-%d-%H')
-    end = end_date.strftime('%Y-%m-%d-%H')
-    print(f'\nDownloading {symbol:10} {interval} {start}--->{end}', end=" ")
-    df = yf.download(symbol,
-                     interval=interval,
-                     start=start_date,
-                     end=end_date,
-                     multi_level_index=False,
-                     auto_adjust=True,
-                     progress=False)
-    df.columns = df.columns.str.lower()
-    entries = len(df)
-    print(f'...Complete. {entries} rows', end=" ")
-    return df
+from utils.DataProvider import DataProvider, KrakenProvider, HybridProvider
+from utils.kraken_yfinance_cmc import get_top_kraken_usd_pairs
 
 
 def plot_data(data: pd.DataFrame, signal_data: pd.DataFrame, symbol: str, num_of_pts=200):
@@ -521,7 +506,8 @@ class Backtest:
 
     def fetch_ohlc_data(self):
         for symbol in self.symbols:
-            self.ohlc_data_dict[symbol] = get_yf_data(symbol, self.interval, self.start_date, self.end_date)
+            yfdata = HybridProvider()
+            self.ohlc_data_dict[symbol] = yfdata.get_data(symbol, self.interval, self.start_date, self.end_date)
         first_ohlc = next(iter(self.ohlc_data_dict.values()))
         date_index = first_ohlc.index
         self.bar_delta = date_index[1] - date_index[0]
@@ -687,8 +673,10 @@ def nearest_4hr(date: datetime):
 
 
 def main():
-    symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD', 'DOGE-USD', 'LTC-USD', 'SHIB-USD', 'XLM-USD',
-               'LINK-USD']
+    # symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD', 'DOGE-USD', 'LTC-USD', 'SHIB-USD', 'XLM-USD', 'LINK-USD']
+    # Get only YF-compatible pairs, sorted by Kraken volume
+    df_yf = get_top_kraken_usd_pairs(top_n=30, require_yf=True)
+    symbols = df_yf["YF Ticker"].head(10).tolist()
 
     # symbols = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD']
     # symbols = ['BTC-USD', 'ETH-USD']
@@ -699,7 +687,7 @@ def main():
                         '4h',
                         start_date,
                         end_date,
-                        cooldown_period=12,
+                        cooldown_period=5,
                         hold_min_periods=5,
                         trail_pct=9.0,
                         use_atr_trailing_stop=False,  # Enable ATR trailing stop here
@@ -707,7 +695,7 @@ def main():
                         atr_multiplier=2.0)
 
     backtest.fetch_ohlc_data()
-    backtest.calc_signals(fast_window=36, slow_window=80)
+    backtest.calc_signals(fast_window=50, slow_window=94)
     backtest.run()
     backtest.print_trades()
     backtest.print_positions()

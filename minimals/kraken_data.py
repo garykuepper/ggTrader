@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from utils.DataProvider import YFinanceProvider, KrakenProvider, HybridProvider
 
 end = datetime.now(timezone.utc)
+print(end)
 start_long = end - timedelta(days=365)   # backtest -> yfinance
 start_short = end - timedelta(days=120)    # live -> kraken
 

@@ -8,7 +8,9 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 
 # Import your Backtest and EMAStrategy (and get_yf_data) from the module you improved
-from mini_trader_trader import Backtest, EMAStrategy, get_yf_data
+from mini_trader_trader import Backtest, EMAStrategy
+from utils.DataProvider import HybridProvider
+from utils.kraken_yfinance_cmc import get_top_kraken_usd_pairs
 
 
 def nearest_4hr(date: datetime):
@@ -18,7 +20,13 @@ def nearest_4hr(date: datetime):
 
 
 # ---------- Configuration ----------
-SYMBOLS = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD','DOGE-USD', 'LTC-USD','SHIB-USD','XLM-USD','LINK-USD']
+SYMBOLS = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD', 'XRP-USD','DOGE-USD', 'LTC-USD','BONK-USD','XLM-USD','LINK-USD']
+# Get only YF-compatible pairs, sorted by Kraken volume
+# df_yf = get_top_kraken_usd_pairs(top_n=30, require_yf=True)
+#
+# # Select the top 10 tickers
+# SYMBOLS = df_yf["YF Ticker"].head(10).tolist()
+
 INTERVAL = '4h'
 END_DATE = nearest_4hr(datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0))
 DAYS_OF_HISTORY = 180*4  # lower -> faster
@@ -32,8 +40,8 @@ N_JOBS = -1  # increase to parallelize trials (be careful with memory & CPU)
 print("Downloading data for all symbols (one-time)...")
 ohlc_cache = {}
 for sym in SYMBOLS:
-
-    df = get_yf_data(sym, INTERVAL, START_DATE, END_DATE)
+    yf_data = HybridProvider()
+    df = yf_data.get_data(sym, INTERVAL, START_DATE, END_DATE)
     if df is None or df.empty:
         raise RuntimeError(f"No data for {sym} - check symbol/interval/dates")
     ohlc_cache[sym] = df
@@ -94,7 +102,7 @@ def make_objective(symbols, interval, ohlc_cache, bar_delta):
         # other params to optimize
         cooldown_period = trial.suggest_int("cooldown_period", 4, 12)  # in bars
         hold_min_periods = trial.suggest_int("hold_min_periods", 1, 6)  # trailing stop hold min
-        trail_pct = trial.suggest_float("trail_pct", 1, 10, step=0.5)  # trailing stop percent
+        trail_pct = trial.suggest_float("trail_pct", 1, 5, step=0.5)  # trailing stop percent
         # trail_pct = 0
         atr_multi = 1.0
         atr_window = 14
@@ -141,7 +149,7 @@ def main():
 
     start = START_DATE.strftime('%Y-%m-%d-%H')
     end = END_DATE.strftime('%Y-%m-%d-%H')
-    study_name = f"{start}_{end}_"
+    study_name = f"{start}_{end}___hehe"
     study = optuna.create_study(direction="maximize", storage=STORAGE, study_name=study_name, load_if_exists=True)
     obj = make_objective(SYMBOLS, INTERVAL, ohlc_cache, BAR_DELTA)
     study.optimize(obj, n_trials=N_TRIALS, n_jobs=N_JOBS)
