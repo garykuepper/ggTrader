@@ -8,3 +8,4 @@ tabulate
 ta
 optuna
 mplfinance
+python-kraken-sdk

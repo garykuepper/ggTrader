@@ -34,7 +34,7 @@ except Exception as _e:
 # ----------------------------
 TOP_N = int(os.getenv("TOP_N", "30"))
 QUOTE_CCY = "USD"  # script is USD-only
-EXCLUDE_BASES = {"USDT", "USDC", "DAI", "USDP", "TUSD", "EUR", "GBP", "AUD"}
+EXCLUDE_BASES = {"USDT", "USDC", "DAI", "USDP", "TUSD", "EUR", "GBP", "AUD", "USDG"}
 
 # Kraken→Common base aliases (keep tiny; wsname covers most)
 KRAKEN_BASE_ALIASES: Dict[str, str] = {

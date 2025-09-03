@@ -1,17 +1,19 @@
+#!/usr/bin/env python3
 """
 paper_trader.py — JSON-only 4h paper trader with EMA signals, trailing stop (hold-min), cooldown,
-and robust universe management (always manage open positions even if they fall out of Top-N).
+'enter-on-bullish-regime' behavior, and robust universe management (always manage open positions).
 
-Dependencies (see requirements.txt):
-  pandas, numpy, ta, yfinance, python-dateutil, pytz, requests
-
-Project assumptions:
-  - utils.DataProvider.HybridProvider.get_data(symbol, interval, start_dt, end_dt) -> DataFrame with index as timestamps
-    and columns at least: ["open","high","low","close","volume"] (close required)
-  - utils.kraken_yfinance_cmc.get_top_kraken_usd_pairs(top_n, require_yf=True) -> DataFrame with column "YF Ticker"
+Assumptions (your project):
+  - utils.DataProvider.HybridProvider.get_data(symbol, interval, start_dt, end_dt) -> DataFrame
+    index: tz-aware timestamps; columns: ["open","high","low","close","volume"] (close required)
+  - utils.kraken_yfinance_cmc.get_top_kraken_usd_pairs(top_n, require_yf=True/False)
+    -> DataFrame with columns "YF Ticker" and "Kraken Pair"
 
 State:
-  - JSON at STATE_PATH (default ./state/paper_state.json)
+  - JSON at STATE_PATH env var or ./state/paper_state.json (default)
+
+Schedule:
+  - Script runs once; schedule via cron/systemd OR wrap in a Docker loop (as in entrypoint.sh).
 """
 
 import os
@@ -25,7 +27,7 @@ from ta.trend import EMAIndicator
 
 from utils.DataProvider import HybridProvider
 from utils.kraken_yfinance_cmc import get_top_kraken_usd_pairs
-
+from paper_state_store import PaperStateStore
 
 # ============================ Helpers & Metrics ============================
 
@@ -54,33 +56,6 @@ def sharpe_from_equity(equity_curve: pd.Series, periods_per_year=2190, rf_annual
     mu, sigma = excess.mean(), excess.std(ddof=1)
     return 0.0 if sigma == 0 or np.isnan(sigma) else float((mu / sigma) * np.sqrt(periods_per_year))
 
-
-# ============================ State (JSON only) ============================
-
-class PaperStateStore:
-    def __init__(self, json_path: Optional[str] = None):
-        self.json_path = json_path or os.getenv("STATE_PATH", "./state/paper_state.json")
-
-    def load(self) -> Dict[str, Any]:
-        default = {
-            "cash": 10_000.0,
-            "transaction_fee": 0.004,     # 0.4%
-            "positions": {},              # sym -> {qty, entry_price, current_price, entry_ts_iso, trailing}
-            "next_entry_time": {},        # sym -> iso timestamp
-            "equity_curve": [],           # [{ts, equity}]
-            "trades": []                  # [{symbol, side, qty, price, ts, fees}]
-        }
-        try:
-            with open(self.json_path, "r") as f:
-                return json.load(f)
-        except FileNotFoundError:
-            os.makedirs(os.path.dirname(self.json_path), exist_ok=True)
-            return default
-
-    def save(self, state: Dict[str, Any]) -> None:
-        os.makedirs(os.path.dirname(self.json_path), exist_ok=True)
-        with open(self.json_path, "w") as f:
-            json.dump(state, f, indent=2, default=str)
 
 
 # ============================ Broker (paper fills) ============================
@@ -165,13 +140,23 @@ class EMASignalEngine:
         self.fast = fast
         self.slow = slow
 
-    def last_signal(self, df: pd.DataFrame) -> int:
+    def _emas(self, df: pd.DataFrame) -> Tuple[pd.Series, pd.Series]:
         ema_fast = EMAIndicator(df["close"], self.fast, fillna=False).ema_indicator()
         ema_slow = EMAIndicator(df["close"], self.slow, fillna=False).ema_indicator()
+        return ema_fast, ema_slow
+
+    def last_signal(self, df: pd.DataFrame) -> int:
+        """+1 for fresh bull cross, -1 for fresh bear cross, 0 otherwise."""
+        ema_fast, ema_slow = self._emas(df)
         bull = (ema_fast > ema_slow).astype(int)
         cross = bull.diff()
         val = cross.iloc[-1]
         return int(val) if val in (1, -1) else 0
+
+    def is_bullish_now(self, df: pd.DataFrame) -> int:
+        """1 if current regime is bullish (fast>slow), else 0."""
+        ema_fast, ema_slow = self._emas(df)
+        return int((ema_fast > ema_slow).iloc[-1])
 
 
 # ============================ Runner ============================
@@ -187,7 +172,9 @@ class Runner:
             position_share_pct: float = 10.0,    # % of equity per new entry
             trail_pct: float = 4.5,              # trailing stop percent
             hold_min_bars: int = 3,              # consecutive bars under stop to trigger exit
-            cooldown_bars: int = 8               # bars to wait after any exit before new entry
+            cooldown_bars: int = 8,              # bars to wait after any exit before new entry
+            buy_on_bull_regime: bool = True,     # enter if fast>slow even w/o fresh cross
+            use_yf_tickers: bool = True          # NEW: use Yahoo tickers or Kraken pairs for universe
     ):
         self.interval = interval
         self.lookback_days = lookback_days
@@ -196,23 +183,42 @@ class Runner:
         self.trail_pct = float(trail_pct)
         self.hold_min_bars = int(hold_min_bars)
         self.cooldown_bars = int(cooldown_bars)
+        self.buy_on_bull_regime = bool(buy_on_bull_regime)
+        self.use_yf_tickers = bool(use_yf_tickers)
 
         self.store = PaperStateStore()
         self.state = self.store.load()
         self.broker = PaperBroker(self.state)
         self.engine = EMASignalEngine(fast_window, slow_window)
         self.provider = HybridProvider()
-
         self.bar_delta = FOUR_HOURS
 
     # ---------- Universe ----------
 
     def build_universe(self) -> Tuple[List[str], List[str], List[str]]:
-        """Returns (top_base, open_syms, manage_set)."""
-        symbols_df = get_top_kraken_usd_pairs(top_n=max(30, self.top_n), require_yf=True)
-        top_base = symbols_df["YF Ticker"].head(self.top_n).tolist()
+        """
+        Returns (top_base, open_syms, manage_set).
+
+        If use_yf_tickers:
+            - Pull DataFrame with require_yf=True
+            - Use the 'YF Ticker' column (e.g., 'DOGE-USD')
+        Else:
+            - Pull DataFrame with require_yf=False
+            - Use the 'Kraken Pair' column (e.g., 'XDGUSD')
+        """
+        df = get_top_kraken_usd_pairs(
+            top_n=max(30, self.top_n),
+            require_yf=self.use_yf_tickers
+        )
+        col = "YF Ticker" if self.use_yf_tickers else "Kraken Pair"
+        syms = (
+            df[col].head(self.top_n).tolist()
+            if col in df.columns else []
+        )
+
+        top_base = syms
         open_syms = list(self.state["positions"].keys())
-        manage_set = sorted(set(top_base) | set(open_syms))
+        manage_set = sorted(set(top_base) | set(open_syms))  # always manage open positions
         return top_base, open_syms, manage_set
 
     # ---------- Cooldown ----------
@@ -281,6 +287,13 @@ class Runner:
             print(f"[WARN] signal failed: {e}")
             return 0
 
+    def bullish_now(self, df: pd.DataFrame) -> int:
+        try:
+            return self.engine.is_bullish_now(df)
+        except Exception as e:
+            print(f"[WARN] bullish regime check failed: {e}")
+            return 0
+
     # ---------- Sizing / Accounting ----------
 
     def total_equity(self) -> float:
@@ -319,17 +332,19 @@ class Runner:
             return True
         return False
 
-    def maybe_enter_on_signal(self, symbol: str, sig: int, close: float, bar_ts_df: datetime, top_base: List[str]) -> bool:
-        """Process +1 entry; return True if entered."""
+    def maybe_enter_on_signal(self, symbol: str, sig: int, bullish_now: int,
+                              close: float, bar_ts_df: datetime, top_base: List[str]) -> bool:
+        """Enter if flat + cooldown OK + (fresh +1 cross OR current bullish regime), restricted to Top-N."""
+        should_enter = (sig == 1) or (self.buy_on_bull_regime and bullish_now == 1)
         if (
-                sig == 1
+                should_enter
                 and not self.broker.in_position(symbol)
                 and symbol in top_base
                 and self.cooldown_ok(symbol, bar_ts_df)
         ):
             qty = self.qty_for_price(close)
             if qty > 0:
-                print(f"[ENTER] {symbol} qty={qty:.6f} @ {close:.6f} ({bar_ts_df})")
+                print(f"[ENTER] {symbol} qty={qty:.6f} @ {close:.6f} ({bar_ts_df})  (sig={sig}, bullish_now={bullish_now})")
                 self.broker.buy(symbol, qty, close, bar_ts_df, trail_pct=self.trail_pct, hold_min=self.hold_min_bars)
                 return True
         return False
@@ -340,7 +355,7 @@ class Runner:
         bar_ts = nearest_4h_bar_end(datetime.now(timezone.utc))
         start_dt = bar_ts - timedelta(days=self.lookback_days)
 
-        # Universe
+        # Universe (YF tickers vs Kraken pairs)
         try:
             top_base, open_syms, symbols = self.build_universe()
         except Exception as e:
@@ -360,28 +375,28 @@ class Runner:
             bar_ts_df = self.latest_bar_timestamp(df, bar_ts)
             close = float(df.loc[bar_ts_df, "close"])
 
-            # Manage open positions first
+            # Manage open positions first (mark + trailing stop)
             if self.broker.in_position(sym):
                 if self.handle_open_position(sym, close, bar_ts_df):
                     exits += 1
                     continue  # already exited on trailing stop
 
+            # Signals
             sig = self.last_signal(df)
+            bull_now = self.bullish_now(df)
 
             # Exit on -1 signal
             if self.maybe_exit_on_signal(sym, sig, close, bar_ts_df):
                 exits += 1
                 continue
 
-            # Enter on +1 signal (restricted to Top-N and cooldown OK)
-            if self.maybe_enter_on_signal(sym, sig, close, bar_ts_df, top_base):
+            # Enter on +1 or bullish regime (restricted to Top-N, respect cooldown)
+            if self.maybe_enter_on_signal(sym, sig, bull_now, close, bar_ts_df, top_base):
                 entries += 1
 
-        # Accounting
+        # Accounting & persist
         equity, sharpe = self.record_equity(bar_ts)
         print(f"\nEquity=${equity:,.2f} | Open={len(self.state['positions'])} | Entries={entries} | Exits={exits} | Sharpe={sharpe:.3f}")
-
-        # Persist
         self.store.save(self.state)
 
 
@@ -390,12 +405,14 @@ def main():
         interval="4h",
         lookback_days=120,
         fast_window=30,
-        slow_window=84,
+        slow_window=80,
         top_n=20,
         position_share_pct=10.0,  # % equity per new position
         trail_pct=4.5,            # trailing stop percent
         hold_min_bars=3,          # bars price must stay <= stop to trigger
         cooldown_bars=8,          # bars to wait after exit before reentry
+        buy_on_bull_regime=True,  # enter if fast>slow even without a fresh +1 cross
+        use_yf_tickers=False       # <-- set False to use Kraken 'Kraken Pair' symbols (e.g., XDGUSD)
     )
     runner.run_once()
 
