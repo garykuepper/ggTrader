@@ -25,6 +25,9 @@ symbol = 'BTC-USD'
 df = get_sample_data(symbol)
 signals = pd.DataFrame()
 signals['close'] = df['close'].copy()
+# ... existing code above ...
+
+# Compute EMA signals (as you currently do)
 signals['ema_slow'] = EMAIndicator(close=df['close'], window=5).ema_indicator()
 signals['ema_fast'] = EMAIndicator(close=df['close'], window=15).ema_indicator()
 signals['crossover'] = np.sign(signals['ema_fast'] - signals['ema_slow'])
@@ -35,8 +38,8 @@ signal_short = signals[(signals['crossover'] != prev) & (signals['crossover'].is
 crossover_aligned = signal_short['crossover'].reindex(df.index)
 
 # Separate bullish (1) and bearish (-1) signals
-bullish = crossover_aligned.where(crossover_aligned == 1)
-bearish = crossover_aligned.where(crossover_aligned == -1)
+bullish = signals['close'].where(crossover_aligned == 1)
+bearish = signals['close'].where(crossover_aligned == -1)
 
 print("\n Data")
 print(tabulate(df, headers='keys', tablefmt='github'))
@@ -44,22 +47,27 @@ print("\n Signals")
 print(tabulate(signals, headers='keys', tablefmt='github'))
 print("\n Signal short Table")
 print(tabulate(signal_short, headers='keys', tablefmt='github'))
-print("\n Bullish")
-print(bullish)
-print("\n Bearish")
-print(bearish)
+
+
+# Build addplots with safe handling for empty signals
 apds = [
     mpf.make_addplot(signals['ema_slow'], color='blue', width=1.0, linestyle='-'),
     mpf.make_addplot(signals['ema_fast'], color='orange', width=1.0, linestyle='-'),
-    # Bullish signals: green up markers
-    mpf.make_addplot(bullish, type="scatter", marker="^", color="green", markersize=80, edgecolors="black",
-                     linewidths=1.5, panel=0
-),
-    # Bearish signals: red down markers
-    mpf.make_addplot(bearish, type="scatter", marker="v", color="red", markersize=80, edgecolors="black",
-                     linewidths=1.5, panel=0)
-
 ]
+
+# Only add bullish markers if there are actual signals
+if bullish.notna().any():
+    apds.append(
+        mpf.make_addplot(bullish, type="scatter", marker="^", color="green", markersize=80,
+                         edgecolors="black", linewidths=1.5, panel=0)
+    )
+
+# Only add bearish markers if there are actual signals
+if bearish.notna().any():
+    apds.append(
+        mpf.make_addplot(bearish, type="scatter", marker="v", color="red", markersize=80,
+                         edgecolors="black", linewidths=1.5, panel=0)
+    )
 
 mpf.plot(df,
          type='candle',
