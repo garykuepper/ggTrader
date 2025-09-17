@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from tabulate import tabulate
 import mplfinance as mpf
 from ta.trend import SMAIndicator, EMAIndicator
-
+import plotly.graph_objects as go
 
 def get_sample_data(ticker: str):
     df = yf.download(ticker,
@@ -28,8 +28,8 @@ signals['close'] = df['close'].copy()
 # ... existing code above ...
 
 # Compute EMA signals (as you currently do)
-signals['ema_slow'] = EMAIndicator(close=df['close'], window=5).ema_indicator()
-signals['ema_fast'] = EMAIndicator(close=df['close'], window=15).ema_indicator()
+signals['ema_fast'] = EMAIndicator(close=df['close'], window=5).ema_indicator()
+signals['ema_slow'] = EMAIndicator(close=df['close'], window=15).ema_indicator()
 signals['crossover'] = np.sign(signals['ema_fast'] - signals['ema_slow'])
 prev = signals['crossover'].shift(1)
 signal_short = signals[(signals['crossover'] != prev) & (signals['crossover'].isin([1, -1]))]
@@ -74,3 +74,31 @@ mpf.plot(df,
          volume=True,
          style='yahoo',
          addplot=apds)
+#
+# # Use aligned signals for Plotly buy/sell markers to match the same timestamps as `df`
+# fig = go.Figure(data=[go.Candlestick(x=df.index,
+#                 open=df['open'],
+#                 high=df['high'],
+#                 low=df['low'],
+#                 close=df['close'])])
+# fig.add_trace(go.Scatter(x=df.index, y=signals['ema_slow'],
+#                          mode='lines', name='EMA Slow', line=dict(color='blue')))
+# fig.add_trace(go.Scatter(x=df.index, y=signals['ema_fast'],
+#                          mode='lines', name='EMA Fast', line=dict(color='orange')))
+#
+# # Use the aligned crossover series for points
+# buy_points_aligned = df.index[crossover_aligned == 1]
+# sell_points_aligned = df.index[crossover_aligned == -1]
+#
+# fig.add_trace(go.Scatter(
+#     x=buy_points_aligned, y=df.loc[buy_points_aligned]['close'],
+#     mode='markers', marker=dict(symbol='triangle-up', size=12, color='green'),
+#     name='Buy'
+# ))
+# fig.add_trace(go.Scatter(
+#     x=sell_points_aligned, y=df.loc[sell_points_aligned]['close'],
+#     mode='markers', marker=dict(symbol='triangle-down', size=12, color='red'),
+#     name='Sell'
+# ))
+#
+# fig.show()
