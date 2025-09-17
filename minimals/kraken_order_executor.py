@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import ccxt
 import sys
-
+from tabulate import tabulate
 # Load environment variables from .env
 if not load_dotenv("../.env"):
     print("Warning: .env file not found or failed to load.")
@@ -37,18 +37,46 @@ amt = round(amt, 8)
 # )
 # print("Order info:")
 # print(order)
+from tabulate import tabulate
 
+def print_balances_usd(exchange):
+    """
+    Fetch balances and print table of [Ticker, Amount, USD Value] using current prices.
+    Handles USD, USDT, USDC as fiat/stablecoins.
+    """
+    balance = exchange.fetch_balance()
+    balances = balance['total']
+    usd_values = []
+    for ticker, amount in balances.items():
+        if amount == 0 or ticker is None:
+            continue
+        if ticker in ["USD", "USDT", "USDC"]:
+            usd_value = amount
+        else:
+            try:
+                symbol = f"{ticker}/USD"
+                ticker_info = exchange.fetch_ticker(symbol)
+                price = ticker_info['last']
+                usd_value = amount * price
+            except Exception:
+                usd_value = None  # Price not available
+        usd_values.append([ticker, amount, usd_value])
+    print(tabulate(
+        usd_values,
+        headers=["Ticker", "Amount", "USD Value"],
+        tablefmt="github",
+        floatfmt=(".8f", ".8f", ".2f")
+    ))
 # Show your Kraken account balance (all currencies)
-print("\nYour account balances:")
-balance = kraken.fetch_balance()
-print(balance['total'])
+print_balances_usd(kraken)
 
 # Show your open orders for the symbol
 print(f"\nOpen orders for {symbol}:")
 open_orders = kraken.fetch_open_orders(symbol)
-print(open_orders)
+
+print(tabulate(open_orders, headers='keys', tablefmt='github'))
 
 # Show your closed (historical) orders for the symbol
 print(f"\nOrder history (closed/canceled) for {symbol}:")
 closed_orders = kraken.fetch_closed_orders(symbol)
-print(closed_orders)
+print(tabulate(closed_orders, headers='keys', tablefmt='github'))
