@@ -15,10 +15,10 @@ def get_sample_data(ticker: str):
                      auto_adjust=True,
                      progress=False,
                      multi_level_index=False)
-    df.columns = [col.lower() for col in df.columns]
+    df.columns = df.columns.str.lower()
     return df
 
-def calc_signals(df: pd.DataFrame, ema_fast: int = 5, ema_slow: int = 20):
+def calc_signals(df: pd.DataFrame, ema_fast: int = 5, ema_slow: int = 20, atr_multiplier: int = 1):
     signals = pd.DataFrame()
     signals['close'] = df['close'].copy()
     # ... existing code above ...
@@ -30,6 +30,9 @@ def calc_signals(df: pd.DataFrame, ema_fast: int = 5, ema_slow: int = 20):
     signals['signal'] = signals['crossover'].diff().fillna(0) / 2
     signals['atr'] = AverageTrueRange(high=df['high'], low=df['low'], close=df['close'], window=14, fillna=False).average_true_range()
     signals.loc[signals['atr'] == 0, 'atr'] = np.nan
+    signals['atr_sell'] = df['close'] - signals['atr'] * atr_multiplier
+    signals['atr_sell'] = signals['atr_sell'].shift(1)
+    signals['atr_sell_signal'] = df['close'] < signals['atr_sell']
     return signals
 
 
@@ -42,7 +45,7 @@ ema_fast = 5
 ema_slow = 15
 atr_multiplier = 1
 df = get_sample_data(symbol)
-signals = calc_signals(df, ema_fast, ema_slow)
+signals = calc_signals(df, ema_fast, ema_slow, atr_multiplier)
 
 signals_short = signals.loc[(signals['signal'] == 1) | (signals['signal'] == -1),]
 
@@ -55,7 +58,7 @@ print(tabulate(signals_short, headers='keys', tablefmt='github'))
 
 buy_marker_y = df['close'].where(signals['signal'] == 1)
 sell_marker_y = df['close'].where(signals['signal'] == -1)
-atr_sell = df['close'] - signals['atr'] * atr_multiplier
+atr_marker = df['close'].where(signals['atr_sell_signal'] == True)
 apds = [
     mpf.make_addplot(signals['ema_slow'], color='blue', width=1.0, linestyle='-', label=f'EMA {ema_slow}'),
     mpf.make_addplot(signals['ema_fast'], color='orange', width=1.0, linestyle='-', label=f'EMA {ema_fast}'),
@@ -64,8 +67,8 @@ apds = [
                      marker='^', edgecolors='black', color='green', label='Buy Signal', secondary_y=False),
     mpf.make_addplot(sell_marker_y, type='scatter',
                      marker='v', edgecolors='black', color='red', label='Sell Signal', secondary_y=False),
-    mpf.make_addplot(atr_sell, width=1.0, color='black',  linestyle='--', label='ATR')
-]
+    mpf.make_addplot(signals['atr_sell'], width=1.0, color='black',  linestyle='--', label='ATR'),
+    mpf.make_addplot(atr_marker, type='scatter', marker='*', color='black', label='ATR Sell Signal', secondary_y=False),]
 
 mpf.plot(df,
          type='candle',
