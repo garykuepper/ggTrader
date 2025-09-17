@@ -1,0 +1,68 @@
+from datetime import datetime
+
+
+class Position:
+    def __init__(self, symbol: str,
+                 qty: float,
+                 price: float,
+                 date: datetime,
+                 trail_pct: float,
+                 hold_min: int,
+                 share_pct: int = 100,
+
+                 ):
+        self.symbol = symbol
+        self.qty = qty
+        self.entry_price = price
+        self.entry_date = date
+        self.exit_price = None
+        self.exit_date = None
+        self.current_price = price
+        self.status = "open"
+        self.share_pct = share_pct
+
+    @property
+    def cost(self) -> float:
+        return self.qty * self.entry_price
+
+    @property
+    def current_value(self) -> float:
+        return self.qty * self.current_price
+
+    @property
+    def profit(self) -> float:
+        return self.current_value - self.cost
+
+    @property
+    def profit_pct(self) -> float:
+        return self.profit / self.cost
+
+    # TODO: Add explicit immutable entry fields
+    # TODO: Add Position.entry_date and Position.entry_price on creation to make trade snapshots unambiguous
+    # TODO: Consider adding a unique trade_id here for reliable entry↔exit matching in trade records
+
+    def open_position(self):
+        pass
+
+    def close_position(self, date: datetime):
+        self.status = "closed"
+        self.exit_date = date
+
+    def update_price(self, new_price: float, date: datetime = None):
+        self.current_price = new_price
+
+    def as_dict(self):
+        return {
+            "symbol": self.symbol,
+            "qty": self.qty,
+            "entry_price": self.entry_price,
+            "exit_price": self.exit_price,
+            "entry_date": self.entry_date,
+            "exit_date": self.exit_date,
+            "cost": self.cost,
+            "current_value": self.current_value,
+            "current_price": self.current_price,
+            "profit": self.profit,
+            "profit_pct": self.profit_pct,
+            "status": self.status,
+        }
