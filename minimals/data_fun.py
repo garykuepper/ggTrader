@@ -40,6 +40,7 @@ symbol = 'LTC-USD'
 
 ema_fast = 5
 ema_slow = 15
+atr_multiplier = 1
 df = get_sample_data(symbol)
 signals = calc_signals(df, ema_fast, ema_slow)
 
@@ -54,7 +55,7 @@ print(tabulate(signals_short, headers='keys', tablefmt='github'))
 
 buy_marker_y = df['close'].where(signals['signal'] == 1)
 sell_marker_y = df['close'].where(signals['signal'] == -1)
-
+atr_sell = df['close'] - signals['atr'] * atr_multiplier
 apds = [
     mpf.make_addplot(signals['ema_slow'], color='blue', width=1.0, linestyle='-', label=f'EMA {ema_slow}'),
     mpf.make_addplot(signals['ema_fast'], color='orange', width=1.0, linestyle='-', label=f'EMA {ema_fast}'),
@@ -62,7 +63,8 @@ apds = [
     mpf.make_addplot(buy_marker_y, type='scatter',
                      marker='^', edgecolors='black', color='green', label='Buy Signal', secondary_y=False),
     mpf.make_addplot(sell_marker_y, type='scatter',
-                     marker='v', edgecolors='black', color='red', label='Sell Signal', secondary_y=False)
+                     marker='v', edgecolors='black', color='red', label='Sell Signal', secondary_y=False),
+    mpf.make_addplot(atr_sell, width=1.0, color='black',  linestyle='--', label='ATR')
 ]
 
 mpf.plot(df,
@@ -70,6 +72,6 @@ mpf.plot(df,
          volume=True,
          style='yahoo',
          addplot=apds,
-         figsize=(13, 7),
+         figsize=(15, 8),
          title=f"Trading Chart for {symbol} ",
          )
