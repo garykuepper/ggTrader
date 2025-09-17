@@ -37,10 +37,6 @@ class Position:
     def profit_pct(self) -> float:
         return self.profit / self.cost
 
-    # TODO: Add explicit immutable entry fields
-    # TODO: Add Position.entry_date and Position.entry_price on creation to make trade snapshots unambiguous
-    # TODO: Consider adding a unique trade_id here for reliable entry↔exit matching in trade records
-
     def open_position(self):
         pass
 

@@ -10,7 +10,7 @@ from ta.volatility import AverageTrueRange
 
 def get_sample_data(ticker: str):
     df = yf.download(ticker,
-                     period='14d',
+                     period='45d',
                      interval='4h',
                      auto_adjust=True,
                      progress=False,
@@ -39,11 +39,11 @@ def calc_signals(df: pd.DataFrame, ema_fast: int = 5, ema_slow: int = 20, atr_mu
 # end_date = datetime.now(timezone.utc)
 # start_date = end_date - timedelta(days=30)
 
-symbol = 'LTC-USD'
+symbol = 'BTC-USD'
 
-ema_fast = 5
-ema_slow = 15
-atr_multiplier = 1
+ema_fast = 9
+ema_slow = 21
+atr_multiplier = 1.5
 df = get_sample_data(symbol)
 signals = calc_signals(df, ema_fast, ema_slow, atr_multiplier)
 
@@ -64,11 +64,11 @@ apds = [
     mpf.make_addplot(signals['ema_fast'], color='orange', width=1.0, linestyle='-', label=f'EMA {ema_fast}'),
     # Use aligned 1D marker series instead of DataFrames
     mpf.make_addplot(buy_marker_y, type='scatter',
-                     marker='^', edgecolors='black', color='green', label='Buy Signal', secondary_y=False),
+                     marker='^', edgecolors='black',markersize=60, color='green', label='Buy Signal', secondary_y=False),
     mpf.make_addplot(sell_marker_y, type='scatter',
-                     marker='v', edgecolors='black', color='red', label='Sell Signal', secondary_y=False),
+                     marker='v', edgecolors='black', markersize=60,color='red', label='Sell Signal', secondary_y=False),
     mpf.make_addplot(signals['atr_sell'], width=1.0, color='black',  linestyle='--', label='ATR'),
-    mpf.make_addplot(atr_marker, type='scatter', marker='*', color='black', label='ATR Sell Signal', secondary_y=False),]
+    mpf.make_addplot(atr_marker, type='scatter', edgecolors='black',color='red', markersize=80, marker='*', label='ATR Sell Signal', secondary_y=False),]
 
 mpf.plot(df,
          type='candle',
