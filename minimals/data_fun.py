@@ -63,7 +63,7 @@ atr_marker = df['close'].where(signals['atr_sell_signal'] == True)
 apds = [
     mpf.make_addplot(signals['ema_slow'], color='blue', width=1.0, linestyle='-', label=f'EMA {ema_slow}'),
     mpf.make_addplot(signals['ema_fast'], color='orange', width=1.0, linestyle='-', label=f'EMA {ema_fast}'),
-    mpf.make_addplot(signals['ema_superslow'],  width=1.0, linestyle='-', label=f'EMA {ema_slow * 2}'),
+    # mpf.make_addplot(signals['ema_superslow'],  width=1.0, linestyle='-', label=f'EMA {ema_slow * 2}'),
     # Use aligned 1D marker series instead of DataFrames
     mpf.make_addplot(buy_marker_y, type='scatter',
                      marker='^', edgecolors='black',markersize=60, color='green', label='Buy Signal', secondary_y=False),

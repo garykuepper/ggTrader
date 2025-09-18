@@ -28,8 +28,16 @@ def fetch_ohlcv_df(exchange, symbol, timeframe='1h', limit=100, since=None):
     return df[["open", "high", "low", "close", "volume"]]
 
 
-# Example usage:
-kraken = ccxt.kraken()
-kraken.load_markets()
-df = fetch_ohlcv_df(kraken, 'ETH/USD', timeframe='4h', limit=30)
-print(tabulate(df, headers="keys", tablefmt="github"))
+# Public API
+__all__ = ["fetch_ohlcv_df"]
+
+
+# Example usage (only when run as a script)
+if __name__ == "__main__":
+    import ccxt  # local import to avoid import during from-imports if not needed elsewhere
+
+    # Example usage:
+    kraken = ccxt.kraken()
+    kraken.load_markets()
+    df = fetch_ohlcv_df(kraken, 'ETH/USD', timeframe='4h', limit=30)
+    print(tabulate(df, headers="keys", tablefmt="github"))
