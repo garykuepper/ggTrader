@@ -26,6 +26,7 @@ def calc_signals(df: pd.DataFrame, ema_fast: int = 5, ema_slow: int = 20, atr_mu
     # Compute EMA signals (as you currently do)
     signals['ema_fast'] = EMAIndicator(close=df['close'], window=ema_fast).ema_indicator()
     signals['ema_slow'] = EMAIndicator(close=df['close'], window=ema_slow).ema_indicator()
+    signals['ema_superslow'] = EMAIndicator(close=df['close'], window=ema_slow * 2).ema_indicator()
     signals['crossover'] = np.sign(signals['ema_fast'] - signals['ema_slow'])
     signals['signal'] = signals['crossover'].diff().fillna(0) / 2
     signals['atr'] = AverageTrueRange(high=df['high'], low=df['low'], close=df['close'], window=14, fillna=False).average_true_range()
@@ -62,6 +63,7 @@ atr_marker = df['close'].where(signals['atr_sell_signal'] == True)
 apds = [
     mpf.make_addplot(signals['ema_slow'], color='blue', width=1.0, linestyle='-', label=f'EMA {ema_slow}'),
     mpf.make_addplot(signals['ema_fast'], color='orange', width=1.0, linestyle='-', label=f'EMA {ema_fast}'),
+    mpf.make_addplot(signals['ema_superslow'],  width=1.0, linestyle='-', label=f'EMA {ema_slow * 2}'),
     # Use aligned 1D marker series instead of DataFrames
     mpf.make_addplot(buy_marker_y, type='scatter',
                      marker='^', edgecolors='black',markersize=60, color='green', label='Buy Signal', secondary_y=False),
