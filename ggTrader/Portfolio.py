@@ -42,6 +42,11 @@ class Portfolio:
         # self.trades.append(position.__dict__.copy())
         self.positions.remove(position)
 
+    def update_position_stop_loss(self, symbol: str, stop_loss: float):
+        position = self.get_position(symbol)
+        if position:
+            position.stop_loss = stop_loss
+
     def update_position_price(self, symbol: str, price: float, date: datetime):
         position = self.get_position(symbol)
         if position:
@@ -197,14 +202,14 @@ class Portfolio:
 
     def stats_dict(self):
         return {
-            "cash, $": self.cash,
-            "total_position_value, $": self.total_position_value,
-            "total_value, $": self.total_value,
-            "realized_profit, $": self.realized_profit,
-            "unrealized_profit, $": self.unrealized_profit,
+            "cash": self.cash,
+            "total_position_value": self.total_position_value,
+            "total_value": self.total_value,
+            "realized_profit": self.realized_profit,
+            "unrealized_profit": self.unrealized_profit,
             "total_profit": self.profit,
-            "profit_pct, %": self.profit_pct * 100,
-            "transaction_fee_total, $": self.transaction_fee_total,
+            "profit_pct": self.profit_pct * 100,
+            "transaction_fee_total": self.transaction_fee_total,
             "total_trades": len(self.trades),
             "sharpe": self.sharpe_ratio()
 

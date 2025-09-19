@@ -22,6 +22,7 @@ class Position:
         self.current_price = price
         self.status = "open"
         self.share_pct = share_pct
+        self.stop_loss = 0.0
         self.stop_loss_triggered = False
 
     @property
