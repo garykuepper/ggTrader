@@ -6,8 +6,8 @@ class Position:
                  qty: float,
                  price: float,
                  date: datetime,
-                 trail_pct: float,
-                 hold_min: int,
+                 trail_pct: float = 0.0,
+                 hold_min: int = 3,
                  share_pct: int = 100,
 
                  ):

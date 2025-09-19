@@ -312,8 +312,8 @@ def main():
 
     # Example: get a DataFrame for downstream analysis
     df = rows_to_dataframe(rows)
-    print("\nDataFrame:")
-    print(tabulate(df, headers='keys', tablefmt='github'))  # uncomment to preview
+    # print("\nDataFrame:")
+    # print(tabulate(df, headers='keys', tablefmt='github'))  # uncomment to preview
 
 if __name__ == "__main__":
     main()

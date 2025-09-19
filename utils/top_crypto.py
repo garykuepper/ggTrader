@@ -66,7 +66,9 @@ def get_top_cmc(limit: int = 20, convert: str = "USD", print_table: bool = False
         "Symbol": c.get("symbol"),
         "Name": c.get("name"),
         f"Price ({convert})": c["quote"][convert]["price"],
-        f"Market Cap ({convert})": c["quote"][convert]["market_cap"]
+        f"Market Cap ({convert})": c["quote"][convert]["market_cap"],
+        f"Volume (USD)": c["quote"][convert]["volume_24h"],
+
     } for c in coins])
 
     if print_table:

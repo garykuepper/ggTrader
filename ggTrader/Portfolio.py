@@ -1,4 +1,4 @@
-from Position import Position
+from ggTrader.Position import Position
 from tabulate import tabulate
 
 from datetime import datetime
@@ -15,13 +15,21 @@ class Portfolio:
         self.equity_curve = pd.Series(dtype=float)
         self.profit_per_symbol = {}
 
+        # NEW: track realized profit separately from unrealized
+        self.realized_profit: float = 0.0
+
     def add_position(self, position: Position):
         self.cash -= position.cost * (1 + self.transaction_fee)
         self.positions.append(position)
         self.trades.append(position)
 
     def close_position(self, position: Position, date: datetime):
-        self.cash += position.current_value - (position.current_value * self.transaction_fee)
+        # LOCK IN REALIZED PROFIT (accounting for fees)
+        exit_value = position.current_value
+        transaction_cost = exit_value * self.transaction_fee
+        self.realized_profit += position.profit - transaction_cost
+
+        self.cash += exit_value - transaction_cost
         position.exit_date = date
         position.status = 'closed'
         position.exit_price = position.current_price
@@ -35,11 +43,23 @@ class Portfolio:
 
     @property
     def profit(self):
-        return self.get_total_value() - self.start_cash
+        # DEV: expose total profit as realized + unrealized
+        return self.total_value - self.start_cash
 
     @property
     def profit_pct(self):
         return self.profit / self.start_cash
+
+    # NEW: unrealized gain/loss for open positions
+    @property
+    def unrealized_profit(self) -> float:
+        total = 0.0
+        for position in self.positions:
+            total += position.profit
+        return total
+
+    # NEW: realized + unrealized
+
 
     def get_position(self, symbol: str):
         for position in self.positions:
@@ -59,20 +79,25 @@ class Portfolio:
         for position in self.positions:
             pos.append(position.as_dict())
         print("\nPositions:")
-        print(tabulate(pos, headers="keys", tablefmt="github"))
+        print(tabulate(pos, headers="keys", tablefmt="github", showindex=True))
 
     def print_trades(self):
         trades = []
         for trade in self.trades:
             trades.append(trade.as_dict())
         print("\nTrades:")
-        print(tabulate(trades, headers="keys", tablefmt="github"))
+        print(tabulate(trades, headers="keys", tablefmt="github", showindex=True))
 
-    def get_total_value(self):
-        total_value = self.cash
+    @property
+    def total_value(self):
+        return self.cash + self.total_position_value
+
+    @property
+    def total_position_value(self):
+        total = 0.0
         for position in self.positions:
-            total_value += position.current_value
-        return total_value
+            total += position.current_value
+        return total
 
     def get_profit_per_symbol(self):
         from collections import defaultdict
@@ -102,6 +127,16 @@ class Portfolio:
         Snapshot total equity at the end of a bar.
         """
         ts = pd.Timestamp(date)
-        total = self.get_total_value()
+        total = self.total_value
         # Ensure monotonic index insertion
         self.equity_curve.loc[ts] = float(total)
+
+    def print_stats(self):
+        print("\nStats:")
+        print(f"Cash: ${self.cash:,.2f}")
+        print(f"Total Position Value: ${self.total_position_value:,.2f}")
+        print(f"Total Value: ${self.total_value:,.2f}")
+        print(f"Realized Profit: ${self.realized_profit:,.2f}")
+        print(f"Unrealized Profit: ${self.unrealized_profit:,.2f}")
+        print(f"Total Profit: ${self.profit:,.2f}")
+        print(f"Profit Pct: {self.profit_pct * 100:.2f}%")
