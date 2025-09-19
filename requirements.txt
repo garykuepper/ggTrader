@@ -1,11 +1,9 @@
 pandas
 yfinance
 python-dotenv
-alpaca-py
-pymongo
-pandas_market_calendars
 tabulate
 ta
 optuna
 mplfinance
-python-kraken-sdk
+pytest
+ccxt

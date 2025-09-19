@@ -14,12 +14,15 @@ class Position:
         self.symbol = symbol
         self.qty = qty
         self.entry_price = price
+        self.entry_fee = 0.0
         self.entry_date = date
         self.exit_price = None
         self.exit_date = None
+        self.exit_fee = 0.0
         self.current_price = price
         self.status = "open"
         self.share_pct = share_pct
+        self.stop_loss_triggered = False
 
     @property
     def cost(self) -> float:
@@ -61,4 +64,5 @@ class Position:
             "profit": self.profit,
             "profit_pct": self.profit_pct,
             "status": self.status,
+            "stop_loss_triggered": self.stop_loss_triggered,
         }

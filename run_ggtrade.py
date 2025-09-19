@@ -1,7 +1,11 @@
+import math
+import time
+import json
 import numpy as np
+import optuna
 from ta.trend import EMAIndicator
 from ta.volatility import AverageTrueRange
-
+import pickle
 from utils.kraken_yfinance_cmc import get_top_kraken_usd_pairs
 from utils.kraken_yfinance_cmc import get_kraken_asset_pairs_usd
 from utils.top_crypto import get_top_cmc
@@ -76,46 +80,137 @@ def get_signals(ohlcv: dict, ema_fast: int = 5, ema_slow: int = 20, atr_multipli
     return signals_dict
 
 
-ohlcv = get_top_crypto_ohlcv(top_n=20, limit=700)
+def save_ohlcv_dict(ohlcv, file_path):
+    with open(file_path, "wb") as f:
+        pickle.dump(ohlcv, f)
 
-# first_ohlcv = next(iter(ohlcv.values()), None)
-date_index = next(iter(ohlcv.values()), None).index
-# first_ohlcv_symbol = next(iter(ohlcv.keys()), None)
-# print(f"\n First OHLCV data: {first_ohlcv_symbol}")
-# print(tabulate(first_ohlcv, headers="keys", tablefmt="github"))
 
-signals_dict = get_signals(ohlcv, ema_fast=5, ema_slow=20, atr_multiplier=1.0)
+def load_ohlcv_dict(file_path):
+    with open(file_path, "rb") as f:
+        ohlcv = pickle.load(f)
+    return ohlcv
 
-first_signals = next(iter(signals_dict.values()), None)
-first_signals_symbol = next(iter(signals_dict.keys()), None)
-print(f"\n First Signals: {first_signals_symbol}")
-print(tabulate(first_signals, headers="keys", tablefmt="github"))
 
-print("\n Signals")
+def position_sizing(portfolio: Portfolio, symbol: str, close_price: float, date, position_size: float = 0.05):
+    qty = portfolio.total_value / close_price * position_size
+    return Position(symbol, qty, close_price, date)
 
-portfolio = Portfolio(cash=10000)
-for date in date_index:
-    for symbol in signals_dict.keys():
-        signal = signals_dict[symbol].loc[date, 'signal']
-        close_price = signals_dict[symbol].loc[date, 'close']
-        if portfolio.in_position(symbol):
-            portfolio.update_position_price(symbol, close_price, date)
-            if signal == -1:
-                pos = portfolio.get_position(symbol)
-                portfolio.close_position(pos, date)
-                print(f"{date}: SELL {symbol} at {close_price}")
-        elif signal == 1:
-            # position sizing
-            total_value = portfolio.total_value
-            qty = total_value / close_price * 0.05
-            cost = qty * close_price
-            if cost > portfolio.cash:
-                continue
-            portfolio.add_position(Position(symbol, qty, close_price, date))
-            print(f"{date}: BUY {symbol} at {close_price}, qty: {qty}")
 
-portfolio.print_positions()
+def backtest(signals_dict: dict, plot=False, print_stats=False):
+    # print("\n Backtest")
+    date_index = next(iter(signals_dict.values()), None).index
+    portfolio = Portfolio(cash=10000)
+    reentry = dict.fromkeys(signals_dict.keys(), 0)
+    cooldown_min = 4
+    position_size = 0.05
+    for date in date_index:
+        for symbol in signals_dict.keys():
+            signal = signals_dict[symbol].loc[date, 'signal']
+            crossover = signals_dict[symbol].loc[date, 'crossover']
+            atr_sell_signal = signals_dict[symbol].loc[date, 'atr_sell_signal']
+            close_price = signals_dict[symbol].loc[date, 'close']
+            if portfolio.in_position(symbol):
+                portfolio.update_position_price(symbol, close_price, date)
+                # Check stop loss
+                if signal == -1 or atr_sell_signal:
+                    pos = portfolio.get_position(symbol)
+                    if atr_sell_signal:
+                        pos.stop_loss_triggered = True
+                    # Close position
+                    reentry[symbol] = 0  # reset reentry counter
+                    portfolio.close_position(pos, date)
+                    # print(f"{date}: SELL {symbol} at {close_price}")
+            elif signal == 1:
+                # position sizing
+                pos = position_sizing(portfolio, symbol, close_price, date, position_size)
+                if pos.cost > portfolio.cash:
+                    continue
+                portfolio.add_position(pos)
+                # print(f"{date}: BUY {symbol} at {close_price}, qty: {qty}")
+            # reentry
+            elif crossover == 1:
+                reentry[symbol] += 1
+                if reentry[symbol] > cooldown_min:
+                    pos = position_sizing(portfolio, symbol, close_price, date, position_size)
+                    if pos.cost > portfolio.cash:
+                        # skip if cost is greater than cash available
+                        continue
+                    portfolio.add_position(pos)
+        portfolio.record_equity(date)
 
-portfolio.print_profit_per_symbol()
+    # portfolio.print_trades()
+    # portfolio.print_positions()
+    # portfolio.print_profit_per_symbol()
+    # portfolio.print_stats()
+    # portfolio.reconcile()
+    # portfolio.print_stats_df()
+    if print_stats:
+        portfolio.print_stats_df()
+    if plot:
+        portfolio.plot_equity_curve()
 
-portfolio.print_stats()
+    return portfolio.get_stats_df()
+
+
+def objective(trial):
+    # EMA windows
+    max_window = 100
+    min_fast = 8
+    max_fast = int(math.floor(max_window * 0.6))
+    fast_w = trial.suggest_int("fast_window", min_fast, max_fast, step=2)
+    min_slow = max(fast_w + 2, int(math.floor((fast_w * 1.3) / 2.0) * 2))
+    slow_w = trial.suggest_int("slow_window", min_slow, max_window, step=2)
+    atr_multi = trial.suggest_float("atr_multiplier", .5, 2.0, step=0.0625)
+    # atr_window = trial.suggest_int("atr_window", 10, 36, step=2)
+    # other params to optimize
+    # cooldown_period = trial.suggest_int("cooldown_period", 4, 12)  # in bars
+    # hold_min_periods = trial.suggest_int("hold_min_periods", 1, 6)  # trailing stop hold min
+    # trail_pct = trial.suggest_float("trail_pct", 1, 5, step=0.5)  # trailing stop percent
+    # trail_pct = 0
+    # atr_multi = 1.0
+    # atr_window = 14
+
+    signals_dict = get_signals(ohlcv, ema_fast=fast_w, ema_slow=slow_w, atr_multiplier=atr_multi)
+
+    stats = backtest(signals_dict)
+
+    return stats['sharpe'].values[0]
+    # return stats['total_profit'].values[0]
+
+
+# ohlcv = get_top_crypto_ohlcv(top_n=20, limit=700)
+ohlcv = load_ohlcv_dict("ohlcv_dict.pkl")
+study_name = "top_crypto_sharpe"
+study = optuna.create_study(direction="maximize",
+                            storage="sqlite:///ema_optuna.db",
+                            study_name=study_name,
+                            load_if_exists=True)
+
+study.optimize(objective, n_trials=100, n_jobs=-1)
+
+time.sleep(0.3)
+print("Best value:", study.best_value)
+print("Best params:")
+for k, v in study.best_params.items():
+    print(f"  {k}: {v}")
+
+
+
+with open(study_name + ".json", "w", encoding="utf-8") as f:
+    out = {
+        "best_params": study.best_params,
+        "best_value": study.best_value
+    }
+    json.dump(out, f, indent=2, ensure_ascii=False)
+
+
+print("\nRunning backtest with best params:")
+fast_w = study.best_params['fast_window']
+slow_w = study.best_params['slow_window']
+atr_multi = study.best_params['atr_multiplier']
+signals_dict = get_signals(ohlcv, ema_fast=fast_w, ema_slow=slow_w, atr_multiplier=atr_multi)
+date_index = next(iter(signals_dict.values()), None).index
+delta = (date_index[-1] - date_index[0])
+print(f"Date range: {date_index[0]} to {date_index[-1]}. Days: {delta.days}")
+stats = backtest(signals_dict, plot=True, print_stats=True)
+
