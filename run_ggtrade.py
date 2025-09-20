@@ -33,15 +33,19 @@ def get_top_crypto_ohlcv(top_n=20, limit=30, interval="4h"):
     latest_4h = pd.Timestamp.utcnow().floor(interval)
     datetime_index = pd.date_range(end=latest_4h, periods=limit, freq=interval)
 
-    for _, row in top_crypto.iterrows():
+
+    for label, row in top_crypto.iterrows():
 
         symbol = row.get("Symbol")
-        print(f"Fetching {symbol} OHLC data...")
+        pos = top_crypto.index.get_loc(label)
+
+        print(f"Fetching {symbol} OHLC data...{pos+1}/{top_n}")
         try:
             df[symbol] = fetch_ohlcv_df(kraken, symbol + '/USD', timeframe=interval, limit=limit)
             df[symbol] = df[symbol].reindex(datetime_index)
         except Exception as e:
             print(f"Error fetching {symbol} OHLC data: {e}")
+
     return df
 
 
@@ -95,7 +99,7 @@ def position_sizing(portfolio: Portfolio, symbol: str, close_price: float, date,
     return Position(symbol, qty, close_price, date)
 
 
-def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=2, position_size=0.05,):
+def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=4, position_size=0.05,):
     # print("\n Backtest")
     date_index = next(iter(signals_dict.values()), None).index
     portfolio = Portfolio(cash=10000)
@@ -153,28 +157,10 @@ def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=2, 
 
 
 def objective(trial):
-    # EMA windows
-    # max_window = 100
-    # min_fast = 8
-    # max_fast = int(math.floor(max_window * 0.6))
-    # fast_w = trial.suggest_int("fast_window", min_fast, max_fast, step=2)
-    #
-    # min_slow = max(fast_w + 2, int(math.floor((fast_w * 1.3) / 2.0) * 2))
-    # slow_w = trial.suggest_int("slow_window", min_slow, max_window, step=2)
-
-    fast_w = trial.suggest_int("fast_window", 8, 20, step=1)
-    slow_w = trial.suggest_int("slow_window", fast_w + 10, 50, step=1)
-
+    fast_w = trial.suggest_int("fast_window", 8, 40)
+    slow_w = trial.suggest_int("slow_window", fast_w + 10, 80)
     atr_multi = trial.suggest_float("atr_multiplier", .5, 2.0, step=0.0625)
-    # atr_window = trial.suggest_int("atr_window", 10, 36, step=2)
-    # other params to optimize
-    # cooldown_period = trial.suggest_int("cooldown_period", 1, 5)  # in bars
-    # hold_min_periods = trial.suggest_int("hold_min_periods", 1, 6)  # trailing stop hold min
-    # trail_pct = trial.suggest_float("trail_pct", 1, 5, step=0.5)  # trailing stop percent
-    # trail_pct = 0
-    # atr_multi = 1.0
-    # atr_window = 14
-    cooldown_period = 5
+    cooldown_period = 4
 
     signals_dict = get_signals(ohlcv,
                                ema_fast=fast_w,
@@ -183,28 +169,44 @@ def objective(trial):
 
     stats = backtest(signals_dict, cooldown_min=cooldown_period)
 
-    return stats['sharpe'].values[0]
-    # return stats['total_profit'].values[0]
+    # extract metrics
+    sharpe = float(stats['sharpe'].values[0])
+    max_dd = float(stats.get('max_drawdown', [0.0])[0]) if 'max_drawdown' in stats else 0.0
+    fees = float(stats.get('transaction_fee_total', [0.0])[0]) if 'transaction_fee_total' in stats else 0.0
+    trades = int(stats.get('total_trades', [0])[0])
+
+    # basic constraints: require some minimum trades to avoid tiny-sample winners
+    MIN_TRADES = 20
+    if trades < MIN_TRADES:
+        return -1e6  # very poor
+
+    # score = sharpe minus penalties:
+    # alpha: penalty per unit drawdown (fraction), beta: penalty per $100 fees, gamma: penalty for high turnover
+    alpha = 2.0
+    beta = 0.01  # per dollar of fees
+    gamma = 0.001  # per trade
+
+    score = sharpe - alpha * max_dd - beta * fees - gamma * trades
+
+    return float(score)
 
 
-def save_to_json(study_name, study):
+def save_to_json(study_name: str, out: dict):
     with open(study_name + ".json", "w", encoding="utf-8") as f:
-        out = {
-            "best_params": study.best_params,
-            "best_value": study.best_value
-        }
+
         json.dump(out, f, indent=2, ensure_ascii=False)
 
 
-# ohlcv = get_top_crypto_ohlcv(top_n=20, limit=700)
+# ohlcv = get_top_crypto_ohlcv(top_n=20, limit=720, interval="1h")
+# save_ohlcv_dict(ohlcv, "ohlcv_dict_1h.pkl")
 ohlcv = load_ohlcv_dict("ohlcv_dict.pkl")
-study_name = "top_crypto_sharpe_sw_cd"
+study_name = "top_crypto_sharpe_multi"
 study = optuna.create_study(direction="maximize",
                             storage="sqlite:///ema_optuna.db",
                             study_name=study_name,
                             load_if_exists=True)
 
-study.optimize(objective, n_trials=20, n_jobs=-1)
+study.optimize(objective, n_trials=100, n_jobs=-1)
 
 time.sleep(0.3)
 print("Best value:", study.best_value)
@@ -212,7 +214,7 @@ print("Best params:")
 for k, v in study.best_params.items():
     print(f"  {k}: {v}")
 
-save_to_json(study_name, study)
+
 
 print("\nRunning backtest with best params:")
 fast_w = study.best_params['fast_window']
@@ -223,3 +225,11 @@ date_index = next(iter(signals_dict.values()), None).index
 delta = (date_index[-1] - date_index[0])
 print(f"Date range: {date_index[0]} to {date_index[-1]}. Days: {delta.days}")
 stats = backtest(signals_dict, plot=True, print_stats=True)
+
+out = {
+    "best_params": study.best_params,
+    "best_value": study.best_value,
+    "Best Params Stats": stats.T.to_dict()[0]
+}
+
+save_to_json(study_name, out)

@@ -140,6 +140,35 @@ class Portfolio:
         # Ensure monotonic index insertion
         self.equity_curve.loc[ts] = float(total)
 
+    def max_drawdown(self) -> float:
+        """
+        Compute maximum drawdown as a positive fraction (0.25 == 25%).
+        Uses the current equity_curve series. Returns 0.0 if not enough data.
+        """
+        eq = getattr(self, "equity_curve", None)
+        if not isinstance(eq, pd.Series) or eq.empty or len(eq) < 2:
+            return 0.0
+
+        # Ensure sorted by time
+        eq = eq.sort_index().astype(float)
+
+        # running maximum
+        running_max = eq.cummax()
+        # drawdown series: (peak - trough) / peak
+        dd = (running_max - eq) / running_max
+        # maximum drawdown
+        max_dd = float(dd.max(skipna=True)) if not dd.empty else 0.0
+        # guard against nan
+        if pd.isna(max_dd):
+            return 0.0
+        return max_dd
+
+    def max_drawdown_pct(self) -> float:
+        """
+        Return max drawdown in percent (e.g. 25.0 for 25%).
+        """
+        return self.max_drawdown() * 100.0
+
     def print_stats(self):
         print("\nStats:")
         print(f"Cash: ${self.cash:,.2f}")
@@ -211,9 +240,21 @@ class Portfolio:
             "profit_pct": self.profit_pct * 100,
             "transaction_fee_total": self.transaction_fee_total,
             "total_trades": len(self.trades),
-            "sharpe": self.sharpe_ratio()
-
+            "sharpe": self.sharpe_ratio(),
+            "max_drawdown": self.max_drawdown(),          # fraction (0..1)
+            "max_drawdown_pct": self.max_drawdown_pct()   # percent (0..100)
+ 
         }
+
+    @staticmethod
+    def dict_to_text(d, float_fmt="{:.2f}"):
+        lines = []
+        for k, v in d.items():
+            if isinstance(v, (int, float)):
+                lines.append(f"{k}: {float_fmt.format(v)}")
+            else:
+                lines.append(f"{k}: {v}")
+        return "\n".join(lines)
 
     def update_stop_loss(self, stop_loss: float):
         self.stop_loss = stop_loss
@@ -261,6 +302,17 @@ class Portfolio:
                             alpha=0.12, interpolate=True, color="tab:green")
             ax.fill_between(x, below, baseline, where=below.notna(),
                             alpha=0.12, interpolate=True, color="tab:red")
+        #text
+        text = self.dict_to_text(self.stats_dict())
+        ax.text(
+            0.01, .95,  # x, y in axis coordinates
+            text,
+            transform=ax.transAxes,  # use axes coordinates (0..1)
+            fontsize=10,
+            va='top',
+            ha='left',
+            bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.85, edgecolor='black')
+        )
 
         # Cosmetics
         ax.set_title(title, fontsize=13, weight="bold")
