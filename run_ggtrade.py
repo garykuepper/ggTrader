@@ -131,15 +131,15 @@ def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=4, 
                     continue
                 portfolio.add_position(pos)
                 # print(f"{date}: BUY {symbol} at {close_price}, qty: {qty}")
-            # reentry
-            elif crossover == 1:
-                reentry[symbol] += 1
-                if reentry[symbol] > cooldown_min:
-                    pos = position_sizing(portfolio, symbol, close_price, date, position_size)
-                    if pos.cost > portfolio.cash:
-                        # skip if cost is greater than cash available
-                        continue
-                    portfolio.add_position(pos)
+            # # reentry
+            # elif crossover == 1:
+            #     reentry[symbol] += 1
+            #     if reentry[symbol] > cooldown_min:
+            #         pos = position_sizing(portfolio, symbol, close_price, date, position_size)
+            #         if pos.cost > portfolio.cash:
+            #             # skip if cost is greater than cash available
+            #             continue
+            #         portfolio.add_position(pos)
         portfolio.record_equity(date)
 
     # portfolio.print_trades()
@@ -157,8 +157,8 @@ def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=4, 
 
 
 def objective(trial):
-    fast_w = trial.suggest_int("fast_window", 8, 40)
-    slow_w = trial.suggest_int("slow_window", fast_w + 10, 80)
+    fast_w = trial.suggest_int("fast_window", 8, 50, step=2)
+    slow_w = trial.suggest_int("slow_window", fast_w + 10, 100, step=2)
     atr_multi = trial.suggest_float("atr_multiplier", .5, 2.0, step=0.0625)
     cooldown_period = 4
 
@@ -197,16 +197,16 @@ def save_to_json(study_name: str, out: dict):
         json.dump(out, f, indent=2, ensure_ascii=False)
 
 
-# ohlcv = get_top_crypto_ohlcv(top_n=20, limit=720, interval="1h")
-# save_ohlcv_dict(ohlcv, "ohlcv_dict_1h.pkl")
+# ohlcv = get_top_crypto_ohlcv(top_n=30, limit=720, interval="4h")
+# save_ohlcv_dict(ohlcv, "ohlcv_dict_4h_top30.pkl")
 ohlcv = load_ohlcv_dict("ohlcv_dict.pkl")
-study_name = "top_crypto_sharpe_multi"
+study_name = "top_crypto_sharpe_noreentry_v1"
 study = optuna.create_study(direction="maximize",
                             storage="sqlite:///ema_optuna.db",
                             study_name=study_name,
                             load_if_exists=True)
 
-study.optimize(objective, n_trials=100, n_jobs=-1)
+study.optimize(objective, n_trials=10, n_jobs=1)
 
 time.sleep(0.3)
 print("Best value:", study.best_value)
