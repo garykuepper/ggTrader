@@ -58,6 +58,9 @@ def calc_signals(df: pd.DataFrame, ema_fast: int = 5, ema_slow: int = 20, atr_mu
                                        window=ema_fast).ema_indicator()
     signals['ema_slow'] = EMAIndicator(close=df['close'],
                                        window=ema_slow).ema_indicator()
+    signals['macd'] = signals['ema_fast'] - signals['ema_slow']
+    signals['macd_signal'] = signals['macd'].ewm(span=9, adjust=False).mean()
+    signals['macd_cross'] = signals['macd'] - signals['macd_signal']
     signals['ema_superslow'] = EMAIndicator(close=df['close'],
                                             window=ema_slow * 2).ema_indicator()
     signals['crossover'] = np.sign(signals['ema_fast'] - signals['ema_slow'])
@@ -206,7 +209,7 @@ study = optuna.create_study(direction="maximize",
                             study_name=study_name,
                             load_if_exists=True)
 
-study.optimize(objective, n_trials=10, n_jobs=1)
+study.optimize(objective, n_trials=10, n_jobs=-1)
 
 time.sleep(0.3)
 print("Best value:", study.best_value)
