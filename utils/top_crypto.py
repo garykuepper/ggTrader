@@ -10,11 +10,13 @@ Requires:
   - CMC_API_KEY in your environment
 """
 
+
 import os
 import requests
 import pandas as pd
 from tabulate import tabulate
 from dotenv import load_dotenv  # new: load .env files
+import ccxt  # added to query Kraken for volume-based ranking
 
 CMC_LISTINGS = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
 
@@ -23,6 +25,7 @@ STABLES = {
     "USDT", "USDC", "FDUSD", "DAI", "TUSD", "PYUSD",
     "USDP", "GUSD", "USDD", "EURS", "WBTC", "WBETH", "USDE"
 }
+
 
 def get_top_cmc(limit: int = 20, convert: str = "USD", print_table: bool = False) -> pd.DataFrame:
     """
@@ -47,7 +50,7 @@ def get_top_cmc(limit: int = 20, convert: str = "USD", print_table: bool = False
 
     params = {
         "start": 1,
-        "limit": limit * 2,   # fetch extra to cover excluded stables
+        "limit": limit * 2,  # fetch extra to cover excluded stables
         "convert": convert,
         "sort": "market_cap",
         "sort_dir": "desc",
@@ -75,6 +78,11 @@ def get_top_cmc(limit: int = 20, convert: str = "USD", print_table: bool = False
         print(tabulate(df, headers="keys", tablefmt="github", floatfmt=".2f"))
 
     return df
+
+
+
+
+
 
 # For standalone testing
 if __name__ == "__main__":

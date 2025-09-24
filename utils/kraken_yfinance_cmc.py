@@ -299,6 +299,59 @@ def get_top_kraken_usd_pairs(top_n: int = 30, require_yf: bool = False) -> pd.Da
         rows = [r for r in rows if r.yf_ticker != "-"]
     return rows_to_dataframe(rows)
 
+def get_top_kraken_by_volume(top_n: int = 30) -> pd.DataFrame:
+    """
+    Fetch Kraken tickers via Kraken public REST API and return a DataFrame of the top `top_n`
+    USD-quoted pairs ranked by estimated 24h quote-volume (notional).
+
+    Output columns:
+      - Rank
+      - Kraken Pair (altname)
+      - Base (common symbol, e.g., BTC)
+      - Kraken 24h Vol (USD)  (v[1] * p[1])
+
+    This function intentionally ignores CMC and Yahoo Finance lookups and uses only Kraken public endpoints.
+    """
+    pairs = get_kraken_asset_pairs_usd()  # list of dicts with altname and base_common
+    tickers = get_kraken_tickers()        # dict keyed by pair_code
+
+    # Compute volume notional for each pair
+    rows = []
+    for p in pairs:
+
+        pair_code = p["pair_code"]
+        altname = p.get("altname", pair_code)
+        base_common = p.get("base_common", "")
+        t = tickers.get(pair_code, {}) or {}
+        try:
+            base24 = float(t.get("v", [0, 0])[1])
+        except Exception:
+            base24 = 0.0
+        try:
+            vwap24 = float(t.get("p", [0, 0])[1])
+        except Exception:
+            vwap24 = 0.0
+        notional = base24 * vwap24
+        rows.append({
+            "Kraken Pair": altname,
+            "Symbol": base_common,
+            "Kraken 24h Vol (USD)": notional,
+            "pair_code": pair_code,
+        })
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+
+    df = df.sort_values(by="Kraken 24h Vol (USD)", ascending=False).reset_index(drop=True)
+    df.insert(0, "Rank", df.index + 1)
+    if top_n is not None and top_n > 0:
+        df = df.head(top_n)
+    # Drop internal fields we don't want in output
+    if "pair_code" in df.columns:
+        df = df.drop(columns=["pair_code"])
+    return df
+
 # ----------------------------
 # Main (demo)
 # ----------------------------
@@ -309,11 +362,11 @@ def main():
 
     rows = build_ranked_rows(top_n=TOP_N)
     print_rows(rows)
-
+    df = get_top_kraken_usd_pairs(top_n=TOP_N, require_yf=False)
     # Example: get a DataFrame for downstream analysis
-    df = rows_to_dataframe(rows)
-    # print("\nDataFrame:")
-    # print(tabulate(df, headers='keys', tablefmt='github'))  # uncomment to preview
+
+    print("\nDataFrame:")
+    print(tabulate(df, headers='keys', tablefmt='github'))  # uncomment to preview
 
 if __name__ == "__main__":
     main()

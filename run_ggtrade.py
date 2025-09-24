@@ -9,7 +9,7 @@ from tabulate import tabulate
 from ta.trend import EMAIndicator
 from ta.volatility import AverageTrueRange
 
-from utils.kraken_yfinance_cmc import get_kraken_asset_pairs_usd
+from utils.kraken_yfinance_cmc import get_kraken_asset_pairs_usd, get_top_kraken_by_volume
 from utils.top_crypto import get_top_cmc
 from utils.kraken_ohlcv import fetch_ohlcv_df
 from ggTrader.Portfolio import Portfolio
@@ -17,7 +17,8 @@ from ggTrader.Position import Position
 
 
 def get_top_crypto_ohlcv(top_n=20, limit=30, interval="4h"):
-    top_crypto = get_top_cmc(limit=top_n + 5, print_table=False)
+    # top_crypto = get_top_cmc(limit=top_n + 5, print_table=False)
+    top_crypto = get_top_kraken_by_volume(top_n=top_n)
     # filter out non-Kraken pairs
     kraken_usd_pairs = pd.DataFrame(get_kraken_asset_pairs_usd())
     top_crypto = top_crypto[top_crypto["Symbol"].isin(kraken_usd_pairs["base_common"])]
@@ -163,14 +164,14 @@ def objective(trial):
     fast_w = trial.suggest_int("fast_window", 8, 50, step=2)
     slow_w = trial.suggest_int("slow_window", fast_w + 10, 100, step=2)
     atr_multi = trial.suggest_float("atr_multiplier", .5, 2.0, step=0.0625)
-    cooldown_period = 4
+
 
     signals_dict = get_signals(ohlcv,
                                ema_fast=fast_w,
                                ema_slow=slow_w,
                                atr_multiplier=atr_multi)
 
-    stats = backtest(signals_dict, cooldown_min=cooldown_period)
+    stats = backtest(signals_dict)
 
     # extract metrics
     sharpe = float(stats['sharpe'].values[0])
@@ -200,39 +201,56 @@ def save_to_json(study_name: str, out: dict):
         json.dump(out, f, indent=2, ensure_ascii=False)
 
 
-# ohlcv = get_top_crypto_ohlcv(top_n=30, limit=720, interval="4h")
-# save_ohlcv_dict(ohlcv, "ohlcv_dict_4h_top30.pkl")
-ohlcv = load_ohlcv_dict("ohlcv_dict.pkl")
-study_name = "top_crypto_sharpe_noreentry_v1"
-study = optuna.create_study(direction="maximize",
-                            storage="sqlite:///ema_optuna.db",
-                            study_name=study_name,
-                            load_if_exists=True)
+interval = "4h"
+top_n = 20
+ohlcv = get_top_crypto_ohlcv(top_n=top_n, limit=120, interval=interval)
+latest_4h = pd.Timestamp.utcnow().floor(interval)
+date_str = latest_4h.strftime("%Y-%m-%d_%H")
+filename = f"ohlcv_dict_{top_n}_{date_str}.pkl"
 
-study.optimize(objective, n_trials=10, n_jobs=-1)
+# save_ohlcv_dict(ohlcv, filename)
+# ohlcv = load_ohlcv_dict(filename)
+study = False
 
-time.sleep(0.3)
-print("Best value:", study.best_value)
-print("Best params:")
-for k, v in study.best_params.items():
-    print(f"  {k}: {v}")
+study_name = f"top_crypto_vol_top{top_n}"+date_str
+if study:
 
+    study = optuna.create_study(direction="maximize",
+                                storage="sqlite:///ema_optuna.db",
+                                study_name=study_name,
+                                load_if_exists=True)
 
+    study.optimize(objective, n_trials=10, n_jobs=-1)
 
-print("\nRunning backtest with best params:")
-fast_w = study.best_params['fast_window']
-slow_w = study.best_params['slow_window']
-atr_multi = study.best_params['atr_multiplier']
+    time.sleep(0.3)
+    print("Best value:", study.best_value)
+    print("Best params:")
+    for k, v in study.best_params.items():
+        print(f"  {k}: {v}")
+
+    print("\nRunning backtest with best params:")
+    fast_w = study.best_params['fast_window']
+    slow_w = study.best_params['slow_window']
+
+    atr_multi = study.best_params['atr_multiplier']
+
+else:
+    fast_w = 48
+    slow_w = 98
+    atr_multi = 1.5
+
 signals_dict = get_signals(ohlcv, ema_fast=fast_w, ema_slow=slow_w, atr_multiplier=atr_multi)
 date_index = next(iter(signals_dict.values()), None).index
 delta = (date_index[-1] - date_index[0])
 print(f"Date range: {date_index[0]} to {date_index[-1]}. Days: {delta.days}")
 stats = backtest(signals_dict, plot=True, print_stats=True)
 
-out = {
-    "best_params": study.best_params,
-    "best_value": study.best_value,
-    "Best Params Stats": stats.T.to_dict()[0]
-}
+if study:
+    out = {
+        "best_params": study.best_params,
+        "best_value": study.best_value,
+        "Best Params Stats": stats.T.to_dict()[0]
+    }
 
-save_to_json(study_name, out)
+    save_to_json(study_name, out)
+

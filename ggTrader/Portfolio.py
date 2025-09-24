@@ -4,6 +4,7 @@ from tabulate import tabulate
 from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 class Portfolio:
@@ -325,6 +326,8 @@ class Portfolio:
         if show:
             plt.show()
         return ax
+
+
 
     def sharpe_ratio(self, periods_per_year: int | None = None, rf_annual: float = 0.01, method: str = "log") -> float:
         """
