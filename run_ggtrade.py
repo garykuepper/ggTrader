@@ -17,8 +17,8 @@ from ggTrader.Position import Position
 
 
 def get_top_crypto_ohlcv(top_n=20, limit=30, interval="4h"):
-    # top_crypto = get_top_cmc(limit=top_n + 5, print_table=False)
-    top_crypto = get_top_kraken_by_volume(top_n=top_n)
+    top_crypto = get_top_cmc(limit=top_n + 5, print_table=False)
+    # top_crypto = get_top_kraken_by_volume(top_n=top_n)
     # filter out non-Kraken pairs
     kraken_usd_pairs = pd.DataFrame(get_kraken_asset_pairs_usd())
     top_crypto = top_crypto[top_crypto["Symbol"].isin(kraken_usd_pairs["base_common"])]
@@ -162,7 +162,7 @@ def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=4, 
 
 def objective(trial):
     fast_w = trial.suggest_int("fast_window", 8, 50, step=2)
-    slow_w = trial.suggest_int("slow_window", fast_w + 10, 100, step=2)
+    slow_w = trial.suggest_int("slow_window", fast_w + 10, 70, step=2)
     atr_multi = trial.suggest_float("atr_multiplier", .5, 2.0, step=0.0625)
 
 
@@ -203,16 +203,16 @@ def save_to_json(study_name: str, out: dict):
 
 interval = "4h"
 top_n = 20
-ohlcv = get_top_crypto_ohlcv(top_n=top_n, limit=120, interval=interval)
+# ohlcv = get_top_crypto_ohlcv(top_n=top_n, limit=720, interval=interval)
 latest_4h = pd.Timestamp.utcnow().floor(interval)
 date_str = latest_4h.strftime("%Y-%m-%d_%H")
-filename = f"ohlcv_dict_{top_n}_{date_str}.pkl"
+# filename = f"ohlcv_dict_{top_n}_{date_str}.pkl"
 
-# save_ohlcv_dict(ohlcv, filename)
-# ohlcv = load_ohlcv_dict(filename)
-study = False
+# save_ohlcv_dict(ohlcv,"data/kraken_dict/"+filename)
+ohlcv = load_ohlcv_dict("data/kraken_historical_4h/ohlcv_dict.pkl")
+study = True
 
-study_name = f"top_crypto_vol_top{top_n}"+date_str
+study_name = f"top_crypto_vol_top20_historical"
 if study:
 
     study = optuna.create_study(direction="maximize",
@@ -220,7 +220,7 @@ if study:
                                 study_name=study_name,
                                 load_if_exists=True)
 
-    study.optimize(objective, n_trials=10, n_jobs=-1)
+    study.optimize(objective, n_trials=100, n_jobs=-1)
 
     time.sleep(0.3)
     print("Best value:", study.best_value)

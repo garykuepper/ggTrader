@@ -10,7 +10,6 @@ Requires:
   - CMC_API_KEY in your environment
 """
 
-
 import os
 import requests
 import pandas as pd
@@ -78,10 +77,6 @@ def get_top_cmc(limit: int = 20, convert: str = "USD", print_table: bool = False
         print(tabulate(df, headers="keys", tablefmt="github", floatfmt=".2f"))
 
     return df
-
-
-
-
 
 
 # For standalone testing
