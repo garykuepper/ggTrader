@@ -1,5 +1,5 @@
 # run_ggtrade_live.py
-# A rough live-loop that mirrors run_ggtrade.py logic, uses ccxt Kraken data, and trades
+# A rough live-loop that mirrors run_ggtrade_old.py logic, uses ccxt Kraken data, and trades
 # with Kraken via ccxt. It invests in the top 20 cryptos, mirrors available cash on Kraken,
 # and manages exits with a live ATR-based stop computed in the loop (no ATRTrailingStop class used).
 
