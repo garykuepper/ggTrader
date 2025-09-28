@@ -43,10 +43,14 @@ class Portfolio:
         # self.trades.append(position.__dict__.copy())
         self.positions.remove(position)
 
-    def update_position_stop_loss(self, symbol: str, stop_loss: float):
+    def check_stop_loss(self, symbol: str, new_stop_loss: float):
         position = self.get_position(symbol)
         if position:
-            position.stop_loss = stop_loss
+            if position.current_price <= position.stop_loss:
+                return True
+            elif new_stop_loss > position.stop_loss:
+                position.stop_loss = new_stop_loss
+        return False
 
     def update_position_price(self, symbol: str, price: float, date: datetime):
         position = self.get_position(symbol)

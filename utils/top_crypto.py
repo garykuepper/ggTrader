@@ -17,6 +17,8 @@ from tabulate import tabulate
 from dotenv import load_dotenv  # new: load .env files
 import ccxt  # added to query Kraken for volume-based ranking
 
+from utils.kraken_yfinance_cmc import get_kraken_asset_pairs_usd
+
 CMC_LISTINGS = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
 
 # Common stablecoins to exclude
@@ -78,6 +80,14 @@ def get_top_cmc(limit: int = 20, convert: str = "USD", print_table: bool = False
 
     return df
 
+def get_kraken_top_crypto(top_n=25):
+    top_crypto = get_top_cmc(limit=top_n + 5, print_table=False)
+    # top_crypto = get_top_kraken_by_volume(top_n=top_n)
+    # filter out non-Kraken pairs
+    kraken_usd_pairs = pd.DataFrame(get_kraken_asset_pairs_usd())
+    top_crypto = top_crypto[top_crypto["Symbol"].isin(kraken_usd_pairs["base_common"])]
+    top_crypto = top_crypto.reset_index(drop=True)
+    return top_crypto.head(top_n)
 
 # For standalone testing
 if __name__ == "__main__":

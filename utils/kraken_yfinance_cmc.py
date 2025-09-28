@@ -289,15 +289,54 @@ def print_rows(rows: List[Row]) -> None:
 # ----------------------------
 # Public API: return DataFrame
 # ----------------------------
-def get_top_kraken_usd_pairs(top_n: int = 30, require_yf: bool = False) -> pd.DataFrame:
+def get_top_kraken_usd_pairs_by_volume(top_n: int = 30, exclude_stables: bool = True) -> pd.DataFrame:
     """
-    Return a pandas DataFrame of the top Kraken USD pairs with CMC/Yahoo columns.
-    If require_yf=True, filter to rows where 'YF Ticker' != '-'.
+    Return a DataFrame ranking Kraken USD-paired assets by 24h notional volume
+    (Kraken base volume notional). Optionally exclude stablecoins.
+
+    - top_n: number of rows to return
+    - exclude_stables: if True, filter out stablecoins (based on common bases)
     """
-    rows = build_ranked_rows(top_n=top_n)
-    if require_yf:
-        rows = [r for r in rows if r.yf_ticker != "-"]
-    return rows_to_dataframe(rows)
+    # Build base list of USD-paired assets from Kraken
+    pairs = get_kraken_asset_pairs_usd()
+
+    # Kraken ticker data is needed to compute 24h notional USD
+    tickers = get_kraken_tickers()
+
+    # Compute 24h notional USD for each pair
+    for p in pairs:
+        p["vol_24h_usd"] = kraken_quote_volume_usd(tickers, p["pair_code"])
+
+    # Optionally filter out stablecoins
+    if exclude_stables:
+        # Local stablecoin bases (kept in sync with common stablecoins used elsewhere)
+        STABLE_BASES = {
+            "USDT", "USDC", "DAI", "USDP", "TUSD", "EUR", "GBP", "AUD", "USDG"
+        }
+        pairs = [p for p in pairs if p.get("base_common") not in STABLE_BASES]
+        # Also ensure we don't include any basenames that Kraken-like lists as stable currencies
+        pairs = [p for p in pairs if p.get("base_common") and p["base_common"] not in EXCLUDE_BASES]
+
+    # Sort by volume (descending)
+    pairs_sorted = sorted(pairs, key=lambda p: p.get("vol_24h_usd", 0.0), reverse=True)
+
+    # Take top_n results
+    top = pairs_sorted[:top_n]
+
+    # Normalize into a DataFrame for downstream usage
+    df = pd.DataFrame([{
+        "Rank": idx + 1,
+        "Kraken Pair": p["pair_code"],
+        "Altname": p.get("altname", p["pair_code"]),
+        "Base": p["base_common"],
+        "Vol 24h (USD)": p.get("vol_24h_usd", 0.0),
+    } for idx, p in enumerate(top)])
+
+    # Ensure numeric type for volume
+    if not df.empty:
+        df["Vol 24h (USD)"] = pd.to_numeric(df["Vol 24h (USD)"], errors="coerce")
+
+    return df
 
 def get_top_kraken_by_volume(top_n: int = 30) -> pd.DataFrame:
     """
