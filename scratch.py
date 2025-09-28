@@ -60,24 +60,7 @@ def build_ohlcv_dict():
 
     return ohlcv_dict
 
-
-df = pd.read_csv(
-    f"data/kraken_historical_4h/XBTUSD_240.csv",
-    header=None,
-    names=col_names,
-    converters={"date": lambda x: pd.to_datetime(int(x), unit="s", utc=True)},
-    index_col="date"
-)
-print(df.info())
 top_crypto = get_kraken_top_crypto()
 print(tabulate(top_crypto, headers="keys", tablefmt="github"))
 print(top_crypto.info())
-ohlcv_dict = build_ohlcv_dict()
-save_ohlcv_dict(ohlcv_dict, "datakraken_historical_4h/ohlcv_dict.pkl")
-print(ohlcv_dict.keys())
-print(len(ohlcv_dict.keys()))
 
-for key in ohlcv_dict.keys():
-    print(f"{key}: {ohlcv_dict[key].shape}")
-    print(ohlcv_dict[key].info())
-    print(ohlcv_dict[key].describe())

@@ -1,3 +1,4 @@
+import os
 import time
 import json
 import numpy as np
@@ -10,10 +11,11 @@ from ta.trend import EMAIndicator
 from ta.volatility import AverageTrueRange
 
 from utils.kraken_yfinance_cmc import get_kraken_asset_pairs_usd, get_top_kraken_by_volume
-from utils.top_crypto import get_top_cmc
+from utils.top_crypto import get_top_cmc, get_kraken_top_crypto
 from utils.kraken_ohlcv import fetch_ohlcv_df
 from ggTrader.Portfolio import Portfolio
 from ggTrader.Position import Position
+from ggTrader.Signals import EMASignals
 
 
 def get_top_crypto_ohlcv(top_n=20, limit=30, interval="4h"):
@@ -33,14 +35,14 @@ def get_top_crypto_ohlcv(top_n=20, limit=30, interval="4h"):
     # If you want to keep UTC with tz-aware:
     latest_4h = pd.Timestamp.utcnow().floor(interval)
     datetime_index = pd.date_range(end=latest_4h, periods=limit, freq=interval)
-
+    # datetime_index = pd.date_range(start="2023-01-01", end="2025-06-30", freq="4h")
 
     for label, row in top_crypto.iterrows():
 
         symbol = row.get("Symbol")
         pos = top_crypto.index.get_loc(label)
 
-        print(f"Fetching {symbol} OHLC data...{pos+1}/{top_n}")
+        print(f"Fetching {symbol} OHLC data...{pos + 1}/{top_n}")
         try:
             df[symbol] = fetch_ohlcv_df(kraken, symbol + '/USD', timeframe=interval, limit=limit)
             df[symbol] = df[symbol].reindex(datetime_index)
@@ -50,39 +52,41 @@ def get_top_crypto_ohlcv(top_n=20, limit=30, interval="4h"):
     return df
 
 
-def calc_signals(df: pd.DataFrame, ema_fast: int = 5, ema_slow: int = 20, atr_multiplier: float = 1.0):
-    signals = pd.DataFrame()
-    signals['close'] = df['close'].copy()
+def get_ohlcv_csv(path: str, tickers: list = None):
+    with os.scandir(path) as it:
+        files = [entry.name for entry in it if entry.is_file()]
+    num_files = len(files)
 
-    # Compute EMA signals (as you currently do)
-    signals['ema_fast'] = EMAIndicator(close=df['close'],
-                                       window=ema_fast).ema_indicator()
-    signals['ema_slow'] = EMAIndicator(close=df['close'],
-                                       window=ema_slow).ema_indicator()
-    signals['macd'] = signals['ema_fast'] - signals['ema_slow']
-    signals['macd_signal'] = signals['macd'].ewm(span=9, adjust=False).mean()
-    signals['macd_cross'] = signals['macd'] - signals['macd_signal']
-    signals['ema_superslow'] = EMAIndicator(close=df['close'],
-                                            window=ema_slow * 2).ema_indicator()
-    signals['crossover'] = np.sign(signals['ema_fast'] - signals['ema_slow'])
-    signals['signal'] = signals['crossover'].diff().fillna(0) / 2
-    signals['atr'] = AverageTrueRange(high=df['high'],
-                                      low=df['low'],
-                                      close=df['close'],
-                                      window=14,
-                                      fillna=False).average_true_range()
-    signals.loc[signals['atr'] == 0, 'atr'] = np.nan
-    signals['atr_sell'] = df['close'] - signals['atr'] * atr_multiplier
-    signals['atr_sell'] = signals['atr_sell'].shift(1)
-    signals['atr_sell_signal'] = df['close'] < signals['atr_sell']
-    return signals
+    ohlcv_dict = {}
+    datetime_index = pd.date_range(start="2024-01-01",
+                                   end="2025-06-30",
+                                   freq="4h",
+                                   tz="UTC")
+    for f in files:
+        ticker = f.split("_")[0]
+        if tickers is not None and ticker not in tickers:
+            continue
+        print(f"({files.index(f) + 1}/{num_files}) Processing {f} ")
+        file_path = os.path.join(path, f)
+        df = pd.read_csv(file_path)
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"], utc=True)
+            df = df.set_index("date")
+        else:
+            # If there is no 'date' column, try to infer from index or adjust accordingly
+            df = df.set_index(pd.to_datetime(df.index, utc=True))
+        # print(df.head())
+        ohlcv_dict[ticker] = df.reindex(datetime_index)
+        # print(ohlcv_dict[ticker].head())
+
+    return ohlcv_dict
 
 
 def get_signals(ohlcv: dict, ema_fast: int = 5, ema_slow: int = 20, atr_multiplier: float = 1.0):
     signals_dict = {}
+    signals = EMASignals(ema_fast, ema_slow, atr_multiplier)
     for key in ohlcv.keys():
-        signals = calc_signals(ohlcv[key], ema_fast, ema_slow, atr_multiplier)
-        signals_dict[key] = signals
+        signals_dict[key] = signals.compute(ohlcv[key])
 
     return signals_dict
 
@@ -103,7 +107,7 @@ def position_sizing(portfolio: Portfolio, symbol: str, close_price: float, date,
     return Position(symbol, qty, close_price, date)
 
 
-def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=4, position_size=0.05,):
+def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=4, position_size=0.05, ):
     # print("\n Backtest")
     date_index = next(iter(signals_dict.values()), None).index
     portfolio = Portfolio(cash=10000)
@@ -118,9 +122,9 @@ def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=4, 
             close_price = signals_dict[symbol].loc[date, 'close']
             if portfolio.in_position(symbol):
                 portfolio.update_position_price(symbol, close_price, date)
-                portfolio.update_position_stop_loss(symbol, atr_sell)
-                # Check stop loss
-                if signal == -1 or atr_sell_signal:
+                # Update and check stop loss
+                stop_loss_exit = portfolio.check_stop_loss(symbol, atr_sell)
+                if signal == -1 or atr_sell_signal or stop_loss_exit:
                     pos = portfolio.get_position(symbol)
                     if atr_sell_signal:
                         pos.stop_loss_triggered = True
@@ -131,11 +135,12 @@ def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=4, 
             elif signal == 1:
                 # position sizing
                 pos = position_sizing(portfolio, symbol, close_price, date, position_size)
+                pos.stop_loss = atr_sell
                 if pos.cost > portfolio.cash:
                     continue
                 portfolio.add_position(pos)
                 # print(f"{date}: BUY {symbol} at {close_price}, qty: {qty}")
-            # # reentry
+            # reentry
             # elif crossover == 1:
             #     reentry[symbol] += 1
             #     if reentry[symbol] > cooldown_min:
@@ -162,9 +167,8 @@ def backtest(signals_dict: dict, plot=False, print_stats=False, cooldown_min=4, 
 
 def objective(trial):
     fast_w = trial.suggest_int("fast_window", 8, 50, step=2)
-    slow_w = trial.suggest_int("slow_window", fast_w + 10, 70, step=2)
-    atr_multi = trial.suggest_float("atr_multiplier", .5, 2.0, step=0.0625)
-
+    slow_w = trial.suggest_int("slow_window", fast_w + 10, 80, step=2)
+    atr_multi = trial.suggest_float("atr_multiplier", .5, 2.5, step=0.0625)
 
     signals_dict = get_signals(ohlcv,
                                ema_fast=fast_w,
@@ -186,41 +190,49 @@ def objective(trial):
 
     # score = sharpe minus penalties:
     # alpha: penalty per unit drawdown (fraction), beta: penalty per $100 fees, gamma: penalty for high turnover
-    alpha = 2.0
-    beta = 0.01  # per dollar of fees
-    gamma = 0.001  # per trade
-
-    score = sharpe - alpha * max_dd - beta * fees - gamma * trades
+    alpha = 5.0
+    beta = 0.002  # per dollar of fees
+    gamma = 0.002  # per trade
+    max_dd_wt = alpha * max_dd
+    fees_wt = beta * fees
+    trades_wt = gamma * trades
+    # print(f'sharpe: {sharpe:.2f} max_dd: {max_dd_wt:.2f} fees: ${fees_wt:.2f} trades: {trades_wt}')
+    score = sharpe - max_dd_wt - fees_wt - trades_wt
 
     return float(score)
 
 
 def save_to_json(study_name: str, out: dict):
     with open(study_name + ".json", "w", encoding="utf-8") as f:
-
         json.dump(out, f, indent=2, ensure_ascii=False)
 
 
+top_crypto_list = get_kraken_top_crypto(top_n=20)
+
 interval = "4h"
 top_n = 20
-# ohlcv = get_top_crypto_ohlcv(top_n=top_n, limit=720, interval=interval)
+# filename = f"ohlcv_dict_{top_n}_{date_str}.pkl"
+file_path = "data/kraken_dict/kraken_historial_4h.pkl"
+path = "data/kraken_hist_4h_latest"
+
 latest_4h = pd.Timestamp.utcnow().floor(interval)
 date_str = latest_4h.strftime("%Y-%m-%d_%H")
-# filename = f"ohlcv_dict_{top_n}_{date_str}.pkl"
 
-# save_ohlcv_dict(ohlcv,"data/kraken_dict/"+filename)
-ohlcv = load_ohlcv_dict("data/kraken_historical_4h/ohlcv_dict.pkl")
+# ohlcv = get_top_crypto_ohlcv(top_n=top_n, limit=720, interval=interval)
+# ohlcv = get_ohlcv_csv(path, top_crypto_list["Symbol"].tolist())
+
+# save_ohlcv_dict(ohlcv,file_path)
+ohlcv = load_ohlcv_dict(file_path)
+
 study = True
 
-study_name = f"top_crypto_vol_top20_historical"
+study_name = f"renetry"
 if study:
 
     study = optuna.create_study(direction="maximize",
-                                storage="sqlite:///ema_optuna.db",
-                                study_name=study_name,
-                                load_if_exists=True)
+                                storage="sqlite:///ema_optuna.db")
 
-    study.optimize(objective, n_trials=100, n_jobs=-1)
+    study.optimize(objective, n_trials=100, n_jobs=1)
 
     time.sleep(0.3)
     print("Best value:", study.best_value)
@@ -231,7 +243,6 @@ if study:
     print("\nRunning backtest with best params:")
     fast_w = study.best_params['fast_window']
     slow_w = study.best_params['slow_window']
-
     atr_multi = study.best_params['atr_multiplier']
 
 else:
@@ -245,6 +256,9 @@ delta = (date_index[-1] - date_index[0])
 print(f"Date range: {date_index[0]} to {date_index[-1]}. Days: {delta.days}")
 stats = backtest(signals_dict, plot=True, print_stats=True)
 
+
+# print(tabulate(signals_dict['BTC'].tail(), headers="keys", tablefmt="github"))
+# print(tabulate(ohlcv['BTC'].tail(), headers="keys", tablefmt="github"))
 if study:
     out = {
         "best_params": study.best_params,
@@ -253,4 +267,3 @@ if study:
     }
 
     save_to_json(study_name, out)
-

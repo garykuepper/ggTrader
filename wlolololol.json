@@ -1,0 +1,22 @@
+{
+  "best_params": {
+    "fast_window": 50,
+    "slow_window": 66,
+    "atr_multiplier": 2.3125
+  },
+  "best_value": 1.3025599823838951,
+  "Best Params Stats": {
+    "cash": 9818.6904838013,
+    "total_position_value": 1097.0992275184758,
+    "total_value": 10915.789711319776,
+    "realized_profit": 905.0922476830557,
+    "unrealized_profit": 10.697463636717977,
+    "total_profit": 915.789711319776,
+    "profit_pct": 9.157897113197759,
+    "transaction_fee_total": 271.0158620354825,
+    "total_trades": 65.0,
+    "sharpe": 1.7293913019084106,
+    "max_drawdown": 0.045407728744516464,
+    "max_drawdown_pct": 4.540772874451647
+  }
+}
