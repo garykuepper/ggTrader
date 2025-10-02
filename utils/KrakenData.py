@@ -1,4 +1,5 @@
 import ccxt
+import os
 import time
 import pandas as pd
 import requests
@@ -93,7 +94,12 @@ class KrakenData:
         rows = []
         for s, t in tickers.items():
             # last price
+            # print(f"{s}, {t}")
             last = t.get('last') or t.get('close')
+            low = t.get('low')
+            high = t.get('high')
+            open = t.get('open')
+            percentage = t.get('percentage')
             # notional volume: prefer Kraken-provided fields if present
             vol_usd = 0.0
             # 3a) try quoteVolume (if available and already in USD terms)
@@ -104,6 +110,7 @@ class KrakenData:
                 # 3b) Kraken-specific v/p notations
                 v = t.get('v', [0, 0])[1] if isinstance(t.get('v'), (list, tuple)) else 0.0
                 p = t.get('p', [0, 0])[1] if isinstance(t.get('p'), (list, tuple)) else 0.0
+
                 if v is not None and p is not None:
                     vol_usd = float(v) * float(p)
                 elif last is not None:
@@ -112,8 +119,13 @@ class KrakenData:
                     vol_usd = float(base_vol) * float(last)
             rows.append({
                 'symbol': s,
+                'volume_usd': vol_usd,
+                'percentage': round(percentage, 2),
                 'last': float(last) if last is not None else None,
-                'volume_usd': vol_usd
+                'open': open,
+                'high': high,
+                'low': low,
+
             })
 
         df = pd.DataFrame(rows)
@@ -126,13 +138,38 @@ class KrakenData:
 
         return df
 
+    def print_top_kraken_by_volume(self, limit=20, only_usd=True, exclude_stables: bool = True, verbose=False):
+        top_volume = self.top_kraken_by_volume(limit=limit, only_usd=only_usd, exclude_stables=exclude_stables)
+        print(tabulate(top_volume, headers="keys", tablefmt="github"))
+
+    @staticmethod
+    def get_kraken_historical_csv(symbol: str, interval: str = "4h"):
+        current_file = os.path.abspath(__file__)
+        one_level_up = os.path.dirname(os.path.dirname(current_file))
+        path = os.path.join(one_level_up, "data", f"kraken_hist_{interval}_latest")
+        # Ensure the directory exists (no crash if it doesn't yet)
+        os.makedirs(path, exist_ok=True)
+
+        filename = f"{symbol}_{interval}.csv"
+        filepath = os.path.join(path, filename)
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"File not found: {filepath}")
+        df = pd.read_csv(filepath, index_col="date", parse_dates=["date"])
+        return df
+
+
 if __name__ == "__main__":
     kData = KrakenData()
     pairs = kData.get_kraken_usd_ccxt()
     print(f"Found {len(pairs)} USD pairs on Kraken.")
-    symbol = 'ETH/USD'
-    ohlcv = kData.fetch_ohlcv_df(kData.kraken, symbol, timeframe='4h', limit=30)
-    print(f"Fetched {len(ohlcv)} {symbol} OHLCV data points.")
-    print(tabulate(ohlcv.head(), headers="keys", tablefmt="github"))
-    top_volume = kData.top_kraken_by_volume(limit=20, only_usd=True, exclude_stables=True)
-    print(tabulate(top_volume, headers="keys", tablefmt="github"))
+
+    print(f"\nTop by Volume")
+    kData.print_top_kraken_by_volume(limit=20, only_usd=True, exclude_stables=True, verbose=True)
+
+    symbol = 'BNB'
+    df = kData.get_kraken_historical_csv(symbol, interval="4h")
+    print(f"\nHistorical Data for {symbol}:")
+    out = pd.concat([df.head(10), df.tail(10)])
+    print(tabulate(out, headers="keys", tablefmt="github"))
+    nan_count = df.isna().sum().sum()
+    print(f"\nNaN count: {nan_count}")
