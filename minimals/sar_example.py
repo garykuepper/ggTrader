@@ -13,7 +13,7 @@ TICKER = "BTC-USD"
 INTERVAL = "4h"        # yfinance intervals: 1h, 2h, 4h, 1d, etc.
 LOOKBACK_DAYS = 365   # ~1 year
 ADX_PERIOD = 14
-ADX_THRESHOLD = 25.0
+ADX_THRESHOLD = 45.0
 PSAR_STEP = 0.02
 PSAR_MAX = 0.20
 FEE_BP = 10            # fees in basis points per round trip
@@ -147,7 +147,7 @@ add_plots = [
 
 mpf.plot(
     df,
-    type='candle',
+    type='line',
     addplot=add_plots,
     volume=True,
     style='yahoo',
@@ -155,4 +155,5 @@ mpf.plot(
     figratio=(16,9),
     figscale=1.2,
     tight_layout=True,
+    mav=(20,50, 200)
 )
