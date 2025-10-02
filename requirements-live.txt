@@ -1,8 +1,0 @@
-requests
-pandas
-pymongo
-python-dotenv
-ta
-yfinance
-pandas_market_calendars
-tabulate
