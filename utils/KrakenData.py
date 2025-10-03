@@ -133,7 +133,7 @@ class KrakenData:
             rows.append({
                 'symbol': s,
                 'volume_usd': vol_usd,
-                'percentage': round(percentage, 2),
+                'percentage': round(percentage, 2) if percentage is not None else None,
                 'last': float(last) if last is not None else None,
                 'open': open,
                 'high': high,
