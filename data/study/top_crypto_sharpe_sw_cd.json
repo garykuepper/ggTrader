@@ -1,9 +1,0 @@
-{
-  "best_params": {
-    "fast_window": 20,
-    "slow_window": 34,
-    "atr_multiplier": 1.3125,
-    "cooldown_period": 5
-  },
-  "best_value": 1.3836879638441957
-}

@@ -233,6 +233,30 @@ class KrakenData:
     def special_kraken_map(symbol: str):
         return kraken_map.get(symbol)
 
+    @staticmethod
+    def join_ohlcv_dict(ohlcv_dict_hist, ohlcv_dict_new, interval="4h"):
+        # TODO: decide whether to join raw data or data already in OHLCV format?
+        ohlcv_dict = {}
+        for ticker in ohlcv_dict_new.keys():
+            if ticker in ohlcv_dict_hist.keys():
+                if ohlcv_dict_hist[ticker].empty:
+                    ohlcv_dict[ticker] = ohlcv_dict_new[ticker]
+                else:
+                    ohlcv_dict[ticker] = pd.concat([ohlcv_dict_hist[ticker], ohlcv_dict_new[ticker]])
+            else:
+                ohlcv_dict[ticker] = ohlcv_dict_new[ticker]
+            # adjust volume to be in USD
+            ohlcv_dict[ticker]['volume'] = ohlcv_dict[ticker]['volume'] * ohlcv_dict[ticker]['close']
+        return ohlcv_dict
+
+    @staticmethod
+    def write_ohlcv_dict(out, ohlcv_dict, interval="4h"):
+        num_files = len(ohlcv_dict.keys())
+        for i, ticker in enumerate(ohlcv_dict.keys()):
+            filename = ticker + "_" + interval + ".csv"
+            print(f"{i + 1}/{num_files} Writing {filename}")
+            ohlcv_dict[ticker].to_csv(os.path.join(out, filename))
+
 
 if __name__ == "__main__":
     kData = KrakenData()

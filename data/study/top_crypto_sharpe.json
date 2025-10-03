@@ -1,8 +1,0 @@
-{
-  "best_params": {
-    "fast_window": 40,
-    "slow_window": 80,
-    "atr_multiplier": 1.25
-  },
-  "best_value": 1.7599598441871485
-}
