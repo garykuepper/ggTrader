@@ -1,11 +1,35 @@
+import json
+
 import ccxt
 import os
-import time
 import pandas as pd
 import requests
-from sqlalchemy.orm.base import state_class_str
 
 from tabulate import tabulate
+
+kraken_map = {
+    "XETC": "ETC",
+    "XETH": "ETH",
+    "XLTC": "LTC",
+    "XMLN": "MLN",
+    "XREP": "REP",
+    "XXBT": "XBT",
+    "XXDG": "XDG",
+    "XXLM": "XLM",
+    "XXMR": "XMR",
+    "XXRP": "XRP",
+    "XZEC": "ZEC",
+    "ZAUD": "AUD",
+    "ZCAD": "CAD",
+    "ZEUR": "EUR",
+    "ZGBP": "GBP",
+    "ZJPY": "JPY",
+    "ZUSD": "USD",
+    "XBT": "BTC",
+    "XDG": "DOGE"
+}
+
+STABLE_BASES = {"USDT", "USDC", "DAI", "USDP", "TUSD", "EUR", "GBP", "AUD", "USDG"}
 
 
 class KrakenData:
@@ -38,16 +62,6 @@ class KrakenData:
         return df[["open", "high", "low", "close", "volume"]]
 
     @staticmethod
-    def get_kraken_asset_pairs_usd():
-        url = "https://api.kraken.com/0/public/AssetPairs"
-        r = requests.get(url, timeout=30)
-        r.raise_for_status()
-        payload = r.json()
-        if payload.get("error"):
-            raise RuntimeError(f"Kraken AssetPairs error: {payload['error']}")
-        return payload
-
-    @staticmethod
     def get_kraken_usd_ccxt():
         kraken = ccxt.kraken()
         kraken.load_markets()
@@ -65,7 +79,6 @@ class KrakenData:
         symbols = [s for s in markets.keys() if (s.endswith('/USD') if only_usd else True)]
         # Optional: exclude stablecoins by base symbol
         if exclude_stables:
-            STABLE_BASES = {"USDT", "USDC", "DAI", "USDP", "TUSD", "EUR", "GBP", "AUD", "USDG"}
             filtered = []
             for s in symbols:
                 # s is like 'BASE/USD'; take the base part before '/'
@@ -157,6 +170,69 @@ class KrakenData:
         df = pd.read_csv(filepath, index_col="date", parse_dates=["date"])
         return df
 
+    @staticmethod
+    def get_all_kraken_historical_csv(interval: str = "4h"):
+        current_file = os.path.abspath(__file__)
+        one_level_up = os.path.dirname(os.path.dirname(current_file))
+        path = os.path.join(one_level_up, "data", f"kraken_hist_{interval}_latest")
+        # Ensure the directory exists (no crash if it doesn't yet)
+        os.makedirs(path, exist_ok=True)
+        with os.scandir(path) as it:
+            files = [entry.name for entry in it if entry.is_file()]
+        num_files = len(files)
+
+        ohlcv_dict = {}
+        for i, f in enumerate(files):
+            print(f"({i + 1}/{num_files}) Processing {f} ")
+            file_path = os.path.join(path, f)
+            if f.split(".")[1] != "csv":
+                continue
+            df = pd.read_csv(file_path, index_col="date", parse_dates=["date"])
+            symbol = f.split("_")[0]
+            ohlcv_dict[symbol] = df
+        return ohlcv_dict
+
+    def get_raw_kraken_csv_data(self, path: str):
+        ohlcv_dict = {}
+        col_names = ["date", "open", "high", "low", "close", "volume", "trades"]
+
+        with os.scandir(path) as it:
+            files = [entry.name for entry in it if entry.is_file()]
+        num_files = len(files)
+
+        for f in files:
+            print(f"({files.index(f) + 1}/{num_files}) Processing {f} ")
+            file_path = os.path.join(path, f)
+            if f.split(".")[1] != "csv":
+                continue
+            df = pd.read_csv(file_path,
+                             header=None,
+                             names=col_names,
+                             converters={"date": lambda x: pd.to_datetime(int(x), unit="s", utc=True)},
+                             index_col="date"
+                             )
+            ticker = f.split("_")[0][:-3]
+            if self.special_kraken_map(ticker) is not None:
+                ticker = self.special_kraken_map(ticker)
+
+            if ticker:
+                ohlcv_dict[ticker] = df
+        return ohlcv_dict
+
+    @staticmethod
+    def get_kraken_asset_pairs():
+        url = "https://api.kraken.com/0/public/AssetPairs"
+        r = requests.get(url, timeout=30)
+        r.raise_for_status()
+        payload = r.json()
+        if payload.get("error"):
+            raise RuntimeError(f"Kraken AssetPairs error: {payload['error']}")
+        return payload['result']
+
+    @staticmethod
+    def special_kraken_map(symbol: str):
+        return kraken_map.get(symbol)
+
 
 if __name__ == "__main__":
     kData = KrakenData()
@@ -173,3 +249,24 @@ if __name__ == "__main__":
     print(tabulate(out, headers="keys", tablefmt="github"))
     nan_count = df.isna().sum().sum()
     print(f"\nNaN count: {nan_count}")
+
+    # hist_data = kData.get_all_kraken_historical_csv(interval="4h")
+    # print(f"\nAll Historical Data:")
+    # print(hist_data.keys())
+    pairs = kData.get_kraken_asset_pairs()
+    kraken_symbols = list(pairs.keys())
+    print(f"\nKraken Asset Pairs ({len(kraken_symbols)}):")
+
+    ## Raw Data
+    current_file = os.path.abspath(__file__)
+    one_level_up = os.path.dirname(os.path.dirname(current_file))
+    path = os.path.join(one_level_up, "data", f"kraken_hist_4h")
+    # Ensure the directory exists (no crash if it doesn't yet)
+    os.makedirs(path, exist_ok=True)
+
+    woot = kData.get_raw_kraken_csv_data(path)
+    print(f"\nKraken Raw Data ({len(woot)}):")
+    woot_list = list(woot.keys())
+    woot_list.sort()
+    for key in woot_list:
+        print(key)
