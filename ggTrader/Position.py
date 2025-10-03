@@ -67,3 +67,11 @@ class Position:
             "status": self.status,
             "stop_loss_triggered": self.stop_loss_triggered,
         }
+
+if __name__ == "__main__":
+    pos = Position('BTC', 3, 10000, datetime(2024, 1, 1))
+    print(pos.as_dict())
+
+    pos2 = Position('ETH', 5, 250, datetime(2024, 2, 1))
+    print(pos2.as_dict())
+

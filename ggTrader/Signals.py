@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from ta.trend import EMAIndicator, MACD, SMAIndicator, ADXIndicator, PSARIndicator
 from ta.volatility import AverageTrueRange
-
+from tabulate import tabulate
 
 class Signals:
     def __init__(self,
@@ -20,7 +20,9 @@ class Signals:
     def _build_signals(self, df: pd.DataFrame) -> pd.DataFrame:
         signals = pd.DataFrame()
         # signals = df.copy()
+        # remove all NaN rows
         first_valid = df[['high', 'low', 'close']].dropna().index[0]
+        # calc signals at first valid index
         signals = df.loc[first_valid:].copy()
         # EMA signals
         signals['ema_fast'] = EMAIndicator(close=signals['close'], window=self.ema_fast, fillna=False).ema_indicator()
@@ -31,8 +33,8 @@ class Signals:
                                fillna=False).macd()
 
         # Crossover-based signals
-        signals['crossover'] = np.sign(signals['ema_fast'] - signals['ema_slow'])
-        signals['signal'] = signals['crossover'].diff().fillna(0) / 2
+        signals['ema_crossover'] = np.sign(signals['ema_fast'] - signals['ema_slow'])
+        signals['signal'] = signals['ema_crossover'].diff().fillna(0) / 2
 
         # ATR-based level
         signals['atr'] = AverageTrueRange(
@@ -64,6 +66,7 @@ class Signals:
                                       window=14,
                                       fillna=False).adx()
 
+        # reindex signals to match original df data
         tmp = signals.reindex(df.index)
         first_valid = tmp.first_valid_index()
 
@@ -84,3 +87,52 @@ class Signals:
             return pd.DataFrame()
         self.signals = self._build_signals(df)
         return self.signals
+
+    @classmethod
+    def generate_fake_data(cls,
+                           rows: int = 40,
+                           seed: int = None,
+                           start: float = 100.0,
+                           drift: float = 0.5,
+                           vol: float = 2.0) -> pd.DataFrame:
+        """
+        Generate a fake OHLCV DataFrame for testing.
+        - rows: number of rows to generate
+        - seed: random seed for reproducibility
+        - start: starting price
+        - drift: expected price drift per step
+        - vol: volatility multiplier for random walk
+        Returns a DataFrame with columns: close, high, low
+        """
+        if seed is not None:
+            np.random.seed(seed)
+
+        close = []
+        high = []
+        low = []
+        price = start
+
+        # Optional: include a date index (daily frequency) starting today
+        ts = pd.Timestamp.today(tz='UTC').round("D")
+        dates = pd.date_range(end=ts, periods=rows, freq='D')
+
+        for i in range(rows):
+            # simple stochastic process: price += drift + noise
+            price = price + drift + float(np.random.randn()) * vol
+            c = price
+            h = c + abs(float(np.random.randn())) * vol * 0.8 + 0.5
+            l = c - abs(float(np.random.randn())) * vol * 0.8 - 0.5
+            close.append(round(c, 2))
+            high.append(round(h, 2))
+            low.append(round(l, 2))
+
+        df = pd.DataFrame({'close': close, 'high': high, 'low': low})
+        df.index = dates
+        return df
+
+
+if __name__ == "__main__":
+    signals = Signals()
+    df = signals.generate_fake_data(200)
+    signals.compute(df)
+    print(tabulate(signals.signals.tail(), headers='keys', tablefmt='github'))

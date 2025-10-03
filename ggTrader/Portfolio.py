@@ -246,9 +246,9 @@ class Portfolio:
             "transaction_fee_total": self.transaction_fee_total,
             "total_trades": len(self.trades),
             "sharpe": self.sharpe_ratio(),
-            "max_drawdown": self.max_drawdown(),          # fraction (0..1)
-            "max_drawdown_pct": self.max_drawdown_pct()   # percent (0..100)
- 
+            "max_drawdown": self.max_drawdown(),  # fraction (0..1)
+            "max_drawdown_pct": self.max_drawdown_pct()  # percent (0..100)
+
         }
 
     @staticmethod
@@ -270,6 +270,7 @@ class Portfolio:
     def print_stats_df(self):
         t = self.get_stats_df().T.reset_index().round(2)
         t.columns = ["Metric", "Value"]
+        print(f"\nPortfolio Stats:")
         print(tabulate(t, headers="keys", tablefmt="github", showindex=False))
 
     def plot_equity_curve(
@@ -307,7 +308,7 @@ class Portfolio:
                             alpha=0.12, interpolate=True, color="tab:green")
             ax.fill_between(x, below, baseline, where=below.notna(),
                             alpha=0.12, interpolate=True, color="tab:red")
-        #text
+        # text
         text = self.dict_to_text(self.stats_dict())
         ax.text(
             0.01, .95,  # x, y in axis coordinates
@@ -330,8 +331,6 @@ class Portfolio:
         if show:
             plt.show()
         return ax
-
-
 
     def sharpe_ratio(self, periods_per_year: int | None = None, rf_annual: float = 0.01, method: str = "log") -> float:
         """
@@ -384,3 +383,36 @@ class Portfolio:
 
         sharpe = float((mu / sigma) * np.sqrt(periods_per_year))
         return sharpe
+
+
+if __name__ == "__main__":
+    # Example usage of Portfolio with a Position instance
+    from ggTrader.Position import Position
+    from datetime import datetime
+
+    # Create a portfolio
+    port = Portfolio(cash=100000)
+
+    # Create a position (adjust constructor to match your Position class)
+    # Example assumes: Position(symbol, side, amount, price)
+    pos = Position('BTC', 3, 10000, datetime(2024, 1, 1))
+    pos2 = Position('ETH', 5, 250, datetime(2024, 2, 1))
+    pos3 = Position('LTC', 40, 100, datetime(2024, 3, 1))
+
+    # Add position to portfolio
+    port.add_position(pos)
+    port.add_position(pos2)
+    port.add_position(pos3)
+
+    # Update price (simulate market move)
+    port.update_position_price(symbol='BTC', price=30500.0, date=datetime.now())
+
+    # Close the position (simulate exit)
+    port.close_position(pos, date=datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
+
+    # Print current positions/trades
+    port.print_positions()
+    port.print_trades()
+
+    # Print final stats
+    port.print_stats_df()
