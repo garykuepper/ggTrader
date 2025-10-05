@@ -257,6 +257,24 @@ class KrakenData:
             print(f"{i + 1}/{num_files} Writing {filename}")
             ohlcv_dict[ticker].to_csv(os.path.join(out, filename))
 
+    @staticmethod
+    def write_all_ohlcv_dict(ohlcv_dict, interval="4h"):
+        current_file = os.path.abspath(__file__)
+        one_level_up = os.path.dirname(os.path.dirname(current_file))
+        filename = f"kraken_hist_{interval}.pkl"
+        path = os.path.join(one_level_up, "data", "kraken_dict",filename)
+        # Ensure the directory exists (no crash if it doesn't yet)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        pd.to_pickle(ohlcv_dict, path)
+
+    @staticmethod
+    def get_all_ohlcv_dict(interval="4h"):
+        current_file = os.path.abspath(__file__)
+        one_level_up = os.path.dirname(os.path.dirname(current_file))
+        filename = f"kraken_hist_{interval}.pkl"
+        path = os.path.join(one_level_up, "data", "kraken_dict",filename)
+        return pd.read_pickle(path)
+
 
 if __name__ == "__main__":
     kData = KrakenData()
@@ -274,7 +292,8 @@ if __name__ == "__main__":
     nan_count = df.isna().sum().sum()
     print(f"\nNaN count: {nan_count}")
 
-    # hist_data = kData.get_all_kraken_historical_csv(interval="4h")
+    hist_data = kData.get_all_kraken_historical_csv(interval="4h")
+    kData.write_all_ohlcv_dict(hist_data, interval="4h")
     # print(f"\nAll Historical Data:")
     # print(hist_data.keys())
     pairs = kData.get_kraken_asset_pairs()
