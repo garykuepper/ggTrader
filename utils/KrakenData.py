@@ -292,8 +292,8 @@ if __name__ == "__main__":
     nan_count = df.isna().sum().sum()
     print(f"\nNaN count: {nan_count}")
 
-    hist_data = kData.get_all_kraken_historical_csv(interval="4h")
-    kData.write_all_ohlcv_dict(hist_data, interval="4h")
+    # hist_data = kData.get_all_kraken_historical_csv(interval="4h")
+    # kData.write_all_ohlcv_dict(hist_data, interval="4h")
     # print(f"\nAll Historical Data:")
     # print(hist_data.keys())
     pairs = kData.get_kraken_asset_pairs()
