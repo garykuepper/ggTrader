@@ -17,8 +17,6 @@ class Portfolio:
         self.equity_curve = pd.Series(dtype=float)
         self.profit_per_symbol = {}
         self.transaction_fee_total = 0.0
-
-        # NEW: track realized profit separately from unrealized
         self.realized_profit: float = 0.0
 
     def add_position(self, position: Position):
@@ -384,6 +382,11 @@ class Portfolio:
         sharpe = float((mu / sigma) * np.sqrt(periods_per_year))
         return sharpe
 
+    def qty_to_buy(self, price: float, percent: float=0.1):
+        buy_value = self.total_value * percent
+        if buy_value > self.cash:
+            return 0.0
+        return buy_value / price
 
 if __name__ == "__main__":
     # Example usage of Portfolio with a Position instance

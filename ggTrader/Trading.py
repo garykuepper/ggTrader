@@ -19,6 +19,7 @@ class Trading:
         self.top_n_movers = 25
         self.signals_dict = {}
         self.daily_movers = pd.DataFrame()
+        self.max_position = 0.2
 
     def check_buy(self):
         # check signals
@@ -27,13 +28,24 @@ class Trading:
         pass
 
     def check_buy_by_symbol_and_date(self, symbol: str, date: pd.Timestamp):
-        pass
+        row = self.signals_dict.get(symbol).loc[date]
+        price = row['close']
+
+        signal = row['signal']
+        if signal == 1:
+            qty = self.portfolio.qty_to_buy(price, percent=self.max_position)
+            pos = Position(symbol, qty, price, date)
+            if qty != 0.0:
+                self.portfolio.add_position(pos)
+
+
 
     def check_sell(self):
         # check positions
         if self.portfolio.positions:
             for position in self.portfolio.positions:
                 # update position price first
+                position.update_price(self.ohlcv_data[position.symbol].loc[self.current_date])
 
                 # check stop loss
                 stop_loss_triggered = position.current_price <= position.stop_loss
@@ -109,3 +121,9 @@ if __name__ == "__main__":
     symbols = ['LTC']
     trader.calc_signals(symbols)
     print(tabulate(trader.signals_dict[symbols[0]].tail(10), headers='keys', tablefmt='github'))
+
+    date = pd.Timestamp("2024-01-30 00:00:00+00:00")
+    trader.check_buy_by_symbol_and_date(symbols[0], date)
+    trader.portfolio.print_positions()
+    trader.portfolio.print_trades()
+    trader.portfolio.print_stats_df()
