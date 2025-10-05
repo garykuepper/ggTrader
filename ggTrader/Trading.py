@@ -1,6 +1,9 @@
+from tabulate import tabulate
+
 from ggTrader.Portfolio import Portfolio
 from ggTrader.Position import Position
 from ggTrader.Screener import Screener
+from ggTrader.Signals import Signals
 import pandas as pd
 from utils.KrakenData import KrakenData
 
@@ -14,15 +17,14 @@ class Trading:
         self.current_date = pd.Timestamp(date_range[0]).tz_convert('UTC')
         self.screener = Screener()
         self.top_n_movers = 25
+        self.signals_dict = {}
+        self.daily_movers = pd.DataFrame()
 
     def check_buy(self):
         # check signals
         # check signal by symbol and date
         #  self.check_buy_by_symbol_and_date(symbol, date)
-        # screener_list = ['BTC', 'ETH']
-
-        print(f"Checking for historical movers on {self.current_date}")
-        screener_list = self.screener.get_historical_daily_kraken_by_volume(self.current_date, top_n=self.top_n_movers)
+        pass
 
     def check_buy_by_symbol_and_date(self, symbol: str, date: pd.Timestamp):
         pass
@@ -54,11 +56,30 @@ class Trading:
     def update_stats(self):
         pass
 
+    def calc_signals(self,symbols: list[str]):
+        signals = Signals()
+        for symbol in symbols:
+            if symbol not in self.signals_dict.keys():
+                ohlcv = self.ohlcv_data[symbol]
+                start = self.time_range[0]
+                end = self.time_range[-1]
+                # only calc signals for the specified range.
+                self.signals_dict[symbol] = signals.compute(ohlcv.loc[start:end])
+
+
+
     def run(self):
 
+        #
         for current_date in self.time_range:
             print(f"Running for {current_date}")
             self.current_date = current_date
+            print(f"Checking for historical movers on {self.current_date}")
+            self.daily_movers = self.screener.get_historical_daily_kraken_by_volume(self.current_date,
+                                                                               top_n=self.top_n_movers)
+            self.calc_signals(self.daily_movers['ticker'].tolist())
+            # check signals --> save to signal
+            # rank movers by volume/ ADX?
 
             self.check_sell()
 
@@ -84,3 +105,7 @@ if __name__ == "__main__":
     top_movers = screen.get_historical_daily_kraken_by_volume(date, top_n=25)
     top_mover = top_movers['ticker'].iloc[0]
     print(top_mover)
+    print(top_movers.shape)
+    symbols = ['LTC']
+    trader.calc_signals(symbols)
+    print(tabulate(trader.signals_dict[symbols[0]].tail(10), headers='keys', tablefmt='github'))
