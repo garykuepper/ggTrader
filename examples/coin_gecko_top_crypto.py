@@ -9,7 +9,9 @@ def kraken_pair_list():
     k_pairs = k_data.get_kraken_usd_ccxt()
     # strip /USD
     k_pairs = [pair.replace("/USD", "") for pair in k_pairs]
+    print(k_pairs)
     k_pairs = [s.lower() for s in k_pairs]
+
     return k_pairs
 
 
