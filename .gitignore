@@ -245,3 +245,4 @@ cython_debug/
 /.idea/ggTrader.iml
 /.idea/.gitignore
 /.idea/modules.xml
+.idea
