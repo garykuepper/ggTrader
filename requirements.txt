@@ -7,3 +7,5 @@ optuna
 mplfinance
 pytest
 ccxt
+pyarrow
+vectorbt
