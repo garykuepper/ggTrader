@@ -192,6 +192,7 @@ class KrakenData:
             ohlcv_dict[symbol] = df
         return ohlcv_dict
 
+    #TODO: Refactor to build multiindex dataframe instead of dict of dataframes
     def get_raw_kraken_csv_data(self, path: str):
         ohlcv_dict = {}
         col_names = ["date", "open", "high", "low", "close", "volume", "trades"]
@@ -235,7 +236,7 @@ class KrakenData:
 
     @staticmethod
     def join_ohlcv_dict(ohlcv_dict_hist, ohlcv_dict_new, interval="4h"):
-        # TODO: decide whether to join raw data or data already in OHLCV format?
+        # TODO: Refactor to build multiindex dataframe instead of dict of dataframes
         ohlcv_dict = {}
         for ticker in ohlcv_dict_new.keys():
             if ticker in ohlcv_dict_hist.keys():
@@ -251,6 +252,7 @@ class KrakenData:
 
     @staticmethod
     def write_ohlcv_dict(out, ohlcv_dict, interval="4h"):
+        #TODO: Refactor to build multiindex dataframe instead of dict of dataframes
         num_files = len(ohlcv_dict.keys())
         for i, ticker in enumerate(ohlcv_dict.keys()):
             filename = ticker + "_" + interval + ".csv"
@@ -259,6 +261,7 @@ class KrakenData:
 
     @staticmethod
     def write_all_ohlcv_dict(ohlcv_dict, interval="4h"):
+        #TODO: Refactor to save multiindex dataframe as parquet
         current_file = os.path.abspath(__file__)
         one_level_up = os.path.dirname(os.path.dirname(current_file))
         filename = f"kraken_hist_{interval}.pkl"
@@ -269,6 +272,7 @@ class KrakenData:
 
     @staticmethod
     def get_all_ohlcv_dict(interval="4h"):
+        #TODO: Refactor to load parquet as multiindex dataframe
         current_file = os.path.abspath(__file__)
         one_level_up = os.path.dirname(os.path.dirname(current_file))
         filename = f"kraken_hist_{interval}.pkl"
