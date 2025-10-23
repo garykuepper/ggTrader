@@ -332,6 +332,7 @@ if __name__ == "__main__":
     # Per-folder parallelism (good balance)
     # k.csvs_many_dirs_to_parquet_parallel(quarter_dirs, max_workers=os.cpu_count())
 
+
     # Or: one folder only
     # k.csvs_dir_to_parquet_parallel(quarter_dirs[0], max_workers=8)
 
