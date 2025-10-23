@@ -197,6 +197,10 @@ class KrakenHistoricalData:
         df["base"] = base
         df["quote"] = quote
         df["pair"] = pair_std
+
+        # adjust volume to be in usd
+
+        df['volume'] = df['volume'] * df['close']
         return df
 
     def csvs_dir_to_parquet(self, input_dir, sample=None, position=1):
@@ -269,7 +273,7 @@ class KrakenHistoricalData:
         # If index was preserved, pandas restores it automatically
         if sort and "timestamp" in df.columns:  # in case index wasn't restored
             df = df.sort_values("timestamp")
-        return df
+        return df.sort_index()
 
     def csvs_dir_to_parquet_parallel(self, input_dir, sample=None, max_workers=None):
         files = self.get_file_names(input_dir, quote_only="USD")
@@ -326,11 +330,24 @@ if __name__ == "__main__":
     quarter_dirs = k.list_quarter_dirs()
 
     # Per-folder parallelism (good balance)
-    k.csvs_many_dirs_to_parquet_parallel(quarter_dirs, max_workers=os.cpu_count())
+    # k.csvs_many_dirs_to_parquet_parallel(quarter_dirs, max_workers=os.cpu_count())
 
     # Or: one folder only
     # k.csvs_dir_to_parquet_parallel(quarter_dirs[0], max_workers=8)
 
-    df_btc_1h = k.read_parquet(pair="BTC-USD", interval="1h")
-    print(df_btc_1h.head())
-    print(df_btc_1h.tail())
+    df_btc_1d = k.read_parquet(pair="BTC-USD", interval="1d")
+    df_bnb_1d = k.read_parquet(pair="BNB-USD", interval="1d")
+    print(df_btc_1d.head())
+    print(df_btc_1d.tail())
+    print(df_bnb_1d.head())
+    print(df_bnb_1d.tail())
+
+    merge_df = pd.concat([df_btc_1d,
+                        df_bnb_1d],
+                        axis=1,
+                        keys=['btc', 'bnb'])
+
+    print(merge_df.head())
+    print(merge_df.tail())
+
+    print(merge_df.info())
