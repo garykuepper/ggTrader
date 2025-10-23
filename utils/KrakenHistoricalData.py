@@ -6,6 +6,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from tabulate import tabulate
+import shutil
 
 kraken_map = {
     "XETC": "ETC", "XETH": "ETH", "XLTC": "LTC", "XMLN": "MLN", "XREP": "REP",
@@ -15,6 +16,73 @@ kraken_map = {
 }
 
 STABLE_BASES = {"USDT", "USDC", "DAI", "USDP", "EUR", "GBP", "AUD", "USD", "JPY", "CAD"}
+
+# --- at top level (same module) ---
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+
+def _process_one_file(args):
+    """Top-level worker so it can be pickled on Windows."""
+    input_dir, file_, parquet_root = args
+    # Re-import minimal bits to avoid heavy pickling (optional micro-opt)
+    import os, pandas as pd, pyarrow as pa, pyarrow.parquet as pq
+
+    # ---- replicate the essentials from your class methods ----
+    # You can also refactor your load_csv to @staticmethod and import it here.
+    col_names = ["timestamp", "open", "high", "low", "close", "volume", "trades"]
+    name_noext = file_.rsplit(".", 1)[0]
+    parts = name_noext.split("_")
+    if len(parts) < 2:
+        return (file_, 0)
+
+    raw_pair, interval = parts[0], parts[1]
+    # use your split_pair from module scope
+    base, quote, pair_std = split_pair(raw_pair, quote_only="USD")
+    if base is None:
+        return (file_, 0)
+
+    interval_map = {"1": "1m", "5": "5m", "15": "15m", "30": "30m", "60": "1h", "240": "4h", "1440": "1d",
+                    "10080": "1w"}
+    interval = interval_map.get(interval.lower(), interval)
+
+    file_path = os.path.join(input_dir, file_)
+    try:
+        df = pd.read_csv(
+            file_path,
+            header=None,
+            names=col_names,
+            converters={"timestamp": lambda x: pd.to_datetime(int(x), unit="s", utc=True)},
+            index_col="timestamp",
+        )
+    except pd.errors.EmptyDataError:
+        return (file_, 0)
+    if df.empty:
+        return (file_, 0)
+
+    # dtypes & clean
+    df["open"] = pd.to_numeric(df["open"], errors="coerce").astype("float32")
+    df["high"] = pd.to_numeric(df["high"], errors="coerce").astype("float32")
+    df["low"] = pd.to_numeric(df["low"], errors="coerce").astype("float32")
+    df["close"] = pd.to_numeric(df["close"], errors="coerce").astype("float32")
+    df["volume"] = pd.to_numeric(df["volume"], errors="coerce").astype("float64")
+    df["trades"] = pd.to_numeric(df["trades"], errors="coerce").astype("Int64")
+
+    df = df[~df.index.duplicated(keep="last")].sort_index()
+    df["interval"] = interval
+    df["base"] = base
+    df["quote"] = quote
+    df["pair"] = pair_std
+
+    # write directly from the worker (each creates its own part file)
+    table = pa.Table.from_pandas(df, preserve_index=True)
+    pq.write_to_dataset(
+        table,
+        root_path=parquet_root,
+        partition_cols=["pair", "interval"],
+        compression="zstd",
+        # use the default file_visitor to generate unique part names
+    )
+    return (file_, 1)
 
 
 def clean_ccy(ccy: str) -> str:
@@ -40,6 +108,7 @@ def split_pair(raw_pair: str, quote_only="USD"):
         return clean_ccy(p[:-3]), clean_ccy(quote_only), pair_std
 
     return None, None, None
+
 
 
 class KrakenHistoricalData:
@@ -202,14 +271,66 @@ class KrakenHistoricalData:
             df = df.sort_values("timestamp")
         return df
 
+    def csvs_dir_to_parquet_parallel(self, input_dir, sample=None, max_workers=None):
+        files = self.get_file_names(input_dir, quote_only="USD")
+        if not files:
+            tqdm.write(f"[skip] no USD files in {input_dir}")
+            return
+
+        if sample:
+            files = random.sample(files, k=min(sample, len(files)))
+
+        tqdm.write(f"[dir] {input_dir} -> {len(files)} files (parallel)")
+
+        tasks = [(input_dir, f, self.parquet_root) for f in files]
+        done = 0
+        # default: one process per CPU
+        max_workers = max_workers or os.cpu_count() or 4
+
+        with ProcessPoolExecutor(max_workers=max_workers) as ex:
+            for _file, ok in tqdm(
+                    ex.map(_process_one_file, tasks, chunksize=8),
+                    total=len(tasks),
+                    desc=f"Processing {os.path.basename(input_dir)} (mp x{max_workers})",
+                    dynamic_ncols=True,
+                    leave=False,
+            ):
+                done += ok
+
+        tqdm.write(f"[done] {os.path.basename(input_dir)}: wrote {done}/{len(files)} files")
+
+    def csvs_many_dirs_to_parquet_parallel(self, dirs=None, sample_per_dir=None, max_workers=None):
+        if dirs is None:
+            dirs = self.list_quarter_dirs()
+        for d in tqdm(dirs, desc="Quarterly Folders", dynamic_ncols=True, position=0, leave=True):
+            self.csvs_dir_to_parquet_parallel(d, sample=sample_per_dir, max_workers=max_workers)
+
 
 if __name__ == "__main__":
+    # k = KrakenHistoricalData()
+    #
+    # # 1) Process ALL quarterly folders (USD pairs only), keeping timestamp as index
+    # quarter_dirs = k.list_quarter_dirs()  # e.g. Kraken_OHLCVT_Q1_2023, ...
+    # k.csvs_many_dirs_to_parquet(quarter_dirs)  # or sample_per_dir=200
+    #
+    # # 2) Read back one slice
+    # df_btc_1h = k.read_parquet(pair="BTC-USD", interval="1h")
+    # print(df_btc_1h.head())
+
+    # Important on Windows for multiprocessing to work reliably
+    import multiprocessing as mp
+
+    mp.freeze_support()
+
     k = KrakenHistoricalData()
+    quarter_dirs = k.list_quarter_dirs()
 
-    # 1) Process ALL quarterly folders (USD pairs only), keeping timestamp as index
-    quarter_dirs = k.list_quarter_dirs()  # e.g. Kraken_OHLCVT_Q1_2023, ...
-    k.csvs_many_dirs_to_parquet(quarter_dirs)  # or sample_per_dir=200
+    # Per-folder parallelism (good balance)
+    k.csvs_many_dirs_to_parquet_parallel(quarter_dirs, max_workers=os.cpu_count())
 
-    # 2) Read back one slice
+    # Or: one folder only
+    # k.csvs_dir_to_parquet_parallel(quarter_dirs[0], max_workers=8)
+
     df_btc_1h = k.read_parquet(pair="BTC-USD", interval="1h")
     print(df_btc_1h.head())
+    print(df_btc_1h.tail())
