@@ -37,3 +37,26 @@ print(combined_ohlcv.head())
 print(combined_ohlcv['Symbol1'].head())
 
 
+import pandas as pd
+
+df = pd.DataFrame({
+    "timestamp": ["2025-10-20", "2025-10-21"],
+    "open": [100, 105],
+    "high": [110, 115],
+    "low": [95, 100],
+    "close": [108, 112],
+    "volume": [1000, 1500]
+})
+new_data = pd.DataFrame({
+    "timestamp": ["2025-10-22", "2025-10-23"],
+    "open": [113, 117],
+    "high": [118, 120],
+    "low": [110, 114],
+    "close": [116, 119],
+    "volume": [1600, 1800]
+})
+df = pd.concat([df, new_data], ignore_index=True)
+df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_localize("UTC")
+df = df.set_index("timestamp").sort_index().drop_duplicates()
+
+print(df.head())

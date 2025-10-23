@@ -246,3 +246,4 @@ cython_debug/
 /.idea/.gitignore
 /.idea/modules.xml
 .idea
+data/raw/*
