@@ -247,3 +247,4 @@ cython_debug/
 /.idea/modules.xml
 .idea
 data/raw/*
+data/parquet/*

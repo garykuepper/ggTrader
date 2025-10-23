@@ -1,3 +1,4 @@
+tqdm
 pandas
 yfinance
 python-dotenv
