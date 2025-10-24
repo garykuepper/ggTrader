@@ -489,6 +489,8 @@ class KrakenHistoricalData:
             columns={'level_0': 'date', 'level_1': 'symbol'})
         # filter out low trades
         # print(ohlcv_df_long.describe())
+        ohlcv_df_long = ohlcv_df_long.dropna(subset=["trades"])
+
         ohlcv_df_long = ohlcv_df_long[ohlcv_df_long['trades'] > trades_threshold]
         top_by_volume = ohlcv_df_long.sort_values(['date', 'volume'], ascending=[True, False])
         top_per_day = top_by_volume.groupby('date').head(top_n).reset_index(drop=True)
