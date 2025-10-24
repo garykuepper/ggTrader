@@ -16,7 +16,7 @@ kraken_map = {
     "ZJPY": "JPY", "ZUSD": "USD", "XBT": "BTC", "XDG": "DOGE"
 }
 
-STABLE_BASES = {"USDT", "USDC", "DAI", "USDP", "EUR", "GBP", "AUD", "USD", "JPY", "CAD"}
+STABLE_BASES = ["USDT", "USDC", "DAI", "USDP", "EUR", "GBP", "AUD", "USD", "JPY", "CAD","MKR"]
 
 interval_map = {"1": "1m", "5": "5m", "15": "15m",
                 "30": "30m", "60": "1h", "240": "4h",
@@ -141,6 +141,7 @@ class KrakenHistoricalData:
         self.root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
         self.raw_path = os.path.join(self.root_dir, 'data', 'raw')
         self.parquet_root = os.path.join(self.root_dir, 'data', 'parquet')  # dataset dir
+        self.historical_mover_path = os.path.join(self.root_dir, 'data', 'historical_movers')
         os.makedirs(self.parquet_root, exist_ok=True)
 
     # ---------- directory helpers ----------
@@ -462,11 +463,62 @@ class KrakenHistoricalData:
         return df_out
 
     def get_random_symbols(self, n=10):
-        pairs = self.list_parquet_pairs()
-        symbols = [p[:-4] if p.endswith('-USD') else p for p in pairs]
-
+        symbols = self.list_parquet_symbols()
         return np.random.choice(symbols, size=n, replace=False)
 
+    def list_parquet_symbols(self, quote='USD'):
+        pairs = self.list_parquet_pairs()
+        symbols = [p[:-4] if p.endswith(quote) else p for p in pairs]
+        return symbols
+
+    def get_daily_historical_movers(self, top_n=20,trades_threshold=500, sample=None, stables=False):
+        interval = "1d"
+
+        if sample:
+            symbols = np.random.choice(self.list_parquet_symbols(), size=sample, replace=False)
+        else:
+            symbols = self.list_parquet_symbols()
+        if not stables:
+            symbols = self.filter_out_stables(symbols)
+
+        # symbols = ["AVAX", "AAVE","AUDIO"]
+        ohlcv_df = self.get_ohlcv_df(symbols=symbols, interval=interval, quote="USD")
+
+        # go long!
+        ohlcv_df_long = ohlcv_df.stack(level=0, future_stack=True).reset_index().rename(
+            columns={'level_0': 'date', 'level_1': 'symbol'})
+        # filter out low trades
+        # print(ohlcv_df_long.describe())
+        ohlcv_df_long = ohlcv_df_long[ohlcv_df_long['trades'] > trades_threshold]
+        top_by_volume = ohlcv_df_long.sort_values(['date', 'volume'], ascending=[True, False])
+        top_per_day = top_by_volume.groupby('date').head(top_n).reset_index(drop=True)
+        return top_per_day
+
+    @staticmethod
+    def filter_out_stables(symbols: list):
+        to_remove = set(STABLE_BASES)
+        filtered = [x for x in symbols if x not in to_remove]
+        return filtered
+
+    def save_historical_movers_to_parquet(self):
+        top_per_day = self.get_daily_historical_movers(top_n=100, sample=None, stables=False)
+        top_per_day.to_parquet(os.path.join(self.historical_mover_path, "historical_movers.parquet"))
+
+    def load_historical_movers_from_parquet(self):
+        return pd.read_parquet(os.path.join(self.historical_mover_path, "historical_movers.parquet"))
+
+    def get_historical_movers_by_day(self, date: pd.Timestamp):
+        date = self.ensure_utc_timestamp(date)
+        top_per_day = self.load_historical_movers_from_parquet()
+        top = top_per_day[top_per_day.date == date]
+        return top.reset_index(drop=True)
+
+    @staticmethod
+    def ensure_utc_timestamp(ts: pd.Timestamp) -> pd.Timestamp:
+        if ts.tz is None:
+            return ts.tz_localize("UTC")
+        else:
+            return ts.tz_convert("UTC")
 
 if __name__ == "__main__":
     # k = KrakenHistoricalData()
@@ -488,33 +540,45 @@ if __name__ == "__main__":
     quarter_dirs = k.list_quarter_dirs()
 
     # Per-folder parallelism (good balance), sampling optional
-    k.csvs_many_dirs_to_parquet_parallel(quarter_dirs,
-                                         max_workers=os.cpu_count(),
-                                         sample_per_dir=None)
+    # k.csvs_many_dirs_to_parquet_parallel(quarter_dirs,
+    #                                      max_workers=os.cpu_count(),
+    #                                      sample_per_dir=None)
 
     # one folder only
     # k.csvs_dir_to_parquet_parallel(quarter_dirs[0], max_workers=8)
 
     # # symbols = ["BTC", "ETH", "BNB", "PEPE", "DOGE"]
-    # symbols = k.get_random_symbols(n=5)
-    # print(f"Symbols: {symbols}")
-    # quote = "USD"
-    # interval = "4h"
-    # ohlcv_df = k.get_ohlcv_df(symbols, interval=interval, quote=quote)
-    #
+    symbols = k.get_random_symbols(n=3)
+    # symbols = ["AVAX", "AAVE"]
+    print(f"Symbols: {symbols}")
+    quote = "USD"
+    interval = "1d"
+    ohlcv_df = k.get_ohlcv_df(symbols, interval=interval, quote=quote)
+
     # print(f"\nStart of OHLCV Data")
     # print(ohlcv_df.head())
     # print(f"\nEnd of OHLCV Data")
     # print(ohlcv_df.tail())
     #
     # # date range check
-    # first_date = ohlcv_df.index[0]
-    # last_date = ohlcv_df.index[-1]
-    # date_range = pd.date_range(start=first_date, end=last_date, freq=interval)
-    #
-    # print(f"\nDate Range: {date_range[0]} --> {date_range[-1]}")
-    # print(f"Date Range Length: {len(date_range)}")
-    # print(f"Ohlcv Dataframe Length: {ohlcv_df.shape[0]}")
-    #
-    # print("\n", ohlcv_df.info())
+    first_date = ohlcv_df.index[0]
+    last_date = ohlcv_df.index[-1]
+    date_range = pd.date_range(start=first_date, end=last_date, freq=interval)
 
+    print(f"\nDate Range: {date_range[0]} --> {date_range[-1]}")
+    print(f"Date Range Length: {len(date_range)}")
+    print(f"Ohlcv Dataframe Length: {ohlcv_df.shape[0]}")
+    #
+    print("\n", ohlcv_df.info())
+
+    # Get daily historical movers and save to parquet
+    k.save_historical_movers_to_parquet()
+    historical_movers = k.load_historical_movers_from_parquet()
+    # print(historical_movers.head(20))
+
+    random_date = np.random.choice(date_range)
+    date = pd.Timestamp("2025-06-26")
+    date = random_date
+    print("\n", f"Historical Movers for {date}")
+    historical_movers_by_day = k.get_historical_movers_by_day(date)
+    print(historical_movers_by_day.head(20))

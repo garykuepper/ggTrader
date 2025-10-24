@@ -156,71 +156,6 @@ class KrakenData:
         print(tabulate(top_volume, headers="keys", tablefmt="github"))
 
     @staticmethod
-    def get_kraken_historical_csv(symbol: str, interval: str = "4h"):
-        current_file = os.path.abspath(__file__)
-        one_level_up = os.path.dirname(os.path.dirname(current_file))
-        path = os.path.join(one_level_up, "data", f"kraken_hist_{interval}_latest")
-        # Ensure the directory exists (no crash if it doesn't yet)
-        os.makedirs(path, exist_ok=True)
-
-        filename = f"{symbol}_{interval}.csv"
-        filepath = os.path.join(path, filename)
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"File not found: {filepath}")
-        df = pd.read_csv(filepath, index_col="date", parse_dates=["date"])
-        return df
-
-    @staticmethod
-    def get_all_kraken_historical_csv(interval: str = "4h"):
-        current_file = os.path.abspath(__file__)
-        one_level_up = os.path.dirname(os.path.dirname(current_file))
-        path = os.path.join(one_level_up, "data", f"kraken_hist_{interval}_latest")
-        # Ensure the directory exists (no crash if it doesn't yet)
-        os.makedirs(path, exist_ok=True)
-        with os.scandir(path) as it:
-            files = [entry.name for entry in it if entry.is_file()]
-        num_files = len(files)
-
-        ohlcv_dict = {}
-        for i, f in enumerate(files):
-            print(f"({i + 1}/{num_files}) Processing {f} ")
-            file_path = os.path.join(path, f)
-            if f.split(".")[1] != "csv":
-                continue
-            df = pd.read_csv(file_path, index_col="date", parse_dates=["date"])
-            symbol = f.split("_")[0]
-            ohlcv_dict[symbol] = df
-        return ohlcv_dict
-
-    #TODO: Refactor to build multiindex dataframe instead of dict of dataframes
-    def get_raw_kraken_csv_data(self, path: str):
-        ohlcv_dict = {}
-        col_names = ["date", "open", "high", "low", "close", "volume", "trades"]
-
-        with os.scandir(path) as it:
-            files = [entry.name for entry in it if entry.is_file()]
-        num_files = len(files)
-
-        for f in files:
-            print(f"({files.index(f) + 1}/{num_files}) Processing {f} ")
-            file_path = os.path.join(path, f)
-            if f.split(".")[1] != "csv":
-                continue
-            df = pd.read_csv(file_path,
-                             header=None,
-                             names=col_names,
-                             converters={"date": lambda x: pd.to_datetime(int(x), unit="s", utc=True)},
-                             index_col="date"
-                             )
-            ticker = f.split("_")[0][:-3]
-            if self.special_kraken_map(ticker) is not None:
-                ticker = self.special_kraken_map(ticker)
-
-            if ticker:
-                ohlcv_dict[ticker] = df
-        return ohlcv_dict
-
-    @staticmethod
     def get_kraken_asset_pairs():
         url = "https://api.kraken.com/0/public/AssetPairs"
         r = requests.get(url, timeout=30)
@@ -234,86 +169,21 @@ class KrakenData:
     def special_kraken_map(symbol: str):
         return kraken_map.get(symbol)
 
-    @staticmethod
-    def join_ohlcv_dict(ohlcv_dict_hist, ohlcv_dict_new, interval="4h"):
-        # TODO: Refactor to build multiindex dataframe instead of dict of dataframes
-        ohlcv_dict = {}
-        for ticker in ohlcv_dict_new.keys():
-            if ticker in ohlcv_dict_hist.keys():
-                if ohlcv_dict_hist[ticker].empty:
-                    ohlcv_dict[ticker] = ohlcv_dict_new[ticker]
-                else:
-                    ohlcv_dict[ticker] = pd.concat([ohlcv_dict_hist[ticker], ohlcv_dict_new[ticker]])
-            else:
-                ohlcv_dict[ticker] = ohlcv_dict_new[ticker]
-            # adjust volume to be in USD
-            ohlcv_dict[ticker]['volume'] = ohlcv_dict[ticker]['volume'] * ohlcv_dict[ticker]['close']
-        return ohlcv_dict
-
-    @staticmethod
-    def write_ohlcv_dict(out, ohlcv_dict, interval="4h"):
-        #TODO: Refactor to build multiindex dataframe instead of dict of dataframes
-        num_files = len(ohlcv_dict.keys())
-        for i, ticker in enumerate(ohlcv_dict.keys()):
-            filename = ticker + "_" + interval + ".csv"
-            print(f"{i + 1}/{num_files} Writing {filename}")
-            ohlcv_dict[ticker].to_csv(os.path.join(out, filename))
-
-    @staticmethod
-    def write_all_ohlcv_dict(ohlcv_dict, interval="4h"):
-        #TODO: Refactor to save multiindex dataframe as parquet
-        current_file = os.path.abspath(__file__)
-        one_level_up = os.path.dirname(os.path.dirname(current_file))
-        filename = f"kraken_hist_{interval}.pkl"
-        path = os.path.join(one_level_up, "data", "kraken_dict",filename)
-        # Ensure the directory exists (no crash if it doesn't yet)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        pd.to_pickle(ohlcv_dict, path)
-
-    @staticmethod
-    def get_all_ohlcv_dict(interval="4h"):
-        #TODO: Refactor to load parquet as multiindex dataframe
-        current_file = os.path.abspath(__file__)
-        one_level_up = os.path.dirname(os.path.dirname(current_file))
-        filename = f"kraken_hist_{interval}.pkl"
-        path = os.path.join(one_level_up, "data", "kraken_dict",filename)
-        return pd.read_pickle(path)
-
 
 if __name__ == "__main__":
     kData = KrakenData()
     pairs = kData.get_kraken_usd_ccxt()
+    pairs.sort()
     print(f"Found {len(pairs)} USD pairs on Kraken.")
-
+    for p in pairs:
+        print(p)
     print(f"\nTop by Volume")
     kData.print_top_kraken_by_volume(limit=20, only_usd=True, exclude_stables=True, verbose=True)
 
     symbol = 'BNB'
-    df = kData.get_kraken_historical_csv(symbol, interval="4h")
-    print(f"\nHistorical Data for {symbol}:")
-    out = pd.concat([df.head(10), df.tail(10)])
-    print(tabulate(out, headers="keys", tablefmt="github"))
-    nan_count = df.isna().sum().sum()
-    print(f"\nNaN count: {nan_count}")
+    df = kData.fetch_ohlcv_df(kData.kraken, symbol + '/USD', timeframe='4h', limit=10)
+    print(df.head())
 
-    # hist_data = kData.get_all_kraken_historical_csv(interval="4h")
-    # kData.write_all_ohlcv_dict(hist_data, interval="4h")
-    # print(f"\nAll Historical Data:")
-    # print(hist_data.keys())
-    pairs = kData.get_kraken_asset_pairs()
-    kraken_symbols = list(pairs.keys())
-    print(f"\nKraken Asset Pairs ({len(kraken_symbols)}):")
 
-    ## Raw Data
-    current_file = os.path.abspath(__file__)
-    one_level_up = os.path.dirname(os.path.dirname(current_file))
-    path = os.path.join(one_level_up, "data", f"kraken_hist_4h")
-    # Ensure the directory exists (no crash if it doesn't yet)
-    os.makedirs(path, exist_ok=True)
 
-    woot = kData.get_raw_kraken_csv_data(path)
-    print(f"\nKraken Raw Data ({len(woot)}):")
-    woot_list = list(woot.keys())
-    woot_list.sort()
-    for key in woot_list:
-        print(key)
+
