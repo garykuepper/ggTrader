@@ -572,7 +572,7 @@ if __name__ == "__main__":
     print("\n", ohlcv_df.info())
 
     # Get daily historical movers and save to parquet
-    k.save_historical_movers_to_parquet()
+    # k.save_historical_movers_to_parquet()
     historical_movers = k.load_historical_movers_from_parquet()
     # print(historical_movers.head(20))
 
