@@ -583,4 +583,6 @@ if __name__ == "__main__":
     date = random_date
     print("\n", f"Historical Movers for {date}")
     historical_movers_by_day = k.get_historical_movers_by_day(date)
-    print(historical_movers_by_day.head(20))
+    print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
+
+
