@@ -290,7 +290,7 @@ class KrakenHistoricalData:
             path = base_path
 
         if not os.path.exists(path):
-            raise FileNotFoundError(f"No parquet data found at {path}")
+            raise FileNotFoundError(f"No parquet data for {pair} found at {path}")
 
         df = pd.read_parquet(path, columns=columns, filters=filters)
         # If index was preserved, pandas restores it automatically
@@ -586,3 +586,6 @@ if __name__ == "__main__":
     print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
 
 
+    single_ohlcv_df = k.get_ohlcv_df(['HBAR'], interval="1d")
+
+    print(single_ohlcv_df.head(10))

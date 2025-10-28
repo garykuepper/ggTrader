@@ -180,9 +180,10 @@ if __name__ == "__main__":
     print(f"\nTop by Volume")
     kData.print_top_kraken_by_volume(limit=20, only_usd=True, exclude_stables=True, verbose=True)
 
-    symbol = 'BNB'
-    df = kData.fetch_ohlcv_df(kData.kraken, symbol + '/USD', timeframe='4h', limit=10)
+    symbol = 'HBAR'
+    df = kData.fetch_ohlcv_df(kData.kraken, symbol + '/USD', timeframe='1d', limit=10)
     print(df.head())
+    print(df.info())
 
 
 
