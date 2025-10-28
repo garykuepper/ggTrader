@@ -4,7 +4,7 @@ import ccxt
 import os
 import pandas as pd
 import requests
-
+import numpy as np
 from tabulate import tabulate
 
 kraken_map = {
@@ -37,7 +37,7 @@ class KrakenData:
         self.kraken = ccxt.kraken()
 
     @staticmethod
-    def fetch_ohlcv_df(exchange, symbol, timeframe='4h', limit=100, since=None):
+    def fetch_ohlcv_df(exchange, symbol, timeframe='4h', limit=100, since=None,quote='USD'):
         """
         Fetch OHLCV data via ccxt and return as a pandas DataFrame.
 
@@ -51,10 +51,10 @@ class KrakenData:
         Returns:
             Pandas DataFrame with columns: open, high, low, close, volume and datetime index
         """
-        ohlcv = exchange.fetch_ohlcv(symbol, timeframe=timeframe, since=since, limit=limit)
+        ohlcv = exchange.fetch_ohlcv(f'{symbol}/{quote}', timeframe=timeframe, since=since, limit=limit)
         if not ohlcv or len(ohlcv[0]) < 6:
             raise ValueError("Returned OHLCV data is empty or unexpected format.")
-
+        # print(ohlcv)
         df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
         df["datetime"] = pd.to_datetime(df["timestamp"], unit="ms")
         df["datetime"] = df["datetime"].dt.tz_localize('UTC')
@@ -82,7 +82,9 @@ class KrakenData:
             filtered = []
             for s in symbols:
                 # s is like 'BASE/USD'; take the base part before '/'
-                base = s.split('/', 1)[0]
+                split = s.split('/')
+                base = split[0]
+                quote = split[1]
                 if base.upper() not in STABLE_BASES:
                     filtered.append(s)
             symbols = filtered
@@ -108,10 +110,14 @@ class KrakenData:
         for s, t in tickers.items():
             # last price
             # print(f"{s}, {t}")
+            split = s.split('/')
+            base = split[0]
+            quote = split[1]
             last = t.get('last') or t.get('close')
             low = t.get('low')
             high = t.get('high')
             open = t.get('open')
+            trades = t.get('info', {}).get('t')[1]
             percentage = t.get('percentage')
             # notional volume: prefer Kraken-provided fields if present
             vol_usd = 0.0
@@ -131,13 +137,16 @@ class KrakenData:
                     base_vol = t.get('baseVolume') or 0.0
                     vol_usd = float(base_vol) * float(last)
             rows.append({
-                'symbol': s,
+                'symbol': base,
                 'volume_usd': vol_usd,
                 'percentage': round(percentage, 2) if percentage is not None else None,
                 'last': float(last) if last is not None else None,
                 'open': open,
                 'high': high,
                 'low': low,
+                'trades': trades,
+                'base': base,
+                'quote': quote
 
             })
 
@@ -181,7 +190,8 @@ if __name__ == "__main__":
     kData.print_top_kraken_by_volume(limit=20, only_usd=True, exclude_stables=True, verbose=True)
 
     symbol = 'HBAR'
-    df = kData.fetch_ohlcv_df(kData.kraken, symbol + '/USD', timeframe='1d', limit=10)
+    print(f"\nOHLCV for {symbol}")
+    df = kData.fetch_ohlcv_df(kData.kraken, symbol, timeframe='1d', limit=10)
     print(df.head())
     print(df.info())
 

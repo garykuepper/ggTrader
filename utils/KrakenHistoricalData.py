@@ -509,11 +509,11 @@ class KrakenHistoricalData:
     def load_historical_movers_from_parquet(self):
         return pd.read_parquet(os.path.join(self.historical_mover_path, "historical_movers.parquet"))
 
-    def get_historical_movers_by_day(self, date: pd.Timestamp):
+    def get_historical_movers_by_day(self, date: pd.Timestamp, top_n = 100):
         date = self.ensure_utc_timestamp(date)
         top_per_day = self.load_historical_movers_from_parquet()
         top = top_per_day[top_per_day.date == date]
-        return top.reset_index(drop=True)
+        return top.reset_index(drop=True).head(top_n)
 
     @staticmethod
     def ensure_utc_timestamp(ts: pd.Timestamp) -> pd.Timestamp:
