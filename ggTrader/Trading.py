@@ -10,9 +10,9 @@ from utils.KrakenData import KrakenData
 
 class Trading:
 
-    def __init__(self, ohlcv_dict: dict[str, pd.DataFrame], date_range: pd.DatetimeIndex, start_cash=10000):
+    def __init__(self, ohlcv_df: pd.DataFrame, date_range: pd.DatetimeIndex, start_cash=10000):
         self.portfolio = Portfolio(start_cash)
-        self.ohlcv_data = ohlcv_dict
+        self.ohlcv_df = ohlcv_df
         self.time_range = date_range
         self.current_date = pd.Timestamp(date_range[0]).tz_convert('UTC')
         self.screener = Screener()
@@ -45,7 +45,7 @@ class Trading:
         if self.portfolio.positions:
             for position in self.portfolio.positions:
                 # update position price first
-                position.update_price(self.ohlcv_data[position.symbol].loc[self.current_date])
+                position.update_price(self.ohlcv_df[position.symbol].loc[self.current_date])
 
                 # check stop loss
                 stop_loss_triggered = position.current_price <= position.stop_loss
@@ -72,7 +72,7 @@ class Trading:
         signals = Signals()
         for symbol in symbols:
             if symbol not in self.signals_dict.keys():
-                ohlcv = self.ohlcv_data[symbol]
+                ohlcv = self.ohlcv_df[symbol]
                 start = self.time_range[0]
                 end = self.time_range[-1]
                 # only calc signals for the specified range.
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     kData = KrakenData()
 
     print(f"Loading OHLCV data for {date_range[0]} to {date_range[-1]}..")
-    ohlcv_dict = kData.get_all_ohlcv_dict(interval="4h")
+    ohlcv_df = kData.get_all_ohlcv_dict(interval="4h")
     print(f"Loaded {len(ohlcv_dict)} symbols.")
     trader = Trading(ohlcv_dict, date_range, start_cash=10000)
     trader.current_date = date_range[0]
