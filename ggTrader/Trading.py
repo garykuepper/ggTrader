@@ -6,6 +6,7 @@ from ggTrader.Screener import Screener
 from ggTrader.Signals import Signals
 import pandas as pd
 from utils.KrakenData import KrakenData
+from utils.KrakenHistoricalData import KrakenHistoricalData
 
 
 class Trading:
@@ -101,29 +102,12 @@ class Trading:
 
 
 if __name__ == "__main__":
-    date_range = pd.date_range(start='2024-01-01', end='2024-01-31', freq='4h').tz_localize('UTC')
-    kData = KrakenData()
+    date_range = pd.date_range(start='2023-01-01', end='2023-01-05', freq='1d').tz_localize('UTC')
+    k = KrakenData()
+    k_h = KrakenHistoricalData()
 
-    print(f"Loading OHLCV data for {date_range[0]} to {date_range[-1]}..")
-    ohlcv_df = kData.get_all_ohlcv_dict(interval="4h")
-    print(f"Loaded {len(ohlcv_dict)} symbols.")
-    trader = Trading(ohlcv_dict, date_range, start_cash=10000)
-    trader.current_date = date_range[0]
-    trader.check_buy()
+    for date in date_range:
+        print(f"\nHistorical Movers for {date}")
+        historical_movers_by_day = k_h.get_historical_movers_by_day(date)
 
-    screen = Screener()
-    date = pd.Timestamp(date_range[0]).tz_convert('UTC')
-
-    top_movers = screen.get_historical_daily_kraken_by_volume(date, top_n=25)
-    top_mover = top_movers['ticker'].iloc[0]
-    print(top_mover)
-    print(top_movers.shape)
-    symbols = ['LTC']
-    trader.calc_signals(symbols)
-    print(tabulate(trader.signals_dict[symbols[0]].tail(10), headers='keys', tablefmt='github'))
-
-    date = pd.Timestamp("2024-01-30 00:00:00+00:00")
-    trader.check_buy_by_symbol_and_date(symbols[0], date)
-    trader.portfolio.print_positions()
-    trader.portfolio.print_trades()
-    trader.portfolio.print_stats_df()
+        print(tabulate(historical_movers_by_day.head(10), headers="keys", tablefmt="github"))

@@ -143,6 +143,7 @@ class KrakenHistoricalData:
         self.parquet_root = os.path.join(self.root_dir, 'data', 'parquet')  # dataset dir
         self.historical_mover_path = os.path.join(self.root_dir, 'data', 'historical_movers')
         os.makedirs(self.parquet_root, exist_ok=True)
+        self.historical_mover_df = None
 
     # ---------- directory helpers ----------
     def list_quarter_dirs(self, prefix="Kraken_OHLCVT_"):
@@ -511,7 +512,13 @@ class KrakenHistoricalData:
 
     def get_historical_movers_by_day(self, date: pd.Timestamp, top_n = 100):
         date = self.ensure_utc_timestamp(date)
-        top_per_day = self.load_historical_movers_from_parquet()
+
+        if self.historical_mover_df is None:
+
+            top_per_day = self.load_historical_movers_from_parquet()
+        else:
+            top_per_day = self.historical_mover_df
+
         top = top_per_day[top_per_day.date == date]
         return top.reset_index(drop=True).head(top_n)
 
@@ -579,13 +586,20 @@ if __name__ == "__main__":
     # print(historical_movers.head(20))
 
     random_date = np.random.choice(date_range)
-    date = pd.Timestamp("2025-06-26")
+    # date = pd.Timestamp("2025-06-26")
     date = random_date
     print("\n", f"Historical Movers for {date}")
     historical_movers_by_day = k.get_historical_movers_by_day(date)
     print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
 
+    random_date = np.random.choice(date_range)
+    date = random_date
+    print("\n", f"Historical Movers for {date}")
 
-    single_ohlcv_df = k.get_ohlcv_df(['HBAR'], interval="1d")
+    historical_movers_by_day = k.get_historical_movers_by_day(date)
+    print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
+
+
+    single_ohlcv_df = k.get_ohlcv_df(['BTC'], interval="1d")
 
     print(single_ohlcv_df.head(10))
