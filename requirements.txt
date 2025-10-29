@@ -10,3 +10,4 @@ pytest
 ccxt
 pyarrow
 vectorbt
+TA-Lib

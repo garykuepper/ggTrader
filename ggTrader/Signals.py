@@ -19,76 +19,21 @@ class Signals:
         self.signals = pd.DataFrame()
         self.ohlcv = pd.DataFrame()  # original OHLCV data
 
-    def _build_signals(self, df: pd.DataFrame) -> pd.DataFrame:
-        signals = pd.DataFrame()
-        # signals = df.copy()
-        # remove all NaN rows
-        first_valid = df[['high', 'low', 'close']].dropna().index[0]
-        # calc signals at first valid index
-        signals = df.loc[first_valid:].copy()
-        # EMA signals
-        signals['ema_fast'] = EMAIndicator(close=signals['close'], window=self.ema_fast, fillna=False).ema_indicator()
-        signals['ema_slow'] = EMAIndicator(close=signals['close'], window=self.ema_slow, fillna=False).ema_indicator()
+    # TODO: Use https://github.com/TA-Lib/ta-lib-python library
 
-        # MACD components
-        signals['macd'] = MACD(close=signals['close'], window_slow=26, window_fast=12, window_sign=9,
-                               fillna=False).macd()
-
-        # Crossover-based signals
-        signals['ema_crossover'] = np.sign(signals['ema_fast'] - signals['ema_slow'])
-        signals['signal'] = signals['ema_crossover'].diff().fillna(0) / 2
-
-        # ATR-based level
-        signals['atr'] = AverageTrueRange(
-            high=signals['high'],
-            low=signals['low'],
-            close=signals['close'],
-            window=self.atr_window,
-            fillna=False
-        ).average_true_range()
-        # Replace NaNs with 0 to avoid issues with division later on
-        signals.loc[signals['atr'] == 0, 'atr'] = np.nan
-
-        # ATR-based exit level
-        signals['atr_sell'] = signals['close'] - signals['atr'] * self.atr_multiplier
-        signals['atr_sell'] = signals['atr_sell'].shift(1)
-        signals['atr_sell_signal'] = signals['close'] < signals['atr_sell']
-
-        # PSAR
-        signals['psar'] = PSARIndicator(high=signals['high'],
-                                        low=signals['low'],
-                                        close=signals['close'],
-                                        step=0.02,
-                                        max_step=0.20).psar()
-
-        # ADX
-        signals['adx'] = ADXIndicator(high=signals['high'],
-                                      low=signals['low'],
-                                      close=signals['close'],
-                                      window=14,
-                                      fillna=False).adx()
-
-        # reindex signals to match original df data
-        tmp = signals.reindex(df.index)
-        first_valid = tmp.first_valid_index()
-
-        if first_valid is not None:
-            tmp = tmp.infer_objects(copy=False)
-            tmp.loc[first_valid:] = tmp.loc[first_valid:].interpolate()
-        signals = tmp
-
-        return signals
-
-    def compute(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Compute signals for the given OHLCV DataFrame.
-        Expects df with at least columns: close, high, low.
-        Returns a DataFrame with the same columns as in the original calc_signals.
-        """
-        if df is None or df.empty:
-            return pd.DataFrame()
-        self.signals = self._build_signals(df)
-        return self.signals
+    # TODO: Class Signals, holds cache of all signals in a long form
+    # Details: signals are stored in a long form DataFrame with columns:
+    #  - date
+    #  - symbol
+    #  - close
+    #  - high
+    #  - low
+    #  - quote
+    #  - interval
+    #  - signal (1=buy, -1=sell, 0=hold)
+    #  - SAR
+    #  - ATR
+    #  - stop-loss
 
     @classmethod
     def generate_fake_data(cls,
