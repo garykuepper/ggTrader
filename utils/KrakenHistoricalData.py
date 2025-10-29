@@ -339,7 +339,7 @@ class KrakenHistoricalData:
         dfs = []
         for symbol in symbols:
             pair = f"{symbol}-{quote}"
-            df = k.read_parquet(pair=pair, interval=interval)
+            df = self.read_parquet(pair=pair, interval=interval)
             dfs.append(df)
 
         # deduplicate indices
@@ -358,7 +358,7 @@ class KrakenHistoricalData:
 
         # clean up
         ohlcv_df = ohlcv_df.sort_index()
-        ohlcv_df = self.align_to_datetime_index(ohlcv_df)
+        ohlcv_df = self.align_to_datetime_index(ohlcv_df, interval=interval)
         ohlcv_df = self.fill_after_first_non_nan_multilevel_safe(ohlcv_df, symbols=symbols)
         ohlcv_df = self.fill_symbol_metadata(ohlcv_df, symbols)
 
@@ -425,7 +425,7 @@ class KrakenHistoricalData:
         return df_out
 
     @staticmethod
-    def align_to_datetime_index(ohlcv_df: pd.DataFrame):
+    def align_to_datetime_index(ohlcv_df: pd.DataFrame, interval: str = "1d"):
         first_date = ohlcv_df.index[0]
         last_date = ohlcv_df.index[-1]
         date_range = pd.date_range(start=first_date, end=last_date, freq=interval)
