@@ -5,6 +5,7 @@ from ta.trend import EMAIndicator, MACD, SMAIndicator, ADXIndicator, PSARIndicat
 from ta.volatility import AverageTrueRange
 from tabulate import tabulate
 
+
 class Signals:
     def __init__(self,
                  ema_fast: int = 20,
@@ -133,6 +134,8 @@ class Signals:
 
     def get_signal_by_date(self, date: pd.Timestamp):
         return self.signals.loc[date]
+
+
 if __name__ == "__main__":
     signals = Signals()
     df = signals.generate_fake_data(200)
