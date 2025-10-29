@@ -9,8 +9,8 @@ c = np.random.randn(100)
 
 sar_acceleration = 0.02
 sar_maximum = 0.2
-atr_multiplier = 3.0
-df = yf.download("BTC-USD", period="60d", interval="1d", multi_level_index=False)
+atr_multiplier = 1.5
+df = yf.download("BTC-USD", start="2025-08-01", end="2025-10-30", interval="1d", multi_level_index=False)
 
 print(df.head())
 
@@ -19,6 +19,35 @@ df['adx'] = ta.ADX(df['High'], df['Low'], df['Close'])
 
 df['atr'] = ta.ATR(df['High'], df['Low'], df['Close'])
 df['atr_stop_loss'] = df['Close'] - (atr_multiplier * df['atr'].shift(1))
+df['atr_stop_loss_updated'] = df['atr_stop_loss']  # initialize with original values
+prev_stop_loss = np.nan
+
+for index, row in df.iterrows():
+    new_stop_loss = df.loc[index, 'atr_stop_loss']
+
+    if pd.isna(new_stop_loss):
+        continue
+
+    if pd.isna(prev_stop_loss):
+        prev_stop_loss = new_stop_loss
+
+    if new_stop_loss > prev_stop_loss:
+        # update if new stop loss is higher
+        df.loc[index, 'atr_stop_loss_updated'] = new_stop_loss
+
+    else:
+        # keep the previous stop loss
+        df.loc[index, 'atr_stop_loss_updated'] = prev_stop_loss
+
+    prev_stop_loss = df.loc[index, 'atr_stop_loss_updated']
+
+    # check if triggered
+    if df.loc[index, 'atr_stop_loss_updated'] > df.loc[index, 'Close']:
+       df.loc[index, 'atr_stop_loss_updated'] = new_stop_loss
+       prev_stop_loss = new_stop_loss
+
+
+
 
 # SAR Signal
 df['sar'] = ta.SAR(df['High'],
@@ -32,28 +61,29 @@ signals = pd.Series(0, index=df.index, dtype=int)
 signals[cross_up] = 1
 signals[cross_down] = -1
 df['signals'] = signals
+print(tabulate(df.head(40), headers="keys", tablefmt="github"))
+# Create signal marker series that only contain markers at the signal points
+up_markers = df['Close'].where(df['signals'] == 1)
+down_markers = df['Close'].where(df['signals'] == -1)
 
-print(tabulate(df.tail(30), headers="keys", tablefmt="github"))
-
-signal_markers = []
-for idx, s in enumerate(df.get('signals', pd.Series([0] * len(df), index=df.index))):
-    if s == 1:
-        signal_markers.append(
-            dict(type='scatter', x=df.index[idx], y=df['Close'].iloc[idx], marker='^', color='green', markersize=100))
-    elif s == -1:
-        signal_markers.append(
-            dict(type='scatter', x=df.index[idx], y=df['Close'].iloc[idx], marker='v', color='red', markersize=100))
-
+# Build addplots for SAR and ATR as before
 addplots = [
     mpf.make_addplot(df['sar'], color='orange', width=1.0, label='SAR'),
-    mpf.make_addplot(df['atr_stop_loss'], color='blue', width=1.0, label='ATR'),
+    mpf.make_addplot(df['atr_stop_loss_updated'], color='blue', width=1.0, label='ATR_updated'),
+    # Scatter addplots for signal markers (only plot where not NaN)
+    mpf.make_addplot(up_markers, type='scatter', markersize=100, marker='^', color='green', secondary_y=False),
+    mpf.make_addplot(down_markers, type='scatter', markersize=100, marker='v', color='red', secondary_y=False),
 ]
+
+all_addplots = addplots
 
 mpf.plot(
     df,
     type="candle",
     volume=True,
-    addplot=addplots,
+    # mav=(20, 50),
+    addplot=all_addplots,
     figsize=(16, 10),
     title="BTC-USD with SAR and ATR",
-    style="yahoo")  # optional lines
+    style="yahoo"
+)
