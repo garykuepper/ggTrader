@@ -16,6 +16,7 @@ class Signals:
         self.atr_multiplier = atr_multiplier
         self.atr_window = atr_window
         self.signals = pd.DataFrame()
+        self.ohlcv = pd.DataFrame()  # original OHLCV data
 
     def _build_signals(self, df: pd.DataFrame) -> pd.DataFrame:
         signals = pd.DataFrame()
@@ -130,7 +131,8 @@ class Signals:
         df.index = dates
         return df
 
-
+    def get_signal_by_date(self, date: pd.Timestamp):
+        return self.signals.loc[date]
 if __name__ == "__main__":
     signals = Signals()
     df = signals.generate_fake_data(200)
