@@ -1,4 +1,3 @@
-import talib as ta
 import pandas_ta as pta
 import numpy as np
 import yfinance as yf
@@ -29,6 +28,8 @@ df['rsi'] = pta.rsi(df['close'])
 
 # adx > 25 strong trend
 adx = pta.adx(df['high'], df['low'], df['close'])
+
+print(tabulate(adx.tail(20), headers="keys", tablefmt="github"))
 df['adx'] = adx.iloc[:, 1]
 df['atr'] = pta.atr(df['high'], df['low'], df['close'])
 ce = pta.chandelier_exit(df['high'],
@@ -38,7 +39,7 @@ ce = pta.chandelier_exit(df['high'],
 
 ce['chandelier_long'] = np.where(ce.iloc[:, 2]>0,ce.iloc[:, 0],np.nan)
 ce['chandelier_short'] = np.where(ce.iloc[:, 2]<0,ce.iloc[:, 1],np.nan)
-print(tabulate(ce.tail(10), headers="keys", tablefmt="github"))
+print(tabulate(ce.tail(20), headers="keys", tablefmt="github"))
 
 
 st = pta.supertrend(df['high'],
@@ -52,6 +53,8 @@ df['supertrend'] = st.iloc[:, 0]
 psar = pta.psar(df['high'],
                 df['low'],
                 close=df['close'], )
+
+print(tabulate(psar.tail(20), headers="keys", tablefmt="github"))
 df['sar'] = psar.iloc[:, 0]
 
 # Build addplots for SAR and ATR as before
