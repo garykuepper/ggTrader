@@ -1,4 +1,5 @@
 import talib as ta
+import pandas_ta as pta
 import numpy as np
 import yfinance as yf
 import pandas as pd
@@ -10,87 +11,77 @@ c = np.random.randn(100)
 symbols = ["BTC"]
 interval = "1d"
 start = pd.to_datetime("2025-01-01").tz_localize('UTC')
-end = start + pd.Timedelta(days=120)  # one quarter
+end = start + pd.Timedelta(days=30 * 6)  # one quarter
 sar_acceleration = 0.02
 sar_maximum = 0.2
 atr_multiplier = 1.5
 k = KrakenHistoricalData()
 
-df_multi = k.get_ohlcv_df(symbols,interval=interval)
+df_multi = k.get_ohlcv_df(symbols, interval=interval)
 df_multi.columns = df_multi.columns.droplevel(0)
 df = df_multi.loc[start:end]
 
-# df = yf.download("BTC-USD", start="2025-08-01", end="2025-10-30", interval="1d", multi_level_index=False)
+# moving average
+ma = pta.ohlc4(df['open'],df['high'],df['low'],df['close'])
 
-print(df.head())
+# Calculate technical indicators
+df['rsi'] = pta.rsi(df['close'])
 
-df['rsi'] = ta.RSI(df['close'])
-df['adx'] = ta.ADX(df['high'], df['low'], df['close'])
+# adx > 25 strong trend
+adx = pta.adx(df['high'], df['low'], df['close'])
+df['adx'] = adx.iloc[:, 1]
+df['atr'] = pta.atr(df['high'], df['low'], df['close'])
+ce = pta.chandelier_exit(df['high'],
+                                            df['low'],
+                                            df['close'],
+                                            multiplier=atr_multiplier,)
 
-df['atr'] = ta.ATR(df['high'], df['low'], df['close'])
-df['atr_stop_loss'] = df['close'] - (atr_multiplier * df['atr'].shift(1))
-df['atr_stop_loss_updated'] = df['atr_stop_loss']  # initialize with original values
-prev_stop_loss = np.nan
+ce['chandelier_long'] = np.where(ce.iloc[:, 2]>0,ce.iloc[:, 0],np.nan)
+ce['chandelier_short'] = np.where(ce.iloc[:, 2]<0,ce.iloc[:, 1],np.nan)
+print(tabulate(ce.tail(10), headers="keys", tablefmt="github"))
 
-for index, row in df.iterrows():
-    new_stop_loss = df.loc[index, 'atr_stop_loss']
 
-    if pd.isna(new_stop_loss):
-        continue
-
-    if pd.isna(prev_stop_loss):
-        prev_stop_loss = new_stop_loss
-
-    if new_stop_loss > prev_stop_loss:
-        # update if new stop loss is higher
-        df.loc[index, 'atr_stop_loss_updated'] = new_stop_loss
-
-    else:
-        # keep the previous stop loss
-        df.loc[index, 'atr_stop_loss_updated'] = prev_stop_loss
-
-    prev_stop_loss = df.loc[index, 'atr_stop_loss_updated']
-
-    # check if triggered
-    if df.loc[index, 'atr_stop_loss_updated'] > df.loc[index, 'close']:
-        df.loc[index, 'atr_stop_loss_updated'] = new_stop_loss
-        prev_stop_loss = new_stop_loss
+st = pta.supertrend(df['high'],
+                    df['low'],
+                    df['close'],
+                    period=14,
+                    multiplier=atr_multiplier)
+df['supertrend'] = st.iloc[:, 0]
 
 # SAR Signal
-df['sar'] = ta.SAR(df['high'],
-                   df['low'],
-                   acceleration=sar_acceleration,
-                   maximum=sar_maximum)
-cross_up = (df['close'] > df['sar']) & (df['close'].shift(1) <= df['sar'].shift(1))
-cross_down = (df['close'] < df['sar']) & (df['close'].shift(1) >= df['sar'].shift(1))
-
-signals = pd.Series(0, index=df.index, dtype=int)
-signals[cross_up] = 1
-signals[cross_down] = -1
-df['signals'] = signals
-print(tabulate(df.head(40), headers="keys", tablefmt="github"))
-# Create signal marker series that only contain markers at the signal points
-up_markers = df['close'].where(df['signals'] == 1)
-down_markers = df['close'].where(df['signals'] == -1)
+psar = pta.psar(df['high'],
+                df['low'],
+                close=df['close'], )
+df['sar'] = psar.iloc[:, 0]
 
 # Build addplots for SAR and ATR as before
+
+adx_line = pd.Series(25, index=df.index)
+
 addplots = [
-    mpf.make_addplot(df['sar'], type='scatter', color='orange', width=1.0, label='SAR'),
-    mpf.make_addplot(df['atr_stop_loss_updated'], color='blue', width=1.0, label='ATR_updated'),
-    # Scatter addplots for signal markers (only plot where not NaN)
-    mpf.make_addplot(up_markers, type='scatter', markersize=100, marker='^', color='green', secondary_y=False),
-    mpf.make_addplot(down_markers, type='scatter', markersize=100, marker='v', color='red', secondary_y=False),
+    mpf.make_addplot(psar.iloc[:, 0], type='scatter', color='blue', width=1.0, label='SAR_buy'),
+    mpf.make_addplot(psar.iloc[:, 1], type='scatter', color='red', width=1.0, label='SAR_sell'),
+    mpf.make_addplot(ce.iloc[:, 3], type='scatter', marker='x', color='teal', width=1.0, label='ATR_buy',
+                     secondary_y=False),
+    mpf.make_addplot(ce.iloc[:, 4], type='scatter', marker='x', color='orangered', width=1.0, label='ATR_sell',
+                     secondary_y=False),
+    mpf.make_addplot(df['adx'], type='line', width=1.0, label='ADX',panel=1),
+    mpf.make_addplot(adx_line, type='line', color="black",linestyle='--', width=1.0, label='ADX_line',panel=1),
+    mpf.make_addplot(ma, type='line', color="black",linestyle='-', width=1.0, label='ma',panel=0),
 ]
 
 all_addplots = addplots
 
 mpf.plot(
     df,
-    type="candle",
+    type="ohlc",
     volume=False,
+    style="yahoo",
     # mav=(20, 50),
     addplot=all_addplots,
-    figsize=(19, 14),
+    figratio=(18, 9),
+    figscale=1.7,
+    tight_layout=True,
     title="BTC-USD with SAR and ATR",
-    style="yahoo"
+    xlim=[end - pd.Timedelta(days=150), end],
 )

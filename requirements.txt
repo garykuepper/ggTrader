@@ -10,4 +10,4 @@ pytest
 ccxt
 pyarrow
 vectorbt
-TA-Lib
+pandas-ta
