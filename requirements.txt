@@ -1,3 +1,5 @@
+numpy
+numba
 tqdm
 pandas
 yfinance

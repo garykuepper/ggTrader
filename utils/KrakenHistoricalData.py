@@ -564,8 +564,8 @@ if __name__ == "__main__":
     interval = "1d"
     ohlcv_df = k.get_ohlcv_df(symbols, interval=interval, quote=quote)
 
-    # print(f"\nStart of OHLCV Data")
-    # print(ohlcv_df.head())
+    print(f"\nStart of OHLCV Data")
+    print(ohlcv_df.head())
     # print(f"\nEnd of OHLCV Data")
     # print(ohlcv_df.tail())
     #
@@ -600,6 +600,7 @@ if __name__ == "__main__":
     print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
 
 
-    single_ohlcv_df = k.get_ohlcv_df(['BTC'], interval="1d")
+    single_ohlcv_df = k.get_ohlcv_df(['BTC'], interval="4h")
 
     print(single_ohlcv_df.head(10))
+

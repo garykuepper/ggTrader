@@ -17,6 +17,8 @@ atr_multiplier = 1.5
 k = KrakenHistoricalData()
 
 df_multi = k.get_ohlcv_df(symbols, interval=interval)
+
+print(df_multi.head(10))
 df_multi.columns = df_multi.columns.droplevel(0)
 df = df_multi.loc[start:end]
 
