@@ -529,6 +529,110 @@ class KrakenHistoricalData:
         else:
             return ts.tz_convert("UTC")
 
+    def build_4h_from_1h_and_merge(self, pair: str, year: int = 2023) -> pd.DataFrame:
+        """
+        Create 4h bars from 1h data for a given year and merge with existing 4h.
+        Prefers existing 4h when overlaps occur.
+        """
+        # 1) Load 1h and slice to year (robust to missing year and index dtype)
+        df_1h = self.read_parquet(pair=pair, interval="1h")
+        # ensure datetime index in UTC
+        if not isinstance(df_1h.index, pd.DatetimeIndex):
+            df_1h.index = pd.to_datetime(df_1h.index, utc=True, errors="coerce")
+        elif df_1h.index.tz is None:
+            df_1h.index = df_1h.index.tz_localize("UTC")
+        else:
+            df_1h.index = df_1h.index.tz_convert("UTC")
+        if df_1h.index.hasnans:
+            df_1h = df_1h[~df_1h.index.isna()]
+
+        start = pd.Timestamp(year=year, month=1, day=1, tz="UTC")
+        end = pd.Timestamp(year=year + 1, month=1, day=1, tz="UTC")
+        df_1h_y = df_1h[(df_1h.index >= start) & (df_1h.index < end)]
+
+        # 3) Load existing 4h (may extend into 2024)
+        try:
+            df_4h_real = self.read_parquet(pair=pair, interval="4h")
+        except FileNotFoundError:
+            # No existing 4h parquet; proceed with empty frame
+            df_4h_real = pd.DataFrame()
+        # If the ticker doesn't exist in the requested year, return existing 4h unchanged
+        if df_1h_y.empty:
+            combined = df_4h_real.sort_index() if not df_4h_real.empty else pd.DataFrame()
+            if combined.empty:
+                # produce a consistent empty dataframe with metadata
+                combined = pd.DataFrame(
+                    columns=["open", "high", "low", "close", "volume", "trades", "base", "quote", "pair", "interval"])
+                combined.index = pd.DatetimeIndex([], tz="UTC", name=df_1h.index.name or None)
+            combined["pair"] = pair
+            combined["interval"] = "4h"
+            # backfill metadata if missing
+            if "base" not in combined.columns or combined["base"].isna().all():
+                base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
+                combined["base"] = base
+                combined["quote"] = quote
+            else:
+                combined["base"] = combined["base"].ffill().bfill()
+                if "quote" in combined.columns:
+                    combined["quote"] = combined["quote"].ffill().bfill()
+                else:
+                    base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
+                    combined["quote"] = quote
+            return combined
+
+        # 2) Resample 1h -> 4h OHLCVT
+        agg = {
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
+            "trades": "sum",
+        }
+        df_4h_from_1h = (
+            df_1h_y.resample("4h", label="right", closed="right").agg(agg)
+            .dropna(subset=["open", "close"])
+        )
+
+        # carry metadata if present
+        for meta in ("base", "quote", "pair"):
+            if meta in df_1h_y.columns:
+                df_4h_from_1h[meta] = df_1h_y[meta].iloc[0]
+        df_4h_from_1h["interval"] = "4h"
+
+        # 4) Merge, prefer real 4h on duplicates
+        combined = pd.concat(
+            [df_4h_from_1h, df_4h_real]).sort_index() if not df_4h_real.empty else df_4h_from_1h.sort_index()
+        combined = combined[~combined.index.duplicated(keep="last")]
+
+        # --- ensure required metadata columns are present and consistent ---
+        combined["pair"] = pair
+        combined["interval"] = "4h"
+        if "base" not in combined.columns or combined["base"].isna().all():
+            base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
+            combined["base"] = base
+            combined["quote"] = quote
+        else:
+            combined["base"] = combined["base"].ffill().bfill()
+            if "quote" in combined.columns:
+                combined["quote"] = combined["quote"].ffill().bfill()
+            else:
+                base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
+                combined["quote"] = quote
+
+        return combined
+
+    def build_4h_for_symbols_merge(self, symbols: list, quote: str = "USD", year: int = 2023) -> dict:
+        """
+        Convenience wrapper for multiple symbols. Returns {symbol: DataFrame}.
+        """
+        out = {}
+        for sym in symbols:
+            pair = f"{sym}-{quote}"
+            out[sym] = self.build_4h_from_1h_and_merge(pair=pair, year=year)
+        return out
+
+
 if __name__ == "__main__":
     # k = KrakenHistoricalData()
     #
@@ -600,7 +704,26 @@ if __name__ == "__main__":
     print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
 
 
+
+
+
+    # tickers = k.list_parquet_pairs()
+    # print(tickers)
+    #
+    # import pyarrow as pa, pyarrow.parquet as pq
+    #
+    # k = KrakenHistoricalData()
+    # for ticker in tickers:
+    #     print(ticker)
+    #     df = k.build_4h_from_1h_and_merge(pair=ticker, year=2023)
+    #     table = pa.Table.from_pandas(df, preserve_index=True)
+    #     pq.write_to_dataset(
+    #         table,
+    #         root_path=k.parquet_root,
+    #         partition_cols=["pair", "interval"],
+    #         compression="zstd",
+    #     )
+
     single_ohlcv_df = k.get_ohlcv_df(['BTC'], interval="4h")
 
     print(single_ohlcv_df.head(10))
-

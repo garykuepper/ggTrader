@@ -1,8 +1,7 @@
 # Python
 import numpy as np
 import pandas as pd
-from ta.trend import EMAIndicator, MACD, SMAIndicator, ADXIndicator, PSARIndicator
-from ta.volatility import AverageTrueRange
+import pandas_ta as pta
 from tabulate import tabulate
 
 
@@ -19,70 +18,36 @@ class Signals:
         self.signals = pd.DataFrame()
         self.ohlcv = pd.DataFrame()  # original OHLCV data
 
-    # TODO: Use https://github.com/TA-Lib/ta-lib-python library
-
-    # TODO: Class Signals, holds cache of all signals in a long form
-    # Details: signals are stored in a long form DataFrame with columns:
-    #  - date
-    #  - symbol
-    #  - close
-    #  - high
-    #  - low
-    #  - quote
-    #  - interval
-    #  - signal (1=buy, -1=sell, 0=hold)
-    #  - SAR
-    #  - ATR
-    #  - stop-loss
-
-    @classmethod
-    def generate_fake_data(cls,
-                           rows: int = 40,
-                           seed: int = None,
-                           start: float = 100.0,
-                           drift: float = 0.5,
-                           vol: float = 2.0) -> pd.DataFrame:
+    @staticmethod
+    def sign_crossovers(series: pd.Series) -> tuple[pd.Series, pd.Series, pd.Series]:
         """
-        Generate a fake OHLCV DataFrame for testing.
-        - rows: number of rows to generate
-        - seed: random seed for reproducibility
-        - start: starting price
-        - drift: expected price drift per step
-        - vol: volatility multiplier for random walk
-        Returns a DataFrame with columns: close, high, low
+        Detect sign crossovers (neg->pos and pos->neg) in a single Series.
+        Returns (cross_up, cross_down, signal), aligned with input index.
         """
-        if seed is not None:
-            np.random.seed(seed)
+        s = series.copy()
+        s = s.where(np.isfinite(s))  # treat inf/-inf as NaN
+        s = s.fillna(method="ffill")  # avoid false crosses due to NaN gaps
 
-        close = []
-        high = []
-        low = []
-        price = start
+        prev = s.shift(1)
+        cross_up = (prev < 0) & (s > 0)
+        cross_down = (prev > 0) & (s < 0)
+        signal = pd.Series(0, index=s.index, dtype="int8")
+        signal[cross_up] = 1
+        signal[cross_down] = -1
+        return cross_up, cross_down, signal
 
-        # Optional: include a date index (daily frequency) starting today
-        ts = pd.Timestamp.today(tz='UTC').round("D")
-        dates = pd.date_range(end=ts, periods=rows, freq='D')
-
-        for i in range(rows):
-            # simple stochastic process: price += drift + noise
-            price = price + drift + float(np.random.randn()) * vol
-            c = price
-            h = c + abs(float(np.random.randn())) * vol * 0.8 + 0.5
-            l = c - abs(float(np.random.randn())) * vol * 0.8 - 0.5
-            close.append(round(c, 2))
-            high.append(round(h, 2))
-            low.append(round(l, 2))
-
-        df = pd.DataFrame({'close': close, 'high': high, 'low': low})
-        df.index = dates
-        return df
-
-    def get_signal_by_date(self, date: pd.Timestamp):
-        return self.signals.loc[date]
-
+    @staticmethod
+    def crossover(a: pd.Series, b: pd.Series) -> tuple[pd.Series, pd.Series, pd.Series]:
+        """
+        Detect crossovers between two Series a and b.
+        Returns (cross_up, cross_down, signal), where:
+          cross_up: a crosses above b
+          cross_down: a crosses below b
+          signal: +1 on cross_up, -1 on cross_down, else 0
+        """
+        a, b = a.align(b, join="inner")
+        diff = (a - b).astype("float64")
+        return sign_crossovers(diff)
 
 if __name__ == "__main__":
-    signals = Signals()
-    df = signals.generate_fake_data(200)
-    signals.compute(df)
-    print(tabulate(signals.signals.tail(), headers='keys', tablefmt='github'))
+    pass
