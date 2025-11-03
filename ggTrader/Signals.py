@@ -6,48 +6,64 @@ from tabulate import tabulate
 
 
 class Signals:
-    def __init__(self,
-                 ema_fast: int = 20,
-                 ema_slow: int = 50,
-                 atr_multiplier: float = 2.0,
-                 atr_window: int = 14):
-        self.ema_fast = ema_fast
-        self.ema_slow = ema_slow
-        self.atr_multiplier = atr_multiplier
-        self.atr_window = atr_window
-        self.signals = pd.DataFrame()
+    def __init__(self):
         self.ohlcv = pd.DataFrame()  # original OHLCV data
 
-    @staticmethod
-    def sign_crossovers(series: pd.Series) -> tuple[pd.Series, pd.Series, pd.Series]:
-        """
-        Detect sign crossovers (neg->pos and pos->neg) in a single Series.
-        Returns (cross_up, cross_down, signal), aligned with input index.
-        """
-        s = series.copy()
-        s = s.where(np.isfinite(s))  # treat inf/-inf as NaN
-        s = s.fillna(method="ffill")  # avoid false crosses due to NaN gaps
+    def calc_signals(self, df: pd.DataFrame):
+        signals = self.entry_signals(df)
+        return signals
 
-        prev = s.shift(1)
-        cross_up = (prev < 0) & (s > 0)
-        cross_down = (prev > 0) & (s < 0)
-        signal = pd.Series(0, index=s.index, dtype="int8")
-        signal[cross_up] = 1
-        signal[cross_down] = -1
-        return cross_up, cross_down, signal
+
+    def entry_signals(self, df: pd.DataFrame, adx_threshold: int = 25):
+        signals = df.copy()
+
+
+        # Entry: SAR Signal
+        psar = pta.psar(df['high'],
+                        df['low'],
+                        close=df['close'])
+
+        signals['sar'] = psar.iloc[:, 0]
+        signals['sar_s'] = signals['close'] > signals['sar']
+
+        # adx > 25 strong trend
+        adx = pta.adx(df['high'], df['low'], df['close'])
+        signals['adx'] = adx.iloc[:, 0]
+        signals['adx_d'] = adx.iloc[:, 1]
+        signals['adx_dmp'] = adx.iloc[:, 2]
+        signals['adx_dmn'] = adx.iloc[:, 3]
+
+        signals['adx_s'] = np.where(signals['adx'] > adx_threshold, True, False)
+        signals['adx_bullish'] = np.where(signals['adx_dmp'] > signals['adx_dmn'], True, False)
+        # adx_bullish = adx_dmp > adx_dmn
+        signals['adx_s'] = signals['adx_s'] & signals['adx_bullish']
+
+        # Have ADX strength, and sar is a buy and ce is not an exit
+        entry_series = signals['adx_s'] & signals['sar_s'] & ~signals['ce_exit']
+        entry_rise = entry_series & (~entry_series.shift(1, fill_value=False))
+        signals['entry_signal'] = entry_rise
+
+        return signals
+
+    def exit_signals(self):
+        pass
 
     @staticmethod
-    def crossover(a: pd.Series, b: pd.Series) -> tuple[pd.Series, pd.Series, pd.Series]:
-        """
-        Detect crossovers between two Series a and b.
-        Returns (cross_up, cross_down, signal), where:
-          cross_up: a crosses above b
-          cross_down: a crosses below b
-          signal: +1 on cross_up, -1 on cross_down, else 0
-        """
-        a, b = a.align(b, join="inner")
-        diff = (a - b).astype("float64")
-        return sign_crossovers(diff)
+    def filter_signals(signals: pd.DataFrame, entry_rise: pd.Series, exit_rise: pd.Series):
+
+        in_pos = False
+        filtered_entry = pd.Series(False, index=signals.index)
+        filtered_exit = pd.Series(False, index=signals.index)
+
+        for ts in signals.index:
+            if not in_pos and entry_rise.loc[ts]:
+                filtered_entry.loc[ts] = True
+                in_pos = True
+            elif in_pos and exit_rise.loc[ts]:
+                filtered_exit.loc[ts] = True
+                in_pos = False
+
+        return pd.DataFrame({'entry': filtered_entry, 'exit': filtered_exit})
 
 if __name__ == "__main__":
     pass

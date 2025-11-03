@@ -16,7 +16,7 @@ kraken_map = {
     "ZJPY": "JPY", "ZUSD": "USD", "XBT": "BTC", "XDG": "DOGE"
 }
 
-STABLE_BASES = ["USDT", "USDC", "DAI", "USDP", "EUR", "GBP", "AUD", "USD", "JPY", "CAD","MKR"]
+STABLE_BASES = ["USDT", "USDC", "DAI", "USDP", "EUR", "GBP", "AUD", "USD", "JPY", "CAD", "MKR"]
 
 interval_map = {"1": "1m", "5": "5m", "15": "15m",
                 "30": "30m", "60": "1h", "240": "4h",
@@ -472,7 +472,7 @@ class KrakenHistoricalData:
         symbols = [p[:-4] if p.endswith(quote) else p for p in pairs]
         return symbols
 
-    def get_daily_historical_movers(self, top_n=20,trades_threshold=500, sample=None, stables=False):
+    def get_daily_historical_movers(self, top_n=20, trades_threshold=500, sample=None, stables=False):
         interval = "1d"
 
         if sample:
@@ -510,7 +510,7 @@ class KrakenHistoricalData:
     def load_historical_movers_from_parquet(self):
         return pd.read_parquet(os.path.join(self.historical_mover_path, "historical_movers.parquet"))
 
-    def get_historical_movers_by_day(self, date: pd.Timestamp, top_n = 100):
+    def get_historical_movers_by_day(self, date: pd.Timestamp, top_n=100):
         date = self.ensure_utc_timestamp(date)
 
         if self.historical_mover_df is None:
@@ -703,12 +703,9 @@ if __name__ == "__main__":
     historical_movers_by_day = k.get_historical_movers_by_day(date)
     print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
 
-
-
-
-
-    # tickers = k.list_parquet_pairs()
-    # print(tickers)
+    # Build 4hr intervals for year 2023 from 1hr intervals
+    tickers = k.list_parquet_pairs()
+    print(tickers)
     #
     # import pyarrow as pa, pyarrow.parquet as pq
     #
@@ -726,4 +723,4 @@ if __name__ == "__main__":
 
     single_ohlcv_df = k.get_ohlcv_df(['BTC'], interval="4h")
 
-    print(single_ohlcv_df.head(10))
+    print(tabulate(single_ohlcv_df.head(10), headers="keys", tablefmt="github"))
