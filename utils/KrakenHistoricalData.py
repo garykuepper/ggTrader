@@ -632,25 +632,21 @@ class KrakenHistoricalData:
             out[sym] = self.build_4h_from_1h_and_merge(pair=pair, year=year)
         return out
 
+    # Resample 1hr to 4hr for year 2023
+
 
 if __name__ == "__main__":
-    # k = KrakenHistoricalData()
-    #
-    # # 1) Process ALL quarterly folders (USD pairs only), keeping timestamp as index
-    # quarter_dirs = k.list_quarter_dirs()  # e.g. Kraken_OHLCVT_Q1_2023, ...
-    # k.csvs_many_dirs_to_parquet(quarter_dirs)  # or sample_per_dir=200
-    #
-    # # 2) Read back one slice
-    # df_btc_1h = k.read_parquet(pair="BTC-USD", interval="1h")
-    # print(df_btc_1h.head())
 
-    # Important on Windows for multiprocessing to work reliably
-    import multiprocessing as mp
+    import multiprocessing as mp  # for parallel processing of raw csv to parquet
+    import pyarrow as pa, pyarrow.parquet as pq  # for resampling from 1hr to 4hr
 
     mp.freeze_support()
 
     k = KrakenHistoricalData()
-    quarter_dirs = k.list_quarter_dirs()
+
+    # 1) Process ALL quarterly folders (USD pairs only), keeping timestamp as index
+    quarter_dirs = k.list_quarter_dirs()  # e.g. Kraken_OHLCVT_Q1_2023, ...
+    # k.csvs_many_dirs_to_parquet(quarter_dirs)  # or sample_per_dir=200
 
     # Per-folder parallelism (good balance), sampling optional
     # k.csvs_many_dirs_to_parquet_parallel(quarter_dirs,
@@ -661,7 +657,7 @@ if __name__ == "__main__":
     # k.csvs_dir_to_parquet_parallel(quarter_dirs[0], max_workers=8)
 
     # # symbols = ["BTC", "ETH", "BNB", "PEPE", "DOGE"]
-    symbols = k.get_random_symbols(n=3)
+    symbols = k.get_random_symbols(n=3)  # get random symbols to test
     # symbols = ["AVAX", "AAVE"]
     print(f"Symbols: {symbols}")
     quote = "USD"
@@ -672,8 +668,9 @@ if __name__ == "__main__":
     print(ohlcv_df.head())
     # print(f"\nEnd of OHLCV Data")
     # print(ohlcv_df.tail())
-    #
-    # # date range check
+
+
+    # date range check
     first_date = ohlcv_df.index[0]
     last_date = ohlcv_df.index[-1]
     date_range = pd.date_range(start=first_date, end=last_date, freq=interval)
@@ -687,11 +684,12 @@ if __name__ == "__main__":
     # Get daily historical movers and save to parquet
     # k.save_historical_movers_to_parquet()
     historical_movers = k.load_historical_movers_from_parquet()
-    # print(historical_movers.head(20))
+    print(historical_movers.head(20))
 
+    # Test Historical Movers by random dates
     random_date = np.random.choice(date_range)
-    # date = pd.Timestamp("2025-06-26")
-    date = random_date
+    date = pd.Timestamp("2025-07-26")
+    # date = random_date
     print("\n", f"Historical Movers for {date}")
     historical_movers_by_day = k.get_historical_movers_by_day(date)
     print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
@@ -704,12 +702,9 @@ if __name__ == "__main__":
     print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
 
     # Build 4hr intervals for year 2023 from 1hr intervals
-    tickers = k.list_parquet_pairs()
-    print(tickers)
+    # tickers = k.list_parquet_pairs()
+    # print(tickers)
     #
-    # import pyarrow as pa, pyarrow.parquet as pq
-    #
-    # k = KrakenHistoricalData()
     # for ticker in tickers:
     #     print(ticker)
     #     df = k.build_4h_from_1h_and_merge(pair=ticker, year=2023)
@@ -721,6 +716,6 @@ if __name__ == "__main__":
     #         compression="zstd",
     #     )
 
+    # Test to ensure 2023 data shows for 4hr interval
     single_ohlcv_df = k.get_ohlcv_df(['BTC'], interval="4h")
-
     print(tabulate(single_ohlcv_df.head(10), headers="keys", tablefmt="github"))
