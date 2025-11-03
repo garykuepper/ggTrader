@@ -1,4 +1,3 @@
-# Python
 import numpy as np
 import pandas as pd
 import pandas_ta as pta
@@ -13,10 +12,9 @@ class Signals:
         signals = self.entry_signals(df)
         return signals
 
-
-    def entry_signals(self, df: pd.DataFrame, adx_threshold: int = 25):
+    @staticmethod
+    def entry_signals(df: pd.DataFrame, adx_threshold: int = 25):
         signals = df.copy()
-
 
         # Entry: SAR Signal
         psar = pta.psar(df['high'],
@@ -45,8 +43,28 @@ class Signals:
 
         return signals
 
-    def exit_signals(self):
-        pass
+    @staticmethod
+    def exit_signals(df: pd.DataFrame, atr_multiplier: float = 3.0, ce_high_length: int = 22):
+
+        signals = df.copy()
+        # Exit: Chandlier Exit uses ATR
+        signals['atr'] = pta.atr(df['high'], df['low'], df['close'])
+        ce = pta.chandelier_exit(df['high'],
+                                 df['low'],
+                                 df['close'],
+                                 multiplier=atr_multiplier, high_length=ce_high_length)
+
+        signals['ce_l'] = np.where(ce.iloc[:, 2] > 0, ce.iloc[:, 0], np.nan)
+        signals['ce_sh'] = np.where(ce.iloc[:, 2] < 0, ce.iloc[:, 1], np.nan)
+        signals['ce_exit'] = np.where(ce.iloc[:, 2] == 1, False, True)
+
+        # exit
+        exit_series = signals['ce_exit']
+
+        exit_rise = exit_series & (~exit_series.shift(1, fill_value=False))
+        signals['exit_signal'] = exit_rise
+
+        return signals
 
     @staticmethod
     def filter_signals(signals: pd.DataFrame, entry_rise: pd.Series, exit_rise: pd.Series):
@@ -64,6 +82,7 @@ class Signals:
                 in_pos = False
 
         return pd.DataFrame({'entry': filtered_entry, 'exit': filtered_exit})
+
 
 if __name__ == "__main__":
     pass
