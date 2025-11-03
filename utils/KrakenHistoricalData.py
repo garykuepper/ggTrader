@@ -8,6 +8,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from tabulate import tabulate
 import shutil
+import fsspec
+import pyarrow.dataset as ds
+
 
 kraken_map = {
     "XETC": "ETC", "XETH": "ETH", "XLTC": "LTC", "XMLN": "MLN", "XREP": "REP",
@@ -144,6 +147,8 @@ class KrakenHistoricalData:
         self.historical_mover_path = os.path.join(self.root_dir, 'data', 'historical_movers')
         os.makedirs(self.parquet_root, exist_ok=True)
         self.historical_mover_df = None
+        self.remote_base_url = "https://www.garygigabytes.com/kraken"  # e.g. "https://garygigabytes.com/parquet"
+        self.remote_fs = None         # fsspec filesystem for HTTPS
 
     # ---------- directory helpers ----------
     def list_quarter_dirs(self, prefix="Kraken_OHLCVT_"):
@@ -632,8 +637,123 @@ class KrakenHistoricalData:
             out[sym] = self.build_4h_from_1h_and_merge(pair=pair, year=year)
         return out
 
-    # Resample 1hr to 4hr for year 2023
 
+    # -------- Remote access helpers (HTTPS via fsspec) --------
+    def use_remote(self, base_url: str, username: str = None, password: str = None, headers: dict = None):
+        """
+        Configure a remote parquet root served over HTTPS.
+        Example: use_remote("https://garygigabytes.com/parquet")
+        If you enabled basic-auth in Nginx, pass username/password.
+        """
+        if base_url.endswith("/"):
+            base_url = base_url[:-1]
+        self.remote_base_url = base_url
+
+        client_kwargs = {}
+        if username and password:
+            client_kwargs["auth"] = (username, password)
+        if headers:
+            client_kwargs["headers"] = headers
+
+        # block_size=0 lets PyArrow perform HTTP Range requests cleanly
+        self.remote_fs = fsspec.filesystem("https", client_kwargs=client_kwargs)
+
+    def _remote_url_for(self, pair: str = None, interval: str = None) -> str:
+        """
+        Build the URL matching your partitioning layout:
+          /parquet/pair=BTC-USD/interval=1h/
+        """
+        if self.remote_base_url is None:
+            raise ValueError("Remote base URL is not set. Call use_remote(...) first.")
+        parts = [self.remote_base_url]
+        if pair:
+            parts.append(f"pair={pair}")
+        if interval:
+            parts.append(f"interval={interval}")
+        return "/".join(parts) + "/"
+
+    def read_parquet_remote(self, pair: str = None, interval: str = None,
+                            columns=None, filters=None, sort=True) -> pd.DataFrame:
+        """
+        Read parquet from your HTTPS server using pyarrow.dataset + fsspec.
+        - pair, interval follow your local API
+        - columns: list[str] to project
+        - filters: apply in pandas after load (pyarrow.dataset filters are optional to wire up later)
+        """
+        if self.remote_fs is None or self.remote_base_url is None:
+            raise ValueError("Remote not configured. Call use_remote('https://...') first.")
+
+        url = self._remote_url_for(pair=pair, interval=interval)
+
+        # Let pyarrow.dataset scan the directory of part files
+        dataset = ds.dataset(url, format="parquet", filesystem=self.remote_fs)
+
+        # Pushdown: project columns if given
+        table = dataset.to_table(columns=columns)
+        df = table.to_pandas()
+
+        # If you wrote with preserve_index=True, timestamp is a column here; restore it
+        if "timestamp" in df.columns:
+            # Ensure proper tz
+            df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+            df = df.set_index("timestamp", drop=True)
+
+        if filters is not None:
+            # pandas-style filters (list of tuples) or callable—keep it simple:
+            # Example filters: [("pair", "==", "BTC-USD"), ("trades", ">", 100)]
+            # You can expand this to real pyarrow expressions later if desired.
+            for f in filters:
+                col, op, val = f
+                if op == "==":
+                    df = df[df[col] == val]
+                elif op == "!=":
+                    df = df[df[col] != val]
+                elif op == ">":
+                    df = df[df[col] > val]
+                elif op == ">=":
+                    df = df[df[col] >= val]
+                elif op == "<":
+                    df = df[df[col] < val]
+                elif op == "<=":
+                    df = df[df[col] <= val]
+                else:
+                    raise ValueError(f"Unsupported filter operation: {op}")
+
+        if sort:
+            # sort by index if we restored timestamp as index; otherwise by timestamp column if it exists
+            if isinstance(df.index, pd.DatetimeIndex):
+                df = df.sort_index()
+            elif "timestamp" in df.columns:
+                df = df.sort_values("timestamp")
+
+        return df
+
+    def get_ohlcv_df_remote(self, symbols: list, interval: str = "1d", quote: str = "USD") -> pd.DataFrame:
+        """
+        Remote version of get_ohlcv_df that pulls each symbol from HTTPS.
+        Keeps behavior identical to local (union index, fill helpers, metadata).
+        """
+        dfs = []
+        for symbol in symbols:
+            pair = f"{symbol}-{quote}"
+            dfi = self.read_parquet_remote(pair=pair, interval=interval)
+            dfs.append(dfi)
+
+        # Deduplicate indices
+        dfs = [d[~d.index.duplicated(keep='last')] for d in dfs]
+
+        # Union index across symbols
+        common_idx = dfs[0].index
+        for d in dfs[1:]:
+            common_idx = common_idx.union(d.index)
+
+        dfs = [d.reindex(common_idx) for d in dfs]
+
+        ohlcv_df = pd.concat(dfs, axis=1, keys=symbols).sort_index()
+        ohlcv_df = self.align_to_datetime_index(ohlcv_df, interval=interval)
+        ohlcv_df = self.fill_after_first_non_nan_multilevel_safe(ohlcv_df, symbols=symbols)
+        ohlcv_df = self.fill_symbol_metadata(ohlcv_df, symbols)
+        return ohlcv_df
 
 if __name__ == "__main__":
 
@@ -719,3 +839,19 @@ if __name__ == "__main__":
     # Test to ensure 2023 data shows for 4hr interval
     single_ohlcv_df = k.get_ohlcv_df(['BTC'], interval="4h")
     print(tabulate(single_ohlcv_df.head(10), headers="keys", tablefmt="github"))
+
+
+    # REMOTE ACCESS
+    # point to your Nginx-served dataset root (no trailing slash)
+    k.use_remote("https://garygigabytes.com/kraken/parquet")
+    # If you enabled basic auth on /parquet/, do:
+    # k.use_remote("https://garygigabytes.com/parquet", username="USER", password="PASS")
+
+    # read one slice
+    df = k.read_parquet_remote(pair="BTC-USD", interval="1d")
+    print(df.head())
+
+    # build a multi-symbol OHLCV frame (remote)
+    symbols = ["BTC", "ETH", "AAVE"]
+    ohlcv_df = k.get_ohlcv_df_remote(symbols, interval="1d", quote="USD")
+    print(ohlcv_df.info())
