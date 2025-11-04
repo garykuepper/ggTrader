@@ -147,7 +147,7 @@ class KrakenHistoricalData:
         self.historical_mover_path = os.path.join(self.root_dir, 'data', 'historical_movers')
         os.makedirs(self.parquet_root, exist_ok=True)
         self.historical_mover_df = None
-        self.remote_base_url = "https://www.garygigabytes.com/kraken"  # e.g. "https://garygigabytes.com/parquet"
+        self.remote_base_url = None # e.g. "https://garygigabytes.com/parquet"
         self.remote_fs = None         # fsspec filesystem for HTTPS
 
     # ---------- directory helpers ----------
@@ -639,24 +639,32 @@ class KrakenHistoricalData:
 
 
     # -------- Remote access helpers (HTTPS via fsspec) --------
+    import os, fsspec
+
     def use_remote(self, base_url: str, username: str = None, password: str = None, headers: dict = None):
-        """
-        Configure a remote parquet root served over HTTPS.
-        Example: use_remote("https://garygigabytes.com/parquet")
-        If you enabled basic-auth in Nginx, pass username/password.
-        """
         if base_url.endswith("/"):
             base_url = base_url[:-1]
         self.remote_base_url = base_url
 
-        client_kwargs = {}
+        target_opts = {}
         if username and password:
-            client_kwargs["auth"] = (username, password)
+            target_opts["client_kwargs"] = {"auth": (username, password)}
         if headers:
-            client_kwargs["headers"] = headers
+            ck = target_opts.setdefault("client_kwargs", {})
+            hk = ck.setdefault("headers", {})
+            hk.update(headers)
 
-        # block_size=0 lets PyArrow perform HTTP Range requests cleanly
-        self.remote_fs = fsspec.filesystem("https", client_kwargs=client_kwargs)
+        cache_dir = os.path.join(self.root_dir, ".fsspec-cache")
+        os.makedirs(cache_dir, exist_ok=True)
+
+        # Wrapped HTTPS -> local cache -> seekable files
+        self.remote_fs = fsspec.filesystem(
+            "simplecache",
+            target_protocol="https",
+            target_options=target_opts,
+            cache_storage=cache_dir,
+            same_names=True,
+        )
 
     def _remote_url_for(self, pair: str = None, interval: str = None) -> str:
         """
@@ -675,35 +683,39 @@ class KrakenHistoricalData:
     def read_parquet_remote(self, pair: str = None, interval: str = None,
                             columns=None, filters=None, sort=True) -> pd.DataFrame:
         """
-        Read parquet from your HTTPS server using pyarrow.dataset + fsspec.
-        - pair, interval follow your local API
-        - columns: list[str] to project
-        - filters: apply in pandas after load (pyarrow.dataset filters are optional to wire up later)
+        Read parquet over HTTPS (Nginx autoindex page) using fsspec simplecache.
+        Enumerates files first, then builds a dataset from explicit file list.
         """
         if self.remote_fs is None or self.remote_base_url is None:
             raise ValueError("Remote not configured. Call use_remote('https://...') first.")
 
         url = self._remote_url_for(pair=pair, interval=interval)
 
-        # Let pyarrow.dataset scan the directory of part files
-        dataset = ds.dataset(url, format="parquet", filesystem=self.remote_fs)
+        # 1) List the directory and collect .parquet files
+        entries = self.remote_fs.ls(url)
+        files = []
+        for e in entries:
+            name = e["name"] if isinstance(e, dict) else str(e)
+            if name.lower().endswith(".parquet"):
+                # fsspec may return absolute or relative; normalize to absolute
+                files.append(name if name.startswith("http") else url + name.rsplit("/", 1)[-1])
 
-        # Pushdown: project columns if given
+        if not files:
+            raise FileNotFoundError(f"No parquet files under {url}")
+
+        # 2) Build a dataset from the explicit file list (works with HTTPS + cache)
+        dataset = ds.dataset(files, format="parquet", filesystem=self.remote_fs)
         table = dataset.to_table(columns=columns)
         df = table.to_pandas()
 
-        # If you wrote with preserve_index=True, timestamp is a column here; restore it
+        # 3) Restore timestamp index if you wrote with preserve_index=True
         if "timestamp" in df.columns:
-            # Ensure proper tz
             df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
             df = df.set_index("timestamp", drop=True)
 
+        # 4) Optional pandas-side filters (can swap to Arrow expr later)
         if filters is not None:
-            # pandas-style filters (list of tuples) or callable—keep it simple:
-            # Example filters: [("pair", "==", "BTC-USD"), ("trades", ">", 100)]
-            # You can expand this to real pyarrow expressions later if desired.
-            for f in filters:
-                col, op, val = f
+            for col, op, val in filters:
                 if op == "==":
                     df = df[df[col] == val]
                 elif op == "!=":
@@ -719,8 +731,8 @@ class KrakenHistoricalData:
                 else:
                     raise ValueError(f"Unsupported filter operation: {op}")
 
+        # 5) Sort
         if sort:
-            # sort by index if we restored timestamp as index; otherwise by timestamp column if it exists
             if isinstance(df.index, pd.DatetimeIndex):
                 df = df.sort_index()
             elif "timestamp" in df.columns:
@@ -842,10 +854,13 @@ if __name__ == "__main__":
 
 
     # REMOTE ACCESS
+    print(f"\nRead Remote:")
     # point to your Nginx-served dataset root (no trailing slash)
     k.use_remote("https://garygigabytes.com/kraken/parquet")
     # If you enabled basic auth on /parquet/, do:
     # k.use_remote("https://garygigabytes.com/parquet", username="USER", password="PASS")
+
+
 
     # read one slice
     df = k.read_parquet_remote(pair="BTC-USD", interval="1d")

@@ -248,3 +248,4 @@ cython_debug/
 .idea
 data/raw/*
 data/parquet/*
+.fsspec-cache
