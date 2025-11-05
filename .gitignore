@@ -249,3 +249,4 @@ cython_debug/
 data/raw/*
 data/parquet/*
 .fsspec-cache
+exportToHTML/*
