@@ -32,7 +32,7 @@ class Backtest:
         wins, loss = self.calc_wins_losses(self.profit_df['Profit'])
         self.stats['wins'] = wins
         self.stats['loss'] = loss
-        self.stats['win_rate'] = wins / (wins + loss)
+        self.stats['win_rate'] = wins / (wins + loss) * 100
         self.stats['trading_days'] = (self.signals.index[-1] - self.signals.index[0]).days
         self.stats['sharpe_ratio'] = self.sharpe_ratio(self.profit_df['Profit_Pct'], self.interval)
         self.stats['sortino_ratio'] = self.sortino_ratio(self.profit_df['Profit_Pct'], self.interval)
@@ -86,7 +86,8 @@ class Backtest:
     @staticmethod
     def sortino_ratio(profit: pd.Series, interval: str):
         trading_periods = trading_map.get(interval)
-        return profit.mean() / profit[profit < 0].std() * np.sqrt(trading_periods)
+        std_below_zero = profit[profit < 0].std()
+        return profit.mean() / std_below_zero * np.sqrt(trading_periods)
 
 
 if __name__ == "__main__":
