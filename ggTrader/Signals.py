@@ -5,16 +5,19 @@ from tabulate import tabulate
 
 
 class Signals:
-    def __init__(self):
+    def __init__(self, adx_threshold: int = 25, atr_multiplier: float = 3.0, ce_high_length: int = 22):
         self.ohlcv = pd.DataFrame()  # original OHLCV data
 
     def calc_signals(self, df: pd.DataFrame):
-        signals = self.entry_signals(df)
+        exit_signals = self.exit_signals(df)
+        entry_signals = self.entry_signals(df,exit_signals['ce_exit'])
+        signals = pd.concat([df, entry_signals, exit_signals], axis=1)
+        signals = self.filter_signals(signals, entry_signals['entry_signal'], exit_signals['exit_signal'])
         return signals
 
     @staticmethod
-    def entry_signals(df: pd.DataFrame, adx_threshold: int = 25):
-        signals = df.copy()
+    def entry_signals(df: pd.DataFrame, ce_exit: pd.Series, adx_threshold: int = 25):
+        signals = pd.DataFrame()
 
         # Entry: SAR Signal
         psar = pta.psar(df['high'],
@@ -22,7 +25,7 @@ class Signals:
                         close=df['close'])
 
         signals['sar'] = psar.iloc[:, 0]
-        signals['sar_s'] = signals['close'] > signals['sar']
+        signals['sar_s'] = df['close'] > signals['sar']
 
         # adx > 25 strong trend
         adx = pta.adx(df['high'], df['low'], df['close'])
@@ -37,7 +40,7 @@ class Signals:
         signals['adx_s'] = signals['adx_s'] & signals['adx_bullish']
 
         # Have ADX strength, and sar is a buy and ce is not an exit
-        entry_series = signals['adx_s'] & signals['sar_s'] & ~signals['ce_exit']
+        entry_series = signals['adx_s'] & signals['sar_s'] & ~ce_exit
         entry_rise = entry_series & (~entry_series.shift(1, fill_value=False))
         signals['entry_signal'] = entry_rise
 
@@ -46,7 +49,7 @@ class Signals:
     @staticmethod
     def exit_signals(df: pd.DataFrame, atr_multiplier: float = 3.0, ce_high_length: int = 22):
 
-        signals = df.copy()
+        signals = pd.DataFrame()
         # Exit: Chandlier Exit uses ATR
         signals['atr'] = pta.atr(df['high'], df['low'], df['close'])
         ce = pta.chandelier_exit(df['high'],
@@ -80,8 +83,10 @@ class Signals:
             elif in_pos and exit_rise.loc[ts]:
                 filtered_exit.loc[ts] = True
                 in_pos = False
-
-        return pd.DataFrame({'entry': filtered_entry, 'exit': filtered_exit})
+        signals['filtered_entry'] = filtered_entry
+        signals['filtered_exit'] = filtered_exit
+        print(signals.head())
+        return signals
 
 
 if __name__ == "__main__":
