@@ -12,12 +12,13 @@ class Signals:
         exit_signals = self.exit_signals(df)
         entry_signals = self.entry_signals(df,exit_signals['ce_exit'])
         signals = pd.concat([df, entry_signals, exit_signals], axis=1)
+        signals = signals.loc[:, ~signals.columns.duplicated(keep='last')]
         signals = self.filter_signals(signals, entry_signals['entry_signal'], exit_signals['exit_signal'])
         return signals
 
     @staticmethod
     def entry_signals(df: pd.DataFrame, ce_exit: pd.Series, adx_threshold: int = 25):
-        signals = pd.DataFrame()
+        signals = df.copy()
 
         # Entry: SAR Signal
         psar = pta.psar(df['high'],
@@ -49,7 +50,7 @@ class Signals:
     @staticmethod
     def exit_signals(df: pd.DataFrame, atr_multiplier: float = 3.0, ce_high_length: int = 22):
 
-        signals = pd.DataFrame()
+        signals = df.copy()
         # Exit: Chandlier Exit uses ATR
         signals['atr'] = pta.atr(df['high'], df['low'], df['close'])
         ce = pta.chandelier_exit(df['high'],
