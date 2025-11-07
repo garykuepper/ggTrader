@@ -103,7 +103,8 @@ class Backtest:
         price[filtered_entry_exit['filtered_exit']] = exits_price[filtered_entry_exit['filtered_exit']]
 
         in_position = filtered_entry_exit['in_position'].astype(bool)
-        r_cc = price.pct_change().fillna(0.0)  # close-to-close returns
+
+        r_cc = price.pct_change(fill_method=None).fillna(0.0) # close-to-close returns
         enter_bar = filtered_entry_exit['filtered_entry'].astype(bool)
         exit_bar = filtered_entry_exit['filtered_exit'].astype(bool)
 
@@ -112,33 +113,21 @@ class Backtest:
         returns = returns.mask(exit_bar, returns - transaction_fee)  # apply fee at exit
         return returns
 
-    def calc_profits(self, signals: pd.DataFrame):
-        filtered_entry = signals['filtered_entry']
-        filtered_exit = signals['filtered_exit']
-        # Calc profits
-        close = signals['close']
-        exits_price = signals['ce_l'].shift(-1).ffill() * filtered_exit
-        entries_price = close * filtered_entry
-        returns = self.calc_returns(signals, exits_price, transaction_fee=self.transaction_fee)
-        start_equity = 1000.0
-        equity = start_equity * (1.0 + returns).cumprod()
-        window_ret = self.profit_per_position(returns, in_position)
 
-        profit_df = pd.concat([entries_price, exits_price, close, returns, window_ret, equity], axis=1)
-        profit_df.columns = ['Entry_Price', 'Exit_Price', 'close', 'Returns', 'Window_Profit', 'Equity']
-        return profit_df
 
     @staticmethod
     def sharpe_ratio(returns: pd.Series, interval: str):
         trading_map = {'4h': 6 * 365, '1h': 24 * 365, '1d': 365}
         trading_periods = trading_map.get(interval)
-        return returns.mean() / returns.std() * np.sqrt(trading_periods)
+        risk_free_rate = 0.0001
+        return (returns.mean()  - risk_free_rate)/ returns.std() * np.sqrt(trading_periods)
 
     @staticmethod
     def sortino_ratio(returns: pd.Series, interval: str):
         trading_map = {'4h': 6 * 365, '1h': 24 * 365, '1d': 365}
         trading_periods = trading_map.get(interval)
-        return returns.mean() / returns[returns < 0].std() * np.sqrt(trading_periods)
+        risk_free_rate = 0.0001
+        return (returns.mean()- risk_free_rate) / returns[returns < 0].std() * np.sqrt(trading_periods)
 
 if __name__ == "__main__":
     pass
