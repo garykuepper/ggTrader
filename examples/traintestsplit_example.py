@@ -1,0 +1,22 @@
+from ggTrader.Utils import *
+
+# 1. Create a sample time series dataset
+n_samples = 4057
+X = np.arange(n_samples).reshape(-1, 1)  # define X based on n_samples
+y = np.arange(n_samples)
+
+# 2. Configure end-anchored sliding window with variable ratio
+n_splits = 5
+test_ratio = 0.2  # 20% of each sliding window for testing
+
+tscv, test_size, max_train_size = make_end_anchored_tscv(n_samples, n_splits, test_ratio)
+print(f"Computed test_size={test_size}, max_train_size={max_train_size}")
+
+# 3. Visualize the splits
+fig, ax = plt.subplots(figsize=(10, 5))
+plot_cv_indices(tscv, X, ax, n_splits)
+plt.show()
+
+# 4. Print fold ranges
+for i, (tr, tt) in enumerate(tscv.split(X), 1):
+    print(f"Fold {i}: Train [{tr[0]}–{tr[-1]}] ({len(tr)}), Test [{tt[0]}–{tt[-1]}] ({len(tt)})")

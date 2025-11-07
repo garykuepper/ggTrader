@@ -17,3 +17,5 @@ ccxt
 pyarrow
 vectorbt
 pandas-ta
+scikit-learn
+requests
