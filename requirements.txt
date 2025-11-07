@@ -1,3 +1,8 @@
+fsspec
+seaborn
+matplotlib
+numpy
+numba
 tqdm
 pandas
 yfinance
@@ -10,3 +15,4 @@ pytest
 ccxt
 pyarrow
 vectorbt
+pandas-ta

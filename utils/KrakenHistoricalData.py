@@ -8,6 +8,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from tabulate import tabulate
 import shutil
+import fsspec
+import pyarrow.dataset as ds
+
 
 kraken_map = {
     "XETC": "ETC", "XETH": "ETH", "XLTC": "LTC", "XMLN": "MLN", "XREP": "REP",
@@ -16,7 +19,7 @@ kraken_map = {
     "ZJPY": "JPY", "ZUSD": "USD", "XBT": "BTC", "XDG": "DOGE"
 }
 
-STABLE_BASES = ["USDT", "USDC", "DAI", "USDP", "EUR", "GBP", "AUD", "USD", "JPY", "CAD","MKR"]
+STABLE_BASES = ["USDT", "USDC", "DAI", "USDP", "EUR", "GBP", "AUD", "USD", "JPY", "CAD", "MKR"]
 
 interval_map = {"1": "1m", "5": "5m", "15": "15m",
                 "30": "30m", "60": "1h", "240": "4h",
@@ -143,6 +146,9 @@ class KrakenHistoricalData:
         self.parquet_root = os.path.join(self.root_dir, 'data', 'parquet')  # dataset dir
         self.historical_mover_path = os.path.join(self.root_dir, 'data', 'historical_movers')
         os.makedirs(self.parquet_root, exist_ok=True)
+        self.historical_mover_df = None
+        self.remote_base_url = None # e.g. "https://garygigabytes.com/parquet"
+        self.remote_fs = None         # fsspec filesystem for HTTPS
 
     # ---------- directory helpers ----------
     def list_quarter_dirs(self, prefix="Kraken_OHLCVT_"):
@@ -338,7 +344,7 @@ class KrakenHistoricalData:
         dfs = []
         for symbol in symbols:
             pair = f"{symbol}-{quote}"
-            df = k.read_parquet(pair=pair, interval=interval)
+            df = self.read_parquet(pair=pair, interval=interval)
             dfs.append(df)
 
         # deduplicate indices
@@ -357,7 +363,7 @@ class KrakenHistoricalData:
 
         # clean up
         ohlcv_df = ohlcv_df.sort_index()
-        ohlcv_df = self.align_to_datetime_index(ohlcv_df)
+        ohlcv_df = self.align_to_datetime_index(ohlcv_df, interval=interval)
         ohlcv_df = self.fill_after_first_non_nan_multilevel_safe(ohlcv_df, symbols=symbols)
         ohlcv_df = self.fill_symbol_metadata(ohlcv_df, symbols)
 
@@ -424,7 +430,7 @@ class KrakenHistoricalData:
         return df_out
 
     @staticmethod
-    def align_to_datetime_index(ohlcv_df: pd.DataFrame):
+    def align_to_datetime_index(ohlcv_df: pd.DataFrame, interval: str = "1d"):
         first_date = ohlcv_df.index[0]
         last_date = ohlcv_df.index[-1]
         date_range = pd.date_range(start=first_date, end=last_date, freq=interval)
@@ -471,7 +477,7 @@ class KrakenHistoricalData:
         symbols = [p[:-4] if p.endswith(quote) else p for p in pairs]
         return symbols
 
-    def get_daily_historical_movers(self, top_n=20,trades_threshold=500, sample=None, stables=False):
+    def get_daily_historical_movers(self, top_n=20, trades_threshold=500, sample=None, stables=False):
         interval = "1d"
 
         if sample:
@@ -509,9 +515,15 @@ class KrakenHistoricalData:
     def load_historical_movers_from_parquet(self):
         return pd.read_parquet(os.path.join(self.historical_mover_path, "historical_movers.parquet"))
 
-    def get_historical_movers_by_day(self, date: pd.Timestamp, top_n = 100):
+    def get_historical_movers_by_day(self, date: pd.Timestamp, top_n=100):
         date = self.ensure_utc_timestamp(date)
-        top_per_day = self.load_historical_movers_from_parquet()
+
+        if self.historical_mover_df is None:
+
+            top_per_day = self.load_historical_movers_from_parquet()
+        else:
+            top_per_day = self.historical_mover_df
+
         top = top_per_day[top_per_day.date == date]
         return top.reset_index(drop=True).head(top_n)
 
@@ -522,24 +534,251 @@ class KrakenHistoricalData:
         else:
             return ts.tz_convert("UTC")
 
-if __name__ == "__main__":
-    # k = KrakenHistoricalData()
-    #
-    # # 1) Process ALL quarterly folders (USD pairs only), keeping timestamp as index
-    # quarter_dirs = k.list_quarter_dirs()  # e.g. Kraken_OHLCVT_Q1_2023, ...
-    # k.csvs_many_dirs_to_parquet(quarter_dirs)  # or sample_per_dir=200
-    #
-    # # 2) Read back one slice
-    # df_btc_1h = k.read_parquet(pair="BTC-USD", interval="1h")
-    # print(df_btc_1h.head())
+    def build_4h_from_1h_and_merge(self, pair: str, year: int = 2023) -> pd.DataFrame:
+        """
+        Create 4h bars from 1h data for a given year and merge with existing 4h.
+        Prefers existing 4h when overlaps occur.
+        """
+        # 1) Load 1h and slice to year (robust to missing year and index dtype)
+        df_1h = self.read_parquet(pair=pair, interval="1h")
+        # ensure datetime index in UTC
+        if not isinstance(df_1h.index, pd.DatetimeIndex):
+            df_1h.index = pd.to_datetime(df_1h.index, utc=True, errors="coerce")
+        elif df_1h.index.tz is None:
+            df_1h.index = df_1h.index.tz_localize("UTC")
+        else:
+            df_1h.index = df_1h.index.tz_convert("UTC")
+        if df_1h.index.hasnans:
+            df_1h = df_1h[~df_1h.index.isna()]
 
-    # Important on Windows for multiprocessing to work reliably
-    import multiprocessing as mp
+        start = pd.Timestamp(year=year, month=1, day=1, tz="UTC")
+        end = pd.Timestamp(year=year + 1, month=1, day=1, tz="UTC")
+        df_1h_y = df_1h[(df_1h.index >= start) & (df_1h.index < end)]
+
+        # 3) Load existing 4h (may extend into 2024)
+        try:
+            df_4h_real = self.read_parquet(pair=pair, interval="4h")
+        except FileNotFoundError:
+            # No existing 4h parquet; proceed with empty frame
+            df_4h_real = pd.DataFrame()
+        # If the ticker doesn't exist in the requested year, return existing 4h unchanged
+        if df_1h_y.empty:
+            combined = df_4h_real.sort_index() if not df_4h_real.empty else pd.DataFrame()
+            if combined.empty:
+                # produce a consistent empty dataframe with metadata
+                combined = pd.DataFrame(
+                    columns=["open", "high", "low", "close", "volume", "trades", "base", "quote", "pair", "interval"])
+                combined.index = pd.DatetimeIndex([], tz="UTC", name=df_1h.index.name or None)
+            combined["pair"] = pair
+            combined["interval"] = "4h"
+            # backfill metadata if missing
+            if "base" not in combined.columns or combined["base"].isna().all():
+                base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
+                combined["base"] = base
+                combined["quote"] = quote
+            else:
+                combined["base"] = combined["base"].ffill().bfill()
+                if "quote" in combined.columns:
+                    combined["quote"] = combined["quote"].ffill().bfill()
+                else:
+                    base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
+                    combined["quote"] = quote
+            return combined
+
+        # 2) Resample 1h -> 4h OHLCVT
+        agg = {
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
+            "trades": "sum",
+        }
+        df_4h_from_1h = (
+            df_1h_y.resample("4h", label="right", closed="right").agg(agg)
+            .dropna(subset=["open", "close"])
+        )
+
+        # carry metadata if present
+        for meta in ("base", "quote", "pair"):
+            if meta in df_1h_y.columns:
+                df_4h_from_1h[meta] = df_1h_y[meta].iloc[0]
+        df_4h_from_1h["interval"] = "4h"
+
+        # 4) Merge, prefer real 4h on duplicates
+        combined = pd.concat(
+            [df_4h_from_1h, df_4h_real]).sort_index() if not df_4h_real.empty else df_4h_from_1h.sort_index()
+        combined = combined[~combined.index.duplicated(keep="last")]
+
+        # --- ensure required metadata columns are present and consistent ---
+        combined["pair"] = pair
+        combined["interval"] = "4h"
+        if "base" not in combined.columns or combined["base"].isna().all():
+            base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
+            combined["base"] = base
+            combined["quote"] = quote
+        else:
+            combined["base"] = combined["base"].ffill().bfill()
+            if "quote" in combined.columns:
+                combined["quote"] = combined["quote"].ffill().bfill()
+            else:
+                base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
+                combined["quote"] = quote
+
+        return combined
+
+    def build_4h_for_symbols_merge(self, symbols: list, quote: str = "USD", year: int = 2023) -> dict:
+        """
+        Convenience wrapper for multiple symbols. Returns {symbol: DataFrame}.
+        """
+        out = {}
+        for sym in symbols:
+            pair = f"{sym}-{quote}"
+            out[sym] = self.build_4h_from_1h_and_merge(pair=pair, year=year)
+        return out
+
+
+    # -------- Remote access helpers (HTTPS via fsspec) --------
+    import os, fsspec
+
+    def use_remote(self, base_url: str, username: str = None, password: str = None, headers: dict = None):
+        if base_url.endswith("/"):
+            base_url = base_url[:-1]
+        self.remote_base_url = base_url
+
+        target_opts = {}
+        if username and password:
+            target_opts["client_kwargs"] = {"auth": (username, password)}
+        if headers:
+            ck = target_opts.setdefault("client_kwargs", {})
+            hk = ck.setdefault("headers", {})
+            hk.update(headers)
+
+        cache_dir = os.path.join(self.root_dir, ".fsspec-cache")
+        os.makedirs(cache_dir, exist_ok=True)
+
+        # Wrapped HTTPS -> local cache -> seekable files
+        self.remote_fs = fsspec.filesystem(
+            "simplecache",
+            target_protocol="https",
+            target_options=target_opts,
+            cache_storage=cache_dir,
+            same_names=True,
+        )
+
+    def _remote_url_for(self, pair: str = None, interval: str = None) -> str:
+        """
+        Build the URL matching your partitioning layout:
+          /parquet/pair=BTC-USD/interval=1h/
+        """
+        if self.remote_base_url is None:
+            raise ValueError("Remote base URL is not set. Call use_remote(...) first.")
+        parts = [self.remote_base_url]
+        if pair:
+            parts.append(f"pair={pair}")
+        if interval:
+            parts.append(f"interval={interval}")
+        return "/".join(parts) + "/"
+
+    def read_parquet_remote(self, pair: str = None, interval: str = None,
+                            columns=None, filters=None, sort=True) -> pd.DataFrame:
+        """
+        Read parquet over HTTPS (Nginx autoindex page) using fsspec simplecache.
+        Enumerates files first, then builds a dataset from explicit file list.
+        """
+        if self.remote_fs is None or self.remote_base_url is None:
+            raise ValueError("Remote not configured. Call use_remote('https://...') first.")
+
+        url = self._remote_url_for(pair=pair, interval=interval)
+
+        # 1) List the directory and collect .parquet files
+        entries = self.remote_fs.ls(url)
+        files = []
+        for e in entries:
+            name = e["name"] if isinstance(e, dict) else str(e)
+            if name.lower().endswith(".parquet"):
+                # fsspec may return absolute or relative; normalize to absolute
+                files.append(name if name.startswith("http") else url + name.rsplit("/", 1)[-1])
+
+        if not files:
+            raise FileNotFoundError(f"No parquet files under {url}")
+
+        # 2) Build a dataset from the explicit file list (works with HTTPS + cache)
+        dataset = ds.dataset(files, format="parquet", filesystem=self.remote_fs)
+        table = dataset.to_table(columns=columns)
+        df = table.to_pandas()
+
+        # 3) Restore timestamp index if you wrote with preserve_index=True
+        if "timestamp" in df.columns:
+            df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+            df = df.set_index("timestamp", drop=True)
+
+        # 4) Optional pandas-side filters (can swap to Arrow expr later)
+        if filters is not None:
+            for col, op, val in filters:
+                if op == "==":
+                    df = df[df[col] == val]
+                elif op == "!=":
+                    df = df[df[col] != val]
+                elif op == ">":
+                    df = df[df[col] > val]
+                elif op == ">=":
+                    df = df[df[col] >= val]
+                elif op == "<":
+                    df = df[df[col] < val]
+                elif op == "<=":
+                    df = df[df[col] <= val]
+                else:
+                    raise ValueError(f"Unsupported filter operation: {op}")
+
+        # 5) Sort
+        if sort:
+            if isinstance(df.index, pd.DatetimeIndex):
+                df = df.sort_index()
+            elif "timestamp" in df.columns:
+                df = df.sort_values("timestamp")
+
+        return df
+
+    def get_ohlcv_df_remote(self, symbols: list, interval: str = "1d", quote: str = "USD") -> pd.DataFrame:
+        """
+        Remote version of get_ohlcv_df that pulls each symbol from HTTPS.
+        Keeps behavior identical to local (union index, fill helpers, metadata).
+        """
+        dfs = []
+        for symbol in symbols:
+            pair = f"{symbol}-{quote}"
+            dfi = self.read_parquet_remote(pair=pair, interval=interval)
+            dfs.append(dfi)
+
+        # Deduplicate indices
+        dfs = [d[~d.index.duplicated(keep='last')] for d in dfs]
+
+        # Union index across symbols
+        common_idx = dfs[0].index
+        for d in dfs[1:]:
+            common_idx = common_idx.union(d.index)
+
+        dfs = [d.reindex(common_idx) for d in dfs]
+
+        ohlcv_df = pd.concat(dfs, axis=1, keys=symbols).sort_index()
+        ohlcv_df = self.align_to_datetime_index(ohlcv_df, interval=interval)
+        ohlcv_df = self.fill_after_first_non_nan_multilevel_safe(ohlcv_df, symbols=symbols)
+        ohlcv_df = self.fill_symbol_metadata(ohlcv_df, symbols)
+        return ohlcv_df
+
+if __name__ == "__main__":
+
+    import multiprocessing as mp  # for parallel processing of raw csv to parquet
+    import pyarrow as pa, pyarrow.parquet as pq  # for resampling from 1hr to 4hr
 
     mp.freeze_support()
 
     k = KrakenHistoricalData()
-    quarter_dirs = k.list_quarter_dirs()
+
+    # 1) Process ALL quarterly folders (USD pairs only), keeping timestamp as index
+    quarter_dirs = k.list_quarter_dirs()  # e.g. Kraken_OHLCVT_Q1_2023, ...
+    # k.csvs_many_dirs_to_parquet(quarter_dirs)  # or sample_per_dir=200
 
     # Per-folder parallelism (good balance), sampling optional
     # k.csvs_many_dirs_to_parquet_parallel(quarter_dirs,
@@ -550,19 +789,20 @@ if __name__ == "__main__":
     # k.csvs_dir_to_parquet_parallel(quarter_dirs[0], max_workers=8)
 
     # # symbols = ["BTC", "ETH", "BNB", "PEPE", "DOGE"]
-    symbols = k.get_random_symbols(n=3)
+    symbols = k.get_random_symbols(n=3)  # get random symbols to test
     # symbols = ["AVAX", "AAVE"]
     print(f"Symbols: {symbols}")
     quote = "USD"
     interval = "1d"
     ohlcv_df = k.get_ohlcv_df(symbols, interval=interval, quote=quote)
 
-    # print(f"\nStart of OHLCV Data")
-    # print(ohlcv_df.head())
+    print(f"\nStart of OHLCV Data")
+    print(ohlcv_df.head())
     # print(f"\nEnd of OHLCV Data")
     # print(ohlcv_df.tail())
-    #
-    # # date range check
+
+
+    # date range check
     first_date = ohlcv_df.index[0]
     last_date = ohlcv_df.index[-1]
     date_range = pd.date_range(start=first_date, end=last_date, freq=interval)
@@ -576,16 +816,57 @@ if __name__ == "__main__":
     # Get daily historical movers and save to parquet
     # k.save_historical_movers_to_parquet()
     historical_movers = k.load_historical_movers_from_parquet()
-    # print(historical_movers.head(20))
+    print(historical_movers.head(20))
 
+    # Test Historical Movers by random dates
     random_date = np.random.choice(date_range)
-    date = pd.Timestamp("2025-06-26")
-    date = random_date
+    date = pd.Timestamp("2025-07-26")
+    # date = random_date
     print("\n", f"Historical Movers for {date}")
     historical_movers_by_day = k.get_historical_movers_by_day(date)
     print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
 
+    random_date = np.random.choice(date_range)
+    date = random_date
+    print("\n", f"Historical Movers for {date}")
 
-    single_ohlcv_df = k.get_ohlcv_df(['HBAR'], interval="1d")
+    historical_movers_by_day = k.get_historical_movers_by_day(date)
+    print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
 
-    print(single_ohlcv_df.head(10))
+    # Build 4hr intervals for year 2023 from 1hr intervals
+    # tickers = k.list_parquet_pairs()
+    # print(tickers)
+    #
+    # for ticker in tickers:
+    #     print(ticker)
+    #     df = k.build_4h_from_1h_and_merge(pair=ticker, year=2023)
+    #     table = pa.Table.from_pandas(df, preserve_index=True)
+    #     pq.write_to_dataset(
+    #         table,
+    #         root_path=k.parquet_root,
+    #         partition_cols=["pair", "interval"],
+    #         compression="zstd",
+    #     )
+
+    # Test to ensure 2023 data shows for 4hr interval
+    single_ohlcv_df = k.get_ohlcv_df(['BTC'], interval="4h")
+    print(tabulate(single_ohlcv_df.head(10), headers="keys", tablefmt="github"))
+
+
+    # REMOTE ACCESS
+    print(f"\nRead Remote:")
+    # point to your Nginx-served dataset root (no trailing slash)
+    k.use_remote("https://garygigabytes.com/kraken/parquet")
+    # If you enabled basic auth on /parquet/, do:
+    # k.use_remote("https://garygigabytes.com/parquet", username="USER", password="PASS")
+
+
+
+    # read one slice
+    df = k.read_parquet_remote(pair="BTC-USD", interval="1d")
+    print(df.head())
+
+    # build a multi-symbol OHLCV frame (remote)
+    symbols = ["BTC", "ETH", "AAVE"]
+    ohlcv_df = k.get_ohlcv_df_remote(symbols, interval="1d", quote="USD")
+    print(ohlcv_df.info())

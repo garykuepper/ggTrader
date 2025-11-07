@@ -1,138 +1,94 @@
-# Python
 import numpy as np
 import pandas as pd
-from ta.trend import EMAIndicator, MACD, SMAIndicator, ADXIndicator, PSARIndicator
-from ta.volatility import AverageTrueRange
+import pandas_ta as pta
 from tabulate import tabulate
 
+
 class Signals:
-    def __init__(self,
-                 ema_fast: int = 20,
-                 ema_slow: int = 50,
-                 atr_multiplier: float = 2.0,
-                 atr_window: int = 14):
-        self.ema_fast = ema_fast
-        self.ema_slow = ema_slow
-        self.atr_multiplier = atr_multiplier
-        self.atr_window = atr_window
-        self.signals = pd.DataFrame()
+    def __init__(self, adx_threshold: int = 25, atr_multiplier: float = 3.0, ce_high_length: int = 22):
+        self.ohlcv = pd.DataFrame()  # original OHLCV data
 
-    def _build_signals(self, df: pd.DataFrame) -> pd.DataFrame:
-        signals = pd.DataFrame()
-        # signals = df.copy()
-        # remove all NaN rows
-        first_valid = df[['high', 'low', 'close']].dropna().index[0]
-        # calc signals at first valid index
-        signals = df.loc[first_valid:].copy()
-        # EMA signals
-        signals['ema_fast'] = EMAIndicator(close=signals['close'], window=self.ema_fast, fillna=False).ema_indicator()
-        signals['ema_slow'] = EMAIndicator(close=signals['close'], window=self.ema_slow, fillna=False).ema_indicator()
+    def calc_signals(self, df: pd.DataFrame):
+        exit_signals = self.exit_signals(df)
+        entry_signals = self.entry_signals(df,exit_signals['ce_exit'])
+        signals = pd.concat([df, entry_signals, exit_signals], axis=1)
+        signals = signals.loc[:, ~signals.columns.duplicated(keep='last')]
+        signals = self.filter_signals(signals, entry_signals['entry_signal'], exit_signals['exit_signal'])
+        return signals
 
-        # MACD components
-        signals['macd'] = MACD(close=signals['close'], window_slow=26, window_fast=12, window_sign=9,
-                               fillna=False).macd()
+    @staticmethod
+    def entry_signals(df: pd.DataFrame, ce_exit: pd.Series, adx_threshold: int = 25):
+        signals = df.copy()
 
-        # Crossover-based signals
-        signals['ema_crossover'] = np.sign(signals['ema_fast'] - signals['ema_slow'])
-        signals['signal'] = signals['ema_crossover'].diff().fillna(0) / 2
+        # Entry: SAR Signal
+        psar = pta.psar(df['high'],
+                        df['low'],
+                        close=df['close'])
 
-        # ATR-based level
-        signals['atr'] = AverageTrueRange(
-            high=signals['high'],
-            low=signals['low'],
-            close=signals['close'],
-            window=self.atr_window,
-            fillna=False
-        ).average_true_range()
-        # Replace NaNs with 0 to avoid issues with division later on
-        signals.loc[signals['atr'] == 0, 'atr'] = np.nan
+        signals['sar'] = psar.iloc[:, 0]
+        signals['sar_s'] = df['close'] > signals['sar']
 
-        # ATR-based exit level
-        signals['atr_sell'] = signals['close'] - signals['atr'] * self.atr_multiplier
-        signals['atr_sell'] = signals['atr_sell'].shift(1)
-        signals['atr_sell_signal'] = signals['close'] < signals['atr_sell']
+        # adx > 25 strong trend
+        adx = pta.adx(df['high'], df['low'], df['close'])
+        signals['adx'] = adx.iloc[:, 0]
+        signals['adx_d'] = adx.iloc[:, 1]
+        signals['adx_dmp'] = adx.iloc[:, 2]
+        signals['adx_dmn'] = adx.iloc[:, 3]
 
-        # PSAR
-        signals['psar'] = PSARIndicator(high=signals['high'],
-                                        low=signals['low'],
-                                        close=signals['close'],
-                                        step=0.02,
-                                        max_step=0.20).psar()
+        signals['adx_s'] = np.where(signals['adx'] > adx_threshold, True, False)
+        signals['adx_bullish'] = np.where(signals['adx_dmp'] > signals['adx_dmn'], True, False)
+        # adx_bullish = adx_dmp > adx_dmn
+        signals['adx_s'] = signals['adx_s'] & signals['adx_bullish']
 
-        # ADX
-        signals['adx'] = ADXIndicator(high=signals['high'],
-                                      low=signals['low'],
-                                      close=signals['close'],
-                                      window=14,
-                                      fillna=False).adx()
-
-        # reindex signals to match original df data
-        tmp = signals.reindex(df.index)
-        first_valid = tmp.first_valid_index()
-
-        if first_valid is not None:
-            tmp = tmp.infer_objects(copy=False)
-            tmp.loc[first_valid:] = tmp.loc[first_valid:].interpolate()
-        signals = tmp
+        # Have ADX strength, and sar is a buy and ce is not an exit
+        entry_series = signals['adx_s'] & signals['sar_s'] & ~ce_exit
+        entry_rise = entry_series & (~entry_series.shift(1, fill_value=False))
+        signals['entry_signal'] = entry_rise
 
         return signals
 
-    def compute(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Compute signals for the given OHLCV DataFrame.
-        Expects df with at least columns: close, high, low.
-        Returns a DataFrame with the same columns as in the original calc_signals.
-        """
-        if df is None or df.empty:
-            return pd.DataFrame()
-        self.signals = self._build_signals(df)
-        return self.signals
+    @staticmethod
+    def exit_signals(df: pd.DataFrame, atr_multiplier: float = 3.0, ce_high_length: int = 22):
 
-    @classmethod
-    def generate_fake_data(cls,
-                           rows: int = 40,
-                           seed: int = None,
-                           start: float = 100.0,
-                           drift: float = 0.5,
-                           vol: float = 2.0) -> pd.DataFrame:
-        """
-        Generate a fake OHLCV DataFrame for testing.
-        - rows: number of rows to generate
-        - seed: random seed for reproducibility
-        - start: starting price
-        - drift: expected price drift per step
-        - vol: volatility multiplier for random walk
-        Returns a DataFrame with columns: close, high, low
-        """
-        if seed is not None:
-            np.random.seed(seed)
+        signals = df.copy()
+        # Exit: Chandlier Exit uses ATR
+        signals['atr'] = pta.atr(df['high'], df['low'], df['close'])
+        ce = pta.chandelier_exit(df['high'],
+                                 df['low'],
+                                 df['close'],
+                                 multiplier=atr_multiplier, high_length=ce_high_length)
 
-        close = []
-        high = []
-        low = []
-        price = start
+        signals['ce_l'] = np.where(ce.iloc[:, 2] > 0, ce.iloc[:, 0], np.nan)
+        signals['ce_sh'] = np.where(ce.iloc[:, 2] < 0, ce.iloc[:, 1], np.nan)
+        signals['ce_exit'] = np.where(ce.iloc[:, 2] == 1, False, True)
 
-        # Optional: include a date index (daily frequency) starting today
-        ts = pd.Timestamp.today(tz='UTC').round("D")
-        dates = pd.date_range(end=ts, periods=rows, freq='D')
+        # exit
+        exit_series = signals['ce_exit']
 
-        for i in range(rows):
-            # simple stochastic process: price += drift + noise
-            price = price + drift + float(np.random.randn()) * vol
-            c = price
-            h = c + abs(float(np.random.randn())) * vol * 0.8 + 0.5
-            l = c - abs(float(np.random.randn())) * vol * 0.8 - 0.5
-            close.append(round(c, 2))
-            high.append(round(h, 2))
-            low.append(round(l, 2))
+        exit_rise = exit_series & (~exit_series.shift(1, fill_value=False))
+        signals['exit_signal'] = exit_rise
 
-        df = pd.DataFrame({'close': close, 'high': high, 'low': low})
-        df.index = dates
-        return df
+        return signals
+
+    @staticmethod
+    def filter_signals(signals: pd.DataFrame, entry_rise: pd.Series, exit_rise: pd.Series):
+
+        in_pos = False
+        filtered_entry = pd.Series(False, index=signals.index)
+        filtered_exit = pd.Series(False, index=signals.index)
+
+        for ts in signals.index:
+            if not in_pos and entry_rise.loc[ts]:
+                filtered_entry.loc[ts] = True
+                in_pos = True
+            elif in_pos and exit_rise.loc[ts]:
+                filtered_exit.loc[ts] = True
+                in_pos = False
+        signals['filtered_entry'] = filtered_entry
+        signals['filtered_exit'] = filtered_exit
+        print(signals.head())
+        return signals
 
 
 if __name__ == "__main__":
-    signals = Signals()
-    df = signals.generate_fake_data(200)
-    signals.compute(df)
-    print(tabulate(signals.signals.tail(), headers='keys', tablefmt='github'))
+    pass
