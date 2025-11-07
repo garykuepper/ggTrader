@@ -57,7 +57,7 @@ def plot_cv_indices(cv, X, ax, n_splits, lw=10):
         )
 
         # Optional: annotate ranges
-        ax.text(tt[0], ii + 0.7,
+        ax.text(tt[0]*.7, ii + 0.7,
                 f"Train:{tr[0]}–{tr[-1]} | Test:{tt[0]}–{tt[-1]}",
                 fontsize=8)
 
