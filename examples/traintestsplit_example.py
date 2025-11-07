@@ -4,7 +4,6 @@ import pandas as pd
 # n_samples = 4057
 X = pd.date_range(start='2023-01-01', end='2025-09-30', freq='4h')
 n_samples = (len(X))
-y = np.arange(n_samples)
 
 # 2. Configure end-anchored sliding window with variable ratio
 n_splits = 5
