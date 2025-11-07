@@ -1,8 +1,9 @@
 from ggTrader.Utils import *
-
+import pandas as pd
 # 1. Create a sample time series dataset
-n_samples = 4057
-X = np.arange(n_samples).reshape(-1, 1)  # define X based on n_samples
+# n_samples = 4057
+X = pd.date_range(start='2023-01-01', end='2025-09-30', freq='4h')
+n_samples = (len(X))
 y = np.arange(n_samples)
 
 # 2. Configure end-anchored sliding window with variable ratio
@@ -19,4 +20,4 @@ plt.show()
 
 # 4. Print fold ranges
 for i, (tr, tt) in enumerate(tscv.split(X), 1):
-    print(f"Fold {i}: Train [{tr[0]}–{tr[-1]}] ({len(tr)}), Test [{tt[0]}–{tt[-1]}] ({len(tt)})")
+    print(f"Fold {i}: Train [{X[tr[0]]}–{X[tr[-1]]}] ({len(tr)/6:.0f}), Test [{X[tt[0]]}–{X[tt[-1]]}] ({len(tt)/6:.0f})")
