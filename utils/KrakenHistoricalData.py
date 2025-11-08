@@ -340,7 +340,7 @@ class KrakenHistoricalData:
         for d in tqdm(dirs, desc="Quarterly Folders", dynamic_ncols=True, position=0, leave=True):
             self.csvs_dir_to_parquet_parallel(d, sample=sample_per_dir, max_workers=max_workers)
 
-    def get_ohlcv_df(self, symbols: list, interval="1d", quote="USD"):
+    def get_ohlcv_df(self, symbols: list, interval="1d", quote="USD", start: pd.Timestamp = None, end: pd.Timestamp = None):
         dfs = []
         for symbol in symbols:
             pair = f"{symbol}-{quote}"
@@ -367,7 +367,7 @@ class KrakenHistoricalData:
         ohlcv_df = self.fill_after_first_non_nan_multilevel_safe(ohlcv_df, symbols=symbols)
         ohlcv_df = self.fill_symbol_metadata(ohlcv_df, symbols)
 
-        return ohlcv_df
+        return ohlcv_df.loc[start:end] if start is not None and end is not None else ohlcv_df
 
     def list_parquet_pairs(self, ) -> list[str]:
         pairs = set()
@@ -406,6 +406,11 @@ class KrakenHistoricalData:
                 df_out[base_col] = df_out[base_col].ffill().bfill()
             if quote_col in df_out.columns:
                 df_out[quote_col] = df_out[quote_col].ffill().bfill()
+        df_out.index.name = "Datetime"
+        if isinstance(df_out.columns, pd.MultiIndex):
+            df_out.columns = df_out.columns.set_names("symbol",level=0)
+        else:
+            df_out.columns = df_out.columns.set_names("symbol")
         return df_out
 
     @staticmethod
@@ -435,6 +440,7 @@ class KrakenHistoricalData:
         last_date = ohlcv_df.index[-1]
         date_range = pd.date_range(start=first_date, end=last_date, freq=interval)
         ohlcv_df = ohlcv_df.reindex(date_range)
+        ohlcv_df.index.name = "Datetime"
         return ohlcv_df
 
     @staticmethod
