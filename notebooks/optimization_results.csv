@@ -1,0 +1,2 @@
+symbol,timestamp,sar_acceleration,sar_maximum,atr_multiplier,adx_threshold,adx_length,ce_high_length,ce_low_length,atr_length,trading_days,total_profit,total_profit_pct,sharpe,sortino,wins,losses,win_rate
+BTC,2025-11-08 02:35:50.134138+00:00,0.02,0.2,1.1,0,14,22,1,14,1003,123096.42938257781,12309.64293825778,6.317091095006004,12.773355927850941,216,24,90.0

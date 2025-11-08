@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
 
-
-
 trading_map = {'4h': 6 * 365, '1h': 24 * 365, '1d': 365}
 
 
@@ -10,7 +8,7 @@ class Backtest:
     def __init__(self, signals: pd.DataFrame,
                  interval: str = '4h',
                  transaction_fee: float = 0.004,
-                 start_equity: float = 1000.0,):
+                 start_equity: float = 1000.0, ):
         self.signals = signals
         self.transaction_fee = transaction_fee
         self.stats = {}
@@ -48,7 +46,6 @@ class Backtest:
         self.stats['win_rate'] = win_rate
 
         return self.stats, self.profit_df
-
 
     @staticmethod
     def calc_wins_losses(profit: pd.Series):
@@ -104,7 +101,7 @@ class Backtest:
 
         in_position = filtered_entry_exit['in_position'].astype(bool)
 
-        r_cc = price.pct_change(fill_method=None).fillna(0.0) # close-to-close returns
+        r_cc = price.pct_change(fill_method=None).fillna(0.0)  # close-to-close returns
         enter_bar = filtered_entry_exit['filtered_entry'].astype(bool)
         exit_bar = filtered_entry_exit['filtered_exit'].astype(bool)
 
@@ -113,21 +110,20 @@ class Backtest:
         returns = returns.mask(exit_bar, returns - transaction_fee)  # apply fee at exit
         return returns
 
-
-
     @staticmethod
     def sharpe_ratio(returns: pd.Series, interval: str):
         trading_map = {'4h': 6 * 365, '1h': 24 * 365, '1d': 365}
         trading_periods = trading_map.get(interval)
         risk_free_rate = 0.0001
-        return (returns.mean()  - risk_free_rate)/ returns.std() * np.sqrt(trading_periods)
+        return (returns.mean() - risk_free_rate) / returns.std() * np.sqrt(trading_periods)
 
     @staticmethod
     def sortino_ratio(returns: pd.Series, interval: str):
         trading_map = {'4h': 6 * 365, '1h': 24 * 365, '1d': 365}
         trading_periods = trading_map.get(interval)
         risk_free_rate = 0.0001
-        return (returns.mean()- risk_free_rate) / returns[returns < 0].std() * np.sqrt(trading_periods)
+        return (returns.mean() - risk_free_rate) / returns[returns < 0].std() * np.sqrt(trading_periods)
+
 
 if __name__ == "__main__":
     pass
