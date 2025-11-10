@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 from sklearn.model_selection import TimeSeriesSplit
 import math
-
+import pandas as pd
+import vectorbt as vbt
 
 def make_end_anchored_tscv(n_samples, n_splits, test_ratio):
     """
@@ -93,3 +94,114 @@ def periods_per_year_from_interval(interval: str) -> int:
     # Fallbacks for your common choices
     mapping = {"4h": 6 * 365, "1h": 24 * 365, "1d": 365}
     return mapping.get(interval, 6 * 365)
+
+def reassign_columns_value(stats_df: pd.DataFrame, trial_num: int, level: int = 0):
+    new_level_0 = stats_df.columns.levels[level].to_numpy().copy()
+    new_level_0[:] = trial_num
+    new_levels = [pd.Index(new_level_0), stats_df.columns.levels[1]]
+    new_columns = stats_df.columns.set_levels(new_levels)
+
+    # Assign back
+    stats_df.columns = new_columns
+
+    stats_df.columns = stats_df.columns.set_names(['id', 'symbol'])
+    return stats_df
+
+
+def assign_column_labels(stats_df: pd.DataFrame, labels: list):
+    return stats_df.rename_axis(labels, axis=1)
+
+
+def stats_df_to_wide(df: pd.DataFrame, trial_num: int):
+    df = reassign_columns_value(df, trial_num, level=0)
+    df = assign_column_labels(df, labels=['id', 'symbol'])
+    df = df.T.reset_index()
+    return convert_cols_to_numeric(df)
+
+
+def convert_cols_to_numeric(df: pd.DataFrame):
+    df['Start'] = pd.to_datetime(df['Start'], errors='coerce')
+    df['End'] = pd.to_datetime(df['End'], errors='coerce')
+    df['Period'] = pd.to_timedelta(df['Period'], errors='coerce')
+    duration_str = 'Duration'
+    for col in df.columns:
+        # Skip columns we already converted to datetime/timedelta
+        if col in ['Start', 'End', 'Period']:
+            continue
+
+        # Skip columns that are already numeric
+        if pd.api.types.is_numeric_dtype(df[col]):
+            continue
+        if duration_str in col:
+            df[col] = pd.to_timedelta(df[col], errors='coerce')
+            continue
+        # Try converting to numeric, catching exceptions
+        try:
+            df[col] = pd.to_numeric(df[col], errors='raise')
+
+        except (ValueError, TypeError):
+            # If conversion fails, leave the column as-is
+            pass
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    return df
+
+# ========= 2. Signal Data Comparison =========
+
+def entry_signals(close,
+                  high,
+                  low,
+                  adx_length: int = 14,
+                  adx_threshold: int = 25,
+                  sar_acceleration: float = 0.02,
+                  sar_maximum: float = 0.2):
+    sar_pandas_ta = vbt.pandas_ta('psar').run(high,
+                                              low,
+                                              close=close,
+                                              acceleration=sar_acceleration,
+                                              maximum=sar_maximum)
+    sar_buy = sar_pandas_ta.psarl_below(close)
+
+    adx_pandas_ta = vbt.pandas_ta('adx').run(high, low, close, length=adx_length)
+    dmp_cross = adx_pandas_ta.dmp_above(adx_pandas_ta.dmn)
+    adx_threshold_cross = adx_pandas_ta.adx_above(adx_threshold)
+    adx_buy = dmp_cross & adx_threshold_cross
+
+    return sar_buy & adx_buy
+
+
+def stop_loss(entries, close, high, low, atr_length: int = 14, atr_multiplier: float = 3.0, use_high: bool = False):
+    atr = vbt.pandas_ta('atr').run(high, low, close, length=atr_length)
+    atrr = atr.atrr
+
+    if use_high:
+        entry_price = high.where(entries).ffill()
+    else:
+        entry_price = close.where(entries).ffill()
+
+    # 3) 3x ATR stop distance as a fraction of entry
+    #    (this is already positive: 3 * atr below entry)
+    sl_stop = (atr_multiplier * atrr.values) / entry_price
+
+    # Optional: if entry_price is NaN (no trade yet), keep NaN
+    sl_stop = sl_stop.where(entry_price.notna())
+
+    return sl_stop
+
+
+def calc_signals(close: pd.DataFrame,
+                 high: pd.DataFrame,
+                 low: pd.DataFrame,
+                 adx_length: int = 14,
+                 adx_threshold: int = 25,
+                 sar_acceleration: float = 0.02,
+                 sar_maximum: float = 0.2,
+                 atr_multiplier: float = 3.0,
+                 atr_length: int = 14,
+                 use_high: bool = False, ):
+    entries = entry_signals(close, high, low, adx_length=adx_length, adx_threshold=adx_threshold,
+                            sar_acceleration=sar_acceleration, sar_maximum=sar_maximum)
+    exits = pd.DataFrame(False, index=entries.index, columns=entries.columns)
+    sl_stop = stop_loss(entries, close, high, low, atr_multiplier=atr_multiplier, atr_length=atr_length,
+                        use_high=use_high)
+    return entries, exits, sl_stop
+
