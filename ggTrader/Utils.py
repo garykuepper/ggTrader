@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
@@ -7,6 +6,7 @@ import math
 import pandas as pd
 import vectorbt as vbt
 
+# -------Train Splits
 def make_end_anchored_tscv(n_samples, n_splits, test_ratio):
     """
     Create an end-anchored TimeSeriesSplit with a desired test_ratio per sliding window.
@@ -58,7 +58,7 @@ def plot_cv_indices(cv, X, ax, n_splits, lw=10):
         )
 
         # Optional: annotate ranges
-        ax.text(tt[0]*.7, ii + 0.7,
+        ax.text(tt[0] * .7, ii + 0.7,
                 f"Train:{tr[0]}–{tr[-1]} | Test:{tt[0]}–{tt[-1]}",
                 fontsize=8)
 
@@ -80,7 +80,7 @@ def plot_cv_indices(cv, X, ax, n_splits, lw=10):
     ]
     ax.legend(handles=legend_elements, loc='lower right')
 
-
+#
 def periods_per_year_from_interval(interval: str) -> int:
     # Handles "4h", "1h", "1d" and similar
     if interval.endswith("h"):
@@ -94,6 +94,7 @@ def periods_per_year_from_interval(interval: str) -> int:
     # Fallbacks for your common choices
     mapping = {"4h": 6 * 365, "1h": 24 * 365, "1d": 365}
     return mapping.get(interval, 6 * 365)
+
 
 def reassign_columns_value(stats_df: pd.DataFrame, trial_num: int, level: int = 0):
     new_level_0 = stats_df.columns.levels[level].to_numpy().copy()
@@ -145,6 +146,7 @@ def convert_cols_to_numeric(df: pd.DataFrame):
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     return df
 
+
 # ========= 2. Signal Data Comparison =========
 
 def entry_signals(close,
@@ -153,7 +155,9 @@ def entry_signals(close,
                   adx_length: int = 14,
                   adx_threshold: int = 25,
                   sar_acceleration: float = 0.02,
-                  sar_maximum: float = 0.2):
+                  sar_maximum: float = 0.2,
+                  use_dmp_cross: bool = True,):
+
     sar_pandas_ta = vbt.pandas_ta('psar').run(high,
                                               low,
                                               close=close,
@@ -164,7 +168,10 @@ def entry_signals(close,
     adx_pandas_ta = vbt.pandas_ta('adx').run(high, low, close, length=adx_length)
     dmp_cross = adx_pandas_ta.dmp_above(adx_pandas_ta.dmn)
     adx_threshold_cross = adx_pandas_ta.adx_above(adx_threshold)
-    adx_buy = dmp_cross & adx_threshold_cross
+    if use_dmp_cross:
+        adx_buy = dmp_cross & adx_threshold_cross
+    else:
+        adx_buy = adx_threshold_cross
 
     return sar_buy & adx_buy
 
@@ -197,11 +204,11 @@ def calc_signals(close: pd.DataFrame,
                  sar_maximum: float = 0.2,
                  atr_multiplier: float = 3.0,
                  atr_length: int = 14,
-                 use_high: bool = False, ):
+                 use_high: bool = False,
+                 use_dmp_cross: bool = True,):
     entries = entry_signals(close, high, low, adx_length=adx_length, adx_threshold=adx_threshold,
-                            sar_acceleration=sar_acceleration, sar_maximum=sar_maximum)
+                            sar_acceleration=sar_acceleration, sar_maximum=sar_maximum, use_dmp_cross=use_dmp_cross,)
     exits = pd.DataFrame(False, index=entries.index, columns=entries.columns)
     sl_stop = stop_loss(entries, close, high, low, atr_multiplier=atr_multiplier, atr_length=atr_length,
                         use_high=use_high)
     return entries, exits, sl_stop
-
