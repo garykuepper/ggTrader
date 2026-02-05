@@ -1,156 +1,30 @@
 import os
-import random
-from tqdm.auto import tqdm
-import sys
 import pandas as pd
-import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
-from tabulate import tabulate
-import shutil
-import fsspec
-import pyarrow.dataset as ds
-
-
-kraken_map = {
-    "XETC": "ETC", "XETH": "ETH", "XLTC": "LTC", "XMLN": "MLN", "XREP": "REP",
-    "XXBT": "XBT", "XXDG": "XDG", "XXLM": "XLM", "XXMR": "XMR", "XXRP": "XRP",
-    "XZEC": "ZEC", "ZAUD": "AUD", "ZCAD": "CAD", "ZEUR": "EUR", "ZGBP": "GBP",
-    "ZJPY": "JPY", "ZUSD": "USD", "XBT": "BTC", "XDG": "DOGE"
-}
-
-STABLE_BASES = ["USDT", "USDC", "DAI", "USDP", "EUR", "GBP", "AUD", "USD", "JPY", "CAD", "MKR"]
-
-interval_map = {"1": "1m", "5": "5m", "15": "15m",
-                "30": "30m", "60": "1h", "240": "4h",
-                "720": "12h", "1440": "1d", "10080": "1w"}
-# --- at top level (same module) ---
-from concurrent.futures import ProcessPoolExecutor, as_completed
-
-
-def clean_ccy(ccy: str) -> str:
-    # Map Kraken prefixes like XXBT -> XBT -> BTC, and ZUSD -> USD
-    return kraken_map.get(ccy, ccy)
-
-
-def split_pair(raw_pair: str, quote_only="USD"):
-    """
-    Split Kraken pair (e.g., 'XXBTZUSD', 'XETHZUSD', 'BTCUSDT') into base/quote robustly.
-    Strategy:
-      1) Try 4-letter quote (USDT/USDC/DAI/…)
-      2) Else try 3-letter quote
-      3) Fallback: last 3 chars
-    Then clean both sides via kraken_map.
-    """
-    p = raw_pair.upper()
-
-    if p.endswith(quote_only):
-        base = clean_ccy(p[:-3])
-        quote = quote_only
-        pair_std = f"{base}-{quote}"
-        return clean_ccy(p[:-3]), clean_ccy(quote_only), pair_std
-
-    return None, None, None
-
-
-# Shared CSV loading helper (new)
-def _load_csv_common(file_path: str, col_names: list, interval: str = None):
-    """
-    Shared CSV loader used by both _process_one_file and KrakenHistoricalData.load_csv.
-    Keeps the same parsing logic (header=None, names=col_names, converters for timestamp,
-    index_col='timestamp'). Returns (df, interval) tuple or (None, None) on skip/empty.
-    """
-    try:
-        df = pd.read_csv(
-            file_path,
-            header=None,
-            names=col_names,
-            converters={"timestamp": lambda x: pd.to_datetime(int(x), unit="s", utc=True)},
-            index_col="timestamp",
-        )
-    except pd.errors.EmptyDataError:
-        return None, None
-    if df is None or df.empty:
-        return None, None
-    # Normalize volume to USD by multiplying by the close price
-    if "volume" in df.columns and "close" in df.columns:
-        df["volume"] = df["volume"] * df["close"]
-    # normalize/standardize interval if provided
-    if interval is not None:
-        interval_map = {"1": "1m", "5": "5m", "15": "15m", "30": "30m", "60": "1h", "240": "4h",
-                        "1440": "1d", "10080": "1w"}
-    interval = interval_map.get(interval.lower(), interval)
-    return df, interval
-
-
-def _process_one_file(args):
-    """Top-level worker so it can be pickled on Windows."""
-    input_dir, file_, parquet_root = args
-    # Re-import minimal bits to avoid heavy pickling (optional micro-opt)
-    import os, pandas as pd, pyarrow as pa, pyarrow.parquet as pq
-
-    # ---- replicate the essentials from your class methods ----
-    # You can also refactor your load_csv to @staticmethod and import it here.
-    col_names = ["timestamp", "open", "high", "low", "close", "volume", "trades"]
-    name_noext = file_.rsplit(".", 1)[0]
-    parts = name_noext.split("_")
-    if len(parts) < 2:
-        return (file_, 0)
-
-    raw_pair, interval = parts[0], parts[1]
-    # use your split_pair from module scope
-    base, quote, pair_std = split_pair(raw_pair, quote_only="USD")
-    if base is None:
-        return (file_, 0)
-
-    interval = interval_map.get(interval.lower(), interval)
-
-    file_path = os.path.join(input_dir, file_)
-    df, interval = _load_csv_common(file_path, col_names, interval)
-    if df is None:
-        return (file_, 0)
-    if df.empty:
-        return (file_, 0)
-
-    # dtypes & clean
-    df["open"] = pd.to_numeric(df["open"], errors="coerce").astype("float32")
-    df["high"] = pd.to_numeric(df["high"], errors="coerce").astype("float32")
-    df["low"] = pd.to_numeric(df["low"], errors="coerce").astype("float32")
-    df["close"] = pd.to_numeric(df["close"], errors="coerce").astype("float32")
-    df["volume"] = pd.to_numeric(df["volume"], errors="coerce").astype("float64")
-    df["trades"] = pd.to_numeric(df["trades"], errors="coerce").astype("Int64")
-
-    df = df[~df.index.duplicated(keep="last")].sort_index()
-    df["interval"] = interval
-    df["base"] = base
-    df["quote"] = quote
-    df["pair"] = pair_std
-    # adjust volume to be in usd
-    df['volume'] = df['volume'] * df['close']
-    # write directly from the worker (each creates its own part file)
-    table = pa.Table.from_pandas(df, preserve_index=True)
-    pq.write_to_dataset(
-        table,
-        root_path=parquet_root,
-        partition_cols=["pair", "interval"],
-        compression="zstd",
-        # use the default file_visitor to generate unique part names
-    )
-    return (file_, 1)
-
+import json
+from .KrakenUtils import get_file_names
+from .KrakenConverter import KrakenConverter
+from .KrakenParquetReader import KrakenParquetReader
+from .KrakenRemoteReader import KrakenRemoteReader
 
 class KrakenHistoricalData:
+    """
+    Facade for Kraken historical data operations.
+    Delegates to specialized modules for conversion, reading, and remote access.
+    """
     def __init__(self):
         self.root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
         self.raw_path = os.path.join(self.root_dir, 'data', 'raw')
-        self.parquet_root = os.path.join(self.root_dir, 'data', 'parquet')  # dataset dir
+        self.parquet_root = os.path.join(self.root_dir, 'data', 'parquet')
         self.historical_mover_path = os.path.join(self.root_dir, 'data', 'historical_movers')
+        
         os.makedirs(self.parquet_root, exist_ok=True)
-        self.historical_mover_df = None
-        self.remote_base_url = None # e.g. "https://garygigabytes.com/parquet"
-        self.remote_fs = None         # fsspec filesystem for HTTPS
+        os.makedirs(self.historical_mover_path, exist_ok=True)
 
-    # ---------- directory helpers ----------
+        self.converter = KrakenConverter(self.parquet_root)
+        self.reader = KrakenParquetReader(self.parquet_root, self.historical_mover_path)
+        self.remote_reader = KrakenRemoteReader(self.root_dir)
+
+    # ---------- Directory Helpers ----------
     def list_quarter_dirs(self, prefix="Kraken_OHLCVT_"):
         """Find quarterly Kraken folders under data/raw."""
         out = []
@@ -164,736 +38,147 @@ class KrakenHistoricalData:
         return out
 
     def get_file_names(self, path, quote_only="USD"):
-        if not os.path.isdir(path):
-            return []
-        files = [f for f in os.listdir(path)
-                 if os.path.isfile(os.path.join(path, f)) and f.lower().endswith(".csv")]
-        return self.filter_files_by_quote(files, quote_only)
+        return get_file_names(path, quote_only)
 
-    def filter_files_by_quote(self, files, quote_only="USD"):
-        """Keep files where the pair part ends with quote and has non-empty base."""
-        kept = []
-        for f in files:
-            stem = f.rsplit(".", 1)[0]
-            pair = stem.split("_", 1)[0].upper()
-            if pair.endswith(quote_only) and len(pair) > len(quote_only):
-                kept.append(f)
-        return kept
+    # ---------- Conversion (Delegated to KrakenConverter) ----------
+    def csvs_dir_to_parquet(self, *args, **kwargs):
+        return self.converter.csvs_dir_to_parquet(*args, **kwargs)
 
-    # ---------- IO ----------
-    def load_csv(self, dir_, file_):
-        col_names = ["timestamp", "open", "high", "low", "close", "volume", "trades"]
-        name_noext = file_.rsplit(".", 1)[0]
-        parts = name_noext.split("_")
-        if len(parts) < 2:
-            return None
-
-        raw_pair, interval = parts[0], parts[1]
-        base, quote, pair_std = split_pair(raw_pair, quote_only="USD")
-        if base is None:  # skip non-USD or malformed
-            return None
-
-        # normalize interval (example: Kraken numeric minutes -> human)
-        interval = interval_map.get(interval.lower(), interval)
-
-        file_path = os.path.join(dir_, file_)
-        try:
-            df = pd.read_csv(
-                file_path,
-                header=None,
-                names=col_names,
-                converters={"timestamp": lambda x: pd.to_datetime(int(x), unit="s", utc=True)},
-                index_col='timestamp'  # KEEP INDEX
-            )
-        except pd.errors.EmptyDataError:
-            return None
-
-        if df.empty:
-            return None
-
-        # dtypes & cleaning
-        df["open"] = pd.to_numeric(df["open"], errors="coerce").astype("float32")
-        df["high"] = pd.to_numeric(df["high"], errors="coerce").astype("float32")
-        df["low"] = pd.to_numeric(df["low"], errors="coerce").astype("float32")
-        df["close"] = pd.to_numeric(df["close"], errors="coerce").astype("float32")
-        df["volume"] = pd.to_numeric(df["volume"], errors="coerce").astype("float64")
-        df["trades"] = pd.to_numeric(df["trades"], errors="coerce").astype("Int64")
-
-        # dedup by index & sort
-        df = df[~df.index.duplicated(keep="last")].sort_index()
-
-        # metadata columns
-        df["interval"] = interval
-        df["base"] = base
-        df["quote"] = quote
-        df["pair"] = pair_std
-
-        # adjust volume to be in usd
-        df['volume'] = df['volume'] * df['close']
-        return df
-
-    def csvs_dir_to_parquet(self, input_dir, sample=None, position=1):
-        files = self.get_file_names(input_dir, quote_only="USD")
-        if not files:
-            tqdm.write(f"[skip] no USD files in {input_dir}")  # <- tqdm-safe
-            return
-
-        if sample:
-            files = random.sample(files, k=min(sample, len(files)))
-
-        # tqdm-safe message
-        tqdm.write(f"[dir] {input_dir} -> {len(files)} files")
-
-        # single-folder progress bar
-        for f in tqdm(
-                files,
-                desc=f"Processing {os.path.basename(input_dir)}",
-                ncols=0,  # let tqdm auto-size (prevents wrapping)
-                dynamic_ncols=True,
-                position=position,  # <- important for nested bars
-                leave=False,  # <- collapse when done (outer bar stays)
-                miniters=1,
-                smoothing=0.1,
-        ):
-            df = self.load_csv(input_dir, f)
-            if df is None or df.empty:
-                # if you want to see skips:
-                # tqdm.write(f"[skip] {f}")
-                continue
-
-            table = pa.Table.from_pandas(df, preserve_index=True)
-            pq.write_to_dataset(
-                table,
-                root_path=self.parquet_root,
-                partition_cols=["pair", "interval"],
-                compression="zstd",
-            )
-
-    def csvs_many_dirs_to_parquet(self, dirs=None, sample_per_dir=None):
+    def csvs_many_dirs_to_parquet(self, dirs=None, **kwargs):
         if dirs is None:
             dirs = self.list_quarter_dirs()
+        for d in dirs:
+            self.converter.csvs_dir_to_parquet(d, **kwargs)
 
-        # outer bar for the list of quarterly folders
-        for d in tqdm(
-                dirs,
-                desc="Quarterly Folders",
-                ncols=0,
-                dynamic_ncols=True,
-                position=0,  # outer bar on line 0
-                leave=True,
-        ):
-            # inner bar uses position=1 so it always reuses the same line
-            self.csvs_dir_to_parquet(d, sample=sample_per_dir, position=1)
+    def csvs_dir_to_parquet_parallel(self, *args, **kwargs):
+        return self.converter.csvs_dir_to_parquet_parallel(*args, **kwargs)
 
-    # ---------- readers ----------
-    def read_parquet(self, pair=None, interval=None, columns=None, filters=None, sort=True):
-        base_path = self.parquet_root
-        if pair and interval:
-            path = os.path.join(base_path, f"pair={pair}", f"interval={interval}")
-        elif pair:
-            path = os.path.join(base_path, f"pair={pair}")
-        else:
-            path = base_path
-
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"No parquet data for {pair} found at {path}")
-
-        df = pd.read_parquet(path, columns=columns, filters=filters)
-        # If index was preserved, pandas restores it automatically
-        if sort and "timestamp" in df.columns:  # in case index wasn't restored
-            df = df.sort_values("timestamp")
-
-        return df.sort_index()
-
-    def csvs_dir_to_parquet_parallel(self, input_dir, sample=None, max_workers=None):
-        files = self.get_file_names(input_dir, quote_only="USD")
-        if not files:
-            tqdm.write(f"[skip] no USD files in {input_dir}")
-            return
-
-        if sample:
-            files = np.random.choice(files, size=sample, replace=False)
-            # files = random.sample(files, k=min(sample, len(files)))
-
-        tqdm.write(f"[dir] {input_dir} -> {len(files)} files (parallel)")
-
-        tasks = [(input_dir, f, self.parquet_root) for f in files]
-        done = 0
-        # default: one process per CPU
-        max_workers = max_workers or os.cpu_count() or 4
-
-        with ProcessPoolExecutor(max_workers=max_workers) as ex:
-            for _file, ok in tqdm(
-                    ex.map(_process_one_file, tasks, chunksize=8),
-                    total=len(tasks),
-                    desc=f"Processing {os.path.basename(input_dir)} (mp x{max_workers})",
-                    dynamic_ncols=True,
-                    leave=False,
-            ):
-                done += ok
-
-        tqdm.write(f"[done] {os.path.basename(input_dir)}: wrote {done}/{len(files)} files")
-
-    def csvs_many_dirs_to_parquet_parallel(self, dirs=None, sample_per_dir=None, max_workers=None):
+    def csvs_many_dirs_to_parquet_parallel(self, dirs=None, **kwargs):
         if dirs is None:
             dirs = self.list_quarter_dirs()
-        for d in tqdm(dirs, desc="Quarterly Folders", dynamic_ncols=True, position=0, leave=True):
-            self.csvs_dir_to_parquet_parallel(d, sample=sample_per_dir, max_workers=max_workers)
+        for d in dirs:
+            self.converter.csvs_dir_to_parquet_parallel(d, **kwargs)
 
-    def get_ohlcv_df(self, symbols: list, interval="1d", quote="USD", start: pd.Timestamp = None, end: pd.Timestamp = None):
-        dfs = []
-        for symbol in symbols:
-            pair = f"{symbol}-{quote}"
-            df = self.read_parquet(pair=pair, interval=interval)
-            dfs.append(df)
-
-        if not dfs:
-            return pd.DataFrame()
-
-        # deduplicate indices
-        dfs = [d[~d.index.duplicated(keep='last')] for d in dfs]
-
-        # build a common index (union of all per-symbol indices)
-        common_idx = dfs[0].index
-        for d in dfs[1:]:
-            common_idx = common_idx.union(d.index)
-
-        # 3) reindex all dfs to the common index
-        dfs = [d.reindex(common_idx) for d in dfs]
-
-        # join into a single dataframe
-        ohlcv_df = pd.concat(dfs, axis=1, keys=symbols)
-
-        # clean up
-        ohlcv_df = ohlcv_df.sort_index()
-        ohlcv_df = self.align_to_datetime_index(ohlcv_df, interval=interval)
-        ohlcv_df = self.fill_after_first_non_nan_multilevel_safe(ohlcv_df, symbols=symbols)
-        ohlcv_df = self.fill_symbol_metadata(ohlcv_df, symbols)
-
-        return ohlcv_df.loc[start:end] if start is not None and end is not None else ohlcv_df
-
-    def list_parquet_pairs(self, ) -> list[str]:
-        pairs = set()
-        if not os.path.isdir(self.parquet_root):
-            return []
-        for name in os.listdir(self.parquet_root):
-            full = os.path.join(self.parquet_root, name)
-            if not os.path.isdir(full):
-                continue
-            # Expect folder name like pair=BTC-USD
-            if name.startswith("pair="):
-                pair = name.split("=", 1)[-1]
-                pairs.add(pair)
-            else:
-                # If there are deeper structures, peek inside
-                for sub in os.listdir(full):
-                    subfull = os.path.join(full, sub)
-                    if os.path.isdir(subfull) and sub.startswith("interval="):
-                        # Try to derive pair from the parent folder
-                        parent = os.path.basename(full)
-                        if parent.startswith("pair="):
-                            pairs.add(parent.split("=", 1)[-1])
-                        break
-        return sorted(pairs)
-
-    # ohlcv_df: multi-index columns: (symbol, 'base'), (symbol, 'quote'), etc.
-    @staticmethod
-    def fill_symbol_metadata(ohlcv_df, symbols):
-        df_out = ohlcv_df.copy()
-        for sym in symbols:
-            # base column for this symbol
-            base_col = (sym, 'base')
-            quote_col = (sym, 'quote')
-
-            if base_col in df_out.columns:
-                df_out[base_col] = df_out[base_col].ffill().bfill()
-            if quote_col in df_out.columns:
-                df_out[quote_col] = df_out[quote_col].ffill().bfill()
-        if isinstance(df_out.columns, pd.MultiIndex):
-            # Explicitly rebuild the MultiIndex to avoid internal naming inconsistencies
-            df_out.columns = pd.MultiIndex.from_tuples(df_out.columns.values, names=["symbol", "ohlcv"])
-        else:
-            df_out.columns.name = "symbol"
-        df_out.index.name = "Datetime"
-        return df_out
-
-    @staticmethod
-    def fill_after_first_non_nan_single(df: pd.DataFrame) -> pd.DataFrame:
+    def sync_local_data(self, **kwargs):
         """
-        For a flat (single-level columns) DataFrame:
-        - For each numeric column, fill NaNs that occur after the first non-NaN value
-          using forward-fill.
-        - Leading NaNs (before the first non-NaN) are preserved.
-        Returns a new DataFrame (original is not mutated).
+        Intelligently sync new Kraken raw CSV directories into the Parquet dataset.
+        Uses a manifest to avoid re-processing directories.
         """
-        df_out = df.copy()
-        for col in df_out.columns:
-            # operate only on numeric dtype columns
-            if pd.api.types.is_numeric_dtype(df_out[col]):
-                first_valid = df_out[col].first_valid_index()
-                if first_valid is not None:
-                    # forward-fill from the first valid index onward
-                    tail = df_out[col].loc[first_valid:]
-                    tail_filled = tail.ffill()
-                    df_out.loc[first_valid:, col] = tail_filled
-        return df_out
-
-    @staticmethod
-    def align_to_datetime_index(ohlcv_df: pd.DataFrame, interval: str = "1d"):
-        first_date = ohlcv_df.index[0]
-        last_date = ohlcv_df.index[-1]
-        date_range = pd.date_range(start=first_date, end=last_date, freq=interval)
-        ohlcv_df = ohlcv_df.reindex(date_range)
-        ohlcv_df.index.name = "Datetime"
-        return ohlcv_df
-
-    @staticmethod
-    def fill_after_first_non_nan_multilevel_safe(ohlcv_df: pd.DataFrame, symbols: list) -> pd.DataFrame:
-        """
-        For a DataFrame with multilevel columns where the top level is a symbol
-        (e.g., (BTC, open), (BTC, high), ..., (ETH, open), ...):
-        - For each symbol, apply the per-column fill-after-first-non-nan logic
-          to that symbol's sub-DataFrame.
-        - Update the original DataFrame column-by-column to avoid
-          MultiIndex assignment issues.
-        - Returns a new DataFrame; original is not mutated.
-        """
-        df_out = ohlcv_df.copy()
-        for sym in symbols:
-            # Work on the per-symbol subframe
-            df_sym = ohlcv_df.xs(sym, axis=1, level=0).copy()
-
-            # Fill each numeric column after the first non-NaN
-            for col in df_sym.columns:
-                if pd.api.types.is_numeric_dtype(df_sym[col]):
-                    first_valid = df_sym[col].first_valid_index()
-                    if first_valid is not None:
-                        tail = df_sym[col].loc[first_valid:]
-                        tail_filled = tail.ffill()
-                        df_sym.loc[first_valid:, col] = tail_filled
-
-            # Write back column-by-column to avoid slice assignment issues
-            for col in df_sym.columns:
-                df_out[(sym, col)] = df_sym[col]
-
-        return df_out
-
-    def get_random_symbols(self, n=10):
-        symbols = self.list_parquet_symbols()
-        return np.random.choice(symbols, size=n, replace=False)
-
-    def list_parquet_symbols(self, quote='USD'):
-        pairs = self.list_parquet_pairs()
-        symbols = [p[:-4] if p.endswith(quote) else p for p in pairs]
-        return symbols
-
-    def get_daily_historical_movers(self, top_n=20, trades_threshold=500, sample=None, stables=False):
-        interval = "1d"
-
-        if sample:
-            symbols = np.random.choice(self.list_parquet_symbols(), size=sample, replace=False)
-        else:
-            symbols = self.list_parquet_symbols()
-        if not stables:
-            symbols = self.filter_out_stables(symbols)
-
-        # symbols = ["AVAX", "AAVE","AUDIO"]
-        ohlcv_df = self.get_ohlcv_df(symbols=symbols, interval=interval, quote="USD")
-        if ohlcv_df.empty:
-            return pd.DataFrame()
-
-        # go long!
-        stacked = []
-        for sym in symbols:
-            if sym in ohlcv_df.columns.levels[0]:
-                df_sym = ohlcv_df[sym].copy()
-                df_sym['symbol'] = sym
-                stacked.append(df_sym.reset_index())
+        manifest_path = os.path.join(self.parquet_root, ".processed_dirs.json")
+        processed_dirs = set()
         
-        if not stacked:
-            return pd.DataFrame()
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, 'r') as f:
+                    processed_dirs = set(json.load(f))
+            except Exception as e:
+                print(f"Warning: could not load sync manifest: {e}")
+
+        all_dirs = self.list_quarter_dirs()
+        new_dirs = [d for d in all_dirs if os.path.basename(d) not in processed_dirs]
+
+        if not new_dirs:
+            print("No new Kraken data directories found to sync.")
+            return
+
+        print(f"Found {len(new_dirs)} new directories to sync: {[os.path.basename(d) for d in new_dirs]}")
+        
+        for d in new_dirs:
+            self.csvs_dir_to_parquet_parallel(d, **kwargs)
+            processed_dirs.add(os.path.basename(d))
             
-        ohlcv_df_long = pd.concat(stacked, ignore_index=True)
-        # Rename whichever column is the date/datetime to 'date'
-        rename_map = {}
-        for col in ohlcv_df_long.columns:
-            if str(col).lower() in ['datetime', 'timestamp', 'index']:
-                rename_map[col] = 'date'
-        ohlcv_df_long = ohlcv_df_long.rename(columns=rename_map)
-        # filter out low trades
-        # print(ohlcv_df_long.describe())
-        ohlcv_df_long = ohlcv_df_long.dropna(subset=["trades"])
+            # Update manifest after each directory is successfully processed
+            try:
+                with open(manifest_path, 'w') as f:
+                    json.dump(sorted(list(processed_dirs)), f, indent=4)
+            except Exception as e:
+                print(f"Warning: could not update sync manifest: {e}")
+        
+        print("Data synchronization complete.")
 
-        ohlcv_df_long = ohlcv_df_long[ohlcv_df_long['trades'] > trades_threshold]
-        top_by_volume = ohlcv_df_long.sort_values(['date', 'volume'], ascending=[True, False])
-        top_per_day = top_by_volume.groupby('date').head(top_n).reset_index(drop=True)
-        return top_per_day
+    # ---------- Local Data Reading (Delegated to KrakenParquetReader) ----------
+    def read_parquet(self, *args, **kwargs):
+        return self.reader.read_parquet(*args, **kwargs)
 
-    @staticmethod
-    def filter_out_stables(symbols: list):
-        to_remove = set(STABLE_BASES)
-        filtered = [x for x in symbols if x not in to_remove]
-        return filtered
+    def get_ohlcv_df(self, *args, **kwargs):
+        return self.reader.get_ohlcv_df(*args, **kwargs)
+
+    def list_parquet_pairs(self):
+        return self.reader.list_parquet_pairs()
+
+    def list_parquet_symbols(self, **kwargs):
+        return self.reader.list_parquet_symbols(**kwargs)
+
+    def get_random_symbols(self, **kwargs):
+        return self.reader.get_random_symbols(**kwargs)
+
+    def get_daily_historical_movers(self, **kwargs):
+        return self.reader.get_daily_historical_movers(**kwargs)
 
     def save_historical_movers_to_parquet(self):
-        top_per_day = self.get_daily_historical_movers(top_n=100, sample=None, stables=False)
-        top_per_day.to_parquet(os.path.join(self.historical_mover_path, "historical_movers.parquet"))
+        return self.reader.save_historical_movers_to_parquet()
 
     def load_historical_movers_from_parquet(self):
-        return pd.read_parquet(os.path.join(self.historical_mover_path, "historical_movers.parquet"))
+        return self.reader.load_historical_movers_from_parquet()
 
-    def get_historical_movers_by_day(self, date: pd.Timestamp, top_n=100):
-        date = self.ensure_utc_timestamp(date)
+    def get_historical_movers_by_day(self, *args, **kwargs):
+        return self.reader.get_historical_movers_by_day(*args, **kwargs)
 
-        if self.historical_mover_df is None:
+    def build_4h_from_1h_and_merge(self, *args, **kwargs):
+        return self.reader.build_4h_from_1h_and_merge(*args, **kwargs)
 
-            top_per_day = self.load_historical_movers_from_parquet()
-        else:
-            top_per_day = self.historical_mover_df
+    # ---------- Remote Data Access (Delegated to KrakenRemoteReader) ----------
+    def use_remote(self, *args, **kwargs):
+        return self.remote_reader.use_remote(*args, **kwargs)
 
-        top = top_per_day[top_per_day.date == date]
-        return top.reset_index(drop=True).head(top_n)
+    def read_parquet_remote(self, *args, **kwargs):
+        return self.remote_reader.read_parquet_remote(*args, **kwargs)
+
+    def get_ohlcv_df_remote(self, *args, **kwargs):
+        return self.remote_reader.get_ohlcv_df_remote(*args, **kwargs)
+
+    # ---------- Static Utility Methods (Backward Compatibility) ----------
+    @staticmethod
+    def align_to_datetime_index(*args, **kwargs):
+        from . import KrakenUtils
+        return KrakenUtils.align_to_datetime_index(*args, **kwargs)
 
     @staticmethod
-    def ensure_utc_timestamp(ts: pd.Timestamp) -> pd.Timestamp:
-        if ts.tz is None:
-            return ts.tz_localize("UTC")
-        else:
-            return ts.tz_convert("UTC")
+    def fill_after_first_non_nan_single(*args, **kwargs):
+        from . import KrakenUtils
+        return KrakenUtils.fill_after_first_non_nan_single(*args, **kwargs)
 
-    def build_4h_from_1h_and_merge(self, pair: str, year: int = 2023) -> pd.DataFrame:
-        """
-        Create 4h bars from 1h data for a given year and merge with existing 4h.
-        Prefers existing 4h when overlaps occur.
-        """
-        # 1) Load 1h and slice to year (robust to missing year and index dtype)
-        df_1h = self.read_parquet(pair=pair, interval="1h")
-        # ensure datetime index in UTC
-        if not isinstance(df_1h.index, pd.DatetimeIndex):
-            df_1h.index = pd.to_datetime(df_1h.index, utc=True, errors="coerce")
-        elif df_1h.index.tz is None:
-            df_1h.index = df_1h.index.tz_localize("UTC")
-        else:
-            df_1h.index = df_1h.index.tz_convert("UTC")
-        if df_1h.index.hasnans:
-            df_1h = df_1h[~df_1h.index.isna()]
+    @staticmethod
+    def fill_after_first_non_nan_multilevel_safe(*args, **kwargs):
+        from . import KrakenUtils
+        return KrakenUtils.fill_after_first_non_nan_multilevel_safe(*args, **kwargs)
 
-        start = pd.Timestamp(year=year, month=1, day=1, tz="UTC")
-        end = pd.Timestamp(year=year + 1, month=1, day=1, tz="UTC")
-        df_1h_y = df_1h[(df_1h.index >= start) & (df_1h.index < end)]
+    @staticmethod
+    def fill_symbol_metadata(*args, **kwargs):
+        from . import KrakenUtils
+        return KrakenUtils.fill_symbol_metadata(*args, **kwargs)
 
-        # 3) Load existing 4h (may extend into 2024)
-        try:
-            df_4h_real = self.read_parquet(pair=pair, interval="4h")
-        except FileNotFoundError:
-            # No existing 4h parquet; proceed with empty frame
-            df_4h_real = pd.DataFrame()
-        # If the ticker doesn't exist in the requested year, return existing 4h unchanged
-        if df_1h_y.empty:
-            combined = df_4h_real.sort_index() if not df_4h_real.empty else pd.DataFrame()
-            if combined.empty:
-                # produce a consistent empty dataframe with metadata
-                combined = pd.DataFrame(
-                    columns=["open", "high", "low", "close", "volume", "trades", "base", "quote", "pair", "interval"])
-                combined.index = pd.DatetimeIndex([], tz="UTC", name=df_1h.index.name or None)
-            combined["pair"] = pair
-            combined["interval"] = "4h"
-            # backfill metadata if missing
-            if "base" not in combined.columns or combined["base"].isna().all():
-                base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
-                combined["base"] = base
-                combined["quote"] = quote
-            else:
-                combined["base"] = combined["base"].ffill().bfill()
-                if "quote" in combined.columns:
-                    combined["quote"] = combined["quote"].ffill().bfill()
-                else:
-                    base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
-                    combined["quote"] = quote
-            return combined
+    @staticmethod
+    def ensure_utc_timestamp(*args, **kwargs):
+        from . import KrakenUtils
+        return KrakenUtils.ensure_utc_timestamp(*args, **kwargs)
 
-        # 2) Resample 1h -> 4h OHLCVT
-        agg = {
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "sum",
-            "trades": "sum",
-        }
-        df_4h_from_1h = (
-            df_1h_y.resample("4h", label="right", closed="right").agg(agg)
-            .dropna(subset=["open", "close"])
-        )
-
-        # carry metadata if present
-        for meta in ("base", "quote", "pair"):
-            if meta in df_1h_y.columns:
-                df_4h_from_1h[meta] = df_1h_y[meta].iloc[0]
-        df_4h_from_1h["interval"] = "4h"
-
-        # 4) Merge, prefer real 4h on duplicates
-        combined = pd.concat(
-            [df_4h_from_1h, df_4h_real]).sort_index() if not df_4h_real.empty else df_4h_from_1h.sort_index()
-        combined = combined[~combined.index.duplicated(keep="last")]
-
-        # --- ensure required metadata columns are present and consistent ---
-        combined["pair"] = pair
-        combined["interval"] = "4h"
-        if "base" not in combined.columns or combined["base"].isna().all():
-            base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
-            combined["base"] = base
-            combined["quote"] = quote
-        else:
-            combined["base"] = combined["base"].ffill().bfill()
-            if "quote" in combined.columns:
-                combined["quote"] = combined["quote"].ffill().bfill()
-            else:
-                base, quote = pair.split("-", 1) if "-" in pair else (pair[:-3], pair[-3:])
-                combined["quote"] = quote
-
-        return combined
-
-    def build_4h_for_symbols_merge(self, symbols: list, quote: str = "USD", year: int = 2023) -> dict:
-        """
-        Convenience wrapper for multiple symbols. Returns {symbol: DataFrame}.
-        """
-        out = {}
-        for sym in symbols:
-            pair = f"{sym}-{quote}"
-            out[sym] = self.build_4h_from_1h_and_merge(pair=pair, year=year)
-        return out
-
-
-    # -------- Remote access helpers (HTTPS via fsspec) --------
-    import os, fsspec
-
-    def use_remote(self, base_url: str, username: str = None, password: str = None, headers: dict = None):
-        if base_url.endswith("/"):
-            base_url = base_url[:-1]
-        self.remote_base_url = base_url
-
-        target_opts = {}
-        if username and password:
-            target_opts["client_kwargs"] = {"auth": (username, password)}
-        if headers:
-            ck = target_opts.setdefault("client_kwargs", {})
-            hk = ck.setdefault("headers", {})
-            hk.update(headers)
-
-        cache_dir = os.path.join(self.root_dir, ".fsspec-cache")
-        os.makedirs(cache_dir, exist_ok=True)
-
-        # Wrapped HTTPS -> local cache -> seekable files
-        self.remote_fs = fsspec.filesystem(
-            "simplecache",
-            target_protocol="https",
-            target_options=target_opts,
-            cache_storage=cache_dir,
-            same_names=True,
-        )
-
-    def _remote_url_for(self, pair: str = None, interval: str = None) -> str:
-        """
-        Build the URL matching your partitioning layout:
-          /parquet/pair=BTC-USD/interval=1h/
-        """
-        if self.remote_base_url is None:
-            raise ValueError("Remote base URL is not set. Call use_remote(...) first.")
-        parts = [self.remote_base_url]
-        if pair:
-            parts.append(f"pair={pair}")
-        if interval:
-            parts.append(f"interval={interval}")
-        return "/".join(parts) + "/"
-
-    def read_parquet_remote(self, pair: str = None, interval: str = None,
-                            columns=None, filters=None, sort=True) -> pd.DataFrame:
-        """
-        Read parquet over HTTPS (Nginx autoindex page) using fsspec simplecache.
-        Enumerates files first, then builds a dataset from explicit file list.
-        """
-        if self.remote_fs is None or self.remote_base_url is None:
-            raise ValueError("Remote not configured. Call use_remote('https://...') first.")
-
-        url = self._remote_url_for(pair=pair, interval=interval)
-
-        # 1) List the directory and collect .parquet files
-        entries = self.remote_fs.ls(url)
-        files = []
-        for e in entries:
-            name = e["name"] if isinstance(e, dict) else str(e)
-            if name.lower().endswith(".parquet"):
-                # fsspec may return absolute or relative; normalize to absolute
-                files.append(name if name.startswith("http") else url + name.rsplit("/", 1)[-1])
-
-        if not files:
-            raise FileNotFoundError(f"No parquet files under {url}")
-
-        # 2) Build a dataset from the explicit file list (works with HTTPS + cache)
-        dataset = ds.dataset(files, format="parquet", filesystem=self.remote_fs)
-        table = dataset.to_table(columns=columns)
-        df = table.to_pandas()
-
-        # 3) Restore timestamp index if you wrote with preserve_index=True
-        if "timestamp" in df.columns:
-            df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
-            df = df.set_index("timestamp", drop=True)
-
-        # 4) Optional pandas-side filters (can swap to Arrow expr later)
-        if filters is not None:
-            for col, op, val in filters:
-                if op == "==":
-                    df = df[df[col] == val]
-                elif op == "!=":
-                    df = df[df[col] != val]
-                elif op == ">":
-                    df = df[df[col] > val]
-                elif op == ">=":
-                    df = df[df[col] >= val]
-                elif op == "<":
-                    df = df[df[col] < val]
-                elif op == "<=":
-                    df = df[df[col] <= val]
-                else:
-                    raise ValueError(f"Unsupported filter operation: {op}")
-
-        # 5) Sort
-        if sort:
-            if isinstance(df.index, pd.DatetimeIndex):
-                df = df.sort_index()
-            elif "timestamp" in df.columns:
-                df = df.sort_values("timestamp")
-
-        return df
-
-    def get_ohlcv_df_remote(self, symbols: list, interval: str = "1d", quote: str = "USD") -> pd.DataFrame:
-        """
-        Remote version of get_ohlcv_df that pulls each symbol from HTTPS.
-        Keeps behavior identical to local (union index, fill helpers, metadata).
-        """
-        dfs = []
-        for symbol in symbols:
-            pair = f"{symbol}-{quote}"
-            dfi = self.read_parquet_remote(pair=pair, interval=interval)
-            dfs.append(dfi)
-
-        # Deduplicate indices
-        dfs = [d[~d.index.duplicated(keep='last')] for d in dfs]
-
-        # Union index across symbols
-        common_idx = dfs[0].index
-        for d in dfs[1:]:
-            common_idx = common_idx.union(d.index)
-
-        dfs = [d.reindex(common_idx) for d in dfs]
-
-        ohlcv_df = pd.concat(dfs, axis=1, keys=symbols).sort_index()
-        ohlcv_df = self.align_to_datetime_index(ohlcv_df, interval=interval)
-        ohlcv_df = self.fill_after_first_non_nan_multilevel_safe(ohlcv_df, symbols=symbols)
-        ohlcv_df = self.fill_symbol_metadata(ohlcv_df, symbols)
-        return ohlcv_df
+    @staticmethod
+    def filter_out_stables(*args, **kwargs):
+        from . import KrakenUtils
+        return KrakenUtils.filter_out_stables(*args, **kwargs)
 
 if __name__ == "__main__":
-
-    import multiprocessing as mp  # for parallel processing of raw csv to parquet
-    import pyarrow as pa, pyarrow.parquet as pq  # for resampling from 1hr to 4hr
-
-    mp.freeze_support()
-
+    # Internal test/demo
+    from tabulate import tabulate
     k = KrakenHistoricalData()
-
-    # 1) Process ALL quarterly folders (USD pairs only), keeping timestamp as index
-    quarter_dirs = k.list_quarter_dirs()  # e.g. Kraken_OHLCVT_Q1_2023, ...
-    # k.csvs_many_dirs_to_parquet(quarter_dirs)  # or sample_per_dir=200
-
-    # Per-folder parallelism (good balance), sampling optional
-    # k.csvs_many_dirs_to_parquet_parallel(quarter_dirs,
-    #                                      max_workers=os.cpu_count(),
-    #                                      sample_per_dir=None)
-
-    # one folder only
-    # k.csvs_dir_to_parquet_parallel(quarter_dirs[0], max_workers=8)
-
-    # # symbols = ["BTC", "ETH", "BNB", "PEPE", "DOGE"]
-    symbols = k.get_random_symbols(n=3)  # get random symbols to test
-    # symbols = ["AVAX", "AAVE"]
-    print(f"Symbols: {symbols}")
-    quote = "USD"
-    interval = "1d"
-    ohlcv_df = k.get_ohlcv_df(symbols, interval=interval, quote=quote)
-
-    print(f"\nStart of OHLCV Data")
-    print(ohlcv_df.head())
-    # print(f"\nEnd of OHLCV Data")
-    # print(ohlcv_df.tail())
-
-
-    # date range check
-    first_date = ohlcv_df.index[0]
-    last_date = ohlcv_df.index[-1]
-    date_range = pd.date_range(start=first_date, end=last_date, freq=interval)
-
-    print(f"\nDate Range: {date_range[0]} --> {date_range[-1]}")
-    print(f"Date Range Length: {len(date_range)}")
-    print(f"Ohlcv Dataframe Length: {ohlcv_df.shape[0]}")
-    #
-    print("\n", ohlcv_df.info())
-
-    # Get daily historical movers and save to parquet
-    # k.save_historical_movers_to_parquet()
-    historical_movers = k.load_historical_movers_from_parquet()
-    print(historical_movers.head(20))
-
-    # Test Historical Movers by random dates
-    random_date = np.random.choice(date_range)
-    date = pd.Timestamp("2025-07-26")
-    # date = random_date
-    print("\n", f"Historical Movers for {date}")
-    historical_movers_by_day = k.get_historical_movers_by_day(date)
-    print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
-
-    random_date = np.random.choice(date_range)
-    date = random_date
-    print("\n", f"Historical Movers for {date}")
-
-    historical_movers_by_day = k.get_historical_movers_by_day(date)
-    print(tabulate(historical_movers_by_day.head(20), headers="keys", tablefmt="github"))
-
-    # Build 4hr intervals for year 2023 from 1hr intervals
-    # tickers = k.list_parquet_pairs()
-    # print(tickers)
-    #
-    # for ticker in tickers:
-    #     print(ticker)
-    #     df = k.build_4h_from_1h_and_merge(pair=ticker, year=2023)
-    #     table = pa.Table.from_pandas(df, preserve_index=True)
-    #     pq.write_to_dataset(
-    #         table,
-    #         root_path=k.parquet_root,
-    #         partition_cols=["pair", "interval"],
-    #         compression="zstd",
-    #     )
-
-    # Test to ensure 2023 data shows for 4hr interval
-    single_ohlcv_df = k.get_ohlcv_df(['BTC'], interval="4h")
-    print(tabulate(single_ohlcv_df.head(10), headers="keys", tablefmt="github"))
-
-
-    # REMOTE ACCESS
-    print(f"\nRead Remote:")
-    # point to your Nginx-served dataset root (no trailing slash)
-    k.use_remote("https://garygigabytes.com/kraken/parquet")
-    # If you enabled basic auth on /parquet/, do:
-    # k.use_remote("https://garygigabytes.com/parquet", username="USER", password="PASS")
-
-
-
-    # read one slice
-    df = k.read_parquet_remote(pair="BTC-USD", interval="1d")
+    
+    # Simple test: list pairs and get random OHLCV
+    pairs = k.list_parquet_pairs()
+    print(f"Total pairs in Parquet: {len(pairs)}")
+    
+    symbols = k.get_random_symbols(n=3)
+    print(f"Testing random symbols: {symbols}")
+    
+    df = k.get_ohlcv_df(symbols, interval="1d")
     print(df.head())
-
-    # build a multi-symbol OHLCV frame (remote)
-    symbols = ["BTC", "ETH", "AAVE"]
-    ohlcv_df = k.get_ohlcv_df_remote(symbols, interval="1d", quote="USD")
-    print(ohlcv_df.info())
