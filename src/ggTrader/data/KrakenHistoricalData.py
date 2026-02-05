@@ -141,7 +141,7 @@ def _process_one_file(args):
 
 class KrakenHistoricalData:
     def __init__(self):
-        self.root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        self.root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
         self.raw_path = os.path.join(self.root_dir, 'data', 'raw')
         self.parquet_root = os.path.join(self.root_dir, 'data', 'parquet')  # dataset dir
         self.historical_mover_path = os.path.join(self.root_dir, 'data', 'historical_movers')
@@ -347,6 +347,9 @@ class KrakenHistoricalData:
             df = self.read_parquet(pair=pair, interval=interval)
             dfs.append(df)
 
+        if not dfs:
+            return pd.DataFrame()
+
         # deduplicate indices
         dfs = [d[~d.index.duplicated(keep='last')] for d in dfs]
 
@@ -406,11 +409,12 @@ class KrakenHistoricalData:
                 df_out[base_col] = df_out[base_col].ffill().bfill()
             if quote_col in df_out.columns:
                 df_out[quote_col] = df_out[quote_col].ffill().bfill()
-        df_out.index.name = "Datetime"
         if isinstance(df_out.columns, pd.MultiIndex):
-            df_out.columns = df_out.columns.set_names("symbol",level=0)
+            # Explicitly rebuild the MultiIndex to avoid internal naming inconsistencies
+            df_out.columns = pd.MultiIndex.from_tuples(df_out.columns.values, names=["symbol", "ohlcv"])
         else:
-            df_out.columns = df_out.columns.set_names("symbol")
+            df_out.columns.name = "symbol"
+        df_out.index.name = "Datetime"
         return df_out
 
     @staticmethod
@@ -495,10 +499,27 @@ class KrakenHistoricalData:
 
         # symbols = ["AVAX", "AAVE","AUDIO"]
         ohlcv_df = self.get_ohlcv_df(symbols=symbols, interval=interval, quote="USD")
+        if ohlcv_df.empty:
+            return pd.DataFrame()
 
         # go long!
-        ohlcv_df_long = ohlcv_df.stack(level=0, future_stack=True).reset_index().rename(
-            columns={'level_0': 'date', 'level_1': 'symbol'})
+        stacked = []
+        for sym in symbols:
+            if sym in ohlcv_df.columns.levels[0]:
+                df_sym = ohlcv_df[sym].copy()
+                df_sym['symbol'] = sym
+                stacked.append(df_sym.reset_index())
+        
+        if not stacked:
+            return pd.DataFrame()
+            
+        ohlcv_df_long = pd.concat(stacked, ignore_index=True)
+        # Rename whichever column is the date/datetime to 'date'
+        rename_map = {}
+        for col in ohlcv_df_long.columns:
+            if str(col).lower() in ['datetime', 'timestamp', 'index']:
+                rename_map[col] = 'date'
+        ohlcv_df_long = ohlcv_df_long.rename(columns=rename_map)
         # filter out low trades
         # print(ohlcv_df_long.describe())
         ohlcv_df_long = ohlcv_df_long.dropna(subset=["trades"])

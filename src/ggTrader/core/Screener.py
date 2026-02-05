@@ -1,8 +1,8 @@
-from utils.KrakenData import KrakenData
+from ggTrader.data.KrakenData import KrakenData
 from tabulate import tabulate
 import pandas as pd
 import os
-from utils.KrakenHistoricalData import KrakenHistoricalData
+from ggTrader.data.KrakenHistoricalData import KrakenHistoricalData
 
 class Screener:
 

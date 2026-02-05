@@ -1,0 +1,56 @@
+Loading OHLCV data...
+Running simulation (shortened)...
+
+--- Day 0: 2024-01-01 00:00:00+00:00 ---
+Getting movers...
+
+--- DEBUG: daily_movers ---
+Type: <class 'pandas.core.frame.DataFrame'>
+Columns type: <class 'pandas.core.indexes.base.Index'>
+Columns nlevels: 1
+Columns names: [None]
+Columns values: ['date' 'symbol' 'open' 'high' 'low']...
+Index names: [None]
+Daily movers dtypes:
+date      datetime64[ns, UTC]
+symbol                 object
+open                  float32
+high                  float32
+low                   float32
+close                 float32
+volume                float64
+trades                  Int64
+base                   object
+quote                  object
+dtype: object
+Calculating signals for movers...
+Signals calculated.
+Checking buy/sell...
+
+--- Day 1: 2024-01-01 04:00:00+00:00 ---
+Getting movers...
+
+--- DEBUG: daily_movers ---
+Type: <class 'pandas.core.frame.DataFrame'>
+Columns type: <class 'pandas.core.indexes.base.Index'>
+Columns nlevels: 1
+Columns names: [None]
+Columns values: ['date' 'symbol' 'open' 'high' 'low']...
+Index names: [None]
+Daily movers dtypes:
+date      datetime64[ns, UTC]
+symbol                 object
+open                  float32
+high                  float32
+low                   float32
+close                 float32
+volume                float64
+trades                  Int64
+base                   object
+quote                  object
+dtype: object
+Calculating signals for movers...
+Signals calculated.
+Checking buy/sell...
+
+Simulation test successful!
