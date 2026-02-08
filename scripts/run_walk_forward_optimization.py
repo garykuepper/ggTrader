@@ -1,0 +1,205 @@
+import optuna
+import pandas as pd
+import sys
+import os
+import traceback
+from datetime import timedelta
+
+# Ensure project root is in path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+
+try:
+    from ggTrader.core.Trading import Trading
+    from ggTrader.data.KrakenHistoricalData import KrakenHistoricalData
+except ImportError:
+    print("Failed to import ggTrader modules. Make sure you are running from project root or scripts folder.")
+    sys.exit(1)
+
+# --- Configuration ---
+SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "DOGE", "ADA", "DOT", "LINK", "LTC", "BCH"]
+INTERVAL = "4h"
+TRAIN_WINDOW_DAYS = 90
+TEST_WINDOW_DAYS = 30
+N_TRIALS = 20  # Trials per window
+START_DATE = "2023-01-01"
+END_DATE = "2024-06-01"
+
+# Global data for optimization (loaded once)
+global_ohlcv_df = pd.DataFrame()
+global_date_range = None
+
+def run_optimization(train_start, train_end, n_trials=N_TRIALS):
+    """
+    Runs optimization on the training window.
+    Returns best parameters.
+    """
+    print(f"  Optimizing from {train_start} to {train_end}...")
+    
+    # Filter data for this window
+    # We pass the full DF to Trading but limit the date_range
+    window_date_range = global_date_range[(global_date_range >= train_start) & (global_date_range < train_end)]
+    
+    if window_date_range.empty:
+        print("  Warning: Empty training window.")
+        return None
+
+    def objective(trial):
+        params = {
+            'adx_threshold': trial.suggest_int('adx_threshold', 15, 35),
+            'adx_length': trial.suggest_int('adx_length', 10, 20),
+            'sar_acceleration': trial.suggest_float('sar_acceleration', 0.01, 0.05, step=0.005),
+            'sar_maximum': trial.suggest_float('sar_maximum', 0.1, 0.3, step=0.05),
+            'atr_multiplier': trial.suggest_float('atr_multiplier', 1.5, 4.0, step=0.5),
+            'atr_length': trial.suggest_int('atr_length', 10, 20),
+            'use_dmp_cross': trial.suggest_categorical('use_dmp_cross', [True, False])
+        }
+        
+        engine = Trading(
+            ohlcv_df=global_ohlcv_df,
+            date_range=window_date_range,
+            start_cash=10000,
+            top_n_movers=5,
+            max_position=0.2, # Fixed for opt
+            strategy_params=params
+        )
+        
+        try:
+            # Suppress output during optimization
+            # sys.stdout = open(os.devnull, 'w') 
+            engine.run()
+            # sys.stdout = sys.__stdout__
+        except Exception as e:
+            # sys.stdout = sys.__stdout__
+            # traceback.print_exc()
+            return -float('inf')
+
+        retained = engine.portfolio.total_value
+        return retained - 10000 # Net Profit
+
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=n_trials)
+    
+    return study.best_params
+
+def run_backtest(test_start, test_end, params, start_cash):
+    """
+    Runs backtest on the test window with given parameters.
+    Returns final portfolio value and stats.
+    """
+    print(f"  Testing from {test_start} to {test_end} with params: {params}")
+    
+    window_date_range = global_date_range[(global_date_range >= test_start) & (global_date_range < test_end)]
+    
+    if window_date_range.empty:
+        print("  Warning: Empty test window.")
+        return start_cash, {}
+
+    engine = Trading(
+        ohlcv_df=global_ohlcv_df,
+        date_range=window_date_range,
+        start_cash=start_cash,
+        top_n_movers=5,
+        max_position=0.2,
+        strategy_params=params
+    )
+    
+    try:
+        engine.run()
+    except Exception as e:
+        print(f"  Test run failed: {e}")
+        traceback.print_exc()
+        return start_cash, {}
+
+    return engine.portfolio.total_value, engine.portfolio.get_stats() if hasattr(engine.portfolio, 'get_stats') else {}
+
+def main():
+    global global_ohlcv_df, global_date_range
+    
+    # 1. Load Data
+    print("Loading data for WFO...")
+    k_h = KrakenHistoricalData()
+    start_dt = pd.to_datetime(START_DATE).tz_localize('UTC')
+    end_dt = pd.to_datetime(END_DATE).tz_localize('UTC')
+    
+    global_ohlcv_df = k_h.get_ohlcv_df(SYMBOLS, interval=INTERVAL, start=start_dt, end=end_dt)
+    
+    # Strip MultiIndex
+    if isinstance(global_ohlcv_df.columns, pd.MultiIndex):
+        global_ohlcv_df.columns.names = [None] * global_ohlcv_df.columns.nlevels
+    else:
+        global_ohlcv_df.columns.name = None
+    global_ohlcv_df.index.name = None
+    global_date_range = global_ohlcv_df.index
+    
+    print(f"Data loaded: {len(global_ohlcv_df)} rows.")
+
+    # 2. WFO Loop
+    current_train_start = start_dt
+    results = []
+    equity_curve = []
+    
+    # Initial capital involved in WFO
+    # We can simulate compounding or reset. Compounding is more realistic for "how would this execute".
+    current_capital = 10000 
+    
+    while True:
+        train_end = current_train_start + timedelta(days=TRAIN_WINDOW_DAYS)
+        test_start = train_end
+        test_end = test_start + timedelta(days=TEST_WINDOW_DAYS)
+        
+        if test_end > end_dt:
+            break
+            
+        print(f"\n=== WFO Step: Train [{current_train_start.date()} - {train_end.date()}] -> Test [{test_start.date()} - {test_end.date()}] ===")
+        
+        # Optimize
+        best_params = run_optimization(current_train_start, train_end)
+        
+        if best_params:
+            # Backtest OOS
+            final_value, stats = run_backtest(test_start, test_end, best_params, current_capital)
+            
+            profit = final_value - current_capital
+            pct_return = (profit / current_capital) * 100
+            
+            print(f"  Result: {current_capital:.2f} -> {final_value:.2f} ({pct_return:.2f}%)")
+            
+            check_point = {
+                'train_start': current_train_start,
+                'train_end': train_end,
+                'test_start': test_start,
+                'test_end': test_end,
+                'start_capital': current_capital,
+                'end_capital': final_value,
+                'profit': profit,
+                'params': best_params
+            }
+            results.append(check_point)
+            
+            # Update capital for next window (Compounding)
+            current_capital = final_value
+        else:
+            print("  Optimization failed (no params found). Skipping window.")
+
+        # Step forward
+        current_train_start = current_train_start + timedelta(days=TEST_WINDOW_DAYS) 
+
+    # 3. Report
+    print("\n\n=== Walk Forward Optimization Results ===")
+    print(f"Overall Period: {START_DATE} to {END_DATE}")
+    print(f"Total Return: {((current_capital - 10000)/10000)*100:.2f}%")
+    print(f"Final Capital: ${current_capital:.2f}")
+    
+    df_res = pd.DataFrame(results)
+    if not df_res.empty:
+        print("\nWindow Details:")
+        # Format for readability
+        view_cols = ['test_start', 'test_end', 'start_capital', 'end_capital', 'profit']
+        print(df_res[view_cols].to_string())
+        
+        # Save results
+        df_res.to_csv("wfo_results.csv", index=False)
+        print("\nDetailed results saved to 'wfo_results.csv'")
+
+if __name__ == "__main__":
+    main()

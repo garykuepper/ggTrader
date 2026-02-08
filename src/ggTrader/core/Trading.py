@@ -40,6 +40,8 @@ class Trading:
                     self.check_buy_by_symbol_and_date(symbol, self.current_date)
 
     def check_buy_by_symbol_and_date(self, symbol: str, date: pd.Timestamp):
+        if symbol not in self.signals_dict:
+            return
         row = self.signals_dict.get(symbol).loc[date]
         price = row['close']
 

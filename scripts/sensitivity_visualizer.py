@@ -33,6 +33,10 @@ def plot_optimization_landscape(study, params_to_plot=['adx_threshold', 'atr_mul
     # 4. Custom Static Heatmap (Pandas/Seaborn)
     # Extracts trial data for custom analysis
     trials_df = study.trials_dataframe()
+    if trials_df.empty:
+        print("No trials found in study.")
+        return
+
     if 'value' in trials_df.columns:
         # Clean column names (remove 'params_' prefix)
         trials_df.columns = [col.replace('params_', '') for col in trials_df.columns]
