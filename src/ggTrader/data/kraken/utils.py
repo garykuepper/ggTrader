@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from .KrakenConstants import kraken_map, interval_map, STABLE_BASES
+from .constants import kraken_map, interval_map, STABLE_BASES
 
 def clean_ccy(ccy: str) -> str:
     """Map Kraken prefixes like XXBT -> XBT -> BTC, and ZUSD -> USD."""

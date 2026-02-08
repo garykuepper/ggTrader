@@ -2,7 +2,7 @@ import os
 import fsspec
 import pandas as pd
 import pyarrow.dataset as ds
-from .KrakenUtils import (
+from .utils import (
     align_to_datetime_index,
     fill_after_first_non_nan_multilevel_safe,
     fill_symbol_metadata

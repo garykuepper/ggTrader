@@ -1,10 +1,12 @@
 import os
+import sys
 import pandas as pd
 import json
-from .KrakenUtils import get_file_names
-from .KrakenConverter import KrakenConverter
-from .KrakenParquetReader import KrakenParquetReader
-from .KrakenRemoteReader import KrakenRemoteReader
+from pathlib import Path
+from .utils import get_file_names
+from .converter import KrakenConverter
+from .parquet_reader import KrakenParquetReader
+from .remote_reader import KrakenRemoteReader
 
 class KrakenHistoricalData:
     """
@@ -12,7 +14,7 @@ class KrakenHistoricalData:
     Delegates to specialized modules for conversion, reading, and remote access.
     """
     def __init__(self):
-        self.root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        self.root_dir = self._find_project_root()
         self.raw_path = os.path.join(self.root_dir, 'data', 'raw')
         self.parquet_root = os.path.join(self.root_dir, 'data', 'parquet')
         self.historical_mover_path = os.path.join(self.root_dir, 'data', 'historical_movers')
@@ -23,6 +25,18 @@ class KrakenHistoricalData:
         self.converter = KrakenConverter(self.parquet_root)
         self.reader = KrakenParquetReader(self.parquet_root, self.historical_mover_path)
         self.remote_reader = KrakenRemoteReader(self.root_dir)
+
+    def _find_project_root(self):
+        """Finds the project root by looking for pyproject.toml."""
+        # Check current directory and its parents
+        current = Path(os.getcwd()).absolute()
+        for parent in [current] + list(current.parents):
+            if (parent / "pyproject.toml").exists():
+                return str(parent)
+        
+        # Fallback to file-based relative path if not found (e.g. running from IDE)
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        return base_dir
 
     # ---------- Directory Helpers ----------
     def list_quarter_dirs(self, prefix="Kraken_OHLCVT_"):

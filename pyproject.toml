@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ggTrader"
+version = "0.1.0"
+description = "A sleek algorithmic trading bot"
+requires-python = ">=3.8"
+dependencies = [
+    "plotly",
+    "fsspec",
+    "seaborn",
+    "matplotlib",
+    "numpy",
+    "numba",
+    "tqdm",
+    "pandas",
+    "yfinance",
+    "python-dotenv",
+    "tabulate",
+    "ta",
+    "optuna",
+    "mplfinance",
+    "pytest",
+    "ccxt",
+    "pyarrow",
+    "vectorbt",
+    "pandas-ta",
+    "scikit-learn",
+    "requests",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["ggTrader*"]

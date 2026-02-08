@@ -7,15 +7,20 @@ from datetime import datetime
 # Ensure project root is in path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from ggTrader.core.Trading import Trading
-from ggTrader.data.KrakenHistoricalData import KrakenHistoricalData
+from ggTrader.core.trading import Trading
+from ggTrader.data.kraken.historical_data import KrakenHistoricalData
+from ggTrader.utils.results_manager import ResultsManager
+
 try:
     from scripts.sensitivity_visualizer import plot_optimization_landscape
 except ImportError:
     from sensitivity_visualizer import plot_optimization_landscape
 
+# Global data for optimization
+global_ohlcv_df = pd.DataFrame()
+global_date_range = None
+
 def objective(trial):
-    # 1. Define Parameter Space
     params = {
         'adx_threshold': trial.suggest_int('adx_threshold', 15, 35),
         'adx_length': trial.suggest_int('adx_length', 10, 20),
@@ -26,28 +31,16 @@ def objective(trial):
         'use_dmp_cross': trial.suggest_categorical('use_dmp_cross', [True, False])
     }
 
-    # 2. Configuration (Fixed for consistency)
-    symbols = ["BTC", "ETH", "XRP", "SOL", "DOGE"] # Can be expanded or dynamic
-    interval = "4h"
-    start_date = "2024-01-01"
-    end_date = "2024-03-31" # Short range for speed, user can expand
+    # Configuration
     start_cash = 10000
     top_n_movers = 5
     max_position = 0.2
 
-    # 3. Load Data (Load once outside if possible, but inside for now to keep self-contained)
-    # Ideally, pass data in to avoid reloading every trial, but Trading logic is coupled
-    # We will use a cached global variable pattern or similar if performance is an issue.
-    # For now, let's load logic here. 
-    # NOTE: To make this efficient, we should load data OUTSIDE the objective function.
-    
-    # Using the global `ohlcv_df` loaded in `main`
     global global_ohlcv_df, global_date_range
 
     if global_ohlcv_df.empty:
         return -float('inf')
 
-    # 4. Run Trading Engine
     engine = Trading(
         ohlcv_df=global_ohlcv_df,
         date_range=global_date_range,
@@ -57,33 +50,21 @@ def objective(trial):
         strategy_params=params
     )
     
-    # Check if we should suppress output
-    # sys.stdout = open(os.devnull, 'w') # Optional: Quiet mode
     try:
         engine.run()
     except Exception as e:
-        import traceback
-        with open("error.log", "a") as f:
-            f.write(f"Trial failed: {e}\n")
-            f.write(traceback.format_exc())
-            f.write("\n" + "="*50 + "\n")
-        print(f"Trial failed: {e}")
         return -float('inf')
-    # sys.stdout = sys.__stdout__
 
-    # 5. Objective Metric: Net Profit or Sharpe
-    # Simple Net Profit for now
-    retained_value = engine.portfolio.total_value
-    net_profit = retained_value - start_cash
-    
-    return net_profit
+    return engine.portfolio.total_value - start_cash
 
 if __name__ == "__main__":
+    rm = ResultsManager("run_sensitivity")
+    
     # --- Data Loading (Once) ---
     symbols = ["BTC", "ETH", "XRP", "SOL", "DOGE", "ADA", "DOT", "LINK", "LTC", "BCH"]
     interval = "4h"
     start_date = "2024-01-01"
-    end_date = "2024-06-01" # 6 months
+    end_date = "2024-06-01" 
     
     print("Loading data for optimization...")
     k_h = KrakenHistoricalData()
@@ -92,7 +73,6 @@ if __name__ == "__main__":
     
     global_ohlcv_df = k_h.get_ohlcv_df(symbols, interval=interval, start=start_dt, end=end_dt)
     
-    # Strip names to avoid MultiIndex length mismatch errors
     if isinstance(global_ohlcv_df.columns, pd.MultiIndex):
         global_ohlcv_df.columns.names = [None] * global_ohlcv_df.columns.nlevels
     else:
@@ -104,14 +84,8 @@ if __name__ == "__main__":
 
     # --- Optimization ---
     study_name = "trading_sensitivity_analysis"
-    storage_name = "sqlite:///{}.db".format(study_name)
+    storage_name = "sqlite:///" + str(rm.run_dir / "sensitivity_study.db")
     
-    # Delete previous study if exists to start fresh (optional)
-    try:
-        optuna.delete_study(study_name=study_name, storage=storage_name)
-    except:
-        pass
-
     study = optuna.create_study(
         study_name=study_name, 
         direction="maximize", 
@@ -121,7 +95,7 @@ if __name__ == "__main__":
     
     print("Starting optimization... (Press Ctrl+C to stop early)")
     try:
-        study.optimize(objective, n_trials=20) # Start with 20 trials for testing
+        study.optimize(objective, n_trials=20) 
     except KeyboardInterrupt:
         print("Optimization stopped by user.")
 
@@ -132,9 +106,33 @@ if __name__ == "__main__":
     for key, value in study.best_params.items():
         print(f"  {key}: {value}")
 
+    # Save Best Params
+    rm.save_params(study.best_params)
+    
+    # Save Metadata
+    metadata = {
+        "script": "run_sensitivity",
+        "timestamp": datetime.now().isoformat(),
+        "symbols": symbols,
+        "interval": interval,
+        "start_date": start_date,
+        "end_date": end_date,
+        "best_value": study.best_value,
+        "best_params": study.best_params
+    }
+    rm.save_metadata(metadata)
+    
+    # Save trials dataframe
+    trials_df = study.trials_dataframe()
+    rm.save_metrics(trials_df, "trials_dataframe.csv")
+
     # --- Visualization ---
     try:
         print("\nGenerating plots...")
-        plot_optimization_landscape(study, params_to_plot=['adx_threshold', 'atr_multiplier'], metric_name='Net Profit')
+        plot_optimization_landscape(study, params_to_plot=['adx_threshold', 'atr_multiplier'], metric_name='Net Profit', results_manager=rm)
     except Exception as e:
         print(f"Plotting failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+    print(f"\nResults saved to: {rm.run_dir}")

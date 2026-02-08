@@ -6,8 +6,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from tqdm.auto import tqdm
 from concurrent.futures import ProcessPoolExecutor
-from .KrakenConstants import interval_map
-from .KrakenUtils import split_pair, _load_csv_common, get_file_names
+from .constants import interval_map
+from .utils import split_pair, _load_csv_common, get_file_names
 
 def _process_one_file(args):
     """Top-level worker so it can be pickled on Windows."""

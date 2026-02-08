@@ -1,4 +1,4 @@
-from ggTrader.core.Position import Position
+from ggTrader.core.position import Position
 from tabulate import tabulate
 
 from datetime import datetime
@@ -390,7 +390,7 @@ class Portfolio:
 
 if __name__ == "__main__":
     # Example usage of Portfolio with a Position instance
-    from ggTrader.core.Position import Position
+    from ggTrader.core.position import Position
     from datetime import datetime
 
     # Create a portfolio

@@ -84,7 +84,7 @@ class Signals:
 
 
     @staticmethod
-    def _atr_trailing_stop_long_ohlc_touch_2d(
+    def _atr_trailing_stop_long_ohlc_touch_multi(
             ohlcv_df: pd.DataFrame,
             adx_length: int = 14,
             adx_threshold: int = 25,
@@ -93,17 +93,18 @@ class Signals:
             use_dmp_cross: bool = True,
             atr_length: int = 14,
             atr_multiplier: float = 3.0,
-    ) -> pd.DataFrame:
+    ) -> dict[str, pd.DataFrame]:
         """
-        Calculates trailing stop signals for a given OHLCV DataFrame.
-        Returns a DataFrame with 'signal' and 'stop_loss' columns.
+        Calculates trailing stop signals for a wide OHLCV DataFrame (MultiIndex).
+        Returns a dictionary mapping symbol to a signals DataFrame.
         """
-        # Handle wide DF with (symbol, ohlcv) columns
-        # Use level-aware slicing to maintain structure
-        close = ohlcv_df.xs('close', axis=1, level=1, drop_level=False)
-        high = ohlcv_df.xs('high', axis=1, level=1, drop_level=False)
-        low = ohlcv_df.xs('low', axis=1, level=1, drop_level=False)
-        open_ = ohlcv_df.xs('open', axis=1, level=1, drop_level=False)
+        symbols = ohlcv_df.columns.levels[0].tolist()
+        
+        # Use drop_level=True to get DataFrames with symbols as columns
+        close = ohlcv_df.xs('close', axis=1, level=1, drop_level=True)
+        high = ohlcv_df.xs('high', axis=1, level=1, drop_level=True)
+        low = ohlcv_df.xs('low', axis=1, level=1, drop_level=True)
+        open_ = ohlcv_df.xs('open', axis=1, level=1, drop_level=True)
         
         entries, exits, stop_df, price_for_orders = Signals.calc_signals(
             close=close, high=high, low=low, open_=open_,
@@ -113,15 +114,19 @@ class Signals:
             atr_length=atr_length, atr_multiplier=atr_multiplier
         )
         
-        # Merge into a single signals DF - flattened for Trading.py compatibility
-        signals_df = pd.DataFrame(index=ohlcv_df.index)
-        signals_df['close'] = close.values.flatten()
-        signals_df['signal'] = 0
-        signals_df.loc[entries.values.flatten(), 'signal'] = 1
-        signals_df.loc[exits.values.flatten(), 'signal'] = -1
-        signals_df['stop_loss'] = stop_df.values.flatten()
-        
-        return signals_df
+        res_dict = {}
+        for symbol in symbols:
+            if symbol not in entries.columns:
+                continue
+            sig_df = pd.DataFrame(index=ohlcv_df.index)
+            sig_df['close'] = close[symbol]
+            sig_df['signal'] = 0
+            sig_df.loc[entries[symbol], 'signal'] = 1
+            sig_df.loc[exits[symbol], 'signal'] = -1
+            sig_df['stop_loss'] = stop_df[symbol]
+            res_dict[symbol] = sig_df
+            
+        return res_dict
 
     @staticmethod
     def trailing_stop_and_exits(

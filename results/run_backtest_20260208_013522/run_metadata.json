@@ -1,0 +1,26 @@
+{
+    "script": "run_backtest",
+    "timestamp": "2026-02-08T01:35:26.031240",
+    "symbols": [
+        "BTC",
+        "ETH",
+        "XRP",
+        "SOL",
+        "DOGE"
+    ],
+    "interval": "4h",
+    "start_date": "2024-01-01",
+    "end_date": "2024-12-31",
+    "strategy_params": {
+        "adx_threshold": 25,
+        "adx_length": 14,
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "atr_multiplier": 3.0,
+        "atr_length": 14,
+        "use_dmp_cross": false
+    },
+    "final_value": 9134.164402371616,
+    "profit": -865.8355976283838,
+    "profit_pct": -8.658355976283838
+}

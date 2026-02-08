@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import vectorbt as vbt
 
 trading_map = {'4h': 6 * 365, '1h': 24 * 365, '1d': 365}
 
@@ -183,6 +184,40 @@ class Backtest:
         if not np.isfinite(ds) or ds == 0:
             return np.nan
         return mu / ds * np.sqrt(trading_periods)
+
+    def to_vbt(self):
+        """
+        Generates a vectorbt.Portfolio object from the backtest results.
+        """
+        # Ensure we have the necessary signals
+        entries = self.signals['filtered_entry'].astype(bool)
+        exits = self.signals['filtered_exit'].astype(bool)
+        close = self.signals['close'].astype(float)
+        
+        # Create vbt portfolio
+        pf = vbt.Portfolio.from_signals(
+            close=close,
+            entries=entries,
+            exits=exits,
+            fees=self.transaction_fee,
+            init_cash=self.start_equity,
+            freq=self.interval
+        )
+        return pf
+
+    def plot_vbt(self, results_manager=None, filename="vbt_overview"):
+        """
+        Generates and saves a VectorBT overview plot.
+        """
+        pf = self.to_vbt()
+        fig = pf.plot()
+        fig.update_layout(title=f"VectorBT Performance Overview - {self.interval}")
+        
+        if results_manager:
+            results_manager.save_plotly_figure(fig, filename)
+        else:
+            fig.show()
+        return fig
 
 
 if __name__ == "__main__":

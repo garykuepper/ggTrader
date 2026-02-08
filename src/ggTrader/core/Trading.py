@@ -1,12 +1,12 @@
 from tabulate import tabulate
 
-from ggTrader.core.Portfolio import Portfolio
-from ggTrader.core.Position import Position
-from ggTrader.core.Screener import Screener
-from ggTrader.indicators import Signals
+from ggTrader.core.portfolio import Portfolio
+from ggTrader.core.position import Position
+from ggTrader.core.screener import Screener
+from ggTrader.indicators.signals import Signals
 import pandas as pd
-from ggTrader.data.KrakenData import KrakenData
-from ggTrader.data.KrakenHistoricalData import KrakenHistoricalData
+from ggTrader.data.kraken.data_manager import KrakenData
+from ggTrader.data.kraken.historical_data import KrakenHistoricalData
 
 
 class Trading:
@@ -31,6 +31,11 @@ class Trading:
             'atr_length': 14,
             'use_dmp_cross': False
         }
+        self.all_movers_per_day = {}
+        self.precalculated_signals = {}
+        self.bulk_entries = pd.DataFrame()
+        self.bulk_exits = pd.DataFrame()
+        self.bulk_prices = pd.DataFrame()
 
     def check_buy(self):
         # Only check movers for the current date
@@ -99,31 +104,78 @@ class Trading:
 
 
 
-    def run(self):
-        print("DEBUG: Trading.run started")
-        #
-        for current_date in self.time_range:
-            print(f"Running for {current_date}")
-            self.current_date = current_date
-            print(f"DEBUG: Checking movers for {self.current_date}")
-            self.daily_movers = self.screener.get_historical_daily_kraken_by_volume(self.current_date,
-                                                                               top_n=self.top_n_movers)
-            print(f"DEBUG: Found {len(self.daily_movers)} movers")
+    def prepare_simulation_data(self):
+        """
+        Pre-calculates all movers and all signals for the entire period to speed up the run loop.
+        """
+        print(f"DEBUG: Pre-calculating simulation data for {len(self.time_range)} days...")
+        all_unique_movers = set()
+        
+        # 1. Pre-calculate all movers for the period
+        for date in self.time_range:
+            daily = self.screener.get_historical_daily_kraken_by_volume(date, top_n=self.top_n_movers)
+            if not daily.empty:
+                syms = daily['symbol'].tolist()
+                self.all_movers_per_day[date] = syms
+                all_unique_movers.update(syms)
+        
+        # 2. Pre-calculate all signals in bulk
+        print(f"DEBUG: Calculating bulk signals for {len(all_unique_movers)} unique symbols...")
+        # Get all relevant OHLCV data once
+        symbols_list = sorted(list(all_unique_movers))
+        # Filter for symbols actually in ohlcv_df
+        available_symbols = [s for s in symbols_list if s in self.ohlcv_df.columns.levels[0]]
+        
+        if available_symbols:
+            relevant_ohlcv = self.ohlcv_df[available_symbols]
+            signals_obj = Signals()
             
-            print(f"DEBUG: Calculating signals for movers")
-            self.calc_signals(self.daily_movers['symbol'].tolist())
-            print(f"DEBUG: signals calculated")
+            # Use the internal calc_signals to get the wide DataFrames for plotting
+            close = relevant_ohlcv.xs('close', axis=1, level=1, drop_level=True)
+            high = relevant_ohlcv.xs('high', axis=1, level=1, drop_level=True)
+            low = relevant_ohlcv.xs('low', axis=1, level=1, drop_level=True)
+            open_ = relevant_ohlcv.xs('open', axis=1, level=1, drop_level=True)
+            
+            entries, exits, stop_df, price_for_orders = signals_obj.calc_signals(
+                close=close, high=high, low=low, open_=open_,
+                **self.strategy_params
+            )
+            
+            self.bulk_entries = entries
+            self.bulk_exits = exits
+            self.bulk_prices = price_for_orders
+            
+            # Still populate the dict for the current simulation loop logic
+            self.precalculated_signals = {}
+            for symbol in available_symbols:
+                sig_df = pd.DataFrame(index=self.ohlcv_df.index)
+                sig_df['close'] = close[symbol]
+                sig_df['signal'] = 0
+                sig_df.loc[entries[symbol], 'signal'] = 1
+                sig_df.loc[exits[symbol], 'signal'] = -1
+                sig_df['stop_loss'] = stop_df[symbol]
+                self.precalculated_signals[symbol] = sig_df
+                
+            print("DEBUG: Bulk signal calculation complete.")
 
-            # rank movers by volume/ ADX?
+    def run(self):
+        print("DEBUG: Trading.run started (optimized)")
+        # Pre-calculate data if not already done
+        if not self.all_movers_per_day or not self.precalculated_signals:
+            self.prepare_simulation_data()
 
-            print(f"DEBUG: Checking sell conditions")
+        for current_date in self.time_range:
+            self.current_date = current_date
+            
+            # Use pre-calculated movers
+            movers = self.all_movers_per_day.get(current_date, [])
+            self.daily_movers = pd.DataFrame({'symbol': movers})
+            
+            # Use pre-calculated signals
+            self.signals_dict = self.precalculated_signals
+
             self.check_sell()
-            print(f"DEBUG: check_sell done")
-
-            print(f"DEBUG: Checking buy conditions")
             self.check_buy()
-            print(f"DEBUG: check_buy done")
-
             self.update_stats()
 
 

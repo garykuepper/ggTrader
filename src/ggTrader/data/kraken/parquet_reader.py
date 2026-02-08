@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
-from .KrakenUtils import (
+from .utils import (
     align_to_datetime_index,
     fill_after_first_non_nan_multilevel_safe,
     fill_symbol_metadata,
