@@ -195,17 +195,24 @@ class Signals:
 
         # Get numpy arrays for all inputs
         stop_values = stop_df.to_numpy(copy=True) if hasattr(stop_df, 'to_numpy') else stop_df.values.copy()
-        low_values = low_df.to_numpy(copy=True) if hasattr(low_df, 'to_numpy') else low_df.values.copy()
-        high_values = high_df.to_numpy(copy=True) if hasattr(high_df, 'to_numpy') else high_df.values.copy()
-
-        # Clip stop prices to the bar's low/high range
-        clipped_stops = np.clip(stop_values, low_values, high_values)
+        
+        # Gap Handling for Long Exits:
+        # If the market opens below our stop (Gap Down), we execute at the Open.
+        # If the market opens above our stop but trades through it (Intrabar), we execute at the Stop.
+        # Logic: Fill = min(Open, Stop)
+        # Note: We assume 'open_df' aligns with 'stop_df'
+        open_values = open_df.to_numpy(copy=True) if hasattr(open_df, 'to_numpy') else open_df.values.copy()
+        
+        # Calculate the realistic fill price taking gaps into account
+        # We use np.minimum because for a Long exit (Sell), a lower price is the "worse" case (gap down).
+        # This replaces the naive np.clip(stop, low, high) which could optimistically fill at High during a gap down.
+        gap_adjusted_stops = np.minimum(open_values, stop_values)
 
         # Create a writable copy of the output values
         out_values = out.to_numpy(copy=True) if hasattr(out, 'to_numpy') else out.values.copy()
 
-        # Apply the clipped stop prices where exits occur
-        out_values[exit_mask] = clipped_stops[exit_mask]
+        # Apply the gap-adjusted prices where exits occur
+        out_values[exit_mask] = gap_adjusted_stops[exit_mask]
 
         # Create new DataFrame with the modified values
         result = pd.DataFrame(out_values, index=out.index, columns=out.columns)
@@ -273,24 +280,38 @@ def _atr_trailing_stop_long_ohlc_touch_2d_numba(
     exits = np.zeros((n, m), dtype=np.bool_)
     in_pos = np.zeros(m, dtype=np.bool_)
     peak = np.zeros(m, dtype=np.float64)
+    current_stop = np.zeros(m, dtype=np.float64)
 
     for i in range(n):
         for j in range(m):
-            if entry_vals[i, j]:
+            # Check for new entry only if we are flat
+            if entry_vals[i, j] and not in_pos[j]:
                 in_pos[j] = True
                 peak[j] = high_vals[i, j]
-                stop[i, j] = peak[j] - mult * atr_vals[i, j]
+                current_stop[j] = peak[j] - mult * atr_vals[i, j]
+                stop[i, j] = current_stop[j]
                 exits[i, j] = False
                 continue
 
             if in_pos[j]:
+                # Update Peak High while in position
                 if high_vals[i, j] > peak[j]:
                     peak[j] = high_vals[i, j]
-                stop[i, j] = peak[j] - mult * atr_vals[i, j]
+                
+                # Calculate theoretical new stop
+                new_trail = peak[j] - mult * atr_vals[i, j]
+                
+                # Enforce Monotonicity: Stop can ONLY go UP
+                if new_trail > current_stop[j]:
+                    current_stop[j] = new_trail
+                
+                stop[i, j] = current_stop[j]
 
+                # Check for Exit (Low touches Stop)
                 if low_vals[i, j] <= stop[i, j]:
                     exits[i, j] = True
                     in_pos[j] = False
+                    current_stop[j] = 0.0 # reset
                 else:
                     exits[i, j] = False
             else:
