@@ -244,6 +244,7 @@ class Portfolio:
             "transaction_fee_total": self.transaction_fee_total,
             "total_trades": len(self.trades),
             "sharpe": self.sharpe_ratio(),
+            "sortino": self.sortino_ratio(),
             "max_drawdown": self.max_drawdown(),  # fraction (0..1)
             "max_drawdown_pct": self.max_drawdown_pct()  # percent (0..100)
 
@@ -381,6 +382,69 @@ class Portfolio:
 
         sharpe = float((mu / sigma) * np.sqrt(periods_per_year))
         return sharpe
+
+    def sortino_ratio(self, periods_per_year: int | None = None, rf_annual: float = 0.01, target_return: float = 0.0) -> float:
+        """
+        Compute annualized Sortino ratio from the portfolio equity_curve.
+        Sortino penalizes only downside deviation (returns below target_return).
+
+        Args:
+            periods_per_year: bars per year (e.g. 4H bars -> 6*365). If None, infer from index spacing.
+            rf_annual: annual risk-free rate (decimal).
+            target_return: The "Minimum Acceptable Return". Defaults to 0.
+
+        Returns:
+            float: annualized Sortino ratio (0.0 if not enough data).
+        """
+        import numpy as np
+        import pandas as pd
+
+        eq = getattr(self, "equity_curve", None)
+        if not isinstance(eq, pd.Series) or eq.empty or len(eq) < 3:
+            return 0.0
+
+        eq = eq.sort_index()
+
+        # infer periods per year
+        if periods_per_year is None:
+            try:
+                delta_seconds = (eq.index[1] - eq.index[0]).total_seconds()
+                bars_per_day = (24 * 3600) / delta_seconds if delta_seconds > 0 else 1.0
+                periods_per_year = max(1, int(round(bars_per_day * 365)))
+            except Exception:
+                periods_per_year = 6 * 365  # fallback (4h)
+
+        # compute per-period returns (using simple returns for Sortino typically)
+        rets = eq.pct_change().dropna()
+
+        if rets.empty:
+            return 0.0
+
+        # convert annual rf to per-period
+        rf_per_period = (1 + rf_annual) ** (1 / periods_per_year) - 1.0
+        
+        # Excess returns vs risk-free
+        excess = rets - rf_per_period
+        
+        # Downside deviation: only consider returns below target_return
+        # Usually target_return is 0 or rf_per_period. We'll use target_return as provided.
+        downside_diff = rets - (target_return / periods_per_year) # rough approximation for target
+        # More common: downside deviation is based on excess returns below 0
+        downside_rets = excess[excess < 0]
+        
+        if downside_rets.empty:
+            return 0.0 # No downside risk!
+        
+        mu = excess.mean()
+        # Downside deviation calculation: sqrt(sum(min(0, r - target)^2) / N)
+        # We use N = total number of periods (rets), not just downside periods
+        downside_sigma = np.sqrt(np.mean(np.square(np.minimum(0, excess))))
+
+        if downside_sigma == 0 or np.isnan(downside_sigma):
+            return 0.0
+
+        sortino = float((mu / downside_sigma) * np.sqrt(periods_per_year))
+        return sortino
 
     def qty_to_buy(self, price: float, percent: float=0.1):
         buy_value = self.total_value * percent

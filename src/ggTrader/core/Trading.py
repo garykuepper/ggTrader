@@ -89,7 +89,7 @@ class Trading:
                     self.portfolio.close_position(position, self.current_date)
 
     def update_stats(self):
-        pass
+        self.portfolio.record_equity(self.current_date)
 
     def calc_signals(self, symbols: list[str]):
         signals = Signals()
@@ -108,7 +108,7 @@ class Trading:
         """
         Pre-calculates all movers and all signals for the entire period to speed up the run loop.
         """
-        print(f"DEBUG: Pre-calculating simulation data for {len(self.time_range)} days...")
+        # print(f"DEBUG: Pre-calculating simulation data for {len(self.time_range)} days...")
         all_unique_movers = set()
         
         # 1. Pre-calculate all movers for the period
@@ -120,7 +120,7 @@ class Trading:
                 all_unique_movers.update(syms)
         
         # 2. Pre-calculate all signals in bulk
-        print(f"DEBUG: Calculating bulk signals for {len(all_unique_movers)} unique symbols...")
+        # print(f"DEBUG: Calculating bulk signals for {len(all_unique_movers)} unique symbols...")
         # Get all relevant OHLCV data once
         symbols_list = sorted(list(all_unique_movers))
         # Filter for symbols actually in ohlcv_df
@@ -156,10 +156,10 @@ class Trading:
                 sig_df['stop_loss'] = stop_df[symbol]
                 self.precalculated_signals[symbol] = sig_df
                 
-            print("DEBUG: Bulk signal calculation complete.")
+            # print("DEBUG: Bulk signal calculation complete.")
 
     def run(self):
-        print("DEBUG: Trading.run started (optimized)")
+        # print("DEBUG: Trading.run started (optimized)")
         # Pre-calculate data if not already done
         if not self.all_movers_per_day or not self.precalculated_signals:
             self.prepare_simulation_data()

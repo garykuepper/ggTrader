@@ -14,6 +14,8 @@ from ggTrader.data.kraken.historical_data import KrakenHistoricalData
 from ggTrader.utils.results_manager import ResultsManager
 import vectorbt as vbt
 import numpy as np
+from tqdm import tqdm
+import logging
 
 # --- Configuration ---
 SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "DOGE", "ADA", "DOT", "LINK", "LTC", "BCH"]
@@ -29,7 +31,7 @@ global_ohlcv_df = pd.DataFrame()
 global_date_range = None
 
 def run_optimization(train_start, train_end, n_trials=N_TRIALS):
-    print(f"  Optimizing from {train_start} to {train_end}...")
+    # print(f"  Optimizing from {train_start} to {train_end}...")
     window_date_range = global_date_range[(global_date_range >= train_start) & (global_date_range < train_end)]
     
     if window_date_range.empty:
@@ -59,17 +61,31 @@ def run_optimization(train_start, train_end, n_trials=N_TRIALS):
         try:
             engine.run()
         except Exception:
-            return -float('inf')
+            return -10.0 # Extreme penalty for failure
 
-        return engine.portfolio.total_value - 10000 # Net Profit
+        sortino = engine.portfolio.sortino_ratio()
+        
+        # Penalize if no trades were made (optimization shouldn't favor doing nothing)
+        if len(engine.portfolio.trades) == 0:
+            return -5.0
+            
+        return sortino if not np.isnan(sortino) else -1.0
 
+    # Suppress Optuna logging to keep tqdm clean
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=n_trials)
+    
+    with tqdm(total=n_trials, desc="    Trials", leave=False) as pbar:
+        def callback(study, trial):
+            pbar.update(1)
+            
+        study.optimize(objective, n_trials=n_trials, callbacks=[callback])
     
     return study.best_params
 
 def run_backtest(test_start, test_end, params, start_cash):
-    print(f"  Testing from {test_start} to {test_end} with params: {params}")
+    # print(f"  Testing from {test_start} to {test_end} with params: {params}")
     window_date_range = global_date_range[(global_date_range >= test_start) & (global_date_range < test_end)]
     
     if window_date_range.empty:
@@ -120,42 +136,59 @@ def main():
     results = []
     current_capital = 10000 
     
+    # Calculate total steps for progress bar
+    temp_start = start_dt
+    total_steps = 0
     while True:
-        train_end = current_train_start + timedelta(days=TRAIN_WINDOW_DAYS)
+        train_end = temp_start + timedelta(days=TRAIN_WINDOW_DAYS)
         test_start = train_end
         test_end = test_start + timedelta(days=TEST_WINDOW_DAYS)
-        
         if test_end > end_dt:
             break
-            
-        print(f"\n=== WFO Step: Train [{current_train_start.date()} - {train_end.date()}] -> Test [{test_start.date()} - {test_end.date()}] ===")
-        
-        best_params = run_optimization(current_train_start, train_end)
-        
-        if best_params:
-            final_value, stats = run_backtest(test_start, test_end, best_params, current_capital)
-            
-            profit = final_value - current_capital
-            pct_return = (profit / current_capital) * 100
-            
-            print(f"  Result: {current_capital:.2f} -> {final_value:.2f} ({pct_return:.2f}%)")
-            
-            check_point = {
-                'train_start': current_train_start.isoformat(),
-                'train_end': train_end.isoformat(),
-                'test_start': test_start.isoformat(),
-                'test_end': test_end.isoformat(),
-                'start_capital': current_capital,
-                'end_capital': final_value,
-                'profit': profit,
-                'params': best_params
-            }
-            results.append(check_point)
-            current_capital = final_value
-        else:
-            print("  Optimization failed (no params found). Skipping window.")
+        total_steps += 1
+        temp_start = temp_start + timedelta(days=TEST_WINDOW_DAYS)
 
-        current_train_start = current_train_start + timedelta(days=TEST_WINDOW_DAYS) 
+    print(f"Starting WFO with {total_steps} windows...")
+    
+    with tqdm(total=total_steps, desc="WFO Progress") as pbar:
+        while True:
+            train_end = current_train_start + timedelta(days=TRAIN_WINDOW_DAYS)
+            test_start = train_end
+            test_end = test_start + timedelta(days=TEST_WINDOW_DAYS)
+            
+            if test_end > end_dt:
+                break
+                
+            # print(f"\n=== WFO Step: Train [{current_train_start.date()} - {train_end.date()}] -> Test [{test_start.date()} - {test_end.date()}] ===")
+            
+            best_params = run_optimization(current_train_start, train_end)
+            
+            if best_params:
+                final_value, stats = run_backtest(test_start, test_end, best_params, current_capital)
+                
+                profit = final_value - current_capital
+                pct_return = (profit / current_capital) * 100
+                
+                # print(f"  Result: {current_capital:.2f} -> {final_value:.2f} ({pct_return:.2f}%)")
+                
+                check_point = {
+                    'train_start': current_train_start.isoformat(),
+                    'train_end': train_end.isoformat(),
+                    'test_start': test_start.isoformat(),
+                    'test_end': test_end.isoformat(),
+                    'start_capital': current_capital,
+                    'end_capital': final_value,
+                    'profit': profit,
+                    'params': best_params
+                }
+                results.append(check_point)
+                current_capital = final_value
+                pbar.set_postfix({"Current Capital": f"${current_capital:,.0f}"})
+            else:
+                print("  Optimization failed (no params found). Skipping window.")
+
+            current_train_start = current_train_start + timedelta(days=TEST_WINDOW_DAYS) 
+            pbar.update(1)
 
     # 3. Report
     print("\n\n=== Walk Forward Optimization Results ===")
