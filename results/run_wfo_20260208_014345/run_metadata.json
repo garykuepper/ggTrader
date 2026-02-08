@@ -1,0 +1,21 @@
+{
+    "script": "run_wfo",
+    "timestamp": "2026-02-08T01:44:26.942832",
+    "symbols": [
+        "BTC",
+        "ETH",
+        "XRP",
+        "SOL",
+        "DOGE",
+        "ADA",
+        "DOT",
+        "LINK",
+        "LTC",
+        "BCH"
+    ],
+    "interval": "4h",
+    "train_window_days": 90,
+    "test_window_days": 30,
+    "total_return_pct": -0.9445184242263167,
+    "final_capital": 9905.548157577368
+}

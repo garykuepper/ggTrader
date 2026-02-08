@@ -18,11 +18,11 @@ import numpy as np
 # --- Configuration ---
 SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "DOGE", "ADA", "DOT", "LINK", "LTC", "BCH"]
 INTERVAL = "4h"
-TRAIN_WINDOW_DAYS = 90
-TEST_WINDOW_DAYS = 30
+TRAIN_WINDOW_DAYS = 30*6
+TEST_WINDOW_DAYS = 30*3
 N_TRIALS = 20  # Trials per window
 START_DATE = "2023-01-01"
-END_DATE = "2025-06-01"
+END_DATE = "2025-12-31"
 
 # Global data for optimization (loaded once)
 global_ohlcv_df = pd.DataFrame()
