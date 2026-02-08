@@ -8,6 +8,8 @@ tqdm
 pandas
 yfinance
 python-dotenv
+joblib
+xlsxwriter
 tabulate
 ta
 optuna
@@ -19,3 +21,4 @@ vectorbt
 pandas-ta
 scikit-learn
 requests
+cupy-cuda13x

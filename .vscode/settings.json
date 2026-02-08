@@ -1,0 +1,6 @@
+{
+    "python.autoComplete.extraPaths": [
+        "c:\\Users\\gkuep\\.antigravity\\extensions\\continue.continue-0.0.412-win32-x64"
+    ],
+    "postman.settings.dotenv-detection-notification-visibility": false
+}
