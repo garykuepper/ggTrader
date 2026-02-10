@@ -387,20 +387,9 @@ def main():
         params_df = pd.DataFrame([r["params"] for r in results])
         params_df.index = df_res["test_start"]
 
-        excel_data = {
-            "Summary": pd.DataFrame.from_dict(
-                metadata, orient="index", columns=["Value"]
-            ),
-            "Window Results": df_res,
-            "Parameters": params_df,
-        }
-
         # Save metadata to DB (this triggers add_run)
         metadata["params"] = results[-1]["params"]  # Representative params for the run
         rm.save_metadata(metadata)
-
-        excel_path = rm.save_excel(excel_data, "wfo_results.xlsx")
-        print(f"\nExcel report saved to: {excel_path}")
 
         # --- 7. Final Full Period Backtest with Best Parameters ---
         print("\n" + "=" * 50)
@@ -474,6 +463,32 @@ def main():
                     print(
                         f"| Profit Factor | {pf_val:.4f} | (Manually Calculated Portfolio Total)"
                     )
+
+                # Update and SAVE Metadata FIRST (creates the run record)
+                portfolio_stats = engine.portfolio.stats_dict()
+                metadata.update(portfolio_stats)
+                rm.save_metadata(metadata)
+
+                # Save standardized metrics to database
+                rm.db_manager.add_metrics(rm.run_id, portfolio_stats)
+
+                    # Store trades in database
+                    vbt_trades_df = pf.trades.to_pd()
+                    if not vbt_trades_df.empty:
+                        mapped_trades = pd.DataFrame(
+                            {
+                                "symbol": "PORTFOLIO",
+                                "entry_time": vbt_trades_df["Entry Timestamp"],
+                                "exit_time": vbt_trades_df["Exit Timestamp"],
+                                "entry_price": vbt_trades_df["Entry Price"],
+                                "exit_price": vbt_trades_df["Exit Price"],
+                                "profit": vbt_trades_df["Profit"],
+                                "profit_pct": vbt_trades_df["Return"] * 100,
+                                "status": "closed",
+                            }
+                        )
+                        rm.save_trades(mapped_trades)
+
                 except Exception as pfe:
                     print(f"Manual Profit Factor calculation failed: {pfe}")
             except Exception as stats_err:

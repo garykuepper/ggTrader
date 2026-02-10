@@ -1,0 +1,32 @@
+{
+    "script": "run_backtest",
+    "run_name": "run_backtest",
+    "timestamp": "2026-02-09T22:06:10.671436",
+    "symbols": "50 symbols",
+    "interval": "4h",
+    "start_date": "2023-01-01",
+    "end_date": "2025-12-31",
+    "strategy_params": {
+        "adx_threshold": 25,
+        "adx_length": 14,
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "atr_multiplier": 3.0,
+        "atr_length": 14,
+        "use_dmp_cross": false
+    },
+    "cash": 485.5237008659997,
+    "total_position_value": 4944.267848510218,
+    "total_value": 5429.7915493762175,
+    "realized_profit": -4469.99166187389,
+    "unrealized_profit": -100.21678874988216,
+    "total_profit": -4570.2084506237825,
+    "profit_pct": -45.702084506237824,
+    "transaction_fee_total": 25717.725429998067,
+    "total_trades": 2970,
+    "sharpe": -0.38057349339171875,
+    "sortino": -0.14966239363729997,
+    "max_drawdown": 0.7227248164132832,
+    "max_drawdown_pct": 72.27248164132833,
+    "run_id": "53037389-cd51-4706-bc3f-9610aa3d4d43"
+}

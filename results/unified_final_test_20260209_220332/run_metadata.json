@@ -1,0 +1,32 @@
+{
+    "script": "run_backtest",
+    "run_name": "unified_final_test",
+    "timestamp": "2026-02-09T22:03:38.075976",
+    "symbols": "50 symbols",
+    "interval": "4h",
+    "start_date": "2024-01-01",
+    "end_date": "2024-06-01",
+    "strategy_params": {
+        "adx_threshold": 25,
+        "adx_length": 14,
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "atr_multiplier": 3.0,
+        "atr_length": 14,
+        "use_dmp_cross": false
+    },
+    "cash": 11211.667572987299,
+    "total_position_value": 0.0,
+    "total_value": 11211.667572987299,
+    "realized_profit": 1211.6675729872957,
+    "unrealized_profit": 0.0,
+    "total_profit": 1211.6675729872986,
+    "profit_pct": 12.116675729872986,
+    "transaction_fee_total": 2400.4898898444294,
+    "total_trades": 126,
+    "sharpe": 0.4952266792325022,
+    "sortino": 1.1816589293294155,
+    "max_drawdown": 0.4054157093158498,
+    "max_drawdown_pct": 40.54157093158498,
+    "run_id": "10ce787d-e7cf-4144-8583-e965d2df0892"
+}

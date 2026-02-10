@@ -86,6 +86,25 @@ class ResultDBManager:
             """
             )
 
+            # Trades table
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS trades (
+                    run_id VARCHAR,
+                    symbol VARCHAR,
+                    entry_time TIMESTAMPTZ,
+                    exit_time TIMESTAMPTZ,
+                    entry_price DOUBLE,
+                    exit_price DOUBLE,
+                    profit DOUBLE,
+                    profit_pct DOUBLE,
+                    status VARCHAR,
+                    PRIMARY KEY (run_id, symbol, entry_time),
+                    FOREIGN KEY (run_id) REFERENCES runs(run_id)
+                )
+            """
+            )
+
     def _init_log(self):
         """Initializes the CSV log file if it doesn't exist."""
         if not self.log_path.exists():
@@ -117,7 +136,7 @@ class ResultDBManager:
             run_id,
             run_type,
             "SUCCESS",
-            metadata.get("total_return_pct", 0) if metadata else 0,
+            metadata.get("profit_pct", 0) if metadata else 0,
         )
 
     def _append_to_log(self, timestamp, run_id, run_type, status, summary_metric):
@@ -201,3 +220,97 @@ class ResultDBManager:
                 """,
                     (run_id, ts_str, float(val)),
                 )
+
+    def add_trades(self, run_id, df_trades):
+        """Inserts trade records into the database with robust column mapping."""
+        if df_trades.empty:
+            return
+
+        # Explicitly map expected columns to the incoming DataFrame
+        mapping = {
+            "symbol": "symbol",
+            "entry_time": ["entry_time", "entry_date"],
+            "exit_time": ["exit_time", "exit_date"],
+            "entry_price": "entry_price",
+            "exit_price": "exit_price",
+            "profit": "profit",
+            "profit_pct": "profit_pct",
+            "status": "status",
+        }
+
+        records = []
+        for _, row in df_trades.iterrows():
+            try:
+                symbol = row.get("symbol", "UNKNOWN")
+
+                # Time stamps
+                entry_time = next(
+                    (
+                        row[c]
+                        for c in mapping["entry_time"]
+                        if c in row and pd.notna(row[c])
+                    ),
+                    None,
+                )
+                exit_time = next(
+                    (
+                        row[c]
+                        for c in mapping["exit_time"]
+                        if c in row and pd.notna(row[c])
+                    ),
+                    None,
+                )
+
+                if hasattr(entry_time, "isoformat"):
+                    entry_time = entry_time.isoformat()
+                if hasattr(exit_time, "isoformat"):
+                    exit_time = exit_time.isoformat()
+
+                # Record tuple matching schema: run_id, symbol, entry_time, exit_time, entry_price, exit_price, profit, profit_pct, status
+                records.append(
+                    (
+                        run_id,
+                        symbol,
+                        entry_time,
+                        exit_time,
+                        float(row.get("entry_price", 0.0)),
+                        float(row.get("exit_price", 0.0)),
+                        float(row.get("profit", 0.0)),
+                        float(row.get("profit_pct", 0.0)),
+                        row.get("status", "closed"),
+                    )
+                )
+            except Exception as e:
+                print(f"Error processing trade row: {e}")
+
+        if not records:
+            return
+
+        with duckdb.connect(str(self.db_path)) as conn:
+            try:
+                # Use parameterized executemany for maximum reliability across environments
+                conn.executemany(
+                    """
+                    INSERT INTO trades (run_id, symbol, entry_time, exit_time, entry_price, exit_price, profit, profit_pct, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (run_id, symbol, entry_time) DO UPDATE SET
+                        exit_time = excluded.exit_time,
+                        entry_price = excluded.entry_price,
+                        exit_price = excluded.exit_price,
+                        profit = excluded.profit,
+                        profit_pct = excluded.profit_pct,
+                        status = excluded.status
+                """,
+                    records,
+                )
+            except Exception as e:
+                print(f"Error in add_trades executemany: {e}")
+                # Last ditch fallback for older DuckDB versions or weird schema issues
+                for rec in records:
+                    try:
+                        conn.execute(
+                            "INSERT OR IGNORE INTO trades VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            rec,
+                        )
+                    except:
+                        pass

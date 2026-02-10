@@ -89,6 +89,10 @@ class ResultsManager:
 
         return path
 
+    def save_trades(self, df):
+        """Saves detailed trade history to the database."""
+        self.db_manager.add_trades(self.run_id, df)
+
     def save_equity_curve(self, series, filename="equity_curve"):
         """Saves equity curve to DB."""
         self.db_manager.add_equity_curve(self.run_id, series)
