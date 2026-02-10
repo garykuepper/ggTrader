@@ -1,0 +1,16 @@
+{
+    "cash": 922.4294081189258,
+    "total_position_value": 3866.349387084294,
+    "total_value": 4788.7787952032195,
+    "realized_profit": -5100.151951048049,
+    "unrealized_profit": -111.06925374872955,
+    "total_profit": -5211.2212047967805,
+    "profit_pct": -52.11221204796781,
+    "transaction_fee_total": 4709.764309478307,
+    "total_trades": 434,
+    "sharpe": -1.202350150820708,
+    "sortino": -1.2836892830812514,
+    "max_drawdown": 0.6014691402005452,
+    "max_drawdown_pct": 60.146914020054524,
+    "run_id": "20799eac-1322-4aa6-a129-d8518f257243"
+}
