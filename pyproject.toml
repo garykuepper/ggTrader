@@ -29,6 +29,10 @@ dependencies = [
     "pandas-ta",
     "scikit-learn",
     "requests",
+    "joblib",
+    "xlsxwriter",
+    "cupy-cuda13x",
+    "duckdb",
 ]
 
 [tool.setuptools.packages.find]

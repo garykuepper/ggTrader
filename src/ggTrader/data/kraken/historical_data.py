@@ -5,25 +5,30 @@ import json
 from pathlib import Path
 from .utils import get_file_names
 from .converter import KrakenConverter
-from .parquet_reader import KrakenParquetReader
+from .duckdb_reader import KrakenDuckDBReader
+from .duckdb_ingestor import KrakenDuckDBIngestor
 from .remote_reader import KrakenRemoteReader
+
 
 class KrakenHistoricalData:
     """
     Facade for Kraken historical data operations.
     Delegates to specialized modules for conversion, reading, and remote access.
     """
+
     def __init__(self):
         self.root_dir = self._find_project_root()
-        self.raw_path = os.path.join(self.root_dir, 'data', 'raw')
-        self.parquet_root = os.path.join(self.root_dir, 'data', 'parquet')
-        self.historical_mover_path = os.path.join(self.root_dir, 'data', 'historical_movers')
-        
-        os.makedirs(self.parquet_root, exist_ok=True)
+        self.raw_path = os.path.join(self.root_dir, "data", "raw")
+        self.db_path = os.path.join(self.root_dir, "data", "ggtrader.db")
+        self.historical_mover_path = os.path.join(
+            self.root_dir, "data", "historical_movers"
+        )
+
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         os.makedirs(self.historical_mover_path, exist_ok=True)
 
-        self.converter = KrakenConverter(self.parquet_root)
-        self.reader = KrakenParquetReader(self.parquet_root, self.historical_mover_path)
+        self.reader = KrakenDuckDBReader(self.db_path)
+        self.ingestor = KrakenDuckDBIngestor(self.db_path)
         self.remote_reader = KrakenRemoteReader(self.root_dir)
 
     def _find_project_root(self):
@@ -33,9 +38,11 @@ class KrakenHistoricalData:
         for parent in [current] + list(current.parents):
             if (parent / "pyproject.toml").exists():
                 return str(parent)
-        
+
         # Fallback to file-based relative path if not found (e.g. running from IDE)
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        base_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..")
+        )
         return base_dir
 
     # ---------- Directory Helpers ----------
@@ -54,36 +61,26 @@ class KrakenHistoricalData:
     def get_file_names(self, path, quote_only="USD"):
         return get_file_names(path, quote_only)
 
-    # ---------- Conversion (Delegated to KrakenConverter) ----------
+    # ---------- Conversion (Legacy / For Reference) ----------
     def csvs_dir_to_parquet(self, *args, **kwargs):
-        return self.converter.csvs_dir_to_parquet(*args, **kwargs)
+        from .converter import KrakenConverter
 
-    def csvs_many_dirs_to_parquet(self, dirs=None, **kwargs):
-        if dirs is None:
-            dirs = self.list_quarter_dirs()
-        for d in dirs:
-            self.converter.csvs_dir_to_parquet(d, **kwargs)
-
-    def csvs_dir_to_parquet_parallel(self, *args, **kwargs):
-        return self.converter.csvs_dir_to_parquet_parallel(*args, **kwargs)
-
-    def csvs_many_dirs_to_parquet_parallel(self, dirs=None, **kwargs):
-        if dirs is None:
-            dirs = self.list_quarter_dirs()
-        for d in dirs:
-            self.converter.csvs_dir_to_parquet_parallel(d, **kwargs)
+        converter = KrakenConverter(os.path.join(self.root_dir, "data", "parquet"))
+        return converter.csvs_dir_to_parquet(*args, **kwargs)
 
     def sync_local_data(self, **kwargs):
         """
-        Intelligently sync new Kraken raw CSV directories into the Parquet dataset.
+        Intelligently sync new Kraken raw CSV directories into the DuckDB dataset.
         Uses a manifest to avoid re-processing directories.
         """
-        manifest_path = os.path.join(self.parquet_root, ".processed_dirs.json")
+        manifest_path = os.path.join(
+            os.path.dirname(self.db_path), ".processed_dirs.json"
+        )
         processed_dirs = set()
-        
+
         if os.path.exists(manifest_path):
             try:
-                with open(manifest_path, 'r') as f:
+                with open(manifest_path, "r") as f:
                     processed_dirs = set(json.load(f))
             except Exception as e:
                 print(f"Warning: could not load sync manifest: {e}")
@@ -95,33 +92,36 @@ class KrakenHistoricalData:
             print("No new Kraken data directories found to sync.")
             return
 
-        print(f"Found {len(new_dirs)} new directories to sync: {[os.path.basename(d) for d in new_dirs]}")
-        
+        print(
+            f"Found {len(new_dirs)} new directories to sync: {[os.path.basename(d) for d in new_dirs]}"
+        )
+
         for d in new_dirs:
-            self.csvs_dir_to_parquet_parallel(d, **kwargs)
+            print(f"Ingesting {os.path.basename(d)} into DuckDB...")
+            self.ingestor.ingest_dir(d)
             processed_dirs.add(os.path.basename(d))
-            
+
             # Update manifest after each directory is successfully processed
             try:
-                with open(manifest_path, 'w') as f:
+                with open(manifest_path, "w") as f:
                     json.dump(sorted(list(processed_dirs)), f, indent=4)
             except Exception as e:
                 print(f"Warning: could not update sync manifest: {e}")
-        
+
         print("Data synchronization complete.")
 
-    # ---------- Local Data Reading (Delegated to KrakenParquetReader) ----------
-    def read_parquet(self, *args, **kwargs):
-        return self.reader.read_parquet(*args, **kwargs)
+    # ---------- Local Data Reading (Delegated to KrakenDuckDBReader) ----------
+    def read_ohlcv(self, *args, **kwargs):
+        return self.reader.read_ohlcv(*args, **kwargs)
 
     def get_ohlcv_df(self, *args, **kwargs):
         return self.reader.get_ohlcv_df(*args, **kwargs)
 
-    def list_parquet_pairs(self):
-        return self.reader.list_parquet_pairs()
+    def list_pairs(self):
+        return self.reader.list_pairs()
 
-    def list_parquet_symbols(self, **kwargs):
-        return self.reader.list_parquet_symbols(**kwargs)
+    def list_symbols(self, **kwargs):
+        return self.reader.list_symbols(**kwargs)
 
     def get_random_symbols(self, **kwargs):
         return self.reader.get_random_symbols(**kwargs)
@@ -139,7 +139,9 @@ class KrakenHistoricalData:
         return self.reader.get_historical_movers_by_day(*args, **kwargs)
 
     def build_4h_from_1h_and_merge(self, *args, **kwargs):
-        return self.reader.build_4h_from_1h_and_merge(*args, **kwargs)
+        # With DuckDB, we can probably just query 4h directly or aggregate 1h on the fly much faster.
+        # Keeping this for now but it's less necessary.
+        return self.reader.read_ohlcv(*args, interval="4h", **kwargs)
 
     # ---------- Remote Data Access (Delegated to KrakenRemoteReader) ----------
     def use_remote(self, *args, **kwargs):
@@ -155,44 +157,52 @@ class KrakenHistoricalData:
     @staticmethod
     def align_to_datetime_index(*args, **kwargs):
         from . import KrakenUtils
+
         return KrakenUtils.align_to_datetime_index(*args, **kwargs)
 
     @staticmethod
     def fill_after_first_non_nan_single(*args, **kwargs):
         from . import KrakenUtils
+
         return KrakenUtils.fill_after_first_non_nan_single(*args, **kwargs)
 
     @staticmethod
     def fill_after_first_non_nan_multilevel_safe(*args, **kwargs):
         from . import KrakenUtils
+
         return KrakenUtils.fill_after_first_non_nan_multilevel_safe(*args, **kwargs)
 
     @staticmethod
     def fill_symbol_metadata(*args, **kwargs):
         from . import KrakenUtils
+
         return KrakenUtils.fill_symbol_metadata(*args, **kwargs)
 
     @staticmethod
     def ensure_utc_timestamp(*args, **kwargs):
         from . import KrakenUtils
+
         return KrakenUtils.ensure_utc_timestamp(*args, **kwargs)
 
     @staticmethod
     def filter_out_stables(*args, **kwargs):
         from . import KrakenUtils
+
         return KrakenUtils.filter_out_stables(*args, **kwargs)
+
 
 if __name__ == "__main__":
     # Internal test/demo
     from tabulate import tabulate
+
     k = KrakenHistoricalData()
-    
+
     # Simple test: list pairs and get random OHLCV
     pairs = k.list_parquet_pairs()
     print(f"Total pairs in Parquet: {len(pairs)}")
-    
+
     symbols = k.get_random_symbols(n=3)
     print(f"Testing random symbols: {symbols}")
-    
+
     df = k.get_ohlcv_df(symbols, interval="1d")
     print(df.head())
