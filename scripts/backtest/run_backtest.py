@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import json
 
 # Ensure project root is in path
 sys.path.append(
@@ -13,13 +14,26 @@ from tabulate import tabulate
 from ggTrader.core.trading import Trading
 from ggTrader.data.kraken.historical_data import KrakenHistoricalData
 from ggTrader.utils.results_manager import ResultsManager, get_latest_params
+from ggTrader.utils.config import load_symbols_from_json
 from ggTrader.core.backtest import Backtest
 from datetime import datetime
 
+DEFAULT_SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "DOGE"]
+SYMBOLS_FILE_DEFAULT = "data/top_50_consistent_movers.json"
 
-def run_backtest(params_path=None):
+
+def run_backtest(params_path=None, symbols_file=None):
     # --- 1. Configuration ---
-    symbols = ["BTC", "ETH", "XRP", "SOL", "DOGE"]
+    # Load Symbols
+    symbols = None
+    if symbols_file:
+        symbols = load_symbols_from_json(symbols_file)
+        if symbols:
+            print(f"Loaded {len(symbols)} symbols from {symbols_file}")
+
+    if not symbols:
+        symbols = DEFAULT_SYMBOLS
+        print(f"Using default symbols: {symbols}")
     interval = "4h"
     start_date = "2024-01-01"
     end_date = "2024-12-31"
@@ -200,6 +214,12 @@ def run_backtest(params_path=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a strategy backtest.")
     parser.add_argument("--params", type=str, help="Path to a params.json file.")
+    parser.add_argument(
+        "--symbols-file",
+        type=str,
+        default=SYMBOLS_FILE_DEFAULT,
+        help="Path to JSON file with symbols",
+    )
     args = parser.parse_args()
 
-    run_backtest(params_path=args.params)
+    run_backtest(params_path=args.params, symbols_file=args.symbols_file)

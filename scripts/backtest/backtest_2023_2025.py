@@ -1,17 +1,33 @@
 import os
 import sys
 import pandas as pd
+import json
+import argparse
 from tabulate import tabulate
 
 # Add src to sys.path
-sys.path.append(os.path.abspath('src'))
+sys.path.append(os.path.abspath("src"))
 
-from ggTrader.data.KrakenHistoricalData import KrakenHistoricalData
-from ggTrader.core.Trading import Trading
+from ggTrader.data.kraken.historical_data import KrakenHistoricalData
+from ggTrader.core.trading import Trading
+from ggTrader.utils.config import load_symbols_from_json
 
-def run_backtest_2023_2025():
+DEFAULT_SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "DOGE"]
+SYMBOLS_FILE_DEFAULT = "data/top_50_consistent_movers.json"
+
+
+def run_backtest_2023_2025(symbols_file=None):
     # --- 1. Configuration ---
-    symbols = ["BTC", "ETH", "XRP", "SOL", "DOGE"]
+    # Load Symbols
+    symbols = None
+    if symbols_file:
+        symbols = load_symbols_from_json(symbols_file)
+        if symbols:
+            print(f"Loaded {len(symbols)} symbols from {symbols_file}")
+
+    if not symbols:
+        symbols = DEFAULT_SYMBOLS
+        print(f"Using default symbols: {symbols}")
     interval = "4h"
     start_date = "2023-01-01"
     end_date = "2025-12-31"
@@ -21,13 +37,13 @@ def run_backtest_2023_2025():
 
     # Strategy Parameters (Same as run_backtest.py)
     strategy_params = {
-        'adx_threshold': 25,
-        'adx_length': 14,
-        'sar_acceleration': 0.02,
-        'sar_maximum': 0.2,
-        'atr_multiplier': 3.0,
-        'atr_length': 14,
-        'use_dmp_cross': False
+        "adx_threshold": 25,
+        "adx_length": 14,
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "atr_multiplier": 3.0,
+        "atr_length": 14,
+        "use_dmp_cross": False,
     }
 
     print(f"--- Backtest Configuration (Long Term) ---")
@@ -39,8 +55,8 @@ def run_backtest_2023_2025():
 
     # --- 2. Data Loading ---
     k_h = KrakenHistoricalData()
-    start_dt = pd.to_datetime(start_date).tz_localize('UTC')
-    end_dt = pd.to_datetime(end_date).tz_localize('UTC')
+    start_dt = pd.to_datetime(start_date).tz_localize("UTC")
+    end_dt = pd.to_datetime(end_date).tz_localize("UTC")
 
     print("Loading data for 2023-2025...")
     ohlcv_df = k_h.get_ohlcv_df(symbols, interval=interval, start=start_dt, end=end_dt)
@@ -66,7 +82,7 @@ def run_backtest_2023_2025():
         start_cash=start_cash,
         top_n_movers=top_n_movers,
         max_position=max_position,
-        strategy_params=strategy_params
+        strategy_params=strategy_params,
     )
 
     print("Running backtest engine...")
@@ -75,7 +91,9 @@ def run_backtest_2023_2025():
     # --- 4. Results ---
     print("\n--- Backtest Results (2023-2025) ---")
     print(f"Final Portfolio Value: {engine.portfolio.total_value:.2f}")
-    print(f"Profit/Loss: {engine.portfolio.profit:.2f} ({engine.portfolio.profit_pct * 100:.2f}%)")
+    print(
+        f"Profit/Loss: {engine.portfolio.profit:.2f} ({engine.portfolio.profit_pct * 100:.2f}%)"
+    )
     print(f"Total Transactions: {len(engine.portfolio.trades)}")
 
     if engine.portfolio.trades:
@@ -90,5 +108,15 @@ def run_backtest_2023_2025():
         history_df.to_csv(results_path, index=False)
         print(f"\nTrade history saved to {results_path}")
 
+
 if __name__ == "__main__":
-    run_backtest_2023_2025()
+    parser = argparse.ArgumentParser(description="Run long-term backtest.")
+    parser.add_argument(
+        "--symbols-file",
+        type=str,
+        default=SYMBOLS_FILE_DEFAULT,
+        help="Path to JSON file with symbols",
+    )
+    args = parser.parse_args()
+
+    run_backtest_2023_2025(symbols_file=args.symbols_file)

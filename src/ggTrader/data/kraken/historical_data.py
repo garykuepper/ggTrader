@@ -151,39 +151,39 @@ class KrakenHistoricalData:
     # ---------- Static Utility Methods (Backward Compatibility) ----------
     @staticmethod
     def align_to_datetime_index(*args, **kwargs):
-        from . import KrakenUtils
+        from . import utils
 
-        return KrakenUtils.align_to_datetime_index(*args, **kwargs)
+        return utils.align_to_datetime_index(*args, **kwargs)
 
     @staticmethod
     def fill_after_first_non_nan_single(*args, **kwargs):
-        from . import KrakenUtils
+        from . import utils
 
-        return KrakenUtils.fill_after_first_non_nan_single(*args, **kwargs)
+        return utils.fill_after_first_non_nan_single(*args, **kwargs)
 
     @staticmethod
     def fill_after_first_non_nan_multilevel_safe(*args, **kwargs):
-        from . import KrakenUtils
+        from . import utils
 
-        return KrakenUtils.fill_after_first_non_nan_multilevel_safe(*args, **kwargs)
+        return utils.fill_after_first_non_nan_multilevel_safe(*args, **kwargs)
 
     @staticmethod
     def fill_symbol_metadata(*args, **kwargs):
-        from . import KrakenUtils
+        from . import utils
 
-        return KrakenUtils.fill_symbol_metadata(*args, **kwargs)
+        return utils.fill_symbol_metadata(*args, **kwargs)
 
     @staticmethod
     def ensure_utc_timestamp(*args, **kwargs):
-        from . import KrakenUtils
+        from . import utils
 
-        return KrakenUtils.ensure_utc_timestamp(*args, **kwargs)
+        return utils.ensure_utc_timestamp(*args, **kwargs)
 
     @staticmethod
     def filter_out_stables(*args, **kwargs):
-        from . import KrakenUtils
+        from . import utils
 
-        return KrakenUtils.filter_out_stables(*args, **kwargs)
+        return utils.filter_out_stables(*args, **kwargs)
 
 
 if __name__ == "__main__":

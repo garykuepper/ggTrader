@@ -5,7 +5,9 @@ import os
 from datetime import datetime
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+)
 
 from ggTrader.core.trading import Trading
 from ggTrader.data.kraken.historical_data import KrakenHistoricalData

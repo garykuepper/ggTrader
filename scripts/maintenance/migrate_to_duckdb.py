@@ -3,6 +3,10 @@ import os
 import sys
 from tqdm import tqdm
 
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+)
+
 
 def migrate_parquet_to_duckdb(parquet_dir="data/parquet", db_path="data/ggtrader.db"):
     """

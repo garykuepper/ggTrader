@@ -4,14 +4,18 @@ import sys
 import os
 import argparse
 import traceback
+import json
 from datetime import datetime, timedelta
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+)
 
 from ggTrader.core.trading import Trading
 from ggTrader.data.kraken.historical_data import KrakenHistoricalData
 from ggTrader.utils.results_manager import ResultsManager
+from ggTrader.utils.config import load_symbols_from_json
 from ggTrader.indicators.signals import Signals
 import vectorbt as vbt
 import numpy as np
@@ -31,6 +35,20 @@ MIN_TRADES = 5  # Minimum trades to avoid skewed results
 START_DATE = "2023-01-01"
 END_DATE = "2025-12-31"
 N_JOBS = -1  # Use all available cores for parallel windows
+DEFAULT_SYMBOLS = [
+    "BTC",
+    "ETH",
+    "XRP",
+    "SOL",
+    "DOGE",
+    "ADA",
+    "DOT",
+    "LINK",
+    "LTC",
+    "BCH",
+]
+SYMBOLS_FILE_DEFAULT = "data/top_50_consistent_movers.json"
+
 
 # Global data for optimization (loaded once)
 global_ohlcv_df = pd.DataFrame()
@@ -157,16 +175,39 @@ def run_backtest(test_start, test_end, params, start_cash):
 def main():
     global global_ohlcv_df, global_date_range
 
+    parser = argparse.ArgumentParser(description="Walk-Forward Optimization")
+    parser.add_argument(
+        "--symbols-file",
+        type=str,
+        default=SYMBOLS_FILE_DEFAULT,
+        help="Path to JSON file with symbols",
+    )
+    parser.add_argument(
+        "--n-trials", type=int, default=N_TRIALS, help="Number of trials per window"
+    )
+    parser.add_argument(
+        "--n-jobs", type=int, default=N_JOBS, help="Number of parallel jobs"
+    )
+    args = parser.parse_args()
+
     rm = ResultsManager("run_wfo")
 
-    # 1. Load Data
+    # 1. Load Symbols
+    symbols = load_symbols_from_json(args.symbols_file)
+    if symbols:
+        print(f"Loaded {len(symbols)} symbols from {args.symbols_file}")
+    else:
+        symbols = DEFAULT_SYMBOLS
+        print(f"Using default symbols: {symbols}")
+
+    # 2. Load Data
     print("Loading data for WFO...")
     k_h = KrakenHistoricalData()
     start_dt = pd.to_datetime(START_DATE).tz_localize("UTC")
     end_dt = pd.to_datetime(END_DATE).tz_localize("UTC")
 
     global_ohlcv_df = k_h.get_ohlcv_df(
-        SYMBOLS, interval=INTERVAL, start=start_dt, end=end_dt
+        symbols, interval=INTERVAL, start=start_dt, end=end_dt
     )
 
     if isinstance(global_ohlcv_df.columns, pd.MultiIndex):
@@ -222,10 +263,13 @@ def main():
     print(f"Starting WFO with {len(windows)} windows...")
 
     # 3. Parallel Optimization
-    print(f"Running optimizations in parallel (n_jobs={N_JOBS})...")
+    print(f"Running optimizations in parallel (n_jobs={args.n_jobs})...")
     # This is the heavy lifting
-    all_best_params = Parallel(n_jobs=N_JOBS)(
-        delayed(run_optimization)(w["train_start"], w["train_end"]) for w in windows
+    all_best_params = Parallel(n_jobs=args.n_jobs)(
+        delayed(run_optimization)(
+            w["train_start"], w["train_end"], n_trials=args.n_trials
+        )
+        for w in windows
     )
 
     # 4. Sequential Backtesting (to handle capital flow)

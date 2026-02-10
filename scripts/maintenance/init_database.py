@@ -1,5 +1,6 @@
 import duckdb
 import os
+import sys
 
 
 def init_db(db_path="data/ggtrader.db"):
@@ -7,6 +8,9 @@ def init_db(db_path="data/ggtrader.db"):
     Initializes the DuckDB database and creates the OHLCV table.
     """
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    sys.path.append(
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+    )
 
     # Connect to the database (creates it if it doesn't exist)
     conn = duckdb.connect(db_path)

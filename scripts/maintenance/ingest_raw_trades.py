@@ -6,7 +6,9 @@ from tqdm import tqdm
 import sys
 
 # Add src to sys.path to reuse KrakenConstants
-sys.path.append(os.path.abspath("src"))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+)
 try:
     from ggTrader.data.kraken.constants import kraken_map
 except ImportError:
