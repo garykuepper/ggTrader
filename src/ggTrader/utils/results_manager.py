@@ -47,8 +47,54 @@ class ResultsManager:
         run_dir.mkdir(parents=True, exist_ok=True)
         return run_dir
 
+    def save_run_results(
+        self, params: dict, metrics: dict, metadata: dict = None
+    ) -> Path:
+        """
+        Saves run results (params + metrics) to a single JSON file.
+
+        Args:
+            params (dict): The strategy parameters used.
+            metrics (dict): The performance metrics obtained.
+            metadata (dict, optional): Additional metadata.
+
+        Returns:
+            Path: The path to the saved JSON file.
+        """
+        if metadata is None:
+            metadata = {}
+
+        output_data = {
+            "run_id": self.run_id,
+            "timestamp": datetime.now().isoformat(),
+            "script_name": self.script_name,
+            "parameters": params,
+            "metrics": metrics,
+            "metadata": metadata,
+        }
+
+        output_path = self.run_dir / "run_results.json"
+        with open(output_path, "w") as f:
+            json.dump(output_data, f, indent=4)
+
+        # Mirror to DB
+        self.db_manager.add_run(
+            run_id=self.run_id,
+            run_type=self.script_name,
+            script_name=self.script_name,
+            parameters=params,
+            metadata=output_data,
+        )
+        # Also log metrics specifically if needed by the DB manager
+        self.db_manager.add_metrics(self.run_id, metrics)
+
+        return output_path
+
     def save_metadata(self, metadata):
-        """Saves run metadata to JSON and mirrored to DuckDB."""
+        """
+        Saves run metadata to JSON and mirrored to DuckDB.
+        DEPRECATED: Use save_run_results instead.
+        """
         metadata["run_id"] = self.run_id
         meta_path = self.run_dir / "run_metadata.json"
         with open(meta_path, "w") as f:
@@ -78,16 +124,44 @@ class ResultsManager:
         with open(params_file_path, "r") as f:
             return json.load(f)
 
-    def save_metrics(self, df, filename="metrics.csv"):
-        """Saves performance metrics to a CSV file and mirrored to DuckDB if relevant."""
+    def save_metrics(
+        self, df: pd.DataFrame, filename: str = "metrics.csv", save_csv: bool = False
+    ) -> Path:
+        """
+        Saves performance metrics to a CSV file (optional) and mirrored to DuckDB if relevant.
+
+        Args:
+            df (pd.DataFrame): The metrics DataFrame.
+            filename (str): The filename for the CSV.
+            save_csv (bool): Whether to save the CSV file. Defaults to False.
+
+        Returns:
+            Path: The path to the saved file (if saved), or the intended path.
+        """
         path = self.run_dir / filename
-        df.to_csv(path, index=False)
+        if save_csv:
+            df.to_csv(path, index=False)
 
         # Mirror to DB if it's WFO results
         if filename == "wfo_results.csv":
             self.db_manager.add_wfo_results(self.run_id, df)
 
         return path
+
+    def print_summary(self, metrics: dict) -> None:
+        """
+        Prints a summary of the performance metrics to the console.
+
+        Args:
+            metrics (dict): A dictionary of performance metrics.
+        """
+        print("\n--- Performance Summary ---")
+        for key, value in metrics.items():
+            if isinstance(value, float):
+                print(f"{key}: {value:.4f}")
+            else:
+                print(f"{key}: {value}")
+        print("---------------------------")
 
     def save_trades(self, df):
         """Saves detailed trade history to the database."""

@@ -67,20 +67,25 @@ if __name__ == "__main__":
     rm = ResultsManager("run_sensitivity")
 
     # --- Data Loading (Once) ---
-    symbols = ["BTC", "ETH", "XRP", "SOL", "DOGE", "ADA", "DOT", "LINK", "LTC", "BCH"]
-    interval = "4h"
-    start_date = "2024-01-01"
-    end_date = "2024-06-01"
+    CONSTANTS = {
+        "SYMBOLS_FILE": "data/top_50_consistent_movers.json",
+        "START_DATE": "2024-01-01",
+        "END_DATE": "2024-06-01",
+        "INTERVAL": "4h",
+    }
 
     print("Loading data for optimization...")
-    k_h = KrakenHistoricalData()
-    start_dt = pd.to_datetime(start_date).tz_localize("UTC")
-    end_dt = pd.to_datetime(end_date).tz_localize("UTC")
+    from ggTrader.utils.setup import load_data_and_setup
 
-    global_ohlcv_df = k_h.get_ohlcv_df(
-        symbols, interval=interval, start=start_dt, end=end_dt
-    )
+    # Load data using shared setup
+    # Note: load_data_and_setup expects config dict
+    try:
+        global_ohlcv_df = load_data_and_setup(CONSTANTS)
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        exit(1)
 
+    # Preprocess for Trading engine (remove MultiIndex levels if necessary)
     if isinstance(global_ohlcv_df.columns, pd.MultiIndex):
         global_ohlcv_df.columns.names = [None] * global_ohlcv_df.columns.nlevels
     else:
@@ -117,25 +122,25 @@ if __name__ == "__main__":
     # Save Best Params
     rm.save_params(study.best_params)
 
-    # Save Metadata
-    metadata = {
-        "script": "run_sensitivity",
-        "timestamp": datetime.now().isoformat(),
-        "symbols": symbols,
-        "interval": interval,
-        "start_date": start_date,
-        "end_date": end_date,
+    # Save consolidated results (params + metrics) -> run_results.json
+    metrics = {
         "best_value": study.best_value,
-        "best_params": study.best_params,
+        "n_trials": len(study.trials),
     }
-    rm.save_metadata(metadata)
+    metadata = {
+        "start_date": CONSTANTS["START_DATE"],
+        "end_date": CONSTANTS["END_DATE"],
+        "symbols_file": CONSTANTS["SYMBOLS_FILE"],
+    }
+
+    rm.save_run_results(params=study.best_params, metrics=metrics, metadata=metadata)
 
     # Save best value to performance_metrics table
-    rm.db_manager.add_metrics(rm.run_id, {"best_value": study.best_value})
+    rm.db_manager.add_metrics(rm.run_id, metrics)
 
     # Save trials dataframe
     trials_df = study.trials_dataframe()
-    rm.save_metrics(trials_df, "trials_dataframe.csv")
+    rm.save_metrics(trials_df, "trials_dataframe.csv", save_csv=False)
 
     # --- Visualization ---
     try:
@@ -148,8 +153,7 @@ if __name__ == "__main__":
         )
     except Exception as e:
         print(f"Plotting failed: {e}")
-        import traceback
-
-        traceback.print_exc()
+        # import traceback
+        # traceback.print_exc()
 
     print(f"\nResults saved to: {rm.run_dir}")

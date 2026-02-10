@@ -1,10 +1,8 @@
 import argparse
-import pandas as pd
-from ggTrader.data.kraken.historical_data import KrakenHistoricalData
+from tabulate import tabulate
 from ggTrader.core.optimization import WalkForwardOptimizer
 from ggTrader.utils.results_manager import ResultsManager
-from ggTrader.utils.config import load_symbols_from_json
-from tabulate import tabulate
+from ggTrader.utils.setup import load_data_and_setup
 
 # --- USER CONFIGURATION ---
 CONSTANTS = {
@@ -30,14 +28,9 @@ CONSTANTS = {
 
 def main():
     rm = ResultsManager("run_wfo")
-    symbols = load_symbols_from_json(CONSTANTS["SYMBOLS_FILE"])
-    k_h = KrakenHistoricalData()
-    ohlcv = k_h.get_ohlcv_df(
-        symbols,
-        interval=CONSTANTS["INTERVAL"],
-        start=pd.to_datetime(CONSTANTS["START_DATE"]).tz_localize("UTC"),
-        end=pd.to_datetime(CONSTANTS["END_DATE"]).tz_localize("UTC"),
-    )
+
+    # Load data using shared setup
+    ohlcv = load_data_and_setup(CONSTANTS)
 
     optimizer = WalkForwardOptimizer(
         ohlcv_df=ohlcv,
@@ -51,8 +44,27 @@ def main():
 
     print("\n--- WFO Results ---")
     print(tabulate(results_df, headers="keys", tablefmt="github", floatfmt=".2f"))
-    rm.save_metadata(CONSTANTS)
-    rm.save_metrics(results_df, "wfo_results.csv")
+
+    # Calculate summary metrics from the WFO results
+    summary_metrics = {
+        "mean_sharpe": results_df["sharpe"].mean(),
+        "median_sharpe": results_df["sharpe"].median(),
+        "mean_profit_pct": results_df["profit_pct"].mean(),
+        "total_profit_pct": results_df["profit_pct"].sum(),
+    }
+
+    # Save consolidated results (params + metrics) -> run_results.json
+    # For WFO, 'parameters' are the configuration constants (ranges etc)
+    rm.save_run_results(
+        params=CONSTANTS,
+        metrics=summary_metrics,
+        metadata={"wfo_results": results_df.to_dict()},
+    )
+
+    # Save full results to DB (mirroring) but NOT to CSV
+    rm.save_metrics(results_df, "wfo_results.csv", save_csv=False)
+
+    rm.print_summary(summary_metrics)
 
 
 if __name__ == "__main__":

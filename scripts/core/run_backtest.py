@@ -1,9 +1,7 @@
 import argparse
-import pandas as pd
 from ggTrader.core.trading import Trading
-from ggTrader.data.kraken.historical_data import KrakenHistoricalData
 from ggTrader.utils.results_manager import ResultsManager
-from ggTrader.utils.config import load_symbols_from_json
+from ggTrader.utils.setup import load_data_and_setup
 
 # --- USER CONFIGURATION ---
 CONSTANTS = {
@@ -32,14 +30,8 @@ def main():
     rm = ResultsManager("run_backtest")
     params = rm.load_params(args.params) if args.params else CONSTANTS["DEFAULT_PARAMS"]
 
-    symbols = load_symbols_from_json(CONSTANTS["SYMBOLS_FILE"])
-    k_h = KrakenHistoricalData()
-    ohlcv = k_h.get_ohlcv_df(
-        symbols,
-        interval=CONSTANTS["INTERVAL"],
-        start=pd.to_datetime(CONSTANTS["START_DATE"]).tz_localize("UTC"),
-        end=pd.to_datetime(CONSTANTS["END_DATE"]).tz_localize("UTC"),
-    )
+    # Load data using shared setup
+    ohlcv = load_data_and_setup(CONSTANTS)
 
     engine = Trading(
         ohlcv_df=ohlcv,
@@ -50,8 +42,12 @@ def main():
     engine.run()
 
     stats = engine.portfolio.stats_dict()
-    rm.save_metadata(stats)
-    print(f"Final Value: {stats['total_value']:.2f}")
+
+    # Save consolidated results (params + metrics) -> run_results.json
+    rm.save_run_results(params=params, metrics=stats, metadata=CONSTANTS)
+
+    # Print summary to console
+    rm.print_summary(stats)
 
 
 if __name__ == "__main__":
