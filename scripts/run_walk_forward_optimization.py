@@ -325,6 +325,9 @@ def main():
                 template="plotly_dark",
             )
             rm.save_plotly_figure(fig, "wfo_stitched_equity")
+
+            # Save equity series to database
+            rm.save_equity_curve(equity_series, "wfo_stitched_equity")
         except Exception as e:
             print(f"Stitched plot failed: {e}")
 
@@ -347,6 +350,11 @@ def main():
             "Window Results": df_res,
             "Parameters": params_df,
         }
+
+        # Save metadata to DB (this triggers add_run)
+        metadata["params"] = results[-1]["params"]  # Representative params for the run
+        rm.save_metadata(metadata)
+
         excel_path = rm.save_excel(excel_data, "wfo_results.xlsx")
         print(f"\nExcel report saved to: {excel_path}")
 

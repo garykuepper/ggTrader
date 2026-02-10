@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from .utils import get_file_names
 from .converter import KrakenConverter
-from .duckdb_reader import KrakenDuckDBReader
+from .duckdb_reader import KrakenDuckDBReader, KrakenDailyMoversReader
 from .duckdb_ingestor import KrakenDuckDBIngestor
 from .remote_reader import KrakenRemoteReader
 
@@ -20,14 +20,14 @@ class KrakenHistoricalData:
         self.root_dir = self._find_project_root()
         self.raw_path = os.path.join(self.root_dir, "data", "raw")
         self.db_path = os.path.join(self.root_dir, "data", "ggtrader.db")
-        self.historical_mover_path = os.path.join(
-            self.root_dir, "data", "historical_movers"
+        self.historical_mover_db = os.path.join(
+            self.root_dir, "data", "daily_movers.db"
         )
 
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        os.makedirs(self.historical_mover_path, exist_ok=True)
 
         self.reader = KrakenDuckDBReader(self.db_path)
+        self.movers_reader = KrakenDailyMoversReader(self.historical_mover_db)
         self.ingestor = KrakenDuckDBIngestor(self.db_path)
         self.remote_reader = KrakenRemoteReader(self.root_dir)
 
@@ -129,14 +129,9 @@ class KrakenHistoricalData:
     def get_daily_historical_movers(self, **kwargs):
         return self.reader.get_daily_historical_movers(**kwargs)
 
-    def save_historical_movers_to_parquet(self):
-        return self.reader.save_historical_movers_to_parquet()
-
-    def load_historical_movers_from_parquet(self):
-        return self.reader.load_historical_movers_from_parquet()
-
     def get_historical_movers_by_day(self, *args, **kwargs):
-        return self.reader.get_historical_movers_by_day(*args, **kwargs)
+        """Redirects to the dedicated daily movers database."""
+        return self.movers_reader.get_historical_movers_by_day(*args, **kwargs)
 
     def build_4h_from_1h_and_merge(self, *args, **kwargs):
         # With DuckDB, we can probably just query 4h directly or aggregate 1h on the fly much faster.

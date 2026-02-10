@@ -183,3 +183,32 @@ class KrakenDuckDBReader:
         if self.conn:
             self.conn.close()
             self.conn = None
+
+
+class KrakenDailyMoversReader:
+    def __init__(self, db_path):
+        self.db_path = db_path
+        self.conn = None
+
+    def _get_conn(self):
+        if self.conn is None:
+            self.conn = duckdb.connect(self.db_path, read_only=True)
+        return self.conn
+
+    def get_historical_movers_by_day(self, date, top_n=20):
+        """
+        Get top movers for a specific historical date from the daily_movers database.
+        """
+        conn = self._get_conn()
+
+        # Ensure date is just a date string or object
+        if hasattr(date, "date"):
+            date = date.date()
+
+        sql = "SELECT * FROM daily_movers WHERE date = ? ORDER BY volume DESC LIMIT ?"
+        return conn.execute(sql, [date, top_n]).df()
+
+    def close(self):
+        if self.conn:
+            self.conn.close()
+            self.conn = None
