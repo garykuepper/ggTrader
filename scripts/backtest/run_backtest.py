@@ -35,8 +35,8 @@ def run_backtest(params_path=None, symbols_file=None):
         symbols = DEFAULT_SYMBOLS
         print(f"Using default symbols: {symbols}")
     interval = "4h"
-    start_date = "2024-01-01"
-    end_date = "2024-12-31"
+    start_date = "2023-01-01"
+    end_date = "2025-12-31"
     start_cash = 10000
     top_n_movers = 5
     max_position = 0.2
@@ -146,6 +146,9 @@ def run_backtest(params_path=None, symbols_file=None):
                 fees=engine.portfolio.transaction_fee,
                 init_cash=start_cash,
                 freq=interval,
+                size=max_position,
+                size_type="percent",
+                direction="longonly",
             )
 
             # Ensure we have a single Series for the total portfolio value

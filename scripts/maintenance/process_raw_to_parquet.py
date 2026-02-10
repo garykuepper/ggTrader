@@ -13,7 +13,7 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 )
 
-from ggTrader.data.KrakenConstants import kraken_map
+from ggTrader.data.kraken.constants import kraken_map
 
 
 def clean_ccy(ccy):
