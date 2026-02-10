@@ -1,9 +1,0 @@
-{
-    "adx_threshold": 17,
-    "adx_length": 15,
-    "sar_acceleration": 0.02,
-    "sar_maximum": 0.2,
-    "atr_multiplier": 3.5,
-    "atr_length": 20,
-    "use_dmp_cross": true
-}

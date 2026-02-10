@@ -1,2 +1,0 @@
-test_start,test_end,start_capital,end_capital,profit,return_pct,sharpe,sortino,params
-2024-01-31,2024-03-01,10000,9862.783203848961,-137.21679615103858,-1.3721679615103857,-1.2688284871695155,-1.7810830595149971,"{'adx_threshold': 25, 'adx_length': 19, 'sar_acceleration': 0.045000000000000005, 'sar_maximum': 0.2, 'atr_multiplier': 2.0, 'atr_length': 10, 'use_dmp_cross': True}"

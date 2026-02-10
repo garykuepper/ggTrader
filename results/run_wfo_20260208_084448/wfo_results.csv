@@ -1,5 +1,0 @@
-test_start,test_end,start_capital,end_capital,profit,return_pct,sharpe,sortino,params
-2024-01-31,2024-03-01,10000,10000,0,0.0,0,0,"{'adx_threshold': 23, 'adx_length': 14, 'sar_acceleration': 0.025, 'sar_maximum': 0.2, 'atr_multiplier': 2.5, 'atr_length': 15, 'use_dmp_cross': False}"
-2024-03-01,2024-03-31,10000,10000,0,0.0,0,0,"{'adx_threshold': 34, 'adx_length': 13, 'sar_acceleration': 0.03, 'sar_maximum': 0.15000000000000002, 'atr_multiplier': 2.5, 'atr_length': 11, 'use_dmp_cross': True}"
-2024-03-31,2024-04-30,10000,10000,0,0.0,0,0,"{'adx_threshold': 35, 'adx_length': 11, 'sar_acceleration': 0.015, 'sar_maximum': 0.2, 'atr_multiplier': 4.0, 'atr_length': 20, 'use_dmp_cross': True}"
-2024-04-30,2024-05-30,10000,10000,0,0.0,0,0,"{'adx_threshold': 19, 'adx_length': 18, 'sar_acceleration': 0.015, 'sar_maximum': 0.3, 'atr_multiplier': 2.5, 'atr_length': 10, 'use_dmp_cross': False}"
