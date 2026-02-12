@@ -6,7 +6,7 @@ from ggTrader.utils.setup import load_data_and_setup
 # --- USER CONFIGURATION ---
 CONSTANTS = {
     "SYMBOLS_FILE": "data/top_50_consistent_movers.json",
-    "START_DATE": "2025-01-01",
+    "START_DATE": "2023-01-01",
     "END_DATE": "2025-12-31",
     "INTERVAL": "4h",
     "START_CASH": 10000,
