@@ -4,9 +4,8 @@ import pandas as pd
 import json
 from pathlib import Path
 from .utils import get_file_names
-from .converter import KrakenConverter
-from .duckdb_reader import KrakenDuckDBReader, KrakenDailyMoversReader
-from .duckdb_ingestor import KrakenDuckDBIngestor
+from .postgres_reader import KrakenPostgresReader
+from .postgres_ingestor import KrakenPostgresIngestor
 from .remote_reader import KrakenRemoteReader
 
 
@@ -14,21 +13,25 @@ class KrakenHistoricalData:
     """
     Facade for Kraken historical data operations.
     Delegates to specialized modules for conversion, reading, and remote access.
+    Now uses PostgreSQL (TimescaleDB) for storage and retrieval.
     """
 
     def __init__(self):
         self.root_dir = self._find_project_root()
         self.raw_path = os.path.join(self.root_dir, "data", "raw")
-        self.db_path = os.path.join(self.root_dir, "data", "ggtrader.db")
-        self.historical_mover_db = os.path.join(
-            self.root_dir, "data", "daily_movers.db"
+
+        # PostgreSQL Connection
+        # Defaults to localhost/ggtrader if not set
+        self.connection_string = os.getenv(
+            "POSTGRES_CONNECTION_STRING",
+            "postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader",
         )
 
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        self.reader = KrakenPostgresReader(self.connection_string)
+        # Movers reader functionality merged into KrakenPostgresReader
+        self.movers_reader = self.reader
 
-        self.reader = KrakenDuckDBReader(self.db_path)
-        self.movers_reader = KrakenDailyMoversReader(self.historical_mover_db)
-        self.ingestor = KrakenDuckDBIngestor(self.db_path)
+        self.ingestor = KrakenPostgresIngestor(self.connection_string)
         self.remote_reader = KrakenRemoteReader(self.root_dir)
 
     def _find_project_root(self):
@@ -62,20 +65,14 @@ class KrakenHistoricalData:
         return get_file_names(path, quote_only)
 
     # ---------- Conversion (Legacy / For Reference) ----------
-    def csvs_dir_to_parquet(self, *args, **kwargs):
-        from .converter import KrakenConverter
-
-        converter = KrakenConverter(os.path.join(self.root_dir, "data", "parquet"))
-        return converter.csvs_dir_to_parquet(*args, **kwargs)
 
     def sync_local_data(self, **kwargs):
         """
-        Intelligently sync new Kraken raw CSV directories into the DuckDB dataset.
+        Intelligently sync new Kraken raw CSV directories into the PostgreSQL dataset.
         Uses a manifest to avoid re-processing directories.
         """
-        manifest_path = os.path.join(
-            os.path.dirname(self.db_path), ".processed_dirs.json"
-        )
+        # We store manifest in data root
+        manifest_path = os.path.join(self.root_dir, "data", ".processed_dirs.json")
         processed_dirs = set()
 
         if os.path.exists(manifest_path):
@@ -97,7 +94,7 @@ class KrakenHistoricalData:
         )
 
         for d in new_dirs:
-            print(f"Ingesting {os.path.basename(d)} into DuckDB...")
+            print(f"Ingesting {os.path.basename(d)} into PostgreSQL...")
             self.ingestor.ingest_dir(d)
             processed_dirs.add(os.path.basename(d))
 
@@ -110,7 +107,7 @@ class KrakenHistoricalData:
 
         print("Data synchronization complete.")
 
-    # ---------- Local Data Reading (Delegated to KrakenDuckDBReader) ----------
+    # ---------- Local Data Reading (Delegated to KrakenPostgresReader) ----------
     def read_ohlcv(self, *args, **kwargs):
         return self.reader.read_ohlcv(*args, **kwargs)
 
@@ -130,12 +127,11 @@ class KrakenHistoricalData:
         return self.reader.get_daily_historical_movers(**kwargs)
 
     def get_historical_movers_by_day(self, *args, **kwargs):
-        """Redirects to the dedicated daily movers database."""
-        return self.movers_reader.get_historical_movers_by_day(*args, **kwargs)
+        """Redirects to the reader (which handles SQL logic)."""
+        return self.reader.get_daily_historical_movers(*args, **kwargs)
 
     def build_4h_from_1h_and_merge(self, *args, **kwargs):
-        # With DuckDB, we can probably just query 4h directly or aggregate 1h on the fly much faster.
-        # Keeping this for now but it's less necessary.
+        # Postgres stores 4h directly. We can query it.
         return self.reader.read_ohlcv(*args, interval="4h", **kwargs)
 
     # ---------- Remote Data Access (Delegated to KrakenRemoteReader) ----------
@@ -193,11 +189,13 @@ if __name__ == "__main__":
     k = KrakenHistoricalData()
 
     # Simple test: list pairs and get random OHLCV
-    pairs = k.list_parquet_pairs()
-    print(f"Total pairs in Parquet: {len(pairs)}")
+    pairs = k.list_symbols()
+
+    print(f"Total symbols in DB: {len(pairs)}")
 
     symbols = k.get_random_symbols(n=3)
     print(f"Testing random symbols: {symbols}")
 
-    df = k.get_ohlcv_df(symbols, interval="1d")
-    print(df.head())
+    if symbols:
+        df = k.get_ohlcv_df(symbols, interval="1d")
+        print(df.head())

@@ -1,9 +1,0 @@
-{
-    "test_key": "test_value",
-    "strategy_params": {
-        "param1": 10,
-        "param2": 0.5
-    },
-    "total_return_pct": 15.5,
-    "run_id": "de3ad252-e8d4-4c2f-b7cb-07780657b125"
-}

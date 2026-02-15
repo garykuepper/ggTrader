@@ -6,17 +6,23 @@ This document provides a detailed technical overview of the components and data 
 
 The project is structured into several modular layers, ensuring that logic for data handling, signal generation, and trade execution remains decoupled.
 
-### 1. Data Layer (`src/ggTrader/data/`)
+## Data Layer
 
-- **Adapters**: Scripts for fetching data from exchanges like Kraken (`data/kraken/`).
-- **Storage**: Primarily uses **DuckDB** (`ggtrader.db`, `daily_movers.db`) for high-speed local processing. Historical data is often stored in Parquet format for interoperability.
-- **Access**: Normalized data access patterns for OHLCV, ensuring consistency across backtests and live execution.
+- **Storage**: PostgreSQL (TimescaleDB) for OHLCV data. optimized for time-series.
+- **Ingestion**: `KrakenPostgresIngestor` processes raw CSVs into Hypertable.
+- **Access**: `KrakenHistoricalData` facade delegates to `KrakenPostgresReader`.
+- **Caching**: `ResultDBManager` (DuckDB) stores run results and study cache (`study_results`).
 
-### 2. Signal Generation (`src/ggTrader/indicators/`)
+## Core Engine
 
-- This layer encapsulates the "brain" of the trading strategy.
-- **Signals.py**: Centralized logic for calculating indicators (using `pandas-ta`, `ta`, etc.) and generating entry/exit signals.
-- **Modular Indicators**: Easily adjustable parameters for RSI, Moving Averages, and proprietary signals.
+- **Backtesting**: `FastBacktest` uses `vectorbt` Portfolio API.
+- **Broadcasting**: `SignalFactory` (vectorbt IndicatorFactory) enables running thousands of parameter combinations in a single vectorized operation.
+- **Signals**: `signals.py` implements "Golden Source" logic (PSAR, ADX, ATR Trailing Stop) using Numba and VectorBT.
+
+## Workflows
+
+1. **Sensitivity Analysis**: `run_sensitivity_analysis.py` performs grid search using `FastBacktest` broadcasting.
+2. **Walk-Forward Optimization**: `run_walk_forward_optimization.py` uses rolling splitting on vectorized results.
 
 ### 3. Execution Engine (`src/ggTrader/core/`)
 

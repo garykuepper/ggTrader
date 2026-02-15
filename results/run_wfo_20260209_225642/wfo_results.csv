@@ -1,3 +1,0 @@
-window_start,window_end,params,end_capital,net_profit,sharpe,sortino
-2025-01-31 00:00:00+00:00,2025-02-10 00:00:00+00:00,"{'adx_threshold': 30, 'adx_length': 13, 'sar_acceleration': 0.025, 'sar_maximum': 0.25, 'atr_multiplier': 1.5, 'atr_length': 20, 'use_dmp_cross': False}",477918.8410126467,-22081.158987353352,inf,inf
-2025-02-10 00:00:00+00:00,2025-02-20 00:00:00+00:00,"{'adx_threshold': 35, 'adx_length': 17, 'sar_acceleration': 0.04, 'sar_maximum': 0.3, 'atr_multiplier': 2.0, 'atr_length': 13, 'use_dmp_cross': True}",23675343.79193171,-220598.25870062178,inf,inf

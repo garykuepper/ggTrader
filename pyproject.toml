@@ -32,7 +32,8 @@ dependencies = [
     "joblib",
     "xlsxwriter",
     "cupy-cuda13x",
-    "duckdb",
+    "psycopg2-binary",
+    "sqlalchemy",
 ]
 
 [tool.setuptools.packages.find]

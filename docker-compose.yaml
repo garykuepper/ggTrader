@@ -1,0 +1,22 @@
+services:
+  ggtrader_db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: ggtrader_db
+    restart: always
+    environment:
+      TZ: America/Los_Angeles
+      POSTGRES_DB: ggtrader
+      POSTGRES_USER: ggtrader
+      POSTGRES_PASSWORD: ggtrader
+    ports:
+      - "5433:5432" # Maps host port 5433 to container port 5432
+    volumes:
+      - ggtrader_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ggtrader -d ggtrader" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ggtrader_pgdata: # Dedicated persistent volume for ggTrader data

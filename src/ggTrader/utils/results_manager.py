@@ -27,7 +27,6 @@ class ResultsManager:
 
         # New: Database and Log Manager
         self.db_manager = ResultDBManager(
-            db_path=self.base_results_dir / "trading_results.db",
             log_path=self.base_results_dir / "runs_log.csv",
         )
 

@@ -76,9 +76,23 @@ Check the stability of your optimized parameters:
 python scripts/run_sensitivity_analysis.py
 ```
 
+## Docker Compose Setup
+
+### 1. Set up Database
+
+- Run the database container:
+
+     ```bash
+     docker-compose up -d
+     ```
+
+- This starts a TimescaleDB instance on port 5433 with default credentials (`gary_admin`/`your_secure_password`).
+- The application is configured to connect to this instance by default.
+
 ## 🐳 External Dependencies
 
-- **DuckDB**: Used for local data storage. The database files (`ggtrader.db`, `daily_movers.db`) will be created automatically in the root or `data/` directory upon ingestion.
+- **PostgreSQL (TimescaleDB)**: Primary database for OHLCV data.
+- **Results DB**: Stores backtest runs and WFO results in Postgres.
 - **VectorBT**: Core backtesting engine.
 
 ---

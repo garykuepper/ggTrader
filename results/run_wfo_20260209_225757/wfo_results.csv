@@ -1,3 +1,0 @@
-test_start,test_end,params,start_capital,end_capital,profit,return_pct,sharpe,sortino
-2025-01-31 00:00:00+00:00,2025-02-10 00:00:00+00:00,"{'adx_threshold': 27, 'adx_length': 17, 'sar_acceleration': 0.03, 'sar_maximum': 0.2, 'atr_multiplier': 3.5, 'atr_length': 20, 'use_dmp_cross': False}",10000.0,472832.43354000186,-27167.566459998146,-5.433513291999629,inf,inf
-2025-02-10 00:00:00+00:00,2025-02-20 00:00:00+00:00,"{'adx_threshold': 18, 'adx_length': 17, 'sar_acceleration': 0.025, 'sar_maximum': 0.3, 'atr_multiplier': 4.0, 'atr_length': 10, 'use_dmp_cross': True}",472832.43354000186,22568347.586826168,-1073274.0901739248,-4.5397651008774345,inf,inf
