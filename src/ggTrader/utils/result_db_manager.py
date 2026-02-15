@@ -18,7 +18,7 @@ class ResultDBManager:
         if connection_string is None:
             self.connection_string = os.getenv(
                 "POSTGRES_CONNECTION_STRING",
-                "postgresql+psycopg2://gary_admin:your_secure_password@localhost:5433/ggtrader",
+                "postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader",
             )
         else:
             self.connection_string = connection_string

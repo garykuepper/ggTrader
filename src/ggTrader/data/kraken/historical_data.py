@@ -7,6 +7,7 @@ from .utils import get_file_names
 from .postgres_reader import KrakenPostgresReader
 from .postgres_ingestor import KrakenPostgresIngestor
 from .remote_reader import KrakenRemoteReader
+from tqdm import tqdm
 
 
 class KrakenHistoricalData:
@@ -93,8 +94,8 @@ class KrakenHistoricalData:
             f"Found {len(new_dirs)} new directories to sync: {[os.path.basename(d) for d in new_dirs]}"
         )
 
-        for d in new_dirs:
-            print(f"Ingesting {os.path.basename(d)} into PostgreSQL...")
+        for d in tqdm(new_dirs, desc="Syncing Directories", unit="dir"):
+            # print(f"Ingesting {os.path.basename(d)} into PostgreSQL...")
             self.ingestor.ingest_dir(d)
             processed_dirs.add(os.path.basename(d))
 
