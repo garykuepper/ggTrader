@@ -76,3 +76,13 @@
 3. **Sequential Execution**:
     - Notebooks must be runnable from top to bottom without errors.
     - Avoid relying on hidden state (out-of-order execution).
+
+## Documentation Standards
+
+1. **Single Source of Truth**:
+    - Core architectural changes (e.g., database transitions) must be reflected across all documentation in `docs/` and `README.md`.
+    - Supplemental documentation must reside in the `docs/` directory.
+
+2. **Project Structure Alignment**:
+    - Documentation must accurately reflect the directory structure (e.g., `src/`, `scripts/`, `docs/`).
+    - Use relative links for cross-referencing between documentation files.

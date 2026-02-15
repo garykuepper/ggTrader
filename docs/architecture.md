@@ -11,7 +11,7 @@ The project is structured into several modular layers, ensuring that logic for d
 - **Storage**: PostgreSQL (TimescaleDB) for OHLCV data. optimized for time-series.
 - **Ingestion**: `KrakenPostgresIngestor` processes raw CSVs into Hypertable.
 - **Access**: `KrakenHistoricalData` facade delegates to `KrakenPostgresReader`.
-- **Caching**: `ResultDBManager` (DuckDB) stores run results and study cache (`study_results`).
+- **Caching**: `ResultDBManager` (PostgreSQL) stores backtest results, study caches, and optimization metadata.
 
 ## Core Engine
 
@@ -44,7 +44,7 @@ graph TD
     B -->|OHLCV Data| C{Signals.py}
     C -->|Long/Short Signals| D[Backtest Engine]
     D -->|Trades & Metrics| E(Results Manager)
-    E -->|Storage| F[DuckDB / results/ folder]
+    E -->|Storage| F[TimescaleDB / results/ folder]
     G[Optimization Scripts] -->|Loop| D
     F -->|Visualization| H[Jupyter Notebooks]
 ```
@@ -58,4 +58,4 @@ Every run (backtest or WFO) outputs results to a timestamped folder in the `resu
 - **Config**: A snapshot of the parameters used for that specific run.
 
 ---
-*Back to [README.md](readme.md)*
+*Back to [README.md](../readme.md)*

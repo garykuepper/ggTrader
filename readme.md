@@ -2,7 +2,7 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/garykuepper/ggTrader)
 [![Backtest Engine](https://img.shields.io/badge/engine-VectorBT-orange.svg)](https://vectorbt.pro/)
 [![Jupyter](https://img.shields.io/badge/Jupyter-F37626.svg?style=flat&logo=Jupyter&logoColor=white)](https://jupyter.org/)
 [![Database: TimescaleDB](https://img.shields.io/badge/database-TimescaleDB-00D3FF?logo=timescaledb&logoColor=white)](https://www.timescale.com/)
@@ -27,8 +27,8 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
 
 ## 📖 Documentation
 
-- [**Architecture Guide**](ARCHITECTURE.md): Deep dive into the project structure and data flow.
-- [**Installation & Setup**](INSTALLATION.md): How to get `ggTrader` running on your local machine.
+- [**Architecture Guide**](docs/architecture.md): Deep dive into the project structure and data flow.
+- [**Installation & Setup**](docs/installation.md): How to get `ggTrader` running on your local machine.
 
 ## 📁 Project Structure
 
@@ -59,4 +59,4 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
    ```
 
 ---
-*For a more detailed breakdown, please refer to the [Architecture Guide](ARCHITECTURE.md).*
+*For a more detailed breakdown, please refer to the [Architecture Guide](docs/architecture.md).*
