@@ -1,15 +1,23 @@
-import sys
-import os
 import argparse
+import os
+import sys
+from typing import Optional
+
 import pandas as pd
-from tabulate import tabulate
 from sqlalchemy import create_engine, text
+from tabulate import tabulate
 
 # Ensure project root is in path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 
-def get_engine(conn_str=None):
+def get_engine(conn_str: Optional[str] = None):
+    """
+    Creates a SQLAlchemy engine for the PostgreSQL database.
+
+    Args:
+        conn_str: Optional connection string. Defaults to env var or default.
+    """
     if not conn_str:
         conn_str = os.getenv(
             "POSTGRES_CONNECTION_STRING",
@@ -18,14 +26,19 @@ def get_engine(conn_str=None):
     return create_engine(conn_str)
 
 
-def list_runs(engine):
-    """Lists recent runs from the database."""
+def list_runs(engine) -> None:
+    """
+    Lists recent runs from the database.
+    """
     query = """
         SELECT 
             r.run_id, 
             r.run_type, 
             r.timestamp,
-            (SELECT metric_value FROM performance_metrics m WHERE m.run_id = r.run_id AND m.metric_name IN ('profit_pct', 'return_pct', 'best_value') LIMIT 1) as summary_metric
+            (SELECT metric_value FROM performance_metrics m 
+             WHERE m.run_id = r.run_id 
+             AND m.metric_name IN ('profit_pct', 'return_pct', 'best_value') 
+             LIMIT 1) as summary_metric
         FROM runs r
         ORDER BY r.timestamp DESC
         LIMIT 15
@@ -43,8 +56,10 @@ def list_runs(engine):
         print(tabulate(df, headers="keys", tablefmt="github", showindex=False))
 
 
-def show_run_details(engine, run_id):
-    """Shows detailed information for a specific run."""
+def show_run_details(engine, run_id: str) -> None:
+    """
+    Shows detailed information for a specific run.
+    """
     # Run info
     run_info = pd.read_sql(
         "SELECT * FROM runs WHERE run_id = %(run_id)s",
@@ -72,7 +87,8 @@ def show_run_details(engine, run_id):
 
     # WFO Windows if applicable
     windows = pd.read_sql(
-        "SELECT window_id, test_start, test_end, return_pct, sharpe, sortino FROM wfo_windows WHERE run_id = %(run_id)s ORDER BY window_id",
+        "SELECT window_id, test_start, test_end, return_pct, sharpe, sortino "
+        "FROM wfo_windows WHERE run_id = %(run_id)s ORDER BY window_id",
         engine,
         params={"run_id": run_id},
     )
@@ -81,7 +97,10 @@ def show_run_details(engine, run_id):
         print(tabulate(windows, headers="keys", tablefmt="github", showindex=False))
 
 
-def main():
+def main() -> None:
+    """
+    Main entry point for browsing results.
+    """
     parser = argparse.ArgumentParser(
         description="ggTrader Results Browser (PostgreSQL)"
     )

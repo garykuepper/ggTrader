@@ -1,3 +1,4 @@
+import argparse
 import sys
 import os
 import pandas as pd
@@ -27,6 +28,7 @@ except ImportError:
 
 # --- Configuration ---
 CONSTANTS = {
+    "SYMBOLS": None,  # Set to a list like ["BTC/USD", "ETH/USD"] to override JSON
     "SYMBOLS_FILE": "data/top_50_consistent_movers.json",
     "START_DATE": "2024-01-01",
     "END_DATE": "2024-06-01",
@@ -40,6 +42,10 @@ def main():
     Run a vectorized sensitivity analysis (grid search) across multiple parameters.
     Uses VectorBT's broadcasting to simulate all parameter combinations simultaneously.
     """
+    parser = argparse.ArgumentParser(description="Run Vectorized Sensitivity Analysis")
+    parser.add_argument("--params", type=str, help="Path to params.json (optional)")
+    args = parser.parse_args()
+
     rm = ResultsManager("run_sensitivity")
 
     # Define Parameter Grid

@@ -1,9 +1,11 @@
+import argparse
 import os
 import sys
-import pandas as pd
 import traceback
 
-# Setup path
+import pandas as pd
+
+# Ensure project root is in path
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 )
@@ -11,15 +13,19 @@ sys.path.append(
 from ggTrader.data.kraken.historical_data import KrakenHistoricalData
 
 
-def test_compatibility():
+def test_compatibility() -> None:
+    """
+    Verifies database compatibility with the Trading engine.
+    """
     print("Initializing KrakenHistoricalData (Postgres)...")
-    kh = KrakenHistoricalData()
+    try:
+        kh = KrakenHistoricalData()
+    except Exception as e:
+        print(f"Failed to initialize data manager: {e}")
+        return
 
     # 1. Test get_ohlcv_df (MultiIndex structure)
     print("\n--- Testing get_ohlcv_df (MultiIndex) ---")
-    symbols = ["XBT", "ETH"]  # Assuming these exist or we can find some
-    # We need to find symbols that actually have data.
-    # Let's list available first
     available = kh.reader.list_symbols()
     print(f"Available symbols (first 5): {available[:5]}")
 
@@ -44,7 +50,6 @@ def test_compatibility():
             print("Index Type:", type(df.index))
 
             # Verify compatibility requirements for Trading class
-            # 1. MultiIndex with Symbol at level 0?
             is_multi = isinstance(df.columns, pd.MultiIndex)
             print(f"Is MultiIndex? {is_multi}")
 
@@ -64,14 +69,25 @@ def test_compatibility():
     print("\n--- Testing get_ohlcv (Single Symbol) ---")
     try:
         sym = test_syms[0]
-        df_single = kh.get_ohlcv(sym, interval="1d")
+        # kh.get_ohlcv_df handles single as well but returns MultiIndex
+        # kh.reader.get_ohlcv is the underlying call for single non-multi
+        df_single = kh.reader.get_ohlcv(sym, interval="1d")
         print(f"Single DF Shape: {df_single.shape}")
         print("Columns:", df_single.columns.tolist())
         if "close" in df_single.columns:
             print("SUCCESS: Single symbol fetch contains 'close'.")
     except Exception as e:
-        print(f"Error in get_ohlcv: {e}")
+        print(f"Error in single symbol fetch: {e}")
+
+
+def main() -> None:
+    """
+    Main orchestration for compatibility test.
+    """
+    parser = argparse.ArgumentParser(description="Verify Engine/DB Compatibility")
+    parser.parse_args()  # Allow --help
+    test_compatibility()
 
 
 if __name__ == "__main__":
-    test_compatibility()
+    main()

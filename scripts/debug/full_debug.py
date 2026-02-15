@@ -1,19 +1,26 @@
+import argparse
 import os
 import sys
 import traceback
-import pandas as pd
+
 import numpy as np
-
-# Set PYTHONPATH to src to find ggTrader
-sys.path.append(os.path.abspath("src"))
-
+import pandas as pd
 import vectorbt as vbt
+
+# Ensure project root is in path
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+)
+
+from ggTrader.core.trading import Trading
 from ggTrader.data.kraken.historical_data import KrakenHistoricalData
 from ggTrader.indicators.signals import Signals
-from ggTrader.core.trading import Trading
 
 
-def log_df_info(name, df):
+def log_df_info(name: str, df: pd.DataFrame) -> None:
+    """
+    Log structural information about a DataFrame.
+    """
     print(f"\n--- DEBUG: {name} ---")
     print(f"Type: {type(df)}")
     if hasattr(df, "columns"):
@@ -25,10 +32,23 @@ def log_df_info(name, df):
         print(f"Index names: {df.index.names}")
 
 
-from ggTrader.core.screener import Screener
+def main() -> None:
+    """
+    Main entry point for the full simulation debug test.
+    """
+    parser = argparse.ArgumentParser(description="Run Full Simulation Debug")
+    parser.add_argument(
+        "--log", action="store_true", help="Redirect output to full_traceback.txt"
+    )
+    args = parser.parse_args()
 
+    if args.log:
+        output_log = "full_traceback.txt"
+        f = open(output_log, "w")
+        sys.stdout = f
+        sys.stderr = f
+        print(f"Logging to {output_log}...")
 
-def main():
     try:
         # Configuration
         symbols = ["BTC", "ETH", "XRP", "SOL", "DOGE"]
@@ -45,7 +65,7 @@ def main():
             symbols, interval=interval, start=start_dt, end=end_dt
         )
 
-        # Defensive strip for ohlcv_df (like in run_backtest.py)
+        # Defensive strip for ohlcv_df names
         if isinstance(ohlcv_df.columns, pd.MultiIndex):
             ohlcv_df.columns.names = [None] * ohlcv_df.columns.nlevels
         else:
@@ -86,7 +106,7 @@ def main():
             engine.calc_signals(daily_movers["symbol"].tolist())
             print("Signals calculated.")
 
-            print("Checking buy/sell...")
+            print("Checking transactions...")
             engine.check_sell()
             engine.check_buy()
 
@@ -95,10 +115,13 @@ def main():
     except Exception as e:
         print(f"\nERROR CAUGHT: {e}")
         traceback.print_exc()
+    finally:
+        if args.log:
+            sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
+            f.close()
+            print(f"Debug log written to full_traceback.txt")
 
 
 if __name__ == "__main__":
-    with open("full_traceback.txt", "w") as f:
-        sys.stdout = f
-        sys.stderr = f
-        main()
+    main()

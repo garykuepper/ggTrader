@@ -1,37 +1,39 @@
 import os
-import sys
 from sqlalchemy import create_engine, text
 
 
-def clean_db():
+def clean_db() -> None:
+    """
+    Cleans the OHLCV table by removing old or malformed data.
+    """
     connection_string = os.getenv(
         "POSTGRES_CONNECTION_STRING",
-        "postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader",
+        "postgresql+psycopg2://gary_admin:your_secure_password@localhost:5433/ggtrader",
     )
 
-    print(f"Connecting to DB...")
-    engine = create_engine(connection_string)
+    print("Connecting to database...")
+    try:
+        engine = create_engine(connection_string)
+    except Exception as e:
+        print(f"Failed to connect to database: {e}")
+        return
 
     with engine.begin() as conn:
         print("--- Cleaning Database ---")
 
-        # 1. Delete 1970 data
+        # 1. Delete old data (pre-2010)
         print("Deleting rows with timestamp < 2010-01-01...")
         res = conn.execute(text("DELETE FROM ohlcv WHERE timestamp < '2010-01-01';"))
         print(f"Deleted {res.rowcount} rows.")
 
-        # 2. Delete bad symbols (ending with _digit)
-        # e.g. 1INCHEUR_1, 1INCHEUR_1440
-        print("Deleting rows with bad symbols (ending in _digit)...")
+        # 2. Delete symbols with interval suffixes (e.g., BTCUSD_1)
+        print("Deleting rows with interval-suffixed symbols (e.g., _1, _4h)...")
         res = conn.execute(text("DELETE FROM ohlcv WHERE symbol ~ '_[0-9]+$';"))
         print(f"Deleted {res.rowcount} rows.")
 
-        # 3. Delete raw pairs that were not standardized? (Optional)
-        # For now, just the known bad ones.
-
-        # 4. Analyze remaining
+        # 3. Analyze remaining data
         count = conn.execute(text("SELECT count(*) FROM ohlcv;")).scalar()
-        print(f"Remaining rows: {count}")
+        print(f"Remaining rows in ohlcv: {count}")
 
         # Sample symbols
         syms = conn.execute(

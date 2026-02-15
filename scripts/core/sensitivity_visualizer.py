@@ -1,45 +1,42 @@
+import os
+from typing import List, Optional, Union
+
+import matplotlib.pyplot as plt
 import optuna
 import optuna.visualization as vis
-import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
-import sys
-import os
-from pathlib import Path
+import seaborn as sns
 
 
 def plot_optimization_landscape(
-    study_or_df,
-    params_to_plot=["adx_threshold", "atr_multiplier"],
-    metric_name="Sharpe Ratio",
-    results_manager=None,
-):
+    study_or_df: Union[optuna.Study, pd.DataFrame],
+    params_to_plot: List[str] = ["adx_threshold", "atr_multiplier"],
+    metric_name: str = "Sharpe Ratio",
+    results_manager: Optional[object] = None,
+) -> None:
     """
     Generates sensitivity plots for analyzing optimization results.
 
     Args:
-        study_or_df (optuna.Study or pd.DataFrame): The completed optimization study or results DataFrame.
-        params_to_plot (list): List of parameter names to visualize.
-        metric_name (str): Label for the objective value.
-        results_manager (ResultsManager, optional): Instance to handle plot saving.
+        study_or_df: The completed optimization study or results DataFrame.
+        params_to_plot: List of parameter names to visualize.
+        metric_name: Label for the objective value.
+        results_manager: Instance to handle plot saving (ResultsManager).
     """
 
-    # helper to handle showing or saving
-    def handle_plot(fig, filename):
+    def handle_plot(fig, filename: str) -> None:
+        """
+        Helper to handle showing or saving plots.
+        """
         if results_manager:
-            # sys.path.append(
-            #     os.path.abspath(
-            #         os.path.join(os.path.dirname(__file__), "..", "..", "src")
-            #     )
-            # )
             path = results_manager.get_plot_path(filename)
             if hasattr(fig, "write_image"):  # Plotly
-                # Default plotly save (requires kaleido)
                 try:
                     fig.write_image(str(path))
                 except Exception as e:
                     print(
-                        f"Failed to save Plotly image {filename}: {e}. Make sure 'kaleido' is installed."
+                        f"Failed to save Plotly image {filename}: {e}. "
+                        "Make sure 'kaleido' is installed."
                     )
                     # Fallback to HTML if image saving fails
                     html_path = path.with_suffix(".html")
@@ -54,7 +51,6 @@ def plot_optimization_landscape(
     # Distinguish between Optuna Study and DataFrame
     if isinstance(study_or_df, pd.DataFrame):
         df = study_or_df
-        # Assuming df has columns for params and the metric
         # Check if params exist
         missing = [p for p in params_to_plot if p not in df.columns]
         if missing:
@@ -62,17 +58,14 @@ def plot_optimization_landscape(
             return
 
         if metric_name not in df.columns:
-            # Try to guess metric if not found? Or just print warning
             print(f"Metric '{metric_name}' not in DataFrame columns: {df.columns}")
             return
 
         # 1. Custom Static Heatmap (Pandas/Seaborn)
         if len(params_to_plot) >= 2:
-            p1 = params_to_plot[0]
-            p2 = params_to_plot[1]
+            p1, p2 = params_to_plot[0], params_to_plot[1]
 
-            # Pivot for heatmap
-            # Aggregating by mean in case of duplicates
+            # Pivot for heatmap, aggregating by mean in case of duplicates
             pivot = df.pivot_table(
                 index=p1, columns=p2, values=metric_name, aggfunc="mean"
             )
@@ -83,9 +76,6 @@ def plot_optimization_landscape(
             handle_plot(fig_sns, f"heatmap_{p1}_{p2}.png")
         else:
             print("Need at least 2 parameters for heatmap.")
-
-        # Can add 3D scatter or other plots here for DataFrame
-        pass
 
     elif isinstance(study_or_df, optuna.Study):
         study = study_or_df
@@ -136,8 +126,7 @@ def plot_optimization_landscape(
             trials_df.rename(columns={"value": metric_name}, inplace=True)
 
             if len(params_to_plot) >= 2:
-                p1 = params_to_plot[0]
-                p2 = params_to_plot[1]
+                p1, p2 = params_to_plot[0], params_to_plot[1]
 
                 pivot = trials_df.pivot_table(
                     index=p1, columns=p2, values=metric_name, aggfunc="mean"

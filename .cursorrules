@@ -5,6 +5,7 @@
     - Use 4 spaces for indentation.
     - Maximum line length of 88-100 characters (Black/Ruff style).
     - Snake_case for functions/variables, CamelCase for classes, UPPER_CASE for constants.
+    - **Snake_case for filenames**: All Python files must be lowercase with underscores (e.g., `trading.py`, not `Trading.py`).
     - Imports grouped: Standard lib, Third-party, Local (sorted alphabetically).
 
 2. **Concise Documentation**:
@@ -23,8 +24,11 @@
 4. **Structure**:
     - Constants defined at the module level (top), not inside functions unless necessary.
     - Main execution logic inside `if __name__ == "__main__":` block.
+    - **Single Source of Truth**: Core logic must live in `src/`. Do not duplicate definitions across files.
+    - **Orchestration Boilerplate**: Scripts in `scripts/` must follow a standard template: `sys.path` setup, `main()` orchestration, and `argparse` for inputs. Every script must handle the `--help` flag gracefully.
+    - **Results Management**: Use `ResultsManager` for all artifact, metric, and plot saving to ensure consistent output directory structures and metadata logging.
 
-# ggTrader Project Specific Rules
+## ggTrader Project Specific Rules
 
 1. **Vectorization First**:
     - Avoid iterating over rows in DataFrames for signal calculation.
@@ -40,32 +44,35 @@
     - Always use `os.path.join` or `pathlib.Path` for file paths.
     - Project root should be dynamically resolved relative to `src` or `scripts`, not hardcoded.
 
-4. **Configuration**:
+4. **Configuration & Data Loading**:
     - Use `CONSTANTS` dictionaries at module level for default configuration.
+    - **Standardized Loading**: Always use `load_data_and_setup(CONSTANTS)` for data retrieval in scripts and notebooks.
+    - **Flexible Symbols**: Support both `SYMBOLS` (direct list) and `SYMBOLS_FILE` (JSON path) in `CONSTANTS` to allow seamless switching between asset pools.
 
 5. **Dependency Discipline**:
     - Update `pyproject.toml` immediately when adding new libraries.
     - Avoid `pip install` without recording the dependency.
 
 6. **Import Strategy**:
-    - Use absolute imports (`from ggTrader.core...`) rooted in `src`.
+    - Use absolute imports (`from ggTrader.core...`) rooted in `src` for cross-package access.
+    - **Relative Imports in Init**: Always use relative imports within package `__init__.py` files (e.g., `from .module import Class`).
     - Avoid circular imports by careful module design (e.g. `utils` vs `core`).
 
 7. **Resilient Scripts**:
     - Long-running scripts (ingestion/optimization) must handle exceptions (log & continue, do not crash).
     - Implement resumability (checkpoints) for any process taking >5 minutes.
 
-# Jupyter Notebook Standards
+## Jupyter Notebook Standards
 
-8.  **Imports from `src`**:
-    -   Notebooks must import core logic and indicators from `src`.
-    -   Do not define complex strategy classes or large functions inline.
-    -   Notebooks are for **orchestration**, **analysis**, and **visualization** only.
+1. **Imports from `src`**:
+    - Notebooks must import core logic and indicators from `src`.
+    - Do not define complex strategy classes or large functions inline.
+    - Notebooks are for **orchestration**, **analysis**, and **visualization** only.
 
-9.  **Path Setup**:
-    -   Always include the standard `sys.path` setup block at the top to resolve project root.
-    -   Use `os.path.join` to locate files relative to the project root, not absolute paths.
+2. **Path Setup**:
+    - Always include the standard `sys.path` setup block at the top to resolve project root.
+    - Use `os.path.join` to locate files relative to the project root, not absolute paths.
 
-10. **Sequential Execution**:
-    -   Notebooks must be runnable from top to bottom without errors.
-    -   Avoid relying on hidden state (out-of-order execution).
+3. **Sequential Execution**:
+    - Notebooks must be runnable from top to bottom without errors.
+    - Avoid relying on hidden state (out-of-order execution).

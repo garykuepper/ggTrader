@@ -1,10 +1,19 @@
 import argparse
+import os
+import sys
+
+# Ensure project root is in path
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+)
+
 from ggTrader.core.trading import Trading
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_and_setup
 
 # --- USER CONFIGURATION ---
 CONSTANTS = {
+    "SYMBOLS": None,  # Set to a list like ["BTC/USD", "ETH/USD"] to override JSON
     "SYMBOLS_FILE": "data/top_50_consistent_movers.json",
     "START_DATE": "2023-01-01",
     "END_DATE": "2025-12-31",
@@ -22,17 +31,25 @@ CONSTANTS = {
 }
 
 
-def main():
-    parser = argparse.ArgumentParser()
+def main() -> None:
+    """
+    Main entry point for running a single backtest.
+    """
+    parser = argparse.ArgumentParser(description="Run a single ggTrader backtest")
     parser.add_argument("--params", type=str, help="Path to params.json")
     args = parser.parse_args()
 
     rm = ResultsManager("run_backtest")
     params = rm.load_params(args.params) if args.params else CONSTANTS["DEFAULT_PARAMS"]
 
-    # Load data using shared setup
-    ohlcv = load_data_and_setup(CONSTANTS)
+    print("Loading data...")
+    try:
+        ohlcv = load_data_and_setup(CONSTANTS)
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        return
 
+    print("Running backtest...")
     engine = Trading(
         ohlcv_df=ohlcv,
         date_range=ohlcv.index,
@@ -41,6 +58,7 @@ def main():
     )
     engine.run()
 
+    print("Backtest complete. Processing results...")
     stats = engine.portfolio.stats_dict()
 
     # Save consolidated results (params + metrics) -> run_results.json
@@ -48,6 +66,7 @@ def main():
 
     # Print summary to console
     rm.print_summary(stats)
+    print(f"Results saved to: {rm.run_dir}")
 
 
 if __name__ == "__main__":

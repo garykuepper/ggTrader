@@ -9,7 +9,8 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
 
     Args:
         config (dict): Configuration dictionary containing:
-            - 'SYMBOLS_FILE': Path to the JSON file with symbols.
+            - 'SYMBOLS': List of symbol strings (optional).
+            - 'SYMBOLS_FILE': Path to JSON file with symbols (optional).
             - 'INTERVAL': Time interval (e.g., '4h').
             - 'START_DATE': Start date string.
             - 'END_DATE': End date string.
@@ -17,7 +18,16 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the OHLCV data for the requested symbols.
     """
-    symbols = load_symbols_from_json(config["SYMBOLS_FILE"])
+    # Priority: Direct SYMBOLS list -> SYMBOLS_FILE JSON
+    if "SYMBOLS" in config and config["SYMBOLS"]:
+        symbols = config["SYMBOLS"]
+    elif "SYMBOLS_FILE" in config and config["SYMBOLS_FILE"]:
+        symbols = load_symbols_from_json(config["SYMBOLS_FILE"])
+    else:
+        raise ValueError(
+            "Config must contain 'SYMBOLS' (list) or 'SYMBOLS_FILE' (path)."
+        )
+
     k_h = KrakenHistoricalData()
 
     ohlcv_df = k_h.get_ohlcv_df(

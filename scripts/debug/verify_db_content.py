@@ -1,24 +1,31 @@
+import argparse
 import os
 import sys
+
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-# Add src to path
+# Ensure project root is in path
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 )
 
-from ggTrader.data.kraken.postgres_reader import KrakenPostgresReader
 
-
-def verify_db():
+def verify_db() -> None:
+    """
+    Verifies the contents and schema of the PostgreSQL database.
+    """
     connection_string = os.getenv(
         "POSTGRES_CONNECTION_STRING",
-        "postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader",
+        "postgresql+psycopg2://gary_admin:your_secure_password@localhost:5433/ggtrader",
     )
 
     print(f"Connecting to: {connection_string}")
-    engine = create_engine(connection_string)
+    try:
+        engine = create_engine(connection_string)
+    except Exception as e:
+        print(f"Failed to create engine: {e}")
+        return
 
     try:
         with engine.connect() as conn:
@@ -26,12 +33,14 @@ def verify_db():
             print("\n--- Table Check ---")
             tables = conn.execute(
                 text(
-                    "SELECT table_name FROM information_schema.tables WHERE table_schema='public';"
+                    "SELECT table_name FROM information_schema.tables "
+                    "WHERE table_schema='public';"
                 )
             ).fetchall()
-            print("Tables found:", [t[0] for t in tables])
+            table_names = [t[0] for t in tables]
+            print("Tables found:", table_names)
 
-            if ("ohlcv",) not in tables:
+            if "ohlcv" not in table_names:
                 print("ERROR: 'ohlcv' table not found!")
                 return
 
@@ -39,19 +48,21 @@ def verify_db():
             print("\n--- Schema Check ---")
             columns = conn.execute(
                 text(
-                    "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'ohlcv';"
+                    "SELECT column_name, data_type FROM information_schema.columns "
+                    "WHERE table_name = 'ohlcv';"
                 )
             ).fetchall()
             for col in columns:
                 print(f"  {col[0]}: {col[1]}")
 
-            # 3. Check Row Count (Approximate if huge)
-            print("\n--- Row Count (Exact) ---")
+            # 3. Check Row Count
+            print("\n--- Row Count ---")
             try:
                 count = conn.execute(text("SELECT count(*) FROM ohlcv;")).scalar()
                 print(f"Total rows in ohlcv: {count}")
             except Exception as e:
                 print(f"Could not count rows: {e}")
+                count = 0
 
             if count == 0:
                 print("Table is empty.")
@@ -69,9 +80,8 @@ def verify_db():
             df = pd.read_sql("SELECT * FROM ohlcv LIMIT 5", conn)
             print(df.to_string())
 
-            # 6. Check a specific symbol (e.g. BTC-USD)
-            print("\n--- Specific Symbol Check (BTC-USD, 1d) ---")
-            # Try to find a symbol that exists
+            # 6. Check a specific symbol
+            print("\n--- Specific Symbol Check (Sample) ---")
             sample_symbol = conn.execute(
                 text("SELECT symbol FROM ohlcv LIMIT 1")
             ).scalar()
@@ -90,5 +100,14 @@ def verify_db():
         traceback.print_exc()
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """
+    Main orchestration for DB verification.
+    """
+    parser = argparse.ArgumentParser(description="Verify PostgreSQL DB Content")
+    parser.parse_args()  # Allow --help
     verify_db()
+
+
+if __name__ == "__main__":
+    main()

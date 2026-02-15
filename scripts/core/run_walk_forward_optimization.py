@@ -1,3 +1,4 @@
+import argparse
 import sys
 import os
 import pandas as pd
@@ -13,10 +14,11 @@ sys.path.append(
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.core.fast_backtest import FastBacktest
 from ggTrader.utils.setup import load_data_and_setup
-
+from ggTrader.utils.utils import make_end_anchored_tscv, plot_cv_indices
 
 # --- Configuration ---
 CONSTANTS = {
+    "SYMBOLS": None,  # Set to a list like ["BTC/USD", "ETH/USD"] to override JSON
     "SYMBOLS_FILE": "data/top_50_consistent_movers.json",
     "START_DATE": "2023-01-01",
     "END_DATE": "2025-06-01",
@@ -32,9 +34,14 @@ def main():
     Run Walk-Forward Optimization (WFO) using VectorBT.
     Iterates through time using a rolling window (Train -> Test).
     """
+    parser = argparse.ArgumentParser(description="Run Walk-Forward Optimization (WFO)")
+    parser.add_argument("--params", type=str, help="Path to params.json (optional)")
+    args = parser.parse_args()
+
     rm = ResultsManager("run_wfo")
 
     # Vectorized Parameter Grid
+    # In a real scenario, you might load these from a file
     params = {
         "adx_threshold": list(range(15, 35, 5)),
         "adx_length": [14],
@@ -52,8 +59,7 @@ def main():
         print(f"Error loading data: {e}")
         return
 
-    # 1. Setup WFO Splitter (Aligned with notebook)
-    from ggTrader.utils.utils import make_end_anchored_tscv, plot_cv_indices
+    # 1. Setup WFO Splitter
     import matplotlib.pyplot as plt
 
     tscv, test_size, max_train_size = make_end_anchored_tscv(

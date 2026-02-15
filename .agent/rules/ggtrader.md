@@ -3,6 +3,37 @@ trigger: always_on
 ---
 
 
+# Python Coding Standards (Global)
+
+1. **Strict PEP 8 Adherence**:
+    - Use 4 spaces for indentation.
+    - Maximum line length of 88-100 characters (Black/Ruff style).
+    - Snake_case for functions/variables, CamelCase for classes, UPPER_CASE for constants.
+    - **Snake_case for filenames**: All Python files must be lowercase with underscores (e.g., `trading.py`, not `Trading.py`).
+    - Imports grouped: Standard lib, Third-party, Local (sorted alphabetically).
+
+2. **Concise Documentation**:
+    - **Module Docstrings**: One-line summary of the file's purpose at the top.
+    - **Function/Class Docstrings**: Required for all public interfaces. brief summary of purpose.
+        - *Format*: Google Style or concise text. Avoid verbose parameter lists for obvious types.
+    - **Inline Comments**:
+        - Explain *WHY*, not *WHAT*.
+        - Keep them short and on the line above the code block.
+        - Avoid obvious comments (e.g., `# Increment i` for `i += 1`).
+
+3. **Type Hinting**:
+    - Use type hints for all function arguments and return values.
+    - Use `from typing import Optional, List, Dict, Any, Tuple` or modern syntax (`list[]`, `|`) where supported.
+
+4. **Structure**:
+    - Constants defined at the module level (top), not inside functions unless necessary.
+    - Main execution logic inside `if __name__ == "__main__":` block.
+    - **Single Source of Truth**: Core logic must live in `src/`. Do not duplicate definitions across files.
+    - **Orchestration Boilerplate**: Scripts in `scripts/` must follow a standard template: `sys.path` setup, `main()` orchestration, and `argparse` for inputs. Every script must handle the `--help` flag gracefully.
+    - **Results Management**: Use `ResultsManager` for all artifact, metric, and plot saving to ensure consistent output directory structures and metadata logging.
+
+## ggTrader Project Specific Rules
+
 1. **Vectorization First**:
     - Avoid iterating over rows in DataFrames for signal calculation.
     - Use `vectorbt`, `numpy`, or `pandas` vectorized operations for speed.
@@ -17,17 +48,35 @@ trigger: always_on
     - Always use `os.path.join` or `pathlib.Path` for file paths.
     - Project root should be dynamically resolved relative to `src` or `scripts`, not hardcoded.
 
-4. **Configuration**:
+4. **Configuration & Data Loading**:
     - Use `CONSTANTS` dictionaries at module level for default configuration.
+    - **Standardized Loading**: Always use `load_data_and_setup(CONSTANTS)` for data retrieval in scripts and notebooks.
+    - **Flexible Symbols**: Support both `SYMBOLS` (direct list) and `SYMBOLS_FILE` (JSON path) in `CONSTANTS` to allow seamless switching between asset pools.
 
 5. **Dependency Discipline**:
     - Update `pyproject.toml` immediately when adding new libraries.
     - Avoid `pip install` without recording the dependency.
 
 6. **Import Strategy**:
-    - Use absolute imports (`from ggTrader.core...`) rooted in `src`.
+    - Use absolute imports (`from ggTrader.core...`) rooted in `src` for cross-package access.
+    - **Relative Imports in Init**: Always use relative imports within package `__init__.py` files (e.g., `from .module import Class`).
     - Avoid circular imports by careful module design (e.g. `utils` vs `core`).
 
 7. **Resilient Scripts**:
     - Long-running scripts (ingestion/optimization) must handle exceptions (log & continue, do not crash).
     - Implement resumability (checkpoints) for any process taking >5 minutes.
+
+## Jupyter Notebook Standards
+
+1. **Imports from `src`**:
+    - Notebooks must import core logic and indicators from `src`.
+    - Do not define complex strategy classes or large functions inline.
+    - Notebooks are for **orchestration**, **analysis**, and **visualization** only.
+
+2. **Path Setup**:
+    - Always include the standard `sys.path` setup block at the top to resolve project root.
+    - Use `os.path.join` to locate files relative to the project root, not absolute paths.
+
+3. **Sequential Execution**:
+    - Notebooks must be runnable from top to bottom without errors.
+    - Avoid relying on hidden state (out-of-order execution).
