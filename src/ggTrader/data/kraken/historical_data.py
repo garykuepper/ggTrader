@@ -67,16 +67,19 @@ class KrakenHistoricalData:
 
     # ---------- Conversion (Legacy / For Reference) ----------
 
-    def sync_local_data(self, **kwargs):
+    def sync_local_data(self, force=False, **kwargs):
         """
         Intelligently sync new Kraken raw CSV directories into the PostgreSQL dataset.
         Uses a manifest to avoid re-processing directories.
+
+        Args:
+            force: If True, ignore manifest and sync all directories
         """
         # We store manifest in data root
         manifest_path = os.path.join(self.root_dir, "data", ".processed_dirs.json")
         processed_dirs = set()
 
-        if os.path.exists(manifest_path):
+        if not force and os.path.exists(manifest_path):
             try:
                 with open(manifest_path, "r") as f:
                     processed_dirs = set(json.load(f))
@@ -84,7 +87,14 @@ class KrakenHistoricalData:
                 print(f"Warning: could not load sync manifest: {e}")
 
         all_dirs = self.list_quarter_dirs()
-        new_dirs = [d for d in all_dirs if os.path.basename(d) not in processed_dirs]
+
+        if force:
+            new_dirs = all_dirs
+            print(f"Force sync: processing all {len(new_dirs)} directories")
+        else:
+            new_dirs = [
+                d for d in all_dirs if os.path.basename(d) not in processed_dirs
+            ]
 
         if not new_dirs:
             print("No new Kraken data directories found to sync.")

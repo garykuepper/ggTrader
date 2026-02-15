@@ -13,6 +13,9 @@ from tqdm import tqdm
 
 from .constants import kraken_map
 
+# DO NOT DELETE  python scripts/data/ingest_kraken_data.py --sync
+# python scripts/data/ingest_kraken_data.py --dir data\raw\Kraken_OHLCVT_Q1_2023
+
 
 class KrakenPostgresIngestor:
     """
@@ -129,12 +132,14 @@ class KrakenPostgresIngestor:
                 batch = data_queue.get(timeout=1.0)
                 if batch:
                     with conn.cursor() as cur:
-                        execute_values(cur, upsert_query, batch)
+                        execute_values(cur, upsert_query, batch, page_size=10000)
+                    conn.commit()
                 data_queue.task_done()
             except queue.Empty:
                 continue
             except Exception as e:
-                print(f"\nWriter Error: {e}")
+                print(f"Writer Error: {e}")
+                conn.rollback()
 
         conn.close()
 
@@ -265,10 +270,16 @@ class KrakenPostgresIngestor:
         # Setup Parallelism
         data_queue = queue.Queue(maxsize=100)  # Flow control
         stop_event = threading.Event()
-        writer_thread = threading.Thread(
-            target=self._db_writer_worker, args=(data_queue, stop_event)
-        )
-        writer_thread.start()
+
+        # Start Multiple Writer Threads to saturate DB I/O
+        num_writers = 4
+        writer_threads = []
+        for _ in range(num_writers):
+            t = threading.Thread(
+                target=self._db_writer_worker, args=(data_queue, stop_event)
+            )
+            t.start()
+            writer_threads.append(t)
 
         suffix_pairs = [
             ("_1440", "1d"),
@@ -334,8 +345,11 @@ class KrakenPostgresIngestor:
                 pbar.update(1)
 
         # Cleanup
+        # Cleanup
+        data_queue.join()
         stop_event.set()
-        writer_thread.join()
+        for t in writer_threads:
+            t.join()
 
         with open(manifest_path, "w") as f:
             json.dump(list(processed_files), f)

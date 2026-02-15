@@ -18,6 +18,11 @@ def main() -> None:
     parser.add_argument(
         "--sync", action="store_true", help="Sync new directories from data/raw"
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force sync all directories (ignore manifest)",
+    )
     parser.add_argument("--dir", type=str, help="Specific directory to ingest")
 
     args = parser.parse_args()
@@ -38,14 +43,14 @@ def main() -> None:
     elif args.sync:
         print("Syncing new data directories...")
         try:
-            data_manager.sync_local_data()
+            data_manager.sync_local_data(force=args.force)
         except Exception as e:
             print(f"Error during sync: {e}")
     else:
-        print("Usage: python ingest_kraken_data.py --sync OR --dir <path>")
+        print("Usage: python ingest_kraken_data.py --sync [--force] OR --dir <path>")
         print("Defaulting to --sync behavior...")
         try:
-            data_manager.sync_local_data()
+            data_manager.sync_local_data(force=args.force)
         except Exception as e:
             print(f"Error during sync: {e}")
 
