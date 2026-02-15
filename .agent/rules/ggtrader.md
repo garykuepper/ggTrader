@@ -41,7 +41,7 @@ trigger: always_on
 
 2. **Database as Source of Truth**:
     - Do not read raw CSVs directly in strategy code.
-    - Use `KrakenHistoricalData` or `KrakenPostgresReader` to fetch data.
+    - Use **TimescaleDB** (via `KrakenPostgresReader`) for all time-series and historical data.
     - Use `ResultDBManager` to save backtest/optimization results.
 
 3. **Path Safety**:
