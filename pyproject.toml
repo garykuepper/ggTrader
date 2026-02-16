@@ -8,33 +8,34 @@ version = "0.1.0"
 description = "A sleek algorithmic trading bot"
 requires-python = ">=3.8"
 dependencies = [
-    "plotly",
-    "fsspec",
-    "seaborn",
-    "matplotlib",
-    "numpy",
-    "numba",
-    "tqdm",
-    "pandas",
-    "yfinance",
-    "python-dotenv",
-    "tabulate",
-    "ta",
-    "optuna",
-    "mplfinance",
-    "pytest",
     "ccxt",
-    "pyarrow",
-    "vectorbt",
-    "pandas-ta",
-    "scikit-learn",
-    "requests",
+    "fsspec",
     "joblib",
-    "xlsxwriter",
-    "cupy-cuda13x",
+    "matplotlib",
+    "mplfinance",
+    "numba",
+    "numpy",
+    "optuna",
+    "pandas",
+    "pandas-ta",
+    "plotly",
     "psycopg2-binary",
+    "pyarrow",
+    "python-dotenv",
+    "requests",
+    "scikit-learn",
+    "seaborn",
     "sqlalchemy",
+    "ta",
+    "tabulate",
+    "tqdm",
+    "vectorbt",
+    "xlsxwriter",
 ]
+
+[project.optional-dependencies]
+gpu = ["cupy-cuda13x"]
+test = ["pytest"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

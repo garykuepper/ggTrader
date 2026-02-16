@@ -2,6 +2,8 @@ import argparse
 import os
 import sys
 
+import pandas as pd
+
 # Ensure project root is in path
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
@@ -13,12 +15,17 @@ from ggTrader.utils.setup import load_data_and_setup
 
 # --- USER CONFIGURATION ---
 CONSTANTS = {
-    "SYMBOLS": None,  # Set to a list like ["BTC/USD", "ETH/USD"] to override JSON
-    "SYMBOLS_FILE": "data/top_50_consistent_movers.json",
+    # "SYMBOLS": [
+    #     "BTC-USD",
+    #     "ETH-USD",
+    # ],  # Set to a list like ["BTC-USD", "ETH-USD"] to override JSON
+    "SYMBOLS": None,
+    "SYMBOLS_FILE": "data/top_10_USD_1095_movers.json",
     "START_DATE": "2023-01-01",
-    "END_DATE": "2025-12-31",
+    "END_DATE": "2023-12-31",
     "INTERVAL": "4h",
     "START_CASH": 10000,
+    "PORTFOLIO_SHARE": 0.20,
     "DEFAULT_PARAMS": {
         "adx_threshold": 25,
         "adx_length": 14,
@@ -50,12 +57,27 @@ def main() -> None:
         return
 
     print("Running backtest...")
-    engine = Trading(
-        ohlcv_df=ohlcv,
-        date_range=ohlcv.index,
-        start_cash=CONSTANTS["START_CASH"],
-        strategy_params=params,
-    )
+    try:
+        # Log data summary to help debugging
+        if hasattr(ohlcv, "columns") and isinstance(ohlcv.columns, pd.MultiIndex):
+            symbols_found = ohlcv.columns.levels[0].tolist()
+            print(f"Loaded {len(symbols_found)} symbols with {len(ohlcv)} data points.")
+
+        engine = Trading(
+            ohlcv_df=ohlcv,
+            date_range=ohlcv.index,
+            start_cash=CONSTANTS["START_CASH"],
+            max_position=CONSTANTS["PORTFOLIO_SHARE"],
+            strategy_params=params,
+            use_movers=False,
+        )
+    except ValueError as e:
+        print(f"Error initializing Trading engine: {e}")
+        return
+    except Exception as e:
+        print(f"Unexpected error during engine setup: {e}")
+        return
+
     engine.run()
 
     print("Backtest complete. Processing results...")

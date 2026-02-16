@@ -10,15 +10,14 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 )
 
+from ggTrader.utils.config import get_db_connection_string
+
 
 def verify_db() -> None:
     """
     Verifies the contents and schema of the PostgreSQL database.
     """
-    connection_string = os.getenv(
-        "POSTGRES_CONNECTION_STRING",
-        "postgresql+psycopg2://gary_admin:your_secure_password@localhost:5433/ggtrader",
-    )
+    connection_string = get_db_connection_string()
 
     print(f"Connecting to: {connection_string}")
     try:

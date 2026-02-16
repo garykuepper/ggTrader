@@ -1,0 +1,72 @@
+[
+    {
+        "rank": 1,
+        "symbol": "BTC",
+        "kraken_symbol": "BTC",
+        "frequency": 319,
+        "average_notional_volume": 161141074.38737422
+    },
+    {
+        "rank": 2,
+        "symbol": "ETH",
+        "kraken_symbol": "ETH",
+        "frequency": 319,
+        "average_notional_volume": 94475763.17706208
+    },
+    {
+        "rank": 3,
+        "symbol": "XRP",
+        "kraken_symbol": "XRP",
+        "frequency": 319,
+        "average_notional_volume": 61964602.45407978
+    },
+    {
+        "rank": 4,
+        "symbol": "SOL",
+        "kraken_symbol": "SOL",
+        "frequency": 319,
+        "average_notional_volume": 46556147.8382158
+    },
+    {
+        "rank": 5,
+        "symbol": "DOGE",
+        "kraken_symbol": "DOGE",
+        "frequency": 319,
+        "average_notional_volume": 18529295.32840719
+    },
+    {
+        "rank": 6,
+        "symbol": "SUI",
+        "kraken_symbol": "SUI",
+        "frequency": 319,
+        "average_notional_volume": 13015803.497333685
+    },
+    {
+        "rank": 7,
+        "symbol": "FARTCOIN",
+        "kraken_symbol": "FARTCOIN",
+        "frequency": 319,
+        "average_notional_volume": 8343672.75116912
+    },
+    {
+        "rank": 8,
+        "symbol": "LINK",
+        "kraken_symbol": "LINK",
+        "frequency": 319,
+        "average_notional_volume": 5753689.129290929
+    },
+    {
+        "rank": 9,
+        "symbol": "LTC",
+        "kraken_symbol": "LTC",
+        "frequency": 319,
+        "average_notional_volume": 4955694.280940869
+    },
+    {
+        "rank": 10,
+        "symbol": "TAO",
+        "kraken_symbol": "TAO",
+        "frequency": 319,
+        "average_notional_volume": 4883678.865539026
+    }
+]

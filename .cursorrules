@@ -62,6 +62,10 @@
     - Long-running scripts (ingestion/optimization) must handle exceptions (log & continue, do not crash).
     - Implement resumability (checkpoints) for any process taking >5 minutes.
 
+8. **Symbol Formatting**:
+    - Use base symbols (e.g., `BTC`, `ETH`) for strategy logic and configuration.
+    - Data layer (`KrakenPostgresReader`) must handle conversion to/from pair symbols (e.g., `BTC-USD`) used in the database.
+
 ## Jupyter Notebook Standards
 
 1. **Imports from `src`**:

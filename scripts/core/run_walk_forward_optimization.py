@@ -24,6 +24,7 @@ CONSTANTS = {
     "END_DATE": "2025-06-01",
     "INTERVAL": "4h",
     "START_CASH": 10000,
+    "PORTFOLIO_SHARE": 0.20,
     "N_SPLITS": 3,
     "TEST_RATIO": 0.334,
 }
