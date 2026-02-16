@@ -31,22 +31,27 @@ class KrakenPostgresReader:
         params = {}
 
         if symbol:
-            where_clauses.append("symbol = %(symbol)s")
+            # Ensure symbol has quote if missing
+            if "-" not in symbol:
+                symbol = f"{symbol}-{quote}"
+            where_clauses.append("symbol = :symbol")
             params["symbol"] = symbol
         elif symbols:
-            where_clauses.append("symbol IN %(symbols)s")
-            params["symbols"] = tuple(symbols)
+            # Ensure symbols have quote if missing
+            formatted_symbols = [f"{s}-{quote}" if "-" not in s else s for s in symbols]
+            where_clauses.append("symbol IN :symbols")
+            params["symbols"] = tuple(formatted_symbols)
 
         if interval:
-            where_clauses.append("interval = %(interval)s")
+            where_clauses.append("interval = :interval")
             params["interval"] = interval
 
         if start:
-            where_clauses.append("timestamp >= %(start)s")
+            where_clauses.append("timestamp >= :start")
             params["start"] = start
 
         if end:
-            where_clauses.append("timestamp <= %(end)s")
+            where_clauses.append("timestamp <= :end")
             params["end"] = end
 
         query = "SELECT * FROM ohlcv"
@@ -54,11 +59,15 @@ class KrakenPostgresReader:
             query += " WHERE " + " AND ".join(where_clauses)
         query += " ORDER BY timestamp ASC"
 
-        # Using pandas read_sql
-        df = pd.read_sql(query, self.engine, params=params)
+        # Using pandas read_sql with text() for named parameter binding
+        df = pd.read_sql(text(query), self.engine, params=params)
 
         if df.empty:
             return df
+
+        # Strip quote suffix from symbol column for consistency with base symbols
+        if quote:
+            df["symbol"] = df["symbol"].str.replace(f"-{quote}", "", regex=False)
 
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
         df.set_index("timestamp", inplace=True)
@@ -77,8 +86,15 @@ class KrakenPostgresReader:
         if end:
             end = ensure_utc_timestamp(end)
 
+        # Ensure symbols are formatted for the query
+        formatted_symbols = [f"{s}-{quote}" if "-" not in s else s for s in symbols]
+
         df = self.read_ohlcv(
-            symbols=symbols, interval=interval, start=start, end=end, quote=quote
+            symbols=formatted_symbols,
+            interval=interval,
+            start=start,
+            end=end,
+            quote=quote,
         )
 
         if df.empty:
@@ -200,7 +216,8 @@ class KrakenPostgresReader:
             LIMIT :limit
         """
 
-        df = pd.read_sql(query, self.engine, params=params)
+        # Use text() for pandas read_sql
+        df = pd.read_sql(text(query), self.engine, params=params)
         return df
 
     def close(self):

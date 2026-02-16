@@ -26,6 +26,11 @@ class Trading:
         self.portfolio = Portfolio(start_cash)
         self.ohlcv_df = ohlcv_df
         self.time_range = date_range
+        if len(date_range) == 0:
+            raise ValueError(
+                "Provided date_range is empty. Ensure data is loaded correctly "
+                "for the requested symbols and date range."
+            )
         self.current_date = pd.Timestamp(date_range[0]).tz_convert("UTC")
         self.screener = Screener()
         self.top_n_movers = top_n_movers

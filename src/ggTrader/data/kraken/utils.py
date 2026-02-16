@@ -52,6 +52,8 @@ def fill_symbol_metadata(ohlcv_df: pd.DataFrame, symbols: list):
     """Fill metadata columns and standardize MultiIndex."""
     df_out = ohlcv_df.copy()
     for sym in symbols:
+        if sym not in df_out.columns.levels[0]:
+            continue
         base_col = (sym, "base")
         quote_col = (sym, "quote")
         if base_col in df_out.columns:
@@ -100,6 +102,8 @@ def fill_after_first_non_nan_multilevel_safe(
     """Forward-fill NaNs after the first valid entry for MultiIndex DataFrame."""
     df_out = ohlcv_df.copy()
     for sym in symbols:
+        if sym not in ohlcv_df.columns.levels[0]:
+            continue
         df_sym = ohlcv_df.xs(sym, axis=1, level=0).copy()
         for col in df_sym.columns:
             if pd.api.types.is_numeric_dtype(df_sym[col]):

@@ -2,6 +2,8 @@ import argparse
 import os
 import sys
 
+import pandas as pd
+
 # Ensure project root is in path
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
@@ -50,12 +52,25 @@ def main() -> None:
         return
 
     print("Running backtest...")
-    engine = Trading(
-        ohlcv_df=ohlcv,
-        date_range=ohlcv.index,
-        start_cash=CONSTANTS["START_CASH"],
-        strategy_params=params,
-    )
+    try:
+        # Log data summary to help debugging
+        if hasattr(ohlcv, "columns") and isinstance(ohlcv.columns, pd.MultiIndex):
+            symbols_found = ohlcv.columns.levels[0].tolist()
+            print(f"Loaded {len(symbols_found)} symbols with {len(ohlcv)} data points.")
+
+        engine = Trading(
+            ohlcv_df=ohlcv,
+            date_range=ohlcv.index,
+            start_cash=CONSTANTS["START_CASH"],
+            strategy_params=params,
+        )
+    except ValueError as e:
+        print(f"Error initializing Trading engine: {e}")
+        return
+    except Exception as e:
+        print(f"Unexpected error during engine setup: {e}")
+        return
+
     engine.run()
 
     print("Backtest complete. Processing results...")

@@ -8,7 +8,7 @@ def enable_compression() -> None:
     """
     connection_string = os.getenv(
         "POSTGRES_CONNECTION_STRING",
-        "postgresql+psycopg2://gary_admin:your_secure_password@localhost:5433/ggtrader",
+        "postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader",
     )
 
     print("Connecting to database...")
