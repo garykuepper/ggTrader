@@ -1,3 +1,0 @@
-timestamp,run_id,type,status,summary_metric
-2026-02-15T18:10:23.305001,9aaf603b-a6f8-4643-9518-eed0a80b9583,run_backtest,SUCCESS,0.0000
-2026-02-15T18:56:33.737742,506e9df3-0b8c-42a1-a95e-87cb638285c3,run_backtest,SUCCESS,0.0000
