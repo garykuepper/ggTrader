@@ -11,7 +11,9 @@
 .vscode/
 # AWS User-specific
 .idea/**/aws.xml
-data/ggtrader.db
+.idea/
+.agent/
+.vscode/
 # Generated files
 .idea/**/contentModel.xml
 
