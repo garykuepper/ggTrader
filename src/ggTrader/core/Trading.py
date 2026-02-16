@@ -1,12 +1,14 @@
-from tabulate import tabulate
+"""Main trading engine for simulation and paper trading."""
+
 import pandas as pd
+from tabulate import tabulate
 
 from ggTrader.core.portfolio import Portfolio
 from ggTrader.core.position import Position
 from ggTrader.core.screener import Screener
-from ggTrader.indicators.signals import Signals
 from ggTrader.data.kraken.data_manager import KrakenData
 from ggTrader.data.kraken.historical_data import KrakenHistoricalData
+from ggTrader.indicators.signals import Signals
 
 
 class Trading:

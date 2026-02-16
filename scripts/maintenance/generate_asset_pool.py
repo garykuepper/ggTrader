@@ -1,6 +1,4 @@
-"""
-Generates a JSON file containing consistent movers based on historical volume frequency.
-"""
+"""Generates a JSON file containing consistent movers based on historical volume frequency."""
 
 import argparse
 import json
@@ -14,31 +12,8 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 )
 
+from ggTrader.data.kraken.constants import SYMBOL_MAPPING
 from ggTrader.data.kraken.historical_data import KrakenHistoricalData
-
-# Mapping for Kraken specific symbols (ISO 4217 legacy prefixes)
-# Prefixes: 'X' for Cryptos, 'Z' for Fiat
-SYMBOL_MAPPING = {
-    # Cryptocurrencies
-    "XBT": "BTC",
-    "XXBT": "BTC",
-    "XETH": "ETH",
-    "XXRP": "XRP",
-    "XLTC": "LTC",
-    "XXLM": "XLM",
-    "XREP": "REP",
-    "XXMR": "XMR",
-    "XZEC": "ZEC",
-    "XETC": "ETC",
-    "XDG": "DOGE",
-    # Fiat currencies
-    "ZUSD": "USD",
-    "ZEUR": "EUR",
-    "ZGBP": "GBP",
-    "ZJPY": "JPY",
-    "ZCAD": "CAD",
-    "ZAUD": "AUD",
-}
 
 
 def main():

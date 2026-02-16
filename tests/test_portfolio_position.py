@@ -3,8 +3,8 @@ from datetime import datetime
 
 import pytest
 
-from ggTrader.Portfolio import Portfolio
-from ggTrader.Position import Position
+from ggTrader.core.portfolio import Portfolio
+from ggTrader.core.position import Position
 
 
 def test_position_basic_calculations():
@@ -83,7 +83,7 @@ def test_portfolio_add_and_close_position_without_fees():
 
     # Realized profit should reflect the P/L of the trade
     # Profit = (exit_value - cost) with zero fees
-    expected_profit = (exit_value - (5 * 100.0))
+    expected_profit = exit_value - (5 * 100.0)
     assert port.realized_profit == pytest.approx(expected_profit)
 
 
@@ -109,6 +109,8 @@ def test_portfolio_unrealized_profit_and_profit_snapshots():
     assert port.unrealized_profit == pytest.approx(expected_unrealized)
 
     # Total value should reflect cash plus position values
+
+
 def almost_equal(a, b, tol=1e-8):
     return abs(a - b) <= tol
 
@@ -208,7 +210,11 @@ def test_reconcile_invariant_holds_after_multiple_trades():
 
     # check transaction fees sum equals recorded total
     sum_entry = sum(getattr(t, "entry_fee", 0.0) for t in p.trades)
-    sum_exit = sum(getattr(t, "exit_fee", 0.0) for t in p.trades if getattr(t, "exit_fee", 0.0) is not None)
+    sum_exit = sum(
+        getattr(t, "exit_fee", 0.0)
+        for t in p.trades
+        if getattr(t, "exit_fee", 0.0) is not None
+    )
     assert almost_equal(p.transaction_fee_total, sum_entry + sum_exit, tol=1e-6)
 
 

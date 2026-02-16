@@ -250,3 +250,10 @@ data/raw/*
 data/parquet/*
 .fsspec-cache
 exportToHTML/*
+
+# Project-specific generated artifacts
+logs/
+results/
+data/daily_movers.db
+data/trading_sensitivity_analysis.db*
+research/*.parquet
