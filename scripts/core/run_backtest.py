@@ -20,12 +20,12 @@ CONSTANTS = {
     #     "ETH-USD",
     # ],  # Set to a list like ["BTC-USD", "ETH-USD"] to override JSON
     "SYMBOLS": None,
-    "SYMBOLS_FILE": "data/top_10_USD_1095_movers.json",
+    "SYMBOLS_FILE": "data/top_20_USD_1095_movers.json",
     "START_DATE": "2023-01-01",
     "END_DATE": "2023-12-31",
     "INTERVAL": "4h",
-    "START_CASH": 10000,
-    "PORTFOLIO_SHARE": 0.20,
+    "START_CASH": 1000,
+    "PORTFOLIO_SHARE": 0.10,
     "DEFAULT_PARAMS": {
         "adx_threshold": 25,
         "adx_length": 14,
