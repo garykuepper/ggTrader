@@ -28,12 +28,16 @@ except ImportError:
 
 # --- Configuration ---
 CONSTANTS = {
-    "SYMBOLS": None,  # Set to a list like ["BTC/USD", "ETH/USD"] to override JSON
+    "SYMBOLS": [
+        "BTC/USD",
+        "ETH/USD",
+    ],  # Set to a list like ["BTC/USD", "ETH/USD"] to override JSON
     "SYMBOLS_FILE": "data/top_50_consistent_movers.json",
     "START_DATE": "2024-01-01",
     "END_DATE": "2024-06-01",
     "INTERVAL": "4h",
     "START_CASH": 10000,
+    "PORTFOLIO_SHARE": 0.20,
 }
 
 
@@ -88,15 +92,25 @@ def main():
     # Convert Series to proper DataFrame for analysis
     if isinstance(sharpe.index, pd.MultiIndex):
         results_df = sharpe.reset_index()
-        # Rename the value column (last column) to "Sharpe Ratio"
+        # Rename columns to remove VectorBT's 'sf_' prefix if present
+        results_df.columns = [
+            col.replace("sf_", "") if isinstance(col, str) else col
+            for col in results_df.columns
+        ]
+
+        # Rename the value column (last column) which contains the Sharpe Ratio
         results_df.rename(
             columns={results_df.columns[-1]: "Sharpe Ratio"}, inplace=True
         )
     else:
         results_df = pd.DataFrame({"Sharpe Ratio": sharpe})
+        # Ensure parameters are in columns for single-run results
+        for p_name, p_val in params.items():
+            if not isinstance(p_val, list) and p_name not in results_df.columns:
+                results_df[p_name] = p_val
 
     # Save raw CSV results using ResultsManager
-    rm.save_metrics(results_df, "sensitivity_results.csv")
+    rm.save_metrics(results_df, "sensitivity_results.csv", save_csv=True)
 
     # --- Visualization ---
     print("Generating heatmaps...")

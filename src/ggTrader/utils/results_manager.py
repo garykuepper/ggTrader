@@ -32,11 +32,19 @@ class ResultsManager:
 
     def _find_project_root(self):
         """Finds the project root by looking for pyproject.toml."""
-        current = Path(os.getcwd()).absolute()
+        # Start from the location of THIS file
+        current = Path(__file__).absolute().parent
         for parent in [current] + list(current.parents):
             if (parent / "pyproject.toml").exists():
                 return parent
-        return current
+
+        # Fallback to CWD if not found via parents
+        current_cwd = Path(os.getcwd()).absolute()
+        for parent in [current_cwd] + list(current_cwd.parents):
+            if (parent / "pyproject.toml").exists():
+                return parent
+
+        return current_cwd
 
     def _create_run_directory(self):
         """Creates a timestamped run directory."""

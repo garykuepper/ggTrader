@@ -1,0 +1,142 @@
+[
+    {
+        "rank": 1,
+        "symbol": "BTC",
+        "kraken_symbol": "BTC",
+        "frequency": 958,
+        "average_notional_volume": 138301810.25374207
+    },
+    {
+        "rank": 2,
+        "symbol": "ETH",
+        "kraken_symbol": "ETH",
+        "frequency": 958,
+        "average_notional_volume": 62071100.29114991
+    },
+    {
+        "rank": 3,
+        "symbol": "SOL",
+        "kraken_symbol": "SOL",
+        "frequency": 958,
+        "average_notional_volume": 42780408.6524143
+    },
+    {
+        "rank": 4,
+        "symbol": "XRP",
+        "kraken_symbol": "XRP",
+        "frequency": 958,
+        "average_notional_volume": 37445421.71855418
+    },
+    {
+        "rank": 5,
+        "symbol": "DOGE",
+        "kraken_symbol": "DOGE",
+        "frequency": 958,
+        "average_notional_volume": 15893969.137486467
+    },
+    {
+        "rank": 6,
+        "symbol": "LTC",
+        "kraken_symbol": "LTC",
+        "frequency": 958,
+        "average_notional_volume": 3554356.7688682415
+    },
+    {
+        "rank": 7,
+        "symbol": "LINK",
+        "kraken_symbol": "LINK",
+        "frequency": 957,
+        "average_notional_volume": 4284760.92402186
+    },
+    {
+        "rank": 8,
+        "symbol": "DOT",
+        "kraken_symbol": "DOT",
+        "frequency": 953,
+        "average_notional_volume": 2378828.2121190703
+    },
+    {
+        "rank": 9,
+        "symbol": "XMR",
+        "kraken_symbol": "XMR",
+        "frequency": 938,
+        "average_notional_volume": 1692299.9170254618
+    },
+    {
+        "rank": 10,
+        "symbol": "TRX",
+        "kraken_symbol": "TRX",
+        "frequency": 847,
+        "average_notional_volume": 1036572.999617965
+    },
+    {
+        "rank": 11,
+        "symbol": "FET",
+        "kraken_symbol": "FET",
+        "frequency": 801,
+        "average_notional_volume": 1713125.4092565556
+    },
+    {
+        "rank": 12,
+        "symbol": "XLM",
+        "kraken_symbol": "XLM",
+        "frequency": 798,
+        "average_notional_volume": 2872766.3579387567
+    },
+    {
+        "rank": 13,
+        "symbol": "SHIB",
+        "kraken_symbol": "SHIB",
+        "frequency": 777,
+        "average_notional_volume": 1476286.539449471
+    },
+    {
+        "rank": 14,
+        "symbol": "AVAX",
+        "kraken_symbol": "AVAX",
+        "frequency": 759,
+        "average_notional_volume": 3372988.099788118
+    },
+    {
+        "rank": 15,
+        "symbol": "PEPE",
+        "kraken_symbol": "PEPE",
+        "frequency": 724,
+        "average_notional_volume": 5691439.64178966
+    },
+    {
+        "rank": 16,
+        "symbol": "UNI",
+        "kraken_symbol": "UNI",
+        "frequency": 693,
+        "average_notional_volume": 1289627.921610442
+    },
+    {
+        "rank": 17,
+        "symbol": "NEAR",
+        "kraken_symbol": "NEAR",
+        "frequency": 691,
+        "average_notional_volume": 2175100.7694370565
+    },
+    {
+        "rank": 18,
+        "symbol": "BCH",
+        "kraken_symbol": "BCH",
+        "frequency": 691,
+        "average_notional_volume": 1435758.8509055716
+    },
+    {
+        "rank": 19,
+        "symbol": "INJ",
+        "kraken_symbol": "INJ",
+        "frequency": 688,
+        "average_notional_volume": 1229498.8366897854
+    },
+    {
+        "rank": 20,
+        "symbol": "ICP",
+        "kraken_symbol": "ICP",
+        "frequency": 659,
+        "average_notional_volume": 1676379.8414341274
+    }
+]

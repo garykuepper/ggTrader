@@ -15,12 +15,17 @@ from ggTrader.utils.setup import load_data_and_setup
 
 # --- USER CONFIGURATION ---
 CONSTANTS = {
-    "SYMBOLS": None,  # Set to a list like ["BTC/USD", "ETH/USD"] to override JSON
-    "SYMBOLS_FILE": "data/top_50_consistent_movers.json",
+    # "SYMBOLS": [
+    #     "BTC-USD",
+    #     "ETH-USD",
+    # ],  # Set to a list like ["BTC-USD", "ETH-USD"] to override JSON
+    "SYMBOLS": None,
+    "SYMBOLS_FILE": "data/top_10_USD_1095_movers.json",
     "START_DATE": "2023-01-01",
-    "END_DATE": "2025-12-31",
+    "END_DATE": "2023-12-31",
     "INTERVAL": "4h",
     "START_CASH": 10000,
+    "PORTFOLIO_SHARE": 0.20,
     "DEFAULT_PARAMS": {
         "adx_threshold": 25,
         "adx_length": 14,
@@ -62,7 +67,9 @@ def main() -> None:
             ohlcv_df=ohlcv,
             date_range=ohlcv.index,
             start_cash=CONSTANTS["START_CASH"],
+            max_position=CONSTANTS["PORTFOLIO_SHARE"],
             strategy_params=params,
+            use_movers=False,
         )
     except ValueError as e:
         print(f"Error initializing Trading engine: {e}")

@@ -23,10 +23,17 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
         symbols = config["SYMBOLS"]
     elif "SYMBOLS_FILE" in config and config["SYMBOLS_FILE"]:
         symbols = load_symbols_from_json(config["SYMBOLS_FILE"])
+        if symbols is None:
+            raise ValueError(
+                f"Symbols file '{config['SYMBOLS_FILE']}' not found or invalid."
+            )
     else:
         raise ValueError(
             "Config must contain 'SYMBOLS' (list) or 'SYMBOLS_FILE' (path)."
         )
+
+    if not symbols:
+        raise ValueError("No symbols provided or symbols list is empty.")
 
     k_h = KrakenHistoricalData()
 

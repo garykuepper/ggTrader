@@ -22,10 +22,12 @@ class Trading:
         top_n_movers: int = 25,
         max_position: float = 0.2,
         strategy_params: dict = None,
+        use_movers: bool = False,
     ):
         self.portfolio = Portfolio(start_cash)
         self.ohlcv_df = ohlcv_df
         self.time_range = date_range
+        self.use_movers = use_movers
         if len(date_range) == 0:
             raise ValueError(
                 "Provided date_range is empty. Ensure data is loaded correctly "
@@ -138,18 +140,24 @@ class Trading:
         """
         Pre-calculates all movers and all signals for the entire period to speed up the run loop.
         """
-        # print(f"DEBUG: Pre-calculating simulation data for {len(self.time_range)} days...")
         all_unique_movers = set()
-
         # 1. Pre-calculate all movers for the period
-        for date in self.time_range:
-            daily = self.screener.get_historical_daily_kraken_by_volume(
-                date, top_n=self.top_n_movers
-            )
-            if not daily.empty:
-                syms = daily["symbol"].tolist()
-                self.all_movers_per_day[date] = syms
-                all_unique_movers.update(syms)
+        if self.use_movers:
+            # print(f"DEBUG: Pre-calculating simulation data for {len(self.time_range)} days...")
+            for date in self.time_range:
+                daily = self.screener.get_historical_daily_kraken_by_volume(
+                    date, top_n=self.top_n_movers
+                )
+                if not daily.empty:
+                    syms = daily["symbol"].tolist()
+                    self.all_movers_per_day[date] = syms
+                    all_unique_movers.update(syms)
+        else:
+            # Use all symbols present in the OHLCV data for all dates
+            all_symbols = self.ohlcv_df.columns.levels[0].tolist()
+            all_unique_movers.update(all_symbols)
+            for date in self.time_range:
+                self.all_movers_per_day[date] = all_symbols
 
         # 2. Pre-calculate all signals in bulk
         # print(f"DEBUG: Calculating bulk signals for {len(all_unique_movers)} unique symbols...")

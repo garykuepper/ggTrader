@@ -7,6 +7,7 @@ from .utils import get_file_names
 from .postgres_reader import KrakenPostgresReader
 from .postgres_ingestor import KrakenPostgresIngestor
 from .remote_reader import KrakenRemoteReader
+from ggTrader.utils.config import get_db_connection_string
 from tqdm import tqdm
 
 
@@ -21,12 +22,8 @@ class KrakenHistoricalData:
         self.root_dir = self._find_project_root()
         self.raw_path = os.path.join(self.root_dir, "data", "raw")
 
-        # PostgreSQL Connection
-        # Defaults to localhost/ggtrader if not set
-        self.connection_string = os.getenv(
-            "POSTGRES_CONNECTION_STRING",
-            "postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader",
-        )
+        # PostgreSQL Connection from centralized config
+        self.connection_string = get_db_connection_string()
 
         self.reader = KrakenPostgresReader(self.connection_string)
         # Movers reader functionality merged into KrakenPostgresReader

@@ -1,0 +1,47 @@
+{
+    "run_id": "506e9df3-0b8c-42a1-a95e-87cb638285c3",
+    "timestamp": "2026-02-15T18:56:33.736722",
+    "script_name": "run_backtest",
+    "parameters": {
+        "adx_threshold": 25,
+        "adx_length": 14,
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "atr_multiplier": 3.0,
+        "atr_length": 14,
+        "use_dmp_cross": false
+    },
+    "metrics": {
+        "cash": 3738.9053045784726,
+        "total_position_value": 5707.9990870284155,
+        "total_value": 9446.904391606888,
+        "realized_profit": -420.13260860300795,
+        "unrealized_profit": -132.96299979009885,
+        "total_profit": -553.0956083931123,
+        "profit_pct": -5.530956083931123,
+        "transaction_fee_total": 3744.293374138675,
+        "total_trades": 324,
+        "sharpe": -0.17579586453540097,
+        "sortino": 0.10762050372829747,
+        "max_drawdown": 0.5138306049389544,
+        "max_drawdown_pct": 51.383060493895435
+    },
+    "metadata": {
+        "SYMBOLS": null,
+        "SYMBOLS_FILE": "data/top_10_USD_1095_movers.json",
+        "START_DATE": "2024-01-01",
+        "END_DATE": "2024-12-31",
+        "INTERVAL": "4h",
+        "START_CASH": 10000,
+        "PORTFOLIO_SHARE": 0.2,
+        "DEFAULT_PARAMS": {
+            "adx_threshold": 25,
+            "adx_length": 14,
+            "sar_acceleration": 0.02,
+            "sar_maximum": 0.2,
+            "atr_multiplier": 3.0,
+            "atr_length": 14,
+            "use_dmp_cross": false
+        }
+    }
+}

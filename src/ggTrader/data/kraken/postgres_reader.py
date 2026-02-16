@@ -31,14 +31,18 @@ class KrakenPostgresReader:
         params = {}
 
         if symbol:
-            # Ensure symbol has quote if missing
+            # Normalize symbol format (replace / with -) and ensure quote
+            symbol = symbol.replace("/", "-")
             if "-" not in symbol:
                 symbol = f"{symbol}-{quote}"
             where_clauses.append("symbol = :symbol")
             params["symbol"] = symbol
         elif symbols:
-            # Ensure symbols have quote if missing
-            formatted_symbols = [f"{s}-{quote}" if "-" not in s else s for s in symbols]
+            # Normalize symbol format (replace / with -) and ensure quote
+            formatted_symbols = [s.replace("/", "-") for s in symbols]
+            formatted_symbols = [
+                f"{s}-{quote}" if "-" not in s else s for s in formatted_symbols
+            ]
             where_clauses.append("symbol IN :symbols")
             params["symbols"] = tuple(formatted_symbols)
 
@@ -81,13 +85,19 @@ class KrakenPostgresReader:
         Retrieve aligned OHLCV data for multiple symbols.
         Returns MultiIndex DataFrame (columns: Symbol -> Metric).
         """
+        if not symbols:
+            return pd.DataFrame()
+
         if start:
             start = ensure_utc_timestamp(start)
         if end:
             end = ensure_utc_timestamp(end)
 
-        # Ensure symbols are formatted for the query
-        formatted_symbols = [f"{s}-{quote}" if "-" not in s else s for s in symbols]
+        # Ensure symbols are formatted for the query (normalize / to -)
+        formatted_symbols = [s.replace("/", "-") for s in symbols]
+        formatted_symbols = [
+            f"{s}-{quote}" if "-" not in s else s for s in formatted_symbols
+        ]
 
         df = self.read_ohlcv(
             symbols=formatted_symbols,
@@ -217,6 +227,67 @@ class KrakenPostgresReader:
         """
 
         # Use text() for pandas read_sql
+        df = pd.read_sql(text(query), self.engine, params=params)
+        return df
+
+    def get_consistent_movers(
+        self,
+        days: int = 365,
+        daily_top_n: int = 50,
+        output_n: int = 50,
+        trades_threshold: int = 500,
+        stables: bool = False,
+        quote: str = "USD",
+    ) -> pd.DataFrame:
+        """
+        Calculates consistent movers over a lookback period.
+        Finds assets that appeared most frequently in the top N by notional volume each day.
+        """
+        excluded = []
+        if not stables:
+            excluded = ["USDT", "USDC", "DAI", "PYUSD", "EUR", "GBP", "AUD", "USDG"]
+
+        # Date range
+        end_date = pd.Timestamp.now(tz="UTC").normalize()
+        start_date = end_date - pd.Timedelta(days=days)
+
+        query = f"""
+            WITH daily_tops AS (
+                SELECT 
+                    timestamp::DATE as date,
+                    split_part(symbol, '-', 1) as asset,
+                    volume * close as notional_volume,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY timestamp 
+                        ORDER BY volume * close DESC
+                    ) as rank
+                FROM ohlcv
+                WHERE interval = '1d'
+                  AND trades > :threshold
+                  AND timestamp >= :start
+                  AND split_part(symbol, '-', 2) = :quote
+                  {"AND split_part(symbol, '-', 1) NOT IN :excluded" if excluded else ""}
+            )
+            SELECT 
+                asset as symbol,
+                COUNT(*) as frequency,
+                CAST(AVG(notional_volume) AS Float) as average_notional_volume
+            FROM daily_tops
+            WHERE rank <= :daily_limit
+            GROUP BY asset
+            ORDER BY frequency DESC, average_notional_volume DESC
+            LIMIT :limit
+        """
+
+        params = {
+            "threshold": trades_threshold,
+            "start": start_date,
+            "quote": quote,
+            "daily_limit": daily_top_n,
+            "limit": output_n,
+            "excluded": tuple(excluded) if excluded else None,
+        }
+
         df = pd.read_sql(text(query), self.engine, params=params)
         return df
 

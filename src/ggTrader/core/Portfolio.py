@@ -36,7 +36,7 @@ class Portfolio:
 
         self.cash += exit_value - position.exit_fee
         position.exit_date = date
-        position.status = 'closed'
+        position.status = "closed"
         position.exit_price = position.current_price
         # self.trades.append(position.__dict__.copy())
         self.positions.remove(position)
@@ -246,8 +246,7 @@ class Portfolio:
             "sharpe": self.sharpe_ratio(),
             "sortino": self.sortino_ratio(),
             "max_drawdown": self.max_drawdown(),  # fraction (0..1)
-            "max_drawdown_pct": self.max_drawdown_pct()  # percent (0..100)
-
+            "max_drawdown_pct": self.max_drawdown_pct(),  # percent (0..100)
         }
 
     @staticmethod
@@ -273,11 +272,11 @@ class Portfolio:
         print(tabulate(t, headers="keys", tablefmt="github", showindex=False))
 
     def plot_equity_curve(
-            self,
-            figsize=(16, 8),
-            title: str = "Equity Curve",
-            fill=True,
-            show=True,
+        self,
+        figsize=(16, 8),
+        title: str = "Equity Curve",
+        fill=True,
+        show=True,
     ):
         if self.equity_curve.empty:
             print("No equity data to plot.")
@@ -298,25 +297,50 @@ class Portfolio:
         ax.plot(x, below, color="tab:red", lw=1.5, label="Below start")
 
         # Baseline
-        ax.axhline(baseline, color="blue", ls="--", lw=1.2,
-                   label=f"Starting Cash (${baseline:,.0f})")
+        ax.axhline(
+            baseline,
+            color="blue",
+            ls="--",
+            lw=1.2,
+            label=f"Starting Cash (${baseline:,.0f})",
+        )
 
         # Optional soft fill to baseline
         if fill:
-            ax.fill_between(x, above, baseline, where=above.notna(),
-                            alpha=0.12, interpolate=True, color="tab:green")
-            ax.fill_between(x, below, baseline, where=below.notna(),
-                            alpha=0.12, interpolate=True, color="tab:red")
+            ax.fill_between(
+                x,
+                above,
+                baseline,
+                where=above.notna(),
+                alpha=0.12,
+                interpolate=True,
+                color="tab:green",
+            )
+            ax.fill_between(
+                x,
+                below,
+                baseline,
+                where=below.notna(),
+                alpha=0.12,
+                interpolate=True,
+                color="tab:red",
+            )
         # text
         text = self.dict_to_text(self.stats_dict())
         ax.text(
-            0.01, .95,  # x, y in axis coordinates
+            0.01,
+            0.95,  # x, y in axis coordinates
             text,
             transform=ax.transAxes,  # use axes coordinates (0..1)
             fontsize=10,
-            va='top',
-            ha='left',
-            bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.85, edgecolor='black')
+            va="top",
+            ha="left",
+            bbox=dict(
+                boxstyle="round,pad=0.4",
+                facecolor="white",
+                alpha=0.85,
+                edgecolor="black",
+            ),
         )
 
         # Cosmetics
@@ -331,7 +355,26 @@ class Portfolio:
             plt.show()
         return ax
 
-    def sharpe_ratio(self, periods_per_year: int | None = None, rf_annual: float = 0.01, method: str = "log") -> float:
+    def plot_value(self, **kwargs):
+        """
+        Alias for plot_equity_curve for backward compatibility.
+        Returns the figure for display in notebooks.
+        """
+        if "show" not in kwargs:
+            kwargs["show"] = False
+        ax = self.plot_equity_curve(**kwargs)
+        fig = ax.get_figure()
+
+        # In Jupyter, fig.show() can cause 'non-interactive backend' warnings.
+        # We return the figure so it can be displayed by just being the last line of a cell.
+        return fig
+
+    def sharpe_ratio(
+        self,
+        periods_per_year: int | None = None,
+        rf_annual: float = 0.01,
+        method: str = "log",
+    ) -> float:
         """
         Compute annualized Sharpe ratio from the portfolio equity_curve.
 
@@ -383,7 +426,12 @@ class Portfolio:
         sharpe = float((mu / sigma) * np.sqrt(periods_per_year))
         return sharpe
 
-    def sortino_ratio(self, periods_per_year: int | None = None, rf_annual: float = 0.01, target_return: float = 0.0) -> float:
+    def sortino_ratio(
+        self,
+        periods_per_year: int | None = None,
+        rf_annual: float = 0.01,
+        target_return: float = 0.0,
+    ) -> float:
         """
         Compute annualized Sortino ratio from the portfolio equity_curve.
         Sortino penalizes only downside deviation (returns below target_return).
@@ -422,19 +470,21 @@ class Portfolio:
 
         # convert annual rf to per-period
         rf_per_period = (1 + rf_annual) ** (1 / periods_per_year) - 1.0
-        
+
         # Excess returns vs risk-free
         excess = rets - rf_per_period
-        
+
         # Downside deviation: only consider returns below target_return
         # Usually target_return is 0 or rf_per_period. We'll use target_return as provided.
-        downside_diff = rets - (target_return / periods_per_year) # rough approximation for target
+        downside_diff = rets - (
+            target_return / periods_per_year
+        )  # rough approximation for target
         # More common: downside deviation is based on excess returns below 0
         downside_rets = excess[excess < 0]
-        
+
         if downside_rets.empty:
-            return 0.0 # No downside risk!
-        
+            return 0.0  # No downside risk!
+
         mu = excess.mean()
         # Downside deviation calculation: sqrt(sum(min(0, r - target)^2) / N)
         # We use N = total number of periods (rets), not just downside periods
@@ -446,11 +496,12 @@ class Portfolio:
         sortino = float((mu / downside_sigma) * np.sqrt(periods_per_year))
         return sortino
 
-    def qty_to_buy(self, price: float, percent: float=0.1):
+    def qty_to_buy(self, price: float, percent: float = 0.1):
         buy_value = self.total_value * percent
         if buy_value > self.cash:
             return 0.0
         return buy_value / price
+
 
 if __name__ == "__main__":
     # Example usage of Portfolio with a Position instance
@@ -462,9 +513,9 @@ if __name__ == "__main__":
 
     # Create a position (adjust constructor to match your Position class)
     # Example assumes: Position(symbol, side, amount, price)
-    pos = Position('BTC', 3, 10000, datetime(2024, 1, 1))
-    pos2 = Position('ETH', 5, 250, datetime(2024, 2, 1))
-    pos3 = Position('LTC', 40, 100, datetime(2024, 3, 1))
+    pos = Position("BTC", 3, 10000, datetime(2024, 1, 1))
+    pos2 = Position("ETH", 5, 250, datetime(2024, 2, 1))
+    pos3 = Position("LTC", 40, 100, datetime(2024, 3, 1))
 
     # Add position to portfolio
     port.add_position(pos)
@@ -472,10 +523,12 @@ if __name__ == "__main__":
     port.add_position(pos3)
 
     # Update price (simulate market move)
-    port.update_position_price(symbol='BTC', price=30500.0, date=datetime.now())
+    port.update_position_price(symbol="BTC", price=30500.0, date=datetime.now())
 
     # Close the position (simulate exit)
-    port.close_position(pos, date=datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
+    port.close_position(
+        pos, date=datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    )
 
     # Print current positions/trades
     port.print_positions()

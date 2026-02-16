@@ -6,6 +6,7 @@ from pathlib import Path
 import csv
 from sqlalchemy import create_engine, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert, JSONB
+from ggTrader.utils.config import get_db_connection_string
 
 
 class ResultDBManager:
@@ -16,10 +17,7 @@ class ResultDBManager:
 
     def __init__(self, connection_string=None, log_path="results/runs_log.csv"):
         if connection_string is None:
-            self.connection_string = os.getenv(
-                "POSTGRES_CONNECTION_STRING",
-                "postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader",
-            )
+            self.connection_string = get_db_connection_string()
         else:
             self.connection_string = connection_string
 
