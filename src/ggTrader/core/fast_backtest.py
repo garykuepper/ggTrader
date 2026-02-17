@@ -14,7 +14,11 @@ _DEFAULT_CONFIG = {
     "FEES": 0.001,
     "SLIPPAGE": 0.0005,
     "FREQ": "4h",
+    "N_JOBS": -1,  # Default to all cores for vectorized runs
 }
+
+# Performance settings
+vbt.settings.caching["enabled"] = True
 
 
 class FastBacktest:
@@ -47,10 +51,11 @@ class FastBacktest:
         self.fees = float(cfg["FEES"])
         self.slippage = float(cfg["SLIPPAGE"])
         self.freq = cfg["FREQ"]
+        self.n_jobs = int(cfg["N_JOBS"])
 
         self.pf = None
 
-    def run(self) -> vbt.Portfolio:
+    def run(self, show_progress: bool = False) -> vbt.Portfolio:
         """Execute the vectorized backtest and return the VBT Portfolio."""
         if self.ohlcv_df.empty:
             raise ValueError(
@@ -58,11 +63,14 @@ class FastBacktest:
                 "and database connection."
             )
 
+        # 0. Performance optimization: downcast to float32
+        ohlcv = self.ohlcv_df.astype(np.float32)
+
         # 1. Unpack OHLCV
-        close = self.ohlcv_df.xs("close", axis=1, level=1, drop_level=True)
-        high = self.ohlcv_df.xs("high", axis=1, level=1, drop_level=True)
-        low = self.ohlcv_df.xs("low", axis=1, level=1, drop_level=True)
-        open_ = self.ohlcv_df.xs("open", axis=1, level=1, drop_level=True)
+        close = ohlcv.xs("close", axis=1, level=1, drop_level=True)
+        high = ohlcv.xs("high", axis=1, level=1, drop_level=True)
+        low = ohlcv.xs("low", axis=1, level=1, drop_level=True)
+        open_ = ohlcv.xs("open", axis=1, level=1, drop_level=True)
 
         # 2. Generate signals via SignalFactory (supports broadcasting)
         sf = SignalFactory.run(
@@ -72,6 +80,8 @@ class FastBacktest:
             open_=open_,
             **self.params,
             param_product=True,
+            show_progress=show_progress,
+            n_jobs=self.n_jobs,
         )
 
         entries = sf.entries
@@ -133,11 +143,7 @@ class FastBacktest:
         return self.pf
 
     def get_stats(self) -> dict:
-        """Return aggregate metrics formatted for ResultsManager.
-
-        NOTE: For large parameter grids, use self.pf directly for per-combo
-        analysis instead of this convenience method which aggregates results.
-        """
+        """Return aggregate metrics formatted for ResultsManager."""
         if self.pf is None:
             raise ValueError("Run the backtest first.")
 
@@ -169,3 +175,33 @@ class FastBacktest:
             "sortino": _safe(float(self.pf.sortino_ratio().mean())),
             "max_drawdown": _safe(float(self.pf.max_drawdown().min() * 100)),
         }
+
+    def save_detailed_plots(
+        self, results_manager, filename: str = "backtest_detailed"
+    ) -> None:
+        """
+        Saves a comprehensive multi-panel plot of the backtest.
+        Safe for cash_sharing=True.
+        """
+        if self.pf is None:
+            raise ValueError("Run the backtest first.")
+
+        # Subplots that provide a good overview for shared-cash portfolios
+        subplots = [
+            "cumulative_returns",
+            "drawdowns",
+            "daily_returns",
+            "cash_sharing",
+        ]
+
+        try:
+            fig = self.pf.plot(subplots=subplots)
+            results_manager.save_plot(fig, filename)
+        except Exception as e:
+            print(f"Warning: Could not generate detailed plots: {e}")
+            # Fallback to basic plot if specific subplots fail
+            try:
+                fig = self.pf.plot()
+                results_manager.save_plot(fig, f"{filename}_basic")
+            except:
+                pass

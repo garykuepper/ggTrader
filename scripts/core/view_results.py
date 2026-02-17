@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import sys
 from typing import Optional
@@ -8,7 +9,9 @@ from sqlalchemy import create_engine, text
 from tabulate import tabulate
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+)
 
 from ggTrader.utils.config import get_db_connection_string
 
@@ -25,22 +28,35 @@ def get_engine(conn_str: Optional[str] = None):
     return create_engine(conn_str)
 
 
+def get_latest_run_id(engine) -> Optional[str]:
+    """
+    Returns the most recent run_id from the database.
+    """
+    query = "SELECT run_id FROM runs ORDER BY timestamp DESC LIMIT 1"
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text(query)).fetchone()
+            return result[0] if result else None
+    except Exception as e:
+        print(f"Error fetching latest run: {e}")
+        return None
+
+
 def list_runs(engine) -> None:
     """
     Lists recent runs from the database.
     """
     query = """
         SELECT 
-            r.run_id, 
-            r.run_type, 
-            r.timestamp,
-            (SELECT metric_value FROM performance_metrics m 
-             WHERE m.run_id = r.run_id 
-             AND m.metric_name IN ('profit_pct', 'return_pct', 'best_value') 
-             LIMIT 1) as summary_metric
-        FROM runs r
-        ORDER BY r.timestamp DESC
-        LIMIT 15
+            run_id, 
+            run_type, 
+            timestamp,
+            total_profit as profit,
+            sharpe,
+            sortino
+        FROM runs
+        ORDER BY timestamp DESC
+        LIMIT 20
     """
     try:
         df = pd.read_sql(query, engine)
@@ -70,9 +86,33 @@ def show_run_details(engine, run_id: str) -> None:
         return
 
     print("\n--- RUN METADATA ---")
-    row = run_info.iloc[0]
-    for col in run_info.columns:
-        print(f"{col}: {row[col]}")
+    row = run_info.iloc[0].to_dict()
+
+    # Separate flat and nested fields
+    flat_data = []
+    nested_fields = ["parameters", "metadata"]
+
+    for col, val in row.items():
+        if col not in nested_fields:
+            flat_data.append([col, val])
+
+    # Print flat data as a table
+    print(tabulate(flat_data, tablefmt="plain"))
+
+    # Print nested fields with pretty formatting
+    for field in nested_fields:
+        if field in row and row[field]:
+            print(f"\n{field}:")
+            try:
+                # If it's already a dict, just dump it
+                if isinstance(row[field], dict):
+                    print(json.dumps(row[field], indent=4))
+                else:
+                    # Try parsing if it's a string
+                    parsed = json.loads(row[field])
+                    print(json.dumps(parsed, indent=4))
+            except (ValueError, TypeError):
+                print(row[field])
 
     # Metrics
     metrics = pd.read_sql(
@@ -86,14 +126,18 @@ def show_run_details(engine, run_id: str) -> None:
 
     # WFO Windows if applicable
     windows = pd.read_sql(
-        "SELECT window_id, test_start, test_end, return_pct, sharpe, sortino "
+        "SELECT window_id, test_start, test_end, profit, return_pct, sharpe, sortino "
         "FROM wfo_windows WHERE run_id = %(run_id)s ORDER BY window_id",
         engine,
         params={"run_id": run_id},
     )
     if not windows.empty:
         print("\n--- WFO WINDOWS ---")
-        print(tabulate(windows, headers="keys", tablefmt="github", showindex=False))
+        # Format percentages and floats
+        display_df = windows.copy()
+        if "return_pct" in display_df.columns:
+            display_df["return_pct"] = display_df["return_pct"].map("{:.2f}%".format)
+        print(tabulate(display_df, headers="keys", tablefmt="github", showindex=False))
 
 
 def main() -> None:
@@ -118,9 +162,19 @@ def main() -> None:
 
     if args.run_id:
         show_run_details(engine, args.run_id)
-    else:
-        # Default behavior is listing
+    elif args.list:
         list_runs(engine)
+    else:
+        # Default behavior: Show summary of recent runs + details for latest
+        list_runs(engine)
+        latest_id = get_latest_run_id(engine)
+        if latest_id:
+            print("\n" + "=" * 50)
+            print(f"LATEST RUN DETAIL: {latest_id}")
+            print("=" * 50)
+            show_run_details(engine, latest_id)
+        else:
+            print("No runs found in database.")
 
 
 if __name__ == "__main__":

@@ -12,74 +12,56 @@ class Signals:
 
     @staticmethod
     def entry_signals(
-        close: pd.DataFrame,
-        high: pd.DataFrame,
-        low: pd.DataFrame,
+        close: np.ndarray,
+        high: np.ndarray,
+        low: np.ndarray,
         adx_length: int = 14,
         adx_threshold: int = 25,
         sar_acceleration: float = 0.02,
         sar_maximum: float = 0.2,
         use_dmp_cross: bool = True,
-    ) -> pd.DataFrame:
+        **kwargs,
+    ) -> np.ndarray:
         """
         Calculate entry signals based on PSAR and ADX.
-
         Long entry: PSAR below close AND (ADX >= threshold) AND (optionally DMP > DMN).
-        Ensures flat column names before calculation to avoid MultiIndex level mismatch errors.
         """
-        # Help vbt by providing flat column names if MultiIndex
-        close_f = (
-            close.columns.get_level_values(-1)
-            if isinstance(close.columns, pd.MultiIndex)
-            else close.columns
-        )
-        high_f = (
-            high.columns.get_level_values(-1)
-            if isinstance(high.columns, pd.MultiIndex)
-            else high.columns
-        )
-        low_f = (
-            low.columns.get_level_values(-1)
-            if isinstance(low.columns, pd.MultiIndex)
-            else low.columns
-        )
+        # Ensure input is numpy for speed
+        c = close.values if hasattr(close, "values") else close
+        h = high.values if hasattr(high, "values") else high
+        l = low.values if hasattr(low, "values") else low
 
-        # We create temporary flat copies for vbt
-        c_flat = close.copy()
-        c_flat.columns = close_f
-        h_flat = high.copy()
-        h_flat.columns = high_f
-        l_flat = low.copy()
-        l_flat.columns = low_f
-
-        # PSAR buy signal
-        psar = vbt.pandas_ta("psar").run(
-            h_flat,
-            l_flat,
-            close=c_flat,
+        # Vectorized PSAR - Using VBT bridge but ensuring numpy output
+        psar_ind = vbt.IndicatorFactory.from_pandas_ta("psar").run(
+            h,
+            l,
+            close=c,
             acceleration=sar_acceleration,
             maximum=sar_maximum,
         )
-        sar_buy = psar.psarl_below(c_flat)
+        psarl = (
+            psar_ind.psarl.values
+            if hasattr(psar_ind.psarl, "values")
+            else psar_ind.psarl
+        )
+        sar_buy = psarl < c
 
-        # ADX block
-        adx = vbt.pandas_ta("adx").run(h_flat, l_flat, c_flat, length=adx_length)
-        adx_ok = adx.adx_above(adx_threshold)
-        dmp_ok = adx.dmp_above(adx.dmn) if use_dmp_cross else adx_ok
-
-        # Combine using numpy values to avoid MultiIndex naming/alignment issues
-        sar_buy_v = sar_buy.values
-        adx_ok_v = adx_ok.values
-        dmp_ok_v = (
-            dmp_ok.values if isinstance(dmp_ok, (pd.Series, pd.DataFrame)) else dmp_ok
+        # Vectorized ADX
+        adx_ind = vbt.IndicatorFactory.from_pandas_ta("adx").run(
+            h, l, c, length=int(adx_length)
         )
 
-        if use_dmp_cross:
-            entries_v = sar_buy_v & adx_ok_v & dmp_ok_v
-        else:
-            entries_v = sar_buy_v & adx_ok_v
+        adx_val = adx_ind.adx.values if hasattr(adx_ind.adx, "values") else adx_ind.adx
+        adx_ok = adx_val >= float(adx_threshold)
 
-        entries = pd.DataFrame(entries_v, index=close.index, columns=close.columns)
+        if use_dmp_cross:
+            dmp = adx_ind.dmp.values if hasattr(adx_ind.dmp, "values") else adx_ind.dmp
+            dmn = adx_ind.dmn.values if hasattr(adx_ind.dmn, "values") else adx_ind.dmn
+            dmp_ok = dmp > dmn
+            entries = sar_buy & adx_ok & dmp_ok
+        else:
+            entries = sar_buy & adx_ok
+
         return entries.astype(bool)
 
     @staticmethod
@@ -106,7 +88,7 @@ class Signals:
         low = ohlcv_df.xs("low", axis=1, level=1, drop_level=True)
         open_ = ohlcv_df.xs("open", axis=1, level=1, drop_level=True)
 
-        entries, exits, stop_df, _ = Signals.calc_signals(
+        entries, exits, stop_arr, price_arr = Signals.calc_signals(
             close=close,
             high=high,
             low=low,
@@ -122,137 +104,98 @@ class Signals:
 
         res_dict = {}
         for symbol in symbols:
-            if symbol not in entries.columns:
+            if symbol not in close.columns:
                 continue
+            idx = close.columns.get_loc(symbol)
             sig_df = pd.DataFrame(index=ohlcv_df.index)
             sig_df["close"] = close[symbol].copy()
             sig_df["signal"] = 0
-            sig_df.loc[entries[symbol], "signal"] = 1
-            sig_df.loc[exits[symbol], "signal"] = -1
-            sig_df["stop_loss"] = stop_df[symbol]
+
+            # Extract column from numpy results
+            s_entries = entries[:, idx]
+            s_exits = exits[:, idx]
+            s_stops = stop_arr[:, idx]
+
+            sig_df.loc[s_entries, "signal"] = 1
+            sig_df.loc[s_exits, "signal"] = -1
+            sig_df["stop_loss"] = s_stops
             res_dict[symbol] = sig_df
 
         return res_dict
 
     @staticmethod
     def trailing_stop_and_exits(
-        entries: pd.DataFrame,
-        close: pd.DataFrame,
-        high: pd.DataFrame,
-        low: pd.DataFrame,
+        entries: np.ndarray,
+        close: np.ndarray,
+        high: np.ndarray,
+        low: np.ndarray,
         atr_length: int = 14,
         atr_multiplier: float = 3.0,
-    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Build a 3xATR trailing stop and intrabar-touch exits (low <= stop).
         """
-        # Help vbt by providing flat column names if MultiIndex
-        close_f = (
-            close.columns.get_level_values(-1)
-            if isinstance(close.columns, pd.MultiIndex)
-            else close.columns
-        )
-        high_f = (
-            high.columns.get_level_values(-1)
-            if isinstance(high.columns, pd.MultiIndex)
-            else high.columns
-        )
-        low_f = (
-            low.columns.get_level_values(-1)
-            if isinstance(low.columns, pd.MultiIndex)
-            else low.columns
-        )
+        # Ensure inputs are numpy
+        c = close.values if hasattr(close, "values") else close
+        h = high.values if hasattr(high, "values") else high
+        l = low.values if hasattr(low, "values") else low
+        e = entries.values if hasattr(entries, "values") else entries
 
-        # We create temporary flat copies for vbt
-        c_flat = close.copy()
-        c_flat.columns = close_f
-        h_flat = high.copy()
-        h_flat.columns = high_f
-        l_flat = low.copy()
-        l_flat.columns = low_f
-
-        # ATR calculation on flat DataFrames
-        atr = vbt.pandas_ta("atr").run(h_flat, l_flat, c_flat, length=atr_length)
-        atr_vals_df = atr.atrr
-
-        # Ensure entries also has matching flat columns for logical operations
-        entries_flat = entries.copy()
-        if isinstance(entries_flat.columns, pd.MultiIndex):
-            entries_flat.columns = entries_flat.columns.get_level_values(-1)
+        # ATR calculation via VBT bridge (fast)
+        atr_ind = vbt.IndicatorFactory.from_pandas_ta("atr").run(
+            h, l, c, length=int(atr_length)
+        )
+        atr_vals = (
+            atr_ind.atrr.values if hasattr(atr_ind.atrr, "values") else atr_ind.atrr
+        )
 
         # Prepare arrays for numba
-        high_vals = np.asarray(h_flat.values, dtype=np.float64)
-        low_vals = np.asarray(l_flat.values, dtype=np.float64)
-        atr_vals = np.asarray(atr_vals_df.values, dtype=np.float64)
-        entry_vals = np.asarray(entries_flat.values, dtype=np.bool_)
+        high_vals = np.asarray(h, dtype=np.float64)
+        low_vals = np.asarray(l, dtype=np.float64)
+        atr_vals_np = np.asarray(atr_vals, dtype=np.float64)
+        entry_vals = np.asarray(e, dtype=np.bool_)
 
         stop_vals, exits_vals = _atr_trailing_stop_long_ohlc_touch_2d_numba(
-            high_vals, low_vals, atr_vals, entry_vals, float(atr_multiplier)
+            high_vals, low_vals, atr_vals_np, entry_vals, float(atr_multiplier)
         )
 
-        # Return DataFrames with matching labels
-        stop_df = pd.DataFrame(stop_vals, index=close.index, columns=c_flat.columns)
-        exits_df = pd.DataFrame(
-            exits_vals, index=close.index, columns=c_flat.columns, dtype=bool
-        )
-        return stop_df, exits_df
+        return stop_vals, exits_vals
 
     @staticmethod
     def stop_fill_price(
-        exits: pd.DataFrame,
-        stop_df: pd.DataFrame,
-        open_df: pd.DataFrame,
-        low_df: pd.DataFrame,
-        high_df: pd.DataFrame,
-        base_price: pd.DataFrame,
-    ) -> pd.DataFrame:
+        exits: np.ndarray,
+        stop_arr: np.ndarray,
+        open_arr: np.ndarray,
+        low_arr: np.ndarray,
+        high_arr: np.ndarray,
+        base_price: np.ndarray,
+    ) -> np.ndarray:
         """
         Calculate the actual fill price for orders, accounting for gap downs.
+        Inputs are expected to be numpy arrays or have a .values attribute.
         """
-        # Start with base_price as the default
-        out = base_price.copy()
 
-        # Create boolean mask for exits
-        exit_mask = (
-            exits.to_numpy(dtype=bool)
-            if hasattr(exits, "to_numpy")
-            else exits.values.astype(bool)
-        )
+        def _to_np(x):
+            return x.values if hasattr(x, "values") else x
 
-        # Get numpy arrays for all inputs
-        stop_values = (
-            stop_df.to_numpy(copy=True)
-            if hasattr(stop_df, "to_numpy")
-            else stop_df.values.copy()
-        )
-        open_values = (
-            open_df.to_numpy(copy=True)
-            if hasattr(open_df, "to_numpy")
-            else open_df.values.copy()
-        )
+        e = _to_np(exits).astype(bool)
+        s = _to_np(stop_arr)
+        o = _to_np(open_arr)
+        bp = _to_np(base_price)
 
-        # Logic: Fill = min(Open, Stop)
-        gap_adjusted_stops = np.minimum(open_values, stop_values)
+        # Logic: Fill = min(Open, Stop) where exit occurs
+        gap_adjusted_stops = np.minimum(o, s)
 
-        # Create a writable copy of the output values
-        out_values = (
-            out.to_numpy(copy=True) if hasattr(out, "to_numpy") else out.values.copy()
-        )
-
-        # Apply the gap-adjusted prices where exits occur
-        out_values[exit_mask] = gap_adjusted_stops[exit_mask]
-
-        # Create new DataFrame with the modified values
-        result = pd.DataFrame(out_values, index=out.index, columns=out.columns)
-
-        return result
+        out = bp.copy()
+        out[e] = gap_adjusted_stops[e]
+        return out
 
     @staticmethod
     def calc_signals(
-        close: pd.DataFrame,
-        high: pd.DataFrame,
-        low: pd.DataFrame,
-        open_: pd.DataFrame,
+        close: np.ndarray,
+        high: np.ndarray,
+        low: np.ndarray,
+        open_: np.ndarray,
         adx_length: int = 14,
         adx_threshold: int = 25,
         sar_acceleration: float = 0.02,
@@ -260,11 +203,22 @@ class Signals:
         use_dmp_cross: bool = True,
         atr_length: int = 14,
         atr_multiplier: float = 3.0,
-    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        **kwargs,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
-        Orchestrates everything and returns entries, exits, stop_df, price_for_orders.
+        Orchestrates everything and returns entries, exits, stop_arr, price_for_orders.
+        Expects numpy arrays or objects with .values.
         """
-        # Cast params to native Python types to avoid issues with numpy scalars in pandas-ta
+
+        def _to_np(x):
+            return x.values if hasattr(x, "values") else x
+
+        c = _to_np(close)
+        h = _to_np(high)
+        l = _to_np(low)
+        o = _to_np(open_)
+
+        # Cast params
         adx_len = int(adx_length)
         adx_th = float(adx_threshold)
         sar_acc = float(sar_acceleration)
@@ -273,35 +227,36 @@ class Signals:
         atr_mult = float(atr_multiplier)
 
         entries = Signals.entry_signals(
-            close,
-            high,
-            low,
+            c,
+            h,
+            l,
             adx_length=adx_len,
             adx_threshold=adx_th,
             sar_acceleration=sar_acc,
             sar_maximum=sar_max,
             use_dmp_cross=use_dmp_cross,
+            **kwargs,
         )
 
-        stop_df, exits = Signals.trailing_stop_and_exits(
+        stop_arr, exits = Signals.trailing_stop_and_exits(
             entries=entries,
-            close=close,
-            high=high,
-            low=low,
+            close=c,
+            high=h,
+            low=l,
             atr_length=atr_len,
             atr_multiplier=atr_mult,
         )
 
         price_for_orders = Signals.stop_fill_price(
             exits=exits,
-            stop_df=stop_df,
-            open_df=open_,
-            low_df=low,
-            high_df=high,
-            base_price=close,
+            stop_arr=stop_arr,
+            open_arr=o,
+            low_arr=l,
+            high_arr=h,
+            base_price=c,
         )
 
-        return entries, exits, stop_df, price_for_orders
+        return entries, exits, stop_arr, price_for_orders
 
 
 # Create a VectorBT IndicatorFactory to enable easy broadcasting/parameterizing
@@ -328,7 +283,7 @@ SignalFactory = vbt.IndicatorFactory(
     use_dmp_cross=True,
     atr_length=14,
     atr_multiplier=3.0,
-    keep_pd=True,  # Ensure inputs/outputs remain pandas objects inside the function
+    keep_pd=False,  # Optimization: Use numpy arrays internally for massive speedup
 )
 
 

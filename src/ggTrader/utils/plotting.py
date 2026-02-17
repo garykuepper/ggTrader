@@ -1,18 +1,26 @@
+"""Plotting utilities for backtesting and optimization results."""
+
 import os
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any
 
 import matplotlib.pyplot as plt
-import optuna
-import optuna.visualization as vis
 import pandas as pd
 import seaborn as sns
 
+try:
+    import optuna
+    import optuna.visualization as vis
+
+    OPTUNA_AVAILABLE = True
+except ImportError:
+    OPTUNA_AVAILABLE = False
+
 
 def plot_optimization_landscape(
-    study_or_df: Union[optuna.Study, pd.DataFrame],
+    study_or_df: Any,
     params_to_plot: List[str] = ["adx_threshold", "atr_multiplier"],
     metric_name: str = "Sharpe Ratio",
-    results_manager: Optional[object] = None,
+    results_manager: Optional[Any] = None,
 ) -> None:
     """
     Generates sensitivity plots for analyzing optimization results.
@@ -25,9 +33,7 @@ def plot_optimization_landscape(
     """
 
     def handle_plot(fig, filename: str) -> None:
-        """
-        Helper to handle showing or saving plots.
-        """
+        """Helper to handle showing or saving plots."""
         if results_manager:
             path = results_manager.get_plot_path(filename)
             if hasattr(fig, "write_image"):  # Plotly
@@ -77,7 +83,7 @@ def plot_optimization_landscape(
         else:
             print("Need at least 2 parameters for heatmap.")
 
-    elif isinstance(study_or_df, optuna.Study):
+    elif OPTUNA_AVAILABLE and isinstance(study_or_df, optuna.Study):
         study = study_or_df
         # 1. Parallel Coordinate Plot
         try:
@@ -136,3 +142,8 @@ def plot_optimization_landscape(
                 sns.heatmap(pivot, cmap="viridis", annot=True, fmt=".2f")
                 plt.title(f"Heatmap: {metric_name} by {p1} & {p2}")
                 handle_plot(fig_sns, f"heatmap_{p1}_{p2}.png")
+    else:
+        if not OPTUNA_AVAILABLE and not isinstance(study_or_df, pd.DataFrame):
+            print("Optuna not installed. Cannot plot Optuna Study.")
+        else:
+            print(f"Unsupported object type for plotting: {type(study_or_df)}")

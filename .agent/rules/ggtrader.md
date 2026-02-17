@@ -2,7 +2,6 @@
 trigger: always_on
 ---
 
-
 # Python Coding Standards (Global)
 
 1. **Strict PEP 8 Adherence**:
@@ -80,3 +79,59 @@ trigger: always_on
 3. **Sequential Execution**:
     - Notebooks must be runnable from top to bottom without errors.
     - Avoid relying on hidden state (out-of-order execution).
+
+## Documentation Standards
+
+1. **Single Source of Truth**:
+    - Core architectural changes (e.g., database transitions) must be reflected across all documentation in `docs/` and `README.md`.
+    - Supplemental documentation must reside in the `docs/` directory.
+
+2. **Project Structure Alignment**:
+    - Documentation must accurately reflect the directory structure (e.g., `src/`, `scripts/`, `docs/`).
+    - Use relative links for cross-referencing between documentation files.
+
+# ggTrader Project Consistency Rules
+
+These rules ensure the codebase remains maintainable and that data artifacts (JSON, CSV, DB) are consistently formatted.
+
+## 1. Symbol Normalization
+
+All scripts, notebooks, and models MUST use standardized asset symbols (e.g., `BTC`, `ETH`).
+
+- **Input**: Database or raw API data may contain Kraken-specific prefixed symbols (e.g., `XBT`, `XETH`, `XXLM`, `ZUSD`).
+- **Processing**: Use the `SYMBOL_MAPPING` table (found in `generate_asset_pool.py` and consolidated in `data_manager.py`) to convert internal labels to standard tickers.
+- **Output**: Any artifact saved to `data/` or results returned to the user must use the normalized symbol.
+
+## 2. SQL Query Patterns
+
+When querying the `ohlcv` table, always use standard PostgreSQL/TimescaleDB functions for asset separation:
+
+- **Asset Part**: `split_part(symbol, '-', 1)`
+- **Quote Part**: `split_part(symbol, '-', 2)`
+- **Aggregation**: Prefer Notional Volume (`volume * close`) for cross-asset ranking to account for price discrepancies.
+
+## 3. Data Persistence
+
+Results, asset pools, and backtest metrics must follow these directory and naming conventions:
+
+- **Pools**: `data/top_{N}_{QUOTE}_{DAYS}_movers.json`
+- **Backtest Results**: Use the `ResultsManager` class to ensure timestamped and structured logs.
+- **Relative Paths**: Always resolve paths relative to the project root or use `os.path.join`. Never hardcode absolute paths starting with `C:\`.
+
+## 4. Error Handling & Resiliency
+
+- **Fail Fast**: Data loading functions (like `load_data_and_setup`) must raise descriptive `ValueError` or `FileNotFoundError` exceptions if inputs are missing.
+- **No None-Returns**: Avoid returning `None` from functions that are expected to return iterables (DataFrames, lists) to prevent "NoneType is not iterable" errors. Handle empty data by returning empty structures or raising exceptions.
+
+## 5. Backtesting Architecture
+
+- **FastBacktest** is the only engine for backtesting, sensitivity analysis, and WFO.
+- Always pass `config=CONSTANTS` for portfolio-level settings; keep signal `params` separate.
+- Use `cash_sharing=True` and `group_by=True` — never independent cash pools per symbol.
+- The `Trading` engine is legacy (paper/live trading only). `WalkForwardOptimizer` (Optuna) is archived.
+
+## 6. Dynamic Mover Masking
+
+- Use `build_mover_mask(ohlcv, config, top_n=N)` for daily top-N mover masks.
+- Pass masks to `FastBacktest(mover_mask=mask)` to zero out entries for non-qualifying symbols.
+- Masks are precomputed via a single SQL query (`get_daily_mover_mask`), not per-bar.
