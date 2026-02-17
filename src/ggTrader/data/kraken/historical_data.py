@@ -142,6 +142,10 @@ class KrakenHistoricalData:
         # Postgres stores 4h directly. We can query it.
         return self.reader.read_ohlcv(*args, interval="4h", **kwargs)
 
+    def get_daily_mover_mask(self, *args, **kwargs):
+        """Build a boolean mask of daily top-N movers. See KrakenPostgresReader."""
+        return self.reader.get_daily_mover_mask(*args, **kwargs)
+
     # ---------- Remote Data Access (Delegated to KrakenRemoteReader) ----------
     def use_remote(self, *args, **kwargs):
         return self.remote_reader.use_remote(*args, **kwargs)

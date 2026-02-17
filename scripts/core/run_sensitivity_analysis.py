@@ -1,17 +1,19 @@
+"""Run a vectorized sensitivity analysis (grid search) using FastBacktest."""
+
 import argparse
-import sys
 import os
-import pandas as pd
+import sys
+
 import numpy as np
-from pathlib import Path
+import pandas as pd
 
 # Ensure project root is in path for imports
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 )
 
-from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.core.fast_backtest import FastBacktest
+from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_and_setup
 
 # Handle import of visualizer depending on execution context
@@ -21,7 +23,6 @@ except ImportError:
     try:
         from sensitivity_visualizer import plot_optimization_landscape
     except ImportError:
-        # Fallback: append current directory to path
         sys.path.append(os.path.abspath(os.path.dirname(__file__)))
         from sensitivity_visualizer import plot_optimization_landscape
 
@@ -31,35 +32,32 @@ CONSTANTS = {
     "SYMBOLS": [
         "BTC/USD",
         "ETH/USD",
-    ],  # Set to a list like ["BTC/USD", "ETH/USD"] to override JSON
-    "SYMBOLS_FILE": "data/top_50_consistent_movers.json",
+    ],
+    "SYMBOLS_FILE": "data/top_10_consistent_movers.json",
     "START_DATE": "2024-01-01",
     "END_DATE": "2024-06-01",
     "INTERVAL": "4h",
     "START_CASH": 10000,
     "PORTFOLIO_SHARE": 0.20,
+    "FEES": 0.001,
 }
 
 
-def main():
-    """
-    Run a vectorized sensitivity analysis (grid search) across multiple parameters.
-    Uses VectorBT's broadcasting to simulate all parameter combinations simultaneously.
-    """
+def main() -> None:
+    """Run vectorized sensitivity analysis across a parameter grid."""
     parser = argparse.ArgumentParser(description="Run Vectorized Sensitivity Analysis")
     parser.add_argument("--params", type=str, help="Path to params.json (optional)")
     args = parser.parse_args()
 
     rm = ResultsManager("run_sensitivity")
 
-    # Define Parameter Grid
-    # VectorBT will create a Cartesian product of these lists (Broadcasting)
+    # Parameter grid — VectorBT creates the Cartesian product
     params = {
-        "adx_threshold": list(range(15, 45, 5)),  # [15, 20, ..., 40]
+        "adx_threshold": list(range(15, 45, 5)),
         "adx_length": 14,
         "sar_acceleration": 0.02,
         "sar_maximum": 0.2,
-        "atr_multiplier": list(np.arange(2.0, 5.0, 0.5)),  # [2.0, 2.5, ..., 4.5]
+        "atr_multiplier": list(np.arange(2.0, 5.0, 0.5)),
         "atr_length": 14,
         "use_dmp_cross": True,
     }
@@ -71,55 +69,106 @@ def main():
         print(f"Error loading data: {e}")
         return
 
-    # Metadata for logging
     param_combinations = len(params["adx_threshold"]) * len(params["atr_multiplier"])
     print("Running Vectorized Sensitivity Analysis...")
     print(
-        f"Testing {param_combinations} parameter combinations across {len(ohlcv.columns.levels[0])} symbols..."
+        f"Testing {param_combinations} parameter combinations "
+        f"across {len(ohlcv.columns.levels[0])} symbols..."
     )
 
-    # Initialize and run backtest engine
-    # FastBacktest handles SignalFactory.run() which broadcasts parameters
-    engine = FastBacktest(ohlcv, params)
+    engine = FastBacktest(ohlcv, params, config=CONSTANTS)
     pf = engine.run()
 
     print("Backtest complete. Calculating metrics...")
 
-    # Calculate Sharpe Ratio for all combinations
-    # Result is a Series with MultiIndex (param_val1, param_val2, ..., symbol)
-    sharpe = pf.sharpe_ratio()
+    # Calculate Sharpe for all combinations
+    # aggregated over all symbols (or mean across symbols? usually vbt returns Series per param combo if grouped)
+    # FastBacktest usually returns Portfolio grouped by Params if passed list.
 
-    # Convert Series to proper DataFrame for analysis
-    if isinstance(sharpe.index, pd.MultiIndex):
-        results_df = sharpe.reset_index()
-        # Rename columns to remove VectorBT's 'sf_' prefix if present
-        results_df.columns = [
-            col.replace("sf_", "") if isinstance(col, str) else col
-            for col in results_df.columns
-        ]
+    # If using FastBacktest with lists, it creates a wrapper.
+    # The portfolio `pf` is likely multi-indexed by params.
 
-        # Rename the value column (last column) which contains the Sharpe Ratio
+    try:
+        sharpe_series = pf.sharpe_ratio()
+
+        # 1. Identify Best Params
+        best_idx = sharpe_series.idxmax()
+        best_sharpe = sharpe_series.max()
+
+        print(f"Global Best Sharpe: {best_sharpe:.4f}")
+        print(f"Best Param Index: {best_idx}")
+
+        # Reconstruct best param dict
+        # The index names should match param names
+        best_params = {}
+        if isinstance(best_idx, tuple):
+            # MultiIndex
+            for name, val in zip(sharpe_series.index.names, best_idx):
+                # Clean up name if it has vbt prefixes
+                clean_name = name.replace("sf_", "")  # example
+                best_params[clean_name] = val
+        else:
+            # Single Index (1 param varying)
+            best_params[sharpe_series.index.name] = best_idx
+
+        # 2. Process Results for CSV/Plotting
+        results_df = sharpe_series.reset_index()
         results_df.rename(
             columns={results_df.columns[-1]: "Sharpe Ratio"}, inplace=True
         )
-    else:
-        results_df = pd.DataFrame({"Sharpe Ratio": sharpe})
-        # Ensure parameters are in columns for single-run results
-        for p_name, p_val in params.items():
-            if not isinstance(p_val, list) and p_name not in results_df.columns:
-                results_df[p_name] = p_val
 
-    # Save raw CSV results using ResultsManager
-    rm.save_metrics(results_df, "sensitivity_results.csv", save_csv=True)
+        rm.save_metrics(results_df, "sensitivity_results.csv", save_csv=True)
 
-    # --- Visualization ---
-    print("Generating heatmaps...")
-    plot_optimization_landscape(
-        results_df,
-        params_to_plot=["adx_threshold", "atr_multiplier"],
-        metric_name="Sharpe Ratio",
-        results_manager=rm,
-    )
+        print("\nTop 5 Parameter Combinations:")
+        print(results_df.sort_values("Sharpe Ratio", ascending=False).head(5))
+
+        # 3. Visualizations
+        print("Generating visualizations...")
+        param_names = [c for c in results_df.columns if c != "Sharpe Ratio"]
+        plot_optimization_landscape(
+            results_df,
+            params_to_plot=param_names,
+            metric_name="Sharpe Ratio",
+            results_manager=rm,
+        )
+
+        # 4. Best Case Dashboard (Consistency)
+        print(f"\nRunning Best Case Backtest with params: {best_params}...")
+
+        # We need to run a NEW backtest with scalar params to get a single portfolio dashboard
+        # Merge best_params with original params to ensure all required keys exist?
+        # FastBacktest expects certain keys.
+        # We start with a copy of the input params, but force the best values.
+        final_params = params.copy()
+        for k, v in best_params.items():
+            final_params[k] = v
+        # Ensure no lists remain (for strict single run)
+        # Any key in params that was a list but NOT in best_params (?)
+        # (Should be impossible if grid covered all lists)
+        for k, v in final_params.items():
+            if isinstance(v, list):
+                # This would be an error or un-optimized param. Pick first?
+                print(f"Warning: Param {k} is still a list {v}. Using first value.")
+                final_params[k] = v[0]
+
+        best_engine = FastBacktest(ohlcv, final_params, config=CONSTANTS)
+        best_pf = best_engine.run()
+        best_stats = best_engine.get_stats()
+
+        rm.save_run_results(
+            params=final_params,
+            metrics=best_stats,
+            metadata={**CONSTANTS, "NOTE": "Best Case from Sensitivity Analysis"},
+        )
+
+        rm.save_vbt_dashboard(best_pf, "best_case_dashboard")
+        print(f"Best Case Results saved to: {rm.run_dir}")
+
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        print(f"Error processing sensitivity results: {e}")
 
     print(f"\nAnalysis complete. Results saved to: {rm.run_dir}")
 

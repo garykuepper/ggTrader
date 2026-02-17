@@ -29,9 +29,9 @@ class ResultDBManager:
         self._init_log()
 
     def _init_db(self):
-        """Initializes the PostgreSQL tables if they don't exist."""
+        """Initializes the PostgreSQL tables and updates schema if needed."""
         with self.engine.begin() as conn:
-            # Runs table
+            # 1. Ensure RUNS table exists
             conn.execute(
                 text(
                     """
@@ -47,7 +47,23 @@ class ResultDBManager:
                 )
             )
 
-            # WFO Windows table
+            # 2. Schema Migration: Add new columns if they don't exist
+            # Postgres 9.6+ supports IF NOT EXISTS
+            new_columns = [
+                "ALTER TABLE runs ADD COLUMN IF NOT EXISTS sharpe DOUBLE PRECISION;",
+                "ALTER TABLE runs ADD COLUMN IF NOT EXISTS sortino DOUBLE PRECISION;",
+                "ALTER TABLE runs ADD COLUMN IF NOT EXISTS total_profit DOUBLE PRECISION;",
+                "ALTER TABLE runs ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ;",
+                "ALTER TABLE runs ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ;",
+                "ALTER TABLE runs ADD COLUMN IF NOT EXISTS interval VARCHAR;",
+            ]
+            for stmt in new_columns:
+                try:
+                    conn.execute(text(stmt))
+                except Exception as e:
+                    print(f"Schema migration warning ({stmt}): {e}")
+
+            # 3. Other Tables (WFO, Metrics, etc.) - Unchanged
             conn.execute(
                 text(
                     """
@@ -69,7 +85,6 @@ class ResultDBManager:
                 )
             )
 
-            # Performance Metrics table
             conn.execute(
                 text(
                     """
@@ -83,7 +98,6 @@ class ResultDBManager:
                 )
             )
 
-            # Equity Curves table
             conn.execute(
                 text(
                     """
@@ -97,7 +111,6 @@ class ResultDBManager:
                 )
             )
 
-            # Trades table
             conn.execute(
                 text(
                     """
@@ -117,7 +130,6 @@ class ResultDBManager:
                 )
             )
 
-            # Study Results for Caching
             conn.execute(
                 text(
                     """
@@ -133,24 +145,71 @@ class ResultDBManager:
 
     def _init_log(self):
         """Initializes the CSV log file if it doesn't exist."""
-        if not self.log_path.exists():
+        # Check if file exists to decide if we need header
+        file_exists = self.log_path.exists()
+
+        # If it exists, check if we need to migrate header (lazy migration: just append new cols if missing?)
+        # For simplicity, we'll just ensure the file exists with the NEW header if it's new.
+        # If old, we might have format mismatch.
+        # Strategy: Read header, if mismatch, maybe rewrite?
+        # Safer: Just append. But let's set the STANDARD header for new files.
+        header = [
+            "timestamp",
+            "run_id",
+            "type",
+            "status",
+            "sharpe",
+            "sortino",
+            "profit",
+            "interval",
+            "start_date",
+            "end_date",
+        ]
+
+        if not file_exists:
             with open(self.log_path, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(
-                    ["timestamp", "run_id", "type", "status", "summary_metric"]
-                )
+                writer.writerow(header)
 
-    def add_run(self, run_id, run_type, script_name, parameters, metadata=None):
-        """Adds a new run entry to the database and CSV log."""
+    def add_run(
+        self, run_id, run_type, script_name, parameters, metadata=None, metrics=None
+    ):
+        """
+        Adds a new run entry.
+
+        Args:
+            run_id (str): UUID
+            run_type (str): 'backtest', 'wfo', 'sensitivity'
+            script_name (str): Script filename
+            parameters (dict): Strategy params
+            metadata (dict): Configuration/Context (e.g. date range, symbols)
+            metrics (dict): Results (sharpe, profit, etc.)
+        """
         timestamp = datetime.now()
-        # sqlalchemy handles dict -> JSONB automatically if dialect supports
-        # but manual json.dumps is safer if using simple params binding
-        # Actually sqlalchemy with psycopg2 handles dicts correctly for JSONB
+        meta = metadata or {}
+        metr = metrics or {}
 
+        # Extract core fields
+        sharpe = metr.get("sharpe")
+        sortino = metr.get("sortino")
+        total_profit = metr.get("total_profit")
+
+        # Extract config from metadata
+        start_date = meta.get("START_DATE") or meta.get("start_date")
+        end_date = meta.get("END_DATE") or meta.get("end_date")
+        interval = meta.get("INTERVAL") or meta.get("interval")
+
+        # Database Parsed Insert
         query = text(
             """
-            INSERT INTO runs (run_id, run_type, timestamp, script_name, parameters, metadata)
-            VALUES (:run_id, :run_type, :timestamp, :script_name, :parameters, :metadata)
+            INSERT INTO runs (
+                run_id, run_type, timestamp, script_name, parameters, metadata,
+                sharpe, sortino, total_profit, start_date, end_date, interval
+            )
+            VALUES (
+                :run_id, :run_type, :timestamp, :script_name, :parameters, :metadata,
+                :sharpe, :sortino, :total_profit, :start_date, :end_date, :interval
+            )
         """
         )
 
@@ -162,21 +221,54 @@ class ResultDBManager:
                     "run_type": run_type,
                     "timestamp": timestamp,
                     "script_name": script_name,
-                    "parameters": json.dumps(parameters),  # Ensure JSON string
-                    "metadata": json.dumps(metadata) if metadata else "{}",
+                    "parameters": json.dumps(parameters),
+                    "metadata": json.dumps(meta),
+                    "sharpe": sharpe,
+                    "sortino": sortino,
+                    "total_profit": total_profit,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "interval": interval,
                 },
             )
 
+        # Append to CSV Log
         self._append_to_log(
             timestamp,
             run_id,
             run_type,
             "SUCCESS",
-            metadata.get("profit_pct", 0) if metadata else 0,
+            sharpe,
+            sortino,
+            total_profit,
+            interval,
+            start_date,
+            end_date,
         )
 
-    def _append_to_log(self, timestamp, run_id, run_type, status, summary_metric):
+    def _append_to_log(
+        self,
+        timestamp,
+        run_id,
+        run_type,
+        status,
+        sharpe,
+        sortino,
+        profit,
+        interval,
+        start,
+        end,
+    ):
         """Appends a line to the external CSV log."""
+
+        # Handle Nones for CSV
+        def safe_fmt(val, fmt="{:.4f}"):
+            return (
+                fmt.format(val)
+                if isinstance(val, (int, float))
+                else str(val) if val else ""
+            )
+
         with open(self.log_path, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(
@@ -185,7 +277,12 @@ class ResultDBManager:
                     run_id,
                     run_type,
                     status,
-                    f"{summary_metric:.4f}",
+                    safe_fmt(sharpe),
+                    safe_fmt(sortino),
+                    safe_fmt(profit, "{:.2f}"),
+                    safe_fmt(interval),
+                    safe_fmt(start),
+                    safe_fmt(end),
                 ]
             )
 
@@ -213,11 +310,6 @@ class ResultDBManager:
                 }
             )
 
-        # Bulk insert
-        # Check for conflicts? (run_id, window_id) is PK.
-        # Simple insert is fine assuming clean run.
-
-        # Using pandas to_sql is easiest
         df_to_insert = pd.DataFrame(records)
         df_to_insert.to_sql(
             "wfo_windows", self.engine, if_exists="append", index=False, method="multi"
@@ -228,7 +320,6 @@ class ResultDBManager:
         with self.engine.begin() as conn:
             for name, value in metrics_dict.items():
                 if isinstance(value, (int, float)):
-                    # Upsert logic for Postgres using ON CONFLICT
                     stmt = text(
                         """
                         INSERT INTO performance_metrics (run_id, metric_name, metric_value)
@@ -251,17 +342,10 @@ class ResultDBManager:
         if equity_series.empty:
             return
 
-        # Prepare DataFrame for bulk insert
         df = equity_series.reset_index()
         df.columns = ["timestamp", "equity_value"]
         df["run_id"] = run_id
-
-        # Ensure timestamp format
         df["timestamp"] = pd.to_datetime(df["timestamp"])
-
-        # We can use to_sql, but what about conflicts?
-        # If running same run_id twice, we might want upsert.
-        # But usually runs are unique.
 
         try:
             df.to_sql(
@@ -274,8 +358,6 @@ class ResultDBManager:
             )
         except Exception as e:
             print(f"Error inserting equity curve: {e}")
-            # Fallback to row-by-row upsert if strict uniqueness needed?
-            # For now assume unique runs.
 
     def add_trades(self, run_id, df_trades):
         """Inserts trade records into the database."""
@@ -332,32 +414,6 @@ class ResultDBManager:
         if not records:
             return
 
-        # Bulk insert
-        # We want to use ON CONFLICT DO UPDATE
-        # SQLAlchemy supports this with dialects
-
-        from sqlalchemy.dialects.postgresql import insert
-
-        with self.engine.begin() as conn:
-            stmt = insert(text("trades")).values(records)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=["run_id", "symbol", "entry_time"],
-                set_={
-                    "exit_time": stmt.excluded.exit_time,
-                    "entry_price": stmt.excluded.entry_price,
-                    "exit_price": stmt.excluded.exit_price,
-                    "profit": stmt.excluded.profit,
-                    "profit_pct": stmt.excluded.profit_pct,
-                    "status": stmt.excluded.status,
-                },
-            )
-            # This requires 'trades' Table object or reflection.
-            # Since we used raw SQL creation, we might not have Table object easily unless we reflect.
-            # Reflection is easy.
-            pass
-
-        # Alternative: use raw SQL with executemany
-        # It's cleaner given we control schema
         query = text(
             """
             INSERT INTO trades (run_id, symbol, entry_time, exit_time, entry_price, exit_price, profit, profit_pct, status)
@@ -381,7 +437,6 @@ class ResultDBManager:
         with self.engine.connect() as conn:
             res = conn.execute(query, {"study_hash": study_hash}).fetchone()
             if res:
-                # In Postgres, JSONB is returned as dict automatically by psycopg2
                 return res[0]
         return None
 

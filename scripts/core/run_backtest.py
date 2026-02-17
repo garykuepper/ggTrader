@@ -1,3 +1,5 @@
+"""Run a single ggTrader backtest using the vectorized FastBacktest engine."""
+
 import argparse
 import os
 import sys
@@ -9,23 +11,28 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 )
 
-from ggTrader.core.trading import Trading
+from ggTrader.core.fast_backtest import FastBacktest
 from ggTrader.utils.results_manager import ResultsManager
-from ggTrader.utils.setup import load_data_and_setup
+from ggTrader.utils.setup import build_mover_mask, load_data_and_setup
 
-# --- USER CONFIGURATION ---
+# =====================================================================
+# USER CONFIGURATION — edit these values to customize the backtest
+# =====================================================================
 CONSTANTS = {
-    # "SYMBOLS": [
-    #     "BTC-USD",
-    #     "ETH-USD",
-    # ],  # Set to a list like ["BTC-USD", "ETH-USD"] to override JSON
+    # Symbol pool (set SYMBOLS to None to use SYMBOLS_FILE instead)
     "SYMBOLS": None,
     "SYMBOLS_FILE": "data/top_20_USD_1095_movers.json",
+    # Date range
     "START_DATE": "2023-01-01",
-    "END_DATE": "2023-12-31",
+    "END_DATE": "2025-12-31",
     "INTERVAL": "4h",
+    # Portfolio
     "START_CASH": 1000,
     "PORTFOLIO_SHARE": 0.10,
+    "FEES": 0.001,
+    # Dynamic movers: set to 0 to disable, or e.g. 20 for top-20 daily
+    "USE_MOVERS": 10,
+    # Strategy parameters
     "DEFAULT_PARAMS": {
         "adx_threshold": 25,
         "adx_length": 14,
@@ -36,12 +43,11 @@ CONSTANTS = {
         "use_dmp_cross": False,
     },
 }
+# =====================================================================
 
 
 def main() -> None:
-    """
-    Main entry point for running a single backtest.
-    """
+    """Main entry point for running a single backtest."""
     parser = argparse.ArgumentParser(description="Run a single ggTrader backtest")
     parser.add_argument("--params", type=str, help="Path to params.json")
     args = parser.parse_args()
@@ -56,37 +62,43 @@ def main() -> None:
         print(f"Error loading data: {e}")
         return
 
+    if hasattr(ohlcv, "columns") and isinstance(ohlcv.columns, pd.MultiIndex):
+        symbols_found = ohlcv.columns.levels[0].tolist()
+        print(f"Loaded {len(symbols_found)} symbols with {len(ohlcv)} data points.")
+
+    # Optional: build dynamic mover mask
+    mover_mask = None
+    top_n = CONSTANTS["USE_MOVERS"]
+    if top_n > 0:
+        print(f"Building dynamic top-{top_n} daily mover mask...")
+        try:
+            mover_mask = build_mover_mask(ohlcv, CONSTANTS, top_n=top_n)
+            print(f"Mover mask built: {mover_mask.shape}")
+        except Exception as e:
+            print(f"Warning: could not build mover mask: {e}")
+
     print("Running backtest...")
     try:
-        # Log data summary to help debugging
-        if hasattr(ohlcv, "columns") and isinstance(ohlcv.columns, pd.MultiIndex):
-            symbols_found = ohlcv.columns.levels[0].tolist()
-            print(f"Loaded {len(symbols_found)} symbols with {len(ohlcv)} data points.")
-
-        engine = Trading(
-            ohlcv_df=ohlcv,
-            date_range=ohlcv.index,
-            start_cash=CONSTANTS["START_CASH"],
-            max_position=CONSTANTS["PORTFOLIO_SHARE"],
-            strategy_params=params,
-            use_movers=False,
-        )
-    except ValueError as e:
-        print(f"Error initializing Trading engine: {e}")
-        return
+        engine = FastBacktest(ohlcv, params, config=CONSTANTS, mover_mask=mover_mask)
+        pf = engine.run()
     except Exception as e:
-        print(f"Unexpected error during engine setup: {e}")
-        return
+        import traceback
 
-    engine.run()
+        traceback.print_exc()
+        print(f"Error running backtest: {e}")
+        return
 
     print("Backtest complete. Processing results...")
-    stats = engine.portfolio.stats_dict()
+    stats = engine.get_stats()
 
-    # Save consolidated results (params + metrics) -> run_results.json
+    # Save consolidated results with new structure
     rm.save_run_results(params=params, metrics=stats, metadata=CONSTANTS)
 
-    # Print summary to console
+    # Save VBT Plots (Dashboard)
+    print("Saving VectorBT dashboard...")
+    rm.save_vbt_dashboard(pf, "dashboard")
+
+    # Print summary
     rm.print_summary(stats)
     print(f"Results saved to: {rm.run_dir}")
 

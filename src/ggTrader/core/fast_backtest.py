@@ -1,68 +1,146 @@
-import vectorbt as vbt
+"""Vectorized backtest engine using VectorBT Portfolio API."""
+
+import numpy as np
 import pandas as pd
+import vectorbt as vbt
+
 from ggTrader.indicators.signals import SignalFactory
 
 
+# Defaults for portfolio-level config keys
+_DEFAULT_CONFIG = {
+    "START_CASH": 10000.0,
+    "PORTFOLIO_SHARE": 1.0,
+    "FEES": 0.001,
+    "SLIPPAGE": 0.0005,
+    "FREQ": "4h",
+}
+
+
 class FastBacktest:
+    """Vectorized backtest engine wrapping VectorBT's Portfolio API.
+
+    Args:
+        ohlcv_df: MultiIndex DataFrame (symbol, ohlcv) from load_data_and_setup.
+        params: Signal parameters for SignalFactory (may contain lists for broadcasting).
+        config: Portfolio-level settings dict (CONSTANTS). Recognised keys:
+            START_CASH, PORTFOLIO_SHARE, FEES, SLIPPAGE, FREQ.
+        mover_mask: Optional boolean DataFrame (dates x symbols) to zero-out
+            entries for symbols not in the daily top-N movers.
+    """
+
     def __init__(
         self,
         ohlcv_df: pd.DataFrame,
         params: dict,
-        start_cash: float = 10000.0,
-        fees: float = 0.001,
-    ):
+        config: dict | None = None,
+        mover_mask: pd.DataFrame | None = None,
+    ) -> None:
         self.ohlcv_df = ohlcv_df
         self.params = params
-        self.start_cash = start_cash
-        self.fees = fees
+        self.mover_mask = mover_mask
+
+        # Merge caller config with defaults
+        cfg = {**_DEFAULT_CONFIG, **(config or {})}
+        self.start_cash = float(cfg["START_CASH"])
+        self.max_position = float(cfg["PORTFOLIO_SHARE"])
+        self.fees = float(cfg["FEES"])
+        self.slippage = float(cfg["SLIPPAGE"])
+        self.freq = cfg["FREQ"]
+
         self.pf = None
 
-    def run(self):
-        # 1. Unpack Data
+    def run(self) -> vbt.Portfolio:
+        """Execute the vectorized backtest and return the VBT Portfolio."""
+        if self.ohlcv_df.empty:
+            raise ValueError(
+                "OHLCV data is empty. Check your symbols, date range, "
+                "and database connection."
+            )
+
+        # 1. Unpack OHLCV
         close = self.ohlcv_df.xs("close", axis=1, level=1, drop_level=True)
         high = self.ohlcv_df.xs("high", axis=1, level=1, drop_level=True)
         low = self.ohlcv_df.xs("low", axis=1, level=1, drop_level=True)
         open_ = self.ohlcv_df.xs("open", axis=1, level=1, drop_level=True)
 
-        # 2. GET SIGNALS (The Golden Source)
-        # Use SignalFactory with broadcasting
+        # 2. Generate signals via SignalFactory (supports broadcasting)
         sf = SignalFactory.run(
             close=close,
             high=high,
             low=low,
             open_=open_,
             **self.params,
-            param_product=True,  # Enable Cartesian product of parameter lists
+            param_product=True,
         )
 
         entries = sf.entries
         exits = sf.exits
         price_for_orders = sf.price_for_orders
 
-        # 3. RUN VECTORBT
-        # vectorbt will handle the broadcasted inputs (which might be MultiIndex columns)
+        # 3. Apply dynamic mover mask if provided
+        if self.mover_mask is not None:
+            if isinstance(entries.columns, pd.MultiIndex):
+                # SignalFactory MultiIndex: last level is the symbol name
+                symbols = entries.columns.get_level_values(-1)
+                # Build mask aligned to entries by mapping symbol → column
+                aligned_mask = self.mover_mask.reindex(columns=symbols.unique())[
+                    symbols.tolist()
+                ]
+                aligned_mask.columns = entries.columns
+                aligned_mask = (
+                    aligned_mask.reindex(index=entries.index, method="ffill")
+                    .fillna(False)
+                    .astype(bool)
+                )
+            else:
+                # Flat columns: direct reindex
+                aligned_mask = (
+                    self.mover_mask.reindex(
+                        index=entries.index, columns=entries.columns
+                    )
+                    .fillna(False)
+                    .astype(bool)
+                )
+            entries = entries & aligned_mask
+
+        # 4. Run VBT Portfolio with proper position sizing
+        # Determine grouping:
+        # - If MultiIndex (Grid Search), group by Params (drop symbol level)
+        # - If Index (Single Run), group all into one (portfolio of symbols)
+        if isinstance(entries.columns, pd.MultiIndex):
+            # Assumes Symbol is the last level (vbt standard)
+            # Group by all param levels, aggregating across symbols
+            group_by = entries.columns.droplevel(-1)
+        else:
+            # Single run with multiple symbols -> 1 Portfolio
+            n_cols = entries.shape[1]
+            group_by = np.full(n_cols, 0)
+
         self.pf = vbt.Portfolio.from_signals(
             close=price_for_orders,
             entries=entries,
             exits=exits,
             init_cash=self.start_cash,
             fees=self.fees,
-            slippage=0.0005,
-            freq="4h",
+            slippage=self.slippage,
+            freq=self.freq,
+            size=self.max_position,
+            size_type="percent",
+            cash_sharing=True,
+            group_by=group_by,
         )
         return self.pf
 
     def get_stats(self) -> dict:
-        """
-        Returns metrics formatted EXACTLY like Portfolio.stats_dict().
-        NOTE: If running huge parameter grids, use self.pf directly for analysis
-        instead of this summary method which assumes a single strategy or sums up results.
+        """Return aggregate metrics formatted for ResultsManager.
+
+        NOTE: For large parameter grids, use self.pf directly for per-combo
+        analysis instead of this convenience method which aggregates results.
         """
         if self.pf is None:
             raise ValueError("Run the backtest first.")
 
-        # Handle VectorBT's multi-column outputs by summing/averaging
-        # This logic sums across ALL columns. If columns are different strategies, this is aggregate stats.
         total_value = self.pf.final_value()
         if isinstance(total_value, pd.Series):
             total_value = total_value.sum()
@@ -71,19 +149,23 @@ class FastBacktest:
         if isinstance(total_profit, pd.Series):
             total_profit = total_profit.sum()
 
-        # Calculate derived metrics
-        init_cash = self.start_cash * (
-            len(self.pf.wrapper.columns) if self.pf.wrapper.ndim > 1 else 1
-        )
+        # Derive profit percentage from actual initial cash
+        init_cash = self.start_cash
         profit_pct = (total_profit / init_cash) * 100
 
+        import math
+
+        def _safe(val: float, default: float = 0.0) -> float:
+            """Replace NaN/Inf with default for JSON safety."""
+            return default if (math.isnan(val) or math.isinf(val)) else val
+
         return {
-            "total_value": total_value,
-            "total_profit": total_profit,
-            "profit_pct": profit_pct,
-            "total_trades": self.pf.trades.count().sum(),
-            "win_rate": self.pf.trades.win_rate().mean() * 100,
-            "sharpe": self.pf.sharpe_ratio().mean(),
-            "sortino": self.pf.sortino_ratio().mean(),
-            "max_drawdown": self.pf.max_drawdown().min() * 100,
+            "total_value": _safe(float(total_value)),
+            "total_profit": _safe(float(total_profit)),
+            "profit_pct": _safe(float(profit_pct)),
+            "total_trades": int(self.pf.trades.count().sum()),
+            "win_rate": _safe(float(self.pf.trades.win_rate().mean() * 100)),
+            "sharpe": _safe(float(self.pf.sharpe_ratio().mean())),
+            "sortino": _safe(float(self.pf.sortino_ratio().mean())),
+            "max_drawdown": _safe(float(self.pf.max_drawdown().min() * 100)),
         }

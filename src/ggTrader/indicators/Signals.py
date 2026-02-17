@@ -264,14 +264,22 @@ class Signals:
         """
         Orchestrates everything and returns entries, exits, stop_df, price_for_orders.
         """
+        # Cast params to native Python types to avoid issues with numpy scalars in pandas-ta
+        adx_len = int(adx_length)
+        adx_th = float(adx_threshold)
+        sar_acc = float(sar_acceleration)
+        sar_max = float(sar_maximum)
+        atr_len = int(atr_length)
+        atr_mult = float(atr_multiplier)
+
         entries = Signals.entry_signals(
             close,
             high,
             low,
-            adx_length=adx_length,
-            adx_threshold=adx_threshold,
-            sar_acceleration=sar_acceleration,
-            sar_maximum=sar_maximum,
+            adx_length=adx_len,
+            adx_threshold=adx_th,
+            sar_acceleration=sar_acc,
+            sar_maximum=sar_max,
             use_dmp_cross=use_dmp_cross,
         )
 
@@ -280,8 +288,8 @@ class Signals:
             close=close,
             high=high,
             low=low,
-            atr_length=atr_length,
-            atr_multiplier=atr_multiplier,
+            atr_length=atr_len,
+            atr_multiplier=atr_mult,
         )
 
         price_for_orders = Signals.stop_fill_price(

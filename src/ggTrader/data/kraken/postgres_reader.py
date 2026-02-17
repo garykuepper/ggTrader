@@ -291,5 +291,69 @@ class KrakenPostgresReader:
         df = pd.read_sql(text(query), self.engine, params=params)
         return df
 
+    def get_daily_mover_mask(
+        self,
+        start: pd.Timestamp,
+        end: pd.Timestamp,
+        top_n: int = 20,
+        quote: str = "USD",
+        trades_threshold: int = 500,
+    ) -> pd.DataFrame:
+        """Build a (date x symbol) boolean mask of daily top-N movers.
+
+        One SQL query fetches all daily rankings over the full range,
+        then pivots into a boolean DataFrame aligned to a 1-day index.
+        The caller can reindex/broadcast this to match the OHLCV frequency.
+        """
+        excluded = ["USDT", "USDC", "DAI", "PYUSD", "EUR", "GBP", "AUD", "USDG"]
+
+        query = f"""
+            WITH daily_tops AS (
+                SELECT
+                    timestamp::DATE as date,
+                    split_part(symbol, '-', 1) as asset,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY timestamp::DATE
+                        ORDER BY volume * close DESC
+                    ) as rank
+                FROM ohlcv
+                WHERE interval = '1d'
+                  AND trades > :threshold
+                  AND timestamp >= :start
+                  AND timestamp <= :end
+                  AND split_part(symbol, '-', 2) = :quote
+                  AND split_part(symbol, '-', 1) NOT IN :excluded
+            )
+            SELECT date, asset
+            FROM daily_tops
+            WHERE rank <= :top_n
+        """
+
+        params = {
+            "threshold": trades_threshold,
+            "start": start,
+            "end": end,
+            "quote": quote,
+            "top_n": top_n,
+            "excluded": tuple(excluded),
+        }
+
+        df = pd.read_sql(text(query), self.engine, params=params)
+
+        if df.empty:
+            return pd.DataFrame()
+
+        # Pivot: one row per date, one column per asset, value = True
+        df["present"] = True
+        mask = df.pivot_table(
+            index="date", columns="asset", values="present", fill_value=False
+        ).astype(bool)
+
+        # Ensure UTC-aware DatetimeIndex
+        mask.index = pd.to_datetime(mask.index, utc=True)
+        mask = mask.sort_index()
+
+        return mask
+
     def close(self):
         self.engine.dispose()

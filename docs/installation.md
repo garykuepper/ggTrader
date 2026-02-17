@@ -42,30 +42,39 @@ pip install cupy-cuda13x  # Replace '13x' with your CUDA version (e.g., 11x, 12x
 
 ## ⚙️ Configuration
 
-Copy the `.env.example` file (if provided) to `.env` and fill in your API credentials:
+Copy the `.env.example` file (if provided) to `.env` and fill in your credentials:
 
 ```bash
 # Example .env entries
 KRAKEN_API_KEY=your_key
 KRAKEN_SECRET_KEY=your_secret
+DATABASE_URL=postgresql://user:password@localhost:5433/ggtrader
 ```
 
 ## 🚀 Running ggTrader
 
 ### Standard Backtest
 
-Run a backtest for a specific symbol or set of symbols defined in your config:
+Run a backtest using the vectorized `FastBacktest` engine:
 
 ```bash
-python scripts/backtest/run_backtest.py
+python scripts/core/run_backtest.py
+```
+
+### Dynamic Mover Backtest
+
+Test with the top-N daily movers mask for dynamic universe filtering:
+
+```bash
+python scripts/core/run_backtest.py --movers 20
 ```
 
 ### Parameter Optimization
 
-Execute Walk-Forward Optimization to find the most robust parameters over a historical period:
+Execute Walk-Forward Optimization to find the most robust parameters:
 
 ```bash
-python scripts/run_walk_forward_optimization.py
+python scripts/core/run_walk_forward_optimization.py
 ```
 
 ### Sensitivity Analysis
@@ -73,7 +82,7 @@ python scripts/run_walk_forward_optimization.py
 Check the stability of your optimized parameters:
 
 ```bash
-python scripts/run_sensitivity_analysis.py
+python scripts/core/run_sensitivity_analysis.py
 ```
 
 ## Docker Compose Setup
@@ -93,7 +102,7 @@ python scripts/run_sensitivity_analysis.py
 
 - **PostgreSQL (TimescaleDB)**: Primary database for OHLCV data.
 - **Results DB**: Stores backtest runs and WFO results in Postgres.
-- **VectorBT**: Core backtesting engine.
+- **VectorBT**: Core backtesting engine (via `FastBacktest`).
 
 ---
 *Back to [README.md](../readme.md)*

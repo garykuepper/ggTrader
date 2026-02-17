@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 import plotly.io as pio
+import matplotlib.pyplot as plt
 import uuid
 from .result_db_manager import ResultDBManager
 
@@ -58,66 +59,64 @@ class ResultsManager:
         self, params: dict, metrics: dict, metadata: dict = None
     ) -> Path:
         """
-        Saves run results (params + metrics) to a single JSON file.
+        Saves run results to a single JSON file with strict separation of concerns.
 
-        Args:
-            params (dict): The strategy parameters used.
-            metrics (dict): The performance metrics obtained.
-            metadata (dict, optional): Additional metadata.
-
-        Returns:
-            Path: The path to the saved JSON file.
+        Structure:
+            {
+                "run_id": ...,
+                "timestamp": ...,
+                "configuration": { ... },   # Metadata, Config, Consts
+                "strategy_parameters": { ... }, # Signal/Strategy Params
+                "results": { ... }          # Metrics
+            }
         """
         if metadata is None:
             metadata = {}
 
+        # 1. Structure the output
         output_data = {
             "run_id": self.run_id,
             "timestamp": datetime.now().isoformat(),
             "script_name": self.script_name,
-            "parameters": params,
-            "metrics": metrics,
-            "metadata": metadata,
+            "configuration": {
+                "start_date": metadata.get("START_DATE"),
+                "end_date": metadata.get("END_DATE"),
+                "interval": metadata.get("INTERVAL"),
+                "symbols_file": metadata.get("SYMBOLS_FILE"),
+                "symbols": metadata.get("SYMBOLS"),
+                "capital": metadata.get("START_CASH"),
+                "fees": metadata.get("FEES"),
+                # Include full raw config for debugging if needed, but keep top-level clean
+                "_raw_config": metadata,
+            },
+            "strategy_parameters": params,
+            "results": metrics,
         }
 
         output_path = self.run_dir / "run_results.json"
         with open(output_path, "w") as f:
             json.dump(output_data, f, indent=4)
 
-        # Mirror to DB
+        # 2. Mirror to DB
+        # Pass separated components to add_run
         self.db_manager.add_run(
             run_id=self.run_id,
             run_type=self.script_name,
             script_name=self.script_name,
             parameters=params,
-            metadata=output_data,
+            metadata=output_data["configuration"],
+            metrics=metrics,
         )
-        # Also log metrics specifically if needed by the DB manager
+
+        # Also mirror metrics largely
         self.db_manager.add_metrics(self.run_id, metrics)
 
         return output_path
 
+    # Deprecated methods
     def save_metadata(self, metadata):
-        """
-        Saves run metadata to JSON and mirrored to DuckDB.
-        DEPRECATED: Use save_run_results instead.
-        """
-        metadata["run_id"] = self.run_id
-        meta_path = self.run_dir / "run_metadata.json"
-        with open(meta_path, "w") as f:
-            json.dump(metadata, f, indent=4)
-
-        # Mirror to DB and CSV Log
-        # Extract params if they exist in metadata, otherwise use empty dict
-        params = metadata.get("params", metadata.get("strategy_params", {}))
-        self.db_manager.add_run(
-            run_id=self.run_id,
-            run_type=self.script_name,
-            script_name=self.script_name,
-            parameters=params,
-            metadata=metadata,
-        )
-        return meta_path
+        """DEPRECATED: Use save_run_results instead."""
+        pass
 
     def save_params(self, params):
         """Saves optimal parameters to params.json for transfer."""
@@ -136,14 +135,6 @@ class ResultsManager:
     ) -> Path:
         """
         Saves performance metrics to a CSV file (optional) and mirrored to DuckDB if relevant.
-
-        Args:
-            df (pd.DataFrame): The metrics DataFrame.
-            filename (str): The filename for the CSV.
-            save_csv (bool): Whether to save the CSV file. Defaults to False.
-
-        Returns:
-            Path: The path to the saved file (if saved), or the intended path.
         """
         path = self.run_dir / filename
         if save_csv:
@@ -152,16 +143,15 @@ class ResultsManager:
         # Mirror to DB if it's WFO results
         if filename == "wfo_results.csv":
             self.db_manager.add_wfo_results(self.run_id, df)
+        elif filename == "sensitivity_results.csv":
+            # Potentially handle sensitivity results in DB?
+            # For now, CSV is fine.
+            pass
 
         return path
 
     def print_summary(self, metrics: dict) -> None:
-        """
-        Prints a summary of the performance metrics to the console.
-
-        Args:
-            metrics (dict): A dictionary of performance metrics.
-        """
+        """Prints a summary of the performance metrics to the console."""
         print("\n--- Performance Summary ---")
         for key, value in metrics.items():
             if isinstance(value, float):
@@ -180,42 +170,81 @@ class ResultsManager:
 
     def get_plot_path(self, filename):
         """Returns the full path for a plot file in the plots directory."""
-        if not filename.endswith((".png", ".html", ".pdf")):
-            filename += ".png"
+        if not filename.endswith((".png", ".html", ".pdf", ".jpg")):
+            # default extension?
+            pass
         return self.plots_dir / filename
 
-    def save_plotly_figure(self, fig, filename):
+    def save_plot(self, fig, filename):
         """
-        Saves a Plotly figure as a static PNG.
+        Universal plot saver for Matplotlib and Plotly figures.
+        Auto-detects backend.
         """
-        png_path = self.get_plot_path(filename.replace(".html", "") + ".png")
+        path = self.get_plot_path(filename)
 
-        # Save static PNG
+        # 1. Plotly Figure
+        if hasattr(fig, "write_image") or hasattr(fig, "write_html"):
+            # Save HTML (Interactive)
+            html_path = path.with_suffix(".html")
+            try:
+                fig.write_html(str(html_path))
+            except Exception as e:
+                print(f"Warning: Could not save HTML for {filename}: {e}")
+
+            # Save PNG (Static)
+            png_path = path.with_suffix(".png")
+            try:
+                # Requires kaleido
+                fig.write_image(str(png_path))
+            except Exception as e:
+                print(
+                    f"Warning: Could not save PNG for {filename}: {e} (Install kaleido?)"
+                )
+
+        # 2. Matplotlib Figure
+        elif hasattr(fig, "savefig"):
+            try:
+                fig.savefig(str(path))
+                plt.close(fig)  # Close to free memory
+            except Exception as e:
+                print(f"Warning: Could not save Matplotlib figure {filename}: {e}")
+
+        else:
+            print(f"Warning: Unknown figure type for {filename}")
+
+    def save_vbt_dashboard(self, pf, filename="dashboard"):
+        """
+        Saves a VectorBT Portfolio dashboard (Equity, Drawdowns, Trades).
+        Args:
+            pf: vectorbt.Portfolio object
+            filename: base filename
+        """
         try:
-            fig.write_image(str(png_path))
-        except Exception as e:
-            print(f"Warning: Could not save static image for {filename}: {e}")
+            # 1. Main Dashboard (Equity, Drawdown, etc.)
+            # pf.plot() returns a Plotly FigureWidget
+            fig = pf.plot()
+            self.save_plot(fig, filename)
 
-        return png_path
+            # 2. Trade Signals (Optional but useful)
+            # fig_trades = pf.plot_trade_signals()
+            # self.save_plot(fig_trades, f"{filename}_trades")
+
+        except Exception as e:
+            print(f"Error saving VBT dashboard: {e}")
+
+    def save_plotly_figure(self, fig, filename):
+        """Deprecated alias for save_plot."""
+        self.save_plot(fig, filename)
 
     def save_excel(self, data_dict, filename="results.xlsx"):
-        """
-        Saves multiple DataFrames into a single Excel workbook with multiple sheets.
-
-        Args:
-            data_dict (dict): Dictionary mapping {sheet_name: DataFrame}
-            filename (str): Output filename.
-        """
+        """Saves multiple DataFrames into a single Excel workbook."""
         excel_path = self.run_dir / filename
         with pd.ExcelWriter(excel_path, engine="xlsxwriter") as writer:
             for sheet_name, df in data_dict.items():
                 if isinstance(df, dict):
                     df = pd.DataFrame.from_dict(df, orient="index", columns=["Value"])
 
-                # Trim sheet name to max 31 characters (Excel limit)
                 safe_name = sheet_name[:31]
-
-                # Strip timezones for Excel compatibility (xlsxwriter requirement)
                 df = df.copy()
                 if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
                     df.index = df.index.tz_localize(None)
@@ -225,16 +254,6 @@ class ResultsManager:
                         df[col] = df[col].dt.tz_localize(None)
 
                 df.to_excel(writer, sheet_name=safe_name)
-
-                # Auto-adjust column widths
-                worksheet = writer.sheets[safe_name]
-                for i, col in enumerate(df.columns):
-                    column_len = max(df[col].astype(str).str.len().max(), len(col)) + 2
-                    worksheet.set_column(i + 1, i + 1, column_len)
-                # Adjust index column as well
-                index_len = max(df.index.astype(str).str.len().max(), 10) + 2
-                worksheet.set_column(0, 0, index_len)
-
         return excel_path
 
     def __str__(self):
