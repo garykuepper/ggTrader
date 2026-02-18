@@ -260,3 +260,16 @@ data/daily_movers.db
 data/trading_sensitivity_analysis.db*
 research/*.parquet
 ggtrader_dump.bak
+
+# IDE & Environment
+.idea/
+.vscode/
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.bak
+*.tmp
+node_modules/
+dist/
+build/
