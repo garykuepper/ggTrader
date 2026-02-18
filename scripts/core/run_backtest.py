@@ -30,7 +30,7 @@ CONSTANTS = {
     "PORTFOLIO_SHARE": 0.10,
     "FEES": 0.001,
     # Dynamic movers: set to 0 to disable, or e.g. 20 for top-20 daily
-    "USE_MOVERS": 10,
+    "USE_MOVERS": 0,
     # Strategy parameters
     "DEFAULT_PARAMS": {
         "adx_threshold": 25,
@@ -61,9 +61,17 @@ def main() -> None:
         params = rm_temp.load_params(args.params)
 
     # Execute via orchestrator
-    run_backtest_orchestrator(
+    results = run_backtest_orchestrator(
         config=CONSTANTS, params=params, save_results=True, show_progress=args.progress
     )
+    pf = results["portfolio"]
+    stats = results["stats"]
+    # --- Visualization ---
+    print("Global Portfolio Stats:")
+    # Convert stats to a DataFrame for a cleaner table view
+    stats_df = pf.stats().to_frame(name="Portfolio Stats")
+    print(stats_df)
+    pf.plot(subplots=["value", "drawdowns"]).show()
 
 
 if __name__ == "__main__":

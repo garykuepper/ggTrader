@@ -3,6 +3,8 @@
 import os
 import sys
 
+from tqdm import tqdm
+
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 )
@@ -28,6 +30,7 @@ SELECT
 FROM ohlcv
 WHERE interval = '1h'
   AND timestamp < :cutoff
+  AND symbol = :symbol
 GROUP BY ts, symbol
 HAVING COUNT(*) = 4
 ON CONFLICT (timestamp, symbol, interval) DO UPDATE SET
@@ -55,6 +58,7 @@ SELECT
 FROM ohlcv
 WHERE interval = '15m'
   AND timestamp < :cutoff
+  AND symbol = :symbol
 GROUP BY ts, symbol
 HAVING COUNT(*) = 2
 ON CONFLICT (timestamp, symbol, interval) DO UPDATE SET
@@ -75,16 +79,40 @@ def main() -> None:
     """Run the migration."""
     engine = create_engine(get_db_connection_string())
 
+    # 1. Get unique symbols
+    print("Fetching unique symbols...")
+    with engine.connect() as conn:
+        symbols = [
+            r[0] for r in conn.execute(text("SELECT DISTINCT symbol FROM ohlcv"))
+        ]
+
+    print(f"Found {len(symbols)} symbols to process.")
+
     with engine.begin() as conn:
+        # Disable decompression limit for this transaction session
+        conn.execute(
+            text("SET timescaledb.max_tuples_decompressed_per_dml_transaction = 0")
+        )
+
         # Build 4h from 1h
         print(f"Building 4h candles from 1h data (before {CUTOFF_4H})...")
-        result = conn.execute(text(AGGREGATE_4H_SQL), {"cutoff": CUTOFF_4H})
-        print(f"  Inserted/updated {result.rowcount:,} 4h rows.")
+        total_4h = 0
+        for symbol in tqdm(symbols, desc="4h Aggregation"):
+            result = conn.execute(
+                text(AGGREGATE_4H_SQL), {"cutoff": CUTOFF_4H, "symbol": symbol}
+            )
+            total_4h += result.rowcount
+        print(f"  Inserted/updated {total_4h:,} 4h rows.")
 
         # Build 30m from 15m
         print(f"Building 30m candles from 15m data (before {CUTOFF_30M})...")
-        result = conn.execute(text(AGGREGATE_30M_SQL), {"cutoff": CUTOFF_30M})
-        print(f"  Inserted/updated {result.rowcount:,} 30m rows.")
+        total_30m = 0
+        for symbol in tqdm(symbols, desc="30m Aggregation"):
+            result = conn.execute(
+                text(AGGREGATE_30M_SQL), {"cutoff": CUTOFF_30M, "symbol": symbol}
+            )
+            total_30m += result.rowcount
+        print(f"  Inserted/updated {total_30m:,} 30m rows.")
 
     engine.dispose()
 
@@ -99,9 +127,12 @@ def main() -> None:
                 ),
                 {"iv": iv},
             ).fetchone()
-            print(
-                f"  BTC {iv}: {str(row[0])[:10]} to {str(row[1])[:10]} ({row[2]:,} rows)"
-            )
+            if row and row[0]:
+                print(
+                    f"  BTC {iv}: {str(row[0])[:10]} to {str(row[1])[:10]} ({row[2]:,} rows)"
+                )
+            else:
+                print(f"  BTC {iv}: No data found.")
 
     engine.dispose()
     print("Done!")

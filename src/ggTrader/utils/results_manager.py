@@ -212,7 +212,7 @@ class ResultsManager:
         else:
             print(f"Warning: Unknown figure type for {filename}")
 
-    def save_vbt_dashboard(self, pf, filename="dashboard"):
+    def save_vbt_dashboard(self, pf, filename="plots"):
         """
         Saves a VectorBT Portfolio dashboard (Equity, Drawdowns, Trades).
         Args:
@@ -222,7 +222,7 @@ class ResultsManager:
         try:
             # 1. Main Dashboard (Equity, Drawdown, etc.)
             # pf.plot() returns a Plotly FigureWidget
-            fig = pf.plot()
+            fig = pf.plot(subplots=["drawdowns", "value"])
             self.save_plot(fig, filename)
 
             # 2. Trade Signals (Optional but useful)

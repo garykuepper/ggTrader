@@ -31,6 +31,8 @@ CONSTANTS = {
     "FEES": 0.001,
     # Dynamic movers: set to 0 to disable, or e.g. 20 for top-20 daily
     "USE_MOVERS": 0,
+    # Minimum trades to accept a result in optimization
+    "MIN_TRADES": 5,
     # # Strategy parameters
     # "DEFAULT_PARAMS": {
     #     "adx_threshold": 25,

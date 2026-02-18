@@ -128,6 +128,20 @@ def run_sensitivity_orchestrator(
     pf = engine.run(show_progress=show_progress)
 
     sharpe_series = pf.sharpe_ratio()
+
+    # Apply filtering by trade count
+    min_trades = config.get("MIN_TRADES", 0)
+    if min_trades > 0:
+        trade_counts = pf.trades.count()
+        # If vectorized, trade_counts is a series aligned with sharpe_series
+        # Mask out those with low trades by setting sharpe to NaN
+        low_trade_mask = trade_counts < min_trades
+        if low_trade_mask.any():
+            print(
+                f"Filtering out {(low_trade_mask).sum()} parameter combinations with < {min_trades} trades."
+            )
+            sharpe_series[low_trade_mask] = np.nan
+
     best_idx = sharpe_series.idxmax()
     param_names = list(param_grid.keys())
     best_params = _to_native(
@@ -221,6 +235,15 @@ def run_wfo_orchestrator(
         pf_train = train_engine.run(show_progress=show_progress)
 
         train_metrics = pf_train.sharpe_ratio()
+
+        # Apply filtering by trade count (In-Sample)
+        min_trades = config.get("MIN_TRADES", 0)
+        if min_trades > 0:
+            trade_counts = pf_train.trades.count()
+            low_trade_mask = trade_counts < min_trades
+            if low_trade_mask.any():
+                train_metrics[low_trade_mask] = np.nan
+
         is_metrics_by_fold[i] = train_metrics
 
         best_param_idx = train_metrics.idxmax()

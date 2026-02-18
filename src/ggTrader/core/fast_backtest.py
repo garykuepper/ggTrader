@@ -15,6 +15,7 @@ _DEFAULT_CONFIG = {
     "SLIPPAGE": 0.0005,
     "FREQ": "4h",
     "N_JOBS": -1,  # Default to all cores for vectorized runs
+    "MIN_TRADES": 0,  # Minimum trades to accept a result
 }
 
 # Performance settings
