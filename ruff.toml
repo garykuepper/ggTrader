@@ -1,0 +1,28 @@
+# Ruff configuration for ggTrader
+line-length = 100
+target-version = "py38"
+
+[lint]
+# Enable Pyflakes (F) and Pycodestyle (E, W) codes by default.
+select = ["E", "F", "W", "I"]
+ignore = []
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Exclude common directories.
+exclude = [
+    ".git",
+    ".idea",
+    ".pytest_cache",
+    ".venv",
+    "archive",
+    "__pycache__",
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

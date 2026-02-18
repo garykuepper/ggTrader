@@ -44,6 +44,7 @@ class FastBacktest:
         self.ohlcv_df = ohlcv_df
         self.params = params
         self.mover_mask = mover_mask
+        self.param_product = config.get("PARAM_PRODUCT", True)
 
         # Merge caller config with defaults
         cfg = {**_DEFAULT_CONFIG, **(config or {})}
@@ -60,8 +61,7 @@ class FastBacktest:
         """Execute the vectorized backtest and return the VBT Portfolio."""
         if self.ohlcv_df.empty:
             raise ValueError(
-                "OHLCV data is empty. Check your symbols, date range, "
-                "and database connection."
+                "OHLCV data is empty. Check your symbols, date range, " "and database connection."
             )
 
         # 0. Performance optimization: downcast to float32
@@ -80,7 +80,7 @@ class FastBacktest:
             low=low,
             open_=open_,
             **self.params,
-            param_product=True,
+            param_product=self.param_product,
             show_progress=show_progress,
             n_jobs=self.n_jobs,
         )
@@ -95,9 +95,7 @@ class FastBacktest:
                 # SignalFactory MultiIndex: last level is the symbol name
                 symbols = entries.columns.get_level_values(-1)
                 # Build mask aligned to entries by mapping symbol → column
-                aligned_mask = self.mover_mask.reindex(columns=symbols.unique())[
-                    symbols.tolist()
-                ]
+                aligned_mask = self.mover_mask.reindex(columns=symbols.unique())[symbols.tolist()]
                 aligned_mask.columns = entries.columns
                 aligned_mask = (
                     aligned_mask.reindex(index=entries.index, method="ffill")
@@ -107,9 +105,7 @@ class FastBacktest:
             else:
                 # Flat columns: direct reindex
                 aligned_mask = (
-                    self.mover_mask.reindex(
-                        index=entries.index, columns=entries.columns
-                    )
+                    self.mover_mask.reindex(index=entries.index, columns=entries.columns)
                     .fillna(False)
                     .astype(bool)
                 )
@@ -177,9 +173,7 @@ class FastBacktest:
             "max_drawdown": _safe(float(self.pf.max_drawdown().min() * 100)),
         }
 
-    def save_detailed_plots(
-        self, results_manager, filename: str = "backtest_detailed"
-    ) -> None:
+    def save_detailed_plots(self, results_manager, filename: str = "backtest_detailed") -> None:
         """
         Saves a comprehensive multi-panel plot of the backtest.
         Safe for cash_sharing=True.

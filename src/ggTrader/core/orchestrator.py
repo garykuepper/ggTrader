@@ -12,6 +12,8 @@ from ggTrader.core.fast_backtest import FastBacktest
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_and_setup, build_mover_mask
 from ggTrader.utils.utils import make_end_anchored_tscv, plot_cv_indices
+import itertools
+import gc
 
 
 def _to_native(val: Any) -> Any:
@@ -119,40 +121,77 @@ def run_sensitivity_orchestrator(
     from ggTrader.utils.plotting import plot_optimization_landscape
 
     rm = ResultsManager("run_sensitivity") if save_results else None
+    best_pf = None
 
     print("Loading data...")
     ohlcv = load_data_and_setup(config)
 
-    print("Running Vectorized Sensitivity Analysis...")
-    engine = FastBacktest(ohlcv, param_grid, config=config)
-    pf = engine.run(show_progress=show_progress)
+    # 1. Generate full parameter product for chunking
+    keys = list(param_grid.keys())
+    values = [v if isinstance(v, list) else [v] for v in param_grid.values()]
+    combinations = list(itertools.product(*values))
+    total_total = len(combinations)
+    chunk_size = config.get("CHUNK_SIZE", 500)  # Default to 500 to be safe
+    total_chunks = (total_total + chunk_size - 1) // chunk_size
 
-    sharpe_series = pf.sharpe_ratio()
+    print(
+        f"Running Vectorized Sensitivity Analysis in {total_chunks} chunks "
+        f"({total_total} total combinations, chunk_size={chunk_size})..."
+    )
 
-    # Apply filtering by trade count
-    min_trades = config.get("MIN_TRADES", 0)
-    if min_trades > 0:
-        trade_counts = pf.trades.count()
-        # If vectorized, trade_counts is a series aligned with sharpe_series
-        # Mask out those with low trades by setting sharpe to NaN
-        low_trade_mask = trade_counts < min_trades
-        if low_trade_mask.any():
-            print(
-                f"Filtering out {(low_trade_mask).sum()} parameter combinations with < {min_trades} trades."
-            )
-            sharpe_series[low_trade_mask] = np.nan
+    all_sharpe_series = []
+
+    for i in range(0, total_total, chunk_size):
+        chunk_idx = i // chunk_size + 1
+        chunk = combinations[i : i + chunk_size]
+        print(
+            f"  > Processing chunk {chunk_idx} of {total_chunks} "
+            f"({i} to {min(i + chunk_size, total_total)})..."
+        )
+
+        # Build a "flat" param grid for this chunk
+        chunk_params = {k: [c[j] for c in chunk] for j, k in enumerate(keys)}
+
+        # Create config for this run ensuring PARAM_PRODUCT is False
+        chunk_config = {**config, "PARAM_PRODUCT": False}
+
+        engine = FastBacktest(ohlcv, chunk_params, config=chunk_config)
+        pf = engine.run(show_progress=show_progress)
+
+        sharpe_series = pf.sharpe_ratio()
+
+        # Apply filtering by trade count
+        min_trades = config.get("MIN_TRADES", 0)
+        if min_trades > 0:
+            trade_counts = pf.trades.count()
+            low_trade_mask = trade_counts < min_trades
+            if low_trade_mask.any():
+                sharpe_series[low_trade_mask] = np.nan
+
+        all_sharpe_series.append(sharpe_series)
+
+        # Explicitly delete objects and collect garbage to free RAM
+        del pf
+        del engine
+        gc.collect()
+
+    # Merge all chunk results
+    sharpe_series = pd.concat(all_sharpe_series)
 
     best_idx = sharpe_series.idxmax()
     param_names = list(param_grid.keys())
-    best_params = _to_native(
-        _extract_params(best_idx, sharpe_series, param_names, param_grid)
-    )
+    best_params = _to_native(_extract_params(best_idx, sharpe_series, param_names, param_grid))
 
     results_df = sharpe_series.reset_index()
     # Clean up column names (remove sf_ prefix from VectorBT)
-    results_df.columns = [
-        str(col).replace("sf_", "") for col in results_df.columns[:-1]
-    ] + ["Sharpe Ratio"]
+    results_df.columns = [str(col).replace("sf_", "") for col in results_df.columns[:-1]] + [
+        "Sharpe Ratio"
+    ]
+
+    # Run best-case backtest for dashboard and return value
+    best_engine = FastBacktest(ohlcv, best_params, config=config)
+    best_pf = best_engine.run(show_progress=show_progress)
+    best_stats = best_engine.get_stats()
 
     if save_results and rm:
         rm.save_metrics(results_df, "sensitivity_results.csv", save_csv=True)
@@ -172,10 +211,6 @@ def run_sensitivity_orchestrator(
             results_manager=rm,
         )
 
-        # Run best-case backtest for dashboard
-        best_engine = FastBacktest(ohlcv, best_params, config=config)
-        best_pf = best_engine.run(show_progress=show_progress)
-        best_stats = best_engine.get_stats()
         rm.save_run_results(
             params=best_params,
             metrics=best_stats,
@@ -185,7 +220,7 @@ def run_sensitivity_orchestrator(
         print(f"Best Case Results saved to: {rm.run_dir}")
 
     return {
-        "portfolio": pf,
+        "portfolio": best_pf,
         "results_df": results_df,
         "best_params": best_params,
         "results_manager": rm,
@@ -247,9 +282,7 @@ def run_wfo_orchestrator(
         is_metrics_by_fold[i] = train_metrics
 
         best_param_idx = train_metrics.idxmax()
-        fold_best_params = _extract_params(
-            best_param_idx, train_metrics, param_names, param_grid
-        )
+        fold_best_params = _extract_params(best_param_idx, train_metrics, param_names, param_grid)
 
         # B. OUT-OF-SAMPLE
         test_engine = FastBacktest(test_ohlcv, fold_best_params, config=config)
@@ -262,20 +295,25 @@ def run_wfo_orchestrator(
                 "fold": i,
                 "train_start": str(train_ohlcv.index[0]),
                 "test_start": str(test_ohlcv.index[0]),
-                "best_params": _to_native(fold_best_params),
+                "test_end": str(test_ohlcv.index[-1]),
+                "params": _to_native(fold_best_params),  # DB expects 'params'
                 "is_sharpe": _to_native(train_metrics.max()),
                 "oos_sharpe": _to_native(pf_test.sharpe_ratio().mean()),
+                "sortino": _to_native(pf_test.sortino_ratio().mean()),
                 "profit": _to_native(pf_test.total_profit().sum()),
+                "start_capital": _to_native(pf_test.init_cash.sum()),
+                "end_capital": _to_native(pf_test.value().iloc[-1].sum()),
+                "return_pct": _to_native(pf_test.total_return().mean() * 100),
             }
         )
+        if i == 1:
+            print(f"  > Fold 1 Keys: {list(wfo_stats[0].keys())}")
         print(f"  > Fold {i} Complete.")
 
     # 2. Robustness Analysis
     df_is_all = pd.DataFrame(is_metrics_by_fold)
     weights = {f: f for f in is_metrics_by_fold.keys()}
-    robustness_scores = (df_is_all * pd.Series(weights)).sum(axis=1) / sum(
-        weights.values()
-    )
+    robustness_scores = (df_is_all * pd.Series(weights)).sum(axis=1) / sum(weights.values())
 
     top_robust_idx = robustness_scores.sort_values(ascending=False).head(5)
     robust_top_5 = []
@@ -286,7 +324,7 @@ def run_wfo_orchestrator(
         )
 
     best_robust_params = robust_top_5[0]["params"]
-    best_recent_params = wfo_stats[-1]["best_params"]
+    best_recent_params = wfo_stats[-1]["params"]
 
     # 3. Final Model & Persistence
     final_engine = FastBacktest(ohlcv, best_robust_params, config=config)

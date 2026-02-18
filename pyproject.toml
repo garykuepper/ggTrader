@@ -36,7 +36,14 @@ dependencies = [
 [project.optional-dependencies]
 gpu = ["cupy-cuda13x"]
 test = ["pytest"]
+dev = ["black"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["ggTrader*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '/(\.git|\.venv|archive)/'

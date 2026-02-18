@@ -7,9 +7,7 @@ import sys
 import pandas as pd
 
 # Ensure project root is in path
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
 
 from ggTrader.core.orchestrator import run_backtest_orchestrator
 from ggTrader.utils.results_manager import ResultsManager
@@ -20,7 +18,7 @@ from ggTrader.utils.results_manager import ResultsManager
 CONSTANTS = {
     # Symbol pool (set SYMBOLS to None to use SYMBOLS_FILE instead)
     "SYMBOLS": None,
-    "SYMBOLS_FILE": "data/top_20_USD_1095_movers.json",
+    "SYMBOLS_FILE": "data/top_30_USD_1095_movers.json",
     # Date range
     "START_DATE": "2023-01-01",
     "END_DATE": "2023-12-31",
@@ -28,9 +26,10 @@ CONSTANTS = {
     # Portfolio
     "START_CASH": 1000,
     "PORTFOLIO_SHARE": 0.10,
-    "FEES": 0.001,
+    "FEES": 0.004,
+    "SLIPPAGE": 0.003,
     # Dynamic movers: set to 0 to disable, or e.g. 20 for top-20 daily
-    "USE_MOVERS": 0,
+    "USE_MOVERS": 10,
     # Strategy parameters
     "DEFAULT_PARAMS": {
         "adx_threshold": 25,
@@ -49,9 +48,7 @@ def main() -> None:
     """Run a single backtest using the orchestrator."""
     parser = argparse.ArgumentParser(description="Run a single ggTrader backtest")
     parser.add_argument("--params", type=str, help="Path to params.json")
-    parser.add_argument(
-        "--progress", action="store_true", help="Show VectorBT progress bar"
-    )
+    parser.add_argument("--progress", action="store_true", help="Show VectorBT progress bar")
     args = parser.parse_args()
 
     # Load parameters if provided, else use defaults
@@ -71,7 +68,7 @@ def main() -> None:
     # Convert stats to a DataFrame for a cleaner table view
     stats_df = pf.stats().to_frame(name="Portfolio Stats")
     print(stats_df)
-    pf.plot(subplots=["value", "drawdowns"]).show()
+    pf.plot(subplots=["drawdowns", "value", "cum_returns"]).show()
 
 
 if __name__ == "__main__":

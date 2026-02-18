@@ -8,42 +8,28 @@ import sys
 import pandas as pd
 
 # Ensure project root is in path
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
 
 from ggTrader.data.kraken.constants import SYMBOL_MAPPING
 from ggTrader.data.kraken.historical_data import KrakenHistoricalData
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Generate Consistent Movers Asset Pool"
-    )
+    parser = argparse.ArgumentParser(description="Generate Consistent Movers Asset Pool")
+    parser.add_argument("--n", type=int, default=30, help="Number of assets in the final pool")
     parser.add_argument(
-        "--n", type=int, default=50, help="Number of assets in the final pool"
+        "--daily-n", type=int, default=100, help="Number of daily top movers to consider"
     )
-    parser.add_argument(
-        "--daily-n", type=int, default=50, help="Number of daily top movers to consider"
-    )
-    parser.add_argument(
-        "--days", type=int, default=365 * 3, help="Lookback period in days"
-    )
-    parser.add_argument(
-        "--threshold", type=int, default=500, help="Minimum daily trades"
-    )
-    parser.add_argument(
-        "--quote", type=str, default="USD", help="Quote currency (USD, EUR, etc.)"
-    )
+    parser.add_argument("--days", type=int, default=365 * 3, help="Lookback period in days")
+    parser.add_argument("--threshold", type=int, default=500, help="Minimum daily trades")
+    parser.add_argument("--quote", type=str, default="USD", help="Quote currency (USD, EUR, etc.)")
     parser.add_argument(
         "--output",
         type=str,
         default=None,
-        help="Output JSON path (default: data/top_N_consistent_movers.json)",
+        help="Output JSON path (default: data/top_N_USD_1095_movers.json)",
     )
-    parser.add_argument(
-        "--stables", action="store_true", help="Include stablecoins and fiats"
-    )
+    parser.add_argument("--stables", action="store_true", help="Include stablecoins and fiats")
 
     args = parser.parse_args()
 

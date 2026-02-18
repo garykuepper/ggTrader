@@ -171,9 +171,7 @@ class ResultDBManager:
                 writer = csv.writer(f)
                 writer.writerow(header)
 
-    def add_run(
-        self, run_id, run_type, script_name, parameters, metadata=None, metrics=None
-    ):
+    def add_run(self, run_id, run_type, script_name, parameters, metadata=None, metrics=None):
         """
         Adds a new run entry.
 
@@ -190,7 +188,7 @@ class ResultDBManager:
         metr = metrics or {}
 
         # Extract core fields
-        sharpe = metr.get("sharpe")
+        sharpe = metr.get("oos_sharpe", metr.get("sharpe"))
         sortino = metr.get("sortino")
         total_profit = metr.get("total_profit")
 
@@ -263,11 +261,7 @@ class ResultDBManager:
 
         # Handle Nones for CSV
         def safe_fmt(val, fmt="{:.4f}"):
-            return (
-                fmt.format(val)
-                if isinstance(val, (int, float))
-                else str(val) if val else ""
-            )
+            return fmt.format(val) if isinstance(val, (int, float)) else str(val) if val else ""
 
         with open(self.log_path, "a", newline="") as f:
             writer = csv.writer(f)
@@ -304,7 +298,7 @@ class ResultDBManager:
                     "end_capital": row["end_capital"],
                     "profit": row["profit"],
                     "return_pct": row["return_pct"],
-                    "sharpe": row["sharpe"],
+                    "sharpe": row.get("oos_sharpe", row.get("sharpe")),
                     "sortino": row["sortino"],
                     "params": params_json,
                 }
@@ -380,19 +374,11 @@ class ResultDBManager:
             try:
                 symbol = row.get("symbol", "UNKNOWN")
                 entry_time = next(
-                    (
-                        row[c]
-                        for c in mapping["entry_time"]
-                        if c in row and pd.notna(row[c])
-                    ),
+                    (row[c] for c in mapping["entry_time"] if c in row and pd.notna(row[c])),
                     None,
                 )
                 exit_time = next(
-                    (
-                        row[c]
-                        for c in mapping["exit_time"]
-                        if c in row and pd.notna(row[c])
-                    ),
+                    (row[c] for c in mapping["exit_time"] if c in row and pd.notna(row[c])),
                     None,
                 )
 
