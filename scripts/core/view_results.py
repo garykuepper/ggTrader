@@ -1,3 +1,5 @@
+"""Browse and inspect ggTrader results stored in the TimescaleDB database."""
+
 import argparse
 import json
 import os
@@ -9,9 +11,7 @@ from sqlalchemy import create_engine, text
 from tabulate import tabulate
 
 # Ensure project root is in path
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
 
 from ggTrader.utils.config import get_db_connection_string
 
@@ -144,18 +144,14 @@ def main() -> None:
     """
     Main entry point for browsing results.
     """
-    parser = argparse.ArgumentParser(
-        description="ggTrader Results Browser (PostgreSQL)"
-    )
+    parser = argparse.ArgumentParser(description="ggTrader Results Browser (PostgreSQL)")
     parser.add_argument(
         "--conn",
         type=str,
         help="PostgreSQL connection string (optional)",
     )
     parser.add_argument("--list", action="store_true", help="List recent runs")
-    parser.add_argument(
-        "run_id", type=str, nargs="?", help="Show details for a specific run ID"
-    )
+    parser.add_argument("run_id", type=str, nargs="?", help="Show details for a specific run ID")
 
     args = parser.parse_args()
     engine = get_engine(args.conn)

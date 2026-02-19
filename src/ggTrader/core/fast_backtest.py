@@ -1,10 +1,13 @@
-"""Vectorized backtest engine using VectorBT Portfolio API."""
-
 import numpy as np
 import pandas as pd
 import vectorbt as vbt
+from typing import Any, Optional, Tuple, Union
 
 from ggTrader.indicators.signals import SignalFactory
+from ggTrader.utils.vbt_patches import apply_vbt_patches
+
+# Apply patches immediately on import
+apply_vbt_patches()
 
 
 # Defaults for portfolio-level config keys
@@ -16,128 +19,165 @@ _DEFAULT_CONFIG = {
     "FREQ": "4h",
     "N_JOBS": -1,  # Default to all cores for vectorized runs
     "MIN_TRADES": 0,  # Minimum trades to accept a result
+    "USE_CASH_SHARING": True,  # New config for grouping
 }
 
 # Performance settings
-vbt.settings.caching["enabled"] = True
+vbt.settings.caching["enabled"] = False
 
 
 class FastBacktest:
     """Vectorized backtest engine wrapping VectorBT's Portfolio API.
 
-    Args:
-        ohlcv_df: MultiIndex DataFrame (symbol, ohlcv) from load_data_and_setup.
-        params: Signal parameters for SignalFactory (may contain lists for broadcasting).
-        config: Portfolio-level settings dict (CONSTANTS). Recognised keys:
-            START_CASH, PORTFOLIO_SHARE, FEES, SLIPPAGE, FREQ.
-        mover_mask: Optional boolean DataFrame (dates x symbols) to zero-out
-            entries for symbols not in the daily top-N movers.
+    Features:
+    - Optimization-ready (lightweight, minimal copying)
+    - Full metric generation
+    - Supports grouped portfolios (sensitivity analysis)
     """
 
     def __init__(
         self,
-        ohlcv_df: pd.DataFrame,
+        ohlcv: pd.DataFrame,
         params: dict,
         config: dict | None = None,
+        signal_factory: Any = None,
         mover_mask: pd.DataFrame | None = None,
-    ) -> None:
-        self.ohlcv_df = ohlcv_df
+    ):
+        """
+        Args:
+            ohlcv: OHLCV DataFrame (MultiIndex columns: symbol, field)
+            params: Strategy parameters
+            config: Configuration dictionary (fees, slippage, etc)
+            signal_factory: Optional custom signal factory
+            mover_mask: Optional boolean mask to filter entries/exits
+        """
+        # Merge caller config with defaults
+        self.config = {**_DEFAULT_CONFIG, **(config or {})}
+
+        self.ohlcv = ohlcv
         self.params = params
         self.mover_mask = mover_mask
-        self.param_product = config.get("PARAM_PRODUCT", True)
-
-        # Merge caller config with defaults
-        cfg = {**_DEFAULT_CONFIG, **(config or {})}
-        self.start_cash = float(cfg["START_CASH"])
-        self.max_position = float(cfg["PORTFOLIO_SHARE"])
-        self.fees = float(cfg["FEES"])
-        self.slippage = float(cfg["SLIPPAGE"])
-        self.freq = cfg["FREQ"]
-        self.n_jobs = int(cfg["N_JOBS"])
-
-        self.pf = None
+        self.pf = None  # Portfolio cache
+        self.signal_factory = signal_factory or SignalFactory
 
     def run(self, show_progress: bool = False) -> vbt.Portfolio:
-        """Execute the vectorized backtest and return the VBT Portfolio."""
-        if self.ohlcv_df.empty:
+        """Execute backtest."""
+        if self.ohlcv.empty:
             raise ValueError(
                 "OHLCV data is empty. Check your symbols, date range, " "and database connection."
             )
 
-        # 0. Performance optimization: downcast to float32
-        ohlcv = self.ohlcv_df.astype(np.float32)
+        # 1. Generate Signals
+        entries, exits, price_for_orders = self._generate_signals(show_progress)
 
-        # 1. Unpack OHLCV
+        # 2. Apply Mover Mask (if exists)
+        if self.mover_mask is not None:
+            entries = self._apply_mover_mask(entries)
+
+        # 3. Determine Grouping
+        group_by, use_cash_sharing = self._determine_grouping(entries)
+
+        # 4. Create Portfolio
+        self.pf = self._create_portfolio(
+            price_for_orders, entries, exits, group_by, use_cash_sharing
+        )
+        return self.pf
+
+    def _generate_signals(
+        self, show_progress: bool
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Runs the signal factory to generate entry/exit signals."""
+        # Clean params for signal factory (remove non-strategy params)
+        strat_params = {
+            k: v
+            for k, v in self.params.items()
+            if k not in ["START_CASH", "PORTFOLIO_SHARE", "FEES", "SLIPPAGE", "FREQ"]
+        }
+
+        # Run signal generation
+        # Pass full OHLCV as signal factory expects it
+        # Use float64 to avoid Numba read-only assignment errors in metrics
+        ohlcv = self.ohlcv.astype(np.float64)
+
+        # Unpack OHLCV
         close = ohlcv.xs("close", axis=1, level=1, drop_level=True)
         high = ohlcv.xs("high", axis=1, level=1, drop_level=True)
         low = ohlcv.xs("low", axis=1, level=1, drop_level=True)
         open_ = ohlcv.xs("open", axis=1, level=1, drop_level=True)
 
-        # 2. Generate signals via SignalFactory (supports broadcasting)
-        sf = SignalFactory.run(
+        sf = self.signal_factory.run(
             close=close,
             high=high,
             low=low,
             open_=open_,
-            **self.params,
-            param_product=self.param_product,
+            **strat_params,
+            param_product=self.config.get("PARAM_PRODUCT", True),
+            n_jobs=self.config.get("N_JOBS", -1),
             show_progress=show_progress,
-            n_jobs=self.n_jobs,
         )
 
-        entries = sf.entries
-        exits = sf.exits
-        price_for_orders = sf.price_for_orders
+        # Prepare execution arrays
+        # Use close price for execution
+        # Ensure we use specific 'close' column to avoid ambiguity
+        price_for_orders = self.ohlcv.xs("close", level=1, axis=1)
 
-        # 3. Apply dynamic mover mask if provided
-        if self.mover_mask is not None:
+        return sf.entries, sf.exits, price_for_orders
+
+    def _apply_mover_mask(self, entries: pd.DataFrame) -> pd.DataFrame:
+        """Applies the mover mask to filter entries."""
+        # Align mover_mask with entries (Broadcast if MultiIndex)
+        m_mask, _ = vbt.broadcast(self.mover_mask, entries)
+        # We don't strictly NEED to mask exits as the stop logic handles it,
+        # but masking entries ensures no new trades start for non-movers.
+        return entries & m_mask
+
+    def _determine_grouping(self, entries: pd.DataFrame) -> Tuple[Any, bool]:
+        """Determines the 'group_by' argument for VectorBT."""
+        use_grouping = self.config.get("USE_CASH_SHARING", True)
+        if use_grouping:
             if isinstance(entries.columns, pd.MultiIndex):
-                # SignalFactory MultiIndex: last level is the symbol name
-                symbols = entries.columns.get_level_values(-1)
-                # Build mask aligned to entries by mapping symbol → column
-                aligned_mask = self.mover_mask.reindex(columns=symbols.unique())[symbols.tolist()]
-                aligned_mask.columns = entries.columns
-                aligned_mask = (
-                    aligned_mask.reindex(index=entries.index, method="ffill")
-                    .fillna(False)
-                    .astype(bool)
-                )
+                # Grid Search: Always group by params (drop symbol level)
+                # Assuming standard VBT param_product output where symbol is last level
+                # and params are previous levels
+                group_by = entries.columns.droplevel(-1)
             else:
-                # Flat columns: direct reindex
-                aligned_mask = (
-                    self.mover_mask.reindex(index=entries.index, columns=entries.columns)
-                    .fillna(False)
-                    .astype(bool)
-                )
-            entries = entries & aligned_mask
-
-        # 4. Run VBT Portfolio with proper position sizing
-        # Determine grouping:
-        # - If MultiIndex (Grid Search), group by Params (drop symbol level)
-        # - If Index (Single Run), group all into one (portfolio of symbols)
-        if isinstance(entries.columns, pd.MultiIndex):
-            # Assumes Symbol is the last level (vbt standard)
-            # Group by all param levels, aggregating across symbols
-            group_by = entries.columns.droplevel(-1)
+                # Single run: Group all symbols into one combined portfolio
+                group_by = np.full(entries.shape[1], 0)
         else:
-            # Single run with multiple symbols -> 1 Portfolio
-            n_cols = entries.shape[1]
-            group_by = np.full(n_cols, 0)
+            # Independent assets, no cash sharing
+            group_by = False
 
-        self.pf = vbt.Portfolio.from_signals(
-            close=price_for_orders,
-            entries=entries,
-            exits=exits,
-            init_cash=self.start_cash,
-            fees=self.fees,
-            slippage=self.slippage,
-            freq=self.freq,
-            size=self.max_position,
+        return group_by, use_grouping
+
+    def _create_portfolio(
+        self,
+        close: pd.DataFrame,
+        entries: pd.DataFrame,
+        exits: pd.DataFrame,
+        group_by: Any,
+        cash_sharing: bool,
+    ) -> vbt.Portfolio:
+        """Creates the VectorBT Portfolio object."""
+        # Force writable copies of everything to prevent Numba read-only errors
+        # This is critical for metrics like profit_factor which modify arrays in-place
+        close_writable = close.values.copy() if hasattr(close, "values") else close.copy()
+        entries_writable = entries.values.copy() if hasattr(entries, "values") else entries.copy()
+        exits_writable = exits.values.copy() if hasattr(exits, "values") else exits.copy()
+
+        pf = vbt.Portfolio.from_signals(
+            close=pd.DataFrame(close_writable, index=close.index, columns=close.columns),
+            entries=pd.DataFrame(entries_writable, index=entries.index, columns=entries.columns),
+            exits=pd.DataFrame(exits_writable, index=exits.index, columns=exits.columns),
+            init_cash=float(self.config["START_CASH"]),
+            fees=float(self.config["FEES"]),
+            slippage=float(self.config["SLIPPAGE"]),
+            freq=self.config["FREQ"],
+            size=float(self.config["PORTFOLIO_SHARE"]),
             size_type="percent",
-            cash_sharing=True,
+            cash_sharing=cash_sharing,
             group_by=group_by,
-        )
-        return self.pf
+        ).copy()
+        return pf
 
     def get_stats(self) -> dict:
         """Return aggregate metrics formatted for ResultsManager."""
@@ -153,7 +193,7 @@ class FastBacktest:
             total_profit = total_profit.sum()
 
         # Derive profit percentage from actual initial cash
-        init_cash = self.start_cash
+        init_cash = float(self.config["START_CASH"])
         profit_pct = (total_profit / init_cash) * 100
 
         import math

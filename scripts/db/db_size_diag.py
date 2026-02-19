@@ -3,15 +3,13 @@ import sys
 from sqlalchemy import create_engine, text
 
 # Add src to path
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
 
 from ggTrader.utils.config import get_db_connection_string
 
 connection_string = get_db_connection_string()
 engine = create_engine(connection_string)
-
+print(connection_string)
 queries = {
     "Total DB Size": "SELECT pg_size_pretty(pg_database_size('ggtrader'))",
     "Table Stats": """

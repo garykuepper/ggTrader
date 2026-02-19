@@ -24,13 +24,9 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
     elif "SYMBOLS_FILE" in config and config["SYMBOLS_FILE"]:
         symbols = load_symbols_from_json(config["SYMBOLS_FILE"])
         if symbols is None:
-            raise ValueError(
-                f"Symbols file '{config['SYMBOLS_FILE']}' not found or invalid."
-            )
+            raise ValueError(f"Symbols file '{config['SYMBOLS_FILE']}' not found or invalid.")
     else:
-        raise ValueError(
-            "Config must contain 'SYMBOLS' (list) or 'SYMBOLS_FILE' (path)."
-        )
+        raise ValueError("Config must contain 'SYMBOLS' (list) or 'SYMBOLS_FILE' (path).")
 
     if not symbols:
         raise ValueError("No symbols provided or symbols list is empty.")
@@ -83,3 +79,31 @@ def build_mover_mask(
     # Reindex to the intraday OHLCV index and forward-fill within each day
     mask = daily_mask.reindex(ohlcv_df.index, method="ffill").fillna(False)
     return mask.astype(bool)
+
+
+from typing import Tuple, Optional
+
+
+def load_data_with_movers(config: dict) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:
+    """
+    Loads data and optionally builds a mover mask based on config['USE_MOVERS'].
+
+    Args:
+        config: Configuration dictionary.
+
+    Returns:
+        Tuple of (ohlcv DataFrame, mover_mask DataFrame or None)
+    """
+    print("Loading data...")
+    ohlcv = load_data_and_setup(config)
+
+    mover_mask = None
+    use_movers = config.get("USE_MOVERS", 0)
+    if use_movers > 0:
+        print(f"Building dynamic top-{use_movers} mover mask...")
+        try:
+            mover_mask = build_mover_mask(ohlcv, config, top_n=use_movers)
+        except Exception as e:
+            print(f"Warning: mover mask build failed: {e}")
+
+    return ohlcv, mover_mask

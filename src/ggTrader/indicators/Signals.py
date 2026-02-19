@@ -39,24 +39,31 @@ class Signals:
             acceleration=sar_acceleration,
             maximum=sar_maximum,
         )
-        psarl = (
-            psar_ind.psarl.values
-            if hasattr(psar_ind.psarl, "values")
-            else psar_ind.psarl
-        )
+        psarl = psar_ind.psarl.values if hasattr(psar_ind.psarl, "values") else psar_ind.psarl
         sar_buy = psarl < c
 
-        # Vectorized ADX
-        adx_ind = vbt.IndicatorFactory.from_pandas_ta("adx").run(
-            h, l, c, length=int(adx_length)
-        )
+        # Safety check: ADX needs enough data
+        # pandas_ta.adx often returns None if data is too short
+        if len(c) < int(adx_length) + 1:
+            return np.zeros(c.shape, dtype=bool)
 
-        adx_val = adx_ind.adx.values if hasattr(adx_ind.adx, "values") else adx_ind.adx
+        # Vectorized ADX
+        try:
+            adx_ind = vbt.IndicatorFactory.from_pandas_ta("adx").run(
+                h, l, c, length=int(adx_length)
+            )
+            adx_val = adx_ind.adx.values if hasattr(adx_ind.adx, "values") else adx_ind.adx
+            dmp = adx_ind.dmp.values if hasattr(adx_ind.dmp, "values") else adx_ind.dmp
+            dmn = adx_ind.dmn.values if hasattr(adx_ind.dmn, "values") else adx_ind.dmn
+        except Exception:
+            # Fallback for insufficient data or other pandas_ta errors
+            adx_val = np.full(c.shape, np.nan)
+            dmp = np.full(c.shape, np.nan)
+            dmn = np.full(c.shape, np.nan)
+
         adx_ok = adx_val >= float(adx_threshold)
 
         if use_dmp_cross:
-            dmp = adx_ind.dmp.values if hasattr(adx_ind.dmp, "values") else adx_ind.dmp
-            dmn = adx_ind.dmn.values if hasattr(adx_ind.dmn, "values") else adx_ind.dmn
             dmp_ok = dmp > dmn
             entries = sar_buy & adx_ok & dmp_ok
         else:
@@ -141,13 +148,23 @@ class Signals:
         l = low.values if hasattr(low, "values") else low
         e = entries.values if hasattr(entries, "values") else entries
 
+        # Safety check: ATR needs enough data
+        if len(c) < int(atr_length) + 1:
+            n_rows = c.shape[0]
+            n_cols = c.shape[1] if len(c.shape) > 1 else 1
+            stop_vals = np.full(c.shape, np.nan)
+            exits_vals = np.zeros(c.shape, dtype=bool)
+            return stop_vals, exits_vals
+
         # ATR calculation via VBT bridge (fast)
-        atr_ind = vbt.IndicatorFactory.from_pandas_ta("atr").run(
-            h, l, c, length=int(atr_length)
-        )
-        atr_vals = (
-            atr_ind.atrr.values if hasattr(atr_ind.atrr, "values") else atr_ind.atrr
-        )
+        try:
+            atr_ind = vbt.IndicatorFactory.from_pandas_ta("atr").run(
+                h, l, c, length=int(atr_length)
+            )
+            atr_vals = atr_ind.atrr.values if hasattr(atr_ind.atrr, "values") else atr_ind.atrr
+        except Exception:
+            # Fallback for insufficient data
+            atr_vals = np.full(c.shape, np.nan)
 
         # Prepare arrays for numba
         high_vals = np.asarray(h, dtype=np.float64)

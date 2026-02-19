@@ -1,0 +1,352 @@
+[
+    {
+        "rank": 1,
+        "symbol": "BTC",
+        "kraken_symbol": "BTC",
+        "frequency": 1095,
+        "average_notional_volume": 139526674.73065594
+    },
+    {
+        "rank": 2,
+        "symbol": "ETH",
+        "kraken_symbol": "ETH",
+        "frequency": 1096,
+        "average_notional_volume": 61906875.9521924
+    },
+    {
+        "rank": 3,
+        "symbol": "SOL",
+        "kraken_symbol": "SOL",
+        "frequency": 1096,
+        "average_notional_volume": 45099385.312877916
+    },
+    {
+        "rank": 4,
+        "symbol": "XRP",
+        "kraken_symbol": "XRP",
+        "frequency": 1096,
+        "average_notional_volume": 33621175.195133634
+    },
+    {
+        "rank": 5,
+        "symbol": "DOGE",
+        "kraken_symbol": "DOGE",
+        "frequency": 1096,
+        "average_notional_volume": 15688967.292536924
+    },
+    {
+        "rank": 6,
+        "symbol": "SUI",
+        "kraken_symbol": "SUI",
+        "frequency": 733,
+        "average_notional_volume": 9017207.272434665
+    },
+    {
+        "rank": 7,
+        "symbol": "ADA",
+        "kraken_symbol": "ADA",
+        "frequency": 733,
+        "average_notional_volume": 6989980.582337942
+    },
+    {
+        "rank": 8,
+        "symbol": "ZEC",
+        "kraken_symbol": "ZEC",
+        "frequency": 688,
+        "average_notional_volume": 5818330.404911421
+    },
+    {
+        "rank": 9,
+        "symbol": "PEPE",
+        "kraken_symbol": "PEPE",
+        "frequency": 807,
+        "average_notional_volume": 5528695.731760401
+    },
+    {
+        "rank": 10,
+        "symbol": "LINK",
+        "kraken_symbol": "LINK",
+        "frequency": 1095,
+        "average_notional_volume": 4341689.337128696
+    },
+    {
+        "rank": 11,
+        "symbol": "AVAX",
+        "kraken_symbol": "AVAX",
+        "frequency": 897,
+        "average_notional_volume": 3764936.907192035
+    },
+    {
+        "rank": 12,
+        "symbol": "LTC",
+        "kraken_symbol": "LTC",
+        "frequency": 1096,
+        "average_notional_volume": 3510739.8830480315
+    },
+    {
+        "rank": 13,
+        "symbol": "MATIC",
+        "kraken_symbol": "MATIC",
+        "frequency": 816,
+        "average_notional_volume": 3096091.2940687286
+    },
+    {
+        "rank": 14,
+        "symbol": "WIF",
+        "kraken_symbol": "WIF",
+        "frequency": 681,
+        "average_notional_volume": 2827719.3050449197
+    },
+    {
+        "rank": 15,
+        "symbol": "DOT",
+        "kraken_symbol": "DOT",
+        "frequency": 1095,
+        "average_notional_volume": 2614749.8660359285
+    },
+    {
+        "rank": 16,
+        "symbol": "XLM",
+        "kraken_symbol": "XLM",
+        "frequency": 1024,
+        "average_notional_volume": 2339688.0371029843
+    },
+    {
+        "rank": 17,
+        "symbol": "NEAR",
+        "kraken_symbol": "NEAR",
+        "frequency": 895,
+        "average_notional_volume": 2292328.7599144126
+    },
+    {
+        "rank": 18,
+        "symbol": "FTM",
+        "kraken_symbol": "FTM",
+        "frequency": 745,
+        "average_notional_volume": 2121110.0377298743
+    },
+    {
+        "rank": 19,
+        "symbol": "TIA",
+        "kraken_symbol": "TIA",
+        "frequency": 788,
+        "average_notional_volume": 2076103.544611936
+    },
+    {
+        "rank": 20,
+        "symbol": "SEI",
+        "kraken_symbol": "SEI",
+        "frequency": 771,
+        "average_notional_volume": 1982326.559569601
+    },
+    {
+        "rank": 21,
+        "symbol": "FET",
+        "kraken_symbol": "FET",
+        "frequency": 1029,
+        "average_notional_volume": 1843399.5750662212
+    },
+    {
+        "rank": 22,
+        "symbol": "CRV",
+        "kraken_symbol": "CRV",
+        "frequency": 733,
+        "average_notional_volume": 1807400.092056922
+    },
+    {
+        "rank": 23,
+        "symbol": "ICP",
+        "kraken_symbol": "ICP",
+        "frequency": 917,
+        "average_notional_volume": 1706947.6665225946
+    },
+    {
+        "rank": 24,
+        "symbol": "XMR",
+        "kraken_symbol": "XMR",
+        "frequency": 1096,
+        "average_notional_volume": 1640401.771368634
+    },
+    {
+        "rank": 25,
+        "symbol": "SHIB",
+        "kraken_symbol": "SHIB",
+        "frequency": 1060,
+        "average_notional_volume": 1612419.0380700268
+    },
+    {
+        "rank": 26,
+        "symbol": "AAVE",
+        "kraken_symbol": "AAVE",
+        "frequency": 667,
+        "average_notional_volume": 1501956.601525525
+    },
+    {
+        "rank": 27,
+        "symbol": "INJ",
+        "kraken_symbol": "INJ",
+        "frequency": 995,
+        "average_notional_volume": 1392416.0121809996
+    },
+    {
+        "rank": 28,
+        "symbol": "FIL",
+        "kraken_symbol": "FIL",
+        "frequency": 863,
+        "average_notional_volume": 1378745.3375990742
+    },
+    {
+        "rank": 29,
+        "symbol": "BCH",
+        "kraken_symbol": "BCH",
+        "frequency": 966,
+        "average_notional_volume": 1324103.445663571
+    },
+    {
+        "rank": 30,
+        "symbol": "ALGO",
+        "kraken_symbol": "ALGO",
+        "frequency": 733,
+        "average_notional_volume": 1190902.0573036633
+    },
+    {
+        "rank": 31,
+        "symbol": "ARB",
+        "kraken_symbol": "ARB",
+        "frequency": 742,
+        "average_notional_volume": 1188443.5511023358
+    },
+    {
+        "rank": 32,
+        "symbol": "UNI",
+        "kraken_symbol": "UNI",
+        "frequency": 962,
+        "average_notional_volume": 1141027.648847715
+    },
+    {
+        "rank": 33,
+        "symbol": "LDO",
+        "kraken_symbol": "LDO",
+        "frequency": 950,
+        "average_notional_volume": 1098989.396881462
+    },
+    {
+        "rank": 34,
+        "symbol": "GALA",
+        "kraken_symbol": "GALA",
+        "frequency": 854,
+        "average_notional_volume": 1005595.3684579434
+    },
+    {
+        "rank": 35,
+        "symbol": "STX",
+        "kraken_symbol": "STX",
+        "frequency": 705,
+        "average_notional_volume": 957133.1715271143
+    },
+    {
+        "rank": 36,
+        "symbol": "TRX",
+        "kraken_symbol": "TRX",
+        "frequency": 1092,
+        "average_notional_volume": 935705.3825098218
+    },
+    {
+        "rank": 37,
+        "symbol": "ATOM",
+        "kraken_symbol": "ATOM",
+        "frequency": 871,
+        "average_notional_volume": 824131.3415530695
+    },
+    {
+        "rank": 38,
+        "symbol": "AKT",
+        "kraken_symbol": "AKT",
+        "frequency": 769,
+        "average_notional_volume": 674080.4092502652
+    },
+    {
+        "rank": 39,
+        "symbol": "GRT",
+        "kraken_symbol": "GRT",
+        "frequency": 828,
+        "average_notional_volume": 609838.6371177802
+    },
+    {
+        "rank": 40,
+        "symbol": "OCEAN",
+        "kraken_symbol": "OCEAN",
+        "frequency": 748,
+        "average_notional_volume": 519276.9385909604
+    },
+    {
+        "rank": 41,
+        "symbol": "FLR",
+        "kraken_symbol": "FLR",
+        "frequency": 1004,
+        "average_notional_volume": 492124.8145241265
+    },
+    {
+        "rank": 42,
+        "symbol": "IMX",
+        "kraken_symbol": "IMX",
+        "frequency": 667,
+        "average_notional_volume": 474133.33681636484
+    },
+    {
+        "rank": 43,
+        "symbol": "KSM",
+        "kraken_symbol": "KSM",
+        "frequency": 775,
+        "average_notional_volume": 457379.6582838603
+    },
+    {
+        "rank": 44,
+        "symbol": "LUNA",
+        "kraken_symbol": "LUNA",
+        "frequency": 903,
+        "average_notional_volume": 443210.39923132607
+    },
+    {
+        "rank": 45,
+        "symbol": "QNT",
+        "kraken_symbol": "QNT",
+        "frequency": 749,
+        "average_notional_volume": 420981.7732668848
+    },
+    {
+        "rank": 46,
+        "symbol": "SAND",
+        "kraken_symbol": "SAND",
+        "frequency": 770,
+        "average_notional_volume": 386837.36251022003
+    },
+    {
+        "rank": 47,
+        "symbol": "EWT",
+        "kraken_symbol": "EWT",
+        "frequency": 694,
+        "average_notional_volume": 167936.87375856534
+    },
+    {
+        "rank": 48,
+        "symbol": "SGB",
+        "kraken_symbol": "SGB",
+        "frequency": 839,
+        "average_notional_volume": 153475.02961755425
+    },
+    {
+        "rank": 49,
+        "symbol": "CFG",
+        "kraken_symbol": "CFG",
+        "frequency": 641,
+        "average_notional_volume": 149320.63606476688
+    },
+    {
+        "rank": 50,
+        "symbol": "SCRT",
+        "kraken_symbol": "SCRT",
+        "frequency": 880,
+        "average_notional_volume": 123100.29272266559
+    }
+]

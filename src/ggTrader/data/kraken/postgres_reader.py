@@ -40,9 +40,7 @@ class KrakenPostgresReader:
         elif symbols:
             # Normalize symbol format (replace / with -) and ensure quote
             formatted_symbols = [s.replace("/", "-") for s in symbols]
-            formatted_symbols = [
-                f"{s}-{quote}" if "-" not in s else s for s in formatted_symbols
-            ]
+            formatted_symbols = [f"{s}-{quote}" if "-" not in s else s for s in formatted_symbols]
             where_clauses.append("symbol IN :symbols")
             params["symbols"] = tuple(formatted_symbols)
 
@@ -78,9 +76,7 @@ class KrakenPostgresReader:
 
         return df
 
-    def get_ohlcv_df(
-        self, symbols: list, interval="1d", quote="USD", start=None, end=None
-    ):
+    def get_ohlcv_df(self, symbols: list, interval="1d", quote="USD", start=None, end=None):
         """
         Retrieve aligned OHLCV data for multiple symbols.
         Returns MultiIndex DataFrame (columns: Symbol -> Metric).
@@ -95,9 +91,7 @@ class KrakenPostgresReader:
 
         # Ensure symbols are formatted for the query (normalize / to -)
         formatted_symbols = [s.replace("/", "-") for s in symbols]
-        formatted_symbols = [
-            f"{s}-{quote}" if "-" not in s else s for s in formatted_symbols
-        ]
+        formatted_symbols = [f"{s}-{quote}" if "-" not in s else s for s in formatted_symbols]
 
         df = self.read_ohlcv(
             symbols=formatted_symbols,
@@ -154,13 +148,9 @@ class KrakenPostgresReader:
         symbols = self.list_symbols(quote=quote)
         if not symbols:
             return []
-        return np.random.choice(
-            symbols, size=min(n, len(symbols)), replace=False
-        ).tolist()
+        return np.random.choice(symbols, size=min(n, len(symbols)), replace=False).tolist()
 
-    def get_daily_historical_movers(
-        self, date, top_n=20, trades_threshold=500, stables=False
-    ):
+    def get_daily_historical_movers(self, date, top_n=20, trades_threshold=500, stables=False):
         """
         Identify top movers for a specific date.
         Queries the ohlcv table where interval='1d'.
@@ -232,7 +222,8 @@ class KrakenPostgresReader:
 
     def get_consistent_movers(
         self,
-        days: int = 365,
+        start_date: str = "2023-01-01",
+        end_date: str = "2025-12-31",
         daily_top_n: int = 50,
         output_n: int = 50,
         trades_threshold: int = 500,
@@ -248,8 +239,8 @@ class KrakenPostgresReader:
             excluded = ["USDT", "USDC", "DAI", "PYUSD", "EUR", "GBP", "AUD", "USDG"]
 
         # Date range
-        end_date = pd.Timestamp.now(tz="UTC").normalize()
-        start_date = end_date - pd.Timedelta(days=days)
+        end_date = pd.Timestamp(end_date)
+        start_date = pd.Timestamp(start_date)
 
         query = f"""
             WITH daily_tops AS (

@@ -49,13 +49,13 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
 2. **Run a Backtest**:
 
    ```bash
-   python scripts/backtest/run_backtest.py --symbols BTC/USD
+   python scripts/core/run_backtest.py --symbols BTC/USD
    ```
 
 3. **Execute WFO**:
 
    ```bash
-   python scripts/run_walk_forward_optimization.py
+   python scripts/core/run_walk_forward_optimization.py
    ```
 
 ---

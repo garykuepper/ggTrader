@@ -1,0 +1,142 @@
+[
+    {
+        "rank": 1,
+        "symbol": "BTC",
+        "kraken_symbol": "BTC",
+        "frequency": 365,
+        "average_notional_volume": 166094592.8633254
+    },
+    {
+        "rank": 2,
+        "symbol": "ETH",
+        "kraken_symbol": "ETH",
+        "frequency": 365,
+        "average_notional_volume": 90783955.21895744
+    },
+    {
+        "rank": 3,
+        "symbol": "XRP",
+        "kraken_symbol": "XRP",
+        "frequency": 365,
+        "average_notional_volume": 69953449.3808856
+    },
+    {
+        "rank": 4,
+        "symbol": "SOL",
+        "kraken_symbol": "SOL",
+        "frequency": 365,
+        "average_notional_volume": 50477877.50399079
+    },
+    {
+        "rank": 5,
+        "symbol": "DOGE",
+        "kraken_symbol": "DOGE",
+        "frequency": 365,
+        "average_notional_volume": 19549128.266722053
+    },
+    {
+        "rank": 6,
+        "symbol": "SUI",
+        "kraken_symbol": "SUI",
+        "frequency": 365,
+        "average_notional_volume": 13907077.575364547
+    },
+    {
+        "rank": 7,
+        "symbol": "LINK",
+        "kraken_symbol": "LINK",
+        "frequency": 365,
+        "average_notional_volume": 5968353.036011012
+    },
+    {
+        "rank": 8,
+        "symbol": "LTC",
+        "kraken_symbol": "LTC",
+        "frequency": 365,
+        "average_notional_volume": 5097560.486857128
+    },
+    {
+        "rank": 9,
+        "symbol": "TAO",
+        "kraken_symbol": "TAO",
+        "frequency": 365,
+        "average_notional_volume": 4932462.4526812
+    },
+    {
+        "rank": 10,
+        "symbol": "PEPE",
+        "kraken_symbol": "PEPE",
+        "frequency": 365,
+        "average_notional_volume": 4491127.708926289
+    },
+    {
+        "rank": 11,
+        "symbol": "XLM",
+        "kraken_symbol": "XLM",
+        "frequency": 365,
+        "average_notional_volume": 3865260.3699788377
+    },
+    {
+        "rank": 12,
+        "symbol": "SPX",
+        "kraken_symbol": "SPX",
+        "frequency": 365,
+        "average_notional_volume": 3602024.6304303785
+    },
+    {
+        "rank": 13,
+        "symbol": "XMR",
+        "kraken_symbol": "XMR",
+        "frequency": 365,
+        "average_notional_volume": 2584126.948186218
+    },
+    {
+        "rank": 14,
+        "symbol": "DOT",
+        "kraken_symbol": "DOT",
+        "frequency": 365,
+        "average_notional_volume": 2031349.9562741031
+    },
+    {
+        "rank": 15,
+        "symbol": "KAS",
+        "kraken_symbol": "KAS",
+        "frequency": 365,
+        "average_notional_volume": 1431248.8657349488
+    },
+    {
+        "rank": 16,
+        "symbol": "TRX",
+        "kraken_symbol": "TRX",
+        "frequency": 365,
+        "average_notional_volume": 1205731.978916302
+    },
+    {
+        "rank": 17,
+        "symbol": "CRV",
+        "kraken_symbol": "CRV",
+        "frequency": 364,
+        "average_notional_volume": 2374837.518049164
+    },
+    {
+        "rank": 18,
+        "symbol": "ONDO",
+        "kraken_symbol": "ONDO",
+        "frequency": 364,
+        "average_notional_volume": 2128565.7483073534
+    },
+    {
+        "rank": 19,
+        "symbol": "FET",
+        "kraken_symbol": "FET",
+        "frequency": 364,
+        "average_notional_volume": 1075466.0293662099
+    },
+    {
+        "rank": 20,
+        "symbol": "RENDER",
+        "kraken_symbol": "RENDER",
+        "frequency": 364,
+        "average_notional_volume": 1006935.3575966917
+    }
+]
