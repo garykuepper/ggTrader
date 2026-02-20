@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import vectorbt as vbt
-from numba import njit
+from numba import njit, prange
 
 
 class Signals:
@@ -304,7 +304,7 @@ SignalFactory = vbt.IndicatorFactory(
 )
 
 
-@njit
+@njit(parallel=True)
 def _atr_trailing_stop_long_ohlc_touch_2d_numba(
     high_vals: np.ndarray,
     low_vals: np.ndarray,
@@ -312,44 +312,53 @@ def _atr_trailing_stop_long_ohlc_touch_2d_numba(
     entry_vals: np.ndarray,
     mult: float,
 ):
+    """
+    Computes a trailing stop and exact exit signals for a 2D array of OHLC/ATR data.
+    The outer loop iterates over columns (assets/parameters) in parallel via prange.
+    The inner loop iterates sequentially over time to maintain causality.
+    """
     n, m = high_vals.shape
     stop = np.empty((n, m), dtype=np.float64)
     stop[:] = np.nan
     exits = np.zeros((n, m), dtype=np.bool_)
-    in_pos = np.zeros(m, dtype=np.bool_)
-    peak = np.zeros(m, dtype=np.float64)
-    current_stop = np.zeros(m, dtype=np.float64)
 
-    for i in range(n):
-        for j in range(m):
-            # Check for new entry only if we are flat
-            if entry_vals[i, j] and not in_pos[j]:
-                in_pos[j] = True
-                peak[j] = high_vals[i, j]
-                current_stop[j] = peak[j] - mult * atr_vals[i, j]
-                stop[i, j] = current_stop[j]
+    # Use prange for the outer loop over columns (parameters/assets)
+    # This allows Numba to execute multi-core processing at the group level
+    for j in prange(m):
+        in_pos = False
+        peak = 0.0
+        current_stop = 0.0
+
+        # Inner loop is strictly sequential over time for this specific column
+        for i in range(n):
+            # 1. Check for new entry only if we are flat
+            if entry_vals[i, j] and not in_pos:
+                in_pos = True
+                peak = high_vals[i, j]
+                current_stop = peak - mult * atr_vals[i, j]
+                stop[i, j] = current_stop
                 exits[i, j] = False
                 continue
 
-            if in_pos[j]:
-                # Update Peak High while in position
-                if high_vals[i, j] > peak[j]:
-                    peak[j] = high_vals[i, j]
+            if in_pos:
+                # 2. Update Peak High while in position
+                if high_vals[i, j] > peak:
+                    peak = high_vals[i, j]
 
-                # Calculate theoretical new stop
-                new_trail = peak[j] - mult * atr_vals[i, j]
+                # 3. Calculate theoretical new stop
+                new_trail = peak - mult * atr_vals[i, j]
 
-                # Enforce Monotonicity: Stop can ONLY go UP
-                if new_trail > current_stop[j]:
-                    current_stop[j] = new_trail
+                # 4. Enforce Monotonicity: Stop can ONLY go UP
+                if new_trail > current_stop:
+                    current_stop = new_trail
 
-                stop[i, j] = current_stop[j]
+                stop[i, j] = current_stop
 
-                # Check for Exit (Low touches Stop)
+                # 5. Check for Exit (Low touches Stop)
                 if low_vals[i, j] <= stop[i, j]:
                     exits[i, j] = True
-                    in_pos[j] = False
-                    current_stop[j] = 0.0  # reset
+                    in_pos = False
+                    current_stop = 0.0  # reset for next trade
                 else:
                     exits[i, j] = False
             else:

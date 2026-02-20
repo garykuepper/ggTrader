@@ -6,8 +6,6 @@ from tabulate import tabulate
 from ggTrader.core.portfolio import Portfolio
 from ggTrader.core.position import Position
 from ggTrader.core.screener import Screener
-from ggTrader.data.kraken.data_manager import KrakenData
-from ggTrader.data.kraken.historical_data import KrakenHistoricalData
 from ggTrader.indicators.signals import Signals
 
 
@@ -105,9 +103,7 @@ class Trading:
                 position.update_price(price)
 
                 # check stop loss from signal processing (trailing stop)
-                signal_row = self.signals_dict.get(position.symbol).loc[
-                    self.current_date
-                ]
+                signal_row = self.signals_dict.get(position.symbol).loc[self.current_date]
                 stop_loss = signal_row.get("stop_loss", position.stop_loss)
                 position.stop_loss = max(position.stop_loss, stop_loss)
 
@@ -166,9 +162,7 @@ class Trading:
         # Get all relevant OHLCV data once
         symbols_list = sorted(list(all_unique_movers))
         # Filter for symbols actually in ohlcv_df
-        available_symbols = [
-            s for s in symbols_list if s in self.ohlcv_df.columns.levels[0]
-        ]
+        available_symbols = [s for s in symbols_list if s in self.ohlcv_df.columns.levels[0]]
 
         if available_symbols:
             relevant_ohlcv = self.ohlcv_df[available_symbols]
@@ -232,18 +226,10 @@ class Trading:
 
 
 if __name__ == "__main__":
-    date_range = pd.date_range(
-        start="2023-01-01", end="2023-01-05", freq="1d"
-    ).tz_localize("UTC")
-    k = KrakenData()
-    k_h = KrakenHistoricalData()
+    date_range = pd.date_range(start="2023-01-01", end="2023-01-05", freq="1d").tz_localize("UTC")
+
+    screener = Screener()
 
     for date in date_range:
         print(f"\nHistorical Movers for {date}")
-        historical_movers_by_day = k_h.get_historical_movers_by_day(date)
-
-        print(
-            tabulate(
-                historical_movers_by_day.head(10), headers="keys", tablefmt="github"
-            )
-        )
+        screener.print_historical_daily_kraken_by_volume(date)

@@ -1,26 +1,28 @@
 """Centralized orchestration logic for backtesting, sensitivity analysis, and WFO."""
 
+import gc
+import itertools
 import traceback
+from typing import Any, Dict, List, Optional, Tuple
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import vectorbt as vbt
-import matplotlib.pyplot as plt
 from tabulate import tabulate
-from typing import Dict, Any, List, Optional, Tuple
-import itertools
-import gc
 
 from ggTrader.core.fast_backtest import FastBacktest
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_with_movers
-from ggTrader.utils.utils import make_end_anchored_tscv, plot_cv_indices
 
 
 def _to_native(val: Any) -> Any:
-    """Ensure basic types are JSON serializable."""
+    """Ensure basic types are JSON serializable. Converts NaNs to None."""
     if isinstance(val, (np.integer, int)):
         return int(val)
     if isinstance(val, (np.floating, float)):
+        if np.isnan(val) or np.isinf(val):
+            return None
         return float(val)
     if isinstance(val, (np.bool_, bool)):
         return bool(val)
@@ -98,6 +100,11 @@ def run_backtest_orchestrator(
     return {"portfolio": pf, "stats": stats, "results_manager": rm}
 
 
+# =============================================================================
+# Sensitivity Analysis Helpers & Orchestrator
+# =============================================================================
+
+
 def _process_sensitivity_chunk(
     chunk: List[Tuple],
     keys: List[str],
@@ -106,10 +113,7 @@ def _process_sensitivity_chunk(
     show_progress: bool,
 ) -> pd.Series:
     """Helper to process a single chunk of sensitivity parameters."""
-    # Build a "flat" param grid for this chunk
     chunk_params = {k: [c[j] for c in chunk] for j, k in enumerate(keys)}
-
-    # Create config for this run ensuring PARAM_PRODUCT is False
     chunk_config = {**config, "PARAM_PRODUCT": False}
 
     engine = FastBacktest(ohlcv, chunk_params, config=chunk_config)
@@ -125,7 +129,7 @@ def _process_sensitivity_chunk(
         if low_trade_mask.any():
             sharpe_series[low_trade_mask] = np.nan
 
-    # Explicitly delete objects and collect garbage to free RAM
+    # Free RAM
     del pf
     del engine
     gc.collect()
@@ -133,47 +137,19 @@ def _process_sensitivity_chunk(
     return sharpe_series
 
 
-def run_sensitivity_orchestrator(
+def _execute_sensitivity_grid(
+    ohlcv: pd.DataFrame,
     config: Dict[str, Any],
     param_grid: Dict[str, Any],
-    save_results: bool = True,
-    show_progress: bool = True,
-) -> Dict[str, Any]:
-    """
-    Orchestrate a vectorized sensitivity analysis (grid search).
-    """
-    from ggTrader.utils.plotting import plot_optimization_landscape
-
-    rm = ResultsManager("run_sensitivity") if save_results else None
-    best_pf = None
-
-    ohlcv, _ = load_data_with_movers(
-        config
-    )  # Mover mask not used in grid search usually unless specified?
-    # Actually FastBacktest supports it, but sensitivity analysis usually runs on raw data first?
-    # The original code loaded data and then ran FastBacktest without checking mover_mask explicitly
-    # in the loop, EXCEPT that FastBacktest init took it.
-    # WAIT: pure sensitivity didn't use mover_mask in original code?
-    # Original code:
-    # ohlcv = load_data_and_setup(config)
-    # ...
-    # engine = FastBacktest(ohlcv, chunk_params, config=chunk_config)
-    # It did NOT pass mover_mask.
-    # But wait, config might have USE_MOVERS.
-    # If I use `load_data_with_movers`, I get it. I probably should pass it if it exists.
-    # However, for consistency with *original* code, I should check if it was used.
-    # In original `run_sensitivity_orchestrator`, it did NOT build mover_mask.
-    # So I will ignore it here to match behavior, OR I could enable it.
-    # Let's stick to original behavior: No mover mask in sensitivity (unless I missed it).
-    # Ah, lines 126-127 of original: ohlcv = load_data_and_setup(config). No mover mask build block.
-    # So effectively USE_MOVERS was ignored in sensitivity analysis in the original code.
-
-    # 1. Generate full parameter product for chunking
+    show_progress: bool,
+) -> pd.Series:
+    """Generates combinations, splits into chunks, and executes the grid search."""
     keys = list(param_grid.keys())
     values = [v if isinstance(v, list) else [v] for v in param_grid.values()]
     combinations = list(itertools.product(*values))
     total_total = len(combinations)
-    chunk_size = config.get("CHUNK_SIZE", 500)  # Default to 500 to be safe
+
+    chunk_size = config.get("CHUNK_SIZE", 500)
     total_chunks = (total_total + chunk_size - 1) // chunk_size
 
     print(
@@ -194,51 +170,80 @@ def run_sensitivity_orchestrator(
         sharpe_series = _process_sensitivity_chunk(chunk, keys, config, ohlcv, show_progress)
         all_sharpe_series.append(sharpe_series)
 
-    # Merge all chunk results
-    sharpe_series = pd.concat(all_sharpe_series)
+    return pd.concat(all_sharpe_series)
+
+
+def _save_sensitivity_results(
+    rm: Any,
+    best_pf: Any,
+    best_stats: Dict[str, Any],
+    best_params: Dict[str, Any],
+    results_df: pd.DataFrame,
+    param_names: List[str],
+    config: Dict[str, Any],
+) -> None:
+    """Handles plotting and saving outputs for the sensitivity analysis."""
+    from ggTrader.utils.plotting import plot_optimization_landscape
+
+    rm.save_metrics(results_df, "sensitivity_results.csv", save_csv=True)
+
+    print("\nTop 5 Parameter Combinations:")
+    print(
+        tabulate(
+            results_df.sort_values("Sharpe Ratio", ascending=False).head(5),
+            headers="keys",
+            tablefmt="github",
+        )
+    )
+
+    plot_optimization_landscape(
+        results_df,
+        params_to_plot=param_names,
+        metric_name="Sharpe Ratio",
+        results_manager=rm,
+    )
+
+    rm.save_run_results(
+        params=best_params,
+        metrics=best_stats,
+        metadata={**config, "NOTE": "Best Case from Sensitivity"},
+    )
+    rm.save_vbt_dashboard(best_pf, "best_case_dashboard")
+    print(f"Best Case Results saved to: {rm.run_dir}")
+
+
+def run_sensitivity_orchestrator(
+    config: Dict[str, Any],
+    param_grid: Dict[str, Any],
+    save_results: bool = True,
+    show_progress: bool = True,
+) -> Dict[str, Any]:
+    """Orchestrate a vectorized sensitivity analysis (grid search)."""
+    rm = ResultsManager("run_sensitivity") if save_results else None
+
+    ohlcv, _ = load_data_with_movers(config)
+    param_names = list(param_grid.keys())
+
+    # Execute grid search
+    sharpe_series = _execute_sensitivity_grid(ohlcv, config, param_grid, show_progress)
 
     best_idx = sharpe_series.idxmax()
-    param_names = list(param_grid.keys())
     best_params = _to_native(_extract_params(best_idx, sharpe_series, param_names, param_grid))
 
     results_df = sharpe_series.reset_index()
-    # Clean up column names (remove sf_ prefix from VectorBT)
     results_df.columns = [str(col).replace("sf_", "") for col in results_df.columns[:-1]] + [
         "Sharpe Ratio"
     ]
 
-    # Run best-case backtest for dashboard and return value
-    # Here we WOULD use mover mask if we wanted to be consistent with backtest,
-    # but again, original didn't.
+    # Evaluate best case
     best_engine = FastBacktest(ohlcv, best_params, config=config)
     best_pf = best_engine.run(show_progress=show_progress)
     best_stats = best_engine.get_stats()
 
     if save_results and rm:
-        rm.save_metrics(results_df, "sensitivity_results.csv", save_csv=True)
-        print("\nTop 5 Parameter Combinations:")
-        print(
-            tabulate(
-                results_df.sort_values("Sharpe Ratio", ascending=False).head(5),
-                headers="keys",
-                tablefmt="github",
-            )
+        _save_sensitivity_results(
+            rm, best_pf, best_stats, best_params, results_df, param_names, config
         )
-
-        plot_optimization_landscape(
-            results_df,
-            params_to_plot=param_names,
-            metric_name="Sharpe Ratio",
-            results_manager=rm,
-        )
-
-        rm.save_run_results(
-            params=best_params,
-            metrics=best_stats,
-            metadata={**config, "NOTE": "Best Case from Sensitivity"},
-        )
-        rm.save_vbt_dashboard(best_pf, "best_case_dashboard")
-        print(f"Best Case Results saved to: {rm.run_dir}")
 
     return {
         "portfolio": best_pf,
@@ -246,6 +251,11 @@ def run_sensitivity_orchestrator(
         "best_params": best_params,
         "results_manager": rm,
     }
+
+
+# =============================================================================
+# WFO Helpers & Orchestrator
+# =============================================================================
 
 
 def _process_wfo_fold(
@@ -260,21 +270,17 @@ def _process_wfo_fold(
     param_names: List[str],
 ) -> Dict[str, Any]:
     """Helper to process a single WFO fold (Train & Test)."""
-    # A. IN-SAMPLE
-    train_ohlcv = ohlcv.iloc[train_idx]
-    test_ohlcv = ohlcv.iloc[test_idx]
+    train_ohlcv = ohlcv.loc[train_idx]
+    test_ohlcv = ohlcv.loc[test_idx]
 
-    # Slice mover_mask if exists
-    train_mask = mover_mask.iloc[train_idx] if mover_mask is not None else None
-    test_mask = mover_mask.iloc[test_idx] if mover_mask is not None else None
+    train_mask = mover_mask.loc[train_idx] if mover_mask is not None else None
+    test_mask = mover_mask.loc[test_idx] if mover_mask is not None else None
 
-    # Run optimization on Train
+    # Train
     train_engine = FastBacktest(train_ohlcv, param_grid, config=config, mover_mask=train_mask)
     pf_train = train_engine.run(show_progress=show_progress)
-
     train_metrics = pf_train.sharpe_ratio()
 
-    # Apply filtering by trade count (In-Sample)
     min_trades = config.get("MIN_TRADES", 0)
     if min_trades > 0:
         trade_counts = pf_train.trades.count()
@@ -282,10 +288,15 @@ def _process_wfo_fold(
         if low_trade_mask.any():
             train_metrics[low_trade_mask] = np.nan
 
-    best_param_idx = train_metrics.idxmax()
+    if train_metrics.isnull().all():
+        print(f"  WARNING: Fold {fold_idx} - All param combos rejected (likely low trades).")
+        best_param_idx = train_metrics.index[0]
+    else:
+        best_param_idx = train_metrics.idxmax()
+
     fold_best_params = _extract_params(best_param_idx, train_metrics, param_names, param_grid)
 
-    # B. OUT-OF-SAMPLE
+    # Test
     test_engine = FastBacktest(test_ohlcv, fold_best_params, config=config, mover_mask=test_mask)
     pf_test = test_engine.run(show_progress=show_progress)
 
@@ -302,7 +313,7 @@ def _process_wfo_fold(
         "start_capital": _to_native(pf_test.init_cash.sum()),
         "end_capital": _to_native(pf_test.value().iloc[-1].sum()),
         "return_pct": _to_native(pf_test.total_return().mean() * 100),
-        "train_metrics": train_metrics,  # Needed for robustness
+        "train_metrics": train_metrics,
         "oos_returns": pf_test.returns(),
     }
 
@@ -319,6 +330,7 @@ def _calculate_robustness(
 
     top_robust_idx = robustness_scores.sort_values(ascending=False).head(5)
     robust_top_5 = []
+
     for idx, score in top_robust_idx.items():
         extracted = _extract_params(idx, robustness_scores, param_names, param_grid)
         robust_top_5.append(
@@ -329,42 +341,53 @@ def _calculate_robustness(
     return robust_top_5, best_robust_params
 
 
-def run_wfo_orchestrator(
-    config: Dict[str, Any],
+def _calculate_wfo_bounds(
+    total_len: int, n_splits: int, test_ratio: float
+) -> List[Tuple[int, int, int, int]]:
+    """Calculates exact integer index boundaries for WFO splits."""
+    test_len = int(total_len / (test_ratio + n_splits))
+    train_len = int(test_len * test_ratio)
+    bounds = []
+
+    for i in range(n_splits):
+        start_idx = i * test_len
+        train_end_idx = start_idx + train_len
+        test_start_idx = train_end_idx
+        test_end_idx = test_start_idx + test_len
+
+        if i == n_splits - 1:
+            test_end_idx = total_len
+
+        bounds.append((start_idx, train_end_idx, test_start_idx, test_end_idx))
+
+    return bounds
+
+
+def _execute_wfo_loop(
+    ohlcv: pd.DataFrame,
+    mover_mask: Optional[pd.DataFrame],
     param_grid: Dict[str, Any],
-    save_results: bool = True,
-    show_progress: bool = True,
-) -> Dict[str, Any]:
-    """
-    Orchestrate Walk-Forward Optimization with Robustness-First selection.
-    """
-    rm = ResultsManager("run_wfo") if save_results else None
-
-    ohlcv, mover_mask = load_data_with_movers(config)
-
-    # 1. Setup Splits
-    tscv, _, _ = make_end_anchored_tscv(
-        n_samples=len(ohlcv),
-        n_splits=config["N_SPLITS"],
-        test_ratio=config["TEST_RATIO"],
-    )
-
-    if save_results and rm:
-        fig, ax = plt.subplots(figsize=(12, 4))
-        plot_cv_indices(tscv, ohlcv.index, ax, config["N_SPLITS"])
-        rm.save_plot(fig, "wfo_splits.png")
-        plt.close(fig)
-
+    config: Dict[str, Any],
+    param_names: List[str],
+    n_splits: int,
+    test_ratio: float,
+    show_progress: bool,
+) -> Tuple[List[Dict[str, Any]], Dict[int, pd.Series], List[pd.Series]]:
+    """Iterates through the dataset and processes each WFO fold."""
     wfo_stats = []
-    oos_returns_list = []
     is_metrics_by_fold = {}
-    param_names = list(param_grid.keys())
+    oos_returns_list = []
 
-    print(f"Starting WFO Loop ({config['N_SPLITS']} splits)...")
+    bounds = _calculate_wfo_bounds(len(ohlcv), n_splits, test_ratio)
 
-    for i, (train_idx, test_idx) in enumerate(tscv.split(ohlcv.index), 1):
+    for i, (tr_start, tr_end, te_start, te_end) in enumerate(bounds):
+        fold_idx = i + 1
+
+        train_idx = ohlcv.index[tr_start:tr_end]
+        test_idx = ohlcv.index[te_start:te_end]
+
         fold_result = _process_wfo_fold(
-            i,
+            fold_idx,
             train_idx,
             test_idx,
             ohlcv,
@@ -375,44 +398,93 @@ def run_wfo_orchestrator(
             param_names,
         )
 
-        # Unpack extras we need
-        is_metrics_by_fold[i] = fold_result.pop("train_metrics")
+        is_metrics_by_fold[fold_idx] = fold_result.pop("train_metrics")
         oos_returns_list.append(fold_result.pop("oos_returns"))
-
         wfo_stats.append(fold_result)
-        print(f"  > Fold {i} Complete.")
 
-    # 2. Robustness Analysis
+        print(f"  > Fold {fold_idx} Complete.")
+
+    return wfo_stats, is_metrics_by_fold, oos_returns_list
+
+
+def _save_wfo_results(
+    rm: Any,
+    final_pf: Any,
+    final_stats: Dict[str, Any],
+    best_robust_params: Dict[str, Any],
+    best_recent_params: Dict[str, Any],
+    robust_top_5: List[Dict[str, Any]],
+    wfo_stats: List[Dict[str, Any]],
+    config: Dict[str, Any],
+) -> None:
+    """Handles persistence of metrics, parameters, and VectorBT dashboards."""
+    rm.save_metrics(pd.DataFrame(wfo_stats), "wfo_results.csv")
+
+    metadata = {
+        **config,
+        "wfo_fold_results": wfo_stats,
+        "robustness_summary": {
+            "top_robust": robust_top_5,
+            "recent_vs_robust": {
+                "recent": best_recent_params,
+                "robust": best_robust_params,
+                "is_equal": best_recent_params == best_robust_params,
+            },
+        },
+    }
+
+    rm.save_run_results(
+        params=best_robust_params,
+        metrics=_to_native(final_stats),
+        metadata=_to_native(metadata),
+    )
+    rm.save_vbt_dashboard(final_pf, "final_robust_model_dashboard")
+    print(f"WFO Results saved to: {rm.run_dir}")
+
+
+def run_wfo_orchestrator(
+    config: Dict[str, Any],
+    param_grid: Dict[str, Any],
+    save_results: bool = True,
+    show_progress: bool = True,
+) -> Dict[str, Any]:
+    """Central orchestration function for Walk-Forward Optimization."""
+    rm = ResultsManager("run_wfo") if save_results else None
+    from ggTrader.utils.plotting import plot_wfo_splits
+
+    ohlcv, mover_mask = load_data_with_movers(config)
+    n_splits = config.get("N_SPLITS", 5)
+    test_ratio = config.get("TEST_RATIO", 3.0)
+    param_names = list(param_grid.keys())
+
+    print(f"Starting WFO Loop ({n_splits} splits, Ratio: {test_ratio}:1)...")
+
+    plot_wfo_splits(ohlcv, n_splits, test_ratio, results_manager=rm)
+
+    wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
+        ohlcv, mover_mask, param_grid, config, param_names, n_splits, test_ratio, show_progress
+    )
+
     robust_top_5, best_robust_params = _calculate_robustness(
         is_metrics_by_fold, param_names, param_grid
     )
     best_recent_params = wfo_stats[-1]["params"]
 
-    # 3. Final Model & Persistence
     final_engine = FastBacktest(ohlcv, best_robust_params, config=config, mover_mask=mover_mask)
     final_pf = final_engine.run(show_progress=show_progress)
     final_stats = final_engine.get_stats()
 
     if save_results and rm:
-        rm.save_metrics(pd.DataFrame(wfo_stats), "wfo_results.csv")
-        rm.save_run_results(
-            params=best_robust_params,
-            metrics=final_stats,
-            metadata={
-                **config,
-                "wfo_fold_results": wfo_stats,
-                "robustness_summary": {
-                    "top_robust": robust_top_5,
-                    "recent_vs_robust": {
-                        "recent": best_recent_params,
-                        "robust": best_robust_params,
-                        "is_equal": best_recent_params == best_robust_params,
-                    },
-                },
-            },
+        _save_wfo_results(
+            rm,
+            final_pf,
+            final_stats,
+            best_robust_params,
+            best_recent_params,
+            robust_top_5,
+            wfo_stats,
+            config,
         )
-        rm.save_vbt_dashboard(final_pf, "final_robust_model_dashboard")
-        print(f"WFO Results saved to: {rm.run_dir}")
 
     return {
         "final_portfolio": final_pf,

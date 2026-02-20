@@ -3,20 +3,20 @@
 import pandas as pd
 from tabulate import tabulate
 
-from ggTrader.data.kraken.data_manager import KrakenData
-from ggTrader.data.kraken.historical_data import KrakenHistoricalData
+from ggTrader.data.live.exchange_loader import LiveExchangeLoader
+from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
 
 
 class Screener:
 
     def __init__(self) -> None:
-        self.k_data = KrakenData()
-        self.k_hdata = KrakenHistoricalData()
+        self.live_loader = LiveExchangeLoader(exchange_id="kraken")
+        self.hist_loader = TimescaleDBLoader()
 
     def get_daily_top_kraken_by_volume(self, top_n: int = 25) -> pd.DataFrame:
         """Fetch the current daily top movers by USD volume from ccxt."""
-        return self.k_data.top_kraken_by_volume(
-            limit=top_n, only_usd=True, exclude_stables=True, verbose=False
+        return self.live_loader.get_top_by_volume(
+            limit=top_n, quote="USD", exclude_stables=True, verbose=False
         )
 
     def print_top_kraken_by_volume(self, top_n: int = 25) -> None:
@@ -28,11 +28,17 @@ class Screener:
         self, date: pd.Timestamp, top_n: int = 25
     ) -> pd.DataFrame:
         """Fetch historical daily movers for a specific date."""
-        return self.k_hdata.get_historical_movers_by_day(date, top_n=top_n)
+        mask = self.hist_loader.get_daily_mover_mask(start=date, end=date, top_n=top_n)
+        if mask.empty:
+            return pd.DataFrame()
 
-    def print_historical_daily_kraken_by_volume(
-        self, date: pd.Timestamp, top_n: int = 25
-    ) -> None:
+        # Safely extract from index
+        if date in mask.index:
+            symbols = mask.columns[mask.loc[date]].tolist()
+            return pd.DataFrame({"symbol": symbols})
+        return pd.DataFrame()
+
+    def print_historical_daily_kraken_by_volume(self, date: pd.Timestamp, top_n: int = 25) -> None:
         """Print historical daily movers table for a specific date."""
         top_daily = self.get_historical_daily_kraken_by_volume(date, top_n=top_n)
         print(tabulate(top_daily, headers="keys", tablefmt="github"))

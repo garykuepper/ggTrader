@@ -6,6 +6,7 @@ from pathlib import Path
 import csv
 from sqlalchemy import create_engine, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert, JSONB
+from typing import Any
 from ggTrader.utils.config import get_db_connection_string
 
 
@@ -143,6 +144,21 @@ class ResultDBManager:
                 )
             )
 
+    def _safe_json_dumps(self, obj: Any) -> str:
+        """JSON dumps that ensures NaNs and Infs are converted to null."""
+
+        def clean_obj(v):
+            if isinstance(v, float):
+                if v != v or v == float("inf") or v == float("-inf"):
+                    return None
+            elif isinstance(v, dict):
+                return {k: clean_obj(v2) for k, v2 in v.items()}
+            elif isinstance(v, (list, tuple)):
+                return [clean_obj(v2) for v2 in v]
+            return v
+
+        return json.dumps(clean_obj(obj))
+
     def _init_log(self):
         """Initializes the CSV log file if it doesn't exist."""
         # Check if file exists to decide if we need header
@@ -201,34 +217,38 @@ class ResultDBManager:
         query = text(
             """
             INSERT INTO runs (
-                run_id, run_type, timestamp, script_name, parameters, metadata,
-                sharpe, sortino, total_profit, start_date, end_date, interval
+                "run_id", "run_type", "timestamp", "script_name", "parameters", "metadata",
+                "sharpe", "sortino", "total_profit", "start_date", "end_date", "interval"
             )
             VALUES (
-                :run_id, :run_type, :timestamp, :script_name, :parameters, :metadata,
-                :sharpe, :sortino, :total_profit, :start_date, :end_date, :interval
+                :rid, :rtype, :ts, :sname, :params, :meta,
+                :sr, :sort, :prof, :sdate, :edate, :inter
             )
         """
         )
 
-        with self.engine.begin() as conn:
-            conn.execute(
-                query,
-                {
-                    "run_id": run_id,
-                    "run_type": run_type,
-                    "timestamp": timestamp,
-                    "script_name": script_name,
-                    "parameters": json.dumps(parameters),
-                    "metadata": json.dumps(meta),
-                    "sharpe": sharpe,
-                    "sortino": sortino,
-                    "total_profit": total_profit,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "interval": interval,
-                },
-            )
+        bind_params = {
+            "rid": run_id,
+            "rtype": run_type,
+            "ts": timestamp,
+            "sname": script_name,
+            "params": self._safe_json_dumps(parameters),
+            "meta": self._safe_json_dumps(meta),
+            "sr": sharpe,
+            "sort": sortino,
+            "prof": total_profit,
+            "sdate": start_date,
+            "edate": end_date,
+            "inter": interval,
+        }
+
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(query, bind_params)
+        except Exception as e:
+            print(f"WARNING: Could not save run results to DB: {e}")
+            # Optionally print keys to check for missing binds
+            # print(f"Available keys: {list(bind_params.keys())}")
 
         # Append to CSV Log
         self._append_to_log(
@@ -287,7 +307,7 @@ class ResultDBManager:
 
         records = []
         for i, row in df_res.iterrows():
-            params_json = json.dumps(row["params"])
+            params_json = self._safe_json_dumps(row["params"])
             records.append(
                 {
                     "run_id": run_id,
@@ -445,8 +465,8 @@ class ResultDBManager:
                 query,
                 {
                     "study_hash": study_hash,
-                    "params": json.dumps(params),
-                    "result": json.dumps(result),
+                    "params": self._safe_json_dumps(params),
+                    "result": self._safe_json_dumps(result),
                     "timestamp": timestamp,
                 },
             )

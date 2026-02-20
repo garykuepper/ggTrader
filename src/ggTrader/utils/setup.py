@@ -1,11 +1,11 @@
 import pandas as pd
-from ggTrader.data.kraken.historical_data import KrakenHistoricalData
+from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
 from ggTrader.utils.config import load_symbols_from_json
 
 
 def load_data_and_setup(config: dict) -> pd.DataFrame:
     """
-    Loads symbols and fetches 4h OHLCV data from KrakenHistoricalData.
+    Loads symbols and fetches 4h OHLCV data from TimescaleDBLoader.
 
     Args:
         config (dict): Configuration dictionary containing:
@@ -31,13 +31,13 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
     if not symbols:
         raise ValueError("No symbols provided or symbols list is empty.")
 
-    k_h = KrakenHistoricalData()
+    loader = TimescaleDBLoader()
 
-    ohlcv_df = k_h.get_ohlcv_df(
-        symbols,
+    ohlcv_df = loader.fetch_ohlcv(
+        symbols=symbols,
         interval=config["INTERVAL"],
-        start=pd.to_datetime(config["START_DATE"]).tz_localize("UTC"),
-        end=pd.to_datetime(config["END_DATE"]).tz_localize("UTC"),
+        start_date=pd.to_datetime(config["START_DATE"]).tz_localize("UTC"),
+        end_date=pd.to_datetime(config["END_DATE"]).tz_localize("UTC"),
     )
 
     if ohlcv_df.empty:
@@ -65,8 +65,8 @@ def build_mover_mask(
     start = pd.to_datetime(config["START_DATE"]).tz_localize("UTC")
     end = pd.to_datetime(config["END_DATE"]).tz_localize("UTC")
 
-    k_h = KrakenHistoricalData()
-    daily_mask = k_h.get_daily_mover_mask(start=start, end=end, top_n=top_n)
+    loader = TimescaleDBLoader()
+    daily_mask = loader.get_daily_mover_mask(start=start, end=end, top_n=top_n)
 
     if daily_mask.empty:
         raise ValueError("No mover data returned from the database.")

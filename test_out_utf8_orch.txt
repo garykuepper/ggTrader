@@ -1,0 +1,132 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\gkuep\PycharmProjects\ggTrader
+configfile: pyproject.toml
+plugins: anyio-4.12.1, cov-7.0.0, timeout-2.4.0
+collecting ... collected 3 items
+
+tests/test_orchestrator.py::test_run_backtest_orchestrator PASSED        [ 33%]
+tests/test_orchestrator.py::test_run_sensitivity_orchestrator PASSED     [ 66%]
+tests/test_orchestrator.py::test_run_wfo_orchestrator FAILED             [100%]
+
+================================== FAILURES ===================================
+__________________________ test_run_wfo_orchestrator __________________________
+
+mock_rm = <MagicMock name='ResultsManager' id='1773997059312'>
+mock_load = <MagicMock name='load_data_with_movers' id='1776426234416'>
+mock_ohlcv = symbol                    BTC                              
+field                    open      high       low     clos...39471  0.311053  0.370286  0.193998
+2023-01-17 12:00:00  0.274676  0.346547  0.494081  0.830878
+
+[100 rows x 4 columns]
+
+    @patch("ggTrader.core.orchestrator.load_data_with_movers")
+    @patch("ggTrader.core.orchestrator.ResultsManager")
+    def test_run_wfo_orchestrator(mock_rm, mock_load, mock_ohlcv):
+        mock_load.return_value = (mock_ohlcv, None)
+    
+        config = {
+            "WINDOW_LEN": 50,
+            "SET_LENS": [25, 25],
+            "USE_MOVERS": 0,
+            "START_CASH": 10000,
+            "FEES": 0.001,
+            "SLIPPAGE": 0.001,
+            "FREQ": "4h",
+        }
+        # Provide multiple thresholds
+        param_grid = {"adx_threshold": [20, 25]}
+    
+>       res = run_wfo_orchestrator(config, param_grid, save_results=False)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_orchestrator.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\ggTrader\core\orchestrator.py:360: in run_wfo_orchestrator
+    split_obj = single_close.vbt.rolling_split(
+..\..\AppData\Roaming\Python\Python314\site-packages\vectorbt\generic\accessors.py:1564: in rolling_split
+    return self.split(RollingSplitter(), **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\Python\Python314\site-packages\vectorbt\generic\accessors.py:1390: in split
+    set_ranges = list(splitter.split(total_range_sr, **kwargs))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+start_idxs = array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
+       17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+       34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50])
+end_idxs = array([49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
+       66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82,
+       83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99])
+set_lens = [25, 25], left_to_right = False
+
+    def split_ranges_into_sets(start_idxs: tp.ArrayLike,
+                               end_idxs: tp.ArrayLike,
+                               set_lens: tp.MaybeSequence[tp.Sequence[float]] = (),
+                               left_to_right: tp.MaybeSequence[bool] = True) -> RangesT:
+        """Generate ranges between each in `start_idxs` and `end_idxs` and
+        optionally split into one or more sets.
+    
+        Args:
+            start_idxs (array_like): Start indices.
+            end_idxs (array_like): End indices.
+            set_lens (list of float): Lengths of sets in each range.
+    
+                The number of returned sets is the length of `set_lens` plus one,
+                which stores the remaining elements.
+    
+                Can be passed per range.
+            left_to_right (bool or list of bool): Whether to resolve `set_lens` from left to right.
+    
+                Makes the last set variable, otherwise makes the first set variable.
+    
+                Can be passed per range.
+    
+        Usage:
+            * `set_lens=(0.5)`: 50% in training set, the rest in test set
+            * `set_lens=(0.5, 0.25)`: 50% in training set, 25% in validation set, the rest in test set
+            * `set_lens=(50, 30)`: 50 in training set, 30 in validation set, the rest in test set
+            * `set_lens=(50, 30)` and `left_to_right=False`: 30 in test set, 50 in validation set,
+                the rest in training set
+        """
+        start_idxs = np.asarray(start_idxs)
+        end_idxs = np.asarray(end_idxs)
+        checks.assert_len_equal(start_idxs, end_idxs)
+    
+        for i in range(len(start_idxs)):
+            start_idx = start_idxs[i]
+            end_idx = end_idxs[i]
+    
+            range_len = end_idx - start_idx + 1
+            new_set_lens = []
+            if len(set_lens) == 0:
+                yield (np.arange(start_idx, end_idx + 1),)
+            else:
+                if checks.is_sequence(set_lens[0]):
+                    _set_lens = set_lens[i]
+                else:
+                    _set_lens = set_lens
+                if checks.is_sequence(left_to_right):
+                    _left_to_right = left_to_right[i]
+                else:
+                    _left_to_right = left_to_right
+                for j, set_len in enumerate(_set_lens):
+                    if 0 < set_len < 1:
+                        set_len = math.floor(set_len * range_len)
+                    if set_len == 0:
+                        raise ValueError(f"Set {j} in the range {i} is empty")
+                    new_set_lens.append(set_len)
+                if sum(new_set_lens) < range_len:
+                    if _left_to_right:
+                        new_set_lens = new_set_lens + [range_len - sum(new_set_lens)]
+                    else:
+                        new_set_lens = [range_len - sum(new_set_lens)] + new_set_lens
+                else:
+>                   raise ValueError(f"Range of length {range_len} too short to split into {len(_set_lens) + 1} sets")
+E                   ValueError: Range of length 50 too short to split into 3 sets
+
+..\..\AppData\Roaming\Python\Python314\site-packages\vectorbt\generic\splitters.py:83: ValueError
+=========================== short test summary info ===========================
+FAILED tests/test_orchestrator.py::test_run_wfo_orchestrator - ValueError: Ra...
+======================== 1 failed, 2 passed in 15.45s =========================

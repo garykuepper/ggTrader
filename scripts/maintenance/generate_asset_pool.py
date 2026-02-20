@@ -10,8 +10,8 @@ import pandas as pd
 # Ensure project root is in path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
 
-from ggTrader.data.kraken.constants import SYMBOL_MAPPING
-from ggTrader.data.kraken.historical_data import KrakenHistoricalData
+from ggTrader.data.core.constants import SYMBOL_MAPPING
+from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
 
 
 def main():
@@ -46,8 +46,8 @@ def main():
     print(f"Target Pool Size: {args.n}")
     print(f"Trades Threshold: {args.threshold}")
 
-    kh = KrakenHistoricalData()
-    df = kh.reader.get_consistent_movers(
+    loader = TimescaleDBLoader()
+    df = loader.get_consistent_movers(
         start_date=args.start_date,
         end_date=args.end_date,
         daily_top_n=args.daily_n,
@@ -82,8 +82,9 @@ def main():
             }
         )
 
-    # Ensure directory exists
-    output_path = os.path.abspath(os.path.join(kh.root_dir, args.output))
+    # Ensure directory exists relative to project root (where this script is 2 levels deep)
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    output_path = os.path.abspath(os.path.join(project_root, args.output))
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     with open(output_path, "w") as f:

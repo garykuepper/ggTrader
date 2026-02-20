@@ -21,9 +21,9 @@ def mock_ohlcv():
     return df
 
 
-@patch("ggTrader.utils.setup.KrakenHistoricalData")
+@patch("ggTrader.utils.setup.TimescaleDBLoader")
 def test_load_data_and_setup(mock_hdata, mock_ohlcv):
-    mock_hdata.return_value.get_ohlcv_df.return_value = mock_ohlcv
+    mock_hdata.return_value.fetch_ohlcv.return_value = mock_ohlcv
 
     config = {
         "SYMBOLS": ["BTC"],
@@ -37,7 +37,7 @@ def test_load_data_and_setup(mock_hdata, mock_ohlcv):
     assert "BTC" in df.columns.levels[0]
 
 
-@patch("ggTrader.utils.setup.KrakenHistoricalData")
+@patch("ggTrader.utils.setup.TimescaleDBLoader")
 def test_build_mover_mask(mock_hdata, mock_ohlcv):
     # Mock daily mover mask (only dates, no intraday)
     daily_idx = pd.date_range("2023-01-01", periods=2, freq="1d").tz_localize("UTC")

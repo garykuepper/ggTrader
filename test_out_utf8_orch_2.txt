@@ -1,0 +1,189 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\gkuep\PycharmProjects\ggTrader
+configfile: pyproject.toml
+plugins: anyio-4.12.1, cov-7.0.0, timeout-2.4.0
+collecting ... collected 3 items
+
+tests/test_orchestrator.py::test_run_backtest_orchestrator PASSED        [ 33%]
+tests/test_orchestrator.py::test_run_sensitivity_orchestrator PASSED     [ 66%]
+tests/test_orchestrator.py::test_run_wfo_orchestrator FAILED             [100%]
+
+================================== FAILURES ===================================
+__________________________ test_run_wfo_orchestrator __________________________
+
+self = <pandas.core.indexing._iLocIndexer object at 0x00000129C2732450>
+key = array(['2023-01-01T00:00:00.000000000', '2023-01-01T04:00:00.000000000',
+       '2023-01-01T08:00:00.000000000', '2023...T16:00:00.000000000', '2023-01-04T20:00:00.000000000',
+       '2023-01-05T00:00:00.000000000'], dtype='datetime64[ns]')
+axis = 0
+
+    def _get_list_axis(self, key, axis: AxisInt):
+        """
+        Return Series values by list or array of integers.
+    
+        Parameters
+        ----------
+        key : list-like positional indexer
+        axis : int
+    
+        Returns
+        -------
+        Series object
+    
+        Notes
+        -----
+        `axis` can only be zero.
+        """
+        try:
+>           return self.obj._take_with_is_copy(key, axis=axis)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\..\AppData\Roaming\Python\Python314\site-packages\pandas\core\indexing.py:1715: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\AppData\Roaming\Python\Python314\site-packages\pandas\core\generic.py:4175: in _take_with_is_copy
+    result = self.take(indices=indices, axis=axis)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\Python\Python314\site-packages\pandas\core\generic.py:4155: in take
+    new_data = self._mgr.take(
+..\..\AppData\Roaming\Python\Python314\site-packages\pandas\core\internals\managers.py:910: in take
+    indexer = maybe_convert_indices(indexer, n, verify=verify)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+indices = array([1672531200000000000, 1672545600000000000, 1672560000000000000,
+       1672574400000000000, 1672588800000000000,...1672819200000000000,
+       1672833600000000000, 1672848000000000000, 1672862400000000000,
+       1672876800000000000])
+n = 100, verify = True
+
+    def maybe_convert_indices(indices, n: int, verify: bool = True) -> np.ndarray:
+        """
+        Attempt to convert indices into valid, positive indices.
+    
+        If we have negative indices, translate to positive here.
+        If we have indices that are out-of-bounds, raise an IndexError.
+    
+        Parameters
+        ----------
+        indices : array-like
+            Array of indices that we are to convert.
+        n : int
+            Number of elements in the array that we are indexing.
+        verify : bool, default True
+            Check that all entries are between 0 and n - 1, inclusive.
+    
+        Returns
+        -------
+        array-like
+            An array-like of positive indices that correspond to the ones
+            that were passed in initially to this function.
+    
+        Raises
+        ------
+        IndexError
+            One of the converted indices either exceeded the number of,
+            elements (specified by `n`), or was still negative.
+        """
+        if isinstance(indices, list):
+            indices = np.array(indices)
+            if len(indices) == 0:
+                # If `indices` is empty, np.array will return a float,
+                # and will cause indexing errors.
+                return np.empty(0, dtype=np.intp)
+    
+        mask = indices < 0
+        if mask.any():
+            indices = indices.copy()
+            indices[mask] += n
+    
+        if verify:
+            mask = (indices >= n) | (indices < 0)
+            if mask.any():
+>               raise IndexError("indices are out-of-bounds")
+E               IndexError: indices are out-of-bounds
+
+..\..\AppData\Roaming\Python\Python314\site-packages\pandas\core\indexers\utils.py:282: IndexError
+
+The above exception was the direct cause of the following exception:
+
+mock_rm = <MagicMock name='ResultsManager' id='1277037571312'>
+mock_load = <MagicMock name='load_data_with_movers' id='1278862045744'>
+mock_ohlcv = symbol                    BTC                              
+field                    open      high       low     clos...39151  0.598540  0.305519  0.165304
+2023-01-17 12:00:00  0.565262  0.830817  0.130451  0.441333
+
+[100 rows x 4 columns]
+
+    @patch("ggTrader.core.orchestrator.load_data_with_movers")
+    @patch("ggTrader.core.orchestrator.ResultsManager")
+    def test_run_wfo_orchestrator(mock_rm, mock_load, mock_ohlcv):
+        mock_load.return_value = (mock_ohlcv, None)
+    
+        config = {
+            "WINDOW_LEN": 50,
+            "SET_LENS": [25],  # 25 test, 25 train
+            "USE_MOVERS": 0,
+            "START_CASH": 10000,
+            "FEES": 0.001,
+            "SLIPPAGE": 0.001,
+            "FREQ": "4h",
+        }
+        # Provide multiple thresholds
+        param_grid = {"adx_threshold": [20, 25]}
+    
+>       res = run_wfo_orchestrator(config, param_grid, save_results=False)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_orchestrator.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\ggTrader\core\orchestrator.py:403: in run_wfo_orchestrator
+    fold_result = _process_wfo_fold(
+src\ggTrader\core\orchestrator.py:264: in _process_wfo_fold
+    train_ohlcv = ohlcv.iloc[train_idx]
+                  ^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\Python\Python314\site-packages\pandas\core\indexing.py:1192: in __getitem__
+    return self._getitem_axis(maybe_callable, axis=axis)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Roaming\Python\Python314\site-packages\pandas\core\indexing.py:1744: in _getitem_axis
+    return self._get_list_axis(key, axis=axis)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pandas.core.indexing._iLocIndexer object at 0x00000129C2732450>
+key = array(['2023-01-01T00:00:00.000000000', '2023-01-01T04:00:00.000000000',
+       '2023-01-01T08:00:00.000000000', '2023...T16:00:00.000000000', '2023-01-04T20:00:00.000000000',
+       '2023-01-05T00:00:00.000000000'], dtype='datetime64[ns]')
+axis = 0
+
+    def _get_list_axis(self, key, axis: AxisInt):
+        """
+        Return Series values by list or array of integers.
+    
+        Parameters
+        ----------
+        key : list-like positional indexer
+        axis : int
+    
+        Returns
+        -------
+        Series object
+    
+        Notes
+        -----
+        `axis` can only be zero.
+        """
+        try:
+            return self.obj._take_with_is_copy(key, axis=axis)
+        except IndexError as err:
+            # re-raise with different error message, e.g. test_getitem_ndarray_3d
+>           raise IndexError("positional indexers are out-of-bounds") from err
+E           IndexError: positional indexers are out-of-bounds
+
+..\..\AppData\Roaming\Python\Python314\site-packages\pandas\core\indexing.py:1718: IndexError
+---------------------------- Captured stdout call -----------------------------
+Starting VBT WFO Loop (51 splits)...
+=========================== short test summary info ===========================
+FAILED tests/test_orchestrator.py::test_run_wfo_orchestrator - IndexError: po...
+======================== 1 failed, 2 passed in 16.33s =========================

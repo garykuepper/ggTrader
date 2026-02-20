@@ -4,7 +4,7 @@ import os
 # Add src to python path
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-from ggTrader.data.kraken.postgres_ingestor import KrakenPostgresIngestor
+from ggTrader.data.historical.postgres_ingestor import PostgresIngestor
 
 # We need to find where CONSTANTS are defined.
 # Based on previous context, it might be in ggTrader.core.constants or data.kraken.historical_data
@@ -20,7 +20,7 @@ POSTGRES_CONNECTION_STRING = os.getenv(
 
 def clear_db():
     print("Connecting to database...")
-    ingestor = KrakenPostgresIngestor(POSTGRES_CONNECTION_STRING)
+    ingestor = PostgresIngestor(POSTGRES_CONNECTION_STRING)
     print("Truncating ohlcv table...")
     with ingestor.engine.connect() as conn:
         conn.execute(text("TRUNCATE TABLE ohlcv;"))

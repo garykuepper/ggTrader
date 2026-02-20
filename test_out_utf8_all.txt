@@ -1,0 +1,136 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\gkuep\PycharmProjects\ggTrader
+configfile: pyproject.toml
+plugins: anyio-4.12.1, cov-7.0.0, timeout-2.4.0
+collected 43 items
+
+tests\test_broadcasting.py .                                             [  2%]
+tests\test_data_kraken.py ..                                             [  6%]
+tests\test_fast_backtest.py ...                                          [ 13%]
+tests\test_fast_backtest_fix.py .                                        [ 16%]
+tests\test_orchestrator.py ..F                                           [ 23%]
+tests\test_portfolio_position.py ..........                              [ 46%]
+tests\test_refactor_verification.py ...                                  [ 53%]
+tests\test_screener.py ..                                                [ 58%]
+tests\test_signals.py ....                                               [ 67%]
+tests\test_trading.py ....                                               [ 76%]
+tests\test_utils_general.py ...                                          [ 83%]
+tests\test_utils_managers.py ...                                         [ 90%]
+tests\test_utils_plotting.py .                                           [ 93%]
+tests\test_utils_setup.py ..                                             [ 97%]
+tests\test_vbt_patches.py .                                              [100%]
+
+================================== FAILURES ===================================
+__________________________ test_run_wfo_orchestrator __________________________
+
+args = ()
+keywargs = {'mock_ohlcv': symbol                    BTC                              
+field                    open      high    ...8648  0.459195  0.703868  0.057953
+2023-01-17 12:00:00  0.769710  0.538495  0.496281  0.980835
+
+[100 rows x 4 columns]}
+
+    @wraps(func)
+    def patched(*args, **keywargs):
+>       with self.decoration_helper(patched,
+                                    args,
+                                    keywargs) as (newargs, newkeywargs):
+
+C:\Python314\Lib\unittest\mock.py:1429: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Python314\Lib\contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1411: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\contextlib.py:530: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+C:\Python314\Lib\unittest\mock.py:1503: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <unittest.mock._patch object at 0x000001A2A88A8F30>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'ggTrader.core.orchestrator' from 'C:\\Users\\gkuep\\PycharmProjects\\ggTrader\\src\\ggTrader\\core\\orchestrator.py'> does not have the attribute 'make_end_anchored_tscv'
+
+C:\Python314\Lib\unittest\mock.py:1473: AttributeError
+============================== warnings summary ===============================
+tests/test_portfolio_position.py::test_add_position_applies_entry_fee_and_updates_cash_and_fee_totals
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:120: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/test_portfolio_position.py::test_close_position_applies_exit_fee_and_updates_realized_and_cash
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:142: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/test_portfolio_position.py::test_close_position_applies_exit_fee_and_updates_realized_and_cash
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:149: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/test_portfolio_position.py::test_unrealized_profit_is_net_of_entry_fee_for_open_positions
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:173: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/test_portfolio_position.py::test_reconcile_invariant_holds_after_multiple_trades
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:191: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/test_portfolio_position.py::test_reconcile_invariant_holds_after_multiple_trades
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:194: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/test_portfolio_position.py::test_reconcile_invariant_holds_after_multiple_trades
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:202: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/test_portfolio_position.py::test_profit_and_profit_pct_consistency
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:223: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/test_portfolio_position.py::test_zero_qty_or_zero_price_positions_behave_safely
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:239: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/test_portfolio_position.py::test_zero_qty_or_zero_price_positions_behave_safely
+  C:\Users\gkuep\PycharmProjects\ggTrader\tests\test_portfolio_position.py:247: DeprecationWarning:
+  
+  datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_orchestrator.py::test_run_wfo_orchestrator - AttributeError...
+================= 1 failed, 42 passed, 10 warnings in 22.91s ==================

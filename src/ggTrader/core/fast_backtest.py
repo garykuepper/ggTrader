@@ -126,7 +126,7 @@ class FastBacktest:
     def _apply_mover_mask(self, entries: pd.DataFrame) -> pd.DataFrame:
         """Applies the mover mask to filter entries."""
         # Align mover_mask with entries (Broadcast if MultiIndex)
-        m_mask, _ = vbt.broadcast(self.mover_mask, entries)
+        m_mask = self.mover_mask.vbt.broadcast_to(entries)
         # We don't strictly NEED to mask exits as the stop logic handles it,
         # but masking entries ensures no new trades start for non-movers.
         return entries & m_mask

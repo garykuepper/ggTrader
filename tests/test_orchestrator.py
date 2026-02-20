@@ -73,17 +73,12 @@ def test_run_sensitivity_orchestrator(mock_rm, mock_load, mock_ohlcv):
 
 @patch("ggTrader.core.orchestrator.load_data_with_movers")
 @patch("ggTrader.core.orchestrator.ResultsManager")
-@patch("ggTrader.core.orchestrator.make_end_anchored_tscv")
-def test_run_wfo_orchestrator(mock_tscv, mock_rm, mock_load, mock_ohlcv):
+def test_run_wfo_orchestrator(mock_rm, mock_load, mock_ohlcv):
     mock_load.return_value = (mock_ohlcv, None)
 
-    mock_splitter = MagicMock()
-    mock_splitter.split.return_value = [(np.arange(50), np.arange(50, 100))]
-    mock_tscv.return_value = (mock_splitter, None, None)
-
     config = {
-        "N_SPLITS": 1,
-        "TEST_RATIO": 0.5,
+        "WINDOW_LEN": 50,
+        "SET_LENS": [25],  # 25 test, 25 train
         "USE_MOVERS": 0,
         "START_CASH": 10000,
         "FEES": 0.001,
@@ -95,5 +90,5 @@ def test_run_wfo_orchestrator(mock_tscv, mock_rm, mock_load, mock_ohlcv):
 
     res = run_wfo_orchestrator(config, param_grid, save_results=False)
 
-    assert len(res["wfo_stats"]) == 1
+    assert len(res["wfo_stats"]) >= 1
     assert "best_robust_params" in res

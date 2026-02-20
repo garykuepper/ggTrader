@@ -1,0 +1,10 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\gkuep\PycharmProjects\ggTrader
+configfile: pyproject.toml
+plugins: anyio-4.12.1, cov-7.0.0, timeout-2.4.0
+collected 3 items
+
+tests\test_utils_general.py ...                                          [100%]
+
+============================== 3 passed in 3.99s ==============================
