@@ -38,7 +38,7 @@ CONSTANTS = {
     "N_SPLITS": 5,
     "TEST_RATIO": 2,
     # Minimum trades to accept a result in optimization
-    "MIN_TRADES": 10,
+    "MIN_TRADES": 5,
     # Memory optimization: process in chunks of N parameter combinations
     "CHUNK_SIZE": 500,
     # Strategy parameters

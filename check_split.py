@@ -1,1 +1,0 @@
-﻿import pandas as pd, vectorbt as vbt; s=pd.Series(range(10)); obj=s.vbt.rolling_split(window_len=5, set_lens=[2]); print(type(obj), len(obj)); print("---"); for i, x in enumerate(obj): print(f"Item {i}: type={type(x)}")
