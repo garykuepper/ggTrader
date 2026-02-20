@@ -1,11 +1,11 @@
 """VectorBT Systemic Patches (ReadOnly Fix)."""
 
 import numpy as np
-from vectorbt.records.mapped_array import MappedArray
-from vectorbt.portfolio.trades import Trades
 import vectorbt.base.reshape_fns as reshape_fns
-import vectorbt.portfolio.trades as vbt_trades
 import vectorbt.portfolio.base as vbt_base
+import vectorbt.portfolio.trades as vbt_trades
+from vectorbt.portfolio.trades import Trades
+from vectorbt.records.mapped_array import MappedArray
 
 try:
     from vectorbt.portfolio.trades import EntryTrades, ExitTrades
@@ -13,10 +13,10 @@ except ImportError:
     EntryTrades = ExitTrades = None
 
 try:
-    from vectorbt.portfolio.positions import Positions, EntryPositions, ExitPositions
+    from vectorbt.portfolio.positions import EntryPositions, ExitPositions, Positions
 except ImportError:
     try:
-        from vectorbt.portfolio.base import Positions, EntryPositions, ExitPositions
+        from vectorbt.portfolio.base import EntryPositions, ExitPositions, Positions
     except ImportError:
         Positions = EntryPositions = ExitPositions = None
 

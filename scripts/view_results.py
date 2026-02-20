@@ -11,7 +11,7 @@ from sqlalchemy import create_engine, text
 from tabulate import tabulate
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from ggTrader.utils.config import get_db_connection_string
 

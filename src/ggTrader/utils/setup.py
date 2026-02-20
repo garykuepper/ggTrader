@@ -1,4 +1,5 @@
 import pandas as pd
+
 from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
 from ggTrader.utils.config import load_symbols_from_json
 
@@ -81,7 +82,7 @@ def build_mover_mask(
     return mask.astype(bool)
 
 
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 
 def load_data_with_movers(config: dict) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:

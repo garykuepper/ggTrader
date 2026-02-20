@@ -1,7 +1,10 @@
-import os
 import json
+import os
 from pathlib import Path
+
 from dotenv import load_dotenv
+
+from ggTrader.utils.paths import find_project_root
 
 
 def load_symbols_from_json(file_path):
@@ -17,21 +20,9 @@ def load_symbols_from_json(file_path):
         return None
 
 
-def _find_project_root() -> Path:
-    """Find the project root by looking for pyproject.toml."""
-    current = Path(os.getcwd()).absolute()
-    for parent in [current] + list(current.parents):
-        if (parent / "pyproject.toml").exists():
-            return parent
-
-    # Fallback to file-based relative path
-    base_dir = Path(__file__).resolve().parent.parent.parent.parent
-    return base_dir
-
-
 def _load_env() -> None:
     """Load environment variables from .env file in project root."""
-    project_root = _find_project_root()
+    project_root = find_project_root()
     env_path = project_root / ".env"
 
     if env_path.exists():

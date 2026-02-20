@@ -1,8 +1,9 @@
 """Live Exchange Loader wrapping CCXT."""
 
+from typing import List, Optional
+
 import ccxt
 import pandas as pd
-from typing import List, Optional
 
 from ggTrader.data.core.base_loader import BaseDataLoader
 from ggTrader.data.core.constants import STABLE_BASES, kraken_map

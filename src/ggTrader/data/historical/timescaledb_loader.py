@@ -1,9 +1,10 @@
 """TimescaleDB historical data loader."""
 
-import pandas as pd
-import numpy as np
-from sqlalchemy import create_engine, text
 from typing import List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
+from sqlalchemy import create_engine, text
 
 from ggTrader.data.core.base_loader import BaseDataLoader
 from ggTrader.utils.config import get_db_connection_string

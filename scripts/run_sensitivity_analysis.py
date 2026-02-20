@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 # Ensure project root is in path for imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from ggTrader.core.orchestrator import run_sensitivity_orchestrator
 

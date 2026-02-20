@@ -60,3 +60,22 @@ INTERVAL_MAP = {
 
 # Backward-compatible alias
 interval_map = INTERVAL_MAP
+
+QUOTES = [
+    "ZUSD",
+    "ZEUR",
+    "ZGBP",
+    "ZJPY",
+    "ZCAD",
+    "ZAUD",
+    "USDT",
+    "USDC",
+    "USD",
+    "EUR",
+    "GBP",
+    "CAD",
+    "AUD",
+    "JPY",
+    "XBT",
+    "ETH",
+]

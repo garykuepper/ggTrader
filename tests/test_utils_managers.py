@@ -23,7 +23,7 @@ def results_dir():
 def test_results_manager_init(results_dir):
     # Patch ResultDBManager and Path operations
     with patch("ggTrader.utils.results_manager.ResultDBManager"), patch(
-        "ggTrader.utils.results_manager.ResultsManager._find_project_root", return_value=results_dir
+        "ggTrader.utils.results_manager.find_project_root", return_value=results_dir
     ):
         rm = ResultsManager("test_run", results_dir="test_sub")
         assert "test_run" in str(rm.run_dir)
@@ -31,9 +31,7 @@ def test_results_manager_init(results_dir):
 
 @patch("ggTrader.utils.results_manager.ResultDBManager")
 def test_results_manager_save_metrics(mock_db_cls, results_dir):
-    with patch(
-        "ggTrader.utils.results_manager.ResultsManager._find_project_root", return_value=results_dir
-    ):
+    with patch("ggTrader.utils.results_manager.find_project_root", return_value=results_dir):
         rm = ResultsManager("test_save")
         df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
         rm.save_metrics(df, "metrics.csv", save_csv=True)

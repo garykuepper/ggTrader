@@ -11,6 +11,8 @@ from typing import Any, Dict, Optional, Union
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from ggTrader.utils.paths import find_project_root
+
 from .result_db_manager import ResultDBManager
 
 
@@ -22,7 +24,7 @@ class ResultsManager:
 
     def __init__(self, script_name: str, results_dir: str = "results") -> None:
         self.script_name = script_name
-        self.project_root = self._find_project_root()
+        self.project_root = find_project_root()
         self.base_results_dir = self.project_root / results_dir
         self.run_dir = self._create_run_directory()
 
@@ -33,20 +35,6 @@ class ResultsManager:
         self.db_manager = ResultDBManager(
             log_path=self.base_results_dir / "runs_log.csv",
         )
-
-    def _find_project_root(self) -> Path:
-        """Finds the project root by looking for pyproject.toml."""
-        current = Path(__file__).absolute().parent
-        for parent in [current] + list(current.parents):
-            if (parent / "pyproject.toml").exists():
-                return parent
-
-        current_cwd = Path(os.getcwd()).absolute()
-        for parent in [current_cwd] + list(current_cwd.parents):
-            if (parent / "pyproject.toml").exists():
-                return parent
-
-        return current_cwd
 
     def _create_run_directory(self) -> Path:
         """Creates a timestamped run directory."""

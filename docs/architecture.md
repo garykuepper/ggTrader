@@ -23,9 +23,9 @@ The project is structured into several modular layers, ensuring that logic for d
 
 ## Workflows
 
-1. **Single Backtest**: `scripts/core/run_backtest.py` runs a one-shot backtest on a symbol pool. Supports optional `--movers N` flag for dynamic universe filtering.
-2. **Sensitivity Analysis**: `scripts/core/run_sensitivity_analysis.py` performs grid search using `FastBacktest` broadcasting.
-3. **Walk-Forward Optimization**: `scripts/core/run_walk_forward_optimization.py` uses rolling time-series CV on vectorized results.
+1. **Single Backtest**: `scripts/run_backtest.py` runs a one-shot backtest on a symbol pool. Supports optional `--movers N` flag for dynamic universe filtering.
+2. **Sensitivity Analysis**: `scripts/run_sensitivity_analysis.py` performs grid search using `FastBacktest` broadcasting.
+3. **Walk-Forward Optimization**: `scripts/run_walk_forward_optimization.py` uses rolling time-series CV on vectorized results.
 
 ## Legacy Modules
 

@@ -3,8 +3,8 @@
 import pandas as pd
 from tabulate import tabulate
 
-from ggTrader.data.live.exchange_loader import LiveExchangeLoader
 from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
+from ggTrader.data.live.exchange_loader import LiveExchangeLoader
 
 
 class Screener:

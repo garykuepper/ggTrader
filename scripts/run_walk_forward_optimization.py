@@ -12,9 +12,9 @@ import vectorbt as vbt
 from tabulate import tabulate
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from ggTrader.core.orchestrator import run_wfo_orchestrator, run_backtest_orchestrator
+from ggTrader.core.orchestrator import run_backtest_orchestrator, run_wfo_orchestrator
 
 # =====================================================================
 # USER CONFIGURATION — edit these values to customize the backtest

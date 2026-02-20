@@ -280,6 +280,8 @@ def _process_wfo_fold(
     train_engine = FastBacktest(train_ohlcv, param_grid, config=config, mover_mask=train_mask)
     pf_train = train_engine.run(show_progress=show_progress)
     train_metrics = pf_train.sharpe_ratio()
+    if not isinstance(train_metrics, pd.Series):
+        train_metrics = pd.Series([train_metrics])
 
     min_trades = config.get("MIN_TRADES", 0)
     if min_trades > 0:

@@ -11,10 +11,7 @@ from psycopg2.extras import execute_values
 from sqlalchemy import create_engine, text
 from tqdm import tqdm
 
-from ggTrader.data.core.constants import kraken_map
-
-# DO NOT DELETE  python scripts/data/ingest_kraken_data.py --sync
-# python scripts/data/ingest_kraken_data.py --dir data\raw\Kraken_OHLCVT_Q1_2023
+from ggTrader.data.core.constants import kraken_map, QUOTES
 
 
 class PostgresIngestor:
@@ -28,7 +25,6 @@ class PostgresIngestor:
         Args:
             connection_string (str): SQLAlchemy connection string
         """
-        # We still use SQLAlchemy for init and high-level ops, but psycopg2 for bulk
         self.engine = create_engine(connection_string, pool_size=20, max_overflow=10)
         self.connection_string = connection_string
         self.intervals = ["1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"]
@@ -55,7 +51,6 @@ class PostgresIngestor:
                 """
                 )
             )
-            # Convert to Hypertable (TimescaleDB)
             try:
                 conn.execute(
                     text("SELECT create_hypertable('ohlcv', 'timestamp', if_not_exists => TRUE);")
@@ -69,25 +64,7 @@ class PostgresIngestor:
 
     def _split_pair(self, filename_stem: str) -> str:
         p = filename_stem.upper()
-        quotes = [
-            "ZUSD",
-            "ZEUR",
-            "ZGBP",
-            "ZJPY",
-            "ZCAD",
-            "ZAUD",
-            "USDT",
-            "USDC",
-            "USD",
-            "EUR",
-            "GBP",
-            "CAD",
-            "AUD",
-            "JPY",
-            "XBT",
-            "ETH",
-        ]
-        quotes.sort(key=len, reverse=True)
+        quotes = sorted(QUOTES, key=len, reverse=True)
 
         for q in quotes:
             if p.endswith(q):
@@ -100,11 +77,7 @@ class PostgresIngestor:
         return self._clean_ccy(p)
 
     def _db_writer_worker(self, data_queue: queue.Queue, stop_event: threading.Event) -> None:
-        """
-        Dedicated thread for consuming record batches and writing to Postgres.
-        Uses psycopg2 execute_values for maximum throughput.
-        """
-        # Create a dedicated connection for the writer
+        """Dedicated thread for consuming record batches and writing to Postgres."""
         conn = psycopg2.connect(
             self.connection_string.replace("postgresql+psycopg2://", "postgresql://")
         )
@@ -124,7 +97,6 @@ class PostgresIngestor:
 
         while not stop_event.is_set() or not data_queue.empty():
             try:
-                # Use a timeout to allow checking stop_event periodically
                 batch = data_queue.get(timeout=1.0)
                 if batch:
                     with conn.cursor() as cur:
@@ -150,7 +122,6 @@ class PostgresIngestor:
             if df.empty:
                 return []
 
-            # Use raw tuples for execute_values
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
             df["symbol"] = symbol
             df["interval"] = interval_str
@@ -175,6 +146,39 @@ class PostgresIngestor:
             print(f"Error parsing OHLC file {file_path}: {e}")
             return []
 
+    def _resample_trades_to_ohlcv(self, df: pd.DataFrame, interval: str, symbol: str) -> list:
+        """Helper method to resample trade data to OHLCV format."""
+        rule = interval.replace("m", "min").replace("d", "D")
+        ohlc = df["price"].resample(rule).ohlc()
+        vol = df["volume"].resample(rule).sum()
+        trades = df["price"].resample(rule).count()
+
+        final = pd.concat([ohlc, vol, trades], axis=1)
+        final.columns = ["open", "high", "low", "close", "volume", "trades"]
+        final.dropna(inplace=True)
+        if final.empty:
+            return []
+
+        final["symbol"] = symbol
+        final["interval"] = interval
+        final.reset_index(inplace=True)
+
+        return list(
+            final[
+                [
+                    "timestamp",
+                    "symbol",
+                    "interval",
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "volume",
+                    "trades",
+                ]
+            ].itertuples(index=False, name=None)
+        )
+
     def _parse_raw_trades_file(self, file_path: str, symbol: str) -> list:
         """Parse raw trades, resample, and return list of tuples."""
         try:
@@ -198,79 +202,56 @@ class PostgresIngestor:
             df.set_index("timestamp", inplace=True)
             all_records = []
             for interval in self.intervals:
-                rule = interval.replace("m", "min").replace("d", "D")
-                ohlc = df["price"].resample(rule).ohlc()
-                vol = df["volume"].resample(rule).sum()
-                trades = df["price"].resample(rule).count()
-
-                final = pd.concat([ohlc, vol, trades], axis=1)
-                final.columns = ["open", "high", "low", "close", "volume", "trades"]
-                final.dropna(inplace=True)
-                if final.empty:
-                    continue
-
-                final["symbol"] = symbol
-                final["interval"] = interval
-                final.reset_index(inplace=True)
-
-                recs = list(
-                    final[
-                        [
-                            "timestamp",
-                            "symbol",
-                            "interval",
-                            "open",
-                            "high",
-                            "low",
-                            "close",
-                            "volume",
-                            "trades",
-                        ]
-                    ].itertuples(index=False, name=None)
-                )
+                recs = self._resample_trades_to_ohlcv(df, interval, symbol)
                 all_records.extend(recs)
             return all_records
         except Exception as e:
             print(f"Error parsing raw trades {file_path}: {e}")
             return []
 
-    def ingest_dir(self, raw_dir: str, max_workers: int = 16) -> None:
-        """
-        Ingest files using Producer-Consumer pattern.
-        """
-        csv_files = glob.glob(os.path.join(raw_dir, "**", "*.csv"), recursive=True)
-        if not csv_files:
-            return
-
-        manifest_path = os.path.join(raw_dir, ".processed_files.json")
+    def _load_manifest(self, path: str) -> set:
+        """Load the processed files manifest."""
         processed_files = set()
-        if os.path.exists(manifest_path):
+        if os.path.exists(path):
             try:
-                with open(manifest_path, "r") as f:
+                with open(path, "r") as f:
                     processed_files = set(json.load(f))
             except Exception:
                 pass
+        return processed_files
 
-        pending_files = [f for f in csv_files if os.path.basename(f) not in processed_files]
-        if not pending_files:
-            return
+    def _save_manifest(self, path: str, data: set) -> None:
+        """Save the processed files manifest."""
+        with open(path, "w") as f:
+            json.dump(list(data), f)
 
-        print(
-            f"Ingesting {len(pending_files)} files in {os.path.basename(raw_dir)} (Workers: {max_workers})..."
-        )
-
-        # Setup Parallelism
-        data_queue = queue.Queue(maxsize=100)  # Flow control
+    def _start_writer_pool(
+        self, num_writers: int
+    ) -> tuple[queue.Queue, threading.Event, list[threading.Thread]]:
+        """Initialize the DB writer threads and queue."""
+        data_queue = queue.Queue(maxsize=100)
         stop_event = threading.Event()
-
-        # Start Multiple Writer Threads to saturate DB I/O
-        num_writers = 4
         writer_threads = []
         for _ in range(num_writers):
             t = threading.Thread(target=self._db_writer_worker, args=(data_queue, stop_event))
             t.start()
             writer_threads.append(t)
+        return data_queue, stop_event, writer_threads
 
+    def _stop_writer_pool(
+        self,
+        data_queue: queue.Queue,
+        stop_event: threading.Event,
+        writer_threads: list[threading.Thread],
+    ) -> None:
+        """Shutdown the DB writer threads and empty the queue."""
+        data_queue.join()
+        stop_event.set()
+        for t in writer_threads:
+            t.join()
+
+    def _parse_and_enqueue(self, file_path: str, data_queue: queue.Queue):
+        """Parse a CSV data file and push the records into the queue for writing."""
         suffix_pairs = [
             ("_1440", "1d"),
             ("_720", "12h"),
@@ -281,40 +262,48 @@ class PostgresIngestor:
             ("_5", "5m"),
             ("_1", "1m"),
         ]
+        try:
+            fname = os.path.basename(file_path)
+            stem = os.path.splitext(fname)[0].strip()
+            is_ohlc = False
+            interval_str = None
+            symbol = None
 
-        def parse_and_enqueue(file_path):
-            try:
-                fname = os.path.basename(file_path)
-                stem = os.path.splitext(fname)[0].strip()
-                is_ohlc = False
-                interval_str = None
-                symbol = None
+            for suffix, interval in suffix_pairs:
+                if stem.endswith(suffix):
+                    is_ohlc = True
+                    interval_str = interval
+                    raw_base = stem[: -len(suffix)]
+                    symbol = self._split_pair(raw_base)
+                    break
 
-                for suffix, interval in suffix_pairs:
-                    if stem.endswith(suffix):
-                        is_ohlc = True
-                        interval_str = interval
-                        raw_base = stem[: -len(suffix)]
-                        symbol = self._split_pair(raw_base)
-                        break
+            if is_ohlc:
+                records = self._parse_ohlc_file(file_path, symbol, interval_str)
+            else:
+                symbol = self._split_pair(stem)
+                records = self._parse_raw_trades_file(file_path, symbol)
 
-                if is_ohlc:
-                    records = self._parse_ohlc_file(file_path, symbol, interval_str)
-                else:
-                    symbol = self._split_pair(stem)
-                    records = self._parse_raw_trades_file(file_path, symbol)
+            if records:
+                data_queue.put(records)
+            return fname
+        except Exception as e:
+            print(f"Error processing {file_path}: {e}")
+            return None
 
-                if records:
-                    data_queue.put(records)
-                return fname
-            except Exception as e:
-                print(f"Error processing {file_path}: {e}")
-                return None
-
+    def _execute_thread_pool(
+        self,
+        pending_files: list,
+        data_queue: queue.Queue,
+        processed_files: set,
+        manifest_path: str,
+        max_workers: int,
+    ) -> None:
+        """Run the core ThreadPool parsing loop for the pending files."""
         pbar = tqdm(total=len(pending_files), desc="Processing Files", unit="file", leave=False)
-
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(parse_and_enqueue, fp): fp for fp in pending_files}
+            futures = {
+                executor.submit(self._parse_and_enqueue, fp, data_queue): fp for fp in pending_files
+            }
             files_since_manifest = 0
             for future in as_completed(futures):
                 fname = future.result()
@@ -322,25 +311,42 @@ class PostgresIngestor:
                     processed_files.add(fname)
                     files_since_manifest += 1
 
-                # Checkpointing
                 if files_since_manifest >= 100:
-                    with open(manifest_path, "w") as f:
-                        json.dump(list(processed_files), f)
+                    self._save_manifest(manifest_path, processed_files)
                     files_since_manifest = 0
 
                 pbar.update(1)
-
-        # Cleanup
-        # Cleanup
-        data_queue.join()
-        stop_event.set()
-        for t in writer_threads:
-            t.join()
-
-        with open(manifest_path, "w") as f:
-            json.dump(list(processed_files), f)
-
         pbar.close()
+
+    def ingest_dir(self, raw_dir: str, max_workers: int = 16) -> None:
+        """
+        Ingest files using Producer-Consumer pattern.
+        """
+        csv_files = glob.glob(os.path.join(raw_dir, "**", "*.csv"), recursive=True)
+        if not csv_files:
+            return
+
+        manifest_path = os.path.join(raw_dir, ".processed_files.json")
+        processed_files = self._load_manifest(manifest_path)
+
+        pending_files = [f for f in csv_files if os.path.basename(f) not in processed_files]
+        if not pending_files:
+            return
+
+        print(
+            f"Ingesting {len(pending_files)} files in {os.path.basename(raw_dir)} (Workers: {max_workers})..."
+        )
+
+        # Setup Parallelism
+        data_queue, stop_event, writer_threads = self._start_writer_pool(num_writers=4)
+
+        self._execute_thread_pool(
+            pending_files, data_queue, processed_files, manifest_path, max_workers
+        )
+
+        # Cleanup
+        self._stop_writer_pool(data_queue, stop_event, writer_threads)
+        self._save_manifest(manifest_path, processed_files)
 
     def list_quarter_dirs(self, raw_path: str, prefix: str = "Kraken_OHLCVT_") -> list:
         """Find quarterly Kraken folders under data/raw."""
@@ -365,14 +371,8 @@ class PostgresIngestor:
         """
         raw_path = os.path.join(root_dir, "data", "raw")
         manifest_path = os.path.join(root_dir, "data", ".processed_dirs.json")
-        processed_dirs = set()
 
-        if not force and os.path.exists(manifest_path):
-            try:
-                with open(manifest_path, "r") as f:
-                    processed_dirs = set(json.load(f))
-            except Exception as e:
-                print(f"Warning: could not load sync manifest: {e}")
+        processed_dirs = self._load_manifest(manifest_path) if not force else set()
 
         all_dirs = self.list_quarter_dirs(raw_path=raw_path)
 
@@ -393,11 +393,6 @@ class PostgresIngestor:
         for d in tqdm(new_dirs, desc="Syncing Directories", unit="dir"):
             self.ingest_dir(d)
             processed_dirs.add(os.path.basename(d))
-
-            try:
-                with open(manifest_path, "w") as f:
-                    json.dump(sorted(list(processed_dirs)), f, indent=4)
-            except Exception as e:
-                print(f"Warning: could not update sync manifest: {e}")
+            self._save_manifest(manifest_path, processed_dirs)
 
         print("Data synchronization complete.")

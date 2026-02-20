@@ -1,8 +1,9 @@
 """Live execution engine for transition from optimization to real-world trading."""
 
 import time
+from typing import Any, Dict, List
+
 import pandas as pd
-from typing import Dict, Any, List
 
 from ggTrader.data.live.exchange_loader import LiveExchangeLoader
 from ggTrader.indicators.Signals import Signals

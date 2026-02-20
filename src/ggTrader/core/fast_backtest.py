@@ -1,7 +1,8 @@
+from typing import Any, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 import vectorbt as vbt
-from typing import Any, Optional, Tuple, Union
 
 from ggTrader.indicators.signals import SignalFactory
 from ggTrader.utils.vbt_patches import apply_vbt_patches
@@ -39,9 +40,9 @@ class FastBacktest:
         self,
         ohlcv: pd.DataFrame,
         params: dict,
-        config: dict | None = None,
+        config: Optional[dict] = None,
         signal_factory: Any = None,
-        mover_mask: pd.DataFrame | None = None,
+        mover_mask: Optional[pd.DataFrame] = None,
     ):
         """
         Args:
@@ -238,5 +239,5 @@ class FastBacktest:
             try:
                 fig = self.pf.plot()
                 results_manager.save_plot(fig, f"{filename}_basic")
-            except:
+            except Exception as e:
                 pass

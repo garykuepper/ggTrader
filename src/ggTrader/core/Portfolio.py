@@ -1,10 +1,12 @@
-from ggTrader.core.position import Position
+from datetime import datetime
+from typing import Optional
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 from tabulate import tabulate
 
-from datetime import datetime
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+from ggTrader.core.position import Position
 
 
 class Portfolio:
@@ -371,7 +373,7 @@ class Portfolio:
 
     def sharpe_ratio(
         self,
-        periods_per_year: int | None = None,
+        periods_per_year: Optional[int] = None,
         rf_annual: float = 0.01,
         method: str = "log",
     ) -> float:
@@ -428,7 +430,7 @@ class Portfolio:
 
     def sortino_ratio(
         self,
-        periods_per_year: int | None = None,
+        periods_per_year: Optional[int] = None,
         rf_annual: float = 0.01,
         target_return: float = 0.0,
     ) -> float:
@@ -476,9 +478,7 @@ class Portfolio:
 
         # Downside deviation: only consider returns below target_return
         # Usually target_return is 0 or rf_per_period. We'll use target_return as provided.
-        downside_diff = rets - (
-            target_return / periods_per_year
-        )  # rough approximation for target
+        downside_diff = rets - (target_return / periods_per_year)  # rough approximation for target
         # More common: downside deviation is based on excess returns below 0
         downside_rets = excess[excess < 0]
 
@@ -505,8 +505,9 @@ class Portfolio:
 
 if __name__ == "__main__":
     # Example usage of Portfolio with a Position instance
-    from ggTrader.core.position import Position
     from datetime import datetime
+
+    from ggTrader.core.position import Position
 
     # Create a portfolio
     port = Portfolio(cash=100000)
@@ -526,9 +527,7 @@ if __name__ == "__main__":
     port.update_position_price(symbol="BTC", price=30500.0, date=datetime.now())
 
     # Close the position (simulate exit)
-    port.close_position(
-        pos, date=datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    )
+    port.close_position(pos, date=datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
 
     # Print current positions/trades
     port.print_positions()

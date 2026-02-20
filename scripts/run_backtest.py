@@ -7,7 +7,7 @@ import sys
 import pandas as pd
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from ggTrader.core.orchestrator import run_backtest_orchestrator
 from ggTrader.utils.results_manager import ResultsManager
