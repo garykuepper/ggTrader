@@ -34,24 +34,40 @@ def _ensure_writable(arr):
     return arr
 
 
+def _clean_to_1d_array(arg, *args, **kwargs):
+    """
+    Clean implementation of reshape_fns.to_1d_array (raw=True).
+    Matches vectorbt.base.reshape_fns behavior for NumPy arrays.
+    Used as fallback if the original function is lost in a dirty kernel state.
+    """
+    # to_1d_array is partial(to_1d, raw=True)
+    # to_any_array(raw=True) -> np.asarray(arg)
+    arg = np.asarray(arg)
+    if arg.ndim == 2:
+        if arg.shape[1] == 1:
+            return arg[:, 0]
+    if arg.ndim == 1:
+        return arg
+    elif arg.ndim == 0:
+        return arg.reshape((1,))
+    raise ValueError(f"Cannot reshape a {arg.ndim}-dimensional array to 1 dimension")
+
+
 def _patched_to_1d_array(arg, *args, **kwargs):
     """Patch for reshape_fns.to_1d_array."""
-    # We need to capture the original function *before* we patch it ideally,
-    # but here we are defining the patch module.
-    # To avoid circular imports or recursion if we just called reshape_fns.to_1d_array,
-    # we need to be careful.
-    # The original implementations in fast_backtest.py captured `orig_to_1d_array` globally.
-    # We will assume that when we apply this patch, we swap it out.
-    # Ideally, we call the *original* implementation.
-    # Since we can't easily get the "original" inside this function without storing it,
-    # we'll store it in a module-level variable during the `apply_patches` call.
+    # Try to use the stored original function
     if hasattr(reshape_fns, "_orig_to_1d_array"):
-        res = reshape_fns._orig_to_1d_array(arg, *args, **kwargs)
+        try:
+            res = reshape_fns._orig_to_1d_array(arg, *args, **kwargs)
+        except NameError:
+            # This handles the specific case where _orig_to_1d_array was a closure
+            # referring to a global that no longer exists (e.g. dirty Jupyter kernel).
+            # Fallback to our clean implementation.
+            res = _clean_to_1d_array(arg, *args, **kwargs)
     else:
-        # Fallback if not patched yet? Or maybe this IS the original?
-        # If we replaced it, reshape_fns.to_1d_array refers to THIS function.
-        # So we definitely need the stash.
-        raise RuntimeError("VectorBT Patch Error: Original to_1d_array not found.")
+        # Fallback if patch state is inconsistent
+        res = _clean_to_1d_array(arg, *args, **kwargs)
+
     return _ensure_writable(res)
 
 
@@ -174,12 +190,28 @@ def apply_vbt_patches():
     """Apply all vectorbt patches."""
     # 1. Patch to_1d_array
     if not hasattr(reshape_fns, "_orig_to_1d_array"):
-        reshape_fns._orig_to_1d_array = reshape_fns.to_1d_array
+        # Check if it's already patched in a weird way
+        current_func = reshape_fns.to_1d_array
+        # If the current function has the name of our patch or the old patch,
+        # but _orig_to_1d_array wasn't set (maybe from a different session),
+        # we might be in trouble. But we can't easily detect "old patch" vs "original"
+        # cleanly without better markers.
+        # However, we can just save it.
+        reshape_fns._orig_to_1d_array = current_func
         reshape_fns.to_1d_array = _patched_to_1d_array
+    else:
+        # If it IS set, ensure the patch is active (idempotency)
+        # We don't want to re-wrap if it's already wrapped by US
+        if reshape_fns.to_1d_array is not _patched_to_1d_array:
+            # It might have been reset or changed.
+            # Just re-apply.
+            reshape_fns.to_1d_array = _patched_to_1d_array
 
-    # Patch shadow references
-    vbt_trades.to_1d_array = _patched_to_1d_array
-    vbt_base.to_1d_array = _patched_to_1d_array
+    # Also fix shadow references if they exist/aren't pointing to our patch
+    if vbt_trades.to_1d_array is not _patched_to_1d_array:
+        vbt_trades.to_1d_array = _patched_to_1d_array
+    if vbt_base.to_1d_array is not _patched_to_1d_array:
+        vbt_base.to_1d_array = _patched_to_1d_array
 
     # 2. Patch MappedArray aggregation methods
     for agg in ["sum", "mean", "std", "min", "max", "count", "reduce"]:
