@@ -35,10 +35,10 @@ CONSTANTS = {
     # Dynamic movers: set to 0 to disable, or e.g. 20 for top-20 daily
     "USE_MOVERS": 0,
     # WFO-specific configuration
-    "N_SPLITS": 5,
+    "N_SPLITS": 4,
     "TEST_RATIO": 2,
     # Minimum trades to accept a result in optimization
-    "MIN_TRADES": 5,
+    "MIN_TRADES": 2,
     # Memory optimization: process in chunks of N parameter combinations
     "CHUNK_SIZE": 500,
     # Strategy parameters
@@ -67,11 +67,11 @@ def main() -> None:
         "sar_acceleration": [0.02],
         "sar_maximum": [0.2],
         "use_dmp_cross": [False],
-        "adx_threshold": list(range(5, 46, 5)),
-        "adx_length": list(range(10, 26, 5)),
+        "adx_threshold": list(range(20, 46, 5)),
+        "adx_length": list(range(7, 22, 7)),
         # exit
-        "atr_length": list(range(5, 26, 5)),
-        "atr_multiplier": list(np.arange(0.5, 3.1, 0.5)),
+        "atr_length": list(range(7, 22, 7)),
+        "atr_multiplier": list(np.arange(1.0, 4.1, 0.5)),
     }
 
     results = run_wfo_orchestrator(
