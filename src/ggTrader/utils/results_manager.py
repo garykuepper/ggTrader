@@ -226,7 +226,8 @@ class ResultsManager:
 
 def get_latest_params(base_results_dir: str = "results") -> Optional[Path]:
     """Finds the latest params.json in the results directory."""
-    results_path = Path(base_results_dir).absolute()
+    project_root = find_project_root()
+    results_path = project_root / base_results_dir
     if not results_path.exists():
         return None
 

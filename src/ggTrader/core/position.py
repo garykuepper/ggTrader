@@ -1,29 +1,39 @@
+"""Position model for the legacy simulation engine."""
+
+from __future__ import annotations
+
 from datetime import datetime
 
 
 class Position:
-    def __init__(self, symbol: str,
-                 qty: float,
-                 price: float,
-                 date: datetime,
-                 trail_pct: float = 0.0,
-                 hold_min: int = 3,
-                 share_pct: int = 100,
+    """Represents a single position in the legacy portfolio simulator."""
 
-                 ):
+    def __init__(
+        self,
+        symbol: str,
+        qty: float,
+        price: float,
+        date: datetime,
+        trail_pct: float = 0.0,
+        hold_min: int = 3,
+        share_pct: int = 100,
+    ) -> None:
         self.symbol = symbol
         self.qty = qty
         self.entry_price = price
         self.entry_fee = 0.0
         self.entry_date = date
-        self.exit_price = None
-        self.exit_date = None
+        self.exit_price: float | None = None
+        self.exit_date: datetime | None = None
         self.exit_fee = 0.0
         self.current_price = price
         self.status = "open"
         self.share_pct = share_pct
         self.stop_loss = 0.0
         self.stop_loss_triggered = False
+
+        self.trail_pct = trail_pct
+        self.hold_min = hold_min
 
     @property
     def cost(self) -> float:
@@ -39,19 +49,16 @@ class Position:
 
     @property
     def profit_pct(self) -> float:
-        return self.profit / self.cost
+        return self.profit / self.cost if self.cost else 0.0
 
-    def open_position(self):
-        pass
-
-    def close_position(self, date: datetime):
+    def close_position(self, date: datetime) -> None:
         self.status = "closed"
         self.exit_date = date
 
-    def update_price(self, new_price: float, date: datetime = None):
+    def update_price(self, new_price: float, date: datetime | None = None) -> None:
         self.current_price = new_price
 
-    def as_dict(self):
+    def as_dict(self) -> dict[str, object]:
         return {
             "symbol": self.symbol,
             "qty": self.qty,
@@ -68,10 +75,8 @@ class Position:
             "stop_loss_triggered": self.stop_loss_triggered,
         }
 
-if __name__ == "__main__":
-    pos = Position('BTC', 3, 10000, datetime(2024, 1, 1))
-    print(pos.as_dict())
 
-    pos2 = Position('ETH', 5, 250, datetime(2024, 2, 1))
-    print(pos2.as_dict())
+if __name__ == "__main__":
+    pos = Position("BTC", 3, 10000, datetime(2024, 1, 1))
+    print(pos.as_dict())
 

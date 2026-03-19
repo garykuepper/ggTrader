@@ -1,5 +1,7 @@
 """Asset screener for daily and historical volume-based ranking."""
 
+from __future__ import annotations
+
 import pandas as pd
 from tabulate import tabulate
 
@@ -8,6 +10,7 @@ from ggTrader.data.live.exchange_loader import LiveExchangeLoader
 
 
 class Screener:
+    """Provides daily and historical mover symbol lists."""
 
     def __init__(self) -> None:
         self.live_loader = LiveExchangeLoader(exchange_id="kraken")
@@ -32,13 +35,14 @@ class Screener:
         if mask.empty:
             return pd.DataFrame()
 
-        # Safely extract from index
         if date in mask.index:
             symbols = mask.columns[mask.loc[date]].tolist()
             return pd.DataFrame({"symbol": symbols})
         return pd.DataFrame()
 
-    def print_historical_daily_kraken_by_volume(self, date: pd.Timestamp, top_n: int = 25) -> None:
+    def print_historical_daily_kraken_by_volume(
+        self, date: pd.Timestamp, top_n: int = 25
+    ) -> None:
         """Print historical daily movers table for a specific date."""
         top_daily = self.get_historical_daily_kraken_by_volume(date, top_n=top_n)
         print(tabulate(top_daily, headers="keys", tablefmt="github"))
@@ -51,3 +55,4 @@ if __name__ == "__main__":
     date = pd.Timestamp("2024-01-01").tz_localize("UTC")
     print(f"\nHistorical top kraken by volume: {date}")
     s.print_historical_daily_kraken_by_volume(date)
+

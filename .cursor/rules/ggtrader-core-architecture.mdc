@@ -1,0 +1,16 @@
+---
+description: ggTrader architecture rules (single-source, vectorization, engines)
+globs: src/**/*.py
+alwaysApply: false
+---
+
+# ggTrader architecture
+
+- **Single source of truth**: Core logic must live in `src/`. Do not duplicate definitions across files.
+- **Vectorization first**: Avoid row-wise DataFrame loops for signals; prefer `vectorbt`, `numpy`, `pandas` vectorization.
+- **Indicators/signals**: Use `SignalFactory.run()` for indicator logic to support parameter broadcasting / grid search.
+- **Backtesting**:
+  - **FastBacktest** is the engine for backtesting / sensitivity / WFO.
+  - Keep portfolio settings in `config=CONSTANTS`; keep signal `params` separate.
+  - Use `cash_sharing=True` and `group_by=True` (no independent cash pools per symbol).
+  - `Trading` engine is legacy for paper/live trading; `WalkForwardOptimizer` (Optuna) is archived.

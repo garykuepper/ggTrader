@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 import pandas as pd
 
 from ggTrader.data.live.exchange_loader import LiveExchangeLoader
-from ggTrader.indicators.Signals import Signals
+from ggTrader.indicators.signals import Signals
 
 
 class ExecutionEngine:

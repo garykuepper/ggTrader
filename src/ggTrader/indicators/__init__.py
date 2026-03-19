@@ -1,1 +1,1 @@
-from ggTrader.indicators.signals import Signals
+from ggTrader.indicators.signals import SignalFactory, Signals

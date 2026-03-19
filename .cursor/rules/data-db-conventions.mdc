@@ -1,0 +1,23 @@
+---
+description: Data/DB conventions (TimescaleDB, symbols, SQL patterns, artifacts)
+globs: "{src,scripts,notebooks}/**/*"
+alwaysApply: false
+---
+
+# Data + DB conventions
+
+- **Database source of truth**: Strategy code should not read raw CSVs directly; use TimescaleDB via `KrakenPostgresReader`.
+- **Results persistence**:
+  - Use `ResultsManager` for artifacts/metrics/plots.
+  - Use `ResultDBManager` for backtest/optimization result storage.
+- **Symbol normalization**:
+  - Use base symbols (`BTC`, `ETH`, …) in configs/logic.
+  - Convert Kraken-prefixed symbols (`XBT`, `XETH`, …) using `SYMBOL_MAPPING` (see `generate_asset_pool.py` / `data_manager.py`).
+  - Output artifacts under `data/` must use normalized symbols.
+- **SQL query patterns** (for `ohlcv`):
+  - Asset: `split_part(symbol, '-', 1)`; Quote: `split_part(symbol, '-', 2)`.
+  - Prefer notional volume \(volume * close\) for cross-asset ranking.
+- **Mover masking**:
+  - Use `build_mover_mask(ohlcv, config, top_n=N)` and pass it to `FastBacktest(mover_mask=mask)`.
+  - Masks should be precomputed via a single SQL query (`get_daily_mover_mask`), not per-bar.
+- **Artifacts naming**: Pools like `data/top_{N}_{QUOTE}_{DAYS}_movers.json`.
