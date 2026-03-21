@@ -661,16 +661,16 @@ def run_wfo_per_coin_orchestrator(
     ).copy()
 
     final_stats = {
-        "total_value": _safe(float(final_pf.final_value().sum())),
-        "total_profit": _safe(float(final_pf.total_profit().sum())),
+        "total_value": _safe(final_pf.final_value().sum()),
+        "total_profit": _safe(final_pf.total_profit().sum()),
         "profit_pct": _safe(
-            float((final_pf.total_profit().sum() / float(config["START_CASH"])) * 100)
+            (final_pf.total_profit().sum() / float(config["START_CASH"])) * 100
         ),
         "total_trades": int(final_pf.trades.count().sum()),
-        "win_rate": _safe(float(final_pf.trades.win_rate().mean() * 100)),
-        "sharpe": _safe(float(final_pf.sharpe_ratio().mean())),
-        "sortino": _safe(float(final_pf.sortino_ratio().mean())),
-        "max_drawdown": _safe(float(final_pf.max_drawdown().min() * 100)),
+        "win_rate": _safe(final_pf.trades.win_rate().mean()) * 100,
+        "sharpe": _safe(final_pf.sharpe_ratio().mean()),
+        "sortino": _safe(final_pf.sortino_ratio().mean()),
+        "max_drawdown": _safe(final_pf.max_drawdown().min()) * 100,
     }
 
     if save_results and rm:
@@ -701,11 +701,17 @@ def run_wfo_per_coin_orchestrator(
     }
 
 
-def _safe(val: float, default: float = 0.0) -> float:
-    """Replace NaN/Inf with default for JSON safety."""
+def _safe(val: Any, default: float = 0.0) -> float:
+    """Replace None, NaN, or Inf with default for JSON safety."""
     import math
 
-    return default if (math.isnan(val) or math.isinf(val)) else val
+    if val is None:
+        return default
+    try:
+        v = float(val)
+    except (TypeError, ValueError):
+        return default
+    return default if (math.isnan(v) or math.isinf(v)) else v
 
 
 def analyze_sensitivity_results(
@@ -937,16 +943,16 @@ def run_multi_strategy_per_coin_wfo(
 
     # Extract final combined stats
     final_stats = {
-        "total_value": _safe(float(final_pf.final_value().sum())),
-        "total_profit": _safe(float(final_pf.total_profit().sum())),
+        "total_value": _safe(final_pf.final_value().sum()),
+        "total_profit": _safe(final_pf.total_profit().sum()),
         "profit_pct": _safe(
-            float((final_pf.total_profit().sum() / float(config["START_CASH"])) * 100)
+            (final_pf.total_profit().sum() / float(config["START_CASH"])) * 100
         ),
         "total_trades": int(final_pf.trades.count().sum()),
-        "win_rate": _safe(float(final_pf.trades.win_rate().mean() * 100)),
-        "sharpe": _safe(float(final_pf.sharpe_ratio().mean())),
-        "sortino": _safe(float(final_pf.sortino_ratio().mean())),
-        "max_drawdown": _safe(float(final_pf.max_drawdown().min() * 100)),
+        "win_rate": _safe(final_pf.trades.win_rate().mean()) * 100,
+        "sharpe": _safe(final_pf.sharpe_ratio().mean()),
+        "sortino": _safe(final_pf.sortino_ratio().mean()),
+        "max_drawdown": _safe(final_pf.max_drawdown().min()) * 100,
     }
 
     print(f"\nFinal Combined Portfolio (Full 3-Year Range):")

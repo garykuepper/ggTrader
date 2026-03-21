@@ -77,7 +77,11 @@ Write-Host ""
 # Optionally start status watcher in new PowerShell window
 if ($Watch) {
     Write-Host "Launching status monitor..." -ForegroundColor Green
-    Start-Process -FilePath pwsh -ArgumentList "-Command", "cd '$ProjectRoot'; python scripts/pipeline_status.py --watch"
+    try {
+        Start-Process -FilePath "powershell" -ArgumentList "-Command", "cd '$ProjectRoot'; python scripts/pipeline_status.py --watch"
+    } catch {
+        Write-Host "Note: Could not launch auto-watch. Run manually: python scripts/pipeline_status.py --watch" -ForegroundColor Yellow
+    }
 }
 
 # Wait for process to complete (don't block the terminal, just report when done)
