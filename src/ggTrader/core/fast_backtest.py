@@ -4,7 +4,12 @@ import numpy as np
 import pandas as pd
 import vectorbt as vbt
 
+from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.signals import SignalFactory
+from ggTrader.indicators.vectorized_signals import (
+    generate_atr_trailing_exits_vectorized,
+    generate_psar_adx_entries_vectorized,
+)
 from ggTrader.utils.vbt_patches import apply_vbt_patches
 
 # Apply patches immediately on import
@@ -21,6 +26,9 @@ _DEFAULT_CONFIG = {
     "N_JOBS": -1,  # Default to all cores for vectorized runs
     "MIN_TRADES": 0,  # Minimum trades to accept a result
     "USE_CASH_SHARING": True,  # New config for grouping
+    "USE_VECTORIZED": False,  # Use new vectorized signal path (default to old for safety)
+    "ENTRY_STRATEGY": None,  # Entry strategy name (e.g., "psar_adx")
+    "EXIT_STRATEGY": None,  # Exit strategy name (e.g., "atr_trailing")
 }
 
 # Performance settings
@@ -69,7 +77,15 @@ class FastBacktest:
             )
 
         # 1. Generate Signals
-        entries, exits, price_for_orders = self._generate_signals(show_progress)
+        use_vectorized = self.config.get("USE_VECTORIZED", False)
+        if use_vectorized:
+            try:
+                entries, exits, price_for_orders = self._generate_signals_vectorized(show_progress)
+            except Exception as e:
+                print(f"Warning: Vectorized signal generation failed ({e}), falling back to standard path.")
+                entries, exits, price_for_orders = self._generate_signals(show_progress)
+        else:
+            entries, exits, price_for_orders = self._generate_signals(show_progress)
 
         # 2. Apply Mover Mask (if exists)
         if self.mover_mask is not None:
@@ -123,6 +139,70 @@ class FastBacktest:
         price_for_orders = self.ohlcv.xs("close", level=1, axis=1)
 
         return sf.entries, sf.exits, price_for_orders
+
+    def _generate_signals_vectorized(
+        self, show_progress: bool
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Generates signals using vectorized pre-computation and broadcasting.
+
+        This path avoids redundant indicator computation by pre-computing each
+        indicator once, then combining via numpy broadcasting.
+        """
+        ohlcv = self.ohlcv.astype(np.float64)
+
+        # Unpack OHLCV
+        close = ohlcv.xs("close", axis=1, level=1, drop_level=True)
+        high = ohlcv.xs("high", axis=1, level=1, drop_level=True)
+        low = ohlcv.xs("low", axis=1, level=1, drop_level=True)
+        open_ = ohlcv.xs("open", axis=1, level=1, drop_level=True)
+
+        # Initialize precomputer
+        precomputer = IndicatorPrecomputer(close, high, low)
+
+        # Extract strategy params
+        strat_params = {
+            k: v
+            for k, v in self.params.items()
+            if k
+            not in [
+                "START_CASH",
+                "PORTFOLIO_SHARE",
+                "FEES",
+                "SLIPPAGE",
+                "FREQ",
+                "PARAM_PRODUCT",
+            ]
+        }
+
+        # Generate entries
+        entries, _ = generate_psar_adx_entries_vectorized(precomputer, strat_params)
+
+        # Generate exits
+        n_symbols = close.shape[1]
+        exits, stops, price_for_orders_arr = generate_atr_trailing_exits_vectorized(
+            entries, precomputer, strat_params, n_symbols
+        )
+
+        # Convert to DataFrames with proper indexing
+        # Build column index: (param_combo_idx, symbol_0), (param_combo_idx, symbol_1), etc.
+        n_combos = entries.shape[1] // n_symbols
+        param_levels = []
+        symbol_levels = []
+
+        for combo_idx in range(n_combos):
+            for sym_idx, symbol in enumerate(close.columns):
+                param_levels.append(combo_idx)
+                symbol_levels.append(symbol)
+
+        multi_index = pd.MultiIndex.from_arrays([param_levels, symbol_levels], names=["param_combo", "symbol"])
+
+        entries_df = pd.DataFrame(entries, index=close.index, columns=multi_index)
+        exits_df = pd.DataFrame(exits, index=close.index, columns=multi_index)
+        price_df = pd.DataFrame(price_for_orders_arr, index=close.index, columns=multi_index)
+
+        precomputer.clear_cache()
+
+        return entries_df, exits_df, price_df
 
     def _apply_mover_mask(self, entries: pd.DataFrame) -> pd.DataFrame:
         """Applies the mover mask to filter entries."""

@@ -496,3 +496,160 @@ def run_wfo_orchestrator(
         "best_recent_params": best_recent_params,
         "results_manager": rm,
     }
+
+
+def run_wfo_per_coin_orchestrator(
+    config: Dict[str, Any],
+    param_grid: Dict[str, Any],
+    save_results: bool = True,
+    show_progress: bool = True,
+) -> Dict[str, Any]:
+    """Walk-Forward Optimization with per-coin independent optimization.
+
+    Each symbol is optimized independently, then combined into a single portfolio.
+
+    Args:
+        config: Portfolio and data configuration.
+        param_grid: Parameter grid for strategy.
+        save_results: Whether to save results.
+        show_progress: Whether to show progress bars.
+
+    Returns:
+        Dictionary with results including per-coin params and combined portfolio.
+    """
+    from ggTrader.utils.plotting import plot_wfo_splits
+
+    rm = ResultsManager("run_wfo_per_coin") if save_results else None
+    ohlcv, mover_mask = load_data_with_movers(config)
+    n_splits = config.get("N_SPLITS", 5)
+    test_ratio = config.get("TEST_RATIO", 3.0)
+    param_names = list(param_grid.keys())
+
+    symbols = ohlcv.columns.get_level_values(0).unique().tolist()
+    print(f"\nStarting Per-Coin WFO ({len(symbols)} symbols, {n_splits} splits)...")
+
+    plot_wfo_splits(ohlcv, n_splits, test_ratio, results_manager=rm)
+
+    # Dictionary to store best params per symbol
+    per_coin_results: Dict[str, Dict[str, Any]] = {}
+
+    # Optimize each symbol independently
+    for symbol in symbols:
+        print(f"\n--- Optimizing {symbol} ---")
+
+        # Extract single-symbol data
+        symbol_ohlcv = ohlcv[[symbol]]
+        symbol_mover_mask = mover_mask[[symbol]] if mover_mask is not None else None
+
+        wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
+            symbol_ohlcv,
+            symbol_mover_mask,
+            param_grid,
+            config,
+            param_names,
+            n_splits,
+            test_ratio,
+            show_progress,
+        )
+
+        robust_top_5, best_robust_params = _calculate_robustness(is_metrics_by_fold, param_names, param_grid)
+
+        per_coin_results[symbol] = {
+            "best_params": best_robust_params,
+            "wfo_stats": wfo_stats,
+            "robust_top_5": robust_top_5,
+        }
+
+        print(f"  > {symbol} Best Params: {best_robust_params}")
+
+    # Build combined portfolio with per-coin params
+    print("\nBuilding combined portfolio with per-coin parameters...")
+
+    combined_entries_list = []
+    combined_exits_list = []
+    combined_close_list = []
+    all_cols = []
+
+    for symbol in symbols:
+        best_params = per_coin_results[symbol]["best_params"]
+        symbol_ohlcv = ohlcv[[symbol]]
+
+        engine = FastBacktest(symbol_ohlcv, best_params, config=config)
+        pf = engine.run(show_progress=False)
+
+        # Extract signals
+        close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)
+        entries = pf.entries()
+        exits = pf.exits()
+
+        combined_entries_list.append(entries)
+        combined_exits_list.append(exits)
+        combined_close_list.append(close)
+        all_cols.append(symbol)
+
+    # Concatenate all symbols
+    combined_entries = pd.concat(combined_entries_list, axis=1)
+    combined_exits = pd.concat(combined_exits_list, axis=1)
+    combined_close = pd.concat(combined_close_list, axis=1)
+
+    # Create final portfolio
+    final_pf = vbt.Portfolio.from_signals(
+        close=combined_close,
+        entries=combined_entries,
+        exits=combined_exits,
+        init_cash=float(config["START_CASH"]),
+        fees=float(config["FEES"]),
+        slippage=float(config["SLIPPAGE"]),
+        freq=config["FREQ"],
+        size=float(config["PORTFOLIO_SHARE"]),
+        size_type="percent",
+        cash_sharing=True,
+        group_by=np.full(combined_entries.shape[1], 0),
+    ).copy()
+
+    final_stats = {
+        "total_value": _safe(float(final_pf.final_value().sum())),
+        "total_profit": _safe(float(final_pf.total_profit().sum())),
+        "profit_pct": _safe(
+            float((final_pf.total_profit().sum() / float(config["START_CASH"])) * 100)
+        ),
+        "total_trades": int(final_pf.trades.count().sum()),
+        "win_rate": _safe(float(final_pf.trades.win_rate().mean() * 100)),
+        "sharpe": _safe(float(final_pf.sharpe_ratio().mean())),
+        "sortino": _safe(float(final_pf.sortino_ratio().mean())),
+        "max_drawdown": _safe(float(final_pf.max_drawdown().min() * 100)),
+    }
+
+    if save_results and rm:
+        # Save per-coin results
+        per_coin_params_list = []
+        for symbol, results in per_coin_results.items():
+            params_dict = {**results["best_params"], "symbol": symbol}
+            per_coin_params_list.append(params_dict)
+
+        per_coin_df = pd.DataFrame(per_coin_params_list)
+        rm.save_metrics(per_coin_df, "per_coin_params.csv")
+
+        # Save overall results
+        metadata = {
+            **config,
+            "per_coin_results": _to_native(per_coin_results),
+        }
+
+        rm.save_run_results(params={"per_coin": _to_native(per_coin_results)}, metrics=final_stats, metadata=metadata)
+        rm.save_vbt_dashboard(final_pf, "combined_portfolio_dashboard")
+        print(f"\nPer-Coin WFO Results saved to: {rm.run_dir}")
+
+    return {
+        "final_portfolio": final_pf,
+        "per_coin_results": per_coin_results,
+        "final_stats": final_stats,
+        "results_manager": rm,
+    }
+
+
+def _safe(val: float, default: float = 0.0) -> float:
+    """Replace NaN/Inf with default for JSON safety."""
+    import math
+
+    return default if (math.isnan(val) or math.isinf(val)) else val

@@ -34,16 +34,11 @@ CONSTANTS = {
     "MIN_TRADES": 5,
     # Memory optimization: process in chunks of N parameter combinations
     "CHUNK_SIZE": 1000,
-    # # Strategy parameters
-    # "DEFAULT_PARAMS": {
-    #     "adx_threshold": 25,
-    #     "adx_length": 14,
-    #     "sar_acceleration": 0.02,
-    #     "sar_maximum": 0.2,
-    #     "atr_multiplier": 3.0,
-    #     "atr_length": 14,
-    #     "use_dmp_cross": False,
-    # },
+    # Strategy selection
+    "ENTRY_STRATEGY": "psar_adx",  # "psar_adx", "ema_cross", "rsi_reversal"
+    "EXIT_STRATEGY": "atr_trailing",  # "atr_trailing", "fixed_sl_tp"
+    # Use vectorized signal generation (experimental)
+    "USE_VECTORIZED": False,
 }
 # =====================================================================
 
