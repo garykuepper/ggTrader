@@ -6,6 +6,7 @@ import vectorbt as vbt
 
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.signals import SignalFactory
+from ggTrader.indicators.strategies import get_entry_strategy, get_exit_strategy
 from ggTrader.indicators.vectorized_signals import (
     generate_atr_trailing_exits_vectorized,
     generate_psar_adx_entries_vectorized,
@@ -146,7 +147,8 @@ class FastBacktest:
         """Generates signals using vectorized pre-computation and broadcasting.
 
         This path avoids redundant indicator computation by pre-computing each
-        indicator once, then combining via numpy broadcasting.
+        indicator once, then combining via numpy broadcasting. Dispatches to
+        registered entry/exit strategies based on config.
         """
         ohlcv = self.ohlcv.astype(np.float64)
 
@@ -174,12 +176,19 @@ class FastBacktest:
             ]
         }
 
-        # Generate entries
-        entries, _ = generate_psar_adx_entries_vectorized(precomputer, strat_params)
+        # Get entry and exit strategies from config, or use defaults
+        entry_strategy_name = self.config.get("ENTRY_STRATEGY") or "psar_adx"
+        exit_strategy_name = self.config.get("EXIT_STRATEGY") or "atr_trailing"
 
-        # Generate exits
+        entry_strategy = get_entry_strategy(entry_strategy_name)
+        exit_strategy = get_exit_strategy(exit_strategy_name)
+
+        # Generate entries using the strategy
+        entries, _ = entry_strategy.compute_entries(precomputer, strat_params)
+
+        # Generate exits using the strategy
         n_symbols = close.shape[1]
-        exits, stops, price_for_orders_arr = generate_atr_trailing_exits_vectorized(
+        exits, stops, price_for_orders_arr = exit_strategy.compute_exits(
             entries, precomputer, strat_params, n_symbols
         )
 

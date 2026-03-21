@@ -18,7 +18,7 @@ from ggTrader.indicators.strategies import ENTRY_REGISTRY, EXIT_REGISTRY
 # =====================================================================
 CONSTANTS = {
     "SYMBOLS": None,
-    "SYMBOLS_FILE": "data/top_10_USD_1095_movers.json",
+    "SYMBOLS_FILE": "data/top_10_USD_2023-01-01_2025-12-31.json",
     "START_DATE": "2023-01-01",
     "END_DATE": "2025-12-31",
     "INTERVAL": "4h",

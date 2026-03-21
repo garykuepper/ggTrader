@@ -58,7 +58,7 @@ DATABASE_URL=postgresql://user:password@localhost:5433/ggtrader
 Run a backtest using the vectorized `FastBacktest` engine:
 
 ```bash
-python scripts/core/run_backtest.py
+python scripts/run_backtest.py
 ```
 
 ### Dynamic Mover Backtest
@@ -66,7 +66,7 @@ python scripts/core/run_backtest.py
 Test with the top-N daily movers mask for dynamic universe filtering:
 
 ```bash
-python scripts/core/run_backtest.py --movers 20
+python scripts/run_backtest.py --movers 20
 ```
 
 ### Parameter Optimization
@@ -74,7 +74,7 @@ python scripts/core/run_backtest.py --movers 20
 Execute Walk-Forward Optimization to find the most robust parameters:
 
 ```bash
-python scripts/core/run_walk_forward_optimization.py
+python scripts/run_walk_forward_optimization.py
 ```
 
 ### Sensitivity Analysis
@@ -82,7 +82,7 @@ python scripts/core/run_walk_forward_optimization.py
 Check the stability of your optimized parameters:
 
 ```bash
-python scripts/core/run_sensitivity_analysis.py
+python scripts/run_sensitivity_analysis.py
 ```
 
 ## Docker Compose Setup

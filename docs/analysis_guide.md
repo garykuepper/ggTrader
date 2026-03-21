@@ -7,7 +7,7 @@ This guide describes the workflow for optimizing and validating trading strategi
 1. **Run Walk-Forward Optimization (WFO)**:
 
    ```bash
-   python scripts/core/run_walk_forward_optimization.py
+   python scripts/run_walk_forward_optimization.py
    ```
 
    This script will save results in `results/run_wfo_YYYYMMDD_HHMMSS/`.
@@ -17,14 +17,14 @@ This guide describes the workflow for optimizing and validating trading strategi
    Transfer the optimal parameters to a full backtest:
 
    ```bash
-   python scripts/core/run_backtest.py --params results/run_wfo_XXXXXX/params.json
+   python scripts/run_backtest.py --params results/run_wfo_XXXXXX/params.json
    ```
 
 3. **Dynamic Mover Backtest** (optional):
    Test with the top-N daily movers mask to simulate dynamic universe filtering:
 
    ```bash
-   python scripts/core/run_backtest.py --params results/run_wfo_XXXXXX/params.json --movers 20
+   python scripts/run_backtest.py --params results/run_wfo_XXXXXX/params.json --movers 20
    ```
 
 ## Sensitivity Analysis
@@ -32,7 +32,7 @@ This guide describes the workflow for optimizing and validating trading strategi
 Check if your strategy is robust to small parameter changes:
 
 ```bash
-python scripts/core/run_sensitivity_analysis.py
+python scripts/run_sensitivity_analysis.py
 ```
 
 View generated heatmaps and contour plots in the `results/run_sensitivity_XXXXXX/plots/` directory.

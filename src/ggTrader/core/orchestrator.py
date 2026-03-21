@@ -2,7 +2,9 @@
 
 import gc
 import itertools
+import time
 import traceback
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -14,6 +16,18 @@ from tabulate import tabulate
 from ggTrader.core.fast_backtest import FastBacktest
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_with_movers
+
+
+def _eta_str(seconds: float) -> str:
+    """Format seconds as HH:MM:SS for ETA display."""
+    return str(timedelta(seconds=int(max(0, seconds))))
+
+
+def _wall_clock_eta(seconds: float) -> str:
+    """Return wall-clock estimate (e.g., '1:30 PM')."""
+    from datetime import datetime, timedelta
+    finish = datetime.now() + timedelta(seconds=max(0, seconds))
+    return finish.strftime("%I:%M %p")
 
 
 def _to_native(val: Any) -> Any:
@@ -114,12 +128,18 @@ def _process_sensitivity_chunk(
 ) -> pd.Series:
     """Helper to process a single chunk of sensitivity parameters."""
     chunk_params = {k: [c[j] for c in chunk] for j, k in enumerate(keys)}
-    chunk_config = {**config, "PARAM_PRODUCT": False}
+    # Sensitivity analysis uses parallel lists (not grid), so must disable vectorized path
+    # The vectorized strategy path expects grids and treats parallel lists as cross-product ranges
+    chunk_config = {**config, "PARAM_PRODUCT": False, "USE_VECTORIZED": False}
 
     engine = FastBacktest(ohlcv, chunk_params, config=chunk_config)
     pf = engine.run(show_progress=show_progress)
 
     sharpe_series = pf.sharpe_ratio()
+    
+    # Handle case where sharpe_series is a scalar (single combo)
+    if not isinstance(sharpe_series, pd.Series):
+        sharpe_series = pd.Series([sharpe_series])
 
     # Apply filtering by trade count
     min_trades = config.get("MIN_TRADES", 0)
@@ -142,6 +162,7 @@ def _execute_sensitivity_grid(
     config: Dict[str, Any],
     param_grid: Dict[str, Any],
     show_progress: bool,
+    logger: Any = None,
 ) -> pd.Series:
     """Generates combinations, splits into chunks, and executes the grid search."""
     keys = list(param_grid.keys())
@@ -158,17 +179,32 @@ def _execute_sensitivity_grid(
     )
 
     all_sharpe_series = []
+    t0 = time.time()
 
     for i in range(0, total_total, chunk_size):
         chunk_idx = i // chunk_size + 1
         chunk = combinations[i : i + chunk_size]
+        chunk_end = min(i + chunk_size, total_total)
         print(
-            f"  > Processing chunk {chunk_idx} of {total_chunks} "
-            f"({i} to {min(i + chunk_size, total_total)})..."
+            f"  > Processing chunk {chunk_idx}/{total_chunks} "
+            f"(combos {i}-{chunk_end})..."
         )
+        chunk_start = time.time()
 
         sharpe_series = _process_sensitivity_chunk(chunk, keys, config, ohlcv, show_progress)
         all_sharpe_series.append(sharpe_series)
+
+        elapsed = time.time() - t0
+        avg_per_chunk = elapsed / chunk_idx
+        remaining_chunks = total_chunks - chunk_idx
+        eta = remaining_chunks * avg_per_chunk
+        chunk_msg = (
+            f"Chunk {chunk_idx}/{total_chunks} done in {time.time()-chunk_start:.1f}s "
+            f"| total elapsed {_eta_str(elapsed)} | ETA {_eta_str(eta)} (est. {_wall_clock_eta(eta)})"
+        )
+        print(f"  > {chunk_msg}")
+        if logger:
+            logger.update(f"  {chunk_msg}")
 
     return pd.concat(all_sharpe_series)
 
@@ -217,6 +253,7 @@ def run_sensitivity_orchestrator(
     param_grid: Dict[str, Any],
     save_results: bool = True,
     show_progress: bool = True,
+    logger: Any = None,
 ) -> Dict[str, Any]:
     """Orchestrate a vectorized sensitivity analysis (grid search)."""
     rm = ResultsManager("run_sensitivity") if save_results else None
@@ -225,7 +262,7 @@ def run_sensitivity_orchestrator(
     param_names = list(param_grid.keys())
 
     # Execute grid search
-    sharpe_series = _execute_sensitivity_grid(ohlcv, config, param_grid, show_progress)
+    sharpe_series = _execute_sensitivity_grid(ohlcv, config, param_grid, show_progress, logger)
 
     best_idx = sharpe_series.idxmax()
     best_params = _to_native(_extract_params(best_idx, sharpe_series, param_names, param_grid))
@@ -276,8 +313,10 @@ def _process_wfo_fold(
     train_mask = mover_mask.loc[train_idx] if mover_mask is not None else None
     test_mask = mover_mask.loc[test_idx] if mover_mask is not None else None
 
-    # Train
-    train_engine = FastBacktest(train_ohlcv, param_grid, config=config, mover_mask=train_mask)
+    # Train: WFO grid search must use non-vectorized path because it produces grid results
+    # The vectorized strategy path produces MultiIndex columns incompatible with sharpe_ratio() indexing
+    wfo_config = {**config, "USE_VECTORIZED": False}
+    train_engine = FastBacktest(train_ohlcv, param_grid, config=wfo_config, mover_mask=train_mask)
     pf_train = train_engine.run(show_progress=show_progress)
     train_metrics = pf_train.sharpe_ratio()
     if not isinstance(train_metrics, pd.Series):
@@ -298,8 +337,8 @@ def _process_wfo_fold(
 
     fold_best_params = _extract_params(best_param_idx, train_metrics, param_names, param_grid)
 
-    # Test
-    test_engine = FastBacktest(test_ohlcv, fold_best_params, config=config, mover_mask=test_mask)
+    # Test: use the same config as training (with vectorized disabled)
+    test_engine = FastBacktest(test_ohlcv, fold_best_params, config=wfo_config, mover_mask=test_mask)
     pf_test = test_engine.run(show_progress=show_progress)
 
     return {
@@ -374,6 +413,7 @@ def _execute_wfo_loop(
     n_splits: int,
     test_ratio: float,
     show_progress: bool,
+    logger: Any = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[int, pd.Series], List[pd.Series]]:
     """Iterates through the dataset and processes each WFO fold."""
     wfo_stats = []
@@ -381,9 +421,11 @@ def _execute_wfo_loop(
     oos_returns_list = []
 
     bounds = _calculate_wfo_bounds(len(ohlcv), n_splits, test_ratio)
+    t0_wfo = time.time()
 
     for i, (tr_start, tr_end, te_start, te_end) in enumerate(bounds):
         fold_idx = i + 1
+        fold_start = time.time()
 
         train_idx = ohlcv.index[tr_start:tr_end]
         test_idx = ohlcv.index[te_start:te_end]
@@ -404,7 +446,17 @@ def _execute_wfo_loop(
         oos_returns_list.append(fold_result.pop("oos_returns"))
         wfo_stats.append(fold_result)
 
-        print(f"  > Fold {fold_idx} Complete.")
+        fold_elapsed = time.time() - fold_start
+        total_elapsed = time.time() - t0_wfo
+        avg_per_fold = total_elapsed / fold_idx
+        eta = (n_splits - fold_idx) * avg_per_fold
+        fold_msg = (
+            f"Fold {fold_idx}/{n_splits} done in {fold_elapsed:.1f}s "
+            f"| total {_eta_str(total_elapsed)} | ETA {_eta_str(eta)} (est. {_wall_clock_eta(eta)})"
+        )
+        print(f"  > {fold_msg}")
+        if logger:
+            logger.update(f"  {fold_msg}")
 
     return wfo_stats, is_metrics_by_fold, oos_returns_list
 
@@ -464,7 +516,7 @@ def run_wfo_orchestrator(
     plot_wfo_splits(ohlcv, n_splits, test_ratio, results_manager=rm)
 
     wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
-        ohlcv, mover_mask, param_grid, config, param_names, n_splits, test_ratio, show_progress
+        ohlcv, mover_mask, param_grid, config, param_names, n_splits, test_ratio, show_progress, None
     )
 
     robust_top_5, best_robust_params = _calculate_robustness(
@@ -550,6 +602,7 @@ def run_wfo_per_coin_orchestrator(
             n_splits,
             test_ratio,
             show_progress,
+            None,
         )
 
         robust_top_5, best_robust_params = _calculate_robustness(is_metrics_by_fold, param_names, param_grid)
@@ -653,3 +706,289 @@ def _safe(val: float, default: float = 0.0) -> float:
     import math
 
     return default if (math.isnan(val) or math.isinf(val)) else val
+
+
+def analyze_sensitivity_results(
+    results_df: pd.DataFrame,
+    param_grid: Dict[str, Any],
+    top_percentile: int = 20,
+) -> Dict[str, Any]:
+    """Analyze sensitivity results to identify impactful parameters and narrow ranges.
+
+    For each parameter, computes the variance of Sharpe ratio across that parameter's
+    unique values (marginal effect). Returns a narrowed parameter grid that keeps
+    values producing top-N% Sharpe ratios.
+
+    Args:
+        results_df: DataFrame with parameter columns and 'Sharpe Ratio' column
+        param_grid: Original parameter grid
+        top_percentile: Keep parameter values in top N% by mean Sharpe ratio
+
+    Returns:
+        Narrowed parameter grid dict with reduced value ranges
+    """
+    if results_df.empty:
+        return param_grid
+
+    narrowed = {}
+
+    for param_name in param_grid.keys():
+        if param_name not in results_df.columns:
+            # Parameter not varied in sensitivity; keep original
+            narrowed[param_name] = param_grid[param_name]
+            continue
+
+        # Group by this parameter and compute mean Sharpe per value
+        grouped = results_df.groupby(param_name)["Sharpe Ratio"].agg(["mean", "count"])
+        grouped = grouped.sort_values("mean", ascending=False)
+
+        # Keep top N% of values by mean Sharpe
+        threshold_idx = max(1, int(len(grouped) * (top_percentile / 100)))
+        top_values = grouped.head(threshold_idx).index.tolist()
+
+        narrowed[param_name] = top_values
+
+        # Print summary
+        print(
+            f"  {param_name}: {len(grouped)} unique values -> {len(top_values)} "
+            f"(top {top_percentile}%): {top_values}"
+        )
+
+    return narrowed
+
+
+def run_multi_strategy_per_coin_wfo(
+    config: Dict[str, Any],
+    strategy_param_grids: Dict[str, Dict],
+    save_results: bool = True,
+    show_progress: bool = True,
+    logger: Any = None,
+) -> Dict[str, Any]:
+    """Run WFO for each symbol across multiple strategies, select best per coin.
+
+    Then run final validation backtest on full 3-year range using the best
+    strategy + params for each coin, combining them into one portfolio.
+
+    Args:
+        config: Portfolio and data configuration
+        strategy_param_grids: Dict mapping strategy name to narrowed param grid
+        save_results: Whether to save results
+        show_progress: Whether to show progress bars
+
+    Returns:
+        Dict with per_coin_results, final_portfolio, final_stats, results_manager
+    """
+    from ggTrader.indicators.strategies import ENTRY_REGISTRY, EXIT_REGISTRY
+
+    rm = ResultsManager("run_wfo_per_coin_multi_strategy") if save_results else None
+    ohlcv, mover_mask = load_data_with_movers(config)
+
+    n_splits = config.get("N_SPLITS", 5)
+    test_ratio = config.get("TEST_RATIO", 3.0)
+
+    symbols = ohlcv.columns.get_level_values(0).unique().tolist()
+    n_symbols = len(symbols)
+    n_strategies = len(strategy_param_grids)
+    print(f"\nStarting Multi-Strategy Per-Coin WFO ({n_symbols} symbols, {n_splits} splits)...")
+
+    # Dictionary to store best strategy + params per symbol
+    per_coin_results: Dict[str, Dict[str, Any]] = {}
+    t0_wfo_coins = time.time()
+
+    # Phase 2: Per-coin WFO loop - test all strategies for each coin
+    for coin_idx, symbol in enumerate(symbols):
+        coin_start = time.time()
+        print(f"\n--- Optimizing {symbol} ({coin_idx+1}/{n_symbols}) ---")
+
+        # Extract single-symbol data
+        symbol_ohlcv = ohlcv[[symbol]]
+        symbol_mover_mask = mover_mask[[symbol]] if mover_mask is not None else None
+
+        best_strategy = None
+        best_robust_score = -np.inf
+        best_params_for_coin = {}
+        best_wfo_stats = []
+        best_robust_top_5 = []
+
+        # Try each strategy
+        for strategy_name, param_grid in strategy_param_grids.items():
+            print(f"  Testing strategy: {strategy_name}")
+
+            # Set strategy in config
+            config_with_strategy = {**config, "ENTRY_STRATEGY": strategy_name}
+
+            # Run WFO for this coin+strategy combination
+            wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
+                symbol_ohlcv,
+                symbol_mover_mask,
+                param_grid,
+                config_with_strategy,
+                list(param_grid.keys()),
+                n_splits,
+                test_ratio,
+                show_progress,
+                logger,
+            )
+
+            robust_top_5, best_robust_params = _calculate_robustness(
+                is_metrics_by_fold, list(param_grid.keys()), param_grid
+            )
+
+            # Extract robustness score
+            robustness_score = robust_top_5[0]["robustness_score"] if robust_top_5 else -np.inf
+
+            print(f"    {strategy_name} robustness: {robustness_score:.4f}")
+
+            # Track best strategy for this coin
+            if robustness_score > best_robust_score:
+                best_robust_score = robustness_score
+                best_strategy = strategy_name
+                best_params_for_coin = best_robust_params
+                best_wfo_stats = wfo_stats
+                best_robust_top_5 = robust_top_5
+
+        per_coin_results[symbol] = {
+            "best_strategy": best_strategy,
+            "best_params": best_params_for_coin,
+            "robustness_score": best_robust_score,
+            "wfo_stats": best_wfo_stats,
+            "robust_top_5": best_robust_top_5,
+        }
+
+        coin_elapsed = time.time() - coin_start
+        total_elapsed = time.time() - t0_wfo_coins
+        avg_per_coin = total_elapsed / (coin_idx + 1)
+        eta = (n_symbols - coin_idx - 1) * avg_per_coin
+        status_msg = (
+            f"  > {symbol} ({coin_idx+1}/{n_symbols}): Best={best_strategy} "
+            f"Robustness={best_robust_score:.4f} | {coin_elapsed:.0f}s | ETA {_eta_str(eta)} (est. {_wall_clock_eta(eta)})"
+        )
+        print(status_msg)
+        if logger:
+            logger.update(status_msg)
+
+    # Phase 3: Final Validation Backtest on Full 3-Year Range
+    print("\n" + "=" * 100)
+    print("PHASE 3: FINAL VALIDATION BACKTEST (FULL 3-YEAR RANGE)")
+    print("=" * 100)
+
+    combined_entries_list = []
+    combined_exits_list = []
+    combined_close_list = []
+    per_coin_final_stats = {}
+
+    for symbol in symbols:
+        strategy_name = per_coin_results[symbol]["best_strategy"]
+        best_params = per_coin_results[symbol]["best_params"]
+
+        print(f"\nGenerating signals for {symbol} with {strategy_name}...")
+
+        symbol_ohlcv = ohlcv[[symbol]]
+
+        # Set strategy and run backtest on full range
+        config_for_final = {**config, "ENTRY_STRATEGY": strategy_name}
+        engine = FastBacktest(symbol_ohlcv, best_params, config=config_for_final)
+        pf = engine.run(show_progress=False)
+
+        # Extract signals from engine (they were computed in FastBacktest.run)
+        # We need to regenerate them since the portfolio object doesn't store the raw signals
+        close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)
+        high = symbol_ohlcv.xs("high", axis=1, level=1, drop_level=True)
+        low = symbol_ohlcv.xs("low", axis=1, level=1, drop_level=True)
+        
+        # Regenerate signals for final backtest
+        use_vectorized = config_for_final.get("USE_VECTORIZED", False)
+        if use_vectorized:
+            entries, exits, _ = engine._generate_signals_vectorized(show_progress=False)
+        else:
+            entries, exits, _ = engine._generate_signals(show_progress=False)
+
+        combined_entries_list.append(entries)
+        combined_exits_list.append(exits)
+        combined_close_list.append(close)
+
+        # Extract per-coin stats
+        stats = engine.get_stats()
+        per_coin_final_stats[symbol] = {
+            "strategy": strategy_name,
+            "params": _to_native(best_params),
+            **stats,
+        }
+
+    # Concatenate all symbols into combined signals
+    combined_entries = pd.concat(combined_entries_list, axis=1)
+    combined_exits = pd.concat(combined_exits_list, axis=1)
+    combined_close = pd.concat(combined_close_list, axis=1)
+
+    # Create combined final portfolio
+    final_pf = vbt.Portfolio.from_signals(
+        close=combined_close,
+        entries=combined_entries,
+        exits=combined_exits,
+        init_cash=float(config["START_CASH"]),
+        fees=float(config["FEES"]),
+        slippage=float(config["SLIPPAGE"]),
+        freq=config["FREQ"],
+        size=float(config["PORTFOLIO_SHARE"]),
+        size_type="percent",
+        cash_sharing=True,
+        group_by=np.full(combined_entries.shape[1], 0),
+    ).copy()
+
+    # Extract final combined stats
+    final_stats = {
+        "total_value": _safe(float(final_pf.final_value().sum())),
+        "total_profit": _safe(float(final_pf.total_profit().sum())),
+        "profit_pct": _safe(
+            float((final_pf.total_profit().sum() / float(config["START_CASH"])) * 100)
+        ),
+        "total_trades": int(final_pf.trades.count().sum()),
+        "win_rate": _safe(float(final_pf.trades.win_rate().mean() * 100)),
+        "sharpe": _safe(float(final_pf.sharpe_ratio().mean())),
+        "sortino": _safe(float(final_pf.sortino_ratio().mean())),
+        "max_drawdown": _safe(float(final_pf.max_drawdown().min() * 100)),
+    }
+
+    print(f"\nFinal Combined Portfolio (Full 3-Year Range):")
+    print(f"  Total Return: {final_stats['profit_pct']:.2f}%")
+    print(f"  Sharpe Ratio: {final_stats['sharpe']:.4f}")
+    print(f"  Max Drawdown: {final_stats['max_drawdown']:.2f}%")
+    print(f"  Total Trades: {final_stats['total_trades']}")
+
+    if save_results and rm:
+        # Save per-coin strategy selection
+        strategy_summary = []
+        for symbol, results in per_coin_results.items():
+            strategy_summary.append({
+                "symbol": symbol,
+                "strategy": results["best_strategy"],
+                "robustness_score": results["robustness_score"],
+            })
+
+        strategy_df = pd.DataFrame(strategy_summary)
+        rm.save_metrics(strategy_df, "per_coin_strategy_selection.csv")
+
+        # Save per-coin final stats
+        final_stats_df = pd.DataFrame([
+            {"symbol": sym, **stats} for sym, stats in per_coin_final_stats.items()
+        ])
+        rm.save_metrics(final_stats_df, "per_coin_final_stats.csv")
+
+        # Save overall results
+        metadata = {
+            **config,
+            "per_coin_results": _to_native(per_coin_results),
+            "per_coin_final_stats": _to_native(per_coin_final_stats),
+        }
+
+        rm.save_run_results(params={"per_coin": _to_native(per_coin_results)}, metrics=final_stats, metadata=metadata)
+        rm.save_vbt_dashboard(final_pf, "combined_portfolio_final_dashboard")
+        print(f"\nMulti-Strategy WFO Results saved to: {rm.run_dir}")
+
+    return {
+        "final_portfolio": final_pf,
+        "per_coin_results": per_coin_results,
+        "per_coin_final_stats": per_coin_final_stats,
+        "final_stats": final_stats,
+        "results_manager": rm,
+    }

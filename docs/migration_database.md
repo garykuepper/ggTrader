@@ -8,7 +8,7 @@ This guide outlines the steps to export the `ggtrader` database from the local D
 The most reliable way to export while seeing progress is via the provided Python utility. This script handles binary output safely and streams progress to your terminal.
 
 ```powershell
-python scripts/db/export_db.py
+python scripts/manage_db.py export
 ```
 
 - **What it does**: Runs `pg_dump -v` inside the `ggtrader_db` container and saves it to `ggtrader_dump.bak`.

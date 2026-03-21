@@ -29,6 +29,7 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
 
 - [**Architecture Guide**](docs/architecture.md): Deep dive into the project structure and data flow.
 - [**Installation & Setup**](docs/installation.md): How to get `ggTrader` running on your local machine.
+- [**Strategy Pipeline Guide**](docs/strategy_pipeline_guide.md): Comprehensive workflow for optimizing strategies across multiple cryptocurrencies.
 
 ## 📁 Project Structure
 
@@ -58,5 +59,11 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
    python scripts/run_walk_forward_optimization.py
    ```
 
+4. **Run Full Pipeline** (Sensitivity → Per-Coin WFO → Validation → Report):
+
+   ```bash
+   python scripts/run_full_pipeline.py
+   ```
+
 ---
-*For a more detailed breakdown, please refer to the [Architecture Guide](docs/architecture.md).*
+*For a more detailed breakdown, please refer to the [Strategy Pipeline Guide](docs/strategy_pipeline_guide.md) or [Architecture Guide](docs/architecture.md).*

@@ -118,18 +118,18 @@ From actual ingestion runs:
 
 ### Files Modified
 
-1. **`src/ggTrader/data/kraken/postgres_ingestor.py`**
+1. **`src/ggTrader/data/historical/postgres_ingestor.py`**
    - Added `_db_writer_worker()` method for threaded database writing
    - Modified `ingest_dir()` to use `ThreadPoolExecutor` for parallel parsing
    - Implemented queue-based communication between parsers and writers
    - Replaced SQLAlchemy with `psycopg2.extras.execute_values` for bulk inserts
    - Increased batch size to 10,000 records per insert
 
-2. **`scripts/data/ingest_kraken_data.py`**
+2. **`scripts/manage_data.py`**
    - Added `--force` flag to bypass manifest and sync all directories
 
-3. **`src/ggTrader/data/kraken/historical_data.py`**
-   - Added `force` parameter to `sync_local_data()` method
+3. **`src/ggTrader/data/historical/`** (module reorganized)
+   - Historical data handling moved to new structure
 
 ### Key Code Patterns
 
@@ -198,7 +198,7 @@ for t in writer_threads:
 ### Normal Sync (Incremental)
 
 ```bash
-python scripts/data/ingest_kraken_data.py --sync
+python scripts/manage_data.py ingest-kraken --sync
 ```
 
 Only processes directories not in `.processed_dirs.json` manifest.
@@ -206,7 +206,7 @@ Only processes directories not in `.processed_dirs.json` manifest.
 ### Force Sync (All Directories)
 
 ```bash
-python scripts/data/ingest_kraken_data.py --sync --force
+python scripts/manage_data.py ingest-kraken --sync --force
 ```
 
 Processes all directories regardless of manifest.
@@ -214,7 +214,7 @@ Processes all directories regardless of manifest.
 ### Specific Directory
 
 ```bash
-python scripts/data/ingest_kraken_data.py --dir data/raw/Kraken_OHLCVT_Q1_2025
+python scripts/manage_data.py ingest-kraken --dir data/raw/Kraken_OHLCVT_Q1_2025
 ```
 
 ---
