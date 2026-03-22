@@ -14,6 +14,7 @@ This directory contains the canonical Cursor rules for this repository. Prefer u
 - **`data-db-conventions.mdc`**: TimescaleDB usage, symbol normalization, SQL patterns, artifact naming, mover masking. Applies to `{src,scripts,notebooks}/**/*`.
 - **`scripts-and-notebooks.mdc`**: orchestration-only guidance for `scripts/` + `notebooks/` (path setup, standardized loading, resiliency). Applies to `{scripts,notebooks}/**/*`.
 - **`docs-standards.mdc`**: documentation consistency across `docs/` and `README.md`. Applies to `{docs/**/*.md,README.md}`.
+- **`powershell-pipeline-execution.mdc`**: PowerShell syntax, pipeline execution patterns, background process management, and monitoring. Applies to `{scripts/**/*.ps1,scripts/**/*.bat,scripts/run_full_pipeline.py}`.
 
 ## When to add a new rule file
 

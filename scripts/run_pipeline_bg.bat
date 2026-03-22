@@ -35,8 +35,11 @@ echo Output log: %logfile%
 echo Error log:  %errfile%
 echo.
 
-REM Run pipeline in background
-start /B python scripts/run_full_pipeline.py %args% > %logfile% 2> %errfile%
+REM Set environment for background run
+set "PYTHONUNBUFFERED=1"
+
+REM Run pipeline in background with --no-progress flag
+start /B python scripts/run_full_pipeline.py --no-progress %args% > %logfile% 2> %errfile%
 
 echo Pipeline started. PID: %ERRORLEVEL%
 echo.

@@ -37,8 +37,10 @@ CONSTANTS = {
     # WFO-specific configuration
     "N_SPLITS": 4,
     "TEST_RATIO": 2,
-    # Minimum trades to accept a result in optimization
-    "MIN_TRADES": 2,
+    # Legacy — no longer used as primary filter; kept for backward compat
+    "MIN_TRADES": 0,
+    # Require at least 1 completed round-trip on train window before ranking a combo
+    "MIN_CLOSED_TRADES_TRAIN": 1,
     # Memory optimization: process in chunks of N parameter combinations
     "CHUNK_SIZE": 500,
     # Strategy selection

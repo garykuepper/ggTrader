@@ -103,9 +103,10 @@ Runs a single backtest on the full 3-year range using WFO-selected parameters.
 
 **Process:**
 - For each coin, generate signals using its winning strategy + optimized parameters on full range
-- Combine all 20 coins' entries/exits into a single portfolio
+- Combine all configured symbols' entries/exits into a single portfolio
 - Run `vbt.Portfolio.from_signals()` with shared capital (cash_sharing=True)
-- Extract final metrics: return %, Sharpe, max drawdown, win rate, total trades
+- Extract final metrics: total return %, **CAGR** (from calendar span of the close index), Sharpe, max drawdown, win rate, total trades
+- Compute **benchmark**: equal-weight buy-and-hold (first-bar buy / last-bar sell per symbol) with the same `START_CASH`, `FEES`, `SLIPPAGE`, and bar frequency; report **excess CAGR** (strategy − benchmark)
 
 **Outputs:**
 - Per-coin final stats: `per_coin_final_stats.csv`
@@ -118,11 +119,11 @@ Generates a comprehensive markdown report summarizing all results.
 
 **Output:** `pipeline_report.md` with sections:
 
-- **Executive Summary**: Combined portfolio Sharpe, return, max DD
+- **Executive Summary**: Combined portfolio Sharpe, total return, **CAGR**, max DD, and **equal-weight B&H benchmark** (+ excess CAGR)
 - **Sensitivity Findings**: Parameter importance per strategy
 - **Per-Coin Strategy Selection**: Best strategy per coin with robustness scores
 - **Final Performance**: Per-coin metrics from full 3-year backtest
-- **Combined Portfolio**: Aggregate metrics across all 20 coins
+- **Combined Portfolio**: Aggregate metrics across all configured symbols
 - **Methodology**: Description of workflow and validation approach
 
 ## Strategy Descriptions
@@ -192,7 +193,7 @@ Edit `CONSTANTS` in `scripts/run_full_pipeline.py` to customize:
 ```python
 CONSTANTS = {
     "SYMBOLS_FILE": "data/top_25_USD_2023-01-01_2025-12-31.json",  # Data source
-    "MAX_SYMBOLS": 20,  # Number of coins to test
+    "MAX_SYMBOLS": 5,  # Debug preset (fast); full book: set 20 or `python scripts/run_full_pipeline.py --max-symbols 20`
     "START_DATE": "2023-01-01",
     "END_DATE": "2025-12-31",
     "INTERVAL": "4h",  # Candle interval
@@ -202,10 +203,40 @@ CONSTANTS = {
     "SLIPPAGE": 0.003,  # Slippage per trade
     "N_SPLITS": 4,  # Number of WFO folds
     "TEST_RATIO": 2,  # Train:test ratio (2:1)
-    "MIN_TRADES": 2,  # Minimum trades to accept result
+    "MIN_TRADES": 0,  # Legacy — no longer used as primary filter (kept for backward compat)
+    "MIN_CLOSED_TRADES_TRAIN": 1,  # Min completed round-trips on train window to be eligible
+    "REJECT_OPEN_END_IF_CLOSED_LT": 0,  # Optional stricter tier (0 = off)
+    "TRAIN_METRIC": "sharpe",  # WFO train fold: sharpe | sortino | calmar
+    "MAX_TRAIN_DRAWDOWN_PCT": None,  # e.g. 60 → drop combo if train max DD worse than -60%
     "CHUNK_SIZE": 500,  # Parameter combinations per chunk
 }
 ```
+
+### Debug vs full run
+
+| Mode | Command / setting |
+|------|-------------------|
+| **Debug (default)** | `MAX_SYMBOLS: 5` in `CONSTANTS` — faster pipeline while tuning gates and reports |
+| **Full universe** | `--max-symbols 20` or set `MAX_SYMBOLS` to `20` in `CONSTANTS` |
+
+### Cost and exit stress (research)
+
+Before trusting best parameters, re-run with **higher** `FEES` / `SLIPPAGE` (e.g. +25%) and/or widen
+`atr_multiplier` in `SENSITIVITY_PARAM_GRIDS` in a notebook. The default grid uses a **tighter**
+`atr_multiplier` band (`2.0`–`3.0`) for 4h crypto; expand intentionally when stress-testing.
+
+### Trade-count filtering
+
+The pipeline gates parameter combo selection on **completed round-trips** (`MIN_CLOSED_TRADES_TRAIN`),
+not raw trade count. This targets the root failure mode: a strategy that **buys and never exits**
+can produce an inflated Sharpe from a single unrealised drift — `pf.trades.count()` returns 0 for
+such a path (open positions at period-end are excluded), so it is automatically disqualified.
+
+| Key | Default | Effect |
+|-----|---------|--------|
+| `MIN_CLOSED_TRADES_TRAIN` | `1` | Require ≥ N closed trades on the **train** window before a combo enters Sharpe ranking. Set to `0` to disable all filtering. |
+| `REJECT_OPEN_END_IF_CLOSED_LT` | `0` (off) | Stricter add-on: also NaN combos still in an open position on the last train bar **and** fewer than N closed trades. Useful when a single lucky round-trip followed by an open hold still inflates Sharpe. |
+| `MIN_TRADES` | `0` | **Retired** as primary filter. Kept in config for backward compatibility; only has effect if you manually set it `> 0` and the old code path were re-enabled. |
 
 Edit parameter grids in `SENSITIVITY_PARAM_GRIDS` to test different ranges:
 

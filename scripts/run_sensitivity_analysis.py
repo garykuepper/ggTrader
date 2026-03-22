@@ -30,8 +30,10 @@ CONSTANTS = {
     "SLIPPAGE": 0.001,
     # Dynamic movers: set to 0 to disable, or e.g. 20 for top-20 daily
     "USE_MOVERS": 0,
-    # Minimum trades to accept a result in optimization
-    "MIN_TRADES": 5,
+    # Legacy — no longer used as primary filter; kept for backward compat
+    "MIN_TRADES": 0,
+    # Require at least 1 completed round-trip on the analysis window before ranking a combo
+    "MIN_CLOSED_TRADES_TRAIN": 1,
     # Memory optimization: process in chunks of N parameter combinations
     "CHUNK_SIZE": 1000,
     # Strategy selection

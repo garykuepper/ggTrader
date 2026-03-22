@@ -259,7 +259,7 @@ SignalFactory = vbt.IndicatorFactory(
 )
 
 
-@njit(parallel=True)
+@njit(parallel=False)
 def _atr_trailing_stop_long_ohlc_touch_2d_numba(
     high_vals: np.ndarray,
     low_vals: np.ndarray,
@@ -272,7 +272,7 @@ def _atr_trailing_stop_long_ohlc_touch_2d_numba(
     stop[:] = np.nan
     exits = np.zeros((n, m), dtype=np.bool_)
 
-    for j in prange(m):
+    for j in range(m):
         in_pos = False
         peak = 0.0
         current_stop = 0.0

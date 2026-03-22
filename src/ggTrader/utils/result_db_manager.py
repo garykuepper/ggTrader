@@ -2,10 +2,12 @@
 
 import csv
 import json
+import math
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 import pandas as pd
 from sqlalchemy import Connection, create_engine, text
 
@@ -315,18 +317,28 @@ class ResultDBManager:
         """Adds multiple numerical metrics for a specific run."""
         with self.engine.begin() as conn:
             for name, value in metrics_dict.items():
-                if isinstance(value, (int, float)):
-                    stmt = text(
-                        """
-                        INSERT INTO performance_metrics (run_id, metric_name, metric_value)
-                        VALUES (:run_id, :metric_name, :metric_value)
-                        ON CONFLICT (run_id, metric_name) 
-                        DO UPDATE SET metric_value = EXCLUDED.metric_value
-                        """
-                    )
-                    conn.execute(
-                        stmt, {"run_id": run_id, "metric_name": name, "metric_value": float(value)}
-                    )
+                if value is None:
+                    continue
+                if isinstance(value, bool):
+                    continue
+                if isinstance(value, (np.bool_,)):
+                    continue
+                if not isinstance(value, (int, float, np.integer, np.floating)):
+                    continue
+                fv = float(value)
+                if math.isnan(fv) or math.isinf(fv):
+                    continue
+                stmt = text(
+                    """
+                    INSERT INTO performance_metrics (run_id, metric_name, metric_value)
+                    VALUES (:run_id, :metric_name, :metric_value)
+                    ON CONFLICT (run_id, metric_name) 
+                    DO UPDATE SET metric_value = EXCLUDED.metric_value
+                    """
+                )
+                conn.execute(
+                    stmt, {"run_id": run_id, "metric_name": name, "metric_value": fv}
+                )
 
     def add_equity_curve(self, run_id: str, equity_series: pd.Series) -> None:
         """Inserts equity curve data into the database in bulk."""

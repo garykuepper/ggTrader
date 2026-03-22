@@ -65,14 +65,23 @@ class IndicatorPrecomputer:
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        psar_ind = vbt.IndicatorFactory.from_pandas_ta("psar").run(
-            self.high,
-            self.low,
-            close=self.close,
-            acceleration=accel,
-            maximum=maxim,
-            param_product=True,
-        )
+        if len(accel) == 1 and len(maxim) == 1:
+            psar_ind = vbt.IndicatorFactory.from_pandas_ta("psar").run(
+                self.high,
+                self.low,
+                close=self.close,
+                acceleration=float(accel[0]),
+                maximum=float(maxim[0]),
+            )
+        else:
+            psar_ind = vbt.IndicatorFactory.from_pandas_ta("psar").run(
+                self.high,
+                self.low,
+                close=self.close,
+                acceleration=accel,
+                maximum=maxim,
+                param_product=True,
+            )
         self._cache[cache_key] = psar_ind
         return psar_ind
 
@@ -94,9 +103,19 @@ class IndicatorPrecomputer:
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        adx_ind = vbt.IndicatorFactory.from_pandas_ta("adx").run(
-            self.high, self.low, self.close, length=[int(l) for l in lengths], param_product=True
-        )
+        # Single length + param_product breaks some pandas_ta/VBT builds (output split mismatch).
+        if len(lengths) == 1:
+            adx_ind = vbt.IndicatorFactory.from_pandas_ta("adx").run(
+                self.high, self.low, self.close, length=int(lengths[0])
+            )
+        else:
+            adx_ind = vbt.IndicatorFactory.from_pandas_ta("adx").run(
+                self.high,
+                self.low,
+                self.close,
+                length=[int(l) for l in lengths],
+                param_product=True,
+            )
         self._cache[cache_key] = adx_ind
         return adx_ind
 
@@ -118,9 +137,18 @@ class IndicatorPrecomputer:
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        atr_ind = vbt.IndicatorFactory.from_pandas_ta("atr").run(
-            self.high, self.low, self.close, length=[int(l) for l in lengths], param_product=True
-        )
+        if len(lengths) == 1:
+            atr_ind = vbt.IndicatorFactory.from_pandas_ta("atr").run(
+                self.high, self.low, self.close, length=int(lengths[0])
+            )
+        else:
+            atr_ind = vbt.IndicatorFactory.from_pandas_ta("atr").run(
+                self.high,
+                self.low,
+                self.close,
+                length=[int(l) for l in lengths],
+                param_product=True,
+            )
         self._cache[cache_key] = atr_ind
         return atr_ind
 
@@ -142,9 +170,14 @@ class IndicatorPrecomputer:
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        ema_ind = vbt.IndicatorFactory.from_pandas_ta("ema").run(
-            self.close, length=[int(l) for l in lengths], param_product=True
-        )
+        if len(lengths) == 1:
+            ema_ind = vbt.IndicatorFactory.from_pandas_ta("ema").run(
+                self.close, length=int(lengths[0])
+            )
+        else:
+            ema_ind = vbt.IndicatorFactory.from_pandas_ta("ema").run(
+                self.close, length=[int(l) for l in lengths], param_product=True
+            )
         self._cache[cache_key] = ema_ind
         return ema_ind
 
@@ -166,9 +199,14 @@ class IndicatorPrecomputer:
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        rsi_ind = vbt.IndicatorFactory.from_pandas_ta("rsi").run(
-            self.close, length=[int(l) for l in lengths], param_product=True
-        )
+        if len(lengths) == 1:
+            rsi_ind = vbt.IndicatorFactory.from_pandas_ta("rsi").run(
+                self.close, length=int(lengths[0])
+            )
+        else:
+            rsi_ind = vbt.IndicatorFactory.from_pandas_ta("rsi").run(
+                self.close, length=[int(l) for l in lengths], param_product=True
+            )
         self._cache[cache_key] = rsi_ind
         return rsi_ind
 

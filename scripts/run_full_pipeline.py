@@ -65,7 +65,7 @@ from ggTrader.utils.report_generator import generate_pipeline_report
 
 CONSTANTS = {
     "SYMBOLS_FILE": "data/top_25_USD_2023-01-01_2025-12-31.json",
-    "MAX_SYMBOLS": 20,
+    "MAX_SYMBOLS": 5,  # Debug preset (fast); use --max-symbols 20 for full book
     "START_DATE": "2023-01-01",
     "END_DATE": "2025-12-31",
     "INTERVAL": "4h",
@@ -76,7 +76,10 @@ CONSTANTS = {
     "SLIPPAGE": 0.003,
     "N_SPLITS": 4,
     "TEST_RATIO": 2,
-    "MIN_TRADES": 2,
+    "MIN_TRADES": 0,  # Legacy — no longer used as primary filter; kept for backward compat
+    "MIN_CLOSED_TRADES_TRAIN": 1,  # Require at least 1 completed round-trip on train window
+    "TRAIN_METRIC": "sharpe",  # Train fold selection: sharpe | sortino | calmar
+    "MAX_TRAIN_DRAWDOWN_PCT": None,  # e.g. 60 → NaN train metric if max DD worse than -60%
     "CHUNK_SIZE": 500,
     "USE_VECTORIZED": True,
     "USE_MOVERS": 0,
@@ -92,19 +95,23 @@ SENSITIVITY_PARAM_GRIDS = {
         "use_dmp_cross": [True, False],
     },
     "ema_cross": {
-        "ema_fast": [5, 9, 12],
-        "ema_slow": [21, 26, 34],
+        "ema_fast": [5, 9, 12, 20],
+        "ema_slow": [21, 34, 50, 100],
+        "atr_length": [10, 14, 20],
+        "atr_multiplier": [2.0, 2.5, 3.0],  # Tighter band for 4h crypto (stress wider in research)
     },
     "rsi_reversal": {
         "rsi_length": [7, 14, 21],
-        "rsi_oversold": [20, 30, 40],
+        "rsi_oversold": [20, 25, 30, 35, 40],
+        "atr_length": [10, 14, 20],
+        "atr_multiplier": [2.0, 2.5, 3.0],  # Tighter band for 4h crypto (stress wider in research)
     },
 }
 
 # Exit strategy parameter grid (shared for all entry strategies)
 EXIT_STRATEGY_PARAMS = {
     "atr_length": [10, 14, 20],
-    "atr_multiplier": [1.5, 2.0, 2.5, 3.0],
+    "atr_multiplier": [2.0, 2.5, 3.0],
 }
 
 
@@ -112,14 +119,8 @@ def _get_extended_param_grid(entry_strategy_name: str) -> dict:
     """Combine entry strategy params with exit strategy params."""
     entry_params = SENSITIVITY_PARAM_GRIDS.get(entry_strategy_name, {})
     
-    # Only include exit strategy params for PSAR strategy
-    # EMA and RSI use default ATR settings, not a grid
-    if entry_strategy_name == "psar_adx":
-        exit_params = EXIT_STRATEGY_PARAMS
-        return {**entry_params, **exit_params}
-    else:
-        # For EMA and RSI, use single fixed ATR params
-        return {**entry_params}
+    # All entry strategies now have ATR exit params in their grids
+    return entry_params
 
 
 def _prepare_config_and_symbols(config: dict) -> dict:
@@ -188,7 +189,7 @@ def phase_1_sensitivity_analysis(
         # Analyze and narrow parameter ranges
         print(f"Analyzing parameter importance for {strategy_name}...")
         if not results_df.empty:
-            narrowed_grid = analyze_sensitivity_results(results_df, param_grid, top_percentile=20)
+            narrowed_grid = analyze_sensitivity_results(results_df, param_grid, top_percentile=50)
             narrowed_grids[strategy_name] = narrowed_grid
             print(f"  Narrowed grid: {narrowed_grid}")
         else:
@@ -238,13 +239,27 @@ def phase_2_per_coin_multi_strategy_wfo(
 def main() -> None:
     """Orchestrate the full 4-phase pipeline."""
     parser = argparse.ArgumentParser(description="Run Full Trading Strategy Pipeline")
-    parser.add_argument("--progress", action="store_true", default=True, help="Show progress bars")
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable progress bars (recommended for background runs)"
+    )
     parser.add_argument("--no-save", action="store_true", help="Do not save results")
     parser.add_argument("--dry-run", action="store_true", help="Quick test: 3 coins, 1 chunk, 2 folds")
+    parser.add_argument(
+        "--max-symbols",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Override MAX_SYMBOLS (default: use CONSTANTS, currently 5 for debug)",
+    )
     args = parser.parse_args()
 
     # Prepare config and symbols
-    config = _prepare_config_and_symbols(CONSTANTS)
+    pipeline_config = dict(CONSTANTS)
+    if args.max_symbols is not None:
+        pipeline_config["MAX_SYMBOLS"] = args.max_symbols
+    config = _prepare_config_and_symbols(pipeline_config)
     
     # Apply dry-run adjustments
     if args.dry_run:
@@ -260,6 +275,9 @@ def main() -> None:
     pipeline_results_dir = Path(f"results/pipeline_{timestamp}")
     pipeline_results_dir.mkdir(parents=True, exist_ok=True)
     print(f"Pipeline results will be saved to: {pipeline_results_dir}")
+
+    # Determine show_progress: disable if --no-progress flag is set or if output is not a TTY
+    show_progress = not args.no_progress and sys.stdout.isatty()
 
     # Create status logger - write to status.txt for live monitoring
     logger = StatusLogger(pipeline_results_dir / "status.txt")
@@ -282,16 +300,17 @@ def main() -> None:
     try:
         # Phase 1: Sensitivity Analysis
         sensitivity_results = phase_1_sensitivity_analysis(
-            config, narrowed_grids, args.progress, args.dry_run, logger
+            config, narrowed_grids, show_progress, args.dry_run, logger
         )
 
         # Phase 2: Per-Coin Multi-Strategy WFO (includes Phase 3: Final Validation)
-        wfo_results = phase_2_per_coin_multi_strategy_wfo(config, narrowed_grids, args.progress, logger)
+        wfo_results = phase_2_per_coin_multi_strategy_wfo(config, narrowed_grids, show_progress, logger)
 
         # Extract final backtest results
         final_backtest_results = {
             "final_portfolio": wfo_results.get("final_portfolio"),
             "per_coin_results": wfo_results.get("per_coin_results", {}),
+            "per_coin_final_stats": wfo_results.get("per_coin_final_stats", {}),
             "final_stats": wfo_results.get("final_stats", {}),
         }
 

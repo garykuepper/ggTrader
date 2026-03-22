@@ -1,10 +1,49 @@
 """Generate comprehensive markdown report from pipeline results."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
+import numpy as np
 import pandas as pd
+
+_SENSITIVITY_METRIC_COLS = frozenset({"Sharpe Ratio", "Closed trades (agg)"})
+
+
+def _fmt_pct_opt(value: Any, decimals: int = 2) -> str:
+    """Format a percentage field; ``None``/invalid -> ``n/a``."""
+    if value is None:
+        return "n/a"
+    try:
+        return f"{float(value):.{decimals}f}%"
+    except (TypeError, ValueError):
+        return "n/a"
+
+
+def _fmt_float_opt(value: Any, decimals: int = 4) -> str:
+    """Format a numeric field; ``None``/invalid -> ``n/a``."""
+    if value is None:
+        return "n/a"
+    try:
+        return f"{float(value):.{decimals}f}"
+    except (TypeError, ValueError):
+        return "n/a"
+
+
+def _fmt_period(final_stats: Dict[str, Any]) -> str:
+    """Human-readable backtest window from orchestrator fields."""
+    start = final_stats.get("backtest_start")
+    end = final_stats.get("backtest_end")
+    if start and end:
+        return f"{start} -> {end}"
+    return "n/a"
+
+
+def _sensitivity_param_columns(results_df: pd.DataFrame) -> List[str]:
+    """Columns that are strategy parameters (not metrics)."""
+    return [c for c in results_df.columns if c not in _SENSITIVITY_METRIC_COLS]
 
 
 def generate_pipeline_report(
@@ -46,12 +85,28 @@ def generate_pipeline_report(
     lines.append("")
     lines.append("| Metric | Value |")
     lines.append("|--------|-------|")
+    lines.append(f"| Backtest period | {_fmt_period(final_stats)} |")
+    lines.append(f"| Calendar span (years) | {_fmt_float_opt(final_stats.get('backtest_years'), 3)} |")
     lines.append(f"| Total Return | {final_stats.get('profit_pct', 0):.2f}% |")
+    lines.append(f"| CAGR | {_fmt_pct_opt(final_stats.get('cagr_pct'))} |")
     lines.append(f"| Sharpe Ratio | {final_stats.get('sharpe', 0):.4f} |")
     lines.append(f"| Sortino Ratio | {final_stats.get('sortino', 0):.4f} |")
     lines.append(f"| Max Drawdown | {final_stats.get('max_drawdown', 0):.2f}% |")
     lines.append(f"| Total Trades | {final_stats.get('total_trades', 0)} |")
     lines.append(f"| Win Rate | {final_stats.get('win_rate', 0):.2f}% |")
+    lines.append("")
+    lines.append("### Benchmark: Equal-Weight Buy-and-Hold")
+    lines.append("")
+    lines.append(f"*{final_stats.get('benchmark_label', 'Same universe and transaction assumptions as the strategy run.')}*")
+    lines.append("")
+    lines.append("| Metric | Value |")
+    lines.append("|--------|-------|")
+    lines.append(f"| Total Return | {_fmt_pct_opt(final_stats.get('benchmark_profit_pct'))} |")
+    lines.append(f"| CAGR | {_fmt_pct_opt(final_stats.get('benchmark_cagr_pct'))} |")
+    lines.append(f"| Sharpe Ratio | {_fmt_float_opt(final_stats.get('benchmark_sharpe'))} |")
+    lines.append(f"| Max Drawdown | {_fmt_pct_opt(final_stats.get('benchmark_max_drawdown'))} |")
+    lines.append(f"| Total Trades | {final_stats.get('benchmark_total_trades', 0)} |")
+    lines.append(f"| Excess CAGR (strategy − benchmark) | {_fmt_pct_opt(final_stats.get('excess_cagr_pct'))} |")
     lines.append("")
 
     # Sensitivity Analysis Findings
@@ -65,21 +120,68 @@ def generate_pipeline_report(
         lines.append("")
 
         if not results_df.empty:
-            # Get top 5 parameter combinations by Sharpe
-            top_5 = results_df.nlargest(5, "Sharpe Ratio")
-            lines.append("**Top 5 Parameter Combinations (by Sharpe Ratio)**:")
-            lines.append("")
-            lines.append("| Params | Sharpe Ratio |")
-            lines.append("|--------|--------------|")
+            sr_num = pd.to_numeric(results_df["Sharpe Ratio"], errors="coerce")
+            finite_mask = np.isfinite(sr_num.to_numpy(dtype=float, copy=False))
+            param_cols = _sensitivity_param_columns(results_df)
 
-            for _, row in top_5.iterrows():
-                params_str = ", ".join(
-                    [f"{col}={row[col]}" for col in top_5.columns if col != "Sharpe Ratio"]
+            if not finite_mask.any():
+                lines.append(
+                    "**All sensitivity rows have NaN Sharpe** (typically gated by "
+                    "`MIN_CLOSED_TRADES_TRAIN`: no completed round-trip on the window, "
+                    "or train drawdown exceeded `MAX_TRAIN_DRAWDOWN_PCT` when set)."
                 )
-                sharpe = row["Sharpe Ratio"]
-                lines.append(f"| {params_str} | {sharpe:.4f} |")
+                lines.append("")
+                if "Closed trades (agg)" in results_df.columns:
+                    ct = results_df["Closed trades (agg)"]
+                    lines.append(
+                        f"- Closed trades (aggregated per combo): min={ct.min():.0f}, "
+                        f"max={ct.max():.0f}, mean={ct.mean():.2f}"
+                    )
+                    lines.append(
+                        f"- Rows with at least one closed trade: "
+                        f"{int((ct >= 1).sum())} / {len(results_df)}"
+                    )
+                    lines.append("")
+                lines.append("Showing first 5 parameter rows (for inspection):")
+                lines.append("")
+                sample = results_df.head(5)
+                hdr = "| Params | Sharpe Ratio |"
+                sep = "|--------|--------------|"
+                if "Closed trades (agg)" in sample.columns:
+                    hdr += " Closed trades (agg) |"
+                    sep += "----------------------|"
+                lines.append(hdr)
+                lines.append(sep)
+                for _, row in sample.iterrows():
+                    params_str = ", ".join(f"{c}={row[c]}" for c in param_cols)
+                    sh = row["Sharpe Ratio"]
+                    sh_s = f"{sh:.4f}" if pd.notna(sh) and np.isfinite(float(sh)) else "nan"
+                    line = f"| {params_str} | {sh_s} |"
+                    if "Closed trades (agg)" in sample.columns:
+                        line += f" {row['Closed trades (agg)']:.0f} |"
+                    lines.append(line)
+                lines.append("")
+            else:
+                top_5 = results_df.loc[finite_mask].nlargest(5, "Sharpe Ratio")
+                lines.append("**Top 5 Parameter Combinations (by Sharpe Ratio)**:")
+                lines.append("")
+                hdr = "| Params | Sharpe Ratio |"
+                sep = "|--------|--------------|"
+                if "Closed trades (agg)" in top_5.columns:
+                    hdr += " Closed trades (agg) |"
+                    sep += "----------------------|"
+                lines.append(hdr)
+                lines.append(sep)
 
-            lines.append("")
+                for _, row in top_5.iterrows():
+                    params_str = ", ".join(f"{c}={row[c]}" for c in param_cols)
+                    sharpe = float(row["Sharpe Ratio"])
+                    line = f"| {params_str} | {sharpe:.4f} |"
+                    if "Closed trades (agg)" in top_5.columns:
+                        line += f" {row['Closed trades (agg)']:.0f} |"
+                    lines.append(line)
+
+                lines.append("")
         else:
             lines.append("No sensitivity results available.")
             lines.append("")
@@ -130,7 +232,9 @@ def generate_pipeline_report(
     # Combined Portfolio Performance
     lines.append("## Combined Portfolio Performance")
     lines.append("")
-    lines.append("Aggregate results when all 20 coins trade simultaneously with shared capital.")
+    lines.append(
+        "Aggregate results when all configured symbols trade simultaneously with shared capital."
+    )
     lines.append("")
     lines.append("| Metric | Value |")
     lines.append("|--------|-------|")
@@ -151,8 +255,13 @@ def generate_pipeline_report(
     lines.append(
         "- Expanded parameter ranges tested for each entry strategy (PSAR+ADX, EMA Crossover, RSI Reversal)"
     )
-    lines.append("- Grid search evaluated all parameter combinations on top 20 cryptocurrencies")
-    lines.append("- Sharpe ratio used as primary optimization metric")
+    lines.append(
+        "- Grid search evaluated all parameter combinations on the configured symbol universe"
+    )
+    lines.append(
+        "- WFO train fold: metric from `TRAIN_METRIC` (sharpe / sortino / calmar); "
+        "gates via `MIN_CLOSED_TRADES_TRAIN` and optional `MAX_TRAIN_DRAWDOWN_PCT`"
+    )
     lines.append("")
 
     lines.append("### Phase 2: Per-Coin Multi-Strategy WFO")
@@ -170,6 +279,14 @@ def generate_pipeline_report(
     lines.append("### Phase 4: Reporting")
     lines.append("- Comprehensive analysis of parameter sensitivity, strategy selection, and final performance")
     lines.append("- Per-coin and combined portfolio metrics")
+    lines.append(
+        "- **CAGR**: geometric annualized return from total return over the calendar span "
+        "between the first and last bar of the combined close matrix"
+    )
+    lines.append(
+        "- **Benchmark**: equal-weight buy-and-hold on the same symbols, first-bar entry and "
+        "last-bar exit per leg, using the same `START_CASH`, `FEES`, `SLIPPAGE`, and bar frequency"
+    )
     lines.append("")
 
     lines.append("---")
@@ -178,7 +295,7 @@ def generate_pipeline_report(
 
     # Write report
     report_file = output_path / "pipeline_report.md"
-    with open(report_file, "w") as f:
+    with open(report_file, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines))
 
     print(f">>> Report generated: {report_file}")

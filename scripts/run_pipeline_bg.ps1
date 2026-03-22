@@ -37,10 +37,13 @@ $ScriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptPath
 
 # Build arguments
-$PythonArgs = @("$ScriptPath/run_full_pipeline.py")
+$PythonArgs = @("$ScriptPath/run_full_pipeline.py", "--no-progress")
 if ($DryRun) {
     $PythonArgs += "--dry-run"
 }
+
+# Set environment for background run
+$env:PYTHONUNBUFFERED = "1"
 
 # Determine log file path
 $LogDir = Join-Path $ProjectRoot "logs"

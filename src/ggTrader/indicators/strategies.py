@@ -10,6 +10,15 @@ from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.signals import _atr_trailing_stop_long_ohlc_touch_2d_numba
 
 
+def _nanmean_axis2_no_empty_warn(stacked: np.ndarray) -> np.ndarray:
+    """Column-wise nanmean along axis=2 without numpy 'Mean of empty slice' noise."""
+    summed = np.nansum(stacked, axis=2)
+    counts = np.sum(np.isfinite(stacked), axis=2)
+    out = np.full(summed.shape, np.nan, dtype=np.float64)
+    np.divide(summed, counts, out=out, where=counts > 0)
+    return out
+
+
 class EntryStrategy(Protocol):
     """Protocol for entry signal strategies."""
 
@@ -205,9 +214,21 @@ class EmaCrossEntry:
                     ema_fast = ema_vals[:, fast_idx] if ema_vals.shape[1] > fast_idx else ema_vals
                     ema_slow = ema_vals[:, slow_idx] if ema_vals.shape[1] > slow_idx else ema_vals
 
-                entries_combo = ema_fast > ema_slow
+                # Ensure 2D shape for crossover logic
+                if ema_fast.ndim == 1:
+                    ema_fast = ema_fast[:, np.newaxis]
+                if ema_slow.ndim == 1:
+                    ema_slow = ema_slow[:, np.newaxis]
 
-                entries_list.append(entries_combo)
+                # Crossover signal: fast crosses above slow (golden cross)
+                ema_fast_prev = np.roll(ema_fast.copy(), 1, axis=0)
+                ema_slow_prev = np.roll(ema_slow.copy(), 1, axis=0)
+                ema_fast_prev[0] = ema_fast[0]
+                ema_slow_prev[0] = ema_slow[0]
+                entries_combo = (ema_fast > ema_slow) & (ema_fast_prev <= ema_slow_prev)
+                entries_combo[0] = False
+
+                entries_list.append(entries_combo.astype(bool))
                 param_combos.append({"ema_fast": fast_len, "ema_slow": slow_len})
 
         entries_stacked = []
@@ -264,9 +285,17 @@ class RsiReversalEntry:
                 else:
                     rsi_col = rsi_vals
 
-                entries_combo = rsi_col < float(rsi_thresh)
+                # Ensure 2D shape for crossover logic
+                if rsi_col.ndim == 1:
+                    rsi_col = rsi_col[:, np.newaxis]
 
-                entries_list.append(entries_combo)
+                # Reversal signal: RSI crosses above oversold threshold (was below, now above)
+                rsi_col_prev = np.roll(rsi_col.copy(), 1, axis=0)
+                rsi_col_prev[0] = rsi_col[0]
+                entries_combo = (rsi_col > float(rsi_thresh)) & (rsi_col_prev <= float(rsi_thresh))
+                entries_combo[0] = False
+
+                entries_list.append(entries_combo.astype(bool))
                 param_combos.append({"rsi_length": rsi_len, "rsi_oversold": rsi_thresh})
 
         entries_stacked = []
@@ -349,7 +378,7 @@ class AtrTrailingExit:
 
         if exits_list:
             exits_array = np.any(np.stack(exits_list, axis=2), axis=2).astype(bool)
-            stops_array = np.nanmean(np.stack(stops_list, axis=2), axis=2)
+            stops_array = _nanmean_axis2_no_empty_warn(np.stack(stops_list, axis=2))
         else:
             exits_array = np.zeros_like(entries, dtype=bool)
             stops_array = np.full_like(entries, np.nan, dtype=np.float64)

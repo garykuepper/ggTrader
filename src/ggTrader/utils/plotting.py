@@ -107,6 +107,17 @@ def _plot_df_heatmap(
     p1, p2 = params_to_plot[0], params_to_plot[1]
     pivot = df.pivot_table(index=p1, columns=p2, values=metric_name, aggfunc="mean")
 
+    vals = pivot.to_numpy(dtype=float, copy=True)
+    if pivot.empty or vals.size == 0:
+        print(f"Skipping heatmap: empty pivot for {p1} vs {p2}.")
+        return
+    if not np.isfinite(vals).any():
+        print(
+            f"Skipping heatmap: no finite {metric_name} values "
+            f"(e.g. all NaN after MIN_TRADES filter)."
+        )
+        return
+
     fig = plt.figure(figsize=(12, 10))
     sns.heatmap(pivot, cmap="viridis", annot=True, fmt=".2f")
     plt.title(f"Heatmap: {metric_name} by {p1} & {p2}")

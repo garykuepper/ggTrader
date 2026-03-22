@@ -92,6 +92,10 @@ class FastBacktest:
         if self.mover_mask is not None:
             entries = self._apply_mover_mask(entries)
 
+        entries, exits, price_for_orders = self._sort_multindex_columns_for_groupby(
+            entries, exits, price_for_orders
+        )
+
         # 3. Determine Grouping
         group_by, use_cash_sharing = self._determine_grouping(entries)
 
@@ -140,6 +144,36 @@ class FastBacktest:
         price_for_orders = self.ohlcv.xs("close", level=1, axis=1)
 
         return sf.entries, sf.exits, price_for_orders
+
+    def _sort_multindex_columns_for_groupby(
+        self,
+        entries: pd.DataFrame,
+        exits: pd.DataFrame,
+        price_for_orders: pd.DataFrame,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Lex-sort MultiIndex columns so VectorBT group_by is contiguous (all paths)."""
+        if not isinstance(entries.columns, pd.MultiIndex):
+            return entries, exits, price_for_orders
+        sorted_cols = entries.columns.sort_values()
+        entries = entries[sorted_cols]
+        exits = exits[sorted_cols]
+        if entries.columns.equals(price_for_orders.columns):
+            return entries, exits, price_for_orders.reindex(columns=entries.columns)
+        # SignalFactory path: price is one column per symbol; entries use MultiIndex (symbol last level).
+        sym_level = entries.columns.get_level_values(-1)
+        pieces = []
+        for sym in sym_level:
+            if sym not in price_for_orders.columns:
+                raise KeyError(
+                    f"Symbol {sym!r} not in price columns: "
+                    f"{price_for_orders.columns.tolist()}"
+                )
+            ser = price_for_orders[sym].reindex(entries.index)
+            pieces.append(ser.to_numpy(dtype=np.float64, copy=True))
+        close_aligned = np.column_stack(pieces)
+        # Use entries.columns so VectorBT sees the same column Index object as entries/exits.
+        price_aligned = pd.DataFrame(close_aligned, index=entries.index, columns=entries.columns)
+        return entries, exits, price_aligned
 
     def _generate_signals_vectorized(
         self, show_progress: bool
@@ -209,6 +243,13 @@ class FastBacktest:
         exits_df = pd.DataFrame(exits, index=close.index, columns=multi_index)
         price_df = pd.DataFrame(price_for_orders_arr, index=close.index, columns=multi_index)
 
+        # VectorBT requires group_by labels to be contiguous; lex-sort MultiIndex columns.
+        if isinstance(entries_df.columns, pd.MultiIndex):
+            sorted_cols = entries_df.columns.sort_values()
+            entries_df = entries_df[sorted_cols]
+            exits_df = exits_df[sorted_cols]
+            price_df = price_df[sorted_cols]
+
         precomputer.clear_cache()
 
         return entries_df, exits_df, price_df
@@ -248,6 +289,14 @@ class FastBacktest:
         cash_sharing: bool,
     ) -> vbt.Portfolio:
         """Creates the VectorBT Portfolio object."""
+        idx = entries.index
+        close = close.reindex(idx)
+        exits = exits.reindex(idx)
+        if not close.columns.equals(entries.columns):
+            close = close.reindex(columns=entries.columns)
+        if not exits.columns.equals(entries.columns):
+            exits = exits.reindex(columns=entries.columns)
+
         # Force writable copies of everything to prevent Numba read-only errors
         # This is critical for metrics like profit_factor which modify arrays in-place
         close_writable = close.values.copy() if hasattr(close, "values") else close.copy()
@@ -288,19 +337,25 @@ class FastBacktest:
 
         import math
 
-        def _safe(val: float, default: float = 0.0) -> float:
-            """Replace NaN/Inf with default for JSON safety."""
-            return default if (math.isnan(val) or math.isinf(val)) else val
+        def _safe(val: object, default: float = 0.0) -> float:
+            """Replace None, NaN, or Inf with default for JSON safety."""
+            if val is None:
+                return default
+            try:
+                v = float(val)
+            except (TypeError, ValueError):
+                return default
+            return default if (math.isnan(v) or math.isinf(v)) else v
 
         return {
-            "total_value": _safe(float(total_value)),
-            "total_profit": _safe(float(total_profit)),
-            "profit_pct": _safe(float(profit_pct)),
+            "total_value": _safe(total_value),
+            "total_profit": _safe(total_profit),
+            "profit_pct": _safe(profit_pct),
             "total_trades": int(self.pf.trades.count().sum()),
-            "win_rate": _safe(float(self.pf.trades.win_rate().mean() * 100)),
-            "sharpe": _safe(float(self.pf.sharpe_ratio().mean())),
-            "sortino": _safe(float(self.pf.sortino_ratio().mean())),
-            "max_drawdown": _safe(float(self.pf.max_drawdown().min() * 100)),
+            "win_rate": _safe(self.pf.trades.win_rate().mean()) * 100,
+            "sharpe": _safe(self.pf.sharpe_ratio().mean()),
+            "sortino": _safe(self.pf.sortino_ratio().mean()),
+            "max_drawdown": _safe(self.pf.max_drawdown().min()) * 100,
         }
 
     def save_detailed_plots(self, results_manager, filename: str = "backtest_detailed") -> None:
