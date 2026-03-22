@@ -31,6 +31,10 @@ The project uses a **pluggable strategy framework** for flexible signal generati
   - `psar_adx`: Parabolic SAR + ADX momentum detection
   - `ema_cross`: EMA crossover (fast > slow)
   - `rsi_reversal`: RSI oversold reversal
+  - `macd_cross`: MACD line crosses above signal
+  - `bbands_mean_reversion`: Close crosses up through lower Bollinger band
+  - `donchian_breakout`: Close breaks above prior Donchian upper band
+  - `supertrend_flip`: Supertrend direction flips bullish
   - Custom strategies can be added to `ggTrader/indicators/strategies.py`
 
 - **Exit Strategies**: `EXIT_REGISTRY` maps exit classes:
@@ -40,7 +44,7 @@ The project uses a **pluggable strategy framework** for flexible signal generati
 ### Indicator Pre-computation
 
 `IndicatorPrecomputer` optimizes performance by:
-- Pre-computing each indicator (PSAR, ADX, ATR, EMA, RSI) once across full parameter ranges
+- Pre-computing each indicator (PSAR, ADX, ATR, EMA, RSI, MACD, BBands, Donchian, Supertrend) once across full parameter ranges
 - Caching results to avoid redundant calculations
 - Enabling numpy broadcasting for efficient parameter grid evaluation
 
@@ -69,10 +73,14 @@ This approach respects the volatility diversity of individual cryptocurrencies w
 
 ## Workflows
 
-1. **Single Backtest**: `scripts/run_backtest.py` runs a one-shot backtest on a symbol pool. Supports optional `--movers N` flag for dynamic universe filtering.
-2. **Sensitivity Analysis**: `scripts/run_sensitivity_analysis.py` performs grid search using `FastBacktest` broadcasting.
-3. **Walk-Forward Optimization**: `scripts/run_walk_forward_optimization.py` uses rolling time-series CV on vectorized results.
-4. **Full Pipeline**: `scripts/run_full_pipeline.py` chains sensitivity analysis → per-coin multi-strategy WFO → final validation → comprehensive report.
+Executable entry points live under `scripts/`; they require `pip install -e .` from the repo root so the `ggTrader` package resolves.
+
+1. **Single Backtest**: [`scripts/run_backtest.py`](../scripts/run_backtest.py) — optional `--symbols`, `--movers`, `--params`, `--no-progress`.
+2. **Sensitivity**: [`scripts/run_sensitivity_analysis.py`](../scripts/run_sensitivity_analysis.py) — `--no-progress`.
+3. **WFO**: [`scripts/run_walk_forward_optimization.py`](../scripts/run_walk_forward_optimization.py) — `--mode`, `--no-progress`.
+4. **Full pipeline** (per-coin multi-strategy WFO, validation, report): see [**Strategy Pipeline Guide**](strategy_pipeline_guide.md) and [`scripts/run_full_pipeline.py`](../scripts/run_full_pipeline.py).
+
+For a concise WFO → backtest recipe, see [**Analysis Guide**](analysis_guide.md).
 
 ## Legacy Modules
 

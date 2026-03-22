@@ -1,61 +1,51 @@
 # ggTrader Analysis Guide
 
-This guide describes the workflow for optimizing and validating trading strategies.
+Short workflow notes. **Authoritative command-line detail** for the full multi-coin pipeline (phases, flags, outputs) is in the [**Strategy Pipeline Guide**](strategy_pipeline_guide.md).
 
-## Workflow: WFO to Backtest
+## Workflow: WFO → Backtest
 
-1. **Run Walk-Forward Optimization (WFO)**:
+1. **Walk-Forward Optimization (WFO)**:
 
    ```bash
    python scripts/run_walk_forward_optimization.py
    ```
 
-   This script will save results in `results/run_wfo_YYYYMMDD_HHMMSS/`.
-   The best overall parameters will be exported to `params.json` within that folder.
+   Optional: `--mode per_coin`, `--no-progress`. Results under `results/run_wfo_*` (or per-coin naming from the orchestrator).
 
-2. **Validate with Backtest**:
-   Transfer the optimal parameters to a full backtest:
+2. **Validate with a full backtest** (load params from a WFO run folder):
 
    ```bash
    python scripts/run_backtest.py --params results/run_wfo_XXXXXX/params.json
    ```
 
-3. **Dynamic Mover Backtest** (optional):
-   Test with the top-N daily movers mask to simulate dynamic universe filtering:
+3. **Optional: fixed symbol list or mover mask** on the same backtest:
 
    ```bash
-   python scripts/run_backtest.py --params results/run_wfo_XXXXXX/params.json --movers 20
+   python scripts/run_backtest.py --symbols BTC-USD ETH-USD --movers 20
    ```
 
-## Sensitivity Analysis
+   `--movers 0` turns the mask off. Defaults for dates, symbol file, and fees live in [`ggTrader.utils.run_config`](../src/ggTrader/utils/run_config.py) (`backtest_script_config()`); override by editing that helper or the script if you need a permanent change.
 
-Check if your strategy is robust to small parameter changes:
+## Sensitivity Analysis
 
 ```bash
 python scripts/run_sensitivity_analysis.py
 ```
 
-View generated heatmaps and contour plots in the `results/run_sensitivity_XXXXXX/plots/` directory.
+Use `--no-progress` when you do not want tqdm/VectorBT progress output. Plots: `results/run_sensitivity_*/plots/`.
 
 ## Engine Notes
 
-All three workflows use `FastBacktest` with `config=CONSTANTS`:
+- **Config**: Portfolio-level settings are the orchestrator `config` dict; signal parameters are passed separately and may use list values for grids.
+- **Mover mask**: `USE_MOVERS` / `--movers N` builds a daily top-*N* mask when `N > 0`.
 
-- **Position sizing**: `PORTFOLIO_SHARE` controls per-trade allocation (shared capital pool).
-- **Signal params**: Passed separately, support list values for broadcasting grids.
-- **Mover mask**: Optional `--movers N` flag on `run_backtest.py` for daily top-N filtering.
+## Results Layout
 
-## Results Management
+Timestamped folders under `results/` typically include metadata, metrics, trades, and `plots/` where applicable. See the pipeline guide for pipeline-specific artifacts (`pipeline_report.md`, `status.txt`, etc.).
 
-Every run creates a timestamped folder in `results/`:
+## Notebooks
 
-- `run_metadata.json`: Parameters used, symbols, and dates.
-- `metrics.csv` / `trade_history.csv`: Performance data.
-- `plots/`: Visualizations (equity curves, sensitivity maps).
-
-## Notebook Integration
-
-Use the notebooks in `notebooks/` for interactive exploration. They import core logic from `src/` and are for **orchestration, analysis, and visualization** only.
+Notebooks under `notebooks/` are for exploration and charts; core logic stays in `src/ggTrader`.
 
 ---
 *Back to [README.md](../readme.md)*

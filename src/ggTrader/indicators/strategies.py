@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 from typing import Any, Protocol
 
 import numpy as np
@@ -17,6 +18,44 @@ def _nanmean_axis2_no_empty_warn(stacked: np.ndarray) -> np.ndarray:
     out = np.full(summed.shape, np.nan, dtype=np.float64)
     np.divide(summed, counts, out=out, where=counts > 0)
     return out
+
+
+def _vbt_multi_output_to_tps(
+    arr: Any,
+    n_time: int,
+    n_params: int,
+    n_symbols: int,
+) -> np.ndarray:
+    """Reshape VectorBT / pandas-ta outputs to ``(time, n_params, n_symbols)``.
+
+    With multiple OHLC columns and ``param_product``, VBT often returns a 2D array
+    shaped ``(T, n_params * n_symbols)`` (param blocks contiguous). Single-param
+    multi-symbol runs may be ``(T, n_symbols)``.
+    """
+    a = np.asarray(arr, dtype=np.float64)
+    if n_params < 1 or n_symbols < 1:
+        return a
+    if a.ndim == 3:
+        if a.shape == (n_time, n_params, n_symbols):
+            return a
+        if a.shape == (n_time, n_symbols, n_params):
+            return np.swapaxes(a, 1, 2)
+        return a
+    if a.ndim == 1 and a.size == n_time * n_params * n_symbols:
+        return a.reshape(n_time, n_params, n_symbols)
+    if a.ndim != 2 or a.shape[0] != n_time:
+        return a
+
+    ncol = a.shape[1]
+    if n_params == 1 and ncol == n_symbols:
+        return a.reshape(n_time, 1, n_symbols)
+    if n_symbols == 1 and ncol == n_params:
+        return a.reshape(n_time, n_params, 1)
+    if ncol == n_params * n_symbols:
+        return a.reshape(n_time, n_params, n_symbols)
+    if ncol == n_symbols * n_params:
+        return np.swapaxes(a.reshape(n_time, n_symbols, n_params), 1, 2)
+    return a
 
 
 class EntryStrategy(Protocol):
@@ -93,15 +132,33 @@ class PsarAdxEntry:
             close = close[:, np.newaxis]
         n_time, n_symbols = close.shape
 
-        sar_accel = param_grid.get("sar_acceleration", [0.02])
-        sar_max = param_grid.get("sar_maximum", [0.2])
-        adx_lengths = param_grid.get("adx_length", [14])
-        adx_thresholds = param_grid.get("adx_threshold", [25])
+        # Entry-only axes (ATR lives in param_grid for exits; expanded in FastBacktest).
+        val_by_key = {
+            "sar_acceleration": param_grid.get("sar_acceleration", [0.02]),
+            "sar_maximum": param_grid.get("sar_maximum", [0.2]),
+            "adx_length": param_grid.get("adx_length", [14]),
+            "adx_threshold": param_grid.get("adx_threshold", [25]),
+            "use_dmp_cross": param_grid.get("use_dmp_cross", [self.use_dmp_cross]),
+        }
+        for _k, _v in list(val_by_key.items()):
+            val_by_key[_k] = _v if isinstance(_v, list) else [_v]
 
-        sar_accel = sar_accel if isinstance(sar_accel, list) else [sar_accel]
-        sar_max = sar_max if isinstance(sar_max, list) else [sar_max]
-        adx_lengths = adx_lengths if isinstance(adx_lengths, list) else [adx_lengths]
-        adx_thresholds = adx_thresholds if isinstance(adx_thresholds, list) else [adx_thresholds]
+        _psar_canon = (
+            "sar_acceleration",
+            "sar_maximum",
+            "adx_length",
+            "adx_threshold",
+            "use_dmp_cross",
+        )
+        keys_psar = [k for k in param_grid.keys() if k in val_by_key]
+        for k in _psar_canon:
+            if k in val_by_key and k not in keys_psar:
+                keys_psar.append(k)
+
+        sar_accel = val_by_key["sar_acceleration"]
+        sar_max = val_by_key["sar_maximum"]
+        adx_lengths = val_by_key["adx_length"]
+        adx_thresholds = val_by_key["adx_threshold"]
 
         psar_ind = precomputer.compute_psar(sar_accel, sar_max)
         adx_ind = precomputer.compute_adx(adx_lengths)
@@ -109,48 +166,60 @@ class PsarAdxEntry:
         psarl = psar_ind.psarl.values if hasattr(psar_ind.psarl, "values") else psar_ind.psarl
         adx_vals = adx_ind.adx.values if hasattr(adx_ind.adx, "values") else adx_ind.adx
 
-        if adx_vals.ndim == 1:
-            adx_vals = adx_vals[:, np.newaxis]
+        n_psar = len(sar_accel) * len(sar_max)
+        n_adx = len(adx_lengths)
+        psarl = _vbt_multi_output_to_tps(psarl, n_time, n_psar, n_symbols)
+        adx_vals = _vbt_multi_output_to_tps(adx_vals, n_time, n_adx, n_symbols)
+
+        dmp = adx_ind.dmp.values if hasattr(adx_ind.dmp, "values") else adx_ind.dmp
+        dmn = adx_ind.dmn.values if hasattr(adx_ind.dmn, "values") else adx_ind.dmn
+        dmp = _vbt_multi_output_to_tps(dmp, n_time, n_adx, n_symbols)
+        dmn = _vbt_multi_output_to_tps(dmn, n_time, n_adx, n_symbols)
+
+        axis_val_lists = [val_by_key[k] for k in keys_psar]
 
         param_combos = []
         entries_list = []
 
-        for sar_accel_val in sar_accel:
-            for sar_max_val in sar_max:
-                for adx_len_idx, adx_len in enumerate(adx_lengths):
-                    for adx_thresh in adx_thresholds:
-                        sar_idx = sar_accel.index(sar_accel_val) * len(sar_max) + sar_max.index(sar_max_val)
-                        if psarl.ndim == 3:
-                            psar_close_compare = psarl[:, sar_idx, :] < close
-                        else:
-                            psar_close_compare = psarl < close
+        for tup in itertools.product(*axis_val_lists):
+            combo = dict(zip(keys_psar, tup))
+            sar_accel_val = combo["sar_acceleration"]
+            sar_max_val = combo["sar_maximum"]
+            adx_len = combo["adx_length"]
+            adx_thresh = combo["adx_threshold"]
+            use_dmp = bool(combo["use_dmp_cross"])
 
-                        if adx_vals.ndim == 3:
-                            adx_ok = adx_vals[:, adx_len_idx, :] >= float(adx_thresh)
-                        else:
-                            adx_ok = adx_vals >= float(adx_thresh)
+            adx_len_idx = adx_lengths.index(adx_len)
+            sar_idx = sar_accel.index(sar_accel_val) * len(sar_max) + sar_max.index(sar_max_val)
+            if psarl.ndim == 3:
+                psar_close_compare = psarl[:, sar_idx, :] < close
+            else:
+                psar_close_compare = psarl < close
 
-                        entries_combo = psar_close_compare & adx_ok
+            if adx_vals.ndim == 3:
+                adx_ok = adx_vals[:, adx_len_idx, :] >= float(adx_thresh)
+            else:
+                adx_ok = adx_vals >= float(adx_thresh)
 
-                        if self.use_dmp_cross:
-                            dmp = adx_ind.dmp.values if hasattr(adx_ind.dmp, "values") else adx_ind.dmp
-                            dmn = adx_ind.dmn.values if hasattr(adx_ind.dmn, "values") else adx_ind.dmn
-                            if dmp.ndim == 3:
-                                dmp_ok = dmp[:, adx_len_idx, :] > dmn[:, adx_len_idx, :]
-                            else:
-                                dmp_ok = dmp > dmn
-                            entries_combo = entries_combo & dmp_ok
+            entries_combo = psar_close_compare & adx_ok
 
-                        entries_list.append(entries_combo)
-                        param_combos.append(
-                            {
-                                "sar_acceleration": sar_accel_val,
-                                "sar_maximum": sar_max_val,
-                                "adx_length": adx_len,
-                                "adx_threshold": adx_thresh,
-                                "use_dmp_cross": self.use_dmp_cross,
-                            }
-                        )
+            if use_dmp:
+                if dmp.ndim == 3:
+                    dmp_ok = dmp[:, adx_len_idx, :] > dmn[:, adx_len_idx, :]
+                else:
+                    dmp_ok = dmp > dmn
+                entries_combo = entries_combo & dmp_ok
+
+            entries_list.append(entries_combo)
+            param_combos.append(
+                {
+                    "sar_acceleration": sar_accel_val,
+                    "sar_maximum": sar_max_val,
+                    "adx_length": adx_len,
+                    "adx_threshold": adx_thresh,
+                    "use_dmp_cross": use_dmp,
+                }
+            )
 
         entries_stacked = []
         for entries_combo in entries_list:
@@ -193,20 +262,28 @@ class EmaCrossEntry:
         all_ema_lengths = sorted(set(ema_fast_vals + ema_slow_vals))
         ema_ind = precomputer.compute_ema(all_ema_lengths)
         ema_vals = ema_ind.ema.values if hasattr(ema_ind.ema, "values") else ema_ind.ema
+        n_ema = len(all_ema_lengths)
+        ema_vals = _vbt_multi_output_to_tps(ema_vals, n_time, n_ema, n_symbols)
 
-        if ema_vals.ndim == 2:
-            ema_vals = ema_vals[:, :, np.newaxis]
+        ema_val_by_key = {"ema_fast": ema_fast_vals, "ema_slow": ema_slow_vals}
+        ema_keys = [k for k in param_grid.keys() if k in ema_val_by_key]
+        for k in ("ema_fast", "ema_slow"):
+            if k in ema_val_by_key and k not in ema_keys:
+                ema_keys.append(k)
 
         param_combos = []
         entries_list = []
 
-        for fast_len in ema_fast_vals:
-            for slow_len in ema_slow_vals:
-                if fast_len >= slow_len:
-                    continue
-                fast_idx = all_ema_lengths.index(fast_len)
-                slow_idx = all_ema_lengths.index(slow_len)
+        for tup in itertools.product(*[ema_val_by_key[k] for k in ema_keys]):
+            lens = dict(zip(ema_keys, tup))
+            fast_len = lens["ema_fast"]
+            slow_len = lens["ema_slow"]
+            fast_idx = all_ema_lengths.index(fast_len)
+            slow_idx = all_ema_lengths.index(slow_len)
 
+            if fast_len >= slow_len:
+                entries_combo = np.zeros((n_time, n_symbols), dtype=bool)
+            else:
                 if ema_vals.ndim == 3:
                     ema_fast = ema_vals[:, fast_idx, :]
                     ema_slow = ema_vals[:, slow_idx, :]
@@ -214,22 +291,21 @@ class EmaCrossEntry:
                     ema_fast = ema_vals[:, fast_idx] if ema_vals.shape[1] > fast_idx else ema_vals
                     ema_slow = ema_vals[:, slow_idx] if ema_vals.shape[1] > slow_idx else ema_vals
 
-                # Ensure 2D shape for crossover logic
                 if ema_fast.ndim == 1:
                     ema_fast = ema_fast[:, np.newaxis]
                 if ema_slow.ndim == 1:
                     ema_slow = ema_slow[:, np.newaxis]
 
-                # Crossover signal: fast crosses above slow (golden cross)
                 ema_fast_prev = np.roll(ema_fast.copy(), 1, axis=0)
                 ema_slow_prev = np.roll(ema_slow.copy(), 1, axis=0)
                 ema_fast_prev[0] = ema_fast[0]
                 ema_slow_prev[0] = ema_slow[0]
                 entries_combo = (ema_fast > ema_slow) & (ema_fast_prev <= ema_slow_prev)
                 entries_combo[0] = False
+                entries_combo = entries_combo.astype(bool)
 
-                entries_list.append(entries_combo.astype(bool))
-                param_combos.append({"ema_fast": fast_len, "ema_slow": slow_len})
+            entries_list.append(entries_combo)
+            param_combos.append({"ema_fast": fast_len, "ema_slow": slow_len})
 
         entries_stacked = []
         for entries_combo in entries_list:
@@ -271,32 +347,39 @@ class RsiReversalEntry:
 
         rsi_ind = precomputer.compute_rsi(rsi_lengths)
         rsi_vals = rsi_ind.rsi.values if hasattr(rsi_ind.rsi, "values") else rsi_ind.rsi
+        n_rsi = len(rsi_lengths)
+        rsi_vals = _vbt_multi_output_to_tps(rsi_vals, n_time, n_rsi, n_symbols)
 
-        if rsi_vals.ndim == 2:
-            rsi_vals = rsi_vals[:, :, np.newaxis]
+        rsi_val_by_key = {"rsi_length": rsi_lengths, "rsi_oversold": rsi_oversold_vals}
+        rsi_keys = [k for k in param_grid.keys() if k in rsi_val_by_key]
+        for k in ("rsi_length", "rsi_oversold"):
+            if k in rsi_val_by_key and k not in rsi_keys:
+                rsi_keys.append(k)
 
         param_combos = []
         entries_list = []
 
-        for rsi_len_idx, rsi_len in enumerate(rsi_lengths):
-            for rsi_thresh in rsi_oversold_vals:
-                if rsi_vals.ndim == 3:
-                    rsi_col = rsi_vals[:, rsi_len_idx, :]
-                else:
-                    rsi_col = rsi_vals
+        for tup in itertools.product(*[rsi_val_by_key[k] for k in rsi_keys]):
+            lens = dict(zip(rsi_keys, tup))
+            rsi_len = lens["rsi_length"]
+            rsi_thresh = lens["rsi_oversold"]
+            rsi_len_idx = rsi_lengths.index(rsi_len)
 
-                # Ensure 2D shape for crossover logic
-                if rsi_col.ndim == 1:
-                    rsi_col = rsi_col[:, np.newaxis]
+            if rsi_vals.ndim == 3:
+                rsi_col = rsi_vals[:, rsi_len_idx, :]
+            else:
+                rsi_col = rsi_vals
 
-                # Reversal signal: RSI crosses above oversold threshold (was below, now above)
-                rsi_col_prev = np.roll(rsi_col.copy(), 1, axis=0)
-                rsi_col_prev[0] = rsi_col[0]
-                entries_combo = (rsi_col > float(rsi_thresh)) & (rsi_col_prev <= float(rsi_thresh))
-                entries_combo[0] = False
+            if rsi_col.ndim == 1:
+                rsi_col = rsi_col[:, np.newaxis]
 
-                entries_list.append(entries_combo.astype(bool))
-                param_combos.append({"rsi_length": rsi_len, "rsi_oversold": rsi_thresh})
+            rsi_col_prev = np.roll(rsi_col.copy(), 1, axis=0)
+            rsi_col_prev[0] = rsi_col[0]
+            entries_combo = (rsi_col > float(rsi_thresh)) & (rsi_col_prev <= float(rsi_thresh))
+            entries_combo[0] = False
+
+            entries_list.append(entries_combo.astype(bool))
+            param_combos.append({"rsi_length": rsi_len, "rsi_oversold": rsi_thresh})
 
         entries_stacked = []
         for entries_combo in entries_list:
@@ -312,6 +395,271 @@ class RsiReversalEntry:
         return entries_array.astype(bool), param_combos
 
 
+class MacdCrossEntry:
+    """MACD line crosses above signal line (bullish)."""
+
+    name = "macd_cross"
+    param_schema = {
+        "macd_fast": [12],
+        "macd_slow": [26],
+        "macd_signal": [9],
+    }
+
+    def compute_entries(
+        self, precomputer: IndicatorPrecomputer, param_grid: dict
+    ) -> tuple[np.ndarray, list[dict]]:
+        """Generate entries on MACD bullish crossover."""
+        close = precomputer.close
+        if close.ndim == 1:
+            close = close[:, np.newaxis]
+        n_time, n_symbols = close.shape
+
+        fasts = param_grid.get("macd_fast", [12])
+        slows = param_grid.get("macd_slow", [26])
+        signals = param_grid.get("macd_signal", [9])
+        fasts = fasts if isinstance(fasts, list) else [fasts]
+        slows = slows if isinstance(slows, list) else [slows]
+        signals = signals if isinstance(signals, list) else [signals]
+
+        macd_ind = precomputer.compute_macd(fasts, slows, signals)
+        macd_line = macd_ind.macd.values if hasattr(macd_ind.macd, "values") else macd_ind.macd
+        macd_sig = macd_ind.macds.values if hasattr(macd_ind.macds, "values") else macd_ind.macds
+
+        n_p = len(fasts) * len(slows) * len(signals)
+        macd_line = _vbt_multi_output_to_tps(macd_line, n_time, n_p, n_symbols)
+        macd_sig = _vbt_multi_output_to_tps(macd_sig, n_time, n_p, n_symbols)
+
+        val_by_key = {
+            "macd_fast": fasts,
+            "macd_slow": slows,
+            "macd_signal": signals,
+        }
+        # Column order matches VBT ``macd`` param_product: fast × slow × signal.
+        macd_axis = ("macd_fast", "macd_slow", "macd_signal")
+
+        combos = list(itertools.product(*[val_by_key[k] for k in macd_axis]))
+        idx_map = {tup: i for i, tup in enumerate(combos)}
+
+        param_combos: list[dict] = []
+        entries_list: list[np.ndarray] = []
+
+        for tup in combos:
+            f_v = int(tup[0])
+            s_v = int(tup[1])
+            g_v = int(tup[2])
+            ci = idx_map[tup]
+
+            if f_v >= s_v:
+                entries_combo = np.zeros((n_time, n_symbols), dtype=bool)
+            elif macd_line.ndim == 3:
+                m = macd_line[:, ci, :]
+                ms = macd_sig[:, ci, :]
+                m_prev = np.roll(m.copy(), 1, axis=0)
+                ms_prev = np.roll(ms.copy(), 1, axis=0)
+                m_prev[0] = m[0]
+                ms_prev[0] = ms[0]
+                entries_combo = (m > ms) & (m_prev <= ms_prev)
+                entries_combo[0] = False
+                entries_combo = entries_combo.astype(bool)
+            else:
+                entries_combo = np.zeros((n_time, n_symbols), dtype=bool)
+
+            param_combos.append(
+                {"macd_fast": f_v, "macd_slow": s_v, "macd_signal": g_v}
+            )
+            entries_list.append(entries_combo)
+
+        entries_stacked = [e.reshape(n_time, -1) if e.ndim == 2 else e for e in entries_list]
+        entries_array = (
+            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+        )
+        return entries_array.astype(bool), param_combos
+
+
+class BollingerMeanReversionEntry:
+    """Long when price crosses back above the lower Bollinger band."""
+
+    name = "bbands_mean_reversion"
+    param_schema = {
+        "bb_length": [20],
+        "bb_std": [2.0],
+    }
+
+    def compute_entries(
+        self, precomputer: IndicatorPrecomputer, param_grid: dict
+    ) -> tuple[np.ndarray, list[dict]]:
+        """Entries on close crossing up through the lower band (oversold bounce)."""
+        close = precomputer.close
+        if close.ndim == 1:
+            close = close[:, np.newaxis]
+        n_time, n_symbols = close.shape
+
+        lengths = param_grid.get("bb_length", [20])
+        stds = param_grid.get("bb_std", [2.0])
+        lengths = lengths if isinstance(lengths, list) else [lengths]
+        stds = stds if isinstance(stds, list) else [stds]
+
+        bbl_by_std: dict[float, np.ndarray] = {}
+        for st in stds:
+            stf = float(st)
+            bb_ind = precomputer.compute_bbands(lengths, stf)
+            bbl = bb_ind.bbl.values if hasattr(bb_ind.bbl, "values") else bb_ind.bbl
+            n_l = len(lengths)
+            bbl_by_std[stf] = _vbt_multi_output_to_tps(bbl, n_time, n_l, n_symbols)
+
+        val_by_key = {"bb_length": lengths, "bb_std": stds}
+        bb_axis = ("bb_length", "bb_std")
+
+        param_combos = []
+        entries_list = []
+
+        for tup in itertools.product(*[val_by_key[k] for k in bb_axis]):
+            lens = dict(zip(bb_axis, tup))
+            bb_len = int(lens["bb_length"])
+            bb_st = float(lens["bb_std"])
+            li = lengths.index(bb_len)
+            bbl_plane = bbl_by_std[bb_st][:, li, :]
+            if bbl_plane.ndim == 1:
+                bbl_plane = bbl_plane[:, np.newaxis]
+
+            bbl_prev = np.roll(bbl_plane.copy(), 1, axis=0)
+            bbl_prev[0] = bbl_plane[0]
+            close_prev = np.roll(close.copy(), 1, axis=0)
+            close_prev[0] = close[0]
+
+            entries_combo = (close > bbl_plane) & (close_prev <= bbl_prev)
+            entries_combo[0] = False
+            entries_list.append(entries_combo.astype(bool))
+            param_combos.append({"bb_length": bb_len, "bb_std": bb_st})
+
+        entries_stacked = [e.reshape(n_time, -1) for e in entries_list]
+        entries_array = (
+            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+        )
+        return entries_array.astype(bool), param_combos
+
+
+class DonchianBreakoutEntry:
+    """Long on close breaking above the prior bar's Donchian upper band."""
+
+    name = "donchian_breakout"
+    param_schema = {"donchian_length": [20]}
+
+    def compute_entries(
+        self, precomputer: IndicatorPrecomputer, param_grid: dict
+    ) -> tuple[np.ndarray, list[dict]]:
+        """Breakout entry without same-bar lookahead (vs prior upper channel)."""
+        close = precomputer.close
+        if close.ndim == 1:
+            close = close[:, np.newaxis]
+        n_time, n_symbols = close.shape
+
+        lengths = param_grid.get("donchian_length", [20])
+        lengths = lengths if isinstance(lengths, list) else [lengths]
+
+        dc_ind = precomputer.compute_donchian(lengths)
+        dcu = dc_ind.dcu.values if hasattr(dc_ind.dcu, "values") else dc_ind.dcu
+        dcu = np.asarray(dcu, dtype=np.float64)
+        n_dc = len(lengths)
+        if dcu.ndim == 2:
+            dcu = _vbt_multi_output_to_tps(dcu, n_time, n_dc, n_symbols)
+
+        param_combos = []
+        entries_list = []
+
+        for d_len in lengths:
+            d_len = int(d_len)
+            li = lengths.index(d_len)
+            if dcu.ndim == 3:
+                u = dcu[:, li, :]
+            else:
+                u = dcu
+
+            if u.ndim == 1:
+                u = u[:, np.newaxis]
+
+            u_prev = np.roll(u.copy(), 1, axis=0)
+            u_prev[0, :] = u[0, :]
+            close_prev = np.roll(close.copy(), 1, axis=0)
+            close_prev[0, :] = close[0, :]
+
+            entries_combo = (close > u_prev) & (close_prev <= u_prev)
+            entries_combo[0] = False
+            entries_list.append(entries_combo.astype(bool))
+            param_combos.append({"donchian_length": d_len})
+
+        entries_stacked = [e.reshape(n_time, -1) for e in entries_list]
+        entries_array = (
+            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+        )
+        return entries_array.astype(bool), param_combos
+
+
+class SupertrendFlipEntry:
+    """Long on Supertrend bullish flip (direction -1 to 1)."""
+
+    name = "supertrend_flip"
+    param_schema = {
+        "st_length": [10],
+        "st_multiplier": [3.0],
+    }
+
+    def compute_entries(
+        self, precomputer: IndicatorPrecomputer, param_grid: dict
+    ) -> tuple[np.ndarray, list[dict]]:
+        """Entry when ``supertd`` transitions from bearish to bullish."""
+        close = precomputer.close
+        if close.ndim == 1:
+            close = close[:, np.newaxis]
+        n_time, n_symbols = close.shape
+
+        lengths = param_grid.get("st_length", [10])
+        mults = param_grid.get("st_multiplier", [3.0])
+        lengths = lengths if isinstance(lengths, list) else [lengths]
+        mults = mults if isinstance(mults, list) else [mults]
+
+        st_ind = precomputer.compute_supertrend(lengths, mults)
+        td = st_ind.supertd.values if hasattr(st_ind.supertd, "values") else st_ind.supertd
+        td = np.asarray(td, dtype=np.float64)
+        n_p = len(lengths) * len(mults)
+
+        if td.ndim == 2:
+            td = _vbt_multi_output_to_tps(td, n_time, n_p, n_symbols)
+
+        val_by_key = {"st_length": lengths, "st_multiplier": mults}
+        st_axis = ("st_length", "st_multiplier")
+        combo_list = list(itertools.product(*[val_by_key[k] for k in st_axis]))
+
+        param_combos = []
+        entries_list = []
+
+        for ci, tup in enumerate(combo_list):
+            L = int(tup[0])
+            m = float(tup[1])
+
+            if td.ndim == 3:
+                d = td[:, ci, :]
+            else:
+                d = td
+
+            if d.ndim == 1:
+                d = d[:, np.newaxis]
+
+            d_prev = np.roll(d.copy(), 1, axis=0)
+            d_prev[0, :] = d[0, :]
+            entries_combo = np.isfinite(d) & np.isfinite(d_prev)
+            entries_combo &= (d >= 1.0) & (d_prev <= -1.0)
+            entries_combo[0] = False
+            entries_list.append(entries_combo.astype(bool))
+            param_combos.append({"st_length": L, "st_multiplier": m})
+
+        entries_stacked = [e.reshape(n_time, -1) for e in entries_list]
+        entries_array = (
+            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+        )
+        return entries_array.astype(bool), param_combos
+
+
 class AtrTrailingExit:
     """ATR-based trailing stop exit strategy."""
 
@@ -324,7 +672,7 @@ class AtrTrailingExit:
     def compute_exits(
         self, entries: np.ndarray, precomputer: IndicatorPrecomputer, param_grid: dict, n_symbols: int
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Generate ATR trailing stop exits."""
+        """Generate ATR trailing stop exits (paired per entry block when ATR grid > 1)."""
         n_time, n_cols = entries.shape
         atr_lengths = param_grid.get("atr_length", [14])
         atr_multipliers = param_grid.get("atr_multiplier", [3.0])
@@ -346,55 +694,89 @@ class AtrTrailingExit:
         atr_ind = precomputer.compute_atr(atr_lengths)
         atr_vals = atr_ind.atrr.values if hasattr(atr_ind.atrr, "values") else atr_ind.atrr
 
-        if atr_vals.ndim == 2:
-            atr_vals = atr_vals[:, :, np.newaxis]
+        n_sym = n_symbols
+        n_atr_len = len(atr_lengths)
+        atr_vals = _vbt_multi_output_to_tps(atr_vals, n_time, n_atr_len, n_sym)
+        n_blocks = n_cols // n_sym if n_cols >= n_sym else 1
+        n_atr = len(atr_lengths) * len(atr_multipliers)
 
-        exits_list = []
-        stops_list = []
-
-        # Handle case where n_cols might not match expected
-        n_entry_combos = n_cols // n_symbols if n_cols >= n_symbols else 1
-
-        for atr_len_idx, _ in enumerate(atr_lengths):
-            for atr_mult in atr_multipliers:
-                if atr_vals.ndim == 3:
-                    atr_combo = np.tile(atr_vals[:, atr_len_idx, :], (1, n_entry_combos))
-                else:
-                    atr_combo = atr_vals
-
-                high_broad = np.tile(high, (1, n_entry_combos))
-                low_broad = np.tile(low, (1, n_entry_combos))
-
-                stops, exits = _atr_trailing_stop_long_ohlc_touch_2d_numba(
-                    np.asarray(high_broad, dtype=np.float64),
-                    np.asarray(low_broad, dtype=np.float64),
-                    np.asarray(atr_combo, dtype=np.float64),
-                    np.asarray(entries, dtype=np.bool_),
-                    float(atr_mult),
+        # FastBacktest expands entries so each (entry_combo, atr_pair) gets its own columns
+        # when n_atr > 1; block i corresponds to e = i // n_atr, k = i % n_atr.
+        if n_atr > 1:
+            if n_blocks % n_atr != 0:
+                raise ValueError(
+                    f"ATR trailing: entries width {n_cols} not divisible by n_sym * n_atr "
+                    f"({n_sym} * {n_atr})."
                 )
+            atr_axis_keys = [k for k in param_grid.keys() if k in ("atr_length", "atr_multiplier")]
+            atr_lists = [
+                (param_grid[k] if isinstance(param_grid[k], list) else [param_grid[k]])
+                for k in atr_axis_keys
+            ]
+            pair_tuples = list(itertools.product(*atr_lists))
+            if len(pair_tuples) != n_atr:
+                raise ValueError("ATR param product size mismatch in vectorized exit.")
 
-                exits_list.append(exits)
-                stops_list.append(stops)
+            exits_parts: list[np.ndarray] = []
+            stops_parts: list[np.ndarray] = []
+            price_parts: list[np.ndarray] = []
 
-        if exits_list:
-            exits_array = np.any(np.stack(exits_list, axis=2), axis=2).astype(bool)
-            stops_array = _nanmean_axis2_no_empty_warn(np.stack(stops_list, axis=2))
+            for i in range(n_blocks):
+                ent_sl = entries[:, i * n_sym : (i + 1) * n_sym]
+                j = i % n_atr
+                pmap = dict(zip(atr_axis_keys, pair_tuples[j]))
+                alen = pmap["atr_length"]
+                atr_mult = float(pmap["atr_multiplier"])
+                atr_len_idx = atr_lengths.index(alen)
+                if atr_vals.ndim == 3:
+                    atr_sl = atr_vals[:, atr_len_idx, :]
+                else:
+                    atr_sl = atr_vals
+
+                stops, ex = _atr_trailing_stop_long_ohlc_touch_2d_numba(
+                    np.asarray(high, dtype=np.float64),
+                    np.asarray(low, dtype=np.float64),
+                    np.asarray(atr_sl, dtype=np.float64),
+                    np.asarray(ent_sl, dtype=np.bool_),
+                    atr_mult,
+                )
+                gap_adj = np.minimum(open_, stops)
+                price_b = np.where(ex, gap_adj, close).astype(np.float64)
+                exits_parts.append(ex)
+                stops_parts.append(stops)
+                price_parts.append(price_b)
+
+            exits_array = np.hstack(exits_parts).astype(bool)
+            stops_array = np.hstack(stops_parts)
+            price_for_orders = np.hstack(price_parts)
+            return exits_array, stops_array, price_for_orders
+
+        # Single (atr_length, atr_multiplier): one ATR setting applied to all entry combos.
+        n_entry_combos = n_blocks
+        atr_len_idx = 0
+        atr_mult = float(atr_multipliers[0])
+        if atr_vals.ndim == 3:
+            atr_combo = np.tile(atr_vals[:, atr_len_idx, :], (1, n_entry_combos))
         else:
-            exits_array = np.zeros_like(entries, dtype=bool)
-            stops_array = np.full_like(entries, np.nan, dtype=np.float64)
+            atr_combo = atr_vals
+
+        high_broad = np.tile(high, (1, n_entry_combos))
+        low_broad = np.tile(low, (1, n_entry_combos))
+
+        stops, exits_array = _atr_trailing_stop_long_ohlc_touch_2d_numba(
+            np.asarray(high_broad, dtype=np.float64),
+            np.asarray(low_broad, dtype=np.float64),
+            np.asarray(atr_combo, dtype=np.float64),
+            np.asarray(entries, dtype=np.bool_),
+            atr_mult,
+        )
 
         open_broad = np.tile(open_, (1, n_entry_combos))
-        gap_adjusted_stops = np.minimum(open_broad, stops_array)
-
-        # Ensure close is broadcasted to match exits shape
-        if close.shape[1] != exits_array.shape[1]:
-            close_broad = np.tile(close, (1, n_entry_combos))
-        else:
-            close_broad = close
-
+        gap_adjusted_stops = np.minimum(open_broad, stops)
+        close_broad = np.tile(close, (1, n_entry_combos)) if close.shape[1] != n_entry_combos else close
         price_for_orders = np.where(exits_array, gap_adjusted_stops, close_broad)
 
-        return exits_array, stops_array, price_for_orders
+        return exits_array, stops, price_for_orders
 
 
 class FixedStopTakeProfit:
@@ -409,7 +791,13 @@ class FixedStopTakeProfit:
     def compute_exits(
         self, entries: np.ndarray, precomputer: IndicatorPrecomputer, param_grid: dict, n_symbols: int
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Generate fixed stop/TP exits."""
+        """Generate fixed stop/TP exits with correct per-block (stop, tp) pairing.
+
+        When multiple stop_pct × take_profit_pct values are given, FastBacktest
+        expands entry columns so that each (entry_combo, exit_combo) pair occupies
+        its own block of n_symbols columns.  Block index i maps to exit pair
+        ``i % n_exit`` (same modulo convention as AtrTrailingExit).
+        """
         n_time, n_cols = entries.shape
         stop_pcts = param_grid.get("stop_pct", [2.0])
         tp_pcts = param_grid.get("take_profit_pct", [5.0])
@@ -423,33 +811,47 @@ class FixedStopTakeProfit:
 
         open_ = close.copy()
 
-        exits_array = np.zeros_like(entries, dtype=bool)
-        stops_array = np.full_like(entries, np.nan, dtype=np.float64)
-        price_for_orders = close.copy()
-
+        # Broadcast close/open to full column width.
         if close.shape[1] == 1 and n_cols > 1:
             close = np.tile(close, (1, n_cols // n_symbols))
             open_ = np.tile(open_, (1, n_cols // n_symbols))
-            price_for_orders = close.copy()
 
-        for col in range(n_cols):
-            in_position = False
-            entry_price = 0.0
+        exits_array = np.zeros((n_time, n_cols), dtype=bool)
+        stops_array = np.full((n_time, n_cols), np.nan, dtype=np.float64)
+        price_for_orders = close.copy()
 
-            for t in range(n_time):
-                if entries[t, col] and not in_position:
-                    in_position = True
-                    entry_price = close[t, col]
+        # Build ordered list of (stop_pct, take_profit_pct) pairs so block index
+        # matches the Cartesian product order produced by _expand_entries_for_exit_product.
+        pair_tuples = list(itertools.product(stop_pcts, tp_pcts))
+        n_exit = len(pair_tuples)
+        n_blocks = n_cols // n_symbols
 
-                if in_position:
-                    stop_level = entry_price * (1 - stop_pcts[0] / 100)
-                    tp_level = entry_price * (1 + tp_pcts[0] / 100)
-                    stops_array[t, col] = stop_level
+        for i in range(n_blocks):
+            j = i % n_exit
+            stop_pct_val, tp_pct_val = pair_tuples[j]
+            col_start = i * n_symbols
+            col_end = col_start + n_symbols
 
-                    if close[t, col] <= stop_level or close[t, col] >= tp_level:
-                        exits_array[t, col] = True
-                        price_for_orders[t, col] = stop_level if close[t, col] <= stop_level else tp_level
-                        in_position = False
+            for col in range(col_start, col_end):
+                in_position = False
+                entry_price = 0.0
+
+                for t in range(n_time):
+                    if entries[t, col] and not in_position:
+                        in_position = True
+                        entry_price = close[t, col]
+
+                    if in_position:
+                        stop_level = entry_price * (1 - stop_pct_val / 100)
+                        tp_level = entry_price * (1 + tp_pct_val / 100)
+                        stops_array[t, col] = stop_level
+
+                        if close[t, col] <= stop_level or close[t, col] >= tp_level:
+                            exits_array[t, col] = True
+                            price_for_orders[t, col] = (
+                                stop_level if close[t, col] <= stop_level else tp_level
+                            )
+                            in_position = False
 
         return exits_array, stops_array, price_for_orders
 
@@ -459,12 +861,49 @@ ENTRY_REGISTRY: dict[str, type] = {
     "psar_adx": PsarAdxEntry,
     "ema_cross": EmaCrossEntry,
     "rsi_reversal": RsiReversalEntry,
+    "macd_cross": MacdCrossEntry,
+    "bbands_mean_reversion": BollingerMeanReversionEntry,
+    "donchian_breakout": DonchianBreakoutEntry,
+    "supertrend_flip": SupertrendFlipEntry,
 }
 
 EXIT_REGISTRY: dict[str, type] = {
     "atr_trailing": AtrTrailingExit,
     "fixed_sl_tp": FixedStopTakeProfit,
 }
+
+# Parameter axes that drive the exit dimension of the vectorized grid.
+# These keys appear in the param_grid and determine how many exit-combo columns
+# get appended per entry-combo block (Cartesian product of all listed keys).
+EXIT_PARAM_AXIS_KEYS: dict[str, tuple[str, ...]] = {
+    "atr_trailing": ("atr_length", "atr_multiplier"),
+    "fixed_sl_tp": ("stop_pct", "take_profit_pct"),
+}
+
+
+def all_exit_axis_param_keys() -> frozenset[str]:
+    """Union of every param key used by any registered exit strategy."""
+    keys: set[str] = set()
+    for tup in EXIT_PARAM_AXIS_KEYS.values():
+        keys.update(tup)
+    return frozenset(keys)
+
+
+def foreign_exit_axis_keys(exit_strategy_name: str) -> frozenset[str]:
+    """Exit-axis keys that belong to exits other than ``exit_strategy_name``."""
+    active = set(EXIT_PARAM_AXIS_KEYS.get(exit_strategy_name, ()))
+    return frozenset(k for k in all_exit_axis_param_keys() if k not in active)
+
+
+def filter_strat_params_for_exit(strat_params: dict[str, Any], exit_strategy_name: str) -> dict[str, Any]:
+    """Drop exit-axis keys not used by the active exit (for superset WFO grids).
+
+    When the parameter grid merges axes from every exit in EXIT_TOURNAMENT, the
+    vectorized path must not pass e.g. ``stop_pct`` to ``atr_trailing`` or
+    ``atr_length`` to ``fixed_sl_tp``.
+    """
+    drop = foreign_exit_axis_keys(exit_strategy_name)
+    return {k: v for k, v in strat_params.items() if k not in drop}
 
 
 def get_entry_strategy(strategy_name: str, **kwargs: Any) -> Any:

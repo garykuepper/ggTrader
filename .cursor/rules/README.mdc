@@ -10,7 +10,7 @@ This directory contains the canonical Cursor rules for this repository. Prefer u
 ## Rules
 
 - **`python-standards.mdc`**: PEP 8 style, typing, docstrings, and basic module structure. Applies to `**/*.py`.
-- **`ggtrader-core-architecture.mdc`**: ggTrader architecture + engine choices (vectorization, `FastBacktest`, single-source-in-`src`). Applies to `src/**/*.py`.
+- **`ggtrader-core-architecture.mdc`**: Architecture (vectorization, `FastBacktest`, single-source-in-`src`), **10% CAGR** target, **10% max per-symbol** risk, **Kraken-realistic fees/slippage** (do not tune down), **composite WFO train metric**. Applies to `src/**/*.py`.
 - **`data-db-conventions.mdc`**: TimescaleDB usage, symbol normalization, SQL patterns, artifact naming, mover masking. Applies to `{src,scripts,notebooks}/**/*`.
 - **`scripts-and-notebooks.mdc`**: orchestration-only guidance for `scripts/` + `notebooks/` (path setup, standardized loading, resiliency). Applies to `{scripts,notebooks}/**/*`.
 - **`docs-standards.mdc`**: documentation consistency across `docs/` and `README.md`. Applies to `{docs/**/*.md,README.md}`.

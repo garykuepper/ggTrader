@@ -1,80 +1,40 @@
 """Run Walk-Forward Optimization (WFO) using VectorBT time-series CV."""
 
-import argparse
-import os
-import sys
-import traceback
+from __future__ import annotations
 
-import matplotlib.pyplot as plt
+import argparse
+import sys
+
 import numpy as np
 import pandas as pd
-import vectorbt as vbt
 from tabulate import tabulate
 
-# Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
-
-from ggTrader.core.orchestrator import run_backtest_orchestrator, run_wfo_orchestrator, run_wfo_per_coin_orchestrator
-
-# =====================================================================
-# USER CONFIGURATION — edit these values to customize the backtest
-# =====================================================================
-CONSTANTS = {
-    # Symbol pool (set SYMBOLS to None to use SYMBOLS_FILE instead)
-    "SYMBOLS": None,
-    "SYMBOLS_FILE": "data/top_25_USD_2023-01-01_2025-12-31.json",
-    # Date range
-    "START_DATE": "2023-01-01",
-    "END_DATE": "2025-12-31",
-    "INTERVAL": "4h",
-    # Portfolio
-    "START_CASH": 1000,
-    "PORTFOLIO_SHARE": 0.10,
-    "FEES": 0.004,
-    "SLIPPAGE": 0.003,
-    # Dynamic movers: set to 0 to disable, or e.g. 20 for top-20 daily
-    "USE_MOVERS": 0,
-    # WFO-specific configuration
-    "N_SPLITS": 4,
-    "TEST_RATIO": 2,
-    # Legacy — no longer used as primary filter; kept for backward compat
-    "MIN_TRADES": 0,
-    # Require at least 1 completed round-trip on train window before ranking a combo
-    "MIN_CLOSED_TRADES_TRAIN": 1,
-    # Memory optimization: process in chunks of N parameter combinations
-    "CHUNK_SIZE": 500,
-    # Strategy selection
-    "ENTRY_STRATEGY": "psar_adx",  # "psar_adx", "ema_cross", "rsi_reversal"
-    "EXIT_STRATEGY": "atr_trailing",  # "atr_trailing", "fixed_sl_tp"
-    # WFO mode: "universal" (all symbols same params) or "per_coin" (optimize each symbol independently)
-    "WFO_MODE": "universal",
-    # Use vectorized signal generation (experimental)
-    "USE_VECTORIZED": False,
-    # Strategy parameters
-    "DEFAULT_PARAMS": {
-        "adx_threshold": 25,
-        "adx_length": 14,
-        "sar_acceleration": 0.02,
-        "sar_maximum": 0.2,
-        "atr_multiplier": 3.0,
-        "atr_length": 14,
-        "use_dmp_cross": False,
-    },
-}
-# =====================================================================
+from ggTrader.core.orchestrator import (
+    run_backtest_orchestrator,
+    run_wfo_orchestrator,
+    run_wfo_per_coin_orchestrator,
+)
+from ggTrader.utils.run_config import merge_run_config, wfo_script_config
 
 
 def main() -> None:
     """Run Walk-Forward Optimization using the orchestrator."""
     parser = argparse.ArgumentParser(description="Run WFO")
-    parser.add_argument("--progress", action="store_true", default=True, help="Show progress bar")
-    parser.add_argument("--mode", choices=["universal", "per_coin"], default="universal", help="WFO mode")
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable progress bar",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["universal", "per_coin"],
+        default="universal",
+        help="WFO mode",
+    )
     args = parser.parse_args()
 
-    # Override WFO_MODE if provided
-    config = {**CONSTANTS}
-    if args.mode:
-        config["WFO_MODE"] = args.mode
+    config = merge_run_config(wfo_script_config(), WFO_MODE=args.mode)
+    show_progress = not args.no_progress and sys.stdout.isatty()
 
     # Vectorized Parameter Grid
     params = {
@@ -96,7 +56,7 @@ def main() -> None:
             config=config,
             param_grid=params,
             save_results=True,
-            show_progress=args.progress,
+            show_progress=show_progress,
         )
         per_coin_results = results["per_coin_results"]
         final_pf = results["final_portfolio"]
@@ -121,7 +81,7 @@ def main() -> None:
             config=config,
             param_grid=params,
             save_results=True,
-            show_progress=args.progress,
+            show_progress=show_progress,
         )
 
         if not results:
@@ -189,12 +149,10 @@ def main() -> None:
             )
         )
 
-        print(tabulate(CONSTANTS.items()))
-
         # 1. Run backtest for just BTC
         btc_pf = run_backtest_orchestrator(
             config={
-                **CONSTANTS,
+                **config,
                 "SYMBOLS": ["BTC"],
                 "PORTFOLIO_SHARE": 1,
                 "USE_CASH_SHARING": False,
@@ -202,7 +160,7 @@ def main() -> None:
             },
             params=results["best_robust_params"],
             save_results=False,
-            show_progress=True,
+            show_progress=show_progress,
         )["portfolio"]
 
         # --- Visualization ---

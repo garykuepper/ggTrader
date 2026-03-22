@@ -32,6 +32,12 @@ Install dependencies in editable mode:
 pip install -e .
 ```
 
+**Scripts under `scripts/`** import the `ggTrader` package by name. Run `pip install -e .` from the repo root before executing `python scripts/run_backtest.py` and other entry points (or use `PYTHONPATH=src`, not recommended).
+
+### Console commands
+
+After `pip install -e .`, the venv exposes these commands (same behavior as `scripts/*.py`): `ggtrader-backtest`, `ggtrader-wfo`, `ggtrader-sensitivity`, `ggtrader-pipeline`, `ggtrader-compare-strategies`, `ggtrader-view-results`, `ggtrader-pipeline-status`, `ggtrader-manage-data`, `ggtrader-manage-db`. Example: `ggtrader-backtest --symbols BTC-USD`.
+
 ### 4. GPU Acceleration (Optional but Recommended)
 
 For high-performance backtesting with VectorBT, it is recommended to have a CUDA-enabled GPU and install `cupy`:
@@ -68,6 +74,8 @@ Test with the top-N daily movers mask for dynamic universe filtering:
 ```bash
 python scripts/run_backtest.py --movers 20
 ```
+
+Disable the progress bar with `--no-progress` when logging to a file.
 
 ### Parameter Optimization
 

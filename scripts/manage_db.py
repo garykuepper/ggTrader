@@ -1,3 +1,7 @@
+"""Database administration helpers for TimescaleDB / PostgreSQL."""
+
+from __future__ import annotations
+
 import argparse
 import os
 import shutil
@@ -7,27 +11,15 @@ import time
 from datetime import datetime
 from urllib.parse import urlparse
 
-from sqlalchemy import create_engine, text
-
-# Ensure src is in the python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+from sqlalchemy import text
 
 from ggTrader.utils.config import get_db_connection_string
-
-
-def _connect():
-    connection_string = get_db_connection_string()
-    try:
-        engine = create_engine(connection_string)
-        return engine
-    except Exception as e:
-        print(f"Failed to connect to database: {e}")
-        sys.exit(1)
+from ggTrader.utils.db_engine import create_db_engine_or_exit
 
 
 def cmd_clean(args):
     """Cleans the OHLCV table by removing old or malformed data."""
-    engine = _connect()
+    engine = create_db_engine_or_exit()
     with engine.begin() as conn:
         print("--- Cleaning Database ---")
         print("Deleting rows with timestamp < 2010-01-01...")
@@ -47,7 +39,7 @@ def cmd_clean(args):
 
 def cmd_fast_clean(args):
     """Quickly clears the OHLCV table using TRUNCATE."""
-    engine = _connect()
+    engine = create_db_engine_or_exit()
     with engine.begin() as conn:
         print("--- Clearing OHLCV Table (TRUNCATE) ---")
         conn.execute(text("TRUNCATE TABLE ohlcv;"))
@@ -58,7 +50,7 @@ def cmd_fast_clean(args):
 
 def cmd_enable_compression(args):
     """Configures and enables TimescaleDB compression on the OHLCV table."""
-    engine = _connect()
+    engine = create_db_engine_or_exit()
     with engine.begin() as conn:
         print("--- Configuring TimescaleDB Compression ---")
         print("1. Setting compression policy (Segment by: symbol, interval)...")
@@ -89,7 +81,7 @@ def cmd_enable_compression(args):
 
 def cmd_db_size_diag(args):
     """Prints DB and table sizes."""
-    engine = _connect()
+    engine = create_db_engine_or_exit()
     queries = {
         "Total DB Size": "SELECT pg_size_pretty(pg_database_size('ggtrader'))",
         "Table Stats": """
@@ -112,7 +104,7 @@ def cmd_db_size_diag(args):
 
 def cmd_check_compression(args):
     """Displays TimescaleDB compression statistics for the OHLCV table."""
-    engine = _connect()
+    engine = create_db_engine_or_exit()
     try:
         with engine.connect() as conn:
             print("\n--- TimescaleDB Hypertable Compression Stats (ohlcv) ---")

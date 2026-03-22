@@ -38,6 +38,17 @@ gpu = ["cupy-cuda13x"]
 test = ["pytest"]
 dev = ["black"]
 
+[project.scripts]
+ggtrader-backtest = "ggTrader.cli.entrypoints:backtest"
+ggtrader-wfo = "ggTrader.cli.entrypoints:wfo"
+ggtrader-sensitivity = "ggTrader.cli.entrypoints:sensitivity"
+ggtrader-pipeline = "ggTrader.cli.entrypoints:pipeline"
+ggtrader-compare-strategies = "ggTrader.cli.entrypoints:compare_strategies"
+ggtrader-view-results = "ggTrader.cli.entrypoints:view_results"
+ggtrader-pipeline-status = "ggTrader.cli.entrypoints:pipeline_status"
+ggtrader-manage-data = "ggTrader.cli.entrypoints:manage_data"
+ggtrader-manage-db = "ggTrader.cli.entrypoints:manage_db"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["ggTrader*"]

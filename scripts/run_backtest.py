@@ -1,71 +1,58 @@
 """Run a single ggTrader backtest using the vectorized FastBacktest engine."""
 
+from __future__ import annotations
+
 import argparse
-import os
 import sys
-
-import pandas as pd
-
-# Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+from copy import deepcopy
 
 from ggTrader.core.orchestrator import run_backtest_orchestrator
 from ggTrader.utils.results_manager import ResultsManager
-
-# =====================================================================
-# USER CONFIGURATION — edit these values to customize the backtest
-# =====================================================================
-CONSTANTS = {
-    # Symbol pool (set SYMBOLS to None to use SYMBOLS_FILE instead)
-    "SYMBOLS": None,
-    "SYMBOLS_FILE": "data/top_25_USD_2023-01-01_2025-12-31.json",
-    # Date range
-    "START_DATE": "2023-01-01",
-    "END_DATE": "2025-12-31",
-    "INTERVAL": "4h",
-    # Portfolio
-    "START_CASH": 1000,
-    "PORTFOLIO_SHARE": 0.10,
-    "FEES": 0.004,
-    "SLIPPAGE": 0.003,
-    # Dynamic movers: set to 0 to disable, or e.g. 20 for top-20 daily
-    "USE_MOVERS": 10,
-    # Strategy parameters
-    "DEFAULT_PARAMS": {
-        "adx_threshold": 25,
-        "adx_length": 14,
-        "sar_acceleration": 0.02,
-        "sar_maximum": 0.2,
-        "atr_multiplier": 3.0,
-        "atr_length": 14,
-        "use_dmp_cross": False,
-    },
-}
-# =====================================================================
+from ggTrader.utils.run_config import DEFAULT_PSAR_ADX_PARAMS, backtest_script_config, merge_run_config
 
 
 def main() -> None:
     """Run a single backtest using the orchestrator."""
     parser = argparse.ArgumentParser(description="Run a single ggTrader backtest")
     parser.add_argument("--params", type=str, help="Path to params.json")
-    parser.add_argument("--progress", action="store_true", help="Show VectorBT progress bar")
+    parser.add_argument(
+        "--symbols",
+        nargs="+",
+        metavar="SYM",
+        help="Override symbol list (disables SYMBOLS_FILE)",
+    )
+    parser.add_argument(
+        "--movers",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Daily top-N mover mask (0 disables); default from run config",
+    )
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable VectorBT progress bar",
+    )
     args = parser.parse_args()
 
-    # Load parameters if provided, else use defaults
-    params = CONSTANTS["DEFAULT_PARAMS"]
+    config = backtest_script_config()
+    if args.symbols:
+        config = merge_run_config(config, SYMBOLS=list(args.symbols), SYMBOLS_FILE=None)
+    if args.movers is not None:
+        config = merge_run_config(config, USE_MOVERS=args.movers)
+
+    params = deepcopy(DEFAULT_PSAR_ADX_PARAMS)
     if args.params:
         rm_temp = ResultsManager("temp")
         params = rm_temp.load_params(args.params)
 
-    # Execute via orchestrator
+    show_progress = not args.no_progress and sys.stdout.isatty()
+
     results = run_backtest_orchestrator(
-        config=CONSTANTS, params=params, save_results=True, show_progress=args.progress
+        config=config, params=params, save_results=True, show_progress=show_progress
     )
     pf = results["portfolio"]
-    stats = results["stats"]
-    # --- Visualization ---
     print("Global Portfolio Stats:")
-    # Convert stats to a DataFrame for a cleaner table view
     stats_df = pf.stats().to_frame(name="Portfolio Stats")
     print(stats_df)
     pf.plot(subplots=["drawdowns", "value", "cum_returns"]).show()

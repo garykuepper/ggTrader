@@ -89,10 +89,13 @@ class TestStrategyDispatchInFastBacktest:
         assert pf is not None
 
     def test_entry_registry_contains_all_strategies(self):
-        """Test that ENTRY_REGISTRY has expected strategies."""
-        expected_strategies = {"psar_adx", "ema_cross", "rsi_reversal"}
+        """ENTRY_REGISTRY is the single source of truth for pipeline strategies."""
         actual_strategies = set(ENTRY_REGISTRY.keys())
-        assert expected_strategies == actual_strategies
+        assert "psar_adx" in actual_strategies
+        assert "ema_cross" in actual_strategies
+        assert "rsi_reversal" in actual_strategies
+        assert "macd_cross" in actual_strategies
+        assert len(actual_strategies) >= 7
 
     def test_exit_registry_contains_all_strategies(self):
         """Test that EXIT_REGISTRY has expected strategies."""

@@ -71,7 +71,7 @@ $Process = Start-Process -FilePath python `
 Write-Host "Pipeline started with PID: $($Process.Id)" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Monitor status with:" -ForegroundColor Yellow
-Write-Host "  python scripts/pipeline_status.py --watch" -ForegroundColor White
+Write-Host "  python scripts/pipeline_status.py --watch --interval 10" -ForegroundColor White
 Write-Host ""
 Write-Host "View logs with:" -ForegroundColor Yellow
 Write-Host "  Get-Content '$OutputLog' -Wait" -ForegroundColor White
@@ -81,9 +81,9 @@ Write-Host ""
 if ($Watch) {
     Write-Host "Launching status monitor..." -ForegroundColor Green
     try {
-        Start-Process -FilePath "powershell" -ArgumentList "-Command", "cd '$ProjectRoot'; python scripts/pipeline_status.py --watch"
+        Start-Process -FilePath "powershell" -ArgumentList "-Command", "cd '$ProjectRoot'; python scripts/pipeline_status.py --watch --interval 10"
     } catch {
-        Write-Host "Note: Could not launch auto-watch. Run manually: python scripts/pipeline_status.py --watch" -ForegroundColor Yellow
+        Write-Host "Note: Could not launch auto-watch. Run manually: python scripts/pipeline_status.py --watch --interval 10" -ForegroundColor Yellow
     }
 }
 

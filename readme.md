@@ -30,6 +30,9 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
 - [**Architecture Guide**](docs/architecture.md): Deep dive into the project structure and data flow.
 - [**Installation & Setup**](docs/installation.md): How to get `ggTrader` running on your local machine.
 - [**Strategy Pipeline Guide**](docs/strategy_pipeline_guide.md): Comprehensive workflow for optimizing strategies across multiple cryptocurrencies.
+- [**Analysis Guide**](docs/analysis_guide.md): Short WFO / backtest / sensitivity workflow notes (details live in the pipeline guide).
+- [**Ingestion & DB performance**](docs/ingestion_optimization.md): Notes on data ingestion and TimescaleDB usage.
+- [**Pipeline run history**](docs/pipeline_run_history.md): Pre-flight checklist, manual table, and default auto-append after each successful pipeline (`GGTRADER_APPEND_RUN_HISTORY=0` to disable for testing).
 
 ## 📁 Project Structure
 
@@ -41,17 +44,22 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
 
 ## ⚡ Quick Start
 
-1. **Clone & Setup**:
+1. **Clone & Setup** (editable install is **required** so `python scripts/...` can import `ggTrader`):
 
    ```bash
    pip install -e .
    ```
 
+   This also installs **console commands** (on PATH inside the active venv): `ggtrader-backtest`, `ggtrader-wfo`, `ggtrader-sensitivity`, `ggtrader-pipeline`, `ggtrader-compare-strategies`, `ggtrader-view-results`, `ggtrader-pipeline-status`, `ggtrader-manage-data`, `ggtrader-manage-db`. They run the same code as the matching files under `scripts/`.
+
 2. **Run a Backtest**:
 
    ```bash
    python scripts/run_backtest.py --symbols BTC-USD
+   # or: ggtrader-backtest --symbols BTC-USD
    ```
+
+   Use `--movers N` for a daily top-*N* mover mask, or `--params path/to/params.json` after WFO. Pass `--no-progress` to disable the VectorBT progress bar.
 
 3. **Execute WFO**:
 
@@ -59,7 +67,7 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
    python scripts/run_walk_forward_optimization.py
    ```
 
-4. **Run Full Pipeline** (Sensitivity → Per-Coin WFO → Validation → Report):
+4. **Run Full Pipeline** (Per-Coin WFO → Validation → Report; optional `--sensitivity` for Phase 1):
 
    ```bash
    python scripts/run_full_pipeline.py

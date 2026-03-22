@@ -1,0 +1,58 @@
+[
+    {
+        "rank": 1,
+        "symbol": "BTC",
+        "kraken_symbol": "BTC",
+        "frequency": 1095,
+        "average_notional_volume": 139526674.73065594
+    },
+    {
+        "rank": 2,
+        "symbol": "ETH",
+        "kraken_symbol": "ETH",
+        "frequency": 1096,
+        "average_notional_volume": 61906875.9521924
+    },
+    {
+        "rank": 3,
+        "symbol": "SOL",
+        "kraken_symbol": "SOL",
+        "frequency": 1096,
+        "average_notional_volume": 45099385.312877916
+    },
+    {
+        "rank": 4,
+        "symbol": "XRP",
+        "kraken_symbol": "XRP",
+        "frequency": 1096,
+        "average_notional_volume": 33621175.195133634
+    },
+    {
+        "rank": 5,
+        "symbol": "DOGE",
+        "kraken_symbol": "DOGE",
+        "frequency": 1096,
+        "average_notional_volume": 15688967.292536924
+    },
+    {
+        "rank": 6,
+        "symbol": "LINK",
+        "kraken_symbol": "LINK",
+        "frequency": 1095,
+        "average_notional_volume": 4341689.337128696
+    },
+    {
+        "rank": 7,
+        "symbol": "AVAX",
+        "kraken_symbol": "AVAX",
+        "frequency": 897,
+        "average_notional_volume": 3764936.907192035
+    },
+    {
+        "rank": 8,
+        "symbol": "LTC",
+        "kraken_symbol": "LTC",
+        "frequency": 1096,
+        "average_notional_volume": 3510739.8830480315
+    }
+]

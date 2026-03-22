@@ -1,239 +1,68 @@
-"""Full pipeline: Sensitivity Analysis → Per-Coin Multi-Strategy WFO → Final Validation → Report."""
+"""Full pipeline: Per-Coin Multi-Strategy WFO → Final Validation → Report (optional Phase 1 sensitivity)."""
+
+from __future__ import annotations
 
 import argparse
-import os
 import sys
 import time
+import traceback
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
-
-
-class StatusLogger:
-    """Writes timestamped status lines to both stdout and a status.txt file."""
-
-    def __init__(self, status_path: Path) -> None:
-        self.path = status_path
-        self.pipeline_start = time.time()
-        self.phase_start = time.time()
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        # Clear/create the file
-        with open(self.path, "w") as f:
-            f.write(f"Pipeline started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Monitor this file for live progress.\n\n")
-
-    def _elapsed_str(self, seconds: float) -> str:
-        return str(timedelta(seconds=int(seconds)))
-
-    def update(self, message: str, start_phase: bool = False) -> None:
-        if start_phase:
-            self.phase_start = time.time()
-        total_elapsed = time.time() - self.pipeline_start
-        line = f"[{self._elapsed_str(total_elapsed):>10}] {message}"
-        print(line)
-        with open(self.path, "a") as f:
-            f.write(line + "\n")
-
-    def phase_done(self, phase_name: str) -> None:
-        phase_elapsed = time.time() - self.phase_start
-        total_elapsed = time.time() - self.pipeline_start
-        line = (
-            f"[{self._elapsed_str(total_elapsed):>10}] "
-            f"{phase_name} COMPLETE ({self._elapsed_str(phase_elapsed)})"
-        )
-        print(line)
-        print()
-        with open(self.path, "a") as f:
-            f.write(line + "\n\n")
-
-from ggTrader.core.orchestrator import (
-    analyze_sensitivity_results,
-    run_multi_strategy_per_coin_wfo,
-    run_sensitivity_orchestrator,
+from ggTrader.indicators.strategies import ENTRY_REGISTRY, EXIT_REGISTRY
+from ggTrader.pipeline.param_grids import (
+    COARSE_ENTRY_PARAM_GRIDS,
+    DETAILED_ENTRY_PARAM_GRIDS,
+    DETAILED_EXIT_AXIS_GRIDS,
+    EXIT_AXIS_GRIDS,
+    build_wfo_superset_grids,
 )
-from ggTrader.indicators.strategies import ENTRY_REGISTRY
-from ggTrader.utils.config import load_symbols_from_json
+from ggTrader.utils.pipeline_phases import (
+    phase_1_sensitivity_analysis,
+    phase_2_per_coin_multi_strategy_wfo,
+    prepare_config_and_symbols,
+    run_recent_validation_window,
+)
+from ggTrader.utils.pipeline_status_logger import StatusLogger
+from ggTrader.utils.pipeline_run_history import append_automated_run_section
 from ggTrader.utils.report_generator import generate_pipeline_report
+from ggTrader.utils.run_config import full_pipeline_config
 
-# =====================================================================
-# CONFIGURATION
-# =====================================================================
-
-CONSTANTS = {
-    "SYMBOLS_FILE": "data/top_25_USD_2023-01-01_2025-12-31.json",
-    "MAX_SYMBOLS": 5,  # Debug preset (fast); use --max-symbols 20 for full book
-    "START_DATE": "2023-01-01",
-    "END_DATE": "2025-12-31",
-    "INTERVAL": "4h",
-    "FREQ": "4h",
-    "START_CASH": 1000,
-    "PORTFOLIO_SHARE": 0.10,
-    "FEES": 0.004,
-    "SLIPPAGE": 0.003,
-    "N_SPLITS": 4,
-    "TEST_RATIO": 2,
-    "MIN_TRADES": 0,  # Legacy — no longer used as primary filter; kept for backward compat
-    "MIN_CLOSED_TRADES_TRAIN": 1,  # Require at least 1 completed round-trip on train window
-    "TRAIN_METRIC": "sharpe",  # Train fold selection: sharpe | sortino | calmar
-    "MAX_TRAIN_DRAWDOWN_PCT": None,  # e.g. 60 → NaN train metric if max DD worse than -60%
-    "CHUNK_SIZE": 500,
-    "USE_VECTORIZED": True,
-    "USE_MOVERS": 0,
-}
-
-# Wide parameter grids for sensitivity analysis (expanded ranges)
-SENSITIVITY_PARAM_GRIDS = {
-    "psar_adx": {
-        "sar_acceleration": [0.01, 0.02, 0.03],
-        "sar_maximum": [0.1, 0.2, 0.3],
-        "adx_length": [10, 14, 20],
-        "adx_threshold": [15, 20, 25, 30],
-        "use_dmp_cross": [True, False],
-    },
-    "ema_cross": {
-        "ema_fast": [5, 9, 12, 20],
-        "ema_slow": [21, 34, 50, 100],
-        "atr_length": [10, 14, 20],
-        "atr_multiplier": [2.0, 2.5, 3.0],  # Tighter band for 4h crypto (stress wider in research)
-    },
-    "rsi_reversal": {
-        "rsi_length": [7, 14, 21],
-        "rsi_oversold": [20, 25, 30, 35, 40],
-        "atr_length": [10, 14, 20],
-        "atr_multiplier": [2.0, 2.5, 3.0],  # Tighter band for 4h crypto (stress wider in research)
-    },
-}
-
-# Exit strategy parameter grid (shared for all entry strategies)
-EXIT_STRATEGY_PARAMS = {
-    "atr_length": [10, 14, 20],
-    "atr_multiplier": [2.0, 2.5, 3.0],
-}
+CONSTANTS = full_pipeline_config()
 
 
-def _get_extended_param_grid(entry_strategy_name: str) -> dict:
-    """Combine entry strategy params with exit strategy params."""
-    entry_params = SENSITIVITY_PARAM_GRIDS.get(entry_strategy_name, {})
-    
-    # All entry strategies now have ATR exit params in their grids
-    return entry_params
-
-
-def _prepare_config_and_symbols(config: dict) -> dict:
-    """Load symbols and truncate to MAX_SYMBOLS, prepare config dict."""
-    # Load symbols from file
-    symbols = load_symbols_from_json(config["SYMBOLS_FILE"])
-    if symbols is None:
-        raise ValueError(f"Failed to load symbols from {config['SYMBOLS_FILE']}")
-
-    # Truncate to MAX_SYMBOLS
-    max_symbols = config.get("MAX_SYMBOLS", len(symbols))
-    symbols = symbols[:max_symbols]
-    print(f"Using top {len(symbols)} symbols: {symbols[:5]}{'...' if len(symbols) > 5 else ''}")
-
-    # Update config to use direct symbol list
-    config = dict(config)
-    config["SYMBOLS"] = symbols
-    config["SYMBOLS_FILE"] = None
-
-    return config
-
-
-def phase_1_sensitivity_analysis(
-    config: dict,
-    narrowed_grids: dict,
-    show_progress: bool = True,
-    dry_run: bool = False,
-    logger: "StatusLogger | None" = None,
-) -> dict:
-    """Phase 1: Run sensitivity analysis for each entry strategy."""
-    strategies = list(ENTRY_REGISTRY.keys())
-    n_strategies = len(strategies)
-    print("\n" + "=" * 100)
-    print("PHASE 1: SENSITIVITY ANALYSIS PER STRATEGY")
-    print("=" * 100)
-    if logger:
-        logger.update(f"Phase 1 started: sensitivity analysis for {n_strategies} strategies", start_phase=True)
-
-    sensitivity_results = {}
-
-    for s_idx, strategy_name in enumerate(strategies, 1):
-        print(f"\n--- Sensitivity Analysis: {strategy_name} ({s_idx}/{n_strategies}) ---")
-
-        # Get parameter grid for this strategy
-        param_grid = _get_extended_param_grid(strategy_name)
-        
-        # In dry-run, reduce the grid size dramatically
-        if dry_run:
-            # For dry-run, take only first 2 values per parameter
-            param_grid = {k: v[:2] if isinstance(v, list) else [v] for k, v in param_grid.items()}
-
-        # Run sensitivity analysis
-        config_with_strategy = {**config, "ENTRY_STRATEGY": strategy_name}
-
-        result = run_sensitivity_orchestrator(
-            config=config_with_strategy,
-            param_grid=param_grid,
-            save_results=True,
-            show_progress=show_progress,
-            logger=logger,
-        )
-
-        results_df = result.get("results_df", pd.DataFrame())
-        sensitivity_results[strategy_name] = results_df
-
-        # Analyze and narrow parameter ranges
-        print(f"Analyzing parameter importance for {strategy_name}...")
-        if not results_df.empty:
-            narrowed_grid = analyze_sensitivity_results(results_df, param_grid, top_percentile=50)
-            narrowed_grids[strategy_name] = narrowed_grid
-            print(f"  Narrowed grid: {narrowed_grid}")
-        else:
-            narrowed_grids[strategy_name] = param_grid
-            print(f"  No results; using original grid")
-
-        if logger:
-            logger.update(f"  Phase 1: {strategy_name} sensitivity done ({s_idx}/{n_strategies})")
-
-    if logger:
-        logger.phase_done("Phase 1 (Sensitivity Analysis)")
-    return sensitivity_results
-
-
-def phase_2_per_coin_multi_strategy_wfo(
-    config: dict,
-    narrowed_grids: dict,
-    show_progress: bool = True,
-    logger: "StatusLogger | None" = None,
-) -> dict:
-    """Phase 2: Run per-coin WFO across all strategies with narrowed param ranges."""
-    n_coins = len(config.get("SYMBOLS", []))
-    n_strategies = len(narrowed_grids)
-    print("\n" + "=" * 100)
-    print("PHASE 2: PER-COIN MULTI-STRATEGY WFO")
-    print("=" * 100)
-    if logger:
-        logger.update(
-            f"Phase 2 started: WFO for {n_coins} coins x {n_strategies} strategies",
-            start_phase=True,
-        )
-
-    # Run multi-strategy per-coin WFO
-    wfo_result = run_multi_strategy_per_coin_wfo(
-        config=config,
-        strategy_param_grids=narrowed_grids,
-        save_results=True,
-        show_progress=show_progress,
-        logger=logger,
-    )
-
-    if logger:
-        logger.phase_done("Phase 2 (Per-Coin WFO) + Phase 3 (Final Validation)")
-    return wfo_result
+def _cli_summary(args: argparse.Namespace) -> str:
+    """Compact flag string for run history logging."""
+    parts: list[str] = []
+    if args.no_progress:
+        parts.append("--no-progress")
+    if args.no_save:
+        parts.append("--no-save")
+    if args.dry_run:
+        parts.append("--dry-run")
+    if args.max_symbols is not None:
+        parts.append(f"--max-symbols {args.max_symbols}")
+    if args.symbols_file:
+        parts.append(f"--symbols-file {args.symbols_file}")
+    if args.detailed_sensitivity:
+        parts.append("--detailed-sensitivity")
+    if args.sensitivity:
+        parts.append("--sensitivity")
+    if getattr(args, "wfo_debug_metrics", False):
+        parts.append("--wfo-debug-metrics")
+    if getattr(args, "train_metric", None):
+        parts.append(f"--train-metric {args.train_metric}")
+    if getattr(args, "exits", None):
+        parts.append(f"--exits {args.exits}")
+    if getattr(args, "dual_exits", False):
+        parts.append("--dual-exits")
+    if getattr(args, "recent_validation_start", None):
+        parts.append(f"--recent-validation-start {args.recent_validation_start}")
+    if getattr(args, "recent_validation_end", None):
+        parts.append(f"--recent-validation-end {args.recent_validation_end}")
+    if getattr(args, "recent_validation_ccxt_tail", False):
+        parts.append("--recent-validation-ccxt-tail")
+    return " ".join(parts) if parts else "(defaults)"
 
 
 def main() -> None:
@@ -242,7 +71,7 @@ def main() -> None:
     parser.add_argument(
         "--no-progress",
         action="store_true",
-        help="Disable progress bars (recommended for background runs)"
+        help="Disable progress bars (recommended for background runs)",
     )
     parser.add_argument("--no-save", action="store_true", help="Do not save results")
     parser.add_argument("--dry-run", action="store_true", help="Quick test: 3 coins, 1 chunk, 2 folds")
@@ -253,22 +82,134 @@ def main() -> None:
         metavar="N",
         help="Override MAX_SYMBOLS (default: use CONSTANTS, currently 5 for debug)",
     )
+    parser.add_argument(
+        "--symbols-file",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help=(
+            "Override SYMBOLS_FILE JSON (rank list). Use e.g. data/top_50_*.json when "
+            "--max-symbols exceeds rows in the default top_25 file."
+        ),
+    )
+    parser.add_argument(
+        "--detailed-sensitivity",
+        action="store_true",
+        help=(
+            "Use DETAILED_SENSITIVITY_PARAM_GRIDS for WFO (and for Phase 1 if --sensitivity); "
+            "default is coarse grids"
+        ),
+    )
+    parser.add_argument(
+        "--sensitivity",
+        action="store_true",
+        help=(
+            "Run Phase 1 sensitivity screen + narrow grids for WFO; default skips Phase 1 "
+            "and WFO uses the active book unchanged"
+        ),
+    )
+    parser.add_argument(
+        "--wfo-debug-metrics",
+        action="store_true",
+        help=(
+            "Set WFO_DEBUG_METRICS in pipeline config: log per-fold train-metric len/finite "
+            "counts and combined robustness stats during multi-strategy WFO (verbose)"
+        ),
+    )
+    parser.add_argument(
+        "--train-metric",
+        type=str,
+        default=None,
+        choices=("sharpe", "sortino", "calmar", "composite"),
+        metavar="NAME",
+        help=(
+            "Override TRAIN_METRIC for WFO (and Phase 1 if --sensitivity): "
+            "sharpe | sortino | calmar | composite (default: from full_pipeline_config)"
+        ),
+    )
+    parser.add_argument(
+        "--exits",
+        type=str,
+        default=None,
+        metavar="NAMES",
+        help=(
+            "Comma-separated EXIT_TOURNAMENT override, e.g. atr_trailing or fixed_sl_tp or "
+            "atr_trailing,fixed_sl_tp (default: from full_pipeline_config)"
+        ),
+    )
+    parser.add_argument(
+        "--dual-exits",
+        action="store_true",
+        help="Use both atr_trailing and fixed_sl_tp in EXIT_TOURNAMENT (ignored if --exits is set)",
+    )
+    parser.add_argument(
+        "--recent-validation-start",
+        type=str,
+        default=None,
+        metavar="DATE",
+        help="YYYY-MM-DD: after WFO, run frozen-params combined backtest on this window (Phase 3B)",
+    )
+    parser.add_argument(
+        "--recent-validation-end",
+        type=str,
+        default=None,
+        metavar="DATE",
+        help="YYYY-MM-DD end for recent validation (default: now UTC)",
+    )
+    parser.add_argument(
+        "--recent-validation-ccxt-tail",
+        action="store_true",
+        help="After last TimescaleDB bar, append Kraken OHLCV via CCXT through validation end",
+    )
     args = parser.parse_args()
 
-    # Prepare config and symbols
+    entry_book = (
+        DETAILED_ENTRY_PARAM_GRIDS if args.detailed_sensitivity else COARSE_ENTRY_PARAM_GRIDS
+    )
+    exit_book = DETAILED_EXIT_AXIS_GRIDS if args.detailed_sensitivity else EXIT_AXIS_GRIDS
+
     pipeline_config = dict(CONSTANTS)
     if args.max_symbols is not None:
         pipeline_config["MAX_SYMBOLS"] = args.max_symbols
-    config = _prepare_config_and_symbols(pipeline_config)
-    
-    # Apply dry-run adjustments
+    if args.symbols_file is not None:
+        pipeline_config["SYMBOLS_FILE"] = args.symbols_file
+    if args.wfo_debug_metrics:
+        pipeline_config["WFO_DEBUG_METRICS"] = True
+    if args.train_metric is not None:
+        pipeline_config["TRAIN_METRIC"] = args.train_metric
+    if args.recent_validation_start is not None:
+        pipeline_config["RECENT_VALIDATION_START_DATE"] = args.recent_validation_start.strip()
+    if args.recent_validation_end is not None:
+        pipeline_config["RECENT_VALIDATION_END_DATE"] = args.recent_validation_end.strip()
+    if args.recent_validation_ccxt_tail:
+        pipeline_config["RECENT_VALIDATION_USE_CCXT_TAIL"] = True
+
+    config = prepare_config_and_symbols(pipeline_config)
+    print(f"TRAIN_METRIC={config.get('TRAIN_METRIC', 'sharpe')!r}")
+
+    if args.dual_exits and args.exits is None:
+        config["EXIT_TOURNAMENT"] = ["atr_trailing", "fixed_sl_tp"]
+
+    if args.exits is not None:
+        names = [x.strip() for x in args.exits.split(",") if x.strip()]
+        invalid = [x for x in names if x not in EXIT_REGISTRY]
+        if invalid:
+            parser.error(
+                f"Unknown exit name(s) {invalid!r}. Valid: {list(EXIT_REGISTRY.keys())}"
+            )
+        if not names:
+            parser.error("--exits must list at least one exit name.")
+        config["EXIT_TOURNAMENT"] = names
+
+    exit_tournament: list[str] = config.get("EXIT_TOURNAMENT", list(EXIT_REGISTRY.keys()))
+
     if args.dry_run:
         print("Running in DRY-RUN mode: 3 coins, 1 chunk, 2 folds")
-        config["SYMBOLS"] = config["SYMBOLS"][:3]  # Only top 3 coins
+        config["SYMBOLS"] = config["SYMBOLS"][:3]
         config["MAX_SYMBOLS"] = 3
-        config["CHUNK_SIZE"] = 50  # Only first 50 combos per chunk
-        config["N_SPLITS"] = 2  # Only 2 folds
-    
+        config["CHUNK_SIZE"] = 50
+        config["N_SPLITS"] = 2
+
     save_results = not args.no_save
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -276,45 +217,80 @@ def main() -> None:
     pipeline_results_dir.mkdir(parents=True, exist_ok=True)
     print(f"Pipeline results will be saved to: {pipeline_results_dir}")
 
-    # Determine show_progress: disable if --no-progress flag is set or if output is not a TTY
     show_progress = not args.no_progress and sys.stdout.isatty()
 
-    # Create status logger - write to status.txt for live monitoring
-    logger = StatusLogger(pipeline_results_dir / "status.txt")
-    print(f"Monitor progress: Get-Content {pipeline_results_dir / 'status.txt'}")
+    status_path = pipeline_results_dir / "status.txt"
+    logger = StatusLogger(status_path)
+    try:
+        status_rel = status_path.relative_to(Path.cwd())
+    except ValueError:
+        status_rel = status_path
+    print("Monitor progress (second terminal, repo root):")
+    print("  ggtrader-pipeline-status --watch --interval 10")
+    print("  python scripts/pipeline_status.py --watch --interval 10")
+    print(f"  PowerShell tail: Get-Content -Path '{status_rel}' -Wait -Tail 40")
     print()
 
     n_coins = len(config["SYMBOLS"])
     n_strategies = len(ENTRY_REGISTRY)
     n_folds = config.get("N_SPLITS", 4)
     logger.update(
-        f"Starting pipeline: {n_coins} coins, {n_strategies} strategies, {n_folds} WFO folds"
+        f"Starting pipeline: {n_coins} coins, {n_strategies} strategies, {n_folds} WFO folds, "
+        f"exits={exit_tournament}"
     )
 
-    # Track results from each phase
-    narrowed_grids = {}
-    sensitivity_results = {}
-    wfo_results = {}
-    final_backtest_results = {}
+    narrowed_grids: dict = {}
+    sensitivity_results: dict = {}
+    wfo_results: dict = {}
 
     try:
-        # Phase 1: Sensitivity Analysis
-        sensitivity_results = phase_1_sensitivity_analysis(
-            config, narrowed_grids, show_progress, args.dry_run, logger
+        if args.sensitivity:
+            sensitivity_results = phase_1_sensitivity_analysis(
+                config,
+                narrowed_grids,
+                show_progress,
+                args.dry_run,
+                logger,
+                entry_book=entry_book,
+                exit_book=exit_book,
+                exit_tournament=exit_tournament,
+                save_results=save_results,
+            )
+        else:
+            narrowed_grids.update(
+                build_wfo_superset_grids(entry_book, exit_book, exit_tournament, args.dry_run)
+            )
+            sensitivity_results = {}
+            print("\n" + "=" * 100)
+            print("PHASE 1: OMITTED (default — pass --sensitivity to run coarse/detailed screen)")
+            print("=" * 100)
+            print(
+                "WFO will search the active parameter book as-is (no analyze_sensitivity_results "
+                "narrowing). Edit grids in src/ggTrader/pipeline/param_grids.py to change ranges."
+            )
+            logger.update(
+                "Phase 1 omitted (default): WFO grids = active book "
+                f"(coarse or --detailed-sensitivity) | exits={exit_tournament}"
+            )
+            logger.phase_done("Phase 1 (sensitivity omitted)")
+
+        wfo_results = phase_2_per_coin_multi_strategy_wfo(
+            config, narrowed_grids, show_progress, logger, save_results=save_results
         )
 
-        # Phase 2: Per-Coin Multi-Strategy WFO (includes Phase 3: Final Validation)
-        wfo_results = phase_2_per_coin_multi_strategy_wfo(config, narrowed_grids, show_progress, logger)
+        run_recent_validation_window(config, wfo_results, logger)
 
-        # Extract final backtest results
         final_backtest_results = {
             "final_portfolio": wfo_results.get("final_portfolio"),
             "per_coin_results": wfo_results.get("per_coin_results", {}),
             "per_coin_final_stats": wfo_results.get("per_coin_final_stats", {}),
             "final_stats": wfo_results.get("final_stats", {}),
+            "recent_validation_stats": wfo_results.get("recent_validation_stats"),
+            "recent_validation_per_coin_final_stats": wfo_results.get(
+                "recent_validation_per_coin_final_stats", {}
+            ),
         }
 
-        # Phase 4: Report Generation
         print("\n" + "=" * 100)
         print("PHASE 4: REPORT GENERATION")
         print("=" * 100)
@@ -326,22 +302,33 @@ def main() -> None:
             output_dir=str(pipeline_results_dir),
         )
 
+        append_automated_run_section(
+            run_folder_name=pipeline_results_dir.name,
+            final_stats=final_backtest_results.get("final_stats", {}),
+            config=config,
+            cli_summary=_cli_summary(args),
+        )
+
         total_elapsed = time.time() - logger.pipeline_start
         logger.update(
             f"Pipeline COMPLETE in {str(timedelta(seconds=int(total_elapsed)))} "
             f"| Results: {pipeline_results_dir}"
         )
         print(f"\n>>> Pipeline complete! Results saved to: {pipeline_results_dir}")
-        print(f"  - pipeline_report.md: Comprehensive analysis report")
-        print(f"  - status.txt: Full timestamped execution log")
-        print(f"  - sensitivity_*.csv: Parameter sensitivity analysis")
-        print(f"  - wfo_*.csv: Walk-forward optimization results")
+        print("  - pipeline_report.md: Comprehensive analysis report")
+        print("  - status.txt: Full timestamped execution log")
+        if args.sensitivity:
+            print("  - sensitivity_*.csv: Parameter sensitivity analysis (Phase 1)")
+        print("  - wfo_*.csv: Walk-forward optimization results")
 
     except Exception as e:
+        tb = traceback.format_exc()
         logger.update(f"FAILED: {e}")
+        with open(status_path, "a", encoding="utf-8") as f:
+            f.write("\n--- Traceback ---\n")
+            f.write(tb)
+            f.write("\n")
         print(f"\nX Pipeline failed: {e}")
-        import traceback
-
         traceback.print_exc()
         raise
 

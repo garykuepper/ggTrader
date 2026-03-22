@@ -1,18 +1,21 @@
+"""CLI for OHLCV maintenance: ingest, aggregate, and related data tasks."""
+
+from __future__ import annotations
+
 import argparse
 import json
 import os
 import sys
 
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from tqdm import tqdm
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from ggTrader.data.core.constants import SYMBOL_MAPPING
 from ggTrader.data.historical.postgres_ingestor import PostgresIngestor
 from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
 from ggTrader.utils.config import get_db_connection_string
+from ggTrader.utils.db_engine import create_db_engine
 
 
 def cmd_backfill(args):
@@ -42,7 +45,7 @@ def cmd_backfill(args):
     """
 
     CUTOFF = "2024-04-01"
-    engine = create_engine(get_db_connection_string())
+    engine = create_db_engine()
     print("Fetching unique symbols...")
     with engine.connect() as conn:
         symbols = [r[0] for r in conn.execute(text("SELECT DISTINCT symbol FROM ohlcv"))]
@@ -68,7 +71,7 @@ def cmd_backfill(args):
 
     engine.dispose()
 
-    engine = create_engine(get_db_connection_string())
+    engine = create_db_engine()
     with engine.connect() as conn:
         for iv in ["4h", "30m"]:
             row = conn.execute(

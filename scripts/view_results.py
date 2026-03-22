@@ -1,31 +1,16 @@
 """Browse and inspect ggTrader results stored in the TimescaleDB database."""
 
+from __future__ import annotations
+
 import argparse
 import json
-import os
-import sys
 from typing import Optional
 
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from tabulate import tabulate
 
-# Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
-
-from ggTrader.utils.config import get_db_connection_string
-
-
-def get_engine(conn_str: Optional[str] = None):
-    """
-    Creates a SQLAlchemy engine for the PostgreSQL database.
-
-    Args:
-        conn_str: Optional connection string. Defaults to centralized config.
-    """
-    if not conn_str:
-        conn_str = get_db_connection_string()
-    return create_engine(conn_str)
+from ggTrader.utils.db_engine import create_db_engine
 
 
 def get_latest_run_id(engine) -> Optional[str]:
@@ -154,7 +139,7 @@ def main() -> None:
     parser.add_argument("run_id", type=str, nargs="?", help="Show details for a specific run ID")
 
     args = parser.parse_args()
-    engine = get_engine(args.conn)
+    engine = create_db_engine(args.conn)
 
     if args.run_id:
         show_run_details(engine, args.run_id)

@@ -17,3 +17,8 @@ alwaysApply: false
 - **Template**: standard `sys.path` setup, `main()` orchestration, `argparse` inputs; `--help` must work.
 - **Standard loading**: use `load_data_and_setup(CONSTANTS)` for data retrieval.
 - **Resiliency**: long-running ingestion/optimization should log & continue on recoverable errors and support checkpoints/resume when >5 minutes.
+
+## Local artifacts (`results/`, `logs/`)
+
+- **Keep** recent `results/pipeline_<timestamp>/` and companion `run_*` folders for regression checks (e.g. post–WFO-fix runs).
+- **Safe to remove** obsolete pipeline folders and chat/agent logs after confirming they are not needed (duplicate `pipeline_YYYYMMDD_*` runs, `pipeline_monitor_*.txt`, `pipeline_agent_*.log`). Never delete `data/` or DB config.

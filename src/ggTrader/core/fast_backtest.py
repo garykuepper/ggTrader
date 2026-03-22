@@ -1,4 +1,5 @@
-from typing import Any, Optional, Tuple, Union
+import itertools
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -6,7 +7,12 @@ import vectorbt as vbt
 
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.signals import SignalFactory
-from ggTrader.indicators.strategies import get_entry_strategy, get_exit_strategy
+from ggTrader.indicators.strategies import (
+    EXIT_PARAM_AXIS_KEYS,
+    filter_strat_params_for_exit,
+    get_entry_strategy,
+    get_exit_strategy,
+)
 from ggTrader.indicators.vectorized_signals import (
     generate_atr_trailing_exits_vectorized,
     generate_psar_adx_entries_vectorized,
@@ -34,6 +40,76 @@ _DEFAULT_CONFIG = {
 
 # Performance settings
 vbt.settings.caching["enabled"] = False
+
+
+def _listify_param(x: Any) -> list:
+    """Normalize scalar or list parameter values."""
+    return x if isinstance(x, list) else [x]
+
+
+def _get_exit_axis_keys(exit_strategy_name: str) -> tuple[str, ...]:
+    """Return the param-grid keys that drive the exit dimension for the given exit strategy."""
+    return EXIT_PARAM_AXIS_KEYS.get(exit_strategy_name, ())
+
+
+def _expand_entries_for_exit_product(
+    entries: np.ndarray, n_symbols: int, n_exit: int
+) -> np.ndarray:
+    """Repeat each entry-combo block once per exit-param variant.
+
+    Works for any exit strategy: ATR trailing (n_atr variants) or fixed SL/TP
+    (n_stop × n_tp variants).  Replaces the old ATR-only helper.
+    """
+    n_time, w = entries.shape
+    n_e = w // n_symbols
+    parts: list[np.ndarray] = []
+    for e in range(n_e):
+        sl = entries[:, e * n_symbols : (e + 1) * n_symbols]
+        for _ in range(n_exit):
+            parts.append(sl.copy())
+    return np.hstack(parts) if parts else entries
+
+
+def _expand_entries_for_atr_product(
+    entries: np.ndarray, n_symbols: int, n_atr: int
+) -> np.ndarray:
+    """Backward-compatible wrapper for _expand_entries_for_exit_product."""
+    return _expand_entries_for_exit_product(entries, n_symbols=n_symbols, n_exit=n_atr)
+
+
+def _merge_entry_exit_param_combos(
+    entry_combos: List[dict],
+    strat_params: dict,
+    exit_axis_keys: tuple[str, ...],
+) -> List[dict]:
+    """Cartesian product of entry param rows × exit-axis tuples.
+
+    Replaces the old ATR-only helper.  ``exit_axis_keys`` is obtained from
+    ``EXIT_PARAM_AXIS_KEYS[exit_strategy_name]``.  Float-casts are applied to
+    keys whose values are floats in the param grid.
+    """
+    relevant_keys = [k for k in exit_axis_keys if k in strat_params]
+    if not relevant_keys:
+        return [dict(ec) for ec in entry_combos]
+    lists = [_listify_param(strat_params[k]) for k in relevant_keys]
+    out: List[dict] = []
+    for ec in entry_combos:
+        for tup in itertools.product(*lists):
+            row = dict(ec)
+            for k, v in zip(relevant_keys, tup):
+                row[k] = float(v) if isinstance(v, (float, np.floating)) else v
+            out.append(row)
+    return out
+
+
+def _merge_entry_atr_param_combos(
+    entry_combos: List[dict],
+    strat_params: dict,
+) -> List[dict]:
+    """Legacy alias kept for backward compatibility; delegates to the generic helper."""
+    return _merge_entry_exit_param_combos(
+        entry_combos, strat_params, ("atr_length", "atr_multiplier")
+    )
 
 
 class FastBacktest:
@@ -69,6 +145,7 @@ class FastBacktest:
         self.mover_mask = mover_mask
         self.pf = None  # Portfolio cache
         self.signal_factory = signal_factory or SignalFactory
+        self._last_param_combos: Optional[List[dict]] = None
 
     def run(self, show_progress: bool = False) -> vbt.Portfolio:
         """Execute backtest."""
@@ -76,6 +153,8 @@ class FastBacktest:
             raise ValueError(
                 "OHLCV data is empty. Check your symbols, date range, " "and database connection."
             )
+
+        self._last_param_combos = None
 
         # 1. Generate Signals
         use_vectorized = self.config.get("USE_VECTORIZED", False)
@@ -217,11 +296,25 @@ class FastBacktest:
         entry_strategy = get_entry_strategy(entry_strategy_name)
         exit_strategy = get_exit_strategy(exit_strategy_name)
 
-        # Generate entries using the strategy
-        entries, _ = entry_strategy.compute_entries(precomputer, strat_params)
+        # Superset grids (all EXIT_TOURNAMENT axes merged): drop foreign exit-axis keys.
+        strat_params = filter_strat_params_for_exit(strat_params, exit_strategy_name)
 
-        # Generate exits using the strategy
+        entries, entry_param_combos = entry_strategy.compute_entries(precomputer, strat_params)
+
         n_symbols = close.shape[1]
+        exit_axis_keys = _get_exit_axis_keys(exit_strategy_name)
+        n_exit = 1
+        for k in exit_axis_keys:
+            if k in strat_params:
+                n_exit *= len(_listify_param(strat_params[k]))
+
+        if n_exit > 1:
+            entries = _expand_entries_for_exit_product(entries, n_symbols, n_exit)
+
+        self._last_param_combos = _merge_entry_exit_param_combos(
+            entry_param_combos, strat_params, exit_axis_keys
+        )
+
         exits, stops, price_for_orders_arr = exit_strategy.compute_exits(
             entries, precomputer, strat_params, n_symbols
         )

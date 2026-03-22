@@ -32,6 +32,23 @@ def _fmt_float_opt(value: Any, decimals: int = 4) -> str:
         return "n/a"
 
 
+def _fmt_robustness_score(value: Any) -> str:
+    """Format WFO robustness (finite, nan, +/-inf)."""
+    if value is None:
+        return "n/a"
+    try:
+        x = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if np.isnan(x):
+        return "nan"
+    if np.isneginf(x):
+        return "-inf"
+    if np.isposinf(x):
+        return "inf"
+    return f"{x:.4f}"
+
+
 def _fmt_period(final_stats: Dict[str, Any]) -> str:
     """Human-readable backtest window from orchestrator fields."""
     start = final_stats.get("backtest_start")
@@ -109,11 +126,59 @@ def generate_pipeline_report(
     lines.append(f"| Excess CAGR (strategy − benchmark) | {_fmt_pct_opt(final_stats.get('excess_cagr_pct'))} |")
     lines.append("")
 
+    recent_stats = final_backtest_results.get("recent_validation_stats")
+    if recent_stats:
+        lines.append("### Recent validation (frozen WFO params)")
+        lines.append("")
+        lines.append(
+            "Combined portfolio replay on the **recent-only** window below using the same "
+            "entry/exit/params chosen by WFO on the full training range (no re-optimization)."
+        )
+        lines.append("")
+        lines.append("| Metric | Value |")
+        lines.append("|--------|-------|")
+        lines.append(f"| Backtest period | {_fmt_period(recent_stats)} |")
+        lines.append(
+            f"| Calendar span (years) | {_fmt_float_opt(recent_stats.get('backtest_years'), 3)} |"
+        )
+        lines.append(f"| Total Return | {recent_stats.get('profit_pct', 0):.2f}% |")
+        lines.append(f"| CAGR | {_fmt_pct_opt(recent_stats.get('cagr_pct'))} |")
+        lines.append(f"| Sharpe Ratio | {recent_stats.get('sharpe', 0):.4f} |")
+        lines.append(f"| Sortino Ratio | {recent_stats.get('sortino', 0):.4f} |")
+        lines.append(f"| Max Drawdown | {recent_stats.get('max_drawdown', 0):.2f}% |")
+        lines.append(f"| Total Trades | {recent_stats.get('total_trades', 0)} |")
+        lines.append(f"| Win Rate | {recent_stats.get('win_rate', 0):.2f}% |")
+        lines.append("")
+        lines.append("#### Benchmark (equal-weight B&H, same recent window)")
+        lines.append("")
+        lines.append(
+            f"*{recent_stats.get('benchmark_label', 'Same assumptions as full-range benchmark.')}*"
+        )
+        lines.append("")
+        lines.append("| Metric | Value |")
+        lines.append("|--------|-------|")
+        lines.append(f"| Total Return | {_fmt_pct_opt(recent_stats.get('benchmark_profit_pct'))} |")
+        lines.append(f"| CAGR | {_fmt_pct_opt(recent_stats.get('benchmark_cagr_pct'))} |")
+        lines.append(f"| Sharpe Ratio | {_fmt_float_opt(recent_stats.get('benchmark_sharpe'))} |")
+        lines.append(f"| Max Drawdown | {_fmt_pct_opt(recent_stats.get('benchmark_max_drawdown'))} |")
+        lines.append(f"| Total Trades | {recent_stats.get('benchmark_total_trades', 0)} |")
+        lines.append(
+            f"| Excess CAGR (strategy − benchmark) | {_fmt_pct_opt(recent_stats.get('excess_cagr_pct'))} |"
+        )
+        lines.append("")
+
     # Sensitivity Analysis Findings
     lines.append("## Sensitivity Analysis Findings")
     lines.append("")
     lines.append("Analysis of parameter impact across expanded ranges for each strategy.")
     lines.append("")
+
+    if not sensitivity_results:
+        lines.append(
+            "*No sensitivity phase was run (default pipeline omits Phase 1 unless you pass "
+            "`--sensitivity`); WFO used the configured parameter grids directly.*"
+        )
+        lines.append("")
 
     for strategy_name, results_df in sensitivity_results.items():
         lines.append(f"### {strategy_name}")
@@ -194,17 +259,24 @@ def generate_pipeline_report(
 
     strategy_table_data = []
     for symbol, results in per_coin_results.items():
+        strat = results.get("best_strategy")
+        strat_disp = strat if strat is not None else "n/a"
+        sel = results.get("selection_reason", "wfo_robustness")
         strategy_table_data.append({
             "Symbol": symbol,
-            "Strategy": results.get("best_strategy", "N/A"),
-            "Robustness Score": f"{results.get('robustness_score', 0):.4f}",
+            "Strategy": strat_disp,
+            "Selection": sel,
+            "Robustness Score": _fmt_robustness_score(results.get("robustness_score")),
         })
 
     if strategy_table_data:
-        lines.append("| Symbol | Strategy | Robustness Score |")
-        lines.append("|--------|----------|-----------------|")
+        lines.append("| Symbol | Strategy | Selection | Robustness Score |")
+        lines.append("|--------|----------|-----------|------------------|")
         for row in strategy_table_data:
-            lines.append(f"| {row['Symbol']} | {row['Strategy']} | {row['Robustness Score']} |")
+            lines.append(
+                f"| {row['Symbol']} | {row['Strategy']} | {row['Selection']} | "
+                f"{row['Robustness Score']} |"
+            )
     lines.append("")
 
     # Final Full-Period Performance (Per-Coin)
@@ -214,12 +286,19 @@ def generate_pipeline_report(
     lines.append("")
 
     if per_coin_final_stats:
-        lines.append("| Symbol | Strategy | Return % | Sharpe | Max DD % | Trades | Win Rate % |")
-        lines.append("|--------|----------|----------|--------|----------|--------|-----------|")
+        lines.append(
+            "| Symbol | Strategy | Selection | Return % | Sharpe | Max DD % | Trades | Win Rate % |"
+        )
+        lines.append(
+            "|--------|----------|-----------|----------|--------|----------|--------|-----------|"
+        )
 
         for symbol, stats in per_coin_final_stats.items():
+            sstrat = stats.get("strategy")
+            strat_cell = sstrat if sstrat is not None else "n/a"
+            sel = stats.get("selection_reason", "wfo_robustness")
             lines.append(
-                f"| {symbol} | {stats.get('strategy', 'N/A')} | "
+                f"| {symbol} | {strat_cell} | {sel} | "
                 f"{stats.get('profit_pct', 0):.2f}% | "
                 f"{stats.get('sharpe', 0):.4f} | "
                 f"{stats.get('max_drawdown', 0):.2f}% | "

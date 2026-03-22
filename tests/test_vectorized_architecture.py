@@ -13,9 +13,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.strategies import (
     AtrTrailingExit,
+    BollingerMeanReversionEntry,
+    DonchianBreakoutEntry,
     EmaCrossEntry,
+    MacdCrossEntry,
     PsarAdxEntry,
     RsiReversalEntry,
+    SupertrendFlipEntry,
     get_entry_strategy,
     get_exit_strategy,
 )
@@ -195,6 +199,57 @@ class TestStrategies:
         entries, param_combos = strategy.compute_entries(pc, param_grid)
         assert entries.shape[0] == 500
         assert entries.dtype == bool
+
+    def test_macd_cross_entry_strategy(self, sample_ohlcv):
+        """Test MacdCrossEntry shape (fast/slow/signal product × symbols)."""
+        close, high, low, _ = sample_ohlcv
+        pc = IndicatorPrecomputer(close, high, low)
+        strategy = MacdCrossEntry()
+        param_grid = {
+            "macd_fast": [10, 12],
+            "macd_slow": [22, 26],
+            "macd_signal": [9],
+        }
+        entries, param_combos = strategy.compute_entries(pc, param_grid)
+        n_sym = 3
+        n_combo = 2 * 2 * 1
+        assert entries.shape == (500, n_combo * n_sym)
+        assert entries.dtype == bool
+        assert len(param_combos) == n_combo
+
+    def test_bbands_mean_reversion_entry_strategy(self, sample_ohlcv):
+        """Test BollingerMeanReversionEntry."""
+        close, high, low, _ = sample_ohlcv
+        pc = IndicatorPrecomputer(close, high, low)
+        strategy = BollingerMeanReversionEntry()
+        param_grid = {"bb_length": [15, 20], "bb_std": [2.0]}
+        entries, param_combos = strategy.compute_entries(pc, param_grid)
+        assert entries.shape == (500, 2 * 3)
+        assert entries.dtype == bool
+        assert len(param_combos) == 2
+
+    def test_donchian_breakout_entry_strategy(self, sample_ohlcv):
+        """Test DonchianBreakoutEntry."""
+        close, high, low, _ = sample_ohlcv
+        pc = IndicatorPrecomputer(close, high, low)
+        strategy = DonchianBreakoutEntry()
+        param_grid = {"donchian_length": [10, 20]}
+        entries, param_combos = strategy.compute_entries(pc, param_grid)
+        assert entries.shape == (500, 2 * 3)
+        assert entries.dtype == bool
+        assert len(param_combos) == 2
+
+    def test_supertrend_flip_entry_strategy(self, sample_ohlcv):
+        """Test SupertrendFlipEntry (stacked length × multiplier × symbols)."""
+        close, high, low, _ = sample_ohlcv
+        pc = IndicatorPrecomputer(close, high, low)
+        strategy = SupertrendFlipEntry()
+        param_grid = {"st_length": [7, 10], "st_multiplier": [2.0, 3.0]}
+        entries, param_combos = strategy.compute_entries(pc, param_grid)
+        n_combo = 2 * 2
+        assert entries.shape == (500, n_combo * 3)
+        assert entries.dtype == bool
+        assert len(param_combos) == n_combo
 
     def test_atr_trailing_exit_strategy(self, sample_ohlcv):
         """Test AtrTrailingExit strategy."""
