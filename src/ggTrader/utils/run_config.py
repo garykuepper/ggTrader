@@ -110,30 +110,40 @@ def full_pipeline_config() -> dict[str, Any]:
         "PORTFOLIO_SHARE": 0.10,
         "FEES": 0.004,
         "SLIPPAGE": SLIPPAGE_STANDARD,
-        "N_SPLITS": 4,
-        "TEST_RATIO": 2,
+        # 6 folds × TEST_RATIO=3 keeps ~2190 train bars/fold (same as 4×2) while adding
+        # 2 more OOS samples for a more reliable fold-consistency signal in the gate.
+        "N_SPLITS": 6,
+        "TEST_RATIO": 3,
         "MIN_TRADES": 0,
         "MIN_CLOSED_TRADES_TRAIN": 1,
         # WFO / sensitivity train ranking: composite blends Sharpe, Sortino, Calmar-like (return/|maxDD|).
         "TRAIN_METRIC": "composite",
         "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
-            "sharpe": 0.35,
-            "sortino": 0.35,
-            "calmar": 0.30,
+            "sharpe": 0.25,
+            "sortino": 0.25,
+            "calmar": 0.25,
+            "profit_factor": 0.25,
         },
         "MAX_TRAIN_DRAWDOWN_PCT": None,
         "CHUNK_SIZE": 500,
         "USE_VECTORIZED": True,
         "USE_VECTORIZED_SENSITIVITY": True,
         "USE_MOVERS": 0,
-        # Default ATR-only; use --dual-exits or EXIT_TOURNAMENT in config for both exits.
-        "EXIT_TOURNAMENT": ["atr_trailing"],
+        # Both exits compete in the tournament; use --exits atr_trailing to limit to one.
+        "EXIT_TOURNAMENT": ["atr_trailing", "fixed_sl_tp"],
         "SENSITIVITY_EXIT_STRATEGY": "atr_trailing",
         # Optional: set RECENT_VALIDATION_START_DATE (or CLI) to run Phase 3B after WFO.
         "RECENT_VALIDATION_START_DATE": None,
         "RECENT_VALIDATION_END_DATE": None,
-        "RECENT_VALIDATION_USE_CCXT_TAIL": False,
+        # CCXT tail enabled by default: appends Kraken bars after the last DB timestamp.
+        "RECENT_VALIDATION_USE_CCXT_TAIL": True,
+        # Coins whose OOS-weighted robustness falls below this threshold are excluded from
+        # Phase 2/3 combined portfolio. Set to None to disable the gate.
+        "MIN_ROBUSTNESS_SCORE": 0.0,
         # Set True or pass --wfo-debug-metrics on run_full_pipeline.py: per-fold train-metric
         # len/finite counts and combined robustness during WFO (all orchestrator paths).
         "WFO_DEBUG_METRICS": False,
+        # OOS robustness blend: 0.0 = pure IS robustness (original behaviour),
+        # 1.0 = pure OOS Sharpe gate, 0.5 = equal blend (default).
+        "OOS_ROBUSTNESS_BLEND_ALPHA": 0.5,
     }

@@ -257,3 +257,84 @@ ggtrader-pipeline --max-symbols 30 --symbols-file data/top_50_USD_2023-01-01_202
 - **Strategy**: Total return 94.88% | CAGR 24.93% | Sharpe 0.7082 | Max DD -46.25% | Trades 302
 - **Benchmark**: BH return 162.70% | Excess CAGR -13.09%
 
+
+### `pipeline_20260322_143117` (automated)
+
+- **Git**: `5daf853`
+- **CLI / flags**: `--max-symbols 8 --symbols-file data/majors_top8_usd_2023-01-01_2025-12-31.json --recent-validation-start 2025-01-01`
+- **Universe**: 8 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing']
+- **Strategy**: Total return -10.85% | CAGR -3.76% | Sharpe -0.2891 | Max DD -25.11% | Trades 317
+- **Benchmark**: BH return 162.70% | Excess CAGR -41.79%
+
+
+### `pipeline_20260322_143439` (automated)
+
+- **Git**: `5daf853`
+- **CLI / flags**: `--max-symbols 8 --symbols-file data/majors_top8_usd_2023-01-01_2025-12-31.json --recent-validation-start 2026-01-01`
+- **Universe**: 8 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing']
+- **Strategy**: Total return -10.85% | CAGR -3.76% | Sharpe -0.2891 | Max DD -25.11% | Trades 317
+- **Benchmark**: BH return 162.70% | Excess CAGR -41.79%
+
+
+### `pipeline_20260322_205756` (automated)
+
+- **Git**: `5daf853`
+- **CLI / flags**: `--dry-run --max-symbols 2`
+- **Universe**: 2 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing']
+- **Strategy**: Total return -0.06% | CAGR -0.02% | Sharpe 0.0107 | Max DD -8.11% | Trades 79
+- **Benchmark**: BH return 249.38% | Excess CAGR -51.82%
+
+
+### `pipeline_20260322_210034` (automated)
+
+- **Git**: `5daf853`
+- **CLI / flags**: `--no-progress --max-symbols 8 --symbols-file data/majors_top8_usd_2023-01-01_2025-12-31.json --recent-validation-start 2026-01-01`
+- **Universe**: 8 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing']
+- **Strategy**: Total return -10.85% | CAGR -3.76% | Sharpe -0.2891 | Max DD -25.11% | Trades 317
+- **Benchmark**: BH return 162.70% | Excess CAGR -41.79%
+
+
+### `pipeline_20260322_214320` (automated)
+
+- **Git**: `5daf853`
+- **CLI / flags**: `--no-progress --max-symbols 8 --symbols-file data/majors_top8_usd_2023-01-01_2025-12-31.json --exits atr_trailing`
+- **Universe**: 8 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing']
+- **Strategy**: Total return 5.65% | CAGR 1.85% | Sharpe 0.3134 | Max DD -10.93% | Trades 102
+- **Benchmark**: BH return 358.36% | Excess CAGR -64.34%
+
+
+### `pipeline_20260322_222728` (automated)
+
+- **Git**: `5daf853`
+- **CLI / flags**: `--no-progress --dry-run`
+- **Universe**: 3 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing', 'fixed_sl_tp']
+- **Strategy**: Total return 34.33% | CAGR 10.35% | Sharpe 1.4168 | Max DD -5.40% | Trades 85
+- **Benchmark**: BH return 342.26% | Excess CAGR -53.88%
+
+
+### `pipeline_20260322_224231` (automated)
+
+- **Git**: `5daf853`
+- **CLI / flags**: `--no-progress --max-symbols 8 --symbols-file data/majors_top8_usd_2023-01-01_2025-12-31.json --exits atr_trailing`
+- **Universe**: 8 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing']
+- **Strategy**: Total return -13.17% | CAGR -4.60% | Sharpe -0.7275 | Max DD -18.46% | Trades 120
+- **Benchmark**: BH return 148.85% | Excess CAGR -40.16%
+
+
+### `pipeline_20260322_225700` (automated)
+
+- **Git**: `5daf853`
+- **CLI / flags**: `--no-progress --dry-run`
+- **Universe**: 3 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing', 'fixed_sl_tp']
+- **Strategy**: Total return 25.53% | CAGR 7.88% | Sharpe 1.0307 | Max DD -7.96% | Trades 90
+- **Benchmark**: BH return 342.26% | Excess CAGR -56.34%
+
+
+### `pipeline_20260322_225844` (automated)
+
+- **Git**: `5daf853`
+- **CLI / flags**: `--no-progress --max-symbols 8 --symbols-file data/majors_top8_usd_2023-01-01_2025-12-31.json --exits atr_trailing`
+- **Universe**: 8 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing']
+- **Strategy**: Total return -4.64% | CAGR -1.57% | Sharpe -0.7668 | Max DD -5.47% | Trades 26
+- **Benchmark**: BH return 447.16% | Excess CAGR -77.89%
+

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls c:/Users/gkuep/PycharmProjects/ggTrader/results/pipeline_*)",
+      "Bash(ls -d c:/Users/gkuep/PycharmProjects/ggTrader/results/pipeline_*)",
+      "Bash(python -c \"import vectorbt as vbt; print\\(dir\\(vbt.Portfolio.from_random_signals\\(size=10\\).trades\\)\\)\")",
+      "Bash(python scripts/run_full_pipeline.py --dry-run --no-progress)",
+      "Bash(ls -t c:/Users/gkuep/PycharmProjects/ggTrader/results/pipeline_* -d)",
+      "Bash(xargs -I{} tail -40 {}/status.txt)",
+      "Bash(ls -t -d c:/Users/gkuep/PycharmProjects/ggTrader/results/pipeline_*)",
+      "Bash(xargs -I{} cat {}/pipeline_report.md)"
+    ]
+  }
+}

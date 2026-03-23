@@ -18,10 +18,11 @@ from ggTrader.pipeline.param_grids import (
     build_wfo_superset_grids,
 )
 from ggTrader.utils.pipeline_phases import (
-    phase_1_sensitivity_analysis,
-    phase_2_per_coin_multi_strategy_wfo,
+    phase_0_sensitivity_analysis,
+    phase_1_per_coin_multi_strategy_wfo,
+    phase_2_full_data_validation,
+    phase_3_recent_performance,
     prepare_config_and_symbols,
-    run_recent_validation_window,
 )
 from ggTrader.utils.pipeline_status_logger import StatusLogger
 from ggTrader.utils.pipeline_run_history import append_automated_run_section
@@ -209,6 +210,8 @@ def main() -> None:
         config["MAX_SYMBOLS"] = 3
         config["CHUNK_SIZE"] = 50
         config["N_SPLITS"] = 2
+        # Disable robustness gate in dry-run — 2 artificial folds always fail the gate.
+        config["MIN_ROBUSTNESS_SCORE"] = None
 
     save_results = not args.no_save
 
@@ -245,7 +248,7 @@ def main() -> None:
 
     try:
         if args.sensitivity:
-            sensitivity_results = phase_1_sensitivity_analysis(
+            sensitivity_results = phase_0_sensitivity_analysis(
                 config,
                 narrowed_grids,
                 show_progress,
@@ -262,33 +265,37 @@ def main() -> None:
             )
             sensitivity_results = {}
             print("\n" + "=" * 100)
-            print("PHASE 1: OMITTED (default — pass --sensitivity to run coarse/detailed screen)")
+            print("PHASE 0: OMITTED (default — pass --sensitivity to run coarse/detailed screen)")
             print("=" * 100)
             print(
                 "WFO will search the active parameter book as-is (no analyze_sensitivity_results "
                 "narrowing). Edit grids in src/ggTrader/pipeline/param_grids.py to change ranges."
             )
             logger.update(
-                "Phase 1 omitted (default): WFO grids = active book "
+                "Phase 0 omitted (default): WFO grids = active book "
                 f"(coarse or --detailed-sensitivity) | exits={exit_tournament}"
             )
-            logger.phase_done("Phase 1 (sensitivity omitted)")
+            logger.phase_done("Phase 0 (sensitivity omitted)")
 
-        wfo_results = phase_2_per_coin_multi_strategy_wfo(
+        wfo_results = phase_1_per_coin_multi_strategy_wfo(
             config, narrowed_grids, show_progress, logger, save_results=save_results
         )
 
-        run_recent_validation_window(config, wfo_results, logger)
+        # Phase 2: Full Data Validation (Full Range)
+        phase_2_full_data_validation(config, wfo_results, logger)
+
+        # Phase 3: Recent Performance (Past Year)
+        phase_3_recent_performance(config, wfo_results, logger)
 
         final_backtest_results = {
             "final_portfolio": wfo_results.get("final_portfolio"),
             "per_coin_results": wfo_results.get("per_coin_results", {}),
             "per_coin_final_stats": wfo_results.get("per_coin_final_stats", {}),
             "final_stats": wfo_results.get("final_stats", {}),
-            "recent_validation_stats": wfo_results.get("recent_validation_stats"),
-            "recent_validation_per_coin_final_stats": wfo_results.get(
-                "recent_validation_per_coin_final_stats", {}
-            ),
+            "phase_2_stats": wfo_results.get("phase_2_stats"),
+            "phase_2_per_coin_final_stats": wfo_results.get("phase_2_per_coin_final_stats", {}),
+            "phase_3_stats": wfo_results.get("phase_3_stats"),
+            "phase_3_per_coin_final_stats": wfo_results.get("phase_3_per_coin_final_stats", {}),
         }
 
         print("\n" + "=" * 100)

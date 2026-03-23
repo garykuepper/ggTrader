@@ -157,6 +157,19 @@ def _calmar_ratio_series(pf_train: Any) -> pd.Series:
     return m
 
 
+def _profit_factor_series(pf_train: Any) -> pd.Series:
+    """Per-combo profit factor, mean-centred: (gross_profit/gross_loss - 1), clipped [-3, 3].
+
+    0.0 = breakeven, 1.0 = 2:1 reward ratio, inf (all-win) clipped to 3.0.
+    NaN (no trades) propagates — the outer ``m.where(sh_f.notna(), nan)`` gate then
+    removes those combos, consistent with the Sharpe NaN convention.
+    """
+    raw = pf_train.trades.profit_factor()
+    if not isinstance(raw, pd.Series):
+        raw = pd.Series([float(raw)])
+    return (raw - 1.0).clip(lower=-3.0, upper=3.0).astype(float)
+
+
 def _train_metric_series(pf_train: Any, config: Dict[str, Any]) -> pd.Series:
     """In-sample metric Series used to pick best params on the train window."""
     name = str(config.get("TRAIN_METRIC", "sharpe")).lower().strip()
@@ -169,11 +182,12 @@ def _train_metric_series(pf_train: Any, config: Dict[str, Any]) -> pd.Series:
         ws = float(raw_w.get("sharpe", 1.0 / 3.0))
         wso = float(raw_w.get("sortino", 1.0 / 3.0))
         wc = float(raw_w.get("calmar", 1.0 / 3.0))
-        s = ws + wso + wc
+        wpf = float(raw_w.get("profit_factor", 0.0))
+        s = ws + wso + wc + wpf
         if s <= 0:
-            ws, wso, wc = 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0
+            ws, wso, wc, wpf = 0.25, 0.25, 0.25, 0.25
         else:
-            ws, wso, wc = ws / s, wso / s, wc / s
+            ws, wso, wc, wpf = ws / s, wso / s, wc / s, wpf / s
         sh = pf_train.sharpe_ratio()
         so = pf_train.sortino_ratio()
         ca = _calmar_ratio_series(pf_train)
@@ -183,7 +197,20 @@ def _train_metric_series(pf_train: Any, config: Dict[str, Any]) -> pd.Series:
             so = pd.Series([float(so)])
         so = so.reindex(sh.index)
         ca = ca.reindex(sh.index)
-        m = ws * sh.astype(float) + wso * so.astype(float) + wc * ca.astype(float)
+        # Clip calmar to [-5, 5] to prevent extreme values (near-zero drawdown) from
+        # dominating the composite and artificially inflating a strategy's score.
+        ca_clipped = ca.clip(lower=-5.0, upper=5.0)
+        # When calmar is NaN but sharpe is valid (e.g. fold with zero drawdown),
+        # treat calmar as 0 rather than propagating NaN to the whole composite.
+        sh_f = sh.astype(float)
+        so_f = so.astype(float)
+        ca_fin = ca_clipped.where(ca_clipped.notna(), other=0.0)
+        # profit_factor: (GP/GL - 1), clipped [-3, 3]; NaN → 0 (same as calmar convention).
+        pf_s = _profit_factor_series(pf_train).reindex(sh.index)
+        pf_fin = pf_s.where(pf_s.notna(), other=0.0)
+        m = ws * sh_f + wso * so_f + wc * ca_fin + wpf * pf_fin
+        # Preserve NaN for combos where sharpe itself is NaN (no trades / gated out).
+        m = m.where(sh_f.notna(), other=float("nan"))
     else:
         m = pf_train.sharpe_ratio()
     if not isinstance(m, pd.Series):
@@ -970,6 +997,37 @@ def _weighted_robustness_series(
     return pd.Series(combined, index=union_idx)
 
 
+def _calculate_oos_robustness(
+    oos_metrics_by_fold: Dict[int, float],
+) -> Tuple[float, float]:
+    """Recency-weighted mean OOS Sharpe and fold consistency fraction.
+
+    Args:
+        oos_metrics_by_fold: Dict mapping fold index → OOS Sharpe for the winning params.
+
+    Returns:
+        (oos_robustness_score, fold_consistency)
+        - oos_robustness_score: recency-weighted mean OOS Sharpe (later folds count more).
+        - fold_consistency: fraction of folds with positive OOS Sharpe (0.0 – 1.0).
+    """
+    if not oos_metrics_by_fold:
+        return float("nan"), float("nan")
+    fold_indices = sorted(oos_metrics_by_fold.keys())
+    oos_vals = np.array(
+        [float(oos_metrics_by_fold[f]) if oos_metrics_by_fold[f] is not None else float("nan")
+         for f in fold_indices],
+        dtype=float,
+    )
+    weights = np.array([float(f) for f in fold_indices], dtype=float)
+    mask = np.isfinite(oos_vals)
+    if not mask.any():
+        return float("nan"), 0.0
+    w_sum = float(weights[mask].sum())
+    oos_rob = float(np.dot(oos_vals[mask], weights[mask]) / w_sum) if w_sum > 0 else float("nan")
+    fold_cons = float(np.sum(oos_vals[mask] > 0) / int(mask.sum()))
+    return oos_rob, fold_cons
+
+
 def _calculate_robustness(
     is_metrics_by_fold: Dict[int, pd.Series],
     param_names: List[str],
@@ -994,21 +1052,26 @@ def _calculate_robustness(
     """
     # If OOS metrics provided, use them to measure generalization
     if oos_metrics_by_fold:
-        # Weight each fold by its OOS Sharpe to penalize overfitting
-        # Folds with poor OOS performance get lower weight
         fold_indices = sorted(oos_metrics_by_fold.keys())
         oos_values = np.array(
             [_coerce_metric_float(oos_metrics_by_fold.get(f)) for f in fold_indices],
             dtype=float,
         )
-        oos_mean = float(np.nanmean(oos_values))
+        # Min-max normalize OOS Sharpes to [0.1, 1.0] so folds with better OOS get
+        # proportionally higher weight even when *all* OOS values are negative.
+        # This prevents the old ratio-to-mean collapsing to a flat 0.5 weight when
+        # oos_mean <= 0 (which made OOS weighting useless in poor-OOS regimes).
+        oos_finite = oos_values[np.isfinite(oos_values)]
+        oos_min_val = float(np.min(oos_finite)) if oos_finite.size > 0 else 0.0
+        oos_max_val = float(np.max(oos_finite)) if oos_finite.size > 0 else 0.0
+        oos_range_val = oos_max_val - oos_min_val
 
         weights = {}
         for f in fold_indices:
             oos_sharpe = _coerce_metric_float(oos_metrics_by_fold.get(f))
             recency_weight = float(f)
-            if np.isfinite(oos_mean) and oos_mean > 0 and np.isfinite(oos_sharpe):
-                consistency_weight = max(0.1, oos_sharpe / oos_mean)
+            if np.isfinite(oos_sharpe) and oos_range_val > 1e-8:
+                consistency_weight = 0.1 + 0.9 * (oos_sharpe - oos_min_val) / oos_range_val
             else:
                 consistency_weight = 0.5
             weights[f] = recency_weight * consistency_weight
@@ -1852,6 +1915,9 @@ def run_multi_strategy_per_coin_wfo(
         best_params_for_coin: Dict[str, Any] = {}
         best_wfo_stats: List[Dict] = []
         best_robust_top_5: List[Dict] = []
+        best_is_robustness_score: float = float("-inf")
+        best_oos_robustness_score: float = float("nan")
+        best_fold_consistency: float = float("nan")
         debug_wfo = bool(config.get("WFO_DEBUG_METRICS", False))
 
         for strategy_name, param_grid in strategy_param_grids.items():
@@ -1894,15 +1960,34 @@ def run_multi_strategy_per_coin_wfo(
                     robustness_score = float(robust_top_5[0]["robustness_score"])
                 else:
                     robustness_score = float("-inf")
-                print(f"    {label} robustness: {_format_robustness_metric(robustness_score)}")
 
-                if _is_better_robustness(robustness_score, best_robust_score):
-                    best_robust_score = robustness_score
+                # OOS-direct robustness: recency-weighted mean of per-fold OOS Sharpe.
+                oos_rob_combo, fold_cons_combo = _calculate_oos_robustness(oos_metrics_by_fold)
+                oos_blend_alpha = float(config.get("OOS_ROBUSTNESS_BLEND_ALPHA", 0.5))
+                if np.isfinite(oos_rob_combo) and np.isfinite(robustness_score):
+                    gate_score = (1.0 - oos_blend_alpha) * robustness_score + oos_blend_alpha * oos_rob_combo
+                elif np.isfinite(oos_rob_combo):
+                    gate_score = oos_rob_combo
+                else:
+                    gate_score = robustness_score
+
+                print(
+                    f"    {label} robustness: IS={_format_robustness_metric(robustness_score)} "
+                    f"OOS={_format_robustness_metric(oos_rob_combo)} "
+                    f"gate={_format_robustness_metric(gate_score)} "
+                    f"consistency={fold_cons_combo:.0%}"
+                )
+
+                if _is_better_robustness(gate_score, best_robust_score):
+                    best_robust_score = gate_score
                     best_strategy = strategy_name
                     best_exit = exit_name
                     best_params_for_coin = best_robust_params
                     best_wfo_stats = wfo_stats
                     best_robust_top_5 = robust_top_5
+                    best_is_robustness_score = robustness_score
+                    best_oos_robustness_score = oos_rob_combo
+                    best_fold_consistency = fold_cons_combo
 
         selection_reason = "wfo_robustness"
         if best_strategy is None or not np.isfinite(best_robust_score):
@@ -1921,13 +2006,16 @@ def run_multi_strategy_per_coin_wfo(
             )
 
         per_coin_results[symbol] = {
-            "best_strategy": best_strategy,
-            "best_exit": best_exit,
-            "best_params": best_params_for_coin,
-            "robustness_score": best_robust_score,
-            "wfo_stats": best_wfo_stats,
-            "robust_top_5": best_robust_top_5,
-            "selection_reason": selection_reason,
+            "best_strategy":        best_strategy,
+            "best_exit":            best_exit,
+            "best_params":          best_params_for_coin,
+            "robustness_score":     best_robust_score,       # blended gate score
+            "is_robustness_score":  best_is_robustness_score,
+            "oos_robustness_score": best_oos_robustness_score,
+            "fold_consistency":     best_fold_consistency,
+            "wfo_stats":            best_wfo_stats,
+            "robust_top_5":         best_robust_top_5,
+            "selection_reason":     selection_reason,
         }
 
         coin_elapsed = time.time() - coin_start
@@ -1942,6 +2030,25 @@ def run_multi_strategy_per_coin_wfo(
         print(status_msg)
         if logger:
             logger.update(status_msg)
+
+    # Filter out coins that failed to meet the minimum robustness threshold.
+    # Set MIN_ROBUSTNESS_SCORE=None in config to disable.
+    min_robust_cfg = config.get("MIN_ROBUSTNESS_SCORE")
+    if min_robust_cfg is not None:
+        min_robust = float(min_robust_cfg)
+        skipped = [
+            sym for sym, r in per_coin_results.items()
+            if not np.isfinite(r["robustness_score"]) or r["robustness_score"] < min_robust
+        ]
+        if skipped:
+            print(
+                f"\n  [Robustness gate] Dropping {len(skipped)} coin(s) below "
+                f"MIN_ROBUSTNESS_SCORE={min_robust}: {skipped}"
+            )
+            per_coin_results = {sym: r for sym, r in per_coin_results.items() if sym not in skipped}
+        if not per_coin_results:
+            print("  WARNING: All coins dropped by robustness gate — lowering threshold or "
+                  "setting MIN_ROBUSTNESS_SCORE=None is recommended.")
 
     phase3_out = run_frozen_params_combined_backtest(
         ohlcv,

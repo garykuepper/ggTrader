@@ -16,7 +16,6 @@ from ggTrader.indicators.strategies import ENTRY_REGISTRY, EXIT_REGISTRY
 from ggTrader.pipeline.exit_tournament import parse_exit_tournament
 from ggTrader.pipeline.param_grids import COARSE_ENTRY_PARAM_GRIDS, EXIT_AXIS_GRIDS
 from ggTrader.utils.config import load_symbols_from_json
-from ggTrader.utils.setup import load_hybrid_validation_ohlcv
 
 if TYPE_CHECKING:
     from ggTrader.utils.pipeline_status_logger import StatusLogger
@@ -43,12 +42,17 @@ def prepare_config_and_symbols(config: dict) -> dict:
     n_available = len(symbols)
     if n_available < max_symbols:
         print(
-            f"Warning: SYMBOLS_FILE lists only {n_available} symbols but MAX_SYMBOLS={max_symbols}. "
-            f"Using all {n_available}. Use a larger rank JSON (e.g. data/top_50_USD_2023-01-01_2025-12-31.json) "
-            f"or lower --max-symbols."
+            f"Warning: SYMBOLS_FILE lists only {n_available} "
+            f"symbols but MAX_SYMBOLS={max_symbols}. "
+            f"Using all {n_available}. Use a larger rank JSON "
+            "(e.g. data/top_50_USD_2023-01-01_2025-12-31.json) "
+            "or lower --max-symbols."
         )
     symbols = symbols[:max_symbols]
-    print(f"Using top {len(symbols)} symbols: {symbols[:5]}{'...' if len(symbols) > 5 else ''}")
+    print(
+        f"Using top {len(symbols)} symbols: "
+        f"{symbols[:5]}{'...' if len(symbols) > 5 else ''}"
+    )
 
     config = dict(config)
     config["SYMBOLS"] = symbols
@@ -57,7 +61,7 @@ def prepare_config_and_symbols(config: dict) -> dict:
     return config
 
 
-def phase_1_sensitivity_analysis(
+def phase_0_sensitivity_analysis(
     config: dict,
     narrowed_grids: dict,
     show_progress: bool = True,
@@ -68,7 +72,7 @@ def phase_1_sensitivity_analysis(
     exit_tournament: list[str] | None = None,
     save_results: bool = True,
 ) -> dict:
-    """Phase 1: Run sensitivity analysis for each entry strategy.
+    """Phase 0: Run sensitivity analysis for each entry strategy.
 
     Uses a single sensitivity exit (SENSITIVITY_EXIT_STRATEGY, default atr_trailing)
     to avoid multiplying Phase 1 cost across the full exit tournament. WFO still
@@ -142,30 +146,30 @@ def phase_1_sensitivity_analysis(
             print("  No results; using original grid")
 
         if logger:
-            logger.update(f"  Phase 1: {strategy_name} sensitivity done ({s_idx}/{n_strategies})")
+            logger.update(f"  Phase 0: {strategy_name} sensitivity done ({s_idx}/{n_strategies})")
 
     if logger:
-        logger.phase_done("Phase 1 (Sensitivity Analysis)")
+        logger.phase_done("Phase 0 (Sensitivity Analysis)")
     return sensitivity_results
 
 
-def phase_2_per_coin_multi_strategy_wfo(
+def phase_1_per_coin_multi_strategy_wfo(
     config: dict,
     narrowed_grids: dict,
     show_progress: bool = True,
     logger: StatusLogger | None = None,
     save_results: bool = True,
 ) -> dict:
-    """Phase 2: Run per-coin WFO exit tournament across all (entry, exit) combinations."""
+    """Phase 1: Run per-coin WFO exit tournament across all (entry, exit) combinations."""
     n_coins = len(config.get("SYMBOLS", []))
     n_strategies = len(narrowed_grids)
     exit_tournament = config.get("EXIT_TOURNAMENT", list(EXIT_REGISTRY.keys()))
     print("\n" + "=" * 100)
-    print("PHASE 2: PER-COIN MULTI-STRATEGY WFO (EXIT TOURNAMENT)")
+    print("PHASE 1: PER-COIN MULTI-STRATEGY WFO (EXIT TOURNAMENT)")
     print("=" * 100)
     if logger:
         logger.update(
-            f"Phase 2 started: WFO for {n_coins} coins × {n_strategies} entries "
+            f"Phase 1 started: WFO for {n_coins} coins × {n_strategies} entries "
             f"× {len(exit_tournament)} exits",
             start_phase=True,
         )
@@ -179,39 +183,86 @@ def phase_2_per_coin_multi_strategy_wfo(
     )
 
     if logger:
-        logger.phase_done("Phase 2 (Per-Coin WFO) + Phase 3 (full-range final validation)")
+        logger.phase_done("Phase 1 (Per-Coin WFO)")
     return wfo_result
 
 
-def run_recent_validation_window(
+def phase_2_full_data_validation(
     config: dict,
     wfo_results: dict,
     logger: StatusLogger | None = None,
 ) -> None:
-    """If ``RECENT_VALIDATION_START_DATE`` is set, run frozen-params combined backtest on that window."""
-    start_raw = config.get("RECENT_VALIDATION_START_DATE")
-    if start_raw is None or (isinstance(start_raw, str) and not str(start_raw).strip()):
-        return
+    """Phase 2: Run best WFO parameters on the entire data range and compare to B&H."""
+    from ggTrader.core.orchestrator import run_frozen_params_combined_backtest
 
-    ts = pd.to_datetime(start_raw)
-    start = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+    print("\n" + "=" * 100)
+    print("PHASE 2: RESULT VALIDATION (FULL RANGE)")
+    print("=" * 100)
+    if logger:
+        logger.update("Phase 2: Full-range final validation backtest", start_phase=True)
+
+    exit_tournament = parse_exit_tournament(
+        config.get("EXIT_TOURNAMENT", list(EXIT_REGISTRY.keys())),
+        EXIT_REGISTRY,
+    )
+
+    # Use existing full-range OHLCV from config (loaded in Phase 1)
+    # Actually, we might need to reload it if it's not passed, but usually Phase 1 leaves it.
+    # For now, we assume we use the original dates from config.
+    from ggTrader.utils.setup import load_data_with_movers
+    ohlcv, _ = load_data_with_movers(config)
+
+    out = run_frozen_params_combined_backtest(
+        ohlcv,
+        wfo_results["per_coin_results"],
+        config,
+        exit_tournament=exit_tournament,
+        save_results=False,
+        phase_title="PHASE 2: FINAL VALIDATION (FULL 3-YEAR RANGE)",
+        combined_portfolio_label="Phase 2 - combined portfolio vs Buy & Hold",
+        logger=logger,
+    )
+    wfo_results["phase_2_stats"] = out["final_stats"]
+    wfo_results["phase_2_per_coin_final_stats"] = out["per_coin_final_stats"]
+    if logger:
+        logger.phase_done("Phase 2 (Full-range validation)")
+
+
+def phase_3_recent_performance(
+    config: dict,
+    wfo_results: dict,
+    logger: StatusLogger | None = None,
+) -> None:
+    """Phase 3: Run best WFO parameters on the most recent 1-year data and compare to B&H."""
+    import pandas as pd
+
+    from ggTrader.utils.setup import load_hybrid_validation_ohlcv
+
+    # Dynamically calculate window, or use config if provided
+    start_raw = config.get("RECENT_VALIDATION_START_DATE")
+    if start_raw:
+        ts = pd.to_datetime(start_raw)
+        start = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+    else:
+        start = pd.Timestamp.now(tz="UTC") - pd.DateOffset(years=1)
 
     end_raw = config.get("RECENT_VALIDATION_END_DATE")
-    if end_raw is None or (isinstance(end_raw, str) and not str(end_raw).strip()):
-        end = pd.Timestamp.now(tz="UTC")
-    else:
+    if end_raw:
         te = pd.to_datetime(end_raw)
         end = te.tz_localize("UTC") if te.tzinfo is None else te.tz_convert("UTC")
+    else:
+        end = pd.Timestamp.now(tz="UTC")
 
     use_ccxt = bool(config.get("RECENT_VALIDATION_USE_CCXT_TAIL", False))
 
-    print("\n" + "=" * 100)
-    print("PHASE 3B: RECENT VALIDATION SETUP")
-    print("=" * 100)
-    print(f"  Window: {start} .. {end} | CCXT tail: {use_ccxt}")
+    print(
+        f"  Window: {start.strftime('%Y-%m-%d')} .. {end.strftime('%Y-%m-%d')} "
+        f"| CCXT tail: {use_ccxt}"
+    )
     if logger:
         logger.update(
-            f"Phase 3B: recent validation {start.date()} .. {end.date()} (CCXT tail={use_ccxt})",
+            f"Phase 3: recent performance {start.date()} .. {end.date()} "
+            f"(CCXT tail={use_ccxt})",
             start_phase=True,
         )
 
@@ -231,11 +282,11 @@ def run_recent_validation_window(
         config,
         exit_tournament=exit_tournament,
         save_results=False,
-        phase_title="PHASE 3B: RECENT VALIDATION (FROZEN WFO PARAMS)",
-        combined_portfolio_label="Recent window - combined portfolio (frozen WFO params)",
+        phase_title="PHASE 3: RECENT PERFORMANCE (PAST YEAR)",
+        combined_portfolio_label="Phase 3 - recent window combined portfolio vs Buy & Hold",
         logger=logger,
     )
-    wfo_results["recent_validation_stats"] = out["final_stats"]
-    wfo_results["recent_validation_per_coin_final_stats"] = out["per_coin_final_stats"]
+    wfo_results["phase_3_stats"] = out["final_stats"]
+    wfo_results["phase_3_per_coin_final_stats"] = out["per_coin_final_stats"]
     if logger:
-        logger.phase_done("Phase 3B (Recent validation)")
+        logger.phase_done("Phase 3 (Recent performance)")

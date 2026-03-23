@@ -13,33 +13,40 @@ COARSE_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
         "sar_acceleration": [0.01, 0.03],
         "sar_maximum": [0.1, 0.3],
         "adx_length": [14, 20],
-        "adx_threshold": [25],
+        # Expanded from [25]: ADX 20–30 is the practitioner range; single value = no optimisation.
+        "adx_threshold": [20, 25, 30],
         "use_dmp_cross": [True],
     },
     "ema_cross": {
         "ema_fast": [5, 20],
         # Cap slow EMA vs 100 to cut extreme fast/slow pairs that often fold-dry in WFO.
-        "ema_slow": [21, 50],
+        # Added Fibonacci 34 to fill gap between 21 and 50.
+        "ema_slow": [21, 34, 50],
     },
     "rsi_reversal": {
-        "rsi_length": [7, 21],
-        "rsi_oversold": [30, 40],
+        # Added standard RSI-14 which was missing.
+        "rsi_length": [7, 14, 21],
+        # Added 25; many coins need a lower oversold threshold to generate enough signals.
+        "rsi_oversold": [25, 30, 40],
     },
     "macd_cross": {
         "macd_fast": [10, 12],
         "macd_slow": [22, 26],
-        "macd_signal": [9],
+        # Expanded from [9]: signal=7 is a valid shorter variant; single value = unoptimised.
+        "macd_signal": [7, 9],
     },
     "bbands_mean_reversion": {
         "bb_length": [15, 20],
-        "bb_std": [2.0],
+        # Expanded from [2.0]: band width matters on volatile coins; was entirely fixed.
+        "bb_std": [1.5, 2.0, 2.5],
     },
     "donchian_breakout": {
         "donchian_length": [10, 20],
     },
     "supertrend_flip": {
         "st_length": [7, 10],
-        "st_multiplier": [2.0, 3.0],
+        # Added 1.5 — tighter bands generate more signals on low-ATR coins.
+        "st_multiplier": [1.5, 2.0, 3.0],
     },
 }
 
@@ -80,11 +87,14 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
 EXIT_AXIS_GRIDS: dict[str, dict[str, Any]] = {
     "atr_trailing": {
         "atr_length": [10, 20],
-        "atr_multiplier": [2.0, 3.0],
+        # Added 1.5 — tighter trailing stop for shorter-trend coins.
+        "atr_multiplier": [1.5, 2.0, 3.0],
     },
     "fixed_sl_tp": {
-        "stop_pct": [2.0, 4.0],
-        "take_profit_pct": [4.0, 8.0],
+        # Added 3.0 — 3% stop was missing between 2% and 4%.
+        "stop_pct": [2.0, 3.0, 5.0],
+        # Added 6.0 — fills gap between 4% and 8% TP.
+        "take_profit_pct": [4.0, 6.0, 10.0],
     },
 }
 

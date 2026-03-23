@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import Any, List
 
 import pandas as pd
 
+from ggTrader.data.core.constants import kraken_map
 from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
 from ggTrader.utils.config import load_symbols_from_json
+
+# CCXT normalises Kraken markets to standard symbols (BTC/USD, DOGE/USD, etc.);
+# no base aliasing is needed when calling exchange.fetch_ohlcv via CCXT.
+_KRAKEN_BASE_ALIASES: dict[str, str] = {}
 
 
 def load_data_and_setup(config: dict) -> pd.DataFrame:
@@ -146,6 +151,18 @@ def _tsdb_column_key(base: str, quote: str = "USD") -> str:
     return f"{b}-{quote}"
 
 
+def _ccxt_pair_for_exchange(base: str, quote: str, exchange: Any) -> str:
+    """Return the CCXT pair string for a base symbol.
+
+    Applies exchange-specific base aliases (e.g. Kraken uses XBT instead of BTC,
+    XDG instead of DOGE).  For all other exchanges the pair is ``base/quote``.
+    """
+    exchange_id = getattr(exchange, "id", "") if exchange is not None else ""
+    if exchange_id == "kraken":
+        base = _KRAKEN_BASE_ALIASES.get(base.upper(), base)
+    return f"{base}/{quote}"
+
+
 def _ccxt_fetch_paginated(
     exchange,
     pair: str,
@@ -230,7 +247,6 @@ def load_hybrid_validation_ohlcv(
     ccxt_parts: list[pd.DataFrame] = []
     for base in bases:
         col_key = _tsdb_column_key(base, quote)
-        pair = f"{base}/{quote}"
         sub_start = ts_start
         if not tsdb.empty and col_key in tsdb.columns.get_level_values(0):
             last_db = tsdb[col_key].dropna(how="all").index.max()
@@ -238,6 +254,7 @@ def load_hybrid_validation_ohlcv(
                 sub_start = max(ts_start, last_db + pd.Timedelta(seconds=1))
         if sub_start > ts_end:
             continue
+        pair = _ccxt_pair_for_exchange(base, quote, ex)
         raw = _ccxt_fetch_paginated(ex, pair, config["INTERVAL"], sub_start, ts_end)
         if raw.empty:
             continue

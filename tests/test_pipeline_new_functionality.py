@@ -283,8 +283,8 @@ class TestReportGenerator:
         expected_sections = [
             "# Trading Strategy Pipeline Report",
             "## Executive Summary",
-            "## Sensitivity Analysis Findings",
-            "## Per-Coin Strategy Selection",
+            "## Phase 0: Sensitivity Analysis Findings",
+            "## Phase 1: Per-Coin Strategy Selection",
             "## Final Full-Period Performance",
             "## Combined Portfolio Performance",
             "## Methodology",
