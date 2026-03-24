@@ -44,6 +44,7 @@ The project uses a **pluggable strategy framework** for flexible signal generati
 ### Indicator Pre-computation
 
 `IndicatorPrecomputer` optimizes performance by:
+
 - Pre-computing each indicator (PSAR, ADX, ATR, EMA, RSI, MACD, BBands, Donchian, Supertrend) once across full parameter ranges
 - Caching results to avoid redundant calculations
 - Enabling numpy broadcasting for efficient parameter grid evaluation
@@ -100,6 +101,10 @@ graph TD
     F -->|Storage| G[TimescaleDB / results/ folder]
     H["Optimization Scripts<br/>Sensitivity/WFO/Pipeline"] -->|Loop| D
     G -->|Visualization| I[Jupyter Notebooks]
+    J[Live Exchange] <-->|Rest/WS| K[ExecutionEngine]
+    K -->|Load Params| G
+    B -->|Live OHLCV| K
+    K -->|Orders| J
 ```
 
 ## 📊 Result Management
@@ -109,6 +114,12 @@ Every run (backtest, sensitivity, or WFO) outputs results to a timestamped folde
 - **Trades**: Detailed log of every entry and exit.
 - **Metrics**: Sharpe ratio, Max Drawdown, Profit Factor, etc.
 - **Config**: A snapshot of the parameters used for that specific run.
+
+## 🚀 Live Execution
+
+- **`ExecutionEngine`**: Orchestrates live trading by fetching recent candles via `LiveExchangeLoader`, computing per-coin signals using WFO-optimized parameters, and managing Kraken orders.
+- **Bot Persistence**: Tracks active positions in `data/active_positions.json` to handle process restarts.
+- **Native Trailing Stop**: Leverages Kraken's `trailing-stop` order type for server-side risk management.
 
 ---
 *Back to [README.md](../readme.md)*

@@ -18,5 +18,32 @@ services:
       timeout: 5s
       retries: 5
 
+  ggtrader_live:
+    build: .
+    container_name: ggtrader_live
+    env_file: .env # Loads KRAKEN_KEY, KRAKEN_SECRET
+    depends_on:
+      ggtrader_db:
+        condition: service_healthy
+    volumes:
+      - ./results:/app/results # To read run_results.json and save logs/reports
+      - ./data:/app/data         # To persist active_positions.json
+      - ./logs:/app/logs         # To persist pipeline logs
+    environment:
+      - DB_HOST=ggtrader_db
+      - DB_PORT=5432
+      - DB_USER=ggtrader
+      - DB_PASS=ggtrader
+      - DB_NAME=ggtrader
+      # --- Automated Trading Settings ---
+      - SYMBOLS=BTC-USD,ETH-USD,SOL-USD,DOT-USD,LINK-USD
+      - TRADING_INTERVAL=4h
+      - START_CASH=1000.0
+      - CAPITAL_PER_TRADE=25.0
+      - REOPTIMIZE_DAYS=30
+      - TRAINING_YEARS=3
+      - DRY_RUN=true
+    command: python scripts/auto_trader.py
+
 volumes:
   ggtrader_pgdata: # Dedicated persistent volume for ggTrader data

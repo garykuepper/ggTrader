@@ -39,3 +39,7 @@ def manage_data() -> None:
 
 def manage_db() -> None:
     run_script("manage_db.py")
+
+
+def live() -> None:
+    run_script("run_live_trader.py")

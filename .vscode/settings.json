@@ -4,7 +4,8 @@
     ],
     "postman.settings.dotenv-detection-notification-visibility": false,
     "editor.formatOnSave": true,
-    "python.defaultInterpreterPath": ".\\.venv\\Scripts\\python.exe",
+    "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "python.terminal.activateEnvironment": true,
     "python.analysis.typeCheckingMode": "basic",
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
@@ -13,5 +14,15 @@
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
         "tests"
+    ],
+    "terminal.integrated.env.windows": {
+        "PATH": "${workspaceFolder}\\.venv\\Scripts;${env:PATH}"
+    },
+    "claudeCode.usePythonEnvironment": true,
+    "claudeCode.environmentVariables": [
+        {
+            "name": "PATH",
+            "value": "${workspaceFolder}\\.venv\\Scripts;${env:PATH}"
+        }
     ]
 }

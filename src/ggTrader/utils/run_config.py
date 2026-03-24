@@ -1,7 +1,4 @@
-"""Shared default configuration dicts for CLI scripts and orchestrators."""
-
-from __future__ import annotations
-
+import os
 from typing import Any
 
 # --- Common date / portfolio keys (many scripts share these) ---
@@ -101,9 +98,9 @@ def full_pipeline_config() -> dict[str, Any]:
     """Defaults for ``scripts/run_full_pipeline.py``."""
     return {
         "SYMBOLS_FILE": "data/top_25_USD_2023-01-01_2025-12-31.json",
-        "MAX_SYMBOLS": 5,
-        "START_DATE": "2023-01-01",
-        "END_DATE": "2025-12-31",
+        "MAX_SYMBOLS": 25,
+        "START_DATE": os.getenv("GGTRADER_START_DATE", "2023-01-01"),
+        "END_DATE": os.getenv("GGTRADER_END_DATE", "2025-12-31"),
         "INTERVAL": "4h",
         "FREQ": "4h",
         "START_CASH": 1000,
@@ -130,7 +127,7 @@ def full_pipeline_config() -> dict[str, Any]:
         "USE_VECTORIZED_SENSITIVITY": True,
         "USE_MOVERS": 0,
         # Both exits compete in the tournament; use --exits atr_trailing to limit to one.
-        "EXIT_TOURNAMENT": ["atr_trailing", "fixed_sl_tp"],
+        "EXIT_TOURNAMENT": ["atr_trailing", "fixed_sl_tp", "trailing_stop"],
         "SENSITIVITY_EXIT_STRATEGY": "atr_trailing",
         # Optional: set RECENT_VALIDATION_START_DATE (or CLI) to run Phase 3B after WFO.
         "RECENT_VALIDATION_START_DATE": None,

@@ -863,10 +863,29 @@ def _process_wfo_fold(
         trade_for_gate = _trade_counts_for_train_gate(pf_train, train_metrics)
         train_metrics_before_gates = train_metrics.copy()
 
+    # Bear Market check: if Buy & Hold return of the fold is negative.
+    try:
+        train_close = train_ohlcv.xs("close", axis=1, level=1)
+        bnh_return = float((train_close.iloc[-1].mean() / train_close.iloc[0].mean()) - 1.0)
+        is_bear_market = bnh_return < 0.0
+    except Exception:
+        is_bear_market = False
+
     # Gate: require MIN_CLOSED_TRADES_TRAIN completed round-trips (per combo).
     min_closed = config.get("MIN_CLOSED_TRADES_TRAIN", 1)
     if min_closed > 0:
         incomplete_mask = trade_for_gate < min_closed
+        
+        # If it's a bear market, we forgive combos that took exactly 0 trades. 
+        # They successfully stayed out of a losing market.
+        if is_bear_market:
+            zero_trades_mask = trade_for_gate == 0
+            incomplete_mask = incomplete_mask & ~zero_trades_mask
+            
+            if zero_trades_mask.any():
+                train_metrics = train_metrics.copy()
+                train_metrics[zero_trades_mask] = 0.0
+
         if incomplete_mask.any():
             train_metrics = train_metrics.copy()
             train_metrics[incomplete_mask] = np.nan
@@ -1270,7 +1289,7 @@ def run_wfo_orchestrator(
         is_metrics_by_fold,
         param_names,
         param_grid,
-        oos_metrics_by_fold,
+        None,  # Do not punish entire folds based on OOS performance of the single IS winner
         debug_metrics=dbg,
     )
     if not best_robust_params:
@@ -1338,6 +1357,13 @@ def run_wfo_per_coin_orchestrator(
     # Dictionary to store best params per symbol
     per_coin_results: Dict[str, Dict[str, Any]] = {}
 
+    per_coin_config = {
+        **config,
+        "PORTFOLIO_SHARE": 1.0,
+        "USE_CASH_SHARING": False,
+        "group_by": False,
+    }
+
     # Optimize each symbol independently
     for symbol in symbols:
         print(f"\n--- Optimizing {symbol} ---")
@@ -1350,7 +1376,7 @@ def run_wfo_per_coin_orchestrator(
             symbol_ohlcv,
             symbol_mover_mask,
             param_grid,
-            config,
+            per_coin_config,
             param_names,
             n_splits,
             test_ratio,
@@ -1366,7 +1392,7 @@ def run_wfo_per_coin_orchestrator(
             is_metrics_by_fold,
             param_names,
             param_grid,
-            oos_metrics_by_fold,
+            None,  # Do not punish entire folds based on OOS performance of the single IS winner
             debug_metrics=dbg,
         )
         if not best_robust_params:
@@ -1392,13 +1418,13 @@ def run_wfo_per_coin_orchestrator(
         best_params = per_coin_results[symbol]["best_params"]
         symbol_ohlcv = ohlcv[[symbol]]
 
-        engine = FastBacktest(symbol_ohlcv, best_params, config=config)
+        engine = FastBacktest(symbol_ohlcv, best_params, config=per_coin_config)
         pf = engine.run(show_progress=False)
 
         # Extract signals
         close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)
-        entries = pf.entries()
-        exits = pf.exits()
+        entries = engine.entries
+        exits = engine.exits
 
         combined_entries_list.append(entries)
         combined_exits_list.append(exits)
@@ -1415,11 +1441,11 @@ def run_wfo_per_coin_orchestrator(
         close=combined_close,
         entries=combined_entries,
         exits=combined_exits,
-        init_cash=float(config["START_CASH"]),
-        fees=float(config["FEES"]),
-        slippage=float(config["SLIPPAGE"]),
-        freq=config["FREQ"],
-        size=float(config["PORTFOLIO_SHARE"]),
+        init_cash=float(config.get("START_CASH", 10000.0)),
+        fees=float(config.get("FEES", 0.001)),
+        slippage=float(config.get("SLIPPAGE", 0.0005)),
+        freq=config.get("FREQ", "4h"),
+        size=float(config.get("PORTFOLIO_SHARE", 1.0)),
         size_type="percent",
         cash_sharing=True,
         group_by=np.full(combined_entries.shape[1], 0),
@@ -1429,7 +1455,7 @@ def run_wfo_per_coin_orchestrator(
         "total_value": _safe(final_pf.final_value().sum()),
         "total_profit": _safe(final_pf.total_profit().sum()),
         "profit_pct": _safe(
-            (final_pf.total_profit().sum() / float(config["START_CASH"])) * 100
+            (final_pf.total_profit().sum() / float(config.get("START_CASH", 10000.0))) * 100
         ),
         "total_trades": int(final_pf.trades.count().sum()),
         "win_rate": _safe(final_pf.trades.win_rate().mean()) * 100,
@@ -1553,10 +1579,10 @@ def _equal_weight_buy_hold_portfolio_stats(
         close=close,
         entries=entries,
         exits=exits,
-        init_cash=float(config["START_CASH"]),
-        fees=float(config["FEES"]),
-        slippage=float(config["SLIPPAGE"]),
-        freq=config["FREQ"],
+        init_cash=float(config.get("START_CASH", 10000.0)),
+        fees=float(config.get("FEES", 0.001)),
+        slippage=float(config.get("SLIPPAGE", 0.0005)),
+        freq=config.get("FREQ", "4h"),
         size=1.0 / n,
         size_type="percent",
         cash_sharing=True,
@@ -1564,7 +1590,7 @@ def _equal_weight_buy_hold_portfolio_stats(
     ).copy()
 
     years = _years_from_price_index(close.index)
-    init_cash = float(config["START_CASH"])
+    init_cash = float(config.get("START_CASH", 10000.0))
     profit_pct = float((bench_pf.total_profit().sum() / init_cash) * 100.0)
     cagr = _cagr_percent(profit_pct, years)
     sh = float(bench_pf.sharpe_ratio().mean())

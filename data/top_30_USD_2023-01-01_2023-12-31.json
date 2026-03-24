@@ -4,209 +4,239 @@
         "symbol": "ETH",
         "kraken_symbol": "ETH",
         "frequency": 1096,
-        "average_notional_volume": 61906875.9521924
+        "average_notional_volume": 61906875.9521924,
+        "name": "Ethereum"
     },
     {
         "rank": 2,
         "symbol": "SOL",
         "kraken_symbol": "SOL",
         "frequency": 1096,
-        "average_notional_volume": 45099385.312877916
+        "average_notional_volume": 45099385.312877916,
+        "name": "Solana"
     },
     {
         "rank": 3,
         "symbol": "XRP",
         "kraken_symbol": "XRP",
         "frequency": 1096,
-        "average_notional_volume": 33621175.195133634
+        "average_notional_volume": 33621175.195133634,
+        "name": "XRP"
     },
     {
         "rank": 4,
         "symbol": "DOGE",
         "kraken_symbol": "DOGE",
         "frequency": 1096,
-        "average_notional_volume": 15688967.292536924
+        "average_notional_volume": 15688967.292536924,
+        "name": "Dogecoin"
     },
     {
         "rank": 5,
         "symbol": "LTC",
         "kraken_symbol": "LTC",
         "frequency": 1096,
-        "average_notional_volume": 3510739.8830480315
+        "average_notional_volume": 3510739.8830480315,
+        "name": "Litecoin"
     },
     {
         "rank": 6,
         "symbol": "XMR",
         "kraken_symbol": "XMR",
         "frequency": 1096,
-        "average_notional_volume": 1640401.771368634
+        "average_notional_volume": 1640401.771368634,
+        "name": "Monero"
     },
     {
         "rank": 7,
         "symbol": "BTC",
         "kraken_symbol": "BTC",
         "frequency": 1095,
-        "average_notional_volume": 139526674.73065594
+        "average_notional_volume": 139526674.73065594,
+        "name": "Bitcoin"
     },
     {
         "rank": 8,
         "symbol": "LINK",
         "kraken_symbol": "LINK",
         "frequency": 1095,
-        "average_notional_volume": 4341689.337128696
+        "average_notional_volume": 4341689.337128696,
+        "name": "Chainlink"
     },
     {
         "rank": 9,
         "symbol": "DOT",
         "kraken_symbol": "DOT",
         "frequency": 1095,
-        "average_notional_volume": 2614749.8660359285
+        "average_notional_volume": 2614749.8660359285,
+        "name": "Polkadot"
     },
     {
         "rank": 10,
         "symbol": "TRX",
         "kraken_symbol": "TRX",
         "frequency": 1092,
-        "average_notional_volume": 935705.3825098218
+        "average_notional_volume": 935705.3825098218,
+        "name": "TRON"
     },
     {
         "rank": 11,
         "symbol": "SHIB",
         "kraken_symbol": "SHIB",
         "frequency": 1059,
-        "average_notional_volume": 1613858.0931486206
+        "average_notional_volume": 1613858.0931486206,
+        "name": "Shiba Inu"
     },
     {
         "rank": 12,
         "symbol": "FET",
         "kraken_symbol": "FET",
         "frequency": 1028,
-        "average_notional_volume": 1845018.977505129
+        "average_notional_volume": 1845018.977505129,
+        "name": "Fetch.ai"
     },
     {
         "rank": 13,
         "symbol": "XLM",
         "kraken_symbol": "XLM",
         "frequency": 1024,
-        "average_notional_volume": 2339688.0371029843
+        "average_notional_volume": 2339688.0371029843,
+        "name": "Stellar"
     },
     {
         "rank": 14,
         "symbol": "FLR",
         "kraken_symbol": "FLR",
         "frequency": 999,
-        "average_notional_volume": 493623.1402718625
+        "average_notional_volume": 493623.1402718625,
+        "name": "Flare"
     },
     {
         "rank": 15,
         "symbol": "INJ",
         "kraken_symbol": "INJ",
         "frequency": 986,
-        "average_notional_volume": 1404015.9331136853
+        "average_notional_volume": 1404015.9331136853,
+        "name": "Injective"
     },
     {
         "rank": 16,
         "symbol": "BCH",
         "kraken_symbol": "BCH",
         "frequency": 964,
-        "average_notional_volume": 1326621.2288684747
+        "average_notional_volume": 1326621.2288684747,
+        "name": "Bitcoin Cash"
     },
     {
         "rank": 17,
         "symbol": "UNI",
         "kraken_symbol": "UNI",
         "frequency": 960,
-        "average_notional_volume": 1143272.4944827822
+        "average_notional_volume": 1143272.4944827822,
+        "name": "Uniswap"
     },
     {
         "rank": 18,
         "symbol": "LDO",
         "kraken_symbol": "LDO",
         "frequency": 938,
-        "average_notional_volume": 1110851.848173092
+        "average_notional_volume": 1110851.848173092,
+        "name": "Lido DAO"
     },
     {
         "rank": 19,
         "symbol": "ICP",
         "kraken_symbol": "ICP",
         "frequency": 914,
-        "average_notional_volume": 1711878.6528340057
+        "average_notional_volume": 1711878.6528340057,
+        "name": "Internet Computer"
     },
     {
         "rank": 20,
         "symbol": "AVAX",
         "kraken_symbol": "AVAX",
         "frequency": 897,
-        "average_notional_volume": 3764936.907192035
+        "average_notional_volume": 3764936.907192035,
+        "name": "Avalanche"
     },
     {
         "rank": 21,
         "symbol": "NEAR",
         "kraken_symbol": "NEAR",
         "frequency": 895,
-        "average_notional_volume": 2292328.7599144126
+        "average_notional_volume": 2292328.7599144126,
+        "name": "Near Protocol"
     },
     {
         "rank": 22,
         "symbol": "ATOM",
         "kraken_symbol": "ATOM",
         "frequency": 857,
-        "average_notional_volume": 834676.7445179514
+        "average_notional_volume": 834676.7445179514,
+        "name": "Cosmos"
     },
     {
         "rank": 23,
         "symbol": "FIL",
         "kraken_symbol": "FIL",
         "frequency": 833,
-        "average_notional_volume": 1421864.4080601886
+        "average_notional_volume": 1421864.4080601886,
+        "name": "Filecoin"
     },
     {
         "rank": 24,
         "symbol": "GALA",
         "kraken_symbol": "GALA",
         "frequency": 818,
-        "average_notional_volume": 1042181.1580996431
+        "average_notional_volume": 1042181.1580996431,
+        "name": "Gala"
     },
     {
         "rank": 25,
         "symbol": "MATIC",
         "kraken_symbol": "MATIC",
         "frequency": 816,
-        "average_notional_volume": 3096091.2940687286
+        "average_notional_volume": 3096091.2940687286,
+        "name": "Polygon"
     },
     {
         "rank": 26,
         "symbol": "PEPE",
         "kraken_symbol": "PEPE",
         "frequency": 807,
-        "average_notional_volume": 5528695.731760401
+        "average_notional_volume": 5528695.731760401,
+        "name": "Pepe"
     },
     {
         "rank": 27,
         "symbol": "TIA",
         "kraken_symbol": "TIA",
         "frequency": 771,
-        "average_notional_volume": 2118702.4135720218
+        "average_notional_volume": 2118702.4135720218,
+        "name": "Celestia"
     },
     {
         "rank": 28,
         "symbol": "SEI",
         "kraken_symbol": "SEI",
         "frequency": 770,
-        "average_notional_volume": 1984805.3764499791
+        "average_notional_volume": 1984805.3764499791,
+        "name": "Sei"
     },
     {
         "rank": 29,
         "symbol": "LUNA",
         "kraken_symbol": "LUNA",
         "frequency": 746,
-        "average_notional_volume": 507681.36911292555
+        "average_notional_volume": 507681.36911292555,
+        "name": "Terra"
     },
     {
         "rank": 30,
         "symbol": "FTM",
         "kraken_symbol": "FTM",
         "frequency": 745,
-        "average_notional_volume": 2121110.0377298743
+        "average_notional_volume": 2121110.0377298743,
+        "name": "Fantom"
     }
 ]

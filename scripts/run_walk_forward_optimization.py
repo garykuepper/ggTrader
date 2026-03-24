@@ -4,189 +4,88 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
-import numpy as np
-import pandas as pd
-from tabulate import tabulate
-
-from ggTrader.core.orchestrator import (
-    run_backtest_orchestrator,
-    run_wfo_orchestrator,
-    run_wfo_per_coin_orchestrator,
+from ggTrader.pipeline.param_grids import (
+    DETAILED_ENTRY_PARAM_GRIDS,
+    DETAILED_EXIT_AXIS_GRIDS,
+    build_wfo_superset_grids,
 )
+from ggTrader.utils.pipeline_phases import (
+    phase_1_per_coin_multi_strategy_wfo,
+    phase_2_full_data_validation,
+)
+from ggTrader.utils.pipeline_status_logger import StatusLogger
 from ggTrader.utils.run_config import merge_run_config, wfo_script_config
 
 
 def main() -> None:
-    """Run Walk-Forward Optimization using the orchestrator."""
-    parser = argparse.ArgumentParser(description="Run WFO")
+    """Run Walk-Forward Optimization using the pipeline's phase 1 orchestrator."""
+    parser = argparse.ArgumentParser(description="Run Isolated WFO (Phase 1)")
     parser.add_argument(
         "--no-progress",
         action="store_true",
         help="Disable progress bar",
     )
     parser.add_argument(
-        "--mode",
-        choices=["universal", "per_coin"],
-        default="universal",
-        help="WFO mode",
+        "--symbols-file",
+        type=str,
+        default=None,
+        help="Override SYMBOLS_FILE JSON",
+    )
+    parser.add_argument(
+        "--max-symbols",
+        type=int,
+        default=None,
+        help="Limit number of symbols",
+    )
+    parser.add_argument(
+        "--train-metric",
+        type=str,
+        default=None,
+        choices=("sharpe", "sortino", "calmar", "composite"),
+        help="Override TRAIN_METRIC",
     )
     args = parser.parse_args()
 
-    config = merge_run_config(wfo_script_config(), WFO_MODE=args.mode)
+    # We use the full pipeline config to ensure we mimic its splits and metrics
+    from ggTrader.utils.run_config import full_pipeline_config
+    config = merge_run_config(
+        full_pipeline_config(), 
+        SYMBOLS_FILE=args.symbols_file,
+        MAX_SYMBOLS=args.max_symbols,
+        TRAIN_METRIC=args.train_metric
+    )
     show_progress = not args.no_progress and sys.stdout.isatty()
 
-    # Vectorized Parameter Grid
-    params = {
-        # entry
-        "sar_acceleration": [0.02],
-        "sar_maximum": [0.2],
-        "use_dmp_cross": [False],
-        "adx_threshold": list(range(20, 46, 5)),
-        "adx_length": list(range(7, 22, 7)),
-        # exit
-        "atr_length": list(range(7, 22, 7)),
-        "atr_multiplier": list(np.arange(1.0, 4.1, 0.5)),
-    }
+    # Build the exact same grids as the full pipeline does (Iteration 6: Expanded Discovery)
+    narrowed_grids = build_wfo_superset_grids(
+        DETAILED_ENTRY_PARAM_GRIDS,
+        DETAILED_EXIT_AXIS_GRIDS,
+        list(DETAILED_EXIT_AXIS_GRIDS.keys()),
+        dry_run=False
+    )
 
-    # Run appropriate WFO mode
-    wfo_mode = config.get("WFO_MODE", "universal")
-    if wfo_mode == "per_coin":
-        results = run_wfo_per_coin_orchestrator(
-            config=config,
-            param_grid=params,
-            save_results=True,
-            show_progress=show_progress,
-        )
-        per_coin_results = results["per_coin_results"]
-        final_pf = results["final_portfolio"]
-        final_stats = results["final_stats"]
+    logger = StatusLogger(Path("results/wfo_isolated_status.txt"))
+    logger.update("Starting isolated multi-strategy WFO (Phase 1)...")
 
-        print("\n" + "=" * 80)
-        print("PER-COIN OPTIMIZATION RESULTS")
-        print("=" * 80)
+    # Delegate to the single source of truth for Phase 1 WFO
+    wfo_results = phase_1_per_coin_multi_strategy_wfo(
+        config=config,
+        narrowed_grids=narrowed_grids,
+        show_progress=show_progress,
+        logger=logger,
+        save_results=True,
+    )
+    
+    print("\nIsolated WFO execution completed successfully.")
+    
+    if "final_portfolio" in wfo_results:
+        pf = wfo_results["final_portfolio"]
+        print(f"\nFinal Dynamic Walk-Forward Portfolio Return (Across concatenated folds): {pf.total_return().mean() * 100:.2f}%\n")
 
-        per_coin_df = pd.DataFrame(
-            [{"symbol": s, **r["best_params"]} for s, r in per_coin_results.items()]
-        )
-        print("\nBest Parameters per Symbol:")
-        print(tabulate(per_coin_df, headers="keys", tablefmt="github", showindex=False))
-
-        print("\nFINAL COMBINED PORTFOLIO PERFORMANCE:")
-        stats_df = pd.DataFrame(final_stats.items(), columns=["Metric", "Value"])
-        print(tabulate(stats_df, headers="keys", tablefmt="simple", showindex=False))
-
-    else:
-        results = run_wfo_orchestrator(
-            config=config,
-            param_grid=params,
-            save_results=True,
-            show_progress=show_progress,
-        )
-
-        if not results:
-            print("WFO optimization returned no results.")
-            return
-
-        wfo_stats = results["wfo_stats"]
-        robust_top_5 = results["robust_top_5"]
-        final_pf = results["final_portfolio"]
-
-        # --- Analysis & Visualization ---
-
-        print("\nPARAMETER ROBUSTNESS REPORT (Top 5 Overall):")
-        robust_report_df = pd.DataFrame(
-            [{"Score": r["robustness_score"], **r["params"]} for r in robust_top_5]
-        )
-        print(tabulate(robust_report_df.round(2), headers="keys", tablefmt="github", showindex=False))
-
-        print("\nWFO FOLD RESULTS SUMMARY:")
-        df_results = pd.DataFrame(wfo_stats)
-
-        # Create a concise string for the best params
-        def simplify_params(d):
-            # Only show the params that usually change (e.g., adx and atr)
-            return f"ADX:{d.get('adx_threshold')}/{d.get('adx_length')} | ATR:{d.get('atr_multiplier'):.2f}"
-
-        df_clean = df_results.copy()
-        df_clean["params"] = df_clean["params"].apply(simplify_params)
-        df_clean["train"] = pd.to_datetime(df_clean["train_start"]).dt.strftime("%Y-%m-%d")
-        df_clean["test"] = pd.to_datetime(df_clean["test_start"]).dt.strftime("%Y-%m-%d")
-
-        # Select only the readable columns
-        cols = ["fold", "train", "test", "params", "is_sharpe", "oos_sharpe", "profit"]
-        # Handle potential discrepancies in naming
-        existing_cols = [c for c in cols if c in df_clean.columns]
-        print(
-            tabulate(
-                df_clean[existing_cols].round(2),
-                headers="keys",
-                tablefmt="github",
-                showindex=False,
-            )
-        )
-
-        print("\nFINAL ROBUST MODEL PERFORMANCE (Across Entire Period):")
-        # Convert stats to a DataFrame for a cleaner table view
-        stats_df = final_pf.stats().to_frame(name="Value").reset_index()
-
-        # 2. Format only the numbers to 2 decimals (ignoring dates and durations)
-        def format_values(x):
-            if isinstance(x, (float, np.floating)):
-                return f"{x:.2f}"
-            return str(x)
-
-        stats_df["Value"] = stats_df["Value"].apply(format_values)
-
-        # 3. Print with tabulate (no floatfmt needed now because we formatted them in step 2)
-        print(
-            tabulate(
-                stats_df,
-                headers=["Metric", "Value"],
-                tablefmt="simple",
-                numalign="right",
-                showindex=False,
-            )
-        )
-
-        # 1. Run backtest for just BTC
-        btc_pf = run_backtest_orchestrator(
-            config={
-                **config,
-                "SYMBOLS": ["BTC"],
-                "PORTFOLIO_SHARE": 1,
-                "USE_CASH_SHARING": False,
-                "group_by": False,
-            },
-            params=results["best_robust_params"],
-            save_results=False,
-            show_progress=show_progress,
-        )["portfolio"]
-
-        # --- Visualization ---
-        print("Global Portfolio Stats:")
-        # Convert stats to a DataFrame for a cleaner table view
-        stats_df = btc_pf.stats().to_frame(name="Value").reset_index()
-
-        # 2. Format only the numbers to 2 decimals (ignoring dates and durations)
-        def format_values(x):
-            if isinstance(x, (float, np.floating)):
-                return f"{x:.2f}"
-            return str(x)
-
-        stats_df["Value"] = stats_df["Value"].apply(format_values)
-
-        # 3. Print with tabulate (no floatfmt needed now because we formatted them in step 2)
-        print(
-            tabulate(
-                stats_df,
-                headers=["Metric", "Value"],
-                tablefmt="simple",
-                numalign="right",
-                showindex=False,
-            )
-        )
-
+    # Run the user-requested static backtest on the single set of top robust parameters over the entire time range (Phase 2)
+    phase_2_full_data_validation(config, wfo_results, logger=logger)
 
 if __name__ == "__main__":
     main()

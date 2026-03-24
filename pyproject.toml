@@ -48,6 +48,7 @@ ggtrader-view-results = "ggTrader.cli.entrypoints:view_results"
 ggtrader-pipeline-status = "ggTrader.cli.entrypoints:pipeline_status"
 ggtrader-manage-data = "ggTrader.cli.entrypoints:manage_data"
 ggtrader-manage-db = "ggTrader.cli.entrypoints:manage_db"
+ggtrader-live = "ggTrader.cli.entrypoints:live"
 
 [tool.setuptools.packages.find]
 where = ["src"]

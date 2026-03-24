@@ -4,174 +4,199 @@
         "symbol": "BTC",
         "kraken_symbol": "BTC",
         "frequency": 1095,
-        "average_notional_volume": 139526674.73065594
+        "average_notional_volume": 139526674.73065594,
+        "name": "Bitcoin"
     },
     {
         "rank": 2,
         "symbol": "ETH",
         "kraken_symbol": "ETH",
         "frequency": 1096,
-        "average_notional_volume": 61906875.9521924
+        "average_notional_volume": 61906875.9521924,
+        "name": "Ethereum"
     },
     {
         "rank": 3,
         "symbol": "SOL",
         "kraken_symbol": "SOL",
         "frequency": 1096,
-        "average_notional_volume": 45099385.312877916
+        "average_notional_volume": 45099385.312877916,
+        "name": "Solana"
     },
     {
         "rank": 4,
         "symbol": "XRP",
         "kraken_symbol": "XRP",
         "frequency": 1096,
-        "average_notional_volume": 33621175.195133634
+        "average_notional_volume": 33621175.195133634,
+        "name": "XRP"
     },
     {
         "rank": 5,
         "symbol": "DOGE",
         "kraken_symbol": "DOGE",
         "frequency": 1096,
-        "average_notional_volume": 15688967.292536924
+        "average_notional_volume": 15688967.292536924,
+        "name": "Dogecoin"
     },
     {
         "rank": 6,
         "symbol": "LINK",
         "kraken_symbol": "LINK",
         "frequency": 1095,
-        "average_notional_volume": 4341689.337128696
+        "average_notional_volume": 4341689.337128696,
+        "name": "Chainlink"
     },
     {
         "rank": 7,
         "symbol": "AVAX",
         "kraken_symbol": "AVAX",
         "frequency": 897,
-        "average_notional_volume": 3764936.907192035
+        "average_notional_volume": 3764936.907192035,
+        "name": "Avalanche"
     },
     {
         "rank": 8,
         "symbol": "LTC",
         "kraken_symbol": "LTC",
         "frequency": 1096,
-        "average_notional_volume": 3510739.8830480315
+        "average_notional_volume": 3510739.8830480315,
+        "name": "Litecoin"
     },
     {
         "rank": 9,
         "symbol": "DOT",
         "kraken_symbol": "DOT",
         "frequency": 1095,
-        "average_notional_volume": 2614749.8660359285
+        "average_notional_volume": 2614749.8660359285,
+        "name": "Polkadot"
     },
     {
         "rank": 10,
         "symbol": "XLM",
         "kraken_symbol": "XLM",
         "frequency": 1024,
-        "average_notional_volume": 2339688.0371029843
+        "average_notional_volume": 2339688.0371029843,
+        "name": "Stellar"
     },
     {
         "rank": 11,
         "symbol": "NEAR",
         "kraken_symbol": "NEAR",
         "frequency": 895,
-        "average_notional_volume": 2292328.7599144126
+        "average_notional_volume": 2292328.7599144126,
+        "name": "Near Protocol"
     },
     {
         "rank": 12,
         "symbol": "FET",
         "kraken_symbol": "FET",
         "frequency": 1029,
-        "average_notional_volume": 1843399.5750662212
+        "average_notional_volume": 1843399.5750662212,
+        "name": "Fetch.ai"
     },
     {
         "rank": 13,
         "symbol": "ICP",
         "kraken_symbol": "ICP",
         "frequency": 917,
-        "average_notional_volume": 1706947.6665225946
+        "average_notional_volume": 1706947.6665225946,
+        "name": "Internet Computer"
     },
     {
         "rank": 14,
         "symbol": "XMR",
         "kraken_symbol": "XMR",
         "frequency": 1096,
-        "average_notional_volume": 1640401.771368634
+        "average_notional_volume": 1640401.771368634,
+        "name": "Monero"
     },
     {
         "rank": 15,
         "symbol": "SHIB",
         "kraken_symbol": "SHIB",
         "frequency": 1060,
-        "average_notional_volume": 1612419.0380700268
+        "average_notional_volume": 1612419.0380700268,
+        "name": "Shiba Inu"
     },
     {
         "rank": 16,
         "symbol": "INJ",
         "kraken_symbol": "INJ",
         "frequency": 995,
-        "average_notional_volume": 1392416.0121809996
+        "average_notional_volume": 1392416.0121809996,
+        "name": "Injective"
     },
     {
         "rank": 17,
         "symbol": "FIL",
         "kraken_symbol": "FIL",
         "frequency": 863,
-        "average_notional_volume": 1378745.3375990742
+        "average_notional_volume": 1378745.3375990742,
+        "name": "Filecoin"
     },
     {
         "rank": 18,
         "symbol": "BCH",
         "kraken_symbol": "BCH",
         "frequency": 966,
-        "average_notional_volume": 1324103.445663571
+        "average_notional_volume": 1324103.445663571,
+        "name": "Bitcoin Cash"
     },
     {
         "rank": 19,
         "symbol": "UNI",
         "kraken_symbol": "UNI",
         "frequency": 962,
-        "average_notional_volume": 1141027.648847715
+        "average_notional_volume": 1141027.648847715,
+        "name": "Uniswap"
     },
     {
         "rank": 20,
         "symbol": "LDO",
         "kraken_symbol": "LDO",
         "frequency": 950,
-        "average_notional_volume": 1098989.396881462
+        "average_notional_volume": 1098989.396881462,
+        "name": "Lido DAO"
     },
     {
         "rank": 21,
         "symbol": "TRX",
         "kraken_symbol": "TRX",
         "frequency": 1092,
-        "average_notional_volume": 935705.3825098218
+        "average_notional_volume": 935705.3825098218,
+        "name": "TRON"
     },
     {
         "rank": 22,
         "symbol": "ATOM",
         "kraken_symbol": "ATOM",
         "frequency": 871,
-        "average_notional_volume": 824131.3415530695
+        "average_notional_volume": 824131.3415530695,
+        "name": "Cosmos"
     },
     {
         "rank": 23,
         "symbol": "FLR",
         "kraken_symbol": "FLR",
         "frequency": 1004,
-        "average_notional_volume": 492124.8145241265
+        "average_notional_volume": 492124.8145241265,
+        "name": "Flare"
     },
     {
         "rank": 24,
         "symbol": "LUNA",
         "kraken_symbol": "LUNA",
         "frequency": 903,
-        "average_notional_volume": 443210.39923132607
+        "average_notional_volume": 443210.39923132607,
+        "name": "Terra"
     },
     {
         "rank": 25,
         "symbol": "SCRT",
         "kraken_symbol": "SCRT",
         "frequency": 880,
-        "average_notional_volume": 123100.29272266559
+        "average_notional_volume": 123100.29272266559,
+        "name": "Secret"
     }
 ]

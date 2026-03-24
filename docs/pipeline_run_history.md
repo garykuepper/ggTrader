@@ -338,3 +338,12 @@ ggtrader-pipeline --max-symbols 30 --symbols-file data/top_50_USD_2023-01-01_202
 - **Strategy**: Total return -4.64% | CAGR -1.57% | Sharpe -0.7668 | Max DD -5.47% | Trades 26
 - **Benchmark**: BH return 447.16% | Excess CAGR -77.89%
 
+
+### `pipeline_20260323_160240` (automated)
+
+- **Git**: `3e95e4a`
+- **CLI / flags**: `--dry-run True`
+- **Universe**: 3 symbols | `PORTFOLIO_SHARE`=0.1 | `EXIT_TOURNAMENT`=['atr_trailing', 'fixed_sl_tp']
+- **Strategy**: Total return 25.53% | CAGR 7.88% | Sharpe 1.0307 | Max DD -7.96% | Trades 90
+- **Benchmark**: BH return 342.26% | Excess CAGR -56.34%
+

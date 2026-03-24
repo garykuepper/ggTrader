@@ -144,6 +144,8 @@ class FastBacktest:
         self.params = params
         self.mover_mask = mover_mask
         self.pf = None  # Portfolio cache
+        self.entries = None
+        self.exits = None
         self.signal_factory = signal_factory or SignalFactory
         self._last_param_combos: Optional[List[dict]] = None
 
@@ -179,6 +181,8 @@ class FastBacktest:
         group_by, use_cash_sharing = self._determine_grouping(entries)
 
         # 4. Create Portfolio
+        self.entries = entries
+        self.exits = exits
         self.pf = self._create_portfolio(
             price_for_orders, entries, exits, group_by, use_cash_sharing
         )

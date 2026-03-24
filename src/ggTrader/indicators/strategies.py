@@ -856,6 +856,86 @@ class FixedStopTakeProfit:
         return exits_array, stops_array, price_for_orders
 
 
+class TrailingStopExit:
+    """Percentage-based trailing stop loss exit strategy."""
+
+    name = "trailing_stop"
+    param_schema = {
+        "trailing_stop_pct": [3.0, 5.0, 10.0],
+    }
+
+    def compute_exits(
+        self, entries: np.ndarray, precomputer: IndicatorPrecomputer, param_grid: dict, n_symbols: int
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Generate trailing stop exits using the Numba-accelerated percentage logic."""
+        from ggTrader.indicators.signals import _trailing_stop_long_ohlc_touch_2d_numba
+
+        n_time, n_cols = entries.shape
+        stop_pcts = param_grid.get("trailing_stop_pct", [3.0, 5.0, 10.0])
+        stop_pcts = stop_pcts if isinstance(stop_pcts, list) else [stop_pcts]
+
+        high = precomputer.high
+        low = precomputer.low
+        close = precomputer.close
+        if high.ndim == 1:
+            high = high[:, np.newaxis]
+            low = low[:, np.newaxis]
+            close = close[:, np.newaxis]
+
+        n_exit = len(stop_pcts)
+        n_blocks = n_cols // n_symbols if n_cols >= n_symbols else 1
+
+        if n_exit > 1:
+            if n_blocks % n_exit != 0:
+                raise ValueError(
+                    f"Trailing stop: entries width {n_cols} not divisible by n_sym * n_exit "
+                    f"({n_symbols} * {n_exit})."
+                )
+
+            exits_parts: list[np.ndarray] = []
+            stops_parts: list[np.ndarray] = []
+            price_parts: list[np.ndarray] = []
+
+            for i in range(n_blocks):
+                ent_sl = entries[:, i * n_symbols : (i + 1) * n_symbols]
+                j = i % n_exit
+                spct = float(stop_pcts[j])
+
+                stops, ex = _trailing_stop_long_ohlc_touch_2d_numba(
+                    np.asarray(high, dtype=np.float64),
+                    np.asarray(low, dtype=np.float64),
+                    np.asarray(ent_sl, dtype=np.bool_),
+                    spct,
+                )
+                # Fill price logic (gap adjustment)
+                open_ = close.copy()  # Approximating open with close if not available, consistent with other exits
+                gap_adj = np.minimum(open_, stops)
+                price_b = np.where(ex, gap_adj, close).astype(np.float64)
+
+                exits_parts.append(ex)
+                stops_parts.append(stops)
+                price_parts.append(price_b)
+
+            exits_array = np.hstack(exits_parts).astype(bool)
+            stops_array = np.hstack(stops_parts)
+            price_for_orders = np.hstack(price_parts)
+            return exits_array, stops_array, price_for_orders
+
+        # Single stop value path
+        spct = float(stop_pcts[0])
+        stops, exits_array = _trailing_stop_long_ohlc_touch_2d_numba(
+            np.tile(high, (1, n_blocks)),
+            np.tile(low, (1, n_blocks)),
+            entries,
+            spct,
+        )
+        open_broad = np.tile(close, (1, n_blocks))
+        gap_adjusted_stops = np.minimum(open_broad, stops)
+        price_for_orders = np.where(exits_array, gap_adjusted_stops, open_broad)
+
+        return exits_array, stops, price_for_orders
+
+
 # Strategy registries
 ENTRY_REGISTRY: dict[str, type] = {
     "psar_adx": PsarAdxEntry,
@@ -870,7 +950,9 @@ ENTRY_REGISTRY: dict[str, type] = {
 EXIT_REGISTRY: dict[str, type] = {
     "atr_trailing": AtrTrailingExit,
     "fixed_sl_tp": FixedStopTakeProfit,
+    "trailing_stop": TrailingStopExit,
 }
+
 
 # Parameter axes that drive the exit dimension of the vectorized grid.
 # These keys appear in the param_grid and determine how many exit-combo columns
@@ -878,7 +960,9 @@ EXIT_REGISTRY: dict[str, type] = {
 EXIT_PARAM_AXIS_KEYS: dict[str, tuple[str, ...]] = {
     "atr_trailing": ("atr_length", "atr_multiplier"),
     "fixed_sl_tp": ("stop_pct", "take_profit_pct"),
+    "trailing_stop": ("trailing_stop_pct",),
 }
+
 
 
 def all_exit_axis_param_keys() -> frozenset[str]:

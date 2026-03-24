@@ -31,6 +31,7 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
 - [**Installation & Setup**](docs/installation.md): How to get `ggTrader` running on your local machine.
 - [**Strategy Pipeline Guide**](docs/strategy_pipeline_guide.md): Comprehensive workflow for optimizing strategies across multiple cryptocurrencies.
 - [**Analysis Guide**](docs/analysis_guide.md): Short WFO / backtest / sensitivity workflow notes (details live in the pipeline guide).
+- [**Live Trading Guide**](docs/live_trading_guide.md): How to deploy optimized strategies to Kraken via CCXT.
 - [**Ingestion & DB performance**](docs/ingestion_optimization.md): Notes on data ingestion and TimescaleDB usage.
 - [**Pipeline run history**](docs/pipeline_run_history.md): Pre-flight checklist, manual table, and default auto-append after each successful pipeline (`GGTRADER_APPEND_RUN_HISTORY=0` to disable for testing).
 
