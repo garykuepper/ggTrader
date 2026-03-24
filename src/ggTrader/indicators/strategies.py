@@ -328,6 +328,7 @@ class RsiReversalEntry:
     param_schema = {
         "rsi_length": [14],
         "rsi_oversold": [30],
+        "rsi_trend_filter": [False],
     }
 
     def compute_entries(
@@ -341,18 +342,26 @@ class RsiReversalEntry:
 
         rsi_lengths = param_grid.get("rsi_length", [14])
         rsi_oversold_vals = param_grid.get("rsi_oversold", [30])
+        rsi_filters = param_grid.get("rsi_trend_filter", [False])
 
         rsi_lengths = rsi_lengths if isinstance(rsi_lengths, list) else [rsi_lengths]
         rsi_oversold_vals = rsi_oversold_vals if isinstance(rsi_oversold_vals, list) else [rsi_oversold_vals]
+        rsi_filters = rsi_filters if isinstance(rsi_filters, list) else [rsi_filters]
+
+        ema200 = None
+        if any(rsi_filters):
+            ema_ind = precomputer.compute_ema([200])
+            ema_vals = ema_ind.ema.values if hasattr(ema_ind.ema, "values") else ema_ind.ema
+            ema200 = _vbt_multi_output_to_tps(ema_vals, n_time, 1, n_symbols)
 
         rsi_ind = precomputer.compute_rsi(rsi_lengths)
         rsi_vals = rsi_ind.rsi.values if hasattr(rsi_ind.rsi, "values") else rsi_ind.rsi
         n_rsi = len(rsi_lengths)
         rsi_vals = _vbt_multi_output_to_tps(rsi_vals, n_time, n_rsi, n_symbols)
 
-        rsi_val_by_key = {"rsi_length": rsi_lengths, "rsi_oversold": rsi_oversold_vals}
+        rsi_val_by_key = {"rsi_length": rsi_lengths, "rsi_oversold": rsi_oversold_vals, "rsi_trend_filter": rsi_filters}
         rsi_keys = [k for k in param_grid.keys() if k in rsi_val_by_key]
-        for k in ("rsi_length", "rsi_oversold"):
+        for k in ("rsi_length", "rsi_oversold", "rsi_trend_filter"):
             if k in rsi_val_by_key and k not in rsi_keys:
                 rsi_keys.append(k)
 
@@ -363,6 +372,7 @@ class RsiReversalEntry:
             lens = dict(zip(rsi_keys, tup))
             rsi_len = lens["rsi_length"]
             rsi_thresh = lens["rsi_oversold"]
+            use_filter = bool(lens.get("rsi_trend_filter", False))
             rsi_len_idx = rsi_lengths.index(rsi_len)
 
             if rsi_vals.ndim == 3:
@@ -378,8 +388,20 @@ class RsiReversalEntry:
             entries_combo = (rsi_col > float(rsi_thresh)) & (rsi_col_prev <= float(rsi_thresh))
             entries_combo[0] = False
 
+            if use_filter and ema200 is not None:
+                if ema200.ndim == 3:
+                    ema_col = ema200[:, 0, :]
+                else:
+                    ema_col = ema200
+                if ema_col.ndim == 1:
+                    ema_col = ema_col[:, np.newaxis]
+                entries_combo = entries_combo & (close > ema_col)
+
             entries_list.append(entries_combo.astype(bool))
-            param_combos.append({"rsi_length": rsi_len, "rsi_oversold": rsi_thresh})
+            combo_dict = {"rsi_length": rsi_len, "rsi_oversold": rsi_thresh}
+            if "rsi_trend_filter" in rsi_keys:
+                combo_dict["rsi_trend_filter"] = use_filter
+            param_combos.append(combo_dict)
 
         entries_stacked = []
         for entries_combo in entries_list:

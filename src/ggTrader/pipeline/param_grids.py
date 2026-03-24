@@ -23,6 +23,7 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
     "rsi_reversal": {
         "rsi_length": [7, 14, 21, 28],  # RE-INTRODUCED RSI-7
         "rsi_oversold": [20, 25, 30, 35, 40], # EXPANDED
+        "rsi_trend_filter": [False, True], # NEW REGIME FILTER
     },
     "donchian_breakout": {
         "donchian_length": [10, 15, 20, 30, 50], # EXPANDED
@@ -60,6 +61,7 @@ COARSE_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
     "rsi_reversal": {
         "rsi_length": [14, 21, 28],
         "rsi_oversold": [20, 25, 30],
+        "rsi_trend_filter": [False],
     },
     "donchian_breakout": {
         "donchian_length": [15, 20, 30, 50],

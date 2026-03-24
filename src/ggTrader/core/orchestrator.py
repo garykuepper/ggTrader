@@ -1746,7 +1746,7 @@ def run_frozen_params_combined_backtest(
             **config,
             "ENTRY_STRATEGY": strategy_name,
             "EXIT_STRATEGY": exit_name,
-            "USE_VECTORIZED": False,
+            "USE_VECTORIZED": True,
         }
         engine = FastBacktest(symbol_ohlcv, best_params, config=config_for_final)
         engine.run(show_progress=False)

@@ -178,19 +178,46 @@ class IndicatorPrecomputer:
     ) -> Any:
         """Pre-compute ADX across parameter ranges."""
         lengths = adx_length_values if isinstance(adx_length_values, list) else [adx_length_values]
-
         params = {"length": tuple(int(l) for l in lengths)}
         cached = self._get_persistent("adx", params)
         if cached is not None:
             return cached
 
-        # Single length + param_product breaks some pandas_ta/VBT builds (output split mismatch).
+        # Use own custom factory to avoid issues with from_pandas_ta splitting
+        # ADX usually returns (ADX, DMP, DMN)
+        ADXFactory = vbt.IndicatorFactory(
+            class_name="ADX",
+            short_name="adx",
+            input_names=["high", "low", "close"],
+            param_names=["length"],
+            output_names=["adx", "dmp", "dmn"],
+        )
+
+        def custom_adx(high, low, close, length):
+            import pandas_ta as ta
+            h_s = pd.Series(np.asarray(high).flatten())
+            l_s = pd.Series(np.asarray(low).flatten())
+            c_s = pd.Series(np.asarray(close).flatten())
+            try:
+                # length might be a list/array with one element if param_product is used
+                le = int(length[0] if isinstance(length, (list, np.ndarray)) else length)
+                res = ta.adx(h_s, l_s, c_s, length=le)
+                if res is not None and res.shape[1] >= 3:
+                    return res.iloc[:, 0].values, res.iloc[:, 1].values, res.iloc[:, 2].values
+            except Exception:
+                pass
+            # Fallback for failing ADX or empty data
+            nan_arr = np.full(close.shape, np.nan)
+            return nan_arr, nan_arr, nan_arr
+
+        factory = ADXFactory.from_apply_func(custom_adx)
+        
         if len(lengths) == 1:
-            adx_ind = vbt.IndicatorFactory.from_pandas_ta("adx").run(
+            adx_ind = factory.run(
                 self.high, self.low, self.close, length=int(lengths[0])
             )
         else:
-            adx_ind = vbt.IndicatorFactory.from_pandas_ta("adx").run(
+            adx_ind = factory.run(
                 self.high,
                 self.low,
                 self.close,

@@ -61,14 +61,22 @@ def generate_combined_signals(ohlcv, per_coin_results, global_config):
         best_params = res["best_params"]
         best_strategy = res["best_strategy"]
         best_exit = res["best_exit"]
-        symbol_robustness[symbol] = res.get("robustness_score", 0.0)
+        rob_score = res.get("robustness_score", 0.0)
+        
+        # Phase 3 Hard Gate: Skip assets that failed or have negative robustness
+        if rob_score <= 0.0:
+            print(f"Skipping {symbol} (Gate Failed: Robustness = {rob_score:.2f})")
+            continue
+            
+        symbol_robustness[symbol] = rob_score
        
         # Setup engine for this symbol
         config = {
             **global_config,
             "ENTRY_STRATEGY": best_strategy,
             "EXIT_STRATEGY": best_exit,
-            "USE_VECTORIZED": False
+            "USE_VECTORIZED": False,
+            "USE_CASH_SHARING": False  # Prevent redundant grouping of single assets
         }
        
         sym_ohlcv = ohlcv[[symbol]]
@@ -93,33 +101,56 @@ def generate_combined_signals(ohlcv, per_coin_results, global_config):
         exits = _get_single_col(engine.exits, symbol)
         close = sym_ohlcv.xs("close", level=1, axis=1)
        
+        # Ensure they are single columns
+        if isinstance(entries, pd.DataFrame) and entries.shape[1] > 1:
+            entries = entries.iloc[:, [0]]
+        if isinstance(exits, pd.DataFrame) and exits.shape[1] > 1:
+            exits = exits.iloc[:, [0]]
+        if isinstance(close, pd.DataFrame) and close.shape[1] > 1:
+            close = close.iloc[:, [0]]
+
         # Force column name to symbol
+        # Use .copy() to avoid SettingWithCopyWarning
+        entries = entries.copy()
+        exits = exits.copy()
+        close = close.copy()
+        
         entries.columns = [symbol]
         exits.columns = [symbol]
         close.columns = [symbol]
-       
+        
         combined_entries.append(entries)
         combined_exits.append(exits)
         combined_close.append(close)
        
-    return (
-        pd.concat(combined_entries, axis=1),
-        pd.concat(combined_exits, axis=1),
-        pd.concat(combined_close, axis=1),
-        symbol_robustness
-    )
+    e_df = pd.concat(combined_entries, axis=1)
+    x_df = pd.concat(combined_exits, axis=1)
+    c_df = pd.concat(combined_close, axis=1)
+    
+    # Flatten any MultiIndex to simple column names
+    e_df.columns = [str(c) if not isinstance(c, tuple) else str(c[-1]) for c in e_df.columns]
+    x_df.columns = [str(c) if not isinstance(c, tuple) else str(c[-1]) for c in x_df.columns]
+    c_df.columns = [str(c) if not isinstance(c, tuple) else str(c[-1]) for c in c_df.columns]
+
+    return e_df, x_df, c_df, symbol_robustness
 
 def run_strategy_equal_share(close, entries, exits, config, share=0.1):
     """Current strategy: flat % per trade with cash sharing."""
+    print(f"DEBUG: shapes - close: {close.shape}, entries: {entries.shape}, group_by size: {close.shape[1]}")
+    # Force alignment and copy
+    c = close.astype(float).copy()
+    e = entries.astype(bool).copy()
+    x = exits.astype(bool).copy()
+    
     pf = vbt.Portfolio.from_signals(
-        close=close.astype(float),
-        entries=entries.astype(bool),
-        exits=exits.astype(bool),
+        close=c,
+        entries=e,
+        exits=x,
         init_cash=float(config["START_CASH"]),
         fees=float(config["FEES"]),
         slippage=float(config["SLIPPAGE"]),
         freq=config["FREQ"],
-        size=share,
+        size=float(share),
         size_type="percent",
         cash_sharing=True,
         group_by=np.full(close.shape[1], 0)
@@ -184,9 +215,14 @@ def run_strategy_volatility_weighted(close, entries, exits, config, window=20):
 def run_strategy_robustness_weighted(close, entries, exits, config, robustness_scores):
     """Allocate proportional to WFO robustness score."""
     scores = pd.Series(robustness_scores)
-    # Normalize robustness scores to weights [0, 1]
-    # Sum to 1.0 logic
-    weights = scores / scores.sum()
+    # Normalize robustness scores to weights [0, 1], enforcing min 0
+    scores[scores < 0] = 0.0
+    
+    score_sum = scores.sum()
+    if score_sum > 0:
+        weights = scores / score_sum
+    else:
+        weights = pd.Series(0.0, index=scores.index)
    
     # Broadcast to DataFrame
     weights_df = pd.DataFrame([weights.values] * len(close), index=close.index, columns=close.columns)
@@ -251,27 +287,43 @@ def main():
     weights = {}
    
     print("Running Baseline (Current: Flat 10%)...")
-    strategies["Flat 10%"], weights["Flat 10%"] = run_strategy_equal_share(
-        close, entries, exits, raw_config, share=0.1
-    )
+    try:
+        strategies["Flat 10%"], weights["Flat 10%"] = run_strategy_equal_share(
+            close, entries, exits, raw_config, share=0.1
+        )
+    except Exception as e:
+        print(f"Error in Flat 10%: {e}")
+        import traceback; traceback.print_exc()
    
     print("Running Max Diversified (1/N)...")
-    strategies["Max Diversified (1/N)"], weights["Max Diversified (1/N)"] = run_strategy_max_diversified(
-        close, entries, exits, raw_config
-    )
-   
+    try:
+        strategies["Max Diversified (1/N)"], weights["Max Diversified (1/N)"] = run_strategy_max_diversified(
+            close, entries, exits, raw_config
+        )
+    except Exception as e:
+        print(f"Error in Max Diversified (1/N): {e}")
+
     print("Running Volatility Weighted...")
-    strategies["Volatility Weighted"], weights["Volatility Weighted"] = run_strategy_volatility_weighted(
-        close, entries, exits, raw_config
-    )
-   
+    try:
+        strategies["Volatility Weighted"], weights["Volatility Weighted"] = run_strategy_volatility_weighted(
+            close, entries, exits, raw_config
+        )
+    except Exception as e:
+        print(f"Error in Volatility Weighted: {e}")
+
     print("Running Robustness Weighted...")
-    strategies["Robustness Weighted"], weights["Robustness Weighted"] = run_strategy_robustness_weighted(
-        close, entries, exits, raw_config, robustness
-    )
-   
+    try:
+        strategies["Robustness Weighted"], weights["Robustness Weighted"] = run_strategy_robustness_weighted(
+            close, entries, exits, raw_config, robustness
+        )
+    except Exception as e:
+        print(f"Error in Robustness Weighted: {e}")
+
     print("Running Buy & Hold Benchmark...")
-    strategies["Buy & Hold (EW)"], _ = run_strategy_benchmark(close, raw_config)
+    try:
+        strategies["Buy & Hold (EW)"], _ = run_strategy_benchmark(close, raw_config)
+    except Exception as e:
+        print(f"Error in Buy & Hold (EW): {e}")
    
     # Comparison table
     stats = []

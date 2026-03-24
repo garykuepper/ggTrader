@@ -370,7 +370,11 @@ class FastBacktest:
                 group_by = entries.columns.droplevel(-1)
             else:
                 # Single run: Group all symbols into one combined portfolio
-                group_by = np.full(entries.shape[1], 0)
+                # Only if there's more than one column to group
+                if entries.shape[1] > 1:
+                    group_by = np.full(entries.shape[1], 0)
+                else:
+                    group_by = False
         else:
             # Independent assets, no cash sharing
             group_by = False

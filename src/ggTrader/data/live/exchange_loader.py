@@ -6,7 +6,7 @@ import ccxt
 import pandas as pd
 
 from ggTrader.data.core.base_loader import BaseDataLoader
-from ggTrader.data.core.constants import STABLE_BASES, kraken_map
+from ggTrader.data.core.constants import STABLE_BASES
 
 
 class LiveExchangeLoader(BaseDataLoader):
@@ -52,7 +52,9 @@ class LiveExchangeLoader(BaseDataLoader):
 
         for symbol in symbols:
             # ccxt expects 'BTC/USD'
-            pair = symbol if "/" in symbol else f"{symbol}/{quote}"
+            # CCXT expects 'BTC/USD', project uses 'BTC-USD'
+            has_explicit_sep = "-" in symbol or "/" in symbol
+            pair = symbol.replace("-", "/") if has_explicit_sep else f"{symbol}/{quote}"
             try:
                 ohlcv = self.exchange.fetch_ohlcv(
                     pair, timeframe=interval, since=since, limit=limit
@@ -81,7 +83,7 @@ class LiveExchangeLoader(BaseDataLoader):
         # Concatenate horizontally (aligning on datetime index)
         combined_df = pd.concat(all_dfs, axis=1)
 
-        # Slice appropriately if end_date was provided (ccxt only handles 'since' natively in this simple fetch)
+        # Slice appropriately if end_date was provided
         if end_date:
             combined_df = combined_df[combined_df.index <= end_date]
 
@@ -151,7 +153,13 @@ class LiveExchangeLoader(BaseDataLoader):
     def _parse_ticker_volume(self, symbol: str, ticker_data: dict) -> Optional[dict]:
         """Helper to parse raw ccxt ticker data into a standardized volume row."""
         try:
-            base, quote = symbol.split("/")
+            if "/" in symbol:
+                base, quote = symbol.split("/")
+            elif "-" in symbol:
+                base, quote = symbol.split("-")
+            else:
+                base = symbol
+                quote = "USD"  # Default
             last = ticker_data.get("last") or ticker_data.get("close")
 
             vol_usd = 0.0
@@ -188,5 +196,5 @@ class LiveExchangeLoader(BaseDataLoader):
                 "last": float(last) if last is not None else None,
                 "percentage": round(ticker_data.get("percentage", 0) or 0, 2),
             }
-        except Exception as e:
+        except Exception:
             return None

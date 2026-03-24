@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 
-from ggTrader.data.live.exchange_loader import LiveExchangeLoader
+from ggTrader.data.live.cached_loader import CachedExchangeLoader
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.strategies import (
     AtrTrailingExit,
@@ -52,8 +52,8 @@ class ExecutionEngine:
         self.results_path = results_path
         self.exchange_id = config.get("EXCHANGE", "kraken")
 
-        # Initialize CCXT exchange
-        self.loader = LiveExchangeLoader(exchange_id=self.exchange_id)
+        # Initialize CCXT exchange with caching
+        self.loader = CachedExchangeLoader(exchange_id=self.exchange_id)
         self.exchange = self.loader.exchange
 
         # API Keys from env if not provided in config
@@ -253,7 +253,10 @@ class ExecutionEngine:
                     # For now, we use START_CASH as the total 'Bankroll' for the engine.
                     base_capital = self.config.get("START_CASH", 1000.0)
                     capital_per_trade = base_capital * float(weight)
-                    print(f"Using dynamic weight for {symbol}: {weight*100:.1f}% -> {capital_per_trade:.2f} USD")
+                    print(
+                        f"Using dynamic weight for {symbol}: {weight*100:.1f}% -> "
+                        f"{capital_per_trade:.2f} USD"
+                    )
                 else:
                     capital_per_trade = self.config.get("CAPITAL_PER_TRADE", 100.0)
                     print(f"Using fixed capital for {symbol}: {capital_per_trade:.2f} USD")

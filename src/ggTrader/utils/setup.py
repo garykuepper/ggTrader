@@ -6,7 +6,6 @@ from typing import Any, List
 
 import pandas as pd
 
-from ggTrader.data.core.constants import kraken_map
 from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
 from ggTrader.utils.config import load_symbols_from_json
 
@@ -60,6 +59,29 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
             f"  Interval: {config['INTERVAL']}\n"
             f"  Check that the database is running and contains data for these symbols."
         )
+
+    # Ensure all requested symbols exist in the dataframe as top-level columns.
+    # New coins with short histories (e.g. SUI) might be completely missing 
+    # depending on the requested date range. Padding them with NaNs prevents KeyErrors.
+    existing_symbols = set(ohlcv_df.columns.get_level_values(0))
+    missing_symbols = [s for s in symbols if s not in existing_symbols]
+    
+    if missing_symbols:
+        metrics = ["open", "high", "low", "close", "volume", "trades"]
+        # Only use metrics that actually exist in the dataframe
+        actual_metrics = [m for m in metrics if m in ohlcv_df.columns.get_level_values(1)]
+        
+        # Create a MultiIndex of missing combinations
+        import itertools
+        missing_tuples = list(itertools.product(missing_symbols, actual_metrics))
+        missing_idx = pd.MultiIndex.from_tuples(missing_tuples)
+        
+        # Create an empty dataframe with NaNs and concatenate
+        empty_df = pd.DataFrame(index=ohlcv_df.index, columns=missing_idx, dtype=float)
+        ohlcv_df = pd.concat([ohlcv_df, empty_df], axis=1)
+        
+        # Sort columns to maintain consistency
+        ohlcv_df.sort_index(axis=1, inplace=True)
 
     return ohlcv_df
 
@@ -216,8 +238,17 @@ def load_hybrid_validation_ohlcv(
     if not bases:
         raise ValueError("No symbols resolved for hybrid validation load.")
 
-    ts_start = pd.Timestamp(validation_start).tz_localize("UTC") if validation_start.tz is None else validation_start.tz_convert("UTC")
-    ts_end = pd.Timestamp(validation_end).tz_localize("UTC") if validation_end.tz is None else validation_end.tz_convert("UTC")
+    ts_start = validation_start
+    if ts_start.tz is None:
+        ts_start = pd.Timestamp(ts_start).tz_localize("UTC")
+    else:
+        ts_start = ts_start.tz_convert("UTC")
+
+    ts_end = validation_end
+    if ts_end.tz is None:
+        ts_end = pd.Timestamp(ts_end).tz_localize("UTC")
+    else:
+        ts_end = ts_end.tz_convert("UTC")
 
     formatted = [b if "-" in b or "/" in b else f"{b}-{quote}" for b in bases]
     loader = TimescaleDBLoader()
@@ -236,58 +267,41 @@ def load_hybrid_validation_ohlcv(
         return tsdb.sort_index()
 
     try:
-        from ggTrader.data.live.exchange_loader import LiveExchangeLoader
+        from ggTrader.data.live.cached_loader import CachedExchangeLoader
     except ImportError as e:
-        raise ImportError("CCXT tail requires ggTrader.data.live.exchange_loader") from e
+        raise ImportError("CCXT tail requires ggTrader.data.live.cached_loader") from e
 
-    live = LiveExchangeLoader()
-    live._ensure_markets_loaded()
-    ex = live.exchange
+    # The CachedExchangeLoader handles fetching from DB first, then CCXT, and CACHING it back to DB.
+    # This fulfills the requirement of not pulling the same data repeatedly.
+    cache_loader = CachedExchangeLoader()
+    try:
+        combined = cache_loader.fetch_ohlcv(
+            symbols=bases,
+            interval=config["INTERVAL"],
+            start_date=ts_start,
+            end_date=ts_end,
+            quote=quote,
+        )
+    except Exception as e:
+        print(f"Warning: CachedExchangeLoader failed: {e}. Falling back to DB-only results.")
+        return tsdb
 
-    ccxt_parts: list[pd.DataFrame] = []
-    for base in bases:
-        col_key = _tsdb_column_key(base, quote)
-        sub_start = ts_start
-        if not tsdb.empty and col_key in tsdb.columns.get_level_values(0):
-            last_db = tsdb[col_key].dropna(how="all").index.max()
-            if pd.notna(last_db):
-                sub_start = max(ts_start, last_db + pd.Timedelta(seconds=1))
-        if sub_start > ts_end:
-            continue
-        pair = _ccxt_pair_for_exchange(base, quote, ex)
-        raw = _ccxt_fetch_paginated(ex, pair, config["INTERVAL"], sub_start, ts_end)
-        if raw.empty:
-            continue
-        raw.columns = pd.MultiIndex.from_product([[col_key], raw.columns])
-        ccxt_parts.append(raw)
+    # Ensure column names have the suffix (e.g. BTC-USD) expected by the orchestrator
+    if not combined.empty:
+        new_cols = []
+        for col in combined.columns:
+            sym, field = col
+            # Normalize to symbol-quote (e.g. BTC-USD)
+            if "-" not in sym and "/" not in sym:
+                new_cols.append((f"{sym}-{quote}", field))
+            else:
+                new_cols.append((sym.replace("/", "-"), field))
+        
+        combined.columns = pd.MultiIndex.from_tuples(new_cols)
+        
+        # Deduplicate columns (important if both BTC and BTC-USD existed due to loader mismatch)
+        if combined.columns.duplicated().any():
+            # Group by column name and take the first non-null or just first
+            combined = combined.loc[:, ~combined.columns.duplicated(keep='last')]
 
-    if not ccxt_parts and tsdb.empty:
-        raise ValueError("Hybrid validation load: both TimescaleDB and CCXT returned empty.")
-
-    if not ccxt_parts:
-        return tsdb.sort_index()
-
-    ccxt_by_key: dict[str, pd.DataFrame] = {}
-    for p in ccxt_parts:
-        ck = p.columns.get_level_values(0)[0]
-        ccxt_by_key[str(ck)] = p
-
-    merged_cols: list[pd.DataFrame] = []
-    for col_key in formatted:
-        left = tsdb[[col_key]] if not tsdb.empty and col_key in tsdb.columns.get_level_values(0) else None
-        right = ccxt_by_key.get(col_key)
-        if left is None and right is None:
-            continue
-        if right is None:
-            merged_cols.append(left)
-        elif left is None:
-            merged_cols.append(right)
-        else:
-            m = pd.concat([left, right], axis=0).sort_index()
-            m = m[~m.index.duplicated(keep="last")]
-            merged_cols.append(m)
-
-    if not merged_cols:
-        raise ValueError("Hybrid validation: no symbol columns after TSDB/CCXT merge.")
-
-    return pd.concat(merged_cols, axis=1).sort_index()
+    return combined.sort_index()
