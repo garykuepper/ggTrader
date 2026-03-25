@@ -36,14 +36,14 @@ data/*.json
 
 # --- Research & Results (Selective Signal) ---
 # Ignore all result directories and log/txt files by default
-results/*/
-results/*.log
-results/*.txt
-results/*.xlsx
-results/*.csv
+results/**/*
 
-# BUT Always version-control the outcomes (Signal)
+# BUT Always version-control the outcomes (Aggregated Data, Weights, Plots, Reports)
+!results/**/
 !results/**/run_results.json
 !results/**/portfolio_weights.json
+!results/**/plots/
 !results/**/plots/*.png
 !results/**/final_report.md
+!results/**/FINAL_WFO_RESEARCH_REPORT.md
+!results/research/*.md
