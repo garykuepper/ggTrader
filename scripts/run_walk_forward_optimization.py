@@ -80,6 +80,18 @@ def main() -> None:
         default=None,
         help="Backtest end date (YYYY-MM-DD)",
     )
+    parser.add_argument(
+        "--run-dir",
+        type=str,
+        default=None,
+        help="Explicit directory to save results",
+    )
+    parser.add_argument(
+        "--pipeline-stage",
+        type=str,
+        default="research",
+        help="Pipeline stage string for folder routing",
+    )
     args = parser.parse_args()
 
     # Default to all if none specified
@@ -96,6 +108,8 @@ def main() -> None:
         "TRAIN_METRIC": args.train_metric,
         "START_DATE": args.start_date,
         "END_DATE": args.end_date,
+        "EXPLICIT_RUN_DIR": args.run_dir,
+        "PIPELINE_STAGE": args.pipeline_stage,
     }
     if args.symbols:
         config_overrides["SYMBOLS"] = args.symbols.split(",")
@@ -108,7 +122,12 @@ def main() -> None:
 
     show_progress = not args.no_progress and sys.stdout.isatty()
 
-    logger = StatusLogger(Path("results/wfo_isolated_status.txt"))
+    if args.run_dir:
+        logger_path = Path(args.run_dir) / "wfo_isolated_status.txt"
+    else:
+        logger_path = Path("results/wfo_isolated_status.txt")
+
+    logger = StatusLogger(logger_path)
     wfo_results = None
 
     if args.phase1:

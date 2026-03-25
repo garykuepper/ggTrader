@@ -21,11 +21,25 @@ class ResultsManager:
     metadata, metrics, and plots.
     """
 
-    def __init__(self, script_name: str, results_dir: str = "results") -> None:
+    def __init__(
+        self,
+        script_name: str,
+        results_dir: str = "results",
+        pipeline_stage: Optional[str] = None,
+        explicit_run_dir: Optional[Union[str, Path]] = None,
+    ) -> None:
         self.script_name = script_name
         self.project_root = find_project_root()
         self.base_results_dir = self.project_root / results_dir
-        self.run_dir = self._create_run_directory()
+        self.pipeline_stage = pipeline_stage
+
+        if explicit_run_dir:
+            self.run_dir = Path(explicit_run_dir)
+            if not self.run_dir.is_absolute():
+                self.run_dir = self.project_root / self.run_dir
+            self.run_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            self.run_dir = self._create_run_directory()
 
         self.plots_dir = self.run_dir / "plots"
         self.plots_dir.mkdir(parents=True, exist_ok=True)
@@ -39,7 +53,12 @@ class ResultsManager:
         """Creates a timestamped run directory."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         run_name = f"{self.script_name}_{timestamp}"
-        run_dir = self.base_results_dir / run_name
+
+        target_base = self.base_results_dir
+        if self.pipeline_stage:
+            target_base = target_base / self.pipeline_stage
+
+        run_dir = target_base / run_name
         run_dir.mkdir(parents=True, exist_ok=True)
         return run_dir
 
@@ -84,6 +103,7 @@ class ResultsManager:
             parameters=params,
             metadata=output_data["configuration"],
             metrics=metrics,
+            pipeline_stage=self.pipeline_stage,
         )
         self.db_manager.add_metrics(self.run_id, metrics)
 

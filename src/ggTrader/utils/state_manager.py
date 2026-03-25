@@ -11,11 +11,20 @@ def get_latest_research_run(results_dir: str = "results") -> Optional[Path]:
         return None
 
     candidates = []
-    # Look for both pipeline_ and isolated WFO runs if they exist
+    
+    # Check new structure (results/research/)
+    research_path = base_path / "research"
+    if research_path.exists():
+        for d in research_path.iterdir():
+            if d.is_dir():
+                res_json = d / "run_results.json"
+                if res_json.exists():
+                    candidates.append(res_json)
+
+    # Check legacy structure (results root)
     for d in base_path.iterdir():
-        if d.is_dir():
+        if d.is_dir() and d.name not in ["research", "backtest", "production", "trade"]:
             res_json = d / "run_results.json"
-            # We specifically want research runs, not recalibration runs here
             if res_json.exists() and "recalibration" not in d.name:
                 candidates.append(res_json)
 
@@ -34,11 +43,23 @@ def get_latest_production_weights(results_dir: str = "results") -> Optional[Path
         return None
 
     candidates = []
+    
+    # Check new structure
+    prod_path = base_path / "production"
+    if prod_path.exists():
+        for d in prod_path.iterdir():
+            if d.is_dir():
+                weight_json = d / "portfolio_analysis" / "portfolio_weights.json"
+                if weight_json.exists():
+                    candidates.append(weight_json)
+
+    # Check legacy structure
     for d in base_path.iterdir():
-        if d.is_dir() and "recalibration" in d.name:
-            weight_json = d / "portfolio_analysis" / "portfolio_weights.json"
-            if weight_json.exists():
-                candidates.append(weight_json)
+        if d.is_dir() and d.name not in ["research", "backtest", "production", "trade"]:
+            if "recalibration" in d.name:
+                weight_json = d / "portfolio_analysis" / "portfolio_weights.json"
+                if weight_json.exists():
+                    candidates.append(weight_json)
 
     if not candidates:
         return None

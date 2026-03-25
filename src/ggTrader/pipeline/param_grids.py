@@ -8,23 +8,32 @@ from typing import Any
 
 DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
     "psar_adx": {
-        "sar_acceleration": [0.01, 0.02, 0.03],
-        "sar_maximum": [0.1, 0.2, 0.3],
-        "adx_length": [10, 14, 20],
-        "adx_threshold": [15, 20, 25, 30],
-        "use_dmp_cross": [True, False],  # RE-ACTIVATED
+        "sar_acceleration": [0.01, 0.02, 0.03, 0.05], # MORE AGGRESSIVE
+        "sar_maximum": [0.1, 0.2, 0.3, 0.5], # MORE AGGRESSIVE
+        "adx_length": [10, 14, 20, 30],
+        "adx_threshold": [15, 20, 25, 30, 35],
+        "use_dmp_cross": [True, False],
     },
     "ema_cross": {
-        "ema_fast": [5, 9, 12, 20],
-        "ema_slow": [21, 34, 50, 100],
+        "ema_fast": [5, 9, 12, 20, 50],
+        "ema_slow": [21, 34, 50, 100, 200],
     },
     "rsi_reversal": {
-        "rsi_length": [7, 14, 21, 28],  # RE-INTRODUCED RSI-7
-        "rsi_oversold": [20, 25, 30, 35, 40],  # EXPANDED
-        "rsi_trend_filter": [False, True],  # NEW REGIME FILTER
+        "rsi_length": [7, 14, 21, 28],
+        "rsi_oversold": [15, 20, 25, 30, 35, 40], # LOWER OVERSOLD (15)
+        "rsi_trend_filter": [False, True],
     },
     "donchian_breakout": {
-        "donchian_length": [10, 15, 20, 30, 50],  # EXPANDED
+        "donchian_length": [10, 15, 20, 30, 50, 100], # WIDER (100)
+    },
+    "macd_cross": {  # NEW
+        "macd_fast": [8, 12, 16],
+        "macd_slow": [21, 26, 32],
+        "macd_signal": [7, 9, 11],
+    },
+    "supertrend_flip": {  # NEW
+        "st_length": [7, 10, 14, 20],
+        "st_multiplier": [2.0, 3.0, 4.0, 5.0],
     },
 }
 

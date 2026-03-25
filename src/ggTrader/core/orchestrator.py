@@ -106,8 +106,14 @@ def _trade_counts_for_train_gate(pf: Any, sharpe_series: Any) -> pd.Series:
     raw = pf.trades.count()
     if not isinstance(raw, pd.Series):
         raw = pd.Series([float(raw)])
+    
+    # If lengths match exactly, assume positional alignment (common in vectorized group runs)
+    if len(raw) == len(sh):
+        return pd.Series(np.asarray(raw, dtype=float).ravel(), index=sh.index)
+        
     if raw.index.equals(sh.index):
         return raw.astype(float)
+        
     cols = pf.wrapper.columns
     if isinstance(cols, pd.MultiIndex) and cols.nlevels >= 2 and len(raw) == len(cols):
         per_col = pd.Series(np.asarray(raw, dtype=float).ravel(), index=cols)
@@ -127,8 +133,14 @@ def _open_position_count_end_for_gate(pf: Any, sharpe_series: Any) -> pd.Series:
         return pd.Series(0.0, index=sh.index, dtype=float)
     if not isinstance(raw, pd.Series):
         raw = pd.Series([float(raw)])
+        
+    # If lengths match exactly, assume positional alignment
+    if len(raw) == len(sh):
+        return pd.Series(np.asarray(raw, dtype=float).ravel(), index=sh.index)
+
     if raw.index.equals(sh.index):
         return raw.astype(float)
+        
     cols = pf.wrapper.columns
     if isinstance(cols, pd.MultiIndex) and cols.nlevels >= 2 and len(raw) == len(cols):
         per_col = pd.Series(np.asarray(raw, dtype=float).ravel(), index=cols)
@@ -411,7 +423,15 @@ def run_backtest_orchestrator(
     Returns:
         Dictionary containing 'portfolio', 'stats', and 'rm' (if saved).
     """
-    rm = ResultsManager("run_backtest") if save_results else None
+    rm = (
+        ResultsManager(
+            "run_backtest",
+            explicit_run_dir=config.get("EXPLICIT_RUN_DIR"),
+            pipeline_stage=config.get("PIPELINE_STAGE"),
+        )
+        if save_results
+        else None
+    )
 
     ohlcv, mover_mask = load_data_with_movers(config)
 
@@ -729,7 +749,15 @@ def run_sensitivity_orchestrator(
     logger: Any = None,
 ) -> Dict[str, Any]:
     """Orchestrate a vectorized sensitivity analysis (grid search)."""
-    rm = ResultsManager("run_sensitivity") if save_results else None
+    rm = (
+        ResultsManager(
+            "run_sensitivity",
+            explicit_run_dir=config.get("EXPLICIT_RUN_DIR"),
+            pipeline_stage=config.get("PIPELINE_STAGE"),
+        )
+        if save_results
+        else None
+    )
 
     ohlcv, _ = load_data_with_movers(config)
     param_names = list(param_grid.keys())
@@ -1253,7 +1281,15 @@ def run_wfo_orchestrator(
     show_progress: bool = True,
 ) -> Dict[str, Any]:
     """Central orchestration function for Walk-Forward Optimization."""
-    rm = ResultsManager("run_wfo") if save_results else None
+    rm = (
+        ResultsManager(
+            "run_wfo",
+            explicit_run_dir=config.get("EXPLICIT_RUN_DIR"),
+            pipeline_stage=config.get("PIPELINE_STAGE"),
+        )
+        if save_results
+        else None
+    )
     from ggTrader.utils.plotting import plot_wfo_splits
 
     ohlcv, mover_mask = load_data_with_movers(config)
@@ -1341,7 +1377,15 @@ def run_wfo_per_coin_orchestrator(
     """
     from ggTrader.utils.plotting import plot_wfo_splits
 
-    rm = ResultsManager("run_wfo_per_coin") if save_results else None
+    rm = (
+        ResultsManager(
+            "run_wfo_per_coin",
+            explicit_run_dir=config.get("EXPLICIT_RUN_DIR"),
+            pipeline_stage=config.get("PIPELINE_STAGE"),
+        )
+        if save_results
+        else None
+    )
     ohlcv, mover_mask = load_data_with_movers(config)
     n_splits = config.get("N_SPLITS", 5)
     test_ratio = config.get("TEST_RATIO", 3.0)
@@ -1557,13 +1601,14 @@ def _cagr_percent(total_return_pct: float, years: float) -> float:
     return (mult ** (1.0 / years) - 1.0) * 100.0
 
 
-def _equal_weight_buy_hold_portfolio_stats(
-    close: pd.DataFrame,
+def _sp500_buy_hold_portfolio_stats(
+    close_idx: pd.DatetimeIndex,
     config: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Equal-weight spot B&H: buy all names on bar 0, sell on last bar; same vbt costs as WFO."""
-    n = close.shape[1]
-    rows = close.shape[0]
+    """S&P 500 spot B&H: buy SPY on bar 0, sell on last bar; matching crypto timeframe."""
+    import warnings
+
+    warnings.filterwarnings("ignore", category=FutureWarning)
     empty: Dict[str, Any] = {
         "profit_pct": None,
         "cagr_pct": None,
@@ -1571,41 +1616,157 @@ def _equal_weight_buy_hold_portfolio_stats(
         "max_drawdown": None,
         "total_trades": 0,
     }
-    if n == 0 or rows < 2:
+    if len(close_idx) < 2:
         return empty
 
-    entries = pd.DataFrame(False, index=close.index, columns=close.columns)
-    exits = pd.DataFrame(False, index=close.index, columns=close.columns)
+    start_date = close_idx[0].strftime("%Y-%m-%d")
+    end_date = (close_idx[-1] + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+
+    try:
+        import yfinance as yf
+
+        spy = yf.download("SPY", start=start_date, end=end_date, progress=False)["Close"]
+        if isinstance(spy, pd.DataFrame):
+            spy = spy.squeeze()
+        if spy.empty:
+            return empty
+
+        # Convert index to UTC to match crypto
+        spy.index = pd.to_datetime(spy.index)
+        if spy.index.tz is None:
+            spy.index = spy.index.tz_localize("America/New_York").tz_convert("UTC")
+        else:
+            spy.index = spy.index.tz_convert("UTC")
+
+        # Reindex to our crypto timeframe
+        spy_reindexed = spy.reindex(close_idx, method="ffill").to_frame("SPY")
+
+        # Drop strictly leading NaNs prior to SPY's first trading day if necessary
+        spy_reindexed.fillna(method="bfill", inplace=True)
+
+        entries = pd.DataFrame(False, index=spy_reindexed.index, columns=["SPY"])
+        exits = pd.DataFrame(False, index=spy_reindexed.index, columns=["SPY"])
+        entries.iloc[0] = True
+        exits.iloc[-1] = True
+
+        bench_pf = vbt.Portfolio.from_signals(
+            close=spy_reindexed,
+            entries=entries,
+            exits=exits,
+            init_cash=float(config.get("START_CASH", 10000.0)),
+            fees=0.0,
+            slippage=0.0,
+            freq=config.get("FREQ", "4h"),
+            size=1.0,
+            size_type="percent",
+            cash_sharing=False,
+        ).copy()
+
+        years = _years_from_price_index(spy_reindexed.index)
+        init_cash = float(config.get("START_CASH", 10000.0))
+        profit_pct = float((bench_pf.total_profit().sum() / init_cash) * 100.0)
+        cagr = _cagr_percent(profit_pct, years)
+
+        # Avoid singular shapes errors if trades exist
+        try:
+            sh = float(bench_pf.sharpe_ratio())
+        except Exception:
+            sh = 0.0
+
+        return {
+            "profit_pct": _as_optional_float(profit_pct),
+            "cagr_pct": _as_optional_float(cagr),
+            "sharpe": _as_optional_float(sh),
+            "max_drawdown": _as_optional_float(float(bench_pf.max_drawdown()) * 100.0),
+            "total_trades": int(bench_pf.trades.count().sum()),
+        }
+    except Exception as e:
+        print(f"Warning: Failed to load S&P 500 benchmark: {e}")
+        return empty
+
+
+def _btc_buy_hold_portfolio_stats(
+    close: pd.DataFrame,
+    config: Dict[str, Any],
+) -> Dict[str, Any]:
+    """BTC spot B&H: buy BTC on bar 0, sell on last bar; same vbt costs as WFO."""
+    empty: Dict[str, Any] = {
+        "profit_pct": None,
+        "cagr_pct": None,
+        "sharpe": None,
+        "max_drawdown": None,
+        "total_trades": 0,
+    }
+    if close.shape[0] < 2:
+        return empty
+
+    bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
+    bench_close = None
+
+    if bench_symbol in close.columns:
+        bench_close = close[[bench_symbol]]
+    else:
+        try:
+            from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
+
+            loader = TimescaleDBLoader()
+            start = pd.to_datetime(close.index[0])
+            end = pd.to_datetime(close.index[-1])
+            if start.tz is None:
+                start = start.tz_localize("UTC")
+            if end.tz is None:
+                end = end.tz_localize("UTC")
+
+            ohlcv = loader.fetch_ohlcv(
+                symbols=[bench_symbol],
+                interval=config.get("INTERVAL", "4h"),
+                start_date=start,
+                end_date=end,
+            )
+            if not ohlcv.empty:
+                b = ohlcv.xs("close", axis=1, level=1, drop_level=True)
+                bench_close = b.reindex(close.index, method="ffill").to_frame(bench_symbol)
+        except Exception as e:
+            print(f"Warning: Failed to load {bench_symbol} benchmark from DB: {e}")
+
+    if bench_close is None or bench_close.empty:
+        return empty
+
+    entries = pd.DataFrame(False, index=bench_close.index, columns=[bench_symbol])
+    exits = pd.DataFrame(False, index=bench_close.index, columns=[bench_symbol])
     entries.iloc[0] = True
     exits.iloc[-1] = True
 
     bench_pf = vbt.Portfolio.from_signals(
-        close=close,
+        close=bench_close,
         entries=entries,
         exits=exits,
         init_cash=float(config.get("START_CASH", 10000.0)),
         fees=float(config.get("FEES", 0.001)),
         slippage=float(config.get("SLIPPAGE", 0.0005)),
         freq=config.get("FREQ", "4h"),
-        size=1.0 / n,
+        size=1.0,
         size_type="percent",
-        cash_sharing=True,
-        group_by=np.full(n, 0),
+        cash_sharing=False,
     ).copy()
 
-    years = _years_from_price_index(close.index)
+    years = _years_from_price_index(bench_close.index)
     init_cash = float(config.get("START_CASH", 10000.0))
     profit_pct = float((bench_pf.total_profit().sum() / init_cash) * 100.0)
     cagr = _cagr_percent(profit_pct, years)
-    sh = float(bench_pf.sharpe_ratio().mean())
-    dd = float(bench_pf.max_drawdown().min()) * 100.0
+
+    try:
+        sh = float(bench_pf.sharpe_ratio())
+    except Exception:
+        sh = 0.0
 
     return {
         "profit_pct": _as_optional_float(profit_pct),
         "cagr_pct": _as_optional_float(cagr),
         "sharpe": _as_optional_float(sh),
-        "max_drawdown": _as_optional_float(dd),
+        "max_drawdown": _as_optional_float(float(bench_pf.max_drawdown()) * 100.0),
         "total_trades": int(bench_pf.trades.count().sum()),
+        "benchmark_symbol": bench_symbol,
     }
 
 
@@ -1630,19 +1791,26 @@ def _enrich_final_stats_with_cagr_and_benchmark(
     final_stats["backtest_years"] = _as_optional_float(years)
     final_stats["cagr_pct"] = _as_optional_float(strat_cagr)
 
-    bench = _equal_weight_buy_hold_portfolio_stats(combined_close, config)
+    bench = _btc_buy_hold_portfolio_stats(combined_close, config)
+    bench_sym = bench.get("benchmark_symbol", "BTC-USD")
     final_stats["benchmark_label"] = (
-        "Equal-weight buy-and-hold: one buy per symbol on the first bar and one sell on the "
+        f"{bench_sym} buy-and-hold: bought on the first bar and sold on the "
         "last bar; same START_CASH, FEES, SLIPPAGE, and bar frequency as the strategy run."
     )
-    final_stats["benchmark_profit_pct"] = bench["profit_pct"]
-    final_stats["benchmark_cagr_pct"] = bench["cagr_pct"]
-    final_stats["benchmark_sharpe"] = bench["sharpe"]
-    final_stats["benchmark_max_drawdown"] = bench["max_drawdown"]
-    final_stats["benchmark_total_trades"] = bench["total_trades"]
+    final_stats["benchmark_profit_pct"] = bench.get("profit_pct")
+    final_stats["benchmark_cagr_pct"] = bench.get("cagr_pct")
+    final_stats["benchmark_sharpe"] = bench.get("sharpe")
+    final_stats["benchmark_max_drawdown"] = bench.get("max_drawdown")
+    final_stats["benchmark_total_trades"] = bench.get("total_trades")
 
-    sc = final_stats["cagr_pct"]
-    bc = bench["cagr_pct"]
+    spy_bench = _sp500_buy_hold_portfolio_stats(combined_close.index, config)
+    final_stats["spy_cagr_pct"] = spy_bench.get("cagr_pct")
+    final_stats["spy_profit_pct"] = spy_bench.get("profit_pct")
+    final_stats["spy_sharpe"] = spy_bench.get("sharpe")
+    final_stats["spy_max_drawdown"] = spy_bench.get("max_drawdown")
+
+    sc = final_stats.get("cagr_pct")
+    bc = bench.get("cagr_pct")
     if sc is not None and bc is not None:
         final_stats["excess_cagr_pct"] = float(sc) - float(bc)
     else:
@@ -1820,9 +1988,17 @@ def run_frozen_params_combined_backtest(
     print(f"  Total Return: {final_stats['profit_pct']:.2f}%")
     cagr_s = f"{final_stats['cagr_pct']:.2f}%" if final_stats.get("cagr_pct") is not None else "n/a"
     print(f"  CAGR: {cagr_s}")
+
+    bench_sym = final_stats.get("benchmark_label", "BTC-USD").split(" ")[0]
     b_cagr = final_stats.get("benchmark_cagr_pct")
     b_cagr_s = f"{b_cagr:.2f}%" if b_cagr is not None else "n/a"
-    print(f"  Benchmark CAGR (EW B&H): {b_cagr_s}")
+    print(f"  Benchmark CAGR ({bench_sym} B&H): {b_cagr_s}")
+
+    spy_cagr = final_stats.get("spy_cagr_pct")
+    if spy_cagr is not None:
+        spy_ret = final_stats.get("spy_profit_pct", 0.0)
+        print(f"  Benchmark Return (S&P 500 B&H): {spy_ret:.2f}% | CAGR: {spy_cagr:.2f}%")
+
     print(f"  Sharpe Ratio: {final_stats['sharpe']:.4f}")
     print(f"  Max Drawdown: {final_stats['max_drawdown']:.2f}%")
     print(f"  Total Trades: {final_stats['total_trades']}")
@@ -1905,7 +2081,15 @@ def run_multi_strategy_per_coin_wfo(
         EXIT_REGISTRY,
     )
 
-    rm = ResultsManager("run_wfo_per_coin_multi_strategy") if save_results else None
+    rm = (
+        ResultsManager(
+            "run_wfo_per_coin_multi_strategy",
+            explicit_run_dir=config.get("EXPLICIT_RUN_DIR"),
+            pipeline_stage=config.get("PIPELINE_STAGE"),
+        )
+        if save_results
+        else None
+    )
     ohlcv, mover_mask = load_data_with_movers(config)
 
     n_splits = config.get("N_SPLITS", 5)
@@ -1944,10 +2128,13 @@ def run_multi_strategy_per_coin_wfo(
         best_fold_consistency: float = float("nan")
         debug_wfo = bool(config.get("WFO_DEBUG_METRICS", False))
 
+        total_combos = len(strategy_param_grids) * len(exit_tournament)
+        combo_idx = 0
         for strategy_name, param_grid in strategy_param_grids.items():
             for exit_name in exit_tournament:
+                combo_idx += 1
                 label = f"{strategy_name}+{exit_name}"
-                print(f"  Testing: {label}")
+                print(f"  Testing: {label} ({combo_idx}/{total_combos})")
 
                 config_combo = {
                     **config,

@@ -66,6 +66,7 @@ class ResultDBManager:
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ;",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ;",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS interval VARCHAR;",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS pipeline_stage VARCHAR;",
         ]
         for stmt in new_columns:
             try:
@@ -228,6 +229,7 @@ class ResultDBManager:
         parameters: Dict[str, Any],
         metadata: Optional[Dict[str, Any]] = None,
         metrics: Optional[Dict[str, Any]] = None,
+        pipeline_stage: Optional[str] = None,
     ) -> None:
         """Adds a new primary run entry to the database and CSV log."""
         timestamp = datetime.now()
@@ -246,9 +248,13 @@ class ResultDBManager:
             """
             INSERT INTO runs (
                 "run_id", "run_type", "timestamp", "script_name", "parameters", "metadata",
-                "sharpe", "sortino", "total_profit", "start_date", "end_date", "interval"
+                "sharpe", "sortino", "total_profit", "start_date", "end_date", "interval",
+                "pipeline_stage"
             )
-            VALUES (:rid, :rtype, :ts, :sname, :params, :meta, :sr, :sort, :prof, :sdate, :edate, :inter)
+            VALUES (
+                :rid, :rtype, :ts, :sname, :params, :meta, :sr, :sort, :prof, :sdate, :edate,
+                :inter, :stage
+            )
             """
         )
 
@@ -265,6 +271,7 @@ class ResultDBManager:
             "sdate": start_date,
             "edate": end_date,
             "inter": interval,
+            "stage": pipeline_stage,
         }
 
         try:
@@ -376,8 +383,14 @@ class ResultDBManager:
 
         query = text(
             """
-            INSERT INTO trades (run_id, symbol, entry_time, exit_time, entry_price, exit_price, profit, profit_pct, status)
-            VALUES (:run_id, :symbol, :entry_time, :exit_time, :entry_price, :exit_price, :profit, :profit_pct, :status)
+            INSERT INTO trades (
+                run_id, symbol, entry_time, exit_time, entry_price, exit_price, profit,
+                profit_pct, status
+            )
+            VALUES (
+                :run_id, :symbol, :entry_time, :exit_time, :entry_price, :exit_price,
+                :profit, :profit_pct, :status
+            )
             ON CONFLICT (run_id, symbol, entry_time) DO UPDATE SET
                 exit_time = EXCLUDED.exit_time, entry_price = EXCLUDED.entry_price,
                 exit_price = EXCLUDED.exit_price, profit = EXCLUDED.profit,

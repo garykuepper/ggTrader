@@ -46,7 +46,7 @@ def main():
     print("Loading OHLCV data for backtest simulation...")
     ohlcv, _ = load_data_with_movers(config)
     
-    rm = ResultsManager("backtest_simulation")
+    rm = ResultsManager("backtest_simulation", pipeline_stage="backtest")
     
     # Use standard Orchestrator logic for replaying with frozen book
     out = run_frozen_params_combined_backtest(

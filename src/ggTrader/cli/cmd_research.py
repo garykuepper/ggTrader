@@ -54,7 +54,8 @@ def register_research_parser(subparsers: argparse._SubParsersAction):
 def run_research(args: argparse.Namespace):
     """Executes the research pipeline in parallel by default."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    research_dir = Path(f"results/research_{timestamp}")
+    project_root = Path(__file__).resolve().parent.parent.parent.parent
+    research_dir = project_root / f"results/research/research_{timestamp}"
     research_dir.mkdir(parents=True, exist_ok=True)
 
     universe_path = research_dir / "top_ccxt_volume.json"
@@ -112,6 +113,10 @@ def run_research(args: argparse.Namespace):
             "--end-date",
             end_date,
             "--phase1",
+            "--run-dir",
+            str(research_dir.absolute()),
+            "--pipeline-stage",
+            "research",
         ]
         if args.no_progress:
             cmd.append("--no-progress")
@@ -125,6 +130,7 @@ def run_research(args: argparse.Namespace):
 
         processes = []
         log_handles = []
+        log_paths = []
 
         for i, chunk in enumerate(symbol_chunks):
             if not chunk:
@@ -132,10 +138,8 @@ def run_research(args: argparse.Namespace):
 
             chunk_str = ",".join(chunk)
             worker_log = research_dir / f"worker_{i + 1}.log"
+            log_paths.append(worker_log)
 
-            # Note: We run Phase 1 (WFO) in parallel.
-            # Phase 2/3 (Portfolio Validation) requires aggregated results,
-            # so they are typically run after all workers finish.
             cmd = [
                 sys.executable,
                 "-u",
@@ -144,6 +148,10 @@ def run_research(args: argparse.Namespace):
                 chunk_str,
                 "--phase1",
                 "--no-progress",
+                "--run-dir",
+                str(research_dir.absolute()),
+                "--pipeline-stage",
+                "research",
             ]
 
             f = open(worker_log, "w")
@@ -155,24 +163,131 @@ def run_research(args: argparse.Namespace):
         print("-" * 50)
         print("All workers launched. Monitoring progress...")
 
+        import re
+        from tqdm import tqdm
+
+        # Regex patterns for progress extraction
+        re_sym = re.compile(r"--- Optimizing (\S+) \((\d+)/(\d+)\) ---")
+        re_combo = re.compile(r"Testing: \S+ \((\d+)/(\d+)\)")
+        re_fold = re.compile(r"Fold (\d+)/(\d+) done")
+
+        # Main progress bar for finished workers
+        main_pbar = tqdm(
+            total=len(processes),
+            desc="Total Workers",
+            unit="worker",
+            position=0,
+            leave=True
+        )
+
+        # Per-worker progress bars
+        worker_pbars = []
+        for i in range(len(processes)):
+            pbar = tqdm(
+                total=100,
+                desc=f"Worker {i+1}",
+                position=i + 1,
+                leave=False,
+                bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}]"
+            )
+            worker_pbars.append(pbar)
+
         try:
             while True:
                 alive = [p.poll() is None for p in processes]
+                done_count = alive.count(False)
+                main_pbar.n = done_count
+                main_pbar.refresh()
+
                 if not any(alive):
                     break
 
-                done_count = alive.count(False)
-                print(f"Status: {done_count}/{len(processes)} workers finished...", end="\r")
-                time.sleep(10)
+                # Update per-worker status by reading log tails
+                for i, log_path in enumerate(log_paths):
+                    if not alive[i]:
+                        worker_pbars[i].set_description(f"Worker {i+1}: Finished")
+                        worker_pbars[i].n = 100
+                        worker_pbars[i].refresh()
+                        continue
+
+                    try:
+                        # Read last 20 lines of the log
+                        with open(log_path, "r", encoding="utf-8") as lf:
+                            # Use offset to read near the end for performance
+                            lf.seek(0, 2)
+                            size = lf.tell()
+                            lf.seek(max(0, size - 2048))
+                            tail = lf.read()
+
+                        # Extract progress state
+                        sym_match = list(re_sym.finditer(tail))
+                        combo_match = list(re_combo.finditer(tail))
+                        fold_match = list(re_fold.finditer(tail))
+
+                        msg = f"Worker {i+1}: "
+                        total_progress = 0.0
+
+                        if sym_match:
+                            s_name, s_idx, s_total = sym_match[-1].groups()
+                            msg += f"[{s_name} {s_idx}/{s_total}] "
+                            # Coin progress (e.g. 1/5 = 20%)
+                            total_progress += (int(s_idx) - 1) / int(s_total) * 100
+                            
+                            if combo_match:
+                                c_idx, c_total = combo_match[-1].groups()
+                                msg += f"C{c_idx}/{c_total} "
+                                # Combo contribution within current coin
+                                combo_prog = (int(c_idx) - 1) / int(c_total) * (100 / int(s_total))
+                                total_progress += combo_prog
+
+                                if fold_match:
+                                    f_idx, f_total = fold_match[-1].groups()
+                                    msg += f"F{f_idx}/{f_total}"
+                                    # Fold contribution within current combo
+                                    fold_prog = int(f_idx) / int(f_total) * (100 / int(s_total) / int(c_total))
+                                    total_progress += fold_prog
+
+                        worker_pbars[i].set_description(msg)
+                        worker_pbars[i].n = min(99, total_progress) # Save 100 for true finish
+                        worker_pbars[i].refresh()
+                    except (OSError, ValueError, IndexError):
+                        pass
+
+                time.sleep(2)
         except KeyboardInterrupt:
             print("\nTerminating research workers...")
             for p in processes:
                 p.terminate()
         finally:
+            main_pbar.close()
+            for pbar in worker_pbars:
+                pbar.close()
+            # Move cursor past the closed progress bars
+            print("\n" * (len(processes) + 1))
             for f in log_handles:
                 f.close()
 
-        print(f"\n[{datetime.now()}] All parallel workers finished.")
-        print(f"Logs available in: {research_dir}")
+    print(f"\n[{datetime.now()}] All parallel workers finished.")
+    print(f"Intermediate WFO results available in: {research_dir}")
+
+    # Step 3: Global Validation & Recent Data Performance
+    # We now run Phase 2 & 3 ONCE using the accumulated results dir
+    print(
+        f"\n[{datetime.now()}] Step 3: Initiating Global Logic Validation (Phase 2) "
+        "and Recent Performance (Phase 3)..."
+    )
+    # The run_walk_forward_optimization.py script knows how to find its own results 
+    # if we point it to the same run-dir and symbols-file.
+    final_cmd = [
+        sys.executable,
+        "scripts/run_walk_forward_optimization.py",
+        "--symbols-file", str(universe_path.absolute()),
+        "--phase2", 
+        "--phase3",
+        "--run-dir", str(research_dir.absolute()),
+        "--pipeline-stage", "research",
+        "--no-progress"
+    ]
+    subprocess.run(final_cmd, check=True)
 
     print(f"\n[{datetime.now()}] Research Pipeline complete.")

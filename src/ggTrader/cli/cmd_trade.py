@@ -75,7 +75,7 @@ def run_trade(args: argparse.Namespace):
                 "Using fixed fallback capital."
             )
 
-    rm = ResultsManager("live_trader")
+    rm = ResultsManager("live_trader", pipeline_stage="trade")
     print(f"\n[{rm.run_id}] Initializing live trader...")
 
     config = full_pipeline_config()
