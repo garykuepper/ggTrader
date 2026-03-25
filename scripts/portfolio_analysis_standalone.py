@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 import pandas as pd
 from ggTrader.core.orchestrator import run_frozen_params_combined_backtest
-from ggTrader.pipeline.exit_tournament import EXIT_REGISTRY
+from ggTrader.indicators.strategies import EXIT_REGISTRY
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_with_movers
 
@@ -33,6 +33,9 @@ def main():
         master_results = json.load(f)
         
     config = master_results.get("metadata", {})
+    if "_raw_config" in config:
+        config.update(config["_raw_config"])
+        
     per_coin_results = master_results.get("params", {}).get("per_coin", {})
     
     if not per_coin_results:
