@@ -1,8 +1,7 @@
 """TimescaleDB historical data loader."""
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine, text
 
@@ -227,7 +226,7 @@ class TimescaleDBLoader(BaseDataLoader):
         end_ts = pd.Timestamp(end_date)
         start_ts = pd.Timestamp(start_date)
 
-        query = f"""
+        query = """
             WITH daily_tops AS (
                 SELECT 
                     DATE_TRUNC('day', timestamp) as date,

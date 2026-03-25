@@ -1,9 +1,10 @@
 """Smoke tests for plotting utilities."""
 
-import pytest
-from unittest.mock import MagicMock, patch
-import pandas as pd
+from unittest.mock import patch
+
 import matplotlib.pyplot as plt
+import pandas as pd
+
 from ggTrader.utils.plotting import plot_optimization_landscape
 
 

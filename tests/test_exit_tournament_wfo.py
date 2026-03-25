@@ -5,24 +5,20 @@ import sys
 
 import numpy as np
 import pandas as pd
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from ggTrader.core.fast_backtest import (
     FastBacktest,
-    _expand_entries_for_exit_product,
     _expand_entries_for_atr_product,
+    _expand_entries_for_exit_product,
     _get_exit_axis_keys,
     _merge_entry_exit_param_combos,
 )
 from ggTrader.indicators.strategies import (
     EXIT_PARAM_AXIS_KEYS,
     EXIT_REGISTRY,
-    FixedStopTakeProfit,
-    AtrTrailingExit,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -126,8 +122,15 @@ class TestExpandEntriesForExitProduct:
 class TestMergeEntryExitParamCombos:
     def test_atr_axes_merged_correctly(self):
         entry_combos = [{"ema_fast": 5, "ema_slow": 21}, {"ema_fast": 9, "ema_slow": 50}]
-        strat_params = {"ema_fast": [5, 9], "ema_slow": [21, 50], "atr_length": [10, 20], "atr_multiplier": [2.0, 3.0]}
-        result = _merge_entry_exit_param_combos(entry_combos, strat_params, ("atr_length", "atr_multiplier"))
+        strat_params = {
+            "ema_fast": [5, 9],
+            "ema_slow": [21, 50],
+            "atr_length": [10, 20],
+            "atr_multiplier": [2.0, 3.0],
+        }
+        result = _merge_entry_exit_param_combos(
+            entry_combos, strat_params, ("atr_length", "atr_multiplier")
+        )
         # 2 entry combos × 2 lengths × 2 multipliers = 8
         assert len(result) == 8
         # All atr_length values should be present
@@ -137,7 +140,9 @@ class TestMergeEntryExitParamCombos:
     def test_fixed_sl_tp_axes_merged_correctly(self):
         entry_combos = [{"rsi_length": 14}]
         strat_params = {"rsi_length": [14], "stop_pct": [2.0, 4.0], "take_profit_pct": [5.0, 10.0]}
-        result = _merge_entry_exit_param_combos(entry_combos, strat_params, ("stop_pct", "take_profit_pct"))
+        result = _merge_entry_exit_param_combos(
+            entry_combos, strat_params, ("stop_pct", "take_profit_pct")
+        )
         # 1 entry combo × 2 stops × 2 tps = 4
         assert len(result) == 4
         tp_vals = {r["take_profit_pct"] for r in result}
@@ -159,10 +164,14 @@ class TestMergeEntryExitParamCombos:
 class TestFixedStopTakeProfitMultiCombo:
     """Verify that FixedStopTakeProfit uses the correct (stop, tp) per block."""
 
-    def _make_indicator_precomputer(self, close_arr: np.ndarray, high_arr: np.ndarray, low_arr: np.ndarray):
+    def _make_indicator_precomputer(
+        self, close_arr: np.ndarray, high_arr: np.ndarray, low_arr: np.ndarray
+    ):
         """Minimal object matching IndicatorPrecomputer's attribute interface."""
-        from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
         import pandas as pd
+
+        from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
+
         idx = pd.date_range("2023-01-01", periods=len(close_arr), freq="4h")
         c = pd.DataFrame({"SYM": close_arr}, index=idx)
         h = pd.DataFrame({"SYM": high_arr}, index=idx)
@@ -197,12 +206,25 @@ class TestFixedStopTakeProfitMultiCombo:
     def test_different_stops_produce_different_exits(self, sample_ohlcv_data):
         """Tight stop (1%) should trigger more exits than loose stop (10%)."""
         ohlcv = sample_ohlcv_data[["BTC-USD"]]
-        base_cfg = {**_BASE_CONFIG, "ENTRY_STRATEGY": "ema_cross", "EXIT_STRATEGY": "fixed_sl_tp", "USE_VECTORIZED": True}
+        base_cfg = {
+            **_BASE_CONFIG,
+            "ENTRY_STRATEGY": "ema_cross",
+            "EXIT_STRATEGY": "fixed_sl_tp",
+            "USE_VECTORIZED": True,
+        }
 
-        tight_engine = FastBacktest(ohlcv, {"ema_fast": 9, "ema_slow": 21, "stop_pct": 1.0, "take_profit_pct": 2.0}, config=base_cfg)
+        tight_engine = FastBacktest(
+            ohlcv,
+            {"ema_fast": 9, "ema_slow": 21, "stop_pct": 1.0, "take_profit_pct": 2.0},
+            config=base_cfg,
+        )
         tight_pf = tight_engine.run(show_progress=False)
 
-        loose_engine = FastBacktest(ohlcv, {"ema_fast": 9, "ema_slow": 21, "stop_pct": 10.0, "take_profit_pct": 20.0}, config=base_cfg)
+        loose_engine = FastBacktest(
+            ohlcv,
+            {"ema_fast": 9, "ema_slow": 21, "stop_pct": 10.0, "take_profit_pct": 20.0},
+            config=base_cfg,
+        )
         loose_pf = loose_engine.run(show_progress=False)
 
         # Tight stop should produce >= trades (higher turnover) than very loose stop.
@@ -375,7 +397,9 @@ class TestBuildParamGrid:
             build_param_grid,
         )
 
-        grid = build_param_grid("ema_cross", "atr_trailing", COARSE_ENTRY_PARAM_GRIDS, EXIT_AXIS_GRIDS)
+        grid = build_param_grid(
+            "ema_cross", "atr_trailing", COARSE_ENTRY_PARAM_GRIDS, EXIT_AXIS_GRIDS
+        )
         assert "atr_length" in grid
         assert "stop_pct" not in grid
         assert "take_profit_pct" not in grid
@@ -387,7 +411,9 @@ class TestBuildParamGrid:
             build_param_grid,
         )
 
-        grid = build_param_grid("ema_cross", "fixed_sl_tp", COARSE_ENTRY_PARAM_GRIDS, EXIT_AXIS_GRIDS)
+        grid = build_param_grid(
+            "ema_cross", "fixed_sl_tp", COARSE_ENTRY_PARAM_GRIDS, EXIT_AXIS_GRIDS
+        )
         assert "stop_pct" in grid
         assert "take_profit_pct" in grid
         assert "atr_length" not in grid
@@ -400,7 +426,9 @@ class TestBuildParamGrid:
             build_param_grid,
         )
 
-        grid = build_param_grid("ema_cross", "atr_trailing", COARSE_ENTRY_PARAM_GRIDS, EXIT_AXIS_GRIDS)
+        grid = build_param_grid(
+            "ema_cross", "atr_trailing", COARSE_ENTRY_PARAM_GRIDS, EXIT_AXIS_GRIDS
+        )
         assert "ema_fast" in grid
         assert "ema_slow" in grid
 
@@ -413,7 +441,9 @@ class TestBuildParamGrid:
 
         for entry_name in COARSE_ENTRY_PARAM_GRIDS:
             for exit_name in EXIT_AXIS_GRIDS:
-                grid = build_param_grid(entry_name, exit_name, COARSE_ENTRY_PARAM_GRIDS, EXIT_AXIS_GRIDS)
+                grid = build_param_grid(
+                    entry_name, exit_name, COARSE_ENTRY_PARAM_GRIDS, EXIT_AXIS_GRIDS
+                )
                 assert isinstance(grid, dict)
                 assert len(grid) > 0
 

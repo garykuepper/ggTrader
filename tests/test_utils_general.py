@@ -1,12 +1,12 @@
 """Unit tests for general utility functions."""
 
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from ggTrader.utils.utils import (
+    convert_cols_to_numeric,
     make_end_anchored_tscv,
     periods_per_year_from_interval,
-    convert_cols_to_numeric,
 )
 
 

@@ -180,4 +180,3 @@ if __name__ == "__main__":
     port.add_position(pos)
     port.update_position_price("BTC", 30500.0, datetime.now())
     port.print_positions()
-

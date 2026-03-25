@@ -2,8 +2,8 @@
 
 import numpy as np
 import pandas as pd
-import pytest
-from ggTrader.indicators.signals import Signals, SignalFactory
+
+from ggTrader.indicators.signals import SignalFactory, Signals
 
 
 def create_dummy_ohlcv(n_rows: int = 100, trend: str = "flat") -> pd.DataFrame:

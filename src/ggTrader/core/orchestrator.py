@@ -3,12 +3,10 @@
 import gc
 import itertools
 import time
-from math import prod
-import traceback
 from datetime import timedelta
+from math import prod
 from typing import Any, Dict, List, Optional, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import vectorbt as vbt
@@ -33,6 +31,7 @@ def _eta_str(seconds: float) -> str:
 def _wall_clock_eta(seconds: float) -> str:
     """Return wall-clock estimate (e.g., '1:30 PM')."""
     from datetime import datetime, timedelta
+
     finish = datetime.now() + timedelta(seconds=max(0, seconds))
     return finish.strftime("%I:%M %p")
 
@@ -43,7 +42,7 @@ def _log_memory_usage(label: str) -> None:
         return
     try:
         proc = psutil.Process()
-        mem_mb = proc.memory_info().rss / (1024 ** 2)
+        mem_mb = proc.memory_info().rss / (1024**2)
         print(f"    [{label}] Memory: {mem_mb:.1f} MB")
     except Exception:
         pass
@@ -265,9 +264,7 @@ def _print_wfo_fold_all_rejected_diagnostics(
     raw_tc = pf_train.trades.count()
     idx_match: Optional[bool] = None
     align_note = "trade_count_index=n/a"
-    if isinstance(raw_tc, pd.Series) and isinstance(
-        train_metrics_before_gates, pd.Series
-    ):
+    if isinstance(raw_tc, pd.Series) and isinstance(train_metrics_before_gates, pd.Series):
         idx_match = bool(raw_tc.index.equals(train_metrics_before_gates.index))
         align_note = f"trade_count_index_equals_metric_index={idx_match}"
         if not idx_match:
@@ -553,13 +550,9 @@ def _execute_sensitivity_vectorized(
     vec_cfg = {**config, "USE_VECTORIZED": True}
     engine = FastBacktest(ohlcv, param_grid, config=vec_cfg)
     pf = engine.run(show_progress=show_progress)
-    sharpe_series, trade_for_gate = _metric_series_from_vectorized_pf(
-        pf, engine, keys, config
-    )
+    sharpe_series, trade_for_gate = _metric_series_from_vectorized_pf(pf, engine, keys, config)
     closed_for_output = trade_for_gate.copy()
-    sharpe_series = _apply_sensitivity_train_gates(
-        sharpe_series, trade_for_gate, pf, config
-    )
+    sharpe_series = _apply_sensitivity_train_gates(sharpe_series, trade_for_gate, pf, config)
 
     del pf
     del engine
@@ -610,6 +603,7 @@ def _process_sensitivity_chunk(
     # Clear NumBa JIT cache to free compiled function memory
     try:
         import numba
+
         numba.core.registry.CPUTarget.clear()
     except Exception:
         pass
@@ -619,6 +613,7 @@ def _process_sensitivity_chunk(
     # Force C memory trimming (Linux/POSIX) to reclaim fragmented malloc'd memory
     try:
         import ctypes
+
         ctypes.CDLL(None).malloc_trim(0)
     except Exception:
         pass
@@ -636,9 +631,7 @@ def _execute_sensitivity_grid(
     """Generates combinations, splits into chunks, and executes the grid search."""
     if config.get("USE_VECTORIZED_SENSITIVITY", True):
         try:
-            return _execute_sensitivity_vectorized(
-                ohlcv, config, param_grid, show_progress, logger
-            )
+            return _execute_sensitivity_vectorized(ohlcv, config, param_grid, show_progress, logger)
         except Exception as e:
             print(f"Vectorized sensitivity failed ({e!r}); falling back to chunked path.")
 
@@ -663,10 +656,7 @@ def _execute_sensitivity_grid(
         chunk_idx = i // chunk_size + 1
         chunk = combinations[i : i + chunk_size]
         chunk_end = min(i + chunk_size, total_total)
-        print(
-            f"  > Processing chunk {chunk_idx}/{total_chunks} "
-            f"(combos {i}-{chunk_end})..."
-        )
+        print(f"  > Processing chunk {chunk_idx}/{total_chunks} (combos {i}-{chunk_end})...")
         _log_memory_usage("chunk start")
         chunk_start = time.time()
 
@@ -682,7 +672,7 @@ def _execute_sensitivity_grid(
         remaining_chunks = total_chunks - chunk_idx
         eta = remaining_chunks * avg_per_chunk
         chunk_msg = (
-            f"Chunk {chunk_idx}/{total_chunks} done in {time.time()-chunk_start:.1f}s "
+            f"Chunk {chunk_idx}/{total_chunks} done in {time.time() - chunk_start:.1f}s "
             f"| total elapsed {_eta_str(elapsed)} | ETA {_eta_str(eta)} (est. {_wall_clock_eta(eta)})"
         )
         print(f"  > {chunk_msg}")
@@ -875,13 +865,13 @@ def _process_wfo_fold(
     min_closed = config.get("MIN_CLOSED_TRADES_TRAIN", 1)
     if min_closed > 0:
         incomplete_mask = trade_for_gate < min_closed
-        
-        # If it's a bear market, we forgive combos that took exactly 0 trades. 
+
+        # If it's a bear market, we forgive combos that took exactly 0 trades.
         # They successfully stayed out of a losing market.
         if is_bear_market:
             zero_trades_mask = trade_for_gate == 0
             incomplete_mask = incomplete_mask & ~zero_trades_mask
-            
+
             if zero_trades_mask.any():
                 train_metrics = train_metrics.copy()
                 train_metrics[zero_trades_mask] = 0.0
@@ -931,7 +921,9 @@ def _process_wfo_fold(
 
     # Test: single-combo run; USE_VECTORIZED False is fine here (scalar params).
     wfo_test_cfg = {**config, "USE_VECTORIZED": False}
-    test_engine = FastBacktest(test_ohlcv, fold_best_params, config=wfo_test_cfg, mover_mask=test_mask)
+    test_engine = FastBacktest(
+        test_ohlcv, fold_best_params, config=wfo_test_cfg, mover_mask=test_mask
+    )
     pf_test = test_engine.run(show_progress=show_progress)
 
     return {
@@ -1033,8 +1025,10 @@ def _calculate_oos_robustness(
         return float("nan"), float("nan")
     fold_indices = sorted(oos_metrics_by_fold.keys())
     oos_vals = np.array(
-        [float(oos_metrics_by_fold[f]) if oos_metrics_by_fold[f] is not None else float("nan")
-         for f in fold_indices],
+        [
+            float(oos_metrics_by_fold[f]) if oos_metrics_by_fold[f] is not None else float("nan")
+            for f in fold_indices
+        ],
         dtype=float,
     )
     weights = np.array([float(f) for f in fold_indices], dtype=float)
@@ -1055,17 +1049,17 @@ def _calculate_robustness(
     debug_metrics: bool = False,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Calculates parameter robustness validation across folds.
-    
+
     If oos_metrics_by_fold is provided, uses OOS Sharpe to weight each fold's
     contribution to robustness (penalizes parameter sets that don't generalize).
     Otherwise falls back to in-sample Sharpe with recency weighting.
-    
+
     Args:
         is_metrics_by_fold: Dict mapping fold idx to in-sample Sharpe Series (all param combos)
         param_names: List of parameter names
         param_grid: Parameter grid definition
         oos_metrics_by_fold: Optional dict mapping fold idx to OOS Sharpe (for fold-level consistency)
-    
+
     Returns:
         (robust_top_5, best_robust_params) tuples
     """
@@ -1105,16 +1099,12 @@ def _calculate_robustness(
         for fk, s in sorted(is_metrics_by_fold.items()):
             arr = np.asarray(s, dtype=float).ravel()
             n_fin = int(np.sum(np.isfinite(arr)))
-            print(
-                f"      [WFO_DEBUG] fold {fk}: train_metric len={len(s)} "
-                f"finite={n_fin}"
-            )
+            print(f"      [WFO_DEBUG] fold {fk}: train_metric len={len(s)} finite={n_fin}")
         if robustness_scores.size:
             rs_arr = np.asarray(robustness_scores, dtype=float).ravel()
             n_c = int(np.sum(np.isfinite(rs_arr)))
             print(
-                f"      [WFO_DEBUG] combined robustness: len={len(robustness_scores)} "
-                f"finite={n_c}"
+                f"      [WFO_DEBUG] combined robustness: len={len(robustness_scores)} finite={n_c}"
             )
         else:
             print("      [WFO_DEBUG] combined robustness: empty")
@@ -1133,9 +1123,7 @@ def _calculate_robustness(
             score_f = float("nan")
         if not np.isfinite(score_f):
             score_f = float("nan")
-        robust_top_5.append(
-            {"params": _to_native(extracted), "robustness_score": score_f}
-        )
+        robust_top_5.append({"params": _to_native(extracted), "robustness_score": score_f})
 
     if not robust_top_5:
         return [], {}
@@ -1278,12 +1266,22 @@ def run_wfo_orchestrator(
     plot_wfo_splits(ohlcv, n_splits, test_ratio, results_manager=rm)
 
     wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
-        ohlcv, mover_mask, param_grid, config, param_names, n_splits, test_ratio, show_progress, None
+        ohlcv,
+        mover_mask,
+        param_grid,
+        config,
+        param_names,
+        n_splits,
+        test_ratio,
+        show_progress,
+        None,
     )
 
     # Extract OOS Sharpe ratios from wfo_stats to measure generalization
-    oos_metrics_by_fold = {fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)}
-    
+    oos_metrics_by_fold = {
+        fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
+    }
+
     dbg = bool(config.get("WFO_DEBUG_METRICS", False))
     robust_top_5, best_robust_params = _calculate_robustness(
         is_metrics_by_fold,
@@ -1385,8 +1383,10 @@ def run_wfo_per_coin_orchestrator(
         )
 
         # Extract OOS Sharpe ratios from wfo_stats to measure generalization
-        oos_metrics_by_fold = {fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)}
-        
+        oos_metrics_by_fold = {
+            fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
+        }
+
         dbg = bool(config.get("WFO_DEBUG_METRICS", False))
         robust_top_5, best_robust_params = _calculate_robustness(
             is_metrics_by_fold,
@@ -1481,7 +1481,11 @@ def run_wfo_per_coin_orchestrator(
             "per_coin_results": _to_native(per_coin_results),
         }
 
-        rm.save_run_results(params={"per_coin": _to_native(per_coin_results)}, metrics=final_stats, metadata=metadata)
+        rm.save_run_results(
+            params={"per_coin": _to_native(per_coin_results)},
+            metrics=final_stats,
+            metadata=metadata,
+        )
         rm.save_vbt_dashboard(final_pf, "combined_portfolio_dashboard")
         print(f"\nPer-Coin WFO Results saved to: {rm.run_dir}")
 
@@ -1767,9 +1771,7 @@ def run_frozen_params_combined_backtest(
             **stats,
         }
         rs_disp = _format_robustness_metric(robustness_score)
-        sel_note = (
-            "" if selection_reason == "wfo_robustness" else f" | sel={selection_reason}"
-        )
+        sel_note = "" if selection_reason == "wfo_robustness" else f" | sel={selection_reason}"
         phase3_msg = (
             f"  > {symbol} ({sym_idx}/{n_sym_total}): Best={best_label} | "
             f"Robustness={rs_disp}{sel_note} | Win Rate={stats['win_rate']:.2f}% | "
@@ -1805,9 +1807,7 @@ def run_frozen_params_combined_backtest(
     final_stats = {
         "total_value": _safe(final_pf.final_value().sum()),
         "total_profit": _safe(final_pf.total_profit().sum()),
-        "profit_pct": _safe(
-            (final_pf.total_profit().sum() / float(config["START_CASH"])) * 100
-        ),
+        "profit_pct": _safe((final_pf.total_profit().sum() / float(config["START_CASH"])) * 100),
         "total_trades": int(final_pf.trades.count().sum()),
         "win_rate": _safe(final_pf.trades.win_rate().mean()) * 100,
         "sharpe": _safe(final_pf.sharpe_ratio().mean()),
@@ -1818,11 +1818,7 @@ def run_frozen_params_combined_backtest(
 
     print(f"\n{combined_portfolio_label}:")
     print(f"  Total Return: {final_stats['profit_pct']:.2f}%")
-    cagr_s = (
-        f"{final_stats['cagr_pct']:.2f}%"
-        if final_stats.get("cagr_pct") is not None
-        else "n/a"
-    )
+    cagr_s = f"{final_stats['cagr_pct']:.2f}%" if final_stats.get("cagr_pct") is not None else "n/a"
     print(f"  CAGR: {cagr_s}")
     b_cagr = final_stats.get("benchmark_cagr_pct")
     b_cagr_s = f"{b_cagr:.2f}%" if b_cagr is not None else "n/a"
@@ -1835,20 +1831,22 @@ def run_frozen_params_combined_backtest(
     if save_results and results_manager:
         strategy_summary = []
         for symbol, results in per_coin_results.items():
-            strategy_summary.append({
-                "symbol": symbol,
-                "strategy": results["best_strategy"],
-                "exit": results.get("best_exit", "atr_trailing"),
-                "robustness_score": results["robustness_score"],
-                "selection_reason": results.get("selection_reason", "wfo_robustness"),
-            })
+            strategy_summary.append(
+                {
+                    "symbol": symbol,
+                    "strategy": results["best_strategy"],
+                    "exit": results.get("best_exit", "atr_trailing"),
+                    "robustness_score": results["robustness_score"],
+                    "selection_reason": results.get("selection_reason", "wfo_robustness"),
+                }
+            )
 
         strategy_df = pd.DataFrame(strategy_summary)
         results_manager.save_metrics(strategy_df, "per_coin_strategy_selection.csv")
 
-        final_stats_df = pd.DataFrame([
-            {"symbol": sym, **stats} for sym, stats in per_coin_final_stats.items()
-        ])
+        final_stats_df = pd.DataFrame(
+            [{"symbol": sym, **stats} for sym, stats in per_coin_final_stats.items()]
+        )
         results_manager.save_metrics(final_stats_df, "per_coin_final_stats.csv")
 
         metadata = {
@@ -1930,7 +1928,7 @@ def run_multi_strategy_per_coin_wfo(
     # Phase 2: Per-coin WFO loop — test all (entry, exit) combos for each coin.
     for coin_idx, symbol in enumerate(symbols):
         coin_start = time.time()
-        print(f"\n--- Optimizing {symbol} ({coin_idx+1}/{n_symbols}) ---")
+        print(f"\n--- Optimizing {symbol} ({coin_idx + 1}/{n_symbols}) ---")
 
         symbol_ohlcv = ohlcv[[symbol]]
         symbol_mover_mask = mover_mask[[symbol]] if mover_mask is not None else None
@@ -1970,8 +1968,7 @@ def run_multi_strategy_per_coin_wfo(
                 )
 
                 oos_metrics_by_fold = {
-                    fold_idx: stats["oos_sharpe"]
-                    for fold_idx, stats in enumerate(wfo_stats, 1)
+                    fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
                 }
 
                 robust_top_5, best_robust_params = _calculate_robustness(
@@ -1991,7 +1988,9 @@ def run_multi_strategy_per_coin_wfo(
                 oos_rob_combo, fold_cons_combo = _calculate_oos_robustness(oos_metrics_by_fold)
                 oos_blend_alpha = float(config.get("OOS_ROBUSTNESS_BLEND_ALPHA", 0.5))
                 if np.isfinite(oos_rob_combo) and np.isfinite(robustness_score):
-                    gate_score = (1.0 - oos_blend_alpha) * robustness_score + oos_blend_alpha * oos_rob_combo
+                    gate_score = (
+                        1.0 - oos_blend_alpha
+                    ) * robustness_score + oos_blend_alpha * oos_rob_combo
                 elif np.isfinite(oos_rob_combo):
                     gate_score = oos_rob_combo
                 else:
@@ -2017,9 +2016,7 @@ def run_multi_strategy_per_coin_wfo(
 
         selection_reason = "wfo_robustness"
         if best_strategy is None or not np.isfinite(best_robust_score):
-            fb_s, fb_e, fb_p = _wfo_per_coin_fallback_triple(
-                strategy_param_grids, exit_tournament
-            )
+            fb_s, fb_e, fb_p = _wfo_per_coin_fallback_triple(strategy_param_grids, exit_tournament)
             best_strategy = fb_s
             best_exit = fb_e
             best_params_for_coin = fb_p
@@ -2032,16 +2029,16 @@ def run_multi_strategy_per_coin_wfo(
             )
 
         per_coin_results[symbol] = {
-            "best_strategy":        best_strategy,
-            "best_exit":            best_exit,
-            "best_params":          best_params_for_coin,
-            "robustness_score":     best_robust_score,       # blended gate score
-            "is_robustness_score":  best_is_robustness_score,
+            "best_strategy": best_strategy,
+            "best_exit": best_exit,
+            "best_params": best_params_for_coin,
+            "robustness_score": best_robust_score,  # blended gate score
+            "is_robustness_score": best_is_robustness_score,
             "oos_robustness_score": best_oos_robustness_score,
-            "fold_consistency":     best_fold_consistency,
-            "wfo_stats":            best_wfo_stats,
-            "robust_top_5":         best_robust_top_5,
-            "selection_reason":     selection_reason,
+            "fold_consistency": best_fold_consistency,
+            "wfo_stats": best_wfo_stats,
+            "robust_top_5": best_robust_top_5,
+            "selection_reason": selection_reason,
         }
 
         coin_elapsed = time.time() - coin_start
@@ -2049,7 +2046,7 @@ def run_multi_strategy_per_coin_wfo(
         avg_per_coin = total_elapsed / (coin_idx + 1)
         eta = (n_symbols - coin_idx - 1) * avg_per_coin
         status_msg = (
-            f"  > {symbol} ({coin_idx+1}/{n_symbols}): WFO complete in {coin_elapsed:.0f}s | "
+            f"  > {symbol} ({coin_idx + 1}/{n_symbols}): WFO complete in {coin_elapsed:.0f}s | "
             f"ETA {_eta_str(eta)} (est. {_wall_clock_eta(eta)}) "
             f"(full-range Best / Win Rate printed in Phase 3)"
         )
@@ -2063,7 +2060,8 @@ def run_multi_strategy_per_coin_wfo(
     if min_robust_cfg is not None:
         min_robust = float(min_robust_cfg)
         skipped = [
-            sym for sym, r in per_coin_results.items()
+            sym
+            for sym, r in per_coin_results.items()
             if not np.isfinite(r["robustness_score"]) or r["robustness_score"] < min_robust
         ]
         if skipped:
@@ -2073,8 +2071,10 @@ def run_multi_strategy_per_coin_wfo(
             )
             per_coin_results = {sym: r for sym, r in per_coin_results.items() if sym not in skipped}
         if not per_coin_results:
-            print("  WARNING: All coins dropped by robustness gate — lowering threshold or "
-                  "setting MIN_ROBUSTNESS_SCORE=None is recommended.")
+            print(
+                "  WARNING: All coins dropped by robustness gate — lowering threshold or "
+                "setting MIN_ROBUSTNESS_SCORE=None is recommended."
+            )
 
     phase3_out = run_frozen_params_combined_backtest(
         ohlcv,

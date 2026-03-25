@@ -1,39 +1,24 @@
 services:
-  ggtrader_db:
-    image: timescale/timescaledb:latest-pg16
-    container_name: ggtrader_db
-    restart: always
-    environment:
-      TZ: America/Los_Angeles
-      POSTGRES_DB: ggtrader
-      POSTGRES_USER: ggtrader
-      POSTGRES_PASSWORD: ggtrader
-    ports:
-      - "5433:5432" # Maps host port 5433 to container port 5432
-    volumes:
-      - ggtrader_pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ggtrader -d ggtrader" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # --- Managed Externally (Separate Installation) ---
+  # ggtrader_db:
+  #   image: timescale/timescaledb:latest-pg16
+  #   container_name: ggtrader_db
+  #   ...
 
   ggtrader_live:
     build: .
     container_name: ggtrader_live
     env_file: .env # Loads KRAKEN_KEY, KRAKEN_SECRET
-    depends_on:
-      ggtrader_db:
-        condition: service_healthy
     volumes:
-      - ./results:/app/results # To read run_results.json and save logs/reports
-      - ./data:/app/data         # To persist active_positions.json
-      - ./logs:/app/logs         # To persist pipeline logs
+      - ./results:/app/results
+      - ./data:/app/data
+      - ./logs:/app/logs
     environment:
-      - DB_HOST=ggtrader_db
+      # Use host.docker.internal to reach the external DB on Windows/Mac host
+      - DB_HOST=host.docker.internal
       - DB_PORT=5432
-      - DB_USER=ggtrader
-      - DB_PASS=ggtrader
+      - DB_USER=postgres
+      - DB_PASS=postgres
       - DB_NAME=ggtrader
       # --- Automated Trading Settings ---
       - SYMBOLS=BTC-USD,ETH-USD,SOL-USD,DOT-USD,LINK-USD
@@ -43,7 +28,9 @@ services:
       - REOPTIMIZE_DAYS=30
       - TRAINING_YEARS=3
       - DRY_RUN=true
-    command: python scripts/auto_trader.py
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: python ggt.py trade
 
 volumes:
   ggtrader_pgdata: # Dedicated persistent volume for ggTrader data

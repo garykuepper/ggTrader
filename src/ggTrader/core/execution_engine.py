@@ -254,7 +254,7 @@ class ExecutionEngine:
                     base_capital = self.config.get("START_CASH", 1000.0)
                     capital_per_trade = base_capital * float(weight)
                     print(
-                        f"Using dynamic weight for {symbol}: {weight*100:.1f}% -> "
+                        f"Using dynamic weight for {symbol}: {weight * 100:.1f}% -> "
                         f"{capital_per_trade:.2f} USD"
                     )
                 else:

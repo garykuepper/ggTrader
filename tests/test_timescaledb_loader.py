@@ -1,9 +1,9 @@
 """Unit tests for TimescaleDB Loader."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
 import pandas as pd
-import numpy as np
+
 from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
 
 

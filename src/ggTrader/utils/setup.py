@@ -61,25 +61,26 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
         )
 
     # Ensure all requested symbols exist in the dataframe as top-level columns.
-    # New coins with short histories (e.g. SUI) might be completely missing 
+    # New coins with short histories (e.g. SUI) might be completely missing
     # depending on the requested date range. Padding them with NaNs prevents KeyErrors.
     existing_symbols = set(ohlcv_df.columns.get_level_values(0))
     missing_symbols = [s for s in symbols if s not in existing_symbols]
-    
+
     if missing_symbols:
         metrics = ["open", "high", "low", "close", "volume", "trades"]
         # Only use metrics that actually exist in the dataframe
         actual_metrics = [m for m in metrics if m in ohlcv_df.columns.get_level_values(1)]
-        
+
         # Create a MultiIndex of missing combinations
         import itertools
+
         missing_tuples = list(itertools.product(missing_symbols, actual_metrics))
         missing_idx = pd.MultiIndex.from_tuples(missing_tuples)
-        
+
         # Create an empty dataframe with NaNs and concatenate
         empty_df = pd.DataFrame(index=ohlcv_df.index, columns=missing_idx, dtype=float)
         ohlcv_df = pd.concat([ohlcv_df, empty_df], axis=1)
-        
+
         # Sort columns to maintain consistency
         ohlcv_df.sort_index(axis=1, inplace=True)
 
@@ -210,9 +211,7 @@ def _ccxt_fetch_paginated(
             break
     if not rows:
         return pd.DataFrame()
-    df = pd.DataFrame(
-        rows, columns=["timestamp", "open", "high", "low", "close", "volume"]
-    )
+    df = pd.DataFrame(rows, columns=["timestamp", "open", "high", "low", "close", "volume"])
     df["datetime"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
     df = df.set_index("datetime").drop(columns=["timestamp"])
     df = df[(df.index >= start.tz_convert("UTC")) & (df.index <= end.tz_convert("UTC"))]
@@ -296,12 +295,12 @@ def load_hybrid_validation_ohlcv(
                 new_cols.append((f"{sym}-{quote}", field))
             else:
                 new_cols.append((sym.replace("/", "-"), field))
-        
+
         combined.columns = pd.MultiIndex.from_tuples(new_cols)
-        
+
         # Deduplicate columns (important if both BTC and BTC-USD existed due to loader mismatch)
         if combined.columns.duplicated().any():
             # Group by column name and take the first non-null or just first
-            combined = combined.loc[:, ~combined.columns.duplicated(keep='last')]
+            combined = combined.loc[:, ~combined.columns.duplicated(keep="last")]
 
     return combined.sort_index()

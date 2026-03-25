@@ -1,17 +1,24 @@
 """CLI Command: Backtest (Portfolio Analysis Simulation)"""
 
 import argparse
-import sys
 import subprocess
+import sys
+
 from ggTrader.utils.state_manager import get_latest_research_run
+
 
 def register_backtest_parser(subparsers: argparse._SubParsersAction):
     """Registers the 'backtest' subcommand."""
-    parser = subparsers.add_parser("backtest", help="Simulate a portfolio backtest using research parameters")
-    parser.add_argument(
-        "--run-id", type=str, default=None,
-        help="Path to specific results directory (default: auto-detect latest)"
+    parser = subparsers.add_parser(
+        "backtest", help="Simulate a portfolio backtest using research parameters"
     )
+    parser.add_argument(
+        "--run-id",
+        type=str,
+        default=None,
+        help="Path to specific results directory (default: auto-detect latest)",
+    )
+
 
 def run_backtest(args: argparse.Namespace):
     """Executes the backtest simulation."""
@@ -24,9 +31,6 @@ def run_backtest(args: argparse.Namespace):
             sys.exit(1)
         target_dir = str(latest.parent)
         print(f"Auto-detected latest research run: {target_dir}")
-        
-    cmd = [
-        sys.executable, "scripts/portfolio_analysis_standalone.py",
-        "--results-dir", target_dir
-    ]
+
+    cmd = [sys.executable, "scripts/portfolio_analysis_standalone.py", "--results-dir", target_dir]
     subprocess.run(cmd, check=True)

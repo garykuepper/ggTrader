@@ -1,6 +1,6 @@
-import vectorbt as vbt
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from ggTrader.indicators.signals import SignalFactory
 
 
@@ -48,9 +48,9 @@ def test_broadcasting():
     print(f"Columns: {sf.entries.columns}")
 
     expected_cols = len(adx_thresholds) * 1 * len(symbols)  # 3 * 1 * 2 = 6
-    assert (
-        sf.entries.shape[1] == expected_cols
-    ), f"Expected {expected_cols} columns, got {sf.entries.shape[1]}"
+    assert sf.entries.shape[1] == expected_cols, (
+        f"Expected {expected_cols} columns, got {sf.entries.shape[1]}"
+    )
 
     # 4. Check if we have MultiIndex columns with parameter levels
     if isinstance(sf.entries.columns, pd.MultiIndex):

@@ -1,20 +1,30 @@
 import json
 import os
 from pathlib import Path
+from typing import List, Optional
 
 from dotenv import load_dotenv
 
 from ggTrader.utils.paths import find_project_root
 
 
-def load_symbols_from_json(file_path):
-    """Loads symbols from a JSON file expecting a list of objects with a 'symbol' key."""
-    if not os.path.exists(file_path):
+def load_symbols_from_json(file_path: str) -> Optional[List[str]]:
+    """Loads symbols from a JSON file (list of strings or list of objects with 'symbol' key)."""
+    if not Path(file_path).exists():
         return None
     try:
         with open(file_path, "r") as f:
             data = json.load(f)
-            return [item["symbol"] for item in data if "symbol" in item]
+            if not isinstance(data, list):
+                return None
+
+            symbols = []
+            for item in data:
+                if isinstance(item, str):
+                    symbols.append(item)
+                elif isinstance(item, dict) and "symbol" in item:
+                    symbols.append(item["symbol"])
+            return symbols
     except Exception as e:
         print(f"Error loading symbols from {file_path}: {e}")
         return None

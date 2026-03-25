@@ -5,7 +5,7 @@ import json
 import math
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -336,9 +336,7 @@ class ResultDBManager:
                     DO UPDATE SET metric_value = EXCLUDED.metric_value
                     """
                 )
-                conn.execute(
-                    stmt, {"run_id": run_id, "metric_name": name, "metric_value": fv}
-                )
+                conn.execute(stmt, {"run_id": run_id, "metric_name": name, "metric_value": fv})
 
     def add_equity_curve(self, run_id: str, equity_series: pd.Series) -> None:
         """Inserts equity curve data into the database in bulk."""

@@ -1,4 +1,3 @@
-import math
 from datetime import datetime
 
 import pytest
@@ -211,9 +210,7 @@ def test_reconcile_invariant_holds_after_multiple_trades():
     # check transaction fees sum equals recorded total
     sum_entry = sum(getattr(t, "entry_fee", 0.0) for t in p.trades)
     sum_exit = sum(
-        getattr(t, "exit_fee", 0.0)
-        for t in p.trades
-        if getattr(t, "exit_fee", 0.0) is not None
+        getattr(t, "exit_fee", 0.0) for t in p.trades if getattr(t, "exit_fee", 0.0) is not None
     )
     assert almost_equal(p.transaction_fee_total, sum_entry + sum_exit, tol=1e-6)
 

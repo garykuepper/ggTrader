@@ -1,11 +1,11 @@
-import sys
 import os
+import sys
 
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-import pandas as pd
 import numpy as np
-import vectorbt as vbt
+import pandas as pd
+
 from ggTrader.core.fast_backtest import FastBacktest
 
 

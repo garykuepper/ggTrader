@@ -31,6 +31,11 @@ trigger: always_on
     - **Orchestration Boilerplate**: Scripts in `scripts/` must follow a standard template: `sys.path` setup, `main()` orchestration, and `argparse` for inputs. Every script must handle the `--help` flag gracefully.
     - **Results Management**: Use `ResultsManager` for all artifact, metric, and plot saving to ensure consistent output directory structures and metadata logging.
 
+5. **Linting & Formatting**:
+    - All code must strictly follow PEP 8 and pass `ruff check .` (linting) and `ruff format .` (formatting).
+    - Unused imports, unused variables, and long lines (>100 characters) must be resolved before merging.
+    - The use of the `--fix` flag in Ruff is encouraged for automated corrections.
+
 ## ggTrader Project Specific Rules
 
 1. **Vectorization First**:
@@ -83,10 +88,22 @@ trigger: always_on
 ## Documentation Standards
 
 1. **Single Source of Truth**:
-    - Core architectural changes (e.g., database transitions) must be reflected across all documentation in `docs/` and `README.md`.
+    - Core architectural changes (e.g., database transitions, new CLI commands) must be reflected across all documentation in `docs/` and `README.md`.
     - Supplemental documentation must reside in the `docs/` directory.
 
-2. **Project Structure Alignment**:
+2. **CLI Alignment**:
+    - Any changes to `ggt.py` subcommands or their arguments must be immediately updated in `docs/UNIFIED_PIPELINE.md`.
+    - Ensure default behavior (e.g., parallelization, volume windows) is accurately described in manuals.
+
+3. **Standardized Reporting**:
+    - All `ggt research` summaries provided to the user must include:
+        - **Executive Metrics**: Aggregate Return, Win Rate %, Sharpe Ratio, and Max Drawdown.
+        - **Top Performers**: List the top 5 assets by Risk-Adjusted Return.
+        - **Optimization Insights**: Prevailing optimal param ranges (e.g., PSAR acceleration, ATR multipliers).
+        - **Visual Evidence**: Embed key portfolio PNG plots (e.g., equity curve, drawdowns) directly in the report for immediate review.
+        - **File Artifacts**: Explicit links to `run_results.json` and the `plots/` directory.
+
+4. **Project Structure Alignment**:
     - Documentation must accurately reflect the directory structure (e.g., `src/`, `scripts/`, `docs/`).
     - Use relative links for cross-referencing between documentation files.
 

@@ -1,11 +1,12 @@
 """Unit tests for utility managers."""
 
-import pytest
-from unittest.mock import MagicMock, patch, mock_open
-import pandas as pd
-import os
 import shutil
 from pathlib import Path
+from unittest.mock import patch
+
+import pandas as pd
+import pytest
+
 from ggTrader.utils.results_manager import ResultsManager
 
 

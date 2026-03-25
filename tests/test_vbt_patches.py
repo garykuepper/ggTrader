@@ -1,15 +1,15 @@
+import os
+import sys
 import unittest
+
 import numpy as np
 import vectorbt.base.reshape_fns as reshape_fns
-from unittest.mock import patch, MagicMock
-import sys
-import os
 
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 # Import the module under test
-from ggTrader.utils.vbt_patches import apply_vbt_patches, _patched_to_1d_array
+from ggTrader.utils.vbt_patches import _patched_to_1d_array, apply_vbt_patches
 
 
 class TestVBTPatches(unittest.TestCase):

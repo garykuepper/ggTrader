@@ -2,44 +2,56 @@
 
 import argparse
 import sys
-from pathlib import Path
 
 from ggTrader.utils.state_manager import get_latest_production_weights, get_latest_research_run
+
 
 def register_trade_parser(subparsers: argparse._SubParsersAction):
     """Registers the 'trade' subcommand."""
     parser = subparsers.add_parser("trade", help="Start the live execution engine")
     parser.add_argument(
-        "--results", type=str, default=None,
-        help="Path to run_results.json for strategy params (default: auto-detect latest research run)"
+        "--results",
+        type=str,
+        default=None,
+        help=(
+            "Path to run_results.json for strategy params "
+            "(default: auto-detect latest research run)"
+        ),
     )
     parser.add_argument(
-        "--weights", type=str, default=None,
-        help="Path to portfolio_weights.json (default: auto-detect latest production weights)"
+        "--weights",
+        type=str,
+        default=None,
+        help=(
+            "Path to portfolio_weights.json "
+            "(default: auto-detect latest production weights)"
+        ),
     )
     parser.add_argument(
-        "--dry-run", action="store_true",
-        help="Run without placing real orders on the exchange"
+        "--dry-run", action="store_true", help="Run without placing real orders on the exchange"
     )
     parser.add_argument(
-        "--capital", type=float, default=25.0,
-        help="Fallback capital per trade if weight is missing (default: 25.0)"
+        "--capital",
+        type=float,
+        default=25.0,
+        help="Fallback capital per trade if weight is missing (default: 25.0)",
     )
     parser.add_argument(
-        "--interval", type=str, default=None,
-        help="Override polling interval (e.g. 1h, 4h)"
+        "--interval", type=str, default=None, help="Override polling interval (e.g. 1h, 4h)"
     )
+
 
 def run_trade(args: argparse.Namespace):
     """Executes the live trading engine."""
     from dotenv import load_dotenv
+
     load_dotenv()
-    
+
     # Import inside to prevent DB connections from initializing early
     from ggTrader.core.execution_engine import ExecutionEngine
-    from ggTrader.utils.run_config import full_pipeline_config, merge_run_config
     from ggTrader.utils.results_manager import ResultsManager
-    
+    from ggTrader.utils.run_config import full_pipeline_config, merge_run_config
+
     results_path = args.results
     if not results_path:
         print("Searching for latest Master Research results for parameters...")
@@ -58,7 +70,10 @@ def run_trade(args: argparse.Namespace):
             weights_path = str(latest_weight)
             print(f"Auto-detected latest production weights: {weights_path}")
         else:
-            print("Warning: No portfolio_weights.json automatically found. Using fixed fallback capital.")
+            print(
+                "Warning: No portfolio_weights.json automatically found. "
+                "Using fixed fallback capital."
+            )
 
     rm = ResultsManager("live_trader")
     print(f"\n[{rm.run_id}] Initializing live trader...")
@@ -81,11 +96,13 @@ def run_trade(args: argparse.Namespace):
         if weights_path:
             # Native support inside existing ExecutionEngine logic
             engine.load_portfolio_weights(weights_path)
-            
+
         engine.run_event_loop()
     except KeyboardInterrupt:
         print("\nBot stopped by user.")
     except Exception as e:
         print(f"CRITICAL ERROR in event loop: {e}")
-        import traceback; traceback.print_exc()
+        import traceback
+
+        traceback.print_exc()
         sys.exit(1)

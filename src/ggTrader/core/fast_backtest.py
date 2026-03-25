@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -12,10 +12,6 @@ from ggTrader.indicators.strategies import (
     filter_strat_params_for_exit,
     get_entry_strategy,
     get_exit_strategy,
-)
-from ggTrader.indicators.vectorized_signals import (
-    generate_atr_trailing_exits_vectorized,
-    generate_psar_adx_entries_vectorized,
 )
 from ggTrader.utils.vbt_patches import apply_vbt_patches
 
@@ -70,9 +66,7 @@ def _expand_entries_for_exit_product(
     return np.hstack(parts) if parts else entries
 
 
-def _expand_entries_for_atr_product(
-    entries: np.ndarray, n_symbols: int, n_atr: int
-) -> np.ndarray:
+def _expand_entries_for_atr_product(entries: np.ndarray, n_symbols: int, n_atr: int) -> np.ndarray:
     """Backward-compatible wrapper for _expand_entries_for_exit_product."""
     return _expand_entries_for_exit_product(entries, n_symbols=n_symbols, n_exit=n_atr)
 
@@ -153,7 +147,7 @@ class FastBacktest:
         """Execute backtest."""
         if self.ohlcv.empty:
             raise ValueError(
-                "OHLCV data is empty. Check your symbols, date range, " "and database connection."
+                "OHLCV data is empty. Check your symbols, date range, and database connection."
             )
 
         self._last_param_combos = None
@@ -164,7 +158,9 @@ class FastBacktest:
             try:
                 entries, exits, price_for_orders = self._generate_signals_vectorized(show_progress)
             except Exception as e:
-                print(f"Warning: Vectorized signal generation failed ({e}), falling back to standard path.")
+                print(
+                    f"Warning: Vectorized signal generation failed ({e}), falling back to standard path."
+                )
                 entries, exits, price_for_orders = self._generate_signals(show_progress)
         else:
             entries, exits, price_for_orders = self._generate_signals(show_progress)
@@ -237,24 +233,36 @@ class FastBacktest:
         """Lex-sort MultiIndex columns so VectorBT group_by is contiguous (all paths)."""
         if not isinstance(entries.columns, pd.MultiIndex):
             return entries, exits, price_for_orders
+
+        # Optimization: for single-symbol backtests (common in WFO per-coin workers),
+        # broadcast the only price column across all param-combo columns.
+        if len(price_for_orders.columns) == 1:
+            sym_name = price_for_orders.columns[0]
+            price_arr = price_for_orders[sym_name].reindex(entries.index).to_numpy(dtype=np.float64)
+            close_aligned = np.column_stack([price_arr] * entries.shape[1])
+            price_aligned = pd.DataFrame(
+                close_aligned, index=entries.index, columns=entries.columns
+            )
+            return entries, exits, price_aligned
+
         sorted_cols = entries.columns.sort_values()
         entries = entries[sorted_cols]
         exits = exits[sorted_cols]
+
         if entries.columns.equals(price_for_orders.columns):
             return entries, exits, price_for_orders.reindex(columns=entries.columns)
-        # SignalFactory path: price is one column per symbol; entries use MultiIndex (symbol last level).
+
+        # Multi-symbol path: Align price columns to entries by matching the 'symbol' level (last level)
         sym_level = entries.columns.get_level_values(-1)
         pieces = []
         for sym in sym_level:
             if sym not in price_for_orders.columns:
                 raise KeyError(
-                    f"Symbol {sym!r} not in price columns: "
-                    f"{price_for_orders.columns.tolist()}"
+                    f"Symbol {sym!r} not in price columns: {price_for_orders.columns.tolist()}"
                 )
             ser = price_for_orders[sym].reindex(entries.index)
             pieces.append(ser.to_numpy(dtype=np.float64, copy=True))
         close_aligned = np.column_stack(pieces)
-        # Use entries.columns so VectorBT sees the same column Index object as entries/exits.
         price_aligned = pd.DataFrame(close_aligned, index=entries.index, columns=entries.columns)
         return entries, exits, price_aligned
 
@@ -334,7 +342,9 @@ class FastBacktest:
                 param_levels.append(combo_idx)
                 symbol_levels.append(symbol)
 
-        multi_index = pd.MultiIndex.from_arrays([param_levels, symbol_levels], names=["param_combo", "symbol"])
+        multi_index = pd.MultiIndex.from_arrays(
+            [param_levels, symbol_levels], names=["param_combo", "symbol"]
+        )
 
         entries_df = pd.DataFrame(entries, index=close.index, columns=multi_index)
         exits_df = pd.DataFrame(exits, index=close.index, columns=multi_index)

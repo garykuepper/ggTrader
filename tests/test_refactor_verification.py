@@ -1,12 +1,12 @@
-import pytest
-import pandas as pd
+from unittest.mock import patch
+
 import numpy as np
-from unittest.mock import MagicMock, patch
+import pandas as pd
 import vectorbt as vbt
 
+import ggTrader.utils.vbt_patches as vbt_patches
 from ggTrader.core.fast_backtest import FastBacktest
 from ggTrader.utils.setup import load_data_with_movers
-import ggTrader.utils.vbt_patches as vbt_patches
 
 
 def test_vbt_patches_applied():

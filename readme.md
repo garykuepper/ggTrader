@@ -27,52 +27,60 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
 
 ## 📖 Documentation
 
+- [**Unified CLI Guide**](docs/UNIFIED_PIPELINE.md): Start here for the `ggt` command reference.
 - [**Architecture Guide**](docs/architecture.md): Deep dive into the project structure and data flow.
 - [**Installation & Setup**](docs/installation.md): How to get `ggTrader` running on your local machine.
-- [**Strategy Pipeline Guide**](docs/strategy_pipeline_guide.md): Comprehensive workflow for optimizing strategies across multiple cryptocurrencies.
-- [**Analysis Guide**](docs/analysis_guide.md): Short WFO / backtest / sensitivity workflow notes (details live in the pipeline guide).
-- [**Live Trading Guide**](docs/live_trading_guide.md): How to deploy optimized strategies to Kraken via CCXT.
-- [**Ingestion & DB performance**](docs/ingestion_optimization.md): Notes on data ingestion and TimescaleDB usage.
-- [**Pipeline run history**](docs/pipeline_run_history.md): Pre-flight checklist, manual table, and default auto-append after each successful pipeline (`GGTRADER_APPEND_RUN_HISTORY=0` to disable for testing).
+- [**Live Trading Guide**](docs/live_trading_guide.md): Deploying optimized strategies to Kraken.
+- [**Ingestion & DB performance**](docs/ingestion_optimization.md): Notes on TimescaleDB usage.
 
 ## 📁 Project Structure
 
-- `src/ggTrader/`: Core package including `core` engine, `data` adapters, and `indicators`.
-- `scripts/`: Operational scripts for backtesting, WFO, and sensitivity analysis.
-- `notebooks/`: Research and visualization tools.
+- `src/ggTrader/`: Core engine, data adapters, and strategy indicators.
+- `scripts/`: Operational scripts (wrapped by `ggt`).
 - `results/`: Standardized output for all strategy executions.
-- `data/`: Local storage for cached data and exports.
+- `data/`: Local storage for cached data, exports, and symbol pools.
 
 ## ⚡ Quick Start
 
-1. **Clone & Setup** (editable install is **required** so `python scripts/...` can import `ggTrader`):
+The unified `ggt` CLI is the recommended way to interact with the engine.
+
+1. **Install Dependencies**:
 
    ```bash
    pip install -e .
    ```
 
-   This also installs **console commands** (on PATH inside the active venv): `ggtrader-backtest`, `ggtrader-wfo`, `ggtrader-sensitivity`, `ggtrader-pipeline`, `ggtrader-compare-strategies`, `ggtrader-view-results`, `ggtrader-pipeline-status`, `ggtrader-manage-data`, `ggtrader-manage-db`. They run the same code as the matching files under `scripts/`.
+2. **Run a Research Optimization (WFO)**:
 
-2. **Run a Backtest**:
+   Fetches the top 50 liquid coins and runs a parallel 3-year WFO.
 
    ```bash
-   python scripts/run_backtest.py --symbols BTC-USD
-   # or: ggtrader-backtest --symbols BTC-USD
+   python ggt.py research --top 50
    ```
 
-   Use `--movers N` for a daily top-*N* mover mask, or `--params path/to/params.json` after WFO. Pass `--no-progress` to disable the VectorBT progress bar.
+3. **Run a Backtest**:
 
-3. **Execute WFO**:
+   Simulates signals for specific symbols using the latest optimized parameters.
 
    ```bash
-   python scripts/run_walk_forward_optimization.py
+   python ggt.py backtest --symbols BTC,ETH
    ```
 
-4. **Run Full Pipeline** (Per-Coin WFO → Validation → Report; optional `--sensitivity` for Phase 1):
+4. **Production Recalibration**:
+
+   Generates portfolio weights for live trading.
 
    ```bash
-   python scripts/run_full_pipeline.py
+   python ggt.py production
+   ```
+
+5. **Start Live Trading**:
+
+   Begins the execution heartbeat.
+
+   ```bash
+   python ggt.py trade --dry-run
    ```
 
 ---
-*For a more detailed breakdown, please refer to the [Strategy Pipeline Guide](docs/strategy_pipeline_guide.md) or [Architecture Guide](docs/architecture.md).*
+*For a detailed walkthrough, refer to the [Unified CLI Guide](docs/UNIFIED_PIPELINE.md) or [Architecture Guide](docs/architecture.md).*

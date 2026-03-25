@@ -105,7 +105,7 @@ def generate_pipeline_report(
     lines.append("")
 
     p2_stats = final_backtest_results.get("phase_2_stats", final_stats)
-    
+
     lines.append("| Metric | Strategy | Buy & Hold | Excess |")
     lines.append("|--------|----------|------------|--------|")
     lines.append(f"| Backtest period | {_fmt_period(p2_stats)} | - | - |")
@@ -269,12 +269,14 @@ def generate_pipeline_report(
         strat = results.get("best_strategy")
         strat_disp = strat if strat is not None else "n/a"
         sel = results.get("selection_reason", "wfo_robustness")
-        strategy_table_data.append({
-            "Symbol": symbol,
-            "Strategy": strat_disp,
-            "Selection": sel,
-            "Robustness Score": _fmt_robustness_score(results.get("robustness_score")),
-        })
+        strategy_table_data.append(
+            {
+                "Symbol": symbol,
+                "Strategy": strat_disp,
+                "Selection": sel,
+                "Robustness Score": _fmt_robustness_score(results.get("robustness_score")),
+            }
+        )
 
     if strategy_table_data:
         lines.append("| Symbol | Strategy | Selection | Robustness Score |")
@@ -311,12 +313,14 @@ def generate_pipeline_report(
                 strat = r.get("best_strategy", "n/a")
                 exit_ = r.get("best_exit", "n/a")
                 label = f"{strat}+{exit_}"
-                is_rob = _fmt_robustness_score(r.get("is_robustness_score", r.get("robustness_score")))
+                is_rob = _fmt_robustness_score(
+                    r.get("is_robustness_score", r.get("robustness_score"))
+                )
                 oos_rob = _fmt_robustness_score(r.get("oos_robustness_score"))
                 fc = r.get("fold_consistency")
                 fc_str = f"{fc:.0%}" if fc is not None and np.isfinite(float(fc)) else "n/a"
                 fold_vals: list[str] = []
-                for fs in (r.get("wfo_stats") or []):
+                for fs in r.get("wfo_stats") or []:
                     fold_vals.append(_fmt_float_opt(fs.get("oos_sharpe"), decimals=3))
                 while len(fold_vals) < max_folds:
                     fold_vals.append("n/a")
@@ -334,8 +338,7 @@ def generate_pipeline_report(
 
     if per_coin_final_stats:
         lines.append(
-            "| Symbol | Strategy | Selection | Return % | Sharpe | Max DD % | "
-            "Trades | Win Rate % |"
+            "| Symbol | Strategy | Selection | Return % | Sharpe | Max DD % | Trades | Win Rate % |"
         )
         lines.append(
             "|--------|----------|-----------|----------|--------|----------|--------|-----------|"
@@ -405,14 +408,14 @@ def generate_pipeline_report(
 
     lines.append("### Phase 3: Recent Performance (Past Year)")
     lines.append("- Frozen parameters applied to the most recent 1-year data window")
-    lines.append(
-        "- Provides an 'out-of-sample' check on the most recent market conditions"
-    )
+    lines.append("- Provides an 'out-of-sample' check on the most recent market conditions")
     lines.append("- Performance compared against a 1-year Buy & Hold benchmark")
     lines.append("")
 
     lines.append("### Reporting")
-    lines.append("- Comprehensive analysis of parameter sensitivity, strategy selection, and final performance")
+    lines.append(
+        "- Comprehensive analysis of parameter sensitivity, strategy selection, and final performance"
+    )
     lines.append("- Per-coin and combined portfolio metrics")
     lines.append(
         "- **CAGR**: geometric annualized return from total return over the calendar span "

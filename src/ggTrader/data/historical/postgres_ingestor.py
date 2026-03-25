@@ -11,7 +11,7 @@ from psycopg2.extras import execute_values
 from sqlalchemy import create_engine, text
 from tqdm import tqdm
 
-from ggTrader.data.core.constants import kraken_map, QUOTES
+from ggTrader.data.core.constants import QUOTES, kraken_map
 
 
 class PostgresIngestor:

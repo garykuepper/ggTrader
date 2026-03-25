@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import vectorbt as vbt
-from numba import njit, prange
+from numba import njit
 
 
 class Signals:
@@ -356,4 +356,3 @@ def _trailing_stop_long_ohlc_touch_2d_numba(
                 exits[i, j] = False
 
     return stop, exits
-

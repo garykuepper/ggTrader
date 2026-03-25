@@ -24,6 +24,7 @@ from portfolio_analysis_standalone import (
     run_strategy_volatility_weighted,
 )
 
+
 @pytest.fixture
 def sample_portfolio_data(sample_ohlcv_data):
     """Create sample signals and close prices for two symbols."""
@@ -33,18 +34,14 @@ def sample_portfolio_data(sample_ohlcv_data):
     entries = pd.DataFrame(
         np.random.choice([True, False], size=close.shape, p=[0.05, 0.95]),
         index=close.index,
-        columns=close.columns
+        columns=close.columns,
     )
     # Simple exit 5 bars later
     exits = entries.shift(5).fillna(False)
 
-    config = {
-        "START_CASH": 1000,
-        "FEES": 0.001,
-        "SLIPPAGE": 0.001,
-        "FREQ": "4h"
-    }
+    config = {"START_CASH": 1000, "FEES": 0.001, "SLIPPAGE": 0.001, "FREQ": "4h"}
     return close, entries, exits, config
+
 
 def test_run_strategy_equal_share(sample_portfolio_data):
     close, entries, exits, config = sample_portfolio_data
@@ -54,8 +51,9 @@ def test_run_strategy_equal_share(sample_portfolio_data):
     assert pf.init_cash == 1000
     # Check that position sizes are 10%
     if not pf.trades.records.empty:
-      # Expect approx 100 units if price=1000
-      pass
+        # Expect approx 100 units if price=1000
+        pass
+
 
 def test_run_strategy_max_diversified(sample_portfolio_data):
     close, entries, exits, config = sample_portfolio_data
@@ -66,11 +64,13 @@ def test_run_strategy_max_diversified(sample_portfolio_data):
     # pf.size is not directly accessible after run, but we can check entry values
     pass
 
+
 def test_run_strategy_volatility_weighted(sample_portfolio_data):
     close, entries, exits, config = sample_portfolio_data
     pf, weights = run_strategy_volatility_weighted(close, entries, exits, config)
     assert isinstance(pf, vbt.Portfolio)
     assert isinstance(weights, pd.DataFrame)
+
 
 def test_run_strategy_robustness_weighted(sample_portfolio_data):
     close, entries, exits, config = sample_portfolio_data
@@ -79,18 +79,20 @@ def test_run_strategy_robustness_weighted(sample_portfolio_data):
     assert isinstance(pf, vbt.Portfolio)
     assert isinstance(weights, pd.DataFrame)
 
+
 def test_run_strategy_benchmark(sample_portfolio_data):
     close, _, _, config = sample_portfolio_data
     pf = run_strategy_benchmark(close, config)
     assert isinstance(pf, vbt.Portfolio)
-    assert pf.trades.count().sum() == close.shape[1] # One trade per symbol
+    assert pf.trades.count().sum() == close.shape[1]  # One trade per symbol
+
 
 def test_system_flow(tmp_path, sample_ohlcv_data):
     """Test the end-to-end signal generation from a mock result directory."""
     # Create mock result directory
     results_dir = tmp_path / "mock_run"
     results_dir.mkdir()
-    
+
     # Create mock run_results.json
     mock_results = {
         "configuration": {
@@ -103,30 +105,33 @@ def test_system_flow(tmp_path, sample_ohlcv_data):
                             "rsi_length": 14,
                             "rsi_oversold": 30,
                             "stop_pct": 1.5,
-                            "take_profit_pct": 3.0
+                            "take_profit_pct": 3.0,
                         },
-                        "robustness_score": 0.8
+                        "robustness_score": 0.8,
                     }
                 },
                 "START_CASH": 1000,
                 "FEES": 0.001,
                 "SLIPPAGE": 0.001,
-                "FREQ": "4h"
+                "FREQ": "4h",
             }
         }
     }
-    
+
     with open(results_dir / "run_results.json", "w") as f:
         json.dump(mock_results, f)
-        
+
     # We can't easily call main() because it uses load_data_with_movers (which queries DB)
     # But we can test load_wfo_results
     from portfolio_analysis_standalone import load_wfo_results
+
     per_coin, config = load_wfo_results(str(results_dir))
-    
+
     assert "BTC-USD" in per_coin
     assert config["FEES"] == 0.001
 
+
 if __name__ == "__main__":
     import json
+
     pytest.main([__file__])

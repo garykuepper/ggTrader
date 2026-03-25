@@ -22,8 +22,8 @@ from ggTrader.utils.pipeline_phases import (
     phase_3_recent_performance,
     prepare_config_and_symbols,
 )
-from ggTrader.utils.pipeline_status_logger import StatusLogger
 from ggTrader.utils.pipeline_run_history import append_automated_run_section
+from ggTrader.utils.pipeline_status_logger import StatusLogger
 from ggTrader.utils.report_generator import generate_pipeline_report
 
 
@@ -60,7 +60,9 @@ def execute_full_pipeline(args: Namespace, base_constants: dict) -> None:
         names = [x.strip() for x in args.exits.split(",") if x.strip()]
         invalid = [x for x in names if x not in EXIT_REGISTRY]
         if invalid:
-            raise ValueError(f"Unknown exit name(s) {invalid!r}. Valid: {list(EXIT_REGISTRY.keys())}")
+            raise ValueError(
+                f"Unknown exit name(s) {invalid!r}. Valid: {list(EXIT_REGISTRY.keys())}"
+            )
         if not names:
             raise ValueError("--exits must list at least one exit name.")
         config["EXIT_TOURNAMENT"] = names
@@ -127,7 +129,9 @@ def execute_full_pipeline(args: Namespace, base_constants: dict) -> None:
             )
         else:
             narrowed_grids.update(
-                build_wfo_superset_grids(entry_book, exit_book, exit_tournament, getattr(args, "dry_run", False))
+                build_wfo_superset_grids(
+                    entry_book, exit_book, exit_tournament, getattr(args, "dry_run", False)
+                )
             )
             sensitivity_results = {}
             print("\n" + "=" * 100)

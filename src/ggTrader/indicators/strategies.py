@@ -87,7 +87,11 @@ class ExitStrategy(Protocol):
     param_schema: dict[str, list]
 
     def compute_exits(
-        self, entries: np.ndarray, precomputer: IndicatorPrecomputer, param_grid: dict, n_symbols: int
+        self,
+        entries: np.ndarray,
+        precomputer: IndicatorPrecomputer,
+        param_grid: dict,
+        n_symbols: int,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Compute exit signals and fill prices.
 
@@ -229,7 +233,9 @@ class PsarAdxEntry:
                 entries_stacked.append(entries_combo)
 
         entries_array = (
-            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
         )
 
         return entries_array.astype(bool), param_combos
@@ -315,7 +321,9 @@ class EmaCrossEntry:
                 entries_stacked.append(entries_combo)
 
         entries_array = (
-            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
         )
 
         return entries_array.astype(bool), param_combos
@@ -345,7 +353,9 @@ class RsiReversalEntry:
         rsi_filters = param_grid.get("rsi_trend_filter", [False])
 
         rsi_lengths = rsi_lengths if isinstance(rsi_lengths, list) else [rsi_lengths]
-        rsi_oversold_vals = rsi_oversold_vals if isinstance(rsi_oversold_vals, list) else [rsi_oversold_vals]
+        rsi_oversold_vals = (
+            rsi_oversold_vals if isinstance(rsi_oversold_vals, list) else [rsi_oversold_vals]
+        )
         rsi_filters = rsi_filters if isinstance(rsi_filters, list) else [rsi_filters]
 
         ema200 = None
@@ -359,7 +369,11 @@ class RsiReversalEntry:
         n_rsi = len(rsi_lengths)
         rsi_vals = _vbt_multi_output_to_tps(rsi_vals, n_time, n_rsi, n_symbols)
 
-        rsi_val_by_key = {"rsi_length": rsi_lengths, "rsi_oversold": rsi_oversold_vals, "rsi_trend_filter": rsi_filters}
+        rsi_val_by_key = {
+            "rsi_length": rsi_lengths,
+            "rsi_oversold": rsi_oversold_vals,
+            "rsi_trend_filter": rsi_filters,
+        }
         rsi_keys = [k for k in param_grid.keys() if k in rsi_val_by_key]
         for k in ("rsi_length", "rsi_oversold", "rsi_trend_filter"):
             if k in rsi_val_by_key and k not in rsi_keys:
@@ -411,7 +425,9 @@ class RsiReversalEntry:
                 entries_stacked.append(entries_combo)
 
         entries_array = (
-            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
         )
 
         return entries_array.astype(bool), param_combos
@@ -486,14 +502,14 @@ class MacdCrossEntry:
             else:
                 entries_combo = np.zeros((n_time, n_symbols), dtype=bool)
 
-            param_combos.append(
-                {"macd_fast": f_v, "macd_slow": s_v, "macd_signal": g_v}
-            )
+            param_combos.append({"macd_fast": f_v, "macd_slow": s_v, "macd_signal": g_v})
             entries_list.append(entries_combo)
 
         entries_stacked = [e.reshape(n_time, -1) if e.ndim == 2 else e for e in entries_list]
         entries_array = (
-            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
         )
         return entries_array.astype(bool), param_combos
 
@@ -556,7 +572,9 @@ class BollingerMeanReversionEntry:
 
         entries_stacked = [e.reshape(n_time, -1) for e in entries_list]
         entries_array = (
-            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
         )
         return entries_array.astype(bool), param_combos
 
@@ -612,7 +630,9 @@ class DonchianBreakoutEntry:
 
         entries_stacked = [e.reshape(n_time, -1) for e in entries_list]
         entries_array = (
-            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
         )
         return entries_array.astype(bool), param_combos
 
@@ -677,7 +697,9 @@ class SupertrendFlipEntry:
 
         entries_stacked = [e.reshape(n_time, -1) for e in entries_list]
         entries_array = (
-            np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
         )
         return entries_array.astype(bool), param_combos
 
@@ -692,7 +714,11 @@ class AtrTrailingExit:
     }
 
     def compute_exits(
-        self, entries: np.ndarray, precomputer: IndicatorPrecomputer, param_grid: dict, n_symbols: int
+        self,
+        entries: np.ndarray,
+        precomputer: IndicatorPrecomputer,
+        param_grid: dict,
+        n_symbols: int,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Generate ATR trailing stop exits (paired per entry block when ATR grid > 1)."""
         n_time, n_cols = entries.shape
@@ -700,7 +726,9 @@ class AtrTrailingExit:
         atr_multipliers = param_grid.get("atr_multiplier", [3.0])
 
         atr_lengths = atr_lengths if isinstance(atr_lengths, list) else [atr_lengths]
-        atr_multipliers = atr_multipliers if isinstance(atr_multipliers, list) else [atr_multipliers]
+        atr_multipliers = (
+            atr_multipliers if isinstance(atr_multipliers, list) else [atr_multipliers]
+        )
 
         close = precomputer.close
         high = precomputer.high
@@ -795,7 +823,9 @@ class AtrTrailingExit:
 
         open_broad = np.tile(open_, (1, n_entry_combos))
         gap_adjusted_stops = np.minimum(open_broad, stops)
-        close_broad = np.tile(close, (1, n_entry_combos)) if close.shape[1] != n_entry_combos else close
+        close_broad = (
+            np.tile(close, (1, n_entry_combos)) if close.shape[1] != n_entry_combos else close
+        )
         price_for_orders = np.where(exits_array, gap_adjusted_stops, close_broad)
 
         return exits_array, stops, price_for_orders
@@ -811,7 +841,11 @@ class FixedStopTakeProfit:
     }
 
     def compute_exits(
-        self, entries: np.ndarray, precomputer: IndicatorPrecomputer, param_grid: dict, n_symbols: int
+        self,
+        entries: np.ndarray,
+        precomputer: IndicatorPrecomputer,
+        param_grid: dict,
+        n_symbols: int,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Generate fixed stop/TP exits with correct per-block (stop, tp) pairing.
 
@@ -887,7 +921,11 @@ class TrailingStopExit:
     }
 
     def compute_exits(
-        self, entries: np.ndarray, precomputer: IndicatorPrecomputer, param_grid: dict, n_symbols: int
+        self,
+        entries: np.ndarray,
+        precomputer: IndicatorPrecomputer,
+        param_grid: dict,
+        n_symbols: int,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Generate trailing stop exits using the Numba-accelerated percentage logic."""
         from ggTrader.indicators.signals import _trailing_stop_long_ohlc_touch_2d_numba
@@ -930,7 +968,9 @@ class TrailingStopExit:
                     spct,
                 )
                 # Fill price logic (gap adjustment)
-                open_ = close.copy()  # Approximating open with close if not available, consistent with other exits
+                open_ = (
+                    close.copy()
+                )  # Approximating open with close if not available, consistent with other exits
                 gap_adj = np.minimum(open_, stops)
                 price_b = np.where(ex, gap_adj, close).astype(np.float64)
 
@@ -986,7 +1026,6 @@ EXIT_PARAM_AXIS_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 
-
 def all_exit_axis_param_keys() -> frozenset[str]:
     """Union of every param key used by any registered exit strategy."""
     keys: set[str] = set()
@@ -1001,7 +1040,9 @@ def foreign_exit_axis_keys(exit_strategy_name: str) -> frozenset[str]:
     return frozenset(k for k in all_exit_axis_param_keys() if k not in active)
 
 
-def filter_strat_params_for_exit(strat_params: dict[str, Any], exit_strategy_name: str) -> dict[str, Any]:
+def filter_strat_params_for_exit(
+    strat_params: dict[str, Any], exit_strategy_name: str
+) -> dict[str, Any]:
     """Drop exit-axis keys not used by the active exit (for superset WFO grids).
 
     When the parameter grid merges axes from every exit in EXIT_TOURNAMENT, the
@@ -1015,12 +1056,16 @@ def filter_strat_params_for_exit(strat_params: dict[str, Any], exit_strategy_nam
 def get_entry_strategy(strategy_name: str, **kwargs: Any) -> Any:
     """Instantiate an entry strategy by name."""
     if strategy_name not in ENTRY_REGISTRY:
-        raise ValueError(f"Unknown entry strategy: {strategy_name}. Available: {list(ENTRY_REGISTRY.keys())}")
+        raise ValueError(
+            f"Unknown entry strategy: {strategy_name}. Available: {list(ENTRY_REGISTRY.keys())}"
+        )
     return ENTRY_REGISTRY[strategy_name](**kwargs)
 
 
 def get_exit_strategy(strategy_name: str, **kwargs: Any) -> Any:
     """Instantiate an exit strategy by name."""
     if strategy_name not in EXIT_REGISTRY:
-        raise ValueError(f"Unknown exit strategy: {strategy_name}. Available: {list(EXIT_REGISTRY.keys())}")
+        raise ValueError(
+            f"Unknown exit strategy: {strategy_name}. Available: {list(EXIT_REGISTRY.keys())}"
+        )
     return EXIT_REGISTRY[strategy_name](**kwargs)

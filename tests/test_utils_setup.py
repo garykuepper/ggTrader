@@ -1,10 +1,12 @@
 """Unit tests for setup and data loading utilities."""
 
-import pytest
-from unittest.mock import MagicMock, patch
-import pandas as pd
+from unittest.mock import patch
+
 import numpy as np
-from ggTrader.utils.setup import load_data_and_setup, build_mover_mask
+import pandas as pd
+import pytest
+
+from ggTrader.utils.setup import build_mover_mask, load_data_and_setup
 
 
 @pytest.fixture

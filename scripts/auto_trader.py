@@ -55,13 +55,15 @@ def run_wfo(symbols: list[str], training_years: int) -> tuple[str | None, str | 
 
         # Find the latest results directory
         results_dir_base = PROJECT_ROOT / "results"
-        pipeline_dirs = sorted(results_dir_base.glob("pipeline_*"), key=lambda x: x.name, reverse=True)
+        pipeline_dirs = sorted(
+            results_dir_base.glob("pipeline_*"), key=lambda x: x.name, reverse=True
+        )
         if not pipeline_dirs:
             return None, None
 
         latest_results_dir = pipeline_dirs[0]
         latest_results = latest_results_dir / "run_results.json"
-        
+
         if not latest_results.exists():
             return None, None
 
@@ -71,16 +73,16 @@ def run_wfo(symbols: list[str], training_years: int) -> tuple[str | None, str | 
             sys.executable,
             "scripts/portfolio_analysis_standalone.py",
             "--results-dir",
-            str(latest_results_dir)
+            str(latest_results_dir),
         ]
         subprocess.run(port_cmd, capture_output=True, text=True, check=True)
-        
+
         weights_path = latest_results_dir / "portfolio_analysis" / "portfolio_weights.json"
         if weights_path.exists():
             return str(latest_results), str(weights_path)
-            
+
         return str(latest_results), None
-        
+
     except subprocess.CalledProcessError as e:
         print(f"ERROR: Subprocess failed: {e.stderr}")
     except Exception as e:

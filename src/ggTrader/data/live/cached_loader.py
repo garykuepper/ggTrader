@@ -169,9 +169,7 @@ class CachedExchangeLoader(LiveExchangeLoader):
                         float(row["low"]) if not pd.isna(row["low"]) else None,
                         float(row["close"]) if not pd.isna(row["close"]) else None,
                         float(row["volume"]) if not pd.isna(row["volume"]) else None,
-                        int(row["trades"])
-                        if "trades" in row and not pd.isna(row["trades"])
-                        else 0,
+                        int(row["trades"]) if "trades" in row and not pd.isna(row["trades"]) else 0,
                     )
                 )
 
@@ -192,9 +190,7 @@ class CachedExchangeLoader(LiveExchangeLoader):
 
         try:
             conn = psycopg2.connect(
-                self.connection_string.replace(
-                    "postgresql+psycopg2://", "postgresql://"
-                )
+                self.connection_string.replace("postgresql+psycopg2://", "postgresql://")
             )
             conn.autocommit = True
             with conn.cursor() as cur:

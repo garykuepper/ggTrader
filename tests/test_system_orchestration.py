@@ -1,11 +1,12 @@
-import pytest
-from unittest.mock import patch, MagicMock
-import pandas as pd
-import numpy as np
 import os
 import shutil
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
+
+import numpy as np
+import pandas as pd
+import pytest
 
 # Standard imports
 import ggTrader.core.orchestrator as orch

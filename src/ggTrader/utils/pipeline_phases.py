@@ -49,10 +49,7 @@ def prepare_config_and_symbols(config: dict) -> dict:
             "or lower --max-symbols."
         )
     symbols = symbols[:max_symbols]
-    print(
-        f"Using top {len(symbols)} symbols: "
-        f"{symbols[:5]}{'...' if len(symbols) > 5 else ''}"
-    )
+    print(f"Using top {len(symbols)} symbols: {symbols[:5]}{'...' if len(symbols) > 5 else ''}")
 
     config = dict(config)
     config["SYMBOLS"] = symbols
@@ -93,9 +90,7 @@ def phase_0_sensitivity_analysis(
     print("\n" + "=" * 100)
     print("PHASE 1: SENSITIVITY ANALYSIS PER STRATEGY")
     print("=" * 100)
-    merged_grids = {
-        name: {**entry_book.get(name, {}), **sens_exit_axes} for name in entry_book
-    }
+    merged_grids = {name: {**entry_book.get(name, {}), **sens_exit_axes} for name in entry_book}
     n_combos = sensitivity_combo_count(merged_grids)
     print(
         f"Active sensitivity book: {n_combos} total grid points across strategies "
@@ -210,6 +205,7 @@ def phase_2_full_data_validation(
     # Actually, we might need to reload it if it's not passed, but usually Phase 1 leaves it.
     # For now, we assume we use the original dates from config.
     from ggTrader.utils.setup import load_data_with_movers
+
     ohlcv, _ = load_data_with_movers(config)
 
     out = run_frozen_params_combined_backtest(
@@ -261,8 +257,7 @@ def phase_3_recent_performance(
     )
     if logger:
         logger.update(
-            f"Phase 3: recent performance {start.date()} .. {end.date()} "
-            f"(CCXT tail={use_ccxt})",
+            f"Phase 3: recent performance {start.date()} .. {end.date()} (CCXT tail={use_ccxt})",
             start_phase=True,
         )
 

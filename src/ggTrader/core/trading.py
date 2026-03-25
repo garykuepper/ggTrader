@@ -78,7 +78,9 @@ class Trading:
 
         for position in list(self.portfolio.positions):
             symbol_data = self.ohlcv_df[position.symbol].loc[self.current_date]
-            price = symbol_data["close"] if isinstance(symbol_data, pd.Series) else symbol_data.iloc[0]
+            price = (
+                symbol_data["close"] if isinstance(symbol_data, pd.Series) else symbol_data.iloc[0]
+            )
             position.update_price(price)
 
             signal_row = self.signals_dict.get(position.symbol).loc[self.current_date]
@@ -162,4 +164,3 @@ if __name__ == "__main__":
     for date in date_range:
         print(f"\nHistorical Movers for {date}")
         screener.print_historical_daily_kraken_by_volume(date)
-

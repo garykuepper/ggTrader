@@ -79,4 +79,3 @@ class Position:
 if __name__ == "__main__":
     pos = Position("BTC", 3, 10000, datetime(2024, 1, 1))
     print(pos.as_dict())
-

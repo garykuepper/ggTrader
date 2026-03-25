@@ -3,9 +3,7 @@
 import os
 import sys
 
-import numpy as np
 import pandas as pd
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -118,11 +116,13 @@ class TestAnalyzeSensitivityResults:
     def test_analyze_sensitivity_with_data(self):
         """Test sensitivity analysis with sample data."""
         # Create a sample sensitivity results DataFrame
-        results_df = pd.DataFrame({
-            "param1": [1, 1, 2, 2, 3, 3],
-            "param2": [10, 20, 10, 20, 10, 20],
-            "Sharpe Ratio": [0.5, 0.7, 0.9, 0.6, 0.4, 0.8],
-        })
+        results_df = pd.DataFrame(
+            {
+                "param1": [1, 1, 2, 2, 3, 3],
+                "param2": [10, 20, 10, 20, 10, 20],
+                "Sharpe Ratio": [0.5, 0.7, 0.9, 0.6, 0.4, 0.8],
+            }
+        )
 
         param_grid = {
             "param1": [1, 2, 3],
@@ -142,10 +142,12 @@ class TestAnalyzeSensitivityResults:
 
     def test_analyze_sensitivity_top_percentile_filtering(self):
         """Test that top_percentile correctly filters values."""
-        results_df = pd.DataFrame({
-            "param1": [1, 1, 2, 2, 3, 3],
-            "Sharpe Ratio": [0.1, 0.2, 0.9, 0.95, 0.5, 0.6],
-        })
+        results_df = pd.DataFrame(
+            {
+                "param1": [1, 1, 2, 2, 3, 3],
+                "Sharpe Ratio": [0.1, 0.2, 0.9, 0.95, 0.5, 0.6],
+            }
+        )
 
         param_grid = {"param1": [1, 2, 3]}
 
@@ -157,11 +159,13 @@ class TestAnalyzeSensitivityResults:
 
     def test_analyze_sensitivity_constant_parameter(self):
         """Test behavior with constant (non-varied) parameter."""
-        results_df = pd.DataFrame({
-            "param1": [1, 1, 1, 1],  # Constant
-            "param2": [10, 20, 10, 20],
-            "Sharpe Ratio": [0.5, 0.7, 0.9, 0.6],
-        })
+        results_df = pd.DataFrame(
+            {
+                "param1": [1, 1, 1, 1],  # Constant
+                "param2": [10, 20, 10, 20],
+                "Sharpe Ratio": [0.5, 0.7, 0.9, 0.6],
+            }
+        )
 
         param_grid = {
             "param1": [1],
@@ -180,11 +184,13 @@ class TestReportGenerator:
     def test_generate_report_creates_file(self, tmp_path):
         """Test that generate_pipeline_report creates a markdown file."""
         sensitivity_results = {
-            "psar_adx": pd.DataFrame({
-                "sar_acceleration": [0.02],
-                "sar_maximum": [0.2],
-                "Sharpe Ratio": [0.75],
-            })
+            "psar_adx": pd.DataFrame(
+                {
+                    "sar_acceleration": [0.02],
+                    "sar_maximum": [0.2],
+                    "Sharpe Ratio": [0.75],
+                }
+            )
         }
 
         wfo_results = {
@@ -232,11 +238,13 @@ class TestReportGenerator:
     def test_report_content_structure(self, tmp_path):
         """Test that report contains expected sections."""
         sensitivity_results = {
-            "psar_adx": pd.DataFrame({
-                "sar_acceleration": [0.02],
-                "sar_maximum": [0.2],
-                "Sharpe Ratio": [0.75],
-            })
+            "psar_adx": pd.DataFrame(
+                {
+                    "sar_acceleration": [0.02],
+                    "sar_maximum": [0.2],
+                    "Sharpe Ratio": [0.75],
+                }
+            )
         }
 
         wfo_results = {
@@ -296,16 +304,20 @@ class TestReportGenerator:
     def test_report_with_multiple_strategies(self, tmp_path):
         """Test report with multiple strategies."""
         sensitivity_results = {
-            "psar_adx": pd.DataFrame({
-                "sar_acceleration": [0.02],
-                "sar_maximum": [0.2],
-                "Sharpe Ratio": [0.75],
-            }),
-            "ema_cross": pd.DataFrame({
-                "ema_fast": [9],
-                "ema_slow": [21],
-                "Sharpe Ratio": [0.68],
-            }),
+            "psar_adx": pd.DataFrame(
+                {
+                    "sar_acceleration": [0.02],
+                    "sar_maximum": [0.2],
+                    "Sharpe Ratio": [0.75],
+                }
+            ),
+            "ema_cross": pd.DataFrame(
+                {
+                    "ema_fast": [9],
+                    "ema_slow": [21],
+                    "Sharpe Ratio": [0.68],
+                }
+            ),
         }
 
         wfo_results = {

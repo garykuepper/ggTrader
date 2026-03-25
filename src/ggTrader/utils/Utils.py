@@ -5,7 +5,6 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import vectorbt as vbt
 from matplotlib.patches import Patch
 from sklearn.model_selection import TimeSeriesSplit
 
@@ -23,9 +22,7 @@ def make_end_anchored_tscv(n_samples: int, n_splits: int, test_ratio: float) -> 
     k = (1 - test_ratio) / test_ratio
     test_size = int(math.floor(n_samples / (n_splits + k)))
     if test_size < 1:
-        raise ValueError(
-            "Not enough samples for the requested n_splits and test_ratio."
-        )
+        raise ValueError("Not enough samples for the requested n_splits and test_ratio.")
 
     max_train_size = max(1, int(round(k * test_size)))
 
@@ -86,7 +83,7 @@ def plot_cv_indices(cv, X, ax, n_splits: int, lw: int = 10) -> None:
 
         # Add descriptive text above each fold bar
         label_text = (
-            f"Fold {ii+1} | "
+            f"Fold {ii + 1} | "
             f"Train: {train_start.strftime('%Y-%m-%d')} ({train_days}d) | "
             f"Test: {test_start.strftime('%Y-%m-%d')} to {test_end.strftime('%Y-%m-%d')} ({test_days}d)"
         )
@@ -137,9 +134,7 @@ def periods_per_year_from_interval(interval: str) -> int:
     return mapping.get(interval, 6 * 365)
 
 
-def reassign_columns_value(
-    stats_df: pd.DataFrame, trial_num: int, level: int = 0
-) -> pd.DataFrame:
+def reassign_columns_value(stats_df: pd.DataFrame, trial_num: int, level: int = 0) -> pd.DataFrame:
     """Replace level-0 column values with trial_num for stacking."""
     new_level_0 = stats_df.columns.levels[level].to_numpy().copy()
     new_level_0[:] = trial_num

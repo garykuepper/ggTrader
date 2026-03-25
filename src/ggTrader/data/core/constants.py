@@ -44,6 +44,8 @@ STABLE_BASES = {
     "CAD",
     "MKR",
     "USDG",
+    "PAXG",
+    "XAUT",
 }
 
 INTERVAL_MAP = {

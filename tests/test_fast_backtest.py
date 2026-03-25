@@ -1,8 +1,9 @@
 """Unit tests for the FastBacktest engine."""
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
+
 from ggTrader.core.fast_backtest import FastBacktest
 
 

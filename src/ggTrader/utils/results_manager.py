@@ -1,7 +1,6 @@
 """Results management and output persistence."""
 
 import json
-import os
 import uuid
 import warnings
 from datetime import datetime

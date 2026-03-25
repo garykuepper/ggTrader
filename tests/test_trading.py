@@ -1,12 +1,13 @@
 """Unit tests for the Trading class."""
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
 import pandas as pd
-import numpy as np
-from ggTrader.core.trading import Trading
+import pytest
+
 from ggTrader.core.portfolio import Portfolio
 from ggTrader.core.position import Position
+from ggTrader.core.trading import Trading
 
 
 @pytest.fixture

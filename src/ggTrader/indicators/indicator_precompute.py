@@ -20,18 +20,14 @@ class PersistentIndicatorCache:
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir, exist_ok=True)
 
-    def get_data_hash(
-        self, high: np.ndarray, low: np.ndarray, close: np.ndarray
-    ) -> str:
+    def get_data_hash(self, high: np.ndarray, low: np.ndarray, close: np.ndarray) -> str:
         """Create a unique hash of the input price data."""
         # Use first and last few points + total sum for speed, or full bytes for safety.
         # Combined bytes of all 3 arrays ensures we don't mix up different assets.
         combined = b"".join([high.tobytes(), low.tobytes(), close.tobytes()])
         return hashlib.sha256(combined).hexdigest()[:16]
 
-    def get_cache_path(
-        self, data_hash: str, indicator_name: str, params: tuple
-    ) -> str:
+    def get_cache_path(self, data_hash: str, indicator_name: str, params: tuple) -> str:
         """Build a stable file path for the cached indicator result."""
         # Param hash handles the combinatorial grid variations (length, etc).
         param_str = hashlib.md5(str(params).encode()).hexdigest()[:8]
@@ -77,9 +73,7 @@ class IndicatorPrecomputer:
 
         # Persistent disk cache
         self._disk_cache = PersistentIndicatorCache()
-        self._data_hash = self._disk_cache.get_data_hash(
-            self.high, self.low, self.close
-        )
+        self._data_hash = self._disk_cache.get_data_hash(self.high, self.low, self.close)
 
     @staticmethod
     def _to_ndarray(x: object) -> np.ndarray:
@@ -88,9 +82,7 @@ class IndicatorPrecomputer:
             return np.asarray(x.values, dtype=np.float64)
         return np.asarray(x, dtype=np.float64)
 
-    def _make_cache_key(
-        self, indicator_name: str, params: dict
-    ) -> tuple[str, Any]:
+    def _make_cache_key(self, indicator_name: str, params: dict) -> tuple[str, Any]:
         """Create a cache key from indicator name and frozen parameters."""
         frozen_params = tuple(sorted(params.items()))
         return (indicator_name, frozen_params)
@@ -107,7 +99,12 @@ class IndicatorPrecomputer:
         out_names = getattr(ind.__class__, "_outputs", [])
         if not out_names and hasattr(ind, "wrapper"):
             # Fallback for some vbt objects or custom wrappers
-            out_names = [k for k in dir(ind) if not k.startswith("_") and isinstance(getattr(ind, k), (pd.Series, pd.DataFrame, np.ndarray))]
+            out_names = [
+                k
+                for k in dir(ind)
+                if not k.startswith("_")
+                and isinstance(getattr(ind, k), (pd.Series, pd.DataFrame, np.ndarray))
+            ]
 
         for out_name in out_names:
             val = getattr(ind, out_name, None)
@@ -144,7 +141,11 @@ class IndicatorPrecomputer:
         sar_maximum_values: list[float] | float = 0.2,
     ) -> Any:
         """Pre-compute PSAR across parameter ranges."""
-        accel = sar_acceleration_values if isinstance(sar_acceleration_values, list) else [sar_acceleration_values]
+        accel = (
+            sar_acceleration_values
+            if isinstance(sar_acceleration_values, list)
+            else [sar_acceleration_values]
+        )
         maxim = sar_maximum_values if isinstance(sar_maximum_values, list) else [sar_maximum_values]
 
         params = {"acceleration": tuple(accel), "maximum": tuple(maxim)}
@@ -195,6 +196,7 @@ class IndicatorPrecomputer:
 
         def custom_adx(high, low, close, length):
             import pandas_ta as ta
+
             h_s = pd.Series(np.asarray(high).flatten())
             l_s = pd.Series(np.asarray(low).flatten())
             c_s = pd.Series(np.asarray(close).flatten())
@@ -211,11 +213,9 @@ class IndicatorPrecomputer:
             return nan_arr, nan_arr, nan_arr
 
         factory = ADXFactory.from_apply_func(custom_adx)
-        
+
         if len(lengths) == 1:
-            adx_ind = factory.run(
-                self.high, self.low, self.close, length=int(lengths[0])
-            )
+            adx_ind = factory.run(self.high, self.low, self.close, length=int(lengths[0]))
         else:
             adx_ind = factory.run(
                 self.high,

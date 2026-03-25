@@ -18,6 +18,7 @@ exclude = [
     ".pytest_cache",
     ".venv",
     "archive",
+    "legacy_archive",
     "__pycache__",
 ]
 

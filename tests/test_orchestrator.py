@@ -1,10 +1,11 @@
 """Unit tests for orchestrators using mocks."""
 
-import pytest
-from unittest.mock import MagicMock, patch
-import pandas as pd
+from unittest.mock import patch
+
 import numpy as np
-import vectorbt as vbt
+import pandas as pd
+import pytest
+
 from ggTrader.core.orchestrator import (
     run_backtest_orchestrator,
     run_sensitivity_orchestrator,

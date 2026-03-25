@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
-import pandas as pd
 
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.signals import _atr_trailing_stop_long_ohlc_touch_2d_numba
@@ -62,7 +59,9 @@ def generate_psar_adx_entries_vectorized(
                 for adx_thresh in adx_thresholds:
                     # Extract PSAR and ADX for this combo
                     # PSAR result shape: (n_time, n_sar_combos, n_symbols) after param_product
-                    sar_idx = sar_accel.index(sar_accel_val) * len(sar_max) + sar_max.index(sar_max_val)
+                    sar_idx = sar_accel.index(sar_accel_val) * len(sar_max) + sar_max.index(
+                        sar_max_val
+                    )
                     if psarl.ndim == 3:
                         psar_close_compare = psarl[:, sar_idx, :] < close
                     else:
@@ -104,7 +103,9 @@ def generate_psar_adx_entries_vectorized(
         else:
             entries_stacked.append(entries_combo)
 
-    entries_array = np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+    entries_array = (
+        np.hstack(entries_stacked) if entries_stacked else np.zeros((n_time, n_symbols), dtype=bool)
+    )
 
     return entries_array.astype(bool), param_combos
 
@@ -191,7 +192,12 @@ def generate_atr_trailing_exits_vectorized(
 
 
 def stop_fill_price_vectorized(
-    exits: np.ndarray, stop_arr: np.ndarray, close: np.ndarray, high: np.ndarray, low: np.ndarray, open_: np.ndarray
+    exits: np.ndarray,
+    stop_arr: np.ndarray,
+    close: np.ndarray,
+    high: np.ndarray,
+    low: np.ndarray,
+    open_: np.ndarray,
 ) -> np.ndarray:
     """Compute fill prices with gap adjustment for stop exits (vectorized).
 

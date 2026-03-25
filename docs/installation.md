@@ -1,116 +1,60 @@
-# Installation & Execution Guide
+## ⚙️ Database Setup (TimescaleDB)
 
-Follow these steps to set up `ggTrader` and run your first backtest.
+`ggTrader` requires a TimescaleDB instance (PostgreSQL with the Timescale extension) to store OHLCV data and research results.
 
-## 🛠️ Installation
+### 1. Installation
 
-### 1. Prerequisites
-
-- **Python 3.8+**
-- **Git**
-- **Virtual Environment** (recommended)
-
-### 2. Clone the Repository
+You can run TimescaleDB natively or via Docker (recommended for isolation):
 
 ```bash
-git clone https://github.com/garykuepper/ggTrader.git
-cd ggTrader
+docker run -d --name ggtrader_db -p 5432:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb:latest-pg16
 ```
 
-### 3. Setup Environment
+### 2. Connection String
 
-Create and activate a virtual environment:
+Update your `.env` file to point to your database:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ggtrader
 ```
 
-Install dependencies in editable mode:
+### 3. Data Preparation
 
-```bash
-pip install -e .
-```
+Once the DB is running, use the `ggt` CLI to initialize and sync data:
 
-**Scripts under `scripts/`** import the `ggTrader` package by name. Run `pip install -e .` from the repo root before executing `python scripts/run_backtest.py` and other entry points (or use `PYTHONPATH=src`, not recommended).
+1. **Check Connectivity**: `python ggt.py db diag`
+2. **Sync Universe**: `python ggt.py ingest --days 180`
+3. **Optimize Storage**: `python ggt.py db compression --enable`
 
-### Console commands
+## 🐳 Docker Deployment (Live Bot)
 
-After `pip install -e .`, the venv exposes these commands (same behavior as `scripts/*.py`): `ggtrader-backtest`, `ggtrader-wfo`, `ggtrader-sensitivity`, `ggtrader-pipeline`, `ggtrader-compare-strategies`, `ggtrader-view-results`, `ggtrader-pipeline-status`, `ggtrader-manage-data`, `ggtrader-manage-db`. Example: `ggtrader-backtest --symbols BTC-USD`.
+If you wish to run the live trading engine in a container while keeping the database on the host:
 
-### 4. GPU Acceleration (Optional but Recommended)
-
-For high-performance backtesting with VectorBT, it is recommended to have a CUDA-enabled GPU and install `cupy`:
-
-```bash
-pip install cupy-cuda13x  # Replace '13x' with your CUDA version (e.g., 11x, 12x)
-```
-
-## ⚙️ Configuration
-
-Copy the `.env.example` file (if provided) to `.env` and fill in your credentials:
-
-```bash
-# Example .env entries
-KRAKEN_API_KEY=your_key
-KRAKEN_SECRET_KEY=your_secret
-DATABASE_URL=postgresql://user:password@localhost:5433/ggtrader
-```
+1. **Configure Compose**: Ensure `docker-compose.yaml` uses `host.docker.internal` as the `DB_HOST`.
+2. **Build & Run**:
+   ```bash
+   docker compose up --build -d
+   ```
 
 ## 🚀 Running ggTrader
 
-### Standard Backtest
-
-Run a backtest using the vectorized `FastBacktest` engine:
-
+### Grand Research (Start Here)
+Execute the parallel research pipeline to find the best assets and strategies:
 ```bash
-python scripts/run_backtest.py
+python ggt.py research --top 50 --workers 5
 ```
 
-### Dynamic Mover Backtest
-
-Test with the top-N daily movers mask for dynamic universe filtering:
-
+### Portfolio Backtest
+Replay the latest research results in a combined simulation:
 ```bash
-python scripts/run_backtest.py --movers 20
+python ggt.py backtest
 ```
 
-Disable the progress bar with `--no-progress` when logging to a file.
-
-### Parameter Optimization
-
-Execute Walk-Forward Optimization to find the most robust parameters:
-
+### Live Trading
+Start the execution loop for automated orders:
 ```bash
-python scripts/run_walk_forward_optimization.py
+python ggt.py trade
 ```
-
-### Sensitivity Analysis
-
-Check the stability of your optimized parameters:
-
-```bash
-python scripts/run_sensitivity_analysis.py
-```
-
-## Docker Compose Setup
-
-### 1. Set up Database
-
-- Run the database container:
-
-     ```bash
-     docker-compose up -d
-     ```
-
-- This starts a TimescaleDB instance on port 5433 with default credentials (`gary_admin`/`your_secure_password`).
-- The application is configured to connect to this instance by default.
-
-## 🐳 External Dependencies
-
-- **PostgreSQL (TimescaleDB)**: Primary database for OHLCV data.
-- **Results DB**: Stores backtest runs and WFO results in Postgres.
-- **VectorBT**: Core backtesting engine (via `FastBacktest`).
 
 ---
 *Back to [README.md](../readme.md)*

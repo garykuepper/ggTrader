@@ -1,6 +1,5 @@
 """Plotting utilities for backtesting and optimization results."""
 
-import os
 import warnings
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
