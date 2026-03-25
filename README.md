@@ -78,5 +78,11 @@ The unified `ggt` CLI is the recommended way to interact with the engine.
    python ggt.py trade --dry-run
    ```
 
+## ⚖️ License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 ---
-*For a detailed walkthrough, refer to the [Unified CLI Guide](docs/UNIFIED_PIPELINE.md) or [Architecture Guide](docs/architecture.md).*
+*Built with ❤️ and powered by **Google Gemini** for advanced algorithmic coding and research optimization.*
+
+For a detailed walkthrough, refer to the [**Unified CLI Guide**](docs/UNIFIED_PIPELINE.md) or [**Architecture Guide**](docs/architecture.md).
