@@ -84,37 +84,37 @@ Maintains a lean project directory by removing old research logs and temporary f
 python ggt.py cleanup --confirm
 ```
 
-The system splits the historical window into a **6-fold sliding window** to ensure parameter robustness:
+The system splits the historical window into a **6-fold sliding window** where each fold moves forward by the exact length of the test period (**Step = Test Length**):
 
 ```mermaid
 gantt
-    title Walk-Forward Folds (Sliding 3-Year Window)
+    title Walk-Forward Folds (Step = Test Length)
     dateFormat  YYYY-MM-DD
     axisFormat  %Y-%m
     
     section Fold 1
-    Train (80%) :active, f1_train, 2023-01-01, 2025-06-01
-    Test (20%)  :crit, f1_test, 2025-06-01, 2025-10-01
+    Train       :active, f1_tr, 2023-01-01, 2025-01-01
+    Test        :crit, f1_ts, 2025-01-01, 2025-04-01
     
     section Fold 2
-    Train (80%) :active, f2_train, 2023-03-01, 2025-08-01
-    Test (20%)  :crit, f2_test, 2025-08-01, 2025-12-01
+    Train       :active, f2_tr, 2023-04-01, 2025-04-01
+    Test        :crit, f2_ts, 2025-04-01, 2025-07-01
     
     section Fold 3
-    Train (80%) :active, f3_train, 2023-05-01, 2025-10-01
-    Test (20%)  :crit, f3_test, 2025-10-01, 2026-02-01
+    Train       :active, f3_tr, 2023-07-01, 2025-07-01
+    Test        :crit, f3_ts, 2025-07-01, 2025-10-01
     
     section Fold 4
-    Train (80%) :active, f4_train, 2023-07-01, 2025-12-01
-    Test (20%)  :crit, f4_test, 2025-12-01, 2026-04-01
+    Train       :active, f4_tr, 2023-10-01, 2025-10-01
+    Test        :crit, f4_ts, 2025-10-01, 2026-01-01
 
     section Fold 5
-    Train (80%) :active, f5_train, 2023-09-01, 2026-02-01
-    Test (20%)  :crit, f5_test, 2026-02-01, 2026-06-01
+    Train       :active, f5_tr, 2024-01-01, 2026-01-01
+    Test        :crit, f5_ts, 2026-01-01, 2026-04-01
 
     section Fold 6
-    Train (80%) :active, f6_train, 2023-11-01, 2026-04-01
-    Test (20%)  :crit, f6_test, 2026-04-01, 2026-08-01
+    Train       :active, f6_tr, 2024-04-01, 2026-04-01
+    Test        :crit, f6_ts, 2026-04-01, 2026-07-01
 ```
 
 Once Phase 1 finishes, the system aggregates the winners into `run_results.json`.
