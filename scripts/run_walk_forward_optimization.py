@@ -147,11 +147,37 @@ def main() -> None:
             save_results=True,
         )
 
+    # Automatic Result Discovery for Phase 2/3 if Phase 1 was skipped
+    if wfo_results is None and args.run_dir:
+        res_json = Path(args.run_dir) / "run_results.json"
+        if res_json.exists():
+                print(
+                    f"Auto-discovered results in {res_json}. Loading for validation phases..."
+                )
+                with open(res_json, "r") as f:
+                    import json
+
+                    raw_data = json.load(f)
+                    # Check different nested versions of per_coin_results
+                    sp = raw_data.get("strategy_parameters", {})
+                    if "per_coin" in sp:
+                        wfo_results = {"per_coin_results": sp["per_coin"]}
+                    else:
+                        # Fallback to metadata or raw if strategy_parameters is flat
+                        wfo_results = {
+                            "per_coin_results": raw_data.get("metadata", {}).get(
+                                "per_coin_results", sp
+                            )
+                        }
+                print(
+                    f"  Loaded results for symbols: "
+                    f"{list(wfo_results['per_coin_results'].keys())}"
+                )
+
     if args.phase2:
         logger.update("Starting full data validation (Phase 2)...")
 
-        # If we skipped Phase 1, but provided a symbols-file with parameters,
-        # we construct a dummy wfo_results for Phase 2.
+        # If we skipped Phase 1, but provided a symbols-file with parameters (legacy behavior)
         if wfo_results is None and args.symbols_file:
             print(f"Loading pre-optimized parameters from {args.symbols_file} for Phase 2...")
             with open(args.symbols_file, "r") as f:

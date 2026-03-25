@@ -70,11 +70,77 @@ class ResultsManager:
     ) -> Path:
         """
         Saves run results to a single JSON file and mirrors to the database.
+        Supports incremental updates if the file already exists.
         """
         if metadata is None:
             metadata = {}
 
-        output_data = {
+        output_path = self.run_dir / "run_results.json"
+
+        # Incremental update: load existing results if present
+        if output_path.exists():
+            try:
+                with open(output_path, "r") as f:
+                    existing_data = json.load(f)
+
+                # Merge strategy parameters (usually per-coin dicts)
+                if "strategy_parameters" in existing_data and isinstance(
+                    existing_data["strategy_parameters"], dict
+                ):
+                    if (
+                        "per_coin" in existing_data["strategy_parameters"]
+                        and "per_coin" in params
+                    ):
+                        existing_data["strategy_parameters"]["per_coin"].update(
+                            params["per_coin"]
+                        )
+                    else:
+                        existing_data["strategy_parameters"].update(params)
+
+                # Merge metrics
+                if "results" in existing_data and isinstance(
+                    existing_data["results"], dict
+                ):
+                    existing_data["results"].update(metrics)
+
+                # Update symbols list in configuration
+                if (
+                    "configuration" in existing_data
+                    and "symbols" in existing_data["configuration"]
+                ):
+                    new_syms = metadata.get("SYMBOLS", [])
+                    current_syms = existing_data["configuration"]["symbols"]
+                    combined = list(set(current_syms) | set(new_syms))
+                    existing_data["configuration"]["symbols"] = combined
+
+                output_data = existing_data
+                output_data["timestamp"] = datetime.now().isoformat()
+            except Exception as e:
+                print(f"Warning: Could not merge existing results in {output_path}: {e}")
+                # Fallback to creating new structure if merge fails
+                output_data = self._build_output_structure(params, metrics, metadata)
+        else:
+            output_data = self._build_output_structure(params, metrics, metadata)
+
+        with open(output_path, "w") as f:
+            json.dump(output_data, f, indent=4)
+
+        self.db_manager.add_run(
+            run_id=self.run_id,
+            run_type=self.script_name,
+            script_name=self.script_name,
+            parameters=params,
+            metadata=output_data["configuration"],
+            metrics=metrics,
+            pipeline_stage=self.pipeline_stage,
+        )
+        self.db_manager.add_metrics(self.run_id, metrics)
+
+        return output_path
+
+    def _build_output_structure(self, params: Dict, metrics: Dict, metadata: Dict) -> Dict:
+        """Constructs the standard results JSON structure."""
+        return {
             "run_id": self.run_id,
             "timestamp": datetime.now().isoformat(),
             "script_name": self.script_name,
@@ -91,23 +157,6 @@ class ResultsManager:
             "strategy_parameters": params,
             "results": metrics,
         }
-
-        output_path = self.run_dir / "run_results.json"
-        with open(output_path, "w") as f:
-            json.dump(output_data, f, indent=4)
-
-        self.db_manager.add_run(
-            run_id=self.run_id,
-            run_type=self.script_name,
-            script_name=self.script_name,
-            parameters=params,
-            metadata=output_data["configuration"],
-            metrics=metrics,
-            pipeline_stage=self.pipeline_stage,
-        )
-        self.db_manager.add_metrics(self.run_id, metrics)
-
-        return output_path
 
     # =========================================================================
     # Deprecated / Simple Persistence
