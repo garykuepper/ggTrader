@@ -46,4 +46,5 @@ results/**/*
 !results/**/plots/*.png
 !results/**/final_report.md
 !results/**/FINAL_WFO_RESEARCH_REPORT.md
+!results/**/research_report.md
 !results/research/*.md

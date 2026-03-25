@@ -213,6 +213,42 @@ def main() -> None:
 
     print("\nRequested WFO phases completed successfully.")
 
+    # Automatic Report Generation (Integration)
+    if args.run_dir and wfo_results:
+        from ggTrader.utils.report_generator import generate_pipeline_report
+
+        print(f"Generating research report in {args.run_dir}...")
+        # Construct final_backtest_results for the reporter
+        # The reporter expects certain keys like 'phase_2_stats' and 'phase_3_stats'
+        # which are already added to wfo_results by the pipeline_phases functions.
+        final_backtest_results = {
+            "final_stats": wfo_results.get("phase_2_stats", {}),
+            "per_coin_final_stats": wfo_results.get("phase_2_per_coin_final_stats", {}),
+            "phase_2_stats": wfo_results.get("phase_2_stats"),
+            "phase_3_stats": wfo_results.get("phase_3_stats"),
+        }
+
+        # Handle sensitivity results if they were loaded/run (Ph0 is usually separate)
+        sensitivity_results = wfo_results.get("sensitivity_results", {})
+
+        try:
+            generate_pipeline_report(
+                sensitivity_results=sensitivity_results,
+                wfo_results=wfo_results,
+                final_backtest_results=final_backtest_results,
+                output_dir=args.run_dir,
+            )
+            # Standardize filename to research_report.md for this script
+            report_src = Path(args.run_dir) / "pipeline_report.md"
+            report_dst = Path(args.run_dir) / "research_report.md"
+            if report_src.exists():
+                if report_dst.exists():
+                    report_dst.unlink()
+                report_src.rename(report_dst)
+                print(f"  >>> Research report: {report_dst}")
+        except Exception as e:
+            print(f"Warning: Failed to generate report: {e}")
+
     if wfo_results and "final_portfolio" in wfo_results:
         pf = wfo_results["final_portfolio"]
         print(
