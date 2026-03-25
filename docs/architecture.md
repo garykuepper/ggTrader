@@ -72,21 +72,56 @@ The project uses a **pluggable strategy framework** for flexible signal generati
 
 This approach respects the volatility diversity of individual cryptocurrencies while maintaining a unified portfolio structure.
 
+### 📊 Optimization Model (WFO)
+
+The system uses a **6-Fold Sliding Window** to ensure that all optimized parameters are robust across multiple market regimes.
+
+```mermaid
+gantt
+    title Walk-Forward Folds (Sliding 3-Year Window)
+    dateFormat  YYYY-MM-DD
+    axisFormat  %Y-%m
+    
+    section Fold 1
+    Train (80%) :active, f1_train, 2023-01-01, 2025-06-01
+    Test (20%)  :crit, f1_test, 2025-06-01, 2025-10-01
+    
+    section Fold 2
+    Train (80%) :active, f2_train, 2023-03-01, 2025-08-01
+    Test (20%)  :crit, f2_test, 2025-08-01, 2025-12-01
+    
+    section Fold 3
+    Train (80%) :active, f3_train, 2023-05-01, 2025-10-01
+    Test (20%)  :crit, f3_test, 2025-10-01, 2026-02-01
+    
+    section Fold 4
+    Train (80%) :active, f4_train, 2023-07-01, 2025-12-01
+    Test (20%)  :crit, f4_test, 2025-12-01, 2026-04-01
+
+    section Fold 5
+    Train (80%) :active, f5_train, 2023-09-01, 2026-02-01
+    Test (20%)  :crit, f5_test, 2026-02-01, 2026-06-01
+
+    section Fold 6
+    Train (80%) :active, f6_train, 2023-11-01, 2026-04-01
+    Test (20%)  :crit, f6_test, 2026-04-01, 2026-08-01
+```
+
 ## Workflows
 
-Executable entry points live under `scripts/`; they require `pip install -e .` from the repo root so the `ggTrader` package resolves.
+The system is controlled via the unified `ggt` CLI. For a detailed command reference, see [**Unified CLI Guide**](UNIFIED_PIPELINE.md).
 
-1. **Single Backtest**: [`scripts/run_backtest.py`](../scripts/run_backtest.py) — optional `--symbols`, `--movers`, `--params`, `--no-progress`.
-2. **Sensitivity**: [`scripts/run_sensitivity_analysis.py`](../scripts/run_sensitivity_analysis.py) — `--no-progress`.
-3. **WFO**: [`scripts/run_walk_forward_optimization.py`](../scripts/run_walk_forward_optimization.py) — `--mode`, `--no-progress`.
-4. **Full pipeline** (per-coin multi-strategy WFO, validation, report): see [**Strategy Pipeline Guide**](strategy_pipeline_guide.md) and [`scripts/run_full_pipeline.py`](../scripts/run_full_pipeline.py).
+1. **Research**: `python ggt.py research` — Orchestrates parallel WFO across the liquid universe.
+2. **Backtest**: `python ggt.py backtest` — Replays results for validation.
+3. **Database**: `python ggt.py db` — Manages TimescaleDB health and maintenance.
+4. **Ingest**: `python ggt.py ingest` — Syncs historical data from Kraken.
 
-For a concise WFO → backtest recipe, see [**Analysis Guide**](analysis_guide.md).
+For a concise WFO → backtest walkthrough, see [**Strategy Execution**](UNIFIED_PIPELINE.md).
 
 ## Legacy Modules
 
-- **Trading Engine** (`trading.py`): Iterative day-by-day simulation with `Portfolio`/`Position` objects. Retained for paper/live trading scenarios but **not used for backtesting or optimization**.
-- **WalkForwardOptimizer** (`optimization.py`): Optuna-based WFO. Archived to `research/archive/`.
+- **Trading Engine** (`trading.py`): Iterative day-by-day simulation. Retained for live trading execution only.
+- **Archive**: All legacy standalone scripts have been moved to `docs/archive/` or deleted in favor of the unified `ggt` CLI.
 
 ## 🔄 Data Flow
 

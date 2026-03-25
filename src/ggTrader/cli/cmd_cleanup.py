@@ -22,6 +22,11 @@ def register_cleanup_parser(subparsers: argparse._SubParsersAction):
         help="Also clear the archive/ folder of old legacy code",
     )
     parser.add_argument(
+        "--data",
+        action="store_true",
+        help="Purge historical asset pool JSON files in data/",
+    )
+    parser.add_argument(
         "--confirm",
         action="store_true",
         help="Explicit confirmation required to delete files",
@@ -91,7 +96,23 @@ def run_cleanup(args: argparse.Namespace):
                 except Exception as e:
                     print(f"    - Error deleting {item.name}: {e}")
 
-    # 4. Archive Cleanup (Legacy Code)
+    # 4. Data/ Folder Cleanup
+    if args.data:
+        data_dir = root / "data"
+        if data_dir.exists():
+            print("  > Purging historical asset pools in data/...")
+            # Keep top_50_ccxt_volume.json and other system files
+            keep_list = [".processed_dirs.json", "top_50_ccxt_volume.json"]
+            for f in data_dir.glob("*.json"):
+                if f.name not in keep_list:
+                    try:
+                        f.unlink()
+                    except Exception as e:
+                        print(f"    - Error deleting {f.name}: {e}")
+        else:
+            print("  ! Data directory not found. Skipping.")
+
+    # 5. Archive Cleanup (Legacy Code)
     if args.archive:
         archive_dir = root / "archive"
         if archive_dir.exists():

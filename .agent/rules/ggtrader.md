@@ -140,6 +140,13 @@ Results, asset pools, and backtest metrics must follow these directory and namin
 - **Fail Fast**: Data loading functions (like `load_data_and_setup`) must raise descriptive `ValueError` or `FileNotFoundError` exceptions if inputs are missing.
 - **No None-Returns**: Avoid returning `None` from functions that are expected to return iterables (DataFrames, lists) to prevent "NoneType is not iterable" errors. Handle empty data by returning empty structures or raising exceptions.
 
+## 5. Documentation Standards
+
+- **Single Source of Truth**: Core architectural changes (e.g., database transitions, new CLI commands) must be reflected across all documentation in `docs/` and `README.md`.
+- **CLI Alignment**: Whenever the `ggt` CLI is updated (e.g., new subcommands), corresponding guides in `docs/UNIFIED_PIPELINE.md` must be updated immediately.
+- **Cross-Linking**: All guides must maintain relative links to each other to ensure easy navigation within the repository.
+- **Periodic Review**: Documentation must be audited after major refactors to purge references to archived scripts or legacy modules.
+
 ## 5. Backtesting Architecture
 
 - **FastBacktest** is the only engine for backtesting, sensitivity analysis, and WFO.

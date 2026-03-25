@@ -84,6 +84,41 @@ Maintains a lean project directory by removing old research logs and temporary f
 python ggt.py cleanup --confirm
 ```
 
+The system splits the historical window into a **6-fold sliding window** to ensure parameter robustness:
+
+```mermaid
+gantt
+    title Walk-Forward Folds (Sliding 3-Year Window)
+    dateFormat  YYYY-MM-DD
+    axisFormat  %Y-%m
+    
+    section Fold 1
+    Train (80%) :active, f1_train, 2023-01-01, 2025-06-01
+    Test (20%)  :crit, f1_test, 2025-06-01, 2025-10-01
+    
+    section Fold 2
+    Train (80%) :active, f2_train, 2023-03-01, 2025-08-01
+    Test (20%)  :crit, f2_test, 2025-08-01, 2025-12-01
+    
+    section Fold 3
+    Train (80%) :active, f3_train, 2023-05-01, 2025-10-01
+    Test (20%)  :crit, f3_test, 2025-10-01, 2026-02-01
+    
+    section Fold 4
+    Train (80%) :active, f4_train, 2023-07-01, 2025-12-01
+    Test (20%)  :crit, f4_test, 2025-12-01, 2026-04-01
+
+    section Fold 5
+    Train (80%) :active, f5_train, 2023-09-01, 2026-02-01
+    Test (20%)  :crit, f5_test, 2026-02-01, 2026-06-01
+
+    section Fold 6
+    Train (80%) :active, f6_train, 2023-11-01, 2026-04-01
+    Test (20%)  :crit, f6_test, 2026-04-01, 2026-08-01
+```
+
+Once Phase 1 finishes, the system aggregates the winners into `run_results.json`.
+
 ## 🏗️ The 4-Phase Lifecycle
 
 The system is designed to run autonomously, typically within a Docker environment.
