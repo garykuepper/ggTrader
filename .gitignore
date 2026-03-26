@@ -42,6 +42,7 @@ results/**/*
 !results/**/
 !results/**/run_results.json
 !results/**/portfolio_weights.json
+!results/**/phase_stats.json
 !results/**/plots/
 !results/**/plots/*.png
 !results/**/final_report.md

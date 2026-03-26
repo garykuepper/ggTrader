@@ -1,0 +1,108 @@
+# Trading Strategy Pipeline Report
+
+**Generated**: 2026-03-26 07:09:29
+
+## Executive Summary
+
+| | Phase 2 (full range) | Phase 3 (1-year) |
+|-|---------------------|----------|
+| Strategy CAGR | 19.33% | 1.22% |
+| BTC CAGR | 74.01% | 0.00% |
+| S&P 500 CAGR | 23.37% | 16.32% |
+| Strategy Sharpe | 1.71 | 0.28 |
+| Max Drawdown | -7.33% | -11.25% |
+| Coins analyzed | 5 | 5 |
+
+## Phase 2: Result Validation (Full Data)
+
+### Combined Portfolio Performance (Full-Range Backtest)
+
+| Metric | Strategy | BTC (buy & hold) | S&P 500 (SPY) | Excess vs BTC |
+|--------|----------|------------------|---------------|---------------|
+| Backtest period | 2023-01-01 -> 2025-12-30 | - | - | - |
+| Total Return | 69.85% | 426.04% | 87.67% | - |
+| CAGR | 19.33% | 74.01% | 23.37% | -54.68% |
+| Sharpe Ratio | 1.7086 | 1.4255 | 1.4446 | - |
+| Max Drawdown | -7.33% | -34.46% | -18.76% | - |
+| Total Trades | 104 | 1 | 1 | - |
+| Win Rate | 49.04% | - | - | - |
+
+## Phase 3: Recent Performance (Past Year)
+
+Combined portfolio replay on the **recent-only** window using the same entry/exit/params chosen by WFO (no re-optimization).
+
+| Metric | Strategy | BTC (buy & hold) | S&P 500 (SPY) | Excess vs BTC |
+|--------|----------|------------------|---------------|---------------|
+| Backtest period | 2025-03-26 -> 2026-03-26 | - | - | - |
+| Total Return | 1.22% | 0.00% | 16.31% | - |
+| CAGR | 1.22% | 0.00% | 16.32% | 1.22% |
+| Sharpe Ratio | 0.2835 | n/a | 1.0029 | - |
+| Max Drawdown | -11.25% | 0.00% | -12.68% | - |
+| Total Trades | 39 | 0 | 1 | - |
+| Win Rate | 30.77% | - | - | - |
+
+## Phase 1: Per-Coin Strategy Selection (From WFO)
+
+Best performing strategy per coin based on robustness scores.
+
+| Symbol | Strategy | Selection | Robustness Score |
+|--------|----------|-----------|------------------|
+| TAO-USD | psar_adx | wfo_robustness | 0.5331 |
+| ETH-USD | rsi_reversal | wfo_robustness | 0.6446 |
+| BTC-USD | psar_adx | wfo_robustness | 0.5259 |
+| SOL-USD | rsi_reversal | wfo_robustness | 0.7118 |
+| XRP-USD | psar_adx | wfo_robustness | 0.7796 |
+
+### WFO Out-of-Sample Sharpe — Per Fold Breakdown
+
+Per-fold OOS Sharpe for each coin's winning strategy. Negative values indicate the strategy did not generalise in that fold.
+
+| Symbol | Strategy+Exit | IS Rob | OOS Rob | Consistency | Fold 1 | Fold 2 | Fold 3 | Fold 4 | Fold 5 | Fold 6 |
+|--------|---------------|--------|---------|-------------|--------|--------|--------|--------|--------|--------|
+| TAO-USD | psar_adx+atr_trailing | 1.7585 | -0.2353 | 40% | -3.110 | 0.251 | -0.315 | 0.228 | -0.075 | n/a |
+| ETH-USD | rsi_reversal+fixed_sl_tp | 2.8639 | -0.6539 | 17% | -0.227 | -0.256 | -0.817 | -4.349 | 2.003 | -1.049 |
+| BTC-USD | psar_adx+fixed_sl_tp | 2.4192 | -0.8414 | 33% | -1.629 | 0.326 | -0.043 | 0.144 | -2.968 | -0.928 |
+| SOL-USD | rsi_reversal+atr_trailing | 2.4396 | -0.5415 | 50% | 0.233 | -0.253 | 0.827 | -1.164 | 0.222 | -2.128 |
+| XRP-USD | psar_adx+trailing_stop | 1.8961 | 0.1829 | 50% | -1.393 | 1.010 | 3.752 | -0.122 | 1.471 | -2.423 |
+
+## Final Full-Period Performance (Per-Coin)
+
+Performance metrics from running WFO-selected parameters on full-range data.
+
+| Symbol | Strategy | Selection | Return % | Sharpe | Max DD % | Trades | Win Rate % |
+|--------|----------|-----------|----------|--------|----------|--------|-----------|
+| BTC-USD | psar_adx | wfo_robustness | 6.44% | 0.8881 | -3.96% | 18 | 55.56% |
+| ETH-USD | rsi_reversal | wfo_robustness | -1.78% | -0.3010 | -5.48% | 37 | 35.14% |
+| SOL-USD | rsi_reversal | wfo_robustness | 38.71% | 1.5904 | -4.83% | 16 | 62.50% |
+| TAO-USD | psar_adx | wfo_robustness | 22.57% | 1.0843 | -4.72% | 13 | 61.54% |
+| XRP-USD | psar_adx | wfo_robustness | -0.04% | 0.0013 | -4.19% | 20 | 50.00% |
+
+## Methodology
+
+### Phase 1: Per-Coin Multi-Strategy WFO
+- Walk-Forward Optimization with configurable folds and train/test ratio
+- Each coin optimized independently across all (entry, exit) strategy combos
+- Best strategy selected per coin based on blended IS+OOS robustness score
+
+### Phase 2: Result Validation (Full Data)
+- WFO-selected strategy + parameters applied to full data range per coin
+- Per-coin results combined into single portfolio with shared capital
+
+### Phase 3: Recent Performance (Past Year)
+- Frozen parameters replayed on the most recent 1-year window (no re-opt)
+- Provides an out-of-sample check on the most recent market conditions
+
+### Benchmarks
+- **BTC (buy & hold)**: equal-weight buy-and-hold on the strategy's coin universe, first-bar entry and last-bar exit per leg — crypto baseline
+- **S&P 500 (SPY)**: SPY buy-and-hold over the same calendar window via yfinance — traditional-finance baseline
+- **CAGR**: geometric annualized return computed from total return over the calendar span between the first and last bar of the combined close matrix
+
+## Plots
+
+### Combined Portfolio Final Dashboard
+
+![Combined Portfolio Final Dashboard](plots/combined_portfolio_final_dashboard.png)
+
+---
+
+*Report generated by ggTrader Pipeline*
