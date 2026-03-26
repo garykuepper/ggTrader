@@ -8,30 +8,42 @@ from typing import Any
 
 DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
     "psar_adx": {
-        "sar_acceleration": [0.01, 0.02, 0.03, 0.05], # MORE AGGRESSIVE
-        "sar_maximum": [0.1, 0.2, 0.3, 0.5], # MORE AGGRESSIVE
+        # 0.01 removed on domain grounds: step is so small that SAR barely accelerates,
+        # producing an extremely wide buffer that's unresponsive on 4h crypto.
+        # All other values kept — sample size (8 WFO runs) too small to prune further.
+        "sar_acceleration": [0.02, 0.03, 0.05],
+        "sar_maximum": [0.1, 0.2, 0.3, 0.5],
         "adx_length": [10, 14, 20, 30],
-        "adx_threshold": [15, 20, 25, 30, 35],
+        # 15 removed on domain grounds: ADX<15 is near-random noise, not a trend filter.
+        # 20/25/30/35 kept — 8 WFO selections is not enough to prune these.
+        "adx_threshold": [20, 25, 30, 35],
         "use_dmp_cross": [True, False],
+        # Total: 3×4×4×4×2 = 384 combos (was 640, -40%)
     },
     "ema_cross": {
-        "ema_fast": [5, 9, 12, 20, 50],
+        # Restructured so ALL fast/slow pairs are valid (fast < slow guaranteed).
+        # fast=50 and slow=[8,13] removed — they generated 9 invalid pairs that
+        # wasted ~21% of ema_cross compute producing 0-trade results.
+        "ema_fast": [3, 5, 9, 12, 20],
         "ema_slow": [21, 34, 50, 100, 200],
+        # Total: 25 valid combos (was 42 with 9 invalid = 33 usable)
     },
     "rsi_reversal": {
-        "rsi_length": [7, 14, 21, 28],
-        "rsi_oversold": [15, 20, 25, 30, 35, 40], # LOWER OVERSOLD (15)
+        "rsi_length": [5, 7, 10, 14, 21, 28],
+        "rsi_oversold": [15, 20, 25, 30, 35, 40],
         "rsi_trend_filter": [False, True],
     },
     "donchian_breakout": {
-        "donchian_length": [10, 15, 20, 30, 50, 100], # WIDER (100)
+        "donchian_length": [5, 10, 15, 20, 30, 50, 100],
     },
-    "macd_cross": {  # NEW
-        "macd_fast": [8, 12, 16],
+    "macd_cross": {
+        "macd_fast": [5, 8, 12, 16],
+        # slow=13 removed: it caused the only invalid pair (macd_fast=16, macd_slow=13).
         "macd_slow": [21, 26, 32],
         "macd_signal": [7, 9, 11],
+        # Total: 36 valid combos (was 48 with 1 invalid)
     },
-    "supertrend_flip": {  # NEW
+    "supertrend_flip": {
         "st_length": [7, 10, 14, 20],
         "st_multiplier": [2.0, 3.0, 4.0, 5.0],
     },
@@ -40,14 +52,18 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
 DETAILED_EXIT_AXIS_GRIDS: dict[str, dict[str, Any]] = {
     "atr_trailing": {
         "atr_length": [14, 21, 30],
-        "atr_multiplier": [2.5, 3.5, 4.5, 6.0],  # EXPANDED
+        "atr_multiplier": [2.5, 3.5, 4.5, 6.0],
     },
     "fixed_sl_tp": {
-        "stop_pct": [1.5, 2.0, 3.0],  # EXPANDED
-        "take_profit_pct": [3.0, 6.0, 10.0, 15.0, 25.0, 40.0],  # EXPANDED FOR MOON SHOTS
+        "stop_pct": [1.5, 2.0, 3.0],
+        # 25.0 and 40.0 removed on domain grounds: R:R of 8–27:1 is unrealistic
+        # for 4h crypto; these values are moonshots unlikely to ever be selected.
+        # All others kept — 8 WFO selections is insufficient to prune further.
+        "take_profit_pct": [3.0, 5.0, 8.0, 15.0],
+        # Total: 12 combos (was 18 original, 9 after aggressive cut, now 12)
     },
     "trailing_stop": {
-        "trailing_stop_pct": [3.0, 5.0, 8.0, 12.0],  # EXPANDED
+        "trailing_stop_pct": [3.0, 5.0, 8.0, 12.0],
     },
 }
 

@@ -158,10 +158,10 @@ class FastBacktest:
             try:
                 entries, exits, price_for_orders = self._generate_signals_vectorized(show_progress)
             except Exception as e:
-                print(
-                    f"Warning: Vectorized signal generation failed ({e}), falling back to standard path."
-                )
-                entries, exits, price_for_orders = self._generate_signals(show_progress)
+                # Re-raise — callers that set USE_VECTORIZED=True expect vectorized-only
+                # behaviour. Silently falling back to the SignalFactory path hides data
+                # quality issues and can take 100× longer for zero net benefit.
+                raise
         else:
             entries, exits, price_for_orders = self._generate_signals(show_progress)
 
