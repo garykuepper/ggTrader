@@ -129,6 +129,7 @@ def main() -> None:
 
     logger = StatusLogger(logger_path)
     wfo_results = None
+    effective_run_dir = args.run_dir  # may be updated after Phase 1
 
     if args.phase1:
         logger.update("Starting isolated multi-strategy WFO (Phase 1)...")
@@ -146,6 +147,10 @@ def main() -> None:
             logger=logger,
             save_results=True,
         )
+        # Pick up the auto-created run directory from ResultsManager when --run-dir not given
+        rm = wfo_results.get("results_manager")
+        if rm is not None and effective_run_dir is None:
+            effective_run_dir = str(rm.run_dir)
 
     # Automatic Result Discovery for Phase 2/3 if Phase 1 was skipped
     if wfo_results is None and args.run_dir:
@@ -214,10 +219,10 @@ def main() -> None:
     print("\nRequested WFO phases completed successfully.")
 
     # Automatic Report Generation (Integration)
-    if args.run_dir and wfo_results:
+    if effective_run_dir and wfo_results:
         from ggTrader.utils.report_generator import generate_pipeline_report
 
-        print(f"Generating research report in {args.run_dir}...")
+        print(f"Generating research report in {effective_run_dir}...")
         # Construct final_backtest_results for the reporter
         # The reporter expects certain keys like 'phase_2_stats' and 'phase_3_stats'
         # which are already added to wfo_results by the pipeline_phases functions.
@@ -232,20 +237,49 @@ def main() -> None:
         sensitivity_results = wfo_results.get("sensitivity_results", {})
 
         try:
+            # Persist phase stats so the report can be regenerated without re-running backtests
+            import json as _json
+
+            def _serializable(obj):
+                """Recursively convert non-JSON-serializable types."""
+                import numpy as np
+                if isinstance(obj, dict):
+                    return {k: _serializable(v) for k, v in obj.items()}
+                if isinstance(obj, list):
+                    return [_serializable(v) for v in obj]
+                if isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
+                    return None
+                if isinstance(obj, (np.integer,)):
+                    return int(obj)
+                if isinstance(obj, (np.floating,)):
+                    return float(obj)
+                if isinstance(obj, (np.bool_,)):
+                    return bool(obj)
+                return obj
+
+            phase_stats_path = Path(effective_run_dir) / "phase_stats.json"
+            with open(phase_stats_path, "w") as _f:
+                _json.dump(_serializable(final_backtest_results), _f, indent=2, default=str)
+
             generate_pipeline_report(
                 sensitivity_results=sensitivity_results,
                 wfo_results=wfo_results,
                 final_backtest_results=final_backtest_results,
-                output_dir=args.run_dir,
+                output_dir=effective_run_dir,
             )
             # Standardize filename to research_report.md for this script
-            report_src = Path(args.run_dir) / "pipeline_report.md"
-            report_dst = Path(args.run_dir) / "research_report.md"
+            report_src = Path(effective_run_dir) / "pipeline_report.md"
+            report_dst = Path(effective_run_dir) / "research_report.md"
             if report_src.exists():
                 if report_dst.exists():
                     report_dst.unlink()
                 report_src.rename(report_dst)
                 print(f"  >>> Research report: {report_dst}")
+            # Print dashboard link if available
+            plots_dir = Path(effective_run_dir) / "plots"
+            if plots_dir.exists():
+                for png in sorted(plots_dir.glob("*.png")):
+                    print(f"  >>> Plot: {png}")
         except Exception as e:
             print(f"Warning: Failed to generate report: {e}")
 

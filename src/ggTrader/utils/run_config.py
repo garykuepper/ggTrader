@@ -143,4 +143,23 @@ def full_pipeline_config() -> dict[str, Any]:
         # OOS robustness blend: 0.0 = pure IS robustness (original behaviour),
         # 1.0 = pure OOS Sharpe gate, 0.5 = equal blend (default).
         "OOS_ROBUSTNESS_BLEND_ALPHA": 0.5,
+        # --- Anti-overfitting scoring improvements (zero extra compute) ---
+        # Z-score normalize composite metric components before blending so that
+        # Calmar, ProfitFactor, Sharpe and Sortino are all on the same scale.
+        # Set False to restore the original clipped-value blend.
+        "TRAIN_METRIC_NORMALIZE_ZSCORE": True,
+        # CV-based fold stability penalty: penalizes param combos whose IS metric
+        # varies heavily across folds (sign of curve-fitting). 0.0 = disabled,
+        # 0.3 = default (moderate), 1.0 = aggressive penalty.
+        "PARAM_STABILITY_WEIGHT": 0.3,
+        # Apply fold_consistency (fraction of folds with positive OOS Sharpe) as a
+        # soft multiplier on gate_score. Set False to disable.
+        "FOLD_CONSISTENCY_IN_GATE": True,
+        # Floor for the fold_consistency multiplier. 0.5 means a strategy that is
+        # never profitable OOS still keeps 50% of its gate score (soft gate).
+        "FOLD_CONSISTENCY_GATE_FLOOR": 0.5,
+        # Blend weight for the OOS Sharpe-of-Sharpes stability term. Tempers a
+        # single outlier fold from inflating the OOS robustness score.
+        # 0.0 = disabled (pure weighted mean), 0.3 = default.
+        "OOS_STABILITY_WEIGHT": 0.3,
     }

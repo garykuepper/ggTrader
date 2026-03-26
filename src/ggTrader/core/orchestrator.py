@@ -106,14 +106,14 @@ def _trade_counts_for_train_gate(pf: Any, sharpe_series: Any) -> pd.Series:
     raw = pf.trades.count()
     if not isinstance(raw, pd.Series):
         raw = pd.Series([float(raw)])
-    
+
     # If lengths match exactly, assume positional alignment (common in vectorized group runs)
     if len(raw) == len(sh):
         return pd.Series(np.asarray(raw, dtype=float).ravel(), index=sh.index)
-        
+
     if raw.index.equals(sh.index):
         return raw.astype(float)
-        
+
     cols = pf.wrapper.columns
     if isinstance(cols, pd.MultiIndex) and cols.nlevels >= 2 and len(raw) == len(cols):
         per_col = pd.Series(np.asarray(raw, dtype=float).ravel(), index=cols)
@@ -133,14 +133,14 @@ def _open_position_count_end_for_gate(pf: Any, sharpe_series: Any) -> pd.Series:
         return pd.Series(0.0, index=sh.index, dtype=float)
     if not isinstance(raw, pd.Series):
         raw = pd.Series([float(raw)])
-        
+
     # If lengths match exactly, assume positional alignment
     if len(raw) == len(sh):
         return pd.Series(np.asarray(raw, dtype=float).ravel(), index=sh.index)
 
     if raw.index.equals(sh.index):
         return raw.astype(float)
-        
+
     cols = pf.wrapper.columns
     if isinstance(cols, pd.MultiIndex) and cols.nlevels >= 2 and len(raw) == len(cols):
         per_col = pd.Series(np.asarray(raw, dtype=float).ravel(), index=cols)
@@ -181,6 +181,28 @@ def _profit_factor_series(pf_train: Any) -> pd.Series:
     return (raw - 1.0).clip(lower=-3.0, upper=3.0).astype(float)
 
 
+def _zscore_normalize_series(s: pd.Series, eps: float = 1e-8) -> pd.Series:
+    """Z-score normalize a Series across param combos; clip to [-3, 3].
+
+    Guards: returns raw values unchanged when fewer than 2 finite elements or
+    std < eps (all combos have identical metric — normalization meaningless).
+    Non-finite inputs (NaN, inf, -inf) are excluded from mean/std and mapped
+    to NaN in the output — using s.notna() instead of np.isfinite would let
+    inf values contaminate the mean and collapse all z-scores to NaN.
+    """
+    finite_mask = pd.Series(np.isfinite(s.values), index=s.index)
+    if int(finite_mask.sum()) < 2:
+        return s
+    vals = s[finite_mask]
+    mu = float(vals.mean())
+    sigma = float(vals.std(ddof=1))
+    if sigma < eps:
+        return s
+    z = (s - mu).divide(sigma).clip(lower=-3.0, upper=3.0)
+    # Non-finite inputs (NaN/inf) must stay NaN — do not clip inf to ±3.
+    return z.where(finite_mask, other=float("nan"))
+
+
 def _train_metric_series(pf_train: Any, config: Dict[str, Any]) -> pd.Series:
     """In-sample metric Series used to pick best params on the train window."""
     name = str(config.get("TRAIN_METRIC", "sharpe")).lower().strip()
@@ -219,6 +241,13 @@ def _train_metric_series(pf_train: Any, config: Dict[str, Any]) -> pd.Series:
         # profit_factor: (GP/GL - 1), clipped [-3, 3]; NaN → 0 (same as calmar convention).
         pf_s = _profit_factor_series(pf_train).reindex(sh.index)
         pf_fin = pf_s.where(pf_s.notna(), other=0.0)
+        # Z-score each component to put Calmar, ProfitFactor, Sharpe on the same
+        # scale before blending — prevents high-magnitude Calmar values from dominating.
+        if config.get("TRAIN_METRIC_NORMALIZE_ZSCORE", True):
+            sh_f   = _zscore_normalize_series(sh_f)
+            so_f   = _zscore_normalize_series(so_f)
+            ca_fin = _zscore_normalize_series(ca_fin)
+            pf_fin = _zscore_normalize_series(pf_fin)
         m = ws * sh_f + wso * so_f + wc * ca_fin + wpf * pf_fin
         # Preserve NaN for combos where sharpe itself is NaN (no trades / gated out).
         m = m.where(sh_f.notna(), other=float("nan"))
@@ -693,7 +722,8 @@ def _execute_sensitivity_grid(
         eta = remaining_chunks * avg_per_chunk
         chunk_msg = (
             f"Chunk {chunk_idx}/{total_chunks} done in {time.time() - chunk_start:.1f}s "
-            f"| total elapsed {_eta_str(elapsed)} | ETA {_eta_str(eta)} (est. {_wall_clock_eta(eta)})"
+            f"| total elapsed {_eta_str(elapsed)} | ETA {_eta_str(eta)} "
+            f"(est. {_wall_clock_eta(eta)})"
         )
         print(f"  > {chunk_msg}")
         if logger:
@@ -848,6 +878,32 @@ def _process_wfo_fold(
     train_ohlcv = ohlcv.loc[train_idx]
     test_ohlcv = ohlcv.loc[test_idx]
 
+    # Skip folds where the coin has too few real price bars (e.g. newly listed coins).
+    # Newly listed coins have NaN close prices for dates before they existed, while
+    # illiquid-but-real coins still have non-NaN prices. Volume is not used because
+    # low-volume coins on illiquid venues (e.g. Kraken) may have legitimate zero-volume
+    # bars and would be wrongly skipped.
+    _min_fold_bars = int(config.get("MIN_FOLD_BARS", 50))
+    _close_col = next((c for c in ("Close", "close") if c in train_ohlcv.columns), None)
+    if _close_col is not None:
+        _active_bars = int(train_ohlcv[_close_col].notna().sum())
+    else:
+        _active_bars = len(train_ohlcv)
+    if _active_bars < _min_fold_bars:
+        return {
+            "fold_idx": fold_idx,
+            "best_params": {},
+            "oos_sharpe": float("nan"),
+            "oos_return": float("nan"),
+            "profit": float("nan"),
+            "start_capital": float("nan"),
+            "end_capital": float("nan"),
+            "return_pct": float("nan"),
+            "train_metrics": pd.Series(dtype=float),
+            "oos_returns": pd.DataFrame(),
+            "_skipped_insufficient_bars": True,
+        }
+
     train_mask = mover_mask.loc[train_idx] if mover_mask is not None else None
     test_mask = mover_mask.loc[test_idx] if mover_mask is not None else None
 
@@ -865,21 +921,25 @@ def _process_wfo_fold(
         )
         train_metrics_before_gates = train_metrics.copy()
     except Exception as vec_exc:
-        # Graceful fall-back to legacy SignalFactory path.
+        # When the vectorized path fails, skip this fold rather than running the slow
+        # SignalFactory fallback (which takes 100x longer and still produces 0 trades
+        # for data-quality issues like newly listed coins or shape mismatches).
         print(
-            f"  WFO fold {fold_idx}: vectorized train failed ({vec_exc!r}), "
-            "falling back to non-vectorized path."
+            f"  WFO fold {fold_idx}: vectorized train failed ({vec_exc!r}), skipping fold."
         )
-        wfo_config_legacy = {**config, "USE_VECTORIZED": False}
-        train_engine = FastBacktest(
-            train_ohlcv, param_grid, config=wfo_config_legacy, mover_mask=train_mask
-        )
-        pf_train = train_engine.run(show_progress=show_progress)
-        train_metrics = _train_metric_series(pf_train, config)
-        if not isinstance(train_metrics, pd.Series):
-            train_metrics = pd.Series([train_metrics])
-        trade_for_gate = _trade_counts_for_train_gate(pf_train, train_metrics)
-        train_metrics_before_gates = train_metrics.copy()
+        return {
+            "fold_idx": fold_idx,
+            "best_params": {},
+            "oos_sharpe": float("nan"),
+            "oos_return": float("nan"),
+            "profit": float("nan"),
+            "start_capital": float("nan"),
+            "end_capital": float("nan"),
+            "return_pct": float("nan"),
+            "train_metrics": pd.Series(dtype=float),
+            "oos_returns": pd.DataFrame(),
+            "_skipped_vectorized_failure": True,
+        }
 
     # Bear Market check: if Buy & Hold return of the fold is negative.
     try:
@@ -890,33 +950,28 @@ def _process_wfo_fold(
         is_bear_market = False
 
     # Gate: require MIN_CLOSED_TRADES_TRAIN completed round-trips (per combo).
+    # Build a single rejection mask to avoid repeated defensive .copy() calls.
+    nan_mask = pd.Series(False, index=train_metrics.index)
+    zero_mask = pd.Series(False, index=train_metrics.index)
+
     min_closed = config.get("MIN_CLOSED_TRADES_TRAIN", 1)
     if min_closed > 0:
         incomplete_mask = trade_for_gate < min_closed
 
-        # If it's a bear market, we forgive combos that took exactly 0 trades.
-        # They successfully stayed out of a losing market.
+        # If it's a bear market, forgive combos with exactly 0 trades (stayed out).
         if is_bear_market:
             zero_trades_mask = trade_for_gate == 0
             incomplete_mask = incomplete_mask & ~zero_trades_mask
+            zero_mask |= zero_trades_mask
 
-            if zero_trades_mask.any():
-                train_metrics = train_metrics.copy()
-                train_metrics[zero_trades_mask] = 0.0
-
-        if incomplete_mask.any():
-            train_metrics = train_metrics.copy()
-            train_metrics[incomplete_mask] = np.nan
+        nan_mask |= incomplete_mask
 
     # Optional: reject combos with train drawdown deeper than -MAX_TRAIN_DRAWDOWN_PCT%.
     dd_limit = config.get("MAX_TRAIN_DRAWDOWN_PCT")
     if dd_limit is not None:
         try:
             mdd = _max_drawdown_for_train_gate(pf_train, train_metrics)
-            too_deep = mdd < -(float(dd_limit) / 100.0)
-            if too_deep.any():
-                train_metrics = train_metrics.copy()
-                train_metrics[too_deep] = np.nan
+            nan_mask |= mdd < -(float(dd_limit) / 100.0)
         except Exception:
             pass
 
@@ -925,12 +980,17 @@ def _process_wfo_fold(
     if reject_open_lt > 0:
         try:
             open_end = _open_position_count_end_for_gate(pf_train, train_metrics)
-            hold_mask = (open_end > 0) & (trade_for_gate < reject_open_lt)
-            if hold_mask.any():
-                train_metrics = train_metrics.copy()
-                train_metrics[hold_mask] = np.nan
+            nan_mask |= (open_end > 0) & (trade_for_gate < reject_open_lt)
         except Exception:
             pass
+
+    # Apply all gates in one copy
+    if nan_mask.any() or zero_mask.any():
+        train_metrics = train_metrics.copy()
+        if zero_mask.any():
+            train_metrics[zero_mask] = 0.0
+        if nan_mask.any():
+            train_metrics[nan_mask] = np.nan
 
     if train_metrics.isnull().all():
         _print_wfo_fold_all_rejected_diagnostics(
@@ -1010,43 +1070,49 @@ def _weighted_robustness_series(
     if not all_keys:
         return pd.Series(dtype=float)
 
-    union_list = sorted(all_keys, key=lambda t: repr(t))
+    union_list = sorted(all_keys)
     union_idx = pd.Index(union_list, dtype=object)
 
     wvec = np.array([float(weights[fk]) for fk in fold_keys], dtype=float)
     if not np.any(wvec > 0):
         wvec = np.ones(len(fold_keys), dtype=float)
 
-    fold_maps = [{k: float(v) for k, v in flat[fk].items()} for fk in fold_keys]
+    # Build a (n_keys × n_folds) matrix via reindex; NaN where a key is absent in a fold.
+    # Pass union_idx (dtype=object) instead of the raw list — reindexing against a plain
+    # list of tuples triggers pandas MultiIndex.from_tuples(), which crashes on 1-element
+    # tuples (single-param grids like donchian_breakout).
+    n_keys = len(union_list)
+    n_folds = len(fold_keys)
+    mat = np.full((n_keys, n_folds), np.nan, dtype=float)
+    for j, fk in enumerate(fold_keys):
+        s = flat[fk]
+        aligned = s.reindex(union_idx)  # NaN for missing keys
+        mat[:, j] = aligned.to_numpy(dtype=float, copy=False)
 
-    combined = np.empty(len(union_idx), dtype=float)
-    for i, key in enumerate(union_list):
-        num = 0.0
-        den = 0.0
-        for j, fm in enumerate(fold_maps):
-            if key not in fm:
-                continue
-            v = fm[key]
-            if np.isfinite(v):
-                w = float(wvec[j])
-                num += v * w
-                den += w
-        combined[i] = num / den if den > 0.0 else float("nan")
+    # Vectorized weighted mean ignoring NaNs
+    finite_mask = np.isfinite(mat)                          # (n_keys, n_folds)
+    weighted_vals = np.where(finite_mask, mat * wvec, 0.0)  # zero out non-finite
+    weighted_wts  = np.where(finite_mask, wvec, 0.0)        # zero out missing weights
+    den = weighted_wts.sum(axis=1)
+    num = weighted_vals.sum(axis=1)
+    combined = np.where(den > 0.0, num / den, np.nan)
 
     return pd.Series(combined, index=union_idx)
 
 
 def _calculate_oos_robustness(
     oos_metrics_by_fold: Dict[int, float],
+    config: Optional[Dict[str, Any]] = None,
 ) -> Tuple[float, float]:
     """Recency-weighted mean OOS Sharpe and fold consistency fraction.
 
     Args:
         oos_metrics_by_fold: Dict mapping fold index → OOS Sharpe for the winning params.
+        config: Optional run config; reads OOS_STABILITY_WEIGHT (default 0.3).
 
     Returns:
         (oos_robustness_score, fold_consistency)
-        - oos_robustness_score: recency-weighted mean OOS Sharpe (later folds count more).
+        - oos_robustness_score: blend of recency-weighted mean and Sharpe-of-Sharpes stability.
         - fold_consistency: fraction of folds with positive OOS Sharpe (0.0 – 1.0).
     """
     if not oos_metrics_by_fold:
@@ -1064,9 +1130,81 @@ def _calculate_oos_robustness(
     if not mask.any():
         return float("nan"), 0.0
     w_sum = float(weights[mask].sum())
-    oos_rob = float(np.dot(oos_vals[mask], weights[mask]) / w_sum) if w_sum > 0 else float("nan")
+    weighted_mean = (
+        float(np.dot(oos_vals[mask], weights[mask]) / w_sum) if w_sum > 0 else float("nan")
+    )
     fold_cons = float(np.sum(oos_vals[mask] > 0) / int(mask.sum()))
+
+    # OOS stability blend: tempers a single outlier fold from inflating the weighted mean.
+    # oos_stability = mean / (std + 0.5) — a Sharpe-of-Sharpes measure across folds.
+    # The +0.5 damper prevents blow-up when OOS returns are nearly identical across folds.
+    _cfg = config or {}
+    oos_stability_weight = float(_cfg.get("OOS_STABILITY_WEIGHT", 0.3))
+    if oos_stability_weight > 0.0 and int(mask.sum()) >= 2:
+        oos_mean_plain = float(np.mean(oos_vals[mask]))
+        oos_std_plain = float(np.std(oos_vals[mask], ddof=1))
+        oos_stability = oos_mean_plain / (oos_std_plain + 0.5)
+        oos_rob = (
+            (1.0 - oos_stability_weight) * weighted_mean
+            + oos_stability_weight * oos_stability
+        )
+    else:
+        oos_rob = weighted_mean
+
     return oos_rob, fold_cons
+
+
+def _param_cv_series(
+    is_metrics_by_fold: Dict[int, pd.Series],
+) -> pd.Series:
+    """Coefficient of Variation (std / |mean|) per param combo across folds.
+
+    Higher CV = more fold-sensitive = overfitting-prone. Returns NaN for combos
+    with fewer than 2 finite fold values (no penalty applied for those).
+    Uses the same flattened-tuple key scheme as _weighted_robustness_series.
+    """
+    fold_keys = sorted(is_metrics_by_fold.keys())
+    if not fold_keys:
+        return pd.Series(dtype=float)
+
+    flat: Dict[int, pd.Series] = {}
+    for fk in fold_keys:
+        s = is_metrics_by_fold[fk]
+        keys = [_wfo_train_metric_row_key(i) for i in s.index]
+        vals = np.asarray(s, dtype=float).ravel()
+        flat[fk] = pd.Series(vals, index=pd.Index(keys, dtype=object))
+
+    all_keys: set = set()
+    for s in flat.values():
+        all_keys.update(s.index.tolist())
+    if not all_keys:
+        return pd.Series(dtype=float)
+
+    union_list = sorted(all_keys)
+    union_idx = pd.Index(union_list, dtype=object)
+
+    # Build (n_keys × n_folds) matrix; NaN where key absent in a fold.
+    # Use union_idx (dtype=object) to avoid pandas triggering MultiIndex.from_tuples
+    # on 1-element tuples (single-param grids), which raises IndexError.
+    n_keys = len(union_list)
+    n_folds = len(fold_keys)
+    mat = np.full((n_keys, n_folds), np.nan, dtype=float)
+    for j, fk in enumerate(fold_keys):
+        aligned = flat[fk].reindex(union_idx)
+        mat[:, j] = aligned.to_numpy(dtype=float, copy=False)
+
+    # Vectorized CV: std(ddof=1) / (|mean| + eps) per row, NaN if < 2 finite values.
+    finite_counts = np.sum(np.isfinite(mat), axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        row_mean = np.nanmean(mat, axis=1)
+        row_std  = np.nanstd(mat, axis=1, ddof=1)
+    cv_vals = np.where(
+        finite_counts >= 2,
+        row_std / (np.abs(row_mean) + 1e-8),
+        np.nan,
+    )
+
+    return pd.Series(cv_vals, index=union_idx)
 
 
 def _calculate_robustness(
@@ -1075,6 +1213,7 @@ def _calculate_robustness(
     param_grid: Dict[str, Any],
     oos_metrics_by_fold: Optional[Dict[int, float]] = None,
     debug_metrics: bool = False,
+    config: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Calculates parameter robustness validation across folds.
 
@@ -1086,7 +1225,7 @@ def _calculate_robustness(
         is_metrics_by_fold: Dict mapping fold idx to in-sample Sharpe Series (all param combos)
         param_names: List of parameter names
         param_grid: Parameter grid definition
-        oos_metrics_by_fold: Optional dict mapping fold idx to OOS Sharpe (for fold-level consistency)
+        oos_metrics_by_fold: Optional dict mapping fold idx to OOS Sharpe (fold-level consistency)
 
     Returns:
         (robust_top_5, best_robust_params) tuples
@@ -1123,6 +1262,19 @@ def _calculate_robustness(
         weights = {f: float(f) for f in is_metrics_by_fold.keys()}
         robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights)
 
+    # Parameter stability penalty: penalize combos with high fold-to-fold CV.
+    # CV = std / |mean| measures how much a combo's IS metric varies across folds —
+    # high CV indicates the combo is curve-fitting to specific folds rather than
+    # generalizing. The multiplier is 1/(1 + w*CV), so a stable combo (CV≈0) keeps
+    # its full score while an unstable combo (CV=2, w=0.3) loses ~37%.
+    _cfg = config or {}
+    param_stability_weight = float(_cfg.get("PARAM_STABILITY_WEIGHT", 0.3))
+    if param_stability_weight > 0.0 and len(is_metrics_by_fold) >= 2:
+        cv_series = _param_cv_series(is_metrics_by_fold)
+        cv_aligned = cv_series.reindex(robustness_scores.index).fillna(0.0)
+        stability_multiplier = 1.0 / (1.0 + param_stability_weight * cv_aligned)
+        robustness_scores = robustness_scores * stability_multiplier
+
     if debug_metrics:
         for fk, s in sorted(is_metrics_by_fold.items()):
             arr = np.asarray(s, dtype=float).ravel()
@@ -1140,7 +1292,7 @@ def _calculate_robustness(
     if robustness_scores.size == 0:
         return [], {}
 
-    top_robust_idx = robustness_scores.sort_values(ascending=False).head(5)
+    top_robust_idx = robustness_scores.nlargest(5)
     robust_top_5 = []
 
     for idx, score in top_robust_idx.items():
@@ -1325,6 +1477,7 @@ def run_wfo_orchestrator(
         param_grid,
         None,  # Do not punish entire folds based on OOS performance of the single IS winner
         debug_metrics=dbg,
+        config=config,
     )
     if not best_robust_params:
         best_robust_params = _default_params_from_grid(param_grid)
@@ -1438,6 +1591,7 @@ def run_wfo_per_coin_orchestrator(
             param_grid,
             None,  # Do not punish entire folds based on OOS performance of the single IS winner
             debug_metrics=dbg,
+            config=config,
         )
         if not best_robust_params:
             best_robust_params = _default_params_from_grid(param_grid)
@@ -1732,10 +1886,18 @@ def _btc_buy_hold_portfolio_stats(
     if bench_close is None or bench_close.empty:
         return empty
 
+    # Use first/last *valid* (non-NaN) bar so that data-alignment gaps on bar 0
+    # (e.g. when newer coins push the combined index earlier than BTC data starts)
+    # don't silently produce 0-trade, 0-profit results.
+    first_valid = bench_close[bench_symbol].first_valid_index()
+    last_valid = bench_close[bench_symbol].last_valid_index()
+    if first_valid is None or last_valid is None or first_valid >= last_valid:
+        return empty
+
     entries = pd.DataFrame(False, index=bench_close.index, columns=[bench_symbol])
     exits = pd.DataFrame(False, index=bench_close.index, columns=[bench_symbol])
-    entries.iloc[0] = True
-    exits.iloc[-1] = True
+    entries.loc[first_valid] = True
+    exits.loc[last_valid] = True
 
     bench_pf = vbt.Portfolio.from_signals(
         close=bench_close,
@@ -1756,15 +1918,19 @@ def _btc_buy_hold_portfolio_stats(
     cagr = _cagr_percent(profit_pct, years)
 
     try:
-        sh = float(bench_pf.sharpe_ratio())
+        _sh = bench_pf.sharpe_ratio()
+        sh = float(_sh.iloc[0]) if hasattr(_sh, "iloc") else float(_sh)
     except Exception:
         sh = 0.0
+
+    _dd = bench_pf.max_drawdown()
+    _dd_f = float(_dd.iloc[0]) if hasattr(_dd, "iloc") else float(_dd)
 
     return {
         "profit_pct": _as_optional_float(profit_pct),
         "cagr_pct": _as_optional_float(cagr),
         "sharpe": _as_optional_float(sh),
-        "max_drawdown": _as_optional_float(float(bench_pf.max_drawdown()) * 100.0),
+        "max_drawdown": _as_optional_float(_dd_f * 100.0),
         "total_trades": int(bench_pf.trades.count().sum()),
         "benchmark_symbol": bench_symbol,
     }
@@ -1918,40 +2084,44 @@ def run_frozen_params_combined_backtest(
             **config,
             "ENTRY_STRATEGY": strategy_name,
             "EXIT_STRATEGY": exit_name,
-            "USE_VECTORIZED": True,
+            "USE_VECTORIZED": False,  # single-combo run; vectorized gives no benefit here
         }
-        engine = FastBacktest(symbol_ohlcv, best_params, config=config_for_final)
-        engine.run(show_progress=False)
+        try:
+            engine = FastBacktest(symbol_ohlcv, best_params, config=config_for_final)
+            engine.run(show_progress=False)
 
-        close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)
-        entries, exits, _ = engine._generate_signals(show_progress=False)
+            close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)
+            entries, exits, _ = engine._generate_signals(show_progress=False)
 
-        combined_entries_list.append(entries)
-        combined_exits_list.append(exits)
-        combined_close_list.append(close)
+            combined_entries_list.append(entries)
+            combined_exits_list.append(exits)
+            combined_close_list.append(close)
 
-        stats = engine.get_stats()
-        per_coin_final_stats[symbol] = {
-            "strategy": strategy_name,
-            "exit": exit_name,
-            "params": _to_native(best_params),
-            "selection_reason": selection_reason,
-            **stats,
-        }
-        rs_disp = _format_robustness_metric(robustness_score)
-        sel_note = "" if selection_reason == "wfo_robustness" else f" | sel={selection_reason}"
-        phase3_msg = (
-            f"  > {symbol} ({sym_idx}/{n_sym_total}): Best={best_label} | "
-            f"Robustness={rs_disp}{sel_note} | Win Rate={stats['win_rate']:.2f}% | "
-            f"Trades={stats['total_trades']}"
-        )
-        print(phase3_msg)
-        if logger:
-            logger.update(phase3_msg)
+            stats = engine.get_stats()
+            per_coin_final_stats[symbol] = {
+                "strategy": strategy_name,
+                "exit": exit_name,
+                "params": _to_native(best_params),
+                "selection_reason": selection_reason,
+                **stats,
+            }
+            rs_disp = _format_robustness_metric(robustness_score)
+            sel_note = "" if selection_reason == "wfo_robustness" else f" | sel={selection_reason}"
+            phase3_msg = (
+                f"  > {symbol} ({sym_idx}/{n_sym_total}): Best={best_label} | "
+                f"Robustness={rs_disp}{sel_note} | Win Rate={stats['win_rate']:.2f}% | "
+                f"Trades={stats['total_trades']}"
+            )
+            print(phase3_msg)
+            if logger:
+                logger.update(phase3_msg)
+        except Exception as sym_exc:
+            print(f"  [WARN] Skipping {symbol} in combined backtest: {sym_exc!r}")
 
     if not combined_entries_list:
         raise ValueError(
-            "Frozen-params backtest produced no symbols (empty OHLCV or no matching per_coin_results)."
+            "Frozen-params backtest produced no symbols "
+            "(empty OHLCV or no matching per_coin_results)."
         )
 
     combined_entries = pd.concat(combined_entries_list, axis=1)
@@ -2101,7 +2271,8 @@ def run_multi_strategy_per_coin_wfo(
     print(
         f"\nStarting Multi-Strategy Per-Coin WFO "
         f"({n_symbols} symbols, {n_splits} splits, "
-        f"{len(strategy_param_grids)} entries × {len(exit_tournament)} exits = {n_combos} combos)..."
+        f"{len(strategy_param_grids)} entries × "
+        f"{len(exit_tournament)} exits = {n_combos} combos)..."
     )
     print(f"  Exit tournament: {exit_tournament}")
 
@@ -2113,133 +2284,153 @@ def run_multi_strategy_per_coin_wfo(
     for coin_idx, symbol in enumerate(symbols):
         coin_start = time.time()
         print(f"\n--- Optimizing {symbol} ({coin_idx + 1}/{n_symbols}) ---")
+        try:
+            symbol_ohlcv = ohlcv[[symbol]]
+            symbol_mover_mask = mover_mask[[symbol]] if mover_mask is not None else None
 
-        symbol_ohlcv = ohlcv[[symbol]]
-        symbol_mover_mask = mover_mask[[symbol]] if mover_mask is not None else None
-
-        best_strategy: Optional[str] = None
-        best_exit: Optional[str] = None
-        best_robust_score = float("-inf")
-        best_params_for_coin: Dict[str, Any] = {}
-        best_wfo_stats: List[Dict] = []
-        best_robust_top_5: List[Dict] = []
-        best_is_robustness_score: float = float("-inf")
-        best_oos_robustness_score: float = float("nan")
-        best_fold_consistency: float = float("nan")
-        debug_wfo = bool(config.get("WFO_DEBUG_METRICS", False))
-
-        total_combos = len(strategy_param_grids) * len(exit_tournament)
-        combo_idx = 0
-        for strategy_name, param_grid in strategy_param_grids.items():
-            for exit_name in exit_tournament:
-                combo_idx += 1
-                label = f"{strategy_name}+{exit_name}"
-                print(f"  Testing: {label} ({combo_idx}/{total_combos})")
-
-                config_combo = {
-                    **config,
-                    "ENTRY_STRATEGY": strategy_name,
-                    "EXIT_STRATEGY": exit_name,
-                }
-
-                wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
-                    symbol_ohlcv,
-                    symbol_mover_mask,
-                    param_grid,
-                    config_combo,
-                    list(param_grid.keys()),
-                    n_splits,
-                    test_ratio,
-                    show_progress,
-                    logger,
-                )
-
-                oos_metrics_by_fold = {
-                    fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
-                }
-
-                robust_top_5, best_robust_params = _calculate_robustness(
-                    is_metrics_by_fold,
-                    list(param_grid.keys()),
-                    param_grid,
-                    oos_metrics_by_fold,
-                    debug_metrics=debug_wfo,
-                )
-
-                if robust_top_5:
-                    robustness_score = float(robust_top_5[0]["robustness_score"])
-                else:
-                    robustness_score = float("-inf")
-
-                # OOS-direct robustness: recency-weighted mean of per-fold OOS Sharpe.
-                oos_rob_combo, fold_cons_combo = _calculate_oos_robustness(oos_metrics_by_fold)
-                oos_blend_alpha = float(config.get("OOS_ROBUSTNESS_BLEND_ALPHA", 0.5))
-                if np.isfinite(oos_rob_combo) and np.isfinite(robustness_score):
-                    gate_score = (
-                        1.0 - oos_blend_alpha
-                    ) * robustness_score + oos_blend_alpha * oos_rob_combo
-                elif np.isfinite(oos_rob_combo):
-                    gate_score = oos_rob_combo
-                else:
-                    gate_score = robustness_score
-
-                print(
-                    f"    {label} robustness: IS={_format_robustness_metric(robustness_score)} "
-                    f"OOS={_format_robustness_metric(oos_rob_combo)} "
-                    f"gate={_format_robustness_metric(gate_score)} "
-                    f"consistency={fold_cons_combo:.0%}"
-                )
-
-                if _is_better_robustness(gate_score, best_robust_score):
-                    best_robust_score = gate_score
-                    best_strategy = strategy_name
-                    best_exit = exit_name
-                    best_params_for_coin = best_robust_params
-                    best_wfo_stats = wfo_stats
-                    best_robust_top_5 = robust_top_5
-                    best_is_robustness_score = robustness_score
-                    best_oos_robustness_score = oos_rob_combo
-                    best_fold_consistency = fold_cons_combo
-
-        selection_reason = "wfo_robustness"
-        if best_strategy is None or not np.isfinite(best_robust_score):
-            fb_s, fb_e, fb_p = _wfo_per_coin_fallback_triple(strategy_param_grids, exit_tournament)
-            best_strategy = fb_s
-            best_exit = fb_e
-            best_params_for_coin = fb_p
+            best_strategy: Optional[str] = None
+            best_exit: Optional[str] = None
             best_robust_score = float("-inf")
-            best_robust_top_5 = []
-            selection_reason = "fallback_no_finite_robustness"
-            print(
-                f"  WARNING: {symbol} — no finite WFO robustness winner; "
-                f"using fallback {best_strategy}+{best_exit} with first grid values."
+            best_params_for_coin: Dict[str, Any] = {}
+            best_wfo_stats: List[Dict] = []
+            best_robust_top_5: List[Dict] = []
+            best_is_robustness_score: float = float("-inf")
+            best_oos_robustness_score: float = float("nan")
+            best_fold_consistency: float = float("nan")
+            debug_wfo = bool(config.get("WFO_DEBUG_METRICS", False))
+
+            total_combos = len(strategy_param_grids) * len(exit_tournament)
+            combo_idx = 0
+            for strategy_name, param_grid in strategy_param_grids.items():
+                for exit_name in exit_tournament:
+                    combo_idx += 1
+                    label = f"{strategy_name}+{exit_name}"
+                    print(f"  Testing: {label} ({combo_idx}/{total_combos})")
+
+                    config_combo = {
+                        **config,
+                        "ENTRY_STRATEGY": strategy_name,
+                        "EXIT_STRATEGY": exit_name,
+                    }
+
+                    wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
+                        symbol_ohlcv,
+                        symbol_mover_mask,
+                        param_grid,
+                        config_combo,
+                        list(param_grid.keys()),
+                        n_splits,
+                        test_ratio,
+                        show_progress,
+                        logger,
+                    )
+
+                    oos_metrics_by_fold = {
+                        fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
+                    }
+
+                    robust_top_5, best_robust_params = _calculate_robustness(
+                        is_metrics_by_fold,
+                        list(param_grid.keys()),
+                        param_grid,
+                        oos_metrics_by_fold,
+                        debug_metrics=debug_wfo,
+                        config=config,
+                    )
+
+                    if robust_top_5:
+                        robustness_score = float(robust_top_5[0]["robustness_score"])
+                    else:
+                        robustness_score = float("-inf")
+
+                    # OOS-direct robustness: recency-weighted mean of per-fold OOS Sharpe.
+                    oos_rob_combo, fold_cons_combo = _calculate_oos_robustness(
+                        oos_metrics_by_fold, config=config
+                    )
+                    oos_blend_alpha = float(config.get("OOS_ROBUSTNESS_BLEND_ALPHA", 0.5))
+                    if np.isfinite(oos_rob_combo) and np.isfinite(robustness_score):
+                        is_oos_blend = (
+                            1.0 - oos_blend_alpha
+                        ) * robustness_score + oos_blend_alpha * oos_rob_combo
+                    elif np.isfinite(oos_rob_combo):
+                        is_oos_blend = oos_rob_combo
+                    else:
+                        is_oos_blend = robustness_score
+
+                    # Fold consistency soft multiplier: strategies inconsistent across folds
+                    # are penalized. floor=0.5 means the worst case halves the gate score.
+                    use_fc_gate = bool(config.get("FOLD_CONSISTENCY_IN_GATE", True))
+                    fc_floor = float(config.get("FOLD_CONSISTENCY_GATE_FLOOR", 0.5))
+                    if use_fc_gate and np.isfinite(fold_cons_combo):
+                        fc_factor = fc_floor + (1.0 - fc_floor) * fold_cons_combo
+                        gate_score = is_oos_blend * fc_factor
+                    else:
+                        gate_score = is_oos_blend
+
+                    print(
+                        f"    {label} robustness: IS={_format_robustness_metric(robustness_score)} "
+                        f"OOS={_format_robustness_metric(oos_rob_combo)} "
+                        f"gate={_format_robustness_metric(gate_score)} "
+                        f"consistency={fold_cons_combo:.0%}"
+                    )
+
+                    if _is_better_robustness(gate_score, best_robust_score):
+                        best_robust_score = gate_score
+                        best_strategy = strategy_name
+                        best_exit = exit_name
+                        best_params_for_coin = best_robust_params
+                        best_wfo_stats = wfo_stats
+                        best_robust_top_5 = robust_top_5
+                        best_is_robustness_score = robustness_score
+                        best_oos_robustness_score = oos_rob_combo
+                        best_fold_consistency = fold_cons_combo
+
+            selection_reason = "wfo_robustness"
+            if best_strategy is None or not np.isfinite(best_robust_score):
+                fb_s, fb_e, fb_p = _wfo_per_coin_fallback_triple(
+                    strategy_param_grids, exit_tournament
+                )
+                best_strategy = fb_s
+                best_exit = fb_e
+                best_params_for_coin = fb_p
+                best_robust_score = float("-inf")
+                best_robust_top_5 = []
+                selection_reason = "fallback_no_finite_robustness"
+                print(
+                    f"  WARNING: {symbol} — no finite WFO robustness winner; "
+                    f"using fallback {best_strategy}+{best_exit} with first grid values."
+                )
+
+            per_coin_results[symbol] = {
+                "best_strategy": best_strategy,
+                "best_exit": best_exit,
+                "best_params": best_params_for_coin,
+                "robustness_score": best_robust_score,  # blended gate score
+                "is_robustness_score": best_is_robustness_score,
+                "oos_robustness_score": best_oos_robustness_score,
+                "fold_consistency": best_fold_consistency,
+                "wfo_stats": best_wfo_stats,
+                "robust_top_5": best_robust_top_5,
+                "selection_reason": selection_reason,
+            }
+
+            coin_elapsed = time.time() - coin_start
+            total_elapsed = time.time() - t0_wfo_coins
+            avg_per_coin = total_elapsed / (coin_idx + 1)
+            eta = (n_symbols - coin_idx - 1) * avg_per_coin
+            status_msg = (
+                f"  > {symbol} ({coin_idx + 1}/{n_symbols}): WFO complete in {coin_elapsed:.0f}s | "
+                f"ETA {_eta_str(eta)} (est. {_wall_clock_eta(eta)}) "
+                f"(full-range Best / Win Rate printed in Phase 3)"
             )
-
-        per_coin_results[symbol] = {
-            "best_strategy": best_strategy,
-            "best_exit": best_exit,
-            "best_params": best_params_for_coin,
-            "robustness_score": best_robust_score,  # blended gate score
-            "is_robustness_score": best_is_robustness_score,
-            "oos_robustness_score": best_oos_robustness_score,
-            "fold_consistency": best_fold_consistency,
-            "wfo_stats": best_wfo_stats,
-            "robust_top_5": best_robust_top_5,
-            "selection_reason": selection_reason,
-        }
-
-        coin_elapsed = time.time() - coin_start
-        total_elapsed = time.time() - t0_wfo_coins
-        avg_per_coin = total_elapsed / (coin_idx + 1)
-        eta = (n_symbols - coin_idx - 1) * avg_per_coin
-        status_msg = (
-            f"  > {symbol} ({coin_idx + 1}/{n_symbols}): WFO complete in {coin_elapsed:.0f}s | "
-            f"ETA {_eta_str(eta)} (est. {_wall_clock_eta(eta)}) "
-            f"(full-range Best / Win Rate printed in Phase 3)"
-        )
-        print(status_msg)
-        if logger:
-            logger.update(status_msg)
+            print(status_msg)
+            if logger:
+                logger.update(status_msg)
+        except Exception as coin_exc:
+            print(
+                f"  [ERROR] {symbol} failed and will be skipped: {coin_exc!r}\n"
+                f"  Continuing with remaining coins..."
+            )
 
     # Filter out coins that failed to meet the minimum robustness threshold.
     # Set MIN_ROBUSTNESS_SCORE=None in config to disable.
