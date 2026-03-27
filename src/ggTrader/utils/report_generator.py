@@ -113,46 +113,35 @@ def generate_pipeline_report(
     lines.append(f"**Coins:** {n_coins}")
     lines.append("")
     p3_col = "YTD" if p3_stats else "YTD"
-    def _cagr_badge(strat_cagr: Any, btc_cagr: Any, spy_cagr: Any) -> str:
-        """🏆 beats both, 🚀 beats BTC only, 📈 beats S&P only, "" otherwise."""
+    def _beat_emoji(strat_cagr: Any, bench_cagr: Any) -> str:
+        """✅ if strategy CAGR meets or exceeds benchmark, "" otherwise."""
         try:
             s = float(strat_cagr)
-            b = float(btc_cagr) if btc_cagr is not None else None
-            p = float(spy_cagr) if spy_cagr is not None else None
+            b = float(bench_cagr)
         except (TypeError, ValueError):
             return ""
-        beats_btc = b is not None and np.isfinite(b) and np.isfinite(s) and s >= b
-        beats_spy = p is not None and np.isfinite(p) and np.isfinite(s) and s >= p
-        if beats_btc and beats_spy:
-            return " 🏆"
-        if beats_btc:
-            return " 🚀"
-        if beats_spy:
-            return " 📈"
-        return ""
+        return " ✅" if np.isfinite(s) and np.isfinite(b) and s >= b else ""
 
-    p2_badge = _cagr_badge(
-        p2_stats.get("cagr_pct"), p2_stats.get("benchmark_cagr_pct"), p2_stats.get("spy_cagr_pct")
-    )
-    p3_badge = _cagr_badge(
-        p3_stats.get("cagr_pct") if p3_stats else None,
-        p3_stats.get("benchmark_cagr_pct") if p3_stats else None,
-        p3_stats.get("spy_cagr_pct") if p3_stats else None,
-    )
+    p2_strat = p2_stats.get("cagr_pct")
+    p3_strat = p3_stats.get("cagr_pct") if p3_stats else None
 
     lines.append(f"| | WFO Full Range | {p3_col} |")
     lines.append("|-|----------------|--------|")
     lines.append(
-        f"| Strategy CAGR | {_fmt_pct_opt(p2_stats.get('cagr_pct'))}{p2_badge} | "
-        f"{_fmt_pct_opt(p3_stats.get('cagr_pct') if p3_stats else None)}{p3_badge} |"
+        f"| Strategy CAGR | {_fmt_pct_opt(p2_strat)} | "
+        f"{_fmt_pct_opt(p3_strat)} |"
     )
     lines.append(
-        f"| BTC buy & hold CAGR | {_fmt_pct_opt(p2_stats.get('benchmark_cagr_pct'))} | "
-        f"{_fmt_pct_opt(p3_stats.get('benchmark_cagr_pct') if p3_stats else None)} |"
+        f"| BTC buy & hold CAGR | "
+        f"{_fmt_pct_opt(p2_stats.get('benchmark_cagr_pct'))}{_beat_emoji(p2_strat, p2_stats.get('benchmark_cagr_pct'))} | "
+        f"{_fmt_pct_opt(p3_stats.get('benchmark_cagr_pct') if p3_stats else None)}"
+        f"{_beat_emoji(p3_strat, p3_stats.get('benchmark_cagr_pct') if p3_stats else None)} |"
     )
     lines.append(
-        f"| S&P 500 CAGR | {_fmt_pct_opt(p2_stats.get('spy_cagr_pct'))} | "
-        f"{_fmt_pct_opt(p3_stats.get('spy_cagr_pct') if p3_stats else None)} |"
+        f"| S&P 500 CAGR | "
+        f"{_fmt_pct_opt(p2_stats.get('spy_cagr_pct'))}{_beat_emoji(p2_strat, p2_stats.get('spy_cagr_pct'))} | "
+        f"{_fmt_pct_opt(p3_stats.get('spy_cagr_pct') if p3_stats else None)}"
+        f"{_beat_emoji(p3_strat, p3_stats.get('spy_cagr_pct') if p3_stats else None)} |"
     )
     lines.append(
         f"| Strategy Sharpe | {_fmt_float_opt(p2_stats.get('sharpe'), decimals=2)} | "
