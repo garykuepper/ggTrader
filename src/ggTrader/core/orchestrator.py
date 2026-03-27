@@ -2097,7 +2097,17 @@ def _compute_btc_regime_mask(
 
     # Compute EMA over the full (warmup-extended) series, then trim to ohlcv.index.
     btc_ema = btc_series.ewm(span=n_warmup, adjust=False).mean()
-    regime_bull = (btc_series > btc_ema).reindex(ohlcv.index, fill_value=False)
+    regime_raw = btc_series > btc_ema
+
+    # Normalize timezone so reindex matches ohlcv.index (which may be tz-naive).
+    ohlcv_tz = ohlcv.index.tz
+    regime_tz = regime_raw.index.tz
+    if ohlcv_tz is None and regime_tz is not None:
+        regime_raw = regime_raw.tz_convert("UTC").tz_localize(None)
+    elif ohlcv_tz is not None and regime_tz is None:
+        regime_raw = regime_raw.tz_localize("UTC").tz_convert(ohlcv_tz)
+
+    regime_bull = regime_raw.reindex(ohlcv.index, fill_value=False)
     return regime_bull
 
 
