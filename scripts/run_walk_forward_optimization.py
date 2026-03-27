@@ -178,6 +178,11 @@ def main() -> None:
                     f"  Loaded results for symbols: "
                     f"{list(wfo_results['per_coin_results'].keys())}"
                 )
+                # Inject a ResultsManager so Phase 3 can save the YTD dashboard plot
+                from ggTrader.utils.results_manager import ResultsManager
+                wfo_results["results_manager"] = ResultsManager(
+                    explicit_run_dir=args.run_dir
+                )
 
     if args.phase2:
         logger.update("Starting full data validation (Phase 2)...")
