@@ -146,8 +146,13 @@ def full_pipeline_config() -> dict[str, Any]:
         # Applied in Phase 2/3 combined backtest only — WFO fold optimization is unaffected.
         "BTC_REGIME_FILTER": True,
         # Only apply BTC regime filter to coins with BTC return correlation >= this threshold.
-        # Coins below the threshold trade freely regardless of BTC trend.
+        # Coins below the threshold use the altcoin index filter (if enabled) or trade freely.
         "BTC_REGIME_FILTER_MIN_CORRELATION": 0.5,
+        # Altcoin index regime filter: apply an equal-weighted index EMA200 to mid-correlation coins.
+        # Coins with BTC correlation in [ALTCOIN_REGIME_FILTER_CORR_MIN, BTC_REGIME_FILTER_MIN_CORRELATION)
+        # use the altcoin index instead of BTC. Coins below the lower bound trade freely.
+        "ALTCOIN_REGIME_FILTER": True,
+        "ALTCOIN_REGIME_FILTER_CORR_MIN": 0.3,
         # Max fraction of portfolio capital any single coin can receive under OOS-weighted
         # allocation. Prevents over-concentration on a single high-robustness coin.
         "MAX_COIN_ALLOCATION": 0.25,
