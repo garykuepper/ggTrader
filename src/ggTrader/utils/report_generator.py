@@ -161,6 +161,21 @@ def generate_pipeline_report(
                  f"{_fmt_pct_opt(p3_stats.get('win_rate') if p3_stats else None)} |")
     lines.append("")
 
+    # Embed dashboard plots directly in the executive summary
+    plots_dir = output_path / "plots"
+    full_range_plot = plots_dir / "combined_portfolio_final_dashboard.png"
+    ytd_plot = plots_dir / "combined_portfolio_ytd_dashboard.png"
+    if full_range_plot.exists():
+        lines.append("### Full Range Portfolio")
+        lines.append("")
+        lines.append("![Full Range Portfolio](plots/combined_portfolio_final_dashboard.png)")
+        lines.append("")
+    if ytd_plot.exists():
+        lines.append("### YTD Portfolio")
+        lines.append("")
+        lines.append("![YTD Portfolio](plots/combined_portfolio_ytd_dashboard.png)")
+        lines.append("")
+
     def _phase_table(stats: Dict[str, Any]) -> None:
         lines.append(
             "| Metric | Strategy | BTC (buy & hold) | S&P 500 (SPY) | Excess vs BTC |"
@@ -204,12 +219,12 @@ def generate_pipeline_report(
     lines.append("")
     _phase_table(p2_stats)
 
-    # --- Recent Performance ---
+    # --- YTD Performance ---
     lines.append("## YTD Performance")
 
     if p3_stats:
         lines.append(
-            f"**Period: {p3_period}** — same frozen parameters, no re-optimization."
+            f"**Period: {p3_period}** — WFO-selected parameters replayed on the YTD window, no re-optimization."
         )
         lines.append("")
         _phase_table(p3_stats)
@@ -387,18 +402,6 @@ def generate_pipeline_report(
     )
     lines.append("")
 
-    # Plots section — embed any PNG files found in the plots/ subdirectory
-    plots_dir = output_path / "plots"
-    png_files = sorted(plots_dir.glob("*.png")) if plots_dir.exists() else []
-    if png_files:
-        lines.append("## Plots")
-        lines.append("")
-        for png in png_files:
-            title = png.stem.replace("_", " ").title()
-            lines.append(f"### {title}")
-            lines.append("")
-            lines.append(f"![{title}](plots/{png.name})")
-            lines.append("")
 
     lines.append("---")
     lines.append("")

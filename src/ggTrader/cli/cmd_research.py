@@ -273,8 +273,8 @@ def run_research(args: argparse.Namespace):
     # Step 3: Global Validation & Recent Data Performance
     # We now run Phase 2 & 3 ONCE using the accumulated results dir
     print(
-        f"\n[{datetime.now()}] Step 3: Initiating Global Logic Validation (Phase 2) "
-        "and Recent Performance (Phase 3)..."
+        f"\n[{datetime.now()}] Step 3: Initiating Full Training/Test Validation (Phase 2) "
+        "and YTD Performance (Phase 3)..."
     )
     # The run_walk_forward_optimization.py script knows how to find its own results 
     # if we point it to the same run-dir and symbols-file.

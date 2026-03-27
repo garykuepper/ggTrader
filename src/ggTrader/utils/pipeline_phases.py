@@ -214,8 +214,8 @@ def phase_2_full_data_validation(
         config,
         exit_tournament=exit_tournament,
         save_results=False,
-        phase_title="PHASE 2: FINAL VALIDATION (FULL 3-YEAR RANGE)",
-        combined_portfolio_label="Phase 2 - combined portfolio vs Buy & Hold",
+        phase_title="PHASE 2: RESULT VALIDATION (FULL TRAINING/TEST RANGE)",
+        combined_portfolio_label="Phase 2 - full training/test range combined portfolio vs Buy & Hold",
         logger=logger,
     )
     wfo_results["phase_2_stats"] = out["final_stats"]
@@ -229,7 +229,7 @@ def phase_3_recent_performance(
     wfo_results: dict,
     logger: StatusLogger | None = None,
 ) -> None:
-    """Phase 3: Run best WFO parameters on the most recent 1-year data and compare to B&H."""
+    """Phase 3: Run best WFO parameters on the YTD window and compare to B&H."""
     import pandas as pd
 
     from ggTrader.utils.setup import load_hybrid_validation_ohlcv
@@ -257,7 +257,7 @@ def phase_3_recent_performance(
     )
     if logger:
         logger.update(
-            f"Phase 3: recent performance {start.date()} .. {end.date()} (CCXT tail={use_ccxt})",
+            f"Phase 3: YTD performance {start.date()} .. {end.date()} (CCXT tail={use_ccxt})",
             start_phase=True,
         )
 
@@ -277,11 +277,18 @@ def phase_3_recent_performance(
         config,
         exit_tournament=exit_tournament,
         save_results=False,
-        phase_title="PHASE 3: RECENT PERFORMANCE (PAST YEAR)",
-        combined_portfolio_label="Phase 3 - recent window combined portfolio vs Buy & Hold",
+        phase_title="PHASE 3: YEAR-TO-DATE PERFORMANCE",
+        combined_portfolio_label="Phase 3 - YTD combined portfolio vs Buy & Hold",
         logger=logger,
     )
     wfo_results["phase_3_stats"] = out["final_stats"]
     wfo_results["phase_3_per_coin_final_stats"] = out["per_coin_final_stats"]
+
+    # Save YTD dashboard plot alongside the full-range one
+    rm = wfo_results.get("results_manager")
+    ytd_pf = out.get("final_portfolio")
+    if rm is not None and ytd_pf is not None:
+        rm.save_vbt_dashboard(ytd_pf, "combined_portfolio_ytd_dashboard")
+
     if logger:
-        logger.phase_done("Phase 3 (Recent performance)")
+        logger.phase_done("Phase 3 (YTD performance)")
