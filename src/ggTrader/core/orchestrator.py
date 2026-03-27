@@ -2141,6 +2141,28 @@ def run_frozen_params_combined_backtest(
         elif bench_symbol in ohlcv.columns.get_level_values(0):
             btc_raw = ohlcv[[bench_symbol]].xs("close", axis=1, level=1, drop_level=True)
             btc_series = btc_raw.reindex(combined_close.index, method="ffill").iloc[:, 0]
+        else:
+            # Worker doesn't have BTC in its coin batch — load from DB (same path as benchmark).
+            try:
+                from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
+                loader = TimescaleDBLoader()
+                start = pd.to_datetime(combined_close.index[0])
+                end = pd.to_datetime(combined_close.index[-1])
+                if start.tz is None:
+                    start = start.tz_localize("UTC")
+                if end.tz is None:
+                    end = end.tz_localize("UTC")
+                btc_ohlcv = loader.fetch_ohlcv(
+                    symbols=[bench_symbol],
+                    interval=config.get("INTERVAL", "4h"),
+                    start_date=start,
+                    end_date=end,
+                )
+                if not btc_ohlcv.empty:
+                    btc_raw = btc_ohlcv.xs("close", axis=1, level=1, drop_level=True)
+                    btc_series = btc_raw.reindex(combined_close.index, method="ffill").iloc[:, 0]
+            except Exception as _e:
+                print(f"\n  [BTC Regime Filter] WARNING: failed to load {bench_symbol} from DB: {_e}")
         if btc_series is not None and not btc_series.dropna().empty:
             btc_ema200 = btc_series.ewm(span=200, adjust=False).mean()
             regime_bull = (btc_series > btc_ema200).reindex(combined_entries.index, fill_value=False)
