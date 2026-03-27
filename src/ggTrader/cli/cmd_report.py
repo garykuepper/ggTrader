@@ -69,7 +69,24 @@ def run_report(args: argparse.Namespace) -> None:
     with open(phase_stats_path) as f:
         final_backtest_results = json.load(f)
 
-    wfo_results = {"per_coin_results": per_coin_results}
+    from ggTrader.utils.results_manager import ResultsManager
+    rm = ResultsManager(script_name="ggt_report", explicit_run_dir=str(run_dir))
+    wfo_results = {"per_coin_results": per_coin_results, "results_manager": rm}
+
+    # Re-run Phase 3 if the YTD plot is missing
+    ytd_plot = run_dir / "plots" / "combined_portfolio_ytd_dashboard.png"
+    if not ytd_plot.exists():
+        print("YTD plot missing — re-running Phase 3 to generate it...")
+        from ggTrader.utils.pipeline_phases import phase_3_recent_performance
+        from ggTrader.utils.run_config import full_pipeline_config
+        symbols_file = run_dir / "top_ccxt_volume.json"
+        config = {
+            **full_pipeline_config(),
+            "EXPLICIT_RUN_DIR": str(run_dir),
+            **({"SYMBOLS_FILE": str(symbols_file)} if symbols_file.exists() else {}),
+        }
+        phase_3_recent_performance(config=config, wfo_results=wfo_results)
+        final_backtest_results["phase_3_stats"] = wfo_results.get("phase_3_stats", final_backtest_results.get("phase_3_stats"))
 
     print(f"Regenerating report for {run_dir.name} ...")
     generate_pipeline_report(

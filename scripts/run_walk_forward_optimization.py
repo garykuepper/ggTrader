@@ -181,7 +181,7 @@ def main() -> None:
                 # Inject a ResultsManager so Phase 3 can save the YTD dashboard plot
                 from ggTrader.utils.results_manager import ResultsManager
                 wfo_results["results_manager"] = ResultsManager(
-                    explicit_run_dir=args.run_dir
+                    script_name="run_wfo", explicit_run_dir=args.run_dir
                 )
 
     if args.phase2:
