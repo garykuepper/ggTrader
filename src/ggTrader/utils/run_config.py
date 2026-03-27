@@ -138,6 +138,9 @@ def full_pipeline_config() -> dict[str, Any]:
         # Prevents a single strategy from dominating and creating correlated drawdowns.
         # Set to None to disable. 10 = no single strategy gets more than 10 coins.
         "MAX_COINS_PER_STRATEGY": 10,
+        # Number of warmup bars fetched before START_DATE when computing the BTC EMA.
+        # Ensures the EMA is fully warm from bar 1 of the actual backtest window.
+        "EMA_WARMUP_BARS": 200,
         # Block new long entries on all coins when BTC close is below its 200-bar EMA.
         # Prevents catching falling knives in sustained crypto bear markets.
         # Applied in Phase 2/3 combined backtest only — WFO fold optimization is unaffected.

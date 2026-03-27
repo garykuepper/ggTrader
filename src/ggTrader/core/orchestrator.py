@@ -867,6 +867,7 @@ def _process_wfo_fold(
     config: Dict[str, Any],
     show_progress: bool,
     param_names: List[str],
+    btc_regime_mask: Optional[pd.Series] = None,
 ) -> Dict[str, Any]:
     """Helper to process a single WFO fold (Train & Test).
 
@@ -906,6 +907,8 @@ def _process_wfo_fold(
 
     train_mask = mover_mask.loc[train_idx] if mover_mask is not None else None
     test_mask = mover_mask.loc[test_idx] if mover_mask is not None else None
+    train_regime = btc_regime_mask.reindex(train_idx, fill_value=False) if btc_regime_mask is not None else None
+    test_regime = btc_regime_mask.reindex(test_idx, fill_value=False) if btc_regime_mask is not None else None
 
     # Try vectorized train path first (honours ENTRY/EXIT_STRATEGY).
     wfo_train_cfg = {**config, "USE_VECTORIZED": True}
@@ -913,7 +916,8 @@ def _process_wfo_fold(
     pf_train: Any = None
     try:
         train_engine = FastBacktest(
-            train_ohlcv, param_grid, config=wfo_train_cfg, mover_mask=train_mask
+            train_ohlcv, param_grid, config=wfo_train_cfg, mover_mask=train_mask,
+            regime_mask=train_regime,
         )
         pf_train = train_engine.run(show_progress=show_progress)
         train_metrics, trade_for_gate = _vectorized_grid_metrics(
@@ -1010,7 +1014,8 @@ def _process_wfo_fold(
     # Test: single-combo run; USE_VECTORIZED False is fine here (scalar params).
     wfo_test_cfg = {**config, "USE_VECTORIZED": False}
     test_engine = FastBacktest(
-        test_ohlcv, fold_best_params, config=wfo_test_cfg, mover_mask=test_mask
+        test_ohlcv, fold_best_params, config=wfo_test_cfg, mover_mask=test_mask,
+        regime_mask=test_regime,
     )
     pf_test = test_engine.run(show_progress=show_progress)
 
@@ -1344,6 +1349,7 @@ def _execute_wfo_loop(
     test_ratio: float,
     show_progress: bool,
     logger: Any = None,
+    btc_regime_mask: Optional[pd.Series] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[int, pd.Series], List[pd.Series]]:
     """Iterates through the dataset and processes each WFO fold."""
     wfo_stats = []
@@ -1370,6 +1376,7 @@ def _execute_wfo_loop(
             config,
             show_progress,
             param_names,
+            btc_regime_mask=btc_regime_mask,
         )
 
         is_metrics_by_fold[fold_idx] = fold_result.pop("train_metrics")
@@ -2032,6 +2039,68 @@ def analyze_sensitivity_results(
     return narrowed
 
 
+def _compute_btc_regime_mask(
+    ohlcv: pd.DataFrame,
+    config: Dict[str, Any],
+) -> "pd.Series | None":
+    """Compute a boolean BTC EMA(n) regime mask aligned to ``ohlcv.index``.
+
+    Fetches ``EMA_WARMUP_BARS`` extra bars before the first index timestamp so
+    the EMA is fully warm from bar 0 of the actual data range.  Returns a
+    boolean Series (True = BTC above EMA = bull regime) or None on failure.
+    """
+    bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
+    n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
+    interval_str = config.get("INTERVAL", "4h")
+    try:
+        interval_hours = int(interval_str.rstrip("h"))
+    except ValueError:
+        interval_hours = 4
+    warmup_td = pd.Timedelta(hours=interval_hours * n_warmup)
+
+    # Try to get BTC close from the passed ohlcv first (fastest path).
+    btc_series: "pd.Series | None" = None
+    if bench_symbol in ohlcv.columns.get_level_values(0):
+        raw = ohlcv[[bench_symbol]].xs("close", axis=1, level=1, drop_level=True)
+        btc_series = raw.iloc[:, 0]
+
+    # Fall back to DB fetch with warmup extension.
+    data_start = pd.to_datetime(ohlcv.index[0])
+    data_end = pd.to_datetime(ohlcv.index[-1])
+    if data_start.tz is None:
+        data_start = data_start.tz_localize("UTC")
+    if data_end.tz is None:
+        data_end = data_end.tz_localize("UTC")
+    warmup_start = data_start - warmup_td
+
+    try:
+        from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
+        loader = TimescaleDBLoader()
+        btc_ohlcv = loader.fetch_ohlcv(
+            symbols=[bench_symbol],
+            interval=interval_str,
+            start_date=warmup_start,
+            end_date=data_end,
+        )
+        if not btc_ohlcv.empty:
+            raw_db = btc_ohlcv.xs("close", axis=1, level=1, drop_level=True).iloc[:, 0]
+            # Use DB data (has warmup prepended); fall back to ohlcv-embedded above only
+            # if the DB fetch is shorter than what we already have.
+            if len(raw_db) >= len(btc_series or []):
+                btc_series = raw_db
+    except Exception as _e:
+        if btc_series is None:
+            print(f"  [BTC Regime] WARNING: failed to load {bench_symbol} from DB: {_e}")
+
+    if btc_series is None or btc_series.dropna().empty:
+        return None
+
+    # Compute EMA over the full (warmup-extended) series, then trim to ohlcv.index.
+    btc_ema = btc_series.ewm(span=n_warmup, adjust=False).mean()
+    regime_bull = (btc_series > btc_ema).reindex(ohlcv.index, fill_value=False)
+    return regime_bull
+
+
 def run_frozen_params_combined_backtest(
     ohlcv: pd.DataFrame,
     per_coin_results: Dict[str, Dict[str, Any]],
@@ -2131,54 +2200,26 @@ def run_frozen_params_combined_backtest(
     combined_exits = pd.concat(combined_exits_list, axis=1)
     combined_close = pd.concat(combined_close_list, axis=1)
 
-    # BTC 200-EMA regime filter: block new long entries when BTC is below its 200-bar EMA.
-    # Applied to the combined backtest only — WFO fold optimization is unaffected.
+    # BTC EMA regime filter: block new long entries when BTC is below its EMA.
+    # Uses _compute_btc_regime_mask which prepends warmup bars to eliminate lookback bias.
     if config.get("BTC_REGIME_FILTER", False):
-        bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
-        btc_series: pd.Series | None = None
-        if bench_symbol in combined_close.columns:
-            btc_series = combined_close[bench_symbol]
-        elif bench_symbol in ohlcv.columns.get_level_values(0):
-            btc_raw = ohlcv[[bench_symbol]].xs("close", axis=1, level=1, drop_level=True)
-            btc_series = btc_raw.reindex(combined_close.index, method="ffill").iloc[:, 0]
-        else:
-            # Worker doesn't have BTC in its coin batch — load from DB (same path as benchmark).
-            try:
-                from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
-                loader = TimescaleDBLoader()
-                start = pd.to_datetime(combined_close.index[0])
-                end = pd.to_datetime(combined_close.index[-1])
-                if start.tz is None:
-                    start = start.tz_localize("UTC")
-                if end.tz is None:
-                    end = end.tz_localize("UTC")
-                btc_ohlcv = loader.fetch_ohlcv(
-                    symbols=[bench_symbol],
-                    interval=config.get("INTERVAL", "4h"),
-                    start_date=start,
-                    end_date=end,
-                )
-                if not btc_ohlcv.empty:
-                    btc_raw = btc_ohlcv.xs("close", axis=1, level=1, drop_level=True)
-                    btc_series = btc_raw.reindex(combined_close.index, method="ffill").iloc[:, 0]
-            except Exception as _e:
-                print(f"\n  [BTC Regime Filter] WARNING: failed to load {bench_symbol} from DB: {_e}")
-        if btc_series is not None and not btc_series.dropna().empty:
-            btc_ema200 = btc_series.ewm(span=200, adjust=False).mean()
-            regime_bull = (btc_series > btc_ema200).reindex(combined_entries.index, fill_value=False)
+        regime_bull = _compute_btc_regime_mask(ohlcv, config)
+        if regime_bull is not None:
+            regime_bull = regime_bull.reindex(combined_entries.index, fill_value=False)
             regime_mask = pd.DataFrame(
                 np.column_stack([regime_bull.values] * combined_entries.shape[1]),
                 index=combined_entries.index,
                 columns=combined_entries.columns,
             )
-            blocked = combined_entries & ~regime_mask
-            n_blocked = int(blocked.values.sum())
+            n_blocked = int((combined_entries & ~regime_mask).values.sum())
             combined_entries = combined_entries & regime_mask
+            n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
             print(
-                f"\n  [BTC Regime Filter] EMA(200) mask applied — "
-                f"blocked {n_blocked} entry signals while BTC was below EMA200."
+                f"\n  [BTC Regime Filter] EMA({n_warmup}) mask applied — "
+                f"blocked {n_blocked} entry signals while BTC was below EMA."
             )
         else:
+            bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
             print(f"\n  [BTC Regime Filter] WARNING: {bench_symbol} data unavailable — filter skipped.")
 
     # Compute OOS-robustness-proportional allocation weights.
@@ -2345,6 +2386,17 @@ def run_multi_strategy_per_coin_wfo(
     )
     ohlcv, mover_mask = load_data_with_movers(config)
 
+    # Pre-compute BTC regime mask once for the full OHLCV range so all WFO folds
+    # optimize with the same regime filter that Phase 2/3 applies.
+    wfo_regime_mask: Optional[pd.Series] = None
+    if config.get("BTC_REGIME_FILTER", False):
+        wfo_regime_mask = _compute_btc_regime_mask(ohlcv, config)
+        if wfo_regime_mask is not None:
+            n_wu = int(config.get("EMA_WARMUP_BARS", 200))
+            print(f"  [BTC Regime] EMA({n_wu}) mask pre-computed for WFO folds.")
+        else:
+            print("  [BTC Regime] WARNING: mask unavailable — WFO folds will run unfiltered.")
+
     n_splits = config.get("N_SPLITS", 5)
     test_ratio = config.get("TEST_RATIO", 3.0)
 
@@ -2406,6 +2458,7 @@ def run_multi_strategy_per_coin_wfo(
                         test_ratio,
                         show_progress,
                         logger,
+                        btc_regime_mask=wfo_regime_mask,
                     )
 
                     oos_metrics_by_fold = {
