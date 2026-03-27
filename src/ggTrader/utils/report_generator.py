@@ -109,15 +109,42 @@ def generate_pipeline_report(
         f"**WFO Training/Test period:** {p2_period}  "
     )
     if p3_stats:
-        lines.append(f"**Recent performance window:** {p3_period}  ")
+        lines.append(f"**YTD performance window:** {p3_period}  ")
     lines.append(f"**Coins:** {n_coins}")
     lines.append("")
-    p3_col = "Recent (Past Year)" if p3_stats else "Recent"
+    p3_col = "YTD" if p3_stats else "YTD"
+    def _cagr_badge(strat_cagr: Any, btc_cagr: Any, spy_cagr: Any) -> str:
+        """🏆 beats both, 🚀 beats BTC only, 📈 beats S&P only, "" otherwise."""
+        try:
+            s = float(strat_cagr)
+            b = float(btc_cagr) if btc_cagr is not None else None
+            p = float(spy_cagr) if spy_cagr is not None else None
+        except (TypeError, ValueError):
+            return ""
+        beats_btc = b is not None and np.isfinite(b) and np.isfinite(s) and s >= b
+        beats_spy = p is not None and np.isfinite(p) and np.isfinite(s) and s >= p
+        if beats_btc and beats_spy:
+            return " 🏆"
+        if beats_btc:
+            return " 🚀"
+        if beats_spy:
+            return " 📈"
+        return ""
+
+    p2_badge = _cagr_badge(
+        p2_stats.get("cagr_pct"), p2_stats.get("benchmark_cagr_pct"), p2_stats.get("spy_cagr_pct")
+    )
+    p3_badge = _cagr_badge(
+        p3_stats.get("cagr_pct") if p3_stats else None,
+        p3_stats.get("benchmark_cagr_pct") if p3_stats else None,
+        p3_stats.get("spy_cagr_pct") if p3_stats else None,
+    )
+
     lines.append(f"| | WFO Full Range | {p3_col} |")
     lines.append("|-|----------------|--------|")
     lines.append(
-        f"| Strategy CAGR | {_fmt_pct_opt(p2_stats.get('cagr_pct'))} | "
-        f"{_fmt_pct_opt(p3_stats.get('cagr_pct') if p3_stats else None)} |"
+        f"| Strategy CAGR | {_fmt_pct_opt(p2_stats.get('cagr_pct'))}{p2_badge} | "
+        f"{_fmt_pct_opt(p3_stats.get('cagr_pct') if p3_stats else None)}{p3_badge} |"
     )
     lines.append(
         f"| BTC buy & hold CAGR | {_fmt_pct_opt(p2_stats.get('benchmark_cagr_pct'))} | "
@@ -187,7 +214,7 @@ def generate_pipeline_report(
     _phase_table(p2_stats)
 
     # --- Recent Performance ---
-    lines.append("## Recent Performance (Past Year)")
+    lines.append("## YTD Performance")
 
     if p3_stats:
         lines.append(
