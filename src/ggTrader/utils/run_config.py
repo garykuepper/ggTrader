@@ -112,7 +112,7 @@ def full_pipeline_config() -> dict[str, Any]:
         "N_SPLITS": 6,
         "TEST_RATIO": 3,
         "MIN_TRADES": 0,
-        "MIN_CLOSED_TRADES_TRAIN": 5,
+        "MIN_CLOSED_TRADES_TRAIN": 3,
         # WFO / sensitivity train ranking: composite blends Sharpe, Sortino, Calmar-like (return/|maxDD|).
         "TRAIN_METRIC": "composite",
         "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
