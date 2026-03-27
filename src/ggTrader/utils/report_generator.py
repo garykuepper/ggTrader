@@ -114,13 +114,15 @@ def generate_pipeline_report(
     lines.append("")
     p3_col = "YTD" if p3_stats else "YTD"
     def _beat_emoji(strat_cagr: Any, bench_cagr: Any) -> str:
-        """✅ if strategy CAGR meets or exceeds benchmark, "" otherwise."""
+        """✅ if strategy meets or exceeds benchmark, ❌ if it doesn't."""
         try:
             s = float(strat_cagr)
             b = float(bench_cagr)
         except (TypeError, ValueError):
             return ""
-        return " ✅" if np.isfinite(s) and np.isfinite(b) and s >= b else ""
+        if not (np.isfinite(s) and np.isfinite(b)):
+            return ""
+        return " ✅" if s >= b else " ❌"
 
     p2_strat = p2_stats.get("cagr_pct")
     p3_strat = p3_stats.get("cagr_pct") if p3_stats else None
