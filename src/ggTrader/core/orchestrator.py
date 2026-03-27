@@ -2111,6 +2111,26 @@ def _compute_btc_regime_mask(
     return regime_bull
 
 
+def _compute_btc_correlations(ohlcv: pd.DataFrame, config: Dict[str, Any]) -> Dict[str, float]:
+    """Return per-symbol Pearson correlation of 4h returns vs BTC-USD returns.
+
+    Used to decide which coins should have the BTC regime filter applied.
+    Coins below BTC_REGIME_FILTER_MIN_CORRELATION trade freely.
+    """
+    bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
+    try:
+        close = ohlcv.xs("close", axis=1, level=1)
+        close = close[[c for c in close.columns if str(c).endswith("-USD")]]
+        if bench_symbol not in close.columns:
+            return {}
+        returns = close.pct_change()
+        btc_ret = returns[bench_symbol]
+        corr = returns.corrwith(btc_ret)
+        return corr.to_dict()
+    except Exception:
+        return {}
+
+
 def run_frozen_params_combined_backtest(
     ohlcv: pd.DataFrame,
     per_coin_results: Dict[str, Dict[str, Any]],
@@ -2211,23 +2231,38 @@ def run_frozen_params_combined_backtest(
     combined_close = pd.concat(combined_close_list, axis=1)
 
     # BTC EMA regime filter: block new long entries when BTC is below its EMA.
+    # Only applied to coins whose return correlation with BTC >= BTC_REGIME_FILTER_MIN_CORRELATION.
     # Uses _compute_btc_regime_mask which prepends warmup bars to eliminate lookback bias.
     if config.get("BTC_REGIME_FILTER", False):
         regime_bull = _compute_btc_regime_mask(ohlcv, config)
         if regime_bull is not None:
-            regime_bull = regime_bull.reindex(combined_entries.index, fill_value=False)
-            regime_mask = pd.DataFrame(
-                np.column_stack([regime_bull.values] * combined_entries.shape[1]),
-                index=combined_entries.index,
-                columns=combined_entries.columns,
-            )
+            min_corr = float(config.get("BTC_REGIME_FILTER_MIN_CORRELATION", 0.5))
+            btc_corrs = _compute_btc_correlations(ohlcv, config)
+            regime_bull_aligned = regime_bull.reindex(combined_entries.index, fill_value=False)
+            # Build per-coin mask: True (unblocked) for low-corr coins, regime for high-corr coins
+            mask_cols = {}
+            filtered_coins, exempt_coins = [], []
+            for col in combined_entries.columns:
+                sym = col[0] if isinstance(col, tuple) else col
+                corr = btc_corrs.get(sym, 1.0)
+                if corr >= min_corr:
+                    mask_cols[col] = regime_bull_aligned.values
+                    filtered_coins.append(f"{sym}({corr:.2f})")
+                else:
+                    mask_cols[col] = np.ones(len(combined_entries), dtype=bool)
+                    exempt_coins.append(f"{sym}({corr:.2f})")
+            regime_mask = pd.DataFrame(mask_cols, index=combined_entries.index)
             n_blocked = int((combined_entries & ~regime_mask).values.sum())
             combined_entries = combined_entries & regime_mask
             n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
             print(
-                f"\n  [BTC Regime Filter] EMA({n_warmup}) mask applied — "
-                f"blocked {n_blocked} entry signals while BTC was below EMA."
+                f"\n  [BTC Regime Filter] EMA({n_warmup}) mask applied (corr>={min_corr}) — "
+                f"blocked {n_blocked} signals."
             )
+            if filtered_coins:
+                print(f"    Filtered:  {', '.join(filtered_coins)}")
+            if exempt_coins:
+                print(f"    Exempt:    {', '.join(exempt_coins)}")
         else:
             bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
             print(f"\n  [BTC Regime Filter] WARNING: {bench_symbol} data unavailable — filter skipped.")
@@ -2398,12 +2433,16 @@ def run_multi_strategy_per_coin_wfo(
 
     # Pre-compute BTC regime mask once for the full OHLCV range so all WFO folds
     # optimize with the same regime filter that Phase 2/3 applies.
+    # Only applied per-coin if that coin's BTC return correlation >= BTC_REGIME_FILTER_MIN_CORRELATION.
     wfo_regime_mask: Optional[pd.Series] = None
+    wfo_btc_corrs: Dict[str, float] = {}
     if config.get("BTC_REGIME_FILTER", False):
         wfo_regime_mask = _compute_btc_regime_mask(ohlcv, config)
+        wfo_btc_corrs = _compute_btc_correlations(ohlcv, config)
         if wfo_regime_mask is not None:
             n_wu = int(config.get("EMA_WARMUP_BARS", 200))
-            print(f"  [BTC Regime] EMA({n_wu}) mask pre-computed for WFO folds.")
+            min_corr = float(config.get("BTC_REGIME_FILTER_MIN_CORRELATION", 0.5))
+            print(f"  [BTC Regime] EMA({n_wu}) mask pre-computed for WFO folds (corr>={min_corr}).")
         else:
             print("  [BTC Regime] WARNING: mask unavailable — WFO folds will run unfiltered.")
 
@@ -2458,6 +2497,10 @@ def run_multi_strategy_per_coin_wfo(
                         "EXIT_STRATEGY": exit_name,
                     }
 
+                    min_corr = float(config.get("BTC_REGIME_FILTER_MIN_CORRELATION", 0.5))
+                    coin_corr = wfo_btc_corrs.get(symbol, 1.0)
+                    coin_regime_mask = wfo_regime_mask if coin_corr >= min_corr else None
+
                     wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
                         symbol_ohlcv,
                         symbol_mover_mask,
@@ -2468,7 +2511,7 @@ def run_multi_strategy_per_coin_wfo(
                         test_ratio,
                         show_progress,
                         logger,
-                        btc_regime_mask=wfo_regime_mask,
+                        btc_regime_mask=coin_regime_mask,
                     )
 
                     oos_metrics_by_fold = {

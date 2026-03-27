@@ -145,6 +145,9 @@ def full_pipeline_config() -> dict[str, Any]:
         # Prevents catching falling knives in sustained crypto bear markets.
         # Applied in Phase 2/3 combined backtest only — WFO fold optimization is unaffected.
         "BTC_REGIME_FILTER": True,
+        # Only apply BTC regime filter to coins with BTC return correlation >= this threshold.
+        # Coins below the threshold trade freely regardless of BTC trend.
+        "BTC_REGIME_FILTER_MIN_CORRELATION": 0.5,
         # Max fraction of portfolio capital any single coin can receive under OOS-weighted
         # allocation. Prevents over-concentration on a single high-robustness coin.
         "MAX_COIN_ALLOCATION": 0.25,
