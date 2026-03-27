@@ -112,7 +112,7 @@ def full_pipeline_config() -> dict[str, Any]:
         "N_SPLITS": 6,
         "TEST_RATIO": 3,
         "MIN_TRADES": 0,
-        "MIN_CLOSED_TRADES_TRAIN": 1,
+        "MIN_CLOSED_TRADES_TRAIN": 5,
         # WFO / sensitivity train ranking: composite blends Sharpe, Sortino, Calmar-like (return/|maxDD|).
         "TRAIN_METRIC": "composite",
         "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
@@ -134,15 +134,29 @@ def full_pipeline_config() -> dict[str, Any]:
         "RECENT_VALIDATION_END_DATE": None,
         # CCXT tail enabled by default: appends Kraken bars after the last DB timestamp.
         "RECENT_VALIDATION_USE_CCXT_TAIL": True,
+        # Max number of coins that can use the same entry strategy in the combined portfolio.
+        # Prevents a single strategy from dominating and creating correlated drawdowns.
+        # Set to None to disable. 10 = no single strategy gets more than 10 coins.
+        "MAX_COINS_PER_STRATEGY": 10,
+        # Block new long entries on all coins when BTC close is below its 200-bar EMA.
+        # Prevents catching falling knives in sustained crypto bear markets.
+        # Applied in Phase 2/3 combined backtest only — WFO fold optimization is unaffected.
+        "BTC_REGIME_FILTER": True,
+        # Max fraction of portfolio capital any single coin can receive under OOS-weighted
+        # allocation. Prevents over-concentration on a single high-robustness coin.
+        "MAX_COIN_ALLOCATION": 0.25,
         # Coins whose OOS-weighted robustness falls below this threshold are excluded from
         # Phase 2/3 combined portfolio. Set to None to disable the gate.
-        "MIN_ROBUSTNESS_SCORE": 0.0,
+        "MIN_ROBUSTNESS_SCORE": 0.1,
+        # Minimum fraction of OOS folds that must be profitable (positive Sharpe) for a coin
+        # to be included in the combined portfolio. 0.33 = at least 1 in 3 folds profitable.
+        "MIN_FOLD_CONSISTENCY": 0.33,
         # Set True or pass --wfo-debug-metrics on run_full_pipeline.py: per-fold train-metric
         # len/finite counts and combined robustness during WFO (all orchestrator paths).
         "WFO_DEBUG_METRICS": False,
         # OOS robustness blend: 0.0 = pure IS robustness (original behaviour),
-        # 1.0 = pure OOS Sharpe gate, 0.5 = equal blend (default).
-        "OOS_ROBUSTNESS_BLEND_ALPHA": 0.5,
+        # 1.0 = pure OOS Sharpe gate, 0.65 = weight OOS more than IS.
+        "OOS_ROBUSTNESS_BLEND_ALPHA": 0.65,
         # --- Anti-overfitting scoring improvements (zero extra compute) ---
         # Z-score normalize composite metric components before blending so that
         # Calmar, ProfitFactor, Sharpe and Sortino are all on the same scale.
@@ -155,9 +169,9 @@ def full_pipeline_config() -> dict[str, Any]:
         # Apply fold_consistency (fraction of folds with positive OOS Sharpe) as a
         # soft multiplier on gate_score. Set False to disable.
         "FOLD_CONSISTENCY_IN_GATE": True,
-        # Floor for the fold_consistency multiplier. 0.5 means a strategy that is
-        # never profitable OOS still keeps 50% of its gate score (soft gate).
-        "FOLD_CONSISTENCY_GATE_FLOOR": 0.5,
+        # Floor for the fold_consistency multiplier. 0.25 means a strategy that is
+        # never profitable OOS still keeps 25% of its gate score (harder gate).
+        "FOLD_CONSISTENCY_GATE_FLOOR": 0.25,
         # Blend weight for the OOS Sharpe-of-Sharpes stability term. Tempers a
         # single outlier fold from inflating the OOS robustness score.
         # 0.0 = disabled (pure weighted mean), 0.3 = default.

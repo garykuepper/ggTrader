@@ -2056,6 +2056,7 @@ def run_frozen_params_combined_backtest(
     combined_entries_list = []
     combined_exits_list = []
     combined_close_list = []
+    combined_oos_scores: List[float] = []  # OOS robustness score per included symbol
     per_coin_final_stats: Dict[str, Any] = {}
 
     n_sym_total = len(symbols)
@@ -2096,6 +2097,8 @@ def run_frozen_params_combined_backtest(
             combined_entries_list.append(entries)
             combined_exits_list.append(exits)
             combined_close_list.append(close)
+            oos_rob = per_coin_results[symbol].get("oos_robustness_score")
+            combined_oos_scores.append(float(oos_rob) if oos_rob is not None and np.isfinite(float(oos_rob)) else 0.0)
 
             stats = engine.get_stats()
             per_coin_final_stats[symbol] = {
@@ -2128,6 +2131,64 @@ def run_frozen_params_combined_backtest(
     combined_exits = pd.concat(combined_exits_list, axis=1)
     combined_close = pd.concat(combined_close_list, axis=1)
 
+    # BTC 200-EMA regime filter: block new long entries when BTC is below its 200-bar EMA.
+    # Applied to the combined backtest only — WFO fold optimization is unaffected.
+    if config.get("BTC_REGIME_FILTER", False):
+        bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
+        btc_series: pd.Series | None = None
+        if bench_symbol in combined_close.columns:
+            btc_series = combined_close[bench_symbol]
+        elif bench_symbol in ohlcv.columns.get_level_values(0):
+            btc_raw = ohlcv[[bench_symbol]].xs("close", axis=1, level=1, drop_level=True)
+            btc_series = btc_raw.reindex(combined_close.index, method="ffill").iloc[:, 0]
+        if btc_series is not None and not btc_series.dropna().empty:
+            btc_ema200 = btc_series.ewm(span=200, adjust=False).mean()
+            regime_bull = (btc_series > btc_ema200).reindex(combined_entries.index, fill_value=False)
+            regime_mask = pd.DataFrame(
+                np.column_stack([regime_bull.values] * combined_entries.shape[1]),
+                index=combined_entries.index,
+                columns=combined_entries.columns,
+            )
+            blocked = combined_entries & ~regime_mask
+            n_blocked = int(blocked.values.sum())
+            combined_entries = combined_entries & regime_mask
+            print(
+                f"\n  [BTC Regime Filter] EMA(200) mask applied — "
+                f"blocked {n_blocked} entry signals while BTC was below EMA200."
+            )
+        else:
+            print(f"\n  [BTC Regime Filter] WARNING: {bench_symbol} data unavailable — filter skipped.")
+
+    # Compute OOS-robustness-proportional allocation weights.
+    # Coins with higher OOS robustness receive a larger share of capital.
+    # Falls back to equal weight if all OOS scores are zero/negative.
+    raw_w = np.array([max(0.0, s) for s in combined_oos_scores], dtype=float)
+    total_w = raw_w.sum()
+    if total_w <= 0.0:
+        raw_w = np.ones(len(combined_oos_scores), dtype=float)
+        total_w = raw_w.sum()
+    alloc_weights = raw_w / total_w  # normalized to sum 1.0
+
+    # Iterative cap: no single coin exceeds MAX_COIN_ALLOCATION.
+    max_alloc = float(config.get("MAX_COIN_ALLOCATION", 0.25))
+    for _ in range(len(alloc_weights)):
+        over = alloc_weights > max_alloc
+        if not over.any():
+            break
+        excess = (alloc_weights[over] - max_alloc).sum()
+        alloc_weights[over] = max_alloc
+        under = ~over
+        if not under.any():
+            break
+        alloc_weights[under] += excess * (alloc_weights[under] / alloc_weights[under].sum())
+
+    print(
+        f"\n  [Portfolio weights] OOS-weighted allocation "
+        f"(max_alloc={max_alloc:.0%}, equal_fallback={total_w <= 0.0}):"
+    )
+    for sym, w in zip(combined_close.columns, alloc_weights):
+        print(f"    {sym}: {w:.1%}")
+
     final_pf = vbt.Portfolio.from_signals(
         close=combined_close,
         entries=combined_entries,
@@ -2136,7 +2197,7 @@ def run_frozen_params_combined_backtest(
         fees=float(config["FEES"]),
         slippage=float(config["SLIPPAGE"]),
         freq=config["FREQ"],
-        size=float(config["PORTFOLIO_SHARE"]),
+        size=alloc_weights,
         size_type="percent",
         cash_sharing=True,
         group_by=np.full(combined_entries.shape[1], 0),
@@ -2453,6 +2514,58 @@ def run_multi_strategy_per_coin_wfo(
                 "  WARNING: All coins dropped by robustness gate — lowering threshold or "
                 "setting MIN_ROBUSTNESS_SCORE=None is recommended."
             )
+
+    # Filter out coins with insufficient OOS fold consistency.
+    # Set MIN_FOLD_CONSISTENCY=None in config to disable.
+    min_consistency_cfg = config.get("MIN_FOLD_CONSISTENCY")
+    if min_consistency_cfg is not None:
+        min_consistency = float(min_consistency_cfg)
+        skipped_fc = [
+            sym
+            for sym, r in per_coin_results.items()
+            if (r.get("fold_consistency") is None
+                or not np.isfinite(float(r["fold_consistency"]))
+                or float(r["fold_consistency"]) < min_consistency)
+        ]
+        if skipped_fc:
+            print(
+                f"\n  [Consistency gate] Dropping {len(skipped_fc)} coin(s) below "
+                f"MIN_FOLD_CONSISTENCY={min_consistency:.0%}: {skipped_fc}"
+            )
+            per_coin_results = {sym: r for sym, r in per_coin_results.items() if sym not in skipped_fc}
+        if not per_coin_results:
+            print(
+                "  WARNING: All coins dropped by consistency gate — lowering threshold or "
+                "setting MIN_FOLD_CONSISTENCY=None is recommended."
+            )
+
+    # Strategy diversity cap: limit how many coins can use the same entry strategy.
+    # Prevents a single strategy from dominating the portfolio (correlation risk).
+    max_per_strat_cfg = config.get("MAX_COINS_PER_STRATEGY")
+    if max_per_strat_cfg is not None:
+        max_per_strat = int(max_per_strat_cfg)
+        from collections import defaultdict
+        strat_groups: dict = defaultdict(list)
+        for sym, r in per_coin_results.items():
+            strat_groups[r["best_strategy"]].append((sym, r))
+        diversity_dropped = []
+        for strat, group in strat_groups.items():
+            if len(group) <= max_per_strat:
+                continue
+            # Sort by OOS robustness descending; keep top N
+            group_sorted = sorted(
+                group,
+                key=lambda x: float(x[1].get("oos_robustness_score") or float("-inf")),
+                reverse=True,
+            )
+            to_drop = [sym for sym, _ in group_sorted[max_per_strat:]]
+            diversity_dropped.extend(to_drop)
+        if diversity_dropped:
+            print(
+                f"\n  [Diversity cap] Dropping {len(diversity_dropped)} coin(s) over "
+                f"MAX_COINS_PER_STRATEGY={max_per_strat}: {diversity_dropped}"
+            )
+            per_coin_results = {sym: r for sym, r in per_coin_results.items() if sym not in diversity_dropped}
 
     phase3_out = run_frozen_params_combined_backtest(
         ohlcv,
