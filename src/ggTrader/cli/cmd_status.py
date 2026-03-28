@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -37,10 +38,54 @@ def _find_latest_research_dir() -> Optional[Path]:
     return candidates[0] if candidates else None
 
 
-def _worker_summary(log_path: Path) -> str:
-    """Return a one-line status string for a worker log file."""
+def _parse_elapsed_secs(elapsed_str: str) -> Optional[int]:
+    """Parse 'H:MM:SS' or 'M:SS' elapsed string into total seconds."""
+    try:
+        parts = elapsed_str.strip().split(":")
+        if len(parts) == 3:
+            return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+        if len(parts) == 2:
+            return int(parts[0]) * 60 + int(parts[1])
+    except (ValueError, IndexError):
+        pass
+    return None
+
+
+def _estimate_remaining_secs(log_path: Path) -> Optional[int]:
+    """
+    Estimate remaining seconds for a worker.
+
+    Priority:
+    1. Most recent "WFO complete in Xs | ETA H:MM:SS" line — emitted after each coin
+       and already accounts for all remaining coins via a running average.
+    2. Fall back to the per-combo ETA in the tail (covers only the current coin).
+    """
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(max(0, size - 8192))
+            tail = f.read()
+    except OSError:
+        return None
+
+    # "WFO complete" ETA: emitted after every coin, already a full-worker estimate
+    wfo_complete = re.findall(r"WFO complete in \d+s \| ETA (\S+) \(est\.", tail)
+    if wfo_complete:
+        return _parse_elapsed_secs(wfo_complete[-1])
+
+    # Fallback: per-combo ETA (covers only current coin — shown when on coin 1)
+    eta_matches = re.findall(r"ETA (\S+) \(est\. .+?\)", tail)
+    if eta_matches:
+        return _parse_elapsed_secs(eta_matches[-1])
+
+    return None
+
+
+def _worker_summary(log_path: Path) -> tuple[str, Optional[int]]:
+    """Return (one-line status string, estimated remaining seconds or None)."""
     if not log_path.exists():
-        return "not started"
+        return "not started", None
 
     try:
         # Read last 4 KB for efficiency
@@ -50,15 +95,15 @@ def _worker_summary(log_path: Path) -> str:
             f.seek(max(0, size - 4096))
             tail = f.read()
     except OSError:
-        return "unreadable"
+        return "unreadable", None
 
     # Did it finish?
     if "Requested WFO phases completed" in tail or "WFO Results saved to" in tail:
         coins = re.findall(r"Optimizing (\S+) \((\d+)/(\d+)\)", tail)
         if coins:
             last = coins[-1]
-            return f"DONE ({last[0]} was last, {last[1]}/{last[2]} coins)"
-        return "DONE"
+            return f"DONE ({last[0]} was last, {last[1]}/{last[2]} coins)", None
+        return "DONE", None
 
     # Current coin
     coin_matches = re.findall(r"Optimizing (\S+) \((\d+)/(\d+)\)", tail)
@@ -80,7 +125,8 @@ def _worker_summary(log_path: Path) -> str:
         eta, wall = eta_matches[-1]
         parts.append(f"ETA {eta} (~{wall})")
 
-    return "  |  ".join(parts) if parts else "starting..."
+    remaining_secs = _estimate_remaining_secs(log_path)
+    return "  |  ".join(parts) if parts else "starting...", remaining_secs
 
 
 def _count_selected_strategies(run_dir: Path) -> dict:
@@ -144,13 +190,29 @@ def run_status(args: argparse.Namespace) -> None:
             print(f"  Workers: {alive} running, {done_count}/{total_workers} finished\n")
 
         all_done = True
+        max_remaining_secs: Optional[int] = None
         for log in worker_logs:
-            summary = _worker_summary(log)
+            summary, remaining_secs = _worker_summary(log)
             done = summary.startswith("DONE")
             if not done:
                 all_done = False
+                if remaining_secs is not None:
+                    if max_remaining_secs is None or remaining_secs > max_remaining_secs:
+                        max_remaining_secs = remaining_secs
             icon = "[done]" if done else "[running]"
             print(f"  {icon} {log.name}: {summary}")
+
+        # Overall ETA — max remaining time across all running workers
+        if max_remaining_secs is not None:
+            if max_remaining_secs > 0:
+                h, rem = divmod(max_remaining_secs, 3600)
+                m, s = divmod(rem, 60)
+                eta_str = f"{h}h {m:02d}m" if h else f"{m}m {s:02d}s"
+                wall = datetime.now().timestamp() + max_remaining_secs
+                wall_str = datetime.fromtimestamp(wall).strftime("%I:%M %p").lstrip("0")
+                print(f"\n  Overall ETA: ~{eta_str} (est. {wall_str})")
+            else:
+                print(f"\n  Overall ETA: finishing soon...")
 
         # run_results.json strategy counts (written incrementally)
         strategy_counts = _count_selected_strategies(run_dir)

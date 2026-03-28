@@ -264,8 +264,15 @@ def run_frozen_params_combined_backtest(
                     mask_cols[col] = np.ones(len(combined_entries), dtype=bool)
                     exempt_coins.append(f"{sym}({corr:.2f})")
             regime_mask = pd.DataFrame(mask_cols, index=combined_entries.index)
-            n_blocked = int((combined_entries & ~regime_mask).values.sum())
-            combined_entries = combined_entries & regime_mask
+            # Use numpy arrays to avoid pandas MultiIndex column-alignment errors
+            # when combined_entries has named MultiIndex columns from vbt IndicatorFactory
+            regime_arr = regime_mask.values
+            n_blocked = int((combined_entries.values & ~regime_arr).sum())
+            combined_entries = pd.DataFrame(
+                combined_entries.values & regime_arr,
+                index=combined_entries.index,
+                columns=combined_entries.columns,
+            )
             print(f"\n  [Regime Filter] EMA({n_warmup}) applied — blocked {n_blocked} signals.")
             if btc_filtered:
                 print(f"    BTC filter (corr>={btc_min_corr}):        {', '.join(btc_filtered)}")

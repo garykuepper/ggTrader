@@ -167,7 +167,12 @@ def _btc_buy_hold_portfolio_stats(
             )
             if not ohlcv.empty:
                 b = ohlcv.xs("close", axis=1, level=1, drop_level=True)
-                bench_close = b.reindex(close.index, method="ffill").to_frame(bench_symbol)
+                b_reindexed = b.reindex(close.index, method="ffill")
+                # xs may return a Series (single symbol) or DataFrame (multiple)
+                if isinstance(b_reindexed, pd.Series):
+                    bench_close = b_reindexed.to_frame(bench_symbol)
+                else:
+                    bench_close = b_reindexed[[bench_symbol]] if bench_symbol in b_reindexed.columns else b_reindexed.iloc[:, :1].rename(columns={b_reindexed.columns[0]: bench_symbol})
         except Exception as e:
             print(f"Warning: Failed to load {bench_symbol} benchmark from DB: {e}")
 
