@@ -186,6 +186,7 @@ def phase_2_full_data_validation(
     config: dict,
     wfo_results: dict,
     logger: StatusLogger | None = None,
+    ohlcv: pd.DataFrame | None = None,
 ) -> None:
     """Phase 2: Run best WFO parameters on the entire data range and compare to B&H."""
     from ggTrader.core.orchestrator import run_frozen_params_combined_backtest
@@ -201,12 +202,9 @@ def phase_2_full_data_validation(
         EXIT_REGISTRY,
     )
 
-    # Use existing full-range OHLCV from config (loaded in Phase 1)
-    # Actually, we might need to reload it if it's not passed, but usually Phase 1 leaves it.
-    # For now, we assume we use the original dates from config.
-    from ggTrader.utils.setup import load_data_with_movers
-
-    ohlcv, _ = load_data_with_movers(config)
+    if ohlcv is None:
+        from ggTrader.utils.setup import load_data_with_movers
+        ohlcv, _ = load_data_with_movers(config)
 
     out = run_frozen_params_combined_backtest(
         ohlcv,

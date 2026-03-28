@@ -1,6 +1,7 @@
 """Benchmark statistics: CAGR, S&P 500 B&H, BTC B&H, and stats enrichment."""
 
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -43,6 +44,129 @@ def _cagr_percent(total_return_pct: float, years: float) -> float:
     return (mult ** (1.0 / years) - 1.0) * 100.0
 
 
+def _buy_hold_portfolio_stats(
+    close_df: pd.DataFrame,
+    label: str,
+    config: Dict[str, Any],
+    fees: float = 0.0,
+    slippage: float = 0.0,
+) -> Dict[str, Any]:
+    """
+    Generic buy-and-hold helper: buy on first valid bar, sell on last valid bar.
+
+    Parameters
+    ----------
+    close_df : single-column DataFrame with DatetimeIndex
+    label    : column name used for entries/exits DataFrame
+    config   : pipeline config (START_CASH, FREQ)
+    fees     : trading fee fraction (default 0 for index benchmarks)
+    slippage : slippage fraction
+    """
+    empty: Dict[str, Any] = {
+        "profit_pct": None,
+        "cagr_pct": None,
+        "sharpe": None,
+        "max_drawdown": None,
+        "total_trades": 0,
+    }
+    if close_df is None or close_df.empty or close_df.shape[0] < 2:
+        return empty
+
+    col = close_df.columns[0]
+    first_valid = close_df[col].first_valid_index()
+    last_valid = close_df[col].last_valid_index()
+    if first_valid is None or last_valid is None or first_valid >= last_valid:
+        return empty
+
+    entries = pd.DataFrame(False, index=close_df.index, columns=[col])
+    exits = pd.DataFrame(False, index=close_df.index, columns=[col])
+    entries.loc[first_valid] = True
+    exits.loc[last_valid] = True
+
+    bench_pf = vbt.Portfolio.from_signals(
+        close=close_df,
+        entries=entries,
+        exits=exits,
+        init_cash=float(config.get("START_CASH", 10000.0)),
+        fees=fees,
+        slippage=slippage,
+        freq=config.get("FREQ", "4h"),
+        size=1.0,
+        size_type="percent",
+        cash_sharing=False,
+    ).copy()
+
+    years = _years_from_price_index(close_df.index)
+    init_cash = float(config.get("START_CASH", 10000.0))
+    profit_pct = float((bench_pf.total_profit().sum() / init_cash) * 100.0)
+    cagr = _cagr_percent(profit_pct, years)
+
+    try:
+        _sh = bench_pf.sharpe_ratio()
+        sh = float(_sh.iloc[0]) if hasattr(_sh, "iloc") else float(_sh)
+    except Exception:
+        sh = 0.0
+
+    _dd = bench_pf.max_drawdown()
+    _dd_f = float(_dd.iloc[0]) if hasattr(_dd, "iloc") else float(_dd)
+
+    return {
+        "profit_pct": _as_optional_float(profit_pct),
+        "cagr_pct": _as_optional_float(cagr),
+        "sharpe": _as_optional_float(sh),
+        "max_drawdown": _as_optional_float(_dd_f * 100.0),
+        "total_trades": int(bench_pf.trades.count().sum()),
+    }
+
+
+def _load_spy_close(
+    start_date: str,
+    end_date: str,
+    close_idx: pd.DatetimeIndex,
+) -> Optional[pd.DataFrame]:
+    """
+    Download SPY daily close and reindex to crypto timeframe.
+    Caches to results/spy_cache_YYYYMMDD.parquet (TTL = 1 day).
+    Returns a single-column DataFrame named 'SPY', or None on failure.
+    """
+    import yfinance as yf
+
+    # --- per-day file cache ---
+    today_str = pd.Timestamp.now().strftime("%Y%m%d")
+    cache_dir = Path("results")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = cache_dir / f"spy_cache_{today_str}.parquet"
+
+    spy: Optional[pd.Series] = None
+    if cache_path.exists():
+        try:
+            spy = pd.read_parquet(cache_path).squeeze()
+        except Exception:
+            cache_path.unlink(missing_ok=True)
+
+    if spy is None:
+        spy_raw = yf.download("SPY", start=start_date, end=end_date, progress=False)["Close"]
+        if isinstance(spy_raw, pd.DataFrame):
+            spy_raw = spy_raw.squeeze()
+        if spy_raw.empty:
+            return None
+        spy = spy_raw
+        try:
+            pd.DataFrame({"SPY": spy}).to_parquet(cache_path)
+        except Exception:
+            pass  # cache write failure is non-fatal
+
+    # Normalise timezone
+    spy.index = pd.to_datetime(spy.index)
+    if spy.index.tz is None:
+        spy.index = spy.index.tz_localize("America/New_York").tz_convert("UTC")
+    else:
+        spy.index = spy.index.tz_convert("UTC")
+
+    spy_df = spy.reindex(close_idx).ffill().bfill().to_frame("SPY")
+    return spy_df if not spy_df["SPY"].isna().all() else None
+
+
 def _sp500_buy_hold_portfolio_stats(
     close_idx: pd.DatetimeIndex,
     config: Dict[str, Any],
@@ -65,63 +189,10 @@ def _sp500_buy_hold_portfolio_stats(
     end_date = (close_idx[-1] + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
 
     try:
-        import yfinance as yf
-
-        spy = yf.download("SPY", start=start_date, end=end_date, progress=False)["Close"]
-        if isinstance(spy, pd.DataFrame):
-            spy = spy.squeeze()
-        if spy.empty:
+        spy_df = _load_spy_close(start_date, end_date, close_idx)
+        if spy_df is None:
             return empty
-
-        # Convert index to UTC to match crypto
-        spy.index = pd.to_datetime(spy.index)
-        if spy.index.tz is None:
-            spy.index = spy.index.tz_localize("America/New_York").tz_convert("UTC")
-        else:
-            spy.index = spy.index.tz_convert("UTC")
-
-        # Reindex to our crypto timeframe
-        spy_reindexed = spy.reindex(close_idx, method="ffill").to_frame("SPY")
-
-        # Drop strictly leading NaNs prior to SPY's first trading day if necessary
-        spy_reindexed.fillna(method="bfill", inplace=True)
-
-        entries = pd.DataFrame(False, index=spy_reindexed.index, columns=["SPY"])
-        exits = pd.DataFrame(False, index=spy_reindexed.index, columns=["SPY"])
-        entries.iloc[0] = True
-        exits.iloc[-1] = True
-
-        bench_pf = vbt.Portfolio.from_signals(
-            close=spy_reindexed,
-            entries=entries,
-            exits=exits,
-            init_cash=float(config.get("START_CASH", 10000.0)),
-            fees=0.0,
-            slippage=0.0,
-            freq=config.get("FREQ", "4h"),
-            size=1.0,
-            size_type="percent",
-            cash_sharing=False,
-        ).copy()
-
-        years = _years_from_price_index(spy_reindexed.index)
-        init_cash = float(config.get("START_CASH", 10000.0))
-        profit_pct = float((bench_pf.total_profit().sum() / init_cash) * 100.0)
-        cagr = _cagr_percent(profit_pct, years)
-
-        # Avoid singular shapes errors if trades exist
-        try:
-            sh = float(bench_pf.sharpe_ratio())
-        except Exception:
-            sh = 0.0
-
-        return {
-            "profit_pct": _as_optional_float(profit_pct),
-            "cagr_pct": _as_optional_float(cagr),
-            "sharpe": _as_optional_float(sh),
-            "max_drawdown": _as_optional_float(float(bench_pf.max_drawdown()) * 100.0),
-            "total_trades": int(bench_pf.trades.count().sum()),
-        }
+        return _buy_hold_portfolio_stats(spy_df, "SPY", config, fees=0.0, slippage=0.0)
     except Exception as e:
         print(f"Warning: Failed to load S&P 500 benchmark: {e}")
         return empty
@@ -143,7 +214,7 @@ def _btc_buy_hold_portfolio_stats(
         return empty
 
     bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
-    bench_close = None
+    bench_close: Optional[pd.DataFrame] = None
 
     if bench_symbol in close.columns:
         bench_close = close[[bench_symbol]]
@@ -167,66 +238,32 @@ def _btc_buy_hold_portfolio_stats(
             )
             if not ohlcv.empty:
                 b = ohlcv.xs("close", axis=1, level=1, drop_level=True)
-                b_reindexed = b.reindex(close.index, method="ffill")
-                # xs may return a Series (single symbol) or DataFrame (multiple)
+                b_reindexed = b.reindex(close.index).ffill()
                 if isinstance(b_reindexed, pd.Series):
                     bench_close = b_reindexed.to_frame(bench_symbol)
                 else:
-                    bench_close = b_reindexed[[bench_symbol]] if bench_symbol in b_reindexed.columns else b_reindexed.iloc[:, :1].rename(columns={b_reindexed.columns[0]: bench_symbol})
+                    bench_close = (
+                        b_reindexed[[bench_symbol]]
+                        if bench_symbol in b_reindexed.columns
+                        else b_reindexed.iloc[:, :1].rename(
+                            columns={b_reindexed.columns[0]: bench_symbol}
+                        )
+                    )
         except Exception as e:
             print(f"Warning: Failed to load {bench_symbol} benchmark from DB: {e}")
 
     if bench_close is None or bench_close.empty:
         return empty
 
-    # Use first/last *valid* (non-NaN) bar so that data-alignment gaps on bar 0
-    # (e.g. when newer coins push the combined index earlier than BTC data starts)
-    # don't silently produce 0-trade, 0-profit results.
-    first_valid = bench_close[bench_symbol].first_valid_index()
-    last_valid = bench_close[bench_symbol].last_valid_index()
-    if first_valid is None or last_valid is None or first_valid >= last_valid:
-        return empty
-
-    entries = pd.DataFrame(False, index=bench_close.index, columns=[bench_symbol])
-    exits = pd.DataFrame(False, index=bench_close.index, columns=[bench_symbol])
-    entries.loc[first_valid] = True
-    exits.loc[last_valid] = True
-
-    bench_pf = vbt.Portfolio.from_signals(
-        close=bench_close,
-        entries=entries,
-        exits=exits,
-        init_cash=float(config.get("START_CASH", 10000.0)),
+    stats = _buy_hold_portfolio_stats(
+        bench_close,
+        bench_symbol,
+        config,
         fees=float(config.get("FEES", 0.001)),
         slippage=float(config.get("SLIPPAGE", 0.0005)),
-        freq=config.get("FREQ", "4h"),
-        size=1.0,
-        size_type="percent",
-        cash_sharing=False,
-    ).copy()
-
-    years = _years_from_price_index(bench_close.index)
-    init_cash = float(config.get("START_CASH", 10000.0))
-    profit_pct = float((bench_pf.total_profit().sum() / init_cash) * 100.0)
-    cagr = _cagr_percent(profit_pct, years)
-
-    try:
-        _sh = bench_pf.sharpe_ratio()
-        sh = float(_sh.iloc[0]) if hasattr(_sh, "iloc") else float(_sh)
-    except Exception:
-        sh = 0.0
-
-    _dd = bench_pf.max_drawdown()
-    _dd_f = float(_dd.iloc[0]) if hasattr(_dd, "iloc") else float(_dd)
-
-    return {
-        "profit_pct": _as_optional_float(profit_pct),
-        "cagr_pct": _as_optional_float(cagr),
-        "sharpe": _as_optional_float(sh),
-        "max_drawdown": _as_optional_float(_dd_f * 100.0),
-        "total_trades": int(bench_pf.trades.count().sum()),
-        "benchmark_symbol": bench_symbol,
-    }
+    )
+    stats["benchmark_symbol"] = bench_symbol
+    return stats
 
 
 def _enrich_final_stats_with_cagr_and_benchmark(

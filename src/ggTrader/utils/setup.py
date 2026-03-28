@@ -112,7 +112,7 @@ def build_mover_mask(
     daily_mask = daily_mask[common]
 
     # Reindex to the intraday OHLCV index and forward-fill within each day
-    mask = daily_mask.reindex(ohlcv_df.index, method="ffill").fillna(False)
+    mask = daily_mask.reindex(ohlcv_df.index).ffill().fillna(False)
     return mask.astype(bool)
 
 

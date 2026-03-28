@@ -144,7 +144,11 @@ def execute_full_pipeline(args: Namespace, base_constants: dict) -> None:
             config, narrowed_grids, show_progress, logger, save_results=save_results
         )
 
-        phase_2_full_data_validation(config, wfo_results, logger)
+        # Load full-range OHLCV once and reuse for phase_2 — avoids a redundant DB fetch.
+        from ggTrader.utils.setup import load_data_with_movers
+        full_ohlcv, _ = load_data_with_movers(config)
+
+        phase_2_full_data_validation(config, wfo_results, logger, ohlcv=full_ohlcv)
         phase_3_recent_performance(config, wfo_results, logger)
 
         if save_results:

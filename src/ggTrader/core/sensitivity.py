@@ -205,7 +205,11 @@ def _execute_sensitivity_grid(
         try:
             return _execute_sensitivity_vectorized(ohlcv, config, param_grid, show_progress, logger)
         except Exception as e:
-            print(f"Vectorized sensitivity failed ({e!r}); falling back to chunked path.")
+            print(
+                f"WARNING: Vectorized sensitivity failed ({type(e).__name__}: {e}); "
+                "falling back to chunked path (~100× slower). "
+                "Set USE_VECTORIZED_SENSITIVITY=False to suppress this warning."
+            )
 
     keys = list(param_grid.keys())
     values = [v if isinstance(v, list) else [v] for v in param_grid.values()]

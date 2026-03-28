@@ -60,23 +60,40 @@ def run_research(args: argparse.Namespace):
 
     universe_path = research_dir / "top_ccxt_volume.json"
 
-    print(
-        f"\n[{datetime.now()}] Step 1: Fetching Live CCXT Universe for Research "
-        f"({args.top} coins, {args.window} window)..."
-    )
-    subprocess.run(
-        [
-            sys.executable,
-            "scripts/update_universe_ccxt.py",
-            "--limit",
-            str(args.top),
-            "--out",
-            str(universe_path),
-            "--window",
-            args.window,
-        ],
-        check=True,
-    )
+    # Check for a same-day cached universe file (keyed by date + top-N + window).
+    today = datetime.now().strftime("%Y%m%d")
+    cache_name = f"universe_cache_{today}_top{args.top}_{args.window}.json"
+    universe_cache_path = project_root / "results" / "research" / cache_name
+
+    if universe_cache_path.exists():
+        print(
+            f"\n[{datetime.now()}] Step 1: Using cached universe from today "
+            f"({universe_cache_path.name}) — skipping live fetch."
+        )
+        import shutil
+        shutil.copy(universe_cache_path, universe_path)
+    else:
+        print(
+            f"\n[{datetime.now()}] Step 1: Fetching Live CCXT Universe for Research "
+            f"({args.top} coins, {args.window} window)..."
+        )
+        subprocess.run(
+            [
+                sys.executable,
+                "scripts/update_universe_ccxt.py",
+                "--limit",
+                str(args.top),
+                "--out",
+                str(universe_path),
+                "--window",
+                args.window,
+            ],
+            check=True,
+        )
+        # Cache for subsequent runs today
+        import shutil
+        shutil.copy(universe_path, universe_cache_path)
+        print(f"  Cached universe to {universe_cache_path.name} for today's runs.")
 
     # Load the freshly generated symbols
     try:

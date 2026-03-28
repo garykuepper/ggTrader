@@ -82,6 +82,187 @@ from ggTrader.core.metrics import (
 )
 
 
+def _apply_tiered_regime_mask(
+    combined_entries: pd.DataFrame,
+    btc_corrs: Dict[str, float],
+    btc_regime: Optional[pd.Series],
+    alt_regime: Optional[pd.Series],
+    config: Dict[str, Any],
+) -> pd.DataFrame:
+    """Apply three-tier BTC correlation regime filter to combined entries DataFrame.
+
+    Returns a new entries DataFrame with signals blocked on bear-market bars,
+    per each coin's BTC return correlation tier.
+    """
+    if btc_regime is None:
+        bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
+        print(f"\n  [Regime Filter] WARNING: {bench_symbol} data unavailable — filter skipped.")
+        return combined_entries
+
+    btc_min_corr = float(config.get("BTC_REGIME_FILTER_MIN_CORRELATION", 0.5))
+    alt_min_corr = float(config.get("ALTCOIN_REGIME_FILTER_CORR_MIN", 0.3))
+    n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
+
+    btc_aligned = btc_regime.reindex(combined_entries.index, fill_value=False)
+    alt_aligned = (
+        alt_regime.reindex(combined_entries.index, fill_value=False)
+        if alt_regime is not None else None
+    )
+
+    mask_cols = {}
+    btc_filtered, alt_filtered, exempt_coins = [], [], []
+    for col in combined_entries.columns:
+        sym = col[0] if isinstance(col, tuple) else col
+        corr = btc_corrs.get(sym, 1.0)
+        if corr >= btc_min_corr:
+            mask_cols[col] = btc_aligned.values
+            btc_filtered.append(f"{sym}({corr:.2f})")
+        elif corr >= alt_min_corr and alt_aligned is not None:
+            mask_cols[col] = alt_aligned.values
+            alt_filtered.append(f"{sym}({corr:.2f})")
+        else:
+            mask_cols[col] = np.ones(len(combined_entries), dtype=bool)
+            exempt_coins.append(f"{sym}({corr:.2f})")
+
+    regime_mask_df = pd.DataFrame(mask_cols, index=combined_entries.index)
+    # Use .values to bypass pandas MultiIndex column-alignment errors
+    regime_arr = regime_mask_df.values
+    n_blocked = int((combined_entries.values & ~regime_arr).sum())
+    filtered = pd.DataFrame(
+        combined_entries.values & regime_arr,
+        index=combined_entries.index,
+        columns=combined_entries.columns,
+    )
+
+    print(f"\n  [Regime Filter] EMA({n_warmup}) applied — blocked {n_blocked} signals.")
+    if btc_filtered:
+        print(f"    BTC filter (corr>={btc_min_corr}):        {', '.join(btc_filtered)}")
+    if alt_filtered:
+        print(f"    Altcoin filter (corr>={alt_min_corr}):     {', '.join(alt_filtered)}")
+    if exempt_coins:
+        print(f"    Exempt (corr<{alt_min_corr}):              {', '.join(exempt_coins)}")
+
+    return filtered
+
+
+def _compute_allocation_weights(
+    oos_scores: List[float],
+    config: Dict[str, Any],
+) -> np.ndarray:
+    """Compute OOS-robustness-proportional allocation weights with per-coin cap.
+
+    Coins with higher OOS robustness receive a larger share of capital.
+    Falls back to equal weight if all OOS scores are zero/negative.
+    No single coin exceeds MAX_COIN_ALLOCATION (default 25%).
+    """
+    raw_w = np.array([max(0.0, s) for s in oos_scores], dtype=float)
+    total_w = raw_w.sum()
+    if total_w <= 0.0:
+        raw_w = np.ones(len(oos_scores), dtype=float)
+        total_w = raw_w.sum()
+    alloc_weights = raw_w / total_w
+
+    max_alloc = float(config.get("MAX_COIN_ALLOCATION", 0.25))
+    # Iterative cap: redistribute excess from over-cap coins to under-cap coins.
+    # When fewer coins are under-cap than required to absorb the excess (i.e.
+    # n × max_alloc < 1.0), all coins converge to max_alloc and any remaining
+    # budget is distributed equally — weights still sum to 1.0.
+    for _ in range(len(alloc_weights) + 1):
+        over = alloc_weights > max_alloc + 1e-12
+        if not over.any():
+            break
+        excess = (alloc_weights[over] - max_alloc).sum()
+        alloc_weights[over] = max_alloc
+        under = ~over
+        if not under.any():
+            # All coins at cap — distribute remaining budget equally
+            alloc_weights += excess / len(alloc_weights)
+            break
+        alloc_weights[under] += excess / under.sum()
+
+    return alloc_weights
+
+
+def _apply_wfo_selection_gates(
+    per_coin_results: Dict[str, Dict[str, Any]],
+    config: Dict[str, Any],
+) -> Dict[str, Dict[str, Any]]:
+    """Apply robustness, fold-consistency, and strategy-diversity gates.
+
+    Returns a filtered copy of per_coin_results with low-quality coins removed.
+    """
+    results = dict(per_coin_results)
+
+    # Gate 1: minimum IS robustness score
+    min_robust_cfg = config.get("MIN_ROBUSTNESS_SCORE")
+    if min_robust_cfg is not None:
+        min_robust = float(min_robust_cfg)
+        skipped = [
+            sym for sym, r in results.items()
+            if not np.isfinite(r["robustness_score"]) or r["robustness_score"] < min_robust
+        ]
+        if skipped:
+            print(
+                f"\n  [Robustness gate] Dropping {len(skipped)} coin(s) below "
+                f"MIN_ROBUSTNESS_SCORE={min_robust}: {skipped}"
+            )
+            results = {sym: r for sym, r in results.items() if sym not in skipped}
+        if not results:
+            print(
+                "  WARNING: All coins dropped by robustness gate — lowering threshold or "
+                "setting MIN_ROBUSTNESS_SCORE=None is recommended."
+            )
+
+    # Gate 2: minimum fold consistency
+    min_consistency_cfg = config.get("MIN_FOLD_CONSISTENCY")
+    if min_consistency_cfg is not None:
+        min_consistency = float(min_consistency_cfg)
+        skipped_fc = [
+            sym for sym, r in results.items()
+            if (r.get("fold_consistency") is None
+                or not np.isfinite(float(r["fold_consistency"]))
+                or float(r["fold_consistency"]) < min_consistency)
+        ]
+        if skipped_fc:
+            print(
+                f"\n  [Consistency gate] Dropping {len(skipped_fc)} coin(s) below "
+                f"MIN_FOLD_CONSISTENCY={min_consistency:.0%}: {skipped_fc}"
+            )
+            results = {sym: r for sym, r in results.items() if sym not in skipped_fc}
+        if not results:
+            print(
+                "  WARNING: All coins dropped by consistency gate — lowering threshold or "
+                "setting MIN_FOLD_CONSISTENCY=None is recommended."
+            )
+
+    # Gate 3: strategy diversity cap
+    max_per_strat_cfg = config.get("MAX_COINS_PER_STRATEGY")
+    if max_per_strat_cfg is not None:
+        from collections import defaultdict
+        max_per_strat = int(max_per_strat_cfg)
+        strat_groups: dict = defaultdict(list)
+        for sym, r in results.items():
+            strat_groups[r["best_strategy"]].append((sym, r))
+        diversity_dropped = []
+        for strat, group in strat_groups.items():
+            if len(group) <= max_per_strat:
+                continue
+            group_sorted = sorted(
+                group,
+                key=lambda x: float(x[1].get("oos_robustness_score") or float("-inf")),
+                reverse=True,
+            )
+            diversity_dropped.extend(sym for sym, _ in group_sorted[max_per_strat:])
+        if diversity_dropped:
+            print(
+                f"\n  [Diversity cap] Dropping {len(diversity_dropped)} coin(s) over "
+                f"MAX_COINS_PER_STRATEGY={max_per_strat}: {diversity_dropped}"
+            )
+            results = {sym: r for sym, r in results.items() if sym not in diversity_dropped}
+
+    return results
+
+
 def run_backtest_orchestrator(
     config: Dict[str, Any],
     params: Dict[str, Any],
@@ -236,77 +417,16 @@ def run_frozen_params_combined_backtest(
             else None
         )
         btc_corrs = _compute_btc_correlations(ohlcv, config)
-        btc_min_corr = float(config.get("BTC_REGIME_FILTER_MIN_CORRELATION", 0.5))
-        alt_min_corr = float(config.get("ALTCOIN_REGIME_FILTER_CORR_MIN", 0.3))
-        n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
+        combined_entries = _apply_tiered_regime_mask(
+            combined_entries, btc_corrs, btc_regime, alt_regime, config
+        )
 
-        if btc_regime is None:
-            bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
-            print(f"\n  [Regime Filter] WARNING: {bench_symbol} data unavailable — filter skipped.")
-        else:
-            btc_aligned = btc_regime.reindex(combined_entries.index, fill_value=False)
-            alt_aligned = (
-                alt_regime.reindex(combined_entries.index, fill_value=False)
-                if alt_regime is not None else None
-            )
-            mask_cols = {}
-            btc_filtered, alt_filtered, exempt_coins = [], [], []
-            for col in combined_entries.columns:
-                sym = col[0] if isinstance(col, tuple) else col
-                corr = btc_corrs.get(sym, 1.0)
-                if corr >= btc_min_corr:
-                    mask_cols[col] = btc_aligned.values
-                    btc_filtered.append(f"{sym}({corr:.2f})")
-                elif corr >= alt_min_corr and alt_aligned is not None:
-                    mask_cols[col] = alt_aligned.values
-                    alt_filtered.append(f"{sym}({corr:.2f})")
-                else:
-                    mask_cols[col] = np.ones(len(combined_entries), dtype=bool)
-                    exempt_coins.append(f"{sym}({corr:.2f})")
-            regime_mask = pd.DataFrame(mask_cols, index=combined_entries.index)
-            # Use numpy arrays to avoid pandas MultiIndex column-alignment errors
-            # when combined_entries has named MultiIndex columns from vbt IndicatorFactory
-            regime_arr = regime_mask.values
-            n_blocked = int((combined_entries.values & ~regime_arr).sum())
-            combined_entries = pd.DataFrame(
-                combined_entries.values & regime_arr,
-                index=combined_entries.index,
-                columns=combined_entries.columns,
-            )
-            print(f"\n  [Regime Filter] EMA({n_warmup}) applied — blocked {n_blocked} signals.")
-            if btc_filtered:
-                print(f"    BTC filter (corr>={btc_min_corr}):        {', '.join(btc_filtered)}")
-            if alt_filtered:
-                print(f"    Altcoin filter (corr>={alt_min_corr}):     {', '.join(alt_filtered)}")
-            if exempt_coins:
-                print(f"    Exempt (corr<{alt_min_corr}):              {', '.join(exempt_coins)}")
-
-    # Compute OOS-robustness-proportional allocation weights.
-    # Coins with higher OOS robustness receive a larger share of capital.
-    # Falls back to equal weight if all OOS scores are zero/negative.
-    raw_w = np.array([max(0.0, s) for s in combined_oos_scores], dtype=float)
-    total_w = raw_w.sum()
-    if total_w <= 0.0:
-        raw_w = np.ones(len(combined_oos_scores), dtype=float)
-        total_w = raw_w.sum()
-    alloc_weights = raw_w / total_w  # normalized to sum 1.0
-
-    # Iterative cap: no single coin exceeds MAX_COIN_ALLOCATION.
+    alloc_weights = _compute_allocation_weights(combined_oos_scores, config)
     max_alloc = float(config.get("MAX_COIN_ALLOCATION", 0.25))
-    for _ in range(len(alloc_weights)):
-        over = alloc_weights > max_alloc
-        if not over.any():
-            break
-        excess = (alloc_weights[over] - max_alloc).sum()
-        alloc_weights[over] = max_alloc
-        under = ~over
-        if not under.any():
-            break
-        alloc_weights[under] += excess * (alloc_weights[under] / alloc_weights[under].sum())
-
+    equal_fallback = all(s <= 0 for s in combined_oos_scores)
     print(
         f"\n  [Portfolio weights] OOS-weighted allocation "
-        f"(max_alloc={max_alloc:.0%}, equal_fallback={total_w <= 0.0}):"
+        f"(max_alloc={max_alloc:.0%}, equal_fallback={equal_fallback}):"
     )
     for sym, w in zip(combined_close.columns, alloc_weights):
         print(f"    {sym}: {w:.1%}")
@@ -648,79 +768,7 @@ def run_multi_strategy_per_coin_wfo(
                 f"  Continuing with remaining coins..."
             )
 
-    # Filter out coins that failed to meet the minimum robustness threshold.
-    # Set MIN_ROBUSTNESS_SCORE=None in config to disable.
-    min_robust_cfg = config.get("MIN_ROBUSTNESS_SCORE")
-    if min_robust_cfg is not None:
-        min_robust = float(min_robust_cfg)
-        skipped = [
-            sym
-            for sym, r in per_coin_results.items()
-            if not np.isfinite(r["robustness_score"]) or r["robustness_score"] < min_robust
-        ]
-        if skipped:
-            print(
-                f"\n  [Robustness gate] Dropping {len(skipped)} coin(s) below "
-                f"MIN_ROBUSTNESS_SCORE={min_robust}: {skipped}"
-            )
-            per_coin_results = {sym: r for sym, r in per_coin_results.items() if sym not in skipped}
-        if not per_coin_results:
-            print(
-                "  WARNING: All coins dropped by robustness gate — lowering threshold or "
-                "setting MIN_ROBUSTNESS_SCORE=None is recommended."
-            )
-
-    # Filter out coins with insufficient OOS fold consistency.
-    # Set MIN_FOLD_CONSISTENCY=None in config to disable.
-    min_consistency_cfg = config.get("MIN_FOLD_CONSISTENCY")
-    if min_consistency_cfg is not None:
-        min_consistency = float(min_consistency_cfg)
-        skipped_fc = [
-            sym
-            for sym, r in per_coin_results.items()
-            if (r.get("fold_consistency") is None
-                or not np.isfinite(float(r["fold_consistency"]))
-                or float(r["fold_consistency"]) < min_consistency)
-        ]
-        if skipped_fc:
-            print(
-                f"\n  [Consistency gate] Dropping {len(skipped_fc)} coin(s) below "
-                f"MIN_FOLD_CONSISTENCY={min_consistency:.0%}: {skipped_fc}"
-            )
-            per_coin_results = {sym: r for sym, r in per_coin_results.items() if sym not in skipped_fc}
-        if not per_coin_results:
-            print(
-                "  WARNING: All coins dropped by consistency gate — lowering threshold or "
-                "setting MIN_FOLD_CONSISTENCY=None is recommended."
-            )
-
-    # Strategy diversity cap: limit how many coins can use the same entry strategy.
-    # Prevents a single strategy from dominating the portfolio (correlation risk).
-    max_per_strat_cfg = config.get("MAX_COINS_PER_STRATEGY")
-    if max_per_strat_cfg is not None:
-        max_per_strat = int(max_per_strat_cfg)
-        from collections import defaultdict
-        strat_groups: dict = defaultdict(list)
-        for sym, r in per_coin_results.items():
-            strat_groups[r["best_strategy"]].append((sym, r))
-        diversity_dropped = []
-        for strat, group in strat_groups.items():
-            if len(group) <= max_per_strat:
-                continue
-            # Sort by OOS robustness descending; keep top N
-            group_sorted = sorted(
-                group,
-                key=lambda x: float(x[1].get("oos_robustness_score") or float("-inf")),
-                reverse=True,
-            )
-            to_drop = [sym for sym, _ in group_sorted[max_per_strat:]]
-            diversity_dropped.extend(to_drop)
-        if diversity_dropped:
-            print(
-                f"\n  [Diversity cap] Dropping {len(diversity_dropped)} coin(s) over "
-                f"MAX_COINS_PER_STRATEGY={max_per_strat}: {diversity_dropped}"
-            )
-            per_coin_results = {sym: r for sym, r in per_coin_results.items() if sym not in diversity_dropped}
+    per_coin_results = _apply_wfo_selection_gates(per_coin_results, config)
 
     phase3_out = run_frozen_params_combined_backtest(
         ohlcv,

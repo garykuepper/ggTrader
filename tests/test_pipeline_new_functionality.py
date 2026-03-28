@@ -2,7 +2,10 @@
 
 import os
 import sys
+from argparse import Namespace
+from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -379,3 +382,124 @@ class TestReportGenerator:
         # Should contain both coins
         assert "BTC" in content
         assert "ETH" in content
+
+
+# ---------------------------------------------------------------------------
+# C4: Data-load-once tests (Phase A1 fix)
+# ---------------------------------------------------------------------------
+
+def _make_ohlcv_stub(n=200):
+    dates = pd.date_range("2023-01-01", periods=n, freq="4h", tz="UTC")
+    data = {}
+    for sym in ("BTC-USD",):
+        close = 1000.0 + np.cumsum(np.random.default_rng(0).standard_normal(n) * 5)
+        for field in ("open", "high", "low", "close", "volume"):
+            data[(sym, field)] = close
+    df = pd.DataFrame(data, index=dates)
+    df.columns = pd.MultiIndex.from_tuples(df.columns, names=["symbol", "field"])
+    return df
+
+
+class TestDataLoadOnce:
+    """Verify the Phase A1 fix: OHLCV is not redundantly reloaded per phase."""
+
+    def test_phase_2_skips_load_when_ohlcv_provided(self):
+        """phase_2_full_data_validation must NOT call load_data_with_movers if ohlcv is given."""
+        from ggTrader.utils.pipeline_phases import phase_2_full_data_validation
+
+        ohlcv = _make_ohlcv_stub()
+        config = {
+            "START_CASH": 1000.0, "FEES": 0.001, "SLIPPAGE": 0.0, "FREQ": "4h",
+            "EXIT_TOURNAMENT": [],
+            "BTC_REGIME_FILTER": False,
+        }
+        wfo_results = {"per_coin_results": {}}
+
+        mock_frozen = MagicMock(return_value={
+            "final_stats": {}, "per_coin_final_stats": {}, "final_portfolio": None
+        })
+
+        # load_data_with_movers is a local import inside the function body; patch source module
+        with patch("ggTrader.utils.setup.load_data_with_movers") as mock_load, \
+             patch("ggTrader.core.orchestrator.run_frozen_params_combined_backtest",
+                   mock_frozen):
+            phase_2_full_data_validation(config, wfo_results, ohlcv=ohlcv)
+
+        mock_load.assert_not_called()
+
+    def test_phase_2_loads_data_when_ohlcv_not_provided(self):
+        """phase_2_full_data_validation calls load_data_with_movers when ohlcv is None."""
+        from ggTrader.utils.pipeline_phases import phase_2_full_data_validation
+
+        ohlcv = _make_ohlcv_stub()
+        config = {
+            "START_CASH": 1000.0, "FEES": 0.001, "SLIPPAGE": 0.0, "FREQ": "4h",
+            "EXIT_TOURNAMENT": [],
+            "BTC_REGIME_FILTER": False,
+        }
+        wfo_results = {"per_coin_results": {}}
+
+        mock_frozen = MagicMock(return_value={
+            "final_stats": {}, "per_coin_final_stats": {}, "final_portfolio": None
+        })
+
+        # load_data_with_movers is a local import inside the function body; patch source module
+        with patch("ggTrader.utils.setup.load_data_with_movers",
+                   return_value=(ohlcv, None)) as mock_load, \
+             patch("ggTrader.core.orchestrator.run_frozen_params_combined_backtest",
+                   mock_frozen):
+            phase_2_full_data_validation(config, wfo_results)  # no ohlcv arg
+
+        mock_load.assert_called_once()
+
+    def test_pipeline_runner_loads_ohlcv_once(self):
+        """execute_full_pipeline calls load_data_with_movers exactly once (for phase 2 data).
+
+        The load happens in pipeline_runner.py via a local import; patching the source module.
+        """
+        from ggTrader.pipeline.pipeline_runner import execute_full_pipeline
+
+        ohlcv = _make_ohlcv_stub()
+        args = Namespace(
+            detailed_sensitivity=False,
+            max_symbols=1,
+            symbols_file=None,
+            wfo_debug_metrics=False,
+            train_metric=None,
+            recent_validation_start=None,
+            recent_validation_end=None,
+            recent_validation_ccxt_tail=False,
+            sensitivity=False,
+            dual_exits=False,
+            exits=None,
+            dry_run=True,
+            no_save=True,
+            no_progress=True,
+        )
+
+        base_constants = {
+            "START_CASH": 1000.0, "FEES": 0.001, "SLIPPAGE": 0.0, "FREQ": "4h",
+            "SYMBOLS": ["BTC-USD"],
+            "INTERVAL": "4h",
+            "START_DATE": "2023-01-01",
+            "END_DATE": "2023-12-31",
+            "N_SPLITS": 2,
+            "CHUNK_SIZE": 50,
+        }
+
+        stub_wfo = {"per_coin_results": {}, "final_portfolio": None, "final_stats": {},
+                    "per_coin_final_stats": {}, "results_manager": None}
+
+        with patch("ggTrader.pipeline.pipeline_runner.prepare_config_and_symbols",
+                   return_value={**base_constants, "SYMBOLS": ["BTC-USD"]}), \
+             patch("ggTrader.pipeline.pipeline_runner.phase_1_per_coin_multi_strategy_wfo",
+                   return_value=stub_wfo), \
+             patch("ggTrader.utils.setup.load_data_with_movers",
+                   return_value=(ohlcv, None)) as mock_load, \
+             patch("ggTrader.pipeline.pipeline_runner.phase_2_full_data_validation"), \
+             patch("ggTrader.pipeline.pipeline_runner.phase_3_recent_performance"), \
+             patch("ggTrader.pipeline.pipeline_runner.StatusLogger"):
+            execute_full_pipeline(args, base_constants)
+
+        # load_data_with_movers in the source module called exactly once
+        mock_load.assert_called_once()

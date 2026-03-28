@@ -16,8 +16,20 @@ The project is structured into several modular layers, ensuring that logic for d
 
 ## Core Engine
 
-- **Backtesting**: `FastBacktest` is the **primary backtest engine**. It wraps `vectorbt.Portfolio.from_signals()` with proper position sizing (`max_position`), shared cash pool (`cash_sharing=True`), and optional dynamic mover masking.
-- **Configuration**: `FastBacktest` accepts a `config` dict (CONSTANTS) for portfolio-level settings and a separate `params` dict for signal parameters. Signal parameters support list values for broadcasting parameter grids.
+The `ggTrader.core` package is split into seven focused modules:
+
+| Module | Responsibility |
+| ------ | -------------- |
+| `fast_backtest.py` | `FastBacktest` engine — wraps `vbt.Portfolio.from_signals()` with position sizing, shared cash, and mover masking |
+| `orchestrator.py` | Public API (`run_backtest_orchestrator`, `run_frozen_params_combined_backtest`, `run_multi_strategy_per_coin_wfo`) + regime/allocation helpers |
+| `orchestrator_utils.py` | Pure utility helpers (param coercion, ETA strings, logging) shared across orchestration layers |
+| `sensitivity.py` | Grid search orchestration — vectorized and chunked paths |
+| `wfo.py` | Walk-forward optimization loop (`run_wfo_orchestrator`, fold calculations, robustness scoring) |
+| `metrics.py` | Train-metric extraction (Sharpe/Sortino/Calmar), trade-count gates, sensitivity result filtering |
+| `regime_filtering.py` | Three-tier BTC-correlation regime filter (BTC regime, altcoin index, exempt) |
+| `benchmarking.py` | Buy-and-hold benchmarks (BTC, S&P 500), CAGR helpers, SPY parquet cache |
+
+- **Backtesting**: `FastBacktest` accepts a `config` dict (CONSTANTS) for portfolio-level settings and a separate `params` dict for signal parameters. Signal parameters support list values for broadcasting parameter grids.
 - **Broadcasting**: `SignalFactory` (vectorbt IndicatorFactory) enables running thousands of parameter combinations in a single vectorized operation.
 - **Signals**: `signals.py` implements "Golden Source" logic (PSAR, ADX, ATR Trailing Stop) using Numba and VectorBT.
 
@@ -57,6 +69,27 @@ The project uses a **pluggable strategy framework** for flexible signal generati
 2. Instantiates the strategy classes via `get_entry_strategy()` / `get_exit_strategy()`
 3. Calls `compute_entries()` and `compute_exits()` which return numpy arrays
 4. Wraps arrays in DataFrames with proper MultiIndex columns for VectorBT
+
+### Three-Tier Regime Filter
+
+Before combining per-coin signals into the final portfolio, `run_frozen_params_combined_backtest()` applies a BTC-correlation regime filter that mutes entries during bear markets:
+
+| Tier | Condition | Filter applied |
+| ---- | --------- | -------------- |
+| **BTC tier** | BTC return correlation ≥ `BTC_REGIME_FILTER_MIN_CORRELATION` (default 0.5) | Signal blocked when BTC price < EMA(200) |
+| **Altcoin tier** | Correlation in `[ALTCOIN_REGIME_FILTER_CORR_MIN, btc_min)` (default 0.3–0.5) | Signal blocked when altcoin equal-weight index < EMA(200) |
+| **Exempt tier** | Correlation < `ALTCOIN_REGIME_FILTER_CORR_MIN` | No filter — coin trades freely |
+
+The **altcoin index** is an equal-weighted, normalised price series built from all non-BTC symbols in the universe. Its EMA(200) acts as a trend proxy for alt-correlated coins.
+
+Correlations are computed over the full OHLCV date range using daily log-returns. Regime filtering is enabled by `BTC_REGIME_FILTER=True` in constants; it is disabled by default.
+
+```python
+_compute_btc_correlations()   # -> Dict[str, float]
+_compute_btc_regime_mask()    # -> pd.Series[bool]  (True = bullish)
+_compute_altcoin_index_mask() # -> pd.Series[bool]  (True = bullish)
+_apply_tiered_regime_mask()   # -> filtered entries DataFrame
+```
 
 ### Per-Coin Walk-Forward Optimization
 
