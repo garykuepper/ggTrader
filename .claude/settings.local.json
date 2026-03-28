@@ -8,7 +8,29 @@
       "Bash(ls -t c:/Users/gkuep/PycharmProjects/ggTrader/results/pipeline_* -d)",
       "Bash(xargs -I{} tail -40 {}/status.txt)",
       "Bash(ls -t -d c:/Users/gkuep/PycharmProjects/ggTrader/results/pipeline_*)",
-      "Bash(xargs -I{} cat {}/pipeline_report.md)"
+      "Bash(xargs -I{} cat {}/pipeline_report.md)",
+      "Bash(ls -la /c/Users/gkuep/PycharmProjects/ggTrader/src/ggTrader/cli/*.py)",
+      "Bash(grep -r \"class\\\\|def \" /c/Users/gkuep/PycharmProjects/ggTrader/src/ggTrader/core/*.py)",
+      "Bash(ls -la /c/Users/gkuep/PycharmProjects/ggTrader/src/ggTrader/utils/*.py)",
+      "Bash(python -c \"from src.ggTrader.core.orchestrator import _zscore_normalize_series, _param_cv_series, _calculate_robustness, _calculate_oos_robustness; print\\(''OK''\\)\")",
+      "Bash(python ggt.py research --help)",
+      "Bash(python scripts/run_walk_forward_optimization.py --help)",
+      "Bash(python scripts/run_walk_forward_optimization.py --symbols BTC-USD,ETH-USD,SOL-USD --start-date 2023-01-01 --end-date 2025-12-31 --phase1 --no-progress)",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''data/top_50_ccxt_volume.json''\\)\\); syms=[x[''symbol''] if isinstance\\(x,dict\\) else x for x in d]; print\\(f''{len\\(syms\\)} coins available''\\); print\\('', ''.join\\(syms[:20]\\)\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''data/top_50_ccxt_volume.json''\\)\\); syms=[x[''symbol''] if isinstance\\(x,dict\\) else x for x in d]; print\\('', ''.join\\(syms\\)\\)\")",
+      "Bash(python -c \":*)",
+      "Bash(python -c \"import ggTrader; print\\(ggTrader.__file__\\)\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(type\\(d\\)\\); print\\(d[:5] if isinstance\\(d,list\\) else list\\(d.keys\\(\\)\\)[:5]\\)\")",
+      "Bash(grep -r \"register_.*_parser\\\\|run_backtest\\\\|run_trade\\\\|run_production\" src/ggTrader/cli/cmd_*.py)",
+      "Bash(grep -h \"^def register_\\\\|^def run_\" src/ggTrader/cli/cmd_*.py)",
+      "Bash(pip install:*)",
+      "Bash(ggt --help)",
+      "Bash(ggt research:*)",
+      "Bash(for i:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/gkuep/PycharmProjects/ggTrader/results/research/research_20260325_212757/**)",
+      "Bash(done)",
+      "Bash(tasklist /v)"
     ]
   }
 }

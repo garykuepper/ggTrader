@@ -1,11 +1,11 @@
 # Trading Strategy Pipeline Report
 
-**Generated**: 2026-03-27 10:11:32
+**Generated**: 2026-03-27 20:08:02
 
 ## Executive Summary
 
 **WFO Training/Test period:** n/a  
-**Coins:** 5
+**Coins:** 9
 
 | | WFO Full Range | YTD |
 |-|----------------|--------|
@@ -45,11 +45,15 @@ Best performing strategy per coin based on robustness scores (highest first).
 
 | Symbol | Strategy | Selection | Robustness Score |
 |--------|----------|-----------|------------------|
-| PUMP-USD | supertrend_flip+fixed_sl_tp | wfo_robustness | 1.7791 |
-| BNB-USD | psar_adx+atr_trailing | wfo_robustness | 0.7270 |
-| SPX-USD | psar_adx+fixed_sl_tp | wfo_robustness | 0.6601 |
-| CRV-USD | donchian_breakout+atr_trailing | wfo_robustness | 0.4583 |
-| RENDER-USD | psar_adx+atr_trailing | wfo_robustness | 0.1734 |
+| ZEC-USD | ema_cross+atr_trailing | wfo_robustness | 0.9396 |
+| TAO-USD | psar_adx+atr_trailing | wfo_robustness | 0.8003 |
+| ETH-USD | rsi_reversal+atr_trailing | wfo_robustness | 0.7849 |
+| XRP-USD | psar_adx+atr_trailing | wfo_robustness | 0.5760 |
+| SOL-USD | ema_cross+atr_trailing | wfo_robustness | 0.5235 |
+| DOGE-USD | rsi_reversal+trailing_stop | wfo_robustness | 0.4019 |
+| ADA-USD | rsi_reversal+atr_trailing | wfo_robustness | 0.3933 |
+| SUI-USD | ema_cross+fixed_sl_tp | wfo_robustness | 0.3128 |
+| BTC-USD | macd_cross+atr_trailing | wfo_robustness | 0.2379 |
 
 ### WFO Fold Timeline
 
@@ -59,9 +63,17 @@ gantt
     dateFormat  YYYY-MM-DD
     axisFormat  %Y-%m
     
+    section Fold 4
+    Train  :active, f4_tr, 2023-12-31, 2024-12-30
+    Test   :crit, f4_ts, 2024-12-30, 2025-04-30
+    
+    section Fold 5
+    Train  :active, f5_tr, 2024-05-01, 2025-04-30
+    Test   :crit, f5_ts, 2025-04-30, 2025-08-30
+    
     section Fold 6
-    Train  :active, f6_tr, 2024-09-12, 2025-09-02
-    Test   :crit, f6_ts, 2025-09-02, 2025-12-30
+    Train  :active, f6_tr, 2024-08-30, 2025-08-30
+    Test   :crit, f6_ts, 2025-08-30, 2025-12-30
     
 ```
 
@@ -71,11 +83,15 @@ Per-fold OOS Sharpe for each coin's winning strategy (folds ordered as above). N
 
 | Symbol | Strategy+Exit | IS Rob | OOS Rob | Consistency | Fold 1 | Fold 2 | Fold 3 | Fold 4 | Fold 5 | Fold 6 |
 |--------|---------------|--------|---------|-------------|--------|--------|--------|--------|--------|--------|
-| PUMP-USD | supertrend_flip+fixed_sl_tp | 2.5370 | 1.3710 | 100% | nan | nan | nan | nan | nan | 1.371 |
-| BNB-USD | psar_adx+atr_trailing | 1.9842 | 0.7211 | 50% | nan | nan | nan | nan | -0.206 | 1.740 |
-| SPX-USD | psar_adx+fixed_sl_tp | 2.2542 | 0.0360 | 75% | n/a | n/a | 0.824 | -3.568 | 0.751 | 1.546 |
-| CRV-USD | donchian_breakout+atr_trailing | 2.5959 | -0.1159 | 40% | nan | -0.668 | 1.440 | -2.080 | 0.767 | -0.189 |
-| RENDER-USD | psar_adx+atr_trailing | 2.0114 | -0.6562 | 50% | nan | nan | 0.243 | -0.631 | 0.216 | -2.228 |
+| TAO-USD | psar_adx+atr_trailing | 1.8878 | 0.6252 | 67% | nan | nan | 1.326 | -0.164 | 0.918 | n/a |
+| ZEC-USD | ema_cross+atr_trailing | 2.5053 | 0.5783 | 67% | nan | nan | nan | 0.212 | -1.058 | 2.544 |
+| ETH-USD | rsi_reversal+atr_trailing | 1.8321 | 0.3935 | 83% | 0.688 | 1.297 | 0.863 | -3.405 | 2.367 | 1.004 |
+| SOL-USD | ema_cross+atr_trailing | 1.7893 | 0.1871 | 60% | n/a | -1.182 | 0.651 | -1.260 | 0.894 | 1.031 |
+| XRP-USD | psar_adx+atr_trailing | 1.8801 | 0.0302 | 80% | 0.072 | 0.151 | 4.252 | -3.428 | 0.151 | n/a |
+| ADA-USD | rsi_reversal+atr_trailing | 2.0156 | 0.0149 | 40% | -1.193 | -1.581 | 2.722 | n/a | 0.418 | -0.868 |
+| DOGE-USD | rsi_reversal+trailing_stop | 2.0506 | -0.1148 | 50% | 0.954 | -1.800 | 1.800 | -2.326 | 1.764 | -0.898 |
+| BTC-USD | macd_cross+atr_trailing | 1.7905 | -0.2322 | 33% | 2.868 | -3.269 | 1.564 | -0.253 | -1.138 | -0.176 |
+| SUI-USD | ema_cross+fixed_sl_tp | 2.3463 | -0.4933 | 50% | 2.535 | -2.557 | 2.003 | 0.605 | -1.294 | -2.272 |
 
 ## Full-Period Performance (Per-Coin)
 
