@@ -109,24 +109,24 @@ def _apply_tiered_regime_mask(
         if alt_regime is not None else None
     )
 
-    mask_cols = {}
+    # Build per-column mask arrays — use a list (not dict) to preserve duplicate columns.
+    mask_arrays = []
     btc_filtered, alt_filtered, exempt_coins = [], [], []
     for col in combined_entries.columns:
         sym = col[0] if isinstance(col, tuple) else col
         corr = btc_corrs.get(sym, 1.0)
         if corr >= btc_min_corr:
-            mask_cols[col] = btc_aligned.values
+            mask_arrays.append(btc_aligned.values)
             btc_filtered.append(f"{sym}({corr:.2f})")
         elif corr >= alt_min_corr and alt_aligned is not None:
-            mask_cols[col] = alt_aligned.values
+            mask_arrays.append(alt_aligned.values)
             alt_filtered.append(f"{sym}({corr:.2f})")
         else:
-            mask_cols[col] = np.ones(len(combined_entries), dtype=bool)
+            mask_arrays.append(np.ones(len(combined_entries), dtype=bool))
             exempt_coins.append(f"{sym}({corr:.2f})")
 
-    regime_mask_df = pd.DataFrame(mask_cols, index=combined_entries.index)
-    # Use .values to bypass pandas MultiIndex column-alignment errors
-    regime_arr = regime_mask_df.values
+    # Stack into (n_bars, n_cols) — guaranteed same shape as combined_entries.values
+    regime_arr = np.column_stack(mask_arrays)
     n_blocked = int((combined_entries.values & ~regime_arr).sum())
     filtered = pd.DataFrame(
         combined_entries.values & regime_arr,
