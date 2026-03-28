@@ -1,6 +1,6 @@
 # Trading Strategy Pipeline Report
 
-**Generated**: 2026-03-27 20:20:24
+**Generated**: 2026-03-27 20:24:02
 
 ## Executive Summary
 
@@ -11,8 +11,8 @@
 | | WFO Full Range | YTD |
 |-|----------------|--------|
 | Strategy CAGR | 17.07% | 2.19% |
-| BTC buy & hold CAGR | 74.01% ❌ | -28.55% ✅ |
-| S&P 500 CAGR | 1.02% ✅ | n/a |
+| BTC buy & hold CAGR | 74.01% ❌ | -28.53% ✅ |
+| S&P 500 CAGR | 22.47% ❌ | 15.43% ❌ |
 | Strategy Sharpe | 0.96 | 0.40 |
 | Max Drawdown | -20.57% | -11.95% |
 | Total Trades | 89 | 32 |
@@ -33,10 +33,10 @@
 
 | Metric | Strategy | BTC (buy & hold) | S&P 500 (SPY) | Excess vs BTC |
 |--------|----------|------------------|---------------|---------------|
-| Total Return | 60.37% | 426.04% | 3.09% | - |
-| CAGR | 17.07% | 74.01% | 1.02% | -56.94% |
-| Sharpe Ratio | 0.9583 | 1.4255 | 0.4864 | - |
-| Max Drawdown | -20.57% | -34.46% | -1.70% | - |
+| Total Return | 60.37% | 426.04% | 83.58% | - |
+| CAGR | 17.07% | 74.01% | 22.47% | -56.94% |
+| Sharpe Ratio | 0.9583 | 1.4255 | 1.2852 | - |
+| Max Drawdown | -20.57% | -34.46% | -14.53% | - |
 | Total Trades | 89 | 1 | 1 | - |
 | Win Rate | 48.31% | - | - | - |
 
@@ -45,10 +45,10 @@
 
 | Metric | Strategy | BTC (buy & hold) | S&P 500 (SPY) | Excess vs BTC |
 |--------|----------|------------------|---------------|---------------|
-| Total Return | 2.19% | -28.53% | n/a | - |
-| CAGR | 2.19% | -28.55% | n/a | 30.74% |
-| Sharpe Ratio | 0.4011 | -1.8147 | n/a | - |
-| Max Drawdown | -11.95% | -35.36% | n/a | - |
+| Total Return | 2.18% | -28.51% | 15.42% | - |
+| CAGR | 2.19% | -28.53% | 15.43% | 30.71% |
+| Sharpe Ratio | 0.4008 | -1.8128 | 0.9163 | - |
+| Max Drawdown | -11.95% | -35.36% | -10.49% | - |
 | Total Trades | 32 | 1 | 1 | - |
 | Win Rate | 28.12% | - | - | - |
 

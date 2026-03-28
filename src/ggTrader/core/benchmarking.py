@@ -135,7 +135,10 @@ def _load_spy_close(
     today_str = pd.Timestamp.now().strftime("%Y%m%d")
     cache_dir = Path("results")
     cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_path = cache_dir / f"spy_cache_{today_str}.parquet"
+    # Key cache by date + requested range so phase-2 and phase-3 don't collide.
+    start_slug = str(start_date).replace("-", "")[:8]
+    end_slug = str(end_date).replace("-", "")[:8]
+    cache_path = cache_dir / f"spy_cache_{today_str}_{start_slug}_{end_slug}.parquet"
 
     spy: Optional[pd.Series] = None
     if cache_path.exists():
