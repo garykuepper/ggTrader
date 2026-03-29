@@ -119,25 +119,25 @@ gantt
 
 Once Phase 1 finishes, the system aggregates the winners into `run_results.json`.
 
-## 🏗️ The Pipeline Lifecycle
+## 🏗️ The 4-Phase Lifecycle
 
-The system is designed to run autonomously via `ggt research`, which internally runs all three backtesting phases before handing off to live execution.
+The system is designed to run autonomously, typically within a Docker environment.
 
-### Phase 1: Per-Coin WFO + Exit Tournament
+### Phase 1: Selection (Dynamic)
 
-Runs Walk-Forward Optimization for each coin across all (entry × exit) strategy combos using a 6-fold sliding window. Each fold trains on ~2 years and tests on ~3 months. The winning strategy + params per coin are saved to `run_results.json`. Parallel workers split the coin universe to reduce total wall-clock time.
+The universe is generated in real-time by `ggt research` based on live Kraken volume, ensuring the bot always trades the most liquid assets.
 
-### Phase 2: Full-Range Validation
+### Phase 2: Re-Optimization
 
-Replays WFO-selected params on the entire training/test range with the three-tier BTC regime filter applied. OOS-robustness-weighted allocation assigns capital across coins. Produces the combined portfolio equity curve, per-coin stats, and allocation weights.
+The Grand WFO searches for the best strategy (RSI, EMA, PSAR, etc.) and parameters for each coin independently using a sliding 3-year window.
 
-### Phase 3: YTD Performance
+### Phase 3: Portfolio Analysis
 
-Same replay on the last 12 months (configurable via `RECENT_VALIDATION_START_DATE`). Pre-loads `EMA_WARMUP_BARS` (default 200) × interval bars before the window start so indicators are fully warm from bar 0. Generates the YTD dashboard plot alongside the full-range one.
+The system simulates the signals against multiple allocation models (Equal Weight, Kelly, Risk Parity) and selects the one with the highest Sharpe Ratio.
 
 ### Phase 4: Live Execution
 
-`ggt trade` uses `portfolio_weights.json` from Phase 2/3 to manage Kraken orders. The `ExecutionEngine` polls every 4 hours, aligned with candle closes, and uses **Native Trailing Stops** for server-side risk protection.
+The `ExecutionEngine` manages orders on Kraken, utilizing **Native Trailing Stops** for server-side risk protection.
 
 ## 🐳 Docker Orchestration
 
@@ -165,19 +165,19 @@ The default of **5 workers** is the empirical sweet spot for a 50-coin universe 
 - More workers (8+): rarely faster due to Python GIL contention during Numba JIT compilation; can increase peak RAM to 20 GB+.
 
 ```bash
-ggt research --top 50 --workers 5   # default, ~20-25 min
-ggt research --top 20 --workers 3   # lighter, ~8 min
+ggt research --top 50 --workers 5   # default, ~12-15 min
+ggt research --top 20 --workers 3   # lighter, ~5 min
 ```
 
 ### Parameter grid size
 
-The `DETAILED_ENTRY_PARAM_GRIDS` and `DETAILED_EXIT_AXIS_GRIDS` in `src/ggTrader/pipeline/param_grids.py` drive WFO search space:
+The `DETAILED_ENTRY_PARAM_GRIDS` in `src/ggTrader/pipeline/param_grids.py` drives WFO search space. Based on 261 real-run selections:
 
-- **psar_adx**: collapsed `sar_acceleration`→`[0.02]`, `sar_maximum`→`[0.1]` (empirically constant) — saves ~97% of combos.
-- **donchian_breakout**: `donchian_length`→`[30, 50, 100]` — WFO selects the best channel width per coin.
-- **fixed_sl_tp exit**: `stop_pct`→`[1.0, 1.5, 2.0, 3.0]`, `take_profit_pct`→`[2.0, 3.0, 4.0, 6.0]` — 16 combos.
-- **trailing_stop exit**: `trailing_stop_pct`→`[2.0, 3.0, 5.0, 8.0]` — 4 combos.
-- **rsi_reversal**: `rsi_trend_filter`→`[True, False]` — WFO decides per coin whether EMA200 alignment helps.
+- **psar_adx**: collapsed `sar_acceleration`→`[0.02]`, `sar_maximum`→`[0.1]` (100% selected), saving ~97% of combos.
+- **donchian_breakout**: collapsed `donchian_length`→`[100]` (100% selected).
+- **fixed_sl_tp / trailing_stop exits**: collapsed to single constants (`stop_pct=1.5`, `take_profit_pct=3.0`, `trailing_stop_pct=3.0`).
+
+Current total: ~25,000 combos vs 311,000 before pruning — roughly **12× faster** per worker.
 
 ### Universe cache
 
@@ -212,13 +212,17 @@ The main process waits for all workers to check in; if one never does, it stalls
 
 Symptom: Phase 1 finishes but every coin shows `robustness=n/a`, `trades=0`.
 
-Cause: Multi-worker merge failure. Each worker writes `worker_N_results.json` to the shared run directory. The main process merges them into `run_results.json` before launching Phase 2/3. If one worker crashed silently, its coin subset is missing from the merged result.
+Cause: Multi-worker merge failure — the result `pickle` file was written by one worker but not yet flushed when the coordinator read it.
 
-Fix: Check individual `worker_N.log` files in the run directory for tracebacks. Reduce `--workers` to 1 to confirm results are valid, then increase back up. If it recurs, check disk space on the `results/` volume.
+Fix: Reduce `--workers` to 1 to confirm results are valid, then increase back up. If it recurs, check disk space on the `results/` volume.
 
 ### YTD backtest starts trading much later than the window start
 
-**Status: Resolved.** Phase 3 now pre-loads `EMA_WARMUP_BARS` (default 200) × `INTERVAL` bars before the YTD window start, ensuring strategy indicators (e.g. EMA200) and the BTC regime filter are fully warm from bar 0. The portfolio equity curve is then trimmed back to the intended YTD start via `PHASE3_STATS_CUTOFF` so reported stats cover only the intended window. No manual workaround needed.
+Symptom: `ggt pipeline --phase 3` starts at e.g. March 2025 but first trades don't appear until December 2025.
+
+Cause: The EMA(200) warmup period requires 200 bars before regime signals become valid. At 4h bars, 200 bars ≈ 33 days. If the regime filter is enabled (`BTC_REGIME_FILTER=True`), all signals are blocked during warmup.
+
+Fix: Either extend the YTD window start backwards by at least 200 bars, or disable regime filtering for short validation windows (`BTC_REGIME_FILTER=False`).
 
 ### YTD plot missing from report
 
