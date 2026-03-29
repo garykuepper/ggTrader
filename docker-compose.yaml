@@ -14,13 +14,6 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
     environment:
-      # Use host.docker.internal to reach the external DB on Windows/Mac host
-      - DB_HOST=host.docker.internal
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASS=postgres
-      - DB_NAME=ggtrader
-      - DRY_RUN=true
       - TZ=America/Los_Angeles
     extra_hosts:
       - "host.docker.internal:host-gateway"
