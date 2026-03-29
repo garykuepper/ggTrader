@@ -64,7 +64,7 @@ The unified `ggt` CLI is the recommended way to interact with the engine.
 
 4. **Production Recalibration**:
 
-   Generates portfolio weights for live trading.
+   Runs a native VectorBT competition to rank allocations and generate target `portfolio_weights.json` for live trading.
 
    ```bash
    python ggt.py production
@@ -72,7 +72,7 @@ The unified `ggt` CLI is the recommended way to interact with the engine.
 
 5. **Start Live Trading**:
 
-   Begins the execution heartbeat.
+   Begins the execution heartbeat. It scales natively by polling total Free USD + Crypto Held USD via CCXT, deploying server-side Kraken OCO stops instantly.
 
    ```bash
    python ggt.py trade --dry-run

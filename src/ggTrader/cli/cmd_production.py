@@ -1,9 +1,10 @@
 """CLI Command: Production (Monthly Recalibration)"""
 
 import argparse
-import subprocess
 import sys
+from pathlib import Path
 
+from ggTrader.core.portfolio_optimizer import run_portfolio_competition
 from ggTrader.utils.state_manager import get_latest_research_run
 
 
@@ -22,7 +23,6 @@ def register_production_parser(subparsers: argparse._SubParsersAction):
         "--limit", type=int, default=50, help="Number of CCXT coins to pull (default: 50)"
     )
 
-
 def run_production(args: argparse.Namespace):
     """Executes the production recalibration pipeline."""
     target_results = args.master_results
@@ -35,12 +35,7 @@ def run_production(args: argparse.Namespace):
         target_results = str(latest)
         print(f"Auto-detected latest research run: {target_results}")
 
-    cmd = [
-        sys.executable,
-        "scripts/run_recalibration_pipeline.py",
-        "--master-results",
-        target_results,
-        "--limit",
-        str(args.limit),
-    ]
-    subprocess.run(cmd, check=True)
+    # The master results file is a path to run_results.json.
+    # We pass its parent directory to the optimizer.
+    results_dir = str(Path(target_results).parent)
+    run_portfolio_competition(results_dir)

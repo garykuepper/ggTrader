@@ -32,7 +32,7 @@ def list_runs(engine) -> None:
     Lists recent runs from the database.
     """
     query = """
-        SELECT 
+        SELECT
             run_id, 
             run_type, 
             timestamp,

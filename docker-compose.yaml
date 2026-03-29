@@ -20,17 +20,11 @@ services:
       - DB_USER=postgres
       - DB_PASS=postgres
       - DB_NAME=ggtrader
-      # --- Automated Trading Settings ---
-      - SYMBOLS=BTC-USD,ETH-USD,SOL-USD,DOT-USD,LINK-USD
-      - TRADING_INTERVAL=4h
-      - START_CASH=1000.0
-      - CAPITAL_PER_TRADE=25.0
-      - REOPTIMIZE_DAYS=30
-      - TRAINING_YEARS=3
       - DRY_RUN=true
+      - TZ=America/Los_Angeles
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: python ggt.py trade
+    command: python -u ggt.py trade --dry-run
 
 volumes:
   ggtrader_pgdata: # Dedicated persistent volume for ggTrader data

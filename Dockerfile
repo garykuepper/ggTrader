@@ -23,5 +23,5 @@ RUN pip install --no-cache-dir -e .
 # Create the data directory for persistence
 RUN mkdir -p /app/data
 
-# Default command (can be overridden in docker-compose)
-CMD ["ggtrader-live", "--results", "/app/results/run_results.json", "--dry-run"]
+# Default command: Start Live Exec Engine natively with Unbuffered output for log tailing
+CMD ["python", "-u", "ggt.py", "trade"]

@@ -75,7 +75,11 @@ class ResultsManager:
         if metadata is None:
             metadata = {}
 
-        output_path = self.run_dir / "run_results.json"
+        worker_id = metadata.get("WORKER_ID")
+        if worker_id is not None:
+            output_path = self.run_dir / f"worker_{worker_id}_results.json"
+        else:
+            output_path = self.run_dir / "run_results.json"
 
         # Incremental update: load existing results if present
         if output_path.exists():

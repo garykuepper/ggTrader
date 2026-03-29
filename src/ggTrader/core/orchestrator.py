@@ -643,7 +643,11 @@ def run_frozen_params_combined_backtest(
             metrics=final_stats,
             metadata=metadata,
         )
-        results_manager.save_vbt_dashboard(final_pf, "combined_portfolio_final_dashboard")
+
+        worker_id_tag = f"_worker_{config['WORKER_ID']}" if config.get("WORKER_ID") else ""
+        results_manager.save_vbt_dashboard(
+            final_pf, f"combined_portfolio_final_dashboard{worker_id_tag}"
+        )
         print(f"\nMulti-Strategy WFO Results saved to: {results_manager.run_dir}")
 
     return {

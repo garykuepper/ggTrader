@@ -1,0 +1,14 @@
+{
+    "strategy": "Max Diversified (1/N)",
+    "timestamp": "2026-03-29 12:49:51",
+    "weights": {
+        "ADA-USD": 0.125,
+        "DOGE-USD": 0.125,
+        "ETH-USD": 0.125,
+        "SOL-USD": 0.125,
+        "SUI-USD": 0.125,
+        "TAO-USD": 0.125,
+        "XRP-USD": 0.125,
+        "ZEC-USD": 0.125
+    }
+}

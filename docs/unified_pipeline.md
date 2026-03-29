@@ -14,14 +14,14 @@ Fetches the top assets by volume and runs a **Grand Walk-Forward Optimization (W
 - **Filtering**: Automatically excludes stablecoins, fiat, and gold-backed assets (`PAXG`, `XAUT`).
 - **Asset Selection**: Selects the most liquid assets based on exchange volume (Default: **Top 50**).
 - **Volume Window**: Aggregates volume over a specific lookback period to ensure sustained liquidity (Default: **30d**; Options: `24h`, `7d`, `30d`).
-- **WFO Duration**: Runs the optimization over a dynamic sliding window relative to today (Default: **1095 days / 3 years**).
+- **WFO Duration**: Runs the optimization over a dynamic sliding window relative to an end date. The end date defaults to **2025-12-31**, but can be customized with `--end-date` (Default: **1095 days / 3 years** prior to the end date).
 - **Command (Using Defaults)**:
 
 ```bash
 python ggt.py research
 ```
 
-*Note: The command above is equivalent to: `python ggt.py research --top 50 --window 30d --days 1095 --workers 5`*
+*Note: The command above is equivalent to: `python ggt.py research --top 50 --window 30d --days 1095 --end-date 2025-12-31 --workers 5`*
 
 ### 2. Backtest (`ggt backtest`)
 
@@ -38,7 +38,9 @@ python ggt.py backtest --symbols BTC,ETH --params signals_config.json
 
 Performs the monthly recalibration. It runs the full portfolio analysis and generates the final allocation weights for live trading.
 
-- **Output**: Generates `portfolio_weights.json` used by the live bot.
+- **Native Competition**: Runs an instantaneous backtest using `vectorbt` to rank allocation strategies (Flat 10%, Max Diversified 1/N, and Robustness Weighted) against your Master WFO results.
+- **Selection**: Automatically picks the allocation strategy that yields the highest Sharpe Ratio.
+- **Output**: Generates `portfolio_weights.json` in a timestamped `results/production/production_{date}/` directory for the live bot to securely mount.
 - **Command**:
 
 ```bash
@@ -50,13 +52,20 @@ python ggt.py production
 Starts the live `ExecutionEngine` heartbeat.
 
 - **Loop**: Polls Kraken every 4 hours (aligned with candle closes).
-- **Execution**: Uses optimized parameters to generate signals and `portfolio_weights.json` for position sizing.
+- **Dynamic Sizing**: Calculates trade sizing dynamically by parsing your entire live Kraken account value (USD free capital + the current real-time USD value of all held crypto). You do not need to pause the bot to manually add cash!
+- **Server-Side Safety**: Submits native OCO (One-Cancels-the-Other) "stop-loss-profit" orders directly to Kraken instantly upon entry. Ensures absolute downstream protection if your local bot loses internet connectivity.
 - **Command**:
+
 ```bash
 python ggt.py trade
 ```
 
-### 5. Database (`ggt db`)
+### 5. Status & Reporting
+
+- **`ggt status`**: Tails the asynchronous log streams of all parallel WFO workers in real-time, outputting dynamic `%` progress bars without locking up your terminal.
+- **`ggt report`**: Regenerates the `research_report.md` Markdown dashboard from a previous `run_results.json`.
+
+### 6. Database (`ggt db`)
 
 Unified administration for TimescaleDB maintenance and exports.
 
@@ -65,21 +74,23 @@ Unified administration for TimescaleDB maintenance and exports.
 - **`compression`**: Manage TimescaleDB native data compression.
 - **`export`**: Backup the database using industrial-grade `pg_dump`.
 
-### 6. Ingest (`ggt ingest`)
+### 7. Ingest (`ggt ingest`)
 
 Synchronizes historical candle data from CCXT (Kraken) to the local database.
 
 - **Command**:
+
 ```bash
 python ggt.py ingest --days 180
 ```
 
-### 7. Cleanup (`ggt cleanup`)
+### 8. Cleanup (`ggt cleanup`)
 
 Maintains a lean project directory by removing old research logs and temporary files.
 
 - **Function**: Keeps only the last 10 research runs and clears out root log files.
 - **Command**:
+
 ```bash
 python ggt.py cleanup --confirm
 ```

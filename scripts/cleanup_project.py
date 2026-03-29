@@ -21,7 +21,8 @@ def cleanup_project():
         to_delete = all_folders[keep_count:]
 
         print(
-            f"Found {len(all_folders)} result folders. Keeping {keep_count}, deleting {len(to_delete)}..."
+            f"Found {len(all_folders)} result folders. Keeping {keep_count}, "
+            f"deleting {len(to_delete)}..."
         )
         for folder in to_delete:
             try:

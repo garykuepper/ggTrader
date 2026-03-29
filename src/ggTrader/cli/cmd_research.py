@@ -30,6 +30,12 @@ def register_research_parser(subparsers: argparse._SubParsersAction):
         help="Train lookup window in days (default: 1095 / 3 years)",
     )
     parser.add_argument(
+        "--end-date",
+        type=str,
+        default="2025-12-31",
+        help="End date for the research window in YYYY-MM-DD format (default: 2025-12-31)",
+    )
+    parser.add_argument(
         "--top",
         type=int,
         default=50,
@@ -165,8 +171,19 @@ def run_research(args: argparse.Namespace):
     symbols = [s if "-" in s else f"{s}-USD" for s in symbols]
 
     # Calculate dynamic training window
-    end_date = datetime.now().strftime("%Y-%m-%d")
-    start_date = (datetime.now() - timedelta(days=args.days)).strftime("%Y-%m-%d")
+    if args.end_date:
+        end_date_str = args.end_date
+        try:
+            end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d")
+        except ValueError:
+            print(f"Error: Invalid --end-date '{end_date_str}'. Must be in YYYY-MM-DD format.")
+            return
+    else:
+        end_date_obj = datetime.now()
+        end_date_str = end_date_obj.strftime("%Y-%m-%d")
+
+    end_date = end_date_str
+    start_date = (end_date_obj - timedelta(days=args.days)).strftime("%Y-%m-%d")
 
     if args.no_parallel or args.workers <= 1:
         print(
@@ -265,9 +282,15 @@ def run_research(args: argparse.Namespace):
                 desc=f"Worker {i+1}",
                 position=i + 1,
                 leave=False,
-                bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}]"
+                dynamic_ncols=True,
+                bar_format="{desc} {percentage:3.0f}%|{bar:20}| [{elapsed}]"
             )
             worker_pbars.append(pbar)
+
+        # Worker persistent state
+        worker_states = {}
+        for i in range(len(processes)):
+            worker_states[i] = {"msg": "", "progress": 0.0}
 
         try:
             while True:
@@ -301,7 +324,7 @@ def run_research(args: argparse.Namespace):
                         combo_match = list(re_combo.finditer(tail))
                         fold_match = list(re_fold.finditer(tail))
 
-                        msg = f"Worker {i+1}: "
+                        msg = ""
                         total_progress = 0.0
 
                         if sym_match:
@@ -327,7 +350,19 @@ def run_research(args: argparse.Namespace):
                                     )
                                     total_progress += fold_prog
 
-                        worker_pbars[i].set_description(msg)
+                            # Update persistent state
+                            worker_states[i] = {"msg": msg, "progress": total_progress}
+                        else:
+                            # Use last known state if markers scrolled out of the buffer
+                            msg = worker_states[i]["msg"]
+                            total_progress = worker_states[i]["progress"]
+
+                        desc_str = msg if msg else "Init..."
+                        # Prevent console wrap by truncating long descriptions
+                        if len(desc_str) > 40:
+                             desc_str = desc_str[:37] + "..."
+
+                        worker_pbars[i].set_description(f"W{i+1} {desc_str}")
                         worker_pbars[i].n = min(99, total_progress) # Save 100 for true finish
                         worker_pbars[i].refresh()
                     except (OSError, ValueError, IndexError):
