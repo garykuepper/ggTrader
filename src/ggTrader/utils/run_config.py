@@ -145,6 +145,10 @@ def full_pipeline_config() -> dict[str, Any]:
         # Prevents catching falling knives in sustained crypto bear markets.
         # Applied in Phase 2/3 combined backtest only — WFO fold optimization is unaffected.
         "BTC_REGIME_FILTER": True,
+        # Optional: compare a short EMA vs EMA(200) instead of close vs EMA(200).
+        # Smooths out single-candle spikes from flipping the regime signal.
+        # 50 = golden/death cross (EMA50 > EMA200). Set to None to use close > EMA200.
+        "BTC_REGIME_FILTER_SHORT_EMA": 50,
         # Only apply BTC regime filter to coins with BTC return correlation >= this threshold.
         # Coins below the threshold use the altcoin index filter (if enabled) or trade freely.
         "BTC_REGIME_FILTER_MIN_CORRELATION": 0.5,
@@ -159,6 +163,13 @@ def full_pipeline_config() -> dict[str, Any]:
         # Coins whose OOS-weighted robustness falls below this threshold are excluded from
         # Phase 2/3 combined portfolio. Set to None to disable the gate.
         "MIN_ROBUSTNESS_SCORE": 0.1,
+        # Minimum number of WFO training folds that must have produced at least one valid
+        # param combo (finite is_sharpe). Strategies where most folds were rejected by the
+        # training gate (e.g. regime-filtered ema_cross with ema_slow=200 yielding 0-1
+        # trades per fold) can still achieve inflated robustness from lucky OOS folds.
+        # Set to None to disable. 3 = at least 3 of N folds must have had valid training
+        # (with 6 folds total, this means at least half must pass the training gate).
+        "MIN_VALID_TRAIN_FOLDS": 3,
         # Minimum fraction of OOS folds that must be profitable (positive Sharpe) for a coin
         # to be included in the combined portfolio. 0.33 = at least 1 in 3 folds profitable.
         "MIN_FOLD_CONSISTENCY": 0.33,
@@ -187,4 +198,9 @@ def full_pipeline_config() -> dict[str, Any]:
         # single outlier fold from inflating the OOS robustness score.
         # 0.0 = disabled (pure weighted mean), 0.3 = default.
         "OOS_STABILITY_WEIGHT": 0.3,
+        # WFO result cache: skip re-running the 6-fold WFO for (symbol, combo) pairs whose
+        # inputs (param grid, config, date range) haven't changed since a prior run.
+        # Set False to force a full re-run (e.g. after changing WFO internals not covered
+        # by the cache key). Delete results/wfo_cache/ to clear all cached entries.
+        "WFO_CACHE_ENABLED": True,
     }

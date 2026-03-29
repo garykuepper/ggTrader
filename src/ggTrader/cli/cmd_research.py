@@ -51,6 +51,59 @@ def register_research_parser(subparsers: argparse._SubParsersAction):
     parser.add_argument("--no-progress", action="store_true", help="Disable progress bar")
 
 
+def merge_worker_results(research_dir: Path, num_workers: int) -> int:
+    """Merge per-worker result files into a single run_results.json.
+
+    Each worker writes worker_N_results.json after phase 1. This function
+    reads all of them, unions their ``strategy_parameters.per_coin`` dicts,
+    and writes the merged result to ``run_results.json`` for phase 2/3.
+
+    Returns the number of coins merged.
+    """
+    merged_per_coin: dict = {}
+    merged_base: dict | None = None
+
+    for n in range(1, num_workers + 1):
+        worker_file = research_dir / f"worker_{n}_results.json"
+        if not worker_file.exists():
+            print(f"  [merge] Warning: {worker_file.name} not found — skipping.")
+            continue
+        try:
+            with open(worker_file, "r") as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f"  [merge] Warning: could not read {worker_file.name}: {e} — skipping.")
+            continue
+
+        sp = data.get("strategy_parameters", {})
+        per_coin = sp.get("per_coin", {})
+        if not per_coin:
+            print(f"  [merge] Warning: {worker_file.name} has no per_coin data — skipping.")
+            continue
+
+        merged_per_coin.update(per_coin)
+        if merged_base is None:
+            merged_base = data  # use first worker's structure as the template
+
+    if merged_base is None:
+        print("  [merge] ERROR: No worker result files found — phase 2/3 will have no data.")
+        return 0
+
+    # Write merged result: patch per_coin into the template structure
+    merged_base["strategy_parameters"]["per_coin"] = merged_per_coin
+    # Update the symbols list in configuration to reflect all coins
+    if "configuration" in merged_base:
+        merged_base["configuration"]["symbols"] = list(merged_per_coin.keys())
+
+    out_path = research_dir / "run_results.json"
+    with open(out_path, "w") as f:
+        json.dump(merged_base, f, indent=4)
+
+    n_coins = len(merged_per_coin)
+    print(f"  [merge] Merged {n_coins} coins from {num_workers} workers -> {out_path.name}")
+    return n_coins
+
+
 def run_research(args: argparse.Namespace):
     """Executes the research pipeline in parallel by default."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -169,6 +222,12 @@ def run_research(args: argparse.Namespace):
                 str(research_dir.absolute()),
                 "--pipeline-stage",
                 "research",
+                "--worker-id",
+                str(i + 1),
+                "--start-date",
+                start_date,
+                "--end-date",
+                end_date,
             ]
 
             f = open(worker_log, "w")
@@ -287,6 +346,15 @@ def run_research(args: argparse.Namespace):
     print(f"\n[{datetime.now()}] All parallel workers finished.")
     print(f"Intermediate WFO results available in: {research_dir}")
 
+    # Merge per-worker result files into a single run_results.json before phase 2/3.
+    # Without this, whichever worker wrote last would be the only one seen by phase 2/3.
+    if not args.no_parallel and args.workers > 1:
+        print(f"\n[{datetime.now()}] Merging worker results...")
+        n_merged = merge_worker_results(research_dir, len(symbol_chunks))  # actual workers launched (≤ args.workers)
+        if n_merged == 0:
+            print("  ERROR: merge produced 0 coins. Phase 2/3 will be skipped.")
+            return
+
     # Step 3: Global Validation & Recent Data Performance
     # We now run Phase 2 & 3 ONCE using the accumulated results dir
     print(
@@ -299,11 +367,13 @@ def run_research(args: argparse.Namespace):
         sys.executable,
         "scripts/run_walk_forward_optimization.py",
         "--symbols-file", str(universe_path.absolute()),
-        "--phase2", 
+        "--phase2",
         "--phase3",
         "--run-dir", str(research_dir.absolute()),
         "--pipeline-stage", "research",
-        "--no-progress"
+        "--no-progress",
+        "--start-date", start_date,
+        "--end-date", end_date,
     ]
     subprocess.run(final_cmd, check=True)
 

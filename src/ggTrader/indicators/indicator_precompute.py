@@ -184,46 +184,40 @@ class IndicatorPrecomputer:
         if cached is not None:
             return cached
 
-        # Use own custom factory to avoid issues with from_pandas_ta splitting
-        # ADX usually returns (ADX, DMP, DMN)
-        ADXFactory = vbt.IndicatorFactory(
-            class_name="ADX",
-            short_name="adx",
-            input_names=["high", "low", "close"],
-            param_names=["length"],
-            output_names=["adx", "dmp", "dmn"],
-        )
+        # Compute ADX per (length, symbol_col) and assemble as a 2D array.
+        # VectorBT's IndicatorFactory has issues with multi-column + multi-param for
+        # multi-output indicators; doing it manually is more reliable.
+        # self.close is a 2D numpy array (n_time, n_symbols).
+        import pandas_ta as ta
 
-        def custom_adx(high, low, close, length):
-            import pandas_ta as ta
+        n_time = self.close.shape[0]
+        n_symbols = self.close.shape[1] if self.close.ndim == 2 else 1
 
-            h_s = pd.Series(np.asarray(high).flatten())
-            l_s = pd.Series(np.asarray(low).flatten())
-            c_s = pd.Series(np.asarray(close).flatten())
-            try:
-                # length might be a list/array with one element if param_product is used
-                le = int(length[0] if isinstance(length, (list, np.ndarray)) else length)
-                res = ta.adx(h_s, l_s, c_s, length=le)
-                if res is not None and res.shape[1] >= 3:
-                    return res.iloc[:, 0].values, res.iloc[:, 1].values, res.iloc[:, 2].values
-            except Exception:
-                pass
-            # Fallback for failing ADX or empty data
-            nan_arr = np.full(close.shape, np.nan)
-            return nan_arr, nan_arr, nan_arr
+        adx_cols, dmp_cols, dmn_cols = [], [], []
+        for length in lengths:
+            le = int(length)
+            for sym_idx in range(n_symbols):
+                h = self.high[:, sym_idx] if self.high.ndim == 2 else self.high
+                l = self.low[:, sym_idx] if self.low.ndim == 2 else self.low
+                c = self.close[:, sym_idx] if self.close.ndim == 2 else self.close
+                try:
+                    res = ta.adx(pd.Series(h), pd.Series(l), pd.Series(c), length=le)
+                    if res is not None and hasattr(res, "shape") and res.shape[1] >= 3:
+                        adx_cols.append(res.iloc[:, 0].values)
+                        dmp_cols.append(res.iloc[:, 1].values)
+                        dmn_cols.append(res.iloc[:, 2].values)
+                    else:
+                        raise ValueError("Unexpected ADX shape")
+                except Exception:
+                    nan_arr = np.full(n_time, np.nan)
+                    adx_cols.append(nan_arr)
+                    dmp_cols.append(nan_arr)
+                    dmn_cols.append(nan_arr)
 
-        factory = ADXFactory.from_apply_func(custom_adx)
-
-        if len(lengths) == 1:
-            adx_ind = factory.run(self.high, self.low, self.close, length=int(lengths[0]))
-        else:
-            adx_ind = factory.run(
-                self.high,
-                self.low,
-                self.close,
-                length=[int(l) for l in lengths],
-                param_product=True,
-            )
+        adx_arr = np.column_stack(adx_cols) if adx_cols else np.full((n_time, 0), np.nan)
+        dmp_arr = np.column_stack(dmp_cols) if dmp_cols else np.full((n_time, 0), np.nan)
+        dmn_arr = np.column_stack(dmn_cols) if dmn_cols else np.full((n_time, 0), np.nan)
+        adx_ind = SimpleNamespace(adx=adx_arr, dmp=dmp_arr, dmn=dmn_arr)
         self._save_persistent("adx", params, adx_ind)
         return adx_ind
 

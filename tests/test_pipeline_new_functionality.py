@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -70,8 +71,8 @@ class TestStrategyDispatchInFastBacktest:
         assert engine.config["ENTRY_STRATEGY"] == "rsi_reversal"
         assert engine.config["EXIT_STRATEGY"] == "fixed_sl_tp"
 
-    def test_invalid_strategy_falls_back(self, sample_ohlcv_data):
-        """Test that invalid strategy is caught and falls back gracefully."""
+    def test_invalid_strategy_raises(self, sample_ohlcv_data):
+        """Test that an unknown entry strategy raises ValueError."""
         config = {
             "ENTRY_STRATEGY": "invalid_strategy",
             "EXIT_STRATEGY": "atr_trailing",
@@ -84,10 +85,8 @@ class TestStrategyDispatchInFastBacktest:
         params = {"sar_acceleration": 0.02, "sar_maximum": 0.2, "adx_length": 14, "atr_length": 14}
 
         engine = FastBacktest(sample_ohlcv_data, params, config=config)
-        # Should not raise - falls back to standard path which will print warning
-        # This is expected behavior - errors in vectorized path gracefully fallback
-        pf = engine.run(show_progress=False)
-        assert pf is not None
+        with pytest.raises(ValueError, match="Unknown entry strategy"):
+            engine.run(show_progress=False)
 
     def test_entry_registry_contains_all_strategies(self):
         """ENTRY_REGISTRY is the single source of truth for pipeline strategies."""
@@ -100,7 +99,7 @@ class TestStrategyDispatchInFastBacktest:
 
     def test_exit_registry_contains_all_strategies(self):
         """Test that EXIT_REGISTRY has expected strategies."""
-        expected_strategies = {"atr_trailing", "fixed_sl_tp"}
+        expected_strategies = {"atr_trailing", "fixed_sl_tp", "trailing_stop"}
         actual_strategies = set(EXIT_REGISTRY.keys())
         assert expected_strategies == actual_strategies
 
@@ -294,11 +293,8 @@ class TestReportGenerator:
         expected_sections = [
             "# Trading Strategy Pipeline Report",
             "## Executive Summary",
-            "## Phase 0: Sensitivity Analysis Findings",
-            "## Phase 1: Per-Coin Strategy Selection",
-            "## Final Full-Period Performance",
-            "## Combined Portfolio Performance",
-            "## Methodology",
+            "## Per-Coin Strategy Selection (WFO)",
+            "## Full-Period Performance (Per-Coin)",
         ]
 
         for section in expected_sections:
@@ -412,6 +408,8 @@ class TestDataLoadOnce:
             "START_CASH": 1000.0, "FEES": 0.001, "SLIPPAGE": 0.0, "FREQ": "4h",
             "EXIT_TOURNAMENT": [],
             "BTC_REGIME_FILTER": False,
+            "START_DATE": "2023-01-01",
+            "END_DATE": "2023-12-31",
         }
         wfo_results = {"per_coin_results": {}}
 
@@ -436,6 +434,8 @@ class TestDataLoadOnce:
             "START_CASH": 1000.0, "FEES": 0.001, "SLIPPAGE": 0.0, "FREQ": "4h",
             "EXIT_TOURNAMENT": [],
             "BTC_REGIME_FILTER": False,
+            "START_DATE": "2023-01-01",
+            "END_DATE": "2023-12-31",
         }
         wfo_results = {"per_coin_results": {}}
 
@@ -443,9 +443,9 @@ class TestDataLoadOnce:
             "final_stats": {}, "per_coin_final_stats": {}, "final_portfolio": None
         })
 
-        # load_data_with_movers is a local import inside the function body; patch source module
-        with patch("ggTrader.utils.setup.load_data_with_movers",
-                   return_value=(ohlcv, None)) as mock_load, \
+        # phase_2 calls load_hybrid_validation_ohlcv when ohlcv is not provided
+        with patch("ggTrader.utils.setup.load_hybrid_validation_ohlcv",
+                   return_value=ohlcv) as mock_load, \
              patch("ggTrader.core.orchestrator.run_frozen_params_combined_backtest",
                    mock_frozen):
             phase_2_full_data_validation(config, wfo_results)  # no ohlcv arg

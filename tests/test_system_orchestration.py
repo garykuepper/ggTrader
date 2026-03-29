@@ -63,7 +63,7 @@ def test_system_backtest_flow(mock_load, mock_ohlcv, temp_results_dir):
     assert (results_base / run_dirs[0] / "run_results.json").exists()
 
 
-@patch("ggTrader.core.orchestrator.load_data_with_movers")
+@patch("ggTrader.core.wfo.load_data_with_movers")
 def test_system_wfo_auto_window(mock_load, mock_ohlcv, temp_results_dir):
     mock_load.return_value = (mock_ohlcv, None)
 

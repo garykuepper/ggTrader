@@ -44,8 +44,8 @@ def bull_market_ohlcv():
     return df
 
 
-@patch("ggTrader.core.orchestrator.FastBacktest")
-@patch("ggTrader.core.orchestrator._vectorized_grid_metrics")
+@patch("ggTrader.core.wfo.FastBacktest")
+@patch("ggTrader.core.wfo._vectorized_grid_metrics")
 def test_bear_market_forgives_zero_trades(mock_metrics, mock_engine_cls, bear_market_ohlcv):
     """
     Tests that if the Buy&Hold return over the train fold is negative,
@@ -77,7 +77,7 @@ def test_bear_market_forgives_zero_trades(mock_metrics, mock_engine_cls, bear_ma
     # FastBacktest is instantiated twice per fold (train, then test)
     mock_engine_cls.return_value = mock_test_engine
 
-    config = {"MIN_CLOSED_TRADES_TRAIN": 1}
+    config = {"MIN_CLOSED_TRADES_TRAIN": 1, "MIN_FOLD_BARS": 1}
 
     train_idx = bear_market_ohlcv.index
     test_idx = bear_market_ohlcv.index
@@ -110,8 +110,8 @@ def test_bear_market_forgives_zero_trades(mock_metrics, mock_engine_cls, bear_ma
     )
 
 
-@patch("ggTrader.core.orchestrator.FastBacktest")
-@patch("ggTrader.core.orchestrator._vectorized_grid_metrics")
+@patch("ggTrader.core.wfo.FastBacktest")
+@patch("ggTrader.core.wfo._vectorized_grid_metrics")
 def test_bull_market_rejects_zero_trades(mock_metrics, mock_engine_cls, bull_market_ohlcv):
     """
     Tests that if the Buy&Hold return is positive (bull market),
@@ -136,7 +136,7 @@ def test_bull_market_rejects_zero_trades(mock_metrics, mock_engine_cls, bull_mar
     mock_test_engine.run.return_value = mock_test_pf
     mock_engine_cls.return_value = mock_test_engine
 
-    config = {"MIN_CLOSED_TRADES_TRAIN": 1}
+    config = {"MIN_CLOSED_TRADES_TRAIN": 1, "MIN_FOLD_BARS": 1}
 
     train_idx = bull_market_ohlcv.index
     test_idx = bull_market_ohlcv.index

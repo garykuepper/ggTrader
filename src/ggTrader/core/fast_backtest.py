@@ -66,11 +66,6 @@ def _expand_entries_for_exit_product(
     return np.hstack(parts) if parts else entries
 
 
-def _expand_entries_for_atr_product(entries: np.ndarray, n_symbols: int, n_atr: int) -> np.ndarray:
-    """Backward-compatible wrapper for _expand_entries_for_exit_product."""
-    return _expand_entries_for_exit_product(entries, n_symbols=n_symbols, n_exit=n_atr)
-
-
 def _merge_entry_exit_param_combos(
     entry_combos: List[dict],
     strat_params: dict,

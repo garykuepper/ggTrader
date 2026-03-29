@@ -63,7 +63,15 @@ def _compute_btc_regime_mask(
 
     # Compute EMA over the full (warmup-extended) series, then trim to ohlcv.index.
     btc_ema = btc_series.ewm(span=n_warmup, adjust=False).mean()
-    regime_raw = btc_series > btc_ema
+
+    # Optionally use a dual-EMA comparison (short EMA > long EMA) instead of close > EMA,
+    # which avoids single-candle price spikes flipping the regime signal.
+    short_span = config.get("BTC_REGIME_FILTER_SHORT_EMA", None)
+    if short_span is not None:
+        btc_ema_short = btc_series.ewm(span=int(short_span), adjust=False).mean()
+        regime_raw = btc_ema_short > btc_ema
+    else:
+        regime_raw = btc_series > btc_ema
 
     # Normalize timezone so reindex matches ohlcv.index (which may be tz-naive).
     ohlcv_tz = ohlcv.index.tz
@@ -120,7 +128,12 @@ def _compute_altcoin_index_mask(
         normed = close[alt_cols].div(close[alt_cols].bfill().iloc[0])
         alt_index = normed.mean(axis=1)
         alt_ema = alt_index.ewm(span=n_warmup, adjust=False).mean()
-        regime = alt_index > alt_ema
+        short_span = config.get("BTC_REGIME_FILTER_SHORT_EMA", None)
+        if short_span is not None:
+            alt_ema_short = alt_index.ewm(span=int(short_span), adjust=False).mean()
+            regime = alt_ema_short > alt_ema
+        else:
+            regime = alt_index > alt_ema
         return regime
     except Exception as e:
         print(f"  [Altcoin Index] WARNING: failed to compute index: {e}")

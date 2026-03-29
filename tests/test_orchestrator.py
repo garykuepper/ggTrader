@@ -53,8 +53,8 @@ def test_run_backtest_orchestrator(mock_rm, mock_load, mock_ohlcv):
     mock_rm.return_value.save_run_results.assert_called_once()
 
 
-@patch("ggTrader.core.orchestrator.load_data_with_movers")
-@patch("ggTrader.core.orchestrator.ResultsManager")
+@patch("ggTrader.core.sensitivity.load_data_with_movers")
+@patch("ggTrader.core.sensitivity.ResultsManager")
 def test_run_sensitivity_orchestrator(mock_rm, mock_load, mock_ohlcv):
     mock_load.return_value = (mock_ohlcv, None)
 
@@ -75,8 +75,8 @@ def test_run_sensitivity_orchestrator(mock_rm, mock_load, mock_ohlcv):
     assert len(res["results_df"]) == 3
 
 
-@patch("ggTrader.core.orchestrator.load_data_with_movers")
-@patch("ggTrader.core.orchestrator.ResultsManager")
+@patch("ggTrader.core.wfo.load_data_with_movers")
+@patch("ggTrader.core.wfo.ResultsManager")
 def test_run_wfo_orchestrator(mock_rm, mock_load, mock_ohlcv):
     mock_load.return_value = (mock_ohlcv, None)
 

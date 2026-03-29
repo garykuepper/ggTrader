@@ -1,5 +1,6 @@
 """Live Exchange Loader wrapping CCXT."""
 
+import time
 from typing import List, Optional
 
 import ccxt
@@ -7,6 +8,9 @@ import pandas as pd
 
 from ggTrader.data.core.base_loader import BaseDataLoader
 from ggTrader.data.core.constants import STABLE_BASES
+
+_FETCH_MAX_RETRIES = 3
+_FETCH_RETRY_BASE_DELAY = 2.0  # seconds; doubled on each retry
 
 
 class LiveExchangeLoader(BaseDataLoader):
@@ -55,12 +59,22 @@ class LiveExchangeLoader(BaseDataLoader):
             # CCXT expects 'BTC/USD', project uses 'BTC-USD'
             has_explicit_sep = "-" in symbol or "/" in symbol
             pair = symbol.replace("-", "/") if has_explicit_sep else f"{symbol}/{quote}"
-            try:
-                ohlcv = self.exchange.fetch_ohlcv(
-                    pair, timeframe=interval, since=since, limit=limit
-                )
-            except Exception as e:
-                print(f"Failed to fetch live OHLCV for {pair}: {e}")
+            ohlcv = None
+            for attempt in range(1, _FETCH_MAX_RETRIES + 1):
+                try:
+                    ohlcv = self.exchange.fetch_ohlcv(
+                        pair, timeframe=interval, since=since, limit=limit
+                    )
+                    break
+                except (ccxt.NetworkError, ccxt.RateLimitExceeded) as e:
+                    delay = _FETCH_RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                    print(f"  [CCXT] Retry {attempt}/{_FETCH_MAX_RETRIES} for {pair} "
+                          f"({type(e).__name__}) — waiting {delay:.0f}s")
+                    time.sleep(delay)
+                except Exception as e:
+                    print(f"Failed to fetch live OHLCV for {pair}: {e}")
+                    break
+            if not ohlcv:
                 continue
 
             if not ohlcv or len(ohlcv[0]) < 6:

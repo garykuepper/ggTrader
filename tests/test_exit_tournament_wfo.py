@@ -10,7 +10,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from ggTrader.core.fast_backtest import (
     FastBacktest,
-    _expand_entries_for_atr_product,
     _expand_entries_for_exit_product,
     _get_exit_axis_keys,
     _merge_entry_exit_param_combos,
@@ -106,12 +105,6 @@ class TestExpandEntriesForExitProduct:
         np.testing.assert_array_equal(expanded[:, 0:1], entries[:, 0:1])
         np.testing.assert_array_equal(expanded[:, 1:2], entries[:, 0:1])
 
-    def test_backward_compat_alias(self):
-        """_expand_entries_for_atr_product must delegate to the new helper."""
-        entries = self._make_entries(80, 2, 2)
-        via_old = _expand_entries_for_atr_product(entries, n_symbols=2, n_atr=3)
-        via_new = _expand_entries_for_exit_product(entries, n_symbols=2, n_exit=3)
-        np.testing.assert_array_equal(via_old, via_new)
 
 
 # ---------------------------------------------------------------------------

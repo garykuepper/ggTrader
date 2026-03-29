@@ -564,6 +564,13 @@ def _execute_wfo_loop(
         if logger:
             logger.update(f"  {fold_msg}")
 
+    skipped = sum(1 for f in wfo_stats if f.get("_skipped_vectorized_failure"))
+    if skipped > 0:
+        print(
+            f"  [WFO WARN] {skipped}/{n_splits} fold(s) skipped due to vectorized-train failure"
+            f" — robustness built from {n_splits - skipped} fold(s) only"
+        )
+
     return wfo_stats, is_metrics_by_fold, oos_returns_list
 
 
@@ -578,7 +585,12 @@ def _save_wfo_results(
     config: Dict[str, Any],
 ) -> None:
     """Handles persistence of metrics, parameters, and VectorBT dashboards."""
-    rm.save_metrics(pd.DataFrame(wfo_stats), "wfo_results.csv")
+    # Exclude skipped folds (missing test_start/params) from the saved CSV/DB
+    complete_stats = [
+        s for s in wfo_stats
+        if not s.get("_skipped_vectorized_failure") and not s.get("_skipped_insufficient_bars")
+    ]
+    rm.save_metrics(pd.DataFrame(complete_stats) if complete_stats else pd.DataFrame(), "wfo_results.csv")
 
     metadata = {
         **config,
@@ -657,7 +669,8 @@ def run_wfo_orchestrator(
     )
     if not best_robust_params:
         best_robust_params = _default_params_from_grid(param_grid)
-    best_recent_params = wfo_stats[-1]["params"]
+    last_fold = wfo_stats[-1]
+    best_recent_params = last_fold.get("params") or last_fold.get("best_params") or best_robust_params
 
     final_engine = FastBacktest(ohlcv, best_robust_params, config=config, mover_mask=mover_mask)
     final_pf = final_engine.run(show_progress=show_progress)

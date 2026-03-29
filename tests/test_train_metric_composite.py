@@ -11,10 +11,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from ggTrader.core.orchestrator import _train_metric_series
 
 
+class _MockTrades:
+    def __init__(self, idx) -> None:
+        self._idx = idx
+
+    def profit_factor(self) -> pd.Series:
+        return pd.Series([2.0, 1.5], index=self._idx)
+
+
 class _MockPF:
     def __init__(self) -> None:
         idx = pd.MultiIndex.from_tuples([(0, "S"), (1, "S")], names=["combo", "sym"])
         self._idx = idx
+        self.trades = _MockTrades(idx)
 
     def sharpe_ratio(self) -> pd.Series:
         return pd.Series([1.0, 0.0], index=self._idx)
@@ -37,6 +46,7 @@ def test_composite_equal_weights() -> None:
             "sortino": 1.0,
             "calmar": 1.0,
         },
+        "TRAIN_METRIC_NORMALIZE_ZSCORE": False,
     }
     pf = _MockPF()
     out = _train_metric_series(pf, cfg)
@@ -51,6 +61,7 @@ def test_composite_custom_weights_normalized() -> None:
     cfg = {
         "TRAIN_METRIC": "composite",
         "TRAIN_METRIC_COMPOSITE_WEIGHTS": {"sharpe": 2.0, "sortino": 0.0, "calmar": 0.0},
+        "TRAIN_METRIC_NORMALIZE_ZSCORE": False,
     }
     pf = _MockPF()
     out = _train_metric_series(pf, cfg)

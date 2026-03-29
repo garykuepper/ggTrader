@@ -203,13 +203,37 @@ def phase_2_full_data_validation(
     )
 
     if ohlcv is None:
-        from ggTrader.utils.setup import load_data_with_movers
-        ohlcv, _ = load_data_with_movers(config)
+        # Pre-load EMA_WARMUP_BARS before START_DATE so the regime filter EMA is fully
+        # warm from bar 0 of the actual backtest window — same approach as Phase 3.
+        # Without this, EMA50/EMA200 start cold and regime signals are unreliable for
+        # the first ~EMA_WARMUP_BARS × interval (default ~33 days at 4h).
+        from ggTrader.utils.setup import load_hybrid_validation_ohlcv
+
+        interval_str = config.get("INTERVAL", "4h")
+        try:
+            interval_hours = int(interval_str.rstrip("h"))
+        except ValueError:
+            interval_hours = 4
+        n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
+        warmup_td = pd.Timedelta(hours=interval_hours * n_warmup)
+        start_ts = pd.Timestamp(config["START_DATE"]).tz_localize("UTC")
+        end_ts = pd.Timestamp(config["END_DATE"]).tz_localize("UTC")
+        load_start = start_ts - warmup_td
+        print(
+            f"  [Phase 2] Loading warmup data from {load_start.date()} "
+            f"({n_warmup} bars before {start_ts.date()}) — regime EMA warm from bar 0."
+        )
+        ohlcv = load_hybrid_validation_ohlcv(config, load_start, end_ts)
+
+    # Pass PHASE3_STATS_CUTOFF so the portfolio is trimmed back to START_DATE after
+    # indicators are computed on the warmup-extended data.  The key name is reused
+    # since run_frozen_params_combined_backtest handles it generically.
+    config_phase2 = {**config, "PHASE3_STATS_CUTOFF": config["START_DATE"]}
 
     out = run_frozen_params_combined_backtest(
         ohlcv,
         wfo_results["per_coin_results"],
-        config,
+        config_phase2,
         exit_tournament=exit_tournament,
         save_results=False,
         phase_title="PHASE 2: RESULT VALIDATION (FULL TRAINING/TEST RANGE)",
@@ -259,20 +283,40 @@ def phase_3_recent_performance(
             start_phase=True,
         )
 
+    # Load extra warmup bars before `start` so strategy indicators (e.g. EMA(200))
+    # are fully warm from the first bar of the actual YTD window.  Without this,
+    # strategies with slow EMAs suppress all entries for the first ~warmup_bars × interval
+    # (e.g. 200 × 4h = 33 days) because the indicator starts from NaN.
+    interval_str = config.get("INTERVAL", "4h")
+    try:
+        interval_hours = int(interval_str.rstrip("h"))
+    except ValueError:
+        interval_hours = 4
+    n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
+    warmup_td = pd.Timedelta(hours=interval_hours * n_warmup)
+    load_start = start - warmup_td
+
+    # Pass the full warmup-extended window to the backtest so indicators are warm
+    # by bar 0 of the actual YTD window.  The backtest trims its own equity curve
+    # but the OHLCV needs to start early for correct indicator values.
     ohlcv_r = load_hybrid_validation_ohlcv(
         config,
-        start,
+        load_start,
         end,
         use_ccxt_tail=use_ccxt,
     )
+
     exit_tournament = parse_exit_tournament(
         config.get("EXIT_TOURNAMENT", list(EXIT_REGISTRY.keys())),
         EXIT_REGISTRY,
     )
+    # Pass the warmup cutoff so the portfolio is trimmed back to the intended YTD
+    # start after indicators have been computed on the warmup-extended data.
+    config_phase3 = {**config, "PHASE3_STATS_CUTOFF": start.isoformat()}
     out = run_frozen_params_combined_backtest(
         ohlcv_r,
         wfo_results["per_coin_results"],
-        config,
+        config_phase3,
         exit_tournament=exit_tournament,
         save_results=False,
         phase_title="PHASE 3: YEAR-TO-DATE PERFORMANCE",

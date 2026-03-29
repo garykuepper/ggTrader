@@ -31,13 +31,17 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
     "rsi_reversal": {
         "rsi_length": [5, 7, 10, 14, 21, 28],
         "rsi_oversold": [15, 20, 25, 30, 35, 40],
-        "rsi_trend_filter": [False, True],
-        # Total: 72 combos (unchanged — all values have meaningful selection rates)
+        # Restored False: BTC regime filter already blocks entries in bear markets for
+        # correlated coins. Forcing EMA200 on RSI is double-blocking. Let WFO decide
+        # per coin whether the trend filter helps or hurts.
+        "rsi_trend_filter": [True, False],
+        # Total: 72 combos (was 36)
     },
     "donchian_breakout": {
-        # donchian_length: 100 selected 100% of the time across all runs — collapse to constant.
-        "donchian_length": [100],
-        # Total: 1 combo (was 7, -86%)
+        # Restored shorter lengths: only testing 100 was circular (it always won).
+        # WFO can now find per-coin optimal channel width.
+        "donchian_length": [30, 50, 100],
+        # Total: 3 combos (was 1)
     },
     "macd_cross": {
         # macd_fast=5: 0 selections — dropped.
@@ -62,16 +66,16 @@ DETAILED_EXIT_AXIS_GRIDS: dict[str, dict[str, Any]] = {
         # Total: 12 combos (unchanged — all values have meaningful selection rates)
     },
     "fixed_sl_tp": {
-        # stop_pct: 1.5 selected 100% of the time — collapse to constant.
-        # take_profit_pct: 3.0 selected 100% of the time — collapse to constant.
-        "stop_pct": [1.5],
-        "take_profit_pct": [3.0],
-        # Total: 1 combo (was 12, -92%)
+        # Restored ranges: collapsing to single values was circular (only value always wins).
+        # WFO can now find per-coin optimal risk/reward ratio.
+        "stop_pct": [1.0, 1.5, 2.0, 3.0],
+        "take_profit_pct": [2.0, 3.0, 4.0, 6.0],
+        # Total: 16 combos (was 1)
     },
     "trailing_stop": {
-        # trailing_stop_pct: 3.0 selected 100% of the time — collapse to constant.
-        "trailing_stop_pct": [3.0],
-        # Total: 1 combo (was 4, -75%)
+        # Restored range: collapsing to 3.0 was circular.
+        "trailing_stop_pct": [2.0, 3.0, 5.0, 8.0],
+        # Total: 4 combos (was 1)
     },
 }
 
@@ -106,6 +110,7 @@ EXIT_AXIS_GRIDS: dict[str, dict[str, Any]] = {
     },
     "fixed_sl_tp": {
         "stop_pct": [1.5, 2.0, 3.0],
+        "take_profit_pct": [2.0, 3.0, 4.0, 6.0],
     },
     "trailing_stop": {
         "trailing_stop_pct": [3.0, 5.0, 8.0, 12.0],

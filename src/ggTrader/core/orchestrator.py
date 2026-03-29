@@ -1,6 +1,7 @@
 """Centralized orchestration logic for backtesting, sensitivity analysis, and WFO."""
 
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -44,6 +45,7 @@ from ggTrader.core.sensitivity import (
     analyze_sensitivity_results,
     run_sensitivity_orchestrator,
 )
+from ggTrader.data.cache.wfo_cache import WFOCache
 from ggTrader.core.wfo import (
     _calculate_oos_robustness,
     _calculate_robustness,
@@ -235,7 +237,41 @@ def _apply_wfo_selection_gates(
                 "setting MIN_FOLD_CONSISTENCY=None is recommended."
             )
 
-    # Gate 3: strategy diversity cap
+    # Gate 3: minimum valid training folds
+    # A "valid" fold is one where at least one param combo passed the training gate
+    # (is_sharpe is finite, not NaN). Strategies that win almost entirely on lucky OOS
+    # folds while the training gate fired on most folds produce inflated robustness
+    # scores and tend to yield 0 trades in phase 2/3 (e.g. ZEC/SUI with ema_cross+EMA200
+    # that gets wiped by the regime filter).
+    min_valid_folds_cfg = config.get("MIN_VALID_TRAIN_FOLDS")
+    if min_valid_folds_cfg is not None:
+        min_valid_folds = int(min_valid_folds_cfg)
+        skipped_vf = []
+        for sym, r in results.items():
+            wfo_stats = r.get("wfo_stats", [])
+            n_valid = sum(
+                1 for f in wfo_stats
+                if f is not None
+                and f.get("is_sharpe") is not None
+                and np.isfinite(float(f["is_sharpe"]))
+            )
+            if n_valid < min_valid_folds:
+                skipped_vf.append((sym, n_valid))
+        if skipped_vf:
+            dropped_syms = [sym for sym, _ in skipped_vf]
+            details = ", ".join(f"{sym}({n})" for sym, n in skipped_vf)
+            print(
+                f"\n  [Valid-fold gate] Dropping {len(skipped_vf)} coin(s) with fewer than "
+                f"MIN_VALID_TRAIN_FOLDS={min_valid_folds} valid training folds: {details}"
+            )
+            results = {sym: r for sym, r in results.items() if sym not in dropped_syms}
+        if not results:
+            print(
+                "  WARNING: All coins dropped by valid-fold gate — lower MIN_VALID_TRAIN_FOLDS "
+                "or set to None to disable."
+            )
+
+    # Gate 4: strategy diversity cap
     max_per_strat_cfg = config.get("MAX_COINS_PER_STRATEGY")
     if max_per_strat_cfg is not None:
         from collections import defaultdict
@@ -421,6 +457,37 @@ def run_frozen_params_combined_backtest(
             combined_entries, btc_corrs, btc_regime, alt_regime, config
         )
 
+    # Optional warmup trim: if PHASE3_STATS_CUTOFF is set, we loaded extra bars before
+    # the YTD start so indicators are warm at bar 0.  Trim signals/close back to the
+    # intended window before building the portfolio so stats start from the right date.
+    stats_cutoff = config.get("PHASE3_STATS_CUTOFF")
+    if stats_cutoff is not None:
+        import pandas as _pd
+        cutoff_ts = _pd.Timestamp(stats_cutoff)
+        if cutoff_ts.tz is None:
+            cutoff_ts = cutoff_ts.tz_localize("UTC")
+        idx_tz = combined_close.index.tz
+        if idx_tz is None:
+            cutoff_ts = cutoff_ts.tz_localize(None)
+        else:
+            cutoff_ts = cutoff_ts.tz_convert(idx_tz)
+        combined_entries = combined_entries[combined_entries.index >= cutoff_ts]
+        combined_exits = combined_exits[combined_exits.index >= cutoff_ts]
+        combined_close = combined_close[combined_close.index >= cutoff_ts]
+
+    # Zero out OOS score for coins with 0 regime-filtered signals so their
+    # WFO robustness score doesn't claim allocation that would sit completely idle.
+    # Use .to_dict() so tuple-keyed multi-level columns return scalar booleans, not Series.
+    _active: dict = (combined_entries.sum(axis=0) > 0).to_dict()
+    # Column names may be multi-level tuples; extract the last element (symbol name) for display.
+    _zeroed = [col[-1] if isinstance(col, tuple) else str(col) for col, active in _active.items() if not active]
+    if _zeroed:
+        print(f"  [Allocation] Zeroing OOS score for 0-trade coins: {_zeroed}")
+        combined_oos_scores = [
+            s if _active[col] else 0.0
+            for s, col in zip(combined_oos_scores, combined_entries.columns)
+        ]
+
     alloc_weights = _compute_allocation_weights(combined_oos_scores, config)
     max_alloc = float(config.get("MAX_COIN_ALLOCATION", 0.25))
     equal_fallback = all(s <= 0 for s in combined_oos_scores)
@@ -445,6 +512,44 @@ def run_frozen_params_combined_backtest(
         group_by=np.full(combined_entries.shape[1], 0),
     ).copy()
 
+    # Second-pass zeroing: catch coins that had entry signals but 0 executed trades
+    # (e.g. regime filter blocked all entries after signal generation).  The pre-portfolio
+    # zeroing only checks combined_entries.sum() > 0 (signals exist), not actual trade
+    # outcomes.  Rebuild the portfolio with corrected weights if any idle coins are found.
+    try:
+        _trade_counts = final_pf.trades.count()
+        _zero_post = [
+            col for col, cnt in zip(combined_entries.columns, _trade_counts.values)
+            if int(cnt) == 0
+        ]
+        if _zero_post:
+            _zero_syms = [col[-1] if isinstance(col, tuple) else str(col) for col in _zero_post]
+            print(f"  [Allocation] Re-zeroing post-portfolio 0-trade coins: {_zero_syms}")
+            combined_oos_scores = [
+                0.0 if col in _zero_post else s
+                for s, col in zip(combined_oos_scores, combined_entries.columns)
+            ]
+            alloc_weights = _compute_allocation_weights(combined_oos_scores, config)
+            print(f"  [Allocation] Rebuilt weights after re-zeroing:")
+            for sym, w in zip(combined_close.columns, alloc_weights):
+                if w > 0:
+                    print(f"    {sym}: {w:.1%}")
+            final_pf = vbt.Portfolio.from_signals(
+                close=combined_close,
+                entries=combined_entries,
+                exits=combined_exits,
+                init_cash=float(config["START_CASH"]),
+                fees=float(config["FEES"]),
+                slippage=float(config["SLIPPAGE"]),
+                freq=config["FREQ"],
+                size=alloc_weights,
+                size_type="percent",
+                cash_sharing=True,
+                group_by=np.full(combined_entries.shape[1], 0),
+            ).copy()
+    except Exception as _e:
+        print(f"  [Allocation] Post-portfolio zeroing skipped: {_e!r}")
+
     final_stats = {
         "total_value": _safe(final_pf.final_value().sum()),
         "total_profit": _safe(final_pf.total_profit().sum()),
@@ -457,10 +562,32 @@ def run_frozen_params_combined_backtest(
     }
     _enrich_final_stats_with_cagr_and_benchmark(final_stats, combined_close, config)
 
+    # Enrich with first-trade date and effective CAGR (from first trade, not data start).
+    # Useful when warmup or regime filter creates dead time at the start of the window.
+    try:
+        _first_ts = final_pf.trades.records_readable["Entry Timestamp"].min()
+        if pd.notna(_first_ts):
+            _first_ts = pd.Timestamp(_first_ts)
+            final_stats["first_trade_date"] = str(_first_ts)[:10]
+            _dead_days = (_first_ts - pd.Timestamp(combined_close.index[0])).days
+            final_stats["dead_time_months"] = round(max(_dead_days, 0) / 30.44, 1)
+            _eff_years = _years_from_price_index(
+                combined_close[combined_close.index >= _first_ts].index
+            )
+            final_stats["effective_cagr"] = _cagr_percent(
+                float(final_stats.get("profit_pct", 0.0)), _eff_years
+            )
+    except Exception:
+        pass
+
     print(f"\n{combined_portfolio_label}:")
     print(f"  Total Return: {final_stats['profit_pct']:.2f}%")
     cagr_s = f"{final_stats['cagr_pct']:.2f}%" if final_stats.get("cagr_pct") is not None else "n/a"
     print(f"  CAGR: {cagr_s}")
+    eff_cagr = final_stats.get("effective_cagr")
+    if eff_cagr is not None and final_stats.get("dead_time_months", 0) > 0.5:
+        dead_m = final_stats.get("dead_time_months", 0)
+        print(f"  Effective CAGR (from first trade {final_stats.get('first_trade_date', '?')}): {eff_cagr:.2f}%  [{dead_m:.1f} months dead time]")
 
     bench_sym = final_stats.get("benchmark_label", "BTC-USD").split(" ")[0]
     b_cagr = final_stats.get("benchmark_cagr_pct")
@@ -601,6 +728,17 @@ def run_multi_strategy_per_coin_wfo(
     )
     print(f"  Exit tournament: {exit_tournament}")
 
+    # WFO result cache: skips re-running 6-fold WFO for (symbol, combo) combos whose
+    # inputs (param grid, config, date range) haven't changed since the last run.
+    _wfo_cache: Optional[WFOCache] = None
+    if config.get("WFO_CACHE_ENABLED", True):
+        _cache_dir = Path(config.get(
+            "WFO_CACHE_DIR",
+            Path(__file__).resolve().parent.parent.parent.parent / "results" / "wfo_cache",
+        ))
+        _wfo_cache = WFOCache(_cache_dir)
+        print(f"  [WFO Cache] Enabled — {_cache_dir}")
+
     # Dictionary to store best (entry, exit, params) per symbol.
     per_coin_results: Dict[str, Dict[str, Any]] = {}
     t0_wfo_coins = time.time()
@@ -648,18 +786,32 @@ def run_multi_strategy_per_coin_wfo(
                     else:
                         coin_regime_mask = None
 
-                    wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
-                        symbol_ohlcv,
-                        symbol_mover_mask,
-                        param_grid,
-                        config_combo,
-                        list(param_grid.keys()),
-                        n_splits,
-                        test_ratio,
-                        show_progress,
-                        logger,
-                        btc_regime_mask=coin_regime_mask,
+                    _cached = (
+                        _wfo_cache.get(symbol, strategy_name, exit_name, param_grid, config_combo, symbol_ohlcv)
+                        if _wfo_cache is not None
+                        else None
                     )
+                    if _cached is not None:
+                        wfo_stats, is_metrics_by_fold = _cached
+                        print(f"    {label} [cache hit — skipping {n_splits} folds]")
+                    else:
+                        wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
+                            symbol_ohlcv,
+                            symbol_mover_mask,
+                            param_grid,
+                            config_combo,
+                            list(param_grid.keys()),
+                            n_splits,
+                            test_ratio,
+                            show_progress,
+                            logger,
+                            btc_regime_mask=coin_regime_mask,
+                        )
+                        if _wfo_cache is not None:
+                            _wfo_cache.put(
+                                symbol, strategy_name, exit_name, param_grid,
+                                config_combo, symbol_ohlcv, wfo_stats, is_metrics_by_fold,
+                            )
 
                     oos_metrics_by_fold = {
                         fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
@@ -767,6 +919,9 @@ def run_multi_strategy_per_coin_wfo(
                 f"  [ERROR] {symbol} failed and will be skipped: {coin_exc!r}\n"
                 f"  Continuing with remaining coins..."
             )
+
+    if _wfo_cache is not None:
+        print(f"  [{_wfo_cache.summary()}]")
 
     per_coin_results = _apply_wfo_selection_gates(per_coin_results, config)
 
