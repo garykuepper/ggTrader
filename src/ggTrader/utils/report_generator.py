@@ -135,13 +135,15 @@ def generate_pipeline_report(
     )
     lines.append(
         f"| BTC buy & hold CAGR | "
-        f"{_fmt_pct_opt(p2_stats.get('benchmark_cagr_pct'))}{_beat_emoji(p2_strat, p2_stats.get('benchmark_cagr_pct'))} | "
+        f"{_fmt_pct_opt(p2_stats.get('benchmark_cagr_pct'))}"
+        f"{_beat_emoji(p2_strat, p2_stats.get('benchmark_cagr_pct'))} | "
         f"{_fmt_pct_opt(p3_stats.get('benchmark_cagr_pct') if p3_stats else None)}"
         f"{_beat_emoji(p3_strat, p3_stats.get('benchmark_cagr_pct') if p3_stats else None)} |"
     )
     lines.append(
         f"| S&P 500 CAGR | "
-        f"{_fmt_pct_opt(p2_stats.get('spy_cagr_pct'))}{_beat_emoji(p2_strat, p2_stats.get('spy_cagr_pct'))} | "
+        f"{_fmt_pct_opt(p2_stats.get('spy_cagr_pct'))}"
+        f"{_beat_emoji(p2_strat, p2_stats.get('spy_cagr_pct'))} | "
         f"{_fmt_pct_opt(p3_stats.get('spy_cagr_pct') if p3_stats else None)}"
         f"{_beat_emoji(p3_strat, p3_stats.get('spy_cagr_pct') if p3_stats else None)} |"
     )
@@ -213,7 +215,10 @@ def generate_pipeline_report(
 
     # --- Training/Test Data ---
     lines.append("## Result Validation (Training/Test Data)")
-    lines.append(f"**Period: {p2_period}** — WFO-selected parameters replayed on the full training/test range.")
+    lines.append(
+        f"**Period: {p2_period}** — WFO-selected parameters replayed on the "
+        f"full training/test range."
+    )
     lines.append("")
     lines.append("### Combined Portfolio Performance")
     lines.append("")
@@ -224,7 +229,8 @@ def generate_pipeline_report(
 
     if p3_stats:
         lines.append(
-            f"**Period: {p3_period}** — WFO-selected parameters replayed on the YTD window, no re-optimization."
+            f"**Period: {p3_period}** — WFO-selected parameters replayed on the YTD window, "
+            f"no re-optimization."
         )
         lines.append("")
         _phase_table(p3_stats)

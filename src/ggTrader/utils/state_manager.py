@@ -11,7 +11,7 @@ def get_latest_research_run(results_dir: str = "results") -> Optional[Path]:
         return None
 
     candidates = []
-    
+
     # Check new structure (results/research/)
     research_path = base_path / "research"
     if research_path.exists():
@@ -43,7 +43,7 @@ def get_latest_production_weights(results_dir: str = "results") -> Optional[Path
         return None
 
     candidates = []
-    
+
     # Check new structure
     prod_path = base_path / "production"
     if prod_path.exists():

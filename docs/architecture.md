@@ -51,7 +51,8 @@ The project uses a **pluggable strategy framework** for flexible signal generati
 
 - **Exit Strategies**: `EXIT_REGISTRY` maps exit classes:
   - `atr_trailing`: ATR-based trailing stop
-  - `fixed_sl_tp`: Fixed percentage stop/take-profit
+  - `fixed_sl_tp`: Fixed percentage stop-loss / take-profit
+  - `trailing_stop`: Percentage-based trailing stop
 
 ### Indicator Pre-computation
 
@@ -76,11 +77,13 @@ Before combining per-coin signals into the final portfolio, `run_frozen_params_c
 
 | Tier | Condition | Filter applied |
 | ---- | --------- | -------------- |
-| **BTC tier** | BTC return correlation ≥ `BTC_REGIME_FILTER_MIN_CORRELATION` (default 0.5) | Signal blocked when BTC price < EMA(200) |
-| **Altcoin tier** | Correlation in `[ALTCOIN_REGIME_FILTER_CORR_MIN, btc_min)` (default 0.3–0.5) | Signal blocked when altcoin equal-weight index < EMA(200) |
+| **BTC tier** | BTC return correlation ≥ `BTC_REGIME_FILTER_MIN_CORRELATION` (default 0.5) | Signal blocked when BTC EMA(50) < EMA(200) — golden cross filter |
+| **Altcoin tier** | Correlation in `[ALTCOIN_REGIME_FILTER_CORR_MIN, btc_min)` (default 0.3–0.5) | Signal blocked when altcoin equal-weight index EMA(50) < EMA(200) |
 | **Exempt tier** | Correlation < `ALTCOIN_REGIME_FILTER_CORR_MIN` | No filter — coin trades freely |
 
-The **altcoin index** is an equal-weighted, normalised price series built from all non-BTC symbols in the universe. Its EMA(200) acts as a trend proxy for alt-correlated coins.
+The filter compares a short EMA to the long EMA(200) rather than raw close price, which prevents single-candle spikes from flipping the regime signal. The short span is configured via `BTC_REGIME_FILTER_SHORT_EMA` (default `50`). Set to `None` to revert to the original `close > EMA(200)` behaviour.
+
+The **altcoin index** is an equal-weighted, normalised price series built from all non-BTC symbols in the universe. Its EMA(50)/EMA(200) cross acts as a trend proxy for alt-correlated coins.
 
 Correlations are computed over the full OHLCV date range using daily log-returns. Regime filtering is enabled by `BTC_REGIME_FILTER=True` in constants; it is disabled by default.
 
@@ -90,6 +93,19 @@ _compute_btc_regime_mask()    # -> pd.Series[bool]  (True = bullish)
 _compute_altcoin_index_mask() # -> pd.Series[bool]  (True = bullish)
 _apply_tiered_regime_mask()   # -> filtered entries DataFrame
 ```
+
+### Quality Gates (Anti-Overfitting)
+
+After WFO, each coin passes through sequential gates before entering the combined portfolio:
+
+| Gate | Config key | Default | Purpose |
+| ---- | ---------- | ------- | ------- |
+| Robustness floor | `MIN_ROBUSTNESS_SCORE` | 0.1 | Drop coins with very low OOS robustness |
+| Fold consistency | `MIN_FOLD_CONSISTENCY` | 0.33 | At least 1 in 3 OOS folds must be profitable |
+| Valid train folds | `MIN_VALID_TRAIN_FOLDS` | 3 | At least 3 of 6 folds must produce finite IS Sharpe |
+| Strategy diversity | `MAX_COINS_PER_STRATEGY` | 10 | Prevent one entry strategy from dominating |
+
+Coins that pass all gates but produce **0 regime-filtered trade signals** in the combined backtest have their OOS allocation weight zeroed out, so idle capital is redistributed to active coins.
 
 ### Per-Coin Walk-Forward Optimization
 
@@ -142,14 +158,14 @@ gantt
 
 ## Workflows
 
-The system is controlled via the unified `ggt` CLI. For a detailed command reference, see [**Unified CLI Guide**](UNIFIED_PIPELINE.md).
+The system is controlled via the unified `ggt` CLI. For a detailed command reference, see [**Unified CLI Guide**](unified_pipeline.md).
 
 1. **Research**: `python ggt.py research` — Orchestrates parallel WFO across the liquid universe.
 2. **Backtest**: `python ggt.py backtest` — Replays results for validation.
 3. **Database**: `python ggt.py db` — Manages TimescaleDB health and maintenance.
 4. **Ingest**: `python ggt.py ingest` — Syncs historical data from Kraken.
 
-For a concise WFO → backtest walkthrough, see [**Strategy Execution**](UNIFIED_PIPELINE.md).
+For a concise WFO → backtest walkthrough, see [**Strategy Execution**](unified_pipeline.md).
 
 ## Legacy Modules
 
@@ -190,4 +206,4 @@ Every run (backtest, sensitivity, or WFO) outputs results to a timestamped folde
 - **Native Trailing Stop**: Leverages Kraken's `trailing-stop` order type for server-side risk management.
 
 ---
-*Back to [README.md](../readme.md)*
+*Back to [README.md](../README.md)*

@@ -155,7 +155,8 @@ def test_bull_market_rejects_zero_trades(mock_metrics, mock_engine_cls, bull_mar
 
     final_train_metrics = result["train_metrics"]
 
-    # Assert Combo A was rejected (remains NaN) because taking 0 trades in a bull market is a failure!
+    # Assert Combo A was rejected (remains NaN) because taking 0 trades in a
+    # bull market is a failure!
     assert pd.isna(final_train_metrics.loc["combo_A"]), (
         "Combo A traded 0 times in a bull market; should be rejected (NaN)"
     )

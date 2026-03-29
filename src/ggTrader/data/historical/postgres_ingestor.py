@@ -334,7 +334,8 @@ class PostgresIngestor:
             return
 
         print(
-            f"Ingesting {len(pending_files)} files in {os.path.basename(raw_dir)} (Workers: {max_workers})..."
+            f"Ingesting {len(pending_files)} files in {os.path.basename(raw_dir)} "
+            f"(Workers: {max_workers})..."
         )
 
         # Setup Parallelism
@@ -387,7 +388,8 @@ class PostgresIngestor:
             return
 
         print(
-            f"Found {len(new_dirs)} new directories to sync: {[os.path.basename(d) for d in new_dirs]}"
+            f"Found {len(new_dirs)} new directories to sync: "
+            f"{[os.path.basename(d) for d in new_dirs]}"
         )
 
         for d in tqdm(new_dirs, desc="Syncing Directories", unit="dir"):

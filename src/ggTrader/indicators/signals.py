@@ -26,11 +26,11 @@ class Signals:
         """Calculate long entry signals based on PSAR and ADX (optionally DMP>DMN)."""
         c = close.values if hasattr(close, "values") else close
         h = high.values if hasattr(high, "values") else high
-        l = low.values if hasattr(low, "values") else low
+        lo = low.values if hasattr(low, "values") else low
 
         psar_ind = vbt.IndicatorFactory.from_pandas_ta("psar").run(
             h,
-            l,
+            lo,
             close=c,
             acceleration=sar_acceleration,
             maximum=sar_maximum,
@@ -43,7 +43,7 @@ class Signals:
 
         try:
             adx_ind = vbt.IndicatorFactory.from_pandas_ta("adx").run(
-                h, l, c, length=int(adx_length)
+                h, lo, c, length=int(adx_length)
             )
             adx_val = adx_ind.adx.values if hasattr(adx_ind.adx, "values") else adx_ind.adx
             dmp = adx_ind.dmp.values if hasattr(adx_ind.dmp, "values") else adx_ind.dmp
@@ -125,7 +125,7 @@ class Signals:
         """Build a trailing stop and intrabar-touch exits (low <= stop)."""
         c = close.values if hasattr(close, "values") else close
         h = high.values if hasattr(high, "values") else high
-        l = low.values if hasattr(low, "values") else low
+        lo = low.values if hasattr(low, "values") else low
         e = entries.values if hasattr(entries, "values") else entries
 
         if len(c) < int(atr_length) + 1:
@@ -135,7 +135,7 @@ class Signals:
 
         try:
             atr_ind = vbt.IndicatorFactory.from_pandas_ta("atr").run(
-                h, l, c, length=int(atr_length)
+                h, lo, c, length=int(atr_length)
             )
             atr_vals = atr_ind.atrr.values if hasattr(atr_ind.atrr, "values") else atr_ind.atrr
         except Exception:
@@ -143,7 +143,7 @@ class Signals:
 
         stop_vals, exits_vals = _atr_trailing_stop_long_ohlc_touch_2d_numba(
             np.asarray(h, dtype=np.float64),
-            np.asarray(l, dtype=np.float64),
+            np.asarray(lo, dtype=np.float64),
             np.asarray(atr_vals, dtype=np.float64),
             np.asarray(e, dtype=np.bool_),
             float(atr_multiplier),
@@ -197,13 +197,13 @@ class Signals:
 
         c = _to_np(close)
         h = _to_np(high)
-        l = _to_np(low)
+        lo = _to_np(low)
         o = _to_np(open_)
 
         entries = Signals.entry_signals(
             c,
             h,
-            l,
+            lo,
             adx_length=int(adx_length),
             adx_threshold=float(adx_threshold),
             sar_acceleration=float(sar_acceleration),
@@ -216,7 +216,7 @@ class Signals:
             entries=entries,
             close=c,
             high=h,
-            low=l,
+            low=lo,
             atr_length=int(atr_length),
             atr_multiplier=float(atr_multiplier),
         )
@@ -225,7 +225,7 @@ class Signals:
             exits=exits,
             stop_arr=stop_arr,
             open_arr=o,
-            low_arr=l,
+            low_arr=lo,
             high_arr=h,
             base_price=c,
         )

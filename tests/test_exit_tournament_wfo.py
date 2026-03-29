@@ -168,8 +168,8 @@ class TestFixedStopTakeProfitMultiCombo:
         idx = pd.date_range("2023-01-01", periods=len(close_arr), freq="4h")
         c = pd.DataFrame({"SYM": close_arr}, index=idx)
         h = pd.DataFrame({"SYM": high_arr}, index=idx)
-        l = pd.DataFrame({"SYM": low_arr}, index=idx)
-        return IndicatorPrecomputer(c, h, l)
+        lo = pd.DataFrame({"SYM": low_arr}, index=idx)
+        return IndicatorPrecomputer(c, h, lo)
 
     def test_last_param_combos_length_matches_columns(self, sample_ohlcv_data):
         """_last_param_combos must equal columns // n_symbols for fixed_sl_tp grid."""

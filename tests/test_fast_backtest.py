@@ -74,7 +74,7 @@ def test_fast_backtest_stats_safety():
         "use_dmp_cross": False,
     }
     engine = FastBacktest(ohlcv, params)
-    pf = engine.run()
+    engine.run()
     stats = engine.get_stats()
 
     # Should not crash on division by zero or NaN

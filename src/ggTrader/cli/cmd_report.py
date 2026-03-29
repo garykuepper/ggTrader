@@ -86,7 +86,9 @@ def run_report(args: argparse.Namespace) -> None:
             **({"SYMBOLS_FILE": str(symbols_file)} if symbols_file.exists() else {}),
         }
         phase_3_recent_performance(config=config, wfo_results=wfo_results)
-        final_backtest_results["phase_3_stats"] = wfo_results.get("phase_3_stats", final_backtest_results.get("phase_3_stats"))
+        final_backtest_results["phase_3_stats"] = wfo_results.get(
+            "phase_3_stats", final_backtest_results.get("phase_3_stats")
+        )
 
     print(f"Regenerating report for {run_dir.name} ...")
     generate_pipeline_report(

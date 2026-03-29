@@ -113,7 +113,8 @@ def full_pipeline_config() -> dict[str, Any]:
         "TEST_RATIO": 3,
         "MIN_TRADES": 0,
         "MIN_CLOSED_TRADES_TRAIN": 3,
-        # WFO / sensitivity train ranking: composite blends Sharpe, Sortino, Calmar-like (return/|maxDD|).
+        # WFO / sensitivity train ranking: composite blends Sharpe, Sortino,
+        # Calmar-like (return/|maxDD|).
         "TRAIN_METRIC": "composite",
         "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
             "sharpe": 0.25,
@@ -152,8 +153,10 @@ def full_pipeline_config() -> dict[str, Any]:
         # Only apply BTC regime filter to coins with BTC return correlation >= this threshold.
         # Coins below the threshold use the altcoin index filter (if enabled) or trade freely.
         "BTC_REGIME_FILTER_MIN_CORRELATION": 0.5,
-        # Altcoin index regime filter: apply an equal-weighted index EMA200 to mid-correlation coins.
-        # Coins with BTC correlation in [ALTCOIN_REGIME_FILTER_CORR_MIN, BTC_REGIME_FILTER_MIN_CORRELATION)
+        # Altcoin index regime filter: apply an equal-weighted index EMA200
+        # to mid-correlation coins.
+        # Coins with BTC correlation in
+        # [ALTCOIN_REGIME_FILTER_CORR_MIN, BTC_REGIME_FILTER_MIN_CORRELATION)
         # use the altcoin index instead of BTC. Coins below the lower bound trade freely.
         "ALTCOIN_REGIME_FILTER": True,
         "ALTCOIN_REGIME_FILTER_CORR_MIN": 0.3,

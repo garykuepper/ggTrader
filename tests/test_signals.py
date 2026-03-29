@@ -32,12 +32,12 @@ def test_entry_signals_logic():
     ohlcv = create_dummy_ohlcv(n_rows=50, trend="up")
     c = ohlcv.xs("close", axis=1, level="field")
     h = ohlcv.xs("high", axis=1, level="field")
-    l = ohlcv.xs("low", axis=1, level="field")
+    lo = ohlcv.xs("low", axis=1, level="field")
 
     entries = Signals.entry_signals(
         close=c,
         high=h,
-        low=l,
+        low=lo,
         adx_length=14,
         adx_threshold=20,
         sar_acceleration=0.02,

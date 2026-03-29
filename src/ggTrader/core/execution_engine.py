@@ -143,8 +143,10 @@ class ExecutionEngine:
             }
 
         if dropped_low_rob:
-            print(f"  [Gates] Dropped {len(dropped_low_rob)} coin(s) below MIN_ROBUSTNESS_SCORE={min_rob}: "
-                  f"{dropped_low_rob}")
+            print(
+                f"  [Gates] Dropped {len(dropped_low_rob)} coin(s) below "
+                f"MIN_ROBUSTNESS_SCORE={min_rob}: {dropped_low_rob}"
+            )
         if dropped_strategy_cap:
             print(f"  [Gates] Dropped {len(dropped_strategy_cap)} coin(s) exceeding "
                   f"MAX_COINS_PER_STRATEGY={max_per_strategy}: {dropped_strategy_cap}")
@@ -166,7 +168,10 @@ class ExecutionEngine:
                 capped = {s: min(w, max_alloc) for s, w in self.portfolio_weights.items()}
                 n_capped = sum(1 for s, w in self.portfolio_weights.items() if w > max_alloc)
                 if n_capped:
-                    print(f"  [Gates] Capped {n_capped} weight(s) to MAX_COIN_ALLOCATION={max_alloc:.0%}")
+                    print(
+                        f"  [Gates] Capped {n_capped} weight(s) to "
+                        f"MAX_COIN_ALLOCATION={max_alloc:.0%}"
+                    )
                 self.portfolio_weights = capped
             print(f"Loaded portfolio weights for {len(self.portfolio_weights)} symbols.")
         except Exception as e:
@@ -237,10 +242,16 @@ class ExecutionEngine:
                 self.save_state()
 
             if not stale and not untracked:
-                print(f"  [Reconcile] State verified: {len(self.active_positions)} position(s) match exchange.")
+                print(
+                    f"  [Reconcile] State verified: "
+                    f"{len(self.active_positions)} position(s) match exchange."
+                )
 
         except Exception as e:
-            print(f"  [Reconcile] WARNING: exchange reconciliation failed ({e!r}) — using local state.")
+            print(
+                f"  [Reconcile] WARNING: exchange reconciliation failed "
+                f"({e!r}) — using local state."
+            )
 
     # ------------------------------------------------------------------
     # Data fetching

@@ -1,1 +1,1 @@
-from .fast_backtest import FastBacktest
+from .fast_backtest import FastBacktest  # noqa: F401

@@ -54,4 +54,4 @@ def test_build_mover_mask(mock_hdata, mock_ohlcv):
     # Check that it's a boolean mask
     assert mask.values.dtype == bool
     # BTC should be True for the first day, False for the second
-    assert mask["BTC"].iloc[0] == True
+    assert mask["BTC"].iloc[0]

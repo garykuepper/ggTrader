@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -169,7 +170,6 @@ def run_status(args: argparse.Namespace) -> None:
 
     def _show() -> bool:
         """Print status, return True if all workers are done."""
-        import os
 
         print(f"\n{'='*60}")
         print(f"  Research Run: {run_dir.name}")
@@ -212,12 +212,12 @@ def run_status(args: argparse.Namespace) -> None:
                 wall_str = datetime.fromtimestamp(wall).strftime("%I:%M %p").lstrip("0")
                 print(f"\n  Overall ETA: ~{eta_str} (est. {wall_str})")
             else:
-                print(f"\n  Overall ETA: finishing soon...")
+                print("\n  Overall ETA: finishing soon...")
 
         # run_results.json strategy counts (written incrementally)
         strategy_counts = _count_selected_strategies(run_dir)
         if strategy_counts:
-            print(f"\n  Strategies selected so far:")
+            print("\n  Strategies selected so far:")
             for strat, count in sorted(strategy_counts.items(), key=lambda x: -x[1]):
                 print(f"    {strat}: {count} coin(s)")
 

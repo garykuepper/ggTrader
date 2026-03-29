@@ -179,7 +179,7 @@ class IndicatorPrecomputer:
     ) -> Any:
         """Pre-compute ADX across parameter ranges."""
         lengths = adx_length_values if isinstance(adx_length_values, list) else [adx_length_values]
-        params = {"length": tuple(int(l) for l in lengths)}
+        params = {"length": tuple(int(lo) for lo in lengths)}
         cached = self._get_persistent("adx", params)
         if cached is not None:
             return cached
@@ -198,10 +198,10 @@ class IndicatorPrecomputer:
             le = int(length)
             for sym_idx in range(n_symbols):
                 h = self.high[:, sym_idx] if self.high.ndim == 2 else self.high
-                l = self.low[:, sym_idx] if self.low.ndim == 2 else self.low
+                lo = self.low[:, sym_idx] if self.low.ndim == 2 else self.low
                 c = self.close[:, sym_idx] if self.close.ndim == 2 else self.close
                 try:
-                    res = ta.adx(pd.Series(h), pd.Series(l), pd.Series(c), length=le)
+                    res = ta.adx(pd.Series(h), pd.Series(lo), pd.Series(c), length=le)
                     if res is not None and hasattr(res, "shape") and res.shape[1] >= 3:
                         adx_cols.append(res.iloc[:, 0].values)
                         dmp_cols.append(res.iloc[:, 1].values)
@@ -228,7 +228,7 @@ class IndicatorPrecomputer:
         """Pre-compute ATR across parameter ranges."""
         lengths = atr_length_values if isinstance(atr_length_values, list) else [atr_length_values]
 
-        params = {"length": tuple(int(l) for l in lengths)}
+        params = {"length": tuple(int(lo) for lo in lengths)}
         cached = self._get_persistent("atr", params)
         if cached is not None:
             return cached
@@ -242,7 +242,7 @@ class IndicatorPrecomputer:
                 self.high,
                 self.low,
                 self.close,
-                length=[int(l) for l in lengths],
+                length=[int(lo) for lo in lengths],
                 param_product=True,
             )
         self._save_persistent("atr", params, atr_ind)
@@ -255,7 +255,7 @@ class IndicatorPrecomputer:
         """Pre-compute EMA across parameter ranges."""
         lengths = ema_length_values if isinstance(ema_length_values, list) else [ema_length_values]
 
-        params = {"length": tuple(int(l) for l in lengths)}
+        params = {"length": tuple(int(lo) for lo in lengths)}
         cached = self._get_persistent("ema", params)
         if cached is not None:
             return cached
@@ -266,7 +266,7 @@ class IndicatorPrecomputer:
             )
         else:
             ema_ind = vbt.IndicatorFactory.from_pandas_ta("ema").run(
-                self.close, length=[int(l) for l in lengths], param_product=True
+                self.close, length=[int(lo) for lo in lengths], param_product=True
             )
         self._save_persistent("ema", params, ema_ind)
         return ema_ind
@@ -278,7 +278,7 @@ class IndicatorPrecomputer:
         """Pre-compute RSI across parameter ranges."""
         lengths = rsi_length_values if isinstance(rsi_length_values, list) else [rsi_length_values]
 
-        params = {"length": tuple(int(l) for l in lengths)}
+        params = {"length": tuple(int(lo) for lo in lengths)}
         cached = self._get_persistent("rsi", params)
         if cached is not None:
             return cached
@@ -289,7 +289,7 @@ class IndicatorPrecomputer:
             )
         else:
             rsi_ind = vbt.IndicatorFactory.from_pandas_ta("rsi").run(
-                self.close, length=[int(l) for l in lengths], param_product=True
+                self.close, length=[int(lo) for lo in lengths], param_product=True
             )
         self._save_persistent("rsi", params, rsi_ind)
         return rsi_ind
@@ -341,7 +341,7 @@ class IndicatorPrecomputer:
         lengths = length_values if isinstance(length_values, list) else [length_values]
         std_f = float(std)
 
-        params = {"length": tuple(int(l) for l in lengths), "std": std_f}
+        params = {"length": tuple(int(lo) for lo in lengths), "std": std_f}
         cached = self._get_persistent("bbands", params)
         if cached is not None:
             return cached
@@ -353,7 +353,7 @@ class IndicatorPrecomputer:
         else:
             bb_ind = vbt.IndicatorFactory.from_pandas_ta("bbands").run(
                 self.close,
-                length=[int(l) for l in lengths],
+                length=[int(lo) for lo in lengths],
                 std=std_f,
                 param_product=True,
             )

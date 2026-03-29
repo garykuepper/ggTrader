@@ -71,7 +71,7 @@ def test_fast_backtest_run():
             print(f"pf.trades.profit_factor() failed: {e}")
 
         print("Testing pf.stats() which caused the original error...")
-        stats = pf.stats()
+        pf.stats()
         print("pf.stats() completed successfully.")
 
     except AttributeError as e:

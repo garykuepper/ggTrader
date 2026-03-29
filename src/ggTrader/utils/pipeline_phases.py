@@ -237,7 +237,9 @@ def phase_2_full_data_validation(
         exit_tournament=exit_tournament,
         save_results=False,
         phase_title="PHASE 2: RESULT VALIDATION (FULL TRAINING/TEST RANGE)",
-        combined_portfolio_label="Phase 2 - full training/test range combined portfolio vs Buy & Hold",
+        combined_portfolio_label=(
+            "Phase 2 - full training/test range combined portfolio vs Buy & Hold"
+        ),
         logger=logger,
     )
     wfo_results["phase_2_stats"] = out["final_stats"]

@@ -339,7 +339,7 @@ class ResultDBManager:
                     """
                     INSERT INTO performance_metrics (run_id, metric_name, metric_value)
                     VALUES (:run_id, :metric_name, :metric_value)
-                    ON CONFLICT (run_id, metric_name) 
+                    ON CONFLICT (run_id, metric_name)
                     DO UPDATE SET metric_value = EXCLUDED.metric_value
                     """
                 )

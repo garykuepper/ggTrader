@@ -156,7 +156,7 @@ class FastBacktest:
         if use_vectorized:
             try:
                 entries, exits, price_for_orders = self._generate_signals_vectorized(show_progress)
-            except Exception as e:
+            except Exception:
                 # Re-raise — callers that set USE_VECTORIZED=True expect vectorized-only
                 # behaviour. Silently falling back to the SignalFactory path hides data
                 # quality issues and can take 100× longer for zero net benefit.
@@ -256,7 +256,8 @@ class FastBacktest:
         if entries.columns.equals(price_for_orders.columns):
             return entries, exits, price_for_orders.reindex(columns=entries.columns)
 
-        # Multi-symbol path: Align price columns to entries by matching the 'symbol' level (last level)
+        # Multi-symbol path: Align price columns to entries by matching the
+        # 'symbol' level (last level)
         sym_level = entries.columns.get_level_values(-1)
         pieces = []
         for sym in sym_level:
@@ -285,7 +286,7 @@ class FastBacktest:
         close = ohlcv.xs("close", axis=1, level=1, drop_level=True)
         high = ohlcv.xs("high", axis=1, level=1, drop_level=True)
         low = ohlcv.xs("low", axis=1, level=1, drop_level=True)
-        open_ = ohlcv.xs("open", axis=1, level=1, drop_level=True)
+        ohlcv.xs("open", axis=1, level=1, drop_level=True)
 
         # Initialize precomputer
         precomputer = IndicatorPrecomputer(close, high, low)

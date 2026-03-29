@@ -269,7 +269,7 @@ def test_frozen_params_regime_filter_blocks_signals():
         "MAX_COIN_ALLOCATION": 0.5,
         "BENCHMARK_SYMBOL": "BTC-USD",
     }
-    n = len(ohlcv)
+    len(ohlcv)
     all_bear = pd.Series(False, index=ohlcv.index)
 
     with patch("ggTrader.core.orchestrator._compute_btc_regime_mask", return_value=all_bear), \

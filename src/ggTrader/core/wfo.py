@@ -14,12 +14,12 @@ from ggTrader.core.metrics import (
     _print_wfo_fold_all_rejected_diagnostics,
 )
 from ggTrader.core.orchestrator_utils import (
+    _coerce_metric_float,
     _default_params_from_grid,
     _eta_str,
     _extract_params,
     _to_native,
     _wall_clock_eta,
-    _coerce_metric_float,
 )
 from ggTrader.core.sensitivity import _vectorized_grid_metrics
 from ggTrader.utils.results_manager import ResultsManager
@@ -76,8 +76,13 @@ def _process_wfo_fold(
 
     train_mask = mover_mask.loc[train_idx] if mover_mask is not None else None
     test_mask = mover_mask.loc[test_idx] if mover_mask is not None else None
-    train_regime = btc_regime_mask.reindex(train_idx, fill_value=False) if btc_regime_mask is not None else None
-    test_regime = btc_regime_mask.reindex(test_idx, fill_value=False) if btc_regime_mask is not None else None
+    train_regime = (
+        btc_regime_mask.reindex(train_idx, fill_value=False)
+        if btc_regime_mask is not None else None
+    )
+    test_regime = (
+        btc_regime_mask.reindex(test_idx, fill_value=False) if btc_regime_mask is not None else None
+    )
 
     # Try vectorized train path first (honours ENTRY/EXIT_STRATEGY).
     wfo_train_cfg = {**config, "USE_VECTORIZED": True}
@@ -590,7 +595,9 @@ def _save_wfo_results(
         s for s in wfo_stats
         if not s.get("_skipped_vectorized_failure") and not s.get("_skipped_insufficient_bars")
     ]
-    rm.save_metrics(pd.DataFrame(complete_stats) if complete_stats else pd.DataFrame(), "wfo_results.csv")
+    rm.save_metrics(
+        pd.DataFrame(complete_stats) if complete_stats else pd.DataFrame(), "wfo_results.csv"
+    )
 
     metadata = {
         **config,
@@ -654,7 +661,7 @@ def run_wfo_orchestrator(
     )
 
     # Extract OOS Sharpe ratios from wfo_stats to measure generalization
-    oos_metrics_by_fold = {
+    {
         fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
     }
 
@@ -670,7 +677,9 @@ def run_wfo_orchestrator(
     if not best_robust_params:
         best_robust_params = _default_params_from_grid(param_grid)
     last_fold = wfo_stats[-1]
-    best_recent_params = last_fold.get("params") or last_fold.get("best_params") or best_robust_params
+    best_recent_params = (
+        last_fold.get("params") or last_fold.get("best_params") or best_robust_params
+    )
 
     final_engine = FastBacktest(ohlcv, best_robust_params, config=config, mover_mask=mover_mask)
     final_pf = final_engine.run(show_progress=show_progress)
@@ -771,7 +780,7 @@ def run_wfo_per_coin_orchestrator(
         )
 
         # Extract OOS Sharpe ratios from wfo_stats to measure generalization
-        oos_metrics_by_fold = {
+        {
             fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
         }
 
@@ -808,7 +817,7 @@ def run_wfo_per_coin_orchestrator(
         symbol_ohlcv = ohlcv[[symbol]]
 
         engine = FastBacktest(symbol_ohlcv, best_params, config=per_coin_config)
-        pf = engine.run(show_progress=False)
+        engine.run(show_progress=False)
 
         # Extract signals
         close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)

@@ -240,6 +240,7 @@ def run_research(args: argparse.Namespace):
         print("All workers launched. Monitoring progress...")
 
         import re
+
         from tqdm import tqdm
 
         # Regex patterns for progress extraction
@@ -308,7 +309,7 @@ def run_research(args: argparse.Namespace):
                             msg += f"[{s_name} {s_idx}/{s_total}] "
                             # Coin progress (e.g. 1/5 = 20%)
                             total_progress += (int(s_idx) - 1) / int(s_total) * 100
-                            
+
                             if combo_match:
                                 c_idx, c_total = combo_match[-1].groups()
                                 msg += f"C{c_idx}/{c_total} "
@@ -320,7 +321,10 @@ def run_research(args: argparse.Namespace):
                                     f_idx, f_total = fold_match[-1].groups()
                                     msg += f"F{f_idx}/{f_total}"
                                     # Fold contribution within current combo
-                                    fold_prog = int(f_idx) / int(f_total) * (100 / int(s_total) / int(c_total))
+                                    fold_prog = (
+                                        int(f_idx) / int(f_total)
+                                        * (100 / int(s_total) / int(c_total))
+                                    )
                                     total_progress += fold_prog
 
                         worker_pbars[i].set_description(msg)
@@ -350,7 +354,8 @@ def run_research(args: argparse.Namespace):
     # Without this, whichever worker wrote last would be the only one seen by phase 2/3.
     if not args.no_parallel and args.workers > 1:
         print(f"\n[{datetime.now()}] Merging worker results...")
-        n_merged = merge_worker_results(research_dir, len(symbol_chunks))  # actual workers launched (≤ args.workers)
+        # actual workers launched (≤ args.workers)
+        n_merged = merge_worker_results(research_dir, len(symbol_chunks))
         if n_merged == 0:
             print("  ERROR: merge produced 0 coins. Phase 2/3 will be skipped.")
             return
@@ -361,7 +366,7 @@ def run_research(args: argparse.Namespace):
         f"\n[{datetime.now()}] Step 3: Initiating Full Training/Test Validation (Phase 2) "
         "and YTD Performance (Phase 3)..."
     )
-    # The run_walk_forward_optimization.py script knows how to find its own results 
+    # The run_walk_forward_optimization.py script knows how to find its own results
     # if we point it to the same run-dir and symbols-file.
     final_cmd = [
         sys.executable,

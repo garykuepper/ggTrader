@@ -4,14 +4,18 @@ import gc
 import itertools
 import time
 from math import prod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
 from ggTrader.core.fast_backtest import FastBacktest
-from ggTrader.core.metrics import _apply_sensitivity_train_gates, _trade_counts_for_train_gate, _train_metric_series
+from ggTrader.core.metrics import (
+    _apply_sensitivity_train_gates,
+    _trade_counts_for_train_gate,
+    _train_metric_series,
+)
 from ggTrader.core.orchestrator_utils import (
     _coerce_strategy_params_for_engine,
     _eta_str,

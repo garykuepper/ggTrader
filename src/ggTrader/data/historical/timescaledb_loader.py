@@ -109,7 +109,6 @@ class TimescaleDBLoader(BaseDataLoader):
             metrics.append("trades")
 
         # Keep only the metrics we need and handle missing gracefully
-        idx = pd.IndexSlice
         # df_pivoted is sorted, so we can slice it
 
         # Sometimes a column might be fully missing for a metric, reindex level 1
@@ -223,12 +222,12 @@ class TimescaleDBLoader(BaseDataLoader):
         if not stables:
             excluded = ["USDT", "USDC", "DAI", "PYUSD", "EUR", "GBP", "AUD", "USDG"]
 
-        end_ts = pd.Timestamp(end_date)
+        pd.Timestamp(end_date)
         start_ts = pd.Timestamp(start_date)
 
         query = """
             WITH daily_tops AS (
-                SELECT 
+                SELECT
                     DATE_TRUNC('day', timestamp) as date,
                     symbol as asset,
                     volume * close as notional_volume,
@@ -242,7 +241,7 @@ class TimescaleDBLoader(BaseDataLoader):
                   AND timestamp >= :start
                   AND symbol LIKE :quote_pattern
             )
-            SELECT 
+            SELECT
                 asset as symbol,
                 COUNT(*) as frequency,
                 AVG(notional_volume) as average_notional_volume

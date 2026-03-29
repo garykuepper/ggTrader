@@ -116,7 +116,7 @@ def build_mover_mask(
     return mask.astype(bool)
 
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple  # noqa: E402
 
 
 def load_data_with_movers(config: dict) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:

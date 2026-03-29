@@ -1,8 +1,7 @@
 """Pure helper utilities for the orchestration layer."""
 
-import gc
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd

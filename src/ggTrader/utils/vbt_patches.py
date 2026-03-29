@@ -150,8 +150,12 @@ def _robust_profit_factor(self, group_by=None, wrap_kwargs=None):
                     seen.add(key)
             n_groups = len(unique_labels)
             label_to_idx = {
-                (str(l) if not isinstance(l, (str, int, float, bool, tuple, type(None))) else l): i
-                for i, l in enumerate(unique_labels)
+                (
+                    str(lo)
+                    if not isinstance(lo, (str, int, float, bool, tuple, type(None)))
+                    else lo
+                ): i
+                for i, lo in enumerate(unique_labels)
             }
             # Handle potential scalar group_labels_arr content access safely
             # (Though group_labels_arr is 1d, good to be safe)

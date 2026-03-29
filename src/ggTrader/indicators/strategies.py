@@ -162,7 +162,7 @@ class PsarAdxEntry:
         sar_accel = val_by_key["sar_acceleration"]
         sar_max = val_by_key["sar_maximum"]
         adx_lengths = val_by_key["adx_length"]
-        adx_thresholds = val_by_key["adx_threshold"]
+        val_by_key["adx_threshold"]
 
         psar_ind = precomputer.compute_psar(sar_accel, sar_max)
         adx_ind = precomputer.compute_adx(adx_lengths)

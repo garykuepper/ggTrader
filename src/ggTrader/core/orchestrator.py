@@ -2,16 +2,33 @@
 
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 import vectorbt as vbt
 
-from ggTrader.core.benchmarking import _enrich_final_stats_with_cagr_and_benchmark
+from ggTrader.core.benchmarking import (  # noqa: F401
+    _btc_buy_hold_portfolio_stats,
+    _cagr_percent,
+    _enrich_final_stats_with_cagr_and_benchmark,
+    _sp500_buy_hold_portfolio_stats,
+    _years_from_price_index,
+)
 from ggTrader.core.fast_backtest import FastBacktest
-from ggTrader.core.metrics import _apply_sensitivity_train_gates, _train_metric_series
-from ggTrader.core.orchestrator_utils import (
+from ggTrader.core.metrics import (  # noqa: F401
+    _align_grouped_combo_series,
+    _apply_sensitivity_train_gates,
+    _calmar_ratio_series,
+    _max_drawdown_for_train_gate,
+    _open_position_count_end_for_gate,
+    _print_wfo_fold_all_rejected_diagnostics,
+    _profit_factor_series,
+    _trade_counts_for_train_gate,
+    _train_metric_series,
+    _zscore_normalize_series,
+)
+from ggTrader.core.orchestrator_utils import (  # noqa: F401
     _as_optional_float,
     _coerce_metric_float,
     _coerce_strategy_params_for_engine,
@@ -28,12 +45,12 @@ from ggTrader.core.orchestrator_utils import (
     _wall_clock_eta,
     _wfo_per_coin_fallback_triple,
 )
-from ggTrader.core.regime_filtering import (
+from ggTrader.core.regime_filtering import (  # noqa: F401
     _compute_altcoin_index_mask,
     _compute_btc_correlations,
     _compute_btc_regime_mask,
 )
-from ggTrader.core.sensitivity import (
+from ggTrader.core.sensitivity import (  # noqa: F401
     _cleanup_after_heavy_vectorized_run,
     _combo_index_keys,
     _execute_sensitivity_grid,
@@ -45,8 +62,7 @@ from ggTrader.core.sensitivity import (
     analyze_sensitivity_results,
     run_sensitivity_orchestrator,
 )
-from ggTrader.data.cache.wfo_cache import WFOCache
-from ggTrader.core.wfo import (
+from ggTrader.core.wfo import (  # noqa: F401
     _calculate_oos_robustness,
     _calculate_robustness,
     _calculate_wfo_bounds,
@@ -59,29 +75,10 @@ from ggTrader.core.wfo import (
     run_wfo_orchestrator,
     run_wfo_per_coin_orchestrator,
 )
+from ggTrader.data.cache.wfo_cache import WFOCache
 from ggTrader.pipeline.exit_tournament import parse_exit_tournament
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_with_movers
-
-# Re-export benchmarking helpers that may be used by external callers
-from ggTrader.core.benchmarking import (
-    _btc_buy_hold_portfolio_stats,
-    _cagr_percent,
-    _sp500_buy_hold_portfolio_stats,
-    _years_from_price_index,
-)
-
-# Re-export metrics helpers
-from ggTrader.core.metrics import (
-    _align_grouped_combo_series,
-    _calmar_ratio_series,
-    _max_drawdown_for_train_gate,
-    _open_position_count_end_for_gate,
-    _print_wfo_fold_all_rejected_diagnostics,
-    _profit_factor_series,
-    _trade_counts_for_train_gate,
-    _zscore_normalize_series,
-)
 
 
 def _apply_tiered_regime_mask(
@@ -408,7 +405,8 @@ def run_frozen_params_combined_backtest(
             combined_exits_list.append(exits)
             combined_close_list.append(close)
             oos_rob = per_coin_results[symbol].get("oos_robustness_score")
-            combined_oos_scores.append(float(oos_rob) if oos_rob is not None and np.isfinite(float(oos_rob)) else 0.0)
+            oos_rob_f = float(oos_rob) if oos_rob is not None else 0.0
+            combined_oos_scores.append(oos_rob_f if np.isfinite(oos_rob_f) else 0.0)
 
             stats = engine.get_stats()
             per_coin_final_stats[symbol] = {
@@ -480,7 +478,11 @@ def run_frozen_params_combined_backtest(
     # Use .to_dict() so tuple-keyed multi-level columns return scalar booleans, not Series.
     _active: dict = (combined_entries.sum(axis=0) > 0).to_dict()
     # Column names may be multi-level tuples; extract the last element (symbol name) for display.
-    _zeroed = [col[-1] if isinstance(col, tuple) else str(col) for col, active in _active.items() if not active]
+    _zeroed = [
+        col[-1] if isinstance(col, tuple) else str(col)
+        for col, active in _active.items()
+        if not active
+    ]
     if _zeroed:
         print(f"  [Allocation] Zeroing OOS score for 0-trade coins: {_zeroed}")
         combined_oos_scores = [
@@ -530,7 +532,7 @@ def run_frozen_params_combined_backtest(
                 for s, col in zip(combined_oos_scores, combined_entries.columns)
             ]
             alloc_weights = _compute_allocation_weights(combined_oos_scores, config)
-            print(f"  [Allocation] Rebuilt weights after re-zeroing:")
+            print("  [Allocation] Rebuilt weights after re-zeroing:")
             for sym, w in zip(combined_close.columns, alloc_weights):
                 if w > 0:
                     print(f"    {sym}: {w:.1%}")
@@ -587,7 +589,11 @@ def run_frozen_params_combined_backtest(
     eff_cagr = final_stats.get("effective_cagr")
     if eff_cagr is not None and final_stats.get("dead_time_months", 0) > 0.5:
         dead_m = final_stats.get("dead_time_months", 0)
-        print(f"  Effective CAGR (from first trade {final_stats.get('first_trade_date', '?')}): {eff_cagr:.2f}%  [{dead_m:.1f} months dead time]")
+        first_trade = final_stats.get("first_trade_date", "?")
+        print(
+            f"  Effective CAGR (from first trade {first_trade}):"
+            f" {eff_cagr:.2f}%  [{dead_m:.1f} months dead time]"
+        )
 
     bench_sym = final_stats.get("benchmark_label", "BTC-USD").split(" ")[0]
     b_cagr = final_stats.get("benchmark_cagr_pct")
@@ -787,7 +793,10 @@ def run_multi_strategy_per_coin_wfo(
                         coin_regime_mask = None
 
                     _cached = (
-                        _wfo_cache.get(symbol, strategy_name, exit_name, param_grid, config_combo, symbol_ohlcv)
+                        _wfo_cache.get(
+                            symbol, strategy_name, exit_name,
+                            param_grid, config_combo, symbol_ohlcv,
+                        )
                         if _wfo_cache is not None
                         else None
                     )

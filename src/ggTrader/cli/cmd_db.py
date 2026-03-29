@@ -3,7 +3,6 @@ import argparse
 import os
 import shutil
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -12,6 +11,7 @@ from sqlalchemy import text
 
 from ggTrader.utils.config import get_db_connection_string
 from ggTrader.utils.db_engine import create_db_engine_or_exit
+
 
 def register_db_parser(subparsers: argparse._SubParsersAction):
     """Registers the 'db' subcommand."""
@@ -58,7 +58,7 @@ def _db_diag():
     queries = {
         "Total DB Size": "SELECT pg_size_pretty(pg_database_size('ggtrader'))",
         "Table Stats": """
-            SELECT 
+            SELECT
                 pg_size_pretty(pg_total_relation_size('ohlcv')) as total_size,
                 pg_size_pretty(pg_relation_size('ohlcv')) as table_size,
                 pg_size_pretty(pg_indexes_size('ohlcv')) as index_size,
@@ -125,23 +125,24 @@ def _db_export(args):
         "password": parsed.password or "",
         "dbname": parsed.path.lstrip("/"),
     }
-    
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir = Path("data/exports") / f"ggtrader_dump_{timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Try common pg_dump paths for Windows
     pg_dump = shutil.which("pg_dump") or r"C:\Program Files\PostgreSQL\16\bin\pg_dump.exe"
-    
+
     cmd = [
-        pg_dump, "-h", db_params["host"], "-p", db_params["port"], 
-        "-U", db_params["user"], "-Fd", "-j", str(args.jobs), "-f", str(out_dir), db_params["dbname"]
+        pg_dump, "-h", db_params["host"], "-p", db_params["port"],
+        "-U", db_params["user"], "-Fd", "-j", str(args.jobs), "-f", str(out_dir),
+        db_params["dbname"]
     ]
-    
+
     env = os.environ.copy()
     if db_params["password"]:
         env["PGPASSWORD"] = db_params["password"]
-        
+
     print(f"\nExecuting parallel dump of {db_params['dbname']} to {out_dir}...")
     subprocess.run(cmd, env=env, check=True)
     print("Export complete.")

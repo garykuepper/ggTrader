@@ -2,18 +2,16 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
+from ggTrader.core.orchestrator import (
+    _apply_tiered_regime_mask,
+    _apply_wfo_selection_gates,
+    _compute_allocation_weights,
+)
 from ggTrader.core.regime_filtering import (
     _compute_altcoin_index_mask,
     _compute_btc_correlations,
 )
-from ggTrader.core.orchestrator import (
-    _apply_tiered_regime_mask,
-    _compute_allocation_weights,
-    _apply_wfo_selection_gates,
-)
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -73,7 +71,7 @@ class TestComputeBtcCorrelations:
         """A coin whose close is identical to BTC should have corr ≈ 1."""
         ohlcv = _make_ohlcv(["BTC-USD"])
         # Copy BTC close into a second symbol
-        btc_close = ohlcv[("BTC-USD", "close")]
+        ohlcv[("BTC-USD", "close")]
         for field in ["open", "high", "low", "close", "volume"]:
             ohlcv[("COPY-USD", field)] = ohlcv[("BTC-USD", field)]
         ohlcv.columns = pd.MultiIndex.from_tuples(ohlcv.columns, names=["symbol", "field"])
