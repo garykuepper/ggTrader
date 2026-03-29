@@ -1,0 +1,3340 @@
+{
+    "run_id": "93d06d48-f684-40f5-a5ab-7977b6907b60",
+    "timestamp": "2026-03-27T22:13:45.452607",
+    "script_name": "run_wfo_per_coin_multi_strategy",
+    "configuration": {
+        "start_date": "2023-01-01",
+        "end_date": "2025-12-31",
+        "interval": "4h",
+        "symbols_file": "data/top_25_USD_2023-01-01_2025-12-31.json",
+        "symbols": [
+            "BTC-USD",
+            "ETH-USD",
+            "SOL-USD",
+            "TAO-USD",
+            "XRP-USD",
+            "ADA-USD",
+            "DOGE-USD",
+            "SUI-USD",
+            "ZEC-USD"
+        ],
+        "capital": 1000,
+        "fees": 0.004,
+        "_raw_config": {
+            "SYMBOLS_FILE": "data/top_25_USD_2023-01-01_2025-12-31.json",
+            "MAX_SYMBOLS": 25,
+            "START_DATE": "2023-01-01",
+            "END_DATE": "2025-12-31",
+            "INTERVAL": "4h",
+            "FREQ": "4h",
+            "START_CASH": 1000,
+            "PORTFOLIO_SHARE": 0.1,
+            "FEES": 0.004,
+            "SLIPPAGE": 0.003,
+            "N_SPLITS": 6,
+            "TEST_RATIO": 3,
+            "MIN_TRADES": 0,
+            "MIN_CLOSED_TRADES_TRAIN": 3,
+            "TRAIN_METRIC": "composite",
+            "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
+                "sharpe": 0.25,
+                "sortino": 0.25,
+                "calmar": 0.25,
+                "profit_factor": 0.25
+            },
+            "MAX_TRAIN_DRAWDOWN_PCT": null,
+            "CHUNK_SIZE": 500,
+            "USE_VECTORIZED": true,
+            "USE_VECTORIZED_SENSITIVITY": true,
+            "USE_MOVERS": 0,
+            "EXIT_TOURNAMENT": [
+                "atr_trailing",
+                "fixed_sl_tp",
+                "trailing_stop"
+            ],
+            "SENSITIVITY_EXIT_STRATEGY": "atr_trailing",
+            "RECENT_VALIDATION_START_DATE": null,
+            "RECENT_VALIDATION_END_DATE": null,
+            "RECENT_VALIDATION_USE_CCXT_TAIL": true,
+            "MAX_COINS_PER_STRATEGY": 10,
+            "EMA_WARMUP_BARS": 200,
+            "BTC_REGIME_FILTER": true,
+            "BTC_REGIME_FILTER_MIN_CORRELATION": 0.5,
+            "ALTCOIN_REGIME_FILTER": true,
+            "ALTCOIN_REGIME_FILTER_CORR_MIN": 0.3,
+            "MAX_COIN_ALLOCATION": 0.25,
+            "MIN_ROBUSTNESS_SCORE": 0.1,
+            "MIN_FOLD_CONSISTENCY": 0.33,
+            "WFO_DEBUG_METRICS": false,
+            "OOS_ROBUSTNESS_BLEND_ALPHA": 0.65,
+            "TRAIN_METRIC_NORMALIZE_ZSCORE": true,
+            "PARAM_STABILITY_WEIGHT": 0.3,
+            "FOLD_CONSISTENCY_IN_GATE": true,
+            "FOLD_CONSISTENCY_GATE_FLOOR": 0.25,
+            "OOS_STABILITY_WEIGHT": 0.3,
+            "EXPLICIT_RUN_DIR": "C:\\Users\\gkuep\\PycharmProjects\\ggTrader\\results\\research\\research_20260327_220617",
+            "PIPELINE_STAGE": "research",
+            "SYMBOLS": [
+                "BTC-USD",
+                "ETH-USD",
+                "SOL-USD",
+                "XRP-USD",
+                "TAO-USD"
+            ],
+            "exit_tournament": [
+                "atr_trailing",
+                "fixed_sl_tp",
+                "trailing_stop"
+            ],
+            "per_coin_results": {
+                "BTC-USD": {
+                    "best_strategy": "rsi_reversal",
+                    "best_exit": "atr_trailing",
+                    "best_params": {
+                        "rsi_length": 5,
+                        "rsi_oversold": 25,
+                        "rsi_trend_filter": 1,
+                        "atr_length": 14,
+                        "atr_multiplier": 6.0,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "robustness_score": 0.25596184328006144,
+                    "is_robustness_score": 1.7165292825727119,
+                    "oos_robustness_score": -0.13671009590819422,
+                    "fold_consistency": 0.3333333333333333,
+                    "wfo_stats": [
+                        {
+                            "fold": 1,
+                            "train_start": "2023-01-01 00:00:00+00:00",
+                            "test_start": "2023-12-31 16:00:00+00:00",
+                            "test_end": "2024-05-01 04:00:00+00:00",
+                            "params": {
+                                "rsi_length": 14,
+                                "rsi_oversold": 30,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 14,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.607713907029943,
+                            "oos_sharpe": 2.8678408830635562,
+                            "sortino": 3.910419570826809,
+                            "profit": 40.286108337704036,
+                            "start_capital": 1000.0,
+                            "end_capital": 1040.286108337704,
+                            "return_pct": 4.028610833770403
+                        },
+                        {
+                            "fold": 2,
+                            "train_start": "2023-05-02 12:00:00+00:00",
+                            "test_start": "2024-05-01 08:00:00+00:00",
+                            "test_end": "2024-08-30 16:00:00+00:00",
+                            "params": {
+                                "rsi_length": 14,
+                                "rsi_oversold": 30,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 14,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.501810219783276,
+                            "oos_sharpe": -3.269271790632742,
+                            "sortino": -4.04286505840255,
+                            "profit": -27.84524264549411,
+                            "start_capital": 1000.0,
+                            "end_capital": 972.154757354506,
+                            "return_pct": -2.784524264549411
+                        },
+                        {
+                            "fold": 3,
+                            "train_start": "2023-09-01 04:00:00+00:00",
+                            "test_start": "2024-08-30 20:00:00+00:00",
+                            "test_end": "2024-12-30 04:00:00+00:00",
+                            "params": {
+                                "rsi_length": 5,
+                                "rsi_oversold": 40,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 14,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.7066178494536874,
+                            "oos_sharpe": 1.5639137461204116,
+                            "sortino": 2.4587167175578424,
+                            "profit": 21.409298787579473,
+                            "start_capital": 1000.0,
+                            "end_capital": 1021.4092987875796,
+                            "return_pct": 2.1409298787579476
+                        },
+                        {
+                            "fold": 4,
+                            "train_start": "2023-12-31 16:00:00+00:00",
+                            "test_start": "2024-12-30 08:00:00+00:00",
+                            "test_end": "2025-04-30 16:00:00+00:00",
+                            "params": {
+                                "rsi_length": 7,
+                                "rsi_oversold": 40,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 30,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.346541374186843,
+                            "oos_sharpe": -0.25341275388814544,
+                            "sortino": -0.3549729532223396,
+                            "profit": -4.665586155303828,
+                            "start_capital": 1000.0,
+                            "end_capital": 995.3344138446962,
+                            "return_pct": -0.4665586155303828
+                        },
+                        {
+                            "fold": 5,
+                            "train_start": "2024-05-01 08:00:00+00:00",
+                            "test_start": "2025-04-30 20:00:00+00:00",
+                            "test_end": "2025-08-30 04:00:00+00:00",
+                            "params": {
+                                "rsi_length": 5,
+                                "rsi_oversold": 25,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 14,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.2186873296201206,
+                            "oos_sharpe": -0.1571909138430724,
+                            "sortino": -0.22461685091285982,
+                            "profit": -1.561425879457019,
+                            "start_capital": 1000.0,
+                            "end_capital": 998.438574120543,
+                            "return_pct": -0.1561425879457019
+                        },
+                        {
+                            "fold": 6,
+                            "train_start": "2024-08-30 20:00:00+00:00",
+                            "test_start": "2025-08-30 08:00:00+00:00",
+                            "test_end": "2025-12-30 16:00:00+00:00",
+                            "params": {
+                                "rsi_length": 5,
+                                "rsi_oversold": 25,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 30,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.530709536925894,
+                            "oos_sharpe": -0.5712480510444748,
+                            "sortino": -0.781482250679511,
+                            "profit": -2.5570416988234825,
+                            "start_capital": 1000.0,
+                            "end_capital": 997.4429583011764,
+                            "return_pct": -0.25570416988234823
+                        }
+                    ],
+                    "robust_top_5": [
+                        {
+                            "params": {
+                                "rsi_length": 5,
+                                "rsi_oversold": 25,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 14,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.7165292825727119
+                        },
+                        {
+                            "params": {
+                                "rsi_length": 7,
+                                "rsi_oversold": 20,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 14,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.6249323235409512
+                        },
+                        {
+                            "params": {
+                                "rsi_length": 5,
+                                "rsi_oversold": 30,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 14,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.6056594120495238
+                        },
+                        {
+                            "params": {
+                                "rsi_length": 5,
+                                "rsi_oversold": 25,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 30,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.544694261219926
+                        },
+                        {
+                            "params": {
+                                "rsi_length": 5,
+                                "rsi_oversold": 25,
+                                "rsi_trend_filter": 1,
+                                "atr_length": 21,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.464031760096737
+                        }
+                    ],
+                    "selection_reason": "wfo_robustness"
+                },
+                "ETH-USD": {
+                    "best_strategy": "supertrend_flip",
+                    "best_exit": "atr_trailing",
+                    "best_params": {
+                        "st_length": 7,
+                        "st_multiplier": 2.0,
+                        "atr_length": 14,
+                        "atr_multiplier": 6.0,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "robustness_score": 0.709363919420219,
+                    "is_robustness_score": 1.0647318779942965,
+                    "oos_robustness_score": 0.6739160998408189,
+                    "fold_consistency": 0.8333333333333334,
+                    "wfo_stats": [
+                        {
+                            "fold": 1,
+                            "train_start": "2023-01-01 00:00:00+00:00",
+                            "test_start": "2023-12-31 16:00:00+00:00",
+                            "test_end": "2024-05-01 04:00:00+00:00",
+                            "params": {
+                                "st_length": 10,
+                                "st_multiplier": 4.0,
+                                "atr_length": 21,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.0673875019201633,
+                            "oos_sharpe": 0.010035929966291034,
+                            "sortino": 0.014213794389439222,
+                            "profit": 0.008928337313676593,
+                            "start_capital": 1000.0,
+                            "end_capital": 1000.0089283373137,
+                            "return_pct": 0.0008928337313676594
+                        },
+                        {
+                            "fold": 2,
+                            "train_start": "2023-05-02 12:00:00+00:00",
+                            "test_start": "2024-05-01 08:00:00+00:00",
+                            "test_end": "2024-08-30 16:00:00+00:00",
+                            "params": {
+                                "st_length": 10,
+                                "st_multiplier": 5.0,
+                                "atr_length": 21,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.1809991509133297,
+                            "oos_sharpe": 0.7703976764906825,
+                            "sortino": 1.5875134181169455,
+                            "profit": 7.351587109438981,
+                            "start_capital": 1000.0,
+                            "end_capital": 1007.3515871094389,
+                            "return_pct": 0.7351587109438981
+                        },
+                        {
+                            "fold": 3,
+                            "train_start": "2023-09-01 04:00:00+00:00",
+                            "test_start": "2024-08-30 20:00:00+00:00",
+                            "test_end": "2024-12-30 04:00:00+00:00",
+                            "params": {
+                                "st_length": 20,
+                                "st_multiplier": 2.0,
+                                "atr_length": 21,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 1.6879605767757258,
+                            "oos_sharpe": 1.768984988328387,
+                            "sortino": 2.649922275073409,
+                            "profit": 31.661992033538,
+                            "start_capital": 1000.0,
+                            "end_capital": 1031.6619920335381,
+                            "return_pct": 3.1661992033538
+                        },
+                        {
+                            "fold": 4,
+                            "train_start": "2023-12-31 16:00:00+00:00",
+                            "test_start": "2024-12-30 08:00:00+00:00",
+                            "test_end": "2025-04-30 16:00:00+00:00",
+                            "params": {
+                                "st_length": 7,
+                                "st_multiplier": 2.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": null,
+                            "oos_sharpe": -3.4049632286573406,
+                            "sortino": -3.800964360939297,
+                            "profit": -14.688748018974195,
+                            "start_capital": 1000.0,
+                            "end_capital": 985.3112519810257,
+                            "return_pct": -1.4688748018974196
+                        },
+                        {
+                            "fold": 5,
+                            "train_start": "2024-05-01 08:00:00+00:00",
+                            "test_start": "2025-04-30 20:00:00+00:00",
+                            "test_end": "2025-08-30 04:00:00+00:00",
+                            "params": {
+                                "st_length": 7,
+                                "st_multiplier": 4.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 3.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 1.845870268156769,
+                            "oos_sharpe": 4.079000923997018,
+                            "sortino": 7.394295325648998,
+                            "profit": 67.12772971077898,
+                            "start_capital": 1000.0,
+                            "end_capital": 1067.1277297107788,
+                            "return_pct": 6.712772971077897
+                        },
+                        {
+                            "fold": 6,
+                            "train_start": "2024-08-30 20:00:00+00:00",
+                            "test_start": "2025-08-30 08:00:00+00:00",
+                            "test_end": "2025-12-30 16:00:00+00:00",
+                            "params": {
+                                "st_length": 14,
+                                "st_multiplier": 4.0,
+                                "atr_length": 30,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 1.890464492640895,
+                            "oos_sharpe": 0.7593168719030052,
+                            "sortino": 1.0976810305288942,
+                            "profit": 4.105040013089223,
+                            "start_capital": 1000.0,
+                            "end_capital": 1004.1050400130893,
+                            "return_pct": 0.41050400130892234
+                        }
+                    ],
+                    "robust_top_5": [
+                        {
+                            "params": {
+                                "st_length": 7,
+                                "st_multiplier": 2.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.0647318779942965
+                        },
+                        {
+                            "params": {
+                                "st_length": 20,
+                                "st_multiplier": 4.0,
+                                "atr_length": 21,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.03500743864669
+                        },
+                        {
+                            "params": {
+                                "st_length": 14,
+                                "st_multiplier": 5.0,
+                                "atr_length": 21,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.0335458167423974
+                        },
+                        {
+                            "params": {
+                                "st_length": 14,
+                                "st_multiplier": 5.0,
+                                "atr_length": 30,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.0218022762215433
+                        },
+                        {
+                            "params": {
+                                "st_length": 20,
+                                "st_multiplier": 2.0,
+                                "atr_length": 21,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 0.9899663306656117
+                        }
+                    ],
+                    "selection_reason": "wfo_robustness"
+                },
+                "SOL-USD": {
+                    "best_strategy": "ema_cross",
+                    "best_exit": "atr_trailing",
+                    "best_params": {
+                        "ema_fast": 20,
+                        "ema_slow": 50,
+                        "atr_length": 30,
+                        "atr_multiplier": 4.5,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "robustness_score": 0.5235294712266592,
+                    "is_robustness_score": 1.789299778788763,
+                    "oos_robustness_score": 0.18714511082068644,
+                    "fold_consistency": 0.6,
+                    "wfo_stats": [
+                        {
+                            "fold": 1,
+                            "train_start": "2023-01-01 00:00:00+00:00",
+                            "test_start": "2023-12-31 16:00:00+00:00",
+                            "test_end": "2024-05-01 04:00:00+00:00",
+                            "params": {
+                                "ema_fast": 12,
+                                "ema_slow": 50,
+                                "atr_length": 30,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.004733381934562,
+                            "oos_sharpe": null,
+                            "sortino": null,
+                            "profit": 0.0,
+                            "start_capital": 1000.0,
+                            "end_capital": 1000.0,
+                            "return_pct": 0.0
+                        },
+                        {
+                            "fold": 2,
+                            "train_start": "2023-05-02 12:00:00+00:00",
+                            "test_start": "2024-05-01 08:00:00+00:00",
+                            "test_end": "2024-08-30 16:00:00+00:00",
+                            "params": {
+                                "ema_fast": 12,
+                                "ema_slow": 50,
+                                "atr_length": 14,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 1.7191080471819333,
+                            "oos_sharpe": -1.1820665548426914,
+                            "sortino": -1.6148429818914718,
+                            "profit": -16.760921674871497,
+                            "start_capital": 1000.0,
+                            "end_capital": 983.2390783251284,
+                            "return_pct": -1.6760921674871496
+                        },
+                        {
+                            "fold": 3,
+                            "train_start": "2023-09-01 04:00:00+00:00",
+                            "test_start": "2024-08-30 20:00:00+00:00",
+                            "test_end": "2024-12-30 04:00:00+00:00",
+                            "params": {
+                                "ema_fast": 9,
+                                "ema_slow": 100,
+                                "atr_length": 30,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.002310787299591,
+                            "oos_sharpe": 0.6512855969693472,
+                            "sortino": 0.9562145988614178,
+                            "profit": 10.876534837604481,
+                            "start_capital": 1000.0,
+                            "end_capital": 1010.8765348376046,
+                            "return_pct": 1.0876534837604481
+                        },
+                        {
+                            "fold": 4,
+                            "train_start": "2023-12-31 16:00:00+00:00",
+                            "test_start": "2024-12-30 08:00:00+00:00",
+                            "test_end": "2025-04-30 16:00:00+00:00",
+                            "params": {
+                                "ema_fast": 5,
+                                "ema_slow": 34,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": -1.328659653395625,
+                            "oos_sharpe": -1.260159295370352,
+                            "sortino": -1.7759214384498596,
+                            "profit": -24.640163760505658,
+                            "start_capital": 1000.0,
+                            "end_capital": 975.3598362394944,
+                            "return_pct": -2.464016376050566
+                        },
+                        {
+                            "fold": 5,
+                            "train_start": "2024-05-01 08:00:00+00:00",
+                            "test_start": "2025-04-30 20:00:00+00:00",
+                            "test_end": "2025-08-30 04:00:00+00:00",
+                            "params": {
+                                "ema_fast": 5,
+                                "ema_slow": 200,
+                                "atr_length": 21,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.7220384927575676,
+                            "oos_sharpe": 0.8942634232666652,
+                            "sortino": 1.3395565270932739,
+                            "profit": 13.870409465686265,
+                            "start_capital": 1000.0,
+                            "end_capital": 1013.8704094656863,
+                            "return_pct": 1.3870409465686266
+                        },
+                        {
+                            "fold": 6,
+                            "train_start": "2024-08-30 20:00:00+00:00",
+                            "test_start": "2025-08-30 08:00:00+00:00",
+                            "test_end": "2025-12-30 16:00:00+00:00",
+                            "params": {
+                                "ema_fast": 3,
+                                "ema_slow": 200,
+                                "atr_length": 21,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.527620714740539,
+                            "oos_sharpe": 1.031120339752434,
+                            "sortino": 1.6048095589069866,
+                            "profit": 6.602284476050855,
+                            "start_capital": 1000.0,
+                            "end_capital": 1006.602284476051,
+                            "return_pct": 0.6602284476050855
+                        }
+                    ],
+                    "robust_top_5": [
+                        {
+                            "params": {
+                                "ema_fast": 20,
+                                "ema_slow": 50,
+                                "atr_length": 30,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.789299778788763
+                        },
+                        {
+                            "params": {
+                                "ema_fast": 20,
+                                "ema_slow": 50,
+                                "atr_length": 21,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.6774423361512343
+                        },
+                        {
+                            "params": {
+                                "ema_fast": 5,
+                                "ema_slow": 200,
+                                "atr_length": 21,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.6709012590269818
+                        },
+                        {
+                            "params": {
+                                "ema_fast": 3,
+                                "ema_slow": 200,
+                                "atr_length": 21,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.532377246741378
+                        },
+                        {
+                            "params": {
+                                "ema_fast": 20,
+                                "ema_slow": 50,
+                                "atr_length": 14,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.5303323688585502
+                        }
+                    ],
+                    "selection_reason": "wfo_robustness"
+                },
+                "TAO-USD": {
+                    "best_strategy": "psar_adx",
+                    "best_exit": "atr_trailing",
+                    "best_params": {
+                        "sar_acceleration": 0.02,
+                        "sar_maximum": 0.1,
+                        "adx_length": 30,
+                        "adx_threshold": 25,
+                        "use_dmp_cross": 0,
+                        "atr_length": 30,
+                        "atr_multiplier": 4.5,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "robustness_score": 0.8003499063576884,
+                    "is_robustness_score": 1.8877779446985863,
+                    "oos_robustness_score": 0.6252475812806348,
+                    "fold_consistency": 0.6666666666666666,
+                    "wfo_stats": [
+                        {
+                            "fold_idx": 1,
+                            "best_params": {},
+                            "oos_sharpe": null,
+                            "oos_return": null,
+                            "profit": null,
+                            "start_capital": null,
+                            "end_capital": null,
+                            "return_pct": null,
+                            "_skipped_vectorized_failure": 1
+                        },
+                        {
+                            "fold_idx": 2,
+                            "best_params": {},
+                            "oos_sharpe": null,
+                            "oos_return": null,
+                            "profit": null,
+                            "start_capital": null,
+                            "end_capital": null,
+                            "return_pct": null,
+                            "_skipped_vectorized_failure": 1
+                        },
+                        {
+                            "fold": 3,
+                            "train_start": "2023-09-01 04:00:00+00:00",
+                            "test_start": "2024-08-30 20:00:00+00:00",
+                            "test_end": "2024-12-30 04:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 30,
+                                "use_dmp_cross": 0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 0.3372571924542006,
+                            "oos_sharpe": 1.3258143374958717,
+                            "sortino": 2.451384105873399,
+                            "profit": 21.76062855571317,
+                            "start_capital": 1000.0,
+                            "end_capital": 1021.7606285557131,
+                            "return_pct": 2.176062855571317
+                        },
+                        {
+                            "fold": 4,
+                            "train_start": "2023-12-31 16:00:00+00:00",
+                            "test_start": "2024-12-30 08:00:00+00:00",
+                            "test_end": "2025-04-30 16:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 25,
+                                "use_dmp_cross": 0,
+                                "atr_length": 21,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.465948697949694,
+                            "oos_sharpe": -0.16433346877938837,
+                            "sortino": -0.267718926680306,
+                            "profit": -1.6427795313913123,
+                            "start_capital": 1000.0,
+                            "end_capital": 998.3572204686087,
+                            "return_pct": -0.16427795313913124
+                        },
+                        {
+                            "fold": 5,
+                            "train_start": "2024-05-01 08:00:00+00:00",
+                            "test_start": "2025-04-30 20:00:00+00:00",
+                            "test_end": "2025-08-30 04:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 25,
+                                "use_dmp_cross": 0,
+                                "atr_length": 21,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.081894925064838,
+                            "oos_sharpe": 0.9182799871204755,
+                            "sortino": 1.4464327090342646,
+                            "profit": 10.674126504376417,
+                            "start_capital": 1000.0,
+                            "end_capital": 1010.6741265043763,
+                            "return_pct": 1.0674126504376418
+                        },
+                        {
+                            "fold": 6,
+                            "train_start": "2024-08-30 20:00:00+00:00",
+                            "test_start": "2025-08-30 08:00:00+00:00",
+                            "test_end": "2025-12-30 16:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 30,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.1388614930705776,
+                            "oos_sharpe": null,
+                            "sortino": null,
+                            "profit": 0.0,
+                            "start_capital": 1000.0,
+                            "end_capital": 1000.0,
+                            "return_pct": 0.0
+                        }
+                    ],
+                    "robust_top_5": [
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 25,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.8877779446985863
+                        },
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 25,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.758707687126885
+                        },
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 30,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.7402822889239713
+                        },
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 25,
+                                "use_dmp_cross": 0,
+                                "atr_length": 14,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.6714109252125504
+                        },
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 25,
+                                "use_dmp_cross": 0,
+                                "atr_length": 21,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.6476426192214144
+                        }
+                    ],
+                    "selection_reason": "wfo_robustness"
+                },
+                "XRP-USD": {
+                    "best_strategy": "psar_adx",
+                    "best_exit": "atr_trailing",
+                    "best_params": {
+                        "sar_acceleration": 0.02,
+                        "sar_maximum": 0.1,
+                        "adx_length": 30,
+                        "adx_threshold": 35,
+                        "use_dmp_cross": 0,
+                        "atr_length": 30,
+                        "atr_multiplier": 2.5,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "robustness_score": 0.5760297067013279,
+                    "is_robustness_score": 1.8800565616663227,
+                    "oos_robustness_score": 0.030249555847234093,
+                    "fold_consistency": 0.8,
+                    "wfo_stats": [
+                        {
+                            "fold": 1,
+                            "train_start": "2023-01-01 00:00:00+00:00",
+                            "test_start": "2023-12-31 16:00:00+00:00",
+                            "test_end": "2024-05-01 04:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 20,
+                                "adx_threshold": 35,
+                                "use_dmp_cross": 0,
+                                "atr_length": 21,
+                                "atr_multiplier": 3.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.475472340918366,
+                            "oos_sharpe": 0.0721012934710272,
+                            "sortino": 0.11127190012402953,
+                            "profit": 0.3155897192406485,
+                            "start_capital": 1000.0,
+                            "end_capital": 1000.3155897192406,
+                            "return_pct": 0.03155897192406485
+                        },
+                        {
+                            "fold": 2,
+                            "train_start": "2023-05-02 12:00:00+00:00",
+                            "test_start": "2024-05-01 08:00:00+00:00",
+                            "test_end": "2024-08-30 16:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 20,
+                                "adx_threshold": 35,
+                                "use_dmp_cross": 0,
+                                "atr_length": 21,
+                                "atr_multiplier": 3.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.6826891739325083,
+                            "oos_sharpe": 0.15100973416527147,
+                            "sortino": 0.22831782023747613,
+                            "profit": 0.9371770032377498,
+                            "start_capital": 1000.0,
+                            "end_capital": 1000.9371770032377,
+                            "return_pct": 0.09371770032377498
+                        },
+                        {
+                            "fold": 3,
+                            "train_start": "2023-09-01 04:00:00+00:00",
+                            "test_start": "2024-08-30 20:00:00+00:00",
+                            "test_end": "2024-12-30 04:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 25,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 3.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.1240913261229006,
+                            "oos_sharpe": 4.251880961995294,
+                            "sortino": 7.5951171039049505,
+                            "profit": 172.51934536383607,
+                            "start_capital": 1000.0,
+                            "end_capital": 1172.5193453638362,
+                            "return_pct": 17.251934536383608
+                        },
+                        {
+                            "fold": 4,
+                            "train_start": "2023-12-31 16:00:00+00:00",
+                            "test_start": "2024-12-30 08:00:00+00:00",
+                            "test_end": "2025-04-30 16:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 14,
+                                "adx_threshold": 20,
+                                "use_dmp_cross": 0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": null,
+                            "oos_sharpe": -3.4283519912789635,
+                            "sortino": -4.32289940244935,
+                            "profit": -53.90893440149203,
+                            "start_capital": 1000.0,
+                            "end_capital": 946.091065598508,
+                            "return_pct": -5.3908934401492035
+                        },
+                        {
+                            "fold": 5,
+                            "train_start": "2024-05-01 08:00:00+00:00",
+                            "test_start": "2025-04-30 20:00:00+00:00",
+                            "test_end": "2025-08-30 04:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 35,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 1.8498229300764344,
+                            "oos_sharpe": 0.15075183247399088,
+                            "sortino": 0.21988255288532293,
+                            "profit": 1.299881864633278,
+                            "start_capital": 1000.0,
+                            "end_capital": 1001.2998818646332,
+                            "return_pct": 0.1299881864633278
+                        },
+                        {
+                            "fold": 6,
+                            "train_start": "2024-08-30 20:00:00+00:00",
+                            "test_start": "2025-08-30 08:00:00+00:00",
+                            "test_end": "2025-12-30 16:00:00+00:00",
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 35,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 1.942657144629649,
+                            "oos_sharpe": null,
+                            "sortino": null,
+                            "profit": 0.0,
+                            "start_capital": 1000.0,
+                            "end_capital": 1000.0,
+                            "return_pct": 0.0
+                        }
+                    ],
+                    "robust_top_5": [
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 35,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.8800565616663227
+                        },
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 35,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 3.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.7718806100157147
+                        },
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 35,
+                                "use_dmp_cross": 0,
+                                "atr_length": 14,
+                                "atr_multiplier": 4.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.5635555559718999
+                        },
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 35,
+                                "use_dmp_cross": 0,
+                                "atr_length": 21,
+                                "atr_multiplier": 2.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.5257929840919218
+                        },
+                        {
+                            "params": {
+                                "sar_acceleration": 0.02,
+                                "sar_maximum": 0.1,
+                                "adx_length": 30,
+                                "adx_threshold": 30,
+                                "use_dmp_cross": 0,
+                                "atr_length": 30,
+                                "atr_multiplier": 3.5,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.4697506794269455
+                        }
+                    ],
+                    "selection_reason": "wfo_robustness"
+                }
+            },
+            "per_coin_final_stats": {
+                "BTC-USD": {
+                    "strategy": "rsi_reversal",
+                    "exit": "atr_trailing",
+                    "params": {
+                        "rsi_length": 5,
+                        "rsi_oversold": 25,
+                        "rsi_trend_filter": 1,
+                        "atr_length": 14,
+                        "atr_multiplier": 6.0,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "selection_reason": "wfo_robustness",
+                    "total_value": 1107.4505163277647,
+                    "total_profit": 107.45051632776472,
+                    "profit_pct": 10.745051632776471,
+                    "total_trades": 22,
+                    "win_rate": 36.36363636363637,
+                    "sharpe": 1.2506301356435408,
+                    "sortino": 1.8317779887983263,
+                    "max_drawdown": -3.9961179813244985
+                },
+                "ETH-USD": {
+                    "strategy": "supertrend_flip",
+                    "exit": "atr_trailing",
+                    "params": {
+                        "st_length": 7,
+                        "st_multiplier": 2.0,
+                        "atr_length": 14,
+                        "atr_multiplier": 6.0,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "selection_reason": "wfo_robustness",
+                    "total_value": 1023.8995785775464,
+                    "total_profit": 23.899578577546464,
+                    "profit_pct": 2.3899578577546463,
+                    "total_trades": 21,
+                    "win_rate": 38.095238095238095,
+                    "sharpe": 0.32532309684746186,
+                    "sortino": 0.4787729644632014,
+                    "max_drawdown": -4.896090706824896
+                },
+                "SOL-USD": {
+                    "strategy": "ema_cross",
+                    "exit": "atr_trailing",
+                    "params": {
+                        "ema_fast": 20,
+                        "ema_slow": 50,
+                        "atr_length": 30,
+                        "atr_multiplier": 4.5,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "selection_reason": "wfo_robustness",
+                    "total_value": 1195.690626089127,
+                    "total_profit": 195.6906260891268,
+                    "profit_pct": 19.56906260891268,
+                    "total_trades": 27,
+                    "win_rate": 48.148148148148145,
+                    "sharpe": 1.1575841524276145,
+                    "sortino": 1.8921773336330328,
+                    "max_drawdown": -5.315955638959302
+                },
+                "TAO-USD": {
+                    "strategy": "psar_adx",
+                    "exit": "atr_trailing",
+                    "params": {
+                        "sar_acceleration": 0.02,
+                        "sar_maximum": 0.1,
+                        "adx_length": 30,
+                        "adx_threshold": 25,
+                        "use_dmp_cross": 0,
+                        "atr_length": 30,
+                        "atr_multiplier": 4.5,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "selection_reason": "wfo_robustness",
+                    "total_value": 1172.4550276555651,
+                    "total_profit": 172.45502765556503,
+                    "profit_pct": 17.245502765556502,
+                    "total_trades": 15,
+                    "win_rate": 73.33333333333333,
+                    "sharpe": 1.0020395192626488,
+                    "sortino": 1.5825985929606812,
+                    "max_drawdown": -4.724983041012676
+                },
+                "XRP-USD": {
+                    "strategy": "psar_adx",
+                    "exit": "atr_trailing",
+                    "params": {
+                        "sar_acceleration": 0.02,
+                        "sar_maximum": 0.1,
+                        "adx_length": 30,
+                        "adx_threshold": 35,
+                        "use_dmp_cross": 0,
+                        "atr_length": 30,
+                        "atr_multiplier": 2.5,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "selection_reason": "wfo_robustness",
+                    "total_value": 984.1520517193048,
+                    "total_profit": -15.84794828069515,
+                    "profit_pct": -1.5847948280695148,
+                    "total_trades": 3,
+                    "win_rate": 33.33333333333333,
+                    "sharpe": -0.7861514444160239,
+                    "sortino": -1.0260489488761386,
+                    "max_drawdown": -1.5847948280696023
+                }
+            }
+        }
+    },
+    "strategy_parameters": {
+        "per_coin": {
+            "BTC-USD": {
+                "best_strategy": "rsi_reversal",
+                "best_exit": "atr_trailing",
+                "best_params": {
+                    "rsi_length": 5,
+                    "rsi_oversold": 25,
+                    "rsi_trend_filter": 1,
+                    "atr_length": 14,
+                    "atr_multiplier": 6.0,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.25596184328006144,
+                "is_robustness_score": 1.7165292825727119,
+                "oos_robustness_score": -0.13671009590819422,
+                "fold_consistency": 0.3333333333333333,
+                "wfo_stats": [
+                    {
+                        "fold": 1,
+                        "train_start": "2023-01-01 00:00:00+00:00",
+                        "test_start": "2023-12-31 16:00:00+00:00",
+                        "test_end": "2024-05-01 04:00:00+00:00",
+                        "params": {
+                            "rsi_length": 14,
+                            "rsi_oversold": 30,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.607713907029943,
+                        "oos_sharpe": 2.8678408830635562,
+                        "sortino": 3.910419570826809,
+                        "profit": 40.286108337704036,
+                        "start_capital": 1000.0,
+                        "end_capital": 1040.286108337704,
+                        "return_pct": 4.028610833770403
+                    },
+                    {
+                        "fold": 2,
+                        "train_start": "2023-05-02 12:00:00+00:00",
+                        "test_start": "2024-05-01 08:00:00+00:00",
+                        "test_end": "2024-08-30 16:00:00+00:00",
+                        "params": {
+                            "rsi_length": 14,
+                            "rsi_oversold": 30,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.501810219783276,
+                        "oos_sharpe": -3.269271790632742,
+                        "sortino": -4.04286505840255,
+                        "profit": -27.84524264549411,
+                        "start_capital": 1000.0,
+                        "end_capital": 972.154757354506,
+                        "return_pct": -2.784524264549411
+                    },
+                    {
+                        "fold": 3,
+                        "train_start": "2023-09-01 04:00:00+00:00",
+                        "test_start": "2024-08-30 20:00:00+00:00",
+                        "test_end": "2024-12-30 04:00:00+00:00",
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 40,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.7066178494536874,
+                        "oos_sharpe": 1.5639137461204116,
+                        "sortino": 2.4587167175578424,
+                        "profit": 21.409298787579473,
+                        "start_capital": 1000.0,
+                        "end_capital": 1021.4092987875796,
+                        "return_pct": 2.1409298787579476
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2023-12-31 16:00:00+00:00",
+                        "test_start": "2024-12-30 08:00:00+00:00",
+                        "test_end": "2025-04-30 16:00:00+00:00",
+                        "params": {
+                            "rsi_length": 7,
+                            "rsi_oversold": 40,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 30,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.346541374186843,
+                        "oos_sharpe": -0.25341275388814544,
+                        "sortino": -0.3549729532223396,
+                        "profit": -4.665586155303828,
+                        "start_capital": 1000.0,
+                        "end_capital": 995.3344138446962,
+                        "return_pct": -0.4665586155303828
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2024-05-01 08:00:00+00:00",
+                        "test_start": "2025-04-30 20:00:00+00:00",
+                        "test_end": "2025-08-30 04:00:00+00:00",
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.2186873296201206,
+                        "oos_sharpe": -0.1571909138430724,
+                        "sortino": -0.22461685091285982,
+                        "profit": -1.561425879457019,
+                        "start_capital": 1000.0,
+                        "end_capital": 998.438574120543,
+                        "return_pct": -0.1561425879457019
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2024-08-30 20:00:00+00:00",
+                        "test_start": "2025-08-30 08:00:00+00:00",
+                        "test_end": "2025-12-30 16:00:00+00:00",
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 30,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.530709536925894,
+                        "oos_sharpe": -0.5712480510444748,
+                        "sortino": -0.781482250679511,
+                        "profit": -2.5570416988234825,
+                        "start_capital": 1000.0,
+                        "end_capital": 997.4429583011764,
+                        "return_pct": -0.25570416988234823
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.7165292825727119
+                    },
+                    {
+                        "params": {
+                            "rsi_length": 7,
+                            "rsi_oversold": 20,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.6249323235409512
+                    },
+                    {
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 30,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.6056594120495238
+                    },
+                    {
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 30,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.544694261219926
+                    },
+                    {
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 21,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.464031760096737
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            },
+            "ETH-USD": {
+                "best_strategy": "supertrend_flip",
+                "best_exit": "atr_trailing",
+                "best_params": {
+                    "st_length": 7,
+                    "st_multiplier": 2.0,
+                    "atr_length": 14,
+                    "atr_multiplier": 6.0,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.709363919420219,
+                "is_robustness_score": 1.0647318779942965,
+                "oos_robustness_score": 0.6739160998408189,
+                "fold_consistency": 0.8333333333333334,
+                "wfo_stats": [
+                    {
+                        "fold": 1,
+                        "train_start": "2023-01-01 00:00:00+00:00",
+                        "test_start": "2023-12-31 16:00:00+00:00",
+                        "test_end": "2024-05-01 04:00:00+00:00",
+                        "params": {
+                            "st_length": 10,
+                            "st_multiplier": 4.0,
+                            "atr_length": 21,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.0673875019201633,
+                        "oos_sharpe": 0.010035929966291034,
+                        "sortino": 0.014213794389439222,
+                        "profit": 0.008928337313676593,
+                        "start_capital": 1000.0,
+                        "end_capital": 1000.0089283373137,
+                        "return_pct": 0.0008928337313676594
+                    },
+                    {
+                        "fold": 2,
+                        "train_start": "2023-05-02 12:00:00+00:00",
+                        "test_start": "2024-05-01 08:00:00+00:00",
+                        "test_end": "2024-08-30 16:00:00+00:00",
+                        "params": {
+                            "st_length": 10,
+                            "st_multiplier": 5.0,
+                            "atr_length": 21,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.1809991509133297,
+                        "oos_sharpe": 0.7703976764906825,
+                        "sortino": 1.5875134181169455,
+                        "profit": 7.351587109438981,
+                        "start_capital": 1000.0,
+                        "end_capital": 1007.3515871094389,
+                        "return_pct": 0.7351587109438981
+                    },
+                    {
+                        "fold": 3,
+                        "train_start": "2023-09-01 04:00:00+00:00",
+                        "test_start": "2024-08-30 20:00:00+00:00",
+                        "test_end": "2024-12-30 04:00:00+00:00",
+                        "params": {
+                            "st_length": 20,
+                            "st_multiplier": 2.0,
+                            "atr_length": 21,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.6879605767757258,
+                        "oos_sharpe": 1.768984988328387,
+                        "sortino": 2.649922275073409,
+                        "profit": 31.661992033538,
+                        "start_capital": 1000.0,
+                        "end_capital": 1031.6619920335381,
+                        "return_pct": 3.1661992033538
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2023-12-31 16:00:00+00:00",
+                        "test_start": "2024-12-30 08:00:00+00:00",
+                        "test_end": "2025-04-30 16:00:00+00:00",
+                        "params": {
+                            "st_length": 7,
+                            "st_multiplier": 2.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": -3.4049632286573406,
+                        "sortino": -3.800964360939297,
+                        "profit": -14.688748018974195,
+                        "start_capital": 1000.0,
+                        "end_capital": 985.3112519810257,
+                        "return_pct": -1.4688748018974196
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2024-05-01 08:00:00+00:00",
+                        "test_start": "2025-04-30 20:00:00+00:00",
+                        "test_end": "2025-08-30 04:00:00+00:00",
+                        "params": {
+                            "st_length": 7,
+                            "st_multiplier": 4.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 3.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.845870268156769,
+                        "oos_sharpe": 4.079000923997018,
+                        "sortino": 7.394295325648998,
+                        "profit": 67.12772971077898,
+                        "start_capital": 1000.0,
+                        "end_capital": 1067.1277297107788,
+                        "return_pct": 6.712772971077897
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2024-08-30 20:00:00+00:00",
+                        "test_start": "2025-08-30 08:00:00+00:00",
+                        "test_end": "2025-12-30 16:00:00+00:00",
+                        "params": {
+                            "st_length": 14,
+                            "st_multiplier": 4.0,
+                            "atr_length": 30,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.890464492640895,
+                        "oos_sharpe": 0.7593168719030052,
+                        "sortino": 1.0976810305288942,
+                        "profit": 4.105040013089223,
+                        "start_capital": 1000.0,
+                        "end_capital": 1004.1050400130893,
+                        "return_pct": 0.41050400130892234
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "st_length": 7,
+                            "st_multiplier": 2.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.0647318779942965
+                    },
+                    {
+                        "params": {
+                            "st_length": 20,
+                            "st_multiplier": 4.0,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.03500743864669
+                    },
+                    {
+                        "params": {
+                            "st_length": 14,
+                            "st_multiplier": 5.0,
+                            "atr_length": 21,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.0335458167423974
+                    },
+                    {
+                        "params": {
+                            "st_length": 14,
+                            "st_multiplier": 5.0,
+                            "atr_length": 30,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.0218022762215433
+                    },
+                    {
+                        "params": {
+                            "st_length": 20,
+                            "st_multiplier": 2.0,
+                            "atr_length": 21,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 0.9899663306656117
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            },
+            "SOL-USD": {
+                "best_strategy": "ema_cross",
+                "best_exit": "atr_trailing",
+                "best_params": {
+                    "ema_fast": 20,
+                    "ema_slow": 50,
+                    "atr_length": 30,
+                    "atr_multiplier": 4.5,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.5235294712266592,
+                "is_robustness_score": 1.789299778788763,
+                "oos_robustness_score": 0.18714511082068644,
+                "fold_consistency": 0.6,
+                "wfo_stats": [
+                    {
+                        "fold": 1,
+                        "train_start": "2023-01-01 00:00:00+00:00",
+                        "test_start": "2023-12-31 16:00:00+00:00",
+                        "test_end": "2024-05-01 04:00:00+00:00",
+                        "params": {
+                            "ema_fast": 12,
+                            "ema_slow": 50,
+                            "atr_length": 30,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.004733381934562,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 1000.0,
+                        "end_capital": 1000.0,
+                        "return_pct": 0.0
+                    },
+                    {
+                        "fold": 2,
+                        "train_start": "2023-05-02 12:00:00+00:00",
+                        "test_start": "2024-05-01 08:00:00+00:00",
+                        "test_end": "2024-08-30 16:00:00+00:00",
+                        "params": {
+                            "ema_fast": 12,
+                            "ema_slow": 50,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.7191080471819333,
+                        "oos_sharpe": -1.1820665548426914,
+                        "sortino": -1.6148429818914718,
+                        "profit": -16.760921674871497,
+                        "start_capital": 1000.0,
+                        "end_capital": 983.2390783251284,
+                        "return_pct": -1.6760921674871496
+                    },
+                    {
+                        "fold": 3,
+                        "train_start": "2023-09-01 04:00:00+00:00",
+                        "test_start": "2024-08-30 20:00:00+00:00",
+                        "test_end": "2024-12-30 04:00:00+00:00",
+                        "params": {
+                            "ema_fast": 9,
+                            "ema_slow": 100,
+                            "atr_length": 30,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.002310787299591,
+                        "oos_sharpe": 0.6512855969693472,
+                        "sortino": 0.9562145988614178,
+                        "profit": 10.876534837604481,
+                        "start_capital": 1000.0,
+                        "end_capital": 1010.8765348376046,
+                        "return_pct": 1.0876534837604481
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2023-12-31 16:00:00+00:00",
+                        "test_start": "2024-12-30 08:00:00+00:00",
+                        "test_end": "2025-04-30 16:00:00+00:00",
+                        "params": {
+                            "ema_fast": 5,
+                            "ema_slow": 34,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": -1.328659653395625,
+                        "oos_sharpe": -1.260159295370352,
+                        "sortino": -1.7759214384498596,
+                        "profit": -24.640163760505658,
+                        "start_capital": 1000.0,
+                        "end_capital": 975.3598362394944,
+                        "return_pct": -2.464016376050566
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2024-05-01 08:00:00+00:00",
+                        "test_start": "2025-04-30 20:00:00+00:00",
+                        "test_end": "2025-08-30 04:00:00+00:00",
+                        "params": {
+                            "ema_fast": 5,
+                            "ema_slow": 200,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.7220384927575676,
+                        "oos_sharpe": 0.8942634232666652,
+                        "sortino": 1.3395565270932739,
+                        "profit": 13.870409465686265,
+                        "start_capital": 1000.0,
+                        "end_capital": 1013.8704094656863,
+                        "return_pct": 1.3870409465686266
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2024-08-30 20:00:00+00:00",
+                        "test_start": "2025-08-30 08:00:00+00:00",
+                        "test_end": "2025-12-30 16:00:00+00:00",
+                        "params": {
+                            "ema_fast": 3,
+                            "ema_slow": 200,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.527620714740539,
+                        "oos_sharpe": 1.031120339752434,
+                        "sortino": 1.6048095589069866,
+                        "profit": 6.602284476050855,
+                        "start_capital": 1000.0,
+                        "end_capital": 1006.602284476051,
+                        "return_pct": 0.6602284476050855
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "ema_fast": 20,
+                            "ema_slow": 50,
+                            "atr_length": 30,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.789299778788763
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 20,
+                            "ema_slow": 50,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.6774423361512343
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 5,
+                            "ema_slow": 200,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.6709012590269818
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 3,
+                            "ema_slow": 200,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.532377246741378
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 20,
+                            "ema_slow": 50,
+                            "atr_length": 14,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.5303323688585502
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            },
+            "TAO-USD": {
+                "best_strategy": "psar_adx",
+                "best_exit": "atr_trailing",
+                "best_params": {
+                    "sar_acceleration": 0.02,
+                    "sar_maximum": 0.1,
+                    "adx_length": 30,
+                    "adx_threshold": 25,
+                    "use_dmp_cross": 0,
+                    "atr_length": 30,
+                    "atr_multiplier": 4.5,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.8003499063576884,
+                "is_robustness_score": 1.8877779446985863,
+                "oos_robustness_score": 0.6252475812806348,
+                "fold_consistency": 0.6666666666666666,
+                "wfo_stats": [
+                    {
+                        "fold_idx": 1,
+                        "best_params": {},
+                        "oos_sharpe": null,
+                        "oos_return": null,
+                        "profit": null,
+                        "start_capital": null,
+                        "end_capital": null,
+                        "return_pct": null,
+                        "_skipped_vectorized_failure": 1
+                    },
+                    {
+                        "fold_idx": 2,
+                        "best_params": {},
+                        "oos_sharpe": null,
+                        "oos_return": null,
+                        "profit": null,
+                        "start_capital": null,
+                        "end_capital": null,
+                        "return_pct": null,
+                        "_skipped_vectorized_failure": 1
+                    },
+                    {
+                        "fold": 3,
+                        "train_start": "2023-09-01 04:00:00+00:00",
+                        "test_start": "2024-08-30 20:00:00+00:00",
+                        "test_end": "2024-12-30 04:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 30,
+                            "use_dmp_cross": 0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 0.3372571924542006,
+                        "oos_sharpe": 1.3258143374958717,
+                        "sortino": 2.451384105873399,
+                        "profit": 21.76062855571317,
+                        "start_capital": 1000.0,
+                        "end_capital": 1021.7606285557131,
+                        "return_pct": 2.176062855571317
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2023-12-31 16:00:00+00:00",
+                        "test_start": "2024-12-30 08:00:00+00:00",
+                        "test_end": "2025-04-30 16:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 25,
+                            "use_dmp_cross": 0,
+                            "atr_length": 21,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.465948697949694,
+                        "oos_sharpe": -0.16433346877938837,
+                        "sortino": -0.267718926680306,
+                        "profit": -1.6427795313913123,
+                        "start_capital": 1000.0,
+                        "end_capital": 998.3572204686087,
+                        "return_pct": -0.16427795313913124
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2024-05-01 08:00:00+00:00",
+                        "test_start": "2025-04-30 20:00:00+00:00",
+                        "test_end": "2025-08-30 04:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 25,
+                            "use_dmp_cross": 0,
+                            "atr_length": 21,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.081894925064838,
+                        "oos_sharpe": 0.9182799871204755,
+                        "sortino": 1.4464327090342646,
+                        "profit": 10.674126504376417,
+                        "start_capital": 1000.0,
+                        "end_capital": 1010.6741265043763,
+                        "return_pct": 1.0674126504376418
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2024-08-30 20:00:00+00:00",
+                        "test_start": "2025-08-30 08:00:00+00:00",
+                        "test_end": "2025-12-30 16:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 30,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.1388614930705776,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 1000.0,
+                        "end_capital": 1000.0,
+                        "return_pct": 0.0
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 25,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.8877779446985863
+                    },
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 25,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.758707687126885
+                    },
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 30,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.7402822889239713
+                    },
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 25,
+                            "use_dmp_cross": 0,
+                            "atr_length": 14,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.6714109252125504
+                    },
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 25,
+                            "use_dmp_cross": 0,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.6476426192214144
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            },
+            "XRP-USD": {
+                "best_strategy": "psar_adx",
+                "best_exit": "atr_trailing",
+                "best_params": {
+                    "sar_acceleration": 0.02,
+                    "sar_maximum": 0.1,
+                    "adx_length": 30,
+                    "adx_threshold": 35,
+                    "use_dmp_cross": 0,
+                    "atr_length": 30,
+                    "atr_multiplier": 2.5,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.5760297067013279,
+                "is_robustness_score": 1.8800565616663227,
+                "oos_robustness_score": 0.030249555847234093,
+                "fold_consistency": 0.8,
+                "wfo_stats": [
+                    {
+                        "fold": 1,
+                        "train_start": "2023-01-01 00:00:00+00:00",
+                        "test_start": "2023-12-31 16:00:00+00:00",
+                        "test_end": "2024-05-01 04:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 20,
+                            "adx_threshold": 35,
+                            "use_dmp_cross": 0,
+                            "atr_length": 21,
+                            "atr_multiplier": 3.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.475472340918366,
+                        "oos_sharpe": 0.0721012934710272,
+                        "sortino": 0.11127190012402953,
+                        "profit": 0.3155897192406485,
+                        "start_capital": 1000.0,
+                        "end_capital": 1000.3155897192406,
+                        "return_pct": 0.03155897192406485
+                    },
+                    {
+                        "fold": 2,
+                        "train_start": "2023-05-02 12:00:00+00:00",
+                        "test_start": "2024-05-01 08:00:00+00:00",
+                        "test_end": "2024-08-30 16:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 20,
+                            "adx_threshold": 35,
+                            "use_dmp_cross": 0,
+                            "atr_length": 21,
+                            "atr_multiplier": 3.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.6826891739325083,
+                        "oos_sharpe": 0.15100973416527147,
+                        "sortino": 0.22831782023747613,
+                        "profit": 0.9371770032377498,
+                        "start_capital": 1000.0,
+                        "end_capital": 1000.9371770032377,
+                        "return_pct": 0.09371770032377498
+                    },
+                    {
+                        "fold": 3,
+                        "train_start": "2023-09-01 04:00:00+00:00",
+                        "test_start": "2024-08-30 20:00:00+00:00",
+                        "test_end": "2024-12-30 04:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 25,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 3.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.1240913261229006,
+                        "oos_sharpe": 4.251880961995294,
+                        "sortino": 7.5951171039049505,
+                        "profit": 172.51934536383607,
+                        "start_capital": 1000.0,
+                        "end_capital": 1172.5193453638362,
+                        "return_pct": 17.251934536383608
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2023-12-31 16:00:00+00:00",
+                        "test_start": "2024-12-30 08:00:00+00:00",
+                        "test_end": "2025-04-30 16:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 14,
+                            "adx_threshold": 20,
+                            "use_dmp_cross": 0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": -3.4283519912789635,
+                        "sortino": -4.32289940244935,
+                        "profit": -53.90893440149203,
+                        "start_capital": 1000.0,
+                        "end_capital": 946.091065598508,
+                        "return_pct": -5.3908934401492035
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2024-05-01 08:00:00+00:00",
+                        "test_start": "2025-04-30 20:00:00+00:00",
+                        "test_end": "2025-08-30 04:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 35,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.8498229300764344,
+                        "oos_sharpe": 0.15075183247399088,
+                        "sortino": 0.21988255288532293,
+                        "profit": 1.299881864633278,
+                        "start_capital": 1000.0,
+                        "end_capital": 1001.2998818646332,
+                        "return_pct": 0.1299881864633278
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2024-08-30 20:00:00+00:00",
+                        "test_start": "2025-08-30 08:00:00+00:00",
+                        "test_end": "2025-12-30 16:00:00+00:00",
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 35,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.942657144629649,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 1000.0,
+                        "end_capital": 1000.0,
+                        "return_pct": 0.0
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 35,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.8800565616663227
+                    },
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 35,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 3.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.7718806100157147
+                    },
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 35,
+                            "use_dmp_cross": 0,
+                            "atr_length": 14,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.5635555559718999
+                    },
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 35,
+                            "use_dmp_cross": 0,
+                            "atr_length": 21,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.5257929840919218
+                    },
+                    {
+                        "params": {
+                            "sar_acceleration": 0.02,
+                            "sar_maximum": 0.1,
+                            "adx_length": 30,
+                            "adx_threshold": 30,
+                            "use_dmp_cross": 0,
+                            "atr_length": 30,
+                            "atr_multiplier": 3.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.4697506794269455
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            },
+            "ADA-USD": {
+                "best_strategy": "rsi_reversal",
+                "best_exit": "atr_trailing",
+                "best_params": {
+                    "rsi_length": 5,
+                    "rsi_oversold": 25,
+                    "rsi_trend_filter": 1,
+                    "atr_length": 21,
+                    "atr_multiplier": 4.5,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.5583244484954119,
+                "is_robustness_score": 2.322349802372962,
+                "oos_robustness_score": 0.31125066164648,
+                "fold_consistency": 0.4,
+                "wfo_stats": [
+                    {
+                        "fold": 1,
+                        "train_start": "2023-01-01 00:00:00+00:00",
+                        "test_start": "2023-12-31 16:00:00+00:00",
+                        "test_end": "2024-05-01 04:00:00+00:00",
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 40,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 30,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.782566671158863,
+                        "oos_sharpe": -1.6311573109937505,
+                        "sortino": -2.241889222199072,
+                        "profit": -7.920722717083862,
+                        "start_capital": 1000.0,
+                        "end_capital": 992.0792772829161,
+                        "return_pct": -0.7920722717083862
+                    },
+                    {
+                        "fold": 2,
+                        "train_start": "2023-05-02 12:00:00+00:00",
+                        "test_start": "2024-05-01 08:00:00+00:00",
+                        "test_end": "2024-08-30 16:00:00+00:00",
+                        "params": {
+                            "rsi_length": 7,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.3066452727716857,
+                        "oos_sharpe": -1.581424040031758,
+                        "sortino": -2.2209231743719733,
+                        "profit": -15.795161335527666,
+                        "start_capital": 1000.0,
+                        "end_capital": 984.2048386644722,
+                        "return_pct": -1.5795161335527668
+                    },
+                    {
+                        "fold": 3,
+                        "train_start": "2023-09-01 04:00:00+00:00",
+                        "test_start": "2024-08-30 20:00:00+00:00",
+                        "test_end": "2024-12-30 04:00:00+00:00",
+                        "params": {
+                            "rsi_length": 7,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.3047390999870787,
+                        "oos_sharpe": 2.7221259182436137,
+                        "sortino": 4.487758733273402,
+                        "profit": 95.39742851560717,
+                        "start_capital": 1000.0,
+                        "end_capital": 1095.397428515607,
+                        "return_pct": 9.539742851560717
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2023-12-31 16:00:00+00:00",
+                        "test_start": "2024-12-30 08:00:00+00:00",
+                        "test_end": "2025-04-30 16:00:00+00:00",
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 15,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 1000.0,
+                        "end_capital": 1000.0,
+                        "return_pct": 0.0
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2024-05-01 08:00:00+00:00",
+                        "test_start": "2025-04-30 20:00:00+00:00",
+                        "test_end": "2025-08-30 04:00:00+00:00",
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.80781647434659,
+                        "oos_sharpe": 1.2336566603437789,
+                        "sortino": 1.8813152129802722,
+                        "profit": 22.597701275942597,
+                        "start_capital": 1000.0,
+                        "end_capital": 1022.5977012759427,
+                        "return_pct": 2.2597701275942597
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2024-08-30 20:00:00+00:00",
+                        "test_start": "2025-08-30 08:00:00+00:00",
+                        "test_end": "2025-12-30 16:00:00+00:00",
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.7613209338209046,
+                        "oos_sharpe": -0.36845673514708976,
+                        "sortino": -0.5057708333069443,
+                        "profit": -1.6641570899416394,
+                        "start_capital": 1000.0,
+                        "end_capital": 998.3358429100583,
+                        "return_pct": -0.16641570899416394
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 21,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 2.322349802372962
+                    },
+                    {
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 2.246630631892658
+                    },
+                    {
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 21,
+                            "atr_multiplier": 3.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 2.086078601240781
+                    },
+                    {
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.8830798678002616
+                    },
+                    {
+                        "params": {
+                            "rsi_length": 5,
+                            "rsi_oversold": 25,
+                            "rsi_trend_filter": 1,
+                            "atr_length": 30,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.823266021650115
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            },
+            "DOGE-USD": {
+                "best_strategy": "macd_cross",
+                "best_exit": "atr_trailing",
+                "best_params": {
+                    "macd_fast": 12,
+                    "macd_slow": 32,
+                    "macd_signal": 11,
+                    "atr_length": 14,
+                    "atr_multiplier": 6.0,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.34505247667926287,
+                "is_robustness_score": 1.617256890012429,
+                "oos_robustness_score": -0.163030680921025,
+                "fold_consistency": 0.6666666666666666,
+                "wfo_stats": [
+                    {
+                        "fold": 1,
+                        "train_start": "2023-01-01 00:00:00+00:00",
+                        "test_start": "2023-12-31 16:00:00+00:00",
+                        "test_end": "2024-05-01 04:00:00+00:00",
+                        "params": {
+                            "macd_fast": 8,
+                            "macd_slow": 32,
+                            "macd_signal": 7,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.31531758467746,
+                        "oos_sharpe": 0.9292764695893956,
+                        "sortino": 1.2056396596806316,
+                        "profit": 32.218537321488824,
+                        "start_capital": 1000.0,
+                        "end_capital": 1032.2185373214886,
+                        "return_pct": 3.2218537321488827
+                    },
+                    {
+                        "fold": 2,
+                        "train_start": "2023-05-02 12:00:00+00:00",
+                        "test_start": "2024-05-01 08:00:00+00:00",
+                        "test_end": "2024-08-30 16:00:00+00:00",
+                        "params": {
+                            "macd_fast": 16,
+                            "macd_slow": 32,
+                            "macd_signal": 11,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.2462746982543287,
+                        "oos_sharpe": -1.9014939589580493,
+                        "sortino": -2.570405590847576,
+                        "profit": -29.74454956323342,
+                        "start_capital": 1000.0,
+                        "end_capital": 970.2554504367665,
+                        "return_pct": -2.974454956323342
+                    },
+                    {
+                        "fold": 3,
+                        "train_start": "2023-09-01 04:00:00+00:00",
+                        "test_start": "2024-08-30 20:00:00+00:00",
+                        "test_end": "2024-12-30 04:00:00+00:00",
+                        "params": {
+                            "macd_fast": 16,
+                            "macd_slow": 32,
+                            "macd_signal": 7,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.9488894403313002,
+                        "oos_sharpe": 2.5151129694934653,
+                        "sortino": 3.812191446800539,
+                        "profit": 107.02677443679205,
+                        "start_capital": 1000.0,
+                        "end_capital": 1107.0267744367918,
+                        "return_pct": 10.702677443679205
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2023-12-31 16:00:00+00:00",
+                        "test_start": "2024-12-30 08:00:00+00:00",
+                        "test_end": "2025-04-30 16:00:00+00:00",
+                        "params": {
+                            "macd_fast": 8,
+                            "macd_slow": 32,
+                            "macd_signal": 7,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.753034989369934,
+                        "oos_sharpe": -4.575290477271799,
+                        "sortino": -5.343194988497375,
+                        "profit": -73.81607369051085,
+                        "start_capital": 1000.0,
+                        "end_capital": 926.1839263094892,
+                        "return_pct": -7.3816073690510855
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2024-05-01 08:00:00+00:00",
+                        "test_start": "2025-04-30 20:00:00+00:00",
+                        "test_end": "2025-08-30 04:00:00+00:00",
+                        "params": {
+                            "macd_fast": 16,
+                            "macd_slow": 26,
+                            "macd_signal": 11,
+                            "atr_length": 21,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.225935856352538,
+                        "oos_sharpe": 0.8525759674504735,
+                        "sortino": 1.2833904332698827,
+                        "profit": 21.796557474486136,
+                        "start_capital": 1000.0,
+                        "end_capital": 1021.796557474486,
+                        "return_pct": 2.1796557474486136
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2024-08-30 20:00:00+00:00",
+                        "test_start": "2025-08-30 08:00:00+00:00",
+                        "test_end": "2025-12-30 16:00:00+00:00",
+                        "params": {
+                            "macd_fast": 12,
+                            "macd_slow": 32,
+                            "macd_signal": 11,
+                            "atr_length": 21,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.0252747471125536,
+                        "oos_sharpe": 0.8540830665909849,
+                        "sortino": 1.1727507390769394,
+                        "profit": 9.335295138228645,
+                        "start_capital": 1000.0,
+                        "end_capital": 1009.3352951382287,
+                        "return_pct": 0.9335295138228644
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "macd_fast": 12,
+                            "macd_slow": 32,
+                            "macd_signal": 11,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.617256890012429
+                    },
+                    {
+                        "params": {
+                            "macd_fast": 16,
+                            "macd_slow": 26,
+                            "macd_signal": 11,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.5872975432353755
+                    },
+                    {
+                        "params": {
+                            "macd_fast": 8,
+                            "macd_slow": 32,
+                            "macd_signal": 7,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.5783223319138746
+                    },
+                    {
+                        "params": {
+                            "macd_fast": 8,
+                            "macd_slow": 26,
+                            "macd_signal": 7,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.4937764880120064
+                    },
+                    {
+                        "params": {
+                            "macd_fast": 12,
+                            "macd_slow": 26,
+                            "macd_signal": 7,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.4855189130280946
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            },
+            "SUI-USD": {
+                "best_strategy": "ema_cross",
+                "best_exit": "fixed_sl_tp",
+                "best_params": {
+                    "ema_fast": 20,
+                    "ema_slow": 200,
+                    "atr_length": 1.5,
+                    "atr_multiplier": 3.0,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.31283310171327183,
+                "is_robustness_score": 2.3462897280235397,
+                "oos_robustness_score": -0.4933360647184675,
+                "fold_consistency": 0.5,
+                "wfo_stats": [
+                    {
+                        "fold": 1,
+                        "train_start": "2023-01-01 00:00:00+00:00",
+                        "test_start": "2023-12-31 16:00:00+00:00",
+                        "test_end": "2024-05-01 04:00:00+00:00",
+                        "params": {
+                            "ema_fast": 3,
+                            "ema_slow": 21,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": 2.534795617732791,
+                        "sortino": 6.264842575327743,
+                        "profit": 28.498903177140193,
+                        "start_capital": 1000.0,
+                        "end_capital": 1028.4989031771402,
+                        "return_pct": 2.8498903177140193
+                    },
+                    {
+                        "fold": 2,
+                        "train_start": "2023-05-02 12:00:00+00:00",
+                        "test_start": "2024-05-01 08:00:00+00:00",
+                        "test_end": "2024-08-30 16:00:00+00:00",
+                        "params": {
+                            "ema_fast": 3,
+                            "ema_slow": 21,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": -2.5571569212174388,
+                        "sortino": -3.2787221904053174,
+                        "profit": -36.3022990761779,
+                        "start_capital": 1000.0,
+                        "end_capital": 963.697700923822,
+                        "return_pct": -3.63022990761779
+                    },
+                    {
+                        "fold": 3,
+                        "train_start": "2023-09-01 04:00:00+00:00",
+                        "test_start": "2024-08-30 20:00:00+00:00",
+                        "test_end": "2024-12-30 04:00:00+00:00",
+                        "params": {
+                            "ema_fast": 3,
+                            "ema_slow": 21,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": 2.0026687600358506,
+                        "sortino": 3.2327676990416876,
+                        "profit": 57.71282301926716,
+                        "start_capital": 1000.0,
+                        "end_capital": 1057.712823019267,
+                        "return_pct": 5.771282301926716
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2023-12-31 16:00:00+00:00",
+                        "test_start": "2024-12-30 08:00:00+00:00",
+                        "test_end": "2025-04-30 16:00:00+00:00",
+                        "params": {
+                            "ema_fast": 12,
+                            "ema_slow": 21,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": -0.8517636033216331,
+                        "oos_sharpe": 0.6053515102648763,
+                        "sortino": 0.9965642825398259,
+                        "profit": 8.226433672221845,
+                        "start_capital": 1000.0,
+                        "end_capital": 1008.2264336722218,
+                        "return_pct": 0.8226433672221845
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2024-05-01 08:00:00+00:00",
+                        "test_start": "2025-04-30 20:00:00+00:00",
+                        "test_end": "2025-08-30 04:00:00+00:00",
+                        "params": {
+                            "ema_fast": 20,
+                            "ema_slow": 200,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.2754673711136792,
+                        "oos_sharpe": -1.2938102221085228,
+                        "sortino": -1.8598508330704575,
+                        "profit": -21.202353694725133,
+                        "start_capital": 1000.0,
+                        "end_capital": 978.7976463052751,
+                        "return_pct": -2.120235369472513
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2024-08-30 20:00:00+00:00",
+                        "test_start": "2025-08-30 08:00:00+00:00",
+                        "test_end": "2025-12-30 16:00:00+00:00",
+                        "params": {
+                            "ema_fast": 20,
+                            "ema_slow": 200,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.721118502175659,
+                        "oos_sharpe": -2.2724160954909443,
+                        "sortino": -2.7526569126316276,
+                        "profit": -10.287575249656257,
+                        "start_capital": 1000.0,
+                        "end_capital": 989.7124247503438,
+                        "return_pct": -1.0287575249656258
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "ema_fast": 20,
+                            "ema_slow": 200,
+                            "atr_length": 1.5,
+                            "atr_multiplier": 3.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 2.3462897280235397
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 9,
+                            "ema_slow": 200,
+                            "atr_length": 1.5,
+                            "atr_multiplier": 3.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.3790457158250564
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 12,
+                            "ema_slow": 200,
+                            "atr_length": 1.5,
+                            "atr_multiplier": 3.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.218942048331814
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 12,
+                            "ema_slow": 100,
+                            "atr_length": 1.5,
+                            "atr_multiplier": 3.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 0.5032709551261538
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 9,
+                            "ema_slow": 100,
+                            "atr_length": 1.5,
+                            "atr_multiplier": 3.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 0.47080277396010584
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            },
+            "ZEC-USD": {
+                "best_strategy": "ema_cross",
+                "best_exit": "atr_trailing",
+                "best_params": {
+                    "ema_fast": 9,
+                    "ema_slow": 200,
+                    "atr_length": 14,
+                    "atr_multiplier": 6.0,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.9233337914413657,
+                "is_robustness_score": 2.501877067062434,
+                "oos_robustness_score": 0.5468534591537986,
+                "fold_consistency": 0.6666666666666666,
+                "wfo_stats": [
+                    {
+                        "fold_idx": 1,
+                        "best_params": {},
+                        "oos_sharpe": null,
+                        "oos_return": null,
+                        "profit": null,
+                        "start_capital": null,
+                        "end_capital": null,
+                        "return_pct": null,
+                        "_skipped_vectorized_failure": 1
+                    },
+                    {
+                        "fold_idx": 2,
+                        "best_params": {},
+                        "oos_sharpe": null,
+                        "oos_return": null,
+                        "profit": null,
+                        "start_capital": null,
+                        "end_capital": null,
+                        "return_pct": null,
+                        "_skipped_vectorized_failure": 1
+                    },
+                    {
+                        "fold_idx": 3,
+                        "best_params": {},
+                        "oos_sharpe": null,
+                        "oos_return": null,
+                        "profit": null,
+                        "start_capital": null,
+                        "end_capital": null,
+                        "return_pct": null,
+                        "_skipped_vectorized_failure": 1
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2023-12-31 16:00:00+00:00",
+                        "test_start": "2024-12-30 08:00:00+00:00",
+                        "test_end": "2025-04-30 16:00:00+00:00",
+                        "params": {
+                            "ema_fast": 3,
+                            "ema_slow": 21,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": 1.0901522076542447,
+                        "sortino": 1.8370595991849354,
+                        "profit": 14.225156696642244,
+                        "start_capital": 1000.0,
+                        "end_capital": 1014.2251566966423,
+                        "return_pct": 1.4225156696642245
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2024-05-01 08:00:00+00:00",
+                        "test_start": "2025-04-30 20:00:00+00:00",
+                        "test_end": "2025-08-30 04:00:00+00:00",
+                        "params": {
+                            "ema_fast": 9,
+                            "ema_slow": 200,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.4399488781779186,
+                        "oos_sharpe": -2.514899166833966,
+                        "sortino": -3.4750662660625307,
+                        "profit": -55.582736529427066,
+                        "start_capital": 1000.0,
+                        "end_capital": 944.417263470573,
+                        "return_pct": -5.558273652942707
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2024-08-30 20:00:00+00:00",
+                        "test_start": "2025-08-30 08:00:00+00:00",
+                        "test_end": "2025-12-30 16:00:00+00:00",
+                        "params": {
+                            "ema_fast": 9,
+                            "ema_slow": 200,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.5272474655537547,
+                        "oos_sharpe": 3.139876406133963,
+                        "sortino": 5.591167027796149,
+                        "profit": 257.94906633884483,
+                        "start_capital": 1000.0,
+                        "end_capital": 1257.949066338845,
+                        "return_pct": 25.794906633884484
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "ema_fast": 9,
+                            "ema_slow": 200,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 2.501877067062434
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 9,
+                            "ema_slow": 200,
+                            "atr_length": 21,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 2.4065194897233426
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 12,
+                            "ema_slow": 200,
+                            "atr_length": 14,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 2.180684823397831
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 9,
+                            "ema_slow": 200,
+                            "atr_length": 30,
+                            "atr_multiplier": 4.5,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.8860694155035245
+                    },
+                    {
+                        "params": {
+                            "ema_fast": 12,
+                            "ema_slow": 200,
+                            "atr_length": 21,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.8426285217554776
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            }
+        }
+    },
+    "results": {
+        "total_value": 1818.9927258047094,
+        "total_profit": 818.9927258047094,
+        "profit_pct": 81.89927258047094,
+        "total_trades": 75,
+        "win_rate": 45.33333333333333,
+        "sharpe": 1.311793538281206,
+        "sortino": 2.030154303877295,
+        "max_drawdown": -14.746593052722956,
+        "backtest_start": "2023-01-01",
+        "backtest_end": "2025-12-30",
+        "backtest_years": 2.997033994980607,
+        "cagr_pct": 22.094481362464037,
+        "benchmark_label": "BTC-USD buy-and-hold: bought on the first bar and sold on the last bar; same START_CASH, FEES, SLIPPAGE, and bar frequency as the strategy run.",
+        "benchmark_profit_pct": 426.04040984994515,
+        "benchmark_cagr_pct": 74.01134100911071,
+        "benchmark_sharpe": 1.4255387001004467,
+        "benchmark_max_drawdown": -34.46440813072942,
+        "benchmark_total_trades": 1,
+        "spy_cagr_pct": 22.470301044352148,
+        "spy_profit_pct": 83.58249014171072,
+        "spy_sharpe": 1.2851924941855026,
+        "spy_max_drawdown": -14.529915665361326,
+        "excess_cagr_pct": -51.91685964664667
+    }
+}
