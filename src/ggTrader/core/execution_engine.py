@@ -475,7 +475,8 @@ class ExecutionEngine:
                 return False
 
             pair = symbol.replace("-", "/") if "-" in symbol else symbol
-            self._ensure_markets_loaded()
+            if not self.exchange.markets:
+                self.exchange.load_markets()
             market = self.exchange.market(pair)
             ticker = self.exchange.fetch_ticker(pair)
             price = ticker["last"]
@@ -535,7 +536,12 @@ class ExecutionEngine:
     def _execute_trailing_stop_order(
         self, symbol: str, amount: float, stop_pct: float
     ) -> Optional[str]:
-        """Place a trailing stop loss order on Kraken."""
+        """Place a trailing stop loss order on Kraken.
+
+        Kraken trailing-stop requires the trailing offset as a price value
+        (not a percentage string). We fetch the current price and compute
+        the dollar offset from the percentage.
+        """
         self.logger.info(f"PLACING TRAILING STOP: {amount} {symbol} at -{stop_pct}%")
         if self.config.get("DRY_RUN", False):
             self.logger.info("DRY RUN: Order skipped.")
@@ -544,9 +550,18 @@ class ExecutionEngine:
         try:
             pair = symbol.replace("-", "/") if "/" not in symbol else symbol
             market = self.exchange.market(pair)
-            params = {"ordertype": "trailing-stop", "trailing_amount": f"{stop_pct}%"}
+            ticker = self.exchange.fetch_ticker(market["symbol"])
+            current_price = ticker["last"]
+
+            # Kraken expects the trailing offset as an absolute price distance
+            trailing_offset = current_price * (stop_pct / 100.0)
+            trailing_offset = float(
+                self.exchange.price_to_precision(market["symbol"], trailing_offset)
+            )
+
+            amount_precise = self.exchange.amount_to_precision(market["symbol"], amount)
             order = self.exchange.create_order(
-                market["symbol"], "trailing-stop", "sell", amount, None, params
+                market["symbol"], "trailing-stop", "sell", amount_precise, trailing_offset
             )
             return order["id"]
         except Exception as e:

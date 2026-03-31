@@ -17,7 +17,7 @@ services:
       - TZ=America/Los_Angeles
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: python -u ggt.py trade --dry-run
+    command: python -u ggt.py trade 
 
 volumes:
   ggtrader_pgdata: # Dedicated persistent volume for ggTrader data
