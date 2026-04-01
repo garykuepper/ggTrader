@@ -61,7 +61,7 @@ class TradeTracker:
 
     @staticmethod
     def _now_iso() -> str:
-        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
 
     # ------------------------------------------------------------------
     # Recording methods

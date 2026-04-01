@@ -853,6 +853,10 @@ class FixedStopTakeProfit:
         expands entry columns so that each (entry_combo, exit_combo) pair occupies
         its own block of n_symbols columns.  Block index i maps to exit pair
         ``i % n_exit`` (same modulo convention as AtrTrailingExit).
+
+        Uses high/low for intra-bar stop/TP detection: low touches stop,
+        high touches TP. Fill price is clamped to the stop or TP level
+        (not close) for realistic execution.
         """
         n_time, n_cols = entries.shape
         stop_pcts = param_grid.get("stop_pct", [2.0])
@@ -862,15 +866,23 @@ class FixedStopTakeProfit:
         tp_pcts = tp_pcts if isinstance(tp_pcts, list) else [tp_pcts]
 
         close = precomputer.close
+        high = precomputer.high
+        low = precomputer.low
+
         if close.ndim == 1:
             close = close[:, np.newaxis]
+            high = high[:, np.newaxis]
+            low = low[:, np.newaxis]
 
         open_ = close.copy()
 
-        # Broadcast close/open to full column width.
+        # Broadcast to full column width.
         if close.shape[1] == 1 and n_cols > 1:
-            close = np.tile(close, (1, n_cols // n_symbols))
-            open_ = np.tile(open_, (1, n_cols // n_symbols))
+            tile_n = n_cols // n_symbols
+            close = np.tile(close, (1, tile_n))
+            high = np.tile(high, (1, tile_n))
+            low = np.tile(low, (1, tile_n))
+            open_ = np.tile(open_, (1, tile_n))
 
         exits_array = np.zeros((n_time, n_cols), dtype=bool)
         stops_array = np.full((n_time, n_cols), np.nan, dtype=np.float64)
@@ -902,11 +914,19 @@ class FixedStopTakeProfit:
                         tp_level = entry_price * (1 + tp_pct_val / 100)
                         stops_array[t, col] = stop_level
 
-                        if close[t, col] <= stop_level or close[t, col] >= tp_level:
+                        # Check intra-bar: low touches stop, high touches TP.
+                        # If both hit in the same bar, assume stop triggered first
+                        # (conservative — worst case for the trader).
+                        hit_stop = low[t, col] <= stop_level
+                        hit_tp = high[t, col] >= tp_level
+
+                        if hit_stop:
                             exits_array[t, col] = True
-                            price_for_orders[t, col] = (
-                                stop_level if close[t, col] <= stop_level else tp_level
-                            )
+                            price_for_orders[t, col] = min(open_[t, col], stop_level)
+                            in_position = False
+                        elif hit_tp:
+                            exits_array[t, col] = True
+                            price_for_orders[t, col] = max(open_[t, col], tp_level)
                             in_position = False
 
         return exits_array, stops_array, price_for_orders
