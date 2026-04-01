@@ -629,9 +629,30 @@ class ExecutionEngine:
 
             # Kraken expects the trailing offset as an absolute price distance
             trailing_offset = current_price * (stop_pct / 100.0)
+
+            # Ensure offset meets Kraken's minimum tick size.
+            # For micro-cap coins (e.g. PEPE ~$0.000007), a 1% offset can
+            # round to 0 after price_to_precision, causing rejection.
+            price_precision = market.get("precision", {}).get("price")
+            if price_precision is not None:
+                min_tick = 10 ** (-price_precision) if isinstance(price_precision, int) else price_precision
+                if trailing_offset < min_tick:
+                    self.logger.info(
+                        f"  [TSL] Trailing offset for {symbol} (${trailing_offset:.10f}) "
+                        f"below min tick (${min_tick:.10f}) — clamping to min tick"
+                    )
+                    trailing_offset = min_tick
+
             trailing_offset = float(
                 self.exchange.price_to_precision(market["symbol"], trailing_offset)
             )
+
+            # Final guard: reject if offset is still zero after rounding
+            if not trailing_offset or trailing_offset <= 0:
+                self.logger.error(
+                    f"  [TSL] Trailing offset rounded to zero for {symbol} — cannot place TSL"
+                )
+                return None
 
             amount_precise = self.exchange.amount_to_precision(market["symbol"], amount)
             order = self.exchange.create_order(
@@ -660,11 +681,20 @@ class ExecutionEngine:
 
             sl_price_str = self.exchange.price_to_precision(market["symbol"], sl_price)
             tp_price_str = self.exchange.price_to_precision(market["symbol"], tp_price)
+            amount_precise = self.exchange.amount_to_precision(market["symbol"], amount)
+
+            # Guard: ensure SL and TP didn't round to the same value
+            if sl_price_str == tp_price_str:
+                self.logger.error(
+                    f"  [OCO] SL and TP rounded to same price ({sl_price_str}) "
+                    f"for {symbol} — cannot place OCO"
+                )
+                return None
 
             # Kraken accepts price2 as the take profit limit
             params = {"price2": tp_price_str}
             order = self.exchange.create_order(
-                market["symbol"], "stop-loss-profit", "sell", amount, sl_price_str, params
+                market["symbol"], "stop-loss-profit", "sell", amount_precise, sl_price_str, params
             )
             return order["id"]
         except Exception as e:
