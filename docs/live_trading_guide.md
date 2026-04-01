@@ -94,3 +94,101 @@ To run the live bot in a continuous container (recommended for production):
 
 3. **Persistence**:
    The container mounts `./data` locally, ensuring `active_positions.json` persists even if the container is rebuilt or moved to another host.
+
+## Performance Tracking & Dashboard
+
+The live trader automatically logs every trade, balance snapshot, and round-trip P&L to local CSV files. This provides a local mirror of your Kraken trading activity with full fee tracking and performance metrics.
+
+### How It Works
+
+The `TradeTracker` class (`src/ggTrader/core/trade_tracker.py`) is integrated into the `ExecutionEngine` and records data at four points:
+
+1. **Buy fills** — After every successful market buy, the fill price, amount, and Kraken fee are logged.
+2. **Strategy-signal sells** — When a `fixed_sl_tp` exit signal fires and the bot executes a market sell, the round-trip P&L is computed and recorded.
+3. **Reconciliation-detected closes** — When the bot detects that a Kraken-side trailing stop or OCO order has filled (position held locally but no longer on exchange), it fetches the exit order details and records the close.
+4. **Balance snapshots** — Every 4h polling cycle, the bot snapshots total account value, free USD, and number of open positions.
+
+### Data Files
+
+All tracking data is stored in `data/live/` (git-ignored, never pushed to GitHub):
+
+| File | Contents |
+|------|----------|
+| `data/live/trade_log.csv` | Every executed order (buys and sells) with price, amount, fee |
+| `data/live/position_closes.csv` | Completed round-trips with entry/exit prices, gross/net P&L, fees, hold duration, exit reason |
+| `data/live/balance_snapshots.csv` | Periodic account value snapshots (total USD, free USD, positions USD) |
+| `data/live/dashboard/` | Generated HTML/PNG charts |
+
+### Using the Dashboard
+
+View your live trading performance with the `ggt dashboard` command:
+
+```bash
+# Print summary and generate interactive charts
+ggt dashboard
+
+# Sync historical trades from Kraken first (recommended on first run)
+ggt dashboard --sync
+
+# Sync trades from a specific start date
+ggt dashboard --since 2025-06-01
+
+# Text summary only, no charts
+ggt dashboard --no-plots
+
+# Save charts to a custom directory
+ggt dashboard --output /path/to/charts
+```
+
+From Docker:
+
+```bash
+docker compose exec ggtrader_live python ggt.py dashboard --sync
+```
+
+### Console Output
+
+The dashboard prints a formatted summary to the terminal:
+
+```
+====================================================
+  ggTrader Live Performance Dashboard
+====================================================
+  Period:          2025-06-01 -> 2026-04-01
+  Account Value:   $1,247.83
+
+  --- P&L ---
+  Gross P&L:       +$266.25
+  Total Fees:      $18.42
+  Net P&L:         +$247.83
+
+  --- Trades ---
+  Total Trades:    47
+  Win Rate:        61.7% (29W / 18L)
+  Avg Win:         +$14.22
+  Avg Loss:        -$7.89
+  Profit Factor:   2.31
+  Best Trade:      +$42.10 (SOL-USD)
+  Worst Trade:     -$19.33 (AVAX-USD)
+====================================================
+```
+
+### Charts Generated
+
+Interactive Plotly HTML charts (plus static PNGs if `kaleido` is installed):
+
+- **Equity Curve** — Account value over time with starting balance reference line
+- **P&L Per Trade** — Green/red bar chart of each closed trade
+- **Cumulative P&L** — Running sum of net profit/loss
+- **Cumulative Fees** — Total fees paid over time
+- **P&L by Symbol** — Horizontal bar chart of net P&L grouped by coin
+- **Summary Gauges** — Win rate, profit factor, total P&L, total fees
+
+### Kraken Sync / Backfill
+
+The `--sync` flag pulls your complete trade history from Kraken via the CCXT `fetch_my_trades` API. It deduplicates by order ID, so it's safe to run repeatedly. After syncing raw trades, it automatically pairs buys and sells (FIFO) to rebuild the `position_closes.csv` round-trip log.
+
+This is useful for:
+- **Initial setup** — Backfill trades that happened before the tracker was installed
+- **Reconciliation** — Verify local records match Kraken's history
+- **Recovery** — Rebuild local data if CSVs are lost

@@ -17,6 +17,7 @@ def main() -> None:
     # Register all subcommands
     from ggTrader.cli.cmd_backtest import register_backtest_parser, run_backtest
     from ggTrader.cli.cmd_cleanup import register_cleanup_parser, run_cleanup
+    from ggTrader.cli.cmd_dashboard import register_dashboard_parser, run_dashboard
     from ggTrader.cli.cmd_db import register_db_parser, run_db
     from ggTrader.cli.cmd_ingest import register_ingest_parser, run_ingest
     from ggTrader.cli.cmd_production import register_production_parser, run_production
@@ -34,6 +35,7 @@ def main() -> None:
     register_ingest_parser(subparsers)
     register_db_parser(subparsers)
     register_cleanup_parser(subparsers)
+    register_dashboard_parser(subparsers)
 
     _DISPATCH = {
         "research": run_research,
@@ -44,6 +46,7 @@ def main() -> None:
         "ingest": run_ingest,
         "db": run_db,
         "cleanup": run_cleanup,
+        "dashboard": run_dashboard,
         "report": run_report,
     }
 

@@ -32,6 +32,7 @@ data/exports/
 data/*.db*
 data/*.csv
 data/*.json
+data/live/
 !data/top_50_ccxt_volume.json
 
 # --- Research & Results (Selective Signal) ---

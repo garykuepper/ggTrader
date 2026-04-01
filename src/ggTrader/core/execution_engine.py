@@ -18,6 +18,7 @@ from ggTrader.core.regime_filtering import (
     _compute_btc_correlations,
     _compute_btc_regime_mask,
 )
+from ggTrader.core.trade_tracker import TradeTracker
 from ggTrader.data.live.cached_loader import CachedExchangeLoader
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.strategies import (
@@ -110,6 +111,7 @@ class ExecutionEngine:
         self.persistence_path = config.get("PERSISTENCE_PATH", "data/active_positions.json")
         self.weights_path = config.get("WEIGHTS_PATH")
         self._reopt_done_month: int | None = None
+        self.tracker = TradeTracker(data_dir=config.get("TRACKER_DATA_DIR", "data/live"))
 
         if results_path:
             self.load_optimized_params(results_path)
@@ -299,6 +301,32 @@ class ExecutionEngine:
                       f"but NOT held on exchange — may have been closed: {stale}")
                 self.logger.info("  [Reconcile] Removing stale positions from local state.")
                 for s in stale:
+                    pos = self.active_positions[s]
+                    # Try to record the exit in the trade tracker
+                    exit_order_id = pos.get("tsl_order_id") or pos.get("oco_order_id")
+                    if exit_order_id and exit_order_id not in ("dry_run_tsl_id", "dry_run_oco_id"):
+                        try:
+                            pair = s.replace("-", "/") if "/" not in s else s
+                            closed_order = self.exchange.fetch_order(exit_order_id, pair)
+                            exit_price = closed_order.get("average", 0)
+                            fee_info = closed_order.get("fee", {})
+                            exit_reason = ("trailing_stop" if pos.get("tsl_order_id")
+                                           else "oco_exit")
+                            self.tracker.record_sell(
+                                symbol=s, order_id=exit_order_id, price=exit_price,
+                                amount=pos.get("amount", 0),
+                                amount_usd=exit_price * pos.get("amount", 0),
+                                fee=float(fee_info.get("cost", 0)),
+                                fee_currency=fee_info.get("currency", "USD"),
+                                entry_price=pos.get("entry_price"),
+                                entry_time=pos.get("entry_time"),
+                                entry_fee=pos.get("entry_fee", 0),
+                                exit_reason=exit_reason,
+                            )
+                        except Exception as e:
+                            self.logger.warning(
+                                f"  [Reconcile] Could not fetch exit details for {s}: {e}"
+                            )
                     del self.active_positions[s]
                 self.save_state()
 
@@ -711,6 +739,17 @@ class ExecutionEngine:
                         )
                         continue
 
+                    # Record buy in trade tracker
+                    fill_price = (order.get("average") or sig["current_price"]
+                                  if "order" in dir() else sig["current_price"])
+                    fee_info = order.get("fee", {}) if "order" in dir() else {}
+                    buy_fee = float(fee_info.get("cost", 0))
+                    self.tracker.record_buy(
+                        symbol=symbol, order_id=order_id, price=fill_price,
+                        amount=filled_amount, amount_usd=capital_per_trade,
+                        fee=buy_fee, fee_currency=fee_info.get("currency", "USD"),
+                    )
+
                     stop_pct = self.per_coin_params[symbol]["params"].get("stop_pct", 3.0)
                     self.active_positions[symbol] = {
                         "entry_order_id": order_id,
@@ -720,6 +759,7 @@ class ExecutionEngine:
                         "stop_pct": stop_pct,
                         "exit_name": sig["exit_name"],
                         "tsl_order_id": None,
+                        "entry_fee": buy_fee,
                     }
 
                     # Place TSL for atr_trailing / trailing_stop exits.
@@ -777,10 +817,30 @@ class ExecutionEngine:
                         self._cancel_open_orders(symbol)
                         sell_id = self._execute_market_sell_order(symbol, amount)
                         if sell_id:
-                            self.active_positions[symbol]["exit_time"] = time.strftime(
+                            pos = self.active_positions[symbol]
+                            # Record sell in trade tracker
+                            try:
+                                pair = symbol.replace("-", "/") if "/" not in symbol else symbol
+                                sell_order = self.exchange.fetch_order(sell_id, pair)
+                                exit_price = sell_order.get("average") or sig["current_price"]
+                                sell_fee_info = sell_order.get("fee", {})
+                            except Exception:
+                                exit_price = sig["current_price"]
+                                sell_fee_info = {}
+                            self.tracker.record_sell(
+                                symbol=symbol, order_id=sell_id, price=exit_price,
+                                amount=amount, amount_usd=exit_price * amount,
+                                fee=float(sell_fee_info.get("cost", 0)),
+                                fee_currency=sell_fee_info.get("currency", "USD"),
+                                entry_price=pos.get("entry_price"),
+                                entry_time=pos.get("entry_time"),
+                                entry_fee=pos.get("entry_fee", 0),
+                                exit_reason="strategy_signal",
+                            )
+                            pos["exit_time"] = time.strftime(
                                 "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
                             )
-                            self.active_positions[symbol]["exit_reason"] = "strategy_signal"
+                            pos["exit_reason"] = "strategy_signal"
                             del self.active_positions[symbol]
                             self.save_state()
                     else:
@@ -908,6 +968,20 @@ class ExecutionEngine:
 
                 # 0b. Sync local memory with actual Kraken exchange (catch server-side OCO exits)
                 self._reconcile_positions()
+
+                # 0c. Record balance snapshot for performance tracking
+                try:
+                    total_usd = self._get_total_portfolio_usd()
+                    balance = self.exchange.fetch_balance()
+                    free_usd = float(balance.get("free", {}).get("USD", 0))
+                    positions_usd = total_usd - free_usd
+                    self.tracker.record_balance_snapshot(
+                        total_usd=total_usd, free_usd=free_usd,
+                        positions_usd=positions_usd,
+                        num_positions=len(self.active_positions),
+                    )
+                except Exception as e:
+                    self.logger.warning(f"  [Tracker] Balance snapshot failed: {e}")
 
                 # 1. Fetch live data (includes BTC for regime filter)
                 latest_df = self._fetch_latest_data()
