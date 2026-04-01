@@ -111,6 +111,8 @@ class ExecutionEngine:
         self.persistence_path = config.get("PERSISTENCE_PATH", "data/active_positions.json")
         self.weights_path = config.get("WEIGHTS_PATH")
         self._reopt_done_month: int | None = None
+        self._reopt_flag_path = Path("data/last_reopt_month.txt")
+        self._load_reopt_flag()
         self.tracker = TradeTracker(data_dir=config.get("TRACKER_DATA_DIR", "data/live"))
 
         if results_path:
@@ -270,6 +272,26 @@ class ExecutionEngine:
             except OSError:
                 pass
             raise
+
+    # ------------------------------------------------------------------
+    # Reoptimization flag persistence
+    # ------------------------------------------------------------------
+
+    def _load_reopt_flag(self) -> None:
+        """Load the last completed reoptimization month from disk."""
+        try:
+            if self._reopt_flag_path.exists():
+                self._reopt_done_month = int(self._reopt_flag_path.read_text().strip())
+        except (ValueError, OSError):
+            self._reopt_done_month = None
+
+    def _save_reopt_flag(self, month: int) -> None:
+        """Persist the reoptimization month to disk so restarts don't re-trigger."""
+        try:
+            self._reopt_flag_path.parent.mkdir(parents=True, exist_ok=True)
+            self._reopt_flag_path.write_text(str(month))
+        except OSError as e:
+            self.logger.warning(f"Could not save reopt flag: {e}")
 
     # ------------------------------------------------------------------
     # Exchange reconciliation
@@ -1023,6 +1045,7 @@ class ExecutionEngine:
                 if _now.day == 1 and self._reopt_done_month != _now.month:
                     if self._run_monthly_reoptimization():
                         self._reopt_done_month = _now.month
+                        self._save_reopt_flag(_now.month)
                     else:
                         self.logger.error(
                             "Monthly reoptimization failed — will retry next cycle"
