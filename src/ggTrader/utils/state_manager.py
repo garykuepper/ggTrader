@@ -31,8 +31,8 @@ def get_latest_research_run(results_dir: str = "results") -> Optional[Path]:
     if not candidates:
         return None
 
-    # Sort chronologically by directory name if timestamped, or modified time
-    candidates.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    # Sort by mtime, then by parent directory name as tiebreaker (handles identical mtimes)
+    candidates.sort(key=lambda x: (x.stat().st_mtime, x.parent.name), reverse=True)
     return candidates[0]
 
 
@@ -64,5 +64,6 @@ def get_latest_production_weights(results_dir: str = "results") -> Optional[Path
     if not candidates:
         return None
 
-    candidates.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    # Sort by mtime, then by parent directory name as tiebreaker (handles identical mtimes)
+    candidates.sort(key=lambda x: (x.stat().st_mtime, x.parent.parent.name), reverse=True)
     return candidates[0]

@@ -263,6 +263,30 @@ def run_portfolio_competition(results_dir: str):
     best_weights = weights[best_strat_name]
     latest_weights = best_weights.iloc[-1].to_dict()
 
+    # Normalize weights to sum to 1.0 and cap per MAX_COIN_ALLOCATION so that
+    # the live execution engine (which has no cash-sharing logic) allocates the
+    # same fractions that vectorbt used in the backtest.
+    max_alloc = float(raw_config.get("MAX_COIN_ALLOCATION", 0.25))
+    w_total = sum(latest_weights.values())
+    if w_total > 0:
+        latest_weights = {s: w / w_total for s, w in latest_weights.items()}
+        # Iterative cap (mirrors _compute_allocation_weights in orchestrator)
+        for _ in range(len(latest_weights) + 1):
+            over = {s: w for s, w in latest_weights.items() if w > max_alloc + 1e-12}
+            if not over:
+                break
+            excess = sum(w - max_alloc for w in over.values())
+            for s in over:
+                latest_weights[s] = max_alloc
+            under = {s: w for s, w in latest_weights.items() if s not in over}
+            if not under:
+                extra = excess / len(latest_weights)
+                latest_weights = {s: w + extra for s, w in latest_weights.items()}
+                break
+            per_under = excess / len(under)
+            for s in under:
+                latest_weights[s] += per_under
+
     weight_file = output_dir / "portfolio_weights.json"
     with open(weight_file, 'w') as f:
         json.dump({
