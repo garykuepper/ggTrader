@@ -780,23 +780,55 @@ class ExecutionEngine:
                         fee=buy_fee, fee_currency=fee_info.get("currency", "USD"),
                     )
 
-                    stop_pct = self.per_coin_params[symbol]["params"].get("stop_pct", 3.0)
+                    # Determine the correct trailing stop percentage based on exit type.
+                    # WFO optimises different params per exit:
+                    #   - atr_trailing: atr_length + atr_multiplier (volatility-aware)
+                    #   - trailing_stop: trailing_stop_pct
+                    #   - fixed_sl_tp:  stop_pct + take_profit_pct
+                    # The backtest signal already computed the ATR-based stop level,
+                    # so we derive the live trailing % from that.
+                    exit_name = sig["exit_name"]
+                    coin_params = self.per_coin_params[symbol]["params"]
+
+                    if exit_name == "atr_trailing":
+                        # Derive stop % from the ATR-computed stop price vs current price.
+                        # sig["stop_price"] is the trailing stop level from the backtest.
+                        stop_price = sig.get("stop_price", 0)
+                        current = sig["current_price"]
+                        if stop_price and current and stop_price < current:
+                            stop_pct = ((current - stop_price) / current) * 100.0
+                        else:
+                            # Fallback: use atr_multiplier as a rough percentage
+                            stop_pct = float(coin_params.get("atr_multiplier", 3.0))
+                        self.logger.info(
+                            f"  [Stop] {symbol} atr_trailing: ATR stop=${stop_price:.4f}, "
+                            f"price=${current:.4f} -> trailing {stop_pct:.2f}%"
+                        )
+                    elif exit_name == "trailing_stop":
+                        stop_pct = float(coin_params.get("trailing_stop_pct", 3.0))
+                        self.logger.info(
+                            f"  [Stop] {symbol} trailing_stop: using WFO trailing_stop_pct={stop_pct}%"
+                        )
+                    else:
+                        # fixed_sl_tp — stop_pct is the correct WFO-optimised param
+                        stop_pct = float(coin_params.get("stop_pct", 3.0))
+
                     self.active_positions[symbol] = {
                         "entry_order_id": order_id,
                         "entry_price": sig["current_price"],
                         "entry_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "amount": filled_amount,
                         "stop_pct": stop_pct,
-                        "exit_name": sig["exit_name"],
+                        "exit_name": exit_name,
                         "tsl_order_id": None,
                         "entry_fee": buy_fee,
                     }
 
-                    # Place TSL for atr_trailing / trailing_stop exits.
-                    # fixed_sl_tp is handled natively by Kraken OCO parameters in CCXT.
-                    exit_name = sig["exit_name"]
+                    # Place exit order on Kraken.
+                    # fixed_sl_tp -> Kraken OCO (stop-loss + take-profit)
+                    # atr_trailing / trailing_stop -> Kraken trailing-stop order
                     if exit_name == "fixed_sl_tp":
-                        tp_pct = self.per_coin_params[symbol]["params"].get("take_profit_pct", 6.0)
+                        tp_pct = float(coin_params.get("take_profit_pct", 6.0))
                         fill_price = sig["current_price"]
                         # attempt to use actual fill price if available
                         if "order" in locals() and "average" in order and order["average"]:
