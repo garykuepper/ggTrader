@@ -147,7 +147,10 @@ def _load_spy_close(
             cache_path.unlink(missing_ok=True)
 
     if spy is None:
-        spy_raw = yf.download("SPY", start=start_date, end=end_date, progress=False)["Close"]
+        # Buffer dates by 5 days to handle weekends/holidays at range boundaries
+        buffered_start = (pd.Timestamp(start_date) - pd.Timedelta(days=5)).strftime("%Y-%m-%d")
+        buffered_end = (pd.Timestamp(end_date) + pd.Timedelta(days=5)).strftime("%Y-%m-%d")
+        spy_raw = yf.download("SPY", start=buffered_start, end=buffered_end, progress=False)["Close"]
         if isinstance(spy_raw, pd.DataFrame):
             spy_raw = spy_raw.squeeze()
         if spy_raw.empty:
@@ -196,7 +199,7 @@ def _sp500_buy_hold_portfolio_stats(
             return empty
         return _buy_hold_portfolio_stats(spy_df, "SPY", config, fees=0.0, slippage=0.0)
     except Exception as e:
-        print(f"Warning: Failed to load S&P 500 benchmark: {e}")
+        print(f"Warning: Failed to load S&P 500 benchmark: {type(e).__name__}: {e}")
         return empty
 
 
@@ -307,9 +310,3 @@ def _enrich_final_stats_with_cagr_and_benchmark(
     final_stats["spy_sharpe"] = spy_bench.get("sharpe")
     final_stats["spy_max_drawdown"] = spy_bench.get("max_drawdown")
 
-    sc = final_stats.get("cagr_pct")
-    bc = bench.get("cagr_pct")
-    if sc is not None and bc is not None:
-        final_stats["excess_cagr_pct"] = float(sc) - float(bc)
-    else:
-        final_stats["excess_cagr_pct"] = None

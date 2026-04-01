@@ -180,37 +180,36 @@ def generate_pipeline_report(
 
     def _phase_table(stats: Dict[str, Any]) -> None:
         lines.append(
-            "| Metric | Strategy | BTC (buy & hold) | S&P 500 (SPY) | Excess vs BTC |"
+            "| Metric | Strategy | BTC (buy & hold) | S&P 500 (SPY) |"
         )
         lines.append(
-            "|--------|----------|------------------|---------------|---------------|"
+            "|--------|----------|------------------|---------------|"
         )
         lines.append(
             f"| Total Return | {_fmt_pct_opt(stats.get('profit_pct'))} | "
             f"{_fmt_pct_opt(stats.get('benchmark_profit_pct'))} | "
-            f"{_fmt_pct_opt(stats.get('spy_profit_pct'))} | - |"
+            f"{_fmt_pct_opt(stats.get('spy_profit_pct'))} |"
         )
         lines.append(
             f"| CAGR | {_fmt_pct_opt(stats.get('cagr_pct'))} | "
             f"{_fmt_pct_opt(stats.get('benchmark_cagr_pct'))} | "
-            f"{_fmt_pct_opt(stats.get('spy_cagr_pct'))} | "
-            f"{_fmt_pct_opt(stats.get('excess_cagr_pct'))} |"
+            f"{_fmt_pct_opt(stats.get('spy_cagr_pct'))} |"
         )
         lines.append(
             f"| Sharpe Ratio | {_fmt_float_opt(stats.get('sharpe'), decimals=4)} | "
             f"{_fmt_float_opt(stats.get('benchmark_sharpe'), decimals=4)} | "
-            f"{_fmt_float_opt(stats.get('spy_sharpe'), decimals=4)} | - |"
+            f"{_fmt_float_opt(stats.get('spy_sharpe'), decimals=4)} |"
         )
         lines.append(
             f"| Max Drawdown | {_fmt_pct_opt(stats.get('max_drawdown'))} | "
             f"{_fmt_pct_opt(stats.get('benchmark_max_drawdown'))} | "
-            f"{_fmt_pct_opt(stats.get('spy_max_drawdown'))} | - |"
+            f"{_fmt_pct_opt(stats.get('spy_max_drawdown'))} |"
         )
         lines.append(
             f"| Total Trades | {stats.get('total_trades', 0)} | "
-            f"{stats.get('benchmark_total_trades', 1)} | 1 | - |"
+            f"{stats.get('benchmark_total_trades', 1)} | 1 |"
         )
-        lines.append(f"| Win Rate | {_fmt_pct_opt(stats.get('win_rate'))} | - | - | - |")
+        lines.append(f"| Win Rate | {_fmt_pct_opt(stats.get('win_rate'))} | - | - |")
         lines.append("")
 
     # --- Training/Test Data ---
@@ -375,10 +374,10 @@ def generate_pipeline_report(
 
     if per_coin_final_stats:
         lines.append(
-            "| Symbol | Strategy | Selection | Return % | Sharpe | Max DD % | Trades | Win Rate % |"
+            "| Symbol | Strategy | Exit | Selection | Return % | Sharpe | Max DD % | Trades | Win Rate % |"
         )
         lines.append(
-            "|--------|----------|-----------|----------|--------|----------|--------|-----------|"
+            "|--------|----------|------|-----------|----------|--------|----------|--------|-----------|"
         )
 
         for symbol, stats in sorted(
@@ -388,9 +387,10 @@ def generate_pipeline_report(
         ):
             sstrat = stats.get("strategy")
             strat_cell = sstrat if sstrat is not None else "n/a"
+            exit_cell = stats.get("exit", "n/a")
             sel = stats.get("selection_reason", "wfo_robustness")
             lines.append(
-                f"| {symbol} | {strat_cell} | {sel} | "
+                f"| {symbol} | {strat_cell} | {exit_cell} | {sel} | "
                 f"{stats.get('profit_pct', 0):.2f}% | "
                 f"{stats.get('sharpe', 0):.4f} | "
                 f"{stats.get('max_drawdown', 0):.2f}% | "

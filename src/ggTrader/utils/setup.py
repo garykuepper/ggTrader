@@ -42,13 +42,16 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
     if not symbols:
         raise ValueError("No symbols provided or symbols list is empty.")
 
-    loader = TimescaleDBLoader()
+    from ggTrader.data.live.cached_loader import CachedExchangeLoader
+
+    loader = CachedExchangeLoader()
 
     ohlcv_df = loader.fetch_ohlcv(
         symbols=symbols,
         interval=config["INTERVAL"],
         start_date=pd.to_datetime(config["START_DATE"]).tz_localize("UTC"),
         end_date=pd.to_datetime(config["END_DATE"]).tz_localize("UTC"),
+        limit=None,
     )
 
     if ohlcv_df.empty:

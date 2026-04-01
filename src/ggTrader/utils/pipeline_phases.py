@@ -223,7 +223,7 @@ def phase_2_full_data_validation(
             f"  [Phase 2] Loading warmup data from {load_start.date()} "
             f"({n_warmup} bars before {start_ts.date()}) — regime EMA warm from bar 0."
         )
-        ohlcv = load_hybrid_validation_ohlcv(config, load_start, end_ts)
+        ohlcv = load_hybrid_validation_ohlcv(config, load_start, end_ts, use_ccxt_tail=True)
 
     # Pass PHASE3_STATS_CUTOFF so the portfolio is trimmed back to START_DATE after
     # indicators are computed on the warmup-extended data.  The key name is reused

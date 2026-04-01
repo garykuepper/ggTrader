@@ -31,6 +31,7 @@ dependencies = [
     "tqdm",
     "vectorbt",
     "xlsxwriter",
+    "yfinance",
 ]
 
 [project.optional-dependencies]
