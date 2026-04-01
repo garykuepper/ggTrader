@@ -1,0 +1,15 @@
+.git
+.github
+.cursor
+.agent
+.venv
+.env
+__pycache__
+*.pyc
+*.egg-info
+results/
+logs/
+data/
+docs/
+*.md
+!pyproject.toml

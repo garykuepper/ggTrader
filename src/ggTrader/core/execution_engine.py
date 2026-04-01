@@ -109,6 +109,7 @@ class ExecutionEngine:
         self.portfolio_weights = {}
         self.persistence_path = config.get("PERSISTENCE_PATH", "data/active_positions.json")
         self.weights_path = config.get("WEIGHTS_PATH")
+        self._reopt_done_month: int | None = None
 
         if results_path:
             self.load_optimized_params(results_path)
@@ -218,6 +219,31 @@ class ExecutionEngine:
         except Exception as e:
             self.logger.error(f"Error loading weights: {e}")
 
+    def reload_params(self) -> None:
+        """Re-detect and reload the latest research params and production weights."""
+        from ggTrader.utils.state_manager import (
+            get_latest_production_weights,
+            get_latest_research_run,
+        )
+
+        latest_res = get_latest_research_run()
+        if latest_res:
+            self.per_coin_params = {}
+            self.load_optimized_params(str(latest_res))
+            self.symbols = list(self.per_coin_params.keys())
+            self.results_path = str(latest_res)
+            self.logger.info(f"Reloaded research params from {latest_res}")
+        else:
+            self.logger.warning("reload_params: no research results found.")
+
+        latest_weights = get_latest_production_weights()
+        if latest_weights:
+            self.portfolio_weights = {}
+            self.load_portfolio_weights(str(latest_weights))
+            self.logger.info(f"Reloaded production weights from {latest_weights}")
+        else:
+            self.logger.warning("reload_params: no production weights found.")
+
     def load_state(self) -> None:
         """Load active positions from persistence file."""
         if os.path.exists(self.persistence_path):
@@ -226,12 +252,22 @@ class ExecutionEngine:
             self.logger.info(f"Loaded {len(self.active_positions)} active positions from state.")
 
     def save_state(self) -> None:
-        """Save active positions to persistence file."""
-        dir_name = os.path.dirname(self.persistence_path)
-        if dir_name:
-            os.makedirs(dir_name, exist_ok=True)
-        with open(self.persistence_path, "w") as f:
-            json.dump(self.active_positions, f, indent=4)
+        """Save active positions to persistence file (atomic write)."""
+        import tempfile
+
+        dir_name = os.path.dirname(self.persistence_path) or "."
+        os.makedirs(dir_name, exist_ok=True)
+        fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(self.active_positions, f, indent=4)
+            os.replace(tmp_path, self.persistence_path)
+        except Exception:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
     # ------------------------------------------------------------------
     # Exchange reconciliation
@@ -267,19 +303,28 @@ class ExecutionEngine:
                 self.save_state()
 
             # Balances on exchange but not tracked in JSON (crash recovery)
-            untracked = [s for s in held_symbols if s in self.per_coin_params
-                         and s not in self.active_positions]
+            untracked = [s for s in held_symbols if s not in self.active_positions]
             if untracked:
                 self.logger.warning(f"  [Reconcile] {len(untracked)} position(s) held on exchange "
                       f"but NOT in local state — adding as untracked: {untracked}")
                 for s in untracked:
+                    coin_params = self.per_coin_params.get(s)
                     self.active_positions[s] = {
                         "entry_order_id": "unknown_reconciled",
                         "entry_price": None,
+                        "entry_time": None,
                         "amount": held_symbols[s],
-                        "stop_pct": self.per_coin_params[s]["params"].get("stop_pct", 3.0),
+                        "stop_pct": (coin_params["params"].get("stop_pct", 3.0)
+                                     if coin_params else 3.0),
+                        "exit_name": (coin_params.get("exit_name", "atr_trailing")
+                                      if coin_params else "atr_trailing"),
                         "tsl_order_id": None,
                     }
+                    if not coin_params:
+                        self.logger.warning(
+                            f"  [Reconcile] {s} not in current trading universe "
+                            f"— using defaults, needs manual review"
+                        )
                 self.save_state()
 
             if not stale and not untracked:
@@ -489,9 +534,10 @@ class ExecutionEngine:
                 )
                 return False
         except Exception as e:
-            self.logger.warning(
-                f"  [Order] Precondition check failed for {symbol} ({e!r}) — allowing"
+            self.logger.error(
+                f"  [Order] Precondition check failed for {symbol} ({e!r}) — BLOCKING"
             )
+            return False
         return True
 
     def _execute_market_buy_order(self, symbol: str, amount_usd: float) -> Optional[str]:
@@ -561,7 +607,8 @@ class ExecutionEngine:
 
             amount_precise = self.exchange.amount_to_precision(market["symbol"], amount)
             order = self.exchange.create_order(
-                market["symbol"], "trailing-stop", "sell", amount_precise, trailing_offset
+                market["symbol"], "trailing-stop", "sell", amount_precise, None,
+                {"trailingAmount": trailing_offset},
             )
             return order["id"]
         except Exception as e:
@@ -605,9 +652,9 @@ class ExecutionEngine:
             open_orders = self.exchange.fetch_open_orders(pair)
             for o in open_orders:
                 self.exchange.cancel_order(o["id"], pair)
-                print(f"  [Exit] Cancelled order {o['id']} for {symbol}")
+                self.logger.info(f"  [Exit] Cancelled order {o['id']} for {symbol}")
         except Exception as e:
-            print(f"  [Exit] WARNING: could not cancel orders for {symbol}: {e!r}")
+            self.logger.warning(f"  [Exit] Could not cancel orders for {symbol}: {e!r}")
 
     # ------------------------------------------------------------------
     # Trade logic
@@ -625,18 +672,18 @@ class ExecutionEngine:
             if sig["entry"] and symbol not in self.active_positions:
                 # Regime gate — block entries in bear markets
                 if not regime_allowance.get(symbol, True):
-                    print(f"  [Regime] BLOCKED entry for {symbol} (bear regime)")
+                    self.logger.info(f"  [Regime] BLOCKED entry for {symbol} (bear regime)")
                     continue
 
                 weight = self.portfolio_weights.get(symbol)
                 if weight is not None:
                     base_capital = self._get_total_portfolio_usd()
                     capital_per_trade = base_capital * float(weight)
-                    print(f"Using dynamic weight for {symbol}: {weight * 100:.1f}% of total "
-                          f"portfolio (${base_capital:.2f}) -> {capital_per_trade:.2f} USD")
+                    self.logger.info(f"  [Sizing] Dynamic weight for {symbol}: {weight * 100:.1f}% of "
+                          f"portfolio (${base_capital:.2f}) -> ${capital_per_trade:.2f}")
                 else:
                     capital_per_trade = self.config.get("CAPITAL_PER_TRADE", 100.0)
-                    print(f"Using fixed capital for {symbol}: {capital_per_trade:.2f} USD")
+                    self.logger.info(f"  [Sizing] Fixed capital for {symbol}: ${capital_per_trade:.2f}")
 
                 # Pre-flight: balance and min-order-size checks
                 if not self._validate_entry_preconditions(symbol, capital_per_trade):
@@ -657,6 +704,12 @@ class ExecutionEngine:
                             symbol.replace("-", "/") if "/" not in symbol else symbol
                         )
                         filled_amount = capital_per_trade / ticker["last"]
+
+                    if not filled_amount or filled_amount <= 0:
+                        self.logger.error(
+                            f"  [Order] Zero fill for {symbol} — skipping position record"
+                        )
+                        continue
 
                     stop_pct = self.per_coin_params[symbol]["params"].get("stop_pct", 3.0)
                     self.active_positions[symbol] = {
@@ -686,18 +739,29 @@ class ExecutionEngine:
                             symbol, filled_amount, sl_price, tp_price
                         )
                         if oco_id is None:
-                            print(f"  [Order] OCO placement failed for {symbol} — closing position")
-                            self._execute_market_sell_order(symbol, filled_amount)
-                            del self.active_positions[symbol]
+                            self.logger.error(f"  [Order] OCO placement failed for {symbol} — closing position")
+                            sell_id = self._execute_market_sell_order(symbol, filled_amount)
+                            if sell_id:
+                                del self.active_positions[symbol]
+                            else:
+                                self.logger.error(
+                                    f"  [Order] EMERGENCY: cleanup sell also failed for {symbol} "
+                                    f"— position unprotected on exchange"
+                                )
                         else:
                             self.active_positions[symbol]["oco_order_id"] = oco_id
                     else:
                         tsl_id = self._execute_trailing_stop_order(symbol, filled_amount, stop_pct)
                         if tsl_id is None:
-                            # TSL failed — close immediately to avoid unprotected position
-                            print(f"  [Order] TSL placement failed for {symbol} — closing position")
-                            self._execute_market_sell_order(symbol, filled_amount)
-                            del self.active_positions[symbol]
+                            self.logger.error(f"  [Order] TSL placement failed for {symbol} — closing position")
+                            sell_id = self._execute_market_sell_order(symbol, filled_amount)
+                            if sell_id:
+                                del self.active_positions[symbol]
+                            else:
+                                self.logger.error(
+                                    f"  [Order] EMERGENCY: cleanup sell also failed for {symbol} "
+                                    f"— position unprotected on exchange"
+                                )
                         else:
                             self.active_positions[symbol]["tsl_order_id"] = tsl_id
 
@@ -708,7 +772,7 @@ class ExecutionEngine:
                     exit_name = self.active_positions[symbol].get("exit_name", sig["exit_name"])
                     if exit_name == "fixed_sl_tp":
                         # fixed_sl_tp: strategy computes the exit condition — execute it
-                        print(f"[{time.strftime('%X')}] STRATEGY EXIT (fixed_sl_tp) FOR {symbol}")
+                        self.logger.info(f"  [Exit] STRATEGY EXIT (fixed_sl_tp) for {symbol}")
                         amount = self.active_positions[symbol]["amount"]
                         self._cancel_open_orders(symbol)
                         sell_id = self._execute_market_sell_order(symbol, amount)
@@ -721,8 +785,88 @@ class ExecutionEngine:
                             self.save_state()
                     else:
                         # atr_trailing / trailing_stop: Kraken's TSL handles the exit
-                        print(f"  [Exit] Strategy exit signal for {symbol} "
+                        self.logger.info(f"  [Exit] Strategy exit signal for {symbol} "
                               f"(exit={exit_name}) — TSL is active, no action needed")
+
+    # ------------------------------------------------------------------
+    # Monthly reoptimization
+    # ------------------------------------------------------------------
+
+    def _run_monthly_reoptimization(self) -> bool:
+        """Run research + production pipeline and reload params.
+
+        Returns True on success, False on failure (caller should retry).
+        """
+        import subprocess
+        import sys
+        from datetime import datetime, timedelta
+
+        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        self.logger.info("=" * 50)
+        self.logger.info("  MONTHLY REOPTIMIZATION STARTED")
+        self.logger.info(f"  End date for WFO: {yesterday}")
+        self.logger.info("=" * 50)
+
+        project_root = Path(__file__).resolve().parent.parent.parent.parent
+
+        # Phase 1: Research (WFO)
+        research_cmd = [
+            sys.executable, "-u", "ggt.py",
+            "research", "--top", "50", "--workers", "2",
+            "--end-date", yesterday,
+        ]
+        self.logger.info(f"Running research: {' '.join(research_cmd)}")
+        try:
+            result = subprocess.run(
+                research_cmd,
+                cwd=str(project_root),
+                capture_output=True,
+                text=True,
+                timeout=7200,  # 2 hour timeout
+            )
+            if result.returncode != 0:
+                self.logger.error(f"Research failed (exit {result.returncode}): {result.stderr[-500:]}")
+                return False
+            self.logger.info("Research completed successfully.")
+        except subprocess.TimeoutExpired:
+            self.logger.error("Research timed out after 2 hours.")
+            return False
+        except Exception as e:
+            self.logger.error(f"Research failed with exception: {e}")
+            return False
+
+        # Phase 2: Production (portfolio competition)
+        production_cmd = [sys.executable, "-u", "ggt.py", "production"]
+        self.logger.info(f"Running production: {' '.join(production_cmd)}")
+        try:
+            result = subprocess.run(
+                production_cmd,
+                cwd=str(project_root),
+                capture_output=True,
+                text=True,
+                timeout=1800,  # 30 min timeout
+            )
+            if result.returncode != 0:
+                self.logger.error(
+                    f"Production failed (exit {result.returncode}): {result.stderr[-500:]}"
+                )
+                return False
+            self.logger.info("Production completed successfully.")
+        except subprocess.TimeoutExpired:
+            self.logger.error("Production timed out after 30 minutes.")
+            return False
+        except Exception as e:
+            self.logger.error(f"Production failed with exception: {e}")
+            return False
+
+        # Phase 3: Reload the new params into this engine
+        self.reload_params()
+        self.logger.info("=" * 50)
+        self.logger.info("  MONTHLY REOPTIMIZATION COMPLETE")
+        self.logger.info(f"  Active symbols: {len(self.per_coin_params)}")
+        self.logger.info(f"  Portfolio weights: {len(self.portfolio_weights)}")
+        self.logger.info("=" * 50)
+        return True
 
     # ------------------------------------------------------------------
     # Main loop
@@ -730,6 +874,17 @@ class ExecutionEngine:
 
     def run_event_loop(self) -> None:
         """Poll for new data every 4h and execute trades."""
+        import signal
+        import sys
+
+        def _handle_shutdown(signum, frame):
+            self.logger.info("Received shutdown signal — saving state and exiting.")
+            self.save_state()
+            self.state = "STOPPED"
+            sys.exit(0)
+
+        signal.signal(signal.SIGTERM, _handle_shutdown)
+
         self.state = "EVENT_LOOP"
         self.logger.info("=========================================")
         self.logger.info(
@@ -739,7 +894,19 @@ class ExecutionEngine:
 
         try:
             while True:
-                # 0. Sync local memory with actual Kraken exchange (catch server-side OCO exits)
+                # 0a. Monthly reoptimization on the 1st of each month
+                from datetime import datetime as _dt
+
+                _now = _dt.now()
+                if _now.day == 1 and self._reopt_done_month != _now.month:
+                    if self._run_monthly_reoptimization():
+                        self._reopt_done_month = _now.month
+                    else:
+                        self.logger.error(
+                            "Monthly reoptimization failed — will retry next cycle"
+                        )
+
+                # 0b. Sync local memory with actual Kraken exchange (catch server-side OCO exits)
                 self._reconcile_positions()
 
                 # 1. Fetch live data (includes BTC for regime filter)
