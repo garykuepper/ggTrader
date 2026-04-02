@@ -109,7 +109,7 @@ def full_pipeline_config() -> dict[str, Any]:
         "SLIPPAGE": SLIPPAGE_STANDARD,
         # 6 folds × TEST_RATIO=3 keeps ~2190 train bars/fold (same as 4×2) while adding
         # 2 more OOS samples for a more reliable fold-consistency signal in the gate.
-        "N_SPLITS": 6,
+        "N_SPLITS": 8,
         "TEST_RATIO": 3,
         "MIN_TRADES": 0,
         "MIN_CLOSED_TRADES_TRAIN": 3,
@@ -141,7 +141,7 @@ def full_pipeline_config() -> dict[str, Any]:
         "MAX_COINS_PER_STRATEGY": 10,
         # Number of warmup bars fetched before START_DATE when computing the BTC EMA.
         # Ensures the EMA is fully warm from bar 1 of the actual backtest window.
-        "EMA_WARMUP_BARS": 200,
+        "EMA_WARMUP_BARS": 100,
         # Block new long entries on all coins when BTC close is below its 200-bar EMA.
         # Prevents catching falling knives in sustained crypto bear markets.
         # Applied in Phase 2/3 combined backtest only — WFO fold optimization is unaffected.
@@ -149,7 +149,7 @@ def full_pipeline_config() -> dict[str, Any]:
         # Optional: compare a short EMA vs EMA(200) instead of close vs EMA(200).
         # Smooths out single-candle spikes from flipping the regime signal.
         # 50 = golden/death cross (EMA50 > EMA200). Set to None to use close > EMA200.
-        "BTC_REGIME_FILTER_SHORT_EMA": 50,
+        "BTC_REGIME_FILTER_SHORT_EMA": 20,
         # Only apply BTC regime filter to coins with BTC return correlation >= this threshold.
         # Coins below the threshold use the altcoin index filter (if enabled) or trade freely.
         "BTC_REGIME_FILTER_MIN_CORRELATION": 0.5,

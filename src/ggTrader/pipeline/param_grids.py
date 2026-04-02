@@ -21,21 +21,19 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
         # Total: 1×1×3×4×1 = 12 combos (was 384, -97%)
     },
     "ema_cross": {
-        # Restructured so ALL fast/slow pairs are valid (fast < slow guaranteed).
-        # fast=50 and slow=[8,13] removed — they generated 9 invalid pairs that
-        # wasted ~21% of ema_cross compute producing 0-trade results.
-        "ema_fast": [3, 5, 9, 12, 20],
-        "ema_slow": [21, 34, 50, 100, 200],
-        # Total: 25 valid combos (unchanged)
+        # Narrowed to textbook ranges: removed very fast (3) and short slow (21, 34)
+        # that overlap with regime filter EMAs or create noise.
+        "ema_fast": [5, 9, 12],
+        "ema_slow": [50, 100, 200],
+        # Total: 9 valid combos (was 25)
     },
     "rsi_reversal": {
-        "rsi_length": [5, 7, 10, 14, 21, 28],
-        "rsi_oversold": [15, 20, 25, 30, 35, 40],
-        # Restored False: BTC regime filter already blocks entries in bear markets for
-        # correlated coins. Forcing EMA200 on RSI is double-blocking. Let WFO decide
-        # per coin whether the trend filter helps or hurts.
+        # Narrowed from 72 to 24 combos. Removed extreme lengths (5, 7, 28) and
+        # extreme oversold levels (15, 40) that chase fold-specific noise.
+        "rsi_length": [10, 14, 21],
+        "rsi_oversold": [20, 25, 30, 35],
         "rsi_trend_filter": [True, False],
-        # Total: 72 combos (was 36)
+        # Total: 24 combos (was 72)
     },
     "donchian_breakout": {
         # Restored shorter lengths: only testing 100 was circular (it always won).
@@ -57,6 +55,13 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
         "st_multiplier": [2.0, 3.0, 4.0, 5.0],
         # Total: 16 combos (unchanged — all values have meaningful selection rates)
     },
+    "bbands_mean_reversion": {
+        # Mean-reversion strategy: enters when price touches lower Bollinger Band.
+        # Complements trend-following strategies in choppy/ranging markets.
+        "bb_length": [14, 20, 30],
+        "bb_std": [1.5, 2.0, 2.5],
+        # Total: 9 combos
+    },
 }
 
 DETAILED_EXIT_AXIS_GRIDS: dict[str, dict[str, Any]] = {
@@ -66,16 +71,16 @@ DETAILED_EXIT_AXIS_GRIDS: dict[str, dict[str, Any]] = {
         # Total: 12 combos (unchanged — all values have meaningful selection rates)
     },
     "fixed_sl_tp": {
-        # Restored ranges: collapsing to single values was circular (only value always wins).
-        # WFO can now find per-coin optimal risk/reward ratio.
-        "stop_pct": [1.0, 1.5, 2.0, 3.0],
-        "take_profit_pct": [2.0, 3.0, 4.0, 6.0],
-        # Total: 16 combos (was 1)
+        # Widened ranges: removed 1.0% stop (too tight for 4h crypto), added 5.0% stop.
+        # Removed 2.0% TP (too tight), added 10.0% TP for trend capture.
+        "stop_pct": [1.5, 2.0, 3.0, 5.0],
+        "take_profit_pct": [3.0, 4.0, 6.0, 10.0],
+        # Total: 16 combos
     },
     "trailing_stop": {
-        # Restored range: collapsing to 3.0 was circular.
-        "trailing_stop_pct": [2.0, 3.0, 5.0, 8.0],
-        # Total: 4 combos (was 1)
+        # Widened: removed 2.0% (too tight for 4h crypto), added 12.0% for wide trailing.
+        "trailing_stop_pct": [3.0, 5.0, 8.0, 12.0],
+        # Total: 4 combos
     },
 }
 
