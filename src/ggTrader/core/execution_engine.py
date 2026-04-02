@@ -701,22 +701,23 @@ class ExecutionEngine:
             pair = symbol.replace("-", "/") if "/" not in symbol else symbol
             market = self.exchange.market(pair)
 
-            sl_price_str = self.exchange.price_to_precision(market["symbol"], sl_price)
-            tp_price_str = self.exchange.price_to_precision(market["symbol"], tp_price)
+            # Kraken requires numeric floats, not strings, for stop-loss-profit prices
+            sl_price_f = float(self.exchange.price_to_precision(market["symbol"], sl_price))
+            tp_price_f = float(self.exchange.price_to_precision(market["symbol"], tp_price))
             amount_precise = self.exchange.amount_to_precision(market["symbol"], amount)
 
             # Guard: ensure SL and TP didn't round to the same value
-            if sl_price_str == tp_price_str:
+            if sl_price_f == tp_price_f:
                 self.logger.error(
-                    f"  [OCO] SL and TP rounded to same price ({sl_price_str}) "
+                    f"  [OCO] SL and TP rounded to same price ({sl_price_f}) "
                     f"for {symbol} — cannot place OCO"
                 )
                 return None
 
             # Kraken accepts price2 as the take profit limit
-            params = {"price2": tp_price_str}
+            params = {"price2": tp_price_f}
             order = self.exchange.create_order(
-                market["symbol"], "stop-loss-profit", "sell", amount_precise, sl_price_str, params
+                market["symbol"], "stop-loss-profit", "sell", amount_precise, sl_price_f, params
             )
             return order["id"]
         except Exception as e:
