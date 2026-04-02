@@ -689,7 +689,12 @@ class ExecutionEngine:
     def _execute_oco_exit_order(
         self, symbol: str, amount: float, sl_price: float, tp_price: float
     ) -> Optional[str]:
-        """Place an OCO (stop-loss-profit) order on Kraken."""
+        """Place a limit sell with stop-loss and take-profit on Kraken.
+
+        Uses CCXT unified params (stopLossPrice / takeProfitPrice) which
+        Kraken maps to conditional close orders attached to a limit sell.
+        The limit price is set to the take-profit level.
+        """
         self.logger.info(
             f"PLACING OCO EXIT: {amount} {symbol} SL={sl_price:.4f}, TP={tp_price:.4f}"
         )
@@ -701,12 +706,10 @@ class ExecutionEngine:
             pair = symbol.replace("-", "/") if "/" not in symbol else symbol
             market = self.exchange.market(pair)
 
-            # Kraken requires numeric floats, not strings, for stop-loss-profit prices
             sl_price_f = float(self.exchange.price_to_precision(market["symbol"], sl_price))
             tp_price_f = float(self.exchange.price_to_precision(market["symbol"], tp_price))
             amount_precise = self.exchange.amount_to_precision(market["symbol"], amount)
 
-            # Guard: ensure SL and TP didn't round to the same value
             if sl_price_f == tp_price_f:
                 self.logger.error(
                     f"  [OCO] SL and TP rounded to same price ({sl_price_f}) "
@@ -714,10 +717,14 @@ class ExecutionEngine:
                 )
                 return None
 
-            # Kraken accepts price2 as the take profit limit
-            params = {"price2": tp_price_f}
+            # CCXT unified params: Kraken creates conditional close orders
+            # (stop-loss + take-profit) attached to a limit sell order.
+            params = {
+                "stopLossPrice": sl_price_f,
+                "takeProfitPrice": tp_price_f,
+            }
             order = self.exchange.create_order(
-                market["symbol"], "stop-loss-profit", "sell", amount_precise, sl_price_f, params
+                market["symbol"], "limit", "sell", amount_precise, tp_price_f, params
             )
             return order["id"]
         except Exception as e:
