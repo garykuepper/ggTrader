@@ -63,10 +63,10 @@ def _hash_config(config: Dict[str, Any]) -> str:
     ).hexdigest()[:12]
 
 
-def _data_date_range(ohlcv: pd.DataFrame) -> Tuple[str, str]:
-    """Return (first_date, last_date) as ISO date strings (no time component)."""
+def _data_fingerprint(ohlcv: pd.DataFrame) -> Tuple[str, str, str]:
+    """Return (first_date, last_date, bar_count) for cache key uniqueness."""
     idx = ohlcv.index
-    return str(idx[0])[:10], str(idx[-1])[:10]
+    return str(idx[0])[:10], str(idx[-1])[:10], str(len(idx))
 
 
 def _make_cache_key(
@@ -78,7 +78,7 @@ def _make_cache_key(
     ohlcv: pd.DataFrame,
 ) -> str:
     """Build a unique 32-char hex cache key for this (symbol, combo, grid, config, data)."""
-    date_start, date_end = _data_date_range(ohlcv)
+    date_start, date_end, bar_count = _data_fingerprint(ohlcv)
     raw = "|".join([
         f"v{_WFO_CACHE_VERSION}",
         symbol,
@@ -88,6 +88,7 @@ def _make_cache_key(
         _hash_config(config),
         date_start,
         date_end,
+        bar_count,
     ])
     return hashlib.md5(raw.encode()).hexdigest()
 
