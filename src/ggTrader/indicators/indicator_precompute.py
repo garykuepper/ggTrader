@@ -442,6 +442,124 @@ class IndicatorPrecomputer:
         self._save_persistent("supertrend", params, wrapped)
         return wrapped
 
+    def compute_stochrsi(
+        self,
+        rsi_length_values: list[int] | int = 14,
+        stoch_length_values: list[int] | int = 14,
+        k_smooth: int = 3,
+    ) -> Any:
+        """Pre-compute Stochastic RSI K-line across parameter ranges.
+
+        Uses per-symbol pandas_ta calls (same pattern as compute_adx) because
+        VBT's IndicatorFactory has issues with multi-output multi-param indicators.
+        """
+        import pandas_ta as ta
+
+        rsi_lengths = (
+            rsi_length_values if isinstance(rsi_length_values, list) else [rsi_length_values]
+        )
+        stoch_lengths = (
+            stoch_length_values if isinstance(stoch_length_values, list) else [stoch_length_values]
+        )
+        k_sm = int(k_smooth)
+
+        params = {
+            "rsi_length": tuple(int(x) for x in rsi_lengths),
+            "stoch_length": tuple(int(x) for x in stoch_lengths),
+            "k_smooth": k_sm,
+        }
+        cached = self._get_persistent("stochrsi", params)
+        if cached is not None:
+            return cached
+
+        n_time = self.close.shape[0]
+        n_symbols = self.close.shape[1] if self.close.ndim == 2 else 1
+
+        k_cols: list[np.ndarray] = []
+        for rsi_len in rsi_lengths:
+            for stoch_len in stoch_lengths:
+                for sym_idx in range(n_symbols):
+                    c = self.close[:, sym_idx] if self.close.ndim == 2 else self.close
+                    try:
+                        res = ta.stochrsi(
+                            pd.Series(c),
+                            length=int(rsi_len),
+                            rsi_length=int(rsi_len),
+                            stoch_length=int(stoch_len),
+                            k=k_sm,
+                        )
+                        if res is not None and res.shape[1] >= 1:
+                            k_cols.append(res.iloc[:, 0].values)
+                        else:
+                            raise ValueError("Unexpected StochRSI shape")
+                    except Exception:
+                        k_cols.append(np.full(n_time, np.nan))
+
+        k_arr = np.column_stack(k_cols) if k_cols else np.full((n_time, 0), np.nan)
+        stochrsi_ind = SimpleNamespace(stochrsi_k=k_arr)
+        self._save_persistent("stochrsi", params, stochrsi_ind)
+        return stochrsi_ind
+
+    def compute_kc(
+        self,
+        length_values: list[int] | int,
+        scalar: float = 1.5,
+    ) -> Any:
+        """Pre-compute Keltner Channels across lengths for a given scalar (multiplier).
+
+        Called once per multiplier value from the strategy class (same pattern as
+        compute_bbands per-std). Uses per-length loops like compute_donchian.
+        """
+        import pandas_ta as ta
+
+        lengths = length_values if isinstance(length_values, list) else [length_values]
+        scalar_f = float(scalar)
+
+        params = {"length": tuple(int(le) for le in lengths), "scalar": scalar_f}
+        cached = self._get_persistent("kc", params)
+        if cached is not None:
+            return cached
+
+        n_time = self.close.shape[0]
+        n_symbols = self.close.shape[1] if self.close.ndim == 2 else 1
+
+        kcu_stack: list[np.ndarray] = []
+        kcl_stack: list[np.ndarray] = []
+        for le_val in lengths:
+            le_i = int(le_val)
+            u_cols: list[np.ndarray] = []
+            l_cols: list[np.ndarray] = []
+            for sym_idx in range(n_symbols):
+                h = self.high[:, sym_idx] if self.high.ndim == 2 else self.high
+                lo = self.low[:, sym_idx] if self.low.ndim == 2 else self.low
+                c = self.close[:, sym_idx] if self.close.ndim == 2 else self.close
+                try:
+                    res = ta.kc(
+                        pd.Series(h),
+                        pd.Series(lo),
+                        pd.Series(c),
+                        length=le_i,
+                        scalar=scalar_f,
+                    )
+                    if res is not None and res.shape[1] >= 3:
+                        # KC returns: KCLe (lower), KCBe (basis), KCUe (upper)
+                        l_cols.append(res.iloc[:, 0].values)
+                        u_cols.append(res.iloc[:, 2].values)
+                    else:
+                        raise ValueError("Unexpected KC shape")
+                except Exception:
+                    nan_arr = np.full(n_time, np.nan)
+                    l_cols.append(nan_arr)
+                    u_cols.append(nan_arr)
+            kcu_stack.append(np.column_stack(u_cols))
+            kcl_stack.append(np.column_stack(l_cols))
+
+        kcu_3d = np.stack(kcu_stack, axis=1)
+        kcl_3d = np.stack(kcl_stack, axis=1)
+        wrapped = SimpleNamespace(kcu=kcu_3d, kcl=kcl_3d)
+        self._save_persistent("kc", params, wrapped)
+        return wrapped
+
     def clear_cache(self) -> None:
         """Clear the indicator cache to free memory."""
         self._cache.clear()

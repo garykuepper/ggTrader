@@ -24,5 +24,6 @@
             "name": "PATH",
             "value": "${workspaceFolder}\\.venv\\Scripts;${env:PATH}"
         }
-    ]
+    ],
+    "cursorpyright.analysis.typeCheckingMode": "basic"
 }

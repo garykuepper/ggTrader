@@ -16,9 +16,11 @@ from ggTrader.indicators.strategies import (
     BollingerMeanReversionEntry,
     DonchianBreakoutEntry,
     EmaCrossEntry,
+    KeltnerBreakoutEntry,
     MacdCrossEntry,
     PsarAdxEntry,
     RsiReversalEntry,
+    StochRsiReversalEntry,
     SupertrendFlipEntry,
     get_entry_strategy,
     get_exit_strategy,
@@ -247,6 +249,34 @@ class TestStrategies:
         param_grid = {"st_length": [7, 10], "st_multiplier": [2.0, 3.0]}
         entries, param_combos = strategy.compute_entries(pc, param_grid)
         n_combo = 2 * 2
+        assert entries.shape == (500, n_combo * 3)
+        assert entries.dtype == bool
+        assert len(param_combos) == n_combo
+
+    def test_stoch_rsi_reversal_entry_strategy(self, sample_ohlcv):
+        """Test StochRsiReversalEntry shape and dtype."""
+        close, high, low, _ = sample_ohlcv
+        pc = IndicatorPrecomputer(close, high, low)
+        strategy = StochRsiReversalEntry()
+        param_grid = {
+            "stochrsi_rsi_length": [10, 14],
+            "stochrsi_stoch_length": [14],
+            "stochrsi_oversold": [20],
+        }
+        entries, param_combos = strategy.compute_entries(pc, param_grid)
+        n_combo = 2 * 1 * 1  # 2 rsi_lengths × 1 stoch_length × 1 oversold
+        assert entries.shape == (500, n_combo * 3)
+        assert entries.dtype == bool
+        assert len(param_combos) == n_combo
+
+    def test_keltner_breakout_entry_strategy(self, sample_ohlcv):
+        """Test KeltnerBreakoutEntry shape and dtype."""
+        close, high, low, _ = sample_ohlcv
+        pc = IndicatorPrecomputer(close, high, low)
+        strategy = KeltnerBreakoutEntry()
+        param_grid = {"kc_length": [14, 20], "kc_multiplier": [1.5]}
+        entries, param_combos = strategy.compute_entries(pc, param_grid)
+        n_combo = 2 * 1  # 2 lengths × 1 multiplier
         assert entries.shape == (500, n_combo * 3)
         assert entries.dtype == bool
         assert len(param_combos) == n_combo

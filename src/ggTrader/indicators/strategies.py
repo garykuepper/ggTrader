@@ -704,6 +704,148 @@ class SupertrendFlipEntry:
         return entries_array.astype(bool), param_combos
 
 
+class StochRsiReversalEntry:
+    """StochRSI oversold bounce entry -- faster-acting than raw RSI in volatile markets."""
+
+    name = "stoch_rsi_reversal"
+    param_schema = {
+        "stochrsi_rsi_length": [14],
+        "stochrsi_stoch_length": [14],
+        "stochrsi_oversold": [20],
+    }
+
+    def compute_entries(
+        self, precomputer: IndicatorPrecomputer, param_grid: dict
+    ) -> tuple[np.ndarray, list[dict]]:
+        """Entry when StochRSI K-line crosses above oversold threshold."""
+        close = precomputer.close
+        if close.ndim == 1:
+            close = close[:, np.newaxis]
+        n_time, n_symbols = close.shape
+
+        rsi_lengths = param_grid.get("stochrsi_rsi_length", [14])
+        stoch_lengths = param_grid.get("stochrsi_stoch_length", [14])
+        oversold_vals = param_grid.get("stochrsi_oversold", [20])
+        rsi_lengths = rsi_lengths if isinstance(rsi_lengths, list) else [rsi_lengths]
+        stoch_lengths = stoch_lengths if isinstance(stoch_lengths, list) else [stoch_lengths]
+        oversold_vals = oversold_vals if isinstance(oversold_vals, list) else [oversold_vals]
+
+        stochrsi_ind = precomputer.compute_stochrsi(rsi_lengths, stoch_lengths, k_smooth=3)
+        k_arr = stochrsi_ind.stochrsi_k
+        k_arr = np.asarray(k_arr, dtype=np.float64)
+
+        # k_arr is (n_time, n_rsi_lengths * n_stoch_lengths * n_symbols) from the
+        # per-symbol loop in compute_stochrsi. Reshape to (time, n_combos, n_symbols).
+        n_param_combos = len(rsi_lengths) * len(stoch_lengths)
+        if k_arr.ndim == 2 and k_arr.shape[1] == n_param_combos * n_symbols:
+            k_arr = k_arr.reshape(n_time, n_param_combos, n_symbols)
+
+        param_combos: list[dict] = []
+        entries_list: list[np.ndarray] = []
+
+        pi = 0
+        for rsi_len in rsi_lengths:
+            for stoch_len in stoch_lengths:
+                if k_arr.ndim == 3:
+                    k_col = k_arr[:, pi, :]
+                else:
+                    k_col = k_arr
+                pi += 1
+
+                if k_col.ndim == 1:
+                    k_col = k_col[:, np.newaxis]
+
+                k_prev = np.roll(k_col.copy(), 1, axis=0)
+                k_prev[0] = k_col[0]
+
+                for oversold in oversold_vals:
+                    ov = float(oversold)
+                    entries_combo = (k_col > ov) & (k_prev <= ov)
+                    entries_combo[0] = False
+                    entries_list.append(entries_combo.astype(bool))
+                    param_combos.append({
+                        "stochrsi_rsi_length": int(rsi_len),
+                        "stochrsi_stoch_length": int(stoch_len),
+                        "stochrsi_oversold": oversold,
+                    })
+
+        entries_stacked = [e.reshape(n_time, -1) for e in entries_list]
+        entries_array = (
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
+        )
+        return entries_array.astype(bool), param_combos
+
+
+class KeltnerBreakoutEntry:
+    """Long on close breaking above the upper Keltner Channel (ATR-based bands)."""
+
+    name = "keltner_breakout"
+    param_schema = {
+        "kc_length": [20],
+        "kc_multiplier": [1.5],
+    }
+
+    def compute_entries(
+        self, precomputer: IndicatorPrecomputer, param_grid: dict
+    ) -> tuple[np.ndarray, list[dict]]:
+        """Breakout entry when close crosses above upper KC (prior bar, no lookahead)."""
+        close = precomputer.close
+        if close.ndim == 1:
+            close = close[:, np.newaxis]
+        n_time, n_symbols = close.shape
+
+        lengths = param_grid.get("kc_length", [20])
+        mults = param_grid.get("kc_multiplier", [1.5])
+        lengths = lengths if isinstance(lengths, list) else [lengths]
+        mults = mults if isinstance(mults, list) else [mults]
+
+        # Precompute KC per multiplier (same pattern as bbands per-std).
+        kcu_by_mult: dict[float, np.ndarray] = {}
+        for m in mults:
+            mf = float(m)
+            kc_ind = precomputer.compute_kc(lengths, scalar=mf)
+            kcu = kc_ind.kcu
+            kcu = np.asarray(kcu, dtype=np.float64)
+            kcu_by_mult[mf] = kcu
+
+        param_combos: list[dict] = []
+        entries_list: list[np.ndarray] = []
+
+        for tup in itertools.product(lengths, mults):
+            kc_len = int(tup[0])
+            kc_mult = float(tup[1])
+            li = lengths.index(kc_len)
+            kcu_plane = kcu_by_mult[kc_mult]
+
+            if kcu_plane.ndim == 3:
+                u = kcu_plane[:, li, :]
+            else:
+                u = kcu_plane
+
+            if u.ndim == 1:
+                u = u[:, np.newaxis]
+
+            u_prev = np.roll(u.copy(), 1, axis=0)
+            u_prev[0, :] = u[0, :]
+            close_prev = np.roll(close.copy(), 1, axis=0)
+            close_prev[0, :] = close[0, :]
+
+            entries_combo = (close > u_prev) & (close_prev <= u_prev)
+            entries_combo[0] = False
+            entries_list.append(entries_combo.astype(bool))
+            param_combos.append({"kc_length": kc_len, "kc_multiplier": kc_mult})
+
+        entries_stacked = [e.reshape(n_time, -1) for e in entries_list]
+        entries_array = (
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
+        )
+        return entries_array.astype(bool), param_combos
+
+
 class AtrTrailingExit:
     """ATR-based trailing stop exit strategy."""
 
@@ -1027,6 +1169,8 @@ ENTRY_REGISTRY: dict[str, type] = {
     "bbands_mean_reversion": BollingerMeanReversionEntry,
     "donchian_breakout": DonchianBreakoutEntry,
     "supertrend_flip": SupertrendFlipEntry,
+    "stoch_rsi_reversal": StochRsiReversalEntry,
+    "keltner_breakout": KeltnerBreakoutEntry,
 }
 
 EXIT_REGISTRY: dict[str, type] = {

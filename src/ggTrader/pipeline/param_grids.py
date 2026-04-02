@@ -62,6 +62,21 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
         "bb_std": [1.5, 2.0, 2.5],
         # Total: 9 combos
     },
+    "stoch_rsi_reversal": {
+        # StochRSI = Stochastic of RSI. Faster mean-reversion signal than raw RSI,
+        # cycles quicker in volatile crypto where plain RSI can stay oversold for ages.
+        "stochrsi_rsi_length": [10, 14, 21],
+        "stochrsi_stoch_length": [10, 14],
+        "stochrsi_oversold": [15, 20],
+        # Total: 3 × 2 × 2 = 12 combos
+    },
+    "keltner_breakout": {
+        # ATR-based channel breakout. Adapts to volatility unlike Donchian (raw range)
+        # or BBands (std dev). Widens in high-vol, contracts in consolidation.
+        "kc_length": [14, 20, 30],
+        "kc_multiplier": [1.0, 1.5, 2.0],
+        # Total: 3 × 3 = 9 combos
+    },
 }
 
 DETAILED_EXIT_AXIS_GRIDS: dict[str, dict[str, Any]] = {
@@ -105,6 +120,15 @@ COARSE_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
     },
     "donchian_breakout": {
         "donchian_length": [15, 20, 30, 50],
+    },
+    "stoch_rsi_reversal": {
+        "stochrsi_rsi_length": [14],
+        "stochrsi_stoch_length": [14],
+        "stochrsi_oversold": [20],
+    },
+    "keltner_breakout": {
+        "kc_length": [20],
+        "kc_multiplier": [1.5],
     },
 }
 
