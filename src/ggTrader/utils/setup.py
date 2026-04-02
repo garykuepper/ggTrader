@@ -278,7 +278,7 @@ def load_hybrid_validation_ohlcv(
     cache_loader = CachedExchangeLoader()
     try:
         combined = cache_loader.fetch_ohlcv(
-            symbols=bases,
+            symbols=formatted,
             interval=config["INTERVAL"],
             start_date=ts_start,
             end_date=ts_end,
