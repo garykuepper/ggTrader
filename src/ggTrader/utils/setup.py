@@ -283,6 +283,7 @@ def load_hybrid_validation_ohlcv(
             start_date=ts_start,
             end_date=ts_end,
             quote=quote,
+            limit=None,
         )
     except Exception as e:
         print(f"Warning: CachedExchangeLoader failed: {e}. Falling back to DB-only results.")
