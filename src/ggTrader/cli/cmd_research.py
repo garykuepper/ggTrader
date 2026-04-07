@@ -32,8 +32,8 @@ def register_research_parser(subparsers: argparse._SubParsersAction):
     parser.add_argument(
         "--end-date",
         type=str,
-        default="2025-12-31",
-        help="End date for the research window in YYYY-MM-DD format (default: 2025-12-31)",
+        default=None,
+        help="End date for the research window in YYYY-MM-DD format (default: today)",
     )
     parser.add_argument(
         "--top",

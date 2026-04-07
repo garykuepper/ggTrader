@@ -117,10 +117,10 @@ def full_pipeline_config() -> dict[str, Any]:
         # Calmar-like (return/|maxDD|).
         "TRAIN_METRIC": "composite",
         "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
-            "sharpe": 0.20,
-            "sortino": 0.30,
-            "calmar": 0.30,
-            "profit_factor": 0.20,
+            "sharpe": 0.25,
+            "sortino": 0.25,
+            "calmar": 0.25,
+            "profit_factor": 0.25,
         },
         "MAX_TRAIN_DRAWDOWN_PCT": None,
         "CHUNK_SIZE": 500,
@@ -175,13 +175,13 @@ def full_pipeline_config() -> dict[str, Any]:
         "MIN_VALID_TRAIN_FOLDS": 3,
         # Minimum fraction of OOS folds that must be profitable (positive Sharpe) for a coin
         # to be included in the combined portfolio. 0.33 = at least 1 in 3 folds profitable.
-        "MIN_FOLD_CONSISTENCY": 0.40,
+        "MIN_FOLD_CONSISTENCY": 0.33,
         # Set True or pass --wfo-debug-metrics on run_full_pipeline.py: per-fold train-metric
         # len/finite counts and combined robustness during WFO (all orchestrator paths).
         "WFO_DEBUG_METRICS": False,
         # OOS robustness blend: 0.0 = pure IS robustness (original behaviour),
         # 1.0 = pure OOS Sharpe gate, 0.65 = weight OOS more than IS.
-        "OOS_ROBUSTNESS_BLEND_ALPHA": 0.70,
+        "OOS_ROBUSTNESS_BLEND_ALPHA": 0.65,
         # --- Anti-overfitting scoring improvements (zero extra compute) ---
         # Z-score normalize composite metric components before blending so that
         # Calmar, ProfitFactor, Sharpe and Sortino are all on the same scale.

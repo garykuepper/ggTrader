@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import time
 from collections import defaultdict
@@ -27,14 +28,53 @@ from ggTrader.indicators.strategies import (
     DonchianBreakoutEntry,
     EmaCrossEntry,
     FixedStopTakeProfit,
+    KeltnerBreakoutEntry,
     MacdCrossEntry,
     PsarAdxEntry,
     RsiReversalEntry,
+    StochRsiReversalEntry,
     SupertrendFlipEntry,
     TrailingStopExit,
 )
 
+
+def _safe_extract_fill_price(order: Optional[Dict[str, Any]]) -> Optional[float]:
+    """Robustly extract a meaningful fill price from a CCXT order response.
+
+    Tries multiple fields in order of preference. Returns None if none are
+    valid (caller should treat None as "unknown" and refuse to record bogus
+    data rather than fall back to 0).
+    """
+    if not order:
+        return None
+    avg = order.get("average")
+    if avg and float(avg) > 0:
+        return float(avg)
+    # Compute weighted average from trade fills if available
+    trades = order.get("trades") or []
+    if trades:
+        total_amt = 0.0
+        total_val = 0.0
+        for t in trades:
+            amt = float(t.get("amount") or 0)
+            px = float(t.get("price") or 0)
+            if amt > 0 and px > 0:
+                total_amt += amt
+                total_val += amt * px
+        if total_amt > 0:
+            return total_val / total_amt
+    # Fall back to limit price for filled limit orders (e.g. OCO take-profit)
+    price = order.get("price")
+    if price and float(price) > 0 and order.get("status") in ("closed", "filled"):
+        return float(price)
+    return None
+
 _BTC_SYMBOL = "BTC-USD"
+
+# Interim polling interval (seconds) — how often we check whether TSL/OCO
+# orders triggered between 4h candle reconciliations. 5 min = 48 polls per
+# 4h window, well within Kraken rate limits.
+POLL_INTERVAL_SEC = 300
 
 
 def setup_live_logger() -> logging.Logger:
@@ -74,6 +114,8 @@ class ExecutionEngine:
         "bbands_mean_reversion": BollingerMeanReversionEntry,
         "donchian_breakout": DonchianBreakoutEntry,
         "supertrend_flip": SupertrendFlipEntry,
+        "stoch_rsi_reversal": StochRsiReversalEntry,
+        "keltner_breakout": KeltnerBreakoutEntry,
     }
 
     EXIT_MAP = {
@@ -330,21 +372,57 @@ class ExecutionEngine:
                         try:
                             pair = s.replace("-", "/") if "/" not in s else s
                             closed_order = self.exchange.fetch_order(exit_order_id, pair)
-                            exit_price = closed_order.get("average", 0)
-                            fee_info = closed_order.get("fee", {})
-                            exit_reason = ("trailing_stop" if pos.get("tsl_order_id")
-                                           else "oco_exit")
-                            self.tracker.record_sell(
-                                symbol=s, order_id=exit_order_id, price=exit_price,
-                                amount=pos.get("amount", 0),
-                                amount_usd=exit_price * pos.get("amount", 0),
-                                fee=float(fee_info.get("cost", 0)),
-                                fee_currency=fee_info.get("currency", "USD"),
-                                entry_price=pos.get("entry_price"),
-                                entry_time=pos.get("entry_time"),
-                                entry_fee=pos.get("entry_fee", 0),
-                                exit_reason=exit_reason,
-                            )
+                            exit_price = _safe_extract_fill_price(closed_order)
+                            if exit_price is None or exit_price <= 0:
+                                # Don't poison the CSV with bogus zero-price records.
+                                # Try fetching recent fills as a last resort.
+                                self.logger.warning(
+                                    f"  [Reconcile] No valid fill price from order "
+                                    f"{exit_order_id} for {s} — trying recent trades"
+                                )
+                                try:
+                                    recent_trades = self.exchange.fetch_my_trades(
+                                        pair, limit=10
+                                    )
+                                    matching = [
+                                        t for t in recent_trades
+                                        if t.get("order") == exit_order_id
+                                    ]
+                                    if matching:
+                                        total_amt = sum(float(t["amount"]) for t in matching)
+                                        total_val = sum(
+                                            float(t["amount"]) * float(t["price"])
+                                            for t in matching
+                                        )
+                                        if total_amt > 0:
+                                            exit_price = total_val / total_amt
+                                except Exception as inner_e:
+                                    self.logger.warning(
+                                        f"  [Reconcile] fetch_my_trades fallback "
+                                        f"failed: {inner_e!r}"
+                                    )
+
+                            if exit_price is None or exit_price <= 0:
+                                # Skip recording rather than write a -100% loss
+                                self.logger.error(
+                                    f"  [Reconcile] Could not determine exit price for {s} "
+                                    f"— SKIPPING CSV record (manual reconciliation needed)"
+                                )
+                            else:
+                                fee_info = closed_order.get("fee", {}) or {}
+                                exit_reason = ("trailing_stop" if pos.get("tsl_order_id")
+                                               else "oco_exit")
+                                self.tracker.record_sell(
+                                    symbol=s, order_id=exit_order_id, price=exit_price,
+                                    amount=pos.get("amount", 0),
+                                    amount_usd=exit_price * pos.get("amount", 0),
+                                    fee=float(fee_info.get("cost", 0) or 0),
+                                    fee_currency=fee_info.get("currency", "USD"),
+                                    entry_price=pos.get("entry_price"),
+                                    entry_time=pos.get("entry_time"),
+                                    entry_fee=pos.get("entry_fee", 0),
+                                    exit_reason=exit_reason,
+                                )
                         except Exception as e:
                             self.logger.warning(
                                 f"  [Reconcile] Could not fetch exit details for {s}: {e}"
@@ -388,6 +466,72 @@ class ExecutionEngine:
                 f"  [Reconcile] Exchange reconciliation failed "
                 f"({e!r}) — using local state."
             )
+
+    def _poll_open_exit_orders(self) -> None:
+        """Targeted poll: check whether any open TSL/OCO orders have triggered.
+
+        Lightweight alternative to full reconciliation — only fetches order status
+        for symbols with a known exit order ID. Called on a 5-minute cadence
+        between 4h candle iterations so that stop-out events get recorded
+        promptly instead of waiting up to 4 hours.
+        """
+        if self.config.get("DRY_RUN", False) or not self.active_positions:
+            return
+
+        triggered: list[str] = []
+        for symbol, pos in list(self.active_positions.items()):
+            exit_order_id = pos.get("tsl_order_id") or pos.get("oco_order_id")
+            if not exit_order_id or exit_order_id in (
+                "dry_run_tsl_id", "dry_run_oco_id"
+            ):
+                continue
+            try:
+                pair = symbol.replace("-", "/") if "/" not in symbol else symbol
+                order = self.exchange.fetch_order(exit_order_id, pair)
+            except Exception as e:
+                self.logger.debug(
+                    f"  [Poll] fetch_order {exit_order_id} ({symbol}) failed: {e!r}"
+                )
+                continue
+
+            status = (order.get("status") or "").lower()
+            if status not in ("closed", "filled"):
+                continue
+
+            exit_price = _safe_extract_fill_price(order)
+            if exit_price is None or exit_price <= 0:
+                self.logger.warning(
+                    f"  [Poll] {symbol} exit order {exit_order_id} appears closed "
+                    f"but has no valid fill price — deferring to next reconcile"
+                )
+                continue
+
+            fee_info = order.get("fee", {}) or {}
+            exit_reason = "trailing_stop" if pos.get("tsl_order_id") else "oco_exit"
+            self.logger.info(
+                f"  [Poll] {symbol} exit triggered: order={exit_order_id} "
+                f"price=${exit_price:.6g} reason={exit_reason}"
+            )
+            self.tracker.record_sell(
+                symbol=symbol,
+                order_id=exit_order_id,
+                price=exit_price,
+                amount=pos.get("amount", 0),
+                amount_usd=exit_price * pos.get("amount", 0),
+                fee=float(fee_info.get("cost", 0) or 0),
+                fee_currency=fee_info.get("currency", "USD"),
+                entry_price=pos.get("entry_price"),
+                entry_time=pos.get("entry_time"),
+                entry_fee=pos.get("entry_fee", 0),
+                exit_reason=exit_reason,
+            )
+            triggered.append(symbol)
+
+        for symbol in triggered:
+            del self.active_positions[symbol]
+
+        if triggered:
+            self.save_state()
 
     # ------------------------------------------------------------------
     # Data fetching
@@ -781,13 +925,18 @@ class ExecutionEngine:
 
                 if order_id:
                     time.sleep(1)  # Brief wait for fill
+                    order: Optional[Dict[str, Any]] = None
                     try:
                         order = self.exchange.fetch_order(
                             order_id,
                             symbol.replace("-", "/") if "/" not in symbol else symbol,
                         )
-                        filled_amount = order.get("filled", 0.0)
-                    except Exception:
+                        filled_amount = float(order.get("filled", 0.0) or 0.0)
+                    except Exception as e:
+                        self.logger.warning(
+                            f"  [Order] fetch_order failed for {symbol} ({e!r}) — "
+                            "estimating fill amount from ticker"
+                        )
                         ticker = self.exchange.fetch_ticker(
                             symbol.replace("-", "/") if "/" not in symbol else symbol
                         )
@@ -799,11 +948,30 @@ class ExecutionEngine:
                         )
                         continue
 
-                    # Record buy in trade tracker
-                    fill_price = (order.get("average") or sig["current_price"]
-                                  if "order" in dir() else sig["current_price"])
-                    fee_info = order.get("fee", {}) if "order" in dir() else {}
-                    buy_fee = float(fee_info.get("cost", 0))
+                    # Determine actual fill price. Cascade through fallbacks:
+                    # 1. order["average"] (from fetch_order)
+                    # 2. weighted average of order["trades"] fills
+                    # 3. order["price"] for closed limit orders
+                    # 4. fresh ticker price (last resort if order fetch failed)
+                    fill_price = _safe_extract_fill_price(order)
+                    if fill_price is None:
+                        try:
+                            ticker = self.exchange.fetch_ticker(
+                                symbol.replace("-", "/") if "/" not in symbol else symbol
+                            )
+                            fill_price = float(ticker["last"])
+                            self.logger.warning(
+                                f"  [Order] {symbol}: no fill price from order — "
+                                f"using ticker last=${fill_price:.6g}"
+                            )
+                        except Exception:
+                            fill_price = float(sig["current_price"])
+                            self.logger.error(
+                                f"  [Order] {symbol}: no fill price available — "
+                                f"using stale signal price=${fill_price:.6g}"
+                            )
+                    fee_info = (order.get("fee") or {}) if order else {}
+                    buy_fee = float(fee_info.get("cost", 0) or 0)
                     self.tracker.record_buy(
                         symbol=symbol, order_id=order_id, price=fill_price,
                         amount=filled_amount, amount_usd=capital_per_trade,
@@ -824,16 +992,35 @@ class ExecutionEngine:
                         # Derive stop % from the ATR-computed stop price vs current price.
                         # sig["stop_price"] is the trailing stop level from the backtest.
                         stop_price = sig.get("stop_price", 0)
-                        current = sig["current_price"]
-                        if stop_price and current and stop_price < current:
+                        # Use the actual fill price (not the stale signal close)
+                        current = fill_price
+                        stop_price_valid = (
+                            stop_price
+                            and not math.isnan(float(stop_price))
+                            and current
+                            and stop_price < current
+                        )
+                        if stop_price_valid:
                             stop_pct = ((current - stop_price) / current) * 100.0
+                            self.logger.info(
+                                f"  [Stop] {symbol} atr_trailing: ATR stop=${stop_price:.6g}, "
+                                f"price=${current:.6g} -> trailing {stop_pct:.2f}%"
+                            )
                         else:
                             # Fallback: use atr_multiplier as a rough percentage
                             stop_pct = float(coin_params.get("atr_multiplier", 3.0))
-                        self.logger.info(
-                            f"  [Stop] {symbol} atr_trailing: ATR stop=${stop_price:.4f}, "
-                            f"price=${current:.4f} -> trailing {stop_pct:.2f}%"
-                        )
+                            if stop_price and math.isnan(float(stop_price)):
+                                self.logger.warning(
+                                    f"  [Stop] {symbol} atr_trailing: ATR stop is NaN "
+                                    f"(insufficient data warmup or zero range) — "
+                                    f"falling back to atr_multiplier={stop_pct:.2f}%"
+                                )
+                            else:
+                                self.logger.info(
+                                    f"  [Stop] {symbol} atr_trailing: stop_price=${stop_price} "
+                                    f"price=${current:.6g} -> using atr_multiplier "
+                                    f"fallback {stop_pct:.2f}%"
+                                )
                     elif exit_name == "trailing_stop":
                         stop_pct = float(coin_params.get("trailing_stop_pct", 3.0))
                         self.logger.info(
@@ -843,9 +1030,13 @@ class ExecutionEngine:
                         # fixed_sl_tp — stop_pct is the correct WFO-optimised param
                         stop_pct = float(coin_params.get("stop_pct", 3.0))
 
+                    # CRITICAL: store the actual fill price (not the stale signal close).
+                    # Storing sig["current_price"] caused position_closes.csv to record
+                    # bogus entry prices, leading to fake -36% to -54% losses on profitable
+                    # trades. The fill_price comes from order["average"] (or fallbacks).
                     self.active_positions[symbol] = {
                         "entry_order_id": order_id,
-                        "entry_price": sig["current_price"],
+                        "entry_price": fill_price,
                         "entry_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "amount": filled_amount,
                         "stop_pct": stop_pct,
@@ -859,11 +1050,7 @@ class ExecutionEngine:
                     # atr_trailing / trailing_stop -> Kraken trailing-stop order
                     if exit_name == "fixed_sl_tp":
                         tp_pct = float(coin_params.get("take_profit_pct", 6.0))
-                        fill_price = sig["current_price"]
-                        # attempt to use actual fill price if available
-                        if "order" in locals() and "average" in order and order["average"]:
-                            fill_price = float(order["average"])
-
+                        # fill_price was already computed above using safe extraction
                         sl_price = fill_price * (1.0 - (stop_pct / 100.0))
                         tp_price = fill_price * (1.0 + (tp_pct / 100.0))
 
@@ -910,19 +1097,35 @@ class ExecutionEngine:
                         sell_id = self._execute_market_sell_order(symbol, amount)
                         if sell_id:
                             pos = self.active_positions[symbol]
-                            # Record sell in trade tracker
+                            # Record sell in trade tracker — use safe fill price extraction
+                            sell_order: Optional[Dict[str, Any]] = None
                             try:
                                 pair = symbol.replace("-", "/") if "/" not in symbol else symbol
+                                time.sleep(1)  # brief settling time
                                 sell_order = self.exchange.fetch_order(sell_id, pair)
-                                exit_price = sell_order.get("average") or sig["current_price"]
-                                sell_fee_info = sell_order.get("fee", {})
-                            except Exception:
-                                exit_price = sig["current_price"]
-                                sell_fee_info = {}
+                            except Exception as e:
+                                self.logger.warning(
+                                    f"  [Exit] fetch_order failed for {symbol}: {e!r}"
+                                )
+                            exit_price = _safe_extract_fill_price(sell_order)
+                            if exit_price is None or exit_price <= 0:
+                                # Last-resort: fetch fresh ticker
+                                try:
+                                    ticker = self.exchange.fetch_ticker(
+                                        symbol.replace("-", "/") if "/" not in symbol else symbol
+                                    )
+                                    exit_price = float(ticker["last"])
+                                except Exception:
+                                    exit_price = float(sig["current_price"])
+                                self.logger.warning(
+                                    f"  [Exit] {symbol}: using estimated exit price "
+                                    f"${exit_price:.6g} (order fetch returned no fill)"
+                                )
+                            sell_fee_info = (sell_order.get("fee") or {}) if sell_order else {}
                             self.tracker.record_sell(
                                 symbol=symbol, order_id=sell_id, price=exit_price,
                                 amount=amount, amount_usd=exit_price * amount,
-                                fee=float(sell_fee_info.get("cost", 0)),
+                                fee=float(sell_fee_info.get("cost", 0) or 0),
                                 fee_currency=sell_fee_info.get("currency", "USD"),
                                 entry_price=pos.get("entry_price"),
                                 entry_time=pos.get("entry_time"),
@@ -1089,7 +1292,7 @@ class ExecutionEngine:
                     # 4. Execute / Manage trades
                     self._execute_trade_logic(latest_signals, regime_allowance)
 
-                # 5. Wait for next 4h candle close
+                # 5. Wait for next 4h candle close, polling stop orders every N minutes
                 now = time.gmtime()
                 next_hour = ((now.tm_hour // 4) + 1) * 4
                 if next_hour >= 24:
@@ -1099,8 +1302,26 @@ class ExecutionEngine:
 
                 # Buffer (2 minutes) to ensure candle data has fully settled
                 wait_seconds += 120
-                self.logger.info(f"Loop complete. Sleeping {wait_seconds}s until next 4h candle.")
-                time.sleep(max(wait_seconds, 60))
+                self.logger.info(
+                    f"Loop complete. Sleeping {wait_seconds}s until next 4h candle "
+                    f"(polling stop orders every {POLL_INTERVAL_SEC}s)."
+                )
+
+                # Sleep in chunks, polling open exit orders between chunks so that
+                # stops triggered intra-candle get recorded immediately rather than
+                # waiting up to 4h for the next reconcile.
+                elapsed = 0
+                while elapsed < wait_seconds:
+                    chunk = min(POLL_INTERVAL_SEC, wait_seconds - elapsed)
+                    time.sleep(max(chunk, 1))
+                    elapsed += chunk
+                    if elapsed < wait_seconds and self.active_positions:
+                        try:
+                            self._poll_open_exit_orders()
+                        except Exception as e:
+                            self.logger.warning(
+                                f"  [Poll] interim exit-order poll failed: {e!r}"
+                            )
 
         except KeyboardInterrupt:
             self.state = "STOPPED"

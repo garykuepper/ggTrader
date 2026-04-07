@@ -20,6 +20,7 @@ def main() -> None:
     from ggTrader.cli.cmd_dashboard import register_dashboard_parser, run_dashboard
     from ggTrader.cli.cmd_db import register_db_parser, run_db
     from ggTrader.cli.cmd_ingest import register_ingest_parser, run_ingest
+    from ggTrader.cli.cmd_pnl_daily import register_pnl_daily_parser, run_pnl_daily
     from ggTrader.cli.cmd_production import register_production_parser, run_production
     from ggTrader.cli.cmd_report import register_report_parser, run_report
     from ggTrader.cli.cmd_research import register_research_parser, run_research
@@ -36,6 +37,7 @@ def main() -> None:
     register_db_parser(subparsers)
     register_cleanup_parser(subparsers)
     register_dashboard_parser(subparsers)
+    register_pnl_daily_parser(subparsers)
 
     _DISPATCH = {
         "research": run_research,
@@ -48,6 +50,7 @@ def main() -> None:
         "cleanup": run_cleanup,
         "dashboard": run_dashboard,
         "report": run_report,
+        "pnl-daily": run_pnl_daily,
     }
 
     args = parser.parse_args()
