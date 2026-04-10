@@ -1,5 +1,114 @@
 # Changelog
 
+## 2026-04-09
+
+### Audit findings: silent data-loss bugs in the trade-recording layer
+
+A thorough audit of how sell orders are calculated and how transactions are tracked uncovered five distinct bugs that caused trades executed on Kraken to never reach the local CSVs. The PnL math, fee aggregation, deposit-adjustment, and `_safe_extract_fill_price()` cascade were all correct — the bugs were in *which* trades made it into `position_closes.csv`, not in *how* the math was done once they were there.
+
+When `ggt repair --dry-run` was run on the live data: **local `trade_log.csv` had 7 rows, Kraken had at least 50 trades — 43 trades silently dropped over weeks**.
+
+After running the actual repair, the local CSV held 23 closed round trips with the real numbers: **5W / 18L, +$2.29 net PnL, profit factor 1.56, all-time win rate 21.74%**. The previously reported 0% win rate / -$123 loss / -2.32 Sharpe were all artifacts of corrupted local state.
+
+### Fixed (execution_engine.py)
+
+- **Bug A — Emergency rollback sell never recorded**: when OCO or TSL placement failed after a buy fill, the bot did an emergency `_execute_market_sell_order` to flatten the position and then deleted it from `active_positions`. `record_sell` was never called. Buy fee, sell fee, and PnL were all orphaned with no recovery path. Fixed via the new `_handle_emergency_rollback` method which routes through `_record_exit`.
+- **Bug B — Reconcile-skip orphans the position**: when `_reconcile_positions` couldn't extract a fill price for a stale position, the code logged `SKIPPING CSV record` and **still** deleted the position from `active_positions`. The trade became permanently unrecoverable. Fixed: positions stay in `active_positions` with `pending_repair=True` flag for the next reconcile / repair cycle to retry.
+- **Bug C — Untracked-position exits write half a record**: when the reconciler discovered a position on the exchange that wasn't in local state, it added it with `entry_price=None`. Subsequent `record_sell` calls landed in `trade_log.csv` but skipped `position_closes.csv` (the line-111 guard). Fixed via new `TradeTracker.find_open_buy_for(symbol)` which seeds entry data from the trade log via FIFO matching.
+- **Bug D — `record_sell` used stored amount instead of actual filled amount**: all sell paths passed `pos.get("amount")` instead of reading the order's `filled` field. Partial fills or dust would record the wrong quantity. Fixed via the new `_safe_extract_filled_amount` helper, baked into `_record_exit`.
+- **Bug E — Balance snapshot poisoned on fetch failure**: `_get_total_portfolio_usd()` returned `START_CASH` (default $1000) on any exchange exception, then the caller wrote that fake value to `balance_snapshots.csv`, poisoning every equity-based metric. Fixed: returns `Optional[float]`, both call sites handle `None` (snapshot writer skips, position sizer aborts the entry).
+
+### Refactored
+
+- **`_record_exit` helper**: extracted the "fetch order → extract price → record sell" sequence into a single method on `ExecutionEngine`. All four sell paths (strategy_signal, reconcile, poll, emergency rollback) now go through this one helper, so any future fix only needs to be applied in one place. The helper takes an `allow_ticker_fallback` flag to differentiate "fresh sells we just placed" (where ticker is fine) from "stale exits we discovered later" (where ticker would be wrong).
+- **`_safe_extract_filled_amount`**: new module-level helper that mirrors `_safe_extract_fill_price` but for the order's filled quantity. Used by `_record_exit` to ensure the recorded amount is the real exchange fill, not the bot's pre-trade expectation.
+
+### Added: `ggt pnl-daily` auto-syncs from Kraken before reading any CSV
+
+The most important fix because it heals all five bugs after the fact even when other defenses miss something. At the very top of `run_pnl_daily`, the new `_autosync_from_kraken` helper:
+
+1. Builds a Kraken CCXT client from `.env` credentials.
+2. Calls `TradeTracker.sync_from_kraken` (idempotent, dedupes by `order_id`) which appends new trades to `trade_log.csv` and rebuilds `position_closes.csv` from scratch via FIFO matching.
+3. On failure (e.g. network outage, missing API keys), warns and continues with stale CSV data — a `⚠️ STALE DATA` banner is added to the top of both the HTML Telegram message and the markdown report so the user immediately sees that the numbers may be behind reality.
+
+A new `--no-sync` flag skips the sync for fast offline runs. Default behavior is to sync on every invocation.
+
+### Added: `ggt repair` CLI command for manual recovery
+
+New subcommand at [src/ggTrader/cli/cmd_repair.py](../src/ggTrader/cli/cmd_repair.py) that explicitly runs the same `sync_from_kraken` + `_rebuild_position_closes` flow as the auto-sync, separate from the daily report. Useful for one-off cleanup after a known incident, backfilling history, or auditing whether local state matches Kraken.
+
+```bash
+ggt repair                       # full sync, rebuild position_closes
+ggt repair --since YYYY-MM-DD    # limit to recent trades
+ggt repair --dry-run             # report the gap without writing
+```
+
+### Fixed: mixed-precision ISO8601 timestamps in CSVs
+
+A latent bug surfaced after the first repair run because `position_closes.csv` ended up with mixed-precision timestamps (some rows had microseconds from `sync_from_kraken`'s `datetime` field, others didn't from the live writer). `pd.to_datetime` with no `format` arg crashed on the mix. Fixed: all 5 `pd.to_datetime` call sites in `live_metrics.py` and `pnl_report_builder.py` now pass `format="ISO8601"` which tolerates both precisions and any timezone representation (Z, +00:00, -0700). The `TradeTracker.get_*` accessors no longer auto-parse via `parse_dates` — callers parse explicitly when needed.
+
+### Verification
+
+- Local lint: all touched files pass ruff cleanly.
+- `ggt repair --dry-run` against live data confirmed 43 missing trades (the smoking gun).
+- `ggt repair` (live data) added all 43 trades and rebuilt position_closes.csv with 23 round trips.
+- `ggt pnl-daily --no-notify --print` produced a clean report with the new metrics: `+0.95% trading return, Sharpe 1.85, profit factor 1.56`.
+- Telegram test: HTML message rendered correctly with monospace tables, no STALE banner (sync succeeded).
+- Live trader rebuilt and restarted: `[Reconcile] State verified: 3 position(s) match exchange`, no `SKIPPING CSV record` errors, polling cadence 300s.
+
+## 2026-04-08
+
+### Fixed: wrong stored entry_price from CCXT `order["average"]`
+
+PENGU was reporting cost ≈ $54.79 in the daily PnL when the actual Kraken fill was $24.98. Root cause: `_safe_extract_fill_price()` in [execution_engine.py](../src/ggTrader/core/execution_engine.py) preferred `order["average"]` from CCXT, which on Kraken can return a stale or partial-fill snapshot value while `order["filled"]` reflects the full cumulative volume — yielding a bogus VWAP when stored as `entry_price` in `active_positions.json`.
+
+For the PENGU order: stored `entry_price=0.013651` × `amount=4013.49 = $54.79`, but real `cost=$24.98`, real VWAP `0.006225`. A cross-check against Kraken via `fetch_order` confirmed the discrepancy and also surfaced a wrong BNB stored entry (`906.02` vs real `606.68`) — interesting because the BNB OCO levels on Kraken were placed correctly off the real price, so the stale value crept into `active_positions.json` separately from the OCO placement path.
+
+**Fix**: prefer `order["cost"] / order["filled"]` as the primary fill-price source. CCXT's standardized `cost` is the total quote-currency value across all fills, so the ratio is always the true VWAP. `order["average"]` is now the second-choice fallback. Code change is the new branch at the top of `_safe_extract_fill_price()`.
+
+Also patched the existing bad entries in `data/active_positions.json`:
+- PENGU: `entry_price` 0.013651 → 0.006225
+- BNB: `entry_price` 906.02 → 606.68
+
+The PENGU trailing stop on Kraken (`OGRAXH-QLJ7U-57J5EX`) was sized off the wrong entry (`stop_pct=12.15%` derived from ATR vs the doubled price) and may need to be cancelled and re-placed. The BNB OCO was already at correct levels.
+
+## 2026-04-07
+
+### Fixed: phantom +72% return from manual deposits
+
+The daily PnL report was reporting `Total return +72%` because it computed return as `(latest_balance / first_balance) - 1`, treating manual capital injections as trading profit. With $200 of fresh deposits (April 1) on a starting balance of ~$135, that math inflated apparent profit by exactly $200.
+
+**Fix**: deposit-aware equity curve.
+
+- New module [src/ggTrader/utils/kraken_ledger.py](../src/ggTrader/utils/kraken_ledger.py) — fetches deposit and withdrawal history via `exchange.fetch_deposits()` + `exchange.fetch_withdrawals()` (CCXT). Persists to `~/.cache/ggtrader/kraken_ledger.json` with a 1h TTL and incremental fetch (only pulls entries newer than the last cached one).
+- New helper `apply_deposit_adjustment()` in [live_metrics.py](../src/ggTrader/utils/live_metrics.py) — subtracts cumulative net deposits made AFTER the first balance snapshot from each subsequent balance, isolating trading PnL from capital flows.
+- The report now computes Sharpe / Sortino / Max DD / Calmar / total return on the **deposit-adjusted** equity, while still showing the **raw Kraken balance** in the snapshot row so the user sees both numbers correctly.
+
+Result on this account: trading return flipped from `+72.34%` (wrong) to `-1.89%` (real, deposit-adjusted from `$134.72 → $132.18` over the live tracking window).
+
+Initial implementation tried `fetch_ledger()` first but Kraken returns mostly `type='trade'` entries by default — the deposit/withdrawal entries needed exchange-specific filter params. Switched to `fetch_deposits()` + `fetch_withdrawals()` directly which is simpler and more reliable.
+
+### Added: HTML-formatted Telegram messages
+
+Telegram's Markdown parser doesn't render tables and is finicky with special characters, so the previous plain-text-only summary felt cramped. Switched to Telegram's `parse_mode=HTML` which supports `<b>`, `<i>`, `<pre>`, `<blockquote>`.
+
+- New `build_daily_pnl_summary_html()` in [pnl_report_builder.py](../src/ggTrader/utils/pnl_report_builder.py) renders the report with bold section headers and `<pre>`-block monospace tables. Cells are HTML-escaped via a `_h()` helper to avoid injection from symbol names or alert messages.
+- Helper functions `_render_kv_table()` (2-column key/value with right-padded keys) and `_render_table()` (n-column with header separator) produce ASCII table layouts that align cleanly inside Telegram's monospace `<pre>` rendering.
+- Open positions table now fetches **current prices** via the public Kraken ticker and computes **unrealized PnL** per position plus a portfolio total — something the markdown report never showed.
+- The CLI [cmd_pnl_daily.py](../src/ggTrader/cli/cmd_pnl_daily.py) dispatches by notifier type: Telegram gets the HTML summary inline + the markdown file as an attachment via `sendDocument`; Discord gets the full markdown.
+
+### Fixed: scheduled cron run silently failed
+
+The `daily_pnl_report.sh` cron wrapper used `docker exec -T` (the `-T` flag is only valid for `docker compose exec`, not plain `docker exec`). Cron fired at 8am as scheduled but the script crashed immediately with `unknown shorthand flag: 'T'`. Removed the flag and added an explicit `PATH` export so the script works under cron's minimal environment.
+
+Also added the cron entry: `0 8 * * * /home/flynn/ggTrader/scripts/daily_pnl_report.sh` (daily at 8am America/Los_Angeles).
+
+### Cleanup: archived corrupted CSV history
+
+The legacy `position_closes.csv` and `trade_log.csv` were full of bogus PnL records from the entry-price storage bug fixed yesterday. Archived them to `data/live/archive_20260406_corrupted_pre_fix/` and started fresh with empty header-only files. Going forward all new trades use the corrected entry-price recording from the 2026-04-06 fixes.
+
+`balance_snapshots.csv` was kept as-is — those are real Kraken balance fetches and the only data we can use to compute equity-curve metrics historically.
+
 ## 2026-04-06
 
 ### Investigation: bot was profitable, CSV PnL was wrong

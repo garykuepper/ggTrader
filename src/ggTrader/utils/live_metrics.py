@@ -110,12 +110,58 @@ def compute_consecutive_losses(net_pnl: pd.Series) -> int:
     return streak
 
 
+def apply_deposit_adjustment(
+    equity: pd.Series, cumulative_net_deposits: pd.Series
+) -> pd.Series:
+    """Subtract net external capital flows from a balance equity curve.
+
+    This isolates "trading PnL" from balance changes caused by deposits and
+    withdrawals. The starting equity is preserved (deposits before T0 are
+    already in the first balance) — only flows AFTER T0 are subtracted.
+
+    Args:
+        equity: Balance series indexed by tz-aware UTC timestamps.
+        cumulative_net_deposits: Cumulative net deposits (deposits minus
+            withdrawals) indexed by tz-aware UTC timestamps. Built from
+            ``kraken_ledger.cumulative_net_deposits_usd()``.
+
+    Returns:
+        Adjusted equity Series. ``adjusted[t] = balance[t] - (net_deposits[t]
+        - net_deposits[T0])``, so the first value is unchanged.
+    """
+    if equity is None or equity.empty:
+        return pd.Series(dtype=float)
+    if cumulative_net_deposits is None or cumulative_net_deposits.empty:
+        return equity.copy()
+
+    # Reindex deposits onto the equity timeline using forward-fill so each
+    # balance snapshot is paired with the cumulative deposits known at that
+    # point in time. Use union to capture deposit timestamps that fall between
+    # balance snapshots.
+    combined_index = equity.index.union(cumulative_net_deposits.index).sort_values()
+    deposits_aligned = (
+        cumulative_net_deposits.reindex(combined_index).ffill().fillna(0.0)
+    )
+    deposits_at_t0 = float(deposits_aligned.loc[: equity.index[0]].iloc[-1]) if len(
+        deposits_aligned.loc[: equity.index[0]]
+    ) > 0 else 0.0
+
+    deposits_on_equity = deposits_aligned.reindex(equity.index, method="ffill").fillna(0.0)
+    adjusted = equity - (deposits_on_equity - deposits_at_t0)
+    return adjusted
+
+
 def equity_curve_from_balance(balances: pd.DataFrame) -> pd.Series:
     """Extract a clean equity Series from a TradeTracker balance_snapshots DataFrame."""
     if balances is None or balances.empty or "total_usd" not in balances.columns:
         return pd.Series(dtype=float)
     df = balances.copy()
-    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+    # format="ISO8601" tolerates mixed precision (microseconds vs none) and
+    # mixed timezone representations (Z vs +00:00 vs -0700) that crop up when
+    # rows come from different sources (live writer + sync_from_kraken).
+    df["timestamp"] = pd.to_datetime(
+        df["timestamp"], utc=True, errors="coerce", format="ISO8601"
+    )
     df = df.dropna(subset=["timestamp"]).sort_values("timestamp")
     return pd.Series(df["total_usd"].values, index=df["timestamp"], name="equity")
 
@@ -172,7 +218,9 @@ def summarise_window(
     # Trade-based stats
     if closes is not None and not closes.empty:
         df = closes.copy()
-        df["close_timestamp"] = pd.to_datetime(df["close_timestamp"], utc=True)
+        df["close_timestamp"] = pd.to_datetime(
+            df["close_timestamp"], utc=True, format="ISO8601"
+        )
         window = df[(df["close_timestamp"] >= start) & (df["close_timestamp"] <= end)]
         if not window.empty:
             window = window.sort_values("close_timestamp")

@@ -55,7 +55,7 @@ class TelegramNotifier(BaseNotifier):
     name = "telegram"
     BASE_URL = "https://api.telegram.org/bot{token}"
 
-    def __init__(self, bot_token: str, chat_id: str, parse_mode: str = "Markdown") -> None:
+    def __init__(self, bot_token: str, chat_id: str, parse_mode: str = "HTML") -> None:
         self.bot_token = bot_token
         self.chat_id = chat_id
         self.parse_mode = parse_mode

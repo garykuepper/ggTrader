@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -303,20 +303,76 @@ class TradeTracker:
     def get_trade_log(self) -> pd.DataFrame:
         if not self.trade_log_path.exists():
             return pd.DataFrame(columns=TRADE_LOG_HEADERS)
-        df = pd.read_csv(self.trade_log_path, parse_dates=["timestamp"])
-        return df
+        # Don't auto-parse the timestamp column here — rows can have mixed
+        # ISO8601 precision (microseconds vs none) and mixed timezone
+        # representations (Z, +00:00, -0700) when they come from different
+        # sources (live writer, sync_from_kraken, manual edits). Callers that
+        # need a parsed timestamp should use ``pd.to_datetime(..., format="ISO8601")``.
+        return pd.read_csv(self.trade_log_path)
 
     def get_closed_positions(self) -> pd.DataFrame:
         if not self.position_closes_path.exists():
             return pd.DataFrame(columns=POSITION_CLOSE_HEADERS)
-        df = pd.read_csv(self.position_closes_path, parse_dates=["close_timestamp"])
-        return df
+        return pd.read_csv(self.position_closes_path)
 
     def get_balance_history(self) -> pd.DataFrame:
         if not self.balance_snapshots_path.exists():
             return pd.DataFrame(columns=BALANCE_SNAPSHOT_HEADERS)
-        df = pd.read_csv(self.balance_snapshots_path, parse_dates=["timestamp"])
-        return df
+        return pd.read_csv(self.balance_snapshots_path)
+
+    def find_open_buy_for(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """Return the oldest unmatched BUY for ``symbol`` from the trade log.
+
+        Used by the live trader's reconciler when it discovers a position on
+        the exchange that has no entry in ``active_positions``. Instead of
+        leaving ``entry_price=None`` (which would later cause ``record_sell``
+        to skip writing a position_closes row — Bug C in the 2026-04-09
+        audit), the reconciler can call this to seed the entry data from the
+        local trade log.
+
+        Pairs FIFO: counts BUY and SELL rows for the symbol; if the running
+        BUY count exceeds the running SELL count, returns the details of the
+        oldest still-unmatched BUY. Returns ``None`` if every BUY is already
+        matched (or there are no BUYs at all).
+
+        The returned dict has keys ``order_id``, ``price``, ``time``, ``fee``,
+        ``amount`` — exactly what ``active_positions[symbol]`` needs for a
+        seeded entry.
+        """
+        df = self.get_trade_log()
+        if df.empty:
+            return None
+        df = df[df["symbol"] == symbol].copy()
+        if df.empty:
+            return None
+        # Parse to UTC for a correct chronological sort across mixed
+        # ISO8601 precisions / timezone offsets.
+        df["_ts"] = pd.to_datetime(
+            df["timestamp"], utc=True, errors="coerce", format="ISO8601"
+        )
+        df = df.sort_values("_ts")
+
+        # FIFO match: walk through and pop a buy each time we see a sell
+        open_buys: List[Dict[str, Any]] = []
+        for _, row in df.iterrows():
+            side = str(row["side"]).lower()
+            if side == "buy":
+                open_buys.append(
+                    {
+                        "order_id": str(row["order_id"]),
+                        "price": float(row["price"]),
+                        "time": str(row["timestamp"]),
+                        "fee": float(row["fee"]) if pd.notna(row["fee"]) else 0.0,
+                        "amount": float(row["amount"]),
+                    }
+                )
+            elif side == "sell" and open_buys:
+                open_buys.pop(0)
+
+        if not open_buys:
+            return None
+        # Return the OLDEST unmatched buy (FIFO)
+        return open_buys[0]
 
     # ------------------------------------------------------------------
     # Summary stats

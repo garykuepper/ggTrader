@@ -126,3 +126,107 @@ Enter on 4h signal only if daily trend aligns. Would reduce false entries in cho
 #### Adaptive Position Sizing
 
 Scale position size by inverse volatility (ATR-based) rather than fixed `PORTFOLIO_SHARE=0.10`. Higher-vol coins get smaller positions, lower-vol coins get larger. Reduces portfolio-level drawdown without changing entry/exit logic.
+
+### Cashflow Ledger (deposits / withdrawals)
+
+**Motivation**: TradeTracker only sees the Kraken balance snapshot — it has no concept of "deposit vs. PnL". On ~2026-04-03 the user manually added **$100** to clear Kraken minimum order sizes, and that injection is currently being counted as trading gains. This distorts:
+
+- `balance_change_pct` / total return (currently shows +72.28%, real number is much lower once the deposit is netted out)
+- Sharpe, Sortino, Calmar (computed from the contaminated equity curve)
+- Max drawdown (deposit creates a fake equity step that hides the real DD)
+- The 24h "balance change" line on any day a deposit lands
+
+The unrealized PnL line on the daily report (added 2026-04-07) already tells the real story for open positions (-45.93% on $169.42 cost basis at time of writing), but the all-time health metrics are still misleading.
+
+**Goal**: Track manual cashflows in a small ledger and net them out before computing any return/risk metric.
+
+**Implementation sketch**:
+
+1. **New file** `data/live/cashflows.csv` with columns `timestamp,amount_usd,note` (positive = deposit, negative = withdrawal). Append-only, human-readable.
+2. **New CLI** in `src/ggTrader/cli/cmd_cashflow.py`:
+   - `ggt cashflow add --amount 100 --date 2026-04-03 --note "Kraken min-order top-up"` — append a row
+   - `ggt cashflow list` — print the ledger
+   - `ggt cashflow remove <row_id>` — delete by index (in case of typos)
+3. **Metrics integration** in `src/ggTrader/utils/live_metrics.py`:
+   - New helper `load_cashflows(data_dir) -> pd.DataFrame`
+   - Modify `equity_curve_from_balance()` to accept an optional `cashflows` arg and subtract the cumulative cashflow at each timestamp before returning the equity series. The result is "balance attributable to trading only".
+   - All downstream metrics (`compute_sharpe_ratio`, `compute_sortino_ratio`, `compute_max_drawdown`, `compute_calmar_ratio`, daily returns) inherit the correction for free since they all consume the cleaned equity curve.
+4. **Report integration** in `pnl_report_builder.py`:
+   - Pass cashflows into `_gather_report_data` and on to `equity_curve_from_balance`
+   - Add a "Net deposits" line to the Account Snapshot block (e.g. `Net deposits  +$100.00`) so the adjustment is visible, not hidden
+   - The 24h `balance_change_pct` should also subtract any cashflows that landed inside the window
+5. **Migration / seeding**: on first run after this ships, prompt-or-document the user to backfill the known 2026-04-03 +$100 entry. Just run `ggt cashflow add --amount 100 --date 2026-04-03 --note "Kraken min-order top-up"` once.
+
+**Risks / things to get right**:
+
+- **Tz handling**: cashflow timestamps must be UTC to match balance snapshots. The CLI should accept either `YYYY-MM-DD` (assume UTC midnight) or full ISO8601.
+- **Don't double-count**: if the user later deposits via Kraken's UI and the bot reads the new balance on its next loop, that delta will appear as both a balance jump *and* a ledger entry. Document clearly that the ledger is the source of truth — anything missing from it gets attributed to trading.
+- **Withdrawals**: same machinery, just negative amounts. Test at least one negative case.
+- **Backfill** any historical injections discovered later — the ledger is append-anywhere by timestamp, not append-only.
+
+**Docs to update when implemented**:
+
+- `docs/changelog.md` — implementation entry
+- `docs/live_trading_guide.md` — operator instructions for recording deposits
+- This file — move to "Shipped" or delete
+
+### Notifications & Alerting
+
+#### Real-time Trade Fill Alerts (Telegram/Discord)
+
+**Motivation**: The Kraken app already pings on order fills, but those notifications are context-free — no entry price, no strategy, no PnL, no exit reason. You can't tell from the Kraken alert whether a sell was profitable or which strategy fired it. The daily PnL report catches problems eventually but with up to 24h lag.
+
+**Goal**: Push a rich Telegram/Discord message at each entry and exit so the full picture (entry, exit, hold time, $/% PnL, strategy, exit reason) is visible immediately.
+
+**Scope (phase 1 — fills only)**:
+
+- **BUY alert** at entry fill, formatted like:
+  ```
+  🟢 BUY  ETH-USD  @ $3,180.42
+  strategy: psar_adx
+  size: 0.062 ETH  (~$197)
+  stop: $3,065  (-3.6%)  •  TP: $3,420  (+7.5%)
+  open positions: 6/10
+  ```
+- **SELL alert** at exit fill, formatted like:
+  ```
+  🔴 SELL  ETH-USD  @ $3,254.10
+  entry:   $3,180.42   (held 2d 4h)
+  PnL:     +$4.57   (+2.32%)  ✅
+  reason:  strategy_signal | stop_loss | take_profit | manual
+  strategy: psar_adx
+  open positions: 5/10
+  ```
+- ✅/❌ emoji on PnL so the notification preview tells the story without opening it.
+
+**Implementation sketch** (`src/ggTrader/core/execution_engine.py`):
+
+1. In `__init__`: `self.notifiers = build_notifiers_from_env()` — same pattern as the daily PnL command. Reuses existing `src/ggTrader/utils/notifier.py` (already supports Telegram + Discord, no new deps).
+2. Add a small `self._notify(msg)` helper that loops `self.notifiers` and swallows exceptions so a Telegram outage cannot crash the trader loop.
+3. Hook points (all data needed is already in scope at these lines):
+   - **Entry fill**: after the successful `create_order` calls around `execution_engine.py:824` and `:870`. Format from the `pos` dict that's about to be written into `active_positions.json` (real fill price, stop, TP, strategy).
+   - **Exit fill (strategy signal)**: at `execution_engine.py:1133`, where `exit_reason="strategy_signal"` is set. Compute realized PnL from `pos["entry_price"]` (now correct post-2026-04-06 fix) vs. fill price.
+   - **Exit fill (stop/TP)**: in the TSL/OCO interim polling path (added 2026-04-06) — same formatting, with `reason` set from the order type that closed it.
+4. Hold time: `datetime.now(tz) - pos["entry_time"]`, formatted as `Xd Yh` or `Yh Zm`.
+
+**Phase 2 (optional, behind a separate env flag)**:
+
+- **Regime-blocked entries**: alert when a signal fired but the bear-regime gate or `MAX_COINS_PER_STRATEGY` cap suppressed it. Useful to know "the bot saw something but didn't act." Hook point: inside `_execute_trade_logic` around `execution_engine.py:907`.
+- **Daily running tally** appended to the end of any loop that produced trades: "Today: 3 closed, 2W/1L, +$8.40". Cheap because the daily PnL builder can already produce this.
+- **Separate Telegram chat IDs** for entries vs. exits vs. blocked-signals so each channel can be muted independently. Would need `TELEGRAM_CHAT_ID_FILLS`, `TELEGRAM_CHAT_ID_SIGNALS` env vars and a small refactor of `build_notifiers_from_env`.
+
+**Phase 3 (probably not worth it)**:
+
+- Per-loop raw-signal alerts for every coin. On a 4h × 29-symbol cadence this is too noisy and the daily report already covers it.
+
+**Risks / things to get right**:
+
+- **Don't double-fire on restarts**: the 20:11–20:22 restart cycles today would have spammed entries if alerts triggered on `Loaded N active positions from state`. Only fire from the actual `create_order` success paths, never from state reload.
+- **Rate limits**: Telegram allows ~30 msg/sec to different chats but only ~1/sec to the same chat. Fills are infrequent enough that this won't matter, but the `_notify` helper should still catch 429s and back off.
+- **Stop/TP polling lag**: the 5-minute interim poll added 2026-04-06 means stop fills are detected within 5 min, not 4h. Alerts will inherit that latency — fine, but worth noting in the message ("detected at HH:MM, actual fill ~earlier").
+
+**Docs to update when implemented**:
+
+- `docs/changelog.md` — entry under the implementation date
+- This file — move this section out of "Planned Experiments" into a "Shipped" note, or delete it
+- `docs/live_trading_guide.md` — add the new env vars / behavior to the operator-facing docs

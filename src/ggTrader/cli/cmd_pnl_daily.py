@@ -53,6 +53,17 @@ def register_pnl_daily_parser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         help="Also print the markdown report to stdout",
     )
+    parser.add_argument(
+        "--no-sync",
+        action="store_true",
+        help=(
+            "Skip the Kraken auto-sync that runs at the start of the report. "
+            "By default, the report syncs trade history from Kraken first so "
+            "any trades the live trader skipped (e.g. emergency rollbacks, "
+            "fill-price extraction failures) get healed before the metrics "
+            "are computed. Use --no-sync for fast offline runs only."
+        ),
+    )
 
 
 def _parse_date(s: str | None) -> datetime | None:
@@ -69,6 +80,7 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
     from ggTrader.utils.notifier import TelegramNotifier, build_notifiers_from_env
     from ggTrader.utils.pnl_report_builder import (
         build_daily_pnl_report,
+        build_daily_pnl_summary_html,
         build_daily_pnl_summary_text,
     )
 
@@ -83,6 +95,19 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
     until = _parse_date(args.until) or datetime.now(timezone.utc)
     since = _parse_date(args.since) or (until - timedelta(days=1))
 
+    # Auto-sync from Kraken before reading any local CSV. This is the safety
+    # net for the entire trade-recording layer: any sells that the live trader
+    # skipped (Bug A emergency rollback, Bug B reconcile-skip, Bug C untracked
+    # exit) are pulled from Kraken's authoritative trade history and the
+    # position_closes.csv is rebuilt via FIFO matching. Failures degrade
+    # gracefully: a STALE banner is added to the report and the existing CSVs
+    # are used as-is.
+    stale_warning: str | None = None
+    if not args.no_sync:
+        stale_warning = _autosync_from_kraken(args.data_dir)
+    else:
+        print("[Sync] --no-sync set — skipping Kraken sync.")
+
     print(f"Building PnL report for {since.date()} → {until.date()}...")
 
     # Full markdown report (file output, Discord embed-friendly)
@@ -91,26 +116,65 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
         active_positions_path=args.positions_file,
         since=since,
         until=until,
+        stale_warning=stale_warning,
     )
 
-    # Plain-text summary (Telegram-friendly — no tables, no markdown syntax)
+    # Plain-text summary (kept for stdout printing and as a fallback if HTML
+    # rendering ever fails on Telegram's side).
     summary_text = build_daily_pnl_summary_text(
         data_dir=args.data_dir,
         active_positions_path=args.positions_file,
         since=since,
         until=until,
+        stale_warning=stale_warning,
     )
 
-    # Save markdown file to disk
+    # HTML summary with monospace tables — what we actually push to Telegram.
+    summary_html = build_daily_pnl_summary_html(
+        data_dir=args.data_dir,
+        active_positions_path=args.positions_file,
+        since=since,
+        until=until,
+        stale_warning=stale_warning,
+    )
+
+    # Save markdown file to disk. The default filename uses YYYYMMDD so the 8am
+    # cron run produces a clean ``daily_<date>.md`` archive entry. If a file with
+    # the same date already exists (e.g. a manual mid-day re-run after the cron
+    # already wrote one), append a HHMMSS suffix so we never clobber history.
+    # Also maintain a ``latest.md`` symlink for quick access.
     if args.output:
         out_path = Path(args.output)
     else:
+        from zoneinfo import ZoneInfo
+
         out_dir = Path("results/reports")
         out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / f"daily_{until.strftime('%Y%m%d')}.md"
+        # Use Pacific time for the filename so it matches the date shown
+        # inside the report (which also uses America/Los_Angeles).
+        local_until = until.astimezone(ZoneInfo("America/Los_Angeles"))
+        date_str = local_until.strftime("%Y%m%d")
+        out_path = out_dir / f"daily_{date_str}.md"
+        if out_path.exists():
+            time_str = local_until.strftime("%H%M%S")
+            out_path = out_dir / f"daily_{date_str}_{time_str}.md"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(report_md)
     print(f"Report saved to: {out_path}")
+
+    # Update ``latest.md`` symlink (best-effort — falls back to a copy if the
+    # filesystem doesn't support symlinks, e.g. some Docker volume drivers).
+    if not args.output:
+        latest = out_path.parent / "latest.md"
+        try:
+            if latest.exists() or latest.is_symlink():
+                latest.unlink()
+            latest.symlink_to(out_path.name)
+        except OSError:
+            try:
+                latest.write_text(report_md)
+            except OSError:
+                pass
 
     if args.print_to_stdout:
         print()
@@ -126,13 +190,12 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
             print("[Notify] No notification channels configured — local file only.")
             return
         for n in notifiers:
-            # Telegram: send plain-text summary inline (markdown tables don't render).
-            # Other channels (Discord) get the full markdown.
+            # Telegram: send the HTML summary inline (monospace tables via <pre>).
+            # Other channels (Discord) get the full markdown report.
             if isinstance(n, TelegramNotifier):
-                # Disable Telegram's markdown parser so emojis/symbols pass through cleanly
                 original_mode = n.parse_mode
-                n.parse_mode = ""
-                ok = n.send_text(summary_text)
+                n.parse_mode = "HTML"
+                ok = n.send_text(summary_html)
                 n.parse_mode = original_mode
                 # Also attach the full markdown file for the detailed view
                 if ok and out_path.exists():
@@ -142,6 +205,45 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
             print(f"[Notify] {n.name}: {'sent' if ok else 'FAILED'}")
     else:
         print("[Notify] --no-notify set — skipping push.")
+
+
+def _autosync_from_kraken(data_dir: str) -> str | None:
+    """Pull recent trades from Kraken and rebuild position_closes.csv.
+
+    Returns ``None`` on success, or a short human-readable error string on
+    failure (e.g. ``"Kraken unreachable: ..."``). The caller passes the
+    returned string into the report builders as ``stale_warning`` so the
+    user sees a clear marker at the top of the daily report when the data
+    may be behind reality.
+
+    The sync is idempotent: ``TradeTracker.sync_from_kraken`` dedupes by
+    order_id and rebuilds the position_closes table via FIFO matching, so
+    repeated calls are safe.
+    """
+    import os
+
+    from ggTrader.core.trade_tracker import TradeTracker
+    from ggTrader.data.live.cached_loader import CachedExchangeLoader
+
+    try:
+        loader = CachedExchangeLoader(exchange_id="kraken")
+        exchange = loader.exchange
+        if not exchange.apiKey:
+            exchange.apiKey = os.getenv("KRAKEN_KEY")
+            exchange.secret = os.getenv("KRAKEN_SECRET")
+        if not exchange.apiKey or not exchange.secret:
+            msg = "KRAKEN_KEY/SECRET missing — cannot auto-sync"
+            print(f"[Sync] WARNING: {msg}")
+            return msg
+
+        tracker = TradeTracker(data_dir=data_dir)
+        new_count = tracker.sync_from_kraken(exchange)
+        print(f"[Sync] {new_count} new trade(s) pulled from Kraken")
+        return None
+    except Exception as e:
+        msg = f"Kraken sync failed ({e!r}) — report uses local CSV as-is"
+        print(f"[Sync] WARNING: {msg}")
+        return msg
 
 
 def _send_telegram_document(notifier, file_path: Path, caption: str = "") -> bool:

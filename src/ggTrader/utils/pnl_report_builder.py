@@ -17,6 +17,7 @@ Used by ``ggt pnl-daily`` CLI command and the cron wrapper script.
 
 from __future__ import annotations
 
+import html as _html
 import json
 import math
 from datetime import datetime, timedelta, timezone
@@ -24,13 +25,62 @@ from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
+from zoneinfo import ZoneInfo
 
 from ggTrader.core.trade_tracker import TradeTracker
+from ggTrader.utils.kraken_ledger import (
+    cumulative_net_deposits_usd,
+    fetch_kraken_ledger_cached,
+)
 from ggTrader.utils.live_metrics import (
+    apply_deposit_adjustment,
     compute_consecutive_losses,
     equity_curve_from_balance,
     summarise_window,
 )
+
+# All user-facing dates/times in reports use this timezone.
+_DISPLAY_TZ = ZoneInfo("America/Los_Angeles")
+
+
+def _h(s: Any) -> str:
+    """HTML-escape a value for Telegram parse_mode=HTML.
+
+    Telegram HTML mode requires escaping only ``<``, ``>`` and ``&``. We pass
+    ``quote=False`` so quotes pass through (they're valid inside text and we
+    don't emit them inside tag attributes).
+    """
+    return _html.escape(str(s), quote=False)
+
+
+def _render_kv_table(rows: list[tuple[str, str]]) -> str:
+    """Render a 2-column key/value block aligned for monospace display.
+
+    Designed to live inside a Telegram ``<pre>`` block. Right-pads keys to
+    the longest key width so values line up.
+    """
+    if not rows:
+        return ""
+    key_w = max(len(k) for k, _ in rows)
+    return "\n".join(f"{k.ljust(key_w)}  {v}" for k, v in rows)
+
+
+def _render_table(headers: list[str], rows: list[list[str]]) -> str:
+    """Render an aligned ASCII table for use inside a ``<pre>`` block.
+
+    All cells are stringified and left-justified to the max width of the
+    column. A dashed separator row sits between header and body.
+    """
+    if not rows:
+        return ""
+    cols = list(zip(*([headers] + rows)))
+    widths = [max(len(str(c)) for c in col) for col in cols]
+    sep = "  "
+    lines = [sep.join(str(h).ljust(w) for h, w in zip(headers, widths))]
+    lines.append(sep.join("-" * w for w in widths))
+    for r in rows:
+        lines.append(sep.join(str(c).ljust(w) for c, w in zip(r, widths)))
+    return "\n".join(lines)
 
 # Default thresholds for ⚠️ alert callouts. Override via run_config or CLI args.
 # balance_floor is the critical intervention level. balance_warning is set equal
@@ -61,6 +111,57 @@ def _fmt_float(x: Optional[float], decimals: int = 2) -> str:
     if x is None or (isinstance(x, float) and (math.isnan(x) or math.isinf(x))):
         return "—"
     return f"{x:.{decimals}f}"
+
+
+def _fmt_dt(dt: datetime, fmt: str = "%Y-%m-%d %H:%M") -> str:
+    """Format a datetime in the display timezone (America/Los_Angeles)."""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(_DISPLAY_TZ).strftime(fmt)
+
+
+def _fmt_ts(ts: Any, fmt: str = "%m-%d %H:%M") -> str:
+    """Format a pandas Timestamp / string in the display timezone."""
+    try:
+        if isinstance(ts, str):
+            ts = pd.Timestamp(ts)
+        if hasattr(ts, "tz_localize") and ts.tzinfo is None:
+            ts = ts.tz_localize("UTC")
+        return ts.tz_convert(_DISPLAY_TZ).strftime(fmt)
+    except Exception:
+        return str(ts)
+
+
+def _fetch_current_prices(symbols: list[str]) -> dict[str, float]:
+    """Fetch current last-trade prices for the given dashed symbols (e.g. BTC-USD).
+
+    Uses Kraken's public ticker endpoint via ccxt — no API key needed.
+    Returns ``{symbol: price}`` for symbols that resolved successfully; symbols
+    that error out are silently omitted (the caller renders "—" for missing).
+    Network or import failures degrade to an empty dict so the report still
+    builds offline.
+    """
+    if not symbols:
+        return {}
+    try:
+        import ccxt  # type: ignore
+
+        ex = ccxt.kraken({"enableRateLimit": True})
+        ex.load_markets()
+    except Exception:
+        return {}
+
+    out: dict[str, float] = {}
+    for sym in symbols:
+        ccxt_sym = sym.replace("-", "/")
+        try:
+            t = ex.fetch_ticker(ccxt_sym)
+            price = t.get("last") or t.get("close")
+            if price:
+                out[sym] = float(price)
+        except Exception:
+            continue
+    return out
 
 
 def _load_active_positions(path: Path) -> dict[str, dict]:
@@ -114,13 +215,50 @@ def _gather_report_data(
     """Collect all data needed for both markdown and plain-text report builders.
 
     Returns a dict with: window, alltime, alerts, snapshot_balance, all_consec,
-    closes, active, summary_all, since, until.
+    closes, active, summary_all, since, until, deposits.
     """
     tracker = TradeTracker(data_dir=data_dir)
     closes = tracker.get_closed_positions()
     balances = tracker.get_balance_history()
     summary_all = tracker.compute_summary_stats()
     active = _load_active_positions(Path(active_positions_path))
+
+    # Fetch deposit/withdrawal history from Kraken (cached locally) so we can
+    # subtract external capital flows from the equity curve. Without this,
+    # manual deposits inflate "total return" with phantom profit.
+    try:
+        ledger_df = fetch_kraken_ledger_cached()
+        cum_deposits = cumulative_net_deposits_usd(ledger_df)
+    except Exception as e:
+        import logging
+
+        logging.getLogger("ggTraderLive").warning(
+            f"  [Report] Could not fetch Kraken ledger ({e!r}) — "
+            f"reporting raw balance (deposits not subtracted)"
+        )
+        ledger_df = pd.DataFrame()
+        cum_deposits = pd.Series(dtype=float)
+
+    deposits_info = {
+        "total_deposits": 0.0,
+        "total_withdrawals": 0.0,
+        "net_deposits": 0.0,
+        "deposit_count": 0,
+    }
+    if ledger_df is not None and not ledger_df.empty:
+        usd_only = ledger_df[ledger_df["currency"].isin(["USD", "ZUSD"])]
+        deposits_info["total_deposits"] = float(
+            usd_only[usd_only["type"] == "deposit"]["amount"].sum()
+        )
+        deposits_info["total_withdrawals"] = float(
+            usd_only[usd_only["type"] == "withdrawal"]["amount"].sum()
+        )
+        deposits_info["net_deposits"] = (
+            deposits_info["total_deposits"] - deposits_info["total_withdrawals"]
+        )
+        deposits_info["deposit_count"] = int(
+            len(usd_only[usd_only["type"] == "deposit"])
+        )
 
     window = summarise_window(
         closes,
@@ -131,8 +269,8 @@ def _gather_report_data(
 
     alltime: dict[str, Any] = {}
     if balances is not None and not balances.empty:
-        equity = equity_curve_from_balance(balances)
-        if not equity.empty:
+        raw_equity = equity_curve_from_balance(balances)
+        if not raw_equity.empty:
             from ggTrader.utils.live_metrics import (
                 compute_calmar_ratio,
                 compute_max_drawdown,
@@ -140,6 +278,10 @@ def _gather_report_data(
                 compute_sortino_ratio,
                 daily_returns_from_equity,
             )
+
+            # Apply deposit adjustment so subsequent metrics reflect TRADING
+            # PnL only, not capital flows.
+            equity = apply_deposit_adjustment(raw_equity, cum_deposits)
 
             returns = daily_returns_from_equity(equity)
             if len(returns) >= 2:
@@ -155,19 +297,26 @@ def _gather_report_data(
             alltime["balance_change_pct"] = (
                 (alltime["balance_last"] / alltime["balance_first"]) - 1.0
             ) * 100.0
+            # Also expose the raw (non-adjusted) current balance for the snapshot
+            alltime["raw_balance_last"] = float(raw_equity.iloc[-1])
 
     if closes is not None and not closes.empty:
         sorted_closes = closes.copy()
         sorted_closes["close_timestamp"] = pd.to_datetime(
-            sorted_closes["close_timestamp"], utc=True, errors="coerce"
+            sorted_closes["close_timestamp"],
+            utc=True,
+            errors="coerce",
+            format="ISO8601",
         )
         sorted_closes = sorted_closes.sort_values("close_timestamp")
         all_consec = compute_consecutive_losses(sorted_closes["net_pnl"])
     else:
         all_consec = 0
 
+    # Snapshot should show ACTUAL Kraken balance (not the deposit-adjusted
+    # trading equity which is what we use for return %).
     snapshot_balance = (
-        alltime.get("balance_last")
+        alltime.get("raw_balance_last")
         or window.get("balance_end")
         or summary_all.get("current_balance")
     )
@@ -189,6 +338,7 @@ def _gather_report_data(
         "summary_all": summary_all,
         "since": since,
         "until": until,
+        "deposits": deposits_info,
     }
 
 
@@ -211,11 +361,17 @@ def build_daily_pnl_summary_text(
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
     thresholds: Optional[dict[str, float]] = None,
+    stale_warning: Optional[str] = None,
 ) -> str:
     """Plain-text Telegram/Discord-friendly summary (no markdown, no tables).
 
     Designed for messaging apps that handle markdown poorly. Keep it concise —
     the full markdown report should be sent as a file attachment alongside.
+
+    Args:
+        stale_warning: Optional banner shown at the very top of the report.
+            Used when the auto-sync from Kraken at the start of ``ggt pnl-daily``
+            failed and the data may be behind reality.
     """
     since, until = _normalise_window(since, until)
     thresholds = {**DEFAULT_ALERT_THRESHOLDS, **(thresholds or {})}
@@ -229,7 +385,10 @@ def build_daily_pnl_summary_text(
     snapshot_balance = data["snapshot_balance"]
 
     lines: list[str] = []
-    lines.append(f"📊 ggTrader Daily PnL — {until.date()}")
+    if stale_warning:
+        lines.append(f"⚠️ STALE: {stale_warning}")
+        lines.append("")
+    lines.append(f"📊 ggTrader Daily PnL — {_fmt_dt(until, '%Y-%m-%d')}")
     lines.append("")
 
     # Snapshot
@@ -278,7 +437,7 @@ def build_daily_pnl_summary_text(
     lines.append("— All-time —")
     if alltime.get("balance_first") is not None:
         lines.append(
-            f"  Total return: {_fmt_pct(alltime['balance_change_pct'], sign=True)} "
+            f"  Trading return: {_fmt_pct(alltime['balance_change_pct'], sign=True)} "
             f"({_fmt_money(alltime['balance_first'])} → {_fmt_money(alltime['balance_last'])})"
         )
     lines.append(
@@ -317,12 +476,233 @@ def build_daily_pnl_summary_text(
     return "\n".join(lines)
 
 
+def build_daily_pnl_summary_html(
+    data_dir: str = "data/live",
+    active_positions_path: str = "data/active_positions.json",
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
+    thresholds: Optional[dict[str, float]] = None,
+    max_open_rows: int = 10,
+    max_recent_rows: int = 8,
+    stale_warning: Optional[str] = None,
+) -> str:
+    """Build a Telegram HTML-mode daily summary with monospace tables.
+
+    Uses ``<pre>`` blocks (rendered monospace by Telegram) for aligned tables
+    and ``<b>`` for section headers. All dynamic content is HTML-escaped.
+    Designed to fit inside Telegram's 4096-char per-message limit even with
+    a full position book.
+
+    Args:
+        max_open_rows: cap the open-positions table to keep the message
+            under the Telegram limit. Excess rows are summarised as "+N more".
+        max_recent_rows: same cap for the recent closed trades table.
+    """
+    since, until = _normalise_window(since, until)
+    thresholds = {**DEFAULT_ALERT_THRESHOLDS, **(thresholds or {})}
+    data = _gather_report_data(data_dir, active_positions_path, since, until, thresholds)
+    window = data["window"]
+    alltime = data["alltime"]
+    alerts = data["alerts"]
+    active = data["active"]
+    closes = data["closes"]
+    summary_all = data["summary_all"]
+    all_consec = data["all_consec"]
+    snapshot_balance = data["snapshot_balance"]
+    deposits = data.get("deposits", {})
+
+    parts: list[str] = []
+
+    # ── Stale warning banner (sync failure) ─────────────────────────────
+    if stale_warning:
+        parts.append(
+            f"<b>⚠️ STALE DATA</b>\n<i>{_h(stale_warning)}</i>"
+        )
+        parts.append("")
+
+    # ── Header ──────────────────────────────────────────────────────────
+    parts.append(f"<b>📊 ggTrader Daily PnL — {_h(_fmt_dt(until, '%Y-%m-%d'))}</b>")
+    parts.append("")
+
+    # ── Account snapshot ────────────────────────────────────────────────
+    bal_change = window.get("balance_change_pct")
+    bal_change_usd = (
+        (window.get("balance_end") or 0) - (window.get("balance_start") or 0)
+        if window.get("balance_start") is not None
+        else None
+    )
+    snap_rows: list[tuple[str, str]] = [("Balance", _fmt_money(snapshot_balance))]
+    if deposits.get("net_deposits"):
+        snap_rows.append(("Net deposits", _fmt_money(deposits["net_deposits"])))
+    if bal_change is not None:
+        arrow = "▲" if bal_change >= 0 else "▼"
+        snap_rows.append(
+            (
+                "24h change",
+                f"{arrow} {_fmt_money(bal_change_usd, sign=True)} "
+                f"({_fmt_pct(bal_change, sign=True)})",
+            )
+        )
+    if active:
+        snap_rows.append(("Open positions", str(len(active))))
+    parts.append("<b>💰 Account Snapshot</b>")
+    parts.append("<pre>" + _h(_render_kv_table(snap_rows)) + "</pre>")
+    parts.append("")
+
+    # ── Alerts (if any) ─────────────────────────────────────────────────
+    if alerts:
+        parts.append("<b>⚠️ Alerts</b>")
+        # Strip legacy markdown bold (**...**) so it doesn't leak as literal
+        clean_alerts = "\n".join("• " + a.replace("**", "") for a in alerts)
+        parts.append("<blockquote>" + _h(clean_alerts) + "</blockquote>")
+        parts.append("")
+
+    # ── 24h activity ────────────────────────────────────────────────────
+    pnl_emoji = "🟢" if window["net_pnl"] > 0 else ("⚪" if window["net_pnl"] == 0 else "🔴")
+    win_rows: list[tuple[str, str]] = [
+        ("Trades", f"{window['trades']} ({window['wins']}W / {window['losses']}L)"),
+        ("Win rate", _fmt_pct(window["win_rate"])),
+        ("Realised PnL", f"{pnl_emoji} {_fmt_money(window['net_pnl'], sign=True)}"),
+        ("Fees", _fmt_money(window["fees"])),
+    ]
+    if window["best"] is not None:
+        win_rows.append(
+            ("Best", f"{_fmt_money(window['best'], sign=True)} ({window['best_symbol']})")
+        )
+    if window["worst"] is not None and window["worst"] != window["best"]:
+        win_rows.append(
+            ("Worst", f"{_fmt_money(window['worst'], sign=True)} ({window['worst_symbol']})")
+        )
+    parts.append("<b>📊 Last 24h</b>")
+    parts.append("<pre>" + _h(_render_kv_table(win_rows)) + "</pre>")
+    parts.append("")
+
+    # ── All-time health ─────────────────────────────────────────────────
+    at_rows: list[tuple[str, str]] = []
+    if alltime.get("balance_first") is not None:
+        # "Trading return" is deposit-adjusted: starts from the first balance
+        # snapshot, then subtracts any deposits made AFTER that point.
+        at_rows.append(
+            (
+                "Trading return",
+                f"{_fmt_pct(alltime['balance_change_pct'], sign=True)} "
+                f"({_fmt_money(alltime['balance_first'])} → {_fmt_money(alltime['balance_last'])})",
+            )
+        )
+    at_rows.extend(
+        [
+            ("Sharpe", _fmt_float(alltime.get("sharpe"))),
+            ("Sortino", _fmt_float(alltime.get("sortino"))),
+            ("Max DD", _fmt_pct(alltime.get("max_dd"))),
+            ("Calmar", _fmt_float(alltime.get("calmar"))),
+            ("Win rate", _fmt_pct(summary_all.get("win_rate"))),
+            ("Profit factor", _fmt_float(summary_all.get("profit_factor"))),
+            ("Consec losses", str(all_consec)),
+        ]
+    )
+    parts.append("<b>📈 All-Time Health</b>")
+    parts.append("<pre>" + _h(_render_kv_table(at_rows)) + "</pre>")
+    parts.append("")
+
+    # ── Open positions with unrealized PnL ──────────────────────────────
+    if active:
+        items = sorted(active.items())
+        truncated = len(items) - max_open_rows
+        items = items[:max_open_rows]
+        # Fetch current prices for symbols with a known entry. Symbols with
+        # null entry_price (reconciled-from-exchange ghosts like SHIB-USD) are
+        # excluded from the fetch since we can't compute PnL anyway.
+        price_syms = [s for s, p in items if p.get("entry_price")]
+        prices = _fetch_current_prices(price_syms)
+
+        rows: list[list[str]] = []
+        total_cost = 0.0
+        total_value = 0.0
+        for sym, p in items:
+            entry = p.get("entry_price")
+            amt = float(p.get("amount", 0) or 0)
+            cur = prices.get(sym)
+            if entry and amt and cur:
+                cost = entry * amt
+                value = cur * amt
+                pnl = value - cost
+                pnl_pct = (cur / entry - 1.0) * 100.0
+                total_cost += cost
+                total_value += value
+                arrow = "▲" if pnl >= 0 else "▼"
+                rows.append(
+                    [
+                        sym,
+                        f"${cost:,.2f}",
+                        f"${value:,.2f}",
+                        f"{arrow}{_fmt_money(pnl, sign=True)}",
+                        _fmt_pct(pnl_pct, sign=True),
+                    ]
+                )
+            else:
+                # Missing entry or current price — show what we know.
+                cost_str = f"${entry * amt:,.2f}" if (entry and amt) else "—"
+                rows.append([sym, cost_str, "—", "—", "—"])
+
+        parts.append(f"<b>📂 Open Positions ({len(active)})</b>")
+        parts.append(
+            "<pre>"
+            + _h(_render_table(["Symbol", "Cost", "Value", "PnL", "%"], rows))
+            + "</pre>"
+        )
+        if total_cost > 0:
+            total_pnl = total_value - total_cost
+            total_pct = (total_value / total_cost - 1.0) * 100.0
+            tot_emoji = "🟢" if total_pnl >= 0 else "🔴"
+            parts.append(
+                f"{tot_emoji} <b>Unrealized:</b> "
+                f"{_h(_fmt_money(total_pnl, sign=True))} "
+                f"({_h(_fmt_pct(total_pct, sign=True))}) "
+                f"on {_h(_fmt_money(total_cost))} cost basis"
+            )
+        if truncated > 0:
+            parts.append(f"<i>+{truncated} more not shown</i>")
+        parts.append("")
+
+    # ── Recent closed trades ────────────────────────────────────────────
+    if closes is not None and not closes.empty:
+        recent = closes.copy()
+        recent["close_timestamp"] = pd.to_datetime(
+            recent["close_timestamp"],
+            utc=True,
+            errors="coerce",
+            format="ISO8601",
+        )
+        recent = recent.sort_values("close_timestamp", ascending=False).head(max_recent_rows)
+        rows = []
+        for _, r in recent.iterrows():
+            ts = _fmt_ts(r["close_timestamp"], "%m-%d %H:%M")
+            rows.append(
+                [
+                    ts,
+                    str(r["symbol"]),
+                    _fmt_money(r["net_pnl"], sign=True),
+                    _fmt_pct(r["pnl_pct"], sign=True),
+                    str(r["exit_reason"]),
+                ]
+            )
+        parts.append(f"<b>📋 Recent Trades (last {len(rows)}) PT</b>")
+        parts.append(
+            "<pre>"
+            + _h(_render_table(["Time", "Symbol", "PnL", "%", "Reason"], rows))
+            + "</pre>"
+        )
+
+    return "\n".join(parts)
+
+
 def build_daily_pnl_report(
     data_dir: str = "data/live",
     active_positions_path: str = "data/active_positions.json",
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
     thresholds: Optional[dict[str, float]] = None,
+    stale_warning: Optional[str] = None,
 ) -> str:
     """Build a markdown daily PnL report.
 
@@ -332,6 +712,8 @@ def build_daily_pnl_report(
         since: Window start (default: 24h ago, UTC)
         until: Window end (default: now, UTC)
         thresholds: Alert thresholds (default: DEFAULT_ALERT_THRESHOLDS)
+        stale_warning: Optional banner shown at the very top of the report
+            when the auto-sync from Kraken failed.
 
     Returns:
         Markdown string ready to write to file.
@@ -351,12 +733,12 @@ def build_daily_pnl_report(
 
     # ── Render markdown ─────────────────────────────────────────────────
     lines: list[str] = []
-    lines.append(f"# Daily PnL Report — {until.date()}")
+    if stale_warning:
+        lines.append(f"> ⚠️ **STALE DATA**: {stale_warning}")
+        lines.append("")
+    lines.append(f"# Daily PnL Report — {_fmt_dt(until, '%Y-%m-%d')}")
     lines.append("")
-    window_str = (
-        f"{since.strftime('%Y-%m-%d %H:%M')} → "
-        f"{until.strftime('%Y-%m-%d %H:%M')} UTC"
-    )
+    window_str = f"{_fmt_dt(since)} → {_fmt_dt(until)} PT"
     lines.append(f"*Window: {window_str}*")
     lines.append("")
 
@@ -418,7 +800,8 @@ def build_daily_pnl_report(
     lines.append("|---|---|")
     if alltime.get("balance_first") is not None:
         lines.append(
-            f"| Total return | {_fmt_pct(alltime['balance_change_pct'], sign=True)} "
+            f"| Trading return (deposit-adjusted) | "
+            f"{_fmt_pct(alltime['balance_change_pct'], sign=True)} "
             f"(${alltime['balance_first']:.2f} → ${alltime['balance_last']:.2f}) |"
         )
     lines.append(f"| Sharpe (daily) | {_fmt_float(alltime.get('sharpe'))} |")
@@ -430,35 +813,68 @@ def build_daily_pnl_report(
     lines.append(f"| Consecutive losses | {all_consec} |")
     lines.append("")
 
-    # Open positions
+    # Open positions with cost basis, current value, and unrealized PnL
     if active:
+        price_syms = [s for s, p in sorted(active.items()) if p.get("entry_price")]
+        prices = _fetch_current_prices(price_syms)
+
         lines.append(f"## 📂 Open Positions ({len(active)})")
         lines.append("")
-        lines.append("| Symbol | Entry | Amount | Stop % | Exit |")
-        lines.append("|---|---|---|---|---|")
+        lines.append("| Symbol | Cost | Value | Unrealised | % | Exit |")
+        lines.append("|---|---|---|---|---|---|")
+        total_cost = 0.0
+        total_value = 0.0
         for sym, p in sorted(active.items()):
             entry = p.get("entry_price")
-            entry_str = f"${entry:.6g}" if entry else "—"
-            amt = p.get("amount", 0)
-            stop = p.get("stop_pct")
-            stop_str = f"{stop:.2f}%" if stop is not None else "—"
+            amt = float(p.get("amount", 0) or 0)
+            cur = prices.get(sym)
             exit_name = p.get("exit_name", "?")
-            lines.append(f"| {sym} | {entry_str} | {amt:.6g} | {stop_str} | {exit_name} |")
+            if entry and amt and cur:
+                cost = entry * amt
+                value = cur * amt
+                pnl = value - cost
+                pnl_pct = (cur / entry - 1.0) * 100.0
+                total_cost += cost
+                total_value += value
+                arrow = "▲" if pnl >= 0 else "▼"
+                lines.append(
+                    f"| {sym} | {_fmt_money(cost)} | {_fmt_money(value)} | "
+                    f"{arrow}{_fmt_money(pnl, sign=True)} | "
+                    f"{_fmt_pct(pnl_pct, sign=True)} | {exit_name} |"
+                )
+            else:
+                cost_str = _fmt_money(entry * amt) if (entry and amt) else "—"
+                lines.append(
+                    f"| {sym} | {cost_str} | — | — | — | {exit_name} |"
+                )
+        if total_cost > 0:
+            total_pnl = total_value - total_cost
+            total_pct = (total_value / total_cost - 1.0) * 100.0
+            arrow = "▲" if total_pnl >= 0 else "▼"
+            lines.append(
+                f"| **Total** | **{_fmt_money(total_cost)}** | "
+                f"**{_fmt_money(total_value)}** | "
+                f"**{arrow}{_fmt_money(total_pnl, sign=True)}** | "
+                f"**{_fmt_pct(total_pct, sign=True)}** | |"
+            )
         lines.append("")
 
     # Recent trades (last 10)
     if closes is not None and not closes.empty:
         recent = closes.copy()
         recent["close_timestamp"] = pd.to_datetime(
-            recent["close_timestamp"], utc=True, errors="coerce"
+            recent["close_timestamp"],
+            utc=True,
+            errors="coerce",
+            format="ISO8601",
         )
         recent = recent.sort_values("close_timestamp", ascending=False).head(10)
         lines.append("## 📋 Recent Closed Trades (last 10)")
         lines.append("")
-        lines.append("| Time | Symbol | Net PnL | % | Reason |")
+        lines.append("| Time (PT) | Symbol | Net PnL | % | Reason |")
         lines.append("|---|---|---|---|---|")
         for _, r in recent.iterrows():
-            ts = r["close_timestamp"].strftime("%Y-%m-%d %H:%M")
+            ts = _fmt_ts(r["close_timestamp"], "%m-%d %H:%M")
             lines.append(
                 f"| {ts} | {r['symbol']} | {_fmt_money(r['net_pnl'], sign=True)} | "
                 f"{_fmt_pct(r['pnl_pct'], sign=True)} | {r['exit_reason']} |"
@@ -467,6 +883,6 @@ def build_daily_pnl_report(
 
     lines.append("---")
     lines.append("")
-    lines.append(f"*Generated {now.strftime('%Y-%m-%d %H:%M:%S UTC')} by ggTrader pnl-daily*")
+    lines.append(f"*Generated {_fmt_dt(now, '%Y-%m-%d %H:%M:%S')} PT by ggTrader pnl-daily*")
 
     return "\n".join(lines)

@@ -139,6 +139,14 @@ def full_pipeline_config() -> dict[str, Any]:
         # Prevents a single strategy from dominating and creating correlated drawdowns.
         # Set to None to disable. 10 = no single strategy gets more than 10 coins.
         "MAX_COINS_PER_STRATEGY": 10,
+        # Manual symbol blacklist for the LIVE trader. Coins listed here are
+        # dropped from per_coin_params at load time, so the live trader will
+        # never open new positions on them — even if WFO selected them. Existing
+        # open positions are unaffected (they continue to be managed normally
+        # until their exit triggers). Use to ban symbols that are unsuitable
+        # for live trading despite scoring well in backtests (e.g. illiquid,
+        # untradeable on Kraken with our minimum size, or known to misbehave).
+        "SYMBOL_BLACKLIST": ["TRUMP-USD"],
         # Number of warmup bars fetched before START_DATE when computing the BTC EMA.
         # Ensures the EMA is fully warm from bar 1 of the actual backtest window.
         "EMA_WARMUP_BARS": 100,

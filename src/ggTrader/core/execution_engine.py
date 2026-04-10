@@ -38,6 +38,31 @@ from ggTrader.indicators.strategies import (
 )
 
 
+def _safe_extract_filled_amount(order: Optional[Dict[str, Any]]) -> Optional[float]:
+    """Extract the actual filled amount from a CCXT order response.
+
+    Prefers ``order["filled"]`` (the canonical CCXT field for cumulative
+    filled quantity). Falls back to summing ``order["trades"]`` amounts if
+    ``filled`` is missing. Returns ``None`` if no usable value is present
+    so the caller can decide whether to fall back to a stored estimate.
+
+    Used by ``_record_exit`` to ensure ``position_closes.csv`` reflects the
+    real exchange fill quantity rather than the bot's pre-trade expectation
+    (Bug D in the 2026-04-09 audit).
+    """
+    if not order:
+        return None
+    filled = order.get("filled")
+    if filled and float(filled) > 0:
+        return float(filled)
+    trades = order.get("trades") or []
+    if trades:
+        total = sum(float(t.get("amount") or 0) for t in trades)
+        if total > 0:
+            return total
+    return None
+
+
 def _safe_extract_fill_price(order: Optional[Dict[str, Any]]) -> Optional[float]:
     """Robustly extract a meaningful fill price from a CCXT order response.
 
@@ -47,6 +72,15 @@ def _safe_extract_fill_price(order: Optional[Dict[str, Any]]) -> Optional[float]
     """
     if not order:
         return None
+    # Prefer cost/filled — CCXT's standardized 'cost' is the total quote-currency
+    # value of all fills, so cost/filled is the true VWAP. Kraken via CCXT has
+    # been observed to return stale/partial 'average' values on multi-fill orders
+    # (see PENGU 2026-04-02: average=0.01365 but real VWAP=0.006225), so we no
+    # longer trust 'average' as the primary source.
+    cost = order.get("cost")
+    filled = order.get("filled")
+    if cost and filled and float(cost) > 0 and float(filled) > 0:
+        return float(cost) / float(filled)
     avg = order.get("average")
     if avg and float(avg) > 0:
         return float(avg)
@@ -177,6 +211,7 @@ class ExecutionEngine:
         """Load per-coin parameters from WFO run_results.json.
 
         Applies risk-control gates from config:
+        - SYMBOL_BLACKLIST: manual ban list (e.g. illiquid or misbehaving coins)
         - MIN_ROBUSTNESS_SCORE: drops coins whose WFO robustness is too low
         - MAX_COINS_PER_STRATEGY: limits how many coins share the same entry strategy
         """
@@ -199,8 +234,14 @@ class ExecutionEngine:
 
         min_rob = float(self.config.get("MIN_ROBUSTNESS_SCORE", 0.0))
         max_per_strategy = self.config.get("MAX_COINS_PER_STRATEGY", None)
+        # Normalise blacklist to a set for O(1) lookup. Accept symbols with or
+        # without the -USD suffix to be forgiving.
+        raw_blacklist = self.config.get("SYMBOL_BLACKLIST", []) or []
+        blacklist = {s.upper() for s in raw_blacklist}
+        blacklist |= {f"{s.upper()}-USD" for s in raw_blacklist if "-" not in s}
 
         strategy_counts: Dict[str, int] = defaultdict(int)
+        dropped_blacklist: List[str] = []
         dropped_low_rob: List[str] = []
         dropped_strategy_cap: List[str] = []
 
@@ -209,6 +250,11 @@ class ExecutionEngine:
             strategy = result.get("best_strategy")
             exit_strategy = result.get("best_exit")
             robustness = float(result.get("robustness_score", 0.0))
+
+            # Gate 0: manual blacklist (highest priority — runs before any other gate)
+            if symbol.upper() in blacklist:
+                dropped_blacklist.append(symbol)
+                continue
 
             # Gate 1: minimum robustness
             if min_rob > 0 and robustness < min_rob:
@@ -228,6 +274,11 @@ class ExecutionEngine:
                 "robustness_score": robustness,
             }
 
+        if dropped_blacklist:
+            self.logger.info(
+                f"  [Gates] Dropped {len(dropped_blacklist)} coin(s) on "
+                f"SYMBOL_BLACKLIST: {dropped_blacklist}"
+            )
         if dropped_low_rob:
             self.logger.info(
                 f"  [Gates] Dropped {len(dropped_low_rob)} coin(s) below "
@@ -363,71 +414,39 @@ class ExecutionEngine:
             if stale:
                 self.logger.warning(f"  [Reconcile] {len(stale)} position(s) in local state "
                       f"but NOT held on exchange — may have been closed: {stale}")
-                self.logger.info("  [Reconcile] Removing stale positions from local state.")
+                preserved: list[str] = []
                 for s in stale:
                     pos = self.active_positions[s]
-                    # Try to record the exit in the trade tracker
                     exit_order_id = pos.get("tsl_order_id") or pos.get("oco_order_id")
-                    if exit_order_id and exit_order_id not in ("dry_run_tsl_id", "dry_run_oco_id"):
-                        try:
-                            pair = s.replace("-", "/") if "/" not in s else s
-                            closed_order = self.exchange.fetch_order(exit_order_id, pair)
-                            exit_price = _safe_extract_fill_price(closed_order)
-                            if exit_price is None or exit_price <= 0:
-                                # Don't poison the CSV with bogus zero-price records.
-                                # Try fetching recent fills as a last resort.
-                                self.logger.warning(
-                                    f"  [Reconcile] No valid fill price from order "
-                                    f"{exit_order_id} for {s} — trying recent trades"
-                                )
-                                try:
-                                    recent_trades = self.exchange.fetch_my_trades(
-                                        pair, limit=10
-                                    )
-                                    matching = [
-                                        t for t in recent_trades
-                                        if t.get("order") == exit_order_id
-                                    ]
-                                    if matching:
-                                        total_amt = sum(float(t["amount"]) for t in matching)
-                                        total_val = sum(
-                                            float(t["amount"]) * float(t["price"])
-                                            for t in matching
-                                        )
-                                        if total_amt > 0:
-                                            exit_price = total_val / total_amt
-                                except Exception as inner_e:
-                                    self.logger.warning(
-                                        f"  [Reconcile] fetch_my_trades fallback "
-                                        f"failed: {inner_e!r}"
-                                    )
-
-                            if exit_price is None or exit_price <= 0:
-                                # Skip recording rather than write a -100% loss
-                                self.logger.error(
-                                    f"  [Reconcile] Could not determine exit price for {s} "
-                                    f"— SKIPPING CSV record (manual reconciliation needed)"
-                                )
-                            else:
-                                fee_info = closed_order.get("fee", {}) or {}
-                                exit_reason = ("trailing_stop" if pos.get("tsl_order_id")
-                                               else "oco_exit")
-                                self.tracker.record_sell(
-                                    symbol=s, order_id=exit_order_id, price=exit_price,
-                                    amount=pos.get("amount", 0),
-                                    amount_usd=exit_price * pos.get("amount", 0),
-                                    fee=float(fee_info.get("cost", 0) or 0),
-                                    fee_currency=fee_info.get("currency", "USD"),
-                                    entry_price=pos.get("entry_price"),
-                                    entry_time=pos.get("entry_time"),
-                                    entry_fee=pos.get("entry_fee", 0),
-                                    exit_reason=exit_reason,
-                                )
-                        except Exception as e:
-                            self.logger.warning(
-                                f"  [Reconcile] Could not fetch exit details for {s}: {e}"
-                            )
-                    del self.active_positions[s]
+                    exit_reason = ("trailing_stop" if pos.get("tsl_order_id")
+                                   else "oco_exit")
+                    recorded = False
+                    if exit_order_id and exit_order_id not in (
+                        "dry_run_tsl_id", "dry_run_oco_id"
+                    ):
+                        recorded = self._record_exit(
+                            symbol=s,
+                            sell_order_id=exit_order_id,
+                            pos=pos,
+                            exit_reason=exit_reason,
+                            allow_ticker_fallback=False,
+                        )
+                    if recorded:
+                        del self.active_positions[s]
+                    else:
+                        # Bug B fix: do NOT orphan the position. Mark it for
+                        # later repair so the auto-sync at the start of
+                        # `ggt pnl-daily` (or a manual `ggt repair`) can pull
+                        # the trade from Kraken's authoritative history and
+                        # rebuild the position_closes row via FIFO matching.
+                        pos["pending_repair"] = True
+                        preserved.append(s)
+                if preserved:
+                    self.logger.warning(
+                        f"  [Reconcile] {len(preserved)} stale position(s) "
+                        f"preserved with pending_repair=True (no fill price "
+                        f"available): {preserved}"
+                    )
                 self.save_state()
 
             # Balances on exchange but not tracked in JSON (crash recovery)
@@ -437,10 +456,32 @@ class ExecutionEngine:
                       f"but NOT in local state — adding as untracked: {untracked}")
                 for s in untracked:
                     coin_params = self.per_coin_params.get(s)
+                    # Bug C fix: try to seed entry data from the local trade
+                    # log so future record_sell calls produce a complete
+                    # round-trip in position_closes.csv. Without this, the
+                    # exit lands in trade_log only and the report's
+                    # realised PnL / win-rate aggregation misses the trade.
+                    seeded = self.tracker.find_open_buy_for(s)
+                    if seeded:
+                        self.logger.info(
+                            f"  [Reconcile] {s}: seeded entry from trade_log "
+                            f"(price=${seeded['price']:.6g}, "
+                            f"time={seeded['time']}, fee=${seeded['fee']:.4f})"
+                        )
+                        entry_order_id = seeded["order_id"]
+                        entry_price: Optional[float] = seeded["price"]
+                        entry_time: Optional[str] = seeded["time"]
+                        entry_fee: float = seeded["fee"]
+                    else:
+                        entry_order_id = "unknown_reconciled"
+                        entry_price = None
+                        entry_time = None
+                        entry_fee = 0.0
                     self.active_positions[s] = {
-                        "entry_order_id": "unknown_reconciled",
-                        "entry_price": None,
-                        "entry_time": None,
+                        "entry_order_id": entry_order_id,
+                        "entry_price": entry_price,
+                        "entry_time": entry_time,
+                        "entry_fee": entry_fee,
                         "amount": held_symbols[s],
                         "stop_pct": (coin_params["params"].get("stop_pct", 3.0)
                                      if coin_params else 3.0),
@@ -498,34 +539,25 @@ class ExecutionEngine:
             if status not in ("closed", "filled"):
                 continue
 
-            exit_price = _safe_extract_fill_price(order)
-            if exit_price is None or exit_price <= 0:
-                self.logger.warning(
-                    f"  [Poll] {symbol} exit order {exit_order_id} appears closed "
-                    f"but has no valid fill price — deferring to next reconcile"
-                )
-                continue
-
-            fee_info = order.get("fee", {}) or {}
             exit_reason = "trailing_stop" if pos.get("tsl_order_id") else "oco_exit"
             self.logger.info(
                 f"  [Poll] {symbol} exit triggered: order={exit_order_id} "
-                f"price=${exit_price:.6g} reason={exit_reason}"
+                f"reason={exit_reason}"
             )
-            self.tracker.record_sell(
+            recorded = self._record_exit(
                 symbol=symbol,
-                order_id=exit_order_id,
-                price=exit_price,
-                amount=pos.get("amount", 0),
-                amount_usd=exit_price * pos.get("amount", 0),
-                fee=float(fee_info.get("cost", 0) or 0),
-                fee_currency=fee_info.get("currency", "USD"),
-                entry_price=pos.get("entry_price"),
-                entry_time=pos.get("entry_time"),
-                entry_fee=pos.get("entry_fee", 0),
+                sell_order_id=exit_order_id,
+                pos=pos,
                 exit_reason=exit_reason,
+                sell_order=order,
+                allow_ticker_fallback=False,
             )
-            triggered.append(symbol)
+            if recorded:
+                triggered.append(symbol)
+            else:
+                # Helper already logged the error. Position stays in
+                # active_positions with the next reconcile / repair to retry.
+                pos["pending_repair"] = True
 
         for symbol in triggered:
             del self.active_positions[symbol]
@@ -534,11 +566,214 @@ class ExecutionEngine:
             self.save_state()
 
     # ------------------------------------------------------------------
+    # Exit recording (canonical helper used by every sell path)
+    # ------------------------------------------------------------------
+
+    def _record_exit(
+        self,
+        symbol: str,
+        sell_order_id: str,
+        pos: Dict[str, Any],
+        exit_reason: str,
+        sell_order: Optional[Dict[str, Any]] = None,
+        allow_ticker_fallback: bool = False,
+    ) -> bool:
+        """Canonical exit-recording helper used by every sell code path.
+
+        Resolves a fill price via ``_safe_extract_fill_price`` (with optional
+        ``fetch_my_trades`` and ticker fallbacks), reads the actual filled
+        amount via ``_safe_extract_filled_amount`` (Bug D fix), and writes a
+        single ``record_sell`` row through ``self.tracker``.
+
+        Returns ``True`` if a row was successfully written, ``False`` if no
+        usable fill price could be determined. The caller decides whether to
+        delete the position from ``active_positions`` based on the return —
+        Bug B fix: callers preserve the position for later repair on False.
+
+        Args:
+            symbol: Dashed symbol like ``BTC-USD``.
+            sell_order_id: The sell order ID returned by Kraken.
+            pos: The position dict from ``self.active_positions[symbol]`` — used
+                for ``entry_price``, ``entry_time``, ``entry_fee`` and (only as
+                a last-resort) the stored ``amount``.
+            exit_reason: One of ``strategy_signal``, ``trailing_stop``,
+                ``oco_exit``, ``emergency_rollback``.
+            sell_order: Optional pre-fetched CCXT order dict. If None, the
+                helper will fetch it (with a 1-second settling sleep).
+            allow_ticker_fallback: When True, if all fill-price extraction
+                fails, fall back to a fresh ticker last-price. Safe for paths
+                where the sell was just placed (strategy_signal,
+                emergency_rollback). Unsafe for reconcile/poll where the sell
+                may be hours old.
+        """
+        if sell_order_id in ("dry_run_sell_id", "dry_run_tsl_id", "dry_run_oco_id"):
+            return False
+
+        pair = symbol.replace("-", "/") if "/" not in symbol else symbol
+
+        # Step 1: ensure we have an order dict, fetching if needed.
+        if sell_order is None:
+            try:
+                time.sleep(1)  # brief settling time so Kraken finalises 'cost'/'filled'
+                sell_order = self.exchange.fetch_order(sell_order_id, pair)
+            except Exception as e:
+                self.logger.warning(
+                    f"  [Exit] {symbol}: fetch_order({sell_order_id}) failed: {e!r}"
+                )
+                sell_order = None
+
+        # Step 2: extract a fill price using the cascade.
+        exit_price = _safe_extract_fill_price(sell_order)
+
+        # Step 3: if no price, try fetch_my_trades for the order id (Path B's
+        # historical fallback — useful when Kraken's order endpoint returns a
+        # stale or partial response but the trade fills are queryable).
+        if exit_price is None or exit_price <= 0:
+            try:
+                recent = self.exchange.fetch_my_trades(pair, limit=20)
+                matching = [t for t in recent if t.get("order") == sell_order_id]
+                if matching:
+                    total_amt = sum(float(t.get("amount") or 0) for t in matching)
+                    total_val = sum(
+                        float(t.get("amount") or 0) * float(t.get("price") or 0)
+                        for t in matching
+                    )
+                    if total_amt > 0:
+                        exit_price = total_val / total_amt
+            except Exception as e:
+                self.logger.debug(
+                    f"  [Exit] {symbol}: fetch_my_trades fallback failed: {e!r}"
+                )
+
+        # Step 4: optional ticker fallback (only safe for fresh sells we just placed).
+        if (exit_price is None or exit_price <= 0) and allow_ticker_fallback:
+            try:
+                ticker = self.exchange.fetch_ticker(pair)
+                t_last = ticker.get("last") or ticker.get("close")
+                if t_last and float(t_last) > 0:
+                    exit_price = float(t_last)
+                    self.logger.warning(
+                        f"  [Exit] {symbol}: using ticker last=${exit_price:.6g} "
+                        f"as estimated exit price (order fetch returned no fill)"
+                    )
+            except Exception as e:
+                self.logger.warning(
+                    f"  [Exit] {symbol}: ticker fallback failed: {e!r}"
+                )
+
+        if exit_price is None or exit_price <= 0:
+            self.logger.error(
+                f"  [Exit] {symbol}: could not determine fill price for order "
+                f"{sell_order_id} — REFUSING to write a bogus record. The next "
+                f"`ggt repair` (or auto-sync at the start of `ggt pnl-daily`) "
+                f"will heal this from Kraken's authoritative trade history."
+            )
+            return False
+
+        # Step 5: prefer the actual filled amount from the order over the
+        # stored position amount (Bug D fix). Falls back to stored amount only
+        # if the order doesn't expose ``filled``.
+        filled_amount = _safe_extract_filled_amount(sell_order)
+        if filled_amount is None:
+            filled_amount = float(pos.get("amount") or 0)
+            if filled_amount <= 0:
+                self.logger.error(
+                    f"  [Exit] {symbol}: no filled amount on order and no "
+                    f"stored position amount — cannot record exit"
+                )
+                return False
+        else:
+            stored = float(pos.get("amount") or 0)
+            if stored > 0 and abs(filled_amount - stored) / stored > 0.01:
+                self.logger.warning(
+                    f"  [Exit] {symbol}: order filled {filled_amount:.6g} but "
+                    f"position stored {stored:.6g} — recording the actual fill"
+                )
+
+        # Step 6: extract sell-side fee from the order.
+        fee_info = (sell_order.get("fee") or {}) if sell_order else {}
+        sell_fee = float(fee_info.get("cost", 0) or 0)
+        fee_currency = fee_info.get("currency", "USD")
+
+        # Step 7: write the round-trip record.
+        self.tracker.record_sell(
+            symbol=symbol,
+            order_id=sell_order_id,
+            price=exit_price,
+            amount=filled_amount,
+            amount_usd=exit_price * filled_amount,
+            fee=sell_fee,
+            fee_currency=fee_currency,
+            entry_price=pos.get("entry_price"),
+            entry_time=pos.get("entry_time"),
+            entry_fee=pos.get("entry_fee", 0),
+            exit_reason=exit_reason,
+        )
+        return True
+
+    def _handle_emergency_rollback(self, symbol: str, amount: float) -> None:
+        """Flatten a position whose protective stop placement failed.
+
+        Bug A fix: previously the emergency sell was placed but ``record_sell``
+        was never called, so the rollback trade and its fees were orphaned
+        from local CSVs forever. Now we record the exit through the canonical
+        ``_record_exit`` helper before deleting the position.
+
+        Called from the buy-side flow at the OCO and TSL placement failure
+        branches. The position is still in ``self.active_positions`` at this
+        point with a valid entry_price (we just bought it seconds ago), so
+        ``_record_exit`` produces a complete round-trip record.
+        """
+        if self.config.get("DRY_RUN", False):
+            if symbol in self.active_positions:
+                del self.active_positions[symbol]
+            return
+
+        sell_id = self._execute_market_sell_order(symbol, amount)
+        if not sell_id:
+            self.logger.error(
+                f"  [Order] EMERGENCY: cleanup sell also failed for {symbol} "
+                f"— position unprotected on exchange and may need manual close"
+            )
+            return
+
+        pos = self.active_positions.get(symbol)
+        if pos is None:
+            self.logger.error(
+                f"  [Rollback] {symbol}: active_positions entry vanished before "
+                f"recording — using minimal pos dict"
+            )
+            pos = {"amount": amount}
+
+        recorded = self._record_exit(
+            symbol=symbol,
+            sell_order_id=sell_id,
+            pos=pos,
+            exit_reason="emergency_rollback",
+            allow_ticker_fallback=True,
+        )
+        if recorded:
+            self.active_positions.pop(symbol, None)
+        else:
+            # Helper logged the reason. Mark for repair so the next reconcile
+            # / `ggt repair` run will pull the trade from Kraken history.
+            if symbol in self.active_positions:
+                self.active_positions[symbol]["pending_repair"] = True
+
+    # ------------------------------------------------------------------
     # Data fetching
     # ------------------------------------------------------------------
 
-    def _get_total_portfolio_usd(self) -> float:
-        """Calculate total USD value of the portfolio (Free USD + held crypto)."""
+    def _get_total_portfolio_usd(self) -> Optional[float]:
+        """Calculate total USD value of the portfolio (Free USD + held crypto).
+
+        Returns ``None`` on exchange failure rather than a fabricated
+        ``START_CASH`` fallback. Bug E fix: callers must handle ``None``
+        explicitly. The balance-snapshot writer skips the snapshot entirely
+        on ``None`` so we never poison ``balance_snapshots.csv`` with a
+        misleading dummy value during a temporary Kraken outage; the
+        position-sizing code falls back to ``CAPITAL_PER_TRADE``.
+        """
         if self.config.get("DRY_RUN", False):
             return float(self.config.get("START_CASH", 1000.0))
 
@@ -576,8 +811,11 @@ class ExecutionEngine:
 
             return total_usd
         except Exception as e:
-            self.logger.warning(f"  [Portfolio] Could not calculate total portfolio USD: {e}")
-            return float(self.config.get("START_CASH", 1000.0))
+            self.logger.warning(
+                f"  [Portfolio] Could not calculate total portfolio USD: {e!r} "
+                f"— returning None so the snapshot writer can skip this cycle"
+            )
+            return None
 
     def _fetch_latest_data(self) -> pd.DataFrame:
         """Fetch the most recent candles for all coins plus BTC (for regime filter)."""
@@ -910,6 +1148,15 @@ class ExecutionEngine:
                 weight = self.portfolio_weights.get(symbol)
                 if weight is not None:
                     base_capital = self._get_total_portfolio_usd()
+                    if base_capital is None:
+                        # Bug E fix: don't size positions off a fabricated
+                        # number when the exchange is down. Skip this entry
+                        # entirely — there will be other 4h candles.
+                        self.logger.warning(
+                            f"  [Sizing] {symbol}: portfolio valuation unavailable "
+                            f"— skipping entry until next cycle"
+                        )
+                        continue
                     capital_per_trade = base_capital * float(weight)
                     self.logger.info(f"  [Sizing] Dynamic weight for {symbol}: {weight * 100:.1f}% of "
                           f"portfolio (${base_capital:.2f}) -> ${capital_per_trade:.2f}")
@@ -1058,29 +1305,21 @@ class ExecutionEngine:
                             symbol, filled_amount, sl_price, tp_price
                         )
                         if oco_id is None:
-                            self.logger.error(f"  [Order] OCO placement failed for {symbol} — closing position")
-                            sell_id = self._execute_market_sell_order(symbol, filled_amount)
-                            if sell_id:
-                                del self.active_positions[symbol]
-                            else:
-                                self.logger.error(
-                                    f"  [Order] EMERGENCY: cleanup sell also failed for {symbol} "
-                                    f"— position unprotected on exchange"
-                                )
+                            self.logger.error(
+                                f"  [Order] OCO placement failed for {symbol} "
+                                f"— closing position via emergency rollback sell"
+                            )
+                            self._handle_emergency_rollback(symbol, filled_amount)
                         else:
                             self.active_positions[symbol]["oco_order_id"] = oco_id
                     else:
                         tsl_id = self._execute_trailing_stop_order(symbol, filled_amount, stop_pct)
                         if tsl_id is None:
-                            self.logger.error(f"  [Order] TSL placement failed for {symbol} — closing position")
-                            sell_id = self._execute_market_sell_order(symbol, filled_amount)
-                            if sell_id:
-                                del self.active_positions[symbol]
-                            else:
-                                self.logger.error(
-                                    f"  [Order] EMERGENCY: cleanup sell also failed for {symbol} "
-                                    f"— position unprotected on exchange"
-                                )
+                            self.logger.error(
+                                f"  [Order] TSL placement failed for {symbol} "
+                                f"— closing position via emergency rollback sell"
+                            )
+                            self._handle_emergency_rollback(symbol, filled_amount)
                         else:
                             self.active_positions[symbol]["tsl_order_id"] = tsl_id
 
@@ -1097,46 +1336,24 @@ class ExecutionEngine:
                         sell_id = self._execute_market_sell_order(symbol, amount)
                         if sell_id:
                             pos = self.active_positions[symbol]
-                            # Record sell in trade tracker — use safe fill price extraction
-                            sell_order: Optional[Dict[str, Any]] = None
-                            try:
-                                pair = symbol.replace("-", "/") if "/" not in symbol else symbol
-                                time.sleep(1)  # brief settling time
-                                sell_order = self.exchange.fetch_order(sell_id, pair)
-                            except Exception as e:
-                                self.logger.warning(
-                                    f"  [Exit] fetch_order failed for {symbol}: {e!r}"
-                                )
-                            exit_price = _safe_extract_fill_price(sell_order)
-                            if exit_price is None or exit_price <= 0:
-                                # Last-resort: fetch fresh ticker
-                                try:
-                                    ticker = self.exchange.fetch_ticker(
-                                        symbol.replace("-", "/") if "/" not in symbol else symbol
-                                    )
-                                    exit_price = float(ticker["last"])
-                                except Exception:
-                                    exit_price = float(sig["current_price"])
-                                self.logger.warning(
-                                    f"  [Exit] {symbol}: using estimated exit price "
-                                    f"${exit_price:.6g} (order fetch returned no fill)"
-                                )
-                            sell_fee_info = (sell_order.get("fee") or {}) if sell_order else {}
-                            self.tracker.record_sell(
-                                symbol=symbol, order_id=sell_id, price=exit_price,
-                                amount=amount, amount_usd=exit_price * amount,
-                                fee=float(sell_fee_info.get("cost", 0) or 0),
-                                fee_currency=sell_fee_info.get("currency", "USD"),
-                                entry_price=pos.get("entry_price"),
-                                entry_time=pos.get("entry_time"),
-                                entry_fee=pos.get("entry_fee", 0),
+                            recorded = self._record_exit(
+                                symbol=symbol,
+                                sell_order_id=sell_id,
+                                pos=pos,
                                 exit_reason="strategy_signal",
+                                allow_ticker_fallback=True,
                             )
                             pos["exit_time"] = time.strftime(
                                 "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
                             )
                             pos["exit_reason"] = "strategy_signal"
-                            del self.active_positions[symbol]
+                            if recorded:
+                                del self.active_positions[symbol]
+                            else:
+                                # Fill price could not be determined. Mark for
+                                # repair so the next reconcile / auto-sync can
+                                # heal it from Kraken's authoritative history.
+                                pos["pending_repair"] = True
                             self.save_state()
                     else:
                         # atr_trailing / trailing_stop: Kraken's TSL handles the exit
@@ -1265,19 +1482,29 @@ class ExecutionEngine:
                 # 0b. Sync local memory with actual Kraken exchange (catch server-side OCO exits)
                 self._reconcile_positions()
 
-                # 0c. Record balance snapshot for performance tracking
+                # 0c. Record balance snapshot for performance tracking.
+                # Bug E fix: skip the snapshot entirely if we couldn't fetch a
+                # real total — never write a fabricated START_CASH value into
+                # balance_snapshots.csv (it would poison every equity-curve
+                # metric: max drawdown, Sharpe, Sortino, deposit-adjusted return).
                 try:
                     total_usd = self._get_total_portfolio_usd()
-                    balance = self.exchange.fetch_balance()
-                    free_usd = float(balance.get("free", {}).get("USD", 0))
-                    positions_usd = total_usd - free_usd
-                    self.tracker.record_balance_snapshot(
-                        total_usd=total_usd, free_usd=free_usd,
-                        positions_usd=positions_usd,
-                        num_positions=len(self.active_positions),
-                    )
+                    if total_usd is None:
+                        self.logger.warning(
+                            "  [Tracker] Skipping balance snapshot this cycle "
+                            "(portfolio valuation failed — see [Portfolio] log)"
+                        )
+                    else:
+                        balance = self.exchange.fetch_balance()
+                        free_usd = float(balance.get("free", {}).get("USD", 0))
+                        positions_usd = total_usd - free_usd
+                        self.tracker.record_balance_snapshot(
+                            total_usd=total_usd, free_usd=free_usd,
+                            positions_usd=positions_usd,
+                            num_positions=len(self.active_positions),
+                        )
                 except Exception as e:
-                    self.logger.warning(f"  [Tracker] Balance snapshot failed: {e}")
+                    self.logger.warning(f"  [Tracker] Balance snapshot failed: {e!r}")
 
                 # 1. Fetch live data (includes BTC for regime filter)
                 latest_df = self._fetch_latest_data()
