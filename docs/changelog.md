@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-04-10
+
+### Fixed: dust positions inflating open position count
+
+Exchange sells often leave sub-penny dust balances (e.g. 0.00001 ETH worth $0.003) due to lot-size rounding. These were picked up by `_reconcile_positions` as "untracked" positions and re-added to `active_positions.json`, inflating the open position count in reports.
+
+- **Reconciliation** ([execution_engine.py](../src/ggTrader/core/execution_engine.py)): untracked exchange balances below `_DUST_THRESHOLD_USD` ($1.00) are now logged and skipped instead of being added as positions.
+- **Report** ([pnl_report_builder.py](../src/ggTrader/utils/pnl_report_builder.py)): `_gather_report_data` filters out any existing positions with cost basis below $1.00 before counting or displaying them. This covers dust that was already in `active_positions.json` from prior reconciliations.
+
+### Documentation reorganization
+
+- Created [roadmap.md](roadmap.md) — themed roadmap covering extensions, research & strategy, infrastructure, and live trading hardening. Each item has a status tag and links to detailed specs where they exist. Includes a priority summary table ranked by impact x feasibility.
+- Archived `future_tweaks_plan.md` to `archive/` — roadmap items migrated into the new roadmap; config experiment history and live config state preserved in the archive for reference.
+
 ## 2026-04-09
 
 ### Audit findings: silent data-loss bugs in the trade-recording layer

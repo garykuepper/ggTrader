@@ -105,6 +105,10 @@ def _safe_extract_fill_price(order: Optional[Dict[str, Any]]) -> Optional[float]
 
 _BTC_SYMBOL = "BTC-USD"
 
+# Minimum USD value to consider a balance a real position. Exchange sells often
+# leave sub-penny dust that should not be tracked or reconciled.
+_DUST_THRESHOLD_USD = 1.00
+
 # Interim polling interval (seconds) — how often we check whether TSL/OCO
 # orders triggered between 4h candle reconciliations. 5 min = 48 polls per
 # 4h window, well within Kraken rate limits.
@@ -449,8 +453,24 @@ class ExecutionEngine:
                     )
                 self.save_state()
 
-            # Balances on exchange but not tracked in JSON (crash recovery)
-            untracked = [s for s in held_symbols if s not in self.active_positions]
+            # Balances on exchange but not tracked in JSON (crash recovery).
+            # Filter out dust balances (sub-$1 leftovers from partial fills).
+            untracked: list[str] = []
+            for s in held_symbols:
+                if s in self.active_positions:
+                    continue
+                try:
+                    ticker = self.exchange.fetch_ticker(s)
+                    usd_value = held_symbols[s] * (ticker.get("last") or 0)
+                except Exception:
+                    usd_value = 0.0
+                if usd_value < _DUST_THRESHOLD_USD:
+                    self.logger.info(
+                        f"  [Reconcile] Ignoring dust balance {s}: "
+                        f"{held_symbols[s]:.8g} (~${usd_value:.4f})"
+                    )
+                    continue
+                untracked.append(s)
             if untracked:
                 self.logger.warning(f"  [Reconcile] {len(untracked)} position(s) held on exchange "
                       f"but NOT in local state — adding as untracked: {untracked}")

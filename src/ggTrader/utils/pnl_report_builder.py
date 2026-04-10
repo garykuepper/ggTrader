@@ -223,6 +223,12 @@ def _gather_report_data(
     summary_all = tracker.compute_summary_stats()
     active = _load_active_positions(Path(active_positions_path))
 
+    # Filter out dust positions — sub-$1 leftovers from partial exchange fills.
+    active = {
+        sym: pos for sym, pos in active.items()
+        if (pos.get("entry_price") or 0) * float(pos.get("amount", 0) or 0) >= 1.00
+    }
+
     # Fetch deposit/withdrawal history from Kraken (cached locally) so we can
     # subtract external capital flows from the equity curve. Without this,
     # manual deposits inflate "total return" with phantom profit.
