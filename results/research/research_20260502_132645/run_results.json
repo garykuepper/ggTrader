@@ -1,0 +1,777 @@
+{
+    "run_id": "fb351b3e-8865-494d-a392-47a2c7291652",
+    "timestamp": "2026-05-02T13:30:45.952618",
+    "script_name": "run_wfo_per_coin_multi_strategy",
+    "configuration": {
+        "start_date": "2025-05-02",
+        "end_date": "2026-05-02",
+        "interval": "1d",
+        "symbols_file": null,
+        "symbols": [
+            "AMZN"
+        ],
+        "capital": 10000,
+        "fees": 0.0,
+        "_raw_config": {
+            "ASSET_CLASS": "stocks",
+            "SYMBOLS_FILE": null,
+            "MAX_SYMBOLS": 50,
+            "START_DATE": "2025-05-02",
+            "END_DATE": "2026-05-02",
+            "INTERVAL": "1d",
+            "FREQ": "1d",
+            "START_CASH": 10000,
+            "PORTFOLIO_SHARE": 0.1,
+            "FEES": 0.0,
+            "SLIPPAGE": 0.001,
+            "N_SPLITS": 10,
+            "TEST_RATIO": 3,
+            "MIN_TRADES": 0,
+            "MIN_CLOSED_TRADES_TRAIN": 3,
+            "TRAIN_METRIC": "composite",
+            "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
+                "sharpe": 0.2,
+                "sortino": 0.3,
+                "calmar": 0.3,
+                "profit_factor": 0.2
+            },
+            "MAX_TRAIN_DRAWDOWN_PCT": null,
+            "CHUNK_SIZE": 500,
+            "USE_VECTORIZED": true,
+            "USE_VECTORIZED_SENSITIVITY": true,
+            "USE_MOVERS": 0,
+            "EXIT_TOURNAMENT": [
+                "atr_trailing",
+                "fixed_sl_tp",
+                "trailing_stop"
+            ],
+            "SENSITIVITY_EXIT_STRATEGY": "atr_trailing",
+            "RECENT_VALIDATION_START_DATE": null,
+            "RECENT_VALIDATION_END_DATE": null,
+            "RECENT_VALIDATION_USE_CCXT_TAIL": false,
+            "BTC_REGIME_FILTER": false,
+            "SPY_REGIME_FILTER": true,
+            "SPY_REGIME_FILTER_SHORT_EMA": 50,
+            "VIX_REGIME_FILTER": true,
+            "VIX_REGIME_THRESHOLD": 25,
+            "SPY_REGIME_FILTER_MIN_CORRELATION": 0.5,
+            "ALTCOIN_REGIME_FILTER": false,
+            "MAX_COINS_PER_STRATEGY": 10,
+            "MAX_COIN_ALLOCATION": 0.25,
+            "MIN_ROBUSTNESS_SCORE": 0.1,
+            "MIN_VALID_TRAIN_FOLDS": 3,
+            "MIN_FOLD_CONSISTENCY": 0.38,
+            "EMA_WARMUP_BARS": 200,
+            "BENCHMARK_SYMBOL": "SPY",
+            "OOS_ROBUSTNESS_BLEND_ALPHA": 0.7,
+            "TRAIN_METRIC_NORMALIZE_ZSCORE": true,
+            "PARAM_STABILITY_WEIGHT": 0.3,
+            "FOLD_CONSISTENCY_IN_GATE": true,
+            "FOLD_CONSISTENCY_GATE_FLOOR": 0.25,
+            "OOS_STABILITY_WEIGHT": 0.3,
+            "WFO_CACHE_ENABLED": true,
+            "DAILY_LOSS_LIMIT_PCT": 0.05,
+            "EXPLICIT_RUN_DIR": "/home/flynn/ggTrader/results/research/research_20260502_132645",
+            "PIPELINE_STAGE": "research",
+            "WORKER_ID": 2,
+            "SYMBOLS": [
+                "AMZN",
+                "AAPL"
+            ],
+            "exit_tournament": [
+                "atr_trailing",
+                "fixed_sl_tp",
+                "trailing_stop"
+            ],
+            "per_coin_results": {
+                "AMZN": {
+                    "best_strategy": "stoch_rsi_reversal",
+                    "best_exit": "fixed_sl_tp",
+                    "best_params": {
+                        "stochrsi_rsi_length": 10,
+                        "stochrsi_stoch_length": 10,
+                        "stochrsi_oversold": 20,
+                        "atr_length": 1.5,
+                        "atr_multiplier": 6.0,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "robustness_score": 0.36826894008717886,
+                    "is_robustness_score": 1.0008273970418113,
+                    "oos_robustness_score": 0.4128315500384896,
+                    "fold_consistency": 0.5,
+                    "wfo_stats": [
+                        {
+                            "fold": 1,
+                            "train_start": "2025-05-02 00:00:00+00:00",
+                            "test_start": "2025-07-25 00:00:00+00:00",
+                            "test_end": "2025-08-20 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 15,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": null,
+                            "oos_sharpe": null,
+                            "sortino": null,
+                            "profit": 0.0,
+                            "start_capital": 10000.0,
+                            "end_capital": 10000.0,
+                            "return_pct": 0.0
+                        },
+                        {
+                            "fold": 2,
+                            "train_start": "2025-05-30 00:00:00+00:00",
+                            "test_start": "2025-08-21 00:00:00+00:00",
+                            "test_end": "2025-09-17 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 20,
+                                "stop_pct": 3.0,
+                                "take_profit_pct": 3.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 0.9433454839633031,
+                            "oos_sharpe": 0.8761049345817292,
+                            "sortino": 1.5288770645545409,
+                            "profit": 4.596034694597279,
+                            "start_capital": 10000.0,
+                            "end_capital": 10004.596034694598,
+                            "return_pct": 0.045960346945972785
+                        },
+                        {
+                            "fold": 3,
+                            "train_start": "2025-06-27 00:00:00+00:00",
+                            "test_start": "2025-09-18 00:00:00+00:00",
+                            "test_end": "2025-10-14 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 15,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": null,
+                            "oos_sharpe": null,
+                            "sortino": null,
+                            "profit": 0.0,
+                            "start_capital": 10000.0,
+                            "end_capital": 10000.0,
+                            "return_pct": 0.0
+                        },
+                        {
+                            "fold": 4,
+                            "train_start": "2025-07-25 00:00:00+00:00",
+                            "test_start": "2025-10-15 00:00:00+00:00",
+                            "test_end": "2025-11-10 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 20,
+                                "stop_pct": 3.0,
+                                "take_profit_pct": 3.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.843771046073358,
+                            "oos_sharpe": -5.1432135149135405,
+                            "sortino": -5.163758746169198,
+                            "profit": -39.67845674621708,
+                            "start_capital": 10000.0,
+                            "end_capital": 9960.321543253784,
+                            "return_pct": -0.3967845674621708
+                        },
+                        {
+                            "fold": 5,
+                            "train_start": "2025-08-21 00:00:00+00:00",
+                            "test_start": "2025-11-11 00:00:00+00:00",
+                            "test_end": "2025-12-08 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 15,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": null,
+                            "oos_sharpe": null,
+                            "sortino": null,
+                            "profit": 0.0,
+                            "start_capital": 10000.0,
+                            "end_capital": 10000.0,
+                            "return_pct": 0.0
+                        },
+                        {
+                            "fold": 6,
+                            "train_start": "2025-09-18 00:00:00+00:00",
+                            "test_start": "2025-12-09 00:00:00+00:00",
+                            "test_end": "2026-01-06 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 15,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 0.0,
+                            "oos_sharpe": -5.712919326350403,
+                            "sortino": -5.6356196430908865,
+                            "profit": -26.947865276534003,
+                            "start_capital": 10000.0,
+                            "end_capital": 9973.052134723466,
+                            "return_pct": -0.26947865276534005
+                        },
+                        {
+                            "fold": 7,
+                            "train_start": "2025-10-15 00:00:00+00:00",
+                            "test_start": "2026-01-07 00:00:00+00:00",
+                            "test_end": "2026-02-03 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 15,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": null,
+                            "oos_sharpe": null,
+                            "sortino": null,
+                            "profit": 0.0,
+                            "start_capital": 10000.0,
+                            "end_capital": 10000.0,
+                            "return_pct": 0.0
+                        },
+                        {
+                            "fold": 8,
+                            "train_start": "2025-11-11 00:00:00+00:00",
+                            "test_start": "2026-02-04 00:00:00+00:00",
+                            "test_end": "2026-03-03 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 14,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 15,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 0.0,
+                            "oos_sharpe": null,
+                            "sortino": null,
+                            "profit": 0.0,
+                            "start_capital": 10000.0,
+                            "end_capital": 10000.0,
+                            "return_pct": 0.0
+                        },
+                        {
+                            "fold": 9,
+                            "train_start": "2025-12-09 00:00:00+00:00",
+                            "test_start": "2026-03-04 00:00:00+00:00",
+                            "test_end": "2026-03-30 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 20,
+                                "stop_pct": 5.0,
+                                "take_profit_pct": 3.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 2.5314448111544627,
+                            "oos_sharpe": null,
+                            "sortino": null,
+                            "profit": 0.0,
+                            "start_capital": 10000.0,
+                            "end_capital": 10000.0,
+                            "return_pct": 0.0
+                        },
+                        {
+                            "fold": 10,
+                            "train_start": "2026-01-07 00:00:00+00:00",
+                            "test_start": "2026-03-31 00:00:00+00:00",
+                            "test_end": "2026-05-01 00:00:00+00:00",
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 20,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 6.0,
+                                "atr_length": 14,
+                                "atr_multiplier": 2.5,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "is_sharpe": 1.883672760236393,
+                            "oos_sharpe": 6.728100336198263,
+                            "sortino": 24.466590354551595,
+                            "profit": 79.39430910865622,
+                            "start_capital": 10000.0,
+                            "end_capital": 10079.394309108657,
+                            "return_pct": 0.7939430910865621
+                        }
+                    ],
+                    "robust_top_5": [
+                        {
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 20,
+                                "atr_length": 1.5,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.0008273970418113
+                        },
+                        {
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 14,
+                                "stochrsi_oversold": 20,
+                                "atr_length": 1.5,
+                                "atr_multiplier": 6.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 1.0008273970418113
+                        },
+                        {
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 20,
+                                "atr_length": 1.5,
+                                "atr_multiplier": 4.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 0.9615754580615414
+                        },
+                        {
+                            "params": {
+                                "stochrsi_rsi_length": 10,
+                                "stochrsi_stoch_length": 14,
+                                "stochrsi_oversold": 20,
+                                "atr_length": 1.5,
+                                "atr_multiplier": 4.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 0.9615754580615414
+                        },
+                        {
+                            "params": {
+                                "stochrsi_rsi_length": 14,
+                                "stochrsi_stoch_length": 10,
+                                "stochrsi_oversold": 15,
+                                "atr_length": 5.0,
+                                "atr_multiplier": 3.0,
+                                "stop_pct": 1.5,
+                                "take_profit_pct": 3.0,
+                                "trailing_stop_pct": 3.0
+                            },
+                            "robustness_score": 0.9401051967372923
+                        }
+                    ],
+                    "selection_reason": "wfo_robustness"
+                }
+            },
+            "per_coin_final_stats": {
+                "AMZN": {
+                    "strategy": "stoch_rsi_reversal",
+                    "exit": "fixed_sl_tp",
+                    "params": {
+                        "stochrsi_rsi_length": 10,
+                        "stochrsi_stoch_length": 10,
+                        "stochrsi_oversold": 20,
+                        "atr_length": 1.5,
+                        "atr_multiplier": 6.0,
+                        "stop_pct": 1.5,
+                        "take_profit_pct": 3.0,
+                        "trailing_stop_pct": 3.0
+                    },
+                    "selection_reason": "wfo_robustness",
+                    "total_value": 9851.960083063794,
+                    "total_profit": -148.03991693620583,
+                    "profit_pct": -1.4803991693620584,
+                    "total_trades": 4,
+                    "win_rate": 25.0,
+                    "sharpe": -1.3480279650550238,
+                    "sortino": -1.5500230739268261,
+                    "max_drawdown": -2.3625737003223235
+                }
+            }
+        }
+    },
+    "strategy_parameters": {
+        "per_coin": {
+            "AMZN": {
+                "best_strategy": "stoch_rsi_reversal",
+                "best_exit": "fixed_sl_tp",
+                "best_params": {
+                    "stochrsi_rsi_length": 10,
+                    "stochrsi_stoch_length": 10,
+                    "stochrsi_oversold": 20,
+                    "atr_length": 1.5,
+                    "atr_multiplier": 6.0,
+                    "stop_pct": 1.5,
+                    "take_profit_pct": 3.0,
+                    "trailing_stop_pct": 3.0
+                },
+                "robustness_score": 0.36826894008717886,
+                "is_robustness_score": 1.0008273970418113,
+                "oos_robustness_score": 0.4128315500384896,
+                "fold_consistency": 0.5,
+                "wfo_stats": [
+                    {
+                        "fold": 1,
+                        "train_start": "2025-05-02 00:00:00+00:00",
+                        "test_start": "2025-07-25 00:00:00+00:00",
+                        "test_end": "2025-08-20 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 15,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 10000.0,
+                        "end_capital": 10000.0,
+                        "return_pct": 0.0
+                    },
+                    {
+                        "fold": 2,
+                        "train_start": "2025-05-30 00:00:00+00:00",
+                        "test_start": "2025-08-21 00:00:00+00:00",
+                        "test_end": "2025-09-17 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 20,
+                            "stop_pct": 3.0,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 0.9433454839633031,
+                        "oos_sharpe": 0.8761049345817292,
+                        "sortino": 1.5288770645545409,
+                        "profit": 4.596034694597279,
+                        "start_capital": 10000.0,
+                        "end_capital": 10004.596034694598,
+                        "return_pct": 0.045960346945972785
+                    },
+                    {
+                        "fold": 3,
+                        "train_start": "2025-06-27 00:00:00+00:00",
+                        "test_start": "2025-09-18 00:00:00+00:00",
+                        "test_end": "2025-10-14 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 15,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 10000.0,
+                        "end_capital": 10000.0,
+                        "return_pct": 0.0
+                    },
+                    {
+                        "fold": 4,
+                        "train_start": "2025-07-25 00:00:00+00:00",
+                        "test_start": "2025-10-15 00:00:00+00:00",
+                        "test_end": "2025-11-10 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 20,
+                            "stop_pct": 3.0,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.843771046073358,
+                        "oos_sharpe": -5.1432135149135405,
+                        "sortino": -5.163758746169198,
+                        "profit": -39.67845674621708,
+                        "start_capital": 10000.0,
+                        "end_capital": 9960.321543253784,
+                        "return_pct": -0.3967845674621708
+                    },
+                    {
+                        "fold": 5,
+                        "train_start": "2025-08-21 00:00:00+00:00",
+                        "test_start": "2025-11-11 00:00:00+00:00",
+                        "test_end": "2025-12-08 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 15,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 10000.0,
+                        "end_capital": 10000.0,
+                        "return_pct": 0.0
+                    },
+                    {
+                        "fold": 6,
+                        "train_start": "2025-09-18 00:00:00+00:00",
+                        "test_start": "2025-12-09 00:00:00+00:00",
+                        "test_end": "2026-01-06 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 15,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 0.0,
+                        "oos_sharpe": -5.712919326350403,
+                        "sortino": -5.6356196430908865,
+                        "profit": -26.947865276534003,
+                        "start_capital": 10000.0,
+                        "end_capital": 9973.052134723466,
+                        "return_pct": -0.26947865276534005
+                    },
+                    {
+                        "fold": 7,
+                        "train_start": "2025-10-15 00:00:00+00:00",
+                        "test_start": "2026-01-07 00:00:00+00:00",
+                        "test_end": "2026-02-03 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 15,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": null,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 10000.0,
+                        "end_capital": 10000.0,
+                        "return_pct": 0.0
+                    },
+                    {
+                        "fold": 8,
+                        "train_start": "2025-11-11 00:00:00+00:00",
+                        "test_start": "2026-02-04 00:00:00+00:00",
+                        "test_end": "2026-03-03 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 14,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 15,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 0.0,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 10000.0,
+                        "end_capital": 10000.0,
+                        "return_pct": 0.0
+                    },
+                    {
+                        "fold": 9,
+                        "train_start": "2025-12-09 00:00:00+00:00",
+                        "test_start": "2026-03-04 00:00:00+00:00",
+                        "test_end": "2026-03-30 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 20,
+                            "stop_pct": 5.0,
+                            "take_profit_pct": 3.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 2.5314448111544627,
+                        "oos_sharpe": null,
+                        "sortino": null,
+                        "profit": 0.0,
+                        "start_capital": 10000.0,
+                        "end_capital": 10000.0,
+                        "return_pct": 0.0
+                    },
+                    {
+                        "fold": 10,
+                        "train_start": "2026-01-07 00:00:00+00:00",
+                        "test_start": "2026-03-31 00:00:00+00:00",
+                        "test_end": "2026-05-01 00:00:00+00:00",
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 20,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 6.0,
+                            "atr_length": 14,
+                            "atr_multiplier": 2.5,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "is_sharpe": 1.883672760236393,
+                        "oos_sharpe": 6.728100336198263,
+                        "sortino": 24.466590354551595,
+                        "profit": 79.39430910865622,
+                        "start_capital": 10000.0,
+                        "end_capital": 10079.394309108657,
+                        "return_pct": 0.7939430910865621
+                    }
+                ],
+                "robust_top_5": [
+                    {
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 20,
+                            "atr_length": 1.5,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.0008273970418113
+                    },
+                    {
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 14,
+                            "stochrsi_oversold": 20,
+                            "atr_length": 1.5,
+                            "atr_multiplier": 6.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 1.0008273970418113
+                    },
+                    {
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 20,
+                            "atr_length": 1.5,
+                            "atr_multiplier": 4.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 0.9615754580615414
+                    },
+                    {
+                        "params": {
+                            "stochrsi_rsi_length": 10,
+                            "stochrsi_stoch_length": 14,
+                            "stochrsi_oversold": 20,
+                            "atr_length": 1.5,
+                            "atr_multiplier": 4.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 0.9615754580615414
+                    },
+                    {
+                        "params": {
+                            "stochrsi_rsi_length": 14,
+                            "stochrsi_stoch_length": 10,
+                            "stochrsi_oversold": 15,
+                            "atr_length": 5.0,
+                            "atr_multiplier": 3.0,
+                            "stop_pct": 1.5,
+                            "take_profit_pct": 3.0,
+                            "trailing_stop_pct": 3.0
+                        },
+                        "robustness_score": 0.9401051967372923
+                    }
+                ],
+                "selection_reason": "wfo_robustness"
+            }
+        }
+    },
+    "results": {
+        "total_value": 8528.860491130241,
+        "total_profit": -1471.139508869759,
+        "profit_pct": -14.711395088697591,
+        "total_trades": 4,
+        "win_rate": 25.0,
+        "sharpe": -1.353613196012334,
+        "sortino": -1.5590447605158846,
+        "max_drawdown": -21.88591576387643,
+        "backtest_start": "2025-05-02",
+        "backtest_end": "2026-05-01",
+        "backtest_years": 0.9965776865160849,
+        "cagr_pct": -14.757989219429701,
+        "benchmark_label": "BTC benchmark skipped (Stock Mode)",
+        "spy_cagr_pct": null,
+        "spy_profit_pct": null,
+        "spy_sharpe": null,
+        "spy_max_drawdown": null,
+        "first_trade_date": "2025-07-25",
+        "dead_time_months": 2.8,
+        "effective_cagr": -18.74505671676603
+    }
+}
