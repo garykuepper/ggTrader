@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-05-01
+
+### Monthly Recalibration: WFO Run Successful
+
+The automated monthly recalibration triggered successfully at 01:06 AM UTC. The research pipeline processed the top 50 symbols by volume, and the production parameters were promoted to live trading at 02:27 AM UTC.
+
+- **Results**: YTD Strategy CAGR of **48.46%** (vs BTC at **-21.34%**) in the validation window.
+- **Bot State**: The `ggtrader_live` bot internally detected the new month and reloaded parameters without requiring a restart.
+- **Active Symbols**: 29 optimized symbols are currently being monitored.
+
+### Added: Market Regime status to Daily PnL Reports
+
+The daily PnL report (sent via Telegram/Discord at 08:00 AM) now includes a "Market Regime" section. This clarifies why the bot may be sitting on the sidelines even when the broader altcoin market looks bullish.
+
+- **Status Shown**: BTC Regime (bull/bear), Altcoin Regime (bull/bear), and current BTC price.
+- **Visuals**: Employs 🟢/🔴 indicators for immediate readability.
+- **Implementation**: Computes regime status on-the-fly using `ccxt` data and the same tiered filtering logic used by the live bot.
+
+### Added: Project-specific `GEMINI.md`
+
+Created a root-level `GEMINI.md` to document the internal automation, tiered regime filtering logic, and deployment nuances for future developer context.
+
 ## 2026-04-27
 
 ### Fixed: live exchange loader crash on duplicate Kraken bars

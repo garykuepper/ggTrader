@@ -17,4 +17,14 @@ When making changes to the codebase, keep these docs updated:
 - **New strategies**: Can be bundled together since they're purely additive and don't affect existing strategy scoring.
 - **Research runs**: Run inside Docker (`docker compose run --rm ggtrader_live python -u ggt.py research`). The DB uses `host.docker.internal` which only resolves inside containers.
 - **Live trader**: Always rebuild before restarting (`docker compose build --no-cache && docker compose up -d`). The trader auto-detects the latest research params.
+- **Code Updates**: The `src/` directory is **not** volume-mounted in production. To apply code changes without a full rebuild/restart, use `docker cp src/ggTrader/path/to/file.py ggtrader_live:/app/src/ggTrader/path/to/file.py`.
 - **WFO cache**: Clear `results/wfo_cache/` when changing scoring config (composite weights, fold consistency, OOS alpha, N_SPLITS) — cached results use old settings.
+
+## Core Systems
+
+- **Monthly Recalibration**: The `ExecutionEngine` handles its own WFO run internally on the 1st of each month (~01:00 AM). It reloads the new parameters automatically once complete.
+- **Tiered Regime Filter**: Entries are gated by correlation with BTC:
+    - High ($\ge 0.5$): BTC Regime (100-day EMA).
+    - Medium ($0.3-0.5$): Altcoin Index.
+    - Low ($< 0.3$): Free trading.
+- **PNL Reporting**: Daily reports are sent at 08:00 AM local time. They include a "Market Regime" status compute on-the-fly from live `ccxt` data.
