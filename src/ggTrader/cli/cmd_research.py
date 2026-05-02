@@ -263,6 +263,8 @@ def run_research(args: argparse.Namespace):
                 start_date,
                 "--end-date",
                 end_date,
+                "--asset-class",
+                asset_class,
             ]
 
             f = open(worker_log, "w")

@@ -65,6 +65,15 @@ def get_db_connection_string() -> str:
             "or POSTGRES_CONNECTION_STRING in your .env or environment."
         )
 
+    # Auto-fix for host.docker.internal when running on the host machine
+    if "host.docker.internal" in conn_str:
+        import socket
+        try:
+            socket.gethostbyname("host.docker.internal")
+        except socket.gaierror:
+            # Fallback to localhost if host.docker.internal doesn't resolve
+            conn_str = conn_str.replace("host.docker.internal", "localhost")
+
     return conn_str
 
 
