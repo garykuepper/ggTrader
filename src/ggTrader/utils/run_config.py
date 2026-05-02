@@ -218,3 +218,69 @@ def full_pipeline_config() -> dict[str, Any]:
         # value drops by more than this percentage. Set to None to disable.
         "DAILY_LOSS_LIMIT_PCT": 0.05,
     }
+
+
+def stock_pipeline_config() -> dict[str, Any]:
+    """Defaults for stock research/trading pipeline."""
+    return {
+        "ASSET_CLASS": "stocks",
+        "SYMBOLS_FILE": None,  # populated by universe script
+        "MAX_SYMBOLS": 50,
+        "START_DATE": os.getenv("GGTRADER_START_DATE", "2023-01-01"),
+        "END_DATE": os.getenv("GGTRADER_END_DATE", "2025-12-31"),
+        "INTERVAL": "1d",  # daily bars (vs 4h for crypto)
+        "FREQ": "1d",
+        "START_CASH": 10000,
+        "PORTFOLIO_SHARE": 0.10,
+        "FEES": 0.0,  # Alpaca is commission-free
+        "SLIPPAGE": 0.001,  # tighter slippage for large-cap stocks
+        # WFO settings
+        "N_SPLITS": 10,
+        "TEST_RATIO": 3,
+        "MIN_TRADES": 0,
+        "MIN_CLOSED_TRADES_TRAIN": 3,
+        "TRAIN_METRIC": "composite",
+        "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
+            "sharpe": 0.20,
+            "sortino": 0.30,
+            "calmar": 0.30,
+            "profit_factor": 0.20,
+        },
+        "MAX_TRAIN_DRAWDOWN_PCT": None,
+        "CHUNK_SIZE": 500,
+        "USE_VECTORIZED": True,
+        "USE_VECTORIZED_SENSITIVITY": True,
+        "USE_MOVERS": 0,
+        # Both exits compete in the tournament
+        "EXIT_TOURNAMENT": ["atr_trailing", "fixed_sl_tp", "trailing_stop"],
+        "SENSITIVITY_EXIT_STRATEGY": "atr_trailing",
+        "RECENT_VALIDATION_START_DATE": None,
+        "RECENT_VALIDATION_END_DATE": None,
+        "RECENT_VALIDATION_USE_CCXT_TAIL": False,  # stocks don't use CCXT
+        # Stock-specific regime filtering
+        "BTC_REGIME_FILTER": False,  # disable crypto regime
+        "SPY_REGIME_FILTER": True,  # enable stock regime
+        "SPY_REGIME_FILTER_SHORT_EMA": 50,
+        "VIX_REGIME_FILTER": True,
+        "VIX_REGIME_THRESHOLD": 25,
+        "SPY_REGIME_FILTER_MIN_CORRELATION": 0.5,
+        "ALTCOIN_REGIME_FILTER": False,  # N/A for stocks
+        # Portfolio gates (same as crypto)
+        "MAX_COINS_PER_STRATEGY": 10,
+        "MAX_COIN_ALLOCATION": 0.25,
+        "MIN_ROBUSTNESS_SCORE": 0.1,
+        "MIN_VALID_TRAIN_FOLDS": 3,
+        "MIN_FOLD_CONSISTENCY": 0.38,
+        "EMA_WARMUP_BARS": 200,
+        # Benchmark
+        "BENCHMARK_SYMBOL": "SPY",
+        # Anti-overfitting
+        "OOS_ROBUSTNESS_BLEND_ALPHA": 0.70,
+        "TRAIN_METRIC_NORMALIZE_ZSCORE": True,
+        "PARAM_STABILITY_WEIGHT": 0.3,
+        "FOLD_CONSISTENCY_IN_GATE": True,
+        "FOLD_CONSISTENCY_GATE_FLOOR": 0.25,
+        "OOS_STABILITY_WEIGHT": 0.3,
+        "WFO_CACHE_ENABLED": True,
+        "DAILY_LOSS_LIMIT_PCT": 0.05,
+    }

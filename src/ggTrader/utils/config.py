@@ -66,3 +66,19 @@ def get_db_connection_string() -> str:
         )
 
     return conn_str
+
+
+def get_alpaca_credentials(paper: bool = True) -> dict:
+    """Return Alpaca API key, secret, and base URL from .env."""
+    _load_env()
+    if paper:
+        return {
+            "key_id": os.getenv("APCA_API_KEY_ID"),
+            "secret_key": os.getenv("APCA_API_SECRET_KEY"),
+            "base_url": os.getenv("APCA_API_BASE_URL", "https://paper-api.alpaca.markets"),
+        }
+    return {
+        "key_id": os.getenv("APCA_API_LIVE_KEY_ID"),
+        "secret_key": os.getenv("APCA_API_LIVE_SECRET_KEY"),
+        "base_url": "https://api.alpaca.markets",
+    }
