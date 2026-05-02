@@ -143,37 +143,53 @@ This approach respects the volatility diversity of individual cryptocurrencies w
 
 ### 📊 Optimization Model (Sliding WFO)
 
-The system uses a **6-Fold Sliding Window** where each fold moves forward by the exact length of the test period (**Step = Test Length**). This ensures that every data point eventually serves as an "unseen" test bar.
+The system uses a **10-Fold Sliding Window** where each fold moves forward by the exact length of the test period (**Step = Test Length**). This ensures that every data point eventually serves as an "unseen" test bar, providing 10 granular OOS data points for robustness gating.
 
 ```mermaid
 gantt
-    title Walk-Forward Folds (Step = Test Length)
+    title Walk-Forward Folds (10 Folds, Step = Test Length)
     dateFormat  YYYY-MM-DD
     axisFormat  %Y-%m
     
     section Fold 1
-    Train       :active, f1_tr, 2023-01-01, 2025-01-01
-    Test        :crit, f1_ts, 2025-01-01, 2025-04-01
+    Train       :active, f1_tr, 2023-01-01, 2024-05-15
+    Test        :crit, f1_ts, 2024-05-15, 2024-07-15
     
     section Fold 2
-    Train       :active, f2_tr, 2023-04-01, 2025-04-01
-    Test        :crit, f2_ts, 2025-04-01, 2025-07-01
+    Train       :active, f2_tr, 2023-03-01, 2024-07-15
+    Test        :crit, f2_ts, 2024-07-15, 2024-09-15
     
     section Fold 3
-    Train       :active, f3_tr, 2023-07-01, 2025-07-01
-    Test        :crit, f3_ts, 2025-07-01, 2025-10-01
+    Train       :active, f3_tr, 2023-05-01, 2024-09-15
+    Test        :crit, f3_ts, 2024-09-15, 2024-11-15
     
     section Fold 4
-    Train       :active, f4_tr, 2023-10-01, 2025-10-01
-    Test        :crit, f4_ts, 2025-10-01, 2026-01-01
+    Train       :active, f4_tr, 2023-07-01, 2024-11-15
+    Test        :crit, f4_ts, 2024-11-15, 2025-01-15
 
     section Fold 5
-    Train       :active, f5_tr, 2024-01-01, 2026-01-01
-    Test        :crit, f5_ts, 2026-01-01, 2026-04-01
+    Train       :active, f5_tr, 2023-09-01, 2025-01-15
+    Test        :crit, f5_ts, 2025-01-15, 2025-03-15
 
     section Fold 6
-    Train       :active, f6_tr, 2024-04-01, 2026-04-01
-    Test        :crit, f6_ts, 2026-04-01, 2026-07-01
+    Train       :active, f6_tr, 2023-11-01, 2025-03-15
+    Test        :crit, f6_ts, 2025-03-15, 2025-05-15
+
+    section Fold 7
+    Train       :active, f7_tr, 2024-01-01, 2025-05-15
+    Test        :crit, f7_ts, 2025-05-15, 2025-07-15
+
+    section Fold 8
+    Train       :active, f8_tr, 2024-03-01, 2025-07-15
+    Test        :crit, f8_ts, 2025-07-15, 2025-09-15
+
+    section Fold 9
+    Train       :active, f9_tr, 2024-05-01, 2025-09-15
+    Test        :crit, f9_ts, 2025-09-15, 2025-11-15
+
+    section Fold 10
+    Train       :active, f10_tr, 2024-07-01, 2025-11-15
+    Test        :crit, f10_ts, 2025-11-15, 2026-01-15
 ```
 
 ## Workflows
