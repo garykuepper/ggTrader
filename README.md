@@ -20,7 +20,7 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
 - **High-Performance Backtesting**: Integrated `FastBacktest.py` utilizing VectorBT and CuPy for GPU-accelerated simulations.
 - **Advanced Optimization**: Built-in Walk-Forward Optimization (WFO) and sensitivity analysis to ensure strategy stability.
 - **Robust Data Layer**: Uses TimescaleDB (PostgreSQL) for centralized, high-speed OHLCV storage and retrieval.
-- **Professional Analytics**: Seamless integration with Jupyter Notebooks for deep-dive visualization and reporting.
+- **Professional Analytics**: Real-time performance tracking via Grafana dashboards and detailed Markdown research reports.
 
 ## 📖 Documentation
 

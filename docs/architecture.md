@@ -220,7 +220,8 @@ graph TD
     D -->|vbt.Portfolio| F(Results Manager)
     F -->|Storage| G[TimescaleDB / results/ folder]
     H["Optimization Scripts<br/>Sensitivity/WFO/Pipeline"] -->|Loop| D
-    G -->|Visualization| I[Jupyter Notebooks]
+    G -->|Query| L[Grafana Dashboard]
+    G -->|Generate| M[Markdown Reports]
     J[Live Exchange] <-->|Rest/WS| K[ExecutionEngine]
     K -->|Load Params| G
     B -->|Live OHLCV| K
