@@ -292,17 +292,20 @@ def _enrich_final_stats_with_cagr_and_benchmark(
     final_stats["backtest_years"] = _as_optional_float(years)
     final_stats["cagr_pct"] = _as_optional_float(strat_cagr)
 
-    bench = _btc_buy_hold_portfolio_stats(combined_close, config)
-    bench_sym = bench.get("benchmark_symbol", "BTC-USD")
-    final_stats["benchmark_label"] = (
-        f"{bench_sym} buy-and-hold: bought on the first bar and sold on the "
-        "last bar; same START_CASH, FEES, SLIPPAGE, and bar frequency as the strategy run."
-    )
-    final_stats["benchmark_profit_pct"] = bench.get("profit_pct")
-    final_stats["benchmark_cagr_pct"] = bench.get("cagr_pct")
-    final_stats["benchmark_sharpe"] = bench.get("sharpe")
-    final_stats["benchmark_max_drawdown"] = bench.get("max_drawdown")
-    final_stats["benchmark_total_trades"] = bench.get("total_trades")
+    if config.get("ASSET_CLASS") != "stocks":
+        bench = _btc_buy_hold_portfolio_stats(combined_close, config)
+        bench_sym = bench.get("benchmark_symbol", "BTC-USD")
+        final_stats["benchmark_label"] = (
+            f"{bench_sym} buy-and-hold: bought on the first bar and sold on the "
+            "last bar; same START_CASH, FEES, SLIPPAGE, and bar frequency as the strategy run."
+        )
+        final_stats["benchmark_profit_pct"] = bench.get("profit_pct")
+        final_stats["benchmark_cagr_pct"] = bench.get("cagr_pct")
+        final_stats["benchmark_sharpe"] = bench.get("sharpe")
+        final_stats["benchmark_max_drawdown"] = bench.get("max_drawdown")
+        final_stats["benchmark_total_trades"] = bench.get("total_trades")
+    else:
+        final_stats["benchmark_label"] = "BTC benchmark skipped (Stock Mode)"
 
     spy_bench = _sp500_buy_hold_portfolio_stats(combined_close.index, config)
     final_stats["spy_cagr_pct"] = spy_bench.get("cagr_pct")

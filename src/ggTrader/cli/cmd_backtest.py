@@ -18,6 +18,13 @@ def register_backtest_parser(subparsers: argparse._SubParsersAction):
         default=None,
         help="Path to specific results directory (default: auto-detect latest)",
     )
+    parser.add_argument(
+        "--asset-class",
+        type=str,
+        default="crypto",
+        choices=["crypto", "stocks"],
+        help="Asset class to backtest (default: crypto)",
+    )
 
 
 def run_backtest(args: argparse.Namespace):

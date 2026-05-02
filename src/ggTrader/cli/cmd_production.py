@@ -22,6 +22,13 @@ def register_production_parser(subparsers: argparse._SubParsersAction):
     parser.add_argument(
         "--limit", type=int, default=50, help="Number of CCXT coins to pull (default: 50)"
     )
+    parser.add_argument(
+        "--asset-class",
+        type=str,
+        default="crypto",
+        choices=["crypto", "stocks"],
+        help="Asset class to promote (default: crypto)",
+    )
 
 def run_production(args: argparse.Namespace):
     """Executes the production recalibration pipeline."""

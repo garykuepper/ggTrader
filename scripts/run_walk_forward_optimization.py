@@ -98,6 +98,13 @@ def main() -> None:
         default=None,
         help="Identifier for the worker process",
     )
+    parser.add_argument(
+        "--asset-class",
+        type=str,
+        default="crypto",
+        choices=["crypto", "stocks"],
+        help="Asset class to process",
+    )
     args = parser.parse_args()
 
     # Default to all if none specified
@@ -121,7 +128,11 @@ def main() -> None:
     if args.symbols:
         config_overrides["SYMBOLS"] = args.symbols.split(",")
 
-    config = merge_run_config(full_pipeline_config(), **config_overrides)
+    # Select base config based on asset class
+    from ggTrader.utils.run_config import full_pipeline_config, stock_pipeline_config
+    base_config = stock_pipeline_config() if args.asset_class == "stocks" else full_pipeline_config()
+
+    config = merge_run_config(base_config, **config_overrides)
 
     # Resolve symbols list from JSON file (if SYMBOLS not already set)
     if not config.get("SYMBOLS"):

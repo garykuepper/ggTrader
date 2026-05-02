@@ -91,6 +91,13 @@ def register_trade_parser(subparsers: argparse._SubParsersAction):
             "(default: query exchange, fall back to START_CASH)"
         ),
     )
+    parser.add_argument(
+        "--asset-class",
+        type=str,
+        default="crypto",
+        choices=["crypto", "stocks"],
+        help="Asset class to trade (default: crypto)",
+    )
 
 
 def run_trade(args: argparse.Namespace):

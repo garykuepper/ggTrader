@@ -49,6 +49,13 @@ def register_research_parser(subparsers: argparse._SubParsersAction):
         help="Volume aggregation window for asset selection (default: 30d)",
     )
     parser.add_argument(
+        "--asset-class",
+        type=str,
+        default="crypto",
+        choices=["crypto", "stocks"],
+        help="Asset class to research (default: crypto)",
+    )
+    parser.add_argument(
         "--workers", type=int, default=5, help="Number of parallel worker processes (default: 5)"
     )
     parser.add_argument(
@@ -112,16 +119,24 @@ def merge_worker_results(research_dir: Path, num_workers: int) -> int:
 
 def run_research(args: argparse.Namespace):
     """Executes the research pipeline in parallel by default."""
+    asset_class = args.asset_class
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     project_root = Path(__file__).resolve().parent.parent.parent.parent
     research_dir = project_root / f"results/research/research_{timestamp}"
     research_dir.mkdir(parents=True, exist_ok=True)
 
-    universe_path = research_dir / "top_ccxt_volume.json"
+    if asset_class == "stocks":
+        universe_path = research_dir / "top_stocks_volume.json"
+        universe_script = "scripts/update_universe_stocks.py"
+        cache_prefix = "universe_cache_stocks"
+    else:
+        universe_path = research_dir / "top_ccxt_volume.json"
+        universe_script = "scripts/update_universe_ccxt.py"
+        cache_prefix = "universe_cache"
 
     # Check for a same-day cached universe file (keyed by date + top-N + window).
     today = datetime.now().strftime("%Y%m%d")
-    cache_name = f"universe_cache_{today}_top{args.top}_{args.window}.json"
+    cache_name = f"{cache_prefix}_{today}_top{args.top}_{args.window}.json"
     universe_cache_path = project_root / "results" / "research" / cache_name
 
     if universe_cache_path.exists():
@@ -133,13 +148,13 @@ def run_research(args: argparse.Namespace):
         shutil.copy(universe_cache_path, universe_path)
     else:
         print(
-            f"\n[{datetime.now()}] Step 1: Fetching Live CCXT Universe for Research "
-            f"({args.top} coins, {args.window} window)..."
+            f"\n[{datetime.now()}] Step 1: Fetching Live {asset_class.capitalize()} Universe for Research "
+            f"({args.top} assets, {args.window} window)..."
         )
         subprocess.run(
             [
                 sys.executable,
-                "scripts/update_universe_ccxt.py",
+                universe_script,
                 "--limit",
                 str(args.top),
                 "--out",
@@ -167,8 +182,9 @@ def run_research(args: argparse.Namespace):
         print(f"Error loading universe for chunking: {e}")
         return
 
-    # Ensure -USD suffix (as required by the historical loader)
-    symbols = [s if "-" in s else f"{s}-USD" for s in symbols]
+    # Ensure -USD suffix for crypto (as required by the historical loader)
+    if asset_class == "crypto":
+        symbols = [s if "-" in s else f"{s}-USD" for s in symbols]
 
     # Calculate dynamic training window
     if args.end_date:
@@ -204,6 +220,8 @@ def run_research(args: argparse.Namespace):
             str(research_dir.absolute()),
             "--pipeline-stage",
             "research",
+            "--asset-class",
+            asset_class,
         ]
         if args.no_progress:
             cmd.append("--no-progress")
