@@ -70,6 +70,7 @@ python ggt.py trade
 Unified administration for TimescaleDB maintenance and exports.
 
 - **`diag`**: Check storage usage and row counts.
+- **`sync-live`**: Backfill historical CSV logs into the database mirror for Grafana.
 - **`clean`**: Purge malformed or old asset data.
 - **`compression`**: Manage TimescaleDB native data compression.
 - **`export`**: Backup the database using industrial-grade `pg_dump`.

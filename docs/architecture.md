@@ -101,9 +101,17 @@ After WFO, each coin passes through sequential gates before entering the combine
 | Gate | Config key | Default | Purpose |
 | ---- | ---------- | ------- | ------- |
 | Robustness floor | `MIN_ROBUSTNESS_SCORE` | 0.1 | Drop coins with very low OOS robustness |
-| Fold consistency | `MIN_FOLD_CONSISTENCY` | 0.33 | At least 1 in 3 OOS folds must be profitable |
+| Fold consistency | `MIN_FOLD_CONSISTENCY` | 0.38 | At least 4 in 10 OOS folds must be profitable |
 | Valid train folds | `MIN_VALID_TRAIN_FOLDS` | 3 | At least 3 of 6 folds must produce finite IS Sharpe |
 | Strategy diversity | `MAX_COINS_PER_STRATEGY` | 10 | Prevent one entry strategy from dominating |
+
+### 🛑 Risk Controls (Live)
+
+Live trading incorporates additional real-time risk safeguards:
+
+- **Daily Loss Circuit Breaker**: Halt all *new* entries for the day if the portfolio's intraday drawdown exceeds `DAILY_LOSS_LIMIT_PCT` (default 5%).
+- **Regime Filter**: Blocks entries during sustained bear markets (BTC EMA-based).
+- **Exchange Reconciliation**: Syncs local state with actual Kraken holdings on every heartbeat to detect server-side exits (TSL/OCO).
 
 Coins that pass all gates but produce **0 regime-filtered trade signals** in the combined backtest have their OOS allocation weight zeroed out, so idle capital is redistributed to active coins.
 
@@ -189,21 +197,25 @@ graph TD
     K -->|Load Params| G
     B -->|Live OHLCV| K
     K -->|Orders| J
+    K -->|Mirror| G
+    G -->|Query| L[Grafana Dashboard]
 ```
 
 ## 📊 Result Management
 
-Every run (backtest, sensitivity, or WFO) outputs results to a timestamped folder in the `results/` directory. This includes:
+Every run (backtest, sensitivity, or WFO) outputs results to a timestamped folder in the `results/` directory.
 
-- **Trades**: Detailed log of every entry and exit.
-- **Metrics**: Sharpe ratio, Max Drawdown, Profit Factor, etc.
-- **Config**: A snapshot of the parameters used for that specific run.
+### Database Mirroring (Live)
+In addition to CSV logs, the `ExecutionEngine` mirrors all live trading events to **TimescaleDB** in real-time. This enables high-performance monitoring via the **Grafana Dashboard**.
+- **`orders`**: Every buy/sell request sent to exchange.
+- **`trades`**: Completed round-trips with PnL.
+- **`equity_curves`**: Periodic balance snapshots for the `LIVE` run_id.
 
 ## 🚀 Live Execution
 
 - **`ExecutionEngine`**: Orchestrates live trading by fetching recent candles via `LiveExchangeLoader`, computing per-coin signals using WFO-optimized parameters, and managing Kraken orders.
-- **Bot Persistence**: Tracks active positions in `data/active_positions.json` to handle process restarts.
-- **Native Trailing Stop**: Leverages Kraken's `trailing-stop` order type for server-side risk management.
+- **Bot Persistence**: Tracks active positions and circuit breaker status in `data/active_positions.json` to handle process restarts.
+- **Native Exits**: Leverages Kraken's `trailing-stop` and `OCO` order types for server-side risk management.
 
 ---
 *Back to [README.md](../README.md)*

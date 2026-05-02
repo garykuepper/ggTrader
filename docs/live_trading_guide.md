@@ -23,23 +23,22 @@ KRAKEN_SECRET=your_kraken_api_private_key
 
 ### 2. Prepare Optimized Parameters
 
-The live bot requires a `run_results.json` file generated from a successful WFO run (e.g., `run_walk_forward_optimization.py` or `run_full_pipeline.py`).
+The live bot requires a `run_results.json` file generated from a successful WFO run (e.g., `ggt research`).
 
 ### 3. Run a Dry Run
 
 It is **highly recommended** to run the bot in dry-run mode for at least one 4h interval to verify initial signals:
 
 ```bash
-python scripts/run_live_trader.py --results results/your_results_folder/run_results.json --dry-run
-# or: ggtrader-live --results ... --dry-run
+python ggt.py trade --dry-run
 ```
 
 ### 4. Live Trading
 
-To start real trading with a specified capital per trade:
+To start real trading with adaptive position sizing and the daily loss circuit breaker:
 
 ```bash
-ggtrader-live --results results/your_results_folder/run_results.json --capital 25.0
+python ggt.py trade --adaptive-sizing
 ```
 
 ## ⚙️ How It Works
@@ -48,25 +47,25 @@ ggtrader-live --results results/your_results_folder/run_results.json --capital 2
 
 The bot polls Kraken for new OHLCV data every 4 hours. It aligns itself with the standard candle closes (00:00, 04:00, 08:00... UTC) by calculating the seconds to the next boundary and sleeping until then.
 
-### Per-Coin Signals
+### Per-Coin Signals & Regime Filters
 
 During every poll cycle:
 
-1. The engine identifies the optimal strategy for each coin (e.g., Ethereum uses `rsi_reversal` while Bitcoin uses `ema_cross`) based on the provided results file.
+1. The engine identifies the optimal strategy for each coin based on the provided results file.
 2. It generates a buy/sell signal for the latest completed candle.
-3. If an entry signal is detected, the bot executes a **Market Buy** on Kraken.
+3. **Regime Filter**: Coins with high BTC correlation are blocked if the overall market is in a bear regime (EMA-based).
+4. **Circuit Breaker**: If your intraday portfolio value drops by more than `DAILY_LOSS_LIMIT_PCT` (default 5%), new entries are halted until the next day.
 
-### Automated Exits (TSL)
+### Automated Exits (TSL/OCO)
 
 Upon a successful entry fill:
 
-1. The engine immediately places a **Trailing Stop Loss** order on Kraken for the same amount.
-2. The trailing setpoint is derived from the WFO-optimized `stop_pct`.
-3. Kraken takes over management of the TSL, safeguarding the position even if the bot is temporarily disconnected.
+1. The engine immediately places a **Trailing Stop Loss** or **OCO** order on Kraken.
+2. Kraken takes over management of the exit, safeguarding the position even if the bot is temporarily disconnected.
 
 ## 📁 Persistence & State
 
-Active positions and order IDs are saved to `data/active_positions.json`. Upon restart, the engine reloads this state to avoid double-entry or losing track of open trades.
+Active positions, circuit breaker status, and start-of-day equity are saved to `data/active_positions.json`. Upon restart, the engine reloads this state to avoid double-entry or losing track of open trades.
 
 ## ⚠️ Important Considerations
 
@@ -95,100 +94,39 @@ To run the live bot in a continuous container (recommended for production):
 3. **Persistence**:
    The container mounts `./data` locally, ensuring `active_positions.json` persists even if the container is rebuilt or moved to another host.
 
-## Performance Tracking & Dashboard
+## Performance Tracking & Observability
 
-The live trader automatically logs every trade, balance snapshot, and round-trip P&L to local CSV files. This provides a local mirror of your Kraken trading activity with full fee tracking and performance metrics.
+ggTrader provides two ways to monitor your live performance: a terminal-based dashboard and a real-time Grafana dashboard.
 
-### How It Works
+### 1. Grafana Dashboard (Recommended)
 
-The `TradeTracker` class (`src/ggTrader/core/trade_tracker.py`) is integrated into the `ExecutionEngine` and records data at four points:
+Accessible at `http://localhost:3002`, this provides:
+- **Live Equity Curve**: Your total portfolio value updated every balance snapshot.
+- **PnL per Trade**: Color-coded points (Gains vs. Losses) for every closed position.
+- **Trade History**: A searchable table of your most recent fills.
 
-1. **Buy fills** — After every successful market buy, the fill price, amount, and Kraken fee are logged.
-2. **Strategy-signal sells** — When a `fixed_sl_tp` exit signal fires and the bot executes a market sell, the round-trip P&L is computed and recorded.
-3. **Reconciliation-detected closes** — When the bot detects that a Kraken-side trailing stop or OCO order has filled (position held locally but no longer on exchange), it fetches the exit order details and records the close.
-4. **Balance snapshots** — Every 4h polling cycle, the bot snapshots total account value, free USD, and number of open positions.
+The Grafana instance pulls directly from the **TimescaleDB** mirror where all live events are recorded in real-time.
 
-### Data Files
+### 2. Terminal Dashboard (`ggt dashboard`)
 
-All tracking data is stored in `data/live/` (git-ignored, never pushed to GitHub):
-
-| File | Contents |
-|------|----------|
-| `data/live/trade_log.csv` | Every executed order (buys and sells) with price, amount, fee |
-| `data/live/position_closes.csv` | Completed round-trips with entry/exit prices, gross/net P&L, fees, hold duration, exit reason |
-| `data/live/balance_snapshots.csv` | Periodic account value snapshots (total USD, free USD, positions USD) |
-| `data/live/dashboard/` | Generated HTML/PNG charts |
-
-### Using the Dashboard
-
-View your live trading performance with the `ggt dashboard` command:
+The live trader also logs every trade, balance snapshot, and round-trip P&L to local CSV files in `data/live/`. You can view a summary with:
 
 ```bash
-# Print summary and generate interactive charts
-ggt dashboard
+# Print summary and generate interactive Plotly charts
+python ggt.py dashboard
 
 # Sync historical trades from Kraken first (recommended on first run)
-ggt dashboard --sync
-
-# Sync trades from a specific start date
-ggt dashboard --since 2025-06-01
-
-# Text summary only, no charts
-ggt dashboard --no-plots
-
-# Save charts to a custom directory
-ggt dashboard --output /path/to/charts
+python ggt.py dashboard --sync
 ```
 
-From Docker:
+### Data Synchronization
+
+If you ever lose local state or want to backfill historical trades into the database for Grafana:
 
 ```bash
-docker compose exec ggtrader_live python ggt.py dashboard --sync
+# Backfill CSV logs into the database mirror
+python ggt.py db sync-live
+
+# Re-sync CSV logs from Kraken trade history
+python ggt.py dashboard --sync
 ```
-
-### Console Output
-
-The dashboard prints a formatted summary to the terminal:
-
-```
-====================================================
-  ggTrader Live Performance Dashboard
-====================================================
-  Period:          2025-06-01 -> 2026-04-01
-  Account Value:   $1,247.83
-
-  --- P&L ---
-  Gross P&L:       +$266.25
-  Total Fees:      $18.42
-  Net P&L:         +$247.83
-
-  --- Trades ---
-  Total Trades:    47
-  Win Rate:        61.7% (29W / 18L)
-  Avg Win:         +$14.22
-  Avg Loss:        -$7.89
-  Profit Factor:   2.31
-  Best Trade:      +$42.10 (SOL-USD)
-  Worst Trade:     -$19.33 (AVAX-USD)
-====================================================
-```
-
-### Charts Generated
-
-Interactive Plotly HTML charts (plus static PNGs if `kaleido` is installed):
-
-- **Equity Curve** — Account value over time with starting balance reference line
-- **P&L Per Trade** — Green/red bar chart of each closed trade
-- **Cumulative P&L** — Running sum of net profit/loss
-- **Cumulative Fees** — Total fees paid over time
-- **P&L by Symbol** — Horizontal bar chart of net P&L grouped by coin
-- **Summary Gauges** — Win rate, profit factor, total P&L, total fees
-
-### Kraken Sync / Backfill
-
-The `--sync` flag pulls your complete trade history from Kraken via the CCXT `fetch_my_trades` API. It deduplicates by order ID, so it's safe to run repeatedly. After syncing raw trades, it automatically pairs buys and sells (FIFO) to rebuild the `position_closes.csv` round-trip log.
-
-This is useful for:
-- **Initial setup** — Backfill trades that happened before the tracker was installed
-- **Reconciliation** — Verify local records match Kraken's history
-- **Recovery** — Rebuild local data if CSVs are lost
