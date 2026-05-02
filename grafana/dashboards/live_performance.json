@@ -106,7 +106,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT timestamp AS \"time\", equity_value as \"Total Balance\" FROM equity_curves WHERE run_id = 'LIVE' ORDER BY timestamp ASC",
+          "rawSql": "SELECT timestamp AS \"time\", equity_value as \"Total Balance\" FROM equity_curves WHERE run_id = '$run_id' ORDER BY timestamp ASC",
           "refId": "A",
           "select": [
             [
@@ -122,7 +122,7 @@
           "where": []
         }
       ],
-      "title": "Equity Curve (Live)",
+      "title": "Equity Curve ($run_id)",
       "type": "timeseries"
     },
     {
@@ -238,7 +238,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT exit_time AS \"time\", CASE WHEN profit > 0 THEN profit END as \"Gains ($)\", CASE WHEN profit <= 0 THEN profit END as \"Losses ($)\" FROM trades WHERE run_id = 'LIVE' ORDER BY exit_time ASC",
+          "rawSql": "SELECT exit_time AS \"time\", CASE WHEN profit > 0 THEN profit END as \"Gains ($)\", CASE WHEN profit <= 0 THEN profit END as \"Losses ($)\" FROM trades WHERE run_id = '$run_id' ORDER BY exit_time ASC",
           "refId": "A"
         }
       ],
@@ -304,7 +304,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT exit_time as \"Time\", symbol, profit as \"PnL ($)\", profit_pct as \"PnL (%)\" FROM trades WHERE run_id = 'LIVE' ORDER BY exit_time DESC LIMIT 20",
+          "rawSql": "SELECT exit_time as \"Time\", symbol, profit as \"PnL ($)\", profit_pct as \"PnL (%)\" FROM trades WHERE run_id = '$run_id' ORDER BY exit_time DESC LIMIT 20",
           "refId": "A"
         }
       ],
@@ -317,7 +317,32 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "LIVE",
+          "value": "LIVE"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "ggTraderDB"
+        },
+        "definition": "SELECT DISTINCT run_id FROM equity_curves",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Asset Run",
+        "multi": false,
+        "name": "run_id",
+        "options": [],
+        "query": "SELECT DISTINCT run_id FROM equity_curves",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-30d",
@@ -327,6 +352,6 @@
   "timezone": "",
   "title": "ggTrader Live Performance",
   "uid": "ggtrader_live",
-  "version": 5,
+  "version": 6,
   "weekStart": ""
 }
