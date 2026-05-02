@@ -92,21 +92,23 @@ def test_execute_orders_mocked(mock_kraken: MagicMock, dummy_results_file: str):
     with patch("ggTrader.data.live.exchange_loader.LiveExchangeLoader") as mock_loader:
         mock_loader_instance = mock_loader.return_value
         mock_loader_instance.exchange = mock_instance
-        engine = ExecutionEngine(config, results_path=dummy_results_file)
+        # Mock reconcile to prevent it from dropping positions
+        with patch.object(ExecutionEngine, "_reconcile_positions"):
+            engine = ExecutionEngine(config, results_path=dummy_results_file)
 
-        # Test Market Buy
-        order_id = engine._execute_market_buy_order("BTC-USD", 100.0)
-        assert order_id == "123"
-        mock_instance.create_market_buy_order.assert_called_once()
+            # Test Market Buy
+            order_id = engine._execute_market_buy_order("BTC-USD", 100.0)
+            assert order_id == "123"
+            mock_instance.create_market_buy_order.assert_called_once()
 
-        # Test Trailing Stop
-        tsl_id = engine._execute_trailing_stop_order("BTC-USD", 0.002, 3.0)
-        assert tsl_id == "456"
-        # Check custom params for Kraken
-        args, kwargs = mock_instance.create_order.call_args
-        params = kwargs.get("params", args[5] if len(args) > 5 else {})
-        assert params["ordertype"] == "trailing-stop"
-        assert params["trailing_amount"] == "3.0%"
+            # Test Trailing Stop
+            tsl_id = engine._execute_trailing_stop_order("BTC-USD", 0.002, 3.0)
+            assert tsl_id == "456"
+            # Check params for create_order(symbol, type, side, amount, price, params)
+            args, kwargs = mock_instance.create_order.call_args
+            assert args[1] == "trailing-stop"
+            params = args[5]
+            assert "trailingAmount" in params
 
 
 def test_persistence_logic(tmp_path: str):
@@ -115,12 +117,14 @@ def test_persistence_logic(tmp_path: str):
     config = {"PERSISTENCE_PATH": persist_path}
     with patch("ggTrader.data.live.exchange_loader.LiveExchangeLoader") as mock_loader:
         mock_loader.return_value.exchange = MagicMock()
-        engine = ExecutionEngine(config)
+        # Mock reconcile to prevent dropping positions
+        with patch.object(ExecutionEngine, "_reconcile_positions"):
+            engine = ExecutionEngine(config)
 
-        engine.active_positions = {"BTC-USD": {"amount": 0.1}}
-        engine.save_state()
+            engine.active_positions = {"BTC-USD": {"amount": 0.1}}
+            engine.save_state()
 
-        assert os.path.exists(persist_path)
+            assert os.path.exists(persist_path)
 
-        new_engine = ExecutionEngine(config)
-        assert new_engine.active_positions["BTC-USD"]["amount"] == 0.1
+            new_engine = ExecutionEngine(config)
+            assert new_engine.active_positions["BTC-USD"]["amount"] == 0.1

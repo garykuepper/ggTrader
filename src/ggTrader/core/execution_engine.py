@@ -319,6 +319,11 @@ class ExecutionEngine:
             if not self.symbols:
                 self.symbols = list(self.per_coin_params.keys())
 
+        # Daily loss circuit breaker state
+        self.daily_start_equity: Optional[float] = None
+        self.circuit_breaker_triggered = False
+        self._last_check_date: Optional[datetime.date] = None
+
         self.load_state()
         self._reconcile_positions()
 
@@ -439,24 +444,56 @@ class ExecutionEngine:
             self.logger.warning("reload_params: no research results found.")
 
     def load_state(self) -> None:
-        """Load active positions from persistence file."""
+        """Load active positions and engine state from persistence file."""
         if os.path.exists(self.persistence_path):
-            with open(self.persistence_path, "r") as f:
-                self.active_positions = json.load(f)
-            self.logger.info(f"Loaded {len(self.active_positions)} active positions from state.")
+            try:
+                with open(self.persistence_path, "r") as f:
+                    data = json.load(f)
+
+                # New format support
+                if isinstance(data, dict) and "positions" in data:
+                    self.active_positions = data["positions"]
+                    self.daily_start_equity = data.get("daily_start_equity")
+                    self.circuit_breaker_triggered = data.get("circuit_breaker_triggered", False)
+                    lcd = data.get("last_check_date")
+                    if lcd:
+                        try:
+                            self._last_check_date = datetime.fromisoformat(lcd).date()
+                        except Exception:
+                            self._last_check_date = None
+                else:
+                    # Old format support (just a dict of positions)
+                    self.active_positions = data
+
+                self.logger.info(
+                    f"Loaded {len(self.active_positions)} active positions from state."
+                )
+                if self.circuit_breaker_triggered:
+                    self.logger.warning("  [State] Circuit breaker was ACTIVE in saved state.")
+            except Exception as e:
+                self.logger.error(f"Failed to load state from {self.persistence_path}: {e!r}")
+                self.active_positions = {}
 
     def save_state(self) -> None:
-        """Save active positions to persistence file (atomic write)."""
+        """Save active positions and engine state to persistence file (atomic write)."""
         import tempfile
+
+        state_data = {
+            "positions": self.active_positions,
+            "daily_start_equity": self.daily_start_equity,
+            "circuit_breaker_triggered": self.circuit_breaker_triggered,
+            "last_check_date": self._last_check_date.isoformat() if self._last_check_date else None,
+        }
 
         dir_name = os.path.dirname(self.persistence_path) or "."
         os.makedirs(dir_name, exist_ok=True)
         fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".tmp")
         try:
             with os.fdopen(fd, "w") as f:
-                json.dump(self.active_positions, f, indent=4)
+                json.dump(state_data, f, indent=4)
             os.replace(tmp_path, self.persistence_path)
-        except Exception:
+        except Exception as e:
+            self.logger.error(f"Failed to save state: {e!r}")
             try:
                 os.unlink(tmp_path)
             except OSError:
@@ -1408,8 +1445,16 @@ class ExecutionEngine:
         """Evaluate signals and execute orders."""
         if regime_allowance is None:
             regime_allowance = {}
+
+        if self.circuit_breaker_triggered:
+            self.logger.info("  [CircuitBreaker] ACTIVE — blocking all new entries")
+
         for symbol, sig in signals_dict.items():
             if sig["entry"] and symbol not in self.active_positions:
+                # Circuit breaker gate
+                if self.circuit_breaker_triggered:
+                    continue
+
                 # Regime gate — block entries in bear markets
                 if not regime_allowance.get(symbol, True):
                     self.logger.info(f"  [Regime] BLOCKED entry for {symbol} (bear regime)")
@@ -1804,7 +1849,39 @@ class ExecutionEngine:
                 # 0b. Sync local memory with actual Kraken exchange (catch server-side OCO exits)
                 self._reconcile_positions()
 
-                # 0c. Record balance snapshot for performance tracking.
+                # 0c. Daily loss circuit breaker check
+                _current_date = _now.date()
+                if self._last_check_date != _current_date:
+                    self.logger.info(f"--- New Day Started: {_current_date} ---")
+                    self.daily_start_equity = self._get_total_portfolio_usd()
+                    self.circuit_breaker_triggered = False
+                    self._last_check_date = _current_date
+                    self.save_state()
+                    if self.daily_start_equity:
+                        self.logger.info(
+                            f"  [CircuitBreaker] Start-of-day equity: "
+                            f"${self.daily_start_equity:,.2f}"
+                        )
+
+                limit = self.config.get("DAILY_LOSS_LIMIT_PCT")
+                if limit and self.daily_start_equity and not self.circuit_breaker_triggered:
+                    current_equity = self._get_total_portfolio_usd()
+                    if current_equity:
+                        drawdown = (current_equity / self.daily_start_equity) - 1
+                        if drawdown < -limit:
+                            self.logger.warning(
+                                f"🛑 [CircuitBreaker] TRIGGERED: Intraday loss "
+                                f"{drawdown*100:.2f}% exceeds limit {limit*100:.2f}%."
+                            )
+                            self.circuit_breaker_triggered = True
+                            self.save_state()
+                            self._notify(
+                                f"🛑 <b>Circuit Breaker Triggered</b>\n"
+                                f"Intraday Loss: <code>{drawdown*100:.2f}%</code>\n"
+                                f"Entries halted until tomorrow."
+                            )
+
+                # 0d. Record balance snapshot for performance tracking.
                 # Bug E fix: skip the snapshot entirely if we couldn't fetch a
                 # real total — never write a fabricated START_CASH value into
                 # balance_snapshots.csv (it would poison every equity-curve

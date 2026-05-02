@@ -214,4 +214,7 @@ def full_pipeline_config() -> dict[str, Any]:
         # Set False to force a full re-run (e.g. after changing WFO internals not covered
         # by the cache key). Delete results/wfo_cache/ to clear all cached entries.
         "WFO_CACHE_ENABLED": True,
+        # Daily loss circuit breaker: halt new entries if intraday portfolio
+        # value drops by more than this percentage. Set to None to disable.
+        "DAILY_LOSS_LIMIT_PCT": 0.05,
     }

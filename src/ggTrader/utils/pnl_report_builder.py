@@ -179,8 +179,12 @@ def _build_alerts(
     consecutive_losses: int,
     max_dd_pct: float,
     thresholds: dict[str, float],
+    circuit_breaker_triggered: bool = False,
 ) -> list[str]:
     alerts: list[str] = []
+    if circuit_breaker_triggered:
+        alerts.append("🛑 **Daily Loss Circuit Breaker is ACTIVE (Entries Halted)**")
+
     if snapshot_balance is not None:
         if snapshot_balance < thresholds["balance_floor"]:
             alerts.append(
@@ -297,7 +301,13 @@ def _gather_report_data(
     closes = tracker.get_closed_positions()
     balances = tracker.get_balance_history()
     summary_all = tracker.compute_summary_stats()
-    active = _load_active_positions(Path(active_positions_path))
+    full_state = _load_active_positions(Path(active_positions_path))
+    if isinstance(full_state, dict) and "positions" in full_state:
+        active = full_state["positions"]
+        cb_triggered = full_state.get("circuit_breaker_triggered", False)
+    else:
+        active = full_state
+        cb_triggered = False
 
     # Filter out dust positions — sub-$1 leftovers from partial exchange fills.
     active = {
@@ -407,6 +417,7 @@ def _gather_report_data(
         consecutive_losses=all_consec,
         max_dd_pct=alltime.get("max_dd", 0.0),
         thresholds=thresholds,
+        circuit_breaker_triggered=cb_triggered,
     )
 
     regime = _fetch_regime_status()
