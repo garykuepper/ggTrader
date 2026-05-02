@@ -164,7 +164,9 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             self.logger.info(f"Reloaded research params from {latest_res}")
 
     def _reconcile_positions(self) -> None:
-        if self.config.get("DRY_RUN", False): return
+        if self.config.get("DRY_RUN", False):
+            return
+
         try:
             balance = self.exchange.fetch_balance()
             held_symbols: Dict[str, float] = {}
@@ -175,7 +177,7 @@ class CryptoExecutionEngine(BaseExecutionEngine):
 
             stale = [s for s in self.active_positions if s not in held_symbols]
             if stale:
-                self.logger.warning(f"  [Reconcile] {len(stale)} position(s) in local state but NOT on exchange: {stale}")
+                self.logger.warning(f"  [Reconcile] {len(stale)} position(s) in local state but NOT held on exchange: {stale}")
                 for s in stale:
                     pos = self.active_positions[s]
                     exit_id = pos.get("tsl_order_id") or pos.get("oco_order_id")
@@ -189,17 +191,22 @@ class CryptoExecutionEngine(BaseExecutionEngine):
 
             untracked: list[str] = []
             for s in held_symbols:
-                if s in self.active_positions: continue
+                if s in self.active_positions:
+                    continue
                 try:
                     ticker = self.exchange.fetch_ticker(s)
                     usd_val = held_symbols[s] * (ticker.get("last") or 0)
-                except Exception: usd_val = 0.0
-                if usd_val < _DUST_THRESHOLD_USD: continue
+                except Exception:
+                    usd_val = 0.0
+                if usd_val < _DUST_THRESHOLD_USD:
+                    self.logger.info(f"  [Reconcile] Ignoring dust balance {s}: {held_symbols[s]:.8g} (~${usd_val:.4f})")
+                    continue
                 untracked.append(s)
             
             if untracked:
                 self.logger.warning(f"  [Reconcile] {len(untracked)} untracked positions found: {untracked}")
                 for s in untracked:
+                    coin_params = self.per_coin_params.get(s)
                     seeded = self.tracker.find_open_buy_for(s)
                     self.active_positions[s] = {
                         "entry_order_id": seeded["order_id"] if seeded else "unknown",
@@ -207,18 +214,38 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                         "entry_time": seeded["time"] if seeded else None,
                         "entry_fee": seeded["fee"] if seeded else 0.0,
                         "amount": held_symbols[s],
-                        "stop_pct": 3.0, "exit_name": "atr_trailing", "tsl_order_id": None,
+                        "stop_pct": coin_params["params"].get("stop_pct", 3.0) if coin_params else 3.0,
+                        "exit_name": coin_params.get("exit_name", "atr_trailing") if coin_params else "atr_trailing",
+                        "tsl_order_id": None,
                     }
                 self.save_state()
+
+            # Dust cleanup in local state
+            for sym, pos in list(self.active_positions.items()):
+                amt = float(pos.get("amount", 0) or 0)
+                entry = float(pos.get("entry_price") or 0)
+                if amt * entry < _DUST_THRESHOLD_USD:
+                    try:
+                        ticker = self.exchange.fetch_ticker(sym)
+                        cur_val = amt * float(ticker.get("last") or 0)
+                        if cur_val < _DUST_THRESHOLD_USD:
+                            self.logger.info(f"  [Reconcile] Removing local dust position {sym}")
+                            del self.active_positions[sym]
+                    except Exception: pass
+            self.save_state()
+
         except Exception as e:
             self.logger.warning(f"  [Reconcile] Failed: {e!r}")
 
     def _poll_open_exit_orders(self) -> None:
-        if self.config.get("DRY_RUN", False) or not self.active_positions: return
+        if self.config.get("DRY_RUN", False) or not self.active_positions:
+            return
+
         triggered: list[str] = []
         for symbol, pos in list(self.active_positions.items()):
             exit_id = pos.get("tsl_order_id") or pos.get("oco_order_id")
-            if not exit_id or exit_id in ("dry_run_tsl_id", "dry_run_oco_id"): continue
+            if not exit_id or exit_id in ("dry_run_tsl_id", "dry_run_oco_id"):
+                continue
             try:
                 pair = symbol.replace("-", "/")
                 order = self.exchange.fetch_order(exit_id, pair)
@@ -226,44 +253,78 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                     reason = "trailing_stop" if pos.get("tsl_order_id") else "oco_exit"
                     if self._record_exit(symbol, exit_id, pos, reason, sell_order=order):
                         triggered.append(symbol)
-                    else: pos["pending_repair"] = True
-            except Exception: continue
-        for s in triggered: del self.active_positions[s]
-        if triggered: self.save_state()
+                    else:
+                        pos["pending_repair"] = True
+            except Exception:
+                continue
 
-    def _record_exit(self, symbol: str, sell_order_id: str, pos: Dict[str, Any], exit_reason: str, sell_order=None, allow_ticker_fallback=False) -> bool:
+        for s in triggered:
+            del self.active_positions[s]
+        if triggered:
+            self.save_state()
+
+    def _record_exit(
+        self,
+        symbol: str,
+        sell_order_id: str,
+        pos: Dict[str, Any],
+        exit_reason: str,
+        sell_order: Optional[Dict[str, Any]] = None,
+        allow_ticker_fallback: bool = False,
+    ) -> bool:
+        if sell_order_id in ("dry_run_sell_id", "dry_run_tsl_id", "dry_run_oco_id"):
+            return False
+
         pair = symbol.replace("-", "/")
         if sell_order is None:
             try:
                 time.sleep(1)
                 sell_order = self.exchange.fetch_order(sell_order_id, pair)
-            except Exception: return False
-        
+            except Exception:
+                return False
+
         exit_price = _safe_extract_fill_price(sell_order)
+        if (exit_price is None or exit_price <= 0):
+            # Try fetch_my_trades
+            try:
+                recent = self.exchange.fetch_my_trades(pair, limit=20)
+                matching = [t for t in recent if t.get("order") == sell_order_id]
+                if matching:
+                    exit_price = sum(float(t["amount"]) * float(t["price"]) for t in matching) / sum(float(t["amount"]) for t in matching)
+            except Exception: pass
+
         if (exit_price is None or exit_price <= 0) and allow_ticker_fallback:
             try:
                 ticker = self.exchange.fetch_ticker(pair)
                 exit_price = float(ticker.get("last") or 0)
             except Exception: pass
-            
-        if not exit_price or exit_price <= 0: return False
-        
-        filled = _safe_extract_filled_amount(sell_order) or float(pos.get("amount") or 0)
+
+        if not exit_price or exit_price <= 0:
+            return False
+
+        filled_amount = _safe_extract_filled_amount(sell_order) or float(pos.get("amount") or 0)
         fee_info = sell_order.get("fee") or {}
         sell_fee = float(fee_info.get("cost", 0) or 0)
         
         self.tracker.record_sell(
-            symbol=symbol, order_id=sell_order_id, price=exit_price, amount=filled,
-            amount_usd=exit_price * filled, fee=sell_fee, fee_currency=fee_info.get("currency", "USD"),
-            entry_price=pos.get("entry_price"), entry_time=pos.get("entry_time"),
-            entry_fee=pos.get("entry_fee", 0), exit_reason=exit_reason,
+            symbol=symbol,
+            order_id=sell_order_id,
+            price=exit_price,
+            amount=filled_amount,
+            amount_usd=exit_price * filled_amount,
+            fee=sell_fee,
+            fee_currency=fee_info.get("currency", "USD"),
+            entry_price=pos.get("entry_price"),
+            entry_time=pos.get("entry_time"),
+            entry_fee=pos.get("entry_fee", 0),
+            exit_reason=exit_reason,
         )
-        
+
         try:
+            strategy = self.per_coin_params.get(symbol, {}).get("strategy_name", "?")
             msg = _format_exit_alert(
-                symbol, self.per_coin_params.get(symbol, {}).get("strategy_name", "?"),
-                exit_reason, pos.get("entry_price"), exit_price, filled,
-                float(pos.get("entry_fee", 0)), sell_fee, pos.get("entry_time"),
+                symbol, strategy, exit_reason, pos.get("entry_price"), exit_price,
+                filled_amount, float(pos.get("entry_fee", 0)), sell_fee, pos.get("entry_time"),
                 len(self.active_positions) - 1, len(self.per_coin_params)
             )
             self._notify(msg)
@@ -283,7 +344,8 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                 self.active_positions[symbol]["pending_repair"] = True
 
     def _get_total_portfolio_usd(self) -> Optional[float]:
-        if self.config.get("DRY_RUN", False): return float(self.config.get("START_CASH", 1000.0))
+        if self.config.get("DRY_RUN", False):
+            return float(self.config.get("START_CASH", 1000.0))
         try:
             bal = self.exchange.fetch_balance()
             total_usd = 0.0
@@ -292,12 +354,15 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             for coin, amount in bal.get("total", {}).items():
                 if float(amount) <= 0: continue
                 norm_coin = norm_map.get(coin, coin)
-                if norm_coin in ("USD", "USDT", "USDC"): total_usd += float(amount)
+                if norm_coin in ("USD", "USDT", "USDC"):
+                    total_usd += float(amount)
                 else:
                     pair = f"{norm_coin}/USD"
-                    if pair in tickers: total_usd += float(amount) * float(tickers[pair]["last"])
+                    if pair in tickers:
+                        total_usd += float(amount) * float(tickers[pair]["last"])
             return total_usd
-        except Exception: return None
+        except Exception:
+            return None
 
     def _fetch_latest_data(self) -> pd.DataFrame:
         fetch_symbols = list(self.symbols)
@@ -306,7 +371,8 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         return self.loader.fetch_ohlcv(symbols=fetch_symbols, interval=self.interval, limit=200)
 
     def _compute_live_regime_allowance(self, ohlcv_df: pd.DataFrame) -> Dict[str, bool]:
-        if not self.config.get("BTC_REGIME_FILTER", False): return {s: True for s in self.symbols}
+        if not self.config.get("BTC_REGIME_FILTER", False):
+            return {s: True for s in self.symbols}
         btc_regime = _compute_btc_regime_mask(ohlcv_df, self.config)
         alt_regime = _compute_altcoin_index_mask(ohlcv_df, self.config) if self.config.get("ALTCOIN_REGIME_FILTER") else None
         corrs = _compute_btc_correlations(ohlcv_df, self.config)
@@ -342,9 +408,12 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                 except Exception: pass
                 
             results[s] = {
-                "entry": bool(ent[-1, 0]), "exit": bool(ext[-1, 0]),
-                "exit_name": info["exit_name"], "stop_price": float(stops[-1, 0]),
-                "fill_price": float(pxs[-1, 0]), "current_price": float(close.iloc[-1]),
+                "entry": bool(ent[-1, 0]),
+                "exit": bool(ext[-1, 0]),
+                "exit_name": info["exit_name"],
+                "stop_price": float(stops[-1, 0]),
+                "fill_price": float(pxs[-1, 0]),
+                "current_price": float(close.iloc[-1]),
                 "atr_value": atr,
             }
         return results
@@ -353,33 +422,45 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         if self.config.get("DRY_RUN"): return True
         try:
             bal = self.exchange.fetch_balance()
-            if float(bal.get("free", {}).get("USD", 0)) < capital_usd * 0.95: return False
+            if float(bal.get("free", {}).get("USD", 0)) < capital_usd * 0.95:
+                return False
             pair = symbol.replace("-", "/")
             if not self.exchange.markets: self.exchange.load_markets()
             m = self.exchange.market(pair)
             ticker = self.exchange.fetch_ticker(pair)
-            if (capital_usd / ticker["last"]) < float(m.get("limits", {}).get("amount", {}).get("min") or 0): return False
+            coin_amt = capital_usd / ticker["last"]
+            min_amt = float(m.get("limits", {}).get("amount", {}).get("min") or 0)
+            if coin_amt < min_amt: return False
             return True
         except Exception: return False
 
     def _execute_market_buy_order(self, symbol: str, amount_usd: float) -> Optional[str]:
+        self.logger.info(f"BUY {symbol} ${amount_usd}")
         if self.config.get("DRY_RUN"): return "dry_run_id"
         try:
             pair = symbol.replace("-", "/")
             ticker = self.exchange.fetch_ticker(pair)
             amt = self.exchange.amount_to_precision(pair, amount_usd / ticker["last"])
-            return self.exchange.create_market_buy_order(pair, amt)["id"]
-        except Exception: return None
+            order = self.exchange.create_market_buy_order(pair, amt)
+            return order["id"]
+        except Exception as e:
+            self.logger.error(f"Buy failed: {e}")
+            return None
 
     def _execute_market_sell_order(self, symbol: str, amount: float) -> Optional[str]:
+        self.logger.info(f"SELL {symbol} {amount}")
         if self.config.get("DRY_RUN"): return "dry_run_sell_id"
         try:
             pair = symbol.replace("-", "/")
             amt = self.exchange.amount_to_precision(pair, amount)
-            return self.exchange.create_market_sell_order(pair, amt)["id"]
-        except Exception: return None
+            order = self.exchange.create_market_sell_order(pair, amt)
+            return order["id"]
+        except Exception as e:
+            self.logger.error(f"Sell failed: {e}")
+            return None
 
     def _execute_trailing_stop_order(self, symbol: str, amount: float, stop_pct: float) -> Optional[str]:
+        self.logger.info(f"TSL {symbol} -{stop_pct}%")
         if self.config.get("DRY_RUN"): return "dry_run_tsl_id"
         try:
             pair = symbol.replace("-", "/")
@@ -389,28 +470,41 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             prec = m.get("precision", {}).get("price")
             min_t = 10**(-prec) if isinstance(prec, int) else prec
             offset = float(self.exchange.price_to_precision(pair, max(offset, min_t)))
-            return self.exchange.create_order(pair, "trailing-stop", "sell", self.exchange.amount_to_precision(pair, amount), None, {"trailingAmount": offset})["id"]
-        except Exception: return None
+            amt_p = self.exchange.amount_to_precision(pair, amount)
+            order = self.exchange.create_order(pair, "trailing-stop", "sell", amt_p, None, {"trailingAmount": offset})
+            return order["id"]
+        except Exception as e:
+            self.logger.error(f"TSL failed: {e}")
+            return None
 
     def _execute_oco_exit_order(self, symbol: str, amount: float, sl: float, tp: float) -> Optional[str]:
+        self.logger.info(f"OCO {symbol} SL={sl} TP={tp}")
         if self.config.get("DRY_RUN"): return "dry_run_oco_id"
         try:
             pair = symbol.replace("-", "/")
             sl_f = float(self.exchange.price_to_precision(pair, sl))
             tp_f = float(self.exchange.price_to_precision(pair, tp))
-            return self.exchange.create_order(pair, "limit", "sell", self.exchange.amount_to_precision(pair, amount), tp_f, {"stopLossPrice": sl_f, "takeProfitPrice": tp_f})["id"]
-        except Exception: return None
+            amt_p = self.exchange.amount_to_precision(pair, amount)
+            order = self.exchange.create_order(pair, "limit", "sell", amt_p, tp_f, {"stopLossPrice": sl_f, "takeProfitPrice": tp_f})
+            return order["id"]
+        except Exception as e:
+            self.logger.error(f"OCO failed: {e}")
+            return None
 
     def _cancel_open_orders(self, symbol: str) -> None:
         if self.config.get("DRY_RUN"): return
         try:
             pair = symbol.replace("-", "/")
-            for o in self.exchange.fetch_open_orders(pair): self.exchange.cancel_order(o["id"], pair)
+            for o in self.exchange.fetch_open_orders(pair):
+                self.exchange.cancel_order(o["id"], pair)
         except Exception: pass
 
     def _execute_trade_logic(self, signals_dict: Dict[str, Dict[str, Any]], regime_allowance: Optional[Dict[str, bool]] = None) -> None:
         regime_allowance = regime_allowance or {}
-        if self.circuit_breaker_triggered: return
+        if self.circuit_breaker_triggered:
+            self.logger.info("  [CircuitBreaker] ACTIVE")
+            return
+        
         for s, sig in signals_dict.items():
             if sig["entry"] and s not in self.active_positions:
                 if not regime_allowance.get(s, True): continue
@@ -450,15 +544,20 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             while True:
                 now = datetime.now(timezone.utc)
                 if now.day == 1 and self._reopt_done_month != now.month:
-                    if self._run_monthly_reoptimization(): self._save_reopt_flag(now.month)
+                    if self._run_monthly_reoptimization():
+                        self._reopt_done_month = now.month
+                        self._save_reopt_flag(now.month)
                 
                 self._reconcile_positions()
                 self._check_circuit_breaker()
                 
                 total_usd = self._get_total_portfolio_usd()
                 if total_usd:
-                    bal = self.exchange.fetch_balance()
-                    self.tracker.record_balance_snapshot(total_usd, float(bal.get("free", {}).get("USD", 0)), total_usd - float(bal.get("free", {}).get("USD", 0)), len(self.active_positions))
+                    try:
+                        bal = self.exchange.fetch_balance()
+                        free_usd = float(bal.get("free", {}).get("USD", 0))
+                        self.tracker.record_balance_snapshot(total_usd, free_usd, total_usd - free_usd, len(self.active_positions))
+                    except Exception: pass
                 
                 df = self._fetch_latest_data()
                 if not df.empty:
@@ -469,5 +568,19 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         except KeyboardInterrupt: self.state = "STOPPED"
 
     def _run_monthly_reoptimization(self) -> bool:
-        # Implementation from original file... keeping it simplified for this Turn.
-        return True
+        import subprocess
+        import sys
+        from datetime import datetime, timedelta
+
+        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        self.logger.info("  MONTHLY REOPTIMIZATION STARTED")
+        project_root = Path(__file__).resolve().parent.parent.parent.parent
+
+        try:
+            subprocess.run([sys.executable, "-u", "ggt.py", "research", "--top", "50", "--workers", "2", "--end-date", yesterday], cwd=str(project_root), check=True, timeout=7200)
+            subprocess.run([sys.executable, "-u", "ggt.py", "production"], cwd=str(project_root), check=True, timeout=1800)
+            self.reload_params()
+            return True
+        except Exception as e:
+            self.logger.error(f"Monthly reopt failed: {e}")
+            return False

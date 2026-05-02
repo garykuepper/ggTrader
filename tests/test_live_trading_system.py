@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from ggTrader.core.execution_engine import ExecutionEngine
+from ggTrader.core.crypto_execution_engine import CryptoExecutionEngine as ExecutionEngine
 
 
 @pytest.fixture

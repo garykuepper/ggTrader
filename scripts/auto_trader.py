@@ -12,7 +12,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from ggTrader.core.execution_engine import ExecutionEngine
+from ggTrader.core.crypto_execution_engine import CryptoExecutionEngine as ExecutionEngine
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.run_config import full_pipeline_config, merge_run_config
 

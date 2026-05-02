@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 from datetime import datetime, timezone
 
-from ggTrader.core.execution_engine import ExecutionEngine
+from ggTrader.core.crypto_execution_engine import CryptoExecutionEngine as ExecutionEngine
 
 @pytest.fixture
 def dummy_results_file(tmp_path: str) -> str:
@@ -40,8 +40,8 @@ def mock_engine_deps(tmp_path):
     persist_path = os.path.join(tmp_path, "active_positions.json")
     reopt_path = os.path.join(tmp_path, "last_reopt_month.txt")
     
-    with patch("ggTrader.core.execution_engine.setup_live_logger"), \
-         patch("ggTrader.core.execution_engine.TradeTracker"), \
+    with patch("ggTrader.core.base_execution_engine.setup_live_logger"), \
+         patch("ggTrader.core.base_execution_engine.TradeTracker"), \
          patch("ggTrader.data.live.cached_loader.CachedExchangeLoader"):
         yield {
             "PERSISTENCE_PATH": persist_path,

@@ -55,7 +55,7 @@ class YFinanceDataLoader(BaseDataLoader):
 
         try:
             # group_by="ticker" ensures we always get a MultiIndex (symbol, metric)
-            # even for a single symbol request.
+            # or at least a structure we can normalize.
             df = yf.download(
                 tickers=symbols,
                 start=start,
@@ -72,21 +72,24 @@ class YFinanceDataLoader(BaseDataLoader):
         if df.empty:
             return pd.DataFrame()
 
-        # Reshape and clean
-        # yfinance returns columns like (AAPL, Close)
-        # We need (AAPL, close)
-        df.columns = df.columns.set_levels(df.columns.levels[1].str.lower(), level=1)
+        # 1. Ensure (Ticker, Price) structure
+        # yfinance >= 0.2.40 can return (Price, Ticker) instead of (Ticker, Price)
+        if df.columns.names[0] == "Price":
+            df = df.swaplevel(0, 1, axis=1)
+        
+        df.sort_index(axis=1, inplace=True)
 
-        # Ensure index is localized to UTC
+        # 2. Normalize metric names to lowercase
+        # Use rename to be safer than set_levels
+        df.rename(columns=str.lower, level=1, inplace=True)
+
+        # 3. Ensure index is localized to UTC
         if df.index.tz is None:
             df.index = df.index.tz_localize("UTC")
         else:
             df.index = df.index.tz_convert("UTC")
 
-        # Sort columns to ensure consistent order
-        df = df.reindex(columns=sorted(df.columns), level=0)
-
-        # Drop any rows that are all NaN for all symbols
+        # 4. Drop any rows that are all NaN
         df.dropna(how="all", inplace=True)
 
         return df
