@@ -114,7 +114,7 @@ def run_trade(args: argparse.Namespace):
     engine = EngineClass(
         config,
         results_path=results_path,
-        db_manager=rm.db_manager,
+        db_manager=rm,
         run_id="LIVE" if asset_class == "crypto" else "LIVE_STOCKS",
     )
 
