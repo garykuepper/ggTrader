@@ -51,7 +51,11 @@ If you wish to run the live trading engine in a container while keeping the data
 ### Grand Research (Start Here)
 Execute the parallel research pipeline to find the best assets and strategies:
 ```bash
+# Crypto (default)
 python ggt.py research --top 50 --workers 5
+
+# Stocks
+python ggt.py research --asset-class stocks --top 25 --workers 5
 ```
 
 ### Portfolio Backtest
@@ -63,7 +67,11 @@ python ggt.py backtest
 ### Live Trading
 Start the execution loop for automated orders:
 ```bash
-python ggt.py trade
+# Crypto Live
+python ggt.py trade --adaptive-sizing
+
+# Stock Paper Trading
+python ggt.py trade --asset-class stocks --paper
 ```
 
 ---

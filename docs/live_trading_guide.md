@@ -58,7 +58,7 @@ python ggt.py trade --asset-class stocks --paper
 - **Crypto**: Polls Kraken every 4 hours, aligned to UTC boundaries (00:00, 04:00, etc).
 - **Stocks**: Evaluates signals once daily after the NYSE market close.
 
-### Per-Coin Signals & Risk Controls
+### Per-Asset Signals & Risk Controls
 During every cycle:
 1. The engine computes signals using WFO-optimized parameters.
 2. **Regime Filter**: High-correlation assets are blocked during bear regimes (EMA-based).

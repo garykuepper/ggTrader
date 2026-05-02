@@ -20,10 +20,11 @@ The project is structured into modular layers, ensuring that research and execut
 
 ## Data Layer
 
-- **Storage**: PostgreSQL (TimescaleDB) for OHLCV data, optimized for time-series.
-- **Ingestion**: `KrakenPostgresIngestor` processes raw CSVs into Hypertable.
-- **Access**: `KrakenHistoricalData` facade delegates to `KrakenPostgresReader`.
-- **Caching**: `ResultDBManager` (PostgreSQL) stores backtest results, study caches, and optimization metadata.
+- **Storage**: PostgreSQL (TimescaleDB) for OHLCV data, optimized for time-series. Both Crypto and Stocks coexist in the same `ohlcv` table.
+- **Live Fetching (Crypto)**: `CachedExchangeLoader` uses CCXT to pull recent candles and mirror them to the database.
+- **Live Fetching (Stocks)**: `CachedYFinanceLoader` uses `yfinance` to pull free historical daily bars and mirror them to the database.
+- **Historical Ingestion**: `KrakenPostgresIngestor` processes raw CSVs into the hypertable for backtesting.
+- **Access Facade**: `TimescaleDBLoader` provides the primary interface for reading data into the system, ensuring standard MultiIndex formatting.
 - **Mover Mask**: `KrakenPostgresReader.get_daily_mover_mask()` builds a boolean DataFrame of daily top-N movers by notional volume in one SQL query.
 
 ## Core Engine
@@ -85,17 +86,17 @@ The project uses a **pluggable strategy framework** for flexible signal generati
 
 ### Three-Tier Regime Filter
 
-Before combining per-coin signals into the final portfolio, `run_frozen_params_combined_backtest()` applies a BTC-correlation regime filter that mutes entries during bear markets:
+Before combining per-asset signals into the final portfolio, `run_frozen_params_combined_backtest()` applies a BTC-correlation regime filter that mutes entries during bear markets:
 
 | Tier | Condition | Filter applied |
 | ---- | --------- | -------------- |
 | **BTC tier** | BTC return correlation ≥ `BTC_REGIME_FILTER_MIN_CORRELATION` (default 0.5) | Signal blocked when BTC EMA(50) < EMA(200) — golden cross filter |
 | **Altcoin tier** | Correlation in `[ALTCOIN_REGIME_FILTER_CORR_MIN, btc_min)` (default 0.3–0.5) | Signal blocked when altcoin equal-weight index EMA(50) < EMA(200) |
-| **Exempt tier** | Correlation < `ALTCOIN_REGIME_FILTER_CORR_MIN` | No filter — coin trades freely |
+| **Exempt tier** | Correlation < `ALTCOIN_REGIME_FILTER_CORR_MIN` | No filter — asset trades freely |
 
 The filter compares a short EMA to the long EMA(200) rather than raw close price, which prevents single-candle spikes from flipping the regime signal. The short span is configured via `BTC_REGIME_FILTER_SHORT_EMA` (default `50`). Set to `None` to revert to the original `close > EMA(200)` behaviour.
 
-The **altcoin index** is an equal-weighted, normalised price series built from all non-BTC symbols in the universe. Its EMA(50)/EMA(200) cross acts as a trend proxy for alt-correlated coins.
+The **altcoin index** is an equal-weighted, normalised price series built from all non-BTC symbols in the universe. Its EMA(50)/EMA(200) cross acts as a trend proxy for alt-correlated assets.
 
 Correlations are computed over the full OHLCV date range using daily log-returns. Regime filtering is enabled by `BTC_REGIME_FILTER=True` in constants; it is disabled by default.
 
@@ -106,13 +107,22 @@ _compute_altcoin_index_mask() # -> pd.Series[bool]  (True = bullish)
 _apply_tiered_regime_mask()   # -> filtered entries DataFrame
 ```
 
+### Stock Macro Filters (SPY & VIX)
+
+Equities use a dual-gate macro filter to identify favorable market environments:
+
+1. **SPY EMA Gate**: True when the short EMA (default 50) is above the long EMA (default 200) for the S&P 500. This tracks the broad market trend.
+2. **VIX Volatility Gate**: True when the VIX Fear Index is below a specific threshold (default 25). High VIX environments often lead to stop-loss cascading and are avoided.
+
+For stocks, per-asset correlation with SPY can also be used to exempt low-beta assets from these macro blocks.
+
 ### Quality Gates (Anti-Overfitting)
 
-After WFO, each coin passes through sequential gates before entering the combined portfolio:
+After WFO, each asset passes through sequential gates before entering the combined portfolio:
 
 | Gate | Config key | Default | Purpose |
 | ---- | ---------- | ------- | ------- |
-| Robustness floor | `MIN_ROBUSTNESS_SCORE` | 0.1 | Drop coins with very low OOS robustness |
+| Robustness floor | `MIN_ROBUSTNESS_SCORE` | 0.1 | Drop assets with very low OOS robustness |
 | Fold consistency | `MIN_FOLD_CONSISTENCY` | 0.38 | At least 4 in 10 OOS folds must be profitable |
 | Valid train folds | `MIN_VALID_TRAIN_FOLDS` | 3 | At least 3 of 6 folds must produce finite IS Sharpe |
 | Strategy diversity | `MAX_COINS_PER_STRATEGY` | 10 | Prevent one entry strategy from dominating |
@@ -125,21 +135,21 @@ Live trading incorporates additional real-time risk safeguards:
 - **Regime Filter**: Blocks entries during sustained bear markets (BTC EMA-based).
 - **Exchange Reconciliation**: Syncs local state with actual Kraken holdings on every heartbeat to detect server-side exits (TSL/OCO).
 
-Coins that pass all gates but produce **0 regime-filtered trade signals** in the combined backtest have their OOS allocation weight zeroed out, so idle capital is redistributed to active coins.
+Assets that pass all gates but produce **0 regime-filtered trade signals** in the combined backtest have their OOS allocation weight zeroed out, so idle capital is redistributed to active assets.
 
-### Per-Coin Walk-Forward Optimization
+### Per-Asset Walk-Forward Optimization
 
-`run_wfo_per_coin_orchestrator()` extends WFO with per-coin independence:
+`run_wfo_per_asset_orchestrator()` extends WFO with per-asset independence:
 
 1. Loads full 3-year OHLCV data once
 2. For each symbol:
    - Runs standard WFO (rolling train/test folds) with the narrowed parameter grid
    - Selects best strategy based on robustness score (in-sample metric stability)
-3. Combines results: uses the winning strategy + params for each coin
-4. Runs final validation backtest on full 3-year range for each coin
-5. Merges per-coin signals into single combined portfolio with shared cash
+3. Combines results: uses the winning strategy + params for each asset
+4. Runs final validation backtest on full 3-year range for each asset
+5. Merges per-asset signals into single combined portfolio with shared cash
 
-This approach respects the volatility diversity of individual cryptocurrencies while maintaining a unified portfolio structure.
+This approach respects the volatility diversity of individual assets while maintaining a unified portfolio structure.
 
 ### 📊 Optimization Model (Sliding WFO)
 
