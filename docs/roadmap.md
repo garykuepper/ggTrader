@@ -12,19 +12,22 @@ Top items ranked by impact × feasibility, reflecting current state:
 
 | Rank | Item | Theme | Status | Effort | Why |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Daily loss circuit breaker | Hardening | Ready | ~2h | Last remaining gap from original live trading analysis |
-| 2 | Scoring tweaks (fold consistency, OOS alpha) | Perf | Ready | 10 min + research | Next logical step after fold increase; run one at a time |
-| 3 | Stock trading (`--asset-class stocks`) | Extension | Specced | Multi-day | Full plan written; diversifies away from crypto-only correlation |
-| 4 | Position health scoring | Hardening | Not started | ~3h | Flag stale positions or those deviating from backtest stats |
-| 5 | MLflow experiment tracking | Infra | Not started | ~half day | Low cost, makes research pipeline presentable |
-| 6 | LLM "Post-Mortem" reports | Ops | Concept | ~4h | Use LLM to analyze `position_closes.csv` and explain performance |
-| 7 | Automated Risk Scaling | Risk | Concept | ~4h | Reduce exposure automatically during equity curve drawdowns |
-| 8 | Multi-Timeframe Confirmation | Perf | Not started | Multi-day | Reduce false entries in choppy regimes |
-| 9 | Coarse Screening for WFO | Perf | Not started | ~4h | Cut compute by 30-50% for larger strategy grids |
+| 1 | Position health scoring | Hardening | Ready | ~3h | Flag stale positions or those deviating from backtest stats |
+| 2 | MLflow experiment tracking | Infra | Not started | ~half day | Low cost, makes research pipeline presentable |
+| 3 | LLM "Post-Mortem" reports | Ops | Concept | ~4h | Use LLM to analyze `position_closes.csv` and explain performance |
+| 4 | Automated Risk Scaling | Risk | Concept | ~4h | Reduce exposure automatically during equity curve drawdowns |
+| 5 | Multi-Timeframe Confirmation | Perf | Not started | Multi-day | Reduce false entries in choppy regimes |
+| 6 | Coarse Screening for WFO | Perf | Not started | ~4h | Cut compute by 30-50% for larger strategy grids |
 
 ---
 
 ## Completed / Shipped Recently ✅
+
+### Stock Trading Foundation — `Shipped 2026-05-02` ✅
+Implemented `BaseExecutionEngine` with multi-asset support. Added `StockExecutionEngine` for Alpaca (Paper/Live), `YFinanceDataLoader` with DB caching, and stock macro regime filters (SPY + VIX).
+
+### Daily Loss Circuit Breaker — `Shipped 2026-05-02` ✅
+Halt new entries if intraday portfolio drops beyond a configurable threshold (default 5%). Integrated with `BaseExecutionEngine` for both Crypto and Stocks.
 
 ### Grafana Dashboard & DB Mirroring — `Shipped 2026-05-02` ✅
 Visual equity curves, trade history, and PnL per trade via a Grafana container. Includes real-time mirroring of live trade logs to TimescaleDB and a backfill tool (`ggt db sync-live`).

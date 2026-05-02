@@ -33,12 +33,20 @@ It is **highly recommended** to run the bot in dry-run mode for at least one 4h 
 python ggt.py trade --dry-run
 ```
 
-### 4. Live Trading
+### 4. Live Trading (Crypto)
 
 To start real trading with adaptive position sizing and the daily loss circuit breaker:
 
 ```bash
 python ggt.py trade --adaptive-sizing
+```
+
+### 5. Paper Trading (Stocks)
+
+To start stock paper trading on Alpaca (uses NYSE market hours):
+
+```bash
+python ggt.py trade --asset-class stocks --paper
 ```
 
 ## ⚙️ How It Works
@@ -65,7 +73,11 @@ Upon a successful entry fill:
 
 ## 📁 Persistence & State
 
-Active positions, circuit breaker status, and start-of-day equity are saved to `data/active_positions.json`. Upon restart, the engine reloads this state to avoid double-entry or losing track of open trades.
+Active positions, circuit breaker status, and start-of-day equity are saved to:
+- **Crypto**: `data/active_positions.json`
+- **Stocks**: `data/active_positions_stocks.json`
+
+Upon restart, the engines reload their respective states to avoid double-entry or losing track of open trades.
 
 ## ⚠️ Important Considerations
 

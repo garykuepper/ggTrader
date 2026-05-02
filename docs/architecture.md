@@ -4,7 +4,19 @@ This document provides a detailed technical overview of the components and data 
 
 ## 🏗️ Core Components
 
-The project is structured into several modular layers, ensuring that logic for data handling, signal generation, and trade execution remains decoupled.
+The project is structured into modular layers, ensuring that research and execution logic remain independent of the underlying asset class.
+
+- **Data Layer**:
+    - `TimescaleDBLoader`: Primary interface for reading historical OHLCV data.
+    - `CachedExchangeLoader`: CCXT-based live data fetching with automatic DB caching (Crypto).
+    - `CachedYFinanceLoader`: yfinance-based live data fetching with automatic DB caching (Stocks).
+- **Strategy Layer**: Modular entry and exit strategies applied via `IndicatorPrecomputer` for high-performance vectorized backtesting.
+- **WFO Engine**: Multi-fold Walk-Forward Optimization that selects robust parameters by blending In-Sample and Out-of-Sample performance.
+- **Execution Engine**:
+    - `BaseExecutionEngine`: Shared abstract base for risk management (Circuit Breaker), state persistence, and notification routing.
+    - `CryptoExecutionEngine`: Specialized logic for Kraken/CCXT market and OCO orders.
+    - `StockExecutionEngine`: Specialized logic for Alpaca limit orders and NYSE market hours.
+- **Observability**: Real-time mirror to TimescaleDB for visualization in Grafana.
 
 ## Data Layer
 
@@ -213,9 +225,10 @@ In addition to CSV logs, the `ExecutionEngine` mirrors all live trading events t
 
 ## 🚀 Live Execution
 
-- **`ExecutionEngine`**: Orchestrates live trading by fetching recent candles via `LiveExchangeLoader`, computing per-coin signals using WFO-optimized parameters, and managing Kraken orders.
-- **Bot Persistence**: Tracks active positions and circuit breaker status in `data/active_positions.json` to handle process restarts.
-- **Native Exits**: Leverages Kraken's `trailing-stop` and `OCO` order types for server-side risk management.
+- **`CryptoExecutionEngine`**: Orchestrates live crypto trading by fetching recent candles via `CachedExchangeLoader` and managing Kraken orders.
+- **`StockExecutionEngine`**: Orchestrates live stock trading via `CachedYFinanceLoader` and Alpaca, respecting NYSE market hours.
+- **Bot Persistence**: Tracks active positions and circuit breaker status in `data/active_positions.json` (Crypto) and `data/active_positions_stocks.json` (Stocks) to handle process restarts.
+- **Native Exits**: Leverages exchange-native `trailing-stop` and `OCO` order types for server-side risk management.
 
 ---
 *Back to [README.md](../README.md)*

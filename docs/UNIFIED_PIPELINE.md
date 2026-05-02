@@ -13,6 +13,7 @@ Fetches the top assets by volume and runs a **Grand Walk-Forward Optimization (W
 - **Parallel Execution**: Splits the universe into concurrent workers (Default: **5 workers**), reducing a 50-coin 3-year WFO from ~1 hour to ~15 minutes.
 - **Filtering**: Automatically excludes stablecoins, fiat, and gold-backed assets (`PAXG`, `XAUT`).
 - **Asset Selection**: Selects the most liquid assets based on exchange volume (Default: **Top 50**).
+- **Multi-Asset Support**: Use `--asset-class stocks` to switch from Crypto (Kraken) to Stock Research (yfinance data, S&P 500 universe).
 - **Volume Window**: Aggregates volume over a specific lookback period to ensure sustained liquidity (Default: **30d**; Options: `24h`, `7d`, `30d`).
 - **WFO Duration**: Runs the optimization over a dynamic sliding window relative to an end date. The end date defaults to **2025-12-31**, but can be customized with `--end-date` (Default: **1095 days / 3 years** prior to the end date).
 - **Command (Using Defaults)**:
@@ -51,13 +52,23 @@ python ggt.py production
 
 Starts the live `ExecutionEngine` heartbeat.
 
-- **Loop**: Polls Kraken every 4 hours (aligned with candle closes).
-- **Dynamic Sizing**: Calculates trade sizing dynamically by parsing your entire live Kraken account value (USD free capital + the current real-time USD value of all held crypto). You do not need to pause the bot to manually add cash!
-- **Server-Side Safety**: Submits native OCO (One-Cancels-the-Other) "stop-loss-profit" orders directly to Kraken instantly upon entry. Ensures absolute downstream protection if your local bot loses internet connectivity.
-- **Command**:
+- **Loop (Crypto)**: Polls Kraken every 4 hours (aligned with candle closes).
+- **Loop (Stocks)**: Evaluates signals once daily after NYSE market close using Alpaca.
+- **Circuit Breaker**: Automatically halts new entries if intraday drawdown exceeds the limit (default 5%).
+- **Multi-Asset Support**: Use `--asset-class stocks` to start stock trading.
+- **Paper Trading**: Use `--paper` to trade on Alpaca's paper environment.
+- **Dynamic Sizing**: Calculates trade sizing dynamically by parsing your entire account value.
+- **Server-Side Safety**: Submits native OCO or Trailing Stop orders directly to the exchange instantly upon entry.
+- **Command (Crypto)**:
 
 ```bash
 python ggt.py trade
+```
+
+- **Command (Stock Paper Trading)**:
+
+```bash
+python ggt.py trade --asset-class stocks --paper
 ```
 
 ### 5. Status & Reporting

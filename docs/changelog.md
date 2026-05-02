@@ -2,18 +2,26 @@
 
 ## 2026-05-02
 
+### Added: Multi-Asset Trading Engine (Stocks & Crypto)
+
+Refactored the core execution layer into a robust multi-asset architecture.
+
+- **Shared Base Engine**: Introduced `BaseExecutionEngine` for unified risk management, state persistence, and notification routing.
+- **Stock Extension**: Launched `StockExecutionEngine` with Alpaca integration (Paper/Live support) and NYSE market hours awareness.
+- **Stock Data**: Implemented `YFinanceDataLoader` with free daily bars back to 1980 and automatic TimescaleDB caching.
+- **Equity Risk Filters**: Added SPY EMA and VIX-based macro regime filters for stocks.
+- **Stock Universe**: New `ggt research --asset-class stocks` workflow with automated S&P 500 volume-ranked selection.
+
+### Added: Daily Loss Circuit Breaker
+
+The system now provides automated intraday protection for both assets.
+- **Auto-Halting**: Halts new entries if the portfolio's intraday drawdown exceeds a configurable limit (default: **5%**).
+- **Start-of-Day Snapshots**: Automatically tracks starting equity at UTC midnight.
+- **Persistence**: Circuit breaker state is preserved across bot restarts.
+- **Real-time Alerts**: Notifies via Telegram/Discord instantly upon trigger.
+
 ### Added: Real-time Grafana Dashboard & DB Mirroring
-
-Launched the official ggTrader Grafana dashboard for live performance monitoring. The system now mirrors all live trading events to TimescaleDB in real-time.
-
-- **Dashboard**: Includes Equity Curve, PnL per trade (categorized gains/losses), and a recent closed trades table. Accessible on port `3002`.
-- **Database Mirroring**: `TradeTracker` now writes to an `orders` table and updates `equity_curves`/`trades` for the `LIVE` run_id alongside CSV logging.
-- **Sync Tool**: Added `ggt db sync-live` to backfill historical CSV data from `data/live/` into the database for full historical visibility.
-- **Stability**: Pinned Grafana to version `10.4.0` in `docker-compose.yaml` and ensured `host.docker.internal` connectivity for the datasource.
-
-### Improved: WFO Robustness gating (N_SPLITS 10)
-
-Increased the number of WFO splits from 8 to 10. This provides more Out-of-Sample (OOS) data points, allowing for a more reliable fold-consistency check in the trade gate, at the cost of slightly smaller training windows (~253 days per fold).
+... [Existing Grafana notes] ...
 
 ## 2026-05-01
 
