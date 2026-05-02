@@ -1,8 +1,8 @@
 # ggTrader Roadmap
 
-Last updated: 2026-04-19
+Last updated: 2026-05-01
 
-Live trading has been running for ~2 weeks. Most of the critical hardening gaps from the original `live_trading_gap_analysis.md` are now shipped. The remaining work is split between performance levers (research-side tuning, sizing) and operational improvements (alerts, dashboards, stock trading).
+Live trading has been running for ~4 weeks. Most of the critical hardening gaps and performance levers (WFO structure, sizing) are now shipped. The remaining work focuses on infrastructure (observability), further research refinements, and expanding into new asset classes.
 
 ---
 
@@ -12,68 +12,62 @@ Top items ranked by impact × feasibility, reflecting current state:
 
 | Rank | Item | Theme | Status | Effort | Why |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Fresh WFO research run | Perf | Ready | ~1-2h compute | Current params are 17 days old (2026-04-02), pre-bear regime. Highest-probability perf lever with zero code work |
-| 2 | Trade fill alerts (Telegram) | Ops | Shipped 2026-04-23 | — | Notifier infra exists; only operational blind spot left after this week's fixes |
-| 3 | Adaptive position sizing | Perf | Shipped 2026-04-23 (opt-in) | — | Real DD reduction — scale by inverse ATR so high-vol coins get smaller slices |
-| 4 | Grafana dashboard | Infra | Not started | ~half day | TimescaleDB already has the data; biggest demo/portfolio gap |
-| 5 | WFO fold increase (8→10) | Perf | Not started | 10 min + research | Bundle with #1; marginal but proven robustness gain |
-| 6 | Stock trading (`--asset-class stocks`) | Extension | Specced | Multi-day | Full plan written, diversifies away from crypto-only correlation |
-| 7 | Scoring tweaks (fold consistency, OOS alpha) | Perf | Not started | 10 min + research | Run one at a time with research run between each |
-| 8 | Daily loss circuit breaker | Hardening | Not started | ~2h | Last remaining gap from original live trading analysis |
-| 9 | Cashflow ledger (`ggt cashflow`) | Ops | Specced | ~4h | Lower priority now — Kraken ledger fetch already provides deposit-adjusted metrics. Useful for out-of-band tracking |
-| 10 | MLflow experiment tracking | Infra | Not started | ~half day | Low cost, makes research pipeline presentable |
+| 1 | Scoring tweaks (fold consistency, OOS alpha) | Perf | Ready | 10 min + research | Next logical step after fold increase; run one at a time |
+| 2 | Stock trading (`--asset-class stocks`) | Extension | Specced | Multi-day | Full plan written; diversifies away from crypto-only correlation |
+| 3 | Daily loss circuit breaker | Hardening | Not started | ~2h | Last remaining gap from original live trading analysis |
+| 4 | MLflow experiment tracking | Infra | Not started | ~half day | Low cost, makes research pipeline presentable |
+| 5 | LLM "Post-Mortem" reports | Ops | Concept | ~4h | Use LLM to analyze `position_closes.csv` and explain performance |
+| 6 | Position health scoring | Hardening | Not started | ~3h | Flag stale positions or those deviating from backtest stats |
+| 7 | Automated Risk Scaling | Risk | Concept | ~4h | Reduce exposure automatically during equity curve drawdowns |
+| 8 | Multi-Timeframe Confirmation | Perf | Not started | Multi-day | Reduce false entries in choppy regimes |
+| 9 | Coarse Screening for WFO | Perf | Not started | ~4h | Cut compute by 30-50% for larger strategy grids |
+
+---
+
+## Completed / Shipped Recently
+
+### Grafana Dashboard & DB Mirroring — `Shipped 2026-05-02`
+Visual equity curves, trade history, and PnL per trade via a Grafana container. Includes real-time mirroring of live trade logs to TimescaleDB and a backfill tool (`ggt db sync-live`).
+
+### WFO Fold Increase (N_SPLITS 8 → 10) — `Shipped 2026-05-02`
+Increased OOS data points for more reliable robustness gating. Maintaining ~253 days of training data per fold.
+
+### Fresh WFO Research Run — `Completed 2026-05-01`
+Incorporated April bear market data. Promoted fresh parameters for 29 symbols to live trading. YTD CAGR in validation: **48.46%**.
+
+### Real-Time Trade Fill Alerts (Telegram) — `Shipped 2026-04-23`
+Rich Telegram HTML messages for every entry and exit. Includes strategy, PnL, and exit reason.
+
+### Adaptive Position Sizing — `Shipped 2026-04-23`
+Volatility-normalized sizing (`--adaptive-sizing`) now available to bound risk per trade.
 
 ---
 
 ## Immediate / High-Value Extensions
 
 ### Stock Trading (`--asset-class stocks`) — `Specced`
+Extend ggTrader to trade US equities alongside crypto using yfinance for data and Alpaca for execution. Architecture is asset-agnostic. Spec: [stock_trading_plan.md](stock_trading_plan.md).
 
-Extend ggTrader to trade US equities alongside crypto using yfinance for data and Alpaca for execution. The architecture is already designed for it — 14 core modules are asset-agnostic. SPY regime filter replaces BTC regime, daily bars replace 4h. Full implementation spec: [stock_trading_plan.md](stock_trading_plan.md).
-
-### Real-Time Trade Fill Alerts (Telegram) — `Shipped 2026-04-23`
-
-Rich Telegram HTML messages fire on every entry and every exit. Single exit hook inside `_record_exit` covers all four sell paths (`strategy_signal`, `trailing_stop`, `oco_exit`, `emergency_rollback`). See [changelog.md](changelog.md) 2026-04-23 entry for implementation detail.
-
-### Cashflow Ledger (`ggt cashflow`) — `Specced`
-
-Track manual deposits/withdrawals in a small CSV ledger and net them out of return/risk metrics. **Lower priority than originally scoped** — the Kraken ledger fetch added on 2026-04-07 already provides deposit-adjusted metrics for anything routed through the exchange. Still useful for out-of-band capital flows (transfers from hardware wallets, etc.) and as a manual override when Kraken's ledger misses something. Detailed spec: [archive/future_tweaks_plan.md](archive/future_tweaks_plan.md#cashflow-ledger-deposits--withdrawals).
+### Grafana Dashboard — `Not Started`
+Visual equity curves, trade history, and strategy performance via a Grafana container pulling from TimescaleDB.
 
 ---
 
 ## Research & Strategy
 
-### Fresh WFO Research Run — `Ready`
+### Scoring & Selection Tweaks — `Ready`
+- **Fold consistency gate**: 0.33 → 0.38 (requires 4 profitable folds with 10 total).
+- **OOS robustness blend alpha**: 0.65 → 0.70 (further favor out-of-sample signal).
+- **Composite weights**: Bias toward Sortino (0.30) and Calmar (0.30).
 
-Current live params are from `research_20260402_123248` — 17 days old and pre-bear-regime. A fresh run incorporates the most recent market data (including the current bear phase) and may shift coin selection toward names that held up better. Zero code changes. Command: `docker compose run --rm ggtrader_live python -u ggt.py research`. Bundle with WFO fold increase for maximum efficiency.
+### LLM "Post-Mortem" Reports — `Concept`
+Integrate an LLM into the `ggt pnl-daily` flow to analyze trade logs and provide natural-language commentary: *"Strategy X is struggling with fakeouts in this ranging market; consider tightening the RSI threshold."*
 
-### Adaptive Position Sizing — `Shipped 2026-04-23 (opt-in)`
-
-Volatility-normalized sizing shipped as an opt-in flag (`--adaptive-sizing`). See [changelog.md](changelog.md) 2026-04-23 entry. Off by default to keep attribution clean during the 2026-04-02 research-run observation window; flip on when ready to A/B against weight-based sizing.
+### Automated Risk Scaling — `Concept`
+"Equity Curve Trading": Automatically reduce `TARGET_RISK_PCT` or `CAPITAL_PER_TRADE` when the system-wide equity curve is below its own moving average, and scale back up when performance recovers.
 
 ### Multi-Timeframe Confirmation — `Not Started`
-
-Enter on 4h signal only when the daily trend agrees. Would reduce false entries in choppy/ranging regimes. Architecturally non-trivial — requires the precomputer to hold multiple bar frequencies simultaneously.
-
-### Volume-Profile / VWAP Entries — `Not Started`
-
-Rolling VWAP-anchored signals for crypto (24/7 markets make session VWAP tricky). Could pair with existing Keltner/Donchian breakout strategies as a confirmation filter. Blocked on volume data quality assessment.
-
-### WFO Fold Increase (N_SPLITS 8 → 10) — `Not Started`
-
-Two more OOS data points for the robustness gate without starving the training window (~253 days vs ~299 days currently). The 6→8 fold increase was a key driver of the March improvement. ~25% compute increase. Bundle with the next fresh research run.
-
-### Coarse Screening for WFO Runtime — `Not Started`
-
-Pre-filter step: run each strategy with 1 default param combo per coin before expanding the full grid. Skip strategy/coin pairs that produce zero trades or -inf Sharpe. Could cut compute by 30-50% as more strategies are added.
-
-### Scoring & Selection Tweaks — `Not Started`
-
-Three independent experiments to run **one at a time** with a research run between each:
-
-- Fold consistency gate: 0.33 → 0.38 (with 10 folds, requires 4 profitable folds)
-- OOS robustness blend alpha: 0.65 → 0.70 (further favor out-of-sample signal)
-- Composite weights: bias toward Sortino (0.30) and Calmar (0.30), reduce Sharpe and ProfitFactor to 0.20 each
+Enter on 4h signal only when the daily trend agrees. Requires architectural support for multiple bar frequencies in the precomputer.
 
 ---
 

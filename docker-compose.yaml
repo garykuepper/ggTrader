@@ -1,16 +1,10 @@
 services:
-  # --- Managed Externally (Separate Installation) ---
-  # ggtrader_db:
-  #   image: timescale/timescaledb:latest-pg16
-  #   container_name: ggtrader_db
-  #   ...
-
   ggtrader_live:
     image: ghcr.io/garykuepper/ggtrader:latest
-    build: .  # fallback: docker compose build
+    build: .
     container_name: ggtrader_live
     restart: unless-stopped
-    env_file: .env # Loads KRAKEN_KEY, KRAKEN_SECRET
+    env_file: .env
     volumes:
       - ./results:/app/results
       - ./data:/app/data
@@ -27,5 +21,22 @@ services:
     stop_grace_period: 10s
     command: python -u ggt.py trade --adaptive-sizing --min-trailing-stop-pct 4 --min-atr-trailing-pct 4
 
+  grafana:
+    image: grafana/grafana-oss:10.4.0
+    container_name: ggtrader_grafana
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ggtrader_grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
-  ggtrader_pgdata: # Dedicated persistent volume for ggTrader data
+  ggtrader_pgdata:
+  ggtrader_grafana_data:

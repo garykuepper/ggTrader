@@ -12,9 +12,12 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    from ggTrader.utils.result_db_manager import ResultDBManager
 
 from ggTrader.core.regime_filtering import (
     _compute_altcoin_index_mask,
@@ -263,7 +266,13 @@ class ExecutionEngine:
         "trailing_stop": TrailingStopExit,
     }
 
-    def __init__(self, config: Dict[str, Any], results_path: Optional[str] = None):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        results_path: Optional[str] = None,
+        db_manager: Optional[ResultDBManager] = None,
+        run_id: str = "LIVE",
+    ):
         """Initialize engine.
 
         If results_path is provided, it loads per-coin optimized parameters.
@@ -271,6 +280,8 @@ class ExecutionEngine:
         """
         self.config = config
         self.results_path = results_path
+        self.db_manager = db_manager
+        self.run_id = run_id
         self.logger = setup_live_logger()
         self.exchange_id = config.get("EXCHANGE", "kraken")
 
@@ -292,7 +303,11 @@ class ExecutionEngine:
         self._reopt_done_month: int | None = None
         self._reopt_flag_path = Path("data/last_reopt_month.txt")
         self._load_reopt_flag()
-        self.tracker = TradeTracker(data_dir=config.get("TRACKER_DATA_DIR", "data/live"))
+        self.tracker = TradeTracker(
+            data_dir=config.get("TRACKER_DATA_DIR", "data/live"),
+            db_manager=self.db_manager,
+            run_id=self.run_id,
+        )
 
         # Real-time fill alerts. Silently no-ops if no channels are configured
         # (TELEGRAM_BOT_TOKEN+TELEGRAM_CHAT_ID or DISCORD_WEBHOOK_URL).

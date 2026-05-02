@@ -107,9 +107,9 @@ def full_pipeline_config() -> dict[str, Any]:
         "PORTFOLIO_SHARE": 0.10,
         "FEES": 0.004,
         "SLIPPAGE": SLIPPAGE_STANDARD,
-        # 6 folds × TEST_RATIO=3 keeps ~2190 train bars/fold (same as 4×2) while adding
-        # 2 more OOS samples for a more reliable fold-consistency signal in the gate.
-        "N_SPLITS": 8,
+        # 10 folds × TEST_RATIO=3 keeps ~1515 train bars/fold (~253 days)
+        # provides 10 OOS samples for a more reliable fold-consistency signal.
+        "N_SPLITS": 10,
         "TEST_RATIO": 3,
         "MIN_TRADES": 0,
         "MIN_CLOSED_TRADES_TRAIN": 3,

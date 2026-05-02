@@ -5,7 +5,16 @@ This directory contains **ggTrader**, an algorithmic crypto trading bot designed
 ## Core Architecture
 - **Unified CLI**: All operations are routed through `ggt.py`.
 - **Execution Engine**: The live trading bot (`ggt trade`) is a long-running process that manages its own lifecycle, including monthly recalibrations.
-- **State Management**: Uses `data/live/` for trade logs, balance snapshots, and active positions.
+## State Management
+- **Primary Logs**: Uses `data/live/` for trade logs, balance snapshots, and active positions (CSV-based).
+- **Database Mirroring**: Live trade events (buy/sell), orders, and balance snapshots are mirrored to TimescaleDB in real-time for observability.
+- **Backfill**: Use `ggt db sync-live` to import existing CSV history into the database.
+
+## Observability (Grafana)
+- **Dashboard**: Accessible at `http://localhost:3002`.
+- **Data Source**: Connects to the `ggtrader` TimescaleDB instance via `host.docker.internal:5433`.
+- **Panels**: Real-time Equity Curve, PnL per Trade (categorized dots), and Recent Closed Trades.
+- **Provisioning**: Configurations are stored in `grafana/provisioning/`.
 
 ## Monthly Recalibration (WFO)
 - **Automation**: On the 1st of every month, the `ExecutionEngine` internally triggers a full research and production pipeline run.

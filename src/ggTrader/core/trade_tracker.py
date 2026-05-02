@@ -7,9 +7,12 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    from ggTrader.utils.result_db_manager import ResultDBManager
 
 logger = logging.getLogger("ggTraderLive")
 
@@ -32,9 +35,17 @@ BALANCE_SNAPSHOT_HEADERS = [
 class TradeTracker:
     """Records trades, balance snapshots, and round-trip P&L to local CSV files."""
 
-    def __init__(self, data_dir: str = "data/live") -> None:
+    def __init__(
+        self,
+        data_dir: str = "data/live",
+        db_manager: Optional[ResultDBManager] = None,
+        run_id: str = "LIVE",
+    ) -> None:
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
+
+        self.db_manager = db_manager
+        self.run_id = run_id
 
         self.trade_log_path = self.data_dir / "trade_log.csv"
         self.position_closes_path = self.data_dir / "position_closes.csv"
@@ -86,6 +97,17 @@ class TradeTracker:
         logger.info(f"  [Tracker] BUY  {symbol}: {amount:.6f} @ ${price:.4f} "
                      f"(${amount_usd:.2f}) fee={fee:.4f} {fee_currency}")
 
+        if self.db_manager:
+            try:
+                dt_ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                self.db_manager.add_order(
+                    run_id=self.run_id, symbol=symbol, side="buy", order_id=order_id,
+                    price=price, amount=amount, amount_usd=amount_usd,
+                    fee=fee, fee_currency=fee_currency, timestamp=dt_ts,
+                )
+            except Exception as e:
+                logger.warning(f"  [Tracker] DB record_buy failed: {e}")
+
     def record_sell(
         self,
         symbol: str,
@@ -107,6 +129,17 @@ class TradeTracker:
             fee, fee_currency,
         ])
 
+        if self.db_manager:
+            try:
+                dt_ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                self.db_manager.add_order(
+                    run_id=self.run_id, symbol=symbol, side="sell", order_id=order_id,
+                    price=price, amount=amount, amount_usd=amount_usd,
+                    fee=fee, fee_currency=fee_currency, timestamp=dt_ts,
+                )
+            except Exception as e:
+                logger.warning(f"  [Tracker] DB record_sell (order) failed: {e}")
+
         # Write round-trip record if we have entry data
         if entry_price is not None and entry_price > 0:
             gross_pnl = (price - entry_price) * amount
@@ -115,6 +148,8 @@ class TradeTracker:
             pnl_pct = ((price / entry_price) - 1.0) * 100.0 if entry_price else 0.0
 
             hold_hours = 0.0
+            t0 = None
+            t1 = None
             if entry_time:
                 try:
                     t0 = datetime.fromisoformat(entry_time.replace("Z", "+00:00"))
@@ -131,6 +166,22 @@ class TradeTracker:
             ])
             logger.info(f"  [Tracker] SELL {symbol}: {amount:.6f} @ ${price:.4f} "
                          f"PnL=${net_pnl:.2f} ({pnl_pct:+.2f}%) reason={exit_reason}")
+
+            if self.db_manager:
+                try:
+                    df_trade = pd.DataFrame([{
+                        "symbol": symbol,
+                        "entry_time": t0 or entry_time,
+                        "exit_time": t1 or ts,
+                        "entry_price": entry_price,
+                        "exit_price": price,
+                        "profit": net_pnl,
+                        "profit_pct": pnl_pct,
+                        "status": "closed",
+                    }])
+                    self.db_manager.add_trades(run_id=self.run_id, df_trades=df_trade)
+                except Exception as e:
+                    logger.warning(f"  [Tracker] DB record_sell (trade) failed: {e}")
         else:
             logger.info(f"  [Tracker] SELL {symbol}: {amount:.6f} @ ${price:.4f} "
                          f"(no entry data) reason={exit_reason}")
@@ -142,10 +193,101 @@ class TradeTracker:
         positions_usd: float,
         num_positions: int,
     ) -> None:
+        ts = self._now_iso()
         self._append_row(self.balance_snapshots_path, [
-            self._now_iso(), round(total_usd, 2), round(free_usd, 2),
+            ts, round(total_usd, 2), round(free_usd, 2),
             round(positions_usd, 2), num_positions,
         ])
+
+        if self.db_manager:
+            try:
+                dt_ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                equity_series = pd.Series([total_usd], index=[dt_ts])
+                self.db_manager.add_equity_curve(run_id=self.run_id, equity_series=equity_series)
+            except Exception as e:
+                logger.warning(f"  [Tracker] DB record_balance_snapshot failed: {e}")
+
+    def backfill_to_db(self) -> dict[str, int]:
+        """Import all existing CSV data into the database.
+
+        Returns a dict with counts of records added per table.
+        """
+        if not self.db_manager:
+            raise ValueError("TradeTracker initialized without db_manager — cannot backfill")
+
+        counts = {"orders": 0, "trades": 0, "equity": 0}
+
+        # 1. Backfill Orders (trade_log.csv)
+        try:
+            df_log = self.get_trade_log()
+            if not df_log.empty:
+                for _, row in df_log.iterrows():
+                    try:
+                        ts = datetime.fromisoformat(str(row["timestamp"]).replace("Z", "+00:00"))
+                        self.db_manager.add_order(
+                            run_id=self.run_id,
+                            symbol=row["symbol"],
+                            side=row["side"],
+                            order_id=str(row["order_id"]),
+                            price=float(row["price"]),
+                            amount=float(row["amount"]),
+                            amount_usd=float(row.get("amount_usd", 0)),
+                            fee=float(row.get("fee", 0)),
+                            fee_currency=row.get("fee_currency", "USD"),
+                            timestamp=ts,
+                        )
+                        counts["orders"] += 1
+                    except Exception:
+                        continue
+        except Exception as e:
+            logger.warning(f"  [Backfill] Orders failed: {e}")
+
+        # 2. Backfill Trades (position_closes.csv)
+        try:
+            df_closes = self.get_closed_positions()
+            if not df_closes.empty:
+                # ResultDBManager.add_trades expects a specific format
+                # We need to map position_closes columns to what ResultDBManager expects
+                trades_to_add = []
+                for _, row in df_closes.iterrows():
+                    try:
+                        entry_t = datetime.fromisoformat(str(row["entry_time"]).replace("Z", "+00:00"))
+                        exit_t = datetime.fromisoformat(str(row["exit_time"]).replace("Z", "+00:00"))
+                        trades_to_add.append({
+                            "symbol": row["symbol"],
+                            "entry_time": entry_t,
+                            "exit_time": exit_t,
+                            "entry_price": float(row["entry_price"]),
+                            "exit_price": float(row["exit_price"]),
+                            "profit": float(row["net_pnl"]),
+                            "profit_pct": float(row["pnl_pct"]),
+                            "status": "closed",
+                        })
+                    except Exception:
+                        continue
+                
+                if trades_to_add:
+                    self.db_manager.add_trades(self.run_id, pd.DataFrame(trades_to_add))
+                    counts["trades"] = len(trades_to_add)
+        except Exception as e:
+            logger.warning(f"  [Backfill] Trades failed: {e}")
+
+        # 3. Backfill Equity (balance_snapshots.csv)
+        try:
+            df_balances = self.get_balance_history()
+            if not df_balances.empty:
+                df_balances["timestamp"] = pd.to_datetime(
+                    df_balances["timestamp"], utc=True, format="ISO8601"
+                )
+                equity_series = pd.Series(
+                    df_balances["total_usd"].values, index=df_balances["timestamp"]
+                )
+                self.db_manager.add_equity_curve(self.run_id, equity_series)
+                counts["equity"] = len(equity_series)
+        except Exception as e:
+            logger.warning(f"  [Backfill] Equity failed: {e}")
+
+        return counts
 
     # ------------------------------------------------------------------
     # Kraken sync / backfill

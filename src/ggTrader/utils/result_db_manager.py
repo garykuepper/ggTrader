@@ -109,6 +109,15 @@ class ResultDBManager:
             );
             """,
             """
+            CREATE TABLE IF NOT EXISTS orders (
+                run_id VARCHAR, timestamp TIMESTAMPTZ, symbol VARCHAR,
+                side VARCHAR, order_id VARCHAR, price DOUBLE PRECISION,
+                amount DOUBLE PRECISION, amount_usd DOUBLE PRECISION,
+                fee DOUBLE PRECISION, fee_currency VARCHAR,
+                PRIMARY KEY (run_id, order_id)
+            );
+            """,
+            """
             CREATE TABLE IF NOT EXISTS study_results (
                 study_hash VARCHAR PRIMARY KEY, params JSONB, result JSONB, timestamp TIMESTAMPTZ
             );
@@ -346,24 +355,30 @@ class ResultDBManager:
                 conn.execute(stmt, {"run_id": run_id, "metric_name": name, "metric_value": fv})
 
     def add_equity_curve(self, run_id: str, equity_series: pd.Series) -> None:
-        """Inserts equity curve data into the database in bulk."""
+        """Inserts equity curve data into the database with conflict handling."""
         if equity_series.empty:
             return
 
-        df = equity_series.reset_index()
-        df.columns = ["timestamp", "equity_value"]
-        df["run_id"] = run_id
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        query = text(
+            """
+            INSERT INTO equity_curves (run_id, timestamp, equity_value)
+            VALUES (:run_id, :timestamp, :equity_value)
+            ON CONFLICT (run_id, timestamp) DO NOTHING
+            """
+        )
+
+        records = [
+            {
+                "run_id": run_id,
+                "timestamp": ts,
+                "equity_value": float(val),
+            }
+            for ts, val in equity_series.items()
+        ]
 
         try:
-            df.to_sql(
-                "equity_curves",
-                self.engine,
-                if_exists="append",
-                index=False,
-                method="multi",
-                chunksize=1000,
-            )
+            with self.engine.begin() as conn:
+                conn.execute(query, records)
         except Exception as e:
             print(f"Error inserting equity curve: {e}")
 
@@ -400,6 +415,51 @@ class ResultDBManager:
 
         with self.engine.begin() as conn:
             conn.execute(query, records)
+
+    def add_order(
+        self,
+        run_id: str,
+        symbol: str,
+        side: str,
+        order_id: str,
+        price: float,
+        amount: float,
+        amount_usd: float,
+        fee: float = 0.0,
+        fee_currency: str = "USD",
+        timestamp: Optional[datetime] = None,
+    ) -> None:
+        """Adds a raw order fill to the database."""
+        ts = timestamp or datetime.now()
+        query = text(
+            """
+            INSERT INTO orders (
+                run_id, timestamp, symbol, side, order_id, price, amount,
+                amount_usd, fee, fee_currency
+            )
+            VALUES (
+                :run_id, :timestamp, :symbol, :side, :order_id, :price, :amount,
+                :amount_usd, :fee, :fee_currency
+            )
+            ON CONFLICT (run_id, order_id) DO NOTHING
+            """
+        )
+        with self.engine.begin() as conn:
+            conn.execute(
+                query,
+                {
+                    "run_id": run_id,
+                    "timestamp": ts,
+                    "symbol": symbol,
+                    "side": side,
+                    "order_id": order_id,
+                    "price": price,
+                    "amount": amount,
+                    "amount_usd": amount_usd,
+                    "fee": fee,
+                    "fee_currency": fee_currency,
+                },
+            )
 
     def check_existing_study(self, study_hash: str) -> Optional[Any]:
         """Checks if a study with the given hash already exists."""

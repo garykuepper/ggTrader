@@ -21,6 +21,9 @@ def register_db_parser(subparsers: argparse._SubParsersAction):
     # Subcommand: ggt db diag
     db_subs.add_parser("diag", help="Check database and table sizes/stats")
 
+    # Subcommand: ggt db sync-live
+    db_subs.add_parser("sync-live", help="Import live CSV data into TimescaleDB")
+
     # Subcommand: ggt db clean
     db_subs.add_parser("clean", help="Remove old or malformed OHLCV data")
 
@@ -41,6 +44,8 @@ def run_db(args: argparse.Namespace):
     """Executes database administration commands."""
     if args.db_command == "diag":
         _db_diag()
+    elif args.db_command == "sync-live":
+        _db_sync_live()
     elif args.db_command == "clean":
         _db_clean()
     elif args.db_command == "truncate":
@@ -52,6 +57,21 @@ def run_db(args: argparse.Namespace):
             _db_check_compression()
     elif args.db_command == "export":
         _db_export(args)
+
+def _db_sync_live():
+    from ggTrader.core.trade_tracker import TradeTracker
+    from ggTrader.utils.result_db_manager import ResultDBManager
+
+    print("\n--- Syncing Live CSV data to TimescaleDB ---")
+    db_manager = ResultDBManager()
+    tracker = TradeTracker(db_manager=db_manager, run_id="LIVE")
+    
+    counts = tracker.backfill_to_db()
+    
+    print(f"Sync complete:")
+    print(f"  - Orders added: {counts['orders']}")
+    print(f"  - Trades added: {counts['trades']}")
+    print(f"  - Equity points: {counts['equity']}")
 
 def _db_diag():
     engine = create_db_engine_or_exit()

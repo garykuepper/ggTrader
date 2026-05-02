@@ -137,7 +137,12 @@ def run_trade(args: argparse.Namespace):
         print("!!! DRY RUN MODE ENABLED - No real orders will be placed !!!")
 
     try:
-        engine = ExecutionEngine(config, results_path=results_path)
+        engine = ExecutionEngine(
+            config,
+            results_path=results_path,
+            db_manager=rm.db_manager,
+            run_id="LIVE",
+        )
 
         if args.dry_run_sizing:
             _dry_run_sizing(engine, override_portfolio_usd=args.portfolio_usd)
