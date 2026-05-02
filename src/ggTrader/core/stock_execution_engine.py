@@ -245,6 +245,18 @@ class StockExecutionEngine(BaseExecutionEngine):
                         "exit_name": sig["exit_name"],
                         "stop_pct": float(self.per_coin_params[s]["params"].get("stop_pct", 3.0))
                     }
+                    
+                    # Mirror to DB and CSV
+                    self.tracker.record_buy(
+                        symbol=s, 
+                        order_id=str(order.id), 
+                        price=price, 
+                        amount=qty, 
+                        amount_usd=capital, 
+                        fee=0.0, 
+                        fee_currency="USD"
+                    )
+                    
                     self.save_state()
                     self._notify(f"🟢 <b>BUY {s} (Alpaca)</b> @ <code>${price:.2f}</code>")
                 except Exception as e:
