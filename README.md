@@ -24,7 +24,7 @@ A sleek, high-performance algorithmic trading bot built for Kraken and other maj
 
 ## 📖 Documentation
 
-- [**CLI Reference Guide**](docs/CLI_REFERENCE.md): Start here for the `ggt` command reference.
+- [**CLI Reference Guide**](docs/cli_reference.md): Start here for the `ggt` command reference.
 - [**Architecture Guide**](docs/architecture.md): Deep dive into the project structure and data flow.
 - [**Installation & Setup**](docs/installation.md): How to get `ggTrader` running on your local machine.
 - [**Live Trading Guide**](docs/live_trading_guide.md): Deploying optimized strategies to Kraken.
@@ -85,4 +85,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 *Built with ❤️ and powered by **Google Gemini** for advanced algorithmic coding and research optimization.*
 
-For a detailed walkthrough, refer to the [**CLI Reference Guide**](docs/CLI_REFERENCE.md) or [**Architecture Guide**](docs/architecture.md).
+For a detailed walkthrough, refer to the [**CLI Reference Guide**](docs/cli_reference.md) or [**Architecture Guide**](docs/architecture.md).

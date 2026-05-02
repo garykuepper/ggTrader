@@ -194,14 +194,14 @@ gantt
 
 ## Workflows
 
-The system is controlled via the unified `ggt` CLI. For a detailed command reference, see [**CLI Reference Guide**](CLI_REFERENCE.md).
+The system is controlled via the unified `ggt` CLI. For a detailed command reference, see [**CLI Reference Guide**](cli_reference.md).
 
 1. **Research**: `python ggt.py research` — Orchestrates parallel WFO across the liquid universe.
 2. **Backtest**: `python ggt.py backtest` — Replays results for validation.
 3. **Database**: `python ggt.py db` — Manages TimescaleDB health and maintenance.
 4. **Ingest**: `python ggt.py ingest` — Syncs historical data from Kraken.
 
-For a concise WFO → backtest walkthrough, see [**CLI Reference Guide**](CLI_REFERENCE.md).
+For a concise WFO → backtest walkthrough, see [**CLI Reference Guide**](cli_reference.md).
 
 ## Legacy Modules
 
