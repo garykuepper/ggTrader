@@ -10,12 +10,22 @@ You can run TimescaleDB natively or via Docker (recommended for isolation):
 docker run -d --name ggtrader_db -p 5432:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb:latest-pg16
 ```
 
-### 2. Connection String
+### 2. Environment Variables
 
-Update your `.env` file to point to your database:
+Copy `.env.example` to `.env` and fill in your exchange credentials:
 
-```bash
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ggtrader
+```text
+# Kraken (Crypto)
+KRAKEN_KEY=your_key
+KRAKEN_SECRET=your_secret
+
+# Alpaca (Stocks)
+APCA_API_KEY_ID=your_key
+APCA_API_SECRET_KEY=your_secret
+APCA_API_BASE_URL=https://paper-api.alpaca.markets
+
+# Database
+POSTGRES_CONNECTION_STRING=postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader
 ```
 
 ### 3. Data Preparation

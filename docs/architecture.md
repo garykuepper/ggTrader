@@ -194,14 +194,14 @@ gantt
 
 ## Workflows
 
-The system is controlled via the unified `ggt` CLI. For a detailed command reference, see [**Unified CLI Guide**](unified_pipeline.md).
+The system is controlled via the unified `ggt` CLI. For a detailed command reference, see [**CLI Reference Guide**](CLI_REFERENCE.md).
 
 1. **Research**: `python ggt.py research` — Orchestrates parallel WFO across the liquid universe.
 2. **Backtest**: `python ggt.py backtest` — Replays results for validation.
 3. **Database**: `python ggt.py db` — Manages TimescaleDB health and maintenance.
 4. **Ingest**: `python ggt.py ingest` — Syncs historical data from Kraken.
 
-For a concise WFO → backtest walkthrough, see [**Strategy Execution**](unified_pipeline.md).
+For a concise WFO → backtest walkthrough, see [**CLI Reference Guide**](CLI_REFERENCE.md).
 
 ## Legacy Modules
 
@@ -227,8 +227,31 @@ graph TD
     B -->|Live OHLCV| K
     K -->|Orders| J
     K -->|Mirror| G
-    G -->|Query| L[Grafana Dashboard]
 ```
+
+## 🏗️ The 4-Phase Lifecycle
+
+The system is designed to run autonomously, typically within a Docker environment, following a structured research-to-production lifecycle.
+
+### Phase 1: Selection (Dynamic)
+The universe is generated in real-time by `ggt research` based on live exchange volume (Kraken for Crypto, yfinance for Stocks), ensuring the bot always trades the most liquid assets.
+
+### Phase 2: Re-Optimization
+The Grand WFO searches for the best strategy (RSI, EMA, PSAR, etc.) and parameters for each asset independently using a sliding historical window.
+
+### Phase 3: Portfolio Analysis
+The system simulates the signals against multiple allocation models (Equal Weight, Kelly, Risk Parity) and selects the one with the highest Sharpe Ratio for promotion to live trading.
+
+### Phase 4: Live Execution
+The appropriate engine (`CryptoExecutionEngine` or `StockExecutionEngine`) manages orders, utilizing exchange-native protection (TSL/OCO) and local circuit breakers.
+
+## 🐳 Docker Orchestration
+
+The entire lifecycle is managed via `docker-compose.yaml` for consistency across environments.
+
+- **`ggtrader_db`**: TimescaleDB for high-speed OHLCV and results storage.
+- **`ggtrader_live`**: The bot service running the long-lived execution loop.
+- **`grafana`**: Real-time performance monitoring and visualization.
 
 ## 📊 Result Management
 
