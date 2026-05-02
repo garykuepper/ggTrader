@@ -77,10 +77,6 @@ def run_wfo(symbols: list[str], training_years: int) -> tuple[str | None, str | 
         ]
         subprocess.run(port_cmd, capture_output=True, text=True, check=True)
 
-        weights_path = latest_results_dir / "portfolio_analysis" / "portfolio_weights.json"
-        if weights_path.exists():
-            return str(latest_results), str(weights_path)
-
         return str(latest_results), None
 
     except subprocess.CalledProcessError as e:
@@ -108,7 +104,6 @@ def main() -> None:
     # State tracking
     last_wfo_time = 0.0
     active_results_path = os.getenv("RESULTS_PATH")
-    active_weights_path = os.getenv("WEIGHTS_PATH")
 
     # Initialize ResultsManager (creates run_id/folder if needed)
     ResultsManager("auto_trader")
@@ -120,15 +115,14 @@ def main() -> None:
         needs_wfo = (current_time - last_wfo_time) > (reoptimize_days * 86400)
 
         if needs_wfo or not active_results_path:
-            new_results, new_weights = run_wfo(symbols, training_years)
+            new_results, _ = run_wfo(symbols, training_years)
             if new_results:
                 active_results_path = new_results
-                active_weights_path = new_weights
                 last_wfo_time = current_time
-                msg = f"RE-OPTIMIZATION SUCCESSFUL: {active_results_path}"
-                if active_weights_path:
-                    msg += f" (Weights: {active_weights_path})"
-                print(f"[{datetime.now().strftime('%X')}] {msg}")
+                print(
+                    f"[{datetime.now().strftime('%X')}] "
+                    f"RE-OPTIMIZATION SUCCESSFUL: {active_results_path}"
+                )
             elif not active_results_path:
                 print("CRITICAL: No results found and WFO failed. Sleeping 1h retry.")
                 time.sleep(3600)
@@ -142,7 +136,6 @@ def main() -> None:
             CAPITAL_PER_TRADE=capital,
             INTERVAL=interval,
             SYMBOLS=symbols,
-            WEIGHTS_PATH=active_weights_path,
         )
 
         try:

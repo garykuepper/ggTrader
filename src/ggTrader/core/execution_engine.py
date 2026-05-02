@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import html
 import json
 import logging
 import math
 import os
 import time
 from collections import defaultdict
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -22,6 +24,7 @@ from ggTrader.core.regime_filtering import (
 from ggTrader.core.trade_tracker import TradeTracker
 from ggTrader.data.live.cached_loader import CachedExchangeLoader
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
+from ggTrader.utils.notifier import build_notifiers_from_env
 from ggTrader.indicators.strategies import (
     AtrTrailingExit,
     BollingerMeanReversionEntry,
@@ -102,6 +105,104 @@ def _safe_extract_fill_price(order: Optional[Dict[str, Any]]) -> Optional[float]
     if price and float(price) > 0 and order.get("status") in ("closed", "filled"):
         return float(price)
     return None
+
+def _format_hold_time(entry_time: Optional[str]) -> str:
+    """Render ISO8601-UTC entry_time as a compact hold-duration string.
+
+    ``1d 4h``, ``3h 22m``, ``14m`` — chooses the largest two units that fit.
+    Returns ``"?"`` if entry_time is missing or unparseable.
+    """
+    if not entry_time:
+        return "?"
+    try:
+        t0 = datetime.fromisoformat(entry_time.replace("Z", "+00:00"))
+        delta = datetime.now(timezone.utc) - t0
+        total_min = int(delta.total_seconds() // 60)
+    except Exception:
+        return "?"
+    if total_min < 0:
+        return "?"
+    days, rem_min = divmod(total_min, 1440)
+    hours, minutes = divmod(rem_min, 60)
+    if days:
+        return f"{days}d {hours}h"
+    if hours:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
+
+
+def _format_entry_alert(
+    symbol: str,
+    strategy: str,
+    exit_name: str,
+    fill_price: float,
+    amount: float,
+    cost_usd: float,
+    stop_pct: float,
+    open_positions: int,
+    universe_size: int,
+) -> str:
+    """HTML-formatted Telegram alert for a successful entry fill."""
+    base = symbol.split("-")[0]
+    sym_e = html.escape(symbol)
+    strat_e = html.escape(strategy or "?")
+    exit_e = html.escape(exit_name or "?")
+    return (
+        f"🟢 <b>BUY {sym_e}</b> @ <code>${fill_price:,.6g}</code>\n"
+        f"strategy: <code>{strat_e}</code> / <code>{exit_e}</code>\n"
+        f"size: <code>{amount:,.6g} {html.escape(base)}</code> "
+        f"(~${cost_usd:,.2f})\n"
+        f"stop: -{stop_pct:.2f}%\n"
+        f"open positions: {open_positions}/{universe_size}"
+    )
+
+
+def _format_exit_alert(
+    symbol: str,
+    strategy: str,
+    exit_reason: str,
+    entry_price: Optional[float],
+    exit_price: float,
+    amount: float,
+    entry_fee: float,
+    exit_fee: float,
+    entry_time: Optional[str],
+    open_positions: int,
+    universe_size: int,
+) -> str:
+    """HTML-formatted Telegram alert for an exit fill."""
+    sym_e = html.escape(symbol)
+    strat_e = html.escape(strategy or "?")
+    reason_e = html.escape(exit_reason or "?")
+    hold_str = _format_hold_time(entry_time)
+
+    if entry_price and entry_price > 0:
+        pnl_usd = (exit_price - entry_price) * amount - (entry_fee + exit_fee)
+        pnl_pct = ((exit_price - entry_price) / entry_price) * 100.0
+        win = pnl_usd >= 0
+        marker = "✅" if win else "❌"
+        sign = "+" if pnl_usd >= 0 else "-"
+        pnl_line = (
+            f"PnL: <code>{sign}${abs(pnl_usd):,.2f}</code> "
+            f"({'+' if pnl_pct >= 0 else ''}{pnl_pct:.2f}%) {marker}"
+        )
+        entry_line = (
+            f"entry: <code>${entry_price:,.6g}</code> (held {hold_str})"
+        )
+    else:
+        marker = "⚠️"
+        pnl_line = "PnL: <code>?</code> (no stored entry price)"
+        entry_line = f"entry: <code>?</code> (held {hold_str})"
+
+    return (
+        f"🔴 <b>SELL {sym_e}</b> @ <code>${exit_price:,.6g}</code>  {marker}\n"
+        f"{entry_line}\n"
+        f"{pnl_line}\n"
+        f"reason: <code>{reason_e}</code>\n"
+        f"strategy: <code>{strat_e}</code>\n"
+        f"open positions: {open_positions}/{universe_size}"
+    )
+
 
 _BTC_SYMBOL = "BTC-USD"
 
@@ -187,13 +288,15 @@ class ExecutionEngine:
         self.symbols = config.get("SYMBOLS", [])
         self.per_coin_params = {}
         self.active_positions = {}
-        self.portfolio_weights = {}
         self.persistence_path = config.get("PERSISTENCE_PATH", "data/active_positions.json")
-        self.weights_path = config.get("WEIGHTS_PATH")
         self._reopt_done_month: int | None = None
         self._reopt_flag_path = Path("data/last_reopt_month.txt")
         self._load_reopt_flag()
         self.tracker = TradeTracker(data_dir=config.get("TRACKER_DATA_DIR", "data/live"))
+
+        # Real-time fill alerts. Silently no-ops if no channels are configured
+        # (TELEGRAM_BOT_TOKEN+TELEGRAM_CHAT_ID or DISCORD_WEBHOOK_URL).
+        self.notifiers = build_notifiers_from_env()
 
         if results_path:
             self.load_optimized_params(results_path)
@@ -201,11 +304,22 @@ class ExecutionEngine:
             if not self.symbols:
                 self.symbols = list(self.per_coin_params.keys())
 
-        if self.weights_path:
-            self.load_portfolio_weights(self.weights_path)
-
         self.load_state()
         self._reconcile_positions()
+
+    def _notify(self, message: str) -> None:
+        """Fan-out a fill alert to every configured notifier.
+
+        Exceptions from individual backends are swallowed so a Telegram outage
+        or 429 can never crash the trade loop. Logs at debug level.
+        """
+        if not self.notifiers:
+            return
+        for n in self.notifiers:
+            try:
+                n.send_text(message)
+            except Exception as e:
+                self.logger.debug(f"  [Notify] {n.name} send failed: {e!r}")
 
     # ------------------------------------------------------------------
     # Parameter and state loading
@@ -295,37 +409,9 @@ class ExecutionEngine:
             )
         self.logger.info(f"Loaded optimized parameters for {len(self.per_coin_params)} symbols.")
 
-    def load_portfolio_weights(self, json_path: str) -> None:
-        """Load capital allocation weights from portfolio_weights.json."""
-        if not os.path.exists(json_path):
-            self.logger.warning(f"Weights file {json_path} not found.")
-            return
-
-        try:
-            with open(json_path, "r") as f:
-                data = json.load(f)
-            self.portfolio_weights = data.get("weights", {})
-            # Apply MAX_COIN_ALLOCATION cap
-            max_alloc = float(self.config.get("MAX_COIN_ALLOCATION", 1.0))
-            if max_alloc < 1.0:
-                capped = {s: min(w, max_alloc) for s, w in self.portfolio_weights.items()}
-                n_capped = sum(1 for s, w in self.portfolio_weights.items() if w > max_alloc)
-                if n_capped:
-                    self.logger.info(
-                        f"  [Gates] Capped {n_capped} weight(s) to "
-                        f"MAX_COIN_ALLOCATION={max_alloc:.0%}"
-                    )
-                self.portfolio_weights = capped
-            self.logger.info(f"Loaded portfolio weights for {len(self.portfolio_weights)} symbols.")
-        except Exception as e:
-            self.logger.error(f"Error loading weights: {e}")
-
     def reload_params(self) -> None:
-        """Re-detect and reload the latest research params and production weights."""
-        from ggTrader.utils.state_manager import (
-            get_latest_production_weights,
-            get_latest_research_run,
-        )
+        """Re-detect and reload the latest research params."""
+        from ggTrader.utils.state_manager import get_latest_research_run
 
         latest_res = get_latest_research_run()
         if latest_res:
@@ -336,14 +422,6 @@ class ExecutionEngine:
             self.logger.info(f"Reloaded research params from {latest_res}")
         else:
             self.logger.warning("reload_params: no research results found.")
-
-        latest_weights = get_latest_production_weights()
-        if latest_weights:
-            self.portfolio_weights = {}
-            self.load_portfolio_weights(str(latest_weights))
-            self.logger.info(f"Reloaded production weights from {latest_weights}")
-        else:
-            self.logger.warning("reload_params: no production weights found.")
 
     def load_state(self) -> None:
         """Load active positions from persistence file."""
@@ -516,7 +594,35 @@ class ExecutionEngine:
                         )
                 self.save_state()
 
-            if not stale and not untracked:
+            # Clean up dust positions already in local state.  Covers the case
+            # where a previous sell left a sub-penny amount on the exchange and
+            # the position lingers in active_positions forever because no exit
+            # signal ever fires on it (fixed_sl_tp never hits SL/TP at dust
+            # size, trailing stops can't be placed on dust).
+            dust_in_local: list[str] = []
+            for sym, pos in list(self.active_positions.items()):
+                amt = float(pos.get("amount", 0) or 0)
+                entry = float(pos.get("entry_price") or 0)
+                cost_value = amt * entry
+                if cost_value >= _DUST_THRESHOLD_USD:
+                    continue
+                # Cost basis missing or below threshold — confirm with live price.
+                try:
+                    ticker = self.exchange.fetch_ticker(sym)
+                    cur_value = amt * float(ticker.get("last") or 0)
+                except Exception:
+                    cur_value = cost_value
+                if max(cost_value, cur_value) < _DUST_THRESHOLD_USD:
+                    dust_in_local.append(sym)
+                    self.logger.info(
+                        f"  [Reconcile] Removing dust position {sym}: "
+                        f"amount={amt:.8g} value=~${max(cost_value, cur_value):.4f}"
+                    )
+                    del self.active_positions[sym]
+            if dust_in_local:
+                self.save_state()
+
+            if not stale and not untracked and not dust_in_local:
                 self.logger.info(
                     f"  [Reconcile] State verified: "
                     f"{len(self.active_positions)} position(s) match exchange."
@@ -729,6 +835,31 @@ class ExecutionEngine:
             entry_fee=pos.get("entry_fee", 0),
             exit_reason=exit_reason,
         )
+
+        # Step 8: push a rich fill alert. One call covers every sell path
+        # (strategy_signal, trailing_stop, oco_exit, emergency_rollback).
+        # open_positions count excludes the symbol we're closing now.
+        try:
+            coin_info = self.per_coin_params.get(symbol) or {}
+            strategy = coin_info.get("strategy_name", "?")
+            open_count = max(0, len(self.active_positions) - 1)
+            msg = _format_exit_alert(
+                symbol=symbol,
+                strategy=strategy,
+                exit_reason=exit_reason,
+                entry_price=pos.get("entry_price"),
+                exit_price=exit_price,
+                amount=filled_amount,
+                entry_fee=float(pos.get("entry_fee", 0) or 0),
+                exit_fee=sell_fee,
+                entry_time=pos.get("entry_time"),
+                open_positions=open_count,
+                universe_size=len(self.per_coin_params),
+            )
+            self._notify(msg)
+        except Exception as e:
+            self.logger.debug(f"  [Notify] exit alert build failed for {symbol}: {e!r}")
+
         return True
 
     def _handle_emergency_rollback(self, symbol: str, amount: float) -> None:
@@ -937,6 +1068,20 @@ class ExecutionEngine:
                 continue
             exits, stops, prices = exit_cls().compute_exits(entries, precomputer, param_grid, 1)
 
+            # Extract current ATR value for the coin so the stop placement
+            # code can compute a proper initial trailing stop from fill price.
+            atr_value = float("nan")
+            if exit_name == "atr_trailing":
+                atr_length = int(params.get("atr_length", 14))
+                try:
+                    atr_ind = precomputer.compute_atr(atr_length)
+                    atr_arr = atr_ind.atrr.values if hasattr(atr_ind.atrr, "values") else atr_ind.atrr
+                    last_atr = float(atr_arr[-1]) if atr_arr.ndim == 1 else float(atr_arr[-1, 0])
+                    if not math.isnan(last_atr):
+                        atr_value = last_atr
+                except Exception:
+                    pass
+
             signals_results[symbol] = {
                 "entry": bool(entries[-1, 0]),
                 "exit": bool(exits[-1, 0]),
@@ -944,6 +1089,7 @@ class ExecutionEngine:
                 "stop_price": float(stops[-1, 0]),
                 "fill_price": float(prices[-1, 0]),
                 "current_price": float(close.iloc[-1]),
+                "atr_value": atr_value,
             }
 
         return signals_results
@@ -1147,6 +1293,95 @@ class ExecutionEngine:
             self.logger.warning(f"  [Exit] Could not cancel orders for {symbol}: {e!r}")
 
     # ------------------------------------------------------------------
+    # Position sizing
+    # ------------------------------------------------------------------
+
+    def _estimate_stop_pct_for_sizing(
+        self, symbol: str, sig: Dict[str, Any]
+    ) -> float:
+        """Pre-buy estimate of the exit's stop distance as a percentage.
+
+        Mirrors the post-buy stop computation in ``_execute_trade_logic`` so
+        adaptive sizing can pick a position that respects the eventual stop.
+        The real stop is recomputed after fill — this is only used to budget
+        risk at signal time. Returns a floor of 0.5% to avoid blowing the
+        cap when ATR is transiently tiny.
+        """
+        coin_params = self.per_coin_params[symbol]["params"]
+        exit_name = sig.get("exit_name", "atr_trailing")
+        if exit_name == "atr_trailing":
+            atr_value = sig.get("atr_value", float("nan"))
+            atr_mult = float(coin_params.get("atr_multiplier", 3.0))
+            price = float(sig.get("current_price", 0) or 0)
+            if (
+                not math.isnan(atr_value)
+                and atr_value > 0
+                and price > 0
+            ):
+                stop_pct = (atr_mult * atr_value / price) * 100.0
+            else:
+                # ATR unavailable — fall back to multiplier-as-percent
+                # (same fallback used by the live stop placement path).
+                stop_pct = atr_mult
+        elif exit_name == "trailing_stop":
+            stop_pct = float(coin_params.get("trailing_stop_pct", 3.0))
+        else:  # fixed_sl_tp
+            stop_pct = float(coin_params.get("stop_pct", 3.0))
+        # Mirror the live trailing-stop floor so adaptive sizing budgets risk
+        # against the actual clamped stop, not a fictitiously tight one.
+        if exit_name in ("atr_trailing", "trailing_stop"):
+            floor_key = (
+                "MIN_ATR_TRAILING_PCT" if exit_name == "atr_trailing"
+                else "MIN_TRAILING_STOP_PCT"
+            )
+            stop_pct = max(stop_pct, float(self.config.get(floor_key, 4.0)))
+        return max(stop_pct, 0.5)
+
+    def _compute_adaptive_position_usd(
+        self, symbol: str, sig: Dict[str, Any], base_capital: float
+    ) -> Optional[float]:
+        """Volatility-normalized position size.
+
+        ``position = (portfolio * TARGET_RISK_PCT) / stop_pct`` — at the stop,
+        the loss is bounded to ``TARGET_RISK_PCT`` of portfolio regardless of
+        how wide the coin's stop is. High-vol coins (wide ATR stop) get
+        smaller positions, low-vol coins get larger ones. Capped at
+        ``MAX_POSITION_PCT`` of portfolio; skipped if below
+        ``MIN_POSITION_USD``.
+
+        Returns ``None`` to signal "skip this entry" (sized too small to be
+        worth paying fees + slippage on).
+        """
+        target_risk_pct = float(self.config.get("TARGET_RISK_PCT", 0.01))
+        max_position_pct = float(self.config.get("MAX_POSITION_PCT", 0.15))
+        min_position_usd = float(self.config.get("MIN_POSITION_USD", 15.0))
+
+        stop_pct = self._estimate_stop_pct_for_sizing(symbol, sig)
+        risk_usd = base_capital * target_risk_pct
+        raw_position = risk_usd / (stop_pct / 100.0)
+        cap_position = base_capital * max_position_pct
+        position_usd = min(raw_position, cap_position)
+
+        if position_usd < min_position_usd:
+            self.logger.info(
+                f"  [Sizing] {symbol}: adaptive size ${position_usd:.2f} "
+                f"(stop≈{stop_pct:.2f}%, risk {target_risk_pct * 100:.2f}% "
+                f"of ${base_capital:.2f}) below MIN_POSITION_USD="
+                f"${min_position_usd:.2f} — skipping entry"
+            )
+            return None
+
+        capped = raw_position > cap_position
+        self.logger.info(
+            f"  [Sizing] {symbol}: adaptive "
+            f"(risk {target_risk_pct * 100:.2f}% @ stop≈{stop_pct:.2f}%) "
+            f"-> ${position_usd:.2f}"
+            + (f"  [CAPPED at {max_position_pct * 100:.0f}% of portfolio]"
+               if capped else "")
+        )
+        return position_usd
+
+    # ------------------------------------------------------------------
     # Trade logic
     # ------------------------------------------------------------------
 
@@ -1165,24 +1400,30 @@ class ExecutionEngine:
                     self.logger.info(f"  [Regime] BLOCKED entry for {symbol} (bear regime)")
                     continue
 
-                weight = self.portfolio_weights.get(symbol)
-                if weight is not None:
+                adaptive = bool(self.config.get("ADAPTIVE_SIZING", False))
+
+                if adaptive:
                     base_capital = self._get_total_portfolio_usd()
                     if base_capital is None:
-                        # Bug E fix: don't size positions off a fabricated
-                        # number when the exchange is down. Skip this entry
-                        # entirely — there will be other 4h candles.
+                        # Bug E fix: refuse to size off a fabricated portfolio
+                        # number when the exchange is down.
                         self.logger.warning(
                             f"  [Sizing] {symbol}: portfolio valuation unavailable "
                             f"— skipping entry until next cycle"
                         )
                         continue
-                    capital_per_trade = base_capital * float(weight)
-                    self.logger.info(f"  [Sizing] Dynamic weight for {symbol}: {weight * 100:.1f}% of "
-                          f"portfolio (${base_capital:.2f}) -> ${capital_per_trade:.2f}")
+                    adaptive_usd = self._compute_adaptive_position_usd(
+                        symbol, sig, base_capital
+                    )
+                    if adaptive_usd is None:
+                        # Too small to bother with (fees + slippage eat it).
+                        continue
+                    capital_per_trade = adaptive_usd
                 else:
                     capital_per_trade = self.config.get("CAPITAL_PER_TRADE", 100.0)
-                    self.logger.info(f"  [Sizing] Fixed capital for {symbol}: ${capital_per_trade:.2f}")
+                    self.logger.info(
+                        f"  [Sizing] Fixed capital for {symbol}: ${capital_per_trade:.2f}"
+                    )
 
                 # Pre-flight: balance and min-order-size checks
                 if not self._validate_entry_preconditions(symbol, capital_per_trade):
@@ -1250,44 +1491,34 @@ class ExecutionEngine:
                     #   - atr_trailing: atr_length + atr_multiplier (volatility-aware)
                     #   - trailing_stop: trailing_stop_pct
                     #   - fixed_sl_tp:  stop_pct + take_profit_pct
-                    # The backtest signal already computed the ATR-based stop level,
-                    # so we derive the live trailing % from that.
                     exit_name = sig["exit_name"]
                     coin_params = self.per_coin_params[symbol]["params"]
 
                     if exit_name == "atr_trailing":
-                        # Derive stop % from the ATR-computed stop price vs current price.
-                        # sig["stop_price"] is the trailing stop level from the backtest.
-                        stop_price = sig.get("stop_price", 0)
-                        # Use the actual fill price (not the stale signal close)
-                        current = fill_price
-                        stop_price_valid = (
-                            stop_price
-                            and not math.isnan(float(stop_price))
-                            and current
-                            and stop_price < current
-                        )
-                        if stop_price_valid:
-                            stop_pct = ((current - stop_price) / current) * 100.0
+                        # Compute the initial trailing stop from the current ATR
+                        # value and the actual fill price.  The old approach used
+                        # sig["stop_price"] from the backtest, but that tracks a
+                        # historical peak across many bars and can be above the
+                        # current price — nonsensical for a new entry.
+                        atr_value = sig.get("atr_value", float("nan"))
+                        atr_mult = float(coin_params.get("atr_multiplier", 3.0))
+
+                        if not math.isnan(atr_value) and fill_price and atr_value > 0:
+                            atr_stop = fill_price - atr_mult * atr_value
+                            stop_pct = ((fill_price - atr_stop) / fill_price) * 100.0
                             self.logger.info(
-                                f"  [Stop] {symbol} atr_trailing: ATR stop=${stop_price:.6g}, "
-                                f"price=${current:.6g} -> trailing {stop_pct:.2f}%"
+                                f"  [Stop] {symbol} atr_trailing: ATR stop=${atr_stop:.6g}, "
+                                f"price=${fill_price:.6g} -> trailing {stop_pct:.2f}%"
                             )
                         else:
-                            # Fallback: use atr_multiplier as a rough percentage
-                            stop_pct = float(coin_params.get("atr_multiplier", 3.0))
-                            if stop_price and math.isnan(float(stop_price)):
-                                self.logger.warning(
-                                    f"  [Stop] {symbol} atr_trailing: ATR stop is NaN "
-                                    f"(insufficient data warmup or zero range) — "
-                                    f"falling back to atr_multiplier={stop_pct:.2f}%"
-                                )
-                            else:
-                                self.logger.info(
-                                    f"  [Stop] {symbol} atr_trailing: stop_price=${stop_price} "
-                                    f"price=${current:.6g} -> using atr_multiplier "
-                                    f"fallback {stop_pct:.2f}%"
-                                )
+                            # ATR unavailable (NaN / insufficient warmup) —
+                            # fall back to atr_multiplier as a percentage.
+                            stop_pct = atr_mult
+                            self.logger.warning(
+                                f"  [Stop] {symbol} atr_trailing: ATR is NaN "
+                                f"(insufficient data warmup or zero range) — "
+                                f"falling back to atr_multiplier={stop_pct:.2f}%"
+                            )
                     elif exit_name == "trailing_stop":
                         stop_pct = float(coin_params.get("trailing_stop_pct", 3.0))
                         self.logger.info(
@@ -1296,6 +1527,22 @@ class ExecutionEngine:
                     else:
                         # fixed_sl_tp — stop_pct is the correct WFO-optimised param
                         stop_pct = float(coin_params.get("stop_pct", 3.0))
+
+                    # Floor: 4h crypto bars routinely traverse tight ATR-derived
+                    # stops in normal noise. Clamp upward so a too-aggressive
+                    # WFO param can't decapitate a position in the first hour.
+                    floor_key = (
+                        "MIN_ATR_TRAILING_PCT" if exit_name == "atr_trailing"
+                        else "MIN_TRAILING_STOP_PCT"
+                    )
+                    if exit_name in ("atr_trailing", "trailing_stop"):
+                        floor = float(self.config.get(floor_key, 4.0))
+                        if stop_pct < floor:
+                            self.logger.info(
+                                f"  [Stop] {symbol}: WFO stop_pct {stop_pct:.2f}% "
+                                f"clamped up to {floor_key} floor {floor:.2f}%"
+                            )
+                            stop_pct = floor
 
                     # CRITICAL: store the actual fill price (not the stale signal close).
                     # Storing sig["current_price"] caused position_closes.csv to record
@@ -1345,17 +1592,58 @@ class ExecutionEngine:
 
                     self.save_state()
 
+                    # Entry alert — only fire if the emergency rollback path
+                    # didn't remove the position. This also guarantees we never
+                    # alert from state-reload paths, since this block only runs
+                    # inside the `sig["entry"] and symbol not in active_positions`
+                    # branch of a live signal evaluation.
+                    if symbol in self.active_positions:
+                        try:
+                            strategy = self.per_coin_params.get(symbol, {}).get(
+                                "strategy_name", "?"
+                            )
+                            msg = _format_entry_alert(
+                                symbol=symbol,
+                                strategy=strategy,
+                                exit_name=exit_name,
+                                fill_price=fill_price,
+                                amount=filled_amount,
+                                cost_usd=capital_per_trade,
+                                stop_pct=stop_pct,
+                                open_positions=len(self.active_positions),
+                                universe_size=len(self.per_coin_params),
+                            )
+                            self._notify(msg)
+                        except Exception as e:
+                            self.logger.debug(
+                                f"  [Notify] entry alert build failed for {symbol}: {e!r}"
+                            )
+
             elif symbol in self.active_positions:
                 if sig["exit"]:
                     exit_name = self.active_positions[symbol].get("exit_name", sig["exit_name"])
                     if exit_name == "fixed_sl_tp":
                         # fixed_sl_tp: strategy computes the exit condition — execute it
+                        pos = self.active_positions[symbol]
+                        amount = pos["amount"]
+                        entry_price = pos.get("entry_price") or 0
+                        pos_value = amount * entry_price
+
+                        # Dust check: if the position is too small to sell,
+                        # remove it silently instead of retrying every loop.
+                        if pos_value < _DUST_THRESHOLD_USD:
+                            self.logger.info(
+                                f"  [Exit] Removing dust position {symbol}: "
+                                f"{amount:.8g} (~${pos_value:.4f})"
+                            )
+                            del self.active_positions[symbol]
+                            self.save_state()
+                            continue
+
                         self.logger.info(f"  [Exit] STRATEGY EXIT (fixed_sl_tp) for {symbol}")
-                        amount = self.active_positions[symbol]["amount"]
                         self._cancel_open_orders(symbol)
                         sell_id = self._execute_market_sell_order(symbol, amount)
                         if sell_id:
-                            pos = self.active_positions[symbol]
                             recorded = self._record_exit(
                                 symbol=symbol,
                                 sell_order_id=sell_id,
@@ -1456,7 +1744,6 @@ class ExecutionEngine:
         self.logger.info("=" * 50)
         self.logger.info("  MONTHLY REOPTIMIZATION COMPLETE")
         self.logger.info(f"  Active symbols: {len(self.per_coin_params)}")
-        self.logger.info(f"  Portfolio weights: {len(self.portfolio_weights)}")
         self.logger.info("=" * 50)
         return True
 

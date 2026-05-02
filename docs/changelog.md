@@ -1,5 +1,74 @@
 # Changelog
 
+## 2026-04-27
+
+### Fixed: live exchange loader crash on duplicate Kraken bars
+
+Kraken's OHLC endpoint occasionally repeats the in-progress partial bar's timestamp inside a single response. When the next-symbol fetch had a different index range, `pd.concat(all_dfs, axis=1)` in `LiveExchangeLoader.fetch_ohlcv` raised `InvalidIndexError: Reindexing only valid with uniquely valued Index objects`. Added a per-symbol `df.index.duplicated(keep="last")` dedupe before the horizontal concat. Live event-loop fetches happened to be insulated by the cached_loader's pre-existing dedupe; the bug surfaced via `--dry-run-sizing`. Regression test in `tests/test_exchange_loader_dedup.py`.
+
+### Removed: dynamic weight-based sizing
+
+The `weight is not None` branch in `_execute_trade_logic` and the `portfolio_weights` loader on `ExecutionEngine` are gone. Trade sizing is now binary: `ADAPTIVE_SIZING=True` → adaptive sizing, otherwise `CAPITAL_PER_TRADE`. The `--weights` CLI flag, `WEIGHTS_PATH` config key, and auto-detection of `portfolio_weights.json` at startup are removed. `scripts/auto_trader.py` no longer threads `WEIGHTS_PATH` either. `portfolio_optimizer.py` still writes the file for research/analysis use; the helper `state_manager.get_latest_production_weights` is left for that purpose.
+
+### Added: trailing-stop floor (`MIN_TRAILING_STOP_PCT` / `MIN_ATR_TRAILING_PCT`)
+
+WFO-optimised stop distances were occasionally tight enough (sub-2%) for normal 4h crypto noise to trigger trailing-stop exits within hours of entry at small losses. Both live stop placement (`execution_engine.py` `_execute_trade_logic`) and the pre-buy sizing estimator (`_estimate_stop_pct_for_sizing`) now clamp `stop_pct` upward to a configurable floor for `atr_trailing` and `trailing_stop` exits. Default 4.0% for both. Logged when the clamp fires. CLI: `--min-trailing-stop-pct` / `--min-atr-trailing-pct`.
+
+### Added: `--dry-run-sizing` flag on `ggt trade`
+
+Prints what each symbol's adaptive position size would be at the current bar/ATR (using live `_estimate_stop_pct_for_sizing` + `_compute_adaptive_position_usd`) and exits. Lets us verify the new `ADAPTIVE_SIZING` path without waiting for a live entry to fire. `--portfolio-usd` overrides the exchange query.
+
+### Added: `ggt trade-report` CLI
+
+Summarises closed trades from `data/live/position_closes.csv` by `exit_reason` / `symbol` / `week`. Replaces grepping logs to evaluate live performance after config changes.
+
+## 2026-04-23
+
+### Added: adaptive (volatility-normalized) position sizing — opt-in
+
+Risk-parity-style sizing that targets a fixed fraction of portfolio-at-risk per entry rather than a fixed dollar or weight allocation. Higher-vol coins (wider ATR stops) get smaller positions, lower-vol coins get larger ones — drawdown on a single stop-out is bounded to `TARGET_RISK_PCT` of portfolio regardless of which coin triggers it.
+
+- **Formula**: `position_usd = (portfolio * TARGET_RISK_PCT) / (stop_pct / 100)`, capped at `portfolio * MAX_POSITION_PCT`, skipped if below `MIN_POSITION_USD`.
+- **Pre-buy stop estimation** ([execution_engine.py](../src/ggTrader/core/execution_engine.py) `_estimate_stop_pct_for_sizing`): mirrors the post-buy stop computation so sizing and eventual stop stay consistent. `atr_trailing` uses `sig["atr_value"] / sig["current_price"]`; `trailing_stop` / `fixed_sl_tp` use their WFO-fixed stop params. Floored at 0.5% to prevent blown positions when ATR is transiently tiny.
+- **Min-size gate**: if the sized position falls below `MIN_POSITION_USD` the entry is skipped (not clamped up) — taking a position so small that Kraken fees + slippage dominate is worse than waiting for the next candle.
+- **Override semantics**: when `ADAPTIVE_SIZING=True`, it overrides weight-based sizing. When off, existing behavior is preserved (`weight * portfolio` if weights loaded, else `CAPITAL_PER_TRADE`).
+- **CLI** ([cmd_trade.py](../src/ggTrader/cli/cmd_trade.py)): `--adaptive-sizing` flag plus `--target-risk-pct` (default 0.01), `--max-position-pct` (default 0.15), `--min-position-usd` (default 15.0). Defaults OFF — opt-in per the "test one config change at a time" rule.
+
+**To enable**: edit `docker-compose.yaml` to append `--adaptive-sizing` to the `command` line (e.g. `python -u ggt.py trade --adaptive-sizing`), then `docker compose build --no-cache && docker compose up -d`.
+
+### Added: real-time trade fill alerts (Telegram)
+
+Rich push notifications on every entry and exit fill — closes the last operational blind spot before the daily PnL report's 24h lag. Telegram creds (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`) are already configured; no additional setup required.
+
+- **Notifier wiring** ([execution_engine.py](../src/ggTrader/core/execution_engine.py)): `ExecutionEngine.__init__` now calls `build_notifiers_from_env()` and a new `_notify(msg)` method fans out to every configured backend, swallowing exceptions so Telegram outages can't crash the trade loop.
+- **Entry alerts**: fired in `_execute_trade_logic` after the exit order (OCO/TSL) is successfully placed, gated on `symbol in self.active_positions` so emergency rollbacks never produce a ghost "BUY" alert. Format includes strategy, exit type, fill price, size, cost, stop %, open position count.
+- **Exit alerts**: fired inside `_record_exit` right after `tracker.record_sell(...)` — a single hook covers all four sell paths (`strategy_signal`, `trailing_stop`, `oco_exit`, `emergency_rollback`). Format includes entry/exit prices, hold time, $/% PnL (fee-adjusted), ✅/❌ marker, exit reason, strategy.
+- **Helpers**: module-level `_format_entry_alert`, `_format_exit_alert`, `_format_hold_time`. HTML-formatted for Telegram's rich rendering; all dynamic values are HTML-escaped to avoid parse errors from symbols or reasons.
+- **Restart safety**: alerts only fire from `create_order` success paths and from the poll/reconcile exit-recording flow — never from state reload, so trader restarts don't spam the chat.
+
+## 2026-04-19
+
+### Fixed: dust positions in local state never cleaned up
+
+The 2026-04-17 fix added a dust check to the `fixed_sl_tp` strategy exit path, but only ran when `sig["exit"]` was True. A dust position (BNB-USD with `entry_price=null`, `amount=1.1e-07`) survived a week because its drifting price never crossed the strategy's stop or take-profit level, so no exit signal ever fired.
+
+- **Proactive dust cleanup in reconciliation** ([execution_engine.py](../src/ggTrader/core/execution_engine.py)): after the standard stale/untracked checks, iterate `active_positions` and remove any entry whose cost basis *and* current market value are both below `_DUST_THRESHOLD_USD`. Catches zombies regardless of whether an exit signal ever fires.
+
+## 2026-04-17
+
+### Fixed: zombie dust positions retry sell every loop
+
+When a position's OCO/TSL closed on the exchange but left a dust amount (e.g. `1.1e-07 BNB`), the `fixed_sl_tp` strategy exit fired every 4h loop, tried to sell, Kraken rejected it ("amount must be greater than minimum"), and the position stayed in `active_positions.json` forever.
+
+- **Dust check before sell** ([execution_engine.py](../src/ggTrader/core/execution_engine.py)): the `fixed_sl_tp` exit path now checks position value against `_DUST_THRESHOLD_USD` ($1.00) before attempting the sell. Dust positions are removed silently.
+
+### Fixed: ATR trailing stop computed from stale backtest peak
+
+`sig["stop_price"]` was the trailing stop from the backtest's historical position, which tracks a `peak` across many bars. For a new live entry, this peak can be much higher than the fill price, producing a stop above the current price (e.g. stop=$2974 at fill=$2358 for ETH-USD). The fallback used `atr_multiplier` (a multiplier like 3.0x) as a raw percentage, which is also wrong.
+
+- **ATR value in signals** ([execution_engine.py](../src/ggTrader/core/execution_engine.py)): `_compute_latest_signals` now extracts the current ATR value from the precomputer and includes it as `atr_value` in the signal dict.
+- **Proper stop computation**: the stop placement code now computes `fill_price - atr_multiplier * atr_value` to derive the trailing stop percentage from the actual fill price and current volatility, instead of using the backtest's stale peak-based stop. Falls back to `atr_multiplier` as a percentage only when ATR is NaN.
+
 ## 2026-04-10
 
 ### Fixed: dust positions inflating open position count

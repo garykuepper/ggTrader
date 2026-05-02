@@ -9,7 +9,7 @@ services:
     image: ghcr.io/garykuepper/ggtrader:latest
     build: .  # fallback: docker compose build
     container_name: ggtrader_live
-    restart: on-failure:5
+    restart: unless-stopped
     env_file: .env # Loads KRAKEN_KEY, KRAKEN_SECRET
     volumes:
       - ./results:/app/results
@@ -25,7 +25,7 @@ services:
           cpus: '2.0'
           memory: 16G
     stop_grace_period: 10s
-    command: python -u ggt.py trade
+    command: python -u ggt.py trade --adaptive-sizing --min-trailing-stop-pct 4 --min-atr-trailing-pct 4
 
 volumes:
   ggtrader_pgdata: # Dedicated persistent volume for ggTrader data

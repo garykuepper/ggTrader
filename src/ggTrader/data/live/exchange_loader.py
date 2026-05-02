@@ -87,6 +87,13 @@ class LiveExchangeLoader(BaseDataLoader):
             df.set_index("datetime", inplace=True)
             df.drop(columns=["timestamp"], inplace=True)
 
+            # Kraken occasionally returns the same timestamp twice (typically a
+            # partial in-progress bar repeated). Dedupe per-symbol before the
+            # horizontal concat below, otherwise pd.concat(axis=1) raises
+            # InvalidIndexError on a non-unique input index.
+            if df.index.has_duplicates:
+                df = df[~df.index.duplicated(keep="last")]
+
             # Create MultiIndex columns for just this symbol
             df.columns = pd.MultiIndex.from_product([[symbol], df.columns])
             all_dfs.append(df)

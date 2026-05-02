@@ -205,6 +205,82 @@ def _build_alerts(
     return alerts
 
 
+def _fetch_regime_status() -> dict[str, Any]:
+    """Fetch recent data for BTC and top coins to compute current regime status.
+
+    Returns a dict with:
+        btc_bull: bool
+        alt_bull: bool
+        btc_price: float
+        alt_index: float (normalized)
+        error: str | None
+    """
+    try:
+        import ccxt
+        from ggTrader.core.regime_filtering import (
+            _compute_altcoin_index_mask,
+            _compute_btc_regime_mask,
+        )
+        from ggTrader.utils.run_config import full_pipeline_config
+
+        config = full_pipeline_config()
+        # Ensure we have enough bars for EMA warmup
+        n_warmup = int(config.get("EMA_WARMUP_BARS", 100))
+        limit = n_warmup + 50
+
+        ex = ccxt.kraken({"enableRateLimit": True})
+        # We need BTC and a handful of top coins for the alt index.
+        # Using a fixed set of top coins is faster than fetching the whole universe.
+        symbols = ["BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "ADA/USD", "DOGE/USD"]
+        data = {}
+        for s in symbols:
+            try:
+                ohlcv = ex.fetch_ohlcv(s, timeframe="4h", limit=limit)
+                df = pd.DataFrame(
+                    ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
+                )
+                df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
+                df.set_index("timestamp", inplace=True)
+                # Map to the format regime_filtering expects (MultiIndex: symbol, field)
+                sym_dashed = s.replace("/", "-")
+                for col in ["open", "high", "low", "close", "volume"]:
+                    data[(sym_dashed, col)] = df[col]
+            except Exception:
+                continue
+
+        if not data:
+            return {"error": "Could not fetch regime data"}
+
+        ohlcv_df = pd.DataFrame(data)
+        
+        # Guard against _compute_btc_regime_mask failing if it tries to touch DB
+        try:
+            btc_mask = _compute_btc_regime_mask(ohlcv_df, config)
+        except Exception:
+            btc_mask = None
+            
+        try:
+            alt_mask = _compute_altcoin_index_mask(ohlcv_df, config)
+        except Exception:
+            alt_mask = None
+
+        btc_bull = bool(btc_mask.iloc[-1]) if btc_mask is not None else False
+        alt_bull = bool(alt_mask.iloc[-1]) if alt_mask is not None else False
+
+        btc_price = 0.0
+        if ("BTC-USD", "close") in ohlcv_df.columns:
+            btc_price = float(ohlcv_df[("BTC-USD", "close")].iloc[-1])
+
+        return {
+            "btc_bull": btc_bull,
+            "alt_bull": alt_bull,
+            "btc_price": btc_price,
+            "error": None,
+        }
+    except Exception as e:
+        return {"error": f"Regime compute failed: {e!r}"}
+
+
 def _gather_report_data(
     data_dir: str,
     active_positions_path: str,
@@ -333,6 +409,8 @@ def _gather_report_data(
         thresholds=thresholds,
     )
 
+    regime = _fetch_regime_status()
+
     return {
         "window": window,
         "alltime": alltime,
@@ -345,6 +423,7 @@ def _gather_report_data(
         "since": since,
         "until": until,
         "deposits": deposits_info,
+        "regime": regime,
     }
 
 
@@ -396,6 +475,15 @@ def build_daily_pnl_summary_text(
         lines.append("")
     lines.append(f"📊 ggTrader Daily PnL — {_fmt_dt(until, '%Y-%m-%d')}")
     lines.append("")
+
+    # Regime
+    regime = data.get("regime", {})
+    if not regime.get("error"):
+        btc_status = "BULL 🟢" if regime.get("btc_bull") else "BEAR 🔴"
+        alt_status = "BULL 🟢" if regime.get("alt_bull") else "BEAR 🔴"
+        lines.append(f"🌐 BTC Regime: {btc_status} (${regime.get('btc_price', 0):,.0f})")
+        lines.append(f"🌐 Alt Regime: {alt_status}")
+        lines.append("")
 
     # Snapshot
     bal_str = _fmt_money(snapshot_balance)
@@ -529,6 +617,20 @@ def build_daily_pnl_summary_html(
     # ── Header ──────────────────────────────────────────────────────────
     parts.append(f"<b>📊 ggTrader Daily PnL — {_h(_fmt_dt(until, '%Y-%m-%d'))}</b>")
     parts.append("")
+
+    # ── Regime Status ───────────────────────────────────────────────────
+    regime = data.get("regime", {})
+    if not regime.get("error"):
+        btc_status = "BULL 🟢" if regime.get("btc_bull") else "BEAR 🔴"
+        alt_status = "BULL 🟢" if regime.get("alt_bull") else "BEAR 🔴"
+        reg_rows = [
+            ("BTC Regime", btc_status),
+            ("Alt Regime", alt_status),
+            ("BTC Price", f"${regime.get('btc_price', 0):,.2f}"),
+        ]
+        parts.append("<b>🌐 Market Regime</b>")
+        parts.append("<pre>" + _h(_render_kv_table(reg_rows)) + "</pre>")
+        parts.append("")
 
     # ── Account snapshot ────────────────────────────────────────────────
     bal_change = window.get("balance_change_pct")
@@ -747,6 +849,18 @@ def build_daily_pnl_report(
     window_str = f"{_fmt_dt(since)} → {_fmt_dt(until)} PT"
     lines.append(f"*Window: {window_str}*")
     lines.append("")
+
+    # Regime
+    regime = data.get("regime", {})
+    if not regime.get("error"):
+        btc_status = "BULL 🟢" if regime.get("btc_bull") else "BEAR 🔴"
+        alt_status = "BULL 🟢" if regime.get("alt_bull") else "BEAR 🔴"
+        lines.append("## 🌐 Market Regime")
+        lines.append("")
+        lines.append(f"- **BTC Regime**: {btc_status}")
+        lines.append(f"- **Alt Regime**: {alt_status}")
+        lines.append(f"- **BTC Price**: ${_fmt_money(regime.get('btc_price', 0))}")
+        lines.append("")
 
     # Snapshot
     bal = snapshot_balance
