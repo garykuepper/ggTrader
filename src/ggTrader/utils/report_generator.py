@@ -404,7 +404,7 @@ def generate_pipeline_report(
     lines.append("")
     lines.append(
         "*For pipeline methodology, fold structure, and benchmark definitions "
-        "see [docs/UNIFIED_PIPELINE.md](../docs/UNIFIED_PIPELINE.md).*"
+        "see [docs/architecture.md](../../../docs/architecture.md).*"
     )
     lines.append("")
 

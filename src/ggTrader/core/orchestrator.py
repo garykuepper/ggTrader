@@ -519,9 +519,17 @@ def run_frozen_params_combined_backtest(
     # zeroing only checks combined_entries.sum() > 0 (signals exist), not actual trade
     # outcomes.  Rebuild the portfolio with corrected weights if any idle coins are found.
     try:
-        _trade_counts = final_pf.trades.count()
+        # Per-asset trade counts. final_pf is grouped (cash_sharing=True), so the
+        # default trades.count() returns a single grouped scalar; pass group_by=False
+        # to get a Series indexed by the original asset columns.
+        _trade_counts = final_pf.trades.count(group_by=False)
+        _counts_iter = (
+            _trade_counts.values
+            if hasattr(_trade_counts, "values")
+            else list(_trade_counts)
+        )
         _zero_post = [
-            col for col, cnt in zip(combined_entries.columns, _trade_counts.values)
+            col for col, cnt in zip(combined_entries.columns, _counts_iter)
             if int(cnt) == 0
         ]
         if _zero_post:
@@ -549,7 +557,7 @@ def run_frozen_params_combined_backtest(
                 cash_sharing=True,
                 group_by=np.full(combined_entries.shape[1], 0),
             ).copy()
-    except Exception as _e:
+    except (AttributeError, KeyError, ValueError, TypeError) as _e:
         print(f"  [Allocation] Post-portfolio zeroing skipped: {_e!r}")
 
     final_stats = {

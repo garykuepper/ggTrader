@@ -30,13 +30,15 @@ class CachedYFinanceLoader(YFinanceDataLoader):
         limit: Optional[int] = 1000,
     ) -> pd.DataFrame:
         """Fetch OHLCV data with a 'DB-first' cache strategy."""
-        # 1. Fetch from DB
+        # 1. Fetch from DB — flag asset_class so the loader doesn't append -USD
+        # to bare stock tickers (which would collide with crypto rows of the same name).
         db_df = self.db_loader.fetch_ohlcv(
             symbols=symbols,
             interval=interval,
             start_date=start_date,
             end_date=end_date,
             limit=limit,
+            asset_class="stocks",
         )
 
         # Determine if we need to fetch more from yfinance

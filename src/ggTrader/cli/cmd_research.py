@@ -434,6 +434,7 @@ def run_research(args: argparse.Namespace):
         "--no-progress",
         "--start-date", start_date,
         "--end-date", end_date,
+        "--asset-class", asset_class,
     ]
     subprocess.run(final_cmd, check=True)
 

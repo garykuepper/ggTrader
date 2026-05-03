@@ -101,9 +101,9 @@ def main() -> None:
     parser.add_argument(
         "--asset-class",
         type=str,
-        default="crypto",
+        required=True,
         choices=["crypto", "stocks"],
-        help="Asset class to process",
+        help="Asset class to process (required — no default to avoid silent crypto fallback)",
     )
     args = parser.parse_args()
 

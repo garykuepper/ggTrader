@@ -267,6 +267,7 @@ def load_hybrid_validation_ohlcv(
         interval=config["INTERVAL"],
         start_date=ts_start,
         end_date=ts_end,
+        asset_class=asset_class,
     )
 
     if not use_ccxt_tail:
