@@ -24,7 +24,7 @@ When making changes to the codebase, keep these docs updated:
 
 - **Monthly Recalibration**: The `ExecutionEngine` handles its own WFO run internally on the 1st of each month (~01:00 AM). It reloads the new parameters automatically once complete.
 - **Tiered Regime Filter**: Entries are gated by correlation with BTC:
-    - High ($\ge 0.5$): BTC Regime (100-day EMA).
+    - High ($\ge 0.5$): BTC Regime (`BTC_REGIME_FILTER_SHORT_EMA` vs 200-day EMA; default short = 20).
     - Medium ($0.3-0.5$): Altcoin Index.
     - Low ($< 0.3$): Free trading.
 - **PNL Reporting**: Daily reports are sent at 08:00 AM local time. They include a "Market Regime" status compute on-the-fly from live `ccxt` data.

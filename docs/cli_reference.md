@@ -15,6 +15,10 @@ This document provides a detailed command reference for the `ggt` unified interf
 | `ggt ingest` | Data | Synchronize historical OHLCV data from exchanges. |
 | `ggt status` | Status | Real-time progress monitoring for active research runs. |
 | `ggt report` | Reporting | Regenerate Markdown reports from previous run results. |
+| `ggt pnl-daily` | Reporting | Generate daily PnL report and push to Telegram/Discord. |
+| `ggt trade-report` | Reporting | Summarize closed live trades from `data/live/position_closes.csv`. |
+| `ggt repair` | Maintenance | Sync trade history from Kraken and rebuild `position_closes.csv`. |
+| `ggt cleanup` | Maintenance | Remove old results, logs, and legacy code. |
 
 ---
 
@@ -58,6 +62,11 @@ Starts the live execution engine.
 - **`--paper`**: Use the exchange's paper/sandbox environment.
 - **`--dry-run`**: Log all actions but do not place orders.
 - **`--adaptive-sizing`**: Enable volatility-normalized position sizing.
+- **`--dry-run-sizing`**: Print adaptive size for each current signal, then exit.
+- **`--portfolio-usd N`**: Override exchange portfolio query (used with `--dry-run-sizing`).
+- **`--capital N`**: Fixed capital per trade in USD (overridden by adaptive sizing).
+- **`--min-trailing-stop-pct N`**: Floor for trailing stop % (default 4.0).
+- **`--min-atr-trailing-pct N`**: Floor for ATR-derived stop % (default 4.0).
 
 ```bash
 # Example: Start stock paper trading

@@ -90,13 +90,13 @@ Before combining per-asset signals into the final portfolio, `run_frozen_params_
 
 | Tier | Condition | Filter applied |
 | ---- | --------- | -------------- |
-| **BTC tier** | BTC return correlation ≥ `BTC_REGIME_FILTER_MIN_CORRELATION` (default 0.5) | Signal blocked when BTC EMA(50) < EMA(200) — golden cross filter |
-| **Altcoin tier** | Correlation in `[ALTCOIN_REGIME_FILTER_CORR_MIN, btc_min)` (default 0.3–0.5) | Signal blocked when altcoin equal-weight index EMA(50) < EMA(200) |
+| **BTC tier** | BTC return correlation ≥ `BTC_REGIME_FILTER_MIN_CORRELATION` (default 0.5) | Signal blocked when BTC EMA(short) < EMA(200); short defaults to 20 |
+| **Altcoin tier** | Correlation in `[ALTCOIN_REGIME_FILTER_CORR_MIN, btc_min)` (default 0.3–0.5) | Signal blocked when altcoin equal-weight index EMA(short) < EMA(200) |
 | **Exempt tier** | Correlation < `ALTCOIN_REGIME_FILTER_CORR_MIN` | No filter — asset trades freely |
 
-The filter compares a short EMA to the long EMA(200) rather than raw close price, which prevents single-candle spikes from flipping the regime signal. The short span is configured via `BTC_REGIME_FILTER_SHORT_EMA` (default `50`). Set to `None` to revert to the original `close > EMA(200)` behaviour.
+The filter compares a short EMA to the long EMA(200) rather than raw close price, which prevents single-candle spikes from flipping the regime signal. The short span is configured via `BTC_REGIME_FILTER_SHORT_EMA` (default `20`). Set to `None` to revert to the original `close > EMA(200)` behaviour.
 
-The **altcoin index** is an equal-weighted, normalised price series built from all non-BTC symbols in the universe. Its EMA(50)/EMA(200) cross acts as a trend proxy for alt-correlated assets.
+The **altcoin index** is an equal-weighted, normalised price series built from all non-BTC symbols in the universe. Its EMA(short)/EMA(200) cross acts as a trend proxy for alt-correlated assets.
 
 Correlations are computed over the full OHLCV date range using daily log-returns. Regime filtering is enabled by `BTC_REGIME_FILTER=True` in constants; it is disabled by default.
 
@@ -254,6 +254,18 @@ The system simulates the signals against multiple allocation models (Equal Weigh
 
 ### Phase 4: Live Execution
 The appropriate engine (`CryptoExecutionEngine` or `StockExecutionEngine`) manages orders, utilizing exchange-native protection (TSL/OCO) and local circuit breakers.
+
+## 🔁 Monthly Auto-Recalibration
+
+The live `ExecutionEngine` triggers a full WFO research run internally on the **1st of each month at ~01:00 UTC**, then hot-reloads the new optimized parameters into the running bot — no restart required. The 2026-05-01 cycle ran end-to-end at 01:06 UTC and promoted new params at 02:27 UTC.
+
+## 📣 Daily PnL Reports
+
+A daily report is sent via Telegram and Discord at **08:00 local time**. It includes:
+
+- Realized + unrealized PnL summary
+- Open positions and circuit-breaker status
+- **Market Regime line**: BTC regime (bull/bear) and altcoin regime (bull/bear) with 🟢/🔴 indicators, computed live via `ccxt` using the same tiered filtering logic the bot uses for entries
 
 ## 🐳 Docker Orchestration
 

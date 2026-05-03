@@ -1,75 +1,68 @@
 # 🚀 ggTrader Roadmap
 
-**Last updated:** 2026-05-02  
-**Status:** Live trading active for ~4 weeks. Major multi-asset and risk infra shipped.
+**Last updated:** 2026-05-03 · **Status:** Live ~4 weeks · Multi-asset shipped
+
+**Status legend:** ✅ Shipped · 🟡 In progress · 🔵 Ready · ⚪ Concept
 
 ---
 
-## 🔝 High-Impact Priorities
+## 🔝 Top Priorities (Next)
 
-| Rank | Item | Theme | Status | Effort | Strategic Why |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| 1️⃣ | **Position health scoring** | Hardening | Ready | ~3h | Identify "zombie" trades open 3x longer than backtest avg |
-| 2️⃣ | **MLflow experiment tracking** | Infra | Not started | ~4h | Visual dashboard for WFO results and parameter drift |
-| 3️⃣ | **LLM "Post-Mortem" reports** | Ops | Concept | ~4h | Auto-generate natural language performance commentary |
-| 4️⃣ | **Automated Risk Scaling** | Risk | Concept | ~4h | Scale exposure based on equity curve slope (equity-curve trading) |
-| 5️⃣ | **Multi-Timeframe Confirmation** | Perf | Not started | Multi-day | Reduce false entries by aligning 4h signals with Daily trend |
+| # | Item | Theme | Status | Effort | Why |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| 1 | Position health scoring | Hardening | 🔵 | ~3h | Flag "zombie" trades open 3× longer than backtest avg |
+| 2 | MLflow experiment tracking | Infra | ⚪ | ~4h | Visual dashboard for WFO results and parameter drift |
+| 3 | LLM post-mortem reports | Ops | ⚪ | ~4h | Auto-generate natural-language performance commentary |
+| 4 | Automated risk scaling | Risk | ⚪ | ~4h | Scale exposure off equity-curve slope |
+| 5 | Multi-timeframe confirmation | Perf | ⚪ | Multi-day | Align 4h signals with daily trend |
 
 ---
 
-## 🛠 Planned Enhancements
+## 🛠 Backlog
 
 ### Research & Strategy
 | Feature | Description | Status |
-| :--- | :--- | :--- |
-| **Multi-TF Gates** | Only enter on a 4h signal if the Daily timeframe trend is bullish. | `Not Started` |
-| **Coarse Screening** | Use a fast, loose pass to prune 70% of strategy combos before full WFO. | `Not Started` |
-| **Alpha Blending** | Dynamically adjust `OOS_ROBUSTNESS_BLEND_ALPHA` based on market volatility. | `Concept` |
+| :-- | :-- | :-- |
+| Multi-TF gates | Only enter on 4h signal if daily trend bullish | ⚪ |
+| Coarse screening | Fast/loose pass to prune ~70% of strategy combos before WFO | ⚪ |
+| Alpha blending | Adjust `OOS_ROBUSTNESS_BLEND_ALPHA` based on volatility regime | ⚪ |
 
-### Infrastructure & Risk
+### Infra & Risk
 | Feature | Description | Status |
-| :--- | :--- | :--- |
-| **MLflow Sync** | Automated logging of every `ggt research` run to a central MLflow UI. | `Ready` |
-| **Equity Scaling** | Reduce `TARGET_RISK_PCT` by 50% if Equity < 20-day Moving Average. | `Concept` |
-| **WFO Compare** | CLI tool (`ggt compare`) to diff two research folders for selection drift. | `Not Started` |
-| **Backtest vs Real** | Measure "Slippage Gap" by replaying backtest logic against actual fill logs. | `Not Started` |
+| :-- | :-- | :-- |
+| Equity scaling | Cut `TARGET_RISK_PCT` 50% if equity < 20-day MA | ⚪ |
+| WFO compare | `ggt compare` to diff two research folders for selection drift | ⚪ |
+| Backtest-vs-real | "Slippage gap" by replaying backtest logic against real fills | ⚪ |
 
 ---
 
-## ✅ Completed Milestones
+## ✅ Shipped (most recent first)
 
-### 📈 Phase 4: Multi-Asset & Risk (May 2026)
-*   **Stock Trading Foundation**
-    *   `BaseExecutionEngine` for shared logic between Crypto/Stocks.
-    *   `StockExecutionEngine` for Alpaca Paper/Live execution.
-    *   `YFinanceDataLoader` with 1980+ data and TimescaleDB caching.
-    *   Automated S&P 500 volume-ranked universe builder.
-*   **Intraday Protection**
-    *   **Daily Loss Circuit Breaker**: Auto-halts entries on 5% drawdown.
-    *   Persistent circuit breaker state across bot restarts.
-*   **WFO Robustness Refinement**
-    *   Increased splits to **10 folds** for more granular OOS data.
-    *   Biased scoring toward **Sortino & Calmar** ratios (risk-adjusted).
-    *   Increased OOS alpha blend to **0.70**.
+### 2026-05 — Multi-Asset & Risk
+- **Stocks**: `BaseExecutionEngine`, `StockExecutionEngine` (Alpaca), `YFinanceDataLoader` (1980+ bars, TimescaleDB cache)
+- **Stock universe**: `scripts/update_universe_stocks.py` — manual S&P 500 volume rank (auto-rank pending)
+- **Daily-loss circuit breaker**: 5% intraday cap, persistent across restarts
+- **Stock macro filters**: SPY EMA gate + VIX volatility gate
+- **WFO refinement**: 10 folds, OOS alpha 0.70, Sortino/Calmar bias
 
-### 📊 Phase 3: Observability (Apr 2026)
-*   **Grafana Dashboard Integration**
-    *   Real-time Equity Curve, PnL Dots, and Trades Table.
-    *   "Asset Run" dropdown to toggle between Crypto (`LIVE`) and Stocks (`LIVE_STOCKS`).
-*   **Real-time DB Mirroring**
-    *   Direct syncing of all entry/exit events to TimescaleDB.
-    *   `ggt db sync-live` utility for historical CSV backfills.
+### 2026-04 — Observability + Adaptive Sizing
+- **Grafana dashboard**: equity, PnL dots, trades; LIVE / LIVE_STOCKS toggle
+- **TimescaleDB live mirror**; `ggt db sync-live` for CSV backfill
+- **Monthly auto-recalibration**: WFO runs internally on day 1 ~01:00 UTC, hot-reloads params
+- **Market-regime line** in 08:00 PnL report (BTC + altcoin status, live ccxt)
+- **Adaptive volatility-normalized sizing** (opt-in `--adaptive-sizing`)
+- **Trailing-stop floor**: `MIN_TRAILING_STOP_PCT` / `MIN_ATR_TRAILING_PCT` (default 4%)
+- **CLI**: `ggt trade-report`, `ggt repair`, `ggt pnl-daily`, `--dry-run-sizing`
 
-### 🛡 Phase 2: Live Hardening (Mar 2026)
-*   **Tiered Regime Filtering**: EMA-based macro gate (BTC EMA 50/200).
-*   **Telegram/Discord Alerts**: Rich HTML notifications for every trade fill.
-*   **Adaptive Position Sizing**: Volatility-normalized risk per trade.
-*   **Exchange Reconciliation**: Auto-detect server-side OCO/TSL triggers on heartbeat.
+### 2026-03 — Live Hardening
+- **Tiered regime filter**: BTC EMA 20/200 (high-corr) → altcoin index (mid) → exempt (low)
+- **Telegram + Discord** trade-fill alerts
+- **Exchange reconciliation**: server-side TSL/OCO detection on heartbeat
 
-### 🏗 Phase 1: Core Engine (Feb 2026)
-*   **Vectorized WFO Pipeline**: High-speed backtesting with Numba.
-*   **FastBacktest Engine**: 1000x faster than iterative simulations.
-*   **Unified CLI**: The `ggt` command-line interface.
+### 2026-02 — Core Engine
+- **Vectorized WFO** pipeline with Numba
+- **FastBacktest** engine (vbt-based)
+- **Unified `ggt` CLI**
 
 ---
 *Back to [README.md](../README.md)*
