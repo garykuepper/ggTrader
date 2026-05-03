@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-05-03
+
+### Hardening: asset-class-aware research/production discovery
+
+Prevented cross-class contamination when crypto and stocks research runs coexist in `results/research/`. Previously, the live trader, backtest, and production recalibration all called `get_latest_research_run()` without any filter — on next restart (or monthly auto-recalibration), the crypto trader could auto-pick up a newer stocks run and try to trade `NVDA, TSLA, ...` on Kraken.
+
+- **`run_results.json` now writes `asset_class` at the top level** ([results_manager.py](../src/ggTrader/utils/results_manager.py) `_build_output_structure`). Backwards-compatible: the legacy `configuration._raw_config.ASSET_CLASS` location is still populated and is used as a fallback by the discovery code.
+- **`get_latest_research_run` and `get_latest_production_weights` accept an optional `asset_class` filter** ([state_manager.py](../src/ggTrader/utils/state_manager.py)). Reading order: top-level `asset_class` → `_raw_config.ASSET_CLASS` → defaults to `"crypto"` for truly legacy runs.
+- **`validate_results_asset_class()` helper** rejects an explicit `--results PATH` if the file's class doesn't match `--asset-class`. Hard-fail with a clear remediation message.
+- **`cmd_trade`, `cmd_backtest`, `cmd_production`** all now pass `asset_class` to discovery and validate explicit paths.
+- **Tests**: 12 unit tests in `tests/test_state_manager.py` cover discovery filtering, legacy fallbacks, and validator behavior.
+
+Verified against existing on-disk runs: `research_20260502_230057` and `research_20260503_085408` resolve to `"stocks"` via `_raw_config` fallback; `research_20260501_205849` resolves to `"crypto"`. No data migration needed.
+
+### Fixed: stocks WFO research pipeline (four root-cause bugs)
+
+The 2026-05-02 stocks research run reported `YTD CAGR -56% / Sharpe -2.14`, masking strong per-worker phase-1 results (+101%, +95%, +40% on three of five shards). Investigation found four independent bugs.
+
+- **Phase 2/3 dispatch lost `--asset-class`** ([cmd_research.py](../src/ggTrader/cli/cmd_research.py) `final_cmd`). The post-merge replay defaulted to crypto, so stock symbols were looked up via `CachedExchangeLoader`. Most returned empty; `CVX-USD` and `CAT-USD` (real Kraken pairs for Convex Finance and Cat token) silently replayed against crypto OHLCV — that's where the misleading aggregate came from. Now passes `asset_class` through, and `run_walk_forward_optimization.py --asset-class` is `required=True` to prevent silent crypto fallback.
+- **`TimescaleDBLoader.fetch_ohlcv` unconditionally appended `-USD`** ([timescaledb_loader.py:48](../src/ggTrader/data/historical/timescaledb_loader.py)). Correct for crypto, wrong for stocks (stored as bare ticker). Added `asset_class` kwarg; `CachedYFinanceLoader` and `load_hybrid_validation_ohlcv` now thread it through.
+- **Post-portfolio zeroing crashed silently** ([orchestrator.py:522](../src/ggTrader/core/orchestrator.py)). `final_pf.trades.count()` returns a scalar when `cash_sharing=True` with single group — `.values` then raised `AttributeError`. Every worker swallowed it, so the second-pass zeroing of dead allocations never ran. Fixed via `count(group_by=False)` and narrowed the `except`.
+- **Research report linked to non-existent `docs/UNIFIED_PIPELINE.md`** ([report_generator.py:407](../src/ggTrader/utils/report_generator.py)). Repointed to `docs/architecture.md` (now contains the fold structure and benchmarks).
+
+**Deferred:** universe shrinkage 25 → 16 stocks. Many gates (`MIN_CLOSED_TRADES_TRAIN=3`) reject daily-bar stocks with too few trades per fold. Re-evaluate after the next clean run.
+
 ## 2026-05-02
 
 ### Added: Multi-Asset Trading Engine (Stocks & Crypto)

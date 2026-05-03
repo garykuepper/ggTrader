@@ -119,6 +119,10 @@ class ResultsManager:
 
                 output_data = existing_data
                 output_data["timestamp"] = datetime.now().isoformat()
+                # Ensure top-level asset_class is set even on incremental merges
+                # (legacy files may have been written without it).
+                if "asset_class" not in output_data:
+                    output_data["asset_class"] = metadata.get("ASSET_CLASS", "crypto")
             except Exception as e:
                 print(f"Warning: Could not merge existing results in {output_path}: {e}")
                 # Fallback to creating new structure if merge fails
@@ -148,6 +152,9 @@ class ResultsManager:
             "run_id": self.run_id,
             "timestamp": datetime.now().isoformat(),
             "script_name": self.script_name,
+            # Top-level asset_class: lets discovery filter without parsing _raw_config.
+            # Required so the live trader doesn't auto-pick up the wrong asset class.
+            "asset_class": metadata.get("ASSET_CLASS", "crypto"),
             "configuration": {
                 "start_date": metadata.get("START_DATE"),
                 "end_date": metadata.get("END_DATE"),

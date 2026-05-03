@@ -86,14 +86,29 @@ def run_trade(args: argparse.Namespace):
         from ggTrader.core.crypto_execution_engine import CryptoExecutionEngine
         EngineClass = CryptoExecutionEngine
 
-    # Priority: Command line argument -> Auto-detect latest research run
+    # Priority: Command line argument -> Auto-detect latest research run.
+    # Discovery and explicit path are both filtered/validated by asset_class to
+    # prevent the trader from picking up a research run for the wrong universe.
+    from ggTrader.utils.state_manager import (
+        get_latest_research_run,
+        validate_results_asset_class,
+    )
+
     results_path = args.results
-    if not results_path:
-        from ggTrader.utils.state_manager import get_latest_research_run
-        latest = get_latest_research_run()
+    if results_path:
+        from pathlib import Path as _P
+        validate_results_asset_class(_P(results_path), expected=asset_class)
+    else:
+        latest = get_latest_research_run(asset_class=asset_class)
         if latest:
             results_path = str(latest)
-            print(f"Auto-detected latest research run: {results_path}")
+            print(f"Auto-detected latest {asset_class} research run: {results_path}")
+        else:
+            print(
+                f"Error: No research run found for asset_class={asset_class!r}.\n"
+                f"  Run `ggt research --asset-class {asset_class}` first, or pass --results PATH."
+            )
+            sys.exit(1)
 
     from ggTrader.utils.run_config import full_pipeline_config, stock_pipeline_config, merge_run_config
     base_config = stock_pipeline_config() if asset_class == "stocks" else full_pipeline_config()
