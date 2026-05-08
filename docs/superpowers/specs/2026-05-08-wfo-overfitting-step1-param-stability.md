@@ -117,6 +117,7 @@ These remain candidates for subsequent steps depending on Step 1's outcome.
 | # | Step | Cost | Expected impact | Status |
 |---|---|---|---|---|
 | 1 | `PARAM_STABILITY_WEIGHT` 0.3 → 0.7 | full WFO re-run; 1 config line | medium-high | **this spec** |
+| 1.5 | Per-fold z-rank in `_weighted_robustness_series` (rank cells by mean z-score across folds, not raw weighted mean) | full WFO re-run; small `wfo.py` edit | medium-high (complements 1: catches positional noise where CV catches magnitude noise) | pending — only if Step 1 gain is incomplete |
 | 2 | Shrink param grids (≈ halve combos) | full WFO re-run; grid edits | medium | pending |
 | 3 | Address DOGE-style sparse-fold survivors (`MIN_CLOSED_TRADES_TRAIN` calibration per strategy) | analysis + tweak | medium | pending |
 | 4 | Per-cell OOS in cache + Layer-1 OOS blend (`IS_OOS_PARAM_BLEND_ALPHA`) | invasive: schema migration + WFO core edit | high | pending |
