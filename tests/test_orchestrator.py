@@ -222,7 +222,8 @@ def test_frozen_params_combined_backtest_returns_expected_keys():
         "BENCHMARK_SYMBOL": "BTC-USD",
         "MAX_COIN_ALLOCATION": 0.25,
     }
-    with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}):
+    with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), \
+         patch("ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}):
         result = run_frozen_params_combined_backtest(
             ohlcv, per_coin, config, exit_tournament=["atr_trailing"], save_results=False
         )
@@ -241,7 +242,8 @@ def test_frozen_params_allocation_weights_sum_to_one():
         "BTC_REGIME_FILTER": False,
         "MAX_COIN_ALLOCATION": 0.5,
     }
-    with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}):
+    with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), \
+         patch("ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}):
         result = run_frozen_params_combined_backtest(
             ohlcv, per_coin, config, exit_tournament=["atr_trailing"], save_results=False
         )
@@ -269,7 +271,8 @@ def test_frozen_params_regime_filter_blocks_signals():
     with patch("ggTrader.core.orchestrator._compute_btc_regime_mask", return_value=all_bear), \
          patch("ggTrader.core.orchestrator._compute_btc_correlations",
                return_value={"BTC-USD": 1.0, "ETH-USD": 0.9}), \
-         patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}):
+         patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), \
+         patch("ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}):
         result = run_frozen_params_combined_backtest(
             ohlcv, per_coin, config, exit_tournament=["atr_trailing"], save_results=False
         )

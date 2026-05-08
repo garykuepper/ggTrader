@@ -164,6 +164,13 @@ def generate_pipeline_report(
         f"{_beat_emoji(p3_strat, p3_stats.get('benchmark_cagr_pct') if p3_stats else None)} |"
     )
     lines.append(
+        f"| S&P 500 CAGR | "
+        f"{_fmt_pct_opt(p2_stats.get('spy_cagr_pct'))}"
+        f"{_beat_emoji(p2_strat, p2_stats.get('spy_cagr_pct'))} | "
+        f"{_fmt_pct_opt(p3_stats.get('spy_cagr_pct') if p3_stats else None)}"
+        f"{_beat_emoji(p3_strat, p3_stats.get('spy_cagr_pct') if p3_stats else None)} |"
+    )
+    lines.append(
         f"| Strategy Sharpe | {_fmt_float_opt(p2_stats.get('sharpe'), decimals=2)} | "
         f"{_fmt_float_opt(p3_stats.get('sharpe') if p3_stats else None, decimals=2)} |"
     )
@@ -195,29 +202,33 @@ def generate_pipeline_report(
         lines.append("")
 
     def _phase_table(stats: Dict[str, Any]) -> None:
-        lines.append("| Metric | Strategy | BTC (buy & hold) |")
-        lines.append("|--------|----------|------------------|")
+        lines.append("| Metric | Strategy | BTC (buy & hold) | S&P 500 (SPY) |")
+        lines.append("|--------|----------|------------------|---------------|")
         lines.append(
             f"| Total Return | {_fmt_pct_opt(stats.get('profit_pct'))} | "
-            f"{_fmt_pct_opt(stats.get('benchmark_profit_pct'))} |"
+            f"{_fmt_pct_opt(stats.get('benchmark_profit_pct'))} | "
+            f"{_fmt_pct_opt(stats.get('spy_profit_pct'))} |"
         )
         lines.append(
             f"| CAGR | {_fmt_pct_opt(stats.get('cagr_pct'))} | "
-            f"{_fmt_pct_opt(stats.get('benchmark_cagr_pct'))} |"
+            f"{_fmt_pct_opt(stats.get('benchmark_cagr_pct'))} | "
+            f"{_fmt_pct_opt(stats.get('spy_cagr_pct'))} |"
         )
         lines.append(
             f"| Sharpe Ratio | {_fmt_float_opt(stats.get('sharpe'), decimals=4)} | "
-            f"{_fmt_float_opt(stats.get('benchmark_sharpe'), decimals=4)} |"
+            f"{_fmt_float_opt(stats.get('benchmark_sharpe'), decimals=4)} | "
+            f"{_fmt_float_opt(stats.get('spy_sharpe'), decimals=4)} |"
         )
         lines.append(
             f"| Max Drawdown | {_fmt_pct_opt(stats.get('max_drawdown'))} | "
-            f"{_fmt_pct_opt(stats.get('benchmark_max_drawdown'))} |"
+            f"{_fmt_pct_opt(stats.get('benchmark_max_drawdown'))} | "
+            f"{_fmt_pct_opt(stats.get('spy_max_drawdown'))} |"
         )
         lines.append(
             f"| Total Trades | {stats.get('total_trades', 0)} | "
-            f"{stats.get('benchmark_total_trades', 1)} |"
+            f"{stats.get('benchmark_total_trades', 1)} | 1 |"
         )
-        lines.append(f"| Win Rate | {_fmt_pct_opt(stats.get('win_rate'))} | - |")
+        lines.append(f"| Win Rate | {_fmt_pct_opt(stats.get('win_rate'))} | - | - |")
         lines.append("")
 
     # --- Training/Test Data ---

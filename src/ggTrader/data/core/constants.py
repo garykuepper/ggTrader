@@ -30,22 +30,25 @@ SYMBOL_MAPPING = {
 # Backward-compatible alias
 kraken_map = SYMBOL_MAPPING
 
+# Symbols whose `BASE/USD` pair is excluded from the trading universe because
+# the base asset is pegged to a fiat currency, gold, or another USD-pegged
+# token. These produce near-zero return variance, which makes every strategy
+# look identical and wastes WFO compute.
+#
+# NOT stablecoins (intentionally NOT in this set, despite the naming):
+#   - MKR: MakerDAO governance token, volatile (~$1k-$2k); the *issuer* of DAI.
+#   - USDUC: "Unstable Coin", a memecoin parodying stablecoin culture; volatile.
 STABLE_BASES = {
-    "USDT",
-    "USDC",
-    "DAI",
-    "USDP",
-    "TUSD",
-    "EUR",
-    "GBP",
-    "AUD",
-    "USD",
-    "JPY",
-    "CAD",
-    "MKR",
-    "USDG",
-    "PAXG",
-    "XAUT",
+    # USD-pegged stables
+    "USD", "USDT", "USDC", "USDP", "USDS", "USDD", "USDG", "USDE",
+    "DAI", "TUSD", "PYUSD", "FDUSD", "RLUSD", "LUSD", "FRAX",
+    "GUSD", "BUSD", "PAX", "USD0",
+    # Euro-pegged stables
+    "EUR", "EURC", "EURT", "EURR", "EURQ",
+    # Other fiat
+    "GBP", "AUD", "JPY", "CAD", "CHF",
+    # Commodity-pegged (gold)
+    "PAXG", "XAUT",
 }
 
 INTERVAL_MAP = {

@@ -1,5 +1,6 @@
-"""Benchmark statistics: CAGR, BTC B&H, and stats enrichment."""
+"""Benchmark statistics: CAGR, BTC B&H, S&P 500 (SPY) B&H, and stats enrichment."""
 
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pandas as pd
@@ -118,6 +119,100 @@ def _buy_hold_portfolio_stats(
 
 
 
+def _load_spy_close(
+    start_date: str,
+    end_date: str,
+    close_idx: pd.DatetimeIndex,
+) -> Optional[pd.DataFrame]:
+    """Download SPY daily close, reindex to the strategy's bar timeline.
+
+    Cached per-day per-window in ``results/spy_cache_<today>_<start>_<end>.parquet``
+    so phase-2 and phase-3 of the same WFO run share the cache, but a different
+    day's run pulls fresh data.
+    """
+    import yfinance as yf
+
+    today_str = pd.Timestamp.now().strftime("%Y%m%d")
+    cache_dir = Path("results")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    start_slug = str(start_date).replace("-", "")[:8]
+    end_slug = str(end_date).replace("-", "")[:8]
+    cache_path = cache_dir / f"spy_cache_{today_str}_{start_slug}_{end_slug}.parquet"
+
+    spy: Optional[pd.Series] = None
+    if cache_path.exists():
+        try:
+            spy = pd.read_parquet(cache_path).squeeze()
+        except Exception:
+            cache_path.unlink(missing_ok=True)
+
+    if spy is None:
+        # Buffer dates by 5 days to handle weekends/holidays at range boundaries.
+        buffered_start = (pd.Timestamp(start_date) - pd.Timedelta(days=5)).strftime("%Y-%m-%d")
+        buffered_end = (pd.Timestamp(end_date) + pd.Timedelta(days=5)).strftime("%Y-%m-%d")
+        try:
+            spy_raw = yf.download(
+                "SPY", start=buffered_start, end=buffered_end, progress=False
+            )["Close"]
+        except Exception as e:
+            print(f"Warning: yfinance SPY download failed: {type(e).__name__}: {e}")
+            return None
+        if isinstance(spy_raw, pd.DataFrame):
+            spy_raw = spy_raw.squeeze()
+        if spy_raw is None or spy_raw.empty:
+            return None
+        spy = spy_raw
+        try:
+            pd.DataFrame({"SPY": spy}).to_parquet(cache_path)
+        except Exception:
+            pass  # cache write failure is non-fatal
+
+    spy.index = pd.to_datetime(spy.index)
+    if spy.index.tz is None:
+        spy.index = spy.index.tz_localize("America/New_York").tz_convert("UTC")
+    else:
+        spy.index = spy.index.tz_convert("UTC")
+
+    spy_df = spy.reindex(close_idx).ffill().bfill().to_frame("SPY")
+    return spy_df if not spy_df["SPY"].isna().all() else None
+
+
+def _sp500_buy_hold_portfolio_stats(
+    close_idx: pd.DatetimeIndex,
+    config: Dict[str, Any],
+) -> Dict[str, Any]:
+    """S&P 500 spot B&H: buy SPY on bar 0, sell on last bar; matched to crypto timeframe.
+
+    Cross-asset reference benchmark. Returns the same dict shape as
+    ``_btc_buy_hold_portfolio_stats``; falls back to empty stats on yfinance
+    failure so the rest of the run isn't blocked.
+    """
+    import warnings
+
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    empty: Dict[str, Any] = {
+        "profit_pct": None,
+        "cagr_pct": None,
+        "sharpe": None,
+        "max_drawdown": None,
+        "total_trades": 0,
+    }
+    if len(close_idx) < 2:
+        return empty
+
+    start_date = close_idx[0].strftime("%Y-%m-%d")
+    end_date = (close_idx[-1] + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+
+    try:
+        spy_df = _load_spy_close(start_date, end_date, close_idx)
+        if spy_df is None:
+            return empty
+        return _buy_hold_portfolio_stats(spy_df, "SPY", config, fees=0.0, slippage=0.0)
+    except Exception as e:
+        print(f"Warning: Failed to load S&P 500 benchmark: {type(e).__name__}: {e}")
+        return empty
+
+
 def _btc_buy_hold_portfolio_stats(
     close: pd.DataFrame,
     config: Dict[str, Any],
@@ -218,4 +313,11 @@ def _enrich_final_stats_with_cagr_and_benchmark(
     final_stats["benchmark_sharpe"] = bench.get("sharpe")
     final_stats["benchmark_max_drawdown"] = bench.get("max_drawdown")
     final_stats["benchmark_total_trades"] = bench.get("total_trades")
+
+    # Cross-asset reference: S&P 500 (SPY) buy-and-hold over the same window.
+    spy_bench = _sp500_buy_hold_portfolio_stats(combined_close.index, config)
+    final_stats["spy_profit_pct"] = spy_bench.get("profit_pct")
+    final_stats["spy_cagr_pct"] = spy_bench.get("cagr_pct")
+    final_stats["spy_sharpe"] = spy_bench.get("sharpe")
+    final_stats["spy_max_drawdown"] = spy_bench.get("max_drawdown")
 

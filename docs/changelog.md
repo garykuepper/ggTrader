@@ -2,6 +2,54 @@
 
 ## 2026-05-08
 
+### WFO selection: trade-frequency gate, top-K fallback, bear-aware consistency, history shrinkage
+
+Investigation of the 2026-05-07 5y research surfaced four selection-quality issues in WFO. All four are now fixed; the changes compose so the next research run filters these systematically.
+
+**(1) `MIN_TRADES_PER_YEAR` Phase-3 gate.** New config (default `4` = ~1 trade per quarter). Applied in `run_frozen_params_combined_backtest` after the chosen params are replayed contiguously over the full window. Catches the **fold-trade-inflation** failure mode where WFO picks combos that fire a separate trade per fold (10 fold-counted trades) but only 1 trade on contiguous data because the position is held across fold boundaries by a wide stop. Hits TRX/SOL/DASH (1 trade over 5y) and ADA (16 trades over 5y) from the prior run.
+
+**(2) Top-K combo fallback for the trade-frequency gate.** When the rank-1 combo fails `MIN_TRADES_PER_YEAR`, the gate promotes runners-up from a new `top_combos` list (top 5 by gate_score across all `(entry, exit)` pairs, distinct from the existing `robust_top_5` which only ranks within rank-1's parameter sweep). First fallback that passes wins; coin only dropped if all 5 fail. Promoted coins get `selection_reason="trade_freq_fallback"` for traceability. Adds `top_combos` to per-coin saved results.
+
+**(3) Bear-aware fold consistency.** `_calculate_oos_robustness` now takes a per-fold bear flag and changes the consistency denominator semantics:
+
+- Bear no-fire fold → forgiven (excluded from denominator). Correct sit-out.
+- Bull no-fire fold → counts as missed opportunity (in denominator, not profitable).
+- Fired fold → counts by sign of OOS Sharpe.
+
+Catches sparse-fire strategies (HBAR: 7 of 10 folds no-fire) that under the legacy "firing folds only" denominator could score 0.667 consistency from 2-of-3 lucky bull entries. The bear flag is computed in `_process_wfo_fold` from each fold's OOS test-window B&H return and added to the per-fold dict (`oos_is_bear`).
+
+**(4) History shrinkage gate.** New gate computes `effective_score = robustness × min(1, years_of_history / HISTORY_SHRINKAGE_TARGET_YEARS)` and re-checks against `MIN_ROBUSTNESS_SCORE`. Cuts brand-new coins (B3, USDUC, OP, JUP, JTO, DYDX — 3 months of history each) whose noisy short-data WFO would otherwise pass on small-sample lucky draws. Continuous shrinkage (vs a hard `MIN_HISTORY_YEARS` cutoff) lets a genuinely strong short-history coin still pass if its raw score is high enough. Default target is `3.0` (matches the standard `--days 1095` window). Raw score left untouched in saved results so it can still be inspected.
+
+### Removed: dead `MIN_TRADES` config
+
+`MIN_TRADES: 0` was declared as a default in `run_config.py` and `core/fast_backtest.py` but only referenced by an error-message string in `utils/plotting.py`. The actual fold-level gate is `MIN_CLOSED_TRADES_TRAIN` (which still exists). Cleaned up to avoid future confusion. `MIN_CLOSED_TRADES_TRAIN: 2 → 1` since the new `MIN_TRADES_PER_YEAR` gate at coin level is the primary trade-frequency filter; per-fold floor is now just "reject genuinely empty folds."
+
+### Universe filter: extended `STABLE_BASES`
+
+`src/ggTrader/data/core/constants.py:STABLE_BASES` was missing many current stablecoins, letting EURC slip into the 2026-05-07 100-coin universe. Extended from 15 to 31 entries (added PYUSD, FDUSD, USDe, USDS, USDD, LUSD, FRAX, RLUSD, EURC, EURT, EURR, EURQ, GUSD, BUSD, PAX, CHF, USD0). Removed MKR (volatile MakerDAO governance token, not a stablecoin). Explicitly NOT added: USDUC ("Unstable Coin", a memecoin parodying stablecoin culture; volatile despite the prefix). Set is now annotated with reasoning so future maintainers don't "fix" it.
+
+### Added: strategy-usage analyzer
+
+`scripts/strategy_usage_stats.py`. Aggregates `best_strategy` selections across recent research runs (DB-backed primary, on-disk fallback) and prints win-count, win-share, median/p25/p75 robustness when selected, and exit-pairing distribution per entry strategy. Surfaces strategies that consistently fail to win (or only win at near-floor robustness) for principled pruning. Already showed `mtf_momentum` and `stoch_rsi_reversal` at 0 wins across 4 runs.
+
+### Disabled: `MAX_COINS_PER_STRATEGY` diversity cap
+
+`MAX_COINS_PER_STRATEGY: 10 → None`. Two reasons:
+
+1. **Conceptually wrong.** WFO already picks the best strategy per coin out-of-sample. Forcing diversity by capping a strategy's wins replaces a WFO-optimal pick with a strictly worse one. Real diversification comes from return correlation (regime filter + position sizing already handle this), not from indicator-label heterogeneity.
+
+2. **Was bugged anyway.** Investigation triggered by 13 `psar_adx` winners surviving despite a configured cap of 10 in the 2026-05-07 5y research. Root cause: the cap was applied **per-worker shard** (each parallel worker called `_apply_wfo_selection_gates` on its own ~20-coin slice), then `merge_worker_results` unioned the post-shard-gate dicts without re-applying the cap. With 5 shards × 20 coins, no individual shard ever exceeded the cap; the post-merge total of 13 was sum-of-shards. The other selection gates (`MIN_ROBUSTNESS_SCORE`, `MIN_FOLD_CONSISTENCY`, `MIN_VALID_TRAIN_FOLDS`) are per-coin decisions and commute with merge, so they were unaffected — only Gate 4's cross-coin context was broken. If `MAX_COINS_PER_STRATEGY` is ever re-enabled, the gate needs to fire post-merge, not per-worker.
+
+### Restored: S&P 500 (SPY) cross-asset benchmark
+
+Removed earlier today as part of the stocks-pipeline purge — that was a mistake. SPY is a useful cross-asset reference for any trader, completely independent of whether we trade stocks ourselves. Restored:
+
+- `_load_spy_close` (yfinance pull, parquet-cached per-day-per-window) and `_sp500_buy_hold_portfolio_stats` in `core/benchmarking.py`.
+- `_enrich_final_stats_with_cagr_and_benchmark` populates `spy_profit_pct`, `spy_cagr_pct`, `spy_sharpe`, `spy_max_drawdown` alongside BTC fields.
+- Orchestrator print line `Benchmark Return (S&P 500 B&H): X% | CAGR: Y%`.
+- `report_generator.py` Phase tables back to 3 columns (Strategy / BTC B&H / S&P 500); executive summary table includes `S&P 500 CAGR` row.
+- Test patches in `test_orchestrator.py` and `test_cagr_benchmark.py`.
+
 ### Removed: stocks pipeline (full purge)
 
 The stocks pipeline is gone — the project is crypto-only ahead of a Kraken-CLI transition. Removed:

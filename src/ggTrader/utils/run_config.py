@@ -143,10 +143,13 @@ def full_pipeline_config() -> dict[str, Any]:
         "RECENT_VALIDATION_END_DATE": None,
         # CCXT tail enabled by default: appends Kraken bars after the last DB timestamp.
         "RECENT_VALIDATION_USE_CCXT_TAIL": True,
-        # Max number of coins that can use the same entry strategy in the combined portfolio.
-        # Prevents a single strategy from dominating and creating correlated drawdowns.
-        # Set to None to disable. 10 = no single strategy gets more than 10 coins.
-        "MAX_COINS_PER_STRATEGY": 10,
+        # Max number of coins that can use the same entry strategy in the combined
+        # portfolio. Disabled by default — WFO already optimizes per-coin OOS, and
+        # forcing strategy diversity replaces the WFO-optimal pick with a worse one.
+        # Real diversification comes from return correlation (regime filter, sizing)
+        # not indicator labels. Set to an int to re-enable; see also the per-shard
+        # bug noted in changelog 2026-05-08 if re-enabling on parallel runs.
+        "MAX_COINS_PER_STRATEGY": None,
         # Manual symbol blacklist for the LIVE trader. Coins listed here are
         # dropped from per_coin_params at load time, so the live trader will
         # never open new positions on them — even if WFO selected them. Existing
@@ -171,6 +174,13 @@ def full_pipeline_config() -> dict[str, Any]:
         # Coins whose OOS-weighted robustness falls below this threshold are excluded from
         # Phase 2/3 combined portfolio. Set to None to disable the gate.
         "MIN_ROBUSTNESS_SCORE": 0.1,
+        # History shrinkage: scales each coin's effective robustness by
+        # min(1, years_of_history / TARGET) and re-checks against MIN_ROBUSTNESS_SCORE.
+        # Cuts brand-new coins (listed mid-window) whose noisy short-data WFO would
+        # otherwise pass on small-sample lucky draws. 3.0 matches the default --days
+        # 1095 (3y) research window; bump if you run longer windows. Set to None to
+        # disable.
+        "HISTORY_SHRINKAGE_TARGET_YEARS": 3.0,
         # Minimum number of WFO training folds that must have produced at least one valid
         # param combo (finite is_sharpe). Strategies where most folds were rejected by the
         # training gate (e.g. regime-filtered ema_cross with ema_slow=200 yielding 0-1

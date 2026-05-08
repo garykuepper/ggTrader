@@ -213,6 +213,72 @@ def _apply_wfo_selection_gates(
                 "setting MIN_ROBUSTNESS_SCORE=None is recommended."
             )
 
+    # Gate 1.5: history shrinkage — discount robustness by available data span.
+    # Coins with very short history (e.g. B3 listed 3 months ago) produce noisy
+    # WFO scores. Continuous shrinkage (vs a hard MIN_HISTORY_YEARS cutoff) lets
+    # a genuinely strong short-history coin still pass if its raw score is high
+    # enough to clear the threshold after shrinkage.
+    #
+    #   effective_score = robustness_score * min(1.0, years_of_history / target)
+    #
+    # Coins where effective_score < MIN_ROBUSTNESS_SCORE get dropped. The raw
+    # score is left untouched in saved results so it can be inspected later.
+    target_years_cfg = config.get("HISTORY_SHRINKAGE_TARGET_YEARS")
+    if target_years_cfg is not None and min_robust_cfg is not None:
+        target_years = float(target_years_cfg)
+        if target_years > 0:
+            min_robust = float(min_robust_cfg)
+            skipped_hs: list[tuple[str, float, float, float]] = []
+            for sym, r in list(results.items()):
+                wfo_stats = r.get("wfo_stats") or []
+                # Span derived from earliest train_start to latest test_end across folds.
+                ts_starts = [
+                    f.get("train_start") for f in wfo_stats
+                    if f and f.get("train_start")
+                ]
+                ts_ends = [
+                    f.get("test_end") for f in wfo_stats
+                    if f and f.get("test_end")
+                ]
+                if not ts_starts or not ts_ends:
+                    # No fold timestamps → can't measure history; skip the gate for this coin.
+                    continue
+                try:
+                    span_years = (
+                        pd.to_datetime(max(ts_ends)) - pd.to_datetime(min(ts_starts))
+                    ).total_seconds() / (365.25 * 24 * 3600.0)
+                except Exception:
+                    continue
+                shrink = min(1.0, max(0.0, span_years / target_years))
+                raw = float(r.get("robustness_score") or 0.0)
+                eff = raw * shrink
+                if np.isfinite(eff) and eff < min_robust:
+                    skipped_hs.append((sym, span_years, shrink, eff))
+            if skipped_hs:
+                dropped = [s for s, _, _, _ in skipped_hs]
+                details = ", ".join(
+                    f"{s}({yrs:.1f}y, shrink={sh:.2f}, eff={eff:.3f})"
+                    for s, yrs, sh, eff in skipped_hs
+                )
+                print(
+                    f"\n  [History-shrinkage gate] Dropping {len(skipped_hs)} coin(s) where "
+                    f"robustness × min(1, years/{target_years}) < MIN_ROBUSTNESS_SCORE={min_robust}: "
+                    f"{details}"
+                )
+                results = {sym: r for sym, r in results.items() if sym not in set(dropped)}
+            if gate_stats is not None:
+                gate_stats["gates"].append({
+                    "name": "HISTORY_SHRINKAGE",
+                    "threshold": min_robust,
+                    "target_years": target_years,
+                    "dropped_count": len(skipped_hs),
+                    "dropped_symbols": [s for s, _, _, _ in skipped_hs],
+                    "dropped_details": [
+                        {"symbol": s, "years": yrs, "shrink": sh, "effective_score": eff}
+                        for s, yrs, sh, eff in skipped_hs
+                    ],
+                })
+
     # Gate 2: minimum fold consistency
     min_consistency_cfg = config.get("MIN_FOLD_CONSISTENCY")
     if min_consistency_cfg is not None:
@@ -416,64 +482,108 @@ def run_frozen_params_combined_backtest(
             print(f"\nSkipping {symbol}: no WFO selection (not in per_coin_results).")
             continue
 
-        strategy_name = per_coin_results[symbol]["best_strategy"]
-        exit_name = per_coin_results[symbol]["best_exit"]
-        best_params = per_coin_results[symbol]["best_params"]
+        # Build candidate list: rank-1 first, then top-K runners-up for fallback.
+        # Each candidate is (strategy, exit, params, label_suffix).
+        rank1 = (
+            per_coin_results[symbol]["best_strategy"],
+            per_coin_results[symbol]["best_exit"],
+            per_coin_results[symbol]["best_params"],
+            "",
+        )
+        candidates: List[Tuple[str, str, Dict[str, Any], str]] = [rank1]
+        for k_idx, alt in enumerate(per_coin_results[symbol].get("top_combos", []) or [], start=1):
+            # Skip the rank-1 (already added)
+            if (alt.get("strategy") == rank1[0] and alt.get("exit") == rank1[1]
+                    and alt.get("params") == rank1[2]):
+                continue
+            candidates.append((
+                alt.get("strategy"), alt.get("exit"), alt.get("params"),
+                f" [fallback rank {k_idx + 1}]",
+            ))
+
         robustness_score = per_coin_results[symbol]["robustness_score"]
         selection_reason = per_coin_results[symbol].get("selection_reason", "wfo_robustness")
-        best_label = f"{strategy_name}+{exit_name}"
-        if selection_reason != "wfo_robustness":
-            print(
-                f"\nGenerating signals for {symbol} with {best_label} "
-                f"(selection={selection_reason})..."
-            )
-        else:
-            print(f"\nGenerating signals for {symbol} with {best_label}...")
 
         symbol_ohlcv = ohlcv[[symbol]]
+        chosen: Optional[Dict[str, Any]] = None
+        last_failure: Optional[Tuple[float, int, str]] = None
 
-        config_for_final = {
-            **config,
-            "ENTRY_STRATEGY": strategy_name,
-            "EXIT_STRATEGY": exit_name,
-            "USE_VECTORIZED": False,  # single-combo run; vectorized gives no benefit here
-        }
-        try:
-            engine = FastBacktest(symbol_ohlcv, best_params, config=config_for_final)
-            engine.run(show_progress=False)
+        for strategy_name, exit_name, best_params, suffix in candidates:
+            best_label = f"{strategy_name}+{exit_name}"
+            if not strategy_name or not exit_name:
+                continue
+            print(f"\nGenerating signals for {symbol} with {best_label}{suffix}...")
 
-            close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)
-            entries, exits, _ = engine._generate_signals(show_progress=False)
+            config_for_final = {
+                **config,
+                "ENTRY_STRATEGY": strategy_name,
+                "EXIT_STRATEGY": exit_name,
+                "USE_VECTORIZED": False,
+            }
+            try:
+                engine = FastBacktest(symbol_ohlcv, best_params, config=config_for_final)
+                engine.run(show_progress=False)
 
-            stats = engine.get_stats()
-            total_trades = int(stats.get("total_trades", 0) or 0)
-            trades_per_year = (
-                total_trades / _years if (np.isfinite(_years) and _years > 0) else float("nan")
-            )
-
-            # Trade-frequency gate: drop coins whose chosen params fire too rarely
-            # over the full WFO window (e.g. < 1 trade/quarter). The coin's stats
-            # are still recorded so the report shows why it was dropped.
-            if min_total_trades is not None and total_trades < min_total_trades:
-                trade_freq_dropped.append((symbol, trades_per_year, total_trades))
-                per_coin_final_stats[symbol] = {
-                    "strategy": strategy_name,
-                    "exit": exit_name,
-                    "params": _to_native(best_params),
-                    "selection_reason": selection_reason,
-                    "dropped_by_gate": "MIN_TRADES_PER_YEAR",
-                    **stats,
-                }
-                print(
-                    f"  > {symbol} ({sym_idx}/{n_sym_total}): DROPPED — "
-                    f"{total_trades} trades / {_years:.2f}y = {trades_per_year:.2f}/yr "
-                    f"(< MIN_TRADES_PER_YEAR={min_tpy})"
+                close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)
+                entries, exits, _ = engine._generate_signals(show_progress=False)
+                stats = engine.get_stats()
+                total_trades = int(stats.get("total_trades", 0) or 0)
+                trades_per_year = (
+                    total_trades / _years if (np.isfinite(_years) and _years > 0) else float("nan")
                 )
+
+                if min_total_trades is not None and total_trades < min_total_trades:
+                    print(
+                        f"    [trade-freq fallback] {best_label}: "
+                        f"{total_trades} trades / {_years:.2f}y = {trades_per_year:.2f}/yr "
+                        f"(< MIN_TRADES_PER_YEAR={min_tpy})"
+                    )
+                    last_failure = (trades_per_year, total_trades, best_label)
+                    continue  # try next candidate
+
+                # Passed the gate.
+                chosen = {
+                    "strategy": strategy_name, "exit": exit_name, "params": best_params,
+                    "label": best_label, "suffix": suffix,
+                    "entries": entries, "exits": exits, "close": close,
+                    "stats": stats, "total_trades": total_trades,
+                    "trades_per_year": trades_per_year,
+                }
+                break
+            except Exception as inner_exc:
+                print(f"    [trade-freq fallback] {best_label} replay failed: {inner_exc!r}")
                 continue
 
-            combined_entries_list.append(entries)
-            combined_exits_list.append(exits)
-            combined_close_list.append(close)
+        if chosen is None:
+            tpy, nt, lbl = last_failure if last_failure else (float("nan"), 0, "n/a")
+            trade_freq_dropped.append((symbol, tpy, nt))
+            per_coin_final_stats[symbol] = {
+                "strategy": rank1[0], "exit": rank1[1],
+                "params": _to_native(rank1[2]),
+                "selection_reason": selection_reason,
+                "dropped_by_gate": "MIN_TRADES_PER_YEAR",
+                "tried_candidates": len(candidates),
+            }
+            print(
+                f"  > {symbol} ({sym_idx}/{n_sym_total}): DROPPED — "
+                f"all {len(candidates)} candidate(s) failed MIN_TRADES_PER_YEAR={min_tpy} "
+                f"(last try {lbl}: {nt} trades, {tpy:.2f}/yr)"
+            )
+            continue
+
+        # Use the chosen candidate.
+        strategy_name = chosen["strategy"]
+        exit_name = chosen["exit"]
+        best_params = chosen["params"]
+        best_label = chosen["label"]
+        if chosen["suffix"]:
+            selection_reason = "trade_freq_fallback"
+
+        try:
+            stats = chosen["stats"]
+            combined_entries_list.append(chosen["entries"])
+            combined_exits_list.append(chosen["exits"])
+            combined_close_list.append(chosen["close"])
             oos_rob = per_coin_results[symbol].get("oos_robustness_score")
             oos_rob_f = float(oos_rob) if oos_rob is not None else 0.0
             combined_oos_scores.append(oos_rob_f if np.isfinite(oos_rob_f) else 0.0)
@@ -670,6 +780,11 @@ def run_frozen_params_combined_backtest(
     b_cagr_s = f"{b_cagr:.2f}%" if b_cagr is not None else "n/a"
     print(f"  Benchmark CAGR ({bench_sym} B&H): {b_cagr_s}")
 
+    spy_cagr = final_stats.get("spy_cagr_pct")
+    if spy_cagr is not None:
+        spy_ret = final_stats.get("spy_profit_pct", 0.0)
+        print(f"  Benchmark Return (S&P 500 B&H): {spy_ret:.2f}% | CAGR: {spy_cagr:.2f}%")
+
     print(f"  Sharpe Ratio: {final_stats['sharpe']:.4f}")
     print(f"  Max Drawdown: {final_stats['max_drawdown']:.2f}%")
     print(f"  Total Trades: {final_stats['total_trades']}")
@@ -833,6 +948,10 @@ def run_multi_strategy_per_coin_wfo(
             best_is_robustness_score: float = float("-inf")
             best_oos_robustness_score: float = float("nan")
             best_fold_consistency: float = float("nan")
+            # Cross-combo top-K tracker for the trade-frequency fallback in Phase 3:
+            # if the rank-1 combo doesn't trade enough on the contiguous full-range
+            # replay, the gate promotes the next runner-up (different entry/exit/params).
+            top_combos_tracker: List[Dict[str, Any]] = []
             debug_wfo = bool(config.get("WFO_DEBUG_METRICS", False))
 
             total_combos = len(strategy_param_grids) * len(exit_tournament)
@@ -889,6 +1008,13 @@ def run_multi_strategy_per_coin_wfo(
                     oos_metrics_by_fold = {
                         fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
                     }
+                    # Per-fold bear flags (computed in _process_wfo_fold from each fold's
+                    # OOS test-window B&H). Used by _calculate_oos_robustness for the
+                    # bear-aware fold-consistency denominator.
+                    oos_bear_by_fold = {
+                        fold_idx: bool(stats.get("oos_is_bear", False))
+                        for fold_idx, stats in enumerate(wfo_stats, 1)
+                    }
 
                     robust_top_5, best_robust_params = _calculate_robustness(
                         is_metrics_by_fold,
@@ -906,7 +1032,8 @@ def run_multi_strategy_per_coin_wfo(
 
                     # OOS-direct robustness: recency-weighted mean of per-fold OOS Sharpe.
                     oos_rob_combo, fold_cons_combo = _calculate_oos_robustness(
-                        oos_metrics_by_fold, config=config
+                        oos_metrics_by_fold, config=config,
+                        oos_bear_by_fold=oos_bear_by_fold,
                     )
                     oos_blend_alpha = float(config.get("OOS_ROBUSTNESS_BLEND_ALPHA", 0.5))
                     if np.isfinite(oos_rob_combo) and np.isfinite(robustness_score):
@@ -946,6 +1073,19 @@ def run_multi_strategy_per_coin_wfo(
                         best_oos_robustness_score = oos_rob_combo
                         best_fold_consistency = fold_cons_combo
 
+                    # Track every (combo, gate_score) for the post-Phase-3 top-K fallback.
+                    # Only finite scores; NaN/-inf get filtered later when sorting.
+                    if np.isfinite(gate_score):
+                        top_combos_tracker.append({
+                            "strategy": strategy_name,
+                            "exit": exit_name,
+                            "params": _to_native(best_robust_params),
+                            "gate_score": float(gate_score),
+                            "is_robustness_score": float(robustness_score),
+                            "oos_robustness_score": float(oos_rob_combo),
+                            "fold_consistency": float(fold_cons_combo),
+                        })
+
             selection_reason = "wfo_robustness"
             if best_strategy is None or not np.isfinite(best_robust_score):
                 fb_s, fb_e, fb_p = _wfo_per_coin_fallback_triple(
@@ -962,6 +1102,11 @@ def run_multi_strategy_per_coin_wfo(
                     f"using fallback {best_strategy}+{best_exit} with first grid values."
                 )
 
+            # Sort top-combo tracker descending by gate_score; cap at top 5 for fallback.
+            top_combos_sorted = sorted(
+                top_combos_tracker, key=lambda r: r["gate_score"], reverse=True
+            )[:5]
+
             per_coin_results[symbol] = {
                 "best_strategy": best_strategy,
                 "best_exit": best_exit,
@@ -971,7 +1116,8 @@ def run_multi_strategy_per_coin_wfo(
                 "oos_robustness_score": best_oos_robustness_score,
                 "fold_consistency": best_fold_consistency,
                 "wfo_stats": best_wfo_stats,
-                "robust_top_5": best_robust_top_5,
+                "robust_top_5": best_robust_top_5,  # top-5 within rank-1 combo's grid
+                "top_combos": top_combos_sorted,    # top-5 across (entry,exit) — for fallback
                 "selection_reason": selection_reason,
             }
 

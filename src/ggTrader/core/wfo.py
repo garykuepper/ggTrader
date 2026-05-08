@@ -65,6 +65,7 @@ def _process_wfo_fold(
             "best_params": {},
             "oos_sharpe": float("nan"),
             "oos_return": float("nan"),
+            "oos_is_bear": False,
             "profit": float("nan"),
             "start_capital": float("nan"),
             "end_capital": float("nan"),
@@ -110,6 +111,7 @@ def _process_wfo_fold(
             "best_params": {},
             "oos_sharpe": float("nan"),
             "oos_return": float("nan"),
+            "oos_is_bear": False,
             "profit": float("nan"),
             "start_capital": float("nan"),
             "end_capital": float("nan"),
@@ -193,6 +195,17 @@ def _process_wfo_fold(
     )
     pf_test = test_engine.run(show_progress=show_progress)
 
+    # Bear-market detection on the OOS test window — used by fold-consistency
+    # scoring downstream so a no-fire fold during a bear market doesn't count
+    # against the strategy (correct sit-out), but a no-fire fold during a bull
+    # market does (missed opportunity).
+    try:
+        test_close = test_ohlcv.xs("close", axis=1, level=1)
+        oos_bnh_return = float((test_close.iloc[-1].mean() / test_close.iloc[0].mean()) - 1.0)
+        oos_is_bear = oos_bnh_return < 0.0
+    except Exception:
+        oos_is_bear = False
+
     return {
         "fold": fold_idx,
         "train_start": str(train_ohlcv.index[0]),
@@ -201,6 +214,7 @@ def _process_wfo_fold(
         "params": _to_native(fold_best_params),
         "is_sharpe": _to_native(train_metrics.max()),
         "oos_sharpe": _to_native(pf_test.sharpe_ratio().mean()),
+        "oos_is_bear": bool(oos_is_bear),
         "sortino": _to_native(pf_test.sortino_ratio().mean()),
         "profit": _to_native(pf_test.total_profit().sum()),
         "start_capital": _to_native(pf_test.init_cash.sum()),
@@ -282,17 +296,29 @@ def _weighted_robustness_series(
 def _calculate_oos_robustness(
     oos_metrics_by_fold: Dict[int, float],
     config: Optional[Dict[str, Any]] = None,
+    oos_bear_by_fold: Optional[Dict[int, bool]] = None,
 ) -> Tuple[float, float]:
-    """Recency-weighted mean OOS Sharpe and fold consistency fraction.
+    """Recency-weighted mean OOS Sharpe and bear-aware fold consistency.
+
+    Fold consistency semantics (with ``oos_bear_by_fold`` provided):
+        - Fold fired (Sharpe is finite): counts in denominator; positive Sharpe = profitable.
+        - Fold didn't fire AND that fold was a bear market: forgiven (excluded from denominator).
+          Correct behaviour is "stay out during a downtrend"; not firing is correct, not penalised.
+        - Fold didn't fire AND that fold was a bull market: missed opportunity, counts against
+          consistency (in denominator, not profitable). Without this branch a sparse-fire
+          strategy can score 100% consistency from a few lucky bull entries.
+
+    When ``oos_bear_by_fold`` is None, falls back to the legacy "firing folds only" denominator
+    (no-fire folds excluded regardless of regime).
 
     Args:
         oos_metrics_by_fold: Dict mapping fold index → OOS Sharpe for the winning params.
         config: Optional run config; reads OOS_STABILITY_WEIGHT (default 0.3).
+        oos_bear_by_fold: Dict mapping fold index → True if that fold's OOS test window
+            was a bear market (B&H return < 0). Enables the bear-aware semantics above.
 
     Returns:
         (oos_robustness_score, fold_consistency)
-        - oos_robustness_score: blend of recency-weighted mean and Sharpe-of-Sharpes stability.
-        - fold_consistency: fraction of folds with positive OOS Sharpe (0.0 – 1.0).
     """
     if not oos_metrics_by_fold:
         return float("nan"), float("nan")
@@ -312,7 +338,19 @@ def _calculate_oos_robustness(
     weighted_mean = (
         float(np.dot(oos_vals[mask], weights[mask]) / w_sum) if w_sum > 0 else float("nan")
     )
-    fold_cons = float(np.sum(oos_vals[mask] > 0) / int(mask.sum()))
+
+    # Bear-aware fold-consistency denominator.
+    if oos_bear_by_fold is not None:
+        bear_arr = np.array(
+            [bool(oos_bear_by_fold.get(f, False)) for f in fold_indices], dtype=bool
+        )
+        # Eligible folds: fired OR (didn't fire AND not bear).
+        eligible_mask = mask | (~mask & ~bear_arr)
+        n_eligible = int(eligible_mask.sum())
+        n_profitable = int(np.sum((oos_vals > 0) & mask))
+        fold_cons = float(n_profitable / n_eligible) if n_eligible > 0 else 0.0
+    else:
+        fold_cons = float(np.sum(oos_vals[mask] > 0) / int(mask.sum()))
 
     # OOS stability blend: tempers a single outlier fold from inflating the weighted mean.
     # oos_stability = mean / (std + 0.5) — a Sharpe-of-Sharpes measure across folds.
