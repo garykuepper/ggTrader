@@ -113,7 +113,7 @@ def _plot_df_heatmap(
     if not np.isfinite(vals).any():
         print(
             f"Skipping heatmap: no finite {metric_name} values "
-            f"(e.g. all NaN after MIN_TRADES filter)."
+            f"(e.g. all NaN after MIN_CLOSED_TRADES_TRAIN gate)."
         )
         return
 

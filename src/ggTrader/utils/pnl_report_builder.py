@@ -209,7 +209,42 @@ def _build_alerts(
     return alerts
 
 
+def _fetch_and_persist_fear_greed() -> Optional[dict]:
+    """Fetch the latest Fear & Greed Index, persist to DB, return formatted row.
+
+    Returns ``{value, classification, emoji, history}`` (history includes last
+    8 days for delta context) or ``None`` on fetch failure.
+    """
+    from ggTrader.utils.fear_greed import fetch_fear_greed
+    latest = fetch_fear_greed(limit=8)  # latest + 7 days for delta
+    if latest is None:
+        return None
+    try:
+        from ggTrader.utils.result_db_manager import ResultDBManager
+        db = ResultDBManager()
+        for entry in (latest.get("history") or [latest]):
+            db.upsert_fear_greed(entry["date"], entry["value"], entry["classification"])
+    except Exception as e:
+        print(f"  [F&G] WARNING: persist failed (continuing) — {e!r}")
+    return latest
+
+
+def _fg_delta_suffix(fg_row: dict, days: int = 7) -> str:
+    """Return ``" (+5 vs 7d)"`` style suffix when history is available."""
+    hist = fg_row.get("history") or []
+    if len(hist) >= days + 1:
+        delta = fg_row["value"] - hist[days]["value"]
+        sign = "+" if delta >= 0 else ""
+        return f" ({sign}{delta} vs {days}d)"
+    return ""
+
+
 def _fetch_regime_status() -> dict[str, Any]:
+    """Compute current crypto regime status (BTC vs altcoin index, F&G)."""
+    return _fetch_crypto_regime_status()
+
+
+def _fetch_crypto_regime_status() -> dict[str, Any]:
     """Fetch recent data for BTC and top coins to compute current regime status.
 
     Returns a dict with:
@@ -221,10 +256,7 @@ def _fetch_regime_status() -> dict[str, Any]:
     """
     try:
         import ccxt
-        from ggTrader.core.regime_filtering import (
-            _compute_altcoin_index_mask,
-            _compute_btc_regime_mask,
-        )
+        from ggTrader.core.regime_filtering import _compute_btc_regime_mask
         from ggTrader.utils.run_config import full_pipeline_config
 
         config = full_pipeline_config()
@@ -257,29 +289,43 @@ def _fetch_regime_status() -> dict[str, Any]:
 
         ohlcv_df = pd.DataFrame(data)
         
-        # Guard against _compute_btc_regime_mask failing if it tries to touch DB
         try:
             btc_mask = _compute_btc_regime_mask(ohlcv_df, config)
         except Exception:
             btc_mask = None
-            
-        try:
-            alt_mask = _compute_altcoin_index_mask(ohlcv_df, config)
-        except Exception:
-            alt_mask = None
 
         btc_bull = bool(btc_mask.iloc[-1]) if btc_mask is not None else False
-        alt_bull = bool(alt_mask.iloc[-1]) if alt_mask is not None else False
 
         btc_price = 0.0
         if ("BTC-USD", "close") in ohlcv_df.columns:
             btc_price = float(ohlcv_df[("BTC-USD", "close")].iloc[-1])
+        eth_price = 0.0
+        if ("ETH-USD", "close") in ohlcv_df.columns:
+            eth_price = float(ohlcv_df[("ETH-USD", "close")].iloc[-1])
 
+        btc_status = "BULL 🟢" if btc_bull else "BEAR 🔴"
+
+        fg_row = _fetch_and_persist_fear_greed()
         return {
             "btc_bull": btc_bull,
-            "alt_bull": alt_bull,
             "btc_price": btc_price,
+            "eth_price": eth_price,
+            "fear_greed": fg_row,
             "error": None,
+            "rows": [
+                ("BTC Regime", btc_status),
+                ("BTC Price", f"${btc_price:,.2f}"),
+                ("ETH Price", f"${eth_price:,.2f}"),
+            ] + ([("Fear & Greed", f"{fg_row['value']} {fg_row['classification']} {fg_row['emoji']}")] if fg_row else []),
+            "lines": [
+                f"🌐 BTC Regime: {btc_status} (${btc_price:,.0f})",
+                f"📈 ETH Price: ${eth_price:,.0f}",
+            ] + ([f"{fg_row['emoji']} Fear & Greed: {fg_row['value']} {fg_row['classification']}{_fg_delta_suffix(fg_row)}"] if fg_row else []),
+            "md_lines": [
+                f"- **BTC Regime**: {btc_status}",
+                f"- **BTC Price**: ${btc_price:,.2f}",
+                f"- **ETH Price**: ${eth_price:,.2f}",
+            ] + ([f"- **Fear & Greed**: {fg_row['value']} {fg_row['classification']} {fg_row['emoji']}{_fg_delta_suffix(fg_row)}"] if fg_row else []),
         }
     except Exception as e:
         return {"error": f"Regime compute failed: {e!r}"}
@@ -295,9 +341,9 @@ def _gather_report_data(
     """Collect all data needed for both markdown and plain-text report builders.
 
     Returns a dict with: window, alltime, alerts, snapshot_balance, all_consec,
-    closes, active, summary_all, since, until, deposits.
+    closes, active, summary_all, since, until, deposits, regime.
     """
-    tracker = TradeTracker(data_dir=data_dir)
+    tracker = TradeTracker(data_dir=data_dir, run_id="LIVE")
     closes = tracker.get_closed_positions()
     balances = tracker.get_balance_history()
     summary_all = tracker.compute_summary_stats()
@@ -315,9 +361,8 @@ def _gather_report_data(
         if (pos.get("entry_price") or 0) * float(pos.get("amount", 0) or 0) >= 1.00
     }
 
-    # Fetch deposit/withdrawal history from Kraken (cached locally) so we can
-    # subtract external capital flows from the equity curve. Without this,
-    # manual deposits inflate "total return" with phantom profit.
+    # Deposit/withdrawal history from Kraken.
+    cum_deposits = pd.Series(dtype=float)
     try:
         ledger_df = fetch_kraken_ledger_cached()
         cum_deposits = cumulative_net_deposits_usd(ledger_df)
@@ -329,7 +374,6 @@ def _gather_report_data(
             f"reporting raw balance (deposits not subtracted)"
         )
         ledger_df = pd.DataFrame()
-        cum_deposits = pd.Series(dtype=float)
 
     deposits_info = {
         "total_deposits": 0.0,
@@ -389,8 +433,16 @@ def _gather_report_data(
             alltime["balance_change_pct"] = (
                 (alltime["balance_last"] / alltime["balance_first"]) - 1.0
             ) * 100.0
+            alltime["trading_pnl"] = (
+                alltime["balance_last"] - alltime["balance_first"]
+            )
             # Also expose the raw (non-adjusted) current balance for the snapshot
             alltime["raw_balance_last"] = float(raw_equity.iloc[-1])
+            # Net deposits added between the first balance snapshot and now —
+            # used so the report can show why current balance ≠ start + PnL.
+            alltime["net_deposits_since_start"] = (
+                alltime["raw_balance_last"] - alltime["balance_last"]
+            )
 
     if closes is not None and not closes.empty:
         sorted_closes = closes.copy()
@@ -480,20 +532,19 @@ def build_daily_pnl_summary_text(
     all_consec = data["all_consec"]
     snapshot_balance = data["snapshot_balance"]
 
+    label = "Crypto"
     lines: list[str] = []
     if stale_warning:
         lines.append(f"⚠️ STALE: {stale_warning}")
         lines.append("")
-    lines.append(f"📊 ggTrader Daily PnL — {_fmt_dt(until, '%Y-%m-%d')}")
+    lines.append(f"📊 ggTrader {label} Daily PnL — {_fmt_dt(until, '%Y-%m-%d')}")
     lines.append("")
 
     # Regime
     regime = data.get("regime", {})
     if not regime.get("error"):
-        btc_status = "BULL 🟢" if regime.get("btc_bull") else "BEAR 🔴"
-        alt_status = "BULL 🟢" if regime.get("alt_bull") else "BEAR 🔴"
-        lines.append(f"🌐 BTC Regime: {btc_status} (${regime.get('btc_price', 0):,.0f})")
-        lines.append(f"🌐 Alt Regime: {alt_status}")
+        for line in regime.get("lines", []):
+            lines.append(line)
         lines.append("")
 
     # Snapshot
@@ -543,7 +594,12 @@ def build_daily_pnl_summary_text(
     if alltime.get("balance_first") is not None:
         lines.append(
             f"  Trading return: {_fmt_pct(alltime['balance_change_pct'], sign=True)} "
-            f"({_fmt_money(alltime['balance_first'])} → {_fmt_money(alltime['balance_last'])})"
+            f"({_fmt_money(alltime.get('trading_pnl'), sign=True)} PnL)"
+        )
+        lines.append(
+            f"  Current balance: {_fmt_money(alltime.get('raw_balance_last'))} "
+            f"(incl. {_fmt_money(alltime.get('net_deposits_since_start'), sign=True)} "
+            f"net deposits since start)"
         )
     lines.append(
         f"  Sharpe: {_fmt_float(alltime.get('sharpe'))}  "
@@ -616,6 +672,7 @@ def build_daily_pnl_summary_html(
     snapshot_balance = data["snapshot_balance"]
     deposits = data.get("deposits", {})
 
+    label = "Crypto"
     parts: list[str] = []
 
     # ── Stale warning banner (sync failure) ─────────────────────────────
@@ -626,22 +683,17 @@ def build_daily_pnl_summary_html(
         parts.append("")
 
     # ── Header ──────────────────────────────────────────────────────────
-    parts.append(f"<b>📊 ggTrader Daily PnL — {_h(_fmt_dt(until, '%Y-%m-%d'))}</b>")
+    parts.append(f"<b>📊 ggTrader {label} Daily PnL — {_h(_fmt_dt(until, '%Y-%m-%d'))}</b>")
     parts.append("")
 
     # ── Regime Status ───────────────────────────────────────────────────
     regime = data.get("regime", {})
     if not regime.get("error"):
-        btc_status = "BULL 🟢" if regime.get("btc_bull") else "BEAR 🔴"
-        alt_status = "BULL 🟢" if regime.get("alt_bull") else "BEAR 🔴"
-        reg_rows = [
-            ("BTC Regime", btc_status),
-            ("Alt Regime", alt_status),
-            ("BTC Price", f"${regime.get('btc_price', 0):,.2f}"),
-        ]
-        parts.append("<b>🌐 Market Regime</b>")
-        parts.append("<pre>" + _h(_render_kv_table(reg_rows)) + "</pre>")
-        parts.append("")
+        reg_rows = regime.get("rows", [])
+        if reg_rows:
+            parts.append("<b>🌐 Market Regime</b>")
+            parts.append("<pre>" + _h(_render_kv_table(reg_rows)) + "</pre>")
+            parts.append("")
 
     # ── Account snapshot ────────────────────────────────────────────────
     bal_change = window.get("balance_change_pct")
@@ -705,7 +757,14 @@ def build_daily_pnl_summary_html(
             (
                 "Trading return",
                 f"{_fmt_pct(alltime['balance_change_pct'], sign=True)} "
-                f"({_fmt_money(alltime['balance_first'])} → {_fmt_money(alltime['balance_last'])})",
+                f"({_fmt_money(alltime.get('trading_pnl'), sign=True)} PnL)",
+            )
+        )
+        at_rows.append(
+            (
+                "Current balance",
+                f"{_fmt_money(alltime.get('raw_balance_last'))} "
+                f"({_fmt_money(alltime.get('net_deposits_since_start'), sign=True)} deposits)",
             )
         )
     at_rows.extend(
@@ -850,12 +909,14 @@ def build_daily_pnl_report(
     snapshot_balance = data["snapshot_balance"]
     now = datetime.now(timezone.utc)
 
+    label = "Crypto"
+
     # ── Render markdown ─────────────────────────────────────────────────
     lines: list[str] = []
     if stale_warning:
         lines.append(f"> ⚠️ **STALE DATA**: {stale_warning}")
         lines.append("")
-    lines.append(f"# Daily PnL Report — {_fmt_dt(until, '%Y-%m-%d')}")
+    lines.append(f"# {label} Daily PnL Report — {_fmt_dt(until, '%Y-%m-%d')}")
     lines.append("")
     window_str = f"{_fmt_dt(since)} → {_fmt_dt(until)} PT"
     lines.append(f"*Window: {window_str}*")
@@ -864,14 +925,12 @@ def build_daily_pnl_report(
     # Regime
     regime = data.get("regime", {})
     if not regime.get("error"):
-        btc_status = "BULL 🟢" if regime.get("btc_bull") else "BEAR 🔴"
-        alt_status = "BULL 🟢" if regime.get("alt_bull") else "BEAR 🔴"
-        lines.append("## 🌐 Market Regime")
-        lines.append("")
-        lines.append(f"- **BTC Regime**: {btc_status}")
-        lines.append(f"- **Alt Regime**: {alt_status}")
-        lines.append(f"- **BTC Price**: ${_fmt_money(regime.get('btc_price', 0))}")
-        lines.append("")
+        md_lines = regime.get("md_lines", [])
+        if md_lines:
+            lines.append("## 🌐 Market Regime")
+            lines.append("")
+            lines.extend(md_lines)
+            lines.append("")
 
     # Snapshot
     bal = snapshot_balance
@@ -933,10 +992,15 @@ def build_daily_pnl_report(
         lines.append(
             f"| Trading return (deposit-adjusted) | "
             f"{_fmt_pct(alltime['balance_change_pct'], sign=True)} "
-            f"(${alltime['balance_first']:.2f} → ${alltime['balance_last']:.2f}) |"
+            f"({_fmt_money(alltime.get('trading_pnl'), sign=True)} PnL) |"
         )
-    lines.append(f"| Sharpe (daily) | {_fmt_float(alltime.get('sharpe'))} |")
-    lines.append(f"| Sortino (daily) | {_fmt_float(alltime.get('sortino'))} |")
+        lines.append(
+            f"| Current balance | "
+            f"{_fmt_money(alltime.get('raw_balance_last'))} "
+            f"({_fmt_money(alltime.get('net_deposits_since_start'), sign=True)} net deposits since start) |"
+        )
+    lines.append(f"| Sharpe (annualised) | {_fmt_float(alltime.get('sharpe'))} |")
+    lines.append(f"| Sortino (annualised) | {_fmt_float(alltime.get('sortino'))} |")
     lines.append(f"| Max drawdown | {_fmt_pct(alltime.get('max_dd'))} |")
     lines.append(f"| Calmar | {_fmt_float(alltime.get('calmar'))} |")
     lines.append(f"| Profit factor | {_fmt_float(summary_all.get('profit_factor'))} |")

@@ -27,6 +27,17 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
         "ema_slow": [50, 100, 200],
         # Total: 9 valid combos (was 25)
     },
+    "mtf_momentum": {
+        # 4h EMA cross gated by daily-equivalent slow EMA. Targets the
+        # category-A failure mode: 4h whipsaws that fire without daily-trend
+        # agreement and bleed in OOS. fast/slow values match ema_cross to
+        # keep textbook ranges; mtf_daily_ema spans 50/100/200 daily bars
+        # (= 300/600/1200 4h bars).
+        "ema_fast": [9, 12],
+        "ema_slow": [21, 26],
+        "mtf_daily_ema": [50, 100, 200],
+        # Total: 2×2×3 = 12 combos (degenerate fast>=slow paths skip cleanly)
+    },
     "rsi_reversal": {
         # Narrowed from 72 to 24 combos. Removed extreme lengths (5, 7, 28) and
         # extreme oversold levels (15, 40) that chase fold-specific noise.
@@ -34,6 +45,17 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
         "rsi_oversold": [20, 25, 30, 35],
         "rsi_trend_filter": [True, False],
         # Total: 24 combos (was 72)
+    },
+    "adx_filtered_rsi": {
+        # RSI cross-up gated by ADX < adx_max (range-only mean reversion).
+        # Targets category-A coins where rsi_reversal fires in trending OOS
+        # and bleeds. Single rsi_length / adx_length to keep combos modest;
+        # adx_max is the discriminating axis (lower = stricter range filter).
+        "rsi_length": [14],
+        "rsi_oversold": [25, 30, 35],
+        "adx_length": [14],
+        "adx_max": [15, 20, 25],
+        # Total: 1×3×1×3 = 9 combos
     },
     "donchian_breakout": {
         # Restored shorter lengths: only testing 100 was circular (it always won).
@@ -113,10 +135,21 @@ COARSE_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
         "ema_fast": [9, 16, 50],
         "ema_slow": [21, 100, 200],
     },
+    "mtf_momentum": {
+        "ema_fast": [9],
+        "ema_slow": [21],
+        "mtf_daily_ema": [100, 200],
+    },
     "rsi_reversal": {
         "rsi_length": [14, 21, 28],
         "rsi_oversold": [20, 25, 30],
         "rsi_trend_filter": [False],
+    },
+    "adx_filtered_rsi": {
+        "rsi_length": [14],
+        "rsi_oversold": [30],
+        "adx_length": [14],
+        "adx_max": [20],
     },
     "donchian_breakout": {
         "donchian_length": [15, 20, 30, 50],

@@ -1,6 +1,6 @@
-# 🚀 ggTrader Roadmap
+# Roadmap
 
-**Last updated:** 2026-05-03 · **Status:** Live ~4 weeks · Multi-asset shipped
+**Last updated:** 2026-05-08 · **Status:** Live ~5 weeks · Crypto-only (stocks pipeline removed 2026-05-08) · BTC regime filter currently disabled
 
 **Status legend:** ✅ Shipped · 🟡 In progress · 🔵 Ready · ⚪ Concept
 
@@ -38,15 +38,13 @@
 
 ## ✅ Shipped (most recent first)
 
-### 2026-05 — Multi-Asset & Risk
-- **Stocks**: `BaseExecutionEngine`, `StockExecutionEngine` (Alpaca), `YFinanceDataLoader` (1980+ bars, TimescaleDB cache)
-- **Stock universe**: `scripts/update_universe_stocks.py` — manual S&P 500 volume rank (auto-rank pending)
+### 2026-05 — Crypto-only refocus
+- **Stocks pipeline removed** (2026-05-08): full purge of `StockExecutionEngine`, `stock_regime_filtering`, `cached_yfinance_loader`, SPY/VIX gates, Alpaca sync, S&P 500 benchmark, and the `--asset-class` flag. Project is crypto-only ahead of a Kraken-CLI transition.
 - **Daily-loss circuit breaker**: 5% intraday cap, persistent across restarts
-- **Stock macro filters**: SPY EMA gate + VIX volatility gate
 - **WFO refinement**: 10 folds, OOS alpha 0.70, Sortino/Calmar bias
 
 ### 2026-04 — Observability + Adaptive Sizing
-- **Grafana dashboard**: equity, PnL dots, trades; LIVE / LIVE_STOCKS toggle
+- **Grafana dashboard**: equity, PnL dots, trades
 - **TimescaleDB live mirror**; `ggt db sync-live` for CSV backfill
 - **Monthly auto-recalibration**: WFO runs internally on day 1 ~01:00 UTC, hot-reloads params
 - **Market-regime line** in 08:00 PnL report (BTC + altcoin status, live ccxt)
@@ -54,8 +52,16 @@
 - **Trailing-stop floor**: `MIN_TRAILING_STOP_PCT` / `MIN_ATR_TRAILING_PCT` (default 4%)
 - **CLI**: `ggt trade-report`, `ggt repair`, `ggt pnl-daily`, `--dry-run-sizing`
 
+### 2026-05 (cont.) — Sizing & Filter Rework
+- **Weighted sizing default**: live trader allocates per coin from OOS robustness, capped at `MAX_COIN_ALLOCATION`. `--adaptive-sizing` still available as opt-in.
+- **Single-leader regime filter**: collapsed back to BTC-only after research showed BTC+ETH dual-leader and 3-tier (BTC/altcoin/exempt) variants underperformed. Filter is currently `BTC_REGIME_FILTER=False` while we collect more comparison data.
+- **Universal trailing stops**: `fixed_sl_tp` legacy positions now convert to native trailing-stop at placement time, so every live sell ratchets up.
+- **Fear & Greed Index** in PnL reports + signals header (alternative.me, daily snapshot persisted to `fear_greed_index` table).
+- **`ggt signals` command**: per-symbol diagnostic table — entry/exit, tier, correlations, %vs_EMA, in-position, blocked-reason.
+- **Correlation matrix script**: `scripts/coin_correlation_matrix.py` for visualising which coins move with BTC.
+- **WFO selection-funnel reporting**: research reports now show how many coins each gate dropped.
+
 ### 2026-03 — Live Hardening
-- **Tiered regime filter**: BTC EMA 20/200 (high-corr) → altcoin index (mid) → exempt (low)
 - **Telegram + Discord** trade-fill alerts
 - **Exchange reconciliation**: server-side TSL/OCO detection on heartbeat
 

@@ -42,12 +42,8 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
     if not symbols:
         raise ValueError("No symbols provided or symbols list is empty.")
 
-    if config.get("ASSET_CLASS") == "stocks":
-        from ggTrader.data.live.cached_yfinance_loader import CachedYFinanceLoader
-        loader = CachedYFinanceLoader()
-    else:
-        from ggTrader.data.live.cached_loader import CachedExchangeLoader
-        loader = CachedExchangeLoader()
+    from ggTrader.data.live.cached_loader import CachedExchangeLoader
+    loader = CachedExchangeLoader()
 
     ohlcv_df = loader.fetch_ohlcv(
         symbols=symbols,
@@ -255,11 +251,7 @@ def load_hybrid_validation_ohlcv(
     else:
         ts_end = ts_end.tz_convert("UTC")
 
-    asset_class = config.get("ASSET_CLASS", "crypto")
-    if asset_class == "stocks":
-        formatted = bases  # stocks don't need -USD
-    else:
-        formatted = [b if "-" in b or "/" in b else f"{b}-{quote}" for b in bases]
+    formatted = [b if "-" in b or "/" in b else f"{b}-{quote}" for b in bases]
 
     loader = TimescaleDBLoader()
     tsdb = loader.fetch_ohlcv(
@@ -267,7 +259,6 @@ def load_hybrid_validation_ohlcv(
         interval=config["INTERVAL"],
         start_date=ts_start,
         end_date=ts_end,
-        asset_class=asset_class,
     )
 
     if not use_ccxt_tail:
@@ -277,35 +268,18 @@ def load_hybrid_validation_ohlcv(
             )
         return tsdb.sort_index()
 
-    try:
-        if asset_class == "stocks":
-            from ggTrader.data.live.cached_yfinance_loader import CachedYFinanceLoader
-            cache_loader = CachedYFinanceLoader()
-        else:
-            from ggTrader.data.live.cached_loader import CachedExchangeLoader
-            cache_loader = CachedExchangeLoader()
-    except ImportError as e:
-        raise ImportError(f"{asset_class} tail requires appropriate loader") from e
+    from ggTrader.data.live.cached_loader import CachedExchangeLoader
+    cache_loader = CachedExchangeLoader()
 
-    # The Cached loader handles fetching from DB first, then live, and CACHING it back to DB.
     try:
-        if asset_class == "stocks":
-            combined = cache_loader.fetch_ohlcv(
-                symbols=formatted,
-                interval=config["INTERVAL"],
-                start_date=ts_start,
-                end_date=ts_end,
-                limit=None,
-            )
-        else:
-            combined = cache_loader.fetch_ohlcv(
-                symbols=formatted,
-                interval=config["INTERVAL"],
-                start_date=ts_start,
-                end_date=ts_end,
-                quote=quote,
-                limit=None,
-            )
+        combined = cache_loader.fetch_ohlcv(
+            symbols=formatted,
+            interval=config["INTERVAL"],
+            start_date=ts_start,
+            end_date=ts_end,
+            quote=quote,
+            limit=None,
+        )
     except Exception as e:
         print(f"Warning: Cached loader failed: {e}. Falling back to DB-only results.")
         return tsdb
@@ -315,14 +289,11 @@ def load_hybrid_validation_ohlcv(
         new_cols = []
         for col in combined.columns:
             sym, field = col
-            if asset_class == "stocks":
-                new_cols.append((sym, field))
+            # Normalize to symbol-quote (e.g. BTC-USD)
+            if "-" not in sym and "/" not in sym:
+                new_cols.append((f"{sym}-{quote}", field))
             else:
-                # Normalize to symbol-quote (e.g. BTC-USD)
-                if "-" not in sym and "/" not in sym:
-                    new_cols.append((f"{sym}-{quote}", field))
-                else:
-                    new_cols.append((sym.replace("/", "-"), field))
+                new_cols.append((sym.replace("/", "-"), field))
 
         combined.columns = pd.MultiIndex.from_tuples(new_cols)
 

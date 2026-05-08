@@ -36,7 +36,6 @@ class TimescaleDBLoader(BaseDataLoader):
         end_date: Optional[pd.Timestamp] = None,
         limit: Optional[int] = None,
         quote: str = "USD",
-        asset_class: str = "crypto",
     ) -> pd.DataFrame:
         """
         Fetch historical OHLCV data from TimescaleDB and format it as a MultiIndex DataFrame
@@ -45,13 +44,7 @@ class TimescaleDBLoader(BaseDataLoader):
         if not symbols:
             return pd.DataFrame()
 
-        # Crypto rows are stored as e.g. BTC-USD; stock rows as bare ticker (NVDA).
-        # Only append the quote suffix for crypto — appending it to stocks causes
-        # silent collisions with crypto pairs that share a stock ticker (CVX, CAT, etc.).
-        if asset_class == "stocks":
-            formatted_symbols = list(symbols)
-        else:
-            formatted_symbols = [s if "-" in s or "/" in s else f"{s}-{quote}" for s in symbols]
+        formatted_symbols = [s if "-" in s or "/" in s else f"{s}-{quote}" for s in symbols]
 
         # Build query constraints
         conditions = ["symbol = ANY(:symbols)", "interval = :interval"]

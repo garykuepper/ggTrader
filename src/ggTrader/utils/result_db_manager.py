@@ -1,10 +1,8 @@
 """PostgreSQL database manager for storing trading run results."""
 
-import csv
 import json
 import math
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -17,17 +15,13 @@ from ggTrader.utils.config import get_db_connection_string
 class ResultDBManager:
     """Manages the PostgreSQL database for storing trading run results."""
 
-    def __init__(
-        self, connection_string: Optional[str] = None, log_path: str = "results/runs_log.csv"
-    ) -> None:
+    def __init__(self, connection_string: Optional[str] = None, **_legacy_kwargs: Any) -> None:
+        # Legacy ``log_path`` kwarg is accepted and ignored — runs_log.csv was
+        # superseded by the runs table; callers can remove it at their leisure.
         self.connection_string = connection_string or get_db_connection_string()
-
-        self.log_path = Path(log_path).absolute()
-        self.log_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.engine = create_engine(self.connection_string)
         self._init_db()
-        self._init_log()
 
     # =========================================================================
     # Database Initialization & Migrations
@@ -67,6 +61,20 @@ class ResultDBManager:
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ;",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS interval VARCHAR;",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS pipeline_stage VARCHAR;",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS asset_class VARCHAR;",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS strategy_params JSONB;",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS phase_stats JSONB;",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS status VARCHAR;",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_dir VARCHAR;",
+            "CREATE INDEX IF NOT EXISTS runs_research_lookup_idx ON runs (run_type, asset_class, timestamp DESC);",
+            # Live position-close fields — null for non-live (backtest/research) rows.
+            "ALTER TABLE trades ADD COLUMN IF NOT EXISTS amount DOUBLE PRECISION;",
+            "ALTER TABLE trades ADD COLUMN IF NOT EXISTS gross_pnl DOUBLE PRECISION;",
+            "ALTER TABLE trades ADD COLUMN IF NOT EXISTS fee_entry DOUBLE PRECISION;",
+            "ALTER TABLE trades ADD COLUMN IF NOT EXISTS fee_exit DOUBLE PRECISION;",
+            "ALTER TABLE trades ADD COLUMN IF NOT EXISTS fee_total DOUBLE PRECISION;",
+            "ALTER TABLE trades ADD COLUMN IF NOT EXISTS hold_duration_hours DOUBLE PRECISION;",
+            "ALTER TABLE trades ADD COLUMN IF NOT EXISTS exit_reason VARCHAR;",
         ]
         for stmt in new_columns:
             try:
@@ -122,9 +130,97 @@ class ResultDBManager:
                 study_hash VARCHAR PRIMARY KEY, params JSONB, result JSONB, timestamp TIMESTAMPTZ
             );
             """,
+            """
+            CREATE TABLE IF NOT EXISTS system_state (
+                key VARCHAR PRIMARY KEY,
+                value JSONB NOT NULL,
+                updated_at TIMESTAMPTZ DEFAULT now()
+            );
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS wfo_cache (
+                cache_key VARCHAR PRIMARY KEY,
+                symbol VARCHAR,
+                strategy_name VARCHAR,
+                exit_name VARCHAR,
+                cache_version INTEGER,
+                payload JSONB NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT now()
+            );
+            """,
+            "CREATE INDEX IF NOT EXISTS wfo_cache_symbol_strategy_idx ON wfo_cache (symbol, strategy_name);",
+            """
+            CREATE TABLE IF NOT EXISTS kraken_ledger (
+                ledger_id VARCHAR PRIMARY KEY,
+                timestamp TIMESTAMPTZ NOT NULL,
+                type VARCHAR,
+                currency VARCHAR,
+                amount DOUBLE PRECISION,
+                signed_amount DOUBLE PRECISION,
+                last_fetched_at TIMESTAMPTZ DEFAULT now()
+            );
+            """,
+            "CREATE INDEX IF NOT EXISTS kraken_ledger_ts_idx ON kraken_ledger (timestamp DESC);",
+            """
+            CREATE TABLE IF NOT EXISTS universe_cache (
+                asset_class VARCHAR NOT NULL,
+                snapshot_date DATE NOT NULL,
+                symbols JSONB NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT now(),
+                PRIMARY KEY (asset_class, snapshot_date)
+            );
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS live_balance_snapshots (
+                asset_class VARCHAR NOT NULL,
+                timestamp TIMESTAMPTZ NOT NULL,
+                total_usd DOUBLE PRECISION,
+                free_usd DOUBLE PRECISION,
+                positions_usd DOUBLE PRECISION,
+                num_positions INTEGER,
+                PRIMARY KEY (asset_class, timestamp)
+            );
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS live_positions_snapshot (
+                asset_class VARCHAR NOT NULL,
+                timestamp TIMESTAMPTZ NOT NULL,
+                positions JSONB NOT NULL,
+                circuit_breaker_triggered BOOLEAN,
+                PRIMARY KEY (asset_class, timestamp)
+            );
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS fear_greed_index (
+                snapshot_date DATE PRIMARY KEY,
+                value INTEGER NOT NULL,
+                classification VARCHAR NOT NULL,
+                inserted_at TIMESTAMPTZ DEFAULT now()
+            );
+            """,
         ]
         for query in queries:
             conn.execute(text(query))
+        # Try to convert live_balance_snapshots into a hypertable; tolerate failure
+        # if TimescaleDB extension isn't available.
+        try:
+            conn.execute(
+                text(
+                    "SELECT create_hypertable('live_balance_snapshots', 'timestamp',"
+                    " if_not_exists => TRUE, migrate_data => TRUE)"
+                )
+            )
+        except Exception as e:
+            print(f"Hypertable warning (live_balance_snapshots): {e}")
+        try:
+            conn.execute(
+                text(
+                    "SELECT create_hypertable('live_positions_snapshot', 'timestamp',"
+                    " if_not_exists => TRUE, migrate_data => TRUE)"
+                )
+            )
+        except Exception as e:
+            print(f"Hypertable warning (live_positions_snapshot): {e}")
 
     # =========================================================================
     # Helpers
@@ -145,57 +241,44 @@ class ResultDBManager:
 
         return json.dumps(clean_obj(obj))
 
-    def _init_log(self) -> None:
-        """Initializes the CSV log file header if it doesn't exist."""
-        if not self.log_path.exists():
-            header = [
-                "timestamp",
-                "run_id",
-                "type",
-                "status",
-                "sharpe",
-                "sortino",
-                "profit",
-                "interval",
-                "start_date",
-                "end_date",
-            ]
-            with open(self.log_path, "w", newline="") as f:
-                csv.writer(f).writerow(header)
+    # =========================================================================
+    # system_state — generic key/value store for small persistence flags
+    # =========================================================================
 
-    def _append_to_log(
-        self,
-        timestamp: datetime,
-        run_id: str,
-        run_type: str,
-        status: str,
-        sharpe: Any,
-        sortino: Any,
-        profit: Any,
-        interval: Any,
-        start: Any,
-        end: Any,
-    ) -> None:
-        """Appends a line to the external CSV log."""
+    def get_state(self, key: str, default: Any = None) -> Any:
+        """Read a value from system_state. Returns ``default`` if absent."""
+        try:
+            with self.engine.connect() as conn:
+                row = conn.execute(
+                    text("SELECT value FROM system_state WHERE key = :k"),
+                    {"k": key},
+                ).fetchone()
+        except Exception as e:
+            print(f"WARNING: get_state({key!r}) failed: {e}")
+            return default
+        if row is None:
+            return default
+        # JSONB comes back as a parsed object via psycopg2 already.
+        return row[0]
 
-        def safe_fmt(val: Any, fmt: str = "{:.4f}") -> str:
-            return fmt.format(val) if isinstance(val, (int, float)) else str(val) if val else ""
-
-        with open(self.log_path, "a", newline="") as f:
-            csv.writer(f).writerow(
-                [
-                    timestamp.isoformat(),
-                    run_id,
-                    run_type,
-                    status,
-                    safe_fmt(sharpe),
-                    safe_fmt(sortino),
-                    safe_fmt(profit, "{:.2f}"),
-                    safe_fmt(interval),
-                    safe_fmt(start),
-                    safe_fmt(end),
-                ]
-            )
+    def set_state(self, key: str, value: Any) -> None:
+        """Upsert a value into system_state."""
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO system_state (key, value, updated_at)
+                        VALUES (:k, CAST(:v AS JSONB), now())
+                        ON CONFLICT (key) DO UPDATE
+                          SET value = EXCLUDED.value,
+                              updated_at = now()
+                        """
+                    ),
+                    {"k": key, "v": self._safe_json_dumps(value)},
+                )
+        except Exception as e:
+            print(f"WARNING: set_state({key!r}) failed: {e}")
 
     def _parse_trade_row(self, row: pd.Series, run_id: str) -> Optional[Dict[str, Any]]:
         """Extracts and sanitizes a single trade row for DB insertion."""
@@ -239,9 +322,17 @@ class ResultDBManager:
         metadata: Optional[Dict[str, Any]] = None,
         metrics: Optional[Dict[str, Any]] = None,
         pipeline_stage: Optional[str] = None,
+        asset_class: Optional[str] = None,
+        strategy_params: Optional[Dict[str, Any]] = None,
+        phase_stats: Optional[Dict[str, Any]] = None,
+        run_dir: Optional[str] = None,
+        status: str = "success",
+        timestamp: Optional[datetime] = None,
     ) -> None:
-        """Adds a new primary run entry to the database and CSV log."""
-        timestamp = datetime.now()
+        """Upsert a primary run entry. The run_dir/strategy_params/phase_stats
+        columns let the live trader and the report builder load everything
+        from the DB without touching the on-disk artifacts."""
+        ts = timestamp or datetime.now()
         meta = metadata or {}
         metr = metrics or {}
 
@@ -252,25 +343,46 @@ class ResultDBManager:
         start_date = meta.get("START_DATE") or meta.get("start_date")
         end_date = meta.get("END_DATE") or meta.get("end_date")
         interval = meta.get("INTERVAL") or meta.get("interval")
+        ac = asset_class or meta.get("ASSET_CLASS") or meta.get("asset_class")
 
         query = text(
             """
             INSERT INTO runs (
-                "run_id", "run_type", "timestamp", "script_name", "parameters", "metadata",
-                "sharpe", "sortino", "total_profit", "start_date", "end_date", "interval",
-                "pipeline_stage"
+                run_id, run_type, timestamp, script_name, parameters, metadata,
+                sharpe, sortino, total_profit, start_date, end_date, interval,
+                pipeline_stage, asset_class, strategy_params, phase_stats,
+                status, run_dir
             )
             VALUES (
-                :rid, :rtype, :ts, :sname, :params, :meta, :sr, :sort, :prof, :sdate, :edate,
-                :inter, :stage
+                :rid, :rtype, :ts, :sname, CAST(:params AS JSONB), CAST(:meta AS JSONB),
+                :sr, :sort, :prof, :sdate, :edate, :inter, :stage, :ac,
+                CAST(:sp AS JSONB), CAST(:ps AS JSONB), :status, :rd
             )
+            ON CONFLICT (run_id) DO UPDATE SET
+                run_type = EXCLUDED.run_type,
+                timestamp = EXCLUDED.timestamp,
+                script_name = EXCLUDED.script_name,
+                parameters = EXCLUDED.parameters,
+                metadata = EXCLUDED.metadata,
+                sharpe = EXCLUDED.sharpe,
+                sortino = EXCLUDED.sortino,
+                total_profit = EXCLUDED.total_profit,
+                start_date = EXCLUDED.start_date,
+                end_date = EXCLUDED.end_date,
+                interval = EXCLUDED.interval,
+                pipeline_stage = EXCLUDED.pipeline_stage,
+                asset_class = COALESCE(EXCLUDED.asset_class, runs.asset_class),
+                strategy_params = COALESCE(EXCLUDED.strategy_params, runs.strategy_params),
+                phase_stats = COALESCE(EXCLUDED.phase_stats, runs.phase_stats),
+                status = EXCLUDED.status,
+                run_dir = COALESCE(EXCLUDED.run_dir, runs.run_dir)
             """
         )
 
         bind_params = {
             "rid": run_id,
             "rtype": run_type,
-            "ts": timestamp,
+            "ts": ts,
             "sname": script_name,
             "params": self._safe_json_dumps(parameters),
             "meta": self._safe_json_dumps(meta),
@@ -281,6 +393,11 @@ class ResultDBManager:
             "edate": end_date,
             "inter": interval,
             "stage": pipeline_stage,
+            "ac": ac,
+            "sp": self._safe_json_dumps(strategy_params) if strategy_params is not None else None,
+            "ps": self._safe_json_dumps(phase_stats) if phase_stats is not None else None,
+            "status": status,
+            "rd": run_dir,
         }
 
         try:
@@ -288,19 +405,6 @@ class ResultDBManager:
                 conn.execute(query, bind_params)
         except Exception as e:
             print(f"WARNING: Could not save run results to DB: {e}")
-
-        self._append_to_log(
-            timestamp,
-            run_id,
-            run_type,
-            "SUCCESS",
-            sharpe,
-            sortino,
-            total_profit,
-            interval,
-            start_date,
-            end_date,
-        )
 
     def add_wfo_results(self, run_id: str, df_res: pd.DataFrame) -> None:
         """Inserts WFO window results into the database."""
@@ -383,7 +487,12 @@ class ResultDBManager:
             print(f"Error inserting equity curve: {e}")
 
     def add_trades(self, run_id: str, df_trades: pd.DataFrame) -> None:
-        """Parses and inserts trade records into the database."""
+        """Parses and inserts trade records into the database.
+
+        Optional live-only columns (``amount``, ``gross_pnl``, ``fee_entry``,
+        ``fee_exit``, ``fee_total``, ``hold_duration_hours``, ``exit_reason``)
+        are persisted when present in the DataFrame and left NULL otherwise.
+        """
         if df_trades.empty:
             return
 
@@ -396,20 +505,39 @@ class ResultDBManager:
         if not records:
             return
 
+        # Augment each record with the optional live-only columns. Using a
+        # wider INSERT is harmless for backtest rows where these are NULL.
+        live_keys = (
+            "amount", "gross_pnl", "fee_entry", "fee_exit",
+            "fee_total", "hold_duration_hours", "exit_reason",
+        )
+        for rec, (_, row) in zip(records, df_trades.iterrows()):
+            for k in live_keys:
+                if k in row and pd.notna(row[k]):
+                    rec[k] = row[k]
+                else:
+                    rec.setdefault(k, None)
+
         query = text(
             """
             INSERT INTO trades (
                 run_id, symbol, entry_time, exit_time, entry_price, exit_price, profit,
-                profit_pct, status
+                profit_pct, status, amount, gross_pnl, fee_entry, fee_exit, fee_total,
+                hold_duration_hours, exit_reason
             )
             VALUES (
                 :run_id, :symbol, :entry_time, :exit_time, :entry_price, :exit_price,
-                :profit, :profit_pct, :status
+                :profit, :profit_pct, :status, :amount, :gross_pnl, :fee_entry, :fee_exit,
+                :fee_total, :hold_duration_hours, :exit_reason
             )
             ON CONFLICT (run_id, symbol, entry_time) DO UPDATE SET
                 exit_time = EXCLUDED.exit_time, entry_price = EXCLUDED.entry_price,
                 exit_price = EXCLUDED.exit_price, profit = EXCLUDED.profit,
-                profit_pct = EXCLUDED.profit_pct, status = EXCLUDED.status
+                profit_pct = EXCLUDED.profit_pct, status = EXCLUDED.status,
+                amount = EXCLUDED.amount, gross_pnl = EXCLUDED.gross_pnl,
+                fee_entry = EXCLUDED.fee_entry, fee_exit = EXCLUDED.fee_exit,
+                fee_total = EXCLUDED.fee_total, hold_duration_hours = EXCLUDED.hold_duration_hours,
+                exit_reason = EXCLUDED.exit_reason
             """
         )
 
@@ -490,6 +618,195 @@ class ResultDBManager:
                     "timestamp": datetime.now(),
                 },
             )
+
+    # =========================================================================
+    # Live-trading data accessors (replace the data/live/*.csv files)
+    # =========================================================================
+
+    def add_balance_snapshot(
+        self,
+        asset_class: str,
+        timestamp: datetime,
+        total_usd: float,
+        free_usd: float,
+        positions_usd: float,
+        num_positions: int,
+    ) -> None:
+        """Append a row to live_balance_snapshots."""
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO live_balance_snapshots
+                            (asset_class, timestamp, total_usd, free_usd,
+                             positions_usd, num_positions)
+                        VALUES (:ac, :ts, :tot, :free, :pos, :n)
+                        ON CONFLICT (asset_class, timestamp) DO UPDATE SET
+                            total_usd = EXCLUDED.total_usd,
+                            free_usd = EXCLUDED.free_usd,
+                            positions_usd = EXCLUDED.positions_usd,
+                            num_positions = EXCLUDED.num_positions
+                        """
+                    ),
+                    {
+                        "ac": asset_class,
+                        "ts": timestamp,
+                        "tot": float(total_usd) if total_usd is not None else None,
+                        "free": float(free_usd) if free_usd is not None else None,
+                        "pos": float(positions_usd) if positions_usd is not None else None,
+                        "n": int(num_positions) if num_positions is not None else None,
+                    },
+                )
+        except Exception as e:
+            print(f"WARNING: add_balance_snapshot failed: {e}")
+
+    def add_positions_snapshot(
+        self,
+        asset_class: str,
+        timestamp: datetime,
+        positions: Dict[str, Any],
+        circuit_breaker_triggered: bool = False,
+    ) -> None:
+        """Append a row to live_positions_snapshot (full active_positions blob)."""
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO live_positions_snapshot
+                            (asset_class, timestamp, positions, circuit_breaker_triggered)
+                        VALUES (:ac, :ts, CAST(:p AS JSONB), :cb)
+                        ON CONFLICT (asset_class, timestamp) DO UPDATE SET
+                            positions = EXCLUDED.positions,
+                            circuit_breaker_triggered = EXCLUDED.circuit_breaker_triggered
+                        """
+                    ),
+                    {
+                        "ac": asset_class,
+                        "ts": timestamp,
+                        "p": self._safe_json_dumps(positions),
+                        "cb": bool(circuit_breaker_triggered),
+                    },
+                )
+        except Exception as e:
+            print(f"WARNING: add_positions_snapshot failed: {e}")
+
+    def get_balance_history(self, asset_class: str) -> pd.DataFrame:
+        """Read live_balance_snapshots for an asset class as a DataFrame.
+
+        Columns match the legacy balance_snapshots.csv schema:
+        ``timestamp, total_usd, free_usd, positions_usd, num_positions``.
+        """
+        query = text(
+            """
+            SELECT timestamp, total_usd, free_usd, positions_usd, num_positions
+            FROM live_balance_snapshots
+            WHERE asset_class = :ac
+            ORDER BY timestamp
+            """
+        )
+        try:
+            with self.engine.connect() as conn:
+                return pd.read_sql(query, conn, params={"ac": asset_class})
+        except Exception as e:
+            print(f"WARNING: get_balance_history failed: {e}")
+            return pd.DataFrame(
+                columns=["timestamp", "total_usd", "free_usd", "positions_usd", "num_positions"]
+            )
+
+    def upsert_fear_greed(self, snapshot_date: Any, value: int, classification: str) -> None:
+        """Insert-or-update a Fear & Greed Index value for a given date.
+
+        Idempotent — repeated calls for the same date overwrite the value.
+        """
+        query = text(
+            """
+            INSERT INTO fear_greed_index (snapshot_date, value, classification)
+            VALUES (:d, :v, :c)
+            ON CONFLICT (snapshot_date) DO UPDATE
+              SET value = EXCLUDED.value,
+                  classification = EXCLUDED.classification,
+                  inserted_at = now()
+            """
+        )
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(query, {"d": snapshot_date, "v": int(value), "c": classification})
+        except Exception as e:
+            print(f"WARNING: upsert_fear_greed failed: {e}")
+
+    def get_fear_greed_history(self, days: int = 365) -> pd.DataFrame:
+        """Read the last N days of Fear & Greed values, newest first."""
+        query = text(
+            """
+            SELECT snapshot_date, value, classification
+            FROM fear_greed_index
+            ORDER BY snapshot_date DESC
+            LIMIT :n
+            """
+        )
+        try:
+            with self.engine.connect() as conn:
+                return pd.read_sql(query, conn, params={"n": int(days)})
+        except Exception as e:
+            print(f"WARNING: get_fear_greed_history failed: {e}")
+            return pd.DataFrame(columns=["snapshot_date", "value", "classification"])
+
+    def get_orders_df(self, run_id: str) -> pd.DataFrame:
+        """Read the orders table for a run_id (replaces trade_log.csv)."""
+        query = text(
+            """
+            SELECT timestamp, symbol, side, order_id, price, amount,
+                   amount_usd, fee, fee_currency
+            FROM orders
+            WHERE run_id = :rid
+            ORDER BY timestamp
+            """
+        )
+        try:
+            with self.engine.connect() as conn:
+                return pd.read_sql(query, conn, params={"rid": run_id})
+        except Exception as e:
+            print(f"WARNING: get_orders_df failed: {e}")
+            return pd.DataFrame(
+                columns=[
+                    "timestamp", "symbol", "side", "order_id", "price",
+                    "amount", "amount_usd", "fee", "fee_currency",
+                ]
+            )
+
+    def get_closed_positions_df(self, run_id: str) -> pd.DataFrame:
+        """Read closed positions from the trades table (replaces position_closes.csv).
+
+        Returns columns mirroring the legacy CSV: ``close_timestamp, symbol,
+        entry_time, exit_time, entry_price, exit_price, amount, gross_pnl,
+        net_pnl, pnl_pct, fee_entry, fee_exit, fee_total, hold_duration_hours,
+        exit_reason``.
+        """
+        query = text(
+            """
+            SELECT exit_time AS close_timestamp,
+                   symbol,
+                   entry_time, exit_time,
+                   entry_price, exit_price,
+                   amount,
+                   gross_pnl,
+                   profit AS net_pnl,
+                   profit_pct AS pnl_pct,
+                   fee_entry, fee_exit, fee_total,
+                   hold_duration_hours, exit_reason
+            FROM trades
+            WHERE run_id = :rid AND status = 'closed'
+            ORDER BY exit_time
+            """
+        )
+        try:
+            with self.engine.connect() as conn:
+                return pd.read_sql(query, conn, params={"rid": run_id})
+        except Exception as e:
+            print(f"WARNING: get_closed_positions_df failed: {e}")
+            return pd.DataFrame()
 
     def close(self) -> None:
         """Disposes of the SQLAlchemy engine pool."""

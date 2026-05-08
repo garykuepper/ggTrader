@@ -2,7 +2,7 @@
 
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -12,7 +12,6 @@ from ggTrader.core.benchmarking import (  # noqa: F401
     _btc_buy_hold_portfolio_stats,
     _cagr_percent,
     _enrich_final_stats_with_cagr_and_benchmark,
-    _sp500_buy_hold_portfolio_stats,
     _years_from_price_index,
 )
 from ggTrader.core.fast_backtest import FastBacktest
@@ -45,8 +44,7 @@ from ggTrader.core.orchestrator_utils import (  # noqa: F401
     _wall_clock_eta,
     _wfo_per_coin_fallback_triple,
 )
-from ggTrader.core.regime_filtering import (  # noqa: F401
-    _compute_altcoin_index_mask,
+from ggTrader.core.regime_filtering import (
     _compute_btc_correlations,
     _compute_btc_regime_mask,
 )
@@ -85,46 +83,37 @@ def _apply_tiered_regime_mask(
     combined_entries: pd.DataFrame,
     btc_corrs: Dict[str, float],
     btc_regime: Optional[pd.Series],
-    alt_regime: Optional[pd.Series],
     config: Dict[str, Any],
 ) -> pd.DataFrame:
-    """Apply three-tier BTC correlation regime filter to combined entries DataFrame.
+    """Apply BTC leader-regime filter to combined entries DataFrame.
 
-    Returns a new entries DataFrame with signals blocked on bear-market bars,
-    per each coin's BTC return correlation tier.
+    Coins with ``corr_BTC >= LEADER_CORR_THRESHOLD`` are gated by
+    ``btc_regime`` (only fire when BTC is bull); below the threshold they
+    trade freely. Default corr 1.0 (conservative) for unknown symbols.
     """
     if btc_regime is None:
-        bench_symbol = config.get("BENCHMARK_SYMBOL", "BTC-USD")
-        print(f"\n  [Regime Filter] WARNING: {bench_symbol} data unavailable — filter skipped.")
+        print("\n  [Regime Filter] No BTC mask available — filter skipped.")
         return combined_entries
 
-    btc_min_corr = float(config.get("BTC_REGIME_FILTER_MIN_CORRELATION", 0.5))
-    alt_min_corr = float(config.get("ALTCOIN_REGIME_FILTER_CORR_MIN", 0.3))
+    threshold = float(config.get("LEADER_CORR_THRESHOLD", 0.7))
     n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
 
-    btc_aligned = btc_regime.reindex(combined_entries.index, fill_value=False)
-    alt_aligned = (
-        alt_regime.reindex(combined_entries.index, fill_value=False)
-        if alt_regime is not None else None
-    )
+    n = len(combined_entries)
+    all_true = np.ones(n, dtype=bool)
+    btc_aligned = btc_regime.reindex(combined_entries.index, fill_value=False).values
 
-    # Build per-column mask arrays — use a list (not dict) to preserve duplicate columns.
     mask_arrays = []
-    btc_filtered, alt_filtered, exempt_coins = [], [], []
+    by_tier: Dict[str, list[str]] = {"BTC": [], "Free": []}
     for col in combined_entries.columns:
         sym = col[0] if isinstance(col, tuple) else col
-        corr = btc_corrs.get(sym, 1.0)
-        if corr >= btc_min_corr:
-            mask_arrays.append(btc_aligned.values)
-            btc_filtered.append(f"{sym}({corr:.2f})")
-        elif corr >= alt_min_corr and alt_aligned is not None:
-            mask_arrays.append(alt_aligned.values)
-            alt_filtered.append(f"{sym}({corr:.2f})")
+        cb = float(btc_corrs.get(sym, 1.0))
+        if cb >= threshold:
+            mask_arrays.append(btc_aligned)
+            by_tier["BTC"].append(f"{sym}({cb:.2f})")
         else:
-            mask_arrays.append(np.ones(len(combined_entries), dtype=bool))
-            exempt_coins.append(f"{sym}({corr:.2f})")
+            mask_arrays.append(all_true)
+            by_tier["Free"].append(f"{sym}({cb:.2f})")
 
-    # Stack into (n_bars, n_cols) — guaranteed same shape as combined_entries.values
     regime_arr = np.column_stack(mask_arrays)
     n_blocked = int((combined_entries.values & ~regime_arr).sum())
     filtered = pd.DataFrame(
@@ -133,13 +122,11 @@ def _apply_tiered_regime_mask(
         columns=combined_entries.columns,
     )
 
-    print(f"\n  [Regime Filter] EMA({n_warmup}) applied — blocked {n_blocked} signals.")
-    if btc_filtered:
-        print(f"    BTC filter (corr>={btc_min_corr}):        {', '.join(btc_filtered)}")
-    if alt_filtered:
-        print(f"    Altcoin filter (corr>={alt_min_corr}):     {', '.join(alt_filtered)}")
-    if exempt_coins:
-        print(f"    Exempt (corr<{alt_min_corr}):              {', '.join(exempt_coins)}")
+    print(f"\n  [Regime Filter] EMA({n_warmup}) BTC leader filter — blocked {n_blocked} signals "
+          f"(threshold={threshold:.2f}).")
+    for tier_name, syms in by_tier.items():
+        if syms:
+            print(f"    {tier_name:<4}: {', '.join(syms)}")
 
     return filtered
 
@@ -185,12 +172,19 @@ def _compute_allocation_weights(
 def _apply_wfo_selection_gates(
     per_coin_results: Dict[str, Dict[str, Any]],
     config: Dict[str, Any],
+    gate_stats: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Dict[str, Any]]:
     """Apply robustness, fold-consistency, and strategy-diversity gates.
 
     Returns a filtered copy of per_coin_results with low-quality coins removed.
+    If ``gate_stats`` is provided it's populated in-place with per-gate
+    threshold/dropped-symbol counts so the research report can surface them.
     """
     results = dict(per_coin_results)
+    n_input = len(results)
+    if gate_stats is not None:
+        gate_stats["n_input"] = n_input
+        gate_stats["gates"] = []
 
     # Gate 1: minimum IS robustness score
     min_robust_cfg = config.get("MIN_ROBUSTNESS_SCORE")
@@ -206,6 +200,13 @@ def _apply_wfo_selection_gates(
                 f"MIN_ROBUSTNESS_SCORE={min_robust}: {skipped}"
             )
             results = {sym: r for sym, r in results.items() if sym not in skipped}
+        if gate_stats is not None:
+            gate_stats["gates"].append({
+                "name": "MIN_ROBUSTNESS_SCORE",
+                "threshold": min_robust,
+                "dropped_count": len(skipped),
+                "dropped_symbols": skipped,
+            })
         if not results:
             print(
                 "  WARNING: All coins dropped by robustness gate — lowering threshold or "
@@ -228,6 +229,13 @@ def _apply_wfo_selection_gates(
                 f"MIN_FOLD_CONSISTENCY={min_consistency:.0%}: {skipped_fc}"
             )
             results = {sym: r for sym, r in results.items() if sym not in skipped_fc}
+        if gate_stats is not None:
+            gate_stats["gates"].append({
+                "name": "MIN_FOLD_CONSISTENCY",
+                "threshold": min_consistency,
+                "dropped_count": len(skipped_fc),
+                "dropped_symbols": skipped_fc,
+            })
         if not results:
             print(
                 "  WARNING: All coins dropped by consistency gate — lowering threshold or "
@@ -262,6 +270,16 @@ def _apply_wfo_selection_gates(
                 f"MIN_VALID_TRAIN_FOLDS={min_valid_folds} valid training folds: {details}"
             )
             results = {sym: r for sym, r in results.items() if sym not in dropped_syms}
+        else:
+            dropped_syms = []
+        if gate_stats is not None:
+            gate_stats["gates"].append({
+                "name": "MIN_VALID_TRAIN_FOLDS",
+                "threshold": min_valid_folds,
+                "dropped_count": len(skipped_vf),
+                "dropped_symbols": dropped_syms,
+                "dropped_details": [{"symbol": s, "valid_folds": n} for s, n in skipped_vf],
+            })
         if not results:
             print(
                 "  WARNING: All coins dropped by valid-fold gate — lower MIN_VALID_TRAIN_FOLDS "
@@ -292,6 +310,17 @@ def _apply_wfo_selection_gates(
                 f"MAX_COINS_PER_STRATEGY={max_per_strat}: {diversity_dropped}"
             )
             results = {sym: r for sym, r in results.items() if sym not in diversity_dropped}
+        if gate_stats is not None:
+            gate_stats["gates"].append({
+                "name": "MAX_COINS_PER_STRATEGY",
+                "threshold": max_per_strat,
+                "dropped_count": len(diversity_dropped),
+                "dropped_symbols": diversity_dropped,
+            })
+
+    if gate_stats is not None:
+        gate_stats["n_kept"] = len(results)
+        gate_stats["n_dropped_total"] = n_input - len(results)
 
     return results
 
@@ -365,6 +394,21 @@ def run_frozen_params_combined_backtest(
     combined_close_list = []
     combined_oos_scores: List[float] = []  # OOS robustness score per included symbol
     per_coin_final_stats: Dict[str, Any] = {}
+    trade_freq_dropped: List[Tuple[str, float, int]] = []  # (sym, trades_per_year, total_trades)
+
+    # Coin-level trade-frequency gate. Years comes from the price index span.
+    min_tpy_cfg = config.get("MIN_TRADES_PER_YEAR")
+    min_tpy = float(min_tpy_cfg) if min_tpy_cfg is not None else None
+    try:
+        _idx = pd.to_datetime(pd.Index(ohlcv.index))
+        _years = (_idx[-1] - _idx[0]).total_seconds() / (365.25 * 24 * 3600.0)
+    except Exception:
+        _years = float("nan")
+    min_total_trades = (
+        int(np.ceil(min_tpy * _years))
+        if (min_tpy is not None and np.isfinite(_years) and _years > 0)
+        else None
+    )
 
     n_sym_total = len(symbols)
     for sym_idx, symbol in enumerate(symbols, start=1):
@@ -401,6 +445,32 @@ def run_frozen_params_combined_backtest(
             close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)
             entries, exits, _ = engine._generate_signals(show_progress=False)
 
+            stats = engine.get_stats()
+            total_trades = int(stats.get("total_trades", 0) or 0)
+            trades_per_year = (
+                total_trades / _years if (np.isfinite(_years) and _years > 0) else float("nan")
+            )
+
+            # Trade-frequency gate: drop coins whose chosen params fire too rarely
+            # over the full WFO window (e.g. < 1 trade/quarter). The coin's stats
+            # are still recorded so the report shows why it was dropped.
+            if min_total_trades is not None and total_trades < min_total_trades:
+                trade_freq_dropped.append((symbol, trades_per_year, total_trades))
+                per_coin_final_stats[symbol] = {
+                    "strategy": strategy_name,
+                    "exit": exit_name,
+                    "params": _to_native(best_params),
+                    "selection_reason": selection_reason,
+                    "dropped_by_gate": "MIN_TRADES_PER_YEAR",
+                    **stats,
+                }
+                print(
+                    f"  > {symbol} ({sym_idx}/{n_sym_total}): DROPPED — "
+                    f"{total_trades} trades / {_years:.2f}y = {trades_per_year:.2f}/yr "
+                    f"(< MIN_TRADES_PER_YEAR={min_tpy})"
+                )
+                continue
+
             combined_entries_list.append(entries)
             combined_exits_list.append(exits)
             combined_close_list.append(close)
@@ -408,7 +478,6 @@ def run_frozen_params_combined_backtest(
             oos_rob_f = float(oos_rob) if oos_rob is not None else 0.0
             combined_oos_scores.append(oos_rob_f if np.isfinite(oos_rob_f) else 0.0)
 
-            stats = engine.get_stats()
             per_coin_final_stats[symbol] = {
                 "strategy": strategy_name,
                 "exit": exit_name,
@@ -439,20 +508,13 @@ def run_frozen_params_combined_backtest(
     combined_exits = pd.concat(combined_exits_list, axis=1)
     combined_close = pd.concat(combined_close_list, axis=1)
 
-    # Regime filters — three tiers based on BTC return correlation:
-    #   corr >= BTC_REGIME_FILTER_MIN_CORRELATION        → BTC EMA filter
-    #   corr in [ALTCOIN_REGIME_FILTER_CORR_MIN, btc_min) → Altcoin index EMA filter
-    #   corr < ALTCOIN_REGIME_FILTER_CORR_MIN             → no filter (trade freely)
+    # BTC leader-regime filter: coins with corr_BTC ≥ LEADER_CORR_THRESHOLD
+    # only fire entries when BTC is bull; below the threshold they trade freely.
     if config.get("BTC_REGIME_FILTER", False):
         btc_regime = _compute_btc_regime_mask(ohlcv, config)
-        alt_regime = (
-            _compute_altcoin_index_mask(ohlcv, config)
-            if config.get("ALTCOIN_REGIME_FILTER", False)
-            else None
-        )
-        btc_corrs = _compute_btc_correlations(ohlcv, config)
+        btc_corrs = _compute_btc_correlations(ohlcv, config) if btc_regime is not None else {}
         combined_entries = _apply_tiered_regime_mask(
-            combined_entries, btc_corrs, btc_regime, alt_regime, config
+            combined_entries, btc_corrs, btc_regime, config
         )
 
     # Optional warmup trim: if PHASE3_STATS_CUTOFF is set, we loaded extra bars before
@@ -608,11 +670,6 @@ def run_frozen_params_combined_backtest(
     b_cagr_s = f"{b_cagr:.2f}%" if b_cagr is not None else "n/a"
     print(f"  Benchmark CAGR ({bench_sym} B&H): {b_cagr_s}")
 
-    spy_cagr = final_stats.get("spy_cagr_pct")
-    if spy_cagr is not None:
-        spy_ret = final_stats.get("spy_profit_pct", 0.0)
-        print(f"  Benchmark Return (S&P 500 B&H): {spy_ret:.2f}% | CAGR: {spy_cagr:.2f}%")
-
     print(f"  Sharpe Ratio: {final_stats['sharpe']:.4f}")
     print(f"  Max Drawdown: {final_stats['max_drawdown']:.2f}%")
     print(f"  Total Trades: {final_stats['total_trades']}")
@@ -658,10 +715,20 @@ def run_frozen_params_combined_backtest(
         )
         print(f"\nMulti-Strategy WFO Results saved to: {results_manager.run_dir}")
 
+    if trade_freq_dropped:
+        details = ", ".join(
+            f"{s}({tpy:.1f}/yr,{n})" for s, tpy, n in trade_freq_dropped
+        )
+        print(
+            f"\n  [Trade-frequency gate] Dropped {len(trade_freq_dropped)} coin(s) below "
+            f"MIN_TRADES_PER_YEAR={min_tpy}: {details}"
+        )
+
     return {
         "final_portfolio": final_pf,
         "per_coin_final_stats": per_coin_final_stats,
         "final_stats": final_stats,
+        "trade_freq_dropped": [s for s, _, _ in trade_freq_dropped],
     }
 
 
@@ -710,27 +777,19 @@ def run_multi_strategy_per_coin_wfo(
     )
     ohlcv, mover_mask = load_data_with_movers(config)
 
-    # Pre-compute regime masks once for all WFO folds.
-    # Three tiers by BTC correlation: BTC filter, altcoin index filter, or no filter.
+    # Pre-compute BTC leader regime mask once for all WFO folds.
     wfo_btc_mask: Optional[pd.Series] = None
-    wfo_alt_mask: Optional[pd.Series] = None
     wfo_btc_corrs: Dict[str, float] = {}
     if config.get("BTC_REGIME_FILTER", False):
         wfo_btc_mask = _compute_btc_regime_mask(ohlcv, config)
         wfo_btc_corrs = _compute_btc_correlations(ohlcv, config)
-        if config.get("ALTCOIN_REGIME_FILTER", False):
-            wfo_alt_mask = _compute_altcoin_index_mask(ohlcv, config)
-        if wfo_btc_mask is not None:
-            n_wu = int(config.get("EMA_WARMUP_BARS", 200))
-            btc_min = float(config.get("BTC_REGIME_FILTER_MIN_CORRELATION", 0.5))
-            alt_min = float(config.get("ALTCOIN_REGIME_FILTER_CORR_MIN", 0.3))
-            alt_status = "altcoin index" if wfo_alt_mask is not None else "disabled"
-            print(
-                f"  [BTC Regime] EMA({n_wu}) masks pre-computed for WFO folds — "
-                f"BTC(corr>={btc_min}), {alt_status}(corr>={alt_min}), exempt(<{alt_min})."
-            )
-        else:
-            print("  [BTC Regime] WARNING: mask unavailable — WFO folds will run unfiltered.")
+    if wfo_btc_mask is not None:
+        n_wu = int(config.get("EMA_WARMUP_BARS", 200))
+        thr = float(config.get("LEADER_CORR_THRESHOLD", 0.7))
+        print(
+            f"  [Leader Regime] EMA({n_wu}) BTC mask pre-computed for WFO folds — "
+            f"threshold={thr:.2f}."
+        )
 
     n_splits = config.get("N_SPLITS", 5)
     test_ratio = config.get("TEST_RATIO", 3.0)
@@ -750,12 +809,8 @@ def run_multi_strategy_per_coin_wfo(
     # inputs (param grid, config, date range) haven't changed since the last run.
     _wfo_cache: Optional[WFOCache] = None
     if config.get("WFO_CACHE_ENABLED", True):
-        _cache_dir = Path(config.get(
-            "WFO_CACHE_DIR",
-            Path(__file__).resolve().parent.parent.parent.parent / "results" / "wfo_cache",
-        ))
-        _wfo_cache = WFOCache(_cache_dir)
-        print(f"  [WFO Cache] Enabled — {_cache_dir}")
+        _wfo_cache = WFOCache()
+        print("  [WFO Cache] Enabled — TimescaleDB (table: wfo_cache)")
 
     # Dictionary to store best (entry, exit, params) per symbol.
     per_coin_results: Dict[str, Dict[str, Any]] = {}
@@ -794,13 +849,10 @@ def run_multi_strategy_per_coin_wfo(
                         "EXIT_STRATEGY": exit_name,
                     }
 
-                    btc_min_corr = float(config.get("BTC_REGIME_FILTER_MIN_CORRELATION", 0.5))
-                    alt_min_corr = float(config.get("ALTCOIN_REGIME_FILTER_CORR_MIN", 0.3))
-                    coin_corr = wfo_btc_corrs.get(symbol, 1.0)
-                    if coin_corr >= btc_min_corr:
+                    threshold = float(config.get("LEADER_CORR_THRESHOLD", 0.7))
+                    cb = float(wfo_btc_corrs.get(symbol, 0.0)) if wfo_btc_mask is not None else 0.0
+                    if wfo_btc_mask is not None and cb >= threshold:
                         coin_regime_mask = wfo_btc_mask
-                    elif coin_corr >= alt_min_corr and wfo_alt_mask is not None:
-                        coin_regime_mask = wfo_alt_mask
                     else:
                         coin_regime_mask = None
 
@@ -944,7 +996,8 @@ def run_multi_strategy_per_coin_wfo(
     if _wfo_cache is not None:
         print(f"  [{_wfo_cache.summary()}]")
 
-    per_coin_results = _apply_wfo_selection_gates(per_coin_results, config)
+    gate_stats: Dict[str, Any] = {}
+    per_coin_results = _apply_wfo_selection_gates(per_coin_results, config, gate_stats=gate_stats)
 
     phase3_out = run_frozen_params_combined_backtest(
         ohlcv,
@@ -959,10 +1012,26 @@ def run_multi_strategy_per_coin_wfo(
     per_coin_final_stats = phase3_out["per_coin_final_stats"]
     final_stats = phase3_out["final_stats"]
 
+    # Propagate the trade-frequency gate's drops back into per_coin_results so
+    # downstream consumers (saved params, live trader) don't pick up coins that
+    # Phase 3 rejected for trading too rarely.
+    trade_freq_dropped = phase3_out.get("trade_freq_dropped") or []
+    if trade_freq_dropped:
+        per_coin_results = {
+            s: r for s, r in per_coin_results.items() if s not in set(trade_freq_dropped)
+        }
+        gate_stats.setdefault("gates", []).append({
+            "name": "MIN_TRADES_PER_YEAR",
+            "threshold": config.get("MIN_TRADES_PER_YEAR"),
+            "dropped_count": len(trade_freq_dropped),
+            "dropped_symbols": list(trade_freq_dropped),
+        })
+
     return {
         "final_portfolio": final_pf,
         "per_coin_results": per_coin_results,
         "per_coin_final_stats": per_coin_final_stats,
         "final_stats": final_stats,
         "results_manager": rm,
+        "selection_gate_stats": gate_stats,
     }

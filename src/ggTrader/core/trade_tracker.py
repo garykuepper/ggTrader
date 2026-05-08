@@ -1,12 +1,15 @@
-"""Local trade logging and Kraken sync for live trading performance tracking."""
+"""Live trade logging and Kraken sync.
+
+Persistence is fully DB-backed: orders → ``orders``, position closes → ``trades``,
+balance snapshots → ``live_balance_snapshots``. The legacy ``data/live*/*.csv``
+files are no longer written or read.
+"""
 
 from __future__ import annotations
 
-import csv
 import logging
 import time
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import pandas as pd
@@ -16,67 +19,57 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("ggTraderLive")
 
+# Column shape returned by get_balance_history / get_trade_log /
+# get_closed_positions — preserved for backwards compatibility with the
+# pnl_report_builder and any other consumer.
 TRADE_LOG_HEADERS = [
     "timestamp", "symbol", "side", "order_id", "price", "amount",
     "amount_usd", "fee", "fee_currency",
 ]
-
 POSITION_CLOSE_HEADERS = [
     "close_timestamp", "symbol", "entry_time", "exit_time", "entry_price",
     "exit_price", "amount", "gross_pnl", "net_pnl", "pnl_pct", "fee_entry",
     "fee_exit", "fee_total", "hold_duration_hours", "exit_reason",
 ]
-
 BALANCE_SNAPSHOT_HEADERS = [
     "timestamp", "total_usd", "free_usd", "positions_usd", "num_positions",
 ]
 
 
+def _parse_iso(ts: str | datetime | None) -> Optional[datetime]:
+    if ts is None or (isinstance(ts, float) and pd.isna(ts)):
+        return None
+    if isinstance(ts, datetime):
+        return ts
+    try:
+        return datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+
+
 class TradeTracker:
-    """Records trades, balance snapshots, and round-trip P&L to local CSV files."""
+    """DB-backed live trade tracker (orders, closed positions, balance snapshots)."""
 
     def __init__(
         self,
-        data_dir: str = "data/live",
+        data_dir: str = "data/live",  # retained for API compatibility; unused
         db_manager: Optional[ResultDBManager] = None,
         run_id: str = "LIVE",
     ) -> None:
-        self.data_dir = Path(data_dir)
-        self.data_dir.mkdir(parents=True, exist_ok=True)
-
+        if db_manager is None:
+            from ggTrader.utils.result_db_manager import ResultDBManager
+            db_manager = ResultDBManager()
         self.db_manager = db_manager
         self.run_id = run_id
-
-        self.trade_log_path = self.data_dir / "trade_log.csv"
-        self.position_closes_path = self.data_dir / "position_closes.csv"
-        self.balance_snapshots_path = self.data_dir / "balance_snapshots.csv"
-
-        self._ensure_headers(self.trade_log_path, TRADE_LOG_HEADERS)
-        self._ensure_headers(self.position_closes_path, POSITION_CLOSE_HEADERS)
-        self._ensure_headers(self.balance_snapshots_path, BALANCE_SNAPSHOT_HEADERS)
+        self.asset_class = "crypto"
 
     # ------------------------------------------------------------------
-    # CSV helpers
+    # Recording
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _ensure_headers(path: Path, headers: List[str]) -> None:
-        if not path.exists() or path.stat().st_size == 0:
-            with open(path, "w", newline="") as f:
-                csv.writer(f).writerow(headers)
-
-    @staticmethod
-    def _append_row(path: Path, row: List[Any]) -> None:
-        with open(path, "a", newline="") as f:
-            csv.writer(f).writerow(row)
-
-    @staticmethod
-    def _now_iso() -> str:
-        return datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
-
-    # ------------------------------------------------------------------
-    # Recording methods
-    # ------------------------------------------------------------------
+    def _now_utc() -> datetime:
+        return datetime.now(timezone.utc)
 
     def record_buy(
         self,
@@ -89,24 +82,19 @@ class TradeTracker:
         fee_currency: str = "USD",
         timestamp: Optional[str] = None,
     ) -> None:
-        ts = timestamp or self._now_iso()
-        self._append_row(self.trade_log_path, [
-            ts, symbol, "buy", order_id, price, amount, amount_usd,
-            fee, fee_currency,
-        ])
-        logger.info(f"  [Tracker] BUY  {symbol}: {amount:.6f} @ ${price:.4f} "
-                     f"(${amount_usd:.2f}) fee={fee:.4f} {fee_currency}")
-
-        if self.db_manager:
-            try:
-                dt_ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                self.db_manager.add_order(
-                    run_id=self.run_id, symbol=symbol, side="buy", order_id=order_id,
-                    price=price, amount=amount, amount_usd=amount_usd,
-                    fee=fee, fee_currency=fee_currency, timestamp=dt_ts,
-                )
-            except Exception as e:
-                logger.warning(f"  [Tracker] DB record_buy failed: {e}")
+        ts = _parse_iso(timestamp) or self._now_utc()
+        try:
+            self.db_manager.add_order(
+                run_id=self.run_id, symbol=symbol, side="buy", order_id=order_id,
+                price=price, amount=amount, amount_usd=amount_usd,
+                fee=fee, fee_currency=fee_currency, timestamp=ts,
+            )
+        except Exception as e:
+            logger.warning(f"  [Tracker] DB record_buy failed: {e}")
+        logger.info(
+            f"  [Tracker] BUY  {symbol}: {amount:.6f} @ ${price:.4f} "
+            f"(${amount_usd:.2f}) fee={fee:.4f} {fee_currency}"
+        )
 
     def record_sell(
         self,
@@ -123,68 +111,56 @@ class TradeTracker:
         exit_reason: str = "unknown",
         timestamp: Optional[str] = None,
     ) -> None:
-        ts = timestamp or self._now_iso()
-        self._append_row(self.trade_log_path, [
-            ts, symbol, "sell", order_id, price, amount, amount_usd,
-            fee, fee_currency,
-        ])
+        ts = _parse_iso(timestamp) or self._now_utc()
+        try:
+            self.db_manager.add_order(
+                run_id=self.run_id, symbol=symbol, side="sell", order_id=order_id,
+                price=price, amount=amount, amount_usd=amount_usd,
+                fee=fee, fee_currency=fee_currency, timestamp=ts,
+            )
+        except Exception as e:
+            logger.warning(f"  [Tracker] DB record_sell (order) failed: {e}")
 
-        if self.db_manager:
-            try:
-                dt_ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                self.db_manager.add_order(
-                    run_id=self.run_id, symbol=symbol, side="sell", order_id=order_id,
-                    price=price, amount=amount, amount_usd=amount_usd,
-                    fee=fee, fee_currency=fee_currency, timestamp=dt_ts,
-                )
-            except Exception as e:
-                logger.warning(f"  [Tracker] DB record_sell (order) failed: {e}")
-
-        # Write round-trip record if we have entry data
         if entry_price is not None and entry_price > 0:
             gross_pnl = (price - entry_price) * amount
             fee_total = entry_fee + fee
             net_pnl = gross_pnl - fee_total
             pnl_pct = ((price / entry_price) - 1.0) * 100.0 if entry_price else 0.0
 
-            hold_hours = 0.0
-            t0 = None
-            t1 = None
-            if entry_time:
-                try:
-                    t0 = datetime.fromisoformat(entry_time.replace("Z", "+00:00"))
-                    t1 = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                    hold_hours = (t1 - t0).total_seconds() / 3600.0
-                except (ValueError, TypeError):
-                    pass
+            t0 = _parse_iso(entry_time)
+            hold_hours = ((ts - t0).total_seconds() / 3600.0) if t0 else 0.0
 
-            self._append_row(self.position_closes_path, [
-                ts, symbol, entry_time, ts, entry_price, price, amount,
-                round(gross_pnl, 6), round(net_pnl, 6), round(pnl_pct, 4),
-                entry_fee, fee, round(fee_total, 6), round(hold_hours, 2),
-                exit_reason,
-            ])
-            logger.info(f"  [Tracker] SELL {symbol}: {amount:.6f} @ ${price:.4f} "
-                         f"PnL=${net_pnl:.2f} ({pnl_pct:+.2f}%) reason={exit_reason}")
+            try:
+                df_trade = pd.DataFrame([{
+                    "symbol": symbol,
+                    "entry_time": t0 or ts,
+                    "exit_time": ts,
+                    "entry_price": entry_price,
+                    "exit_price": price,
+                    "profit": net_pnl,
+                    "profit_pct": pnl_pct,
+                    "status": "closed",
+                    "amount": amount,
+                    "gross_pnl": round(gross_pnl, 6),
+                    "fee_entry": entry_fee,
+                    "fee_exit": fee,
+                    "fee_total": round(fee_total, 6),
+                    "hold_duration_hours": round(hold_hours, 2),
+                    "exit_reason": exit_reason,
+                }])
+                self.db_manager.add_trades(run_id=self.run_id, df_trades=df_trade)
+            except Exception as e:
+                logger.warning(f"  [Tracker] DB record_sell (trade) failed: {e}")
 
-            if self.db_manager:
-                try:
-                    df_trade = pd.DataFrame([{
-                        "symbol": symbol,
-                        "entry_time": t0 or entry_time,
-                        "exit_time": t1 or ts,
-                        "entry_price": entry_price,
-                        "exit_price": price,
-                        "profit": net_pnl,
-                        "profit_pct": pnl_pct,
-                        "status": "closed",
-                    }])
-                    self.db_manager.add_trades(run_id=self.run_id, df_trades=df_trade)
-                except Exception as e:
-                    logger.warning(f"  [Tracker] DB record_sell (trade) failed: {e}")
+            logger.info(
+                f"  [Tracker] SELL {symbol}: {amount:.6f} @ ${price:.4f} "
+                f"PnL=${net_pnl:.2f} ({pnl_pct:+.2f}%) reason={exit_reason}"
+            )
         else:
-            logger.info(f"  [Tracker] SELL {symbol}: {amount:.6f} @ ${price:.4f} "
-                         f"(no entry data) reason={exit_reason}")
+            logger.info(
+                f"  [Tracker] SELL {symbol}: {amount:.6f} @ ${price:.4f} "
+                f"(no entry data) reason={exit_reason}"
+            )
 
     def record_balance_snapshot(
         self,
@@ -193,162 +169,78 @@ class TradeTracker:
         positions_usd: float,
         num_positions: int,
     ) -> None:
-        ts = self._now_iso()
-        self._append_row(self.balance_snapshots_path, [
-            ts, round(total_usd, 2), round(free_usd, 2),
-            round(positions_usd, 2), num_positions,
-        ])
-
-        if self.db_manager:
-            try:
-                dt_ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                equity_series = pd.Series([total_usd], index=[dt_ts])
-                self.db_manager.add_equity_curve(run_id=self.run_id, equity_series=equity_series)
-            except Exception as e:
-                logger.warning(f"  [Tracker] DB record_balance_snapshot failed: {e}")
-
-    def backfill_to_db(self) -> dict[str, int]:
-        """Import all existing CSV data into the database.
-
-        Returns a dict with counts of records added per table.
-        """
-        if not self.db_manager:
-            raise ValueError("TradeTracker initialized without db_manager — cannot backfill")
-
-        counts = {"orders": 0, "trades": 0, "equity": 0}
-
-        # 1. Backfill Orders (trade_log.csv)
+        ts = self._now_utc()
         try:
-            df_log = self.get_trade_log()
-            if not df_log.empty:
-                for _, row in df_log.iterrows():
-                    try:
-                        ts = datetime.fromisoformat(str(row["timestamp"]).replace("Z", "+00:00"))
-                        self.db_manager.add_order(
-                            run_id=self.run_id,
-                            symbol=row["symbol"],
-                            side=row["side"],
-                            order_id=str(row["order_id"]),
-                            price=float(row["price"]),
-                            amount=float(row["amount"]),
-                            amount_usd=float(row.get("amount_usd", 0)),
-                            fee=float(row.get("fee", 0)),
-                            fee_currency=row.get("fee_currency", "USD"),
-                            timestamp=ts,
-                        )
-                        counts["orders"] += 1
-                    except Exception:
-                        continue
+            self.db_manager.add_balance_snapshot(
+                asset_class=self.asset_class,
+                timestamp=ts,
+                total_usd=total_usd,
+                free_usd=free_usd,
+                positions_usd=positions_usd,
+                num_positions=num_positions,
+            )
         except Exception as e:
-            logger.warning(f"  [Backfill] Orders failed: {e}")
-
-        # 2. Backfill Trades (position_closes.csv)
-        try:
-            df_closes = self.get_closed_positions()
-            if not df_closes.empty:
-                # ResultDBManager.add_trades expects a specific format
-                # We need to map position_closes columns to what ResultDBManager expects
-                trades_to_add = []
-                for _, row in df_closes.iterrows():
-                    try:
-                        entry_t = datetime.fromisoformat(str(row["entry_time"]).replace("Z", "+00:00"))
-                        exit_t = datetime.fromisoformat(str(row["exit_time"]).replace("Z", "+00:00"))
-                        trades_to_add.append({
-                            "symbol": row["symbol"],
-                            "entry_time": entry_t,
-                            "exit_time": exit_t,
-                            "entry_price": float(row["entry_price"]),
-                            "exit_price": float(row["exit_price"]),
-                            "profit": float(row["net_pnl"]),
-                            "profit_pct": float(row["pnl_pct"]),
-                            "status": "closed",
-                        })
-                    except Exception:
-                        continue
-                
-                if trades_to_add:
-                    self.db_manager.add_trades(self.run_id, pd.DataFrame(trades_to_add))
-                    counts["trades"] = len(trades_to_add)
-        except Exception as e:
-            logger.warning(f"  [Backfill] Trades failed: {e}")
-
-        # 3. Backfill Equity (balance_snapshots.csv)
-        try:
-            df_balances = self.get_balance_history()
-            if not df_balances.empty:
-                df_balances["timestamp"] = pd.to_datetime(
-                    df_balances["timestamp"], utc=True, format="ISO8601"
-                )
-                equity_series = pd.Series(
-                    df_balances["total_usd"].values, index=df_balances["timestamp"]
-                )
-                self.db_manager.add_equity_curve(self.run_id, equity_series)
-                counts["equity"] = len(equity_series)
-        except Exception as e:
-            logger.warning(f"  [Backfill] Equity failed: {e}")
-
-        return counts
+            logger.warning(f"  [Tracker] DB record_balance_snapshot failed: {e}")
 
     # ------------------------------------------------------------------
-    # Kraken sync / backfill
+    # Kraken sync — pulls authoritative trade history into the orders table
+    # then rebuilds closed-position rows in the trades table via FIFO matching.
     # ------------------------------------------------------------------
 
     def sync_from_kraken(
         self, exchange: Any, since_timestamp: Optional[int] = None
     ) -> int:
-        """Pull historical trades from Kraken via CCXT and merge into local CSVs.
+        """Pull historical trades from Kraken via CCXT and upsert into the DB.
 
-        Returns the number of new trades added.
+        Returns the number of new fills inserted.
         """
-        existing_order_ids: set[str] = set()
-        if self.trade_log_path.exists():
-            try:
-                df = pd.read_csv(self.trade_log_path)
-                if "order_id" in df.columns:
-                    existing_order_ids = set(df["order_id"].astype(str))
-            except Exception:
-                pass
+        existing_orders_df = self.db_manager.get_orders_df(self.run_id)
+        existing_order_ids: set[str] = set(
+            existing_orders_df["order_id"].astype(str)
+        ) if not existing_orders_df.empty else set()
 
         all_trades: List[Dict] = []
         since = since_timestamp or 0
-
         while True:
             try:
                 trades = exchange.fetch_my_trades(symbol=None, since=since, limit=500)
             except Exception as e:
                 logger.warning(f"  [Sync] fetch_my_trades failed: {e}")
-                # Fall back to per-symbol fetching
                 trades = self._fetch_trades_per_symbol(exchange, since)
                 all_trades.extend(trades)
                 break
-
             if not trades:
                 break
             all_trades.extend(trades)
             since = trades[-1]["timestamp"] + 1
             if len(trades) < 500:
                 break
-            time.sleep(1)  # Kraken rate limit
+            time.sleep(1)
 
         new_count = 0
         for t in all_trades:
             oid = str(t.get("order", t.get("id", "")))
             if oid in existing_order_ids:
                 continue
-
+            fee_info = t.get("fee", {}) or {}
+            ts = _parse_iso(t.get("datetime")) or self._now_utc()
             symbol = t.get("symbol", "").replace("/", "-")
-            fee_info = t.get("fee", {})
-            self._append_row(self.trade_log_path, [
-                t.get("datetime", ""),
-                symbol,
-                t.get("side", ""),
-                oid,
-                t.get("price", 0),
-                t.get("amount", 0),
-                t.get("cost", 0),
-                fee_info.get("cost", 0),
-                fee_info.get("currency", "USD"),
-            ])
+            try:
+                self.db_manager.add_order(
+                    run_id=self.run_id,
+                    symbol=symbol,
+                    side=t.get("side", ""),
+                    order_id=oid,
+                    price=float(t.get("price", 0) or 0),
+                    amount=float(t.get("amount", 0) or 0),
+                    amount_usd=float(t.get("cost", 0) or 0),
+                    fee=float(fee_info.get("cost", 0) or 0),
+                    fee_currency=fee_info.get("currency", "USD"),
+                    timestamp=ts,
+                )
+            except Exception as e:
+                logger.warning(f"  [Sync] add_order({oid}) failed: {e}")
+                continue
             existing_order_ids.add(oid)
             new_count += 1
 
@@ -358,9 +250,7 @@ class TradeTracker:
 
         return new_count
 
-    def _fetch_trades_per_symbol(
-        self, exchange: Any, since: int
-    ) -> List[Dict]:
+    def _fetch_trades_per_symbol(self, exchange: Any, since: int) -> List[Dict]:
         """Fallback: fetch trades symbol-by-symbol if bulk fetch unsupported."""
         all_trades: List[Dict] = []
         try:
@@ -368,7 +258,6 @@ class TradeTracker:
             usd_pairs = [s for s in markets if s.endswith("/USD")]
         except Exception:
             return all_trades
-
         for pair in usd_pairs:
             try:
                 trades = exchange.fetch_my_trades(symbol=pair, since=since, limit=500)
@@ -379,107 +268,101 @@ class TradeTracker:
         return all_trades
 
     def _rebuild_position_closes(self) -> None:
-        """Rebuild position_closes.csv from trade_log.csv by pairing buys and sells."""
-        try:
-            df = pd.read_csv(self.trade_log_path)
-        except Exception:
-            return
+        """Pair buys and sells from the orders table via FIFO and upsert into trades.
 
+        Replaces the old CSV-based rebuild. Wipes existing closed rows for this
+        run_id (they're derived) and reinserts the freshly computed set.
+        """
+        df = self.db_manager.get_orders_df(self.run_id)
         if df.empty:
             return
 
         df = df.sort_values("timestamp")
-
-        # Track open buys per symbol (FIFO)
         open_buys: Dict[str, List[Dict]] = {}
-        closes: List[List] = []
+        closes: List[Dict[str, Any]] = []
 
         for _, row in df.iterrows():
             symbol = row["symbol"]
-            if row["side"] == "buy":
+            side = str(row["side"]).lower()
+            if side == "buy":
                 open_buys.setdefault(symbol, []).append({
                     "timestamp": row["timestamp"],
                     "price": float(row["price"]),
                     "amount": float(row["amount"]),
-                    "fee": float(row.get("fee", 0)),
+                    "fee": float(row.get("fee", 0) or 0),
                 })
-            elif row["side"] == "sell" and symbol in open_buys and open_buys[symbol]:
-                buy = open_buys[symbol].pop(0)  # FIFO
+            elif side == "sell" and symbol in open_buys and open_buys[symbol]:
+                buy = open_buys[symbol].pop(0)
                 exit_price = float(row["price"])
                 amount = float(row["amount"])
                 entry_price = buy["price"]
                 fee_entry = buy["fee"]
-                fee_exit = float(row.get("fee", 0))
-
+                fee_exit = float(row.get("fee", 0) or 0)
                 gross_pnl = (exit_price - entry_price) * amount
                 fee_total = fee_entry + fee_exit
                 net_pnl = gross_pnl - fee_total
                 pnl_pct = ((exit_price / entry_price) - 1.0) * 100.0 if entry_price else 0.0
-
                 hold_hours = 0.0
-                try:
-                    t0 = datetime.fromisoformat(str(buy["timestamp"]).replace("Z", "+00:00"))
-                    t1 = datetime.fromisoformat(str(row["timestamp"]).replace("Z", "+00:00"))
+                t0 = _parse_iso(buy["timestamp"])
+                t1 = _parse_iso(row["timestamp"])
+                if t0 and t1:
                     hold_hours = (t1 - t0).total_seconds() / 3600.0
-                except (ValueError, TypeError):
-                    pass
 
-                closes.append([
-                    row["timestamp"], symbol, buy["timestamp"], row["timestamp"],
-                    entry_price, exit_price, amount,
-                    round(gross_pnl, 6), round(net_pnl, 6), round(pnl_pct, 4),
-                    fee_entry, fee_exit, round(fee_total, 6),
-                    round(hold_hours, 2), "synced",
-                ])
+                closes.append({
+                    "symbol": symbol,
+                    "entry_time": t0 or buy["timestamp"],
+                    "exit_time": t1 or row["timestamp"],
+                    "entry_price": entry_price,
+                    "exit_price": exit_price,
+                    "profit": round(net_pnl, 6),
+                    "profit_pct": round(pnl_pct, 4),
+                    "status": "closed",
+                    "amount": amount,
+                    "gross_pnl": round(gross_pnl, 6),
+                    "fee_entry": fee_entry,
+                    "fee_exit": fee_exit,
+                    "fee_total": round(fee_total, 6),
+                    "hold_duration_hours": round(hold_hours, 2),
+                    "exit_reason": "synced",
+                })
 
-        # Rewrite position_closes.csv
-        with open(self.position_closes_path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(POSITION_CLOSE_HEADERS)
-            writer.writerows(closes)
+        # Replace this run's closed rows with the freshly computed set.
+        from sqlalchemy import text as _text
+        with self.db_manager.engine.begin() as conn:
+            conn.execute(
+                _text("DELETE FROM trades WHERE run_id = :rid AND status = 'closed'"),
+                {"rid": self.run_id},
+            )
+        if closes:
+            self.db_manager.add_trades(run_id=self.run_id, df_trades=pd.DataFrame(closes))
 
     # ------------------------------------------------------------------
-    # Data access
+    # Data access — stable surface area for the report builder
     # ------------------------------------------------------------------
 
     def get_trade_log(self) -> pd.DataFrame:
-        if not self.trade_log_path.exists():
+        df = self.db_manager.get_orders_df(self.run_id)
+        if df.empty:
             return pd.DataFrame(columns=TRADE_LOG_HEADERS)
-        # Don't auto-parse the timestamp column here — rows can have mixed
-        # ISO8601 precision (microseconds vs none) and mixed timezone
-        # representations (Z, +00:00, -0700) when they come from different
-        # sources (live writer, sync_from_kraken, manual edits). Callers that
-        # need a parsed timestamp should use ``pd.to_datetime(..., format="ISO8601")``.
-        return pd.read_csv(self.trade_log_path)
+        return df
 
     def get_closed_positions(self) -> pd.DataFrame:
-        if not self.position_closes_path.exists():
+        df = self.db_manager.get_closed_positions_df(self.run_id)
+        if df.empty:
             return pd.DataFrame(columns=POSITION_CLOSE_HEADERS)
-        return pd.read_csv(self.position_closes_path)
+        return df
 
     def get_balance_history(self) -> pd.DataFrame:
-        if not self.balance_snapshots_path.exists():
+        df = self.db_manager.get_balance_history(self.asset_class)
+        if df.empty:
             return pd.DataFrame(columns=BALANCE_SNAPSHOT_HEADERS)
-        return pd.read_csv(self.balance_snapshots_path)
+        return df
 
     def find_open_buy_for(self, symbol: str) -> Optional[Dict[str, Any]]:
-        """Return the oldest unmatched BUY for ``symbol`` from the trade log.
+        """Return the oldest unmatched BUY for ``symbol`` from the orders table.
 
         Used by the live trader's reconciler when it discovers a position on
-        the exchange that has no entry in ``active_positions``. Instead of
-        leaving ``entry_price=None`` (which would later cause ``record_sell``
-        to skip writing a position_closes row — Bug C in the 2026-04-09
-        audit), the reconciler can call this to seed the entry data from the
-        local trade log.
-
-        Pairs FIFO: counts BUY and SELL rows for the symbol; if the running
-        BUY count exceeds the running SELL count, returns the details of the
-        oldest still-unmatched BUY. Returns ``None`` if every BUY is already
-        matched (or there are no BUYs at all).
-
-        The returned dict has keys ``order_id``, ``price``, ``time``, ``fee``,
-        ``amount`` — exactly what ``active_positions[symbol]`` needs for a
-        seeded entry.
+        the exchange that has no entry in ``active_positions``.
         """
         df = self.get_trade_log()
         if df.empty:
@@ -487,37 +370,27 @@ class TradeTracker:
         df = df[df["symbol"] == symbol].copy()
         if df.empty:
             return None
-        # Parse to UTC for a correct chronological sort across mixed
-        # ISO8601 precisions / timezone offsets.
-        df["_ts"] = pd.to_datetime(
-            df["timestamp"], utc=True, errors="coerce", format="ISO8601"
-        )
+        df["_ts"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
         df = df.sort_values("_ts")
 
-        # FIFO match: walk through and pop a buy each time we see a sell
         open_buys: List[Dict[str, Any]] = []
         for _, row in df.iterrows():
             side = str(row["side"]).lower()
             if side == "buy":
-                open_buys.append(
-                    {
-                        "order_id": str(row["order_id"]),
-                        "price": float(row["price"]),
-                        "time": str(row["timestamp"]),
-                        "fee": float(row["fee"]) if pd.notna(row["fee"]) else 0.0,
-                        "amount": float(row["amount"]),
-                    }
-                )
+                open_buys.append({
+                    "order_id": str(row["order_id"]),
+                    "price": float(row["price"]),
+                    "time": str(row["timestamp"]),
+                    "fee": float(row["fee"]) if pd.notna(row["fee"]) else 0.0,
+                    "amount": float(row["amount"]),
+                })
             elif side == "sell" and open_buys:
                 open_buys.pop(0)
 
-        if not open_buys:
-            return None
-        # Return the OLDEST unmatched buy (FIFO)
-        return open_buys[0]
+        return open_buys[0] if open_buys else None
 
     # ------------------------------------------------------------------
-    # Summary stats
+    # Summary stats — used by pnl_report_builder
     # ------------------------------------------------------------------
 
     def compute_summary_stats(self) -> Dict[str, Any]:
@@ -571,7 +444,6 @@ class TradeTracker:
             stats["worst_trade_pnl"] = float(closes.loc[worst_idx, "net_pnl"])
             stats["worst_trade_symbol"] = str(closes.loc[worst_idx, "symbol"])
 
-        # Also tally fees from trade_log for buys that haven't closed yet
         if not trades.empty and "fee" in trades.columns:
             stats["total_fees_all"] = float(trades["fee"].astype(float).sum())
 
@@ -581,3 +453,96 @@ class TradeTracker:
             stats["latest_snapshot"] = str(balances["timestamp"].iloc[-1])
 
         return stats
+
+    # ------------------------------------------------------------------
+    # Backfill — kept for the existing `ggt db sync-live` admin command;
+    # now reads from the legacy CSVs (if present) and writes to the DB,
+    # which is exactly what we need for the migration cutover.
+    # ------------------------------------------------------------------
+
+    def backfill_to_db(self, legacy_dir: str = "data/live") -> Dict[str, int]:
+        """One-time import of legacy CSVs into the DB. No-op if files absent."""
+        from pathlib import Path
+        counts = {"orders": 0, "trades": 0, "equity": 0}
+        legacy = Path(legacy_dir)
+
+        log_path = legacy / "trade_log.csv"
+        closes_path = legacy / "position_closes.csv"
+        balances_path = legacy / "balance_snapshots.csv"
+
+        if log_path.exists():
+            try:
+                df = pd.read_csv(log_path)
+                for _, row in df.iterrows():
+                    try:
+                        ts = _parse_iso(row["timestamp"]) or self._now_utc()
+                        self.db_manager.add_order(
+                            run_id=self.run_id,
+                            symbol=row["symbol"],
+                            side=row["side"],
+                            order_id=str(row["order_id"]),
+                            price=float(row["price"]),
+                            amount=float(row["amount"]),
+                            amount_usd=float(row.get("amount_usd", 0)),
+                            fee=float(row.get("fee", 0)),
+                            fee_currency=row.get("fee_currency", "USD"),
+                            timestamp=ts,
+                        )
+                        counts["orders"] += 1
+                    except Exception:
+                        continue
+            except Exception as e:
+                logger.warning(f"  [Backfill] Orders failed: {e}")
+
+        if closes_path.exists():
+            try:
+                df = pd.read_csv(closes_path)
+                rows: list[dict] = []
+                for _, row in df.iterrows():
+                    try:
+                        rows.append({
+                            "symbol": row["symbol"],
+                            "entry_time": _parse_iso(row["entry_time"]),
+                            "exit_time": _parse_iso(row["exit_time"]),
+                            "entry_price": float(row["entry_price"]),
+                            "exit_price": float(row["exit_price"]),
+                            "profit": float(row["net_pnl"]),
+                            "profit_pct": float(row["pnl_pct"]),
+                            "status": "closed",
+                            "amount": float(row.get("amount", 0)),
+                            "gross_pnl": float(row.get("gross_pnl", 0)),
+                            "fee_entry": float(row.get("fee_entry", 0)),
+                            "fee_exit": float(row.get("fee_exit", 0)),
+                            "fee_total": float(row.get("fee_total", 0)),
+                            "hold_duration_hours": float(row.get("hold_duration_hours", 0)),
+                            "exit_reason": row.get("exit_reason", ""),
+                        })
+                    except Exception:
+                        continue
+                if rows:
+                    self.db_manager.add_trades(self.run_id, pd.DataFrame(rows))
+                    counts["trades"] = len(rows)
+            except Exception as e:
+                logger.warning(f"  [Backfill] Trades failed: {e}")
+
+        if balances_path.exists():
+            try:
+                df = pd.read_csv(balances_path)
+                df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, format="ISO8601")
+                for _, row in df.iterrows():
+                    try:
+                        self.db_manager.add_balance_snapshot(
+                            asset_class=self.asset_class,
+                            timestamp=row["timestamp"].to_pydatetime(),
+                            total_usd=float(row["total_usd"]),
+                            free_usd=float(row["free_usd"]),
+                            positions_usd=float(row["positions_usd"]),
+                            num_positions=int(row["num_positions"]),
+                        )
+                        counts["equity"] += 1
+                    except Exception:
+                        continue
+            except Exception as e:
+                logger.warning(f"  [Backfill] Equity failed: {e}")
+
+        return counts

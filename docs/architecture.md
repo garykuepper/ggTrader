@@ -1,296 +1,103 @@
-# ggTrader Architecture
+# Architecture
 
-This document provides a detailed technical overview of the components and data flow within the `ggTrader` project.
+How ggTrader is put together. For commands and day-to-day usage see [CLI Reference](cli_reference.md); for live deployment see the [Live Trading Guide](live_trading_guide.md).
 
-## 🏗️ Core Components
+## What it is
 
-The project is structured into modular layers, ensuring that research and execution logic remain independent of the underlying asset class.
+ggTrader is an algorithmic crypto trading bot. Once a month it searches historical price data for the parameters that have been working best per coin, then trades those parameters live on Kraken. The same code path produces the research, runs the simulation, and places the orders — so what you backtest is what trades.
 
-- **Data Layer**:
-    - `TimescaleDBLoader`: Primary interface for reading historical OHLCV data.
-    - `CachedExchangeLoader`: CCXT-based live data fetching with automatic DB caching (Crypto).
-    - `CachedYFinanceLoader`: yfinance-based live data fetching with automatic DB caching (Stocks).
-- **Strategy Layer**: Modular entry and exit strategies applied via `IndicatorPrecomputer` for high-performance vectorized backtesting.
-- **WFO Engine**: Multi-fold Walk-Forward Optimization that selects robust parameters by blending In-Sample and Out-of-Sample performance.
-- **Execution Engine**:
-    - `BaseExecutionEngine`: Shared abstract base for risk management (Circuit Breaker), state persistence, and notification routing.
-    - `CryptoExecutionEngine`: Specialized logic for Kraken/CCXT market and OCO orders.
-    - `StockExecutionEngine`: Specialized logic for Alpaca limit orders and NYSE market hours.
-- **Observability**: Real-time mirror to TimescaleDB for visualization in Grafana.
+## The four layers
 
-## Data Layer
+Each layer has one job. They communicate through plain Python objects (DataFrames, dicts) — no message bus, no service mesh.
 
-- **Storage**: PostgreSQL (TimescaleDB) for OHLCV data, optimized for time-series. Both Crypto and Stocks coexist in the same `ohlcv` table.
-- **Live Fetching (Crypto)**: `CachedExchangeLoader` uses CCXT to pull recent candles and mirror them to the database.
-- **Live Fetching (Stocks)**: `CachedYFinanceLoader` uses `yfinance` to pull free historical daily bars and mirror them to the database.
-- **Historical Ingestion**: `KrakenPostgresIngestor` processes raw CSVs into the hypertable for backtesting.
-- **Access Facade**: `TimescaleDBLoader` provides the primary interface for reading data into the system, ensuring standard MultiIndex formatting.
-- **Mover Mask**: `KrakenPostgresReader.get_daily_mover_mask()` builds a boolean DataFrame of daily top-N movers by notional volume in one SQL query.
+### 1. Data
+- **Historical storage**: TimescaleDB (PostgreSQL with a time-series extension). All OHLCV lives in one `ohlcv` hypertable.
+- **Live fetch**: `CachedExchangeLoader` (CCXT against Kraken) pulls recent bars and writes them back to the DB so cold-starts don't re-download.
+- **Read interface**: every component reads through `TimescaleDBLoader.fetch_ohlcv()`, which returns a MultiIndex DataFrame `(symbol, field) → values`. That format is the contract across the rest of the system.
+- Code: `src/ggTrader/data/`.
 
-## Core Engine
+### 2. Strategy
+- An **entry strategy** decides when to buy (e.g. `psar_adx`, `ema_cross`, `rsi_reversal`). Eleven are registered; new ones plug in by subclassing the `EntryStrategy` protocol and registering in `ENTRY_REGISTRY`.
+- An **exit strategy** decides when to sell (`atr_trailing`, `fixed_sl_tp`, `trailing_stop`). Same protocol pattern.
+- `IndicatorPrecomputer` calculates each indicator (PSAR, ADX, RSI, etc.) once across the full parameter range — so a 24-combo grid for `rsi_reversal` reuses the same RSI series instead of recomputing it 24 times.
+- Code: `src/ggTrader/indicators/`.
 
-The `ggTrader.core` package is split into seven focused modules:
+### 3. Optimization (Walk-Forward)
+The job of this layer is to pick good parameters per coin without overfitting.
 
-| Module | Responsibility |
-| ------ | -------------- |
-| `fast_backtest.py` | `FastBacktest` engine — wraps `vbt.Portfolio.from_signals()` with position sizing, shared cash, and mover masking |
-| `orchestrator.py` | Public API (`run_backtest_orchestrator`, `run_frozen_params_combined_backtest`, `run_multi_strategy_per_coin_wfo`) + regime/allocation helpers |
-| `orchestrator_utils.py` | Pure utility helpers (param coercion, ETA strings, logging) shared across orchestration layers |
-| `sensitivity.py` | Grid search orchestration — vectorized and chunked paths |
-| `wfo.py` | Walk-forward optimization loop (`run_wfo_orchestrator`, fold calculations, robustness scoring) |
-| `metrics.py` | Train-metric extraction (Sharpe/Sortino/Calmar), trade-count gates, sensitivity result filtering |
-| `regime_filtering.py` | Three-tier BTC-correlation regime filter (BTC regime, altcoin index, exempt) |
-| `benchmarking.py` | Buy-and-hold benchmarks (BTC, S&P 500), CAGR helpers, SPY parquet cache |
+- We slice the price history into **10 overlapping folds**. Each fold has a *train* window (where we test every parameter combination) and a *test* window (out-of-sample, where we score the survivors).
+- The fold step size equals the test length, so every bar eventually appears in exactly one test window.
+- A combination's **robustness score** blends in-sample stability with out-of-sample performance: `(1 - α) × IS_score + α × OOS_score`, with `α = OOS_ROBUSTNESS_BLEND_ALPHA` (default 0.70). Combinations whose performance varies wildly across folds get penalised by `PARAM_STABILITY_WEIGHT`.
+- The winning combo for each coin then passes through four **selection gates** before it can go live:
 
-- **Backtesting**: `FastBacktest` accepts a `config` dict (CONSTANTS) for portfolio-level settings and a separate `params` dict for signal parameters. Signal parameters support list values for broadcasting parameter grids.
-- **Broadcasting**: `SignalFactory` (vectorbt IndicatorFactory) enables running thousands of parameter combinations in a single vectorized operation.
-- **Signals**: `signals.py` implements "Golden Source" logic (PSAR, ADX, ATR Trailing Stop) using Numba and VectorBT.
+| Gate | Default | What it does |
+|---|---|---|
+| `MIN_ROBUSTNESS_SCORE` | 0.1 | Drops coins where the best combo is weak |
+| `MIN_FOLD_CONSISTENCY` | 0.38 | Must be profitable in at least 38% of test folds |
+| `MIN_VALID_TRAIN_FOLDS` | 3 | At least 3 of the 10 folds must have produced a real fit (finite Sharpe) |
+| `MAX_COINS_PER_STRATEGY` | 10 | Diversification cap — one entry strategy can't dominate the whole portfolio |
 
-## Strategy Architecture
+- Code: `src/ggTrader/core/wfo.py`, `src/ggTrader/core/orchestrator.py`.
 
-The project uses a **pluggable strategy framework** for flexible signal generation across multiple entry and exit strategies.
+### 4. Execution
+Live trading.
 
-### Strategy Registry
+- `BaseExecutionEngine` handles state persistence (`data/active_positions.json`), the daily-loss circuit breaker (`DAILY_LOSS_LIMIT_PCT` = 5%), Telegram + Discord alerts, and the live mirror to TimescaleDB so Grafana sees orders in real time.
+- `CryptoExecutionEngine` polls Kraken every 4 hours (aligned to UTC bar boundaries), places orders via CCXT, and uses Kraken-native trailing-stop orders so positions are protected even if our process dies.
+- Code: `src/ggTrader/core/{base,crypto}_execution_engine.py`.
 
-- **Entry Strategies**: `ENTRY_REGISTRY` maps strategy names to classes:
-  - `psar_adx`: Parabolic SAR + ADX momentum detection
-  - `ema_cross`: EMA crossover (fast > slow)
-  - `rsi_reversal`: RSI oversold reversal
-  - `macd_cross`: MACD line crosses above signal
-  - `bbands_mean_reversion`: Close crosses up through lower Bollinger band
-  - `donchian_breakout`: Close breaks above prior Donchian upper band
-  - `supertrend_flip`: Supertrend direction flips bullish
-  - Custom strategies can be added to `ggTrader/indicators/strategies.py`
+## Regime filter
 
-- **Exit Strategies**: `EXIT_REGISTRY` maps exit classes:
-  - `atr_trailing`: ATR-based trailing stop
-  - `fixed_sl_tp`: Fixed percentage stop-loss / take-profit
-  - `trailing_stop`: Percentage-based trailing stop
+A coin's returns correlation to BTC decides whether the BTC bull/bear regime gates its entries:
 
-### Indicator Pre-computation
+- `corr_BTC ≥ LEADER_CORR_THRESHOLD` (default 0.7) → entries are only allowed when BTC is in a bull regime (close > EMA(200)).
+- `corr_BTC < threshold` → coin trades freely; the BTC regime doesn't affect it.
 
-`IndicatorPrecomputer` optimizes performance by:
+The point is to mute correlated bets during BTC bear markets without holding back coins that march to their own beat (XMR, ZEC, TRX, etc.). The filter is currently `BTC_REGIME_FILTER=False` after research showed it underperformed unfiltered trading on recent data — kept available for future re-enabling.
 
-- Pre-computing each indicator (PSAR, ADX, ATR, EMA, RSI, MACD, BBands, Donchian, Supertrend) once across full parameter ranges
-- Caching results to avoid redundant calculations
-- Enabling numpy broadcasting for efficient parameter grid evaluation
+Code: `src/ggTrader/core/regime_filtering.py`.
 
-### Vectorized Signal Generation
+## Position sizing
 
-`_generate_signals_vectorized()` in `FastBacktest` dispatches to the strategy registry:
+Two modes, picked at trader startup:
 
-1. Reads `config["ENTRY_STRATEGY"]` and `config["EXIT_STRATEGY"]`
-2. Instantiates the strategy classes via `get_entry_strategy()` / `get_exit_strategy()`
-3. Calls `compute_entries()` and `compute_exits()` which return numpy arrays
-4. Wraps arrays in DataFrames with proper MultiIndex columns for VectorBT
+- **Weighted sizing** (default): each coin gets a fraction of total capital proportional to its OOS robustness score. No coin exceeds `MAX_COIN_ALLOCATION` (default 25%). Trusts research weights.
+- **Adaptive sizing** (`--adaptive-sizing`): Kelly-style. Each position is sized so a stop-out costs exactly `TARGET_RISK_PCT` (default 1%) of portfolio value. Wider stops mean smaller positions.
 
-### Three-Tier Regime Filter
-
-Before combining per-asset signals into the final portfolio, `run_frozen_params_combined_backtest()` applies a BTC-correlation regime filter that mutes entries during bear markets:
-
-| Tier | Condition | Filter applied |
-| ---- | --------- | -------------- |
-| **BTC tier** | BTC return correlation ≥ `BTC_REGIME_FILTER_MIN_CORRELATION` (default 0.5) | Signal blocked when BTC EMA(short) < EMA(200); short defaults to 20 |
-| **Altcoin tier** | Correlation in `[ALTCOIN_REGIME_FILTER_CORR_MIN, btc_min)` (default 0.3–0.5) | Signal blocked when altcoin equal-weight index EMA(short) < EMA(200) |
-| **Exempt tier** | Correlation < `ALTCOIN_REGIME_FILTER_CORR_MIN` | No filter — asset trades freely |
-
-The filter compares a short EMA to the long EMA(200) rather than raw close price, which prevents single-candle spikes from flipping the regime signal. The short span is configured via `BTC_REGIME_FILTER_SHORT_EMA` (default `20`). Set to `None` to revert to the original `close > EMA(200)` behaviour.
-
-The **altcoin index** is an equal-weighted, normalised price series built from all non-BTC symbols in the universe. Its EMA(short)/EMA(200) cross acts as a trend proxy for alt-correlated assets.
-
-Correlations are computed over the full OHLCV date range using daily log-returns. Regime filtering is enabled by `BTC_REGIME_FILTER=True` in constants; it is disabled by default.
-
-```python
-_compute_btc_correlations()   # -> Dict[str, float]
-_compute_btc_regime_mask()    # -> pd.Series[bool]  (True = bullish)
-_compute_altcoin_index_mask() # -> pd.Series[bool]  (True = bullish)
-_apply_tiered_regime_mask()   # -> filtered entries DataFrame
-```
-
-### Stock Macro Filters (SPY & VIX)
-
-Equities use a dual-gate macro filter to identify favorable market environments:
-
-1. **SPY EMA Gate**: True when the short EMA (default 50) is above the long EMA (default 200) for the S&P 500. This tracks the broad market trend.
-2. **VIX Volatility Gate**: True when the VIX Fear Index is below a specific threshold (default 25). High VIX environments often lead to stop-loss cascading and are avoided.
-
-For stocks, per-asset correlation with SPY can also be used to exempt low-beta assets from these macro blocks.
-
-### Quality Gates (Anti-Overfitting)
-
-After WFO, each asset passes through sequential gates before entering the combined portfolio:
-
-| Gate | Config key | Default | Purpose |
-| ---- | ---------- | ------- | ------- |
-| Robustness floor | `MIN_ROBUSTNESS_SCORE` | 0.1 | Drop assets with very low OOS robustness |
-| Fold consistency | `MIN_FOLD_CONSISTENCY` | 0.38 | At least 4 in 10 OOS folds must be profitable |
-| Valid train folds | `MIN_VALID_TRAIN_FOLDS` | 3 | At least 3 of 6 folds must produce finite IS Sharpe |
-| Strategy diversity | `MAX_COINS_PER_STRATEGY` | 10 | Prevent one entry strategy from dominating |
-
-### 🛑 Risk Controls (Live)
-
-Live trading incorporates additional real-time risk safeguards:
-
-- **Daily Loss Circuit Breaker**: Halt all *new* entries for the day if the portfolio's intraday drawdown exceeds `DAILY_LOSS_LIMIT_PCT` (default 5%).
-- **Regime Filter**: Blocks entries during sustained bear markets (BTC EMA-based).
-- **Exchange Reconciliation**: Syncs local state with actual Kraken holdings on every heartbeat to detect server-side exits (TSL/OCO).
-
-Assets that pass all gates but produce **0 regime-filtered trade signals** in the combined backtest have their OOS allocation weight zeroed out, so idle capital is redistributed to active assets.
-
-### Per-Asset Walk-Forward Optimization
-
-`run_wfo_per_asset_orchestrator()` extends WFO with per-asset independence:
-
-1. Loads full 3-year OHLCV data once
-2. For each symbol:
-   - Runs standard WFO (rolling train/test folds) with the narrowed parameter grid
-   - Selects best strategy based on robustness score (in-sample metric stability)
-3. Combines results: uses the winning strategy + params for each asset
-4. Runs final validation backtest on full 3-year range for each asset
-5. Merges per-asset signals into single combined portfolio with shared cash
-
-This approach respects the volatility diversity of individual assets while maintaining a unified portfolio structure.
-
-### 📊 Optimization Model (Sliding WFO)
-
-The system uses a **10-Fold Sliding Window** where each fold moves forward by the exact length of the test period (**Step = Test Length**). This ensures that every data point eventually serves as an "unseen" test bar, providing 10 granular OOS data points for robustness gating.
-
-```mermaid
-gantt
-    title Walk-Forward Folds (10 Folds, Step = Test Length)
-    dateFormat  YYYY-MM-DD
-    axisFormat  %Y-%m
-    
-    section Fold 1
-    Train       :active, f1_tr, 2023-01-01, 2024-05-15
-    Test        :crit, f1_ts, 2024-05-15, 2024-07-15
-    
-    section Fold 2
-    Train       :active, f2_tr, 2023-03-01, 2024-07-15
-    Test        :crit, f2_ts, 2024-07-15, 2024-09-15
-    
-    section Fold 3
-    Train       :active, f3_tr, 2023-05-01, 2024-09-15
-    Test        :crit, f3_ts, 2024-09-15, 2024-11-15
-    
-    section Fold 4
-    Train       :active, f4_tr, 2023-07-01, 2024-11-15
-    Test        :crit, f4_ts, 2024-11-15, 2025-01-15
-
-    section Fold 5
-    Train       :active, f5_tr, 2023-09-01, 2025-01-15
-    Test        :crit, f5_ts, 2025-01-15, 2025-03-15
-
-    section Fold 6
-    Train       :active, f6_tr, 2023-11-01, 2025-03-15
-    Test        :crit, f6_ts, 2025-03-15, 2025-05-15
-
-    section Fold 7
-    Train       :active, f7_tr, 2024-01-01, 2025-05-15
-    Test        :crit, f7_ts, 2025-05-15, 2025-07-15
-
-    section Fold 8
-    Train       :active, f8_tr, 2024-03-01, 2025-07-15
-    Test        :crit, f8_ts, 2025-07-15, 2025-09-15
-
-    section Fold 9
-    Train       :active, f9_tr, 2024-05-01, 2025-09-15
-    Test        :crit, f9_ts, 2025-09-15, 2025-11-15
-
-    section Fold 10
-    Train       :active, f10_tr, 2024-07-01, 2025-11-15
-    Test        :crit, f10_ts, 2025-11-15, 2026-01-15
-```
-
-## Workflows
-
-The system is controlled via the unified `ggt` CLI. For a detailed command reference, see [**CLI Reference Guide**](cli_reference.md).
-
-1. **Research**: `python ggt.py research` — Orchestrates parallel WFO across the liquid universe.
-2. **Backtest**: `python ggt.py backtest` — Replays results for validation.
-3. **Database**: `python ggt.py db` — Manages TimescaleDB health and maintenance.
-4. **Ingest**: `python ggt.py ingest` — Syncs historical data from Kraken.
-
-For a concise WFO → backtest walkthrough, see [**CLI Reference Guide**](cli_reference.md).
-
-## Legacy Modules
-
-- **Trading Engine** (`trading.py`): Iterative day-by-day simulation. Retained for live trading execution only.
-- **Archive**: All legacy standalone scripts have been moved to `docs/archive/` or deleted in favor of the unified `ggt` CLI.
-
-## 🔄 Data Flow
+## Data flow
 
 ```mermaid
 graph TD
-    A[Exchange API / Parquet] -->|Fetch| B(Data Layer)
-    B -->|OHLCV Data| C["Strategy Registry<br/>Entry/Exit Classes"]
-    B -->|Daily Mover Mask| D[FastBacktest Engine]
-    C -->|IndicatorPrecomputer| E["Vectorized Signal Gen<br/>compute_entries/exits"]
-    E -->|Entries / Exits| D
-    D -->|vbt.Portfolio| F(Results Manager)
-    F -->|Storage| G[TimescaleDB / results/ folder]
-    H["Optimization Scripts<br/>Sensitivity/WFO/Pipeline"] -->|Loop| D
-    G -->|Query| L[Grafana Dashboard]
-    G -->|Generate| M[Markdown Reports]
-    J[Live Exchange] <-->|Rest/WS| K[ExecutionEngine]
-    K -->|Load Params| G
-    B -->|Live OHLCV| K
-    K -->|Orders| J
-    K -->|Mirror| G
+    A[Kraken] -->|live bars| B[CachedExchangeLoader]
+    B -->|write-through| C[(TimescaleDB)]
+    C -->|TimescaleDBLoader| D[FastBacktest engine]
+    E[Strategy registry + IndicatorPrecomputer] --> D
+    D --> F[WFO orchestrator]
+    F --> G[Selection gates]
+    G --> H[run_results.json]
+    H --> I[CryptoExecutionEngine]
+    I -->|orders| J[Kraken]
+    I -->|mirror| C
+    C -->|metrics| K[Grafana dashboard]
+    H -->|markdown| L[research_report.md]
 ```
 
-## 🏗️ The 4-Phase Lifecycle
+## Monthly recalibration
 
-The system is designed to run autonomously, typically within a Docker environment, following a structured research-to-production lifecycle.
+The live engine kicks off its own WFO research run on the 1st of each month at ~01:00 UTC. When it finishes, the new parameters hot-reload into the running bot — no restart, no downtime. The regime filter, selection gates, and sizing mode all carry over from the running config.
 
-### Phase 1: Selection (Dynamic)
-The universe is generated in real-time by `ggt research` based on live exchange volume (Kraken for Crypto, yfinance for Stocks), ensuring the bot always trades the most liquid assets.
+## Where to find things
 
-### Phase 2: Re-Optimization
-The Grand WFO searches for the best strategy (RSI, EMA, PSAR, etc.) and parameters for each asset independently using a sliding historical window.
-
-### Phase 3: Portfolio Analysis
-The system simulates the signals against multiple allocation models (Equal Weight, Kelly, Risk Parity) and selects the one with the highest Sharpe Ratio for promotion to live trading.
-
-### Phase 4: Live Execution
-The appropriate engine (`CryptoExecutionEngine` or `StockExecutionEngine`) manages orders, utilizing exchange-native protection (TSL/OCO) and local circuit breakers.
-
-## 🔁 Monthly Auto-Recalibration
-
-The live `ExecutionEngine` triggers a full WFO research run internally on the **1st of each month at ~01:00 UTC**, then hot-reloads the new optimized parameters into the running bot — no restart required. The 2026-05-01 cycle ran end-to-end at 01:06 UTC and promoted new params at 02:27 UTC.
-
-## 📣 Daily PnL Reports
-
-A daily report is sent via Telegram and Discord at **08:00 local time**. It includes:
-
-- Realized + unrealized PnL summary
-- Open positions and circuit-breaker status
-- **Market Regime line**: BTC regime (bull/bear) and altcoin regime (bull/bear) with 🟢/🔴 indicators, computed live via `ccxt` using the same tiered filtering logic the bot uses for entries
-
-## 🐳 Docker Orchestration
-
-The entire lifecycle is managed via `docker-compose.yaml` for consistency across environments.
-
-- **`ggtrader_db`**: TimescaleDB for high-speed OHLCV and results storage.
-- **`ggtrader_live`**: The bot service running the long-lived execution loop.
-- **`grafana`**: Real-time performance monitoring and visualization.
-
-## 📊 Result Management
-
-Every run (backtest, sensitivity, or WFO) outputs results to a timestamped folder in the `results/` directory.
-
-### Database Mirroring (Live)
-In addition to CSV logs, the `ExecutionEngine` mirrors all live trading events to **TimescaleDB** in real-time. This enables high-performance monitoring via the **Grafana Dashboard**.
-- **`orders`**: Every buy/sell request sent to exchange.
-- **`trades`**: Completed round-trips with PnL.
-- **`equity_curves`**: Periodic balance snapshots for the `LIVE` run_id.
-
-## 🚀 Live Execution
-
-- **`CryptoExecutionEngine`**: Orchestrates live crypto trading by fetching recent candles via `CachedExchangeLoader` and managing Kraken orders.
-- **`StockExecutionEngine`**: Orchestrates live stock trading via `CachedYFinanceLoader` and Alpaca, respecting NYSE market hours.
-- **Bot Persistence**: Tracks active positions and circuit breaker status in `data/active_positions.json` (Crypto) and `data/active_positions_stocks.json` (Stocks) to handle process restarts.
-- **Native Exits**: Leverages exchange-native `trailing-stop` and `OCO` order types for server-side risk management.
+| Path | What's there |
+|---|---|
+| `src/ggTrader/cli/` | `ggt` subcommands (`research`, `trade`, `db`, etc.) |
+| `src/ggTrader/core/` | Backtest engine, WFO, orchestrator, regime filter |
+| `src/ggTrader/indicators/` | Entry/exit strategy classes + `IndicatorPrecomputer` |
+| `src/ggTrader/data/` | TimescaleDB + live exchange loaders |
+| `src/ggTrader/utils/` | Config defaults, report generators, PnL builder |
+| `scripts/` | One-off operational tooling (universe regen, correlation matrix) |
+| `results/research/` | Timestamped output: `research_report.md`, `run_results.json`, plots |
+| `data/active_positions.json` | Live trader state (positions, circuit breaker, equity baseline) |
 
 ---
-*Back to [README.md](../README.md)*
+*Back to [README.md](../README.md).*

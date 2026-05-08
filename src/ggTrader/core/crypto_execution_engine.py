@@ -22,13 +22,13 @@ from ggTrader.core.base_execution_engine import (
     _format_exit_alert,
 )
 from ggTrader.core.regime_filtering import (
-    _compute_altcoin_index_mask,
     _compute_btc_correlations,
     _compute_btc_regime_mask,
 )
 from ggTrader.data.live.cached_loader import CachedExchangeLoader
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.strategies import (
+    AdxFilteredMeanReversionEntry,
     AtrTrailingExit,
     BollingerMeanReversionEntry,
     DonchianBreakoutEntry,
@@ -36,6 +36,7 @@ from ggTrader.indicators.strategies import (
     FixedStopTakeProfit,
     KeltnerBreakoutEntry,
     MacdCrossEntry,
+    MultiTimeframeMomentumEntry,
     PsarAdxEntry,
     RsiReversalEntry,
     StochRsiReversalEntry,
@@ -93,7 +94,9 @@ class CryptoExecutionEngine(BaseExecutionEngine):
     STRATEGY_MAP = {
         "psar_adx": PsarAdxEntry,
         "ema_cross": EmaCrossEntry,
+        "mtf_momentum": MultiTimeframeMomentumEntry,
         "rsi_reversal": RsiReversalEntry,
+        "adx_filtered_rsi": AdxFilteredMeanReversionEntry,
         "macd_cross": MacdCrossEntry,
         "bbands_mean_reversion": BollingerMeanReversionEntry,
         "donchian_breakout": DonchianBreakoutEntry,
@@ -127,7 +130,7 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             self.exchange.secret = os.getenv("KRAKEN_SECRET")
 
         self._reopt_done_month: int | None = None
-        self._reopt_flag_path = Path("data/last_reopt_month.txt")
+        self._reopt_state_key = f"last_reopt_month_{self.asset_class}"
         self._load_reopt_flag()
 
         if results_path:
@@ -139,18 +142,23 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         self._reconcile_positions()
 
     def _load_reopt_flag(self) -> None:
+        if self.db_manager is None:
+            self._reopt_done_month = None
+            return
+        val = self.db_manager.get_state(self._reopt_state_key)
         try:
-            if self._reopt_flag_path.exists():
-                self._reopt_done_month = int(self._reopt_flag_path.read_text().strip())
-        except (ValueError, OSError):
+            self._reopt_done_month = int(val) if val is not None else None
+        except (TypeError, ValueError):
             self._reopt_done_month = None
 
     def _save_reopt_flag(self, month: int) -> None:
-        try:
-            self._reopt_flag_path.parent.mkdir(parents=True, exist_ok=True)
-            self._reopt_flag_path.write_text(str(month))
+        if self.db_manager is None:
             self._reopt_done_month = month
-        except OSError as e:
+            return
+        try:
+            self.db_manager.set_state(self._reopt_state_key, int(month))
+            self._reopt_done_month = month
+        except Exception as e:
             self.logger.warning(f"Could not save reopt flag: {e}")
 
     def reload_params(self) -> None:
@@ -158,10 +166,10 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         latest_res = get_latest_research_run()
         if latest_res:
             self.per_coin_params = {}
-            self.load_optimized_params(str(latest_res))
+            self.load_optimized_params(latest_res)
             self.symbols = list(self.per_coin_params.keys())
-            self.results_path = str(latest_res)
-            self.logger.info(f"Reloaded research params from {latest_res}")
+            self.results_path = latest_res
+            self.logger.info(f"Reloaded research params from run {latest_res.run_id}")
 
     def _reconcile_positions(self) -> None:
         if self.config.get("DRY_RUN", False):
@@ -351,15 +359,22 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             total_usd = 0.0
             tickers = self.exchange.fetch_tickers()
             norm_map = {"XBT": "BTC", "XETH": "ETH", "XXLM": "XLM", "ZUSD": "USD"}
+            # Restrict valuation to the configured crypto universe so co-located
+            # holdings on the same Kraken account (notably tokenized xStocks
+            # like AAPLx/USD) don't inflate the crypto portfolio total.
+            allowed_bases = {s.split("-")[0] for s in self.symbols}
+            allowed_bases.update(s.split("-")[0] for s in self.active_positions.keys())
             for coin, amount in bal.get("total", {}).items():
                 if float(amount) <= 0: continue
                 norm_coin = norm_map.get(coin, coin)
                 if norm_coin in ("USD", "USDT", "USDC"):
                     total_usd += float(amount)
-                else:
-                    pair = f"{norm_coin}/USD"
-                    if pair in tickers:
-                        total_usd += float(amount) * float(tickers[pair]["last"])
+                    continue
+                if norm_coin not in allowed_bases:
+                    continue
+                pair = f"{norm_coin}/USD"
+                if pair in tickers:
+                    total_usd += float(amount) * float(tickers[pair]["last"])
             return total_usd
         except Exception:
             return None
@@ -371,19 +386,21 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         return self.loader.fetch_ohlcv(symbols=fetch_symbols, interval=self.interval, limit=200)
 
     def _compute_live_regime_allowance(self, ohlcv_df: pd.DataFrame) -> Dict[str, bool]:
-        if not self.config.get("BTC_REGIME_FILTER", False):
+        btc_on = bool(self.config.get("BTC_REGIME_FILTER", False))
+        if not btc_on:
             return {s: True for s in self.symbols}
         btc_regime = _compute_btc_regime_mask(ohlcv_df, self.config)
-        alt_regime = _compute_altcoin_index_mask(ohlcv_df, self.config) if self.config.get("ALTCOIN_REGIME_FILTER") else None
-        corrs = _compute_btc_correlations(ohlcv_df, self.config)
-        btc_bull = bool(btc_regime.iloc[-1]) if btc_regime is not None else True
-        alt_bull = bool(alt_regime.iloc[-1]) if alt_regime is not None else True
+        if btc_regime is None:
+            return {s: True for s in self.symbols}
+        btc_corrs = _compute_btc_correlations(ohlcv_df, self.config)
+        btc_bull = bool(btc_regime.iloc[-1])
+        threshold = float(self.config.get("LEADER_CORR_THRESHOLD", 0.7))
+        # Fallback corr=1.0 (conservative: gate by default) matches the
+        # research orchestrator's behaviour at orchestrator.py:111.
         allowance = {}
         for s in self.symbols:
-            c = corrs.get(s, 1.0)
-            if c >= 0.5: allowance[s] = btc_bull
-            elif c >= 0.3 and alt_regime is not None: allowance[s] = alt_bull
-            else: allowance[s] = True
+            cb = float(btc_corrs.get(s, 1.0))
+            allowance[s] = btc_bull if cb >= threshold else True
         return allowance
 
     def _compute_latest_signals(self, ohlcv_df: pd.DataFrame) -> Dict[str, Dict[str, Any]]:
@@ -422,7 +439,12 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         if self.config.get("DRY_RUN"): return True
         try:
             bal = self.exchange.fetch_balance()
-            if float(bal.get("free", {}).get("USD", 0)) < capital_usd * 0.95:
+            free_usd = float(bal.get("free", {}).get("USD", 0))
+            if free_usd < capital_usd * 0.95:
+                self.logger.warning(
+                    f"[Precondition] {symbol}: insufficient USD balance "
+                    f"(free=${free_usd:.2f}, need~${capital_usd * 0.95:.2f})"
+                )
                 return False
             pair = symbol.replace("-", "/")
             if not self.exchange.markets: self.exchange.load_markets()
@@ -430,9 +452,16 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             ticker = self.exchange.fetch_ticker(pair)
             coin_amt = capital_usd / ticker["last"]
             min_amt = float(m.get("limits", {}).get("amount", {}).get("min") or 0)
-            if coin_amt < min_amt: return False
+            if coin_amt < min_amt:
+                self.logger.warning(
+                    f"[Precondition] {symbol}: order amount {coin_amt:.6f} below "
+                    f"exchange min {min_amt} (capital=${capital_usd:.2f}, last={ticker['last']})"
+                )
+                return False
             return True
-        except Exception: return False
+        except Exception as e:
+            self.logger.warning(f"[Precondition] {symbol}: validation raised — {e!r}")
+            return False
 
     def _execute_market_buy_order(self, symbol: str, amount_usd: float) -> Optional[str]:
         self.logger.info(f"BUY {symbol} ${amount_usd}")
@@ -499,16 +528,130 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                 self.exchange.cancel_order(o["id"], pair)
         except Exception: pass
 
+    def _estimate_stop_pct_for_sizing(self, symbol: str, sig: Dict[str, Any]) -> float:
+        """Pre-buy estimate of the exit's stop distance as a percentage.
+
+        Mirrors the post-buy stop computation so adaptive sizing picks a
+        position consistent with the eventual stop. Floor of 0.5% to avoid
+        blowing the cap when ATR is transiently tiny.
+        """
+        coin_params = self.per_coin_params[symbol]["params"]
+        exit_name = sig.get("exit_name", "atr_trailing")
+        if exit_name == "atr_trailing":
+            atr_value = sig.get("atr_value", float("nan"))
+            atr_mult = float(coin_params.get("atr_multiplier", 3.0))
+            price = float(sig.get("current_price", 0) or 0)
+            if not math.isnan(atr_value) and atr_value > 0 and price > 0:
+                stop_pct = (atr_mult * atr_value / price) * 100.0
+            else:
+                stop_pct = atr_mult
+        elif exit_name == "trailing_stop":
+            stop_pct = float(coin_params.get("trailing_stop_pct", 3.0))
+        else:
+            stop_pct = float(coin_params.get("stop_pct", 3.0))
+        return max(stop_pct, 0.5)
+
+    def _compute_post_buy_stop_pct(self, symbol: str, sig: Dict[str, Any], fill_price: float) -> float:
+        """Final stop-pct for placing the actual exit order after a fill.
+
+        Thin wrapper around ``core.trailing_stop_utils.compute_post_buy_stop_pct``.
+        """
+        from ggTrader.core.trailing_stop_utils import compute_post_buy_stop_pct
+        coin_params = self.per_coin_params[symbol]["params"]
+        return compute_post_buy_stop_pct(
+            symbol=symbol,
+            coin_params=coin_params,
+            exit_name=sig.get("exit_name", "atr_trailing"),
+            fill_price=fill_price,
+            atr_value=sig.get("atr_value", float("nan")),
+            config=self.config,
+            logger=self.logger,
+        )
+
+    def _compute_adaptive_position_usd(self, symbol: str, sig: Dict[str, Any], base_capital: float) -> Optional[float]:
+        """Volatility-normalized position size: position = (portfolio * TARGET_RISK_PCT) / stop_pct."""
+        target_risk_pct = float(self.config.get("TARGET_RISK_PCT", 0.01))
+        max_position_pct = float(self.config.get("MAX_POSITION_PCT", 0.15))
+        min_position_usd = float(self.config.get("MIN_POSITION_USD", 15.0))
+
+        stop_pct = self._estimate_stop_pct_for_sizing(symbol, sig)
+        risk_usd = base_capital * target_risk_pct
+        raw_position = risk_usd / (stop_pct / 100.0)
+        cap_position = base_capital * max_position_pct
+        position_usd = min(raw_position, cap_position)
+
+        if position_usd < min_position_usd:
+            self.logger.info(
+                f"  [Sizing] {symbol}: adaptive size ${position_usd:.2f} "
+                f"(stop≈{stop_pct:.2f}%, risk {target_risk_pct * 100:.2f}% of "
+                f"${base_capital:.2f}) below MIN_POSITION_USD=${min_position_usd:.2f} — skipping"
+            )
+            return None
+
+        capped = raw_position > cap_position
+        self.logger.info(
+            f"  [Sizing] {symbol}: adaptive (risk {target_risk_pct * 100:.2f}% @ "
+            f"stop≈{stop_pct:.2f}%) -> ${position_usd:.2f}"
+            + (f"  [CAPPED at {max_position_pct * 100:.0f}% of portfolio]" if capped else "")
+        )
+        return position_usd
+
     def _execute_trade_logic(self, signals_dict: Dict[str, Dict[str, Any]], regime_allowance: Optional[Dict[str, bool]] = None) -> None:
         regime_allowance = regime_allowance or {}
         if self.circuit_breaker_triggered:
             self.logger.info("  [CircuitBreaker] ACTIVE")
             return
-        
+
+        weighted = bool(self.config.get("WEIGHTED_SIZING", False))
+        adaptive = bool(self.config.get("ADAPTIVE_SIZING", False))
+        min_position_usd = float(self.config.get("MIN_POSITION_USD", 15.0))
+
         for s, sig in signals_dict.items():
             if sig["entry"] and s not in self.active_positions:
-                if not regime_allowance.get(s, True): continue
-                cap = self.config.get("CAPITAL_PER_TRADE", 100.0)
+                if not regime_allowance.get(s, True):
+                    self.logger.info(f"  [Regime] BLOCKED entry for {s} (bear regime)")
+                    continue
+
+                if weighted:
+                    base_capital = self._get_total_portfolio_usd()
+                    if base_capital is None:
+                        self.logger.warning(
+                            f"  [Sizing] {s}: portfolio valuation unavailable — skipping entry"
+                        )
+                        continue
+                    weight = float(self.allocation_weights.get(s, 0.0))
+                    if weight <= 0.0:
+                        self.logger.info(
+                            f"  [Sizing] {s}: research allocation weight = 0% — skipping entry"
+                        )
+                        continue
+                    cap = base_capital * weight
+                    if cap < min_position_usd:
+                        self.logger.info(
+                            f"  [Sizing] {s}: weighted ${cap:.2f} ({weight*100:.2f}% × ${base_capital:.2f}) "
+                            f"below MIN_POSITION_USD=${min_position_usd:.2f} — skipping"
+                        )
+                        continue
+                    self.logger.info(
+                        f"  [Sizing] {s}: weighted {weight*100:.2f}% × ${base_capital:.2f} -> ${cap:.2f}"
+                    )
+                elif adaptive:
+                    base_capital = self._get_total_portfolio_usd()
+                    if base_capital is None:
+                        self.logger.warning(
+                            f"  [Sizing] {s}: portfolio valuation unavailable — skipping entry"
+                        )
+                        continue
+                    cap = self._compute_adaptive_position_usd(s, sig, base_capital)
+                    if cap is None:
+                        continue
+                else:
+                    cap = self.config.get("CAPITAL_PER_TRADE")
+                    if cap is None:
+                        cap = 100.0
+                    cap = float(cap)
+                    self.logger.info(f"  [Sizing] {s}: fixed ${cap:.2f}")
+
                 if not self._validate_entry_preconditions(s, cap): continue
                 oid = self._execute_market_buy_order(s, cap)
                 if oid:
@@ -519,15 +662,36 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                     self.tracker.record_buy(s, oid, px, amt, px * amt, 0, "USD")
                     
                     exit_n = sig["exit_name"]
-                    stop_p = float(self.per_coin_params[s]["params"].get("stop_pct", 3.0))
+                    stop_p = self._compute_post_buy_stop_pct(s, sig, px)
+                    # Universal trailing: every live exit uses Kraken-native trailing-stop.
+                    # Legacy fixed_sl_tp WFO selections (from production_weights predating
+                    # the EXIT_TOURNAMENT trim) get converted at placement time so the
+                    # take-profit leg is dropped and the stop ratchets up with price.
                     if exit_n == "fixed_sl_tp":
-                        tp_p = float(self.per_coin_params[s]["params"].get("take_profit_pct", 6.0))
-                        ocoid = self._execute_oco_exit_order(s, amt, px * (1 - stop_p/100), px * (1 + tp_p/100))
-                        self.active_positions[s] = {"entry_order_id": oid, "entry_price": px, "entry_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "amount": amt, "stop_pct": stop_p, "exit_name": exit_n, "oco_order_id": ocoid}
-                    else:
-                        tslid = self._execute_trailing_stop_order(s, amt, stop_p)
-                        self.active_positions[s] = {"entry_order_id": oid, "entry_price": px, "entry_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "amount": amt, "stop_pct": stop_p, "exit_name": exit_n, "tsl_order_id": tslid}
+                        self.logger.info(
+                            f"  [Exit] {s} fixed_sl_tp converted to trailing-stop "
+                            f"at placement (stop_pct={stop_p:.2f}%)"
+                        )
+                    tslid = self._execute_trailing_stop_order(s, amt, stop_p)
+                    self.active_positions[s] = {
+                        "entry_order_id": oid, "entry_price": px,
+                        "entry_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "amount": amt, "stop_pct": stop_p,
+                        "exit_name": "trailing_stop" if exit_n == "fixed_sl_tp" else exit_n,
+                        "exit_name_original": exit_n,
+                        "tsl_order_id": tslid,
+                    }
                     self.save_state()
+                    try:
+                        msg = _format_entry_alert(
+                            s,
+                            self.per_coin_params.get(s, {}).get("strategy_name", "?"),
+                            self.active_positions[s]["exit_name"],
+                            px, amt, px * amt, stop_p,
+                            len(self.active_positions), len(self.per_coin_params),
+                        )
+                        self._notify(msg)
+                    except Exception: pass
             elif s in self.active_positions and sig["exit"]:
                 pos = self.active_positions[s]
                 if pos.get("exit_name") == "fixed_sl_tp":
@@ -557,6 +721,14 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                         bal = self.exchange.fetch_balance()
                         free_usd = float(bal.get("free", {}).get("USD", 0))
                         self.tracker.record_balance_snapshot(total_usd, free_usd, total_usd - free_usd, len(self.active_positions))
+                    except Exception: pass
+                    try:
+                        self.db_manager.add_positions_snapshot(
+                            asset_class=self.asset_class,
+                            timestamp=datetime.now(timezone.utc),
+                            positions=self.active_positions,
+                            circuit_breaker_triggered=self.circuit_breaker_triggered,
+                        )
                     except Exception: pass
                 
                 df = self._fetch_latest_data()

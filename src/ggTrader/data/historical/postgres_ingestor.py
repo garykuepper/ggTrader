@@ -209,21 +209,38 @@ class PostgresIngestor:
             print(f"Error parsing raw trades {file_path}: {e}")
             return []
 
-    def _load_manifest(self, path: str) -> set:
-        """Load the processed files manifest."""
-        processed_files = set()
-        if os.path.exists(path):
-            try:
-                with open(path, "r") as f:
-                    processed_files = set(json.load(f))
-            except Exception:
-                pass
-        return processed_files
+    def _load_manifest(self, state_key: str) -> set:
+        """Load the processed-items manifest from system_state."""
+        try:
+            with self.engine.connect() as conn:
+                row = conn.execute(
+                    text("SELECT value FROM system_state WHERE key = :k"),
+                    {"k": state_key},
+                ).fetchone()
+        except Exception:
+            return set()
+        if row is None or row[0] is None:
+            return set()
+        try:
+            return set(row[0])
+        except TypeError:
+            return set()
 
-    def _save_manifest(self, path: str, data: set) -> None:
-        """Save the processed files manifest."""
-        with open(path, "w") as f:
-            json.dump(list(data), f)
+    def _save_manifest(self, state_key: str, data: set) -> None:
+        """Persist the processed-items manifest to system_state."""
+        payload = json.dumps(sorted(data))
+        with self.engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO system_state (key, value, updated_at)
+                    VALUES (:k, CAST(:v AS JSONB), now())
+                    ON CONFLICT (key) DO UPDATE
+                      SET value = EXCLUDED.value, updated_at = now()
+                    """
+                ),
+                {"k": state_key, "v": payload},
+            )
 
     def _start_writer_pool(
         self, num_writers: int
@@ -295,7 +312,7 @@ class PostgresIngestor:
         pending_files: list,
         data_queue: queue.Queue,
         processed_files: set,
-        manifest_path: str,
+        manifest_key: str,
         max_workers: int,
     ) -> None:
         """Run the core ThreadPool parsing loop for the pending files."""
@@ -312,7 +329,7 @@ class PostgresIngestor:
                     files_since_manifest += 1
 
                 if files_since_manifest >= 100:
-                    self._save_manifest(manifest_path, processed_files)
+                    self._save_manifest(manifest_key, processed_files)
                     files_since_manifest = 0
 
                 pbar.update(1)
@@ -326,8 +343,8 @@ class PostgresIngestor:
         if not csv_files:
             return
 
-        manifest_path = os.path.join(raw_dir, ".processed_files.json")
-        processed_files = self._load_manifest(manifest_path)
+        manifest_key = f"ingest_processed_files:{os.path.basename(raw_dir)}"
+        processed_files = self._load_manifest(manifest_key)
 
         pending_files = [f for f in csv_files if os.path.basename(f) not in processed_files]
         if not pending_files:
@@ -342,12 +359,12 @@ class PostgresIngestor:
         data_queue, stop_event, writer_threads = self._start_writer_pool(num_writers=4)
 
         self._execute_thread_pool(
-            pending_files, data_queue, processed_files, manifest_path, max_workers
+            pending_files, data_queue, processed_files, manifest_key, max_workers
         )
 
         # Cleanup
         self._stop_writer_pool(data_queue, stop_event, writer_threads)
-        self._save_manifest(manifest_path, processed_files)
+        self._save_manifest(manifest_key, processed_files)
 
     def list_quarter_dirs(self, raw_path: str, prefix: str = "Kraken_OHLCVT_") -> list:
         """Find quarterly Kraken folders under data/raw."""
@@ -371,9 +388,9 @@ class PostgresIngestor:
             force: If True, ignore manifest and sync all directories
         """
         raw_path = os.path.join(root_dir, "data", "raw")
-        manifest_path = os.path.join(root_dir, "data", ".processed_dirs.json")
+        manifest_key = "ingest_processed_dirs"
 
-        processed_dirs = self._load_manifest(manifest_path) if not force else set()
+        processed_dirs = self._load_manifest(manifest_key) if not force else set()
 
         all_dirs = self.list_quarter_dirs(raw_path=raw_path)
 
@@ -395,6 +412,6 @@ class PostgresIngestor:
         for d in tqdm(new_dirs, desc="Syncing Directories", unit="dir"):
             self.ingest_dir(d)
             processed_dirs.add(os.path.basename(d))
-            self._save_manifest(manifest_path, processed_dirs)
+            self._save_manifest(manifest_key, processed_dirs)
 
         print("Data synchronization complete.")

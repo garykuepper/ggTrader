@@ -1,0 +1,152 @@
+[
+    {
+        "rank": 1,
+        "symbol": "NVDA",
+        "frequency": 1,
+        "average_notional_volume": 29546313661.16098
+    },
+    {
+        "rank": 2,
+        "symbol": "TSLA",
+        "frequency": 1,
+        "average_notional_volume": 25197122622.850674
+    },
+    {
+        "rank": 3,
+        "symbol": "MSFT",
+        "frequency": 1,
+        "average_notional_volume": 13985975497.388205
+    },
+    {
+        "rank": 4,
+        "symbol": "AMZN",
+        "frequency": 1,
+        "average_notional_volume": 11995674279.351297
+    },
+    {
+        "rank": 5,
+        "symbol": "AAPL",
+        "frequency": 1,
+        "average_notional_volume": 11884091045.9397
+    },
+    {
+        "rank": 6,
+        "symbol": "AMD",
+        "frequency": 1,
+        "average_notional_volume": 11139214990.86628
+    },
+    {
+        "rank": 7,
+        "symbol": "META",
+        "frequency": 1,
+        "average_notional_volume": 10827576253.888193
+    },
+    {
+        "rank": 8,
+        "symbol": "INTC",
+        "frequency": 1,
+        "average_notional_volume": 9422022786.644379
+    },
+    {
+        "rank": 9,
+        "symbol": "GOOGL",
+        "frequency": 1,
+        "average_notional_volume": 9308538399.283981
+    },
+    {
+        "rank": 10,
+        "symbol": "AVGO",
+        "frequency": 1,
+        "average_notional_volume": 8221316187.57426
+    },
+    {
+        "rank": 11,
+        "symbol": "ORCL",
+        "frequency": 1,
+        "average_notional_volume": 4923776024.504916
+    },
+    {
+        "rank": 12,
+        "symbol": "NFLX",
+        "frequency": 1,
+        "average_notional_volume": 4030169728.0662856
+    },
+    {
+        "rank": 13,
+        "symbol": "XOM",
+        "frequency": 1,
+        "average_notional_volume": 3237885743.308004
+    },
+    {
+        "rank": 14,
+        "symbol": "LLY",
+        "frequency": 1,
+        "average_notional_volume": 2986261379.574076
+    },
+    {
+        "rank": 15,
+        "symbol": "UNH",
+        "frequency": 1,
+        "average_notional_volume": 2893499448.39592
+    },
+    {
+        "rank": 16,
+        "symbol": "JPM",
+        "frequency": 1,
+        "average_notional_volume": 2595074604.124705
+    },
+    {
+        "rank": 17,
+        "symbol": "CRM",
+        "frequency": 1,
+        "average_notional_volume": 2414328595.4354606
+    },
+    {
+        "rank": 18,
+        "symbol": "V",
+        "frequency": 1,
+        "average_notional_volume": 2215499974.7023263
+    },
+    {
+        "rank": 19,
+        "symbol": "CVX",
+        "frequency": 1,
+        "average_notional_volume": 2209785070.675087
+    },
+    {
+        "rank": 20,
+        "symbol": "WMT",
+        "frequency": 1,
+        "average_notional_volume": 2130203124.4167645
+    },
+    {
+        "rank": 21,
+        "symbol": "TXN",
+        "frequency": 1,
+        "average_notional_volume": 1842307998.4439213
+    },
+    {
+        "rank": 22,
+        "symbol": "CAT",
+        "frequency": 1,
+        "average_notional_volume": 1837727150.3120422
+    },
+    {
+        "rank": 23,
+        "symbol": "COST",
+        "frequency": 1,
+        "average_notional_volume": 1811652140.5418396
+    },
+    {
+        "rank": 24,
+        "symbol": "JNJ",
+        "frequency": 1,
+        "average_notional_volume": 1777925831.76562
+    },
+    {
+        "rank": 25,
+        "symbol": "MA",
+        "frequency": 1,
+        "average_notional_volume": 1757981090.3549194
+    }
+]

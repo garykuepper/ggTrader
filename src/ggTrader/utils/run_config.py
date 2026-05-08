@@ -54,7 +54,6 @@ def sensitivity_script_config() -> dict[str, Any]:
         "SYMBOLS": None,
         "SYMBOLS_FILE": "data/top_10_USD_2023-01-01_2025-12-31.json",
         "USE_MOVERS": 0,
-        "MIN_TRADES": 0,
         "MIN_CLOSED_TRADES_TRAIN": 1,
         "CHUNK_SIZE": 1000,
         "ENTRY_STRATEGY": "psar_adx",
@@ -73,7 +72,6 @@ def wfo_script_config() -> dict[str, Any]:
         "USE_MOVERS": 0,
         "N_SPLITS": 4,
         "TEST_RATIO": 2,
-        "MIN_TRADES": 0,
         "MIN_CLOSED_TRADES_TRAIN": 1,
         "CHUNK_SIZE": 500,
         "ENTRY_STRATEGY": "psar_adx",
@@ -111,8 +109,15 @@ def full_pipeline_config() -> dict[str, Any]:
         # provides 10 OOS samples for a more reliable fold-consistency signal.
         "N_SPLITS": 10,
         "TEST_RATIO": 3,
-        "MIN_TRADES": 0,
-        "MIN_CLOSED_TRADES_TRAIN": 3,
+        # Per-fold floor: just rejects genuinely empty folds (0 trades = no signal).
+        # Real trade-frequency selection happens at the coin level via
+        # MIN_TRADES_PER_YEAR after Phase 3.
+        "MIN_CLOSED_TRADES_TRAIN": 1,
+        # Coin-level gate on average trade frequency over the full WFO window.
+        # 4 trades/year ≈ 1 per quarter ≈ 12 trades over a 3-year window.
+        # Applied after Phase 3 (full-range replay) so it sees the same trade
+        # count the live trader would experience. Set to None to disable.
+        "MIN_TRADES_PER_YEAR": 4,
         # WFO / sensitivity train ranking: composite blends Sharpe, Sortino,
         # Calmar-like (return/|maxDD|).
         "TRAIN_METRIC": "composite",
@@ -127,8 +132,11 @@ def full_pipeline_config() -> dict[str, Any]:
         "USE_VECTORIZED": True,
         "USE_VECTORIZED_SENSITIVITY": True,
         "USE_MOVERS": 0,
-        # Both exits compete in the tournament; use --exits atr_trailing to limit to one.
-        "EXIT_TOURNAMENT": ["atr_trailing", "fixed_sl_tp", "trailing_stop"],
+        # Exit tournament: WFO picks the best per-coin exit. fixed_sl_tp is an
+        # OCO bracket (entry-set SL + TP, no ratchet); when chosen at placement
+        # time it's converted to a Kraken-native trailing-stop using stop_pct
+        # so every live sell still ratchets up.
+        "EXIT_TOURNAMENT": ["atr_trailing", "trailing_stop", "fixed_sl_tp"],
         "SENSITIVITY_EXIT_STRATEGY": "atr_trailing",
         # Optional: set RECENT_VALIDATION_START_DATE (or CLI) to run Phase 3B after WFO.
         "RECENT_VALIDATION_START_DATE": None,
@@ -150,24 +158,13 @@ def full_pipeline_config() -> dict[str, Any]:
         # Number of warmup bars fetched before START_DATE when computing the BTC EMA.
         # Ensures the EMA is fully warm from bar 1 of the actual backtest window.
         "EMA_WARMUP_BARS": 100,
-        # Block new long entries on all coins when BTC close is below its 200-bar EMA.
-        # Prevents catching falling knives in sustained crypto bear markets.
-        # Applied in Phase 2/3 combined backtest only — WFO fold optimization is unaffected.
-        "BTC_REGIME_FILTER": True,
-        # Optional: compare a short EMA vs EMA(200) instead of close vs EMA(200).
-        # Smooths out single-candle spikes from flipping the regime signal.
-        # 50 = golden/death cross (EMA50 > EMA200). Set to None to use close > EMA200.
-        "BTC_REGIME_FILTER_SHORT_EMA": 20,
-        # Only apply BTC regime filter to coins with BTC return correlation >= this threshold.
-        # Coins below the threshold use the altcoin index filter (if enabled) or trade freely.
-        "BTC_REGIME_FILTER_MIN_CORRELATION": 0.5,
-        # Altcoin index regime filter: apply an equal-weighted index EMA200
-        # to mid-correlation coins.
-        # Coins with BTC correlation in
-        # [ALTCOIN_REGIME_FILTER_CORR_MIN, BTC_REGIME_FILTER_MIN_CORRELATION)
-        # use the altcoin index instead of BTC. Coins below the lower bound trade freely.
-        "ALTCOIN_REGIME_FILTER": True,
-        "ALTCOIN_REGIME_FILTER_CORR_MIN": 0.3,
+        # BTC leader-regime filter (2-tier). Coins whose return correlation to
+        # BTC is ≥ LEADER_CORR_THRESHOLD only fire entries when BTC is bull
+        # (close > EMA(EMA_WARMUP_BARS)); below the threshold they trade freely.
+        # SHORT_EMA=None means `close > long_EMA` (less brittle than EMA-cross).
+        "BTC_REGIME_FILTER": False,
+        "BTC_REGIME_FILTER_SHORT_EMA": None,
+        "LEADER_CORR_THRESHOLD": 0.7,
         # Max fraction of portfolio capital any single coin can receive under OOS-weighted
         # allocation. Prevents over-concentration on a single high-robustness coin.
         "MAX_COIN_ALLOCATION": 0.25,
@@ -219,68 +216,3 @@ def full_pipeline_config() -> dict[str, Any]:
         "DAILY_LOSS_LIMIT_PCT": 0.05,
     }
 
-
-def stock_pipeline_config() -> dict[str, Any]:
-    """Defaults for stock research/trading pipeline."""
-    return {
-        "ASSET_CLASS": "stocks",
-        "SYMBOLS_FILE": None,  # populated by universe script
-        "MAX_SYMBOLS": 50,
-        "START_DATE": os.getenv("GGTRADER_START_DATE", "2023-01-01"),
-        "END_DATE": os.getenv("GGTRADER_END_DATE", "2025-12-31"),
-        "INTERVAL": "1d",  # daily bars (vs 4h for crypto)
-        "FREQ": "1d",
-        "START_CASH": 10000,
-        "PORTFOLIO_SHARE": 0.10,
-        "FEES": 0.0,  # Alpaca is commission-free
-        "SLIPPAGE": 0.001,  # tighter slippage for large-cap stocks
-        # WFO settings
-        "N_SPLITS": 10,
-        "TEST_RATIO": 3,
-        "MIN_TRADES": 0,
-        "MIN_CLOSED_TRADES_TRAIN": 3,
-        "TRAIN_METRIC": "composite",
-        "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
-            "sharpe": 0.20,
-            "sortino": 0.30,
-            "calmar": 0.30,
-            "profit_factor": 0.20,
-        },
-        "MAX_TRAIN_DRAWDOWN_PCT": None,
-        "CHUNK_SIZE": 500,
-        "USE_VECTORIZED": True,
-        "USE_VECTORIZED_SENSITIVITY": True,
-        "USE_MOVERS": 0,
-        # Both exits compete in the tournament
-        "EXIT_TOURNAMENT": ["atr_trailing", "fixed_sl_tp", "trailing_stop"],
-        "SENSITIVITY_EXIT_STRATEGY": "atr_trailing",
-        "RECENT_VALIDATION_START_DATE": None,
-        "RECENT_VALIDATION_END_DATE": None,
-        "RECENT_VALIDATION_USE_CCXT_TAIL": False,  # stocks don't use CCXT
-        # Stock-specific regime filtering
-        "BTC_REGIME_FILTER": False,  # disable crypto regime
-        "SPY_REGIME_FILTER": True,  # enable stock regime
-        "SPY_REGIME_FILTER_SHORT_EMA": 50,
-        "VIX_REGIME_FILTER": True,
-        "VIX_REGIME_THRESHOLD": 25,
-        "SPY_REGIME_FILTER_MIN_CORRELATION": 0.5,
-        "ALTCOIN_REGIME_FILTER": False,  # N/A for stocks
-        # Portfolio gates (same as crypto)
-        "MAX_COINS_PER_STRATEGY": 10,
-        "MAX_COIN_ALLOCATION": 0.25,
-        "MIN_ROBUSTNESS_SCORE": 0.1,
-        "MIN_VALID_TRAIN_FOLDS": 3,
-        "MIN_FOLD_CONSISTENCY": 0.38,
-        "EMA_WARMUP_BARS": 200,
-        # Benchmark
-        "BENCHMARK_SYMBOL": "SPY",
-        # Anti-overfitting
-        "OOS_ROBUSTNESS_BLEND_ALPHA": 0.70,
-        "TRAIN_METRIC_NORMALIZE_ZSCORE": True,
-        "PARAM_STABILITY_WEIGHT": 0.3,
-        "FOLD_CONSISTENCY_IN_GATE": True,
-        "FOLD_CONSISTENCY_GATE_FLOOR": 0.25,
-        "OOS_STABILITY_WEIGHT": 0.3,
-        "WFO_CACHE_ENABLED": True,
-        "DAILY_LOSS_LIMIT_PCT": 0.05,
-    }

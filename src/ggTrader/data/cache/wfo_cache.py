@@ -3,8 +3,8 @@
 Caches (wfo_stats, is_metrics_by_fold) per (symbol, entry, exit, param_grid, config, data_range)
 so repeated research runs with identical inputs skip re-running the 6-fold WFO entirely.
 
-Cache is stored as JSON files under ``results/wfo_cache/``.  Each file is named by the MD5 of
-its inputs — no TTL, no size limit.  To clear the cache, delete the directory.
+Cache is stored in the TimescaleDB ``wfo_cache`` table — keyed by an MD5 hash of the inputs.
+Use ``ggt db purge-wfo-cache`` to clear, or bump ``_WFO_CACHE_VERSION`` for a global invalidation.
 """
 
 import hashlib
@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
+from sqlalchemy import text
 
 _WFO_CACHE_VERSION = 1  # bump to invalidate all cached entries globally
 
@@ -174,11 +175,15 @@ def _wfo_stats_from_json(data: List[Dict]) -> List[Dict]:
 # ---------------------------------------------------------------------------
 
 class WFOCache:
-    """File-based cache for WFO per-coin tournament (wfo_stats, is_metrics_by_fold)."""
+    """TimescaleDB-backed cache for WFO per-coin tournament (wfo_stats, is_metrics_by_fold)."""
 
-    def __init__(self, cache_dir: Path):
-        self.cache_dir = cache_dir
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, cache_dir: Optional[Path] = None, db_manager: Any = None):
+        # ``cache_dir`` retained for backwards-compatible call sites; the cache
+        # itself now lives in the ``wfo_cache`` table in TimescaleDB.
+        if db_manager is None:
+            from ggTrader.utils.result_db_manager import ResultDBManager
+            db_manager = ResultDBManager()
+        self.db_manager = db_manager
         self._hits = 0
         self._misses = 0
 
@@ -193,13 +198,20 @@ class WFOCache:
     ) -> Optional[Tuple[List[Dict], Dict[int, pd.Series]]]:
         """Return cached (wfo_stats, is_metrics_by_fold) or None on miss."""
         key = _make_cache_key(symbol, strategy_name, exit_name, param_grid, config, ohlcv)
-        path = self.cache_dir / f"{key}.json"
-        if not path.exists():
+        try:
+            with self.db_manager.engine.connect() as conn:
+                row = conn.execute(
+                    text("SELECT payload FROM wfo_cache WHERE cache_key = :k"),
+                    {"k": key},
+                ).fetchone()
+        except Exception:
+            self._misses += 1
+            return None
+        if row is None or row[0] is None:
             self._misses += 1
             return None
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = row[0]
             wfo_stats = _wfo_stats_from_json(data["wfo_stats"])
             is_metrics_by_fold: Dict[int, pd.Series] = {
                 int(k): _series_from_json(v)
@@ -208,10 +220,14 @@ class WFOCache:
             self._hits += 1
             return wfo_stats, is_metrics_by_fold
         except Exception:
-            # Corrupt entry — delete and treat as miss
+            # Corrupt entry — drop it and treat as miss
             try:
-                path.unlink()
-            except OSError:
+                with self.db_manager.engine.begin() as conn:
+                    conn.execute(
+                        text("DELETE FROM wfo_cache WHERE cache_key = :k"),
+                        {"k": key},
+                    )
+            except Exception:
                 pass
             self._misses += 1
             return None
@@ -229,10 +245,7 @@ class WFOCache:
     ) -> None:
         """Persist WFO results to cache (non-fatal on write errors)."""
         key = _make_cache_key(symbol, strategy_name, exit_name, param_grid, config, ohlcv)
-        path = self.cache_dir / f"{key}.json"
-        if path.exists():
-            return  # already cached — don't re-write
-        data = {
+        payload = {
             "version": _WFO_CACHE_VERSION,
             "symbol": symbol,
             "strategy": strategy_name,
@@ -244,8 +257,25 @@ class WFOCache:
             },
         }
         try:
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(data, f)
+            with self.db_manager.engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO wfo_cache (cache_key, symbol, strategy_name,
+                                               exit_name, cache_version, payload)
+                        VALUES (:k, :sym, :strat, :exit, :ver, CAST(:p AS JSONB))
+                        ON CONFLICT (cache_key) DO NOTHING
+                        """
+                    ),
+                    {
+                        "k": key,
+                        "sym": symbol,
+                        "strat": strategy_name,
+                        "exit": exit_name,
+                        "ver": _WFO_CACHE_VERSION,
+                        "p": json.dumps(payload),
+                    },
+                )
         except Exception:
             pass  # cache write failure is non-fatal
 

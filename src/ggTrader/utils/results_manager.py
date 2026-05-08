@@ -45,9 +45,7 @@ class ResultsManager:
         self.plots_dir.mkdir(parents=True, exist_ok=True)
 
         self.run_id = str(uuid.uuid4())
-        self.db_manager = ResultDBManager(
-            log_path=self.base_results_dir / "runs_log.csv",
-        )
+        self.db_manager = ResultDBManager()
 
     def _create_run_directory(self) -> Path:
         """Creates a timestamped run directory."""
@@ -130,8 +128,15 @@ class ResultsManager:
         else:
             output_data = self._build_output_structure(params, metrics, metadata)
 
+        # Keep writing the JSON for now: it's still consumed by transitional
+        # code paths (universe_cache, dashboard, legacy CLIs). The DB row below
+        # is the new source of truth for the live trader's discovery logic.
         with open(output_path, "w") as f:
             json.dump(output_data, f, indent=4)
+
+        ac = output_data.get("asset_class") or metadata.get("ASSET_CLASS", "crypto")
+        strategy_params = output_data.get("strategy_parameters") or params
+        phase_stats = metadata.get("PHASE_STATS")
 
         self.db_manager.add_run(
             run_id=self.run_id,
@@ -141,6 +146,11 @@ class ResultsManager:
             metadata=output_data["configuration"],
             metrics=metrics,
             pipeline_stage=self.pipeline_stage,
+            asset_class=ac,
+            strategy_params=strategy_params,
+            phase_stats=phase_stats,
+            run_dir=str(self.run_dir),
+            status="success",
         )
         self.db_manager.add_metrics(self.run_id, metrics)
 

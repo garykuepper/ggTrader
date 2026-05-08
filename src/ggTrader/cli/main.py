@@ -25,6 +25,7 @@ def main() -> None:
     from ggTrader.cli.cmd_repair import register_repair_parser, run_repair
     from ggTrader.cli.cmd_report import register_report_parser, run_report
     from ggTrader.cli.cmd_research import register_research_parser, run_research
+    from ggTrader.cli.cmd_signals import register_signals_parser, run_signals
     from ggTrader.cli.cmd_status import register_status_parser, run_status
     from ggTrader.cli.cmd_trade import register_trade_parser, run_trade
     from ggTrader.cli.cmd_trade_report import register_trade_report_parser, run_trade_report
@@ -42,6 +43,7 @@ def main() -> None:
     register_pnl_daily_parser(subparsers)
     register_repair_parser(subparsers)
     register_trade_report_parser(subparsers)
+    register_signals_parser(subparsers)
 
     _DISPATCH = {
         "research": run_research,
@@ -57,6 +59,7 @@ def main() -> None:
         "pnl-daily": run_pnl_daily,
         "repair": run_repair,
         "trade-report": run_trade_report,
+        "signals": run_signals,
     }
 
     args = parser.parse_args()

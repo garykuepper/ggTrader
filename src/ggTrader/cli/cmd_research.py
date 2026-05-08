@@ -49,19 +49,21 @@ def register_research_parser(subparsers: argparse._SubParsersAction):
         help="Volume aggregation window for asset selection (default: 30d)",
     )
     parser.add_argument(
-        "--asset-class",
-        type=str,
-        default="crypto",
-        choices=["crypto", "stocks"],
-        help="Asset class to research (default: crypto)",
-    )
-    parser.add_argument(
         "--workers", type=int, default=5, help="Number of parallel worker processes (default: 5)"
     )
     parser.add_argument(
         "--no-parallel", action="store_true", help="Run sequentially instead of in parallel"
     )
     parser.add_argument("--no-progress", action="store_true", help="Disable progress bar")
+
+
+class WorkerResultMissing(RuntimeError):
+    """A worker exited 0 but its result file is missing or unreadable.
+
+    Distinguishes a real plumbing failure (lost output, mid-write crash) from
+    a legitimate "this batch had no winners" outcome (file exists, empty
+    per_coin). The first should abort phase 2/3; the second is fine.
+    """
 
 
 def merge_worker_results(research_dir: Path, num_workers: int) -> int:
@@ -71,35 +73,51 @@ def merge_worker_results(research_dir: Path, num_workers: int) -> int:
     reads all of them, unions their ``strategy_parameters.per_coin`` dicts,
     and writes the merged result to ``run_results.json`` for phase 2/3.
 
-    Returns the number of coins merged.
+    Returns the number of coins merged. Raises ``WorkerResultMissing`` if
+    any worker's result file is missing or unreadable — the caller should
+    treat that as fatal rather than silently continuing with partial data.
+    Legitimate empty per_coin (worker ran, found nothing robust) is fine
+    and merely contributes 0 coins to the union.
     """
     merged_per_coin: dict = {}
     merged_base: dict | None = None
+    missing: list[str] = []
+    empty: list[str] = []
 
     for n in range(1, num_workers + 1):
         worker_file = research_dir / f"worker_{n}_results.json"
         if not worker_file.exists():
-            print(f"  [merge] Warning: {worker_file.name} not found — skipping.")
+            missing.append(f"{worker_file.name} (file not found)")
             continue
         try:
             with open(worker_file, "r") as f:
                 data = json.load(f)
         except Exception as e:
-            print(f"  [merge] Warning: could not read {worker_file.name}: {e} — skipping.")
+            missing.append(f"{worker_file.name} (unreadable: {e!r})")
             continue
 
         sp = data.get("strategy_parameters", {})
         per_coin = sp.get("per_coin", {})
         if not per_coin:
-            print(f"  [merge] Warning: {worker_file.name} has no per_coin data — skipping.")
-            continue
+            empty.append(worker_file.name)
 
         merged_per_coin.update(per_coin)
         if merged_base is None:
             merged_base = data  # use first worker's structure as the template
 
+    if missing:
+        raise WorkerResultMissing(
+            f"{len(missing)}/{num_workers} worker result file(s) missing or unreadable: "
+            + ", ".join(missing)
+        )
+
+    if empty:
+        # Not fatal — just surface it so the user knows which shards contributed nothing.
+        print(f"  [merge] Note: {len(empty)} worker(s) had empty per_coin: {empty}")
+
     if merged_base is None:
-        print("  [merge] ERROR: No worker result files found — phase 2/3 will have no data.")
+        # All workers had empty per_coin — every coin failed gates everywhere.
+        print("  [merge] ERROR: every worker had empty per_coin — phase 2/3 has no data.")
         return 0
 
     # Write merged result: patch per_coin into the template structure
@@ -112,6 +130,50 @@ def merge_worker_results(research_dir: Path, num_workers: int) -> int:
     with open(out_path, "w") as f:
         json.dump(merged_base, f, indent=4)
 
+    # Persist the merged run as a row in the ``runs`` table so the live trader's
+    # state_manager.get_latest_research_run can discover it. Per-worker rows
+    # already exist (one per shard), but the consolidated set of per-coin params
+    # only lives in the merged JSON.
+    try:
+        from datetime import datetime as _dt
+
+        from ggTrader.utils.result_db_manager import ResultDBManager
+
+        ps_path = research_dir / "phase_stats.json"
+        phase_stats = None
+        if ps_path.exists():
+            try:
+                phase_stats = json.loads(ps_path.read_text())
+            except Exception:
+                phase_stats = None
+
+        ts_str = merged_base.get("timestamp")
+        try:
+            ts = _dt.fromisoformat(ts_str) if ts_str else _dt.now()
+        except Exception:
+            ts = _dt.now()
+
+        ResultDBManager().add_run(
+            run_id=merged_base.get("run_id") or research_dir.name,
+            run_type="research",
+            script_name=merged_base.get("script_name", "research"),
+            parameters=merged_base.get("configuration", {}).get("_raw_config", {}),
+            metadata=merged_base.get("configuration", {}),
+            metrics=merged_base.get("results", {}),
+            pipeline_stage="research",
+            asset_class=merged_base.get("asset_class")
+                or merged_base.get("configuration", {})
+                .get("_raw_config", {}).get("ASSET_CLASS", "crypto"),
+            strategy_params=merged_base.get("strategy_parameters", {}),
+            phase_stats=phase_stats,
+            run_dir=str(research_dir),
+            status="success",
+            timestamp=ts,
+        )
+        print(f"  [merge] Persisted merged run to runs table ({merged_base.get('run_id')}).")
+    except Exception as e:
+        print(f"  [merge] WARNING: failed to upsert merged run into DB: {e}")
+
     n_coins = len(merged_per_coin)
     print(f"  [merge] Merged {n_coins} coins from {num_workers} workers -> {out_path.name}")
     return n_coins
@@ -119,36 +181,54 @@ def merge_worker_results(research_dir: Path, num_workers: int) -> int:
 
 def run_research(args: argparse.Namespace):
     """Executes the research pipeline in parallel by default."""
-    asset_class = args.asset_class
+    asset_class = "crypto"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     project_root = Path(__file__).resolve().parent.parent.parent.parent
     research_dir = project_root / f"results/research/research_{timestamp}"
     research_dir.mkdir(parents=True, exist_ok=True)
 
-    if asset_class == "stocks":
-        universe_path = research_dir / "top_stocks_volume.json"
-        universe_script = "scripts/update_universe_stocks.py"
-        cache_prefix = "universe_cache_stocks"
-    else:
-        universe_path = research_dir / "top_ccxt_volume.json"
-        universe_script = "scripts/update_universe_ccxt.py"
-        cache_prefix = "universe_cache"
+    universe_path = research_dir / "top_ccxt_volume.json"
+    universe_script = "scripts/update_universe_ccxt.py"
 
-    # Check for a same-day cached universe file (keyed by date + top-N + window).
-    today = datetime.now().strftime("%Y%m%d")
-    cache_name = f"{cache_prefix}_{today}_top{args.top}_{args.window}.json"
-    universe_cache_path = project_root / "results" / "research" / cache_name
+    # Same-day universe is keyed by (asset_class, snapshot_date, top, window) in
+    # the universe_cache table.
+    from datetime import date as _date
 
-    if universe_cache_path.exists():
+    from sqlalchemy import text as _text
+
+    from ggTrader.utils.result_db_manager import ResultDBManager
+
+    rm = ResultDBManager()
+    cache_key = f"{asset_class}_top{args.top}_{args.window}"
+    today_d = _date.today()
+    cached_payload = None
+    try:
+        with rm.engine.connect() as conn:
+            row = conn.execute(
+                _text(
+                    """
+                    SELECT symbols FROM universe_cache
+                    WHERE asset_class = :ac AND snapshot_date = :d
+                      AND symbols->>'cache_key' = :ck
+                    """
+                ),
+                {"ac": asset_class, "d": today_d, "ck": cache_key},
+            ).fetchone()
+        if row is not None:
+            cached_payload = row[0]
+    except Exception:
+        cached_payload = None
+
+    if cached_payload is not None:
         print(
             f"\n[{datetime.now()}] Step 1: Using cached universe from today "
-            f"({universe_cache_path.name}) — skipping live fetch."
+            f"(universe_cache table, {cache_key}) — skipping live fetch."
         )
-        import shutil
-        shutil.copy(universe_cache_path, universe_path)
+        with open(universe_path, "w") as f:
+            json.dump(cached_payload.get("entries", []), f, indent=2)
     else:
         print(
-            f"\n[{datetime.now()}] Step 1: Fetching Live {asset_class.capitalize()} Universe for Research "
+            f"\n[{datetime.now()}] Step 1: Fetching Live Crypto Universe for Research "
             f"({args.top} assets, {args.window} window)..."
         )
         subprocess.run(
@@ -164,10 +244,25 @@ def run_research(args: argparse.Namespace):
             ],
             check=True,
         )
-        # Cache for subsequent runs today
-        import shutil
-        shutil.copy(universe_path, universe_cache_path)
-        print(f"  Cached universe to {universe_cache_path.name} for today's runs.")
+        try:
+            with open(universe_path, "r") as f:
+                entries = json.load(f)
+            payload = {"cache_key": cache_key, "entries": entries}
+            with rm.engine.begin() as conn:
+                conn.execute(
+                    _text(
+                        """
+                        INSERT INTO universe_cache (asset_class, snapshot_date, symbols)
+                        VALUES (:ac, :d, CAST(:p AS JSONB))
+                        ON CONFLICT (asset_class, snapshot_date) DO UPDATE
+                          SET symbols = EXCLUDED.symbols, created_at = now()
+                        """
+                    ),
+                    {"ac": asset_class, "d": today_d, "p": json.dumps(payload)},
+                )
+            print(f"  Cached universe to universe_cache table ({cache_key}) for today's runs.")
+        except Exception as e:
+            print(f"  WARNING: failed to cache universe to DB: {e}")
 
     # Load the freshly generated symbols
     try:
@@ -182,9 +277,8 @@ def run_research(args: argparse.Namespace):
         print(f"Error loading universe for chunking: {e}")
         return
 
-    # Ensure -USD suffix for crypto (as required by the historical loader)
-    if asset_class == "crypto":
-        symbols = [s if "-" in s else f"{s}-USD" for s in symbols]
+    # Ensure -USD suffix (required by the historical loader)
+    symbols = [s if "-" in s else f"{s}-USD" for s in symbols]
 
     # Calculate dynamic training window
     if args.end_date:
@@ -220,8 +314,6 @@ def run_research(args: argparse.Namespace):
             str(research_dir.absolute()),
             "--pipeline-stage",
             "research",
-            "--asset-class",
-            asset_class,
         ]
         if args.no_progress:
             cmd.append("--no-progress")
@@ -263,8 +355,6 @@ def run_research(args: argparse.Namespace):
                 start_date,
                 "--end-date",
                 end_date,
-                "--asset-class",
-                asset_class,
             ]
 
             f = open(worker_log, "w")
@@ -405,12 +495,40 @@ def run_research(args: argparse.Namespace):
     print(f"\n[{datetime.now()}] All parallel workers finished.")
     print(f"Intermediate WFO results available in: {research_dir}")
 
+    # Verify every worker exited cleanly. Subprocess.Popen does not raise on
+    # non-zero exit; without this check, an OOM-killed or exception-thrown
+    # worker would silently drop its 10-coin batch and phase 2/3 would run
+    # on a partial universe with no signal.
+    if not args.no_parallel and args.workers > 1:
+        worker_failures: list[tuple[int, int, Path]] = []
+        for i, p in enumerate(processes):
+            rc = p.returncode
+            if rc != 0:
+                worker_failures.append((i + 1, rc if rc is not None else -1, log_paths[i]))
+        if worker_failures:
+            print("\nERROR: one or more research workers exited with a non-zero status.")
+            for w_id, rc, log in worker_failures:
+                print(f"  ✗ Worker {w_id}: exit code {rc}  (log: {log})")
+            print(
+                "Refusing to run phase 2/3 on partial data. Inspect the worker "
+                "log(s) above and re-run after fixing the root cause."
+            )
+            sys.exit(1)
+
     # Merge per-worker result files into a single run_results.json before phase 2/3.
     # Without this, whichever worker wrote last would be the only one seen by phase 2/3.
     if not args.no_parallel and args.workers > 1:
         print(f"\n[{datetime.now()}] Merging worker results...")
-        # actual workers launched (≤ args.workers)
-        n_merged = merge_worker_results(research_dir, len(symbol_chunks))
+        try:
+            # actual workers launched (≤ args.workers)
+            n_merged = merge_worker_results(research_dir, len(symbol_chunks))
+        except WorkerResultMissing as e:
+            print(f"\nERROR: {e}")
+            print(
+                "  Worker(s) exited 0 but their result file is missing or corrupt — "
+                "this is a plumbing failure, not a no-edge result. Phase 2/3 aborted."
+            )
+            sys.exit(1)
         if n_merged == 0:
             print("  ERROR: merge produced 0 coins. Phase 2/3 will be skipped.")
             return
@@ -434,7 +552,6 @@ def run_research(args: argparse.Namespace):
         "--no-progress",
         "--start-date", start_date,
         "--end-date", end_date,
-        "--asset-class", asset_class,
     ]
     subprocess.run(final_cmd, check=True)
 

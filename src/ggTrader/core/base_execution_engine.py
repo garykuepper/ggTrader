@@ -1,4 +1,4 @@
-"""Base class for live trading execution engines (Crypto and Stocks)."""
+"""Base class for the live crypto trading execution engine."""
 
 from __future__ import annotations
 
@@ -157,24 +157,19 @@ class BaseExecutionEngine(ABC):
         self.db_manager = db_manager
         self.run_id = run_id
         
-        # Asset-specific names for logs and persistence
-        self.asset_class = config.get("ASSET_CLASS", "crypto")
-        log_file = "live_trader_stocks.log" if self.asset_class == "stocks" else "live_trader.log"
-        self.logger = setup_live_logger(log_file)
-        
-        self.persistence_path = config.get(
-            "PERSISTENCE_PATH", 
-            f"data/active_positions{'_stocks' if self.asset_class == 'stocks' else ''}.json"
-        )
-        
+        self.asset_class = "crypto"
+        self.logger = setup_live_logger("live_trader.log")
+
+        self.persistence_path = config.get("PERSISTENCE_PATH", "data/active_positions.json")
+
         self.state = "INITIALIZED"
-        self.interval = config.get("INTERVAL", "4h" if self.asset_class == "crypto" else "1d")
+        self.interval = config.get("INTERVAL", "4h")
         self.symbols = config.get("SYMBOLS", [])
         self.per_coin_params = {}
+        self.allocation_weights: Dict[str, float] = {}
         self.active_positions = {}
-        
+
         self.tracker = TradeTracker(
-            data_dir=config.get("TRACKER_DATA_DIR", f"data/live{'_stocks' if self.asset_class == 'stocks' else ''}"),
             db_manager=self.db_manager,
             run_id=self.run_id,
         )
@@ -195,17 +190,33 @@ class BaseExecutionEngine(ABC):
             except Exception as e:
                 self.logger.debug(f"  [Notify] {n.name} send failed: {e!r}")
 
-    def load_optimized_params(self, json_path: str) -> None:
-        """Load per-symbol parameters and apply selection gates."""
-        if not os.path.exists(json_path):
-            self.logger.warning(f"Results file {json_path} not found.")
-            return
+    def load_optimized_params(self, source: Any) -> None:
+        """Load per-symbol parameters and apply selection gates.
 
-        with open(json_path, "r") as f:
-            data = json.load(f)
+        ``source`` may be:
+          - a ``LatestResearchRun`` dataclass (preferred — DB-backed)
+          - a path to a ``run_results.json`` (legacy)
+          - a path to a results directory containing ``run_results.json``
+        """
+        from ggTrader.utils.state_manager import LatestResearchRun, from_run_dir
 
-        sp = data.get("strategy_parameters", {})
-        per_coin = sp.get("per_coin", data.get("per_coin_results", {}))
+        per_coin: Dict[str, Any] = {}
+        if isinstance(source, LatestResearchRun):
+            per_coin = source.per_coin or {}
+        else:
+            path_str = str(source)
+            p = Path(path_str)
+            if p.is_dir():
+                latest = from_run_dir(p)
+                per_coin = latest.per_coin
+            elif p.exists():
+                with open(p, "r") as f:
+                    data = json.load(f)
+                sp = data.get("strategy_parameters", {})
+                per_coin = sp.get("per_coin", data.get("per_coin_results", {}))
+            else:
+                self.logger.warning(f"Results source {path_str} not found.")
+                return
         
         min_rob = float(self.config.get("MIN_ROBUSTNESS_SCORE", 0.0))
         max_per_strategy = self.config.get("MAX_COINS_PER_STRATEGY", None)
@@ -229,8 +240,58 @@ class BaseExecutionEngine(ABC):
                 "exit_name": result.get("best_exit"),
                 "params": result.get("best_params", {}),
                 "robustness_score": robustness,
+                "oos_robustness_score": float(result.get("oos_robustness_score", 0.0)),
             }
         self.logger.info(f"Loaded optimized parameters for {len(self.per_coin_params)} symbols.")
+        self._compute_research_allocation_weights()
+
+    def _compute_research_allocation_weights(self) -> None:
+        """Compute per-symbol portfolio weights from OOS robustness scores.
+
+        Mirrors ``orchestrator._compute_allocation_weights``: weights ∝ max(0, oos_score),
+        normalized to sum to 1.0, capped at ``MAX_COIN_ALLOCATION`` per coin with
+        excess redistributed to under-cap coins. Stored on ``self.allocation_weights``.
+        Coins with non-positive OOS scores receive 0% — they're in the gate-passing
+        universe but the live trader will refuse to open new entries on them when
+        ``WEIGHTED_SIZING`` is enabled.
+        """
+        import numpy as np
+        syms = list(self.per_coin_params.keys())
+        if not syms:
+            self.allocation_weights = {}
+            return
+        scores = [float(self.per_coin_params[s].get("oos_robustness_score", 0.0)) for s in syms]
+        raw = np.array([max(0.0, x) for x in scores], dtype=float)
+        total = raw.sum()
+        if total <= 0.0:
+            raw = np.ones(len(scores), dtype=float)
+            total = raw.sum()
+        w = raw / total
+        max_alloc = float(self.config.get("MAX_COIN_ALLOCATION", 0.25))
+        for _ in range(len(w) + 1):
+            over = w > max_alloc + 1e-12
+            if not over.any():
+                break
+            excess = (w[over] - max_alloc).sum()
+            w[over] = max_alloc
+            under = ~over
+            if not under.any():
+                w += excess / len(w)
+                break
+            w[under] += excess / under.sum()
+        # Zero-out any coins whose raw OOS was non-positive so they aren't allocated
+        # via the redistribution loop.
+        for i, sc in enumerate(scores):
+            if sc <= 0.0:
+                w[i] = 0.0
+        self.allocation_weights = {s: float(wt) for s, wt in zip(syms, w)}
+        nz = sum(1 for v in self.allocation_weights.values() if v > 0)
+        self.logger.info(
+            f"Allocation weights computed: {nz}/{len(syms)} coins receive capital "
+            f"(cap={max_alloc:.0%}/coin). Top: "
+            + ", ".join(f"{s}={self.allocation_weights[s]*100:.1f}%"
+                        for s in sorted(self.allocation_weights, key=self.allocation_weights.get, reverse=True)[:5])
+        )
 
     def load_state(self) -> None:
         """Load state from persistence file."""

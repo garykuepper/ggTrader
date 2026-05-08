@@ -329,6 +329,111 @@ class EmaCrossEntry:
         return entries_array.astype(bool), param_combos
 
 
+class MultiTimeframeMomentumEntry:
+    """4h EMA cross gated by a slow (daily-equivalent) trend filter.
+
+    Fires when a fast/slow EMA crosses up on the 4h timeframe AND the close
+    is above a slow EMA approximating the daily trend. The daily EMA is
+    computed as ``ema(close, mtf_daily_ema * 6)`` on the 4h series — 1d ≈
+    6 × 4h, so this approximates a daily EMA without changing pipeline
+    shape or requiring a true daily resample. The goal is "slower trend
+    agreement," not exact daily-candle alignment, so this approximation is
+    intentional.
+    """
+
+    name = "mtf_momentum"
+    param_schema = {
+        "ema_fast": [9, 12],
+        "ema_slow": [21, 26],
+        "mtf_daily_ema": [50, 100, 200],
+    }
+
+    def compute_entries(
+        self, precomputer: IndicatorPrecomputer, param_grid: dict
+    ) -> tuple[np.ndarray, list[dict]]:
+        close = precomputer.close
+        if close.ndim == 1:
+            close = close[:, np.newaxis]
+        n_time, n_symbols = close.shape
+
+        ema_fast_vals = param_grid.get("ema_fast", [9, 12])
+        ema_slow_vals = param_grid.get("ema_slow", [21, 26])
+        mtf_daily_vals = param_grid.get("mtf_daily_ema", [50, 100, 200])
+
+        ema_fast_vals = ema_fast_vals if isinstance(ema_fast_vals, list) else [ema_fast_vals]
+        ema_slow_vals = ema_slow_vals if isinstance(ema_slow_vals, list) else [ema_slow_vals]
+        mtf_daily_vals = mtf_daily_vals if isinstance(mtf_daily_vals, list) else [mtf_daily_vals]
+
+        # 1d ≈ 6 × 4h; expand the daily-equivalent spans into 4h bar counts
+        # so a single compute_ema call covers fast, slow, and the daily trend.
+        daily_4h_lengths = [int(d) * 6 for d in mtf_daily_vals]
+        all_ema_lengths = sorted(set(ema_fast_vals + ema_slow_vals + daily_4h_lengths))
+        ema_ind = precomputer.compute_ema(all_ema_lengths)
+        ema_vals = ema_ind.ema.values if hasattr(ema_ind.ema, "values") else ema_ind.ema
+        n_ema = len(all_ema_lengths)
+        ema_vals = _vbt_multi_output_to_tps(ema_vals, n_time, n_ema, n_symbols)
+
+        param_combos = []
+        entries_list = []
+
+        for fast_len, slow_len, mtf_d in itertools.product(
+            ema_fast_vals, ema_slow_vals, mtf_daily_vals
+        ):
+            if fast_len >= slow_len:
+                # Skip degenerate combos; entries are all False.
+                entries_list.append(np.zeros((n_time, n_symbols), dtype=bool))
+                param_combos.append(
+                    {"ema_fast": fast_len, "ema_slow": slow_len, "mtf_daily_ema": mtf_d}
+                )
+                continue
+
+            fast_idx = all_ema_lengths.index(fast_len)
+            slow_idx = all_ema_lengths.index(slow_len)
+            daily_idx = all_ema_lengths.index(int(mtf_d) * 6)
+
+            if ema_vals.ndim == 3:
+                ema_fast = ema_vals[:, fast_idx, :]
+                ema_slow = ema_vals[:, slow_idx, :]
+                ema_daily = ema_vals[:, daily_idx, :]
+            else:
+                ema_fast = ema_vals[:, fast_idx] if ema_vals.shape[1] > fast_idx else ema_vals
+                ema_slow = ema_vals[:, slow_idx] if ema_vals.shape[1] > slow_idx else ema_vals
+                ema_daily = ema_vals[:, daily_idx] if ema_vals.shape[1] > daily_idx else ema_vals
+
+            if ema_fast.ndim == 1:
+                ema_fast = ema_fast[:, np.newaxis]
+            if ema_slow.ndim == 1:
+                ema_slow = ema_slow[:, np.newaxis]
+            if ema_daily.ndim == 1:
+                ema_daily = ema_daily[:, np.newaxis]
+
+            ema_fast_prev = np.roll(ema_fast.copy(), 1, axis=0)
+            ema_slow_prev = np.roll(ema_slow.copy(), 1, axis=0)
+            ema_fast_prev[0] = ema_fast[0]
+            ema_slow_prev[0] = ema_slow[0]
+
+            cross_up = (ema_fast > ema_slow) & (ema_fast_prev <= ema_slow_prev)
+            daily_ok = close > ema_daily
+            entries_combo = cross_up & daily_ok
+            entries_combo[0] = False
+
+            entries_list.append(entries_combo.astype(bool))
+            param_combos.append(
+                {"ema_fast": fast_len, "ema_slow": slow_len, "mtf_daily_ema": mtf_d}
+            )
+
+        entries_stacked = [
+            ec.reshape(n_time, -1) if ec.ndim == 2 else ec for ec in entries_list
+        ]
+        entries_array = (
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
+        )
+
+        return entries_array.astype(bool), param_combos
+
+
 class RsiReversalEntry:
     """RSI oversold/overbought reversal entry strategy."""
 
@@ -424,6 +529,101 @@ class RsiReversalEntry:
             else:
                 entries_stacked.append(entries_combo)
 
+        entries_array = (
+            np.hstack(entries_stacked)
+            if entries_stacked
+            else np.zeros((n_time, n_symbols), dtype=bool)
+        )
+
+        return entries_array.astype(bool), param_combos
+
+
+class AdxFilteredMeanReversionEntry:
+    """RSI cross-up gated by ADX < threshold (range-only mean reversion).
+
+    Targets the failure mode where existing ``rsi_reversal`` entries fire
+    during strong trends and bleed in OOS. ADX < threshold means "no strong
+    trend" → genuine ranging market → mean-reversion entries are
+    appropriate. Combines ``RsiReversalEntry``'s cross-up signal with a
+    regime guard derived from ``PsarAdxEntry``'s ADX usage.
+    """
+
+    name = "adx_filtered_rsi"
+    param_schema = {
+        "rsi_length": [14],
+        "rsi_oversold": [25, 30, 35],
+        "adx_length": [14],
+        "adx_max": [15, 20, 25],
+    }
+
+    def compute_entries(
+        self, precomputer: IndicatorPrecomputer, param_grid: dict
+    ) -> tuple[np.ndarray, list[dict]]:
+        close = precomputer.close
+        if close.ndim == 1:
+            close = close[:, np.newaxis]
+        n_time, n_symbols = close.shape
+
+        rsi_lengths = param_grid.get("rsi_length", [14])
+        rsi_oversold_vals = param_grid.get("rsi_oversold", [25, 30, 35])
+        adx_lengths = param_grid.get("adx_length", [14])
+        adx_max_vals = param_grid.get("adx_max", [15, 20, 25])
+
+        rsi_lengths = rsi_lengths if isinstance(rsi_lengths, list) else [rsi_lengths]
+        rsi_oversold_vals = (
+            rsi_oversold_vals if isinstance(rsi_oversold_vals, list) else [rsi_oversold_vals]
+        )
+        adx_lengths = adx_lengths if isinstance(adx_lengths, list) else [adx_lengths]
+        adx_max_vals = adx_max_vals if isinstance(adx_max_vals, list) else [adx_max_vals]
+
+        rsi_ind = precomputer.compute_rsi(rsi_lengths)
+        rsi_vals = rsi_ind.rsi.values if hasattr(rsi_ind.rsi, "values") else rsi_ind.rsi
+        n_rsi = len(rsi_lengths)
+        rsi_vals = _vbt_multi_output_to_tps(rsi_vals, n_time, n_rsi, n_symbols)
+
+        adx_ind = precomputer.compute_adx(adx_lengths)
+        adx_vals = adx_ind.adx.values if hasattr(adx_ind.adx, "values") else adx_ind.adx
+        n_adx = len(adx_lengths)
+        adx_vals = _vbt_multi_output_to_tps(adx_vals, n_time, n_adx, n_symbols)
+
+        param_combos = []
+        entries_list = []
+
+        for rsi_len, rsi_thresh, adx_len, adx_max in itertools.product(
+            rsi_lengths, rsi_oversold_vals, adx_lengths, adx_max_vals
+        ):
+            rsi_len_idx = rsi_lengths.index(rsi_len)
+            adx_len_idx = adx_lengths.index(adx_len)
+
+            rsi_col = rsi_vals[:, rsi_len_idx, :] if rsi_vals.ndim == 3 else rsi_vals
+            adx_col = adx_vals[:, adx_len_idx, :] if adx_vals.ndim == 3 else adx_vals
+
+            if rsi_col.ndim == 1:
+                rsi_col = rsi_col[:, np.newaxis]
+            if adx_col.ndim == 1:
+                adx_col = adx_col[:, np.newaxis]
+
+            rsi_col_prev = np.roll(rsi_col.copy(), 1, axis=0)
+            rsi_col_prev[0] = rsi_col[0]
+
+            cross_up = (rsi_col > float(rsi_thresh)) & (rsi_col_prev <= float(rsi_thresh))
+            ranging = adx_col < float(adx_max)
+            entries_combo = cross_up & ranging
+            entries_combo[0] = False
+
+            entries_list.append(entries_combo.astype(bool))
+            param_combos.append(
+                {
+                    "rsi_length": rsi_len,
+                    "rsi_oversold": rsi_thresh,
+                    "adx_length": adx_len,
+                    "adx_max": adx_max,
+                }
+            )
+
+        entries_stacked = [
+            ec.reshape(n_time, -1) if ec.ndim == 2 else ec for ec in entries_list
+        ]
         entries_array = (
             np.hstack(entries_stacked)
             if entries_stacked
@@ -1164,7 +1364,9 @@ class TrailingStopExit:
 ENTRY_REGISTRY: dict[str, type] = {
     "psar_adx": PsarAdxEntry,
     "ema_cross": EmaCrossEntry,
+    "mtf_momentum": MultiTimeframeMomentumEntry,
     "rsi_reversal": RsiReversalEntry,
+    "adx_filtered_rsi": AdxFilteredMeanReversionEntry,
     "macd_cross": MacdCrossEntry,
     "bbands_mean_reversion": BollingerMeanReversionEntry,
     "donchian_breakout": DonchianBreakoutEntry,

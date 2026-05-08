@@ -161,6 +161,7 @@ def execute_full_pipeline(args: Namespace, base_constants: dict) -> None:
                 "phase_2_per_coin_final_stats": wfo_results.get("phase_2_per_coin_final_stats", {}),
                 "phase_3_stats": wfo_results.get("phase_3_stats"),
                 "phase_3_per_coin_final_stats": wfo_results.get("phase_3_per_coin_final_stats", {}),
+                "selection_gate_stats": wfo_results.get("selection_gate_stats", {}),
             }
 
             print("\n" + "=" * 100)

@@ -159,9 +159,18 @@ class CachedExchangeLoader(LiveExchangeLoader):
                 if pd.isna(row["close"]) or pd.isna(ts):
                     continue
 
+                # `ohlcv.timestamp` is `timestamp without time zone`. Passing a
+                # tz-aware datetime makes psycopg2 convert to the connection's
+                # local TZ before stripping, shifting bars by 7-8h depending
+                # on DST. Convert to UTC and drop the tz so the stored label
+                # is the actual UTC wall-clock.
+                if hasattr(ts, "tz_convert") and ts.tzinfo is not None:
+                    ts_naive_utc = ts.tz_convert("UTC").tz_localize(None)
+                else:
+                    ts_naive_utc = ts
                 records.append(
                     (
-                        ts.to_pydatetime(),
+                        ts_naive_utc.to_pydatetime(),
                         db_symbol,
                         interval,
                         float(row["open"]) if not pd.isna(row["open"]) else None,

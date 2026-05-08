@@ -19,7 +19,7 @@ services:
           cpus: '2.0'
           memory: 16G
     stop_grace_period: 10s
-    command: python -u ggt.py trade --adaptive-sizing --min-trailing-stop-pct 4 --min-atr-trailing-pct 4
+    command: python -u ggt.py trade --weighted-sizing --min-trailing-stop-pct 4 --min-atr-trailing-pct 4
 
   grafana:
     image: grafana/grafana-oss:10.4.0

@@ -1,78 +1,94 @@
-## ⚙️ Database Setup (TimescaleDB)
+# Installation
 
-`ggTrader` requires a TimescaleDB instance (PostgreSQL with the Timescale extension) to store OHLCV data and research results.
+ggTrader needs three things to run: Python 3.10+, a TimescaleDB instance, and (for live trading) exchange API keys.
 
-### 1. Installation
-
-You can run TimescaleDB natively or via Docker (recommended for isolation):
+## 1. Python dependencies
 
 ```bash
-docker run -d --name ggtrader_db -p 5432:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb:latest-pg16
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-### 2. Environment Variables
+This installs the project and the `ggt` CLI. Verify with:
 
-Copy `.env.example` to `.env` and fill in your exchange credentials:
+```bash
+python ggt.py --help
+```
+
+## 2. TimescaleDB
+
+TimescaleDB is PostgreSQL with a time-series extension. Easiest path is Docker:
+
+```bash
+docker run -d \
+  --name ggtrader_db \
+  -p 5433:5432 \
+  -e POSTGRES_USER=ggtrader \
+  -e POSTGRES_PASSWORD=ggtrader \
+  -e POSTGRES_DB=ggtrader \
+  timescale/timescaledb:latest-pg16
+```
+
+(The `5433:5432` mapping keeps it off the default Postgres port if you have one running locally.)
+
+## 3. Environment
+
+Copy `.env.example` to `.env` and fill in:
 
 ```text
-# Kraken (Crypto)
-KRAKEN_KEY=your_key
-KRAKEN_SECRET=your_secret
-
-# Alpaca (Stocks)
-APCA_API_KEY_ID=your_key
-APCA_API_SECRET_KEY=your_secret
-APCA_API_BASE_URL=https://paper-api.alpaca.markets
-
 # Database
 POSTGRES_CONNECTION_STRING=postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader
+
+# Kraken (for live trading)
+KRAKEN_KEY=...
+KRAKEN_SECRET=...
+
+# Telegram + Discord (optional, for alerts)
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+DISCORD_WEBHOOK_URL=...
 ```
 
-### 3. Data Preparation
+## 4. First data sync
 
-Once the DB is running, use the `ggt` CLI to initialize and sync data:
-
-1. **Check Connectivity**: `python ggt.py db diag`
-2. **Sync Universe**: `python ggt.py ingest --days 180`
-3. **Optimize Storage**: `python ggt.py db compression --enable`
-
-## 🐳 Docker Deployment (Live Bot)
-
-If you wish to run the live trading engine in a container while keeping the database on the host:
-
-1. **Configure Compose**: Ensure `docker-compose.yaml` uses `host.docker.internal` as the `DB_HOST`.
-2. **Build & Run**:
-   ```bash
-   docker compose up --build -d
-   ```
-
-## 🚀 Running ggTrader
-
-### Grand Research (Start Here)
-Execute the parallel research pipeline to find the best assets and strategies:
 ```bash
-# Crypto (default)
-python ggt.py research --top 50 --workers 5
+# Verify DB connectivity
+python ggt.py db diag
 
-# Stocks
-python ggt.py research --asset-class stocks --top 25 --workers 5
+# Pull recent OHLCV for the live universe
+python ggt.py ingest --days 180
+
+# Optional: enable Timescale compression to shrink old data
+python ggt.py db compression --enable
 ```
 
-### Portfolio Backtest
-Replay the latest research results in a combined simulation:
+## 5. Sanity check
+
+Run a research job on a small universe to confirm the pipeline works end-to-end:
+
 ```bash
-python ggt.py backtest
+python ggt.py research --top 10 --workers 2
 ```
 
-### Live Trading
-Start the execution loop for automated orders:
+If it finishes and writes a `research_report.md` to `results/research/research_<timestamp>/`, you're set.
+
+## Docker (optional)
+
+For running the live bot in a container while keeping the DB on the host, use the bundled `docker-compose.yaml`:
+
 ```bash
-# Crypto Live
-python ggt.py trade --adaptive-sizing
-
-# Stock Paper Trading
-python ggt.py trade --asset-class stocks --paper
+docker compose build --no-cache
+docker compose up -d
 ```
+
+The compose file uses `host.docker.internal` to reach the host's TimescaleDB, so make sure your `.env` `DB_HOST` matches.
+
+## What's next
+
+- [CLI Reference](cli_reference.md) — every command and flag
+- [Live Trading Guide](live_trading_guide.md) — going from research output to live orders
+- [Architecture](architecture.md) — what each piece does
 
 ---
-*Back to [README.md](../readme.md)*
+*Back to [README.md](../README.md).*

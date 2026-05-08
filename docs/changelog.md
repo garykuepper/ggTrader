@@ -1,5 +1,153 @@
 # Changelog
 
+## 2026-05-08
+
+### Removed: stocks pipeline (full purge)
+
+The stocks pipeline is gone — the project is crypto-only ahead of a Kraken-CLI transition. Removed:
+
+- **Modules deleted**: `core/stock_execution_engine.py`, `core/stock_regime_filtering.py`, `core/market_hours.py`, `data/live/yfinance_loader.py`, `data/live/cached_yfinance_loader.py`, `data/core/stock_constants.py`, `data/core/index_constituents.py`, `scripts/update_universe_stocks.py`, `scripts/run_stocks_research.sh`, `scripts/daily_pnl_report_stocks.sh`.
+- **Config**: `stock_pipeline_config()` removed from `run_config.py`; SPY/VIX/Alpaca keys deleted.
+- **CLI**: `--asset-class` flag removed from `research`, `trade`, `backtest`, `production`, `pnl-daily`, `signals`. Hard-coded `crypto` everywhere a Python path needed it; the DB schema (`universe_cache`, `runs`, balance/positions snapshots) keeps its `asset_class` column with `'crypto'` as the only value going forward.
+- **Engines/orchestrator**: `_load_spy_close`, `_sp500_buy_hold_portfolio_stats`, S&P 500 benchmark columns in research reports, alpaca-sync paths in `TradeTracker`, and `get_alpaca_credentials` all removed.
+- **Docker**: `ggtrader_live_stocks` service removed from `docker-compose.yaml`. Cron entry for `daily_pnl_report_stocks.sh` (21:30 Mon-Fri) needs to be removed manually from crontab.
+
+### Cleaned up: regime-filter inconsistencies
+
+- Removed dead-code `_compute_altcoin_index_mask` from `regime_filtering.py` (no longer wired into `_apply_tiered_regime_mask` since the 2-tier simplification; stale orchestrator/engine imports cleaned up).
+- Fixed asymmetric corr-fallback in `crypto_execution_engine._compute_live_regime_allowance`: missing-symbol corr now defaults to **1.0** (gate by default), matching the research orchestrator instead of the previous 0.0 (free by default).
+- Updated `CLAUDE.md` "Tiered Regime Filter" section to describe the actual 2-tier filter instead of the stale 3-tier description.
+
+### Heatmap: 0.2 colour bands
+
+`scripts/coin_correlation_matrix.py` heatmap now uses 6 discrete bands (red below 0; light-to-dark blue in 0.2 increments above 0) instead of the prior 4-band tier-aligned colouring.
+
+## 2026-05-06
+
+### Disabled: BTC + altcoin regime filters
+
+Both `BTC_REGIME_FILTER` and `ALTCOIN_REGIME_FILTER` set to `False` in `full_pipeline_config()`. After 17 days of zero entries, the softened-but-still-bearish BTC gate was confirmed (via `ggt signals`) to be the sole blocker for 19 of 22 universe coins. Trading purely on strategy signals from here; trailing-stop exits (universal post-2026-05-06) are the safety net. Stocks pipeline (SPY/VIX) untouched — different macro regime.
+
+### Fixed: 17-day entry drought (BTC regime filter too brittle around the EMA boundary)
+
+Two prior fix attempts (`CAPITAL_PER_TRADE=None`, OHLCV TZ corruption — both 2026-05-05) were real defects but did not unblock entries. Diagnostic review confirmed the actual gate was the existing portfolio-level **BTC regime filter**: BTC's EMA(20) had been below EMA(200) since ~2026-04-19, and the live trader silently logged `[Regime] BLOCKED entry for X (bear regime)` 812 times over the gap because every high-correlation coin (≥ 0.5) was gated by the BTC mask. The gate was working as designed; the EMA20-vs-EMA200 cross was simply too brittle around the boundary.
+
+- **`BTC_REGIME_FILTER_SHORT_EMA: 20 → None`** ([run_config.py](../src/ggTrader/utils/run_config.py)). Switches the BTC mask from a dual-EMA cross to a single `BTC_close > BTC_EMA(EMA_WARMUP_BARS)` test. The same `None` semantics already existed in `_compute_altcoin_index_mask` ([regime_filtering.py:131-136](../src/ggTrader/core/regime_filtering.py)) so the symmetry is clean.
+- **WARNING logs added to silent rejection paths** ([crypto_execution_engine.py](../src/ggTrader/core/crypto_execution_engine.py) `_validate_entry_preconditions`). Insufficient USD balance, sub-min order amounts, and exception paths now log a reason instead of a bare `return False`. Future entry-drought investigations don't require grepping 17 days of logs.
+
+### Removed: per-coin entry regime filter (added and removed same-day)
+
+The per-coin filter added earlier today was removed before ever being enabled. The new `ggt signals` diagnostic showed every one of the 22 universe coins is currently 15–32% below its own EMA(200) — turning the filter on would have blocked 100% of entries (strictly more than the existing BTC tier already does). The drought has a single cause (the BTC regime gate), and the per-coin scaffold was unused dead code, so it's gone. The `%vs_EMA` informational column in `ggt signals` stays — it surfaces the same data without coupling it to a filter.
+
+- Removed `_compute_per_coin_regime_mask` from [regime_filtering.py](../src/ggTrader/core/regime_filtering.py) and its wire-ups in [orchestrator.py](../src/ggTrader/core/orchestrator.py) and [crypto_execution_engine.py](../src/ggTrader/core/crypto_execution_engine.py).
+- Removed `PER_COIN_REGIME_FILTER` / `PER_COIN_REGIME_FILTER_LENGTH` / `PER_COIN_REGIME_FILTER_SHORT_EMA` from `full_pipeline_config()` and `stock_pipeline_config()`.
+- Removed the per-coin filter row from PnL daily report regime sections.
+- Removed the 5 `TestComputePerCoinRegimeMask` unit tests.
+- See "Added: per-coin entry regime filter" below for the original design and rationale.
+
+### Added: per-coin entry regime filter (v1, opt-in)
+
+Each coin is AND-ed with a mask computed from its own price history (`close > coin_ema(LENGTH)`, or `short_ema > long_ema` when `PER_COIN_REGIME_FILTER_SHORT_EMA` is set), so a coin in its own downtrend is gated even when the BTC/altcoin tier is bull. Default OFF; opt in via config and a research run before promoting to live.
+
+- **`_compute_per_coin_regime_mask`** ([regime_filtering.py](../src/ggTrader/core/regime_filtering.py)). Returns `{symbol: pd.Series[bool]}` aligned to `ohlcv.index`. Mirrors the BTC-mask EMA pattern; no-lookahead verified by unit test.
+- **Wired into the orchestrator** ([orchestrator.py](../src/ggTrader/core/orchestrator.py) `_apply_tiered_regime_mask` and the WFO fold loop) and the **live trader** ([crypto_execution_engine.py](../src/ggTrader/core/crypto_execution_engine.py) `_compute_live_regime_allowance`).
+- **Config keys**: `PER_COIN_REGIME_FILTER` (default `False`), `PER_COIN_REGIME_FILTER_LENGTH` (default 200), `PER_COIN_REGIME_FILTER_SHORT_EMA` (default `None`). Added to both `full_pipeline_config()` and `stock_pipeline_config()`.
+- **PnL report** ([pnl_report_builder.py](../src/ggTrader/utils/pnl_report_builder.py)): per-coin / per-stock filter on/off indicator added to both regime sections.
+- **Tests**: 5 unit tests in `tests/test_regime_filtering.py::TestComputePerCoinRegimeMask` cover dict shape, bool/index alignment, no-lookahead, dual-EMA mode, and NaN-safety.
+
+### Tweaked: `MIN_CLOSED_TRADES_TRAIN: 3 → 2`
+
+10-fold WFO with `TEST_RATIO=3` narrows each train window enough that the `=3` floor was rejecting too many borderline coins, and the per-coin regime filter would push more across the boundary. Lowered to `2` in both `full_pipeline_config()` and `stock_pipeline_config()` ([run_config.py](../src/ggTrader/utils/run_config.py) lines 117 and 244). Coarse-stage configs (lines 58 / 77) stay at 1.
+
+### Changed: every live sell now ratchets up (universal trailing stops)
+
+`fixed_sl_tp` exits used a fixed-price OCO that never moves once placed; the user wanted every sell to track the high. Two changes:
+
+- **Dropped `fixed_sl_tp` from `EXIT_TOURNAMENT`** ([run_config.py](../src/ggTrader/utils/run_config.py)). WFO now selects only `atr_trailing` or `trailing_stop`. Both already place Kraken-native server-side trailing-stop orders ([crypto_execution_engine.py:478-494](../src/ggTrader/core/crypto_execution_engine.py)), which ratchet automatically.
+- **Belt-and-suspenders conversion at placement time** ([crypto_execution_engine.py](../src/ggTrader/core/crypto_execution_engine.py) `_execute_trade_logic`). If a legacy `production_weights` selection still carries `fixed_sl_tp`, the live trader places a trailing-stop instead of OCO, derived from the WFO `stop_pct` (clamped by `MIN_TRAILING_STOP_PCT`). Logged at placement.
+- **Wired Alpaca `TrailingStopOrderRequest` for stocks** ([stock_execution_engine.py](../src/ggTrader/core/stock_execution_engine.py)). Previously imported but never called — only `fixed_sl_tp` actually placed exits, all other exit types were silently ignored. Now every buy is followed by a `TrailingStopOrderRequest(qty, side=SELL, trail_percent=stop_pct)`. If submission is rejected because the buy hasn't filled yet, position is marked `tsl_pending=True` and the reconcile path retries.
+- **Shared helper**: `_compute_post_buy_stop_pct` extracted from `crypto_execution_engine.py` into [`core/trailing_stop_utils.py`](../src/ggTrader/core/trailing_stop_utils.py) so both engines reuse it. The crypto method is now a thin wrapper.
+
+## 2026-05-05
+
+### Added: two regime-aware entry strategies (`mtf_momentum`, `adx_filtered_rsi`)
+
+The post-cleanup research run (`research_20260505_203152`) passed 22/50 universe coins. Inspection of dropped-coin scores in the worker logs revealed three failure shapes; the dominant one ("Category A") was deep IS/OOS divergence consistent across all three exit types, meaning the existing entry library generates false-positive signals in OOS regimes. The library has 5 reversal entries vs. 3 trend-followers, and **none have built-in regime confirmation**: every reversal fires the moment its oscillator crosses (no awareness of trending markets), and every trend entry uses a single timeframe (4h whipsaws fire without daily-trend agreement). These two new strategies target those specific gaps without requiring any pipeline plumbing changes.
+
+- **`MultiTimeframeMomentumEntry` (`mtf_momentum`)** ([strategies.py](../src/ggTrader/indicators/strategies.py)): 4h fast/slow EMA cross AND `close > daily_ema`, where the daily EMA is approximated as `ema(close, mtf_daily_ema * 6)` on the 4h series (1d ≈ 6 × 4h). This is intentionally not a true daily resample — the goal is "slower trend agreement," not exact daily-candle alignment. Param grid: `{ema_fast: [9, 12], ema_slow: [21, 26], mtf_daily_ema: [50, 100, 200]}` = 12 combos. Reuses the existing `compute_ema` helper (single call covers fast, slow, and daily-equivalent lengths) so the disk cache transparently shares with `ema_cross`.
+- **`AdxFilteredMeanReversionEntry` (`adx_filtered_rsi`)** ([strategies.py](../src/ggTrader/indicators/strategies.py)): RSI cross-up through `rsi_oversold` AND `adx < adx_max`. ADX < threshold means "no strong trend" → genuine ranging market → mean-reversion is appropriate. Param grid: `{rsi_length: [14], rsi_oversold: [25, 30, 35], adx_length: [14], adx_max: [15, 20, 25]}` = 9 combos. The discriminating axis is `adx_max` — lower = stricter range filter.
+- **Registration**: both classes added to `ENTRY_REGISTRY` in [strategies.py:1164](../src/ggTrader/indicators/strategies.py), `STRATEGY_MAP` in [crypto_execution_engine.py:95](../src/ggTrader/core/crypto_execution_engine.py) and [stock_execution_engine.py:56](../src/ggTrader/core/stock_execution_engine.py), and to `DETAILED_ENTRY_PARAM_GRIDS` + `COARSE_ENTRY_PARAM_GRIDS` in [param_grids.py](../src/ggTrader/pipeline/param_grids.py). Sensitivity grids auto-pick up via the existing dict-comprehension at lines 151-159.
+- **Smoke-test on BTC-USD 4h (2000 bars)**: `mtf_momentum` 12-combo density 0.96%, `adx_filtered_rsi` 9-combo density 0.17%. Both bool, both shape correct, both no-lookahead at index 0.
+- **Runtime cost**: detailed grid grows by 21 combos (~+15% WFO wall-clock).
+- **Risk callout**: most likely to recover Category C borderline coins (AVAX gate +0.079, AKT +0.051, ZRO +0.162). Category A coins (ADA, DOT, LTC, ICP, XDC) had IS Sharpe 1.4-2.7 with deeply negative OOS — these are deep overfits and may not flip even with regime-aware strategies. If `adx_filtered_rsi` recovers any of them, the chosen `adx_max` should be 15 or 20 (strict) — a lenient 25 winning is a sign of overfit-by-degrees-of-freedom.
+
+A separate follow-up plan will be drafted for **per-coin entry-stage regime filtering** ([core/regime_filtering.py](../src/ggTrader/core/regime_filtering.py)), which the design phase identified as potentially higher-ROI than additional entry strategies for Category A coins.
+
+### Fixed: TZ bug in live OHLCV writer corrupted every crypto bar
+
+While investigating why ADA-USD got dropped by the WFO robustness gate, traced the cause to a system-wide timestamp corruption. The `ohlcv.timestamp` column is `timestamp without time zone`; the live trader's writer was passing a tz-aware UTC datetime through psycopg2 to a connection whose default tz was `America/Los_Angeles`. psycopg2 silently converted to local-naive on insert, shifting every bar by 7-8h depending on DST. Pre-DST writes (-8h) happened to land on the 4h grid because 8 mod 4 = 0, so the system stayed internally consistent and indicators didn't notice — but post-DST writes (-7h) landed at off-grid hours (1, 5, 9, 13, 17, 21), creating apparent "internal gaps" that distorted WFO results for any symbol with post-DST ingest.
+
+Confirmed empirically before the fix: BTC's DB row `2026-05-04 13:00 close=79843.70` matched Kraken's actual `2026-05-04 20:00 UTC close=79843.70` — exactly a 7h PDT shift. Every crypto symbol had ~346 off-grid bars from 2026-03-08 onward (US DST start).
+
+- **Writer fix** ([cached_loader.py](../src/ggTrader/data/live/cached_loader.py) `_cache_to_db`): convert tz-aware timestamps to UTC and strip the tz before passing to psycopg2 so the stored label is the actual UTC wall-clock. Tested: a fresh CCXT fetch for 50 symbols inserted 211+ new bars per symbol with `off_grid=0` across the universe.
+- **Wholesale data restore**: wiped all 1.7M crypto 4h rows; backfilled 244,687 bars (Q1 2023 - Q1 2026) from Kraken's downloadable OHLCVT archive at `/media/thesix/Kraken/raw/`. Live trader fills the gap from end-of-archive (2026-03-31) to present via its now-correct write path.
+- **New script** ([scripts/backfill_kraken_csv.py](../scripts/backfill_kraken_csv.py)): per-symbol archive importer. Uses native 240-min CSVs where present (Q1 2024+) and resamples 60-min for 2023. Looks up archive filenames via the existing `kraken_map` (inverted: modern→legacy) so `BTC-USD` correctly resolves to `XBTUSD_240.csv` and `DOGE-USD` to `XDGUSD_240.csv` — those are the only two symbols where Kraken's archive ships under legacy codes. Idempotent (`ON CONFLICT DO NOTHING`).
+- **Verified gaps gone**: ADA's previous "90-day gap ending 2025-04-01" and "60-day gap ending 2025-11-29" were artifacts of the TZ-shift creating phantom missing windows; both disappear after the clean reimport. Same for AAVE / DOT, and presumably for the WFO drops that would have happened to other coins on a cleaner re-run.
+
+**Next research run** ([roadmap]): re-run WFO on the cleaned data. Robustness scores for ADA, AAVE, DOT etc. should change materially since all three previously failed the gate at least partly because of the TZ-induced data artifacts. LINK / LTC drops are still expected to be real (their pre-fix data was clean).
+
+### Fixed: post-buy stop placement uses wrong source for non-fixed exits (crypto)
+
+The 2026-05-02 multi-asset refactor of `crypto_execution_engine.py` collapsed the exit-type-aware stop computation into a single line `stop_p = params.get("stop_pct", 3.0)`. For `atr_trailing` and `trailing_stop` exits, `stop_pct` doesn't exist in the WFO param set, so every new entry of those exit types was getting placed with a flat 3% trailing stop (or `MIN_*_TRAILING_PCT` floor of 4%) regardless of what WFO selected — and adaptive sizing was sized against an ATR-derived stop that no longer matched the placed stop.
+
+- **New `_compute_post_buy_stop_pct`** ([crypto_execution_engine.py](../src/ggTrader/core/crypto_execution_engine.py)): per exit type, derives `atr_mult * atr / fill_price * 100` for `atr_trailing` (with NaN/zero fallback to `atr_multiplier` as a percentage), reads `trailing_stop_pct` for `trailing_stop`, and `stop_pct` for `fixed_sl_tp`. Trailing types are floor-clamped to `MIN_ATR_TRAILING_PCT` / `MIN_TRAILING_STOP_PCT`. Fully restores the pre-refactor logic.
+- **Wired into `_execute_trade_logic`** in place of the broken one-liner. Sized stop and placed stop now agree.
+
+### Improved: PnL report polish
+
+- **`TradeTracker.sync_from_alpaca` now paginates** ([trade_tracker.py](../src/ggTrader/core/trade_tracker.py)). Pages backwards via the oldest `submitted_at` of each batch until a short page is returned. Removes the silent 500-fill truncation.
+- **Stocks regime in the report reads pipeline config** ([pnl_report_builder.py](../src/ggTrader/utils/pnl_report_builder.py) `_fetch_stock_regime_status`). `EMA_WARMUP_BARS`, `SPY_REGIME_FILTER_SHORT_EMA`, and `VIX_REGIME_THRESHOLD` are pulled from `stock_pipeline_config()` so the report agrees with the live trader's regime gate. Previously hardcoded `vix < 25` and EMA200; now matches whatever the gate uses.
+
+### Added: stocks daily PnL Telegram report
+
+Mirror of the existing crypto `ggt pnl-daily` push, now class-agnostic. Same five sections (regime, balance snapshot, 24h activity, all-time stats, recent closes / open positions), routed against the stocks DB rows and Alpaca paper account.
+
+- **`pnl_report_builder.py`** — added `asset_class` parameter to `_gather_report_data` and all three builders (`build_daily_pnl_report`, `build_daily_pnl_summary_text`, `build_daily_pnl_summary_html`). Threads the class to `TradeTracker(asset_class=..., run_id="LIVE_STOCKS")` so window/all-time stats come from the stocks `runs` rows. Kraken-ledger deposit subtraction is skipped for stocks (Alpaca paper has no concept of deposits).
+- **Regime dispatcher** — `_fetch_regime_status(asset_class)` splits into `_fetch_crypto_regime_status()` (BTC EMA + altcoin index, unchanged) and `_fetch_stock_regime_status()` (SPY price vs EMA200 + VIX < 25 threshold, sourced from yfinance with `.squeeze("columns")` to handle the MultiIndex DataFrame). Both return `rows` / `lines` / `md_lines` so all three renderers stay class-agnostic.
+- **`TradeTracker.sync_from_alpaca`** — pulls closed Alpaca orders via `TradingClient.get_orders(filter=GetOrdersRequest(status=CLOSED, after=...))`, dedupes by Alpaca order id, upserts into the `orders` table, and rebuilds `trades` via the same FIFO matcher used for Kraken. Idempotent. Default lookback is 90 days.
+- **`cmd_pnl_daily`** — added `--asset-class {crypto,stocks}` (default `crypto` for backwards compat). When `stocks`, `--data-dir` defaults to `data/live_stocks`, `--positions-file` to `data/active_positions_stocks.json`, the report file is named `daily_stocks_<date>.md`, the `latest_stocks.md` symlink is maintained separately, and `_autosync_from_alpaca()` runs in place of the Kraken sync.
+- **Cron** — new `scripts/daily_pnl_report_stocks.sh` wrapper, scheduled at `30 21 * * 1-5` (21:30 UTC = 16:30 ET, ~30 min after US close, weekdays only). Logs to `~/logs/daily_pnl_report_stocks_<date>.log`.
+
+**Verified**: live Telegram push delivered. Alpaca sync round-trips cleanly (`0 new fill(s)` since the live trader records in real time). Crypto report path is a no-op refactor — same output, plus a `Crypto` prefix in the title.
+
+### Fixed: live trader silently rejected every new entry (crypto + stocks)
+
+Crypto live had been opening zero new positions for ~3 weeks. Stocks live had been crashing in its event loop on every tick. Three independent root causes, all dating from the 2026-05-02 multi-asset refactor.
+
+- **Adaptive sizing was never wired into the post-refactor crypto engine** ([crypto_execution_engine.py](../src/ggTrader/core/crypto_execution_engine.py) `_execute_trade_logic`). The CLI passed `--adaptive-sizing` and `CAPITAL_PER_TRADE=None` (no `--capital`), but the new engine only had a fixed-capital path: `cap = self.config.get("CAPITAL_PER_TRADE", 100.0)` — which returned the stored `None`, not the default. `_validate_entry_preconditions` then did `bal["free"]["USD"] < None * 0.95` → `TypeError` → swallowed by a bare `except` → `return False`, so every entry was silently skipped. Restored `_estimate_stop_pct_for_sizing` and `_compute_adaptive_position_usd` from the pre-refactor `execution_engine.py`, wired them into the entry path under `ADAPTIVE_SIZING`, and added a None-safe coercion on the fixed-capital branch. The regime gate now logs the block instead of swallowing it.
+- **CLI flags lost in refactor** ([cmd_trade.py](../src/ggTrader/cli/cmd_trade.py)). Restored `--target-risk-pct` (default 0.01), `--max-position-pct` (default 0.15), `--min-position-usd` (default 15.0); threaded through `merge_run_config`.
+- **Same `CAPITAL_PER_TRADE=None` latent bug in stocks** ([stock_execution_engine.py:222](../src/ggTrader/core/stock_execution_engine.py)). Coerce `None` to `100.0` before computing `qty = capital / price`.
+- **Stocks engine crashed on `bool(spy_mask.iloc[-1])`** ([stock_execution_engine.py:341](../src/ggTrader/core/stock_execution_engine.py)). Newer yfinance returns a MultiIndex DataFrame from `yf.download(...)["Close"]` for a single ticker, so `.iloc[-1]` was a 1-row Series, triggering `ValueError: The truth value of a Series is ambiguous`. Fixed at the source: [stock_regime_filtering.py](../src/ggTrader/core/stock_regime_filtering.py) `_compute_spy_regime_mask` and `_compute_vix_regime_mask` now `.squeeze("columns")` when `Close` comes back as a DataFrame.
+
+**Verified post-restart**: `ggtrader_live` started clean with both pre-existing positions (ADA, DASH) reloaded; sizing logs will appear at the next 4h evaluation. `ggtrader_live_stocks` now reaches the market-clock check (no crash); 7 paper positions preserved.
+
+## 2026-05-04
+
+### Migration: offline file caches → TimescaleDB (Phases 1–6)
+
+Consolidated nearly all offline JSON/CSV/parquet state into TimescaleDB so the working tree is minimal, history is queryable via SQL, and the live trader has a single source of truth. Markdown reports and `data/active_positions{,_stocks}.json` (hot-path live state) are the only structured offline files that remain.
+
+- **`system_state` k/v table** with `get_state` / `set_state` helpers ([result_db_manager.py](../src/ggTrader/utils/result_db_manager.py)). Subsumes `data/last_reopt_month.txt` and `data/.processed_dirs.json`.
+- **WFO cache → `wfo_cache` table** ([wfo_cache.py](../src/ggTrader/data/cache/wfo_cache.py)). 7233 entries / 228 MB of `results/wfo_cache/*.json` migrated; on-disk storage compressed to 55 MB JSONB. New admin commands: `ggt db migrate-wfo-cache`, `ggt db purge-wfo-cache`. CLAUDE.md updated to point at the new purge command.
+- **Live CSVs → DB only**. `TradeTracker` now writes orders to `orders`, position closes to an extended `trades` schema (added `amount`, `gross_pnl`, `fee_entry`, `fee_exit`, `fee_total`, `hold_duration_hours`, `exit_reason`), and balance snapshots to a new `live_balance_snapshots` hypertable. `data/live*/*.csv` archived. Daily PnL report reproduces identical metrics from the DB.
+- **Research artifacts → DB**. Added `runs.{asset_class, strategy_params, phase_stats, status, run_dir}`. `state_manager.get_latest_research_run` now returns a `LatestResearchRun` dataclass sourced from the DB (with disk-scan fallback). Live trader / backtest / production CLIs accept the dataclass; `load_optimized_params` handles either the dataclass, a directory, or a `run_results.json` path. New admin: `ggt db backfill-runs` (15 historical runs imported).
+- **kraken_ledger → `kraken_ledger` table**. Replaces `~/.cache/ggtrader/kraken_ledger.json`. Incremental fetch cursor is now `MAX(timestamp)` from the table; 14 historical entries backfilled.
+- **SPY benchmark → `ohlcv` table**. Removed `results/spy_cache_*.parquet`; benchmarking now reads/writes `ohlcv` rows with `symbol='SPY' AND interval='1d'`. 778 days backfilled.
+- **Universe cache → `universe_cache` table**. 8 historical snapshots backfilled.
+- **`live_positions_snapshot` hypertable** receives a row each event-loop tick (alongside the balance snapshot) for crash recovery + dashboards. `data/active_positions*.json` retained for the hot path.
+- **Compression policies**. `ggt db compression --enable` now also compresses `live_balance_snapshots` and `live_positions_snapshot` after 30 days.
+- **Cleanup**. Removed `runs_log.csv` writes (already redundant with the `runs` table). All migrated source files retained as `*.migrated` archives until verified end-to-end.
+
 ## 2026-05-03
 
 ### Hardening: asset-class-aware research/production discovery

@@ -1,23 +1,22 @@
-"""Kraken deposit / withdrawal ledger fetching with local caching.
+"""Kraken deposit / withdrawal ledger fetching with TimescaleDB caching.
 
 Used by the daily PnL report to compute "true trading PnL" by subtracting
 external capital flows (deposits, withdrawals) from balance snapshots.
 Without this, manual deposits show up as fake trading profit.
 
 Cache strategy:
-- Persistent JSON file at data/live/kraken_ledger.json
-- TTL of 1 hour by default (deposits change rarely; trading activity does not)
-- Incremental fetch using ``since=last_known_timestamp + 1`` so we don't
-  re-pull the entire history on every report
+- Rows persisted in the ``kraken_ledger`` table (PK = ledger_id)
+- TTL of 1 hour by default — older than that and we re-poll Kraken
+- Incremental fetch using ``MAX(timestamp)`` from the table as the cursor
+  so we don't re-pull the entire history on every report
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import time
-from pathlib import Path
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 import pandas as pd
@@ -138,109 +137,151 @@ def _fetch_all_ledger_entries(exchange: Any, since_ms: int) -> list[dict]:
     return entries
 
 
-def _default_cache_path() -> str:
-    """User-writable cache location that works on both host and container.
+def _ledger_key(entry: dict) -> str:
+    """Stable identifier for an entry — Kraken-supplied ``id`` if present,
+    else a synthetic ``ts_amount`` fallback."""
+    return entry.get("id") or f"{entry['timestamp_ms']}_{entry['amount']}"
 
-    Uses XDG_CACHE_HOME if set, else ~/.cache/ggtrader/. Falls back to
-    /tmp/ggtrader_cache/ if HOME isn't writable (rare).
-    """
-    cache_root = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
-    candidate = os.path.join(cache_root, "ggtrader", "kraken_ledger.json")
+
+def _read_ledger_from_db() -> tuple[list[dict], Optional[datetime]]:
+    """Return (rows-as-entries, last_fetched_at) from the kraken_ledger table."""
+    from sqlalchemy import text
+    from ggTrader.utils.result_db_manager import ResultDBManager
+
+    m = ResultDBManager()
     try:
-        os.makedirs(os.path.dirname(candidate), exist_ok=True)
-        return candidate
-    except OSError:
-        return "/tmp/ggtrader_cache/kraken_ledger.json"
+        with m.engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT ledger_id, timestamp, type, currency, amount,
+                           signed_amount, last_fetched_at
+                    FROM kraken_ledger
+                    ORDER BY timestamp
+                    """
+                )
+            ).fetchall()
+    except Exception as e:
+        logger.warning(f"  [Ledger] DB read failed ({e!r})")
+        return [], None
+    if not rows:
+        return [], None
+    entries = []
+    latest_fetched = None
+    for r in rows:
+        entries.append({
+            "id": r[0],
+            "timestamp_ms": int(r[1].timestamp() * 1000),
+            "type": r[2],
+            "currency": r[3],
+            "amount": float(r[4]) if r[4] is not None else 0.0,
+            "signed_amount": float(r[5]) if r[5] is not None else 0.0,
+        })
+        if r[6] is not None and (latest_fetched is None or r[6] > latest_fetched):
+            latest_fetched = r[6]
+    return entries, latest_fetched
+
+
+def _write_ledger_to_db(new_entries: list[dict]) -> None:
+    """Upsert new entries into the kraken_ledger table."""
+    if not new_entries:
+        return
+    from sqlalchemy import text
+    from ggTrader.utils.result_db_manager import ResultDBManager
+
+    m = ResultDBManager()
+    sql = text(
+        """
+        INSERT INTO kraken_ledger
+            (ledger_id, timestamp, type, currency, amount, signed_amount, last_fetched_at)
+        VALUES (:lid, :ts, :type, :curr, :amt, :sa, now())
+        ON CONFLICT (ledger_id) DO UPDATE SET
+            last_fetched_at = now()
+        """
+    )
+    rows = []
+    for e in new_entries:
+        amt = float(e["amount"])
+        signed = amt if e["type"] == "deposit" else -amt
+        rows.append({
+            "lid": _ledger_key(e),
+            "ts": datetime.fromtimestamp(e["timestamp_ms"] / 1000.0, tz=timezone.utc),
+            "type": e["type"],
+            "curr": e["currency"],
+            "amt": amt,
+            "sa": signed,
+        })
+    try:
+        with m.engine.begin() as conn:
+            conn.execute(sql, rows)
+    except Exception as e:
+        logger.warning(f"  [Ledger] DB write failed: {e!r}")
 
 
 def fetch_kraken_ledger_cached(
-    cache_path: Optional[str] = None,
+    cache_path: Optional[str] = None,  # retained for API compat; ignored
     cache_ttl_seconds: int = 3600,
     exchange: Any = None,
 ) -> pd.DataFrame:
-    """Return a DataFrame of all deposits and withdrawals, using a local cache.
+    """Return a DataFrame of all deposits and withdrawals (DB-backed).
 
     Columns: ``timestamp`` (UTC tz-aware), ``type`` (deposit/withdrawal),
     ``currency``, ``amount``, ``id``, ``signed_amount`` (positive for deposits,
     negative for withdrawals).
 
-    The cache is incremental — on each call we only fetch entries newer than
-    the latest cached timestamp, so the report is fast even with a long history.
-
-    Args:
-        cache_path: Local JSON cache file path.
-        cache_ttl_seconds: How fresh the cache must be to skip fetching at all.
-        exchange: Optional pre-built CCXT exchange. If None, builds one from env.
+    The cache lives in the ``kraken_ledger`` table. We poll Kraken at most once
+    per ``cache_ttl_seconds`` and incrementally append new entries using the
+    most recent stored timestamp as the cursor.
     """
-    if cache_path is None:
-        cache_path = _default_cache_path()
-    cache_p = Path(cache_path)
-    try:
-        cache_p.parent.mkdir(parents=True, exist_ok=True)
-    except PermissionError:
-        # Caller passed a path we can't create — fall through and disable
-        # persistent caching for this run. Reads/writes below will silently
-        # no-op via the existing exception handlers.
-        pass
-    now_ms = int(time.time() * 1000)
+    db_entries, last_fetched = _read_ledger_from_db()
+    now = datetime.now(timezone.utc)
+    is_fresh = (
+        last_fetched is not None
+        and (now - last_fetched) < timedelta(seconds=cache_ttl_seconds)
+        and db_entries
+    )
 
-    cached: dict = {"entries": [], "last_fetch_ms": 0, "last_entry_ts_ms": 0}
-    if cache_p.exists():
+    if is_fresh:
+        return _entries_to_df(db_entries)
+
+    if exchange is None:
         try:
-            cached = json.loads(cache_p.read_text())
+            exchange = _build_exchange()
         except Exception as e:
-            logger.warning(f"  [Ledger] cache read failed ({e!r}) — refetching all")
+            logger.warning(
+                f"  [Ledger] could not build exchange ({e!r}) — using DB cache only"
+            )
+            return _entries_to_df(db_entries)
 
-    cache_age_seconds = (now_ms - int(cached.get("last_fetch_ms", 0))) / 1000
-    if cache_age_seconds < cache_ttl_seconds and cached.get("entries"):
-        # Cache is fresh, use as-is
-        entries = cached["entries"]
+    if db_entries:
+        # 1-minute overlap to catch late-arriving entries
+        since_ms = max(0, db_entries[-1]["timestamp_ms"] - 60_000)
     else:
-        # Fetch new entries since the last known one (or all if cache is empty)
-        if exchange is None:
-            try:
-                exchange = _build_exchange()
-            except Exception as e:
-                logger.warning(
-                    f"  [Ledger] could not build exchange ({e!r}) — using cached only"
-                )
-                entries = cached.get("entries", [])
-                return _entries_to_df(entries)
+        since_ms = 0
 
-        since_ms = int(cached.get("last_entry_ts_ms", 0))
-        # Add a small overlap window so we don't miss entries that arrived late
-        if since_ms > 0:
-            since_ms = max(0, since_ms - 60_000)  # 1 min overlap
-        new_entries = _fetch_all_ledger_entries(exchange, since_ms)
-
-        # Merge: dedupe by id (or by timestamp+amount for entries without id)
-        existing_keys = set()
-        for e in cached.get("entries", []):
-            key = e.get("id") or f"{e['timestamp_ms']}_{e['amount']}"
-            existing_keys.add(key)
-
-        merged = list(cached.get("entries", []))
+    new_entries = _fetch_all_ledger_entries(exchange, since_ms)
+    if new_entries:
+        _write_ledger_to_db(new_entries)
+        # Re-merge: existing + new (dedupe by stable key)
+        keys = {_ledger_key(e) for e in db_entries}
         for e in new_entries:
-            key = e.get("id") or f"{e['timestamp_ms']}_{e['amount']}"
-            if key not in existing_keys:
-                merged.append(e)
-                existing_keys.add(key)
+            if _ledger_key(e) not in keys:
+                db_entries.append(e)
+                keys.add(_ledger_key(e))
+        db_entries.sort(key=lambda x: x["timestamp_ms"])
+    else:
+        # Bump last_fetched_at on existing rows so we don't re-poll for a TTL window.
+        if db_entries:
+            from sqlalchemy import text
+            from ggTrader.utils.result_db_manager import ResultDBManager
+            try:
+                m = ResultDBManager()
+                with m.engine.begin() as conn:
+                    conn.execute(text("UPDATE kraken_ledger SET last_fetched_at = now()"))
+            except Exception:
+                pass
 
-        merged.sort(key=lambda x: x["timestamp_ms"])
-        last_ts = merged[-1]["timestamp_ms"] if merged else 0
-
-        cached = {
-            "entries": merged,
-            "last_fetch_ms": now_ms,
-            "last_entry_ts_ms": last_ts,
-        }
-        try:
-            cache_p.write_text(json.dumps(cached, indent=2))
-        except Exception as e:
-            logger.warning(f"  [Ledger] cache write failed: {e!r}")
-        entries = merged
-
-    return _entries_to_df(entries)
+    return _entries_to_df(db_entries)
 
 
 def _entries_to_df(entries: list[dict]) -> pd.DataFrame:

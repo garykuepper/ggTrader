@@ -8,10 +8,7 @@ from ggTrader.core.orchestrator import (
     _apply_wfo_selection_gates,
     _compute_allocation_weights,
 )
-from ggTrader.core.regime_filtering import (
-    _compute_altcoin_index_mask,
-    _compute_btc_correlations,
-)
+from ggTrader.core.regime_filtering import _compute_btc_correlations
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -38,8 +35,7 @@ def _base_config():
     return {
         "BENCHMARK_SYMBOL": "BTC-USD",
         "EMA_WARMUP_BARS": 20,  # small for speed in tests
-        "BTC_REGIME_FILTER_MIN_CORRELATION": 0.5,
-        "ALTCOIN_REGIME_FILTER_CORR_MIN": 0.3,
+        "LEADER_CORR_THRESHOLD": 0.7,
     }
 
 
@@ -79,112 +75,55 @@ class TestComputeBtcCorrelations:
         assert abs(corrs.get("COPY-USD", 0) - 1.0) < 1e-6
 
 
-# ---------------------------------------------------------------------------
-# _compute_altcoin_index_mask
-# ---------------------------------------------------------------------------
-
-class TestComputeAltcoinIndexMask:
-    def test_returns_series_of_bools(self):
-        ohlcv = _make_ohlcv(["BTC-USD", "ETH-USD", "SOL-USD"])
-        mask = _compute_altcoin_index_mask(ohlcv, _base_config())
-        assert mask is not None
-        assert isinstance(mask, pd.Series)
-        assert mask.dtype == bool
-        assert len(mask) == len(ohlcv)
-
-    def test_btc_excluded_from_index(self):
-        """When only BTC is present, the function should return None (no alts)."""
-        ohlcv = _make_ohlcv(["BTC-USD"])
-        mask = _compute_altcoin_index_mask(ohlcv, _base_config())
-        assert mask is None
-
-    def test_normalised_index_starts_near_one(self):
-        """The altcoin index should start at ~1.0 (normalised)."""
-        ohlcv = _make_ohlcv(["BTC-USD", "ETH-USD", "SOL-USD"], n_bars=50)
-        config = {**_base_config(), "EMA_WARMUP_BARS": 5}
-        # We can't access the index directly, but the mask should be all True initially
-        # when prices are well above the 5-bar EMA (just started at the same level).
-        mask = _compute_altcoin_index_mask(ohlcv, config)
-        assert mask is not None
-        # After warmup there should be some True and some False values
-        assert mask.any() or not mask.any()  # just check it runs without error
-
-    def test_trending_up_index_is_mostly_true(self):
-        """A steadily rising altcoin universe should be mostly in bull regime."""
-        n = 300
-        dates = pd.date_range("2024-01-01", periods=n, freq="4h", tz="UTC")
-        data = {}
-        for sym in ["BTC-USD", "ETH-USD", "SOL-USD"]:
-            close = np.linspace(1000, 3000, n)  # steady uptrend
-            data[(sym, "open")] = close
-            data[(sym, "high")] = close * 1.01
-            data[(sym, "low")] = close * 0.99
-            data[(sym, "close")] = close
-            data[(sym, "volume")] = np.ones(n) * 100
-        ohlcv = pd.DataFrame(data, index=dates)
-        ohlcv.columns = pd.MultiIndex.from_tuples(ohlcv.columns, names=["symbol", "field"])
-        config = {**_base_config(), "EMA_WARMUP_BARS": 10}
-        mask = _compute_altcoin_index_mask(ohlcv, config)
-        # After warmup, a steadily rising series should be above its EMA
-        assert mask is not None
-        assert mask.iloc[20:].mean() > 0.8
-
 
 # ---------------------------------------------------------------------------
 # _apply_tiered_regime_mask
 # ---------------------------------------------------------------------------
 
 class TestApplyTieredRegimeMask:
+    """Tests for the BTC single-leader regime mask. Threshold = 0.7."""
+
     def _make_entries(self, symbols, n_bars=100):
         dates = pd.date_range("2024-01-01", periods=n_bars, freq="4h", tz="UTC")
         data = {sym: np.ones(n_bars, dtype=bool) for sym in symbols}
         return pd.DataFrame(data, index=dates)
 
-    def test_btc_corr_coins_get_btc_mask(self):
-        """Coins with corr >= 0.5 should have their entries masked by btc_regime."""
+    def test_high_corr_coin_blocked_in_btc_bear(self):
         n = 100
         dates = pd.date_range("2024-01-01", periods=n, freq="4h", tz="UTC")
-        btc_regime = pd.Series([True] * 50 + [False] * 50, index=dates)
-        entries = self._make_entries(["ETH-USD"], n)
-        corrs = {"ETH-USD": 0.8}  # high BTC correlation
-        config = _base_config()
-        result = _apply_tiered_regime_mask(entries, corrs, btc_regime, None, config)
-        # First 50 bars should pass, last 50 blocked
-        assert result.iloc[:50]["ETH-USD"].all()
-        assert not result.iloc[50:]["ETH-USD"].any()
+        btc_regime = pd.Series([True] * 60 + [False] * 40, index=dates)
+        entries = self._make_entries(["XRP-USD"], n)
+        # corr_btc=0.8 ≥ 0.7 → gated by BTC
+        result = _apply_tiered_regime_mask(
+            entries, {"XRP-USD": 0.8}, btc_regime, _base_config()
+        )
+        assert result.iloc[:60]["XRP-USD"].all()
+        assert not result.iloc[60:]["XRP-USD"].any()
 
-    def test_exempt_coins_pass_through(self):
-        """Coins with corr < 0.3 should not be filtered at all."""
+    def test_low_corr_coin_passes_through(self):
         n = 100
         dates = pd.date_range("2024-01-01", periods=n, freq="4h", tz="UTC")
-        btc_regime = pd.Series([False] * n, index=dates)  # all bear
-        entries = self._make_entries(["RIVER-USD"], n)
-        corrs = {"RIVER-USD": 0.05}  # very low correlation
-        config = _base_config()
-        result = _apply_tiered_regime_mask(entries, corrs, btc_regime, None, config)
-        # All entries should pass through (no filter applied)
-        assert result["RIVER-USD"].all()
+        btc_regime = pd.Series([False] * n, index=dates)  # BTC bear throughout
+        entries = self._make_entries(["XMR-USD"], n)
+        # corr_btc=0.4 < 0.7 → Free tier — entries pass through
+        result = _apply_tiered_regime_mask(
+            entries, {"XMR-USD": 0.4}, btc_regime, _base_config()
+        )
+        assert result["XMR-USD"].all()
 
-    def test_mid_corr_coins_get_altcoin_mask(self):
-        """Coins with 0.3 <= corr < 0.5 use the altcoin index mask."""
-        n = 100
-        dates = pd.date_range("2024-01-01", periods=n, freq="4h", tz="UTC")
-        btc_regime = pd.Series([False] * n, index=dates)  # BTC bear (would block all)
-        alt_regime = pd.Series([True] * 70 + [False] * 30, index=dates)
-        entries = self._make_entries(["LINK-USD"], n)
-        corrs = {"LINK-USD": 0.4}  # mid-correlation
-        config = _base_config()
-        result = _apply_tiered_regime_mask(entries, corrs, btc_regime, alt_regime, config)
-        # Should follow alt_regime, not btc_regime
-        assert result.iloc[:70]["LINK-USD"].all()
-        assert not result.iloc[70:]["LINK-USD"].any()
-
-    def test_none_btc_regime_returns_unchanged(self):
-        """When btc_regime is None the function should return entries unchanged."""
+    def test_no_mask_returns_unchanged(self):
         entries = self._make_entries(["BTC-USD", "ETH-USD"])
-        corrs = {"BTC-USD": 1.0, "ETH-USD": 0.9}
-        result = _apply_tiered_regime_mask(entries, corrs, None, None, _base_config())
+        result = _apply_tiered_regime_mask(entries, {}, None, _base_config())
         pd.testing.assert_frame_equal(result, entries)
+
+    def test_unknown_corr_defaults_to_filtered(self):
+        """Symbols missing from corrs default to corr=1.0 (conservative — gated)."""
+        n = 100
+        dates = pd.date_range("2024-01-01", periods=n, freq="4h", tz="UTC")
+        btc_regime = pd.Series([False] * n, index=dates)
+        entries = self._make_entries(["UNKNOWN-USD"], n)
+        result = _apply_tiered_regime_mask(entries, {}, btc_regime, _base_config())
+        assert not result["UNKNOWN-USD"].any()
 
 
 # ---------------------------------------------------------------------------
@@ -272,3 +211,4 @@ class TestApplyWfoSelectionGates:
         original = dict(results)
         _apply_wfo_selection_gates(results, {"MIN_ROBUSTNESS_SCORE": 0.9})
         assert results == original
+

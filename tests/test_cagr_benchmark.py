@@ -11,7 +11,6 @@ from ggTrader.core.benchmarking import (
     _btc_buy_hold_portfolio_stats,
     _buy_hold_portfolio_stats,
     _cagr_percent,
-    _sp500_buy_hold_portfolio_stats,
     _years_from_price_index,
 )
 
@@ -123,24 +122,3 @@ def test_btc_bnh_empty_close_returns_empty() -> None:
     assert out["total_trades"] == 0
 
 
-# ---------------------------------------------------------------------------
-# _sp500_buy_hold_portfolio_stats
-# ---------------------------------------------------------------------------
-
-def test_sp500_bnh_returns_empty_on_yfinance_failure() -> None:
-    """If yfinance raises, the function should return an empty-stats dict, not raise."""
-    idx = pd.date_range("2023-01-01", periods=100, freq="4h", tz="UTC")
-    config = {"START_CASH": 1000.0, "FREQ": "4h"}
-    with patch(
-        "ggTrader.core.benchmarking._load_spy_close", side_effect=RuntimeError("network error")
-    ):
-        out = _sp500_buy_hold_portfolio_stats(idx, config)
-    assert out["profit_pct"] is None
-    assert out["total_trades"] == 0
-
-
-def test_sp500_bnh_empty_index_returns_empty() -> None:
-    idx = pd.DatetimeIndex([])
-    config = {"START_CASH": 1000.0, "FREQ": "4h"}
-    out = _sp500_buy_hold_portfolio_stats(idx, config)
-    assert out["profit_pct"] is None

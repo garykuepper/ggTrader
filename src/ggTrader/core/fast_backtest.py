@@ -27,7 +27,6 @@ _DEFAULT_CONFIG = {
     "SLIPPAGE": 0.0005,
     "FREQ": "4h",
     "N_JOBS": -1,  # Default to all cores for vectorized runs
-    "MIN_TRADES": 0,  # Minimum trades to accept a result
     "USE_CASH_SHARING": True,  # New config for grouping
     "USE_VECTORIZED": False,  # Use new vectorized signal path (default to old for safety)
     "ENTRY_STRATEGY": None,  # Entry strategy name (e.g., "psar_adx")

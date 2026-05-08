@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 
 def register_trade_parser(subparsers: argparse._SubParsersAction):
@@ -26,10 +26,19 @@ def register_trade_parser(subparsers: argparse._SubParsersAction):
         action="store_true",
         help="Use exchange paper trading mode (if supported)",
     )
-    parser.add_argument(
+    sizing_group = parser.add_mutually_exclusive_group()
+    sizing_group.add_argument(
+        "--weighted-sizing",
+        action="store_true",
+        help="Use research-derived portfolio weights (default for crypto). "
+             "Each entry sizes to portfolio × allocation_weight[symbol]; coins "
+             "with 0% research weight are skipped.",
+    )
+    sizing_group.add_argument(
         "--adaptive-sizing",
         action="store_true",
-        help="Use volatility-normalized position sizing",
+        help="Use volatility-normalized position sizing (1%% target risk per trade). "
+             "Ignores research allocation weights.",
     )
     parser.add_argument(
         "--min-trailing-stop-pct",
@@ -50,6 +59,24 @@ def register_trade_parser(subparsers: argparse._SubParsersAction):
         help="Fixed capital per trade in USD (overridden by adaptive sizing)",
     )
     parser.add_argument(
+        "--target-risk-pct",
+        type=float,
+        default=0.01,
+        help="Adaptive sizing: portfolio fraction risked at stop (default: 0.01 = 1%%)",
+    )
+    parser.add_argument(
+        "--max-position-pct",
+        type=float,
+        default=0.15,
+        help="Adaptive sizing: cap on position as fraction of portfolio (default: 0.15)",
+    )
+    parser.add_argument(
+        "--min-position-usd",
+        type=float,
+        default=15.0,
+        help="Adaptive sizing: skip entry if sized position falls below this USD value (default: 15.0)",
+    )
+    parser.add_argument(
         "--dry-run-sizing",
         action="store_true",
         help="Calculate and print sizes for current signals, then exit",
@@ -63,74 +90,59 @@ def register_trade_parser(subparsers: argparse._SubParsersAction):
             "(default: query exchange, fall back to START_CASH)"
         ),
     )
-    parser.add_argument(
-        "--asset-class",
-        type=str,
-        default="crypto",
-        choices=["crypto", "stocks"],
-        help="Asset class to trade (default: crypto)",
-    )
-
-
 def run_trade(args: argparse.Namespace):
     """Executes the live trading engine."""
     from dotenv import load_dotenv
     load_dotenv()
 
-    asset_class = getattr(args, "asset_class", "crypto")
+    from ggTrader.core.crypto_execution_engine import CryptoExecutionEngine
+    from ggTrader.utils.state_manager import get_latest_research_run
 
-    if asset_class == "stocks":
-        from ggTrader.core.stock_execution_engine import StockExecutionEngine
-        EngineClass = StockExecutionEngine
+    if args.results:
+        results_source: object = args.results
     else:
-        from ggTrader.core.crypto_execution_engine import CryptoExecutionEngine
-        EngineClass = CryptoExecutionEngine
-
-    # Priority: Command line argument -> Auto-detect latest research run.
-    # Discovery and explicit path are both filtered/validated by asset_class to
-    # prevent the trader from picking up a research run for the wrong universe.
-    from ggTrader.utils.state_manager import (
-        get_latest_research_run,
-        validate_results_asset_class,
-    )
-
-    results_path = args.results
-    if results_path:
-        from pathlib import Path as _P
-        validate_results_asset_class(_P(results_path), expected=asset_class)
-    else:
-        latest = get_latest_research_run(asset_class=asset_class)
+        latest = get_latest_research_run()
         if latest:
-            results_path = str(latest)
-            print(f"Auto-detected latest {asset_class} research run: {results_path}")
-        else:
+            results_source = latest
             print(
-                f"Error: No research run found for asset_class={asset_class!r}.\n"
-                f"  Run `ggt research --asset-class {asset_class}` first, or pass --results PATH."
+                f"Auto-detected latest research run: "
+                f"{latest.run_id} (run_dir={latest.run_dir})"
             )
+        else:
+            print("Error: No research run found. Run `ggt research` first, or pass --results PATH.")
             sys.exit(1)
 
-    from ggTrader.utils.run_config import full_pipeline_config, stock_pipeline_config, merge_run_config
-    base_config = stock_pipeline_config() if asset_class == "stocks" else full_pipeline_config()
-    
+    from ggTrader.utils.run_config import full_pipeline_config, merge_run_config
+    base_config = full_pipeline_config()
+
+    # Sizing mode: weighted (default) > adaptive > fixed.
+    weighted_flag = bool(getattr(args, "weighted_sizing", False))
+    adaptive_flag = bool(args.adaptive_sizing)
+    if not weighted_flag and not adaptive_flag and args.capital is None:
+        weighted_flag = True
+
     config = merge_run_config(
         base_config,
         DRY_RUN=args.dry_run,
         PAPER=args.paper,
-        ADAPTIVE_SIZING=args.adaptive_sizing,
+        WEIGHTED_SIZING=weighted_flag,
+        ADAPTIVE_SIZING=adaptive_flag,
         MIN_TRAILING_STOP_PCT=args.min_trailing_stop_pct,
         MIN_ATR_TRAILING_PCT=args.min_atr_trailing_pct,
         CAPITAL_PER_TRADE=args.capital,
+        TARGET_RISK_PCT=args.target_risk_pct,
+        MAX_POSITION_PCT=args.max_position_pct,
+        MIN_POSITION_USD=args.min_position_usd,
     )
 
     from ggTrader.utils.result_db_manager import ResultDBManager
     rm = ResultDBManager()
 
-    engine = EngineClass(
+    engine = CryptoExecutionEngine(
         config,
-        results_path=results_path,
+        results_path=results_source,
         db_manager=rm,
-        run_id="LIVE" if asset_class == "crypto" else "LIVE_STOCKS",
+        run_id="LIVE",
     )
 
     if args.dry_run_sizing:

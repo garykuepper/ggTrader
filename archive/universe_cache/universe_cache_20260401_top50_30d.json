@@ -1,0 +1,402 @@
+[
+    {
+        "rank": 1,
+        "symbol": "BTC",
+        "kraken_symbol": "BTC",
+        "frequency": 1,
+        "average_notional_volume": 4981116359.471026,
+        "name": "Bitcoin"
+    },
+    {
+        "rank": 2,
+        "symbol": "ETH",
+        "kraken_symbol": "ETH",
+        "frequency": 1,
+        "average_notional_volume": 2173495241.5270467,
+        "name": "Ethereum"
+    },
+    {
+        "rank": 3,
+        "symbol": "SOL",
+        "kraken_symbol": "SOL",
+        "frequency": 1,
+        "average_notional_volume": 980036325.7287288,
+        "name": "Solana"
+    },
+    {
+        "rank": 4,
+        "symbol": "XRP",
+        "kraken_symbol": "XRP",
+        "frequency": 1,
+        "average_notional_volume": 689345060.1619804,
+        "name": "XRP"
+    },
+    {
+        "rank": 5,
+        "symbol": "TAO",
+        "kraken_symbol": "TAO",
+        "frequency": 1,
+        "average_notional_volume": 334563959.39216346,
+        "name": "Bittensor"
+    },
+    {
+        "rank": 6,
+        "symbol": "HYPE",
+        "kraken_symbol": "HYPE",
+        "frequency": 1,
+        "average_notional_volume": 218277967.12654448,
+        "name": "HYPE"
+    },
+    {
+        "rank": 7,
+        "symbol": "DOGE",
+        "kraken_symbol": "DOGE",
+        "frequency": 1,
+        "average_notional_volume": 209147337.81540984,
+        "name": "Dogecoin"
+    },
+    {
+        "rank": 8,
+        "symbol": "ZEC",
+        "kraken_symbol": "ZEC",
+        "frequency": 1,
+        "average_notional_volume": 168907408.74280477,
+        "name": "Zcash"
+    },
+    {
+        "rank": 9,
+        "symbol": "SUI",
+        "kraken_symbol": "SUI",
+        "frequency": 1,
+        "average_notional_volume": 152193853.44648862,
+        "name": "Sui"
+    },
+    {
+        "rank": 10,
+        "symbol": "ADA",
+        "kraken_symbol": "ADA",
+        "frequency": 1,
+        "average_notional_volume": 96387836.18448254,
+        "name": "Cardano"
+    },
+    {
+        "rank": 11,
+        "symbol": "HBAR",
+        "kraken_symbol": "HBAR",
+        "frequency": 1,
+        "average_notional_volume": 83234212.13997476,
+        "name": "HBAR"
+    },
+    {
+        "rank": 12,
+        "symbol": "XMR",
+        "kraken_symbol": "XMR",
+        "frequency": 1,
+        "average_notional_volume": 75219554.98605181,
+        "name": "Monero"
+    },
+    {
+        "rank": 13,
+        "symbol": "LTC",
+        "kraken_symbol": "LTC",
+        "frequency": 1,
+        "average_notional_volume": 61188858.19951423,
+        "name": "Litecoin"
+    },
+    {
+        "rank": 14,
+        "symbol": "FARTCOIN",
+        "kraken_symbol": "FARTCOIN",
+        "frequency": 1,
+        "average_notional_volume": 54000565.2194318,
+        "name": "FARTCOIN"
+    },
+    {
+        "rank": 15,
+        "symbol": "LINK",
+        "kraken_symbol": "LINK",
+        "frequency": 1,
+        "average_notional_volume": 49557908.08567612,
+        "name": "Chainlink"
+    },
+    {
+        "rank": 16,
+        "symbol": "NEAR",
+        "kraken_symbol": "NEAR",
+        "frequency": 1,
+        "average_notional_volume": 41847994.27934876,
+        "name": "Near Protocol"
+    },
+    {
+        "rank": 17,
+        "symbol": "FET",
+        "kraken_symbol": "FET",
+        "frequency": 1,
+        "average_notional_volume": 40815229.50834553,
+        "name": "Fetch.ai"
+    },
+    {
+        "rank": 18,
+        "symbol": "RIVER",
+        "kraken_symbol": "RIVER",
+        "frequency": 1,
+        "average_notional_volume": 35953104.04886352,
+        "name": "RIVER"
+    },
+    {
+        "rank": 19,
+        "symbol": "TRX",
+        "kraken_symbol": "TRX",
+        "frequency": 1,
+        "average_notional_volume": 35251136.093543336,
+        "name": "TRON"
+    },
+    {
+        "rank": 20,
+        "symbol": "NIGHT",
+        "kraken_symbol": "NIGHT",
+        "frequency": 1,
+        "average_notional_volume": 34614795.314067245,
+        "name": "NIGHT"
+    },
+    {
+        "rank": 21,
+        "symbol": "XLM",
+        "kraken_symbol": "XLM",
+        "frequency": 1,
+        "average_notional_volume": 34179440.52399516,
+        "name": "Stellar"
+    },
+    {
+        "rank": 22,
+        "symbol": "CC",
+        "kraken_symbol": "CC",
+        "frequency": 1,
+        "average_notional_volume": 29871926.757648304,
+        "name": "CC"
+    },
+    {
+        "rank": 23,
+        "symbol": "ZRO",
+        "kraken_symbol": "ZRO",
+        "frequency": 1,
+        "average_notional_volume": 29587342.09274142,
+        "name": "ZRO"
+    },
+    {
+        "rank": 24,
+        "symbol": "PEPE",
+        "kraken_symbol": "PEPE",
+        "frequency": 1,
+        "average_notional_volume": 28766401.9232726,
+        "name": "Pepe"
+    },
+    {
+        "rank": 25,
+        "symbol": "TRUMP",
+        "kraken_symbol": "TRUMP",
+        "frequency": 1,
+        "average_notional_volume": 28661927.508911878,
+        "name": "TRUMP"
+    },
+    {
+        "rank": 26,
+        "symbol": "AVAX",
+        "kraken_symbol": "AVAX",
+        "frequency": 1,
+        "average_notional_volume": 28079335.224652387,
+        "name": "Avalanche"
+    },
+    {
+        "rank": 27,
+        "symbol": "DOT",
+        "kraken_symbol": "DOT",
+        "frequency": 1,
+        "average_notional_volume": 25483530.594927862,
+        "name": "Polkadot"
+    },
+    {
+        "rank": 28,
+        "symbol": "RENDER",
+        "kraken_symbol": "RENDER",
+        "frequency": 1,
+        "average_notional_volume": 24748918.9563363,
+        "name": "Render Token"
+    },
+    {
+        "rank": 29,
+        "symbol": "ICP",
+        "kraken_symbol": "ICP",
+        "frequency": 1,
+        "average_notional_volume": 24457683.932474576,
+        "name": "Internet Computer"
+    },
+    {
+        "rank": 30,
+        "symbol": "KAS",
+        "kraken_symbol": "KAS",
+        "frequency": 1,
+        "average_notional_volume": 24433188.378329597,
+        "name": "Kaspa"
+    },
+    {
+        "rank": 31,
+        "symbol": "PENGU",
+        "kraken_symbol": "PENGU",
+        "frequency": 1,
+        "average_notional_volume": 23852955.017723687,
+        "name": "PENGU"
+    },
+    {
+        "rank": 32,
+        "symbol": "BCH",
+        "kraken_symbol": "BCH",
+        "frequency": 1,
+        "average_notional_volume": 20605317.522724126,
+        "name": "Bitcoin Cash"
+    },
+    {
+        "rank": 33,
+        "symbol": "BNB",
+        "kraken_symbol": "BNB",
+        "frequency": 1,
+        "average_notional_volume": 19056725.3264167,
+        "name": "BNB"
+    },
+    {
+        "rank": 34,
+        "symbol": "XPL",
+        "kraken_symbol": "XPL",
+        "frequency": 1,
+        "average_notional_volume": 18218745.531463847,
+        "name": "XPL"
+    },
+    {
+        "rank": 35,
+        "symbol": "CRV",
+        "kraken_symbol": "CRV",
+        "frequency": 1,
+        "average_notional_volume": 18038968.37723617,
+        "name": "Curve DAO Token"
+    },
+    {
+        "rank": 36,
+        "symbol": "PUMP",
+        "kraken_symbol": "PUMP",
+        "frequency": 1,
+        "average_notional_volume": 17560065.40487279,
+        "name": "PUMP"
+    },
+    {
+        "rank": 37,
+        "symbol": "SPX",
+        "kraken_symbol": "SPX",
+        "frequency": 1,
+        "average_notional_volume": 16620790.136781016,
+        "name": "SPX6900"
+    },
+    {
+        "rank": 38,
+        "symbol": "AKT",
+        "kraken_symbol": "AKT",
+        "frequency": 1,
+        "average_notional_volume": 16598911.711655417,
+        "name": "Akash Network"
+    },
+    {
+        "rank": 39,
+        "symbol": "XCN",
+        "kraken_symbol": "XCN",
+        "frequency": 1,
+        "average_notional_volume": 15830501.02667785,
+        "name": "Onyxcoin"
+    },
+    {
+        "rank": 40,
+        "symbol": "VVV",
+        "kraken_symbol": "VVV",
+        "frequency": 1,
+        "average_notional_volume": 15612128.31893966,
+        "name": "VVV"
+    },
+    {
+        "rank": 41,
+        "symbol": "ASTER",
+        "kraken_symbol": "ASTER",
+        "frequency": 1,
+        "average_notional_volume": 15443737.626773518,
+        "name": "ASTER"
+    },
+    {
+        "rank": 42,
+        "symbol": "XDC",
+        "kraken_symbol": "XDC",
+        "frequency": 1,
+        "average_notional_volume": 15268574.519988209,
+        "name": "XDC"
+    },
+    {
+        "rank": 43,
+        "symbol": "ONDO",
+        "kraken_symbol": "ONDO",
+        "frequency": 1,
+        "average_notional_volume": 14868295.472942732,
+        "name": "Ondo"
+    },
+    {
+        "rank": 44,
+        "symbol": "WIF",
+        "kraken_symbol": "WIF",
+        "frequency": 1,
+        "average_notional_volume": 14382361.54750633,
+        "name": "dogwifhat"
+    },
+    {
+        "rank": 45,
+        "symbol": "AAVE",
+        "kraken_symbol": "AAVE",
+        "frequency": 1,
+        "average_notional_volume": 13640230.972826269,
+        "name": "Aave"
+    },
+    {
+        "rank": 46,
+        "symbol": "TRIA",
+        "kraken_symbol": "TRIA",
+        "frequency": 1,
+        "average_notional_volume": 13450678.936814427,
+        "name": "TRIA"
+    },
+    {
+        "rank": 47,
+        "symbol": "ALGO",
+        "kraken_symbol": "ALGO",
+        "frequency": 1,
+        "average_notional_volume": 13439610.583644351,
+        "name": "Algorand"
+    },
+    {
+        "rank": 48,
+        "symbol": "MON",
+        "kraken_symbol": "MON",
+        "frequency": 1,
+        "average_notional_volume": 13085617.009316541,
+        "name": "MON"
+    },
+    {
+        "rank": 49,
+        "symbol": "VIRTUAL",
+        "kraken_symbol": "VIRTUAL",
+        "frequency": 1,
+        "average_notional_volume": 12924171.589885615,
+        "name": "VIRTUAL"
+    },
+    {
+        "rank": 50,
+        "symbol": "DASH",
+        "kraken_symbol": "DASH",
+        "frequency": 1,
+        "average_notional_volume": 12500414.664908826,
+        "name": "DASH"
+    }
+]
