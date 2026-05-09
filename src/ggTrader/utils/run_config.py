@@ -205,7 +205,7 @@ def full_pipeline_config() -> dict[str, Any]:
         # CV-based fold stability penalty: penalizes param combos whose IS metric
         # varies heavily across folds (sign of curve-fitting). 0.0 = disabled,
         # 0.3 = default (moderate), 1.0 = aggressive penalty.
-        "PARAM_STABILITY_WEIGHT": 0.7,
+        "PARAM_STABILITY_WEIGHT": 0.3,
         # Apply fold_consistency (fraction of folds with positive OOS Sharpe) as a
         # soft multiplier on gate_score. Set False to disable.
         "FOLD_CONSISTENCY_IN_GATE": True,

@@ -116,11 +116,46 @@ These remain candidates for subsequent steps depending on Step 1's outcome.
 
 | # | Step | Cost | Expected impact | Status |
 |---|---|---|---|---|
-| 1 | `PARAM_STABILITY_WEIGHT` 0.3 → 0.7 | full WFO re-run; 1 config line | medium-high | **this spec** |
-| 1.5 | Per-fold z-rank in `_weighted_robustness_series` (rank cells by mean z-score across folds, not raw weighted mean) | full WFO re-run; small `wfo.py` edit | medium-high (complements 1: catches positional noise where CV catches magnitude noise) | pending — only if Step 1 gain is incomplete |
+| 1 | `PARAM_STABILITY_WEIGHT` 0.3 → 0.7 | full WFO re-run; 1 config line | medium-high | **this spec — NEUTRAL** |
+| 1.5 | Per-fold z-rank in `_weighted_robustness_series` (rank cells by mean z-score across folds, not raw weighted mean) | full WFO re-run; small `wfo.py` edit | medium-high (complements 1: catches positional noise where CV catches magnitude noise) | next — Step 1 was a no-op |
 | 2 | Shrink param grids (≈ halve combos) | full WFO re-run; grid edits | medium | pending |
 | 3 | Address DOGE-style sparse-fold survivors (`MIN_CLOSED_TRADES_TRAIN` calibration per strategy) | analysis + tweak | medium | pending |
 | 4 | Per-cell OOS in cache + Layer-1 OOS blend (`IS_OOS_PARAM_BLEND_ALPHA`) | invasive: schema migration + WFO core edit | high | pending |
 | 5 | Universe pruning beyond current filters | cheap | low–medium | pending |
 
 Each subsequent step gets its own spec, run, scorecard, and decision-rule check before the next one starts.
+
+---
+
+## Result
+
+Run via small-N micro-experiment (7 diagnostic coins: BTC, ETH, TRX, DOGE, XMR, DASH, ADA) instead of the originally-planned 100-coin run. The 100-coin run was bailed at ~10% progress after 51 minutes when it became clear it was on track for 5+ hours; the micro-experiment finished cleanly in ~50 minutes (Run A + Run B combined). New CLI flag `--symbols` was added in commit `02760a7` to support this.
+
+- **Run A** (`PARAM_STABILITY_WEIGHT=0.7`): `results/research/research_20260508_175631/`
+- **Run B** (`PARAM_STABILITY_WEIGHT=0.3`, baseline): `results/research/research_20260508_190409/`
+
+**Primary scorecard delta:**
+
+| Metric | Before (0.3) | After (0.7) | Δ |
+|---|---:|---:|---:|
+| `n_oos_gt_0_30` | 1 | 1 | 0 |
+| `median_fold_consistency` | 0.55 | 0.55 | 0 |
+| `n_oos_gt_0` | 2 | 2 | 0 |
+
+**Secondary:** `n_survivors` 4 → 4; `median_is_minus_oos_gap` 1.64 → 1.36 (cosmetic — the gap shrinks because IS scores are scaled down, but the same cells still win).
+
+**Phase 3 sanity:** Total Return −11.67% → −13.12% (within noise on a 4-coin equally-weighted portfolio); BTC B&H benchmark −23.82%.
+
+**Verdict:** **NEUTRAL** by the spec rule (zero of three primary metrics moved). Per-coin OOS values are identical to 3 decimals because Run A and Run B picked the **exact same strategy + exit + parameters** for every surviving coin (TRX, DOGE, ETH, ADA), confirmed by inspecting `worker_*_results.json` in both runs.
+
+**Mechanism (why Step 1 was a no-op):** the CV penalty `(1 − weight × CV)` in `_apply_stability_penalty` (`wfo.py:489-493`) is a uniform multiplicative scale. High-IS-mean cells tend to have low CV (consistently above-zero means → small CV), so they are barely penalized. Low-IS-mean cells have high CV (means near zero → CV explodes), so they are already crushed at the baseline weight. Increasing the weight from 0.3 to 0.7 squeezes both ends harder but does not flip the relative ranking — the IS-best cell stays IS-best, just with a smaller margin. Selection bias is structural; uniform CV scaling can't fix it.
+
+**Implications for next steps:**
+
+- Going to `0.85` is also pointless (same mechanism, just more of it). The spec's NEUTRAL fallback ("consider 0.85 next") is invalidated by the mechanistic finding.
+- **Step 1.5 (per-fold z-rank)** is the right next experiment: it normalizes fold-difficulty and re-ranks cells by mean rank-position rather than raw IS mean, which directly *can* flip the winner.
+- Step 2 (grid shrink) is the alternative; it reduces selection bias by reducing the number of noise draws.
+
+**Action:** config left at `PARAM_STABILITY_WEIGHT=0.3` (post-Run-B revert). Live trader is unaffected because identical params would have been chosen at either weight. Step 1.5 spec drafted in `docs/superpowers/specs/2026-05-08-wfo-overfitting-step1.5-per-fold-zrank.md`.
+
+**Side win:** the small-N approach (7 diagnostic coins, 7 workers, full uncached WFO) ran in ~22 min per iteration vs ~5 hours for the 100-coin equivalent. This is now the recommended pattern for tuning experiments — full 100-coin runs reserved for ratification only.

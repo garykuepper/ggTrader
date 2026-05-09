@@ -2,6 +2,38 @@
 
 ## 2026-05-08
 
+### WFO overfitting Step 1: PARAM_STABILITY_WEIGHT 0.3 → 0.7 — NEUTRAL
+
+Spec: `docs/superpowers/specs/2026-05-08-wfo-overfitting-step1-param-stability.md`. Plan: `docs/superpowers/plans/2026-05-08-wfo-overfitting-step1-param-stability.md`.
+
+**Hypothesis:** tightening the CV-based fold-stability penalty would reduce Layer-1 max-of-N selection bias on noisy IS scores (max−median = 1.5–3.0 Sharpe units across ~144 cells per fold; matches noise theory exactly).
+
+**Method:** small-N micro-experiment on 7 diagnostic coins (BTC, ETH, TRX, DOGE, XMR, DASH, ADA) covering all observed failure modes. Run A at `0.7`, Run B at `0.3` baseline, same universe. Total ~50 min wall vs ~5 hours for the originally-planned 100-coin run. New CLI flag `--symbols` added in `cmd_research.py` to support explicit-universe iteration.
+
+**B-criterion scorecard:**
+
+| Metric | Baseline (0.3) | Step 1 (0.7) | Δ |
+|---|---:|---:|---:|
+| `n_oos_gt_0_30` | 1 | 1 | 0 |
+| `median_fold_consistency` | 0.55 | 0.55 | 0 |
+| `n_oos_gt_0` | 2 | 2 | 0 |
+| `n_survivors` | 4 | 4 | 0 |
+
+**Verdict: NEUTRAL.** Per-coin OOS values are identical to 3 decimals because Run A and Run B selected the **exact same strategy + exit + parameters** for every surviving coin (TRX, DOGE, ETH, ADA), confirmed by inspecting both runs' per-coin JSON.
+
+**Mechanistic finding:** the CV penalty `(1 − weight × CV)` is a uniform multiplicative scale. High-IS-mean cells have low CV (consistently above-zero means → small CV) and are barely penalized; low-IS-mean cells have high CV (means near zero → CV explodes) and are already crushed at the baseline weight. Increasing the weight from 0.3 to 0.7 squeezes both ends harder but does not flip the relative ranking. Selection bias is structural; uniform CV scaling cannot fix it. This invalidates the spec's NEUTRAL fallback ("try 0.85 next") — same mechanism, more of it produces the same outcome.
+
+**Action:** config left at `PARAM_STABILITY_WEIGHT=0.3` (post-Run-B revert). Live trader is unaffected because identical params would have been chosen at either weight. Step 1.5 (per-fold z-rank in `_weighted_robustness_series`) is the next experiment because it directly normalizes fold-difficulty and re-ranks cells by mean rank-position rather than raw IS mean — which can flip the winner where Step 1 cannot.
+
+**Side wins:**
+- Small-N micro-experiment pattern (~50 min/iteration on 7 diagnostic coins) is now the recommended workflow for WFO scoring tuning. Full 100-coin runs reserved for ratification only.
+- New `ggt research --symbols A,B,C` CLI flag for explicit-universe iteration (commit `02760a7`).
+- New `scripts/scorecard_step1.py` reusable scorecard generator producing diff-friendly JSON (B-criterion + Phase 3 sanity) from any research run directory.
+
+### WFO worker robustness: empty per_coin slice now exits cleanly
+
+`run_frozen_params_combined_backtest` (`src/ggTrader/core/orchestrator.py:611`) used to raise `ValueError` when every coin in a worker's slice was filtered out by selection gates, which crashed the worker and killed the whole parallel research run on partial data. Now returns an empty-but-valid result and writes an empty `worker_N_results.json` so the merger sees the worker as a legitimate empty contribution. The caller in `scripts/run_walk_forward_optimization.py` guards against `final_portfolio` being None. Surfaced by 2026-05-07 5y research where W4 (EURC + 19 weak alts) and W5 (mostly <0.5y-history coins) had every coin gated out and the entire run crashed.
+
 ### WFO selection: trade-frequency gate, top-K fallback, bear-aware consistency, history shrinkage
 
 Investigation of the 2026-05-07 5y research surfaced four selection-quality issues in WFO. All four are now fixed; the changes compose so the next research run filters these systematically.
