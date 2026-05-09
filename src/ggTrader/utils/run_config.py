@@ -206,6 +206,12 @@ def full_pipeline_config() -> dict[str, Any]:
         # varies heavily across folds (sign of curve-fitting). 0.0 = disabled,
         # 0.3 = default (moderate), 1.0 = aggressive penalty.
         "PARAM_STABILITY_WEIGHT": 0.3,
+        # Per-fold z-rank blend weight (Step 1.5). 0.0 = pure raw weighted mean
+        # (legacy behavior), 1.0 = pure mean-of-per-fold-z-scores, 0.5 = 50/50.
+        # Per-fold z-rank rewards cells that rank consistently high across folds
+        # over cells that spike in one fold and average elsewhere (the max-of-N
+        # selection bias signature). See _weighted_robustness_series in wfo.py.
+        "PARAM_ZRANK_WEIGHT": 0.5,
         # Apply fold_consistency (fraction of folds with positive OOS Sharpe) as a
         # soft multiplier on gate_score. Set False to disable.
         "FOLD_CONSISTENCY_IN_GATE": True,

@@ -235,6 +235,7 @@ def _wfo_train_metric_row_key(idx: Any) -> tuple[Any, ...]:
 def _weighted_robustness_series(
     is_metrics_by_fold: Dict[int, pd.Series],
     weights: Dict[int, float],
+    config: Optional[Dict[str, Any]] = None,
 ) -> pd.Series:
     """Fold-weighted mean per param combo keyed by flattened tuple rows.
 
@@ -289,6 +290,38 @@ def _weighted_robustness_series(
     den = weighted_wts.sum(axis=1)
     num = weighted_vals.sum(axis=1)
     combined = np.where(den > 0.0, num / den, np.nan)
+
+    # Per-fold z-rank blend (Step 1.5 of WFO overfitting work).
+    # alpha=0 reproduces the raw weighted-mean behavior above. alpha>0 mixes in a
+    # weighted mean of per-fold z-scores so cells that rank consistently high across
+    # folds beat cells that spike in one fold and average elsewhere.
+    alpha = float((config or {}).get("PARAM_ZRANK_WEIGHT", 0.0))
+    if alpha > 0.0:
+        z_mat = np.full_like(mat, np.nan)
+        for j in range(n_folds):
+            col = mat[:, j]
+            col_mask = np.isfinite(col)
+            if col_mask.sum() < 2:
+                continue  # need >= 2 cells for std
+            col_finite = col[col_mask]
+            col_std = col_finite.std()
+            if col_std == 0.0:
+                continue  # degenerate fold: all cells equal, leave z's NaN
+            col_mean = col_finite.mean()
+            z_mat[col_mask, j] = (col_finite - col_mean) / col_std
+        z_finite = np.isfinite(z_mat)
+        z_weighted_vals = np.where(z_finite, z_mat * wvec, 0.0)
+        z_weighted_wts = np.where(z_finite, wvec, 0.0)
+        z_den = z_weighted_wts.sum(axis=1)
+        z_num = z_weighted_vals.sum(axis=1)
+        zrank = np.where(z_den > 0.0, z_num / z_den, np.nan)
+        # Blend; if one side is NaN at a cell, fall back to the finite side.
+        both_finite = np.isfinite(combined) & np.isfinite(zrank)
+        combined = np.where(
+            both_finite,
+            (1.0 - alpha) * combined + alpha * zrank,
+            np.where(np.isfinite(combined), combined, zrank),
+        )
 
     return pd.Series(combined, index=union_idx)
 
@@ -473,11 +506,11 @@ def _calculate_robustness(
                 consistency_weight = 0.5
             weights[f] = recency_weight * consistency_weight
 
-        robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights)
+        robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights, config=config)
     else:
         # Original recency-weighted IS Sharpe (for backwards compatibility)
         weights = {f: float(f) for f in is_metrics_by_fold.keys()}
-        robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights)
+        robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights, config=config)
 
     # Parameter stability penalty: penalize combos with high fold-to-fold CV.
     # CV = std / |mean| measures how much a combo's IS metric varies across folds —
