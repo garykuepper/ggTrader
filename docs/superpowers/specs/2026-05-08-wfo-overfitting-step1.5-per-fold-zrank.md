@@ -153,3 +153,36 @@ Same B-criterion as Step 1, with one addition:
 | 5 | Universe pruning beyond current filters | cheap | low–medium | pending |
 
 Each subsequent step gets its own spec, run, scorecard, and decision-rule check before the next one starts.
+
+---
+
+## Result
+
+Run via small-N micro-experiment on the diagnostic 7-coin universe (BTC, ETH, TRX, DOGE, XMR, DASH, ADA), same shape as Step 1.
+
+- **Run A** (`PARAM_ZRANK_WEIGHT=0.5`, blend): `results/research/research_20260508_232226/` (~38 min wall, slower than Step 1's runs due to server load)
+- **Run B** (`PARAM_ZRANK_WEIGHT=0.0`, baseline): `results/research/research_20260509_102421/` (~47 min wall)
+
+**Pick comparison (hard precondition):** picks changed on **0 of 4** surviving coins. Z-rank blend at α=0.5 produced bit-identical selection (same `(strategy, exit, params)` triples for TRX, DOGE, ETH, ADA in both runs). The hard-precondition fires: classify as **NO-OP** regardless of scorecard movement.
+
+**Primary scorecard delta:**
+
+| Metric | Before (α=0.0) | After (α=0.5) | Δ |
+|---|---:|---:|---:|
+| `n_oos_gt_0_30` | 1 | 1 | 0 |
+| `median_fold_consistency` | 0.55 | 0.55 | 0 |
+| `n_oos_gt_0` | 2 | 2 | 0 |
+
+**Secondary:** `n_survivors` 4 → 4; `median_is_minus_oos_gap` 1.64 → 1.72 (slight rise — IS values displayed are now a 50/50 blend with z-rank means, scaled differently, so the gap metric is no longer apples-to-apples).
+
+**Phase 3 sanity:** Total Return −21.45% (vs −21.78% baseline); Sharpe −1.14 (vs −1.17); MaxDD −35.7% both runs.
+
+**Decision:** **NO-OP**.
+
+**Mechanistic finding (different from Step 1):** Step 1 was a no-op because the CV penalty is a uniform multiplicative scale that doesn't flip rankings. Step 1.5 is a no-op for a *different* structural reason: when the IS-best cell is consistently the per-fold leader (which it is for all 4 surviving coins — TRX/DOGE/ETH/ADA), it is also consistently the highest-z cell. Both ranking schemes agree → no flip. Z-rank only diverges from raw mean when there are spiky single-fold outliers competing with consistent mid-rank cells; in this universe, the IS-leaders ARE the consistent leaders. They just happen not to generalize OOS.
+
+**The deeper lesson:** Step 1 and Step 1.5 together demonstrate that **no IS-only re-ranking transform can fix the IS-OOS gap**. The problem isn't *how* we rank within IS — it's that IS leaders systematically don't generalize. The only fixes that bring new information into ranking are Step 4 (per-cell OOS in Layer 1 ranking; cache-schema invasive) and Step 2 (shrink the grid so there are fewer chances to find lucky overfit leaders). Step 4 is the principled fix; Step 2 is a cheaper proxy.
+
+**Action:** `PARAM_ZRANK_WEIGHT` set to `0.0` in `src/ggTrader/utils/run_config.py` (post-Run-B revert). Live trader is unaffected because identical params would have been chosen at either α. Function code path remains in place (gated by `if alpha > 0.0`); the knob can be reused for future experiments without further code change. Tests stay in `tests/test_wfo_zrank_blend.py` as a regression net.
+
+**Next step:** the natural next experiment is Step 2 (grid shrink) as a cheap, attributable test of the "fewer noise draws" hypothesis. Step 4 (per-cell OOS) is the principled fix but expensive (cache schema migration + larger code surface). Recommendation: do Step 2 first as a small-N micro-experiment, then if the Step 2 gain is partial, commit to Step 4.

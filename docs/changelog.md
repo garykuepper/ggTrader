@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-05-09
+
+### WFO overfitting Step 1.5: per-fold z-rank blend (PARAM_ZRANK_WEIGHT) — NO-OP
+
+Spec: `docs/superpowers/specs/2026-05-08-wfo-overfitting-step1.5-per-fold-zrank.md`. Plan: `docs/superpowers/plans/2026-05-08-wfo-overfitting-step1.5-per-fold-zrank.md`.
+
+**Hypothesis:** blending a per-fold-z-score weighted mean into the within-combo cell ranking will flip winners away from raw-mean single-fold outliers toward consistent rank-position cells. Step 1's CV penalty failed because it scaled cells uniformly without flipping order; per-fold z-rank directly changes the order.
+
+**Method:** small-N micro-experiment on the same 7 diagnostic coins (BTC, ETH, TRX, DOGE, XMR, DASH, ADA). Run A at `0.5` (50/50 blend), Run B at `0.0` (legacy bit-identical baseline). New code: `_weighted_robustness_series` accepts an optional `config` kwarg and blends `(1−α)·raw_weighted_mean + α·zrank_weighted_mean` when α > 0. New config knob `PARAM_ZRANK_WEIGHT` added to `_WFO_RELEVANT_CONFIG_KEYS` for cache invalidation. 5 unit tests + 35 existing WFO tests pass (commit `451deb9`).
+
+**Pick comparison:** picks changed on **0 of 4** surviving coins. TRX/DOGE/ETH/ADA each had identical `(strategy, exit, params)` triples in both runs, hard-precondition fires.
+
+**B-criterion scorecard:**
+
+| Metric | Baseline (α=0.0) | Step 1.5 (α=0.5) | Δ |
+|---|---:|---:|---:|
+| `n_oos_gt_0_30` | 1 | 1 | 0 |
+| `median_fold_consistency` | 0.55 | 0.55 | 0 |
+| `n_oos_gt_0` | 2 | 2 | 0 |
+| `n_survivors` | 4 | 4 | 0 |
+
+**Verdict: NO-OP.** Z-rank blend at α=0.5 produced bit-identical selection to the baseline. Different mechanism than Step 1's no-op but same outcome.
+
+**Mechanistic finding (different from Step 1):** When the IS-best cell is consistently the per-fold leader (the case for all 4 surviving coins in this universe), it is also consistently the highest-z cell. Both ranking schemes agree → no flip. Z-rank only diverges from raw mean when there are spiky single-fold outliers competing with consistent mid-rank cells — but the actual winners here are not single-fold outliers; they are systematic IS leaders that happen to overfit.
+
+**Together with Step 1, the implication:** **no IS-only re-ranking transform can fix the IS-OOS gap** in this universe. The problem is that IS leaders systematically don't generalize, regardless of how we rank within IS. The fixes that bring new information into ranking are Step 4 (per-cell OOS in Layer 1; cache-schema invasive) and Step 2 (shrink the grid so there are fewer chances to find lucky overfit leaders). Step 4 is the principled fix; Step 2 is a cheaper proxy.
+
+**Action:** `PARAM_ZRANK_WEIGHT` left at `0.0`. Function code path stays in place gated by `if alpha > 0.0`; the knob can be reused for future experiments without further code change. Tests stay in `tests/test_wfo_zrank_blend.py` as a regression net. Live trader unaffected (identical params at any α value in this universe).
+
+**Recommendation for next experiment:** Step 2 (grid shrink) as a cheap, attributable test of the "fewer noise draws" hypothesis. If Step 2 gain is partial, commit to Step 4 (per-cell OOS in Layer 1).
+
 ## 2026-05-08
 
 ### WFO overfitting Step 1: PARAM_STABILITY_WEIGHT 0.3 → 0.7 — NEUTRAL
