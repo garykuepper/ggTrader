@@ -55,6 +55,14 @@ def register_research_parser(subparsers: argparse._SubParsersAction):
         "--no-parallel", action="store_true", help="Run sequentially instead of in parallel"
     )
     parser.add_argument("--no-progress", action="store_true", help="Disable progress bar")
+    parser.add_argument(
+        "--symbols",
+        type=str,
+        default=None,
+        help="Comma-separated explicit symbol list (e.g. BTC-USD,ETH-USD,TRX-USD). "
+             "When set, skips the volume-based universe fetch and uses these symbols directly. "
+             "Useful for small-N iteration on diagnostic coins.",
+    )
 
 
 class WorkerResultMissing(RuntimeError):
@@ -201,68 +209,82 @@ def run_research(args: argparse.Namespace):
     rm = ResultDBManager()
     cache_key = f"{asset_class}_top{args.top}_{args.window}"
     today_d = _date.today()
-    cached_payload = None
-    try:
-        with rm.engine.connect() as conn:
-            row = conn.execute(
-                _text(
-                    """
-                    SELECT symbols FROM universe_cache
-                    WHERE asset_class = :ac AND snapshot_date = :d
-                      AND symbols->>'cache_key' = :ck
-                    """
-                ),
-                {"ac": asset_class, "d": today_d, "ck": cache_key},
-            ).fetchone()
-        if row is not None:
-            cached_payload = row[0]
-    except Exception:
-        cached_payload = None
 
-    if cached_payload is not None:
+    if args.symbols:
+        # Explicit symbol list overrides the volume-based universe fetch entirely.
+        # Used for small-N iteration on diagnostic coins; skips DB caching since
+        # the universe is user-specified, not derived from market state.
+        explicit = [s.strip() for s in args.symbols.split(",") if s.strip()]
+        explicit = [s if "-" in s else f"{s}-USD" for s in explicit]
         print(
-            f"\n[{datetime.now()}] Step 1: Using cached universe from today "
-            f"(universe_cache table, {cache_key}) — skipping live fetch."
+            f"\n[{datetime.now()}] Step 1: Using explicit --symbols list "
+            f"({len(explicit)} coins): {','.join(explicit)}"
         )
         with open(universe_path, "w") as f:
-            json.dump(cached_payload.get("entries", []), f, indent=2)
+            json.dump(explicit, f, indent=2)
     else:
-        print(
-            f"\n[{datetime.now()}] Step 1: Fetching Live Crypto Universe for Research "
-            f"({args.top} assets, {args.window} window)..."
-        )
-        subprocess.run(
-            [
-                sys.executable,
-                universe_script,
-                "--limit",
-                str(args.top),
-                "--out",
-                str(universe_path),
-                "--window",
-                args.window,
-            ],
-            check=True,
-        )
+        cached_payload = None
         try:
-            with open(universe_path, "r") as f:
-                entries = json.load(f)
-            payload = {"cache_key": cache_key, "entries": entries}
-            with rm.engine.begin() as conn:
-                conn.execute(
+            with rm.engine.connect() as conn:
+                row = conn.execute(
                     _text(
                         """
-                        INSERT INTO universe_cache (asset_class, snapshot_date, symbols)
-                        VALUES (:ac, :d, CAST(:p AS JSONB))
-                        ON CONFLICT (asset_class, snapshot_date) DO UPDATE
-                          SET symbols = EXCLUDED.symbols, created_at = now()
+                        SELECT symbols FROM universe_cache
+                        WHERE asset_class = :ac AND snapshot_date = :d
+                          AND symbols->>'cache_key' = :ck
                         """
                     ),
-                    {"ac": asset_class, "d": today_d, "p": json.dumps(payload)},
-                )
-            print(f"  Cached universe to universe_cache table ({cache_key}) for today's runs.")
-        except Exception as e:
-            print(f"  WARNING: failed to cache universe to DB: {e}")
+                    {"ac": asset_class, "d": today_d, "ck": cache_key},
+                ).fetchone()
+            if row is not None:
+                cached_payload = row[0]
+        except Exception:
+            cached_payload = None
+
+        if cached_payload is not None:
+            print(
+                f"\n[{datetime.now()}] Step 1: Using cached universe from today "
+                f"(universe_cache table, {cache_key}) — skipping live fetch."
+            )
+            with open(universe_path, "w") as f:
+                json.dump(cached_payload.get("entries", []), f, indent=2)
+        else:
+            print(
+                f"\n[{datetime.now()}] Step 1: Fetching Live Crypto Universe for Research "
+                f"({args.top} assets, {args.window} window)..."
+            )
+            subprocess.run(
+                [
+                    sys.executable,
+                    universe_script,
+                    "--limit",
+                    str(args.top),
+                    "--out",
+                    str(universe_path),
+                    "--window",
+                    args.window,
+                ],
+                check=True,
+            )
+            try:
+                with open(universe_path, "r") as f:
+                    entries = json.load(f)
+                payload = {"cache_key": cache_key, "entries": entries}
+                with rm.engine.begin() as conn:
+                    conn.execute(
+                        _text(
+                            """
+                            INSERT INTO universe_cache (asset_class, snapshot_date, symbols)
+                            VALUES (:ac, :d, CAST(:p AS JSONB))
+                            ON CONFLICT (asset_class, snapshot_date) DO UPDATE
+                              SET symbols = EXCLUDED.symbols, created_at = now()
+                            """
+                        ),
+                        {"ac": asset_class, "d": today_d, "p": json.dumps(payload)},
+                    )
+                print(f"  Cached universe to universe_cache table ({cache_key}) for today's runs.")
+            except Exception as e:
+                print(f"  WARNING: failed to cache universe to DB: {e}")
 
     # Load the freshly generated symbols
     try:
