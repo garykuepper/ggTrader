@@ -295,11 +295,16 @@ def main() -> None:
         except Exception as e:
             print(f"Warning: Failed to generate report: {e}")
 
-    if wfo_results and "final_portfolio" in wfo_results:
+    if wfo_results and wfo_results.get("final_portfolio") is not None:
         pf = wfo_results["final_portfolio"]
         print(
             f"\nFinal Dynamic Walk-Forward Portfolio Return "
             f"(Across concatenated folds): {pf.total_return().mean() * 100:.2f}%\n"
+        )
+    elif wfo_results is not None:
+        print(
+            "\nNo combined portfolio produced — every coin in this slice was "
+            "filtered out by selection gates. Worker exiting cleanly with empty results.\n"
         )
 
 

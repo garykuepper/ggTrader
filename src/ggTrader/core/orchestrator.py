@@ -609,10 +609,34 @@ def run_frozen_params_combined_backtest(
             print(f"  [WARN] Skipping {symbol} in combined backtest: {sym_exc!r}")
 
     if not combined_entries_list:
-        raise ValueError(
-            "Frozen-params backtest produced no symbols "
-            "(empty OHLCV or no matching per_coin_results)."
+        # Every coin in this slice was filtered out by selection gates (or had no
+        # matching OHLCV). Don't raise — that would crash a parallel worker and
+        # kill the whole research run. Save an empty worker results file so the
+        # merger sees this worker as a legitimate empty contribution and return
+        # a None portfolio for the caller to handle.
+        print(
+            "  [Phase 3] No surviving coins after selection gates — "
+            "skipping combined backtest for this slice."
         )
+        if save_results and results_manager:
+            metadata = {
+                **config,
+                "exit_tournament": exit_tournament,
+                "per_coin_results": {},
+                "per_coin_final_stats": {},
+            }
+            try:
+                results_manager.save_run_results(
+                    params={"per_coin": {}}, metrics={}, metadata=metadata,
+                )
+            except Exception as save_exc:
+                print(f"  [Phase 3] WARNING: failed to save empty worker results: {save_exc!r}")
+        return {
+            "final_portfolio": None,
+            "per_coin_final_stats": {},
+            "final_stats": {},
+            "trade_freq_dropped": [],
+        }
 
     combined_entries = pd.concat(combined_entries_list, axis=1)
     combined_exits = pd.concat(combined_exits_list, axis=1)
