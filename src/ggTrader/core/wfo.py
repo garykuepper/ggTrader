@@ -488,6 +488,7 @@ def _calculate_robustness(
     oos_metrics_by_fold: Optional[Dict[int, float]] = None,
     debug_metrics: bool = False,
     config: Optional[Dict[str, Any]] = None,
+    test_metrics_by_fold: Optional[Dict[int, pd.Series]] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Calculates parameter robustness validation across folds.
 
@@ -495,11 +496,20 @@ def _calculate_robustness(
     contribution to robustness (penalizes parameter sets that don't generalize).
     Otherwise falls back to in-sample Sharpe with recency weighting.
 
+    If test_metrics_by_fold is provided AND PARAM_OOS_GAP_PENALTY (gamma) > 0,
+    the per-cell IS-OOS gap is subtracted from each cell's score:
+        score = IS_mean - gamma * |IS_mean - OOS_mean|
+    A cell whose train and test means agree gets full credit; a cell where they
+    disagree is dinged proportional to the gap. This is the consistency-aware
+    selection rule from Step 4b of the WFO overfitting plan.
+
     Args:
         is_metrics_by_fold: Dict mapping fold idx to in-sample Sharpe Series (all param combos)
         param_names: List of parameter names
         param_grid: Parameter grid definition
         oos_metrics_by_fold: Optional dict mapping fold idx to OOS Sharpe (fold-level consistency)
+        test_metrics_by_fold: Optional dict mapping fold idx to per-cell OOS composite Series.
+            Mirror of is_metrics_by_fold but on the test window. Required for the gap penalty.
 
     Returns:
         (robust_top_5, best_robust_params) tuples
@@ -536,12 +546,28 @@ def _calculate_robustness(
         weights = {f: float(f) for f in is_metrics_by_fold.keys()}
         robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights, config=config)
 
+    # Per-cell IS-OOS gap penalty (Step 4b consistency-aware selection).
+    # When PARAM_OOS_GAP_PENALTY > 0 AND test_metrics_by_fold is provided, subtract
+    # gamma * |IS_mean - OOS_mean| from each cell's score. Both means use the same
+    # fold weights as IS, so a cell whose train and test composites agree keeps
+    # full credit; one where they diverge is dinged proportional to the raw gap.
+    _cfg = config or {}
+    gap_penalty = float(_cfg.get("PARAM_OOS_GAP_PENALTY", 0.0))
+    if gap_penalty > 0.0 and test_metrics_by_fold:
+        oos_robustness_scores = _weighted_robustness_series(
+            test_metrics_by_fold, weights, config=config
+        )
+        oos_aligned = oos_robustness_scores.reindex(robustness_scores.index)
+        gap = (robustness_scores - oos_aligned).abs()
+        # Cells with no OOS data (NaN gap) get no penalty — fall back to IS-only.
+        gap = gap.fillna(0.0)
+        robustness_scores = robustness_scores - gap_penalty * gap
+
     # Parameter stability penalty: penalize combos with high fold-to-fold CV.
     # CV = std / |mean| measures how much a combo's IS metric varies across folds —
     # high CV indicates the combo is curve-fitting to specific folds rather than
     # generalizing. The multiplier is 1/(1 + w*CV), so a stable combo (CV≈0) keeps
     # its full score while an unstable combo (CV=2, w=0.3) loses ~37%.
-    _cfg = config or {}
     param_stability_weight = float(_cfg.get("PARAM_STABILITY_WEIGHT", 0.3))
     if param_stability_weight > 0.0 and len(is_metrics_by_fold) >= 2:
         cv_series = _param_cv_series(is_metrics_by_fold)

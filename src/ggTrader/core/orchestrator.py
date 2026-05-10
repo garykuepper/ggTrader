@@ -1048,6 +1048,7 @@ def run_multi_strategy_per_coin_wfo(
                         oos_metrics_by_fold,
                         debug_metrics=debug_wfo,
                         config=config,
+                        test_metrics_by_fold=test_metrics_by_fold,
                     )
 
                     if robust_top_5:
