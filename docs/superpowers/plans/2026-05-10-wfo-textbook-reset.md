@@ -637,7 +637,8 @@ Create `/home/flynn/ggTrader/tests/test_rank_composite.py`:
 
 Step 1 of the WFO textbook reset. The composite is the within-fold selection
 objective. Rank cells by each of Sortino/Calmar/PF descending, average ranks
-on ties, sum the three ranks, and emit -sum so 'max wins' downstream.
+on ties, take the mean of the three ranks, and emit -mean so 'max wins'
+downstream.
 
 Sharpe is intentionally dropped (Sharpe and Sortino are near-redundant; the
 spec drops Sharpe to keep the composite to three non-redundant dimensions).
@@ -650,6 +651,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -699,11 +701,13 @@ def test_rank_composite_average_rank_on_ties():
     # On Sortino: A & B tied -> average rank 1.5 each, C rank 3.
     # On Calmar: A rank 1, B rank 2, C rank 3.
     # On PF:     A rank 1, B rank 2, C rank 3.
-    # Sums:   A = 1.5+1+1 = 3.5; B = 1.5+2+2 = 5.5; C = 3+3+3 = 9.
-    # Scores: A = -3.5; B = -5.5; C = -9.
-    assert scores.iloc[0] == -3.5
-    assert scores.iloc[1] == -5.5
-    assert scores.iloc[2] == -9.0
+    # Implementation uses MEAN rank across the 3 axes, then negates.
+    # A mean rank = (1.5+1+1)/3 = 1.1666...; score = -1.1666...
+    # B mean rank = (1.5+2+2)/3 = 1.8333...; score = -1.8333...
+    # C mean rank = (3+3+3)/3   = 3.0;       score = -3.0
+    assert scores.iloc[0] == pytest.approx(-7.0 / 6.0, abs=1e-9)
+    assert scores.iloc[1] == pytest.approx(-11.0 / 6.0, abs=1e-9)
+    assert scores.iloc[2] == pytest.approx(-3.0, abs=1e-9)
 
 
 def test_rank_composite_sharpe_never_consulted():
@@ -867,6 +871,7 @@ Open `/home/flynn/ggTrader/src/ggTrader/data/cache/wfo_cache.py`. Add to `_WFO_R
 ```python
     "MIN_TRADES_PER_TRAIN_FOLD",
     "MIN_TRAIN_FOLD_PASS_COUNT",
+    "WFO_BARS_PER_YEAR",
 ```
 
 - [ ] **Step 3: Apply the per-fold gate in `_process_wfo_fold`**
@@ -1381,10 +1386,14 @@ In `/home/flynn/ggTrader/src/ggTrader/utils/run_config.py`, near the new WFO kno
 ```python
         # WFO textbook gates (Pardo convention) — applied after 10-fold loop
         # as PASS/FAIL filters, never as selection criteria.
-        "WFO_GATE_WFE_MIN": 0.5,             # mean(test_ann_ret) / mean(train_ann_ret) >= this
+        "WFO_GATE_WFE_MIN": 0.5,               # mean(test_ann_ret) / mean(train_ann_ret) >= this
         "WFO_GATE_PROFITABLE_FOLDS_MIN": 0.6,  # fraction of folds with test_ann_ret > 0
-        "WFO_GATE_PARAM_CV_MAX": 0.3,        # per-axis param CV across the 10 winners
-        "WFO_GATE_DD_RATIO_MAX": 2.0,        # mean(|test_dd|) / mean(|train_dd|)
+        "WFO_GATE_PARAM_CV_MAX": 0.3,          # MAX per-axis param CV across the 10 winners
+        "WFO_GATE_DD_RATIO_MAX": 2.0,          # mean(|test_dd|) / mean(|train_dd|)
+        # Bars-per-year for annualization. None = infer from OHLCV index frequency
+        # (4h -> 2191.5, 1h -> 8766.0, 1d -> 365.25). Override only when needed
+        # for non-standard intervals or when the index is unreliable.
+        "WFO_BARS_PER_YEAR": None,
 ```
 
 - [ ] **Step 2: Write the failing tests for `wfo_aggregate`**
@@ -1414,7 +1423,39 @@ from ggTrader.core.wfo_aggregate import (
     parameter_cv,
     dd_ratio,
     apply_gates,
+    infer_bars_per_year,
 )
+
+
+def test_infer_bars_per_year_4h():
+    """4h bars give 2191.5 bars/year."""
+    idx = pd.date_range("2023-01-01", periods=100, freq="4h")
+    assert infer_bars_per_year(idx) == pytest.approx(2191.5, rel=1e-4)
+
+
+def test_infer_bars_per_year_1d():
+    """Daily bars give 365.25 bars/year."""
+    idx = pd.date_range("2023-01-01", periods=100, freq="D")
+    assert infer_bars_per_year(idx) == pytest.approx(365.25, rel=1e-4)
+
+
+def test_infer_bars_per_year_1h():
+    """Hourly bars give 8766 bars/year."""
+    idx = pd.date_range("2023-01-01", periods=100, freq="h")
+    assert infer_bars_per_year(idx) == pytest.approx(8766.0, rel=1e-4)
+
+
+def test_infer_bars_per_year_config_override():
+    """Explicit WFO_BARS_PER_YEAR overrides inference."""
+    idx = pd.date_range("2023-01-01", periods=100, freq="4h")
+    # Index says 4h (2191.5), but config forces 1000.
+    assert infer_bars_per_year(idx, config={"WFO_BARS_PER_YEAR": 1000}) == 1000.0
+
+
+def test_infer_bars_per_year_fallback_on_empty():
+    """Empty/too-short index falls back to 4h default."""
+    idx = pd.DatetimeIndex([])
+    assert infer_bars_per_year(idx) == pytest.approx(2191.5, rel=1e-4)
 
 
 def test_wfe_basic_ratio():
@@ -1438,12 +1479,17 @@ def test_fraction_profitable_folds():
     assert fraction_profitable_folds(test_returns) == pytest.approx(0.6, abs=1e-9)
 
 
-def test_parameter_cv_per_axis_average():
-    """CV is computed per axis then averaged across axes."""
+def test_parameter_cv_takes_worst_axis():
+    """CV is computed per axis; the WORST (max) axis CV is reported.
+
+    Reasoning: a coin's stability is bottlenecked by its least stable axis.
+    Averaging across axes lets one unstable axis hide behind several stable
+    ones. Max forces every axis to satisfy the CV gate.
+    """
     # Two params, each with 4 fold-winners.
     # adx_length: [14, 14, 14, 14] -> std 0, mean 14, CV 0.
-    # adx_threshold: [20, 25, 30, 35] -> std ~5.59, mean 27.5, CV ~0.203.
-    # Average CV: ~0.10.
+    # adx_threshold: [20, 25, 30, 35] -> std ~5.59 (ddof=0), mean 27.5, CV ~0.203.
+    # max(0.0, 0.203) = 0.203.
     fold_params = [
         {"adx_length": 14, "adx_threshold": 20},
         {"adx_length": 14, "adx_threshold": 25},
@@ -1451,7 +1497,24 @@ def test_parameter_cv_per_axis_average():
         {"adx_length": 14, "adx_threshold": 35},
     ]
     cv = parameter_cv(fold_params)
-    assert cv == pytest.approx(0.10, abs=0.02)
+    assert cv == pytest.approx(0.2032, abs=0.005)
+
+
+def test_parameter_cv_max_dominated_by_worst_axis():
+    """A coin with one stable axis and one wild axis fails on the wild axis."""
+    # adx_length: stable [14, 14, 14, 14] -> CV 0.
+    # adx_threshold: wild [10, 20, 30, 40] -> std ~11.18, mean 25, CV ~0.447.
+    # max = 0.447. If we averaged we'd get ~0.224 — that would let the
+    # combo squeak by the 0.3 gate despite the wild axis. With max, it fails.
+    fold_params = [
+        {"adx_length": 14, "adx_threshold": 10},
+        {"adx_length": 14, "adx_threshold": 20},
+        {"adx_length": 14, "adx_threshold": 30},
+        {"adx_length": 14, "adx_threshold": 40},
+    ]
+    cv = parameter_cv(fold_params)
+    assert cv == pytest.approx(0.4472, abs=0.005)
+    assert cv > 0.3  # would fail the spec gate
 
 
 def test_parameter_cv_constant_params():
@@ -1526,9 +1589,54 @@ selection in Task 7) or fails (excluded from candidate set).
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
+import pandas as pd
+
+
+def infer_bars_per_year(
+    index: pd.DatetimeIndex,
+    config: Optional[Dict[str, Any]] = None,
+) -> float:
+    """Infer bars-per-year from the OHLCV DatetimeIndex frequency.
+
+    Looks at the median spacing between consecutive bars and computes:
+        bars_per_year = (365.25 * 24 * 3600) / median_spacing_seconds
+
+    Examples (with no config override):
+      4h bars  -> 365.25 * 24 / 4   = 2191.5
+      1h bars  -> 365.25 * 24       = 8766.0
+      1d bars  -> 365.25            = 365.25
+      15m bars -> 365.25 * 24 * 4   = 35064.0
+
+    If config sets ``WFO_BARS_PER_YEAR`` to a positive number, that value
+    overrides inference. If inference fails (too few bars, non-uniform
+    spacing), falls back to the config override or 2191.5 (4h default).
+    """
+    cfg = config or {}
+    override = cfg.get("WFO_BARS_PER_YEAR")
+    if override is not None:
+        try:
+            override_f = float(override)
+            if override_f > 0:
+                return override_f
+        except (TypeError, ValueError):
+            pass
+    # Default fallback for 4h bars (project convention).
+    default_4h = 365.25 * 24.0 / 4.0  # 2191.5
+    if index is None or len(index) < 2:
+        return default_4h
+    try:
+        deltas = pd.to_datetime(pd.Index(index)).to_series().diff().dropna()
+        if len(deltas) == 0:
+            return default_4h
+        median_sec = float(deltas.median().total_seconds())
+        if median_sec <= 0:
+            return default_4h
+        return (365.25 * 24.0 * 3600.0) / median_sec
+    except Exception:
+        return default_4h
 
 
 def compute_wfe(train_returns: List[float], test_returns: List[float]) -> float:
@@ -1562,12 +1670,16 @@ def fraction_profitable_folds(test_returns: List[float]) -> float:
 
 
 def parameter_cv(fold_params: List[Dict[str, Any]]) -> float:
-    """Per-axis CV across the chosen-per-fold params, averaged across axes.
+    """Per-axis CV across the chosen-per-fold params; report the MAX axis CV.
 
     For each param key, compute std(values) / |mean(values)| across folds.
     Axes with mean ~= 0 or constant value contribute 0 (no variation).
     Non-numeric param values are skipped.
-    Final score is the mean CV across numeric axes.
+
+    Returns the MAXIMUM CV across numeric axes (not the mean). Reasoning:
+    a coin's stability is bottlenecked by its least stable axis. Averaging
+    lets one wild axis hide behind several stable ones; max forces every
+    axis to satisfy the CV gate.
 
     Returns 0.0 when all axes are constant. NaN when no numeric axes exist.
     """
@@ -1599,7 +1711,7 @@ def parameter_cv(fold_params: List[Dict[str, Any]]) -> float:
     finite_cvs = [c for c in cvs if np.isfinite(c)]
     if not finite_cvs:
         return float("inf")
-    return float(np.mean(finite_cvs))
+    return float(max(finite_cvs))
 
 
 def dd_ratio(train_dds: List[float], test_dds: List[float]) -> float:
@@ -1738,18 +1850,28 @@ In `wfo.py:_process_wfo_fold`, before the function returns its dict (around line
         oos_dd = float(pf_test.max_drawdown().min()) if pf_test is not None else float("nan")
     except Exception:
         oos_dd = float("nan")
-    # Approximate annualized return: total return / (bars / bars_per_year).
-    # For 4h bars, bars_per_year ≈ 365.25 * 24 / 4 = 2191.5.
-    bars_per_year = 365.25 * 24 / 4  # fixed for 4h bars in this project
+    # Annualized return via compounding: (1 + total_return)^(bars_per_year / n_bars) - 1.
+    # Linear scaling understates large compounded returns; compounding is correct
+    # for ratio metrics across windows of different lengths.
+    # bars_per_year is INFERRED from the OHLCV index frequency (no hardcoded 4h
+    # assumption). Falls back to a config override or 4h default if inference fails.
+    from ggTrader.core.wfo_aggregate import infer_bars_per_year
+    bars_per_year = infer_bars_per_year(train_ohlcv.index, config=config)
     try:
         n_train_bars = float(len(train_ohlcv))
-        train_ann_ret = train_total_ret * (bars_per_year / max(n_train_bars, 1.0))
+        if n_train_bars > 0 and np.isfinite(train_total_ret) and train_total_ret > -1.0:
+            train_ann_ret = (1.0 + train_total_ret) ** (bars_per_year / n_train_bars) - 1.0
+        else:
+            train_ann_ret = float("nan")
     except Exception:
         train_ann_ret = float("nan")
     try:
         oos_total_ret = float(pf_test.total_return().mean()) if pf_test is not None else float("nan")
         n_test_bars = float(len(test_ohlcv))
-        oos_ann_ret = oos_total_ret * (bars_per_year / max(n_test_bars, 1.0))
+        if n_test_bars > 0 and np.isfinite(oos_total_ret) and oos_total_ret > -1.0:
+            oos_ann_ret = (1.0 + oos_total_ret) ** (bars_per_year / n_test_bars) - 1.0
+        else:
+            oos_ann_ret = float("nan")
     except Exception:
         oos_ann_ret = float("nan")
 ```
@@ -1811,17 +1933,23 @@ compute four metrics and judge each against a fixed threshold:
 
 - WFE = mean(test_ann_ret) / mean(train_ann_ret) >= 0.5
 - % profitable folds = (test_ann_ret > 0) >= 0.6
-- parameter CV = mean per-axis CV across the 10 winners <= 0.3
+- parameter CV = MAX per-axis CV across the 10 winners <= 0.3
+  (worst axis defines stability; averaging would let one wild
+  axis hide behind several stable ones.)
 - DD ratio = mean(|test_dd|) / mean(|train_dd|) <= 2.0
 
 Gates are PASS/FAIL filters, never selection. A combo passes
 (continues to per-coin selection in Task 7) or fails (excluded
 from candidate set entirely).
 
-Pardo convention thresholds. Annualized returns are computed
-assuming 4h bars (bars_per_year = 365.25 * 24 / 4 = 2191.5).
+Pardo convention thresholds. Annualized returns use proper
+compounding: (1 + total_return)^(bars_per_year / n_bars) - 1.
+bars_per_year is INFERRED from the OHLCV DatetimeIndex frequency
+(falls back to 4h / 2191.5 if inference fails; overridable via
+WFO_BARS_PER_YEAR config).
 
 New module ggTrader.core.wfo_aggregate exposes:
+- infer_bars_per_year(index, config) — bars/yr from index frequency
 - compute_wfe, fraction_profitable_folds, parameter_cv, dd_ratio
 - apply_gates(wfe, prof, cv, ddr, thresholds) -> {passed, failures, metrics}
 
@@ -2058,10 +2186,14 @@ After the per-coin selection (above) in `orchestrator.py`, run the median params
                     # Smoke test: run median params on the full WFO train window.
                     # Not selection — just a sanity check that the median grid-snap
                     # doesn't break (e.g., produces no trades or wild metrics).
+                    # NOTE: FastBacktest expects param_grid as {axis: [value, ...]}.
+                    # median_params is {axis: value} — wrap each value as a single-element
+                    # list so the vectorized engine builds a 1-cell portfolio.
+                    median_grid = {k: [v] for k, v in median_params.items()}
                     try:
                         smoke_engine = FastBacktest(
                             ohlcv=ohlcv[[symbol]],
-                            param_grid=median_params,
+                            param_grid=median_grid,
                             config={**config, "USE_VECTORIZED": False, "ENTRY_STRATEGY": chosen["strategy"], "EXIT_STRATEGY": chosen["exit"]},
                         )
                         smoke_pf = smoke_engine.run(show_progress=False)
@@ -2089,16 +2221,24 @@ After the per-coin selection (above) in `orchestrator.py`, run the median params
                         try:
                             holdout_engine = FastBacktest(
                                 ohlcv=holdout_symbol_data,
-                                param_grid=median_params,
+                                param_grid=median_grid,
                                 config={**config, "USE_VECTORIZED": False, "ENTRY_STRATEGY": chosen["strategy"], "EXIT_STRATEGY": chosen["exit"]},
                             )
                             holdout_pf = holdout_engine.run(show_progress=False)
                             holdout_sortino = float(holdout_pf.sortino_ratio().mean())
                             holdout_total_ret = float(holdout_pf.total_return().mean())
                             holdout_max_dd = float(holdout_pf.max_drawdown().min())
-                            # Annualize the holdout return using same bars_per_year.
-                            bars_per_year = 365.25 * 24 / 4
-                            holdout_ann_ret = holdout_total_ret * (bars_per_year / max(len(holdout_symbol_data), 1.0))
+                            # Annualize the holdout return via compounding using
+                            # the bars-per-year inferred from the holdout index.
+                            from ggTrader.core.wfo_aggregate import infer_bars_per_year
+                            bars_per_year = infer_bars_per_year(
+                                holdout_symbol_data.index, config=config
+                            )
+                            n_holdout_bars = float(len(holdout_symbol_data))
+                            if n_holdout_bars > 0 and np.isfinite(holdout_total_ret) and holdout_total_ret > -1.0:
+                                holdout_ann_ret = (1.0 + holdout_total_ret) ** (bars_per_year / n_holdout_bars) - 1.0
+                            else:
+                                holdout_ann_ret = float("nan")
                             # Worst test-fold DD from chosen combo's wfo_stats.
                             chosen_wfo_stats = chosen.get("wfo_stats_ref", [])
                             test_dds = [fold.get("oos_max_dd", float("nan")) for fold in chosen_wfo_stats]
