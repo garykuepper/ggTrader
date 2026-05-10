@@ -14,7 +14,6 @@ from ggTrader.core.metrics import (
     _print_wfo_fold_all_rejected_diagnostics,
 )
 from ggTrader.core.orchestrator_utils import (
-    _coerce_metric_float,
     _default_params_from_grid,
     _eta_str,
     _extract_params,
@@ -246,6 +245,10 @@ def _weighted_robustness_series(
     weights, skipping NaNs (denominator = sum of weights for folds with finite
     values at that key).
     """
+    # Note: ``config`` is intentionally retained as a kwarg but not currently
+    # read. The textbook reset removed the z-rank/config-driven branches;
+    # the parameter is kept so future composition-time consumers (e.g.
+    # alternative blending modes) can flow through without a signature change.
     fold_keys = sorted(weights.keys())
     if not fold_keys:
         raise ValueError("weights must be non-empty")
@@ -291,38 +294,6 @@ def _weighted_robustness_series(
     den = weighted_wts.sum(axis=1)
     num = weighted_vals.sum(axis=1)
     combined = np.where(den > 0.0, num / den, np.nan)
-
-    # Per-fold z-rank blend (Step 1.5 of WFO overfitting work).
-    # alpha=0 reproduces the raw weighted-mean behavior above. alpha>0 mixes in a
-    # weighted mean of per-fold z-scores so cells that rank consistently high across
-    # folds beat cells that spike in one fold and average elsewhere.
-    alpha = float((config or {}).get("PARAM_ZRANK_WEIGHT", 0.0))
-    if alpha > 0.0:
-        z_mat = np.full_like(mat, np.nan)
-        for j in range(n_folds):
-            col = mat[:, j]
-            col_mask = np.isfinite(col)
-            if col_mask.sum() < 2:
-                continue  # need >= 2 cells for std
-            col_finite = col[col_mask]
-            col_std = col_finite.std()
-            if col_std == 0.0:
-                continue  # degenerate fold: all cells equal, leave z's NaN
-            col_mean = col_finite.mean()
-            z_mat[col_mask, j] = (col_finite - col_mean) / col_std
-        z_finite = np.isfinite(z_mat)
-        z_weighted_vals = np.where(z_finite, z_mat * wvec, 0.0)
-        z_weighted_wts = np.where(z_finite, wvec, 0.0)
-        z_den = z_weighted_wts.sum(axis=1)
-        z_num = z_weighted_vals.sum(axis=1)
-        zrank = np.where(z_den > 0.0, z_num / z_den, np.nan)
-        # Blend; if one side is NaN at a cell, fall back to the finite side.
-        both_finite = np.isfinite(combined) & np.isfinite(zrank)
-        combined = np.where(
-            both_finite,
-            (1.0 - alpha) * combined + alpha * zrank,
-            np.where(np.isfinite(combined), combined, zrank),
-        )
 
     return pd.Series(combined, index=union_idx)
 
@@ -462,70 +433,25 @@ def _calculate_robustness(
     is_metrics_by_fold: Dict[int, pd.Series],
     param_names: List[str],
     param_grid: Dict[str, Any],
-    oos_metrics_by_fold: Optional[Dict[int, float]] = None,
     debug_metrics: bool = False,
     config: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Calculates parameter robustness validation across folds.
 
-    If oos_metrics_by_fold is provided, uses OOS Sharpe to weight each fold's
-    contribution to robustness (penalizes parameter sets that don't generalize).
-    Otherwise falls back to in-sample Sharpe with recency weighting.
+    Selection uses train-window metrics only. Folds get recency weights;
+    no OOS data feeds into fold weighting (textbook reset).
 
     Args:
         is_metrics_by_fold: Dict mapping fold idx to in-sample Sharpe Series (all param combos)
         param_names: List of parameter names
         param_grid: Parameter grid definition
-        oos_metrics_by_fold: Optional dict mapping fold idx to OOS Sharpe (fold-level consistency)
 
     Returns:
         (robust_top_5, best_robust_params) tuples
     """
-    # If OOS metrics provided, use them to measure generalization
-    if oos_metrics_by_fold:
-        fold_indices = sorted(oos_metrics_by_fold.keys())
-        oos_values = np.array(
-            [_coerce_metric_float(oos_metrics_by_fold.get(f)) for f in fold_indices],
-            dtype=float,
-        )
-        # Min-max normalize OOS Sharpes to [0.1, 1.0] so folds with better OOS get
-        # proportionally higher weight even when *all* OOS values are negative.
-        # This prevents the old ratio-to-mean collapsing to a flat 0.5 weight when
-        # oos_mean <= 0 (which made OOS weighting useless in poor-OOS regimes).
-        oos_finite = oos_values[np.isfinite(oos_values)]
-        oos_min_val = float(np.min(oos_finite)) if oos_finite.size > 0 else 0.0
-        oos_max_val = float(np.max(oos_finite)) if oos_finite.size > 0 else 0.0
-        oos_range_val = oos_max_val - oos_min_val
-
-        weights = {}
-        for f in fold_indices:
-            oos_sharpe = _coerce_metric_float(oos_metrics_by_fold.get(f))
-            recency_weight = float(f)
-            if np.isfinite(oos_sharpe) and oos_range_val > 1e-8:
-                consistency_weight = 0.1 + 0.9 * (oos_sharpe - oos_min_val) / oos_range_val
-            else:
-                consistency_weight = 0.5
-            weights[f] = recency_weight * consistency_weight
-
-        robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights, config=config)
-    else:
-        # Original recency-weighted IS Sharpe (for backwards compatibility)
-        weights = {f: float(f) for f in is_metrics_by_fold.keys()}
-        robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights, config=config)
-
-    _cfg = config or {}
-
-    # Parameter stability penalty: penalize combos with high fold-to-fold CV.
-    # CV = std / |mean| measures how much a combo's IS metric varies across folds —
-    # high CV indicates the combo is curve-fitting to specific folds rather than
-    # generalizing. The multiplier is 1/(1 + w*CV), so a stable combo (CV≈0) keeps
-    # its full score while an unstable combo (CV=2, w=0.3) loses ~37%.
-    param_stability_weight = float(_cfg.get("PARAM_STABILITY_WEIGHT", 0.3))
-    if param_stability_weight > 0.0 and len(is_metrics_by_fold) >= 2:
-        cv_series = _param_cv_series(is_metrics_by_fold)
-        cv_aligned = cv_series.reindex(robustness_scores.index).fillna(0.0)
-        stability_multiplier = 1.0 / (1.0 + param_stability_weight * cv_aligned)
-        robustness_scores = robustness_scores * stability_multiplier
+    # Selection uses train-window metrics only; folds get recency weights, no OOS.
+    weights = {f: float(f) for f in is_metrics_by_fold.keys()}
+    robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights, config=config)
 
     if debug_metrics:
         for fk, s in sorted(is_metrics_by_fold.items()):
@@ -743,7 +669,6 @@ def run_wfo_orchestrator(
         is_metrics_by_fold,
         param_names,
         param_grid,
-        None,  # Do not punish entire folds based on OOS performance of the single IS winner
         debug_metrics=dbg,
         config=config,
     )
@@ -862,7 +787,6 @@ def run_wfo_per_coin_orchestrator(
             is_metrics_by_fold,
             param_names,
             param_grid,
-            None,  # Do not punish entire folds based on OOS performance of the single IS winner
             debug_metrics=dbg,
             config=config,
         )

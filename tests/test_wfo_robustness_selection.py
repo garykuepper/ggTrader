@@ -41,7 +41,6 @@ class TestCalculateRobustnessEmpty:
             {1: s_empty, 2: s_empty},
             ["adx_length"],
             {"adx_length": [14]},
-            {1: 0.5, 2: 0.5},
         )
         assert top == []
         assert params == {}

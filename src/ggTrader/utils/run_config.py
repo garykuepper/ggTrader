@@ -118,15 +118,9 @@ def full_pipeline_config() -> dict[str, Any]:
         # Applied after Phase 3 (full-range replay) so it sees the same trade
         # count the live trader would experience. Set to None to disable.
         "MIN_TRADES_PER_YEAR": 4,
-        # WFO / sensitivity train ranking: composite blends Sharpe, Sortino,
-        # Calmar-like (return/|maxDD|).
+        # WFO / sensitivity train ranking: composite blends Sortino, Calmar, PF
+        # via rank-based scoring (equal contribution, no z-score weighting).
         "TRAIN_METRIC": "composite",
-        "TRAIN_METRIC_COMPOSITE_WEIGHTS": {
-            "sharpe": 0.20,
-            "sortino": 0.30,
-            "calmar": 0.30,
-            "profit_factor": 0.20,
-        },
         "MAX_TRAIN_DRAWDOWN_PCT": None,
         "CHUNK_SIZE": 500,
         "USE_VECTORIZED": True,
@@ -194,34 +188,6 @@ def full_pipeline_config() -> dict[str, Any]:
         # Set True or pass --wfo-debug-metrics on run_full_pipeline.py: per-fold train-metric
         # len/finite counts and combined robustness during WFO (all orchestrator paths).
         "WFO_DEBUG_METRICS": False,
-        # OOS robustness blend: 0.0 = pure IS robustness (original behaviour),
-        # 1.0 = pure OOS Sharpe gate, 0.70 = weight OOS more than IS.
-        "OOS_ROBUSTNESS_BLEND_ALPHA": 0.70,
-        # --- Anti-overfitting scoring improvements (zero extra compute) ---
-        # Z-score normalize composite metric components before blending so that
-        # Calmar, ProfitFactor, Sharpe and Sortino are all on the same scale.
-        # Set False to restore the original clipped-value blend.
-        "TRAIN_METRIC_NORMALIZE_ZSCORE": True,
-        # CV-based fold stability penalty: penalizes param combos whose IS metric
-        # varies heavily across folds (sign of curve-fitting). 0.0 = disabled,
-        # 0.3 = default (moderate), 1.0 = aggressive penalty.
-        "PARAM_STABILITY_WEIGHT": 0.3,
-        # Per-fold z-rank blend weight (Step 1.5). 0.0 = pure raw weighted mean
-        # (legacy behavior), 1.0 = pure mean-of-per-fold-z-scores, 0.5 = 50/50.
-        # Per-fold z-rank rewards cells that rank consistently high across folds
-        # over cells that spike in one fold and average elsewhere (the max-of-N
-        # selection bias signature). See _weighted_robustness_series in wfo.py.
-        "PARAM_ZRANK_WEIGHT": 0.0,
-        # Apply fold_consistency (fraction of folds with positive OOS Sharpe) as a
-        # soft multiplier on gate_score. Set False to disable.
-        "FOLD_CONSISTENCY_IN_GATE": True,
-        # Floor for the fold_consistency multiplier. 0.25 means a strategy that is
-        # never profitable OOS still keeps 25% of its gate score (harder gate).
-        "FOLD_CONSISTENCY_GATE_FLOOR": 0.25,
-        # Blend weight for the OOS Sharpe-of-Sharpes stability term. Tempers a
-        # single outlier fold from inflating the OOS robustness score.
-        # 0.0 = disabled (pure weighted mean), 0.3 = default.
-        "OOS_STABILITY_WEIGHT": 0.3,
         # WFO result cache: skip re-running the 6-fold WFO for (symbol, combo) pairs whose
         # inputs (param grid, config, date range) haven't changed since a prior run.
         # Set False to force a full re-run (e.g. after changing WFO internals not covered

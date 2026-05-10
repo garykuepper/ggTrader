@@ -29,7 +29,6 @@ from ggTrader.core.metrics import (  # noqa: F401
 )
 from ggTrader.core.orchestrator_utils import (  # noqa: F401
     _as_optional_float,
-    _coerce_metric_float,
     _coerce_strategy_params_for_engine,
     _default_params_from_grid,
     _eta_str,
@@ -65,7 +64,6 @@ from ggTrader.core.wfo import (  # noqa: F401
     _calculate_robustness,
     _calculate_wfo_bounds,
     _execute_wfo_loop,
-    _param_cv_series,
     _process_wfo_fold,
     _save_wfo_results,
     _weighted_robustness_series,
@@ -1044,7 +1042,6 @@ def run_multi_strategy_per_coin_wfo(
                         is_metrics_by_fold,
                         list(param_grid.keys()),
                         param_grid,
-                        oos_metrics_by_fold,
                         debug_metrics=debug_wfo,
                         config=config,
                     )
@@ -1059,25 +1056,10 @@ def run_multi_strategy_per_coin_wfo(
                         oos_metrics_by_fold, config=config,
                         oos_bear_by_fold=oos_bear_by_fold,
                     )
-                    oos_blend_alpha = float(config.get("OOS_ROBUSTNESS_BLEND_ALPHA", 0.5))
-                    if np.isfinite(oos_rob_combo) and np.isfinite(robustness_score):
-                        is_oos_blend = (
-                            1.0 - oos_blend_alpha
-                        ) * robustness_score + oos_blend_alpha * oos_rob_combo
-                    elif np.isfinite(oos_rob_combo):
-                        is_oos_blend = oos_rob_combo
-                    else:
-                        is_oos_blend = robustness_score
-
-                    # Fold consistency soft multiplier: strategies inconsistent across folds
-                    # are penalized. floor=0.5 means the worst case halves the gate score.
-                    use_fc_gate = bool(config.get("FOLD_CONSISTENCY_IN_GATE", True))
-                    fc_floor = float(config.get("FOLD_CONSISTENCY_GATE_FLOOR", 0.5))
-                    if use_fc_gate and np.isfinite(fold_cons_combo):
-                        fc_factor = fc_floor + (1.0 - fc_floor) * fold_cons_combo
-                        gate_score = is_oos_blend * fc_factor
-                    else:
-                        gate_score = is_oos_blend
+                    # Layer 2 selection uses train-window robustness only (textbook reset).
+                    # OOS-derived blending and fold-consistency multiplier removed —
+                    # both would leak test data into the cross-combo decision.
+                    gate_score = robustness_score
 
                     print(
                         f"    {label} robustness: IS={_format_robustness_metric(robustness_score)} "
