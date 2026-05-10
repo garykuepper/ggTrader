@@ -71,6 +71,7 @@ def _process_wfo_fold(
             "end_capital": float("nan"),
             "return_pct": float("nan"),
             "train_metrics": pd.Series(dtype=float),
+            "test_metrics": pd.Series(dtype=float),
             "oos_returns": pd.DataFrame(),
             "_skipped_insufficient_bars": True,
         }
@@ -117,6 +118,7 @@ def _process_wfo_fold(
             "end_capital": float("nan"),
             "return_pct": float("nan"),
             "train_metrics": pd.Series(dtype=float),
+            "test_metrics": pd.Series(dtype=float),
             "oos_returns": pd.DataFrame(),
             "_skipped_vectorized_failure": True,
         }
@@ -187,7 +189,28 @@ def _process_wfo_fold(
 
     fold_best_params = _extract_params(best_param_idx, train_metrics, param_names, param_grid)
 
-    # Test: single-combo run; USE_VECTORIZED False is fine here (scalar params).
+    # Per-cell OOS metrics: vectorized test pass over the FULL param grid (mirror of train pass).
+    # Used downstream by consistency-aware cell selection (Step 2 PARAM_OOS_GAP_PENALTY).
+    # Empty Series on failure — the gap penalty path treats absence as "fall back to IS only".
+    test_metrics: pd.Series = pd.Series(dtype=float)
+    try:
+        wfo_test_cfg_vec = {**config, "USE_VECTORIZED": True}
+        test_engine_all = FastBacktest(
+            test_ohlcv, param_grid, config=wfo_test_cfg_vec, mover_mask=test_mask,
+            regime_mask=test_regime,
+        )
+        pf_test_all = test_engine_all.run(show_progress=False)
+        test_metrics, _ = _vectorized_grid_metrics(
+            pf_test_all, test_engine_all, param_names, config
+        )
+    except Exception as test_vec_exc:
+        print(
+            f"  WFO fold {fold_idx}: vectorized test failed ({test_vec_exc!r}); "
+            f"per-cell OOS metrics unavailable for this fold."
+        )
+
+    # Test (single winner): kept for downstream stats reporting (oos_sharpe, sortino, profit, etc.).
+    # USE_VECTORIZED False is fine here (scalar params).
     wfo_test_cfg = {**config, "USE_VECTORIZED": False}
     test_engine = FastBacktest(
         test_ohlcv, fold_best_params, config=wfo_test_cfg, mover_mask=test_mask,
@@ -221,6 +244,7 @@ def _process_wfo_fold(
         "end_capital": _to_native(pf_test.value().iloc[-1].sum()),
         "return_pct": _to_native(pf_test.total_return().mean() * 100),
         "train_metrics": train_metrics,
+        "test_metrics": test_metrics,
         "oos_returns": pf_test.returns(),
     }
 
@@ -595,10 +619,16 @@ def _execute_wfo_loop(
     show_progress: bool,
     logger: Any = None,
     btc_regime_mask: Optional[pd.Series] = None,
-) -> Tuple[List[Dict[str, Any]], Dict[int, pd.Series], List[pd.Series]]:
-    """Iterates through the dataset and processes each WFO fold."""
+) -> Tuple[List[Dict[str, Any]], Dict[int, pd.Series], Dict[int, pd.Series], List[pd.Series]]:
+    """Iterates through the dataset and processes each WFO fold.
+
+    Returns (wfo_stats, is_metrics_by_fold, test_metrics_by_fold, oos_returns_list).
+    test_metrics_by_fold mirrors is_metrics_by_fold but holds OOS composite per cell
+    per fold — used by consistency-aware cell selection (Step 2).
+    """
     wfo_stats = []
     is_metrics_by_fold = {}
+    test_metrics_by_fold: Dict[int, pd.Series] = {}
     oos_returns_list = []
 
     bounds = _calculate_wfo_bounds(len(ohlcv), n_splits, test_ratio)
@@ -625,6 +655,7 @@ def _execute_wfo_loop(
         )
 
         is_metrics_by_fold[fold_idx] = fold_result.pop("train_metrics")
+        test_metrics_by_fold[fold_idx] = fold_result.pop("test_metrics", pd.Series(dtype=float))
         oos_returns_list.append(fold_result.pop("oos_returns"))
         wfo_stats.append(fold_result)
 
@@ -647,7 +678,7 @@ def _execute_wfo_loop(
             f" — robustness built from {n_splits - skipped} fold(s) only"
         )
 
-    return wfo_stats, is_metrics_by_fold, oos_returns_list
+    return wfo_stats, is_metrics_by_fold, test_metrics_by_fold, oos_returns_list
 
 
 def _save_wfo_results(
@@ -719,7 +750,7 @@ def run_wfo_orchestrator(
 
     plot_wfo_splits(ohlcv, n_splits, test_ratio, results_manager=rm)
 
-    wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
+    wfo_stats, is_metrics_by_fold, _, _ = _execute_wfo_loop(
         ohlcv,
         mover_mask,
         param_grid,
@@ -838,7 +869,7 @@ def run_wfo_per_coin_orchestrator(
         symbol_ohlcv = ohlcv[[symbol]]
         symbol_mover_mask = mover_mask[[symbol]] if mover_mask is not None else None
 
-        wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
+        wfo_stats, is_metrics_by_fold, _, _ = _execute_wfo_loop(
             symbol_ohlcv,
             symbol_mover_mask,
             param_grid,
