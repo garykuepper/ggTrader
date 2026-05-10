@@ -1895,9 +1895,9 @@ Update the `oos_return` line in the call site above to use `oos_annualized_retur
                     ]
 ```
 
-- [ ] **Step 7: Store the gate result in per-coin results**
+- [ ] **Step 7: Store the gate result in per-coin results (populate ALL Task-7 fields here)**
 
-Continue in `orchestrator.py`. After `gate_result` is computed (the block from Step 6), include it in whatever stores the per-combo info. Look for the existing `top_combos_tracker.append(...)` block (around line 1097–1108) and add the gate result:
+Continue in `orchestrator.py`. After `gate_result` is computed (the block from Step 6), include the gate result AND all fields Task 7's per-coin selection / median-snap / holdout logic will need. Populate every field at construction time — do not defer any to Task 7. Look for the existing `top_combos_tracker.append(...)` block (around line 1097–1108) and replace it with:
 
 ```python
                     if np.isfinite(gate_score):
@@ -1906,8 +1906,23 @@ Continue in `orchestrator.py`. After `gate_result` is computed (the block from S
                             "exit": exit_name,
                             "params": _to_native(best_params),
                             "gate_score": float(gate_score),
-                            "wfo_aggregate_gates": gate_result,  # NEW
-                            ...
+                            # WFO textbook reset Task 7 inputs — populate every field
+                            # here so Task 7's per-coin selection, median-snap, and
+                            # holdout-DD computation don't have to reach back into
+                            # local state. Each field is a snapshot taken once.
+                            "wfo_aggregate_gates": gate_result,
+                            "fold_params": [_to_native(fold.get("params", {})) for fold in wfo_stats],
+                            "param_grid": dict(param_grid),
+                            "mean_sortino": float(np.nanmean(
+                                [fold.get("sortino", float("nan")) for fold in wfo_stats]
+                            )),
+                            # wfo_stats_ref: full per-fold stats list for this combo,
+                            # consumed by Task 7's holdout-DD comparison (needs the
+                            # worst per-fold oos_max_dd to compute the 1.5x warning
+                            # threshold). _to_native unwraps numpy types so the dict
+                            # is JSON-safe if any downstream code serializes it.
+                            "wfo_stats_ref": [_to_native(dict(fold)) for fold in wfo_stats],
+                            "fold_consistency": float(fold_cons_combo) if np.isfinite(fold_cons_combo) else None,
                         })
 ```
 
@@ -2169,14 +2184,7 @@ Open `/home/flynn/ggTrader/src/ggTrader/core/orchestrator.py`. In `run_multi_str
 
 This replaces the prior selection logic (`best_robust_score`, top-K fallback, trade-freq fallback) — those were Layer 2 OOS-aware mechanisms that no longer apply.
 
-Add to the top_combos_tracker dict in Step 7 of Task 6:
-```python
-                            "fold_params": [fold.get("params", {}) for fold in wfo_stats],
-                            "param_grid": param_grid,
-                            "mean_sortino": float(np.nanmean(
-                                [fold.get("sortino", float("nan")) for fold in wfo_stats]
-                            )),
-```
+All fields consumed here (`wfo_aggregate_gates`, `fold_params`, `param_grid`, `mean_sortino`, `wfo_stats_ref`) are already populated by Task 6 Step 7. No additional fields need to be appended to the tracker.
 
 - [ ] **Step 6: Add smoke test + holdout evaluation per coin**
 
