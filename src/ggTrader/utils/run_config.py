@@ -212,13 +212,6 @@ def full_pipeline_config() -> dict[str, Any]:
         # over cells that spike in one fold and average elsewhere (the max-of-N
         # selection bias signature). See _weighted_robustness_series in wfo.py.
         "PARAM_ZRANK_WEIGHT": 0.0,
-        # IS-OOS gap penalty for cell selection (Step 4b consistency-aware ranking).
-        # 0.0 = legacy IS-only selection. >0 subtracts gamma * |IS_mean - OOS_mean|
-        # from each cell's score, so a cell whose train and test composites agree
-        # keeps full credit; a cell where they diverge is dinged proportional to
-        # the raw composite-units gap. Requires test_metrics_by_fold from Step 4a
-        # (per-cell OOS composite per fold). Experiment value 1.0; final value TBD.
-        "PARAM_OOS_GAP_PENALTY": 1.0,
         # Apply fold_consistency (fraction of folds with positive OOS Sharpe) as a
         # soft multiplier on gate_score. Set False to disable.
         "FOLD_CONSISTENCY_IN_GATE": True,

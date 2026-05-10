@@ -16,8 +16,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 from sqlalchemy import text
 
-_WFO_CACHE_VERSION = 2  # bump to invalidate all cached entries globally
-# v2 (2026-05-09): added per-cell OOS metrics (test_metrics_by_fold) — Step 4a foundation
+_WFO_CACHE_VERSION = 3  # bump to invalidate all cached entries globally
+# v3 (2026-05-10): WFO textbook reset — removed per-cell OOS metrics
+#                  (test_metrics_by_fold), rank-based composite scoring
 
 # Config keys whose values affect WFO fold computation.
 # Changing any of these causes a cache miss for that (symbol, combo).
@@ -33,7 +34,6 @@ _WFO_RELEVANT_CONFIG_KEYS = [
     "TRAIN_METRIC_NORMALIZE_ZSCORE",
     "PARAM_STABILITY_WEIGHT",
     "PARAM_ZRANK_WEIGHT",
-    "PARAM_OOS_GAP_PENALTY",
     "START_CASH",
     "FEES",
     "SLIPPAGE",
@@ -198,11 +198,8 @@ class WFOCache:
         param_grid: Dict[str, Any],
         config: Dict[str, Any],
         ohlcv: pd.DataFrame,
-    ) -> Optional[Tuple[List[Dict], Dict[int, pd.Series], Dict[int, pd.Series]]]:
-        """Return cached (wfo_stats, is_metrics_by_fold, test_metrics_by_fold) or None on miss.
-
-        test_metrics_by_fold is empty dict for v1 cache entries (predates Step 4a).
-        """
+    ) -> Optional[Tuple[List[Dict], Dict[int, pd.Series]]]:
+        """Return cached (wfo_stats, is_metrics_by_fold) or None on miss."""
         key = _make_cache_key(symbol, strategy_name, exit_name, param_grid, config, ohlcv)
         try:
             with self.db_manager.engine.connect() as conn:
@@ -223,12 +220,8 @@ class WFOCache:
                 int(k): _series_from_json(v)
                 for k, v in data["is_metrics_by_fold"].items()
             }
-            test_metrics_by_fold: Dict[int, pd.Series] = {
-                int(k): _series_from_json(v)
-                for k, v in (data.get("test_metrics_by_fold") or {}).items()
-            }
             self._hits += 1
-            return wfo_stats, is_metrics_by_fold, test_metrics_by_fold
+            return wfo_stats, is_metrics_by_fold
         except Exception:
             # Corrupt entry — drop it and treat as miss
             try:
@@ -252,14 +245,8 @@ class WFOCache:
         ohlcv: pd.DataFrame,
         wfo_stats: List[Dict],
         is_metrics_by_fold: Dict[int, pd.Series],
-        test_metrics_by_fold: Optional[Dict[int, pd.Series]] = None,
     ) -> None:
-        """Persist WFO results to cache (non-fatal on write errors).
-
-        test_metrics_by_fold (Step 4a) holds OOS composite per cell per fold, mirror
-        of is_metrics_by_fold. Optional for backward compat with callers that haven't
-        been updated yet; missing/empty means future cache reads will see {} for it.
-        """
+        """Persist WFO results to cache (non-fatal on write errors)."""
         key = _make_cache_key(symbol, strategy_name, exit_name, param_grid, config, ohlcv)
         payload = {
             "version": _WFO_CACHE_VERSION,
@@ -270,11 +257,6 @@ class WFOCache:
             "is_metrics_by_fold": {
                 str(k): _series_to_json(v)
                 for k, v in is_metrics_by_fold.items()
-            },
-            "test_metrics_by_fold": {
-                str(k): _series_to_json(v)
-                for k, v in (test_metrics_by_fold or {}).items()
-                if isinstance(v, pd.Series) and len(v) > 0
             },
         }
         try:

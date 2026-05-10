@@ -71,7 +71,6 @@ def _process_wfo_fold(
             "end_capital": float("nan"),
             "return_pct": float("nan"),
             "train_metrics": pd.Series(dtype=float),
-            "test_metrics": pd.Series(dtype=float),
             "oos_returns": pd.DataFrame(),
             "_skipped_insufficient_bars": True,
         }
@@ -118,7 +117,6 @@ def _process_wfo_fold(
             "end_capital": float("nan"),
             "return_pct": float("nan"),
             "train_metrics": pd.Series(dtype=float),
-            "test_metrics": pd.Series(dtype=float),
             "oos_returns": pd.DataFrame(),
             "_skipped_vectorized_failure": True,
         }
@@ -189,26 +187,6 @@ def _process_wfo_fold(
 
     fold_best_params = _extract_params(best_param_idx, train_metrics, param_names, param_grid)
 
-    # Per-cell OOS metrics: vectorized test pass over the FULL param grid (mirror of train pass).
-    # Used downstream by consistency-aware cell selection (Step 2 PARAM_OOS_GAP_PENALTY).
-    # Empty Series on failure — the gap penalty path treats absence as "fall back to IS only".
-    test_metrics: pd.Series = pd.Series(dtype=float)
-    try:
-        wfo_test_cfg_vec = {**config, "USE_VECTORIZED": True}
-        test_engine_all = FastBacktest(
-            test_ohlcv, param_grid, config=wfo_test_cfg_vec, mover_mask=test_mask,
-            regime_mask=test_regime,
-        )
-        pf_test_all = test_engine_all.run(show_progress=False)
-        test_metrics, _ = _vectorized_grid_metrics(
-            pf_test_all, test_engine_all, param_names, config
-        )
-    except Exception as test_vec_exc:
-        print(
-            f"  WFO fold {fold_idx}: vectorized test failed ({test_vec_exc!r}); "
-            f"per-cell OOS metrics unavailable for this fold."
-        )
-
     # Test (single winner): kept for downstream stats reporting (oos_sharpe, sortino, profit, etc.).
     # USE_VECTORIZED False is fine here (scalar params).
     wfo_test_cfg = {**config, "USE_VECTORIZED": False}
@@ -244,7 +222,6 @@ def _process_wfo_fold(
         "end_capital": _to_native(pf_test.value().iloc[-1].sum()),
         "return_pct": _to_native(pf_test.total_return().mean() * 100),
         "train_metrics": train_metrics,
-        "test_metrics": test_metrics,
         "oos_returns": pf_test.returns(),
     }
 
@@ -488,7 +465,6 @@ def _calculate_robustness(
     oos_metrics_by_fold: Optional[Dict[int, float]] = None,
     debug_metrics: bool = False,
     config: Optional[Dict[str, Any]] = None,
-    test_metrics_by_fold: Optional[Dict[int, pd.Series]] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Calculates parameter robustness validation across folds.
 
@@ -496,20 +472,11 @@ def _calculate_robustness(
     contribution to robustness (penalizes parameter sets that don't generalize).
     Otherwise falls back to in-sample Sharpe with recency weighting.
 
-    If test_metrics_by_fold is provided AND PARAM_OOS_GAP_PENALTY (gamma) > 0,
-    the per-cell IS-OOS gap is subtracted from each cell's score:
-        score = IS_mean - gamma * |IS_mean - OOS_mean|
-    A cell whose train and test means agree gets full credit; a cell where they
-    disagree is dinged proportional to the gap. This is the consistency-aware
-    selection rule from Step 4b of the WFO overfitting plan.
-
     Args:
         is_metrics_by_fold: Dict mapping fold idx to in-sample Sharpe Series (all param combos)
         param_names: List of parameter names
         param_grid: Parameter grid definition
         oos_metrics_by_fold: Optional dict mapping fold idx to OOS Sharpe (fold-level consistency)
-        test_metrics_by_fold: Optional dict mapping fold idx to per-cell OOS composite Series.
-            Mirror of is_metrics_by_fold but on the test window. Required for the gap penalty.
 
     Returns:
         (robust_top_5, best_robust_params) tuples
@@ -546,22 +513,7 @@ def _calculate_robustness(
         weights = {f: float(f) for f in is_metrics_by_fold.keys()}
         robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights, config=config)
 
-    # Per-cell IS-OOS gap penalty (Step 4b consistency-aware selection).
-    # When PARAM_OOS_GAP_PENALTY > 0 AND test_metrics_by_fold is provided, subtract
-    # gamma * |IS_mean - OOS_mean| from each cell's score. Both means use the same
-    # fold weights as IS, so a cell whose train and test composites agree keeps
-    # full credit; one where they diverge is dinged proportional to the raw gap.
     _cfg = config or {}
-    gap_penalty = float(_cfg.get("PARAM_OOS_GAP_PENALTY", 0.0))
-    if gap_penalty > 0.0 and test_metrics_by_fold:
-        oos_robustness_scores = _weighted_robustness_series(
-            test_metrics_by_fold, weights, config=config
-        )
-        oos_aligned = oos_robustness_scores.reindex(robustness_scores.index)
-        gap = (robustness_scores - oos_aligned).abs()
-        # Cells with no OOS data (NaN gap) get no penalty — fall back to IS-only.
-        gap = gap.fillna(0.0)
-        robustness_scores = robustness_scores - gap_penalty * gap
 
     # Parameter stability penalty: penalize combos with high fold-to-fold CV.
     # CV = std / |mean| measures how much a combo's IS metric varies across folds —
@@ -645,16 +597,10 @@ def _execute_wfo_loop(
     show_progress: bool,
     logger: Any = None,
     btc_regime_mask: Optional[pd.Series] = None,
-) -> Tuple[List[Dict[str, Any]], Dict[int, pd.Series], Dict[int, pd.Series], List[pd.Series]]:
-    """Iterates through the dataset and processes each WFO fold.
-
-    Returns (wfo_stats, is_metrics_by_fold, test_metrics_by_fold, oos_returns_list).
-    test_metrics_by_fold mirrors is_metrics_by_fold but holds OOS composite per cell
-    per fold — used by consistency-aware cell selection (Step 2).
-    """
+) -> Tuple[List[Dict[str, Any]], Dict[int, pd.Series], List[pd.Series]]:
+    """Iterates through the dataset and processes each WFO fold."""
     wfo_stats = []
     is_metrics_by_fold = {}
-    test_metrics_by_fold: Dict[int, pd.Series] = {}
     oos_returns_list = []
 
     bounds = _calculate_wfo_bounds(len(ohlcv), n_splits, test_ratio)
@@ -681,7 +627,6 @@ def _execute_wfo_loop(
         )
 
         is_metrics_by_fold[fold_idx] = fold_result.pop("train_metrics")
-        test_metrics_by_fold[fold_idx] = fold_result.pop("test_metrics", pd.Series(dtype=float))
         oos_returns_list.append(fold_result.pop("oos_returns"))
         wfo_stats.append(fold_result)
 
@@ -704,7 +649,7 @@ def _execute_wfo_loop(
             f" — robustness built from {n_splits - skipped} fold(s) only"
         )
 
-    return wfo_stats, is_metrics_by_fold, test_metrics_by_fold, oos_returns_list
+    return wfo_stats, is_metrics_by_fold, oos_returns_list
 
 
 def _save_wfo_results(
@@ -776,7 +721,7 @@ def run_wfo_orchestrator(
 
     plot_wfo_splits(ohlcv, n_splits, test_ratio, results_manager=rm)
 
-    wfo_stats, is_metrics_by_fold, _, _ = _execute_wfo_loop(
+    wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
         ohlcv,
         mover_mask,
         param_grid,
@@ -895,7 +840,7 @@ def run_wfo_per_coin_orchestrator(
         symbol_ohlcv = ohlcv[[symbol]]
         symbol_mover_mask = mover_mask[[symbol]] if mover_mask is not None else None
 
-        wfo_stats, is_metrics_by_fold, _, _ = _execute_wfo_loop(
+        wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
             symbol_ohlcv,
             symbol_mover_mask,
             param_grid,

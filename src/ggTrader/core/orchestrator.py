@@ -1008,10 +1008,10 @@ def run_multi_strategy_per_coin_wfo(
                         else None
                     )
                     if _cached is not None:
-                        wfo_stats, is_metrics_by_fold, test_metrics_by_fold = _cached
+                        wfo_stats, is_metrics_by_fold = _cached
                         print(f"    {label} [cache hit — skipping {n_splits} folds]")
                     else:
-                        wfo_stats, is_metrics_by_fold, test_metrics_by_fold, _ = _execute_wfo_loop(
+                        wfo_stats, is_metrics_by_fold, _ = _execute_wfo_loop(
                             symbol_ohlcv,
                             symbol_mover_mask,
                             param_grid,
@@ -1027,7 +1027,6 @@ def run_multi_strategy_per_coin_wfo(
                             _wfo_cache.put(
                                 symbol, strategy_name, exit_name, param_grid,
                                 config_combo, symbol_ohlcv, wfo_stats, is_metrics_by_fold,
-                                test_metrics_by_fold,
                             )
 
                     oos_metrics_by_fold = {
@@ -1048,7 +1047,6 @@ def run_multi_strategy_per_coin_wfo(
                         oos_metrics_by_fold,
                         debug_metrics=debug_wfo,
                         config=config,
-                        test_metrics_by_fold=test_metrics_by_fold,
                     )
 
                     if robust_top_5:
