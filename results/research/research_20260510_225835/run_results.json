@@ -1,0 +1,87 @@
+{
+    "run_id": "4c5d17e9-9d1c-4fc6-8fef-81458b92035c",
+    "timestamp": "2026-05-10T23:40:40.242262",
+    "script_name": "run_wfo_per_coin_multi_strategy",
+    "asset_class": "crypto",
+    "configuration": {
+        "start_date": "2023-05-02",
+        "end_date": "2026-05-01",
+        "interval": "4h",
+        "symbols_file": "data/top_25_USD_2023-01-01_2025-12-31.json",
+        "symbols": [],
+        "capital": 1000,
+        "fees": 0.004,
+        "_raw_config": {
+            "SYMBOLS_FILE": "data/top_25_USD_2023-01-01_2025-12-31.json",
+            "MAX_SYMBOLS": 25,
+            "START_DATE": "2023-05-02",
+            "END_DATE": "2026-05-01",
+            "INTERVAL": "4h",
+            "FREQ": "4h",
+            "START_CASH": 1000,
+            "PORTFOLIO_SHARE": 0.1,
+            "FEES": 0.004,
+            "SLIPPAGE": 0.003,
+            "N_SPLITS": 10,
+            "TEST_RATIO": 3,
+            "MIN_CLOSED_TRADES_TRAIN": 1,
+            "MIN_TRADES_PER_YEAR": 4,
+            "TRAIN_METRIC": "composite",
+            "MAX_TRAIN_DRAWDOWN_PCT": null,
+            "CHUNK_SIZE": 500,
+            "USE_VECTORIZED": true,
+            "USE_VECTORIZED_SENSITIVITY": true,
+            "USE_MOVERS": 0,
+            "EXIT_TOURNAMENT": [
+                "atr_trailing",
+                "trailing_stop",
+                "fixed_sl_tp"
+            ],
+            "SENSITIVITY_EXIT_STRATEGY": "atr_trailing",
+            "RECENT_VALIDATION_START_DATE": null,
+            "RECENT_VALIDATION_END_DATE": null,
+            "RECENT_VALIDATION_USE_CCXT_TAIL": true,
+            "MAX_COINS_PER_STRATEGY": null,
+            "SYMBOL_BLACKLIST": [
+                "TRUMP-USD"
+            ],
+            "EMA_WARMUP_BARS": 100,
+            "BTC_REGIME_FILTER": false,
+            "BTC_REGIME_FILTER_SHORT_EMA": null,
+            "LEADER_CORR_THRESHOLD": 0.7,
+            "MAX_COIN_ALLOCATION": 0.25,
+            "MIN_ROBUSTNESS_SCORE": 0.1,
+            "HISTORY_SHRINKAGE_TARGET_YEARS": 3.0,
+            "MIN_VALID_TRAIN_FOLDS": 3,
+            "MIN_TRADES_PER_TRAIN_FOLD": 30,
+            "MIN_TRAIN_FOLD_PASS_COUNT": 8,
+            "MIN_FOLD_CONSISTENCY": 0.38,
+            "WFO_DEBUG_METRICS": false,
+            "WFO_CACHE_ENABLED": true,
+            "DAILY_LOSS_LIMIT_PCT": 0.05,
+            "HOLDOUT_FRACTION": 0.2,
+            "WFO_GATE_WFE_MIN": 0.5,
+            "WFO_GATE_PROFITABLE_FOLDS_MIN": 0.6,
+            "WFO_GATE_PARAM_CV_MAX": 0.3,
+            "WFO_GATE_DD_RATIO_MAX": 2.0,
+            "WFO_BARS_PER_YEAR": null,
+            "EXPLICIT_RUN_DIR": "/app/results/research/research_20260510_225835",
+            "PIPELINE_STAGE": "research",
+            "WORKER_ID": 1,
+            "SYMBOLS": [
+                "BTC-USD"
+            ],
+            "exit_tournament": [
+                "atr_trailing",
+                "trailing_stop",
+                "fixed_sl_tp"
+            ],
+            "per_coin_results": {},
+            "per_coin_final_stats": {}
+        }
+    },
+    "strategy_parameters": {
+        "per_coin": {}
+    },
+    "results": {}
+}
