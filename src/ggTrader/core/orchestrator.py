@@ -70,6 +70,13 @@ from ggTrader.core.wfo import (  # noqa: F401
     run_wfo_orchestrator,
     run_wfo_per_coin_orchestrator,
 )
+from ggTrader.core.wfo_aggregate import (
+    apply_gates,
+    compute_wfe,
+    dd_ratio,
+    fraction_profitable_folds,
+    parameter_cv,
+)
 from ggTrader.data.cache.wfo_cache import WFOCache
 from ggTrader.pipeline.exit_tournament import parse_exit_tournament
 from ggTrader.utils.results_manager import ResultsManager
@@ -1093,17 +1100,81 @@ def run_multi_strategy_per_coin_wfo(
                         best_oos_robustness_score = oos_rob_combo
                         best_fold_consistency = fold_cons_combo
 
+                    # WFO textbook aggregate gates: compute the four metrics and
+                    # apply pass/fail filtering. A combo that fails any gate is
+                    # excluded from per-coin selection in Task 7.
+                    fold_train_returns = [
+                        float(fold.get("train_annualized_return", float("nan")))
+                        for fold in wfo_stats
+                    ]
+                    fold_test_returns = [
+                        float(fold.get("oos_annualized_return", float("nan")))
+                        for fold in wfo_stats
+                    ]
+                    fold_train_dds = [
+                        float(fold.get("train_max_dd", float("nan")))
+                        for fold in wfo_stats
+                    ]
+                    fold_test_dds = [
+                        float(fold.get("oos_max_dd", float("nan")))
+                        for fold in wfo_stats
+                    ]
+                    fold_params_list = [fold.get("params", {}) for fold in wfo_stats]
+
+                    wfe = compute_wfe(fold_train_returns, fold_test_returns)
+                    prof = fraction_profitable_folds(fold_test_returns)
+                    pcv = parameter_cv(fold_params_list)
+                    ddr = dd_ratio(fold_train_dds, fold_test_dds)
+
+                    gate_result = apply_gates(
+                        wfe=wfe,
+                        profitable_fraction=prof,
+                        param_cv=pcv,
+                        dd_ratio_val=ddr,
+                        thresholds={
+                            "wfe_min": float(config.get("WFO_GATE_WFE_MIN", 0.5)),
+                            "profitable_min": float(
+                                config.get("WFO_GATE_PROFITABLE_FOLDS_MIN", 0.6)
+                            ),
+                            "cv_max": float(config.get("WFO_GATE_PARAM_CV_MAX", 0.3)),
+                            "dd_max": float(config.get("WFO_GATE_DD_RATIO_MAX", 2.0)),
+                        },
+                    )
+
                     # Track every (combo, gate_score) for the post-Phase-3 top-K fallback.
                     # Only finite scores; NaN/-inf get filtered later when sorting.
                     if np.isfinite(gate_score):
+                        _fold_params_snap = [
+                            _to_native(fold.get("params", {})) for fold in wfo_stats
+                        ]
+                        _wfo_stats_snap = [_to_native(dict(fold)) for fold in wfo_stats]
+                        _fc = (
+                            float(fold_cons_combo)
+                            if np.isfinite(fold_cons_combo)
+                            else None
+                        )
                         top_combos_tracker.append({
                             "strategy": strategy_name,
                             "exit": exit_name,
                             "params": _to_native(best_robust_params),
                             "gate_score": float(gate_score),
-                            "is_robustness_score": float(robustness_score),
-                            "oos_robustness_score": float(oos_rob_combo),
-                            "fold_consistency": float(fold_cons_combo),
+                            # WFO textbook reset Task 7 inputs — populate every field
+                            # here so Task 7's per-coin selection, median-snap, and
+                            # holdout-DD computation don't have to reach back into
+                            # local state. Each field is a snapshot taken once.
+                            "wfo_aggregate_gates": gate_result,
+                            "fold_params": _fold_params_snap,
+                            "param_grid": dict(param_grid),
+                            "mean_sortino": float(np.nanmean(
+                                [fold.get("sortino", float("nan")) for fold in wfo_stats]
+                            )),
+                            # wfo_stats_ref: full per-fold stats list for this combo,
+                            # consumed by Task 7's holdout-DD comparison (needs the
+                            # worst per-fold oos_max_dd to compute the 1.5x warning
+                            # threshold). _to_native unwraps numpy types so the dict
+                            # is JSON-safe if any downstream code serializes it.
+                            "wfo_stats_ref": _wfo_stats_snap,
+                            "fold_consistency": _fc,
                         })
 
             selection_reason = "wfo_robustness"

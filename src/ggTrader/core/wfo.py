@@ -21,6 +21,7 @@ from ggTrader.core.orchestrator_utils import (
     _wall_clock_eta,
 )
 from ggTrader.core.sensitivity import _vectorized_grid_metrics
+from ggTrader.core.wfo_aggregate import infer_bars_per_year
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_with_movers
 
@@ -220,6 +221,47 @@ def _process_wfo_fold(
     except Exception:
         oos_is_bear = False
 
+    # Train-window scalars for aggregate gates (Task 6).
+    try:
+        _pf_tr = pf_train.total_return().max() if pf_train is not None else float("nan")
+        train_total_ret = float(_pf_tr)
+    except Exception:
+        train_total_ret = float("nan")
+    try:
+        _pf_dd = pf_train.max_drawdown().min() if pf_train is not None else float("nan")
+        train_dd = float(_pf_dd)
+    except Exception:
+        train_dd = float("nan")
+    try:
+        _oos_dd = pf_test.max_drawdown().min() if pf_test is not None else float("nan")
+        oos_dd = float(_oos_dd)
+    except Exception:
+        oos_dd = float("nan")
+    # Annualized return via compounding: (1 + total_return)^(bars_per_year / n_bars) - 1.
+    # Linear scaling understates large compounded returns; compounding is correct
+    # for ratio metrics across windows of different lengths.
+    # bars_per_year is INFERRED from the OHLCV index frequency (no hardcoded 4h
+    # assumption). Falls back to a config override or 4h default if inference fails.
+    bars_per_year = infer_bars_per_year(train_ohlcv.index, config=config)
+    try:
+        n_train_bars = float(len(train_ohlcv))
+        if n_train_bars > 0 and np.isfinite(train_total_ret) and train_total_ret > -1.0:
+            train_ann_ret = (1.0 + train_total_ret) ** (bars_per_year / n_train_bars) - 1.0
+        else:
+            train_ann_ret = float("nan")
+    except Exception:
+        train_ann_ret = float("nan")
+    try:
+        _oos_tr = pf_test.total_return().mean() if pf_test is not None else float("nan")
+        oos_total_ret = float(_oos_tr)
+        n_test_bars = float(len(test_ohlcv))
+        if n_test_bars > 0 and np.isfinite(oos_total_ret) and oos_total_ret > -1.0:
+            oos_ann_ret = (1.0 + oos_total_ret) ** (bars_per_year / n_test_bars) - 1.0
+        else:
+            oos_ann_ret = float("nan")
+    except Exception:
+        oos_ann_ret = float("nan")
+
     return {
         "fold": fold_idx,
         "train_start": str(train_ohlcv.index[0]),
@@ -236,6 +278,10 @@ def _process_wfo_fold(
         "return_pct": _to_native(pf_test.total_return().mean() * 100),
         "train_metrics": train_metrics,
         "oos_returns": pf_test.returns(),
+        "train_annualized_return": train_ann_ret,
+        "train_max_dd": train_dd,
+        "oos_max_dd": oos_dd,
+        "oos_annualized_return": oos_ann_ret,
     }
 
 

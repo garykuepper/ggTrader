@@ -211,5 +211,15 @@ def full_pipeline_config() -> dict[str, Any]:
         # the holdout entirely — legacy WFO behavior (everything available to
         # the 10-fold loop).
         "HOLDOUT_FRACTION": 0.20,
+        # WFO textbook gates (Pardo convention) — applied after 10-fold loop
+        # as PASS/FAIL filters, never as selection criteria.
+        "WFO_GATE_WFE_MIN": 0.5,               # mean(test_ann_ret) / mean(train_ann_ret) >= this
+        "WFO_GATE_PROFITABLE_FOLDS_MIN": 0.6,  # fraction of folds with test_ann_ret > 0
+        "WFO_GATE_PARAM_CV_MAX": 0.3,          # MAX per-axis param CV across the 10 winners
+        "WFO_GATE_DD_RATIO_MAX": 2.0,          # mean(|test_dd|) / mean(|train_dd|)
+        # Bars-per-year for annualization. None = infer from OHLCV index frequency
+        # (4h -> 2191.5, 1h -> 8766.0, 1d -> 365.25). Override only when needed
+        # for non-standard intervals or when the index is unreliable.
+        "WFO_BARS_PER_YEAR": None,
     }
 
