@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-05-11
+
+### WFO textbook reset — empty result on diagnostic universe (intentional, not a failure)
+
+Plan: `docs/superpowers/plans/2026-05-10-wfo-textbook-reset.md`. Eight implementation commits land textbook WFO and one integration commit documents the verdict.
+
+**What changed:** Reset the WFO pipeline to textbook standard. Strict train-only selection (no test data feeds parameter choice). Rank-based composite of Sortino + Calmar + ProfitFactor (Sharpe dropped, near-redundant with Sortino). 30-trade pre-score gate per fold with 8-of-10 forgiveness. 20% locked holdout (most recent bars, untouched until after all gates pass). Four Pardo-convention aggregate gates: WFE ≥ 0.5, % profitable folds ≥ 60%, max-per-axis parameter CV ≤ 0.3, test/train DD ratio ≤ 2.0. Per-coin selection: highest mean per-fold Sortino among gate-passers, tie-break by lowest CV. Live params: median of 10 per-fold winners snapped to grid. Smoke test on full WFO train + one-shot holdout evaluation with warning flags (NOT a gate).
+
+**Removed:** 8 deprecated config knobs (gap penalty, OOS-blend α, fold-consistency multiplier, param stability weight, z-rank weight, train-metric z-score normalize, train-metric composite weights, OOS stability weight), the per-cell OOS cache schema, and the Sharpe component of the composite. Cache version bumped 2 → 3. Param grids coarsened per the articulation test — max cross product 16 cells (was 144).
+
+**Integration result on the 7-coin diagnostic universe** (BTC, ETH, TRX, DOGE, XMR, DASH, ADA): **all 7 coins dropped** by the 4 aggregate gates. Worker logs show the dominant failure mode: per-fold trade counts on the 6.7-month train window (1212 bars at 4h) typically span 3–28 trades across cells. The 30-trade gate at 8-of-10 forgiveness requires a combo to fire 30+ trades in at least 8 folds — no combo for any coin clears that bar.
+
+**This is the textbook reset working as designed, not a failure.** Standard error of Sortino is roughly `(1 + 0.5·S²)/√N`. At N=30 trades and S≈1, SE is ~0.27 — already non-trivial relative to typical Sortino magnitudes. Lower than 30 trades is statistically regressive; rank precision between adjacent cells degrades to noise. The 30-trade gate is a lenient floor for the precision the rank-composite requires, not a strict ceiling. Lowering it to "find survivors" would be slow grid search over the overfitting detector — exactly what the reset was designed to make impossible.
+
+**Information content of the empty result:** by textbook standards, the current 11 strategies × 7 diagnostic coins × 4h timeframe × 6.7-month train windows doesn't produce statistically robust edges. Most-active cells fire 1 trade per ~7-8 days, which is consistent with regime-change-driven trend-following but produces too few samples per fold for Sortino-based rank selection to be reliable. The prior pipeline that found "edges" on this universe was selecting on the noise the 30-trade gate filters out.
+
+**Open question (not addressed in this commit):** the live trader is currently running on params chosen by the pre-reset (leaky) pipeline. Those params are not validated by the textbook gates. A future change must either (a) calibrate the strategy-coin-timeframe to a regime where the textbook gates can produce survivors (e.g. raise TEST_RATIO to lengthen train windows toward N≈100 trades, change strategies to ones that fire more frequently, or shift timeframe), or (b) explicitly decide to keep the legacy params under a documented "pre-reset legacy" flag with a stated horizon. Not making that decision tonight.
+
+**Commits in this reset:**
+
+- `c5e9c01` revert: remove gap penalty + per-cell OOS cache
+- `aa8dd88` refactor: strip test-data leakage + redundant scoring knobs
+- `cde64b0` feat: rank-based composite (Sortino + Calmar + PF, drop Sharpe)
+- `3c5bd18` feat: 30-trade pre-score gate + 8-of-10 forgiveness
+- `f8279bb` feat: 20% final holdout reservation
+- `e5ce613` feat: aggregate metrics + 4 PASS/FAIL gates
+- `c8b31ef` feat: per-coin selection + median params + smoke + holdout report
+- `ad74480` refactor: coarsen param grids (max 16 cells per combo)
+
+Integration run: `results/research/research_20260510_225835/` (43m54s wall, 7 workers, all empty per_coin). All 67 unit tests across 6 test files pass post-reset.
+
 ## 2026-05-09
 
 ### WFO overfitting Step 1.5: per-fold z-rank blend (PARAM_ZRANK_WEIGHT) — NO-OP
