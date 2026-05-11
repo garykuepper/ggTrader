@@ -25,7 +25,6 @@ from ggTrader.core.metrics import (  # noqa: F401
     _profit_factor_series,
     _trade_counts_for_train_gate,
     _train_metric_series,
-    _zscore_normalize_series,
 )
 from ggTrader.core.orchestrator_utils import (  # noqa: F401
     _as_optional_float,

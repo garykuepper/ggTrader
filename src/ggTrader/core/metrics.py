@@ -100,8 +100,8 @@ def _profit_factor_series(pf_train: Any) -> pd.Series:
     """Per-combo profit factor, mean-centred: (gross_profit/gross_loss - 1), clipped [-3, 3].
 
     0.0 = breakeven, 1.0 = 2:1 reward ratio, inf (all-win) clipped to 3.0.
-    NaN (no trades) propagates — the outer ``m.where(sh_f.notna(), nan)`` gate then
-    removes those combos, consistent with the Sharpe NaN convention.
+    NaN (no trades) propagates — the outer ``m.where(so.notna(), nan)`` gate then
+    removes those combos, consistent with the Sortino NaN convention.
     """
     raw = pf_train.trades.profit_factor()
     if not isinstance(raw, pd.Series):
@@ -139,46 +139,36 @@ def _train_metric_series(pf_train: Any, config: Dict[str, Any]) -> pd.Series:
     elif name == "calmar":
         m = _calmar_ratio_series(pf_train)
     elif name == "composite":
-        raw_w = config.get("TRAIN_METRIC_COMPOSITE_WEIGHTS") or {}
-        ws = float(raw_w.get("sharpe", 1.0 / 3.0))
-        wso = float(raw_w.get("sortino", 1.0 / 3.0))
-        wc = float(raw_w.get("calmar", 1.0 / 3.0))
-        wpf = float(raw_w.get("profit_factor", 0.0))
-        s = ws + wso + wc + wpf
-        if s <= 0:
-            ws, wso, wc, wpf = 0.25, 0.25, 0.25, 0.25
-        else:
-            ws, wso, wc, wpf = ws / s, wso / s, wc / s, wpf / s
-        sh = pf_train.sharpe_ratio()
+        # Rank-based composite (Sortino + Calmar + PF). No Sharpe — redundant with
+        # Sortino (Sortino is a strict refinement, only counts downside vol).
+        # Per-fold: rank cells by each of the three ratios descending (rank 1 = best).
+        # Average rank on ties (standard statistical convention). Average the ranks
+        # across axes. Score = -mean_rank so "max wins" downstream is preserved.
+        # Cells with NaN in any axis get NaN score (propagates to selection drop).
         so = pf_train.sortino_ratio()
-        ca = _calmar_ratio_series(pf_train)
-        if not isinstance(sh, pd.Series):
-            sh = pd.Series([float(sh)])
         if not isinstance(so, pd.Series):
             so = pd.Series([float(so)])
-        so = so.reindex(sh.index)
-        ca = ca.reindex(sh.index)
-        # Clip calmar to [-5, 5] to prevent extreme values (near-zero drawdown) from
-        # dominating the composite and artificially inflating a strategy's score.
+        ca = _calmar_ratio_series(pf_train).reindex(so.index)
+        pf_s = _profit_factor_series(pf_train).reindex(so.index)
+
+        # Clip the same way the legacy composite did, to keep extreme values from
+        # distorting ranks of ties at the edges (rank itself is scale-invariant, but
+        # clipping defends against +inf / -inf making ranks unstable).
         ca_clipped = ca.clip(lower=-5.0, upper=5.0)
-        # When calmar is NaN but sharpe is valid (e.g. fold with zero drawdown),
-        # treat calmar as 0 rather than propagating NaN to the whole composite.
-        sh_f = sh.astype(float)
-        so_f = so.astype(float)
-        ca_fin = ca_clipped.where(ca_clipped.notna(), other=0.0)
-        # profit_factor: (GP/GL - 1), clipped [-3, 3]; NaN → 0 (same as calmar convention).
-        pf_s = _profit_factor_series(pf_train).reindex(sh.index)
-        pf_fin = pf_s.where(pf_s.notna(), other=0.0)
-        # Z-score each component to put Calmar, ProfitFactor, Sharpe on the same
-        # scale before blending — prevents high-magnitude Calmar values from dominating.
-        if config.get("TRAIN_METRIC_NORMALIZE_ZSCORE", True):
-            sh_f   = _zscore_normalize_series(sh_f)
-            so_f   = _zscore_normalize_series(so_f)
-            ca_fin = _zscore_normalize_series(ca_fin)
-            pf_fin = _zscore_normalize_series(pf_fin)
-        m = ws * sh_f + wso * so_f + wc * ca_fin + wpf * pf_fin
-        # Preserve NaN for combos where sharpe itself is NaN (no trades / gated out).
-        m = m.where(sh_f.notna(), other=float("nan"))
+        pf_clipped = pf_s.clip(lower=-3.0, upper=3.0)
+
+        # rank(ascending=False) → highest value = rank 1, lowest = rank N.
+        # method='average' gives tied cells the mean of their tied position range.
+        # NaN values produce NaN ranks (skipped by mean below).
+        r_so = so.rank(ascending=False, method="average")
+        r_ca = ca_clipped.rank(ascending=False, method="average")
+        r_pf = pf_clipped.rank(ascending=False, method="average")
+
+        # Mean rank across the 3 axes. NaN in any axis -> NaN final score.
+        mean_rank = pd.concat([r_so, r_ca, r_pf], axis=1).mean(axis=1, skipna=False)
+        m = -mean_rank  # negate so higher score = better, matches downstream "max wins"
+        # Force NaN where Sortino itself is NaN (no trades / gated out).
+        m = m.where(so.notna(), other=float("nan"))
     else:
         m = pf_train.sharpe_ratio()
     if not isinstance(m, pd.Series):
