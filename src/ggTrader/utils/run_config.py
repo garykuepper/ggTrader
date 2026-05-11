@@ -205,5 +205,11 @@ def full_pipeline_config() -> dict[str, Any]:
         # Daily loss circuit breaker: halt new entries if intraday portfolio
         # value drops by more than this percentage. Set to None to disable.
         "DAILY_LOSS_LIMIT_PCT": 0.05,
+        # Fraction of the most-recent data reserved as a final holdout (locked
+        # away before WFO fold bounds are computed; touched exactly once after
+        # all gates pass). Spec value: 0.20 (20% holdout, 80% WFO). 0.0 disables
+        # the holdout entirely — legacy WFO behavior (everything available to
+        # the 10-fold loop).
+        "HOLDOUT_FRACTION": 0.20,
     }
 

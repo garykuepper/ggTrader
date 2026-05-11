@@ -913,7 +913,22 @@ def run_multi_strategy_per_coin_wfo(
     )
     ohlcv, mover_mask = load_data_with_movers(config)
 
+    # Holdout split FIRST (Task 5): reserve the most recent 20% before any
+    # downstream code reads `ohlcv`. Subsequent computations (BTC regime
+    # mask, fold bounds, etc.) must operate on the 80% WFO window only,
+    # never on holdout-era bars.
+    from ggTrader.core.holdout import split_train_holdout
+    holdout_fraction = float(config.get("HOLDOUT_FRACTION", 0.20))
+    wfo_ohlcv, holdout_ohlcv = split_train_holdout(ohlcv, holdout_fraction)
+    print(
+        f"  [Holdout] Reserved {len(holdout_ohlcv)} bars ({holdout_fraction:.0%}) "
+        f"as final holdout. WFO operates on {len(wfo_ohlcv)} bars."
+    )
+    # Use wfo_ohlcv (not the original) for everything below this point.
+    ohlcv = wfo_ohlcv
+
     # Pre-compute BTC leader regime mask once for all WFO folds.
+    # Now operates on the 80% WFO window only, never on holdout-era bars.
     wfo_btc_mask: Optional[pd.Series] = None
     wfo_btc_corrs: Dict[str, float] = {}
     if config.get("BTC_REGIME_FILTER", False):
