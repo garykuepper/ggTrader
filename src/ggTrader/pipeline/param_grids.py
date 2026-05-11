@@ -7,117 +7,131 @@ from typing import Any
 # --- Discovery (Iteration 6) Expanded Grids ---
 
 DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
+    # WFO Textbook Reset (2026-05-10): coarsened per the articulation test.
+    # If we can't explain why value A should behave differently from adjacent
+    # value B, drop one. Selection bias from max-of-N scales with N; smaller
+    # grids = fewer noise draws = smaller expected outlier. Target ≤16 cells
+    # per (entry × exit) pair. Largest cross product post-coarsening: 4×4 = 16.
     "psar_adx": {
-        # Pruned based on 261 WFO selections across 13 runs (empirical, not domain-only):
-        # sar_acceleration: 0.02 selected 100% of the time — collapse to constant.
-        # sar_maximum: 0.1 selected 100% of the time — collapse to constant.
-        # adx_length: 10 selected only 2.7% — dropped; 30 dominates (71%).
-        # use_dmp_cross: False selected 86%, True 14% — dropped True (treated as noise).
+        # adx_length: 14 (short lookback, responsive) vs 30 (long, smooth).
+        # Dropped 20 (interpolation).
+        # adx_threshold: 20 (loose trend filter) vs 30 (tight). Dropped 25 (interp)
+        # and 35 (extreme — rarely fires).
         "sar_acceleration": [0.02],
         "sar_maximum": [0.1],
-        "adx_length": [14, 20, 30],
-        "adx_threshold": [20, 25, 30, 35],
+        "adx_length": [14, 30],
+        "adx_threshold": [20, 30],
         "use_dmp_cross": [False],
-        # Total: 1×1×3×4×1 = 12 combos (was 384, -97%)
+        # Total: 1×1×2×2×1 = 4 combos (was 12)
     },
     "ema_cross": {
-        # Narrowed to textbook ranges: removed very fast (3) and short slow (21, 34)
-        # that overlap with regime filter EMAs or create noise.
-        "ema_fast": [5, 9, 12],
-        "ema_slow": [50, 100, 200],
-        # Total: 9 valid combos (was 25)
+        # ema_fast: 9 (short) vs 12 (intermediate). Dropped 5 (too noisy at 4h).
+        # ema_slow: 50 (medium trend) vs 200 (long trend). Dropped 100 (interp).
+        "ema_fast": [9, 12],
+        "ema_slow": [50, 200],
+        # Total: 4 combos (was 9)
     },
     "mtf_momentum": {
-        # 4h EMA cross gated by daily-equivalent slow EMA. Targets the
-        # category-A failure mode: 4h whipsaws that fire without daily-trend
-        # agreement and bleed in OOS. fast/slow values match ema_cross to
-        # keep textbook ranges; mtf_daily_ema spans 50/100/200 daily bars
-        # (= 300/600/1200 4h bars).
-        "ema_fast": [9, 12],
-        "ema_slow": [21, 26],
-        "mtf_daily_ema": [50, 100, 200],
-        # Total: 2×2×3 = 12 combos (degenerate fast>=slow paths skip cleanly)
+        # 4h EMA cross gated by daily-equivalent slow EMA. fast/slow at single
+        # canonical values; the discriminating axis is the daily filter strength.
+        # mtf_daily_ema: 100 (intermediate) vs 200 (long). Dropped 50 (too short).
+        "ema_fast": [9],
+        "ema_slow": [21],
+        "mtf_daily_ema": [100, 200],
+        # Total: 2 combos (was 12)
     },
     "rsi_reversal": {
-        # Narrowed from 72 to 24 combos. Removed extreme lengths (5, 7, 28) and
-        # extreme oversold levels (15, 40) that chase fold-specific noise.
-        "rsi_length": [10, 14, 21],
-        "rsi_oversold": [20, 25, 30, 35],
-        "rsi_trend_filter": [True, False],
-        # Total: 24 combos (was 72)
+        # rsi_length: 10 (short, fast) vs 21 (long, smooth). Dropped 14 (interp).
+        # rsi_oversold: 25 (moderate) vs 30 (loose). Dropped 20 (extreme), 35
+        # (very loose — fires too often).
+        # rsi_trend_filter: dropped True path; this strategy is mean-reversion,
+        # adding a trend filter creates a different strategy (adx_filtered_rsi).
+        "rsi_length": [10, 21],
+        "rsi_oversold": [25, 30],
+        "rsi_trend_filter": [False],
+        # Total: 4 combos (was 24)
     },
     "adx_filtered_rsi": {
-        # RSI cross-up gated by ADX < adx_max (range-only mean reversion).
-        # Targets category-A coins where rsi_reversal fires in trending OOS
-        # and bleeds. Single rsi_length / adx_length to keep combos modest;
-        # adx_max is the discriminating axis (lower = stricter range filter).
+        # adx_max is the discriminating axis: 15 (very range-only) vs 25 (loose).
+        # Dropped 20 (interp). rsi_oversold collapsed to single canonical 30.
         "rsi_length": [14],
-        "rsi_oversold": [25, 30, 35],
+        "rsi_oversold": [30],
         "adx_length": [14],
-        "adx_max": [15, 20, 25],
-        # Total: 1×3×1×3 = 9 combos
+        "adx_max": [15, 25],
+        # Total: 2 combos (was 9)
     },
     "donchian_breakout": {
-        # Restored shorter lengths: only testing 100 was circular (it always won).
-        # WFO can now find per-coin optimal channel width.
-        "donchian_length": [30, 50, 100],
-        # Total: 3 combos (was 1)
+        # donchian_length: 30 (short channel, frequent breakouts) vs 100 (long
+        # channel, fewer high-conviction breakouts). Dropped 50 (interp).
+        "donchian_length": [30, 100],
+        # Total: 2 combos (was 3)
     },
     "macd_cross": {
-        # macd_fast=5: 0 selections — dropped.
-        # macd_slow=21: 0 selections — dropped.
-        # macd_signal=9: 0 selections — dropped.
-        "macd_fast": [8, 12, 16],
-        "macd_slow": [26, 32],
-        "macd_signal": [7, 11],
-        # Total: 12 valid combos (was 36, -67%)
+        # macd_fast: 8 (short) vs 16 (long). Dropped 12 (interp).
+        # macd_slow/signal: collapsed to canonical 26/9 (standard MACD).
+        "macd_fast": [8, 16],
+        "macd_slow": [26],
+        "macd_signal": [9],
+        # Total: 2 combos (was 12)
     },
     "supertrend_flip": {
-        "st_length": [7, 10, 14, 20],
-        "st_multiplier": [2.0, 3.0, 4.0, 5.0],
-        # Total: 16 combos (unchanged — all values have meaningful selection rates)
+        # st_length: 10 (short, responsive) vs 20 (long, smooth). Dropped 7, 14.
+        # st_multiplier: 2.0 (tight) vs 4.0 (loose). Dropped 3.0 (interp), 5.0
+        # (very loose).
+        "st_length": [10, 20],
+        "st_multiplier": [2.0, 4.0],
+        # Total: 4 combos (was 16)
     },
     "bbands_mean_reversion": {
-        # Mean-reversion strategy: enters when price touches lower Bollinger Band.
-        # Complements trend-following strategies in choppy/ranging markets.
-        "bb_length": [14, 20, 30],
-        "bb_std": [1.5, 2.0, 2.5],
-        # Total: 9 combos
+        # bb_length: canonical 20 only. Dropped 14, 30.
+        # bb_std: 1.5 (loose — fires often) vs 2.5 (tight — fires at extremes).
+        # Dropped 2.0 (interp).
+        "bb_length": [20],
+        "bb_std": [1.5, 2.5],
+        # Total: 2 combos (was 9)
     },
     "stoch_rsi_reversal": {
-        # StochRSI = Stochastic of RSI. Faster mean-reversion signal than raw RSI,
-        # cycles quicker in volatile crypto where plain RSI can stay oversold for ages.
-        "stochrsi_rsi_length": [10, 14, 21],
-        "stochrsi_stoch_length": [10, 14],
+        # Lengths collapsed to canonical 14. stochrsi_oversold: 15 (strict) vs
+        # 20 (moderate). Discriminates between strict and loose oversold thresholds.
+        "stochrsi_rsi_length": [14],
+        "stochrsi_stoch_length": [14],
         "stochrsi_oversold": [15, 20],
-        # Total: 3 × 2 × 2 = 12 combos
+        # Total: 2 combos (was 12)
     },
     "keltner_breakout": {
-        # ATR-based channel breakout. Adapts to volatility unlike Donchian (raw range)
-        # or BBands (std dev). Widens in high-vol, contracts in consolidation.
-        "kc_length": [14, 20, 30],
-        "kc_multiplier": [1.0, 1.5, 2.0],
-        # Total: 3 × 3 = 9 combos
+        # kc_length: canonical 20 only. kc_multiplier: 1.0 (tight channel,
+        # frequent breakouts) vs 2.0 (wide channel, high-conviction breakouts).
+        # Dropped 1.5 (interp).
+        "kc_length": [20],
+        "kc_multiplier": [1.0, 2.0],
+        # Total: 2 combos (was 9)
     },
 }
 
 DETAILED_EXIT_AXIS_GRIDS: dict[str, dict[str, Any]] = {
+    # Coarsened per articulation test. Each value represents a meaningfully
+    # different exit behavior.
     "atr_trailing": {
-        "atr_length": [14, 21, 30],
-        "atr_multiplier": [2.5, 3.5, 4.5, 6.0],
-        # Total: 12 combos (unchanged — all values have meaningful selection rates)
+        # atr_length: 14 (responsive) vs 30 (smooth). Dropped 21 (interp).
+        # atr_multiplier: 2.5 (tight trailing) vs 4.5 (loose). Dropped 3.5
+        # (interp), 6.0 (very loose).
+        "atr_length": [14, 30],
+        "atr_multiplier": [2.5, 4.5],
+        # Total: 4 combos (was 12)
     },
     "fixed_sl_tp": {
-        # Widened ranges: removed 1.0% stop (too tight for 4h crypto), added 5.0% stop.
-        # Removed 2.0% TP (too tight), added 10.0% TP for trend capture.
-        "stop_pct": [1.5, 2.0, 3.0, 5.0],
-        "take_profit_pct": [3.0, 4.0, 6.0, 10.0],
-        # Total: 16 combos
+        # stop_pct: 2% (tight) vs 5% (loose). Dropped 1.5, 3 (interp).
+        # take_profit_pct: 4% (modest) vs 10% (asymmetric high-reward trend
+        # capture). Dropped 3, 6 (interp).
+        "stop_pct": [2.0, 5.0],
+        "take_profit_pct": [4.0, 10.0],
+        # Total: 4 combos (was 16)
     },
     "trailing_stop": {
-        # Widened: removed 2.0% (too tight for 4h crypto), added 12.0% for wide trailing.
-        "trailing_stop_pct": [3.0, 5.0, 8.0, 12.0],
-        # Total: 4 combos
+        # 3% (tight, frequent stops) vs 8% (loose, lets winners run).
+        # Dropped 5 (interp), 12 (very loose).
+        "trailing_stop_pct": [3.0, 8.0],
+        # Total: 2 combos (was 4)
     },
 }
 
