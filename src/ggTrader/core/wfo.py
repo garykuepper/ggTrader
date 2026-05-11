@@ -145,6 +145,20 @@ def _process_wfo_fold(
 
         nan_mask |= incomplete_mask
 
+    # Textbook reset: 30+ trades per train fold is a hard pre-score gate.
+    # Cells below the threshold get NaN score (disqualified from ranking).
+    # Exception: cells with 0 trades in a bear training window are already
+    # handled by the bear-forgiveness logic above (zero_mask, awarded 0.0).
+    # We must NOT re-NaN them — the bear-sit-out behavior is an existing
+    # safeguard that the textbook reset preserves. Excluding zero_mask from
+    # below_fold_min ensures the 8-of-10 forgiveness can then correctly
+    # treat the bear sit-out as a forgiven fold.
+    min_per_fold = int(config.get("MIN_TRADES_PER_TRAIN_FOLD", 30))
+    if min_per_fold > 0:
+        below_fold_min = (trade_for_gate < min_per_fold) & ~zero_mask
+        # Combine with existing nan_mask so the consolidated update below catches it.
+        nan_mask |= below_fold_min
+
     # Optional: reject combos with train drawdown deeper than -MAX_TRAIN_DRAWDOWN_PCT%.
     dd_limit = config.get("MAX_TRAIN_DRAWDOWN_PCT")
     if dd_limit is not None:
@@ -451,6 +465,40 @@ def _calculate_robustness(
     """
     # Selection uses train-window metrics only; folds get recency weights, no OOS.
     weights = {f: float(f) for f in is_metrics_by_fold.keys()}
+    # 8-of-10 forgiveness: for each cell, count how many folds have a finite IS
+    # metric (i.e., passed the per-fold MIN_TRADES_PER_TRAIN_FOLD gate). Cells
+    # that pass fewer than MIN_TRAIN_FOLD_PASS_COUNT folds are dropped entirely
+    # (assigned -inf so they never win). Cells that pass at least that many
+    # have the failing folds replaced with the per-fold median rank (neither
+    # rewarding nor penalizing the inactivity).
+    _cfg = config or {}
+    min_pass = int(_cfg.get("MIN_TRAIN_FOLD_PASS_COUNT", 8))
+    if min_pass > 0 and len(is_metrics_by_fold) > 0:
+        # Build presence matrix: cells × folds. Per-cell pass count is the row sum
+        # of finite values across the original is_metrics_by_fold.
+        all_cells: set = set()
+        for s in is_metrics_by_fold.values():
+            all_cells.update(s.index.tolist())
+        all_cells_idx = pd.Index(sorted(all_cells), dtype=object)
+        pass_counts = pd.Series(0, index=all_cells_idx)
+        fold_medians: Dict[int, float] = {}
+        for f, s in is_metrics_by_fold.items():
+            aligned = s.reindex(all_cells_idx)
+            pass_counts = pass_counts + aligned.notna().astype(int)
+            finite_vals = aligned[aligned.notna()]
+            fold_medians[f] = float(finite_vals.median()) if len(finite_vals) > 0 else float("nan")
+        # Rebuild is_metrics_by_fold: cells with pass_count < min_pass keep NaN
+        # in all folds (so the weighted mean is NaN, then dropped); cells that
+        # pass get failing folds filled with that fold's median.
+        eligible = pass_counts >= min_pass
+        is_metrics_by_fold = dict(is_metrics_by_fold)  # don't mutate caller's dict
+        for f, s in list(is_metrics_by_fold.items()):
+            aligned = s.reindex(all_cells_idx)
+            # Eligible cells: fill NaN with fold median.
+            filled = aligned.where(aligned.notna(), other=fold_medians.get(f, float("nan")))
+            # Ineligible cells: force NaN regardless of fill.
+            filled = filled.where(eligible, other=float("nan"))
+            is_metrics_by_fold[f] = filled
     robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights, config=config)
 
     if debug_metrics:
@@ -480,7 +528,7 @@ def _calculate_robustness(
         except (TypeError, ValueError):
             score_f = float("nan")
         if not np.isfinite(score_f):
-            score_f = float("nan")
+            continue
         robust_top_5.append({"params": _to_native(extracted), "robustness_score": score_f})
 
     if not robust_top_5:

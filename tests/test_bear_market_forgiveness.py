@@ -77,7 +77,7 @@ def test_bear_market_forgives_zero_trades(mock_metrics, mock_engine_cls, bear_ma
     # FastBacktest is instantiated twice per fold (train, then test)
     mock_engine_cls.return_value = mock_test_engine
 
-    config = {"MIN_CLOSED_TRADES_TRAIN": 1, "MIN_FOLD_BARS": 1}
+    config = {"MIN_CLOSED_TRADES_TRAIN": 1, "MIN_FOLD_BARS": 1, "MIN_TRADES_PER_TRAIN_FOLD": 0}
 
     train_idx = bear_market_ohlcv.index
     test_idx = bear_market_ohlcv.index
@@ -136,7 +136,7 @@ def test_bull_market_rejects_zero_trades(mock_metrics, mock_engine_cls, bull_mar
     mock_test_engine.run.return_value = mock_test_pf
     mock_engine_cls.return_value = mock_test_engine
 
-    config = {"MIN_CLOSED_TRADES_TRAIN": 1, "MIN_FOLD_BARS": 1}
+    config = {"MIN_CLOSED_TRADES_TRAIN": 1, "MIN_FOLD_BARS": 1, "MIN_TRADES_PER_TRAIN_FOLD": 0}
 
     train_idx = bull_market_ohlcv.index
     test_idx = bull_market_ohlcv.index

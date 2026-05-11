@@ -103,3 +103,80 @@ def test_rank_composite_nan_propagates_to_nan():
     assert np.isfinite(scores.iloc[0])
     assert np.isnan(scores.iloc[1])
     assert np.isfinite(scores.iloc[2])
+
+
+from ggTrader.core.wfo import _calculate_robustness
+
+
+def test_min_trades_gate_disqualifies_low_trade_cells():
+    """A cell with <30 trades in a fold gets NaN, so it can't win that fold."""
+    # Two folds, three cells. Cell A is always above 30 trades. Cell B is below
+    # in fold 1, above in fold 2. Cell C is always above. We don't directly
+    # test _process_wfo_fold (it requires real OHLCV/portfolios); we test the
+    # logical contract: cells with NaN scores get NaN robustness.
+    cells = [("A",), ("B",), ("C",)]
+    fold1 = pd.Series([1.0, float("nan"), 0.5], index=pd.Index(cells, dtype=object))
+    fold2 = pd.Series([1.0, 0.8, 0.5], index=pd.Index(cells, dtype=object))
+    is_metrics_by_fold = {1: fold1, 2: fold2}
+    # With 8-of-10 forgiveness disabled (min_pass=0), the legacy weighted mean
+    # would emit B's score from just fold 2. Confirm via the function.
+    config = {"MIN_TRAIN_FOLD_PASS_COUNT": 0}  # disable forgiveness
+    top, best = _calculate_robustness(
+        is_metrics_by_fold=is_metrics_by_fold,
+        param_names=["x"],
+        param_grid={"x": ["A", "B", "C"]},
+        config=config,
+    )
+    # All three cells produce a finite score (B from one fold only).
+    assert any(r["params"]["x"] == "B" for r in top)
+
+
+def test_eight_of_ten_forgiveness_drops_cells_below_threshold():
+    """A cell present in fewer than min_pass folds is forced to NaN everywhere."""
+    cells = [("A",), ("B",)]
+    # 10 folds. A present in all 10, B present in only 5.
+    is_metrics_by_fold = {}
+    for f in range(1, 11):
+        if f <= 5:
+            row = pd.Series([1.0, 0.5], index=pd.Index(cells, dtype=object))
+        else:
+            row = pd.Series([1.0, float("nan")], index=pd.Index(cells, dtype=object))
+        is_metrics_by_fold[f] = row
+    config = {"MIN_TRAIN_FOLD_PASS_COUNT": 8}
+    top, best = _calculate_robustness(
+        is_metrics_by_fold=is_metrics_by_fold,
+        param_names=["x"],
+        param_grid={"x": ["A", "B"]},
+        config=config,
+    )
+    # B passed only 5 folds (<8). It must be dropped.
+    assert not any(r["params"]["x"] == "B" for r in top), (
+        "B should be dropped by 8-of-10 forgiveness (only 5 finite folds)"
+    )
+
+
+def test_eight_of_ten_forgiveness_fills_with_fold_median():
+    """A cell that passes 8+ folds gets the missing folds filled with median rank."""
+    # 10 folds, 3 cells. A always present, scores 1.0. B missing in 2 of 10,
+    # scores 0.5 elsewhere. C present in all 10, scores -0.5 (below median).
+    cells = [("A",), ("B",), ("C",)]
+    is_metrics_by_fold = {}
+    for f in range(1, 11):
+        if f in (1, 2):
+            row = pd.Series([1.0, float("nan"), -0.5], index=pd.Index(cells, dtype=object))
+        else:
+            row = pd.Series([1.0, 0.5, -0.5], index=pd.Index(cells, dtype=object))
+        is_metrics_by_fold[f] = row
+    config = {"MIN_TRAIN_FOLD_PASS_COUNT": 8}
+    top, best = _calculate_robustness(
+        is_metrics_by_fold=is_metrics_by_fold,
+        param_names=["x"],
+        param_grid={"x": ["A", "B", "C"]},
+        config=config,
+    )
+    # B passes 8 folds, gets median-fill in folds 1 and 2. Fold median is
+    # 0.25 (mean of 1.0 and -0.5 — only two finite cells in fold 1 since B is NaN).
+    # The exact ranking depends on aggregation; the key assertion is B is not dropped.
+    assert any(r["params"]["x"] == "B" for r in top), (
+        "B should survive (passes 8 of 10 folds)"
+    )

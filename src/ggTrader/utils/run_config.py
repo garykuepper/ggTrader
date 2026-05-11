@@ -182,6 +182,15 @@ def full_pipeline_config() -> dict[str, Any]:
         # Set to None to disable. 3 = at least 3 of N folds must have had valid training
         # (with 6 folds total, this means at least half must pass the training gate).
         "MIN_VALID_TRAIN_FOLDS": 3,
+        # Minimum number of closed train trades a cell must have to be eligible
+        # for ranking within a fold (textbook reset). Cells with fewer trades
+        # are disqualified before scoring; their rank is "skip". Spec value: 30.
+        "MIN_TRADES_PER_TRAIN_FOLD": 30,
+        # 8-of-N forgiveness: a combo must pass the MIN_TRADES_PER_TRAIN_FOLD gate
+        # in at least N_PASS folds to be eligible for selection across folds.
+        # In folds where it fails, the combo is assigned the median rank in that
+        # fold (neither rewarding nor penalizing the inactivity). 8 of 10.
+        "MIN_TRAIN_FOLD_PASS_COUNT": 8,
         # Minimum fraction of OOS folds that must be profitable (positive Sharpe) for a coin
         # to be included in the combined portfolio. 0.38 = 4 out of 10 folds profitable.
         "MIN_FOLD_CONSISTENCY": 0.38,
