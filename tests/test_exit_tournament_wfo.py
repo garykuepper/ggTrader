@@ -282,11 +282,18 @@ class TestExitTournamentInOrchestratorOutput:
             "N_SPLITS": 2,
             "TEST_RATIO": 2.0,
             "MIN_CLOSED_TRADES_TRAIN": 0,
+            "MIN_TRADES_PER_TRAIN_FOLD": 0,
+            "MIN_TRAIN_FOLD_PASS_COUNT": 0,
             "USE_VECTORIZED": True,
             "USE_VECTORIZED_SENSITIVITY": True,
             "USE_MOVERS": 0,
             "EXIT_TOURNAMENT": ["atr_trailing", "fixed_sl_tp"],
             "_OHLCV_OVERRIDE": ohlcv,  # Injected below via monkeypatch
+            # Lenient gate thresholds so synthetic 2-fold data passes (Task 7 gates).
+            "WFO_GATE_WFE_MIN": -999.0,
+            "WFO_GATE_PROFITABLE_FOLDS_MIN": 0.0,
+            "WFO_GATE_PARAM_CV_MAX": 999.0,
+            "WFO_GATE_DD_RATIO_MAX": 999.0,
         }
         strategy_grids = {
             "ema_cross": {
@@ -340,10 +347,17 @@ class TestExitTournamentInOrchestratorOutput:
             "N_SPLITS": 2,
             "TEST_RATIO": 2.0,
             "MIN_CLOSED_TRADES_TRAIN": 0,
+            "MIN_TRADES_PER_TRAIN_FOLD": 0,
+            "MIN_TRAIN_FOLD_PASS_COUNT": 0,
             "USE_VECTORIZED": True,
             "USE_VECTORIZED_SENSITIVITY": True,
             "USE_MOVERS": 0,
             "EXIT_TOURNAMENT": ["atr_trailing"],
+            # Lenient gate thresholds so synthetic 2-fold data passes (Task 7 gates).
+            "WFO_GATE_WFE_MIN": -999.0,
+            "WFO_GATE_PROFITABLE_FOLDS_MIN": 0.0,
+            "WFO_GATE_PARAM_CV_MAX": 999.0,
+            "WFO_GATE_DD_RATIO_MAX": 999.0,
         }
         strategy_grids = {
             "ema_cross": {

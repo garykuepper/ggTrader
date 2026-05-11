@@ -982,15 +982,6 @@ def run_multi_strategy_per_coin_wfo(
             symbol_ohlcv = ohlcv[[symbol]]
             symbol_mover_mask = mover_mask[[symbol]] if mover_mask is not None else None
 
-            best_strategy: Optional[str] = None
-            best_exit: Optional[str] = None
-            best_robust_score = float("-inf")
-            best_params_for_coin: Dict[str, Any] = {}
-            best_wfo_stats: List[Dict] = []
-            best_robust_top_5: List[Dict] = []
-            best_is_robustness_score: float = float("-inf")
-            best_oos_robustness_score: float = float("nan")
-            best_fold_consistency: float = float("nan")
             # Cross-combo top-K tracker for the trade-frequency fallback in Phase 3:
             # if the rank-1 combo doesn't trade enough on the contiguous full-range
             # replay, the gate promotes the next runner-up (different entry/exit/params).
@@ -1089,17 +1080,6 @@ def run_multi_strategy_per_coin_wfo(
                         f"consistency={fold_cons_combo:.0%}"
                     )
 
-                    if _is_better_robustness(gate_score, best_robust_score):
-                        best_robust_score = gate_score
-                        best_strategy = strategy_name
-                        best_exit = exit_name
-                        best_params_for_coin = best_robust_params
-                        best_wfo_stats = wfo_stats
-                        best_robust_top_5 = robust_top_5
-                        best_is_robustness_score = robustness_score
-                        best_oos_robustness_score = oos_rob_combo
-                        best_fold_consistency = fold_cons_combo
-
                     # WFO textbook aggregate gates: compute the four metrics and
                     # apply pass/fail filtering. A combo that fails any gate is
                     # excluded from per-coin selection in Task 7.
@@ -1177,40 +1157,196 @@ def run_multi_strategy_per_coin_wfo(
                             "fold_consistency": _fc,
                         })
 
-            selection_reason = "wfo_robustness"
-            if best_strategy is None or not np.isfinite(best_robust_score):
-                fb_s, fb_e, fb_p = _wfo_per_coin_fallback_triple(
-                    strategy_param_grids, exit_tournament
-                )
-                best_strategy = fb_s
-                best_exit = fb_e
-                best_params_for_coin = fb_p
-                best_robust_score = float("-inf")
-                best_robust_top_5 = []
-                selection_reason = "fallback_no_finite_robustness"
+            # Per-coin selection (Task 7 textbook reset):
+            # Filter combos to those that passed all 4 aggregate gates from Task 6.
+            # Pick the one with highest mean-per-fold Sortino.
+            # Tie-break (within 5% of top): lowest parameter CV.
+            # Coin is dropped entirely when no combo passes all 4 gates.
+            gate_passing_combos = [
+                c for c in top_combos_tracker
+                if c.get("wfo_aggregate_gates", {}).get("passed") is True
+            ]
+
+            if not gate_passing_combos:
                 print(
-                    f"  WARNING: {symbol} — no finite WFO robustness winner; "
-                    f"using fallback {best_strategy}+{best_exit} with first grid values."
+                    f"  WARNING: {symbol} — no (entry, exit) combo passed all 4 WFO gates. "
+                    f"Dropping."
                 )
+                continue  # skip this symbol; do not add to per_coin_results
 
-            # Sort top-combo tracker descending by gate_score; cap at top 5 for fallback.
-            top_combos_sorted = sorted(
-                top_combos_tracker, key=lambda r: r["gate_score"], reverse=True
-            )[:5]
+            def _combo_mean_sortino(combo: Dict[str, Any]) -> float:
+                return float(combo.get("mean_sortino", float("-inf")))
 
+            sorted_passers = sorted(
+                gate_passing_combos, key=_combo_mean_sortino, reverse=True
+            )
+            top_score = _combo_mean_sortino(sorted_passers[0])
+            # Tie-break: within 5% of top Sortino, prefer lowest param CV.
+            if top_score > 0:
+                tie_band_threshold = top_score * (1.0 - 0.05)
+            elif top_score != 0:
+                tie_band_threshold = top_score - 0.05 * abs(top_score)
+            else:
+                tie_band_threshold = -0.05
+            tied_combos = [
+                c for c in sorted_passers if _combo_mean_sortino(c) >= tie_band_threshold
+            ]
+            if len(tied_combos) > 1:
+                chosen_combo = min(
+                    tied_combos,
+                    key=lambda c: c.get("wfo_aggregate_gates", {}).get(
+                        "metrics", {}
+                    ).get("param_cv", float("inf")),
+                )
+            else:
+                chosen_combo = sorted_passers[0]
+
+            # Median-fold params for the chosen combo, snapped to grid.
+            from ggTrader.core.holdout import median_params_snap_to_grid
+            chosen_fold_params = chosen_combo.get("fold_params", [])
+            chosen_grid = chosen_combo.get("param_grid", {})
+            median_params = median_params_snap_to_grid(chosen_fold_params, chosen_grid)
+
+            # Top-combos for downstream phase-3 fallback (sorted all passers, capped at 5).
+            top_combos_sorted = sorted_passers[:5]
+
+            # Populate per_coin_results with median params and metadata.
+            # Preserve all keys consumed by _apply_wfo_selection_gates and Phase 3.
+            chosen_wfo_stats = chosen_combo.get("wfo_stats_ref", [])
             per_coin_results[symbol] = {
-                "best_strategy": best_strategy,
-                "best_exit": best_exit,
-                "best_params": best_params_for_coin,
-                "robustness_score": best_robust_score,  # blended gate score
-                "is_robustness_score": best_is_robustness_score,
-                "oos_robustness_score": best_oos_robustness_score,
-                "fold_consistency": best_fold_consistency,
-                "wfo_stats": best_wfo_stats,
-                "robust_top_5": best_robust_top_5,  # top-5 within rank-1 combo's grid
-                "top_combos": top_combos_sorted,    # top-5 across (entry,exit) — for fallback
-                "selection_reason": selection_reason,
+                "best_strategy": chosen_combo["strategy"],
+                "best_exit": chosen_combo["exit"],
+                "best_params": median_params,
+                "robustness_score": chosen_combo["gate_score"],
+                "is_robustness_score": chosen_combo["gate_score"],
+                "oos_robustness_score": float(
+                    chosen_combo.get("mean_sortino", float("nan"))
+                ),
+                "fold_consistency": chosen_combo.get("fold_consistency"),
+                "wfo_stats": chosen_wfo_stats,
+                "robust_top_5": [],
+                "top_combos": top_combos_sorted,
+                "selection_reason": "textbook_gates_then_sortino",
+                "wfo_aggregate_gates": chosen_combo["wfo_aggregate_gates"],
             }
+
+            # Smoke test: run median params on the full WFO train window (ohlcv is
+            # already wfo_ohlcv — reassigned at the holdout split above).
+            # FastBacktest accepts {axis: [value, ...]} for its 1-cell grid path.
+            median_grid = {k: [v] for k, v in median_params.items()}
+            try:
+                smoke_engine = FastBacktest(
+                    ohlcv=symbol_ohlcv,
+                    params=median_grid,
+                    config={
+                        **config,
+                        "USE_VECTORIZED": False,
+                        "ENTRY_STRATEGY": chosen_combo["strategy"],
+                        "EXIT_STRATEGY": chosen_combo["exit"],
+                    },
+                )
+                smoke_pf = smoke_engine.run(show_progress=False)
+                smoke_sortino = float(smoke_pf.sortino_ratio().mean())
+                smoke_total_ret = float(smoke_pf.total_return().mean())
+                smoke_max_dd = float(smoke_pf.max_drawdown().min())
+                print(
+                    f"  [Smoke test] {symbol} median params: "
+                    f"Sortino={smoke_sortino:.3f}, "
+                    f"return={smoke_total_ret * 100:.2f}%, "
+                    f"max_dd={smoke_max_dd * 100:.2f}%"
+                )
+                per_coin_results[symbol]["smoke_test"] = {
+                    "sortino": smoke_sortino,
+                    "total_return": smoke_total_ret,
+                    "max_dd": smoke_max_dd,
+                }
+            except Exception as smoke_exc:
+                print(f"  WARNING: {symbol} smoke test failed: {smoke_exc!r}")
+                per_coin_results[symbol]["smoke_test"] = None
+
+            # Holdout evaluation: run median params on the 20% locked holdout.
+            # One-shot. Result is reported with warning flags (not a gate).
+            holdout_symbol_data = (
+                holdout_ohlcv[[symbol]] if len(holdout_ohlcv) > 0 else None
+            )
+            if holdout_symbol_data is not None and len(holdout_symbol_data) > 0:
+                try:
+                    holdout_engine = FastBacktest(
+                        ohlcv=holdout_symbol_data,
+                        params=median_grid,
+                        config={
+                            **config,
+                            "USE_VECTORIZED": False,
+                            "ENTRY_STRATEGY": chosen_combo["strategy"],
+                            "EXIT_STRATEGY": chosen_combo["exit"],
+                        },
+                    )
+                    holdout_pf = holdout_engine.run(show_progress=False)
+                    holdout_sortino = float(holdout_pf.sortino_ratio().mean())
+                    holdout_total_ret = float(holdout_pf.total_return().mean())
+                    holdout_max_dd = float(holdout_pf.max_drawdown().min())
+                    try:
+                        holdout_trades = int(holdout_pf.trades.count().sum())
+                    except Exception:
+                        holdout_trades = None
+                    # Annualize the holdout return via compounding.
+                    from ggTrader.core.wfo_aggregate import infer_bars_per_year
+                    bars_per_year = infer_bars_per_year(
+                        holdout_symbol_data.index, config=config
+                    )
+                    n_holdout_bars = float(len(holdout_symbol_data))
+                    if (
+                        n_holdout_bars > 0
+                        and np.isfinite(holdout_total_ret)
+                        and holdout_total_ret > -1.0
+                    ):
+                        holdout_ann_ret = (
+                            (1.0 + holdout_total_ret)
+                            ** (bars_per_year / n_holdout_bars)
+                            - 1.0
+                        )
+                    else:
+                        holdout_ann_ret = float("nan")
+                    # Worst test-fold DD from the chosen combo's wfo_stats.
+                    test_dds = [
+                        fold.get("oos_max_dd", float("nan"))
+                        for fold in chosen_wfo_stats
+                    ]
+                    finite_test_dds = [
+                        d for d in test_dds if d is not None and np.isfinite(d)
+                    ]
+                    worst_test_dd = min(finite_test_dds) if finite_test_dds else None
+
+                    from ggTrader.core.holdout import holdout_warning_flags
+                    warning_flags = holdout_warning_flags(
+                        holdout_ann_return=holdout_ann_ret,
+                        holdout_max_dd=holdout_max_dd,
+                        worst_wfo_test_dd=(
+                            worst_test_dd if worst_test_dd is not None else 0.0
+                        ),
+                    )
+
+                    trade_count_str = (
+                        f"trades={holdout_trades}, " if holdout_trades is not None else ""
+                    )
+                    print(
+                        f"  [Holdout] {symbol}: "
+                        f"Sortino={holdout_sortino:.3f}, "
+                        f"ann_return={holdout_ann_ret * 100:.2f}%, "
+                        f"max_dd={holdout_max_dd * 100:.2f}%, "
+                        f"{trade_count_str}"
+                        f"warnings={warning_flags or 'none'}"
+                    )
+                    per_coin_results[symbol]["holdout"] = {
+                        "sortino": holdout_sortino,
+                        "annualized_return": holdout_ann_ret,
+                        "max_dd": holdout_max_dd,
+                        "trade_count": holdout_trades,
+                        "warnings": warning_flags,
+                    }
+                except Exception as hold_exc:
+                    print(f"  WARNING: {symbol} holdout evaluation failed: {hold_exc!r}")
+                    per_coin_results[symbol]["holdout"] = None
 
             coin_elapsed = time.time() - coin_start
             total_elapsed = time.time() - t0_wfo_coins

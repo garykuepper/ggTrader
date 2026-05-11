@@ -18,8 +18,9 @@ import pandas as pd
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from ggTrader.core.holdout import (
-    split_train_holdout,
     holdout_warning_flags,
+    median_params_snap_to_grid,
+    split_train_holdout,
 )
 
 
@@ -104,9 +105,52 @@ def test_no_warning_when_worst_wfo_test_dd_is_zero():
 def test_no_warning_when_worst_wfo_test_dd_is_nan():
     """A NaN WFO baseline should skip the DD check rather than masking it."""
     import math
+
     flags = holdout_warning_flags(
         holdout_ann_return=0.10,
         holdout_max_dd=-0.30,
         worst_wfo_test_dd=math.nan,
     )
     assert "max_dd_exceeds_threshold" not in flags
+
+
+def test_median_params_snap_to_grid_int_axis():
+    """Median values for integer axes snap to nearest grid value."""
+    fold_winners = [
+        {"adx_length": 14},
+        {"adx_length": 14},
+        {"adx_length": 20},
+        {"adx_length": 30},
+    ]
+    grid = {"adx_length": [10, 14, 20, 30]}
+    snapped = median_params_snap_to_grid(fold_winners, grid)
+    # statistics.median of [14,14,20,30] = (14+20)/2 = 17.
+    # Nearest grid values 14 and 20 are equidistant — ties go LOWER (conservative).
+    assert snapped["adx_length"] == 14
+
+
+def test_median_params_snap_to_grid_float_axis():
+    """Float axes snap to nearest grid value by absolute distance."""
+    fold_winners = [
+        {"atr_multiplier": 2.5},
+        {"atr_multiplier": 3.5},
+        {"atr_multiplier": 4.5},
+        {"atr_multiplier": 6.0},
+    ]
+    grid = {"atr_multiplier": [2.5, 3.5, 4.5, 6.0]}
+    snapped = median_params_snap_to_grid(fold_winners, grid)
+    # Median of [2.5, 3.5, 4.5, 6.0] = 4.0. Grid values 3.5 and 4.5 are equidistant.
+    # Convention: ties go LOWER for conservatism.
+    assert snapped["atr_multiplier"] == 3.5
+
+
+def test_median_params_snap_grid_with_non_numeric():
+    """Non-numeric params (bools, strings) take the mode (most common value)."""
+    fold_winners = [
+        {"use_filter": True},
+        {"use_filter": True},
+        {"use_filter": False},
+    ]
+    grid = {"use_filter": [True, False]}
+    snapped = median_params_snap_to_grid(fold_winners, grid)
+    assert snapped["use_filter"] is True  # mode of [T,T,F] = T

@@ -13,7 +13,8 @@ warnings; the human decides whether to deploy.
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
+import statistics
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 
@@ -76,3 +77,70 @@ def holdout_warning_flags(
         ):
             flags.append("max_dd_exceeds_threshold")
     return flags
+
+
+def median_params_snap_to_grid(
+    fold_winners: list,
+    grid: Dict[str, list],
+) -> Dict[str, Any]:
+    """Per axis: take median across fold winners, snap to nearest grid value.
+
+    Numeric axes use statistics.median. When the median falls exactly between
+    two grid values (tie), the lower value is chosen (more conservative).
+    Non-numeric axes (bool, str) use mode (most common value).
+
+    Args:
+        fold_winners: List of per-fold winner-params dicts (one per fold).
+        grid: The parameter grid the strategy was optimized over.
+              Each axis's value list provides the snap targets.
+
+    Returns:
+        Dict mapping axis name to the snapped median value.
+    """
+    if not fold_winners:
+        return {}
+    result: Dict[str, Any] = {}
+    axes: set = set()
+    for w in fold_winners:
+        axes.update(w.keys())
+    for axis in axes:
+        values = [w.get(axis) for w in fold_winners if axis in w]
+        if not values:
+            continue
+        # Try numeric path first — but skip if values are booleans or strings
+        # (booleans subclass int in Python, so float(True) == 1.0, losing the type).
+        all_bool = all(isinstance(v, bool) for v in values)
+        all_str = all(isinstance(v, str) for v in values)
+        try:
+            if all_bool or all_str:
+                raise TypeError("non-numeric axis; use mode path")
+            numeric_vals = [float(v) for v in values]
+            med = statistics.median(numeric_vals)
+            grid_vals = [float(g) for g in grid.get(axis, [med])]
+            if not grid_vals:
+                result[axis] = med
+                continue
+            # Snap: find grid value with smallest absolute distance. Ties -> lower.
+            grid_vals_sorted = sorted(grid_vals)
+            best = grid_vals_sorted[0]
+            best_dist = abs(best - med)
+            for v in grid_vals_sorted[1:]:
+                d = abs(v - med)
+                # Strict-less means earlier tied values win (lower-is-conservative).
+                if d < best_dist:
+                    best = v
+                    best_dist = d
+            # Preserve the original numeric type from the grid if possible (int vs float).
+            original_first = grid.get(axis, [best])[0]
+            if isinstance(original_first, int) and best == int(best):
+                result[axis] = int(best)
+            else:
+                result[axis] = best
+        except (TypeError, ValueError):
+            # Non-numeric axis: use mode.
+            try:
+                result[axis] = statistics.mode(values)
+            except statistics.StatisticsError:
+                # No unique mode — fall back to first.
+                result[axis] = values[0]
+    return result
