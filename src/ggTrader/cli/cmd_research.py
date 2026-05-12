@@ -60,8 +60,8 @@ def register_research_parser(subparsers: argparse._SubParsersAction):
         type=str,
         default=None,
         help="Comma-separated explicit symbol list (e.g. BTC-USD,ETH-USD,TRX-USD). "
-             "When set, skips the volume-based universe fetch and uses these symbols directly. "
-             "Useful for small-N iteration on diagnostic coins.",
+        "When set, skips the volume-based universe fetch and uses these symbols directly. "
+        "Useful for small-N iteration on diagnostic coins.",
     )
 
 
@@ -138,6 +138,58 @@ def merge_worker_results(research_dir: Path, num_workers: int) -> int:
     with open(out_path, "w") as f:
         json.dump(merged_base, f, indent=4)
 
+    # Snapshot wfo_cache payloads to disk so per-fold wfo_stats (raw IS/OOS
+    # ann_returns, sharpe, sortino, params) survive subsequent cache purges.
+    # The cache is keyed on _WFO_RELEVANT_CONFIG_KEYS — values change with
+    # fees/slippage/N_SPLITS/etc, so cross-experiment comparisons used to lose
+    # data when one run purged before another. This snapshot fixes that.
+    try:
+        import os as _os
+
+        from sqlalchemy import create_engine, text
+
+        db_url = _os.environ.get(
+            "GGTRADER_DB_URL",
+            "postgresql+psycopg2://ggtrader:ggtrader@host.docker.internal:5433/ggtrader",
+        )
+        symbols = list(merged_base.get("configuration", {}).get("symbols") or [])
+        # symbols stored in DB are bare ticker (e.g. "BTC-USD"); merged_base
+        # already holds them post-normalization. If empty (all coins dropped),
+        # snapshot the entire current cache contents instead.
+        eng = create_engine(db_url)
+        with eng.begin() as conn:
+            if symbols:
+                rows = conn.execute(
+                    text(
+                        "SELECT symbol, strategy_name, exit_name, payload "
+                        "FROM wfo_cache WHERE symbol = ANY(:syms)"
+                    ),
+                    {"syms": symbols},
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    text("SELECT symbol, strategy_name, exit_name, payload FROM wfo_cache")
+                ).fetchall()
+        snapshot = [
+            {
+                "symbol": sym,
+                "strategy": strat,
+                "exit": exit,
+                "payload": payload,
+            }
+            for sym, strat, exit, payload in rows
+        ]
+        snap_path = research_dir / "wfo_stats_snapshot.json"
+        with open(snap_path, "w") as f:
+            json.dump(snapshot, f, indent=2, default=str)
+        print(
+            f"  [merge] Snapshotted wfo_cache: {len(snapshot)} (symbol, combo) "
+            f"rows → {snap_path.name}"
+        )
+    except Exception as snap_exc:
+        # Non-fatal — snapshot is for analysis convenience, not pipeline correctness.
+        print(f"  [merge] WARNING: wfo_stats snapshot failed: {snap_exc!r}")
+
     # Persist the merged run as a row in the ``runs`` table so the live trader's
     # state_manager.get_latest_research_run can discover it. Per-worker rows
     # already exist (one per shard), but the consolidated set of per-coin params
@@ -170,8 +222,9 @@ def merge_worker_results(research_dir: Path, num_workers: int) -> int:
             metrics=merged_base.get("results", {}),
             pipeline_stage="research",
             asset_class=merged_base.get("asset_class")
-                or merged_base.get("configuration", {})
-                .get("_raw_config", {}).get("ASSET_CLASS", "crypto"),
+            or merged_base.get("configuration", {})
+            .get("_raw_config", {})
+            .get("ASSET_CLASS", "crypto"),
             strategy_params=merged_base.get("strategy_parameters", {}),
             phase_stats=phase_stats,
             run_dir=str(research_dir),
@@ -399,11 +452,7 @@ def run_research(args: argparse.Namespace):
 
         # Main progress bar for finished workers
         main_pbar = tqdm(
-            total=len(processes),
-            desc="Total Workers",
-            unit="worker",
-            position=0,
-            leave=True
+            total=len(processes), desc="Total Workers", unit="worker", position=0, leave=True
         )
 
         # Per-worker progress bars
@@ -411,11 +460,11 @@ def run_research(args: argparse.Namespace):
         for i in range(len(processes)):
             pbar = tqdm(
                 total=100,
-                desc=f"Worker {i+1}",
+                desc=f"Worker {i + 1}",
                 position=i + 1,
                 leave=False,
                 dynamic_ncols=True,
-                bar_format="{desc} {percentage:3.0f}%|{bar:20}| [{elapsed}]"
+                bar_format="{desc} {percentage:3.0f}%|{bar:20}| [{elapsed}]",
             )
             worker_pbars.append(pbar)
 
@@ -437,7 +486,7 @@ def run_research(args: argparse.Namespace):
                 # Update per-worker status by reading log tails
                 for i, log_path in enumerate(log_paths):
                     if not alive[i]:
-                        worker_pbars[i].set_description(f"Worker {i+1}: Finished")
+                        worker_pbars[i].set_description(f"Worker {i + 1}: Finished")
                         worker_pbars[i].n = 100
                         worker_pbars[i].refresh()
                         continue
@@ -477,7 +526,8 @@ def run_research(args: argparse.Namespace):
                                     msg += f"F{f_idx}/{f_total}"
                                     # Fold contribution within current combo
                                     fold_prog = (
-                                        int(f_idx) / int(f_total)
+                                        int(f_idx)
+                                        / int(f_total)
                                         * (100 / int(s_total) / int(c_total))
                                     )
                                     total_progress += fold_prog
@@ -492,10 +542,10 @@ def run_research(args: argparse.Namespace):
                         desc_str = msg if msg else "Init..."
                         # Prevent console wrap by truncating long descriptions
                         if len(desc_str) > 40:
-                             desc_str = desc_str[:37] + "..."
+                            desc_str = desc_str[:37] + "..."
 
-                        worker_pbars[i].set_description(f"W{i+1} {desc_str}")
-                        worker_pbars[i].n = min(99, total_progress) # Save 100 for true finish
+                        worker_pbars[i].set_description(f"W{i + 1} {desc_str}")
+                        worker_pbars[i].n = min(99, total_progress)  # Save 100 for true finish
                         worker_pbars[i].refresh()
                     except (OSError, ValueError, IndexError):
                         pass
@@ -566,14 +616,19 @@ def run_research(args: argparse.Namespace):
     final_cmd = [
         sys.executable,
         "scripts/run_walk_forward_optimization.py",
-        "--symbols-file", str(universe_path.absolute()),
+        "--symbols-file",
+        str(universe_path.absolute()),
         "--phase2",
         "--phase3",
-        "--run-dir", str(research_dir.absolute()),
-        "--pipeline-stage", "research",
+        "--run-dir",
+        str(research_dir.absolute()),
+        "--pipeline-stage",
+        "research",
         "--no-progress",
-        "--start-date", start_date,
-        "--end-date", end_date,
+        "--start-date",
+        start_date,
+        "--end-date",
+        end_date,
     ]
     subprocess.run(final_cmd, check=True)
 

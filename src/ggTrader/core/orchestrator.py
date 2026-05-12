@@ -1,7 +1,6 @@
 """Centralized orchestration logic for backtesting, sensitivity analysis, and WFO."""
 
 import time
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -126,8 +125,10 @@ def _apply_tiered_regime_mask(
         columns=combined_entries.columns,
     )
 
-    print(f"\n  [Regime Filter] EMA({n_warmup}) BTC leader filter — blocked {n_blocked} signals "
-          f"(threshold={threshold:.2f}).")
+    print(
+        f"\n  [Regime Filter] EMA({n_warmup}) BTC leader filter — blocked {n_blocked} signals "
+        f"(threshold={threshold:.2f})."
+    )
     for tier_name, syms in by_tier.items():
         if syms:
             print(f"    {tier_name:<4}: {', '.join(syms)}")
@@ -195,7 +196,8 @@ def _apply_wfo_selection_gates(
     if min_robust_cfg is not None:
         min_robust = float(min_robust_cfg)
         skipped = [
-            sym for sym, r in results.items()
+            sym
+            for sym, r in results.items()
             if not np.isfinite(r["robustness_score"]) or r["robustness_score"] < min_robust
         ]
         if skipped:
@@ -205,12 +207,14 @@ def _apply_wfo_selection_gates(
             )
             results = {sym: r for sym, r in results.items() if sym not in skipped}
         if gate_stats is not None:
-            gate_stats["gates"].append({
-                "name": "MIN_ROBUSTNESS_SCORE",
-                "threshold": min_robust,
-                "dropped_count": len(skipped),
-                "dropped_symbols": skipped,
-            })
+            gate_stats["gates"].append(
+                {
+                    "name": "MIN_ROBUSTNESS_SCORE",
+                    "threshold": min_robust,
+                    "dropped_count": len(skipped),
+                    "dropped_symbols": skipped,
+                }
+            )
         if not results:
             print(
                 "  WARNING: All coins dropped by robustness gate — lowering threshold or "
@@ -236,14 +240,8 @@ def _apply_wfo_selection_gates(
             for sym, r in list(results.items()):
                 wfo_stats = r.get("wfo_stats") or []
                 # Span derived from earliest train_start to latest test_end across folds.
-                ts_starts = [
-                    f.get("train_start") for f in wfo_stats
-                    if f and f.get("train_start")
-                ]
-                ts_ends = [
-                    f.get("test_end") for f in wfo_stats
-                    if f and f.get("test_end")
-                ]
+                ts_starts = [f.get("train_start") for f in wfo_stats if f and f.get("train_start")]
+                ts_ends = [f.get("test_end") for f in wfo_stats if f and f.get("test_end")]
                 if not ts_starts or not ts_ends:
                     # No fold timestamps → can't measure history; skip the gate for this coin.
                     continue
@@ -271,27 +269,32 @@ def _apply_wfo_selection_gates(
                 )
                 results = {sym: r for sym, r in results.items() if sym not in set(dropped)}
             if gate_stats is not None:
-                gate_stats["gates"].append({
-                    "name": "HISTORY_SHRINKAGE",
-                    "threshold": min_robust,
-                    "target_years": target_years,
-                    "dropped_count": len(skipped_hs),
-                    "dropped_symbols": [s for s, _, _, _ in skipped_hs],
-                    "dropped_details": [
-                        {"symbol": s, "years": yrs, "shrink": sh, "effective_score": eff}
-                        for s, yrs, sh, eff in skipped_hs
-                    ],
-                })
+                gate_stats["gates"].append(
+                    {
+                        "name": "HISTORY_SHRINKAGE",
+                        "threshold": min_robust,
+                        "target_years": target_years,
+                        "dropped_count": len(skipped_hs),
+                        "dropped_symbols": [s for s, _, _, _ in skipped_hs],
+                        "dropped_details": [
+                            {"symbol": s, "years": yrs, "shrink": sh, "effective_score": eff}
+                            for s, yrs, sh, eff in skipped_hs
+                        ],
+                    }
+                )
 
     # Gate 2: minimum fold consistency
     min_consistency_cfg = config.get("MIN_FOLD_CONSISTENCY")
     if min_consistency_cfg is not None:
         min_consistency = float(min_consistency_cfg)
         skipped_fc = [
-            sym for sym, r in results.items()
-            if (r.get("fold_consistency") is None
+            sym
+            for sym, r in results.items()
+            if (
+                r.get("fold_consistency") is None
                 or not np.isfinite(float(r["fold_consistency"]))
-                or float(r["fold_consistency"]) < min_consistency)
+                or float(r["fold_consistency"]) < min_consistency
+            )
         ]
         if skipped_fc:
             print(
@@ -300,12 +303,14 @@ def _apply_wfo_selection_gates(
             )
             results = {sym: r for sym, r in results.items() if sym not in skipped_fc}
         if gate_stats is not None:
-            gate_stats["gates"].append({
-                "name": "MIN_FOLD_CONSISTENCY",
-                "threshold": min_consistency,
-                "dropped_count": len(skipped_fc),
-                "dropped_symbols": skipped_fc,
-            })
+            gate_stats["gates"].append(
+                {
+                    "name": "MIN_FOLD_CONSISTENCY",
+                    "threshold": min_consistency,
+                    "dropped_count": len(skipped_fc),
+                    "dropped_symbols": skipped_fc,
+                }
+            )
         if not results:
             print(
                 "  WARNING: All coins dropped by consistency gate — lowering threshold or "
@@ -325,7 +330,8 @@ def _apply_wfo_selection_gates(
         for sym, r in results.items():
             wfo_stats = r.get("wfo_stats", [])
             n_valid = sum(
-                1 for f in wfo_stats
+                1
+                for f in wfo_stats
                 if f is not None
                 and f.get("is_sharpe") is not None
                 and np.isfinite(float(f["is_sharpe"]))
@@ -343,13 +349,15 @@ def _apply_wfo_selection_gates(
         else:
             dropped_syms = []
         if gate_stats is not None:
-            gate_stats["gates"].append({
-                "name": "MIN_VALID_TRAIN_FOLDS",
-                "threshold": min_valid_folds,
-                "dropped_count": len(skipped_vf),
-                "dropped_symbols": dropped_syms,
-                "dropped_details": [{"symbol": s, "valid_folds": n} for s, n in skipped_vf],
-            })
+            gate_stats["gates"].append(
+                {
+                    "name": "MIN_VALID_TRAIN_FOLDS",
+                    "threshold": min_valid_folds,
+                    "dropped_count": len(skipped_vf),
+                    "dropped_symbols": dropped_syms,
+                    "dropped_details": [{"symbol": s, "valid_folds": n} for s, n in skipped_vf],
+                }
+            )
         if not results:
             print(
                 "  WARNING: All coins dropped by valid-fold gate — lower MIN_VALID_TRAIN_FOLDS "
@@ -360,6 +368,7 @@ def _apply_wfo_selection_gates(
     max_per_strat_cfg = config.get("MAX_COINS_PER_STRATEGY")
     if max_per_strat_cfg is not None:
         from collections import defaultdict
+
         max_per_strat = int(max_per_strat_cfg)
         strat_groups: dict = defaultdict(list)
         for sym, r in results.items():
@@ -381,12 +390,14 @@ def _apply_wfo_selection_gates(
             )
             results = {sym: r for sym, r in results.items() if sym not in diversity_dropped}
         if gate_stats is not None:
-            gate_stats["gates"].append({
-                "name": "MAX_COINS_PER_STRATEGY",
-                "threshold": max_per_strat,
-                "dropped_count": len(diversity_dropped),
-                "dropped_symbols": diversity_dropped,
-            })
+            gate_stats["gates"].append(
+                {
+                    "name": "MAX_COINS_PER_STRATEGY",
+                    "threshold": max_per_strat,
+                    "dropped_count": len(diversity_dropped),
+                    "dropped_symbols": diversity_dropped,
+                }
+            )
 
     if gate_stats is not None:
         gate_stats["n_kept"] = len(results)
@@ -497,13 +508,20 @@ def run_frozen_params_combined_backtest(
         candidates: List[Tuple[str, str, Dict[str, Any], str]] = [rank1]
         for k_idx, alt in enumerate(per_coin_results[symbol].get("top_combos", []) or [], start=1):
             # Skip the rank-1 (already added)
-            if (alt.get("strategy") == rank1[0] and alt.get("exit") == rank1[1]
-                    and alt.get("params") == rank1[2]):
+            if (
+                alt.get("strategy") == rank1[0]
+                and alt.get("exit") == rank1[1]
+                and alt.get("params") == rank1[2]
+            ):
                 continue
-            candidates.append((
-                alt.get("strategy"), alt.get("exit"), alt.get("params"),
-                f" [fallback rank {k_idx + 1}]",
-            ))
+            candidates.append(
+                (
+                    alt.get("strategy"),
+                    alt.get("exit"),
+                    alt.get("params"),
+                    f" [fallback rank {k_idx + 1}]",
+                )
+            )
 
         robustness_score = per_coin_results[symbol]["robustness_score"]
         selection_reason = per_coin_results[symbol].get("selection_reason", "wfo_robustness")
@@ -547,10 +565,16 @@ def run_frozen_params_combined_backtest(
 
                 # Passed the gate.
                 chosen = {
-                    "strategy": strategy_name, "exit": exit_name, "params": best_params,
-                    "label": best_label, "suffix": suffix,
-                    "entries": entries, "exits": exits, "close": close,
-                    "stats": stats, "total_trades": total_trades,
+                    "strategy": strategy_name,
+                    "exit": exit_name,
+                    "params": best_params,
+                    "label": best_label,
+                    "suffix": suffix,
+                    "entries": entries,
+                    "exits": exits,
+                    "close": close,
+                    "stats": stats,
+                    "total_trades": total_trades,
                     "trades_per_year": trades_per_year,
                 }
                 break
@@ -562,7 +586,8 @@ def run_frozen_params_combined_backtest(
             tpy, nt, lbl = last_failure if last_failure else (float("nan"), 0, "n/a")
             trade_freq_dropped.append((symbol, tpy, nt))
             per_coin_final_stats[symbol] = {
-                "strategy": rank1[0], "exit": rank1[1],
+                "strategy": rank1[0],
+                "exit": rank1[1],
                 "params": _to_native(rank1[2]),
                 "selection_reason": selection_reason,
                 "dropped_by_gate": "MIN_TRADES_PER_YEAR",
@@ -631,7 +656,9 @@ def run_frozen_params_combined_backtest(
             }
             try:
                 results_manager.save_run_results(
-                    params={"per_coin": {}}, metrics={}, metadata=metadata,
+                    params={"per_coin": {}},
+                    metrics={},
+                    metadata=metadata,
                 )
             except Exception as save_exc:
                 print(f"  [Phase 3] WARNING: failed to save empty worker results: {save_exc!r}")
@@ -661,6 +688,7 @@ def run_frozen_params_combined_backtest(
     stats_cutoff = config.get("PHASE3_STATS_CUTOFF")
     if stats_cutoff is not None:
         import pandas as _pd
+
         cutoff_ts = _pd.Timestamp(stats_cutoff)
         if cutoff_ts.tz is None:
             cutoff_ts = cutoff_ts.tz_localize("UTC")
@@ -724,13 +752,10 @@ def run_frozen_params_combined_backtest(
         # to get a Series indexed by the original asset columns.
         _trade_counts = final_pf.trades.count(group_by=False)
         _counts_iter = (
-            _trade_counts.values
-            if hasattr(_trade_counts, "values")
-            else list(_trade_counts)
+            _trade_counts.values if hasattr(_trade_counts, "values") else list(_trade_counts)
         )
         _zero_post = [
-            col for col, cnt in zip(combined_entries.columns, _counts_iter)
-            if int(cnt) == 0
+            col for col, cnt in zip(combined_entries.columns, _counts_iter) if int(cnt) == 0
         ]
         if _zero_post:
             _zero_syms = [col[-1] if isinstance(col, tuple) else str(col) for col in _zero_post]
@@ -859,9 +884,7 @@ def run_frozen_params_combined_backtest(
         print(f"\nMulti-Strategy WFO Results saved to: {results_manager.run_dir}")
 
     if trade_freq_dropped:
-        details = ", ".join(
-            f"{s}({tpy:.1f}/yr,{n})" for s, tpy, n in trade_freq_dropped
-        )
+        details = ", ".join(f"{s}({tpy:.1f}/yr,{n})" for s, tpy, n in trade_freq_dropped)
         print(
             f"\n  [Trade-frequency gate] Dropped {len(trade_freq_dropped)} coin(s) below "
             f"MIN_TRADES_PER_YEAR={min_tpy}: {details}"
@@ -925,6 +948,7 @@ def run_multi_strategy_per_coin_wfo(
     # mask, fold bounds, etc.) must operate on the 80% WFO window only,
     # never on holdout-era bars.
     from ggTrader.core.holdout import split_train_holdout
+
     holdout_fraction = float(config.get("HOLDOUT_FRACTION", 0.20))
     wfo_ohlcv, holdout_ohlcv = split_train_holdout(ohlcv, holdout_fraction)
     print(
@@ -1011,8 +1035,12 @@ def run_multi_strategy_per_coin_wfo(
 
                     _cached = (
                         _wfo_cache.get(
-                            symbol, strategy_name, exit_name,
-                            param_grid, config_combo, symbol_ohlcv,
+                            symbol,
+                            strategy_name,
+                            exit_name,
+                            param_grid,
+                            config_combo,
+                            symbol_ohlcv,
                         )
                         if _wfo_cache is not None
                         else None
@@ -1035,8 +1063,14 @@ def run_multi_strategy_per_coin_wfo(
                         )
                         if _wfo_cache is not None:
                             _wfo_cache.put(
-                                symbol, strategy_name, exit_name, param_grid,
-                                config_combo, symbol_ohlcv, wfo_stats, is_metrics_by_fold,
+                                symbol,
+                                strategy_name,
+                                exit_name,
+                                param_grid,
+                                config_combo,
+                                symbol_ohlcv,
+                                wfo_stats,
+                                is_metrics_by_fold,
                             )
 
                     oos_metrics_by_fold = {
@@ -1065,7 +1099,8 @@ def run_multi_strategy_per_coin_wfo(
 
                     # OOS-direct robustness: recency-weighted mean of per-fold OOS Sharpe.
                     oos_rob_combo, fold_cons_combo = _calculate_oos_robustness(
-                        oos_metrics_by_fold, config=config,
+                        oos_metrics_by_fold,
+                        config=config,
                         oos_bear_by_fold=oos_bear_by_fold,
                     )
                     # Layer 2 selection uses train-window robustness only (textbook reset).
@@ -1073,9 +1108,15 @@ def run_multi_strategy_per_coin_wfo(
                     # both would leak test data into the cross-combo decision.
                     gate_score = robustness_score
 
+                    # NB: `IS_rank_score` is the BEST cell's -mean(rank_Sortino,
+                    # rank_Calmar, rank_PF) within this combo's param grid (composite
+                    # mode). Structurally bounded in [-N_cells, -1], always negative.
+                    # It is NOT a Sortino value — do not interpret the sign as
+                    # "strategy loses money on IS." For raw IS profitability use
+                    # `train_annualized_return` in `wfo_stats` per fold.
                     print(
-                        f"    {label} robustness: IS={_format_robustness_metric(robustness_score)} "
-                        f"OOS={_format_robustness_metric(oos_rob_combo)} "
+                        f"    {label} IS_rank_score={_format_robustness_metric(robustness_score)} "
+                        f"OOS_sharpe={_format_robustness_metric(oos_rob_combo)} "
                         f"gate={_format_robustness_metric(gate_score)} "
                         f"consistency={fold_cons_combo:.0%}"
                     )
@@ -1088,16 +1129,13 @@ def run_multi_strategy_per_coin_wfo(
                         for fold in wfo_stats
                     ]
                     fold_test_returns = [
-                        float(fold.get("oos_annualized_return", float("nan")))
-                        for fold in wfo_stats
+                        float(fold.get("oos_annualized_return", float("nan"))) for fold in wfo_stats
                     ]
                     fold_train_dds = [
-                        float(fold.get("train_max_dd", float("nan")))
-                        for fold in wfo_stats
+                        float(fold.get("train_max_dd", float("nan"))) for fold in wfo_stats
                     ]
                     fold_test_dds = [
-                        float(fold.get("oos_max_dd", float("nan")))
-                        for fold in wfo_stats
+                        float(fold.get("oos_max_dd", float("nan"))) for fold in wfo_stats
                     ]
                     fold_params_list = [fold.get("params", {}) for fold in wfo_stats]
 
@@ -1121,6 +1159,16 @@ def run_multi_strategy_per_coin_wfo(
                         },
                     )
 
+                    _gv = gate_result.get("metrics", {})
+                    _gf = gate_result.get("failures", [])
+                    _gp = "PASS" if gate_result.get("passed") else "FAIL"
+                    print(
+                        f"    [Gates] {symbol} {strategy_name}+{exit_name}: {_gp} "
+                        f"wfe={_gv.get('wfe')} prof={_gv.get('profitable_fraction')} "
+                        f"cv={_gv.get('param_cv')} dd={_gv.get('dd_ratio')} "
+                        f"failures={_gf}"
+                    )
+
                     # Track every (combo, gate_score) for the post-Phase-3 top-K fallback.
                     # Only finite scores; NaN/-inf get filtered later when sorting.
                     if np.isfinite(gate_score):
@@ -1128,34 +1176,34 @@ def run_multi_strategy_per_coin_wfo(
                             _to_native(fold.get("params", {})) for fold in wfo_stats
                         ]
                         _wfo_stats_snap = [_to_native(dict(fold)) for fold in wfo_stats]
-                        _fc = (
-                            float(fold_cons_combo)
-                            if np.isfinite(fold_cons_combo)
-                            else None
+                        _fc = float(fold_cons_combo) if np.isfinite(fold_cons_combo) else None
+                        top_combos_tracker.append(
+                            {
+                                "strategy": strategy_name,
+                                "exit": exit_name,
+                                "params": _to_native(best_robust_params),
+                                "gate_score": float(gate_score),
+                                # WFO textbook reset Task 7 inputs — populate every field
+                                # here so Task 7's per-coin selection, median-snap, and
+                                # holdout-DD computation don't have to reach back into
+                                # local state. Each field is a snapshot taken once.
+                                "wfo_aggregate_gates": gate_result,
+                                "fold_params": _fold_params_snap,
+                                "param_grid": dict(param_grid),
+                                "mean_sortino": float(
+                                    np.nanmean(
+                                        [fold.get("sortino", float("nan")) for fold in wfo_stats]
+                                    )
+                                ),
+                                # wfo_stats_ref: full per-fold stats list for this combo,
+                                # consumed by Task 7's holdout-DD comparison (needs the
+                                # worst per-fold oos_max_dd to compute the 1.5x warning
+                                # threshold). _to_native unwraps numpy types so the dict
+                                # is JSON-safe if any downstream code serializes it.
+                                "wfo_stats_ref": _wfo_stats_snap,
+                                "fold_consistency": _fc,
+                            }
                         )
-                        top_combos_tracker.append({
-                            "strategy": strategy_name,
-                            "exit": exit_name,
-                            "params": _to_native(best_robust_params),
-                            "gate_score": float(gate_score),
-                            # WFO textbook reset Task 7 inputs — populate every field
-                            # here so Task 7's per-coin selection, median-snap, and
-                            # holdout-DD computation don't have to reach back into
-                            # local state. Each field is a snapshot taken once.
-                            "wfo_aggregate_gates": gate_result,
-                            "fold_params": _fold_params_snap,
-                            "param_grid": dict(param_grid),
-                            "mean_sortino": float(np.nanmean(
-                                [fold.get("sortino", float("nan")) for fold in wfo_stats]
-                            )),
-                            # wfo_stats_ref: full per-fold stats list for this combo,
-                            # consumed by Task 7's holdout-DD comparison (needs the
-                            # worst per-fold oos_max_dd to compute the 1.5x warning
-                            # threshold). _to_native unwraps numpy types so the dict
-                            # is JSON-safe if any downstream code serializes it.
-                            "wfo_stats_ref": _wfo_stats_snap,
-                            "fold_consistency": _fc,
-                        })
 
             # Per-coin selection (Task 7 textbook reset):
             # Filter combos to those that passed all 4 aggregate gates from Task 6.
@@ -1163,7 +1211,8 @@ def run_multi_strategy_per_coin_wfo(
             # Tie-break (within 5% of top): lowest parameter CV.
             # Coin is dropped entirely when no combo passes all 4 gates.
             gate_passing_combos = [
-                c for c in top_combos_tracker
+                c
+                for c in top_combos_tracker
                 if c.get("wfo_aggregate_gates", {}).get("passed") is True
             ]
 
@@ -1177,9 +1226,7 @@ def run_multi_strategy_per_coin_wfo(
             def _combo_mean_sortino(combo: Dict[str, Any]) -> float:
                 return float(combo.get("mean_sortino", float("-inf")))
 
-            sorted_passers = sorted(
-                gate_passing_combos, key=_combo_mean_sortino, reverse=True
-            )
+            sorted_passers = sorted(gate_passing_combos, key=_combo_mean_sortino, reverse=True)
             top_score = _combo_mean_sortino(sorted_passers[0])
             # Tie-break: within 5% of top Sortino, prefer lowest param CV.
             if top_score > 0:
@@ -1194,15 +1241,18 @@ def run_multi_strategy_per_coin_wfo(
             if len(tied_combos) > 1:
                 chosen_combo = min(
                     tied_combos,
-                    key=lambda c: c.get("wfo_aggregate_gates", {}).get(
-                        "metrics", {}
-                    ).get("param_cv", float("inf")),
+                    key=lambda c: (
+                        c.get("wfo_aggregate_gates", {})
+                        .get("metrics", {})
+                        .get("param_cv", float("inf"))
+                    ),
                 )
             else:
                 chosen_combo = sorted_passers[0]
 
             # Median-fold params for the chosen combo, snapped to grid.
             from ggTrader.core.holdout import median_params_snap_to_grid
+
             chosen_fold_params = chosen_combo.get("fold_params", [])
             chosen_grid = chosen_combo.get("param_grid", {})
             median_params = median_params_snap_to_grid(chosen_fold_params, chosen_grid)
@@ -1219,9 +1269,7 @@ def run_multi_strategy_per_coin_wfo(
                 "best_params": median_params,
                 "robustness_score": chosen_combo["gate_score"],
                 "is_robustness_score": chosen_combo["gate_score"],
-                "oos_robustness_score": float(
-                    chosen_combo.get("mean_sortino", float("nan"))
-                ),
+                "oos_robustness_score": float(chosen_combo.get("mean_sortino", float("nan"))),
                 "fold_consistency": chosen_combo.get("fold_consistency"),
                 "wfo_stats": chosen_wfo_stats,
                 "robust_top_5": [],
@@ -1266,9 +1314,7 @@ def run_multi_strategy_per_coin_wfo(
 
             # Holdout evaluation: run median params on the 20% locked holdout.
             # One-shot. Result is reported with warning flags (not a gate).
-            holdout_symbol_data = (
-                holdout_ohlcv[[symbol]] if len(holdout_ohlcv) > 0 else None
-            )
+            holdout_symbol_data = holdout_ohlcv[[symbol]] if len(holdout_ohlcv) > 0 else None
             if holdout_symbol_data is not None and len(holdout_symbol_data) > 0:
                 try:
                     holdout_engine = FastBacktest(
@@ -1291,39 +1337,30 @@ def run_multi_strategy_per_coin_wfo(
                         holdout_trades = None
                     # Annualize the holdout return via compounding.
                     from ggTrader.core.wfo_aggregate import infer_bars_per_year
-                    bars_per_year = infer_bars_per_year(
-                        holdout_symbol_data.index, config=config
-                    )
+
+                    bars_per_year = infer_bars_per_year(holdout_symbol_data.index, config=config)
                     n_holdout_bars = float(len(holdout_symbol_data))
                     if (
                         n_holdout_bars > 0
                         and np.isfinite(holdout_total_ret)
                         and holdout_total_ret > -1.0
                     ):
-                        holdout_ann_ret = (
-                            (1.0 + holdout_total_ret)
-                            ** (bars_per_year / n_holdout_bars)
-                            - 1.0
-                        )
+                        holdout_ann_ret = (1.0 + holdout_total_ret) ** (
+                            bars_per_year / n_holdout_bars
+                        ) - 1.0
                     else:
                         holdout_ann_ret = float("nan")
                     # Worst test-fold DD from the chosen combo's wfo_stats.
-                    test_dds = [
-                        fold.get("oos_max_dd", float("nan"))
-                        for fold in chosen_wfo_stats
-                    ]
-                    finite_test_dds = [
-                        d for d in test_dds if d is not None and np.isfinite(d)
-                    ]
+                    test_dds = [fold.get("oos_max_dd", float("nan")) for fold in chosen_wfo_stats]
+                    finite_test_dds = [d for d in test_dds if d is not None and np.isfinite(d)]
                     worst_test_dd = min(finite_test_dds) if finite_test_dds else None
 
                     from ggTrader.core.holdout import holdout_warning_flags
+
                     warning_flags = holdout_warning_flags(
                         holdout_ann_return=holdout_ann_ret,
                         holdout_max_dd=holdout_max_dd,
-                        worst_wfo_test_dd=(
-                            worst_test_dd if worst_test_dd is not None else 0.0
-                        ),
+                        worst_wfo_test_dd=(worst_test_dd if worst_test_dd is not None else 0.0),
                     )
 
                     trade_count_str = (
@@ -1393,12 +1430,14 @@ def run_multi_strategy_per_coin_wfo(
         per_coin_results = {
             s: r for s, r in per_coin_results.items() if s not in set(trade_freq_dropped)
         }
-        gate_stats.setdefault("gates", []).append({
-            "name": "MIN_TRADES_PER_YEAR",
-            "threshold": config.get("MIN_TRADES_PER_YEAR"),
-            "dropped_count": len(trade_freq_dropped),
-            "dropped_symbols": list(trade_freq_dropped),
-        })
+        gate_stats.setdefault("gates", []).append(
+            {
+                "name": "MIN_TRADES_PER_YEAR",
+                "threshold": config.get("MIN_TRADES_PER_YEAR"),
+                "dropped_count": len(trade_freq_dropped),
+                "dropped_symbols": list(trade_freq_dropped),
+            }
+        )
 
     return {
         "final_portfolio": final_pf,

@@ -13,16 +13,34 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
     # grids = fewer noise draws = smaller expected outlier. Target ≤16 cells
     # per (entry × exit) pair. Largest cross product post-coarsening: 4×4 = 16.
     "psar_adx": {
-        # adx_length: 14 (short lookback, responsive) vs 30 (long, smooth).
-        # Dropped 20 (interpolation).
-        # adx_threshold: 20 (loose trend filter) vs 30 (tight). Dropped 25 (interp)
-        # and 35 (extreme — rarely fires).
-        "sar_acceleration": [0.02],
-        "sar_maximum": [0.1],
+        # Residue cleanup (2026-05-11): three STRONG single-value pins inherited
+        # from commit 33d863d (2026-03-27) were justified by "100% selection
+        # across 261 pre-reset WFO runs" — a corpus generated under the
+        # leaky-selection methodology that the textbook reset later invalidated.
+        # Re-expanded to theory-justified pairs (articulation-disciplined: each
+        # pair is behaviorally distinct, NOT survivor-tuned to frictionless tops).
+        #
+        # sar_acceleration: 0.02 (Wilder canonical) vs 0.03 (slightly faster
+        #   acceleration suited to higher-vol 4h crypto). 0.01 already domain-
+        #   rejected by c8a53c2 ("step so small SAR barely accelerates").
+        # sar_maximum: 0.1 (half-canonical, conservative trailing buffer) vs
+        #   0.2 (canonical Wilder maximum AF, responsive trailing).
+        # use_dmp_cross: False (ADX-threshold entry) vs True (DI+/DI- cross
+        #   entry) — fundamentally distinct ADX-based entry logics; pinning to
+        #   one removes an entire textbook entry mode from search.
+        # adx_length: 14 (Wilder canonical, responsive) vs 30 (long-period
+        #   smoothing). Articulation-defensible pair; empirically-dropped 10
+        #   has no canonical theory backing.
+        # adx_threshold: 20 (loose trend filter) vs 30 (tight). Articulation pair.
+        "sar_acceleration": [0.02, 0.03],
+        "sar_maximum": [0.1, 0.2],
         "adx_length": [14, 30],
         "adx_threshold": [20, 30],
-        "use_dmp_cross": [False],
-        # Total: 1×1×2×2×1 = 4 combos (was 12)
+        "use_dmp_cross": [False, True],
+        # Total: 2×2×2×2×2 = 32 combos (was 4; pre-residue-cleanup textbook size).
+        # NB: this exceeds the 16-cells-per-combo target from the articulation
+        # commit. Tradeoff is intentional — the prior cap was achieved partly by
+        # pre-reset empirical pins now known to be circular.
     },
     "ema_cross": {
         # ema_fast: 9 (short) vs 12 (intermediate). Dropped 5 (too noisy at 4h).
@@ -67,12 +85,22 @@ DETAILED_ENTRY_PARAM_GRIDS: dict[str, dict[str, Any]] = {
         # Total: 2 combos (was 3)
     },
     "macd_cross": {
-        # macd_fast: 8 (short) vs 16 (long). Dropped 12 (interp).
-        # macd_slow/signal: collapsed to canonical 26/9 (standard MACD).
-        "macd_fast": [8, 16],
+        # Residue cleanup (2026-05-11): the chain that arrived at [8, 16]
+        # passed through 33d863d's empirical drop of {5, 9, 21} ("0 selections"
+        # under pre-reset leaky methodology). The articulation reset (ad74480)
+        # then independently dropped 12 as "interpolation" between 8 and 16,
+        # but 12 IS the canonical Appel MACD fast EMA. Re-adding 12 restores
+        # the textbook canonical value to the search space (theory-justified,
+        # not survivor-tuned).
+        #
+        # macd_fast: 8 (faster Appel variant) / 12 (canonical Appel) / 16 (slower).
+        # macd_slow: 26 = canonical Appel MACD slow EMA. Single-pin is theory-
+        #   justified at the canonical value (NOT empirically-justified at 26).
+        # macd_signal: 9 = canonical Appel signal EMA. Same theory pin.
+        "macd_fast": [8, 12, 16],
         "macd_slow": [26],
         "macd_signal": [9],
-        # Total: 2 combos (was 12)
+        # Total: 3 combos (was 2)
     },
     "supertrend_flip": {
         # st_length: 10 (short, responsive) vs 20 (long, smooth). Dropped 7, 14.

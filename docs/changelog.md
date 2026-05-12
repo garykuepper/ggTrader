@@ -1,6 +1,268 @@
 # Changelog
 
+## 2026-05-12
+
+### Path D selected: defer-TRX. BTC/ETH/DOGE → Binance.US; TRX waits 90 days.
+
+**Decision:** the venue migration to Binance.US (decided earlier today) deploys with **22 of 36** textbook-validated combos. The 14 TRX combos are deferred for **90 days**, then re-evaluated against Binance.US TRX volume growth.
+
+**Driving data — Binance.US smoke-test snapshot 0 (2026-05-12T17:06 UTC):**
+
+| Pair | BUS 24h vol | Kraken 24h vol | Kraken/BUS |
+|---|---|---|---|
+| BTC | $1.03M | $135.4M | 131× |
+| ETH | $402K | $38.4M | 95× |
+| DOGE | $35K | $7.5M | 213× |
+| **TRX** | **$2.0K** | $2.5M | **1,246×** |
+
+TRX/USD on Binance.US is effectively a dead market at $2K/day. Spread was 118.6 bp in the first snapshot (vs Kraken's ~0bp). Spread variation across additional time-of-day snapshots can't change the underlying structural fact — a market with $2K/day in flow cannot reliably quote tightly, and trades at the account's intended sizes ($50–$200) would be a material fraction of daily volume on individual fills. Not deployable at any size right now.
+
+BTC/ETH/DOGE on Binance.US show 2-3 orders of magnitude lower volume than Kraken but still sufficient absolute liquidity ($35K–$1M/day) for the account's planned trade sizes. Path D is the only path that preserves textbook validation while keeping execution costs at the Binance.US level.
+
+**Path D deployment scope:**
+
+| Coin | Frictionless passers | Path D status |
+|---|---|---|
+| BTC | 5 | Deploy on Binance.US |
+| ETH | 7 | Deploy on Binance.US |
+| DOGE | 10 | Deploy on Binance.US |
+| **TRX** | **14** | **Defer 90 days** (re-evaluate ≥ 2026-08-10) |
+| ADA, DASH, XMR | 0 each | No-op |
+
+**22 of 36** combos go live across BTC/ETH/DOGE in Phase 2 of the migration sequence.
+
+**Migration sequence (for the record, no implementation in this commit):**
+
+1. Smoke tests complete (3 more snapshots scheduled; manual permission audit pending)
+2. Data architecture migration: schema change + Binance.US historical OHLCV backfill via bulk zip
+3. Live trader switched to Binance.US with **legacy pre-reset params** at small size
+4. 1-2 weeks operational validation (fill quality, spread, API stability, balance reconciliation)
+5. Switch to textbook-validated params for the 22-combo BTC/ETH/DOGE set
+
+Discipline: do not change venue *and* params simultaneously (carried forward from the prior decision). Step 3 uses known-good behavior; only the venue is new. Step 5 introduces the params after the venue is operationally proven.
+
+**The previously-shelved post-only limit entry spec stays shelved.** May be unshelved in Q3 2026 if TRX deployment becomes a priority and Binance.US TRX volume hasn't grown enough to make taker-only on Binance.US viable for that pair. The spec lives at `docs/superpowers/specs/2026-05-12-post-only-limit-entry.md`.
+
+**TRX re-evaluation criteria for the 90-day check (≥ 2026-08-10):**
+
+- Binance.US TRX/USD 24h volume ≥ $50K (25× current — a defensible threshold for thin-but-not-dead)
+- Spread consistently < 30 bp across time-of-day snapshots
+- OR: a viable maker-only Binance.US path (would require unshelving the limit-entry proposal)
+
+If those don't materialize: continued deferral, or migrate TRX to a third venue with both better liquidity *and* lower fees than Kraken (Hyperliquid at 0.04% RT for spot pairs is the natural candidate; OKX or Bybit also viable).
+
+**Status of scheduled smoke-test snapshots:** intentionally left running for data hygiene even though the decision is made. The 3 additional snapshots (22:00 UTC tonight, 11:00 + 17:00 UTC tomorrow) will be used to:
+
+1. Confirm BTC/ETH/DOGE spreads stay stable across time-of-day (sanity check — rules out surprise illiquidity windows)
+2. Document the TRX volume/spread pattern for the eventual re-evaluation record
+
+---
+
+### Venue change decided: migrate live execution from Kraken Pro → Binance.US
+
+**Decision:** the live trader will migrate to Binance.US. Kraken Pro's $0+ tier maker rate (0.25%/side) is no longer the cheapest available execution path: Binance.US taker (0.02%/side) is **~12× cheaper round-trip** (0.04% vs 0.50%), without requiring any change to execution mode or strategy logic.
+
+**Decision context:** account volume is well below the $10K monthly tier on every major exchange, so all comparisons used $0-tier published rates:
+
+| Exchange | Maker | Taker | RT Maker | RT Taker |
+|---|---|---|---|---|
+| **Binance.US** | 0.02% | **0.02%** | 0.04% | **0.04%** |
+| Hyperliquid | 0.040% | 0.070% | 0.08% | 0.14% |
+| OKX | 0.080% | 0.100% | 0.16% | 0.20% |
+| Bybit | 0.100% | 0.100% | 0.20% | 0.20% |
+| Kraken Pro (current) | 0.25% | 0.40% | 0.50% | 0.80% |
+| Coinbase Advanced | 0.60% | 0.80–1.20% | 1.20% | 1.60–2.40% |
+
+Binance.US's 0.02% taker rate means **no execution-mode complexity is required** to deploy textbook-validated strategies — just run market orders as today, on the cheaper venue. The post-only limit entry design proposal at `docs/superpowers/specs/2026-05-12-post-only-limit-entry.md` is **SHELVED** with that note. Kept as reference if Binance.US migration is later reversed.
+
+**Implication for textbook validation:** the prior arc's finding was "edge exists at frictionless, fees bind it to zero passers at Kraken taker rates." At Binance.US's 0.02% taker round-trip of 0.04%, the practical execution-cost regime is **effectively frictionless** relative to the strategy edge — well below even the half-fees diagnostic (0.5% RT) that produced 14 passers. Expectation: at Binance.US fee levels, the deployable validated set should be close to the full 36 frictionless passers.
+
+**Migration plan — two-phase, deliberately sequenced:**
+
+1. **Phase 1 — venue-only swap (1-2 weeks):** Switch the live trader from Kraken to Binance.US with **legacy pre-reset parameters** unchanged. Known-good live behavior, only the venue changes. Verifies operational mechanics: fill quality, spread tightness, API stability, deposit/withdrawal flow, balance reconciliation, regional restrictions, pair availability.
+2. **Phase 2 — params migration (after Phase 1 operational validation):** Once Binance.US is confirmed stable, migrate to the textbook-validated parameter set (subset of the 36 frictionless passers — pair availability on Binance.US to be confirmed in Phase 1's smoke tests).
+
+**Discipline:** do not change venue *and* parameter set simultaneously. If something breaks during a dual-variable change, root cause cannot be isolated between operational issues (wrong venue config) and behavioral issues (params don't generalize to Binance.US execution).
+
+**Open execution items from prior arc:**
+
+- Cleaned-grid + Kraken maker rate (FEES=0.0025) diagnostic is in flight (`b608jqx01`). Result will be captured as **fallback data** — what Kraken maker would deploy if the Binance.US migration is later reversed. Not a primary decision input.
+- `fee_entry` recording bug ([Issue #10](https://github.com/garykuepper/ggTrader/issues/10)) stands. Independent of venue.
+- `param_cv` grid-size methodology issue remains deferred.
+
+**Live trader: unchanged for now.** Still on Kraken with legacy pre-reset params. Binance.US smoke tests come next.
+
+---
+
 ## 2026-05-11
+
+### WFO textbook reset investigation arc — closed
+
+**Final landing:** the textbook reset produces **35–36 validated combos under frictionless conditions** (stable across pre- and post-cleanup grids). Under realistic fees (0.4% per-side + 0.3% slippage = 1.4% round-trip), **zero combos pass.** The edge exists; transaction costs bind it to an empty validated set. Next investigation pivots from "find edge in the methodology" to "reduce execution costs."
+
+**Arc summary:**
+
+1. **Initial finding (empty-N=30 run):** all 7 diagnostic coins dropped at the textbook gates. Working hypothesis at the time: "no edge on this strategy × coin × timeframe." Documented in the earlier 2026-05-11 entries below.
+
+2. **Trade-gate recalibration (N=30 → N=19):** pre-registered as strategy-design-matched calibration to ~26 expected trades per train fold, *not* survivor-tuned. Outcome: still 0 survivors. Confirmed the per-fold trade gate was no longer the binding constraint after recalibration.
+
+3. **Binding-gate diagnostic:** added per-combo `[Gates]` print to the orchestrator. profitable_fraction failed 95%, WFE 65%, param_cv 62%, DD ratio 6%. profitable_fraction is the dominant gate. Suggested at the time: "strategies don't produce consistent OOS positive returns."
+
+4. **Naming-bug correction:** the orchestrator's `robustness: IS=...` log line had been mis-interpreted as "IS Sortino." It is actually `-mean(rank_Sortino, rank_Calmar, rank_PF)` of the best cell across the param grid (composite mode) — structurally always negative, bounded in `[-N_cells, -1]`, and tells us *nothing* about absolute IS profitability. Real IS train_ann_ret median was **+0.4%** (marginal but positive). The orchestrator print was renamed `IS_rank_score=` / `OOS_sharpe=` to remove the ambiguity. Audit conclusion "strategies lose on data they were tuned for" was incorrect and retracted.
+
+5. **Frictionless diagnostic (FEES=0, SLIPPAGE=0):** IS median shifted +2.24pp (post-cost +0.40pp → frictionless +2.64pp). User-classified as the "fees contributing" band per pre-registered thresholds. Subsequent gate analysis on the frictionless run revealed **36 of 231 combos passed all 4 textbook gates** — initially missed in the IS-shift summary; surfaced when the cleaned-frictionless comparison was built and pre-frictionless gate data was extracted from worker logs. **The edge is real and reproducible under textbook validation; it's only contingent on costs.**
+
+6. **Pre-reset design-residue audit:** catalogued every grid-pruning decision in pre-textbook-reset commits `33d863d` (2026-03-27) and `e23a40e` (2026-04-01) that referenced selection-frequency rationale under the now-known-leaky methodology. Classification: 3 STRONG (psar_adx pins of `sar_acceleration`, `sar_maximum`, `use_dmp_cross`), 3 MODERATE (`psar_adx.adx_length`, `macd_cross.macd_fast`, `macd_cross.macd_slow`), 4 WEAK (supertrend_flip and atr_trailing). The remaining axes traced back to clean domain/articulation reasoning. The `e23a40e` commit had itself acknowledged the circularity of selection-frequency pinning for some axes (donchian, fixed_sl_tp, trailing_stop) and reverted them; the equivalent reasoning was never applied to psar_adx/macd_cross.
+
+7. **Phase A + B residue cleanup:** unpinned the 3 STRONG psar_adx axes to theory-justified pairs (canonical Wilder vs articulation-distinct alternative), re-added canonical Appel `macd_fast=12` that had been excluded as "interpolation" in the textbook reset. psar_adx grid 4 → 32 cells; macd_cross grid 2 → 3 cells. Discipline: theory-only values, never survivor-tuned.
+
+8. **Paired cleaned-grid runs:**
+   - Cleaned + post-cost: **0 passers** (same outcome as pre-cleanup post-cost)
+   - Cleaned + frictionless: **36 passers**, 35/36 intersection with pre-cleanup-frictionless (one swap: TRX `psar_adx+trailing_stop` lost on cv-explosion; DOGE `macd_cross+trailing_stop` gained from canonical macd_fast=12).
+   - User-classified: "methodologically correct but didn't unlock additional edge" — aggregate metrics within ±0.5pp, intersection 35/36, one noise-level swap.
+
+**Validated passer summary (frictionless, stable across cleanup variations):**
+
+| Coin | Passers | | Strategy family | Passers |
+|---|---|---|---|---|
+| TRX | 14–15 | | adx_filtered_rsi | 9 |
+| DOGE | 9–10 | | mtf_momentum | 8 |
+| ETH | 7 | | ema_cross | 7 |
+| BTC | 5 | | psar_adx | 0–1 (cv-locked) |
+| ADA, DASH, XMR | 0 | | (others: 1–3 each) |  |
+
+**Pivot:** the next investigation is execution-cost reduction (maker-only orders, larger sizing, fee-tier improvements, exchange comparison). The textbook methodology is no longer the bottleneck — fees are. Per-coin passer concentration (TRX dominant; ADA/DASH/XMR zero across all runs) also suggests the universe is heterogeneous in fees-vs-edge.
+
+**Confirmed open methodology issues (deferred — neither blocking nor for tonight):**
+
+- **`param_cv` gate at 0.3 is grid-size dependent.** psar_adx cv exploded from median 0.39 (4-cell grid) to median **1.22** (32-cell grid). Six high-IS-edge psar_adx combos (IS_mean +12 to +21%) pass every other gate and fail only on `param_cv`. Fix is principled — either axis-aware CV (e.g., `unique_picks / grid_size`) or grid-size-relative thresholds — but deferred until the execution-cost question resolves. Until then, grid expansion is mechanically punished by `param_cv` regardless of underlying edge quality.
+- **Legacy `_apply_wfo_selection_gates` warnings** ("All coins dropped by X gate") fire on already-empty input with no preceding "Dropping N coin(s)" message. Should be conditional on `len(results_before) > 0` so they don't mislead operators in future empty-result runs.
+
+**Files touched across this arc:**
+
+- `src/ggTrader/utils/run_config.py`: `MIN_TRADES_PER_TRAIN_FOLD: 30 → 19` (committed change); FEES/SLIPPAGE diagnostic flip-flop (reverted to 0.004 / SLIPPAGE_STANDARD).
+- `src/ggTrader/pipeline/param_grids.py`: `psar_adx` 4 → 32 cells (Phase A unpins of sar_acceleration, sar_maximum, use_dmp_cross with theory-justified pairs); `macd_cross` 2 → 3 cells (added canonical Appel `macd_fast=12`).
+- `src/ggTrader/core/orchestrator.py`: `[Gates]` per-combo diagnostic print after `apply_gates` call; `IS_rank_score=` / `OOS_sharpe=` log rename to fix the misleading "Sortino" framing.
+- `src/ggTrader/cli/cmd_research.py`: wfo_stats snapshot to `<run_dir>/wfo_stats_snapshot.json` at the merge step. Preserves per-fold IS/OOS data across cache purges. Non-fatal on error.
+- `docs/changelog.md`: this entry, plus the prior 2026-05-11 entries (the now-superseded "naming" framing is left in place as a record of the audit trail).
+
+**Run artifacts in `results/research/`:**
+
+- `research_20260510_225835` — N=30, empty (1st textbook reset integration test)
+- `research_20260511_105459` — N=19 cold-cache, empty
+- `research_20260511_124725` — N=19 cache-hot + first `[Gates]` diagnostic; same outcome, with attribution
+- `research_20260511_132232` — pre-cleanup frictionless, **36 passers** (gate data only in worker logs; cache long since purged)
+- `research_20260511_162755` — cleaned + post-cost, empty (gate data only in worker logs)
+- `research_20260511_193048` — cleaned + frictionless, **36 passers**, full wfo_stats preserved in `wfo_stats_snapshot.json` (manual snapshot since auto-snapshot code wasn't in this run's image)
+
+**Live trader: unchanged.** Still on legacy pre-reset params, now with the additional context that the textbook-validated set is empty under realistic fees. The pending half-fees diagnostic will inform whether the live-trader decision needs to remain open or can resolve in either direction.
+
+---
+
+### WFO textbook reset — MIN_TRADES_PER_TRAIN_FOLD recalibrated 30 → 19, still empty result (pre-registered finding)
+
+**Pre-registration (before re-running):** Lowered `MIN_TRADES_PER_TRAIN_FOLD` from 30 to **19** in `src/ggTrader/utils/run_config.py`. The 30-trade textbook gate was structurally incompatible with this codebase's strategy design: strategies are designed to fire ~1 trade per 7-8 days, which over a 6.7-month train fold (1212 bars at 4h ≈ 28.9 weeks) yields an expected ~26 trades at full activity, leaving zero headroom above 30 even before regime-driven inactivity. Pre-registered recalibration target: 73% of expected fire rate (≈19), allowing up to 7 inactive weeks per fold for legitimate regime-aware sit-outs. Standard error of Sortino at N≈20 is ~30% wider than at N=30 but remains adequate for cell-level rank ordering within a ≤16-cell grid, with cross-fold consistency from 8-of-10 forgiveness damping single-fold noise. `MIN_TRAIN_FOLD_PASS_COUNT=8` (8-of-10 forgiveness) preserved.
+
+This recalibration is **NOT a relaxation of the textbook standard**. It is a context-specific calibration of the same statistical principle (sufficient trades for meaningful Sortino ranking) to this strategy design's parameters. Pre-registered explicit principle: *if even N=19 produces an empty set, that is a real "no edge / weak signal" finding to be documented honestly, not a signal to lower the gate further.*
+
+**Re-run:** `results/research/research_20260511_105459/` (45m01s wall, 7 workers, same diagnostic universe BTC/ETH/TRX/DOGE/XMR/DASH/ADA, `--days 1095 --end-date 2026-05-01`). Cache truncated before run (`ggt db purge-wfo-cache --yes`).
+
+**Result: all 7 coins still dropped. No survivors.**
+
+**Failure attribution (post-run gate layer audit):**
+
+The empty result is **100% attributable to the 4 textbook aggregate gates** (`WFO_GATE_WFE_MIN=0.5`, `WFO_GATE_PROFITABLE_FOLDS_MIN=0.6`, `WFO_GATE_PARAM_CV_MAX=0.3`, `WFO_GATE_DD_RATIO_MAX=2.0`). The per-symbol loop (`orchestrator.py:1109-1175`) evaluates these per combo and `continue`s when no combo passes, leaving `per_coin_results` empty before any legacy gate runs.
+
+**Two stages of attrition observed, only one of them filtering:**
+
+1. **Per-fold trade-count gate (N=19, 8-of-10 forgiveness)** — recalibration was directionally correct. 17–19 of 33 (entry × exit) combos per coin produced a finite IS Sortino (meaning at least 8 of 10 folds had ≥1 cell clear the gate), up from essentially 0 finite-IS combos in the N=30 run. The gate is no longer a categorical reject-all filter.
+
+2. **4 textbook aggregate gates** — every combo that survived the per-fold gate failed at least one of these. Sample BTC combo verdicts: `psar_adx+atr_trailing` IS_rank_score=-9.28, consistency=50%; `macd_cross+atr_trailing` IS_rank_score=-1.75, consistency=40%; `keltner_breakout+trailing_stop` IS_rank_score=-3.08, consistency=20%. **Naming correction (2026-05-11 follow-up):** the value labeled `IS` in the orchestrator log is `-mean(rank_Sortino, rank_Calmar, rank_PF)` of the best cell across the combo's param grid (composite mode), structurally bounded in `[-N_cells, -1]` and always negative. It is NOT a Sortino value, and its sign tells us nothing about whether the strategy is profitable on IS data. Per-fold OOS consistency clusters at 20–60% — far below the textbook `WFO_GATE_PROFITABLE_FOLDS_MIN=0.6`. The orchestrator log line was renamed `IS_rank_score=` / `OOS_sharpe=` to remove the ambiguity.
+
+**Legacy gates (`MIN_ROBUSTNESS_SCORE=0.1`, `MIN_FOLD_CONSISTENCY=0.38`, `MIN_VALID_TRAIN_FOLDS=3`) did NOT contribute to the empty result.** Their end-of-worker *"All coins dropped by X gate"* warnings are misleading: they fire whenever `_apply_wfo_selection_gates` receives an empty dict, with no preceding *"Dropping N coin(s)"* lines. Verified across all 7 worker logs — zero legacy-gate actual-drop messages. The reset-era textbook gates are doing all the filtering; the legacy gates are dead-letter warnings on an already-empty input. **Future cleanup (not in this commit):** make the *"All coins dropped"* warnings conditional on the gate actually filtering, not on `not results`.
+
+**Empirical fire-rate finding (pre-registered model was wrong by ~30%):** the pre-registered model assumed ~26 trades per fold at full activity. Across all 7 workers and all 2310 (combo × fold) evaluations, the **highest observed cell-level trade count was 18**. Zero of 709 rejection-diagnostic rows had any cell hit ≥19. Most cells across most folds produced 0–3 trades. The actual designed fire rate on this strategy×coin×timeframe is closer to ~1 trade per 11–15 days, not 1 per 7–8 days. This is a strategy-design observation, not a gate-calibration shortfall.
+
+**Interpretation (honest, pre-registered):** by textbook standards, the current 11 strategies × 7 diagnostic coins × 4h timeframe × 6.7-month train windows does not produce statistically robust edges. The N=19 gate is closer to the empirical ceiling (~18 trades) than N=30 was, but the deeper finding remains: where trades exist, IS Sortino is negative and OOS fold consistency is below 60%. This is not noise the gate is filtering; this is genuinely weak signal across the entire diagnostic set.
+
+**Decision (per pre-registered principle): do NOT lower the gate further.** The right next experiments — *if pursued* — would change the input space, not relax the gate further:
+
+- Raise `TEST_RATIO` from 3 to 4–5 to lengthen train windows toward N≈30–40 expected trades, OR
+- Shift to coins/timeframes with higher base volatility (more signal events per unit time), OR
+- Replace strategies with higher-frequency designs (1 trade per 2–3 days target), OR
+- Accept that this strategy family does not produce textbook-robust edges and either (a) keep the legacy pre-reset params under a documented "pre-reset legacy" flag with stated horizon, or (b) stop live trading until a strategy×universe×timeframe with positive expected gate-passing rate is found.
+
+None of these are decided today.
+
+**Live trader: unchanged.** Still on legacy pre-reset params per the open question carried from the empty-N=30 run.
+
+**Files touched:**
+
+- `src/ggTrader/utils/run_config.py`: `MIN_TRADES_PER_TRAIN_FOLD: 30 → 19`, with inline rationale comment block.
+
+---
+
+### Binding-gate diagnostic — profitable_fraction is the dominant killer (95% fail rate)
+
+Added one-line per-combo gate-verdict print in `orchestrator.py` after `apply_gates`. Rebuilt image; re-ran 7-coin diagnostic with cache hot (`results/research/research_20260511_124725/`, 51s total wall vs 45m cold). 100% cache hits across all 7 workers; all 231 combos re-evaluated for gate attribution only.
+
+**Pass rates across all 7 coins × 33 combos (231 total):**
+
+| Gate | Threshold | Pass count | Pass rate |
+|---|---|---|---|
+| profitable_fraction | ≥ 0.6 | 11 / 231 | **4.8%** |
+| Param CV | ≤ 0.3 | 87 / 231 | 37.7% |
+| WFE | ≥ 0.5 | 81 / 230 | 35.2% |
+| DD ratio | ≤ 2.0 | 217 / 231 | 93.9% |
+
+**profitable_fraction is the dominant binding constraint.** Across 220 combo failures, the metric distribution is **not** clustered near the 0.6 threshold — it's spread across [0.0, 0.7]:
+
+```
+prof 0.0–0.1  |  23
+prof 0.1–0.2  |  32
+prof 0.2–0.3  |  34
+prof 0.3–0.4  |   7
+prof 0.4–0.5  |  63
+prof 0.5–0.6  |  61    ← largest "near-miss" cluster
+prof 0.6–0.7  |   8    ← gate passers
+prof 0.7      |   3
+prof 0.8+     |   0    ← zero combos ever produce ≥80% profitable folds
+```
+
+The "near-miss" cluster at 0.5–0.6 represents 61 combos (26%). Relaxing the gate to 0.5 would let them through — but those same combos generally fail WFE or param_cv too, so a relaxed gate wouldn't translate to survivors.
+
+**Hard ceiling: no combo across the diagnostic universe achieves ≥0.7 profitable folds.** The top 10 by `profitable_fraction` cap at 0.70 and every one of those passes profitable_fraction but fails another gate (typically WFE or param_cv).
+
+**Best per-coin combo (by profitable_fraction):**
+
+| Coin | Best combo | prof | wfe | cv | dd | Failures |
+|---|---|---|---|---|---|---|
+| BTC  | macd_cross+atr_trailing       | 0.70 | -2.65 | 0.35 | 0.24 | wfe, param_cv |
+| ETH  | supertrend_flip+atr_trailing  | 0.70 |  1.18 | 0.38 | 0.32 | **param_cv only** |
+| TRX  | macd_cross+atr_trailing       | 0.60 | -2.93 | 0.35 | 0.29 | wfe, param_cv |
+| DOGE | psar_adx+atr_trailing         | 0.50 |  1.64 | —    | —    | profitable_fraction |
+| ADA  | psar_adx+atr_trailing         | 0.50 |  0.86 | —    | —    | profitable_fraction |
+| DASH | macd_cross+atr_trailing       | 0.30 |  0.37 | —    | —    | profitable_fraction |
+| XMR  | macd_cross+atr_trailing       | 0.30 |  0.11 | —    | —    | profitable_fraction |
+
+ETH `supertrend_flip+atr_trailing` is the closest-to-passing combo in the entire dataset — fails only on `param_cv=0.38` (gate is 0.3). That's a strategy that has a real edge on ETH but where optimal params drift fold-to-fold by enough to fail the parameter-stability check.
+
+**Interpretation:**
+
+- The empty result is **not a near-miss tuning problem.** Most failing combos are deeply below the profitable_fraction threshold (38% have <0.4 profitable folds), and the few near-the-threshold combos fail on overfitting evidence (negative WFE = train wins, test loses badly; or unstable per-fold params).
+- WFE failures concentrate in two modes: deep negative (`<-2`) for ~48 combos meaning train was strongly positive but test strongly negative (classic overfit), and a smaller "barely passing" cluster around +0.8. No middle ground.
+- **DD ratio is essentially never binding** (94% pass) — Kelly/sizing is not the issue.
+- **Param CV is sometimes binding** but secondary to profitable_fraction in the dominant-failure pattern.
+
+**The strategies do not have consistent OOS edge on this universe.** Higher-frequency tuning, longer train windows, or gate relaxation would not change that. The next experiments — if pursued — should change inputs (different coin universe, different strategy designs, different timeframe), not knobs.
+
+**Bug-adjacent (not fixed in this commit):** the `_apply_wfo_selection_gates` legacy "All coins dropped by X gate" warnings fire on already-empty input. Worth gating them on `len(results_before) > 0` so they don't mislead operators in future empty-result runs.
+
+**Files touched:**
+
+- `src/ggTrader/core/orchestrator.py`: added `[Gates]` per-combo diagnostic print after `apply_gates` call (line ~1156).
+
+---
 
 ### WFO textbook reset — empty result on diagnostic universe (intentional, not a failure)
 
