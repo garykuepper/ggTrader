@@ -33,12 +33,15 @@ dependencies = [
     "xlsxwriter",
     "yfinance",
     "alpaca-py",
+    "pydantic>=2.0",
+    "typer>=0.12",
+    "typing-extensions",
 ]
 
 [project.optional-dependencies]
 gpu = ["cupy-cuda13x"]
 test = ["pytest"]
-dev = ["black"]
+dev = ["black", "mypy>=1.8"]
 
 [project.scripts]
 ggt = "ggTrader.cli.main:main"
@@ -62,3 +65,36 @@ line-length = 100
 target-version = ['py38']
 include = '\.pyi?$'
 extend-exclude = '/(\.git|\.venv|archive)/'
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests that hit live external services (network, DB); deselect with -m 'not integration'",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+
+[[tool.mypy.overrides]]
+module = [
+    "ggTrader.core.instrument",
+    "ggTrader.core.signal",
+    "ggTrader.core.order",
+    "ggTrader.core.calendar",
+    "ggTrader.core.universe",
+    "ggTrader.core.types",
+    "ggTrader.core.ticker",
+    "ggTrader.core.balance",
+    "ggTrader.execution.base",
+    "ggTrader.execution.errors",
+    "ggTrader.execution.kraken_spot",
+    "ggTrader.execution.kraken_futures",
+    "ggTrader.strategies.base",
+    "ggTrader.strategies.loader",
+    "ggTrader.strategies.carry.cash_and_carry",
+    "ggTrader.core.calendars",
+    "ggTrader.features.base",
+    "ggTrader.features.derivatives_synthetic",
+    "ggTrader.backtest.vectorized",
+]
+strict = true

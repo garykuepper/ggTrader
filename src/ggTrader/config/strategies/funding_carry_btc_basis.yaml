@@ -1,0 +1,42 @@
+strategy_id: funding_carry_btc_basis
+strategy_class: ggTrader.strategies.carry.funding_carry:FundingCarryBTC
+
+spot:
+  symbol: BTC-USD
+  asset_class: crypto_spot
+  venue: kraken_spot
+  base_currency: BTC
+  quote_currency: USD
+  tick_size: "0.01"
+  min_order_size: "0.0001"
+  maker_fee_bps: "16"
+  taker_fee_bps: "26"
+  calendar_id: crypto_24_7
+
+perp:
+  symbol: BTC-USD-PERP
+  asset_class: crypto_perp
+  venue: kraken_futures
+  base_currency: BTC
+  quote_currency: USD
+  tick_size: "1"
+  min_order_size: "0.0001"
+  maker_fee_bps: "2"
+  taker_fee_bps: "5"
+  calendar_id: crypto_24_7
+  venue_specific_id: PF_XBTUSD
+
+# Signal: spot-perp basis premium APR (30-day rolling avg).
+# Basis-proxy biases slightly high vs realized funding (≈ +2.85% APR per
+# the overlap-window comparison). Same thresholds for an apples-to-apples
+# look at strategy behavior; the proxy bias is what we're measuring.
+signal_source: basis_proxy
+entry_threshold_apr: "0.08"
+exit_threshold_apr: "0.04"
+notional_usd: "10000"
+negative_funding_exit_consecutive: 8
+
+# Backtest defaults — 3-year basis-proxy window (spot 1h coverage starts 2023-01-01)
+backtest:
+  start: "2023-01-01"
+  end:   "2025-05-15"
