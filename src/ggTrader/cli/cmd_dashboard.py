@@ -11,19 +11,25 @@ from pathlib import Path
 def register_dashboard_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("dashboard", help="View live trading performance")
     parser.add_argument(
-        "--sync", action="store_true",
+        "--sync",
+        action="store_true",
         help="Sync trade history from Kraken before displaying",
     )
     parser.add_argument(
-        "--since", type=str, default=None,
+        "--since",
+        type=str,
+        default=None,
         help="Sync trades since date (YYYY-MM-DD). Implies --sync.",
     )
     parser.add_argument(
-        "--output", type=str, default=None,
+        "--output",
+        type=str,
+        default=None,
         help="Output directory for HTML charts (default: data/live/dashboard)",
     )
     parser.add_argument(
-        "--no-plots", action="store_true",
+        "--no-plots",
+        action="store_true",
         help="Print summary only, skip chart generation",
     )
 
@@ -91,11 +97,13 @@ def _sync_from_kraken(tracker: TradeTracker, since_date: str | None) -> None:
 
     import ccxt
 
-    exchange = ccxt.kraken({
-        "apiKey": os.getenv("KRAKEN_KEY"),
-        "secret": os.getenv("KRAKEN_SECRET"),
-        "enableRateLimit": True,
-    })
+    exchange = ccxt.kraken(
+        {
+            "apiKey": os.getenv("KRAKEN_KEY"),
+            "secret": os.getenv("KRAKEN_SECRET"),
+            "enableRateLimit": True,
+        }
+    )
 
     since_ts = None
     if since_date:
@@ -118,30 +126,32 @@ def _print_summary(stats: dict, closes, balances) -> None:
     print(f"{'=' * 52}")
 
     if stats.get("first_snapshot") and stats.get("latest_snapshot"):
-        print(f"  Period:          {stats['first_snapshot'][:10]} -> "
-              f"{stats['latest_snapshot'][:10]}")
+        print(
+            f"  Period:          {stats['first_snapshot'][:10]} -> {stats['latest_snapshot'][:10]}"
+        )
 
     if stats.get("current_balance") is not None:
         print(f"  Account Value:   ${stats['current_balance']:,.2f}")
 
-    print(f"\n  --- P&L ---")
+    print("\n  --- P&L ---")
     print(f"  Gross P&L:       ${stats['total_gross_pnl']:+,.2f}")
     print(f"  Total Fees:      ${stats['total_fees']:,.2f}")
     print(f"  Net P&L:         ${stats['total_net_pnl']:+,.2f}")
 
-    print(f"\n  --- Trades ---")
+    print("\n  --- Trades ---")
     print(f"  Total Trades:    {stats['total_trades']}")
     if stats["total_trades"] > 0:
-        print(f"  Win Rate:        {stats['win_rate']:.1f}% "
-              f"({stats['wins']}W / {stats['losses']}L)")
+        print(
+            f"  Win Rate:        {stats['win_rate']:.1f}% ({stats['wins']}W / {stats['losses']}L)"
+        )
         print(f"  Avg Win:         ${stats['avg_win']:+,.2f}")
         print(f"  Avg Loss:        ${stats['avg_loss']:+,.2f}")
-        pf = stats['profit_factor']
+        pf = stats["profit_factor"]
         pf_str = f"{pf:.2f}" if pf != float("inf") else "inf"
         print(f"  Profit Factor:   {pf_str}")
-        print(f"  Best Trade:      ${stats['best_trade_pnl']:+,.2f} "
-              f"({stats['best_trade_symbol']})")
-        print(f"  Worst Trade:     ${stats['worst_trade_pnl']:+,.2f} "
-              f"({stats['worst_trade_symbol']})")
+        print(f"  Best Trade:      ${stats['best_trade_pnl']:+,.2f} ({stats['best_trade_symbol']})")
+        print(
+            f"  Worst Trade:     ${stats['worst_trade_pnl']:+,.2f} ({stats['worst_trade_symbol']})"
+        )
     else:
         print("  (no closed positions yet)")

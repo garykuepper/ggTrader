@@ -106,7 +106,6 @@ class TestExpandEntriesForExitProduct:
         np.testing.assert_array_equal(expanded[:, 1:2], entries[:, 0:1])
 
 
-
 # ---------------------------------------------------------------------------
 # 3) _merge_entry_exit_param_combos
 # ---------------------------------------------------------------------------

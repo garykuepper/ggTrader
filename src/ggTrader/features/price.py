@@ -43,14 +43,25 @@ def fetch_mid_price(
     for inst in instruments:
         table, db_symbol = _table_and_symbol_for(inst)
         with conn.cursor() as cur:
-            cur.execute(
-                f"""SELECT "timestamp", close
-                    FROM {table}
-                    WHERE symbol = %s AND "interval" = %s
-                      AND "timestamp" BETWEEN %s AND %s
-                    ORDER BY "timestamp" """,
-                (db_symbol, interval, start_naive, end_naive),
-            )
+            if table == "ohlcv":
+                cur.execute(
+                    f"""SELECT "timestamp", close
+                        FROM {table}
+                        WHERE symbol = %s AND "interval" = %s
+                          AND venue = %s
+                          AND "timestamp" BETWEEN %s AND %s
+                        ORDER BY "timestamp" """,
+                    (db_symbol, interval, inst.venue.value, start_naive, end_naive),
+                )
+            else:
+                cur.execute(
+                    f"""SELECT "timestamp", close
+                        FROM {table}
+                        WHERE symbol = %s AND "interval" = %s
+                          AND "timestamp" BETWEEN %s AND %s
+                        ORDER BY "timestamp" """,
+                    (db_symbol, interval, start_naive, end_naive),
+                )
             rows = cur.fetchall()
         if not rows:
             cols[inst.symbol] = pd.Series(dtype=float)

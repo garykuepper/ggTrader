@@ -102,6 +102,7 @@ def test_run_wfo_orchestrator(mock_rm, mock_load, mock_ohlcv):
 # _apply_tiered_regime_mask
 # ---------------------------------------------------------------------------
 
+
 def _make_combined_entries(symbols, n=100):
     """Build a simple entries DataFrame with all-True signals."""
     idx = pd.date_range("2023-01-01", periods=n, freq="4h", tz="UTC")
@@ -121,9 +122,7 @@ def test_regime_mask_high_corr_blocked_on_bear_bars():
     config = {"LEADER_CORR_THRESHOLD": 0.7, "EMA_WARMUP_BARS": 0}
     btc_corrs = {"BTC-USD": 1.0, "ETH-USD": 0.8}
 
-    filtered = _apply_tiered_regime_mask(
-        combined_entries, btc_corrs, btc_regime, config
-    )
+    filtered = _apply_tiered_regime_mask(combined_entries, btc_corrs, btc_regime, config)
     assert not filtered.iloc[:50].any().any(), "Bear bars should be blocked"
     assert filtered.iloc[50:].any().any(), "Bull bars should pass through"
 
@@ -138,9 +137,7 @@ def test_regime_mask_low_corr_exempt_coins_always_pass():
     config = {"LEADER_CORR_THRESHOLD": 0.7, "EMA_WARMUP_BARS": 0}
     btc_corrs = {"LOW-USD": 0.3}
 
-    filtered = _apply_tiered_regime_mask(
-        combined_entries, btc_corrs, btc_regime, config
-    )
+    filtered = _apply_tiered_regime_mask(combined_entries, btc_corrs, btc_regime, config)
     assert filtered.all().all()
 
 
@@ -151,9 +148,7 @@ def test_regime_mask_none_btc_regime_returns_unchanged():
     config = {"LEADER_CORR_THRESHOLD": 0.7, "EMA_WARMUP_BARS": 0, "BENCHMARK_SYMBOL": "BTC-USD"}
     btc_corrs = {"SOL-USD": 0.9}
 
-    result = _apply_tiered_regime_mask(
-        combined_entries, btc_corrs, None, config
-    )
+    result = _apply_tiered_regime_mask(combined_entries, btc_corrs, None, config)
 
     pd.testing.assert_frame_equal(result, combined_entries)
 
@@ -161,6 +156,7 @@ def test_regime_mask_none_btc_regime_returns_unchanged():
 # ---------------------------------------------------------------------------
 # _compute_allocation_weights in combined backtest context
 # ---------------------------------------------------------------------------
+
 
 def test_allocation_weights_sum_to_one():
     scores = [0.8, 0.4, 0.2, 0.1, 0.05]
@@ -179,6 +175,7 @@ def test_allocation_weights_cap_respected():
 # ---------------------------------------------------------------------------
 # run_frozen_params_combined_backtest — integration test
 # ---------------------------------------------------------------------------
+
 
 def _make_multi_symbol_ohlcv(symbols=("BTC-USD", "ETH-USD"), n=200):
     """Synthetic MultiIndex OHLCV for combined backtest."""
@@ -200,9 +197,13 @@ def _per_coin_results_stub(symbols=("BTC-USD", "ETH-USD")):
             "best_strategy": "psar_adx",
             "best_exit": "atr_trailing",
             "best_params": {
-                "sar_acceleration": 0.02, "sar_maximum": 0.1, "adx_length": 14,
-                "adx_threshold": 25, "use_dmp_cross": False,
-                "atr_length": 14, "atr_multiplier": 3.0,
+                "sar_acceleration": 0.02,
+                "sar_maximum": 0.1,
+                "adx_length": 14,
+                "adx_threshold": 25,
+                "use_dmp_cross": False,
+                "atr_length": 14,
+                "atr_multiplier": 3.0,
             },
             "robustness_score": 0.6,
             "oos_robustness_score": 0.5,
@@ -217,13 +218,17 @@ def test_frozen_params_combined_backtest_returns_expected_keys():
     ohlcv = _make_multi_symbol_ohlcv()
     per_coin = _per_coin_results_stub()
     config = {
-        "START_CASH": 1000.0, "FEES": 0.001, "SLIPPAGE": 0.0005, "FREQ": "4h",
+        "START_CASH": 1000.0,
+        "FEES": 0.001,
+        "SLIPPAGE": 0.0005,
+        "FREQ": "4h",
         "BTC_REGIME_FILTER": False,
         "BENCHMARK_SYMBOL": "BTC-USD",
         "MAX_COIN_ALLOCATION": 0.25,
     }
-    with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), \
-         patch("ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}):
+    with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), patch(
+        "ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}
+    ):
         result = run_frozen_params_combined_backtest(
             ohlcv, per_coin, config, exit_tournament=["atr_trailing"], save_results=False
         )
@@ -238,12 +243,16 @@ def test_frozen_params_allocation_weights_sum_to_one():
     ohlcv = _make_multi_symbol_ohlcv()
     per_coin = _per_coin_results_stub()
     config = {
-        "START_CASH": 1000.0, "FEES": 0.001, "SLIPPAGE": 0.0005, "FREQ": "4h",
+        "START_CASH": 1000.0,
+        "FEES": 0.001,
+        "SLIPPAGE": 0.0005,
+        "FREQ": "4h",
         "BTC_REGIME_FILTER": False,
         "MAX_COIN_ALLOCATION": 0.5,
     }
-    with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), \
-         patch("ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}):
+    with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), patch(
+        "ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}
+    ):
         result = run_frozen_params_combined_backtest(
             ohlcv, per_coin, config, exit_tournament=["atr_trailing"], save_results=False
         )
@@ -258,7 +267,10 @@ def test_frozen_params_regime_filter_blocks_signals():
     ohlcv = _make_multi_symbol_ohlcv(symbols=("BTC-USD", "ETH-USD"), n=250)
     per_coin = _per_coin_results_stub()
     config = {
-        "START_CASH": 1000.0, "FEES": 0.0, "SLIPPAGE": 0.0, "FREQ": "4h",
+        "START_CASH": 1000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "4h",
         "BTC_REGIME_FILTER": True,
         "LEADER_CORR_THRESHOLD": 0.7,
         "EMA_WARMUP_BARS": 0,
@@ -268,11 +280,12 @@ def test_frozen_params_regime_filter_blocks_signals():
     len(ohlcv)
     all_bear = pd.Series(False, index=ohlcv.index)
 
-    with patch("ggTrader.core.orchestrator._compute_btc_regime_mask", return_value=all_bear), \
-         patch("ggTrader.core.orchestrator._compute_btc_correlations",
-               return_value={"BTC-USD": 1.0, "ETH-USD": 0.9}), \
-         patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), \
-         patch("ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}):
+    with patch("ggTrader.core.orchestrator._compute_btc_regime_mask", return_value=all_bear), patch(
+        "ggTrader.core.orchestrator._compute_btc_correlations",
+        return_value={"BTC-USD": 1.0, "ETH-USD": 0.9},
+    ), patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), patch(
+        "ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}
+    ):
         result = run_frozen_params_combined_backtest(
             ohlcv, per_coin, config, exit_tournament=["atr_trailing"], save_results=False
         )

@@ -14,6 +14,7 @@ from ggTrader.core.regime_filtering import _compute_btc_correlations
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _make_ohlcv(symbols, n_bars=300, seed=42, freq="4h"):
     """Build a synthetic MultiIndex OHLCV DataFrame for the given symbols."""
     rng = np.random.default_rng(seed)
@@ -42,6 +43,7 @@ def _base_config():
 # ---------------------------------------------------------------------------
 # _compute_btc_correlations
 # ---------------------------------------------------------------------------
+
 
 class TestComputeBtcCorrelations:
     def test_btc_with_itself_is_one(self):
@@ -75,10 +77,10 @@ class TestComputeBtcCorrelations:
         assert abs(corrs.get("COPY-USD", 0) - 1.0) < 1e-6
 
 
-
 # ---------------------------------------------------------------------------
 # _apply_tiered_regime_mask
 # ---------------------------------------------------------------------------
+
 
 class TestApplyTieredRegimeMask:
     """Tests for the BTC single-leader regime mask. Threshold = 0.7."""
@@ -94,9 +96,7 @@ class TestApplyTieredRegimeMask:
         btc_regime = pd.Series([True] * 60 + [False] * 40, index=dates)
         entries = self._make_entries(["XRP-USD"], n)
         # corr_btc=0.8 ≥ 0.7 → gated by BTC
-        result = _apply_tiered_regime_mask(
-            entries, {"XRP-USD": 0.8}, btc_regime, _base_config()
-        )
+        result = _apply_tiered_regime_mask(entries, {"XRP-USD": 0.8}, btc_regime, _base_config())
         assert result.iloc[:60]["XRP-USD"].all()
         assert not result.iloc[60:]["XRP-USD"].any()
 
@@ -106,9 +106,7 @@ class TestApplyTieredRegimeMask:
         btc_regime = pd.Series([False] * n, index=dates)  # BTC bear throughout
         entries = self._make_entries(["XMR-USD"], n)
         # corr_btc=0.4 < 0.7 → Free tier — entries pass through
-        result = _apply_tiered_regime_mask(
-            entries, {"XMR-USD": 0.4}, btc_regime, _base_config()
-        )
+        result = _apply_tiered_regime_mask(entries, {"XMR-USD": 0.4}, btc_regime, _base_config())
         assert result["XMR-USD"].all()
 
     def test_no_mask_returns_unchanged(self):
@@ -129,6 +127,7 @@ class TestApplyTieredRegimeMask:
 # ---------------------------------------------------------------------------
 # _compute_allocation_weights
 # ---------------------------------------------------------------------------
+
 
 class TestComputeAllocationWeights:
     def test_weights_sum_to_one(self):
@@ -158,6 +157,7 @@ class TestComputeAllocationWeights:
 # ---------------------------------------------------------------------------
 # _apply_wfo_selection_gates
 # ---------------------------------------------------------------------------
+
 
 class TestApplyWfoSelectionGates:
     def _coin(self, rob=0.5, oos=0.4, fc=0.5, strategy="psar_adx"):
@@ -211,4 +211,3 @@ class TestApplyWfoSelectionGates:
         original = dict(results)
         _apply_wfo_selection_gates(results, {"MIN_ROBUSTNESS_SCORE": 0.9})
         assert results == original
-

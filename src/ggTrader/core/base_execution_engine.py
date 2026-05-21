@@ -12,9 +12,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
-
-import pandas as pd
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
     from ggTrader.utils.result_db_manager import ResultDBManager
@@ -41,7 +39,7 @@ def setup_live_logger(log_name: str = "live_trader.log") -> logging.Logger:
     # File Handler
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
-    fh = RotatingFileHandler(log_dir / log_name, maxBytes=10*1024*1024, backupCount=5)
+    fh = RotatingFileHandler(log_dir / log_name, maxBytes=10 * 1024 * 1024, backupCount=5)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
@@ -124,9 +122,7 @@ def _format_exit_alert(
             f"PnL: <code>{sign}${abs(pnl_usd):,.2f}</code> "
             f"({'+' if pnl_pct >= 0 else ''}{pnl_pct:.2f}%) {marker}"
         )
-        entry_line = (
-            f"entry: <code>${entry_price:,.6g}</code> (held {hold_str})"
-        )
+        entry_line = f"entry: <code>${entry_price:,.6g}</code> (held {hold_str})"
     else:
         marker = "⚠️"
         pnl_line = "PnL: <code>?</code> (no stored entry price)"
@@ -156,7 +152,7 @@ class BaseExecutionEngine(ABC):
         self.results_path = results_path
         self.db_manager = db_manager
         self.run_id = run_id
-        
+
         self.asset_class = "crypto"
         self.logger = setup_live_logger("live_trader.log")
 
@@ -217,19 +213,24 @@ class BaseExecutionEngine(ABC):
             else:
                 self.logger.warning(f"Results source {path_str} not found.")
                 return
-        
+
         min_rob = float(self.config.get("MIN_ROBUSTNESS_SCORE", 0.0))
         max_per_strategy = self.config.get("MAX_COINS_PER_STRATEGY", None)
         blacklist = {s.upper() for s in (self.config.get("SYMBOL_BLACKLIST", []) or [])}
+        exchange_id = getattr(self, "exchange_id", self.config.get("EXCHANGE", "kraken"))
+        if exchange_id == "binanceus":
+            blacklist.discard("TRX-USD")
 
         strategy_counts: Dict[str, int] = defaultdict(int)
-        
+
         for symbol, result in per_coin.items():
-            if symbol.upper() in blacklist: continue
-            
+            if symbol.upper() in blacklist:
+                continue
+
             robustness = float(result.get("robustness_score", 0.0))
-            if min_rob > 0 and robustness < min_rob: continue
-            
+            if min_rob > 0 and robustness < min_rob:
+                continue
+
             strategy = result.get("best_strategy")
             if max_per_strategy is not None and strategy_counts[strategy] >= max_per_strategy:
                 continue
@@ -256,6 +257,7 @@ class BaseExecutionEngine(ABC):
         ``WEIGHTED_SIZING`` is enabled.
         """
         import numpy as np
+
         syms = list(self.per_coin_params.keys())
         if not syms:
             self.allocation_weights = {}
@@ -289,8 +291,12 @@ class BaseExecutionEngine(ABC):
         self.logger.info(
             f"Allocation weights computed: {nz}/{len(syms)} coins receive capital "
             f"(cap={max_alloc:.0%}/coin). Top: "
-            + ", ".join(f"{s}={self.allocation_weights[s]*100:.1f}%"
-                        for s in sorted(self.allocation_weights, key=self.allocation_weights.get, reverse=True)[:5])
+            + ", ".join(
+                f"{s}={self.allocation_weights[s] * 100:.1f}%"
+                for s in sorted(
+                    self.allocation_weights, key=self.allocation_weights.get, reverse=True
+                )[:5]
+            )
         )
 
     def load_state(self) -> None:
@@ -344,7 +350,9 @@ class BaseExecutionEngine(ABC):
             self._last_check_date = current_date
             self.save_state()
             if self.daily_start_equity:
-                self.logger.info(f"  [CircuitBreaker] Start-of-day equity: ${self.daily_start_equity:,.2f}")
+                self.logger.info(
+                    f"  [CircuitBreaker] Start-of-day equity: ${self.daily_start_equity:,.2f}"
+                )
 
         # Check limit
         limit = self.config.get("DAILY_LOSS_LIMIT_PCT")
@@ -353,12 +361,15 @@ class BaseExecutionEngine(ABC):
             if current_equity:
                 drawdown = (current_equity / self.daily_start_equity) - 1
                 if drawdown < -limit:
-                    self.logger.warning(f"🛑 [CircuitBreaker] TRIGGERED: Loss {drawdown*100:.2f}% > {limit*100:.2f}%")
+                    self.logger.warning(
+                        f"🛑 [CircuitBreaker] TRIGGERED: Loss {drawdown * 100:.2f}% "
+                        f"> {limit * 100:.2f}%"
+                    )
                     self.circuit_breaker_triggered = True
                     self.save_state()
                     self._notify(
                         f"🛑 <b>Circuit Breaker Triggered ({self.asset_class})</b>\n"
-                        f"Intraday Loss: <code>{drawdown*100:.2f}%</code>\n"
+                        f"Intraday Loss: <code>{drawdown * 100:.2f}%</code>\n"
                         f"Entries halted until tomorrow."
                     )
 

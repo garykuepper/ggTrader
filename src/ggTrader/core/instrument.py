@@ -27,6 +27,7 @@ class Venue(str, Enum):
     KRAKEN_FUTURES = "kraken_futures"
     KRAKEN_SECURITIES = "kraken_securities"
     ALPACA = "alpaca"
+    BINANCEUS_SPOT = "binanceus_spot"
 
 
 class Instrument(BaseModel):

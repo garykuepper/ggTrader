@@ -40,15 +40,40 @@ kraken_map = SYMBOL_MAPPING
 #   - USDUC: "Unstable Coin", a memecoin parodying stablecoin culture; volatile.
 STABLE_BASES = {
     # USD-pegged stables
-    "USD", "USDT", "USDC", "USDP", "USDS", "USDD", "USDG", "USDE",
-    "DAI", "TUSD", "PYUSD", "FDUSD", "RLUSD", "LUSD", "FRAX",
-    "GUSD", "BUSD", "PAX", "USD0",
+    "USD",
+    "USDT",
+    "USDC",
+    "USDP",
+    "USDS",
+    "USDD",
+    "USDG",
+    "USDE",
+    "DAI",
+    "TUSD",
+    "PYUSD",
+    "FDUSD",
+    "RLUSD",
+    "LUSD",
+    "FRAX",
+    "GUSD",
+    "BUSD",
+    "PAX",
+    "USD0",
     # Euro-pegged stables
-    "EUR", "EURC", "EURT", "EURR", "EURQ",
+    "EUR",
+    "EURC",
+    "EURT",
+    "EURR",
+    "EURQ",
     # Other fiat
-    "GBP", "AUD", "JPY", "CAD", "CHF",
+    "GBP",
+    "AUD",
+    "JPY",
+    "CAD",
+    "CHF",
     # Commodity-pegged (gold)
-    "PAXG", "XAUT",
+    "PAXG",
+    "XAUT",
 }
 
 INTERVAL_MAP = {

@@ -7,6 +7,7 @@ on the holdout exactly once. A warning is raised if:
 - holdout max_dd > 1.5 * worst test-fold max_dd from WFO.
 The holdout is NOT a gate. Numbers are always reported.
 """
+
 from __future__ import annotations
 
 import os
@@ -96,8 +97,8 @@ def test_no_warning_when_worst_wfo_test_dd_is_zero():
     # warning function must not fire in this degenerate case.
     flags = holdout_warning_flags(
         holdout_ann_return=0.10,  # positive, no return flag
-        holdout_max_dd=-0.05,     # small holdout DD
-        worst_wfo_test_dd=0.0,    # degenerate WFO baseline
+        holdout_max_dd=-0.05,  # small holdout DD
+        worst_wfo_test_dd=0.0,  # degenerate WFO baseline
     )
     assert "max_dd_exceeds_threshold" not in flags
 

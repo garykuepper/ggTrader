@@ -64,8 +64,7 @@ def compute_post_buy_stop_pct(
         floor = float(cfg.get(floor_key, 4.0))
         if stop_pct < floor:
             log.info(
-                f"  [Stop] {symbol}: stop_pct {stop_pct:.2f}% clamped to "
-                f"{floor_key}={floor:.2f}%"
+                f"  [Stop] {symbol}: stop_pct {stop_pct:.2f}% clamped to {floor_key}={floor:.2f}%"
             )
             stop_pct = floor
 

@@ -508,8 +508,13 @@ class ResultDBManager:
         # Augment each record with the optional live-only columns. Using a
         # wider INSERT is harmless for backtest rows where these are NULL.
         live_keys = (
-            "amount", "gross_pnl", "fee_entry", "fee_exit",
-            "fee_total", "hold_duration_hours", "exit_reason",
+            "amount",
+            "gross_pnl",
+            "fee_entry",
+            "fee_exit",
+            "fee_total",
+            "hold_duration_hours",
+            "exit_reason",
         )
         for rec, (_, row) in zip(records, df_trades.iterrows()):
             for k in live_keys:
@@ -771,8 +776,15 @@ class ResultDBManager:
             print(f"WARNING: get_orders_df failed: {e}")
             return pd.DataFrame(
                 columns=[
-                    "timestamp", "symbol", "side", "order_id", "price",
-                    "amount", "amount_usd", "fee", "fee_currency",
+                    "timestamp",
+                    "symbol",
+                    "side",
+                    "order_id",
+                    "price",
+                    "amount",
+                    "amount_usd",
+                    "fee",
+                    "fee_currency",
                 ]
             )
 

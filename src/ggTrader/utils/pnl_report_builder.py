@@ -82,6 +82,7 @@ def _render_table(headers: list[str], rows: list[list[str]]) -> str:
         lines.append(sep.join(str(c).ljust(w) for c, w in zip(r, widths)))
     return "\n".join(lines)
 
+
 # Default thresholds for ⚠️ alert callouts. Override via run_config or CLI args.
 # balance_floor is the critical intervention level. balance_warning is set equal
 # to the floor so any balance dip ≥ floor triggers the critical alert directly.
@@ -216,13 +217,15 @@ def _fetch_and_persist_fear_greed() -> Optional[dict]:
     8 days for delta context) or ``None`` on fetch failure.
     """
     from ggTrader.utils.fear_greed import fetch_fear_greed
+
     latest = fetch_fear_greed(limit=8)  # latest + 7 days for delta
     if latest is None:
         return None
     try:
         from ggTrader.utils.result_db_manager import ResultDBManager
+
         db = ResultDBManager()
-        for entry in (latest.get("history") or [latest]):
+        for entry in latest.get("history") or [latest]:
             db.upsert_fear_greed(entry["date"], entry["value"], entry["classification"])
     except Exception as e:
         print(f"  [F&G] WARNING: persist failed (continuing) — {e!r}")
@@ -256,6 +259,7 @@ def _fetch_crypto_regime_status() -> dict[str, Any]:
     """
     try:
         import ccxt
+
         from ggTrader.core.regime_filtering import _compute_btc_regime_mask
         from ggTrader.utils.run_config import full_pipeline_config
 
@@ -288,7 +292,7 @@ def _fetch_crypto_regime_status() -> dict[str, Any]:
             return {"error": "Could not fetch regime data"}
 
         ohlcv_df = pd.DataFrame(data)
-        
+
         try:
             btc_mask = _compute_btc_regime_mask(ohlcv_df, config)
         except Exception:
@@ -316,16 +320,40 @@ def _fetch_crypto_regime_status() -> dict[str, Any]:
                 ("BTC Regime", btc_status),
                 ("BTC Price", f"${btc_price:,.2f}"),
                 ("ETH Price", f"${eth_price:,.2f}"),
-            ] + ([("Fear & Greed", f"{fg_row['value']} {fg_row['classification']} {fg_row['emoji']}")] if fg_row else []),
+            ]
+            + (
+                [
+                    (
+                        "Fear & Greed",
+                        f"{fg_row['value']} {fg_row['classification']} {fg_row['emoji']}",
+                    )
+                ]
+                if fg_row
+                else []
+            ),
             "lines": [
                 f"🌐 BTC Regime: {btc_status} (${btc_price:,.0f})",
                 f"📈 ETH Price: ${eth_price:,.0f}",
-            ] + ([f"{fg_row['emoji']} Fear & Greed: {fg_row['value']} {fg_row['classification']}{_fg_delta_suffix(fg_row)}"] if fg_row else []),
+            ]
+            + (
+                [
+                    f"{fg_row['emoji']} Fear & Greed: {fg_row['value']} {fg_row['classification']}{_fg_delta_suffix(fg_row)}"
+                ]
+                if fg_row
+                else []
+            ),
             "md_lines": [
                 f"- **BTC Regime**: {btc_status}",
                 f"- **BTC Price**: ${btc_price:,.2f}",
                 f"- **ETH Price**: ${eth_price:,.2f}",
-            ] + ([f"- **Fear & Greed**: {fg_row['value']} {fg_row['classification']} {fg_row['emoji']}{_fg_delta_suffix(fg_row)}"] if fg_row else []),
+            ]
+            + (
+                [
+                    f"- **Fear & Greed**: {fg_row['value']} {fg_row['classification']} {fg_row['emoji']}{_fg_delta_suffix(fg_row)}"
+                ]
+                if fg_row
+                else []
+            ),
         }
     except Exception as e:
         return {"error": f"Regime compute failed: {e!r}"}
@@ -357,7 +385,8 @@ def _gather_report_data(
 
     # Filter out dust positions — sub-$1 leftovers from partial exchange fills.
     active = {
-        sym: pos for sym, pos in active.items()
+        sym: pos
+        for sym, pos in active.items()
         if (pos.get("entry_price") or 0) * float(pos.get("amount", 0) or 0) >= 1.00
     }
 
@@ -392,9 +421,7 @@ def _gather_report_data(
         deposits_info["net_deposits"] = (
             deposits_info["total_deposits"] - deposits_info["total_withdrawals"]
         )
-        deposits_info["deposit_count"] = int(
-            len(usd_only[usd_only["type"] == "deposit"])
-        )
+        deposits_info["deposit_count"] = int(len(usd_only[usd_only["type"] == "deposit"]))
 
     window = summarise_window(
         closes,
@@ -433,9 +460,7 @@ def _gather_report_data(
             alltime["balance_change_pct"] = (
                 (alltime["balance_last"] / alltime["balance_first"]) - 1.0
             ) * 100.0
-            alltime["trading_pnl"] = (
-                alltime["balance_last"] - alltime["balance_first"]
-            )
+            alltime["trading_pnl"] = alltime["balance_last"] - alltime["balance_first"]
             # Also expose the raw (non-adjusted) current balance for the snapshot
             alltime["raw_balance_last"] = float(raw_equity.iloc[-1])
             # Net deposits added between the first balance snapshot and now —
@@ -580,9 +605,7 @@ def build_daily_pnl_summary_text(
         f"(fees {_fmt_money(window['fees'])})"
     )
     if window["best"] is not None:
-        lines.append(
-            f"  Best: {_fmt_money(window['best'], sign=True)} ({window['best_symbol']})"
-        )
+        lines.append(f"  Best: {_fmt_money(window['best'], sign=True)} ({window['best_symbol']})")
     if window["worst"] is not None and window["worst"] != window["best"]:
         lines.append(
             f"  Worst: {_fmt_money(window['worst'], sign=True)} ({window['worst_symbol']})"
@@ -606,8 +629,7 @@ def build_daily_pnl_summary_text(
         f"Sortino: {_fmt_float(alltime.get('sortino'))}"
     )
     lines.append(
-        f"  Max DD: {_fmt_pct(alltime.get('max_dd'))}  "
-        f"Calmar: {_fmt_float(alltime.get('calmar'))}"
+        f"  Max DD: {_fmt_pct(alltime.get('max_dd'))}  Calmar: {_fmt_float(alltime.get('calmar'))}"
     )
     lines.append(
         f"  Win rate: {_fmt_pct(summary_all.get('win_rate'))}  "
@@ -677,9 +699,7 @@ def build_daily_pnl_summary_html(
 
     # ── Stale warning banner (sync failure) ─────────────────────────────
     if stale_warning:
-        parts.append(
-            f"<b>⚠️ STALE DATA</b>\n<i>{_h(stale_warning)}</i>"
-        )
+        parts.append(f"<b>⚠️ STALE DATA</b>\n<i>{_h(stale_warning)}</i>")
         parts.append("")
 
     # ── Header ──────────────────────────────────────────────────────────
@@ -824,9 +844,7 @@ def build_daily_pnl_summary_html(
 
         parts.append(f"<b>📂 Open Positions ({len(active)})</b>")
         parts.append(
-            "<pre>"
-            + _h(_render_table(["Symbol", "Cost", "Value", "PnL", "%"], rows))
-            + "</pre>"
+            "<pre>" + _h(_render_table(["Symbol", "Cost", "Value", "PnL", "%"], rows)) + "</pre>"
         )
         if total_cost > 0:
             total_pnl = total_value - total_cost
@@ -866,9 +884,7 @@ def build_daily_pnl_summary_html(
             )
         parts.append(f"<b>📋 Recent Trades (last {len(rows)}) PT</b>")
         parts.append(
-            "<pre>"
-            + _h(_render_table(["Time", "Symbol", "PnL", "%", "Reason"], rows))
-            + "</pre>"
+            "<pre>" + _h(_render_table(["Time", "Symbol", "PnL", "%", "Reason"], rows)) + "</pre>"
         )
 
     return "\n".join(parts)
@@ -1039,9 +1055,7 @@ def build_daily_pnl_report(
                 )
             else:
                 cost_str = _fmt_money(entry * amt) if (entry and amt) else "—"
-                lines.append(
-                    f"| {sym} | {cost_str} | — | — | — | {exit_name} |"
-                )
+                lines.append(f"| {sym} | {cost_str} | — | — | — | {exit_name} |")
         if total_cost > 0:
             total_pnl = total_value - total_cost
             total_pct = (total_value / total_cost - 1.0) * 100.0

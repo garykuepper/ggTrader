@@ -16,9 +16,7 @@ import numpy as np
 import pandas as pd
 
 
-def compute_sharpe_ratio(
-    returns: pd.Series, periods_per_year: int = 365, rf: float = 0.0
-) -> float:
+def compute_sharpe_ratio(returns: pd.Series, periods_per_year: int = 365, rf: float = 0.0) -> float:
     """Annualised Sharpe ratio from a returns series.
 
     Args:
@@ -48,7 +46,7 @@ def compute_sortino_ratio(
     downside = excess[excess < 0]
     if len(downside) < 1:
         return float("inf") if excess.mean() > 0 else float("nan")
-    downside_std = float(np.sqrt((downside ** 2).mean()))
+    downside_std = float(np.sqrt((downside**2).mean()))
     if downside_std == 0:
         return float("nan")
     return float(excess.mean() / downside_std * np.sqrt(periods_per_year))
@@ -110,9 +108,7 @@ def compute_consecutive_losses(net_pnl: pd.Series) -> int:
     return streak
 
 
-def apply_deposit_adjustment(
-    equity: pd.Series, cumulative_net_deposits: pd.Series
-) -> pd.Series:
+def apply_deposit_adjustment(equity: pd.Series, cumulative_net_deposits: pd.Series) -> pd.Series:
     """Subtract net external capital flows from a balance equity curve.
 
     This isolates "trading PnL" from balance changes caused by deposits and
@@ -139,12 +135,12 @@ def apply_deposit_adjustment(
     # point in time. Use union to capture deposit timestamps that fall between
     # balance snapshots.
     combined_index = equity.index.union(cumulative_net_deposits.index).sort_values()
-    deposits_aligned = (
-        cumulative_net_deposits.reindex(combined_index).ffill().fillna(0.0)
+    deposits_aligned = cumulative_net_deposits.reindex(combined_index).ffill().fillna(0.0)
+    deposits_at_t0 = (
+        float(deposits_aligned.loc[: equity.index[0]].iloc[-1])
+        if len(deposits_aligned.loc[: equity.index[0]]) > 0
+        else 0.0
     )
-    deposits_at_t0 = float(deposits_aligned.loc[: equity.index[0]].iloc[-1]) if len(
-        deposits_aligned.loc[: equity.index[0]]
-    ) > 0 else 0.0
 
     deposits_on_equity = deposits_aligned.reindex(equity.index, method="ffill").fillna(0.0)
     adjusted = equity - (deposits_on_equity - deposits_at_t0)
@@ -159,9 +155,7 @@ def equity_curve_from_balance(balances: pd.DataFrame) -> pd.Series:
     # format="ISO8601" tolerates mixed precision (microseconds vs none) and
     # mixed timezone representations (Z vs +00:00 vs -0700) that crop up when
     # rows come from different sources (live writer + sync_from_kraken).
-    df["timestamp"] = pd.to_datetime(
-        df["timestamp"], utc=True, errors="coerce", format="ISO8601"
-    )
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce", format="ISO8601")
     df = df.dropna(subset=["timestamp"]).sort_values("timestamp")
     return pd.Series(df["total_usd"].values, index=df["timestamp"], name="equity")
 
@@ -218,9 +212,7 @@ def summarise_window(
     # Trade-based stats
     if closes is not None and not closes.empty:
         df = closes.copy()
-        df["close_timestamp"] = pd.to_datetime(
-            df["close_timestamp"], utc=True, format="ISO8601"
-        )
+        df["close_timestamp"] = pd.to_datetime(df["close_timestamp"], utc=True, format="ISO8601")
         window = df[(df["close_timestamp"] >= start) & (df["close_timestamp"] <= end)]
         if not window.empty:
             window = window.sort_values("close_timestamp")

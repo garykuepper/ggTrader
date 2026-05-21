@@ -58,9 +58,7 @@ def _hash_param_grid(param_grid: Dict[str, Any]) -> str:
 def _hash_config(config: Dict[str, Any]) -> str:
     """Hash only WFO-relevant config keys."""
     relevant = {k: config.get(k) for k in _WFO_RELEVANT_CONFIG_KEYS}
-    return hashlib.md5(
-        json.dumps(relevant, sort_keys=True, default=str).encode()
-    ).hexdigest()[:12]
+    return hashlib.md5(json.dumps(relevant, sort_keys=True, default=str).encode()).hexdigest()[:12]
 
 
 def _data_fingerprint(ohlcv: pd.DataFrame) -> Tuple[str, str, str]:
@@ -79,23 +77,26 @@ def _make_cache_key(
 ) -> str:
     """Build a unique 32-char hex cache key for this (symbol, combo, grid, config, data)."""
     date_start, date_end, bar_count = _data_fingerprint(ohlcv)
-    raw = "|".join([
-        f"v{_WFO_CACHE_VERSION}",
-        symbol,
-        strategy_name,
-        exit_name,
-        _hash_param_grid(param_grid),
-        _hash_config(config),
-        date_start,
-        date_end,
-        bar_count,
-    ])
+    raw = "|".join(
+        [
+            f"v{_WFO_CACHE_VERSION}",
+            symbol,
+            strategy_name,
+            exit_name,
+            _hash_param_grid(param_grid),
+            _hash_config(config),
+            date_start,
+            date_end,
+            bar_count,
+        ]
+    )
     return hashlib.md5(raw.encode()).hexdigest()
 
 
 # ---------------------------------------------------------------------------
 # Serialization helpers
 # ---------------------------------------------------------------------------
+
 
 def _float_safe(v: Any) -> Any:
     """Convert float to JSON-safe value (None for NaN/Inf)."""
@@ -114,9 +115,9 @@ def _series_to_json(s: pd.Series) -> Dict:
     index_out = []
     for idx in s.index:
         if isinstance(idx, tuple):
-            index_out.append(list(idx))   # tuple → list
+            index_out.append(list(idx))  # tuple → list
         else:
-            index_out.append(idx)         # scalar as-is
+            index_out.append(idx)  # scalar as-is
     values_out = [_float_safe(float(v)) for v in s.to_numpy(dtype=float)]
     return {"index": index_out, "values": values_out}
 
@@ -131,8 +132,14 @@ def _series_from_json(data: Dict) -> pd.Series:
 
 
 _SCALAR_FOLD_KEYS = {
-    "oos_sharpe", "oos_return", "profit", "start_capital",
-    "end_capital", "return_pct", "is_sharpe", "sortino",
+    "oos_sharpe",
+    "oos_return",
+    "profit",
+    "start_capital",
+    "end_capital",
+    "return_pct",
+    "is_sharpe",
+    "sortino",
 }
 
 
@@ -148,8 +155,9 @@ def _wfo_stats_to_json(wfo_stats: List[Dict]) -> List[Dict]:
                 safe[k] = _float_safe(v)
             elif isinstance(v, dict):
                 # best_params dict (scalar values)
-                safe[k] = {dk: _float_safe(dv) if isinstance(dv, float) else dv
-                           for dk, dv in v.items()}
+                safe[k] = {
+                    dk: _float_safe(dv) if isinstance(dv, float) else dv for dk, dv in v.items()
+                }
             # Skip DataFrames / Series (already popped before this point)
         result.append(safe)
     return result
@@ -173,6 +181,7 @@ def _wfo_stats_from_json(data: List[Dict]) -> List[Dict]:
 # WFOCache class
 # ---------------------------------------------------------------------------
 
+
 class WFOCache:
     """TimescaleDB-backed cache for WFO per-coin tournament (wfo_stats, is_metrics_by_fold)."""
 
@@ -181,6 +190,7 @@ class WFOCache:
         # itself now lives in the ``wfo_cache`` table in TimescaleDB.
         if db_manager is None:
             from ggTrader.utils.result_db_manager import ResultDBManager
+
             db_manager = ResultDBManager()
         self.db_manager = db_manager
         self._hits = 0
@@ -213,8 +223,7 @@ class WFOCache:
             data = row[0]
             wfo_stats = _wfo_stats_from_json(data["wfo_stats"])
             is_metrics_by_fold: Dict[int, pd.Series] = {
-                int(k): _series_from_json(v)
-                for k, v in data["is_metrics_by_fold"].items()
+                int(k): _series_from_json(v) for k, v in data["is_metrics_by_fold"].items()
             }
             self._hits += 1
             return wfo_stats, is_metrics_by_fold
@@ -251,8 +260,7 @@ class WFOCache:
             "exit": exit_name,
             "wfo_stats": _wfo_stats_to_json(wfo_stats),
             "is_metrics_by_fold": {
-                str(k): _series_to_json(v)
-                for k, v in is_metrics_by_fold.items()
+                str(k): _series_to_json(v) for k, v in is_metrics_by_fold.items()
             },
         }
         try:

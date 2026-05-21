@@ -38,7 +38,11 @@ def run_trade_report(args: argparse.Namespace) -> None:
 
     from ggTrader.utils.paths import find_project_root
 
-    csv_path = Path(args.csv) if args.csv else find_project_root() / "data" / "live" / "position_closes.csv"
+    csv_path = (
+        Path(args.csv)
+        if args.csv
+        else find_project_root() / "data" / "live" / "position_closes.csv"
+    )
     if not csv_path.exists():
         print(f"Error: {csv_path} not found")
         sys.exit(1)
@@ -70,32 +74,36 @@ def run_trade_report(args: argparse.Namespace) -> None:
         losses = (g["net_pnl"] <= 0).sum()
         n = len(g)
         loss_pcts = g.loc[g["net_pnl"] <= 0, "pnl_pct"]
-        return pd.Series({
-            "n": n,
-            "wins": wins,
-            "losses": losses,
-            "win_rate": (wins / n * 100.0) if n else 0.0,
-            "sum_net_pnl": g["net_pnl"].sum(),
-            "avg_pnl_pct": g["pnl_pct"].mean(),
-            "median_hold_h": g["hold_duration_hours"].median(),
-            "p90_loss_pct": loss_pcts.quantile(0.10) if not loss_pcts.empty else 0.0,
-        })
+        return pd.Series(
+            {
+                "n": n,
+                "wins": wins,
+                "losses": losses,
+                "win_rate": (wins / n * 100.0) if n else 0.0,
+                "sum_net_pnl": g["net_pnl"].sum(),
+                "avg_pnl_pct": g["pnl_pct"].mean(),
+                "median_hold_h": g["hold_duration_hours"].median(),
+                "p90_loss_pct": loss_pcts.quantile(0.10) if not loss_pcts.empty else 0.0,
+            }
+        )
 
     summary = df.groupby("_group", sort=True).apply(_agg, include_groups=False)
     totals = _agg(df).rename("TOTAL")
     summary = pd.concat([summary, totals.to_frame().T])
 
     print(f"\nWindow: {since.date()} → now   ({len(df)} closed trades)\n")
-    print(summary.to_string(
-        formatters={
-            "n": "{:>4.0f}".format,
-            "wins": "{:>4.0f}".format,
-            "losses": "{:>4.0f}".format,
-            "win_rate": "{:>6.1f}%".format,
-            "sum_net_pnl": "${:>+8.2f}".format,
-            "avg_pnl_pct": "{:>+6.2f}%".format,
-            "median_hold_h": "{:>7.1f}h".format,
-            "p90_loss_pct": "{:>+6.2f}%".format,
-        }
-    ))
+    print(
+        summary.to_string(
+            formatters={
+                "n": "{:>4.0f}".format,
+                "wins": "{:>4.0f}".format,
+                "losses": "{:>4.0f}".format,
+                "win_rate": "{:>6.1f}%".format,
+                "sum_net_pnl": "${:>+8.2f}".format,
+                "avg_pnl_pct": "{:>+6.2f}%".format,
+                "median_hold_h": "{:>7.1f}h".format,
+                "p90_loss_pct": "{:>+6.2f}%".format,
+            }
+        )
+    )
     print()

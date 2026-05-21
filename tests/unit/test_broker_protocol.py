@@ -19,7 +19,7 @@ from ggTrader.core import (
     Ticker,
     Venue,
 )
-from ggTrader.execution import Broker, KrakenSpotBroker
+from ggTrader.execution import BinanceUsSpotBroker, Broker, KrakenSpotBroker
 from ggTrader.execution.errors import (
     InsufficientFunds,
     OrderNotFound,
@@ -274,3 +274,32 @@ def test_venue_specific_id_preferred_over_canonical():
     )
     broker.fetch_ticker(inst)
     mock.fetch_ticker.assert_called_once_with("XXBTZUSD")
+
+
+# ---- BinanceUsSpotBroker Conformance -----------------------------------------
+
+
+def _binanceus_broker_with_mock() -> tuple[BinanceUsSpotBroker, MagicMock]:
+    mock = MagicMock(spec=ccxt.Exchange)
+    return BinanceUsSpotBroker(exchange=mock), mock
+
+
+def test_binanceus_spot_broker_satisfies_broker_protocol():
+    broker, _ = _binanceus_broker_with_mock()
+    assert isinstance(broker, Broker)
+
+
+def test_binanceus_submit_market_buy_calls_ccxt_create_order():
+    broker, mock = _binanceus_broker_with_mock()
+    mock.create_order.return_value = {"id": "binance-123"}
+
+    order_id = broker.submit_order(_make_order(order_type="market"))
+
+    assert order_id == "binance-123"
+    mock.create_order.assert_called_once_with("BTC/USD", "market", "buy", 0.1)
+
+
+def test_binanceus_cancel_order_calls_ccxt():
+    broker, mock = _binanceus_broker_with_mock()
+    assert broker.cancel_order("oid", _btc()) is True
+    mock.cancel_order.assert_called_once_with("oid", "BTC/USD")

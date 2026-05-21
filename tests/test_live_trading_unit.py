@@ -84,10 +84,7 @@ def test_execute_orders_mocked(mock_kraken: MagicMock, dummy_results_file: str):
     # Mock exchange instance
     mock_instance = mock_kraken.return_value
     mock_instance.fetch_ticker.return_value = {"last": 50000.0}
-    mock_instance.market.return_value = {
-        "symbol": "BTC/USD",
-        "precision": {"price": 1}
-    }
+    mock_instance.market.return_value = {"symbol": "BTC/USD", "precision": {"price": 1}}
 
     mock_instance.amount_to_precision.return_value = "0.002"
     mock_instance.create_market_buy_order.return_value = {"id": "123"}

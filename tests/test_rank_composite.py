@@ -8,6 +8,7 @@ downstream.
 Sharpe is intentionally dropped (Sharpe and Sortino are near-redundant; the
 spec drops Sharpe to keep the composite to three non-redundant dimensions).
 """
+
 from __future__ import annotations
 
 import os
@@ -177,6 +178,4 @@ def test_eight_of_ten_forgiveness_fills_with_fold_median():
     # B passes 8 folds, gets median-fill in folds 1 and 2. Fold median is
     # 0.25 (mean of 1.0 and -0.5 — only two finite cells in fold 1 since B is NaN).
     # The exact ranking depends on aggregation; the key assertion is B is not dropped.
-    assert any(r["params"]["x"] == "B" for r in top), (
-        "B should survive (passes 8 of 10 folds)"
-    )
+    assert any(r["params"]["x"] == "B" for r in top), "B should survive (passes 8 of 10 folds)"

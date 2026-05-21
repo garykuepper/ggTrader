@@ -4,6 +4,7 @@ Per (coin, entry, exit) combo, after the 10-fold WFO completes, four metrics
 are computed from the per-fold results and judged against fixed thresholds.
 Gates are filters (pass/fail), never selection.
 """
+
 from __future__ import annotations
 
 import os
@@ -131,7 +132,10 @@ def test_dd_ratio():
 def test_apply_gates_all_pass():
     """All 4 gates pass -> True."""
     result = apply_gates(
-        wfe=0.6, profitable_fraction=0.7, param_cv=0.25, dd_ratio_val=1.8,
+        wfe=0.6,
+        profitable_fraction=0.7,
+        param_cv=0.25,
+        dd_ratio_val=1.8,
         thresholds={"wfe_min": 0.5, "profitable_min": 0.6, "cv_max": 0.3, "dd_max": 2.0},
     )
     assert result["passed"] is True
@@ -142,7 +146,9 @@ def test_apply_gates_one_fails():
     """If one gate fails, passed=False and failures lists the failing metric."""
     result = apply_gates(
         wfe=0.4,  # below 0.5 threshold
-        profitable_fraction=0.7, param_cv=0.25, dd_ratio_val=1.8,
+        profitable_fraction=0.7,
+        param_cv=0.25,
+        dd_ratio_val=1.8,
         thresholds={"wfe_min": 0.5, "profitable_min": 0.6, "cv_max": 0.3, "dd_max": 2.0},
     )
     assert result["passed"] is False

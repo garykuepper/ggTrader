@@ -1,4 +1,3 @@
-
 import argparse
 import os
 import shutil
@@ -80,6 +79,7 @@ def register_db_parser(subparsers: argparse._SubParsersAction):
         help="Research directory (default: results/research)",
     )
 
+
 def run_db(args: argparse.Namespace):
     """Executes database administration commands."""
     if args.db_command == "diag":
@@ -104,6 +104,7 @@ def run_db(args: argparse.Namespace):
     elif args.db_command == "backfill-runs":
         _db_backfill_runs(args)
 
+
 def _db_sync_live():
     from ggTrader.core.trade_tracker import TradeTracker
     from ggTrader.utils.result_db_manager import ResultDBManager
@@ -111,13 +112,14 @@ def _db_sync_live():
     print("\n--- Syncing Live CSV data to TimescaleDB ---")
     db_manager = ResultDBManager()
     tracker = TradeTracker(db_manager=db_manager, run_id="LIVE")
-    
+
     counts = tracker.backfill_to_db()
-    
-    print(f"Sync complete:")
+
+    print("Sync complete:")
     print(f"  - Orders added: {counts['orders']}")
     print(f"  - Trades added: {counts['trades']}")
     print(f"  - Equity points: {counts['equity']}")
+
 
 def _db_diag():
     engine = create_db_engine_or_exit()
@@ -139,6 +141,7 @@ def _db_diag():
             if row:
                 print(dict(zip(result.keys(), row)))
 
+
 def _db_clean():
     engine = create_db_engine_or_exit()
     print("\n--- Cleaning Database ---")
@@ -151,6 +154,7 @@ def _db_clean():
         res = conn.execute(text("DELETE FROM ohlcv WHERE symbol ~ '_[0-9]+$';"))
         print(f"Deleted {res.rowcount} rows.")
 
+
 def _db_truncate():
     engine = create_db_engine_or_exit()
     print("\n--- Wiping OHLCV Table (TRUNCATE) ---")
@@ -158,36 +162,40 @@ def _db_truncate():
         conn.execute(text("TRUNCATE TABLE ohlcv;"))
         print("Table truncated. All data cleared.")
 
+
 def _db_enable_compression():
     engine = create_db_engine_or_exit()
     with engine.begin() as conn:
         print("\n--- Enabling TimescaleDB Compression ---")
-        conn.execute(text("""
+        conn.execute(
+            text("""
             ALTER TABLE ohlcv SET (
                 timescaledb.compress,
                 timescaledb.compress_segmentby = 'symbol, interval',
                 timescaledb.compress_orderby = 'timestamp DESC'
             );
-        """))
+        """)
+        )
         conn.execute(text("SELECT add_compression_policy('ohlcv', INTERVAL '7 days');"))
         print("ohlcv: compression policy added (7-day window).")
 
         # Live snapshot tables — segment by asset_class, compress after 30 days.
         for table in ("live_balance_snapshots", "live_positions_snapshot"):
             try:
-                conn.execute(text(f"""
+                conn.execute(
+                    text(f"""
                     ALTER TABLE {table} SET (
                         timescaledb.compress,
                         timescaledb.compress_segmentby = 'asset_class',
                         timescaledb.compress_orderby = 'timestamp DESC'
                     );
-                """))
-                conn.execute(
-                    text(f"SELECT add_compression_policy('{table}', INTERVAL '30 days');")
+                """)
                 )
+                conn.execute(text(f"SELECT add_compression_policy('{table}', INTERVAL '30 days');"))
                 print(f"{table}: compression policy added (30-day window).")
             except Exception as e:
                 print(f"{table}: skipped ({e})")
+
 
 def _db_check_compression():
     engine = create_db_engine_or_exit()
@@ -196,6 +204,7 @@ def _db_check_compression():
         result = conn.execute(text("SELECT * FROM hypertable_compression_stats('ohlcv');"))
         for row in result:
             print(row)
+
 
 def _db_export(args):
     """Refactored logic for DB export via ggt CLI."""
@@ -217,9 +226,19 @@ def _db_export(args):
     pg_dump = shutil.which("pg_dump") or r"C:\Program Files\PostgreSQL\16\bin\pg_dump.exe"
 
     cmd = [
-        pg_dump, "-h", db_params["host"], "-p", db_params["port"],
-        "-U", db_params["user"], "-Fd", "-j", str(args.jobs), "-f", str(out_dir),
-        db_params["dbname"]
+        pg_dump,
+        "-h",
+        db_params["host"],
+        "-p",
+        db_params["port"],
+        "-U",
+        db_params["user"],
+        "-Fd",
+        "-j",
+        str(args.jobs),
+        "-f",
+        str(out_dir),
+        db_params["dbname"],
     ]
 
     env = os.environ.copy()
@@ -370,9 +389,9 @@ def _db_backfill_runs(args):
         except Exception:
             ts = datetime.now()
 
-        asset_class = data.get("asset_class") or data.get(
-            "configuration", {}
-        ).get("_raw_config", {}).get("ASSET_CLASS", "crypto")
+        asset_class = data.get("asset_class") or data.get("configuration", {}).get(
+            "_raw_config", {}
+        ).get("ASSET_CLASS", "crypto")
         config = data.get("configuration", {})
         strategy_params = data.get("strategy_parameters", {})
         metrics = data.get("results", {})

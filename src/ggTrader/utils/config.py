@@ -68,6 +68,7 @@ def get_db_connection_string() -> str:
     # Auto-fix for host.docker.internal when running on the host machine
     if "host.docker.internal" in conn_str:
         import socket
+
         try:
             socket.gethostbyname("host.docker.internal")
         except socket.gaierror:

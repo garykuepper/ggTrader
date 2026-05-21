@@ -157,6 +157,7 @@ def run_status(args: argparse.Namespace) -> None:
 
     try:
         import psutil
+
         _psutil = True
     except ImportError:
         _psutil = False
@@ -171,9 +172,9 @@ def run_status(args: argparse.Namespace) -> None:
     def _show() -> bool:
         """Print status, return True if all workers are done."""
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  Research Run: {run_dir.name}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         # Worker process check
         if _psutil:
@@ -229,7 +230,7 @@ def run_status(args: argparse.Namespace) -> None:
             if plots:
                 print(f"  Plots: {len(plots)} PNG(s) in {run_dir / 'plots'}")
 
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
         return all_done
 
     if args.watch:

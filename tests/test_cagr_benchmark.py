@@ -19,6 +19,7 @@ from ggTrader.core.benchmarking import (
 # _cagr_percent
 # ---------------------------------------------------------------------------
 
+
 def test_cagr_percent_matches_geometric_mean() -> None:
     """13.72% over 3 calendar years -> ~4.4% CAGR."""
     cagr = _cagr_percent(13.72, 3.0)
@@ -34,7 +35,7 @@ def test_cagr_percent_invalid_years() -> None:
 def test_cagr_percent_negative_return() -> None:
     # -50% over 2 years → (0.5^0.5 - 1)*100 ≈ -29.3%
     cagr = _cagr_percent(-50.0, 2.0)
-    expected = (0.5 ** 0.5 - 1.0) * 100.0
+    expected = (0.5**0.5 - 1.0) * 100.0
     assert cagr == pytest.approx(expected, rel=1e-6)
 
 
@@ -46,6 +47,7 @@ def test_cagr_percent_total_loss() -> None:
 # ---------------------------------------------------------------------------
 # _years_from_price_index
 # ---------------------------------------------------------------------------
+
 
 def test_years_from_price_index() -> None:
     idx = pd.date_range("2023-01-01", periods=10, freq="4h")
@@ -62,6 +64,7 @@ def test_years_from_price_index_single_bar() -> None:
 # ---------------------------------------------------------------------------
 # _buy_hold_portfolio_stats (shared helper)
 # ---------------------------------------------------------------------------
+
 
 def _rising_close(n=80, start=100.0, end=110.0, col="ASSET"):
     idx = pd.date_range("2023-01-01", periods=n, freq="D")
@@ -90,6 +93,7 @@ def test_buy_hold_portfolio_stats_empty_returns_empty() -> None:
 # _btc_buy_hold_portfolio_stats
 # ---------------------------------------------------------------------------
 
+
 def _make_ohlcv_with_btc(n=200):
     """Build minimal MultiIndex OHLCV with BTC-USD already present."""
     dates = pd.date_range("2023-01-01", periods=n, freq="4h", tz="UTC")
@@ -106,8 +110,13 @@ def test_btc_bnh_uses_existing_ohlcv_without_db_fetch() -> None:
     """When BTC-USD is already in the close columns, no DB fetch should occur."""
     ohlcv = _make_ohlcv_with_btc()
     close = ohlcv.xs("close", axis=1, level=1)
-    config = {"BENCHMARK_SYMBOL": "BTC-USD", "START_CASH": 1000.0, "FEES": 0.001,
-              "SLIPPAGE": 0.0005, "FREQ": "4h"}
+    config = {
+        "BENCHMARK_SYMBOL": "BTC-USD",
+        "START_CASH": 1000.0,
+        "FEES": 0.001,
+        "SLIPPAGE": 0.0005,
+        "FREQ": "4h",
+    }
     with patch("ggTrader.data.historical.timescaledb_loader.TimescaleDBLoader") as mock_db:
         out = _btc_buy_hold_portfolio_stats(close, config)
         mock_db.assert_not_called()
@@ -127,6 +136,7 @@ def test_btc_bnh_empty_close_returns_empty() -> None:
 # _sp500_buy_hold_portfolio_stats
 # ---------------------------------------------------------------------------
 
+
 def test_sp500_bnh_returns_empty_on_yfinance_failure() -> None:
     """If yfinance raises, the function should return an empty-stats dict, not raise."""
     idx = pd.date_range("2023-01-01", periods=100, freq="4h", tz="UTC")
@@ -144,5 +154,3 @@ def test_sp500_bnh_empty_index_returns_empty() -> None:
     config = {"START_CASH": 1000.0, "FREQ": "4h"}
     out = _sp500_buy_hold_portfolio_stats(idx, config)
     assert out["profit_pct"] is None
-
-

@@ -53,6 +53,7 @@ def register_signals_parser(subparsers: argparse._SubParsersAction) -> None:
 
 def run_signals(args: argparse.Namespace) -> None:
     from dotenv import load_dotenv
+
     load_dotenv()
 
     from ggTrader.core.crypto_execution_engine import CryptoExecutionEngine
@@ -96,10 +97,10 @@ def run_signals(args: argparse.Namespace) -> None:
         _compute_btc_correlations,
         _compute_btc_regime_mask,
     )
+
     threshold = float(config.get("LEADER_CORR_THRESHOLD", 0.7))
     btc_regime = (
-        _compute_btc_regime_mask(df, config)
-        if config.get("BTC_REGIME_FILTER", False) else None
+        _compute_btc_regime_mask(df, config) if config.get("BTC_REGIME_FILTER", False) else None
     )
     btc_corrs = _compute_btc_correlations(df, config) if btc_regime is not None else {}
     btc_bull = bool(btc_regime.iloc[-1]) if btc_regime is not None else None
@@ -108,6 +109,7 @@ def run_signals(args: argparse.Namespace) -> None:
 
     try:
         from ggTrader.utils.fear_greed import fetch_fear_greed
+
         fg = fetch_fear_greed(limit=8)
     except Exception:
         fg = None
@@ -174,24 +176,26 @@ def run_signals(args: argparse.Namespace) -> None:
         else:
             reason = "no_signal"
 
-        rows.append({
-            "symbol": sym,
-            "strategy": info.get("strategy_name", "-"),
-            "exit": info.get("exit_name", "-"),
-            "entry": bool(sig.get("entry", False)),
-            "exit_signal": bool(sig.get("exit", False)),
-            "tier": tier,
-            "corr_btc": cb,
-            "allow": allow,
-            "price": float(sig.get("current_price", float("nan"))),
-            "ema_long": ema_long_value,
-            "ema_dist_pct": ema_dist_pct,
-            "atr": float(sig.get("atr_value", float("nan"))),
-            "in_pos": in_pos,
-            "reason": reason,
-            "params": info.get("params", {}),
-            "stop_price": float(sig.get("stop_price", float("nan"))),
-        })
+        rows.append(
+            {
+                "symbol": sym,
+                "strategy": info.get("strategy_name", "-"),
+                "exit": info.get("exit_name", "-"),
+                "entry": bool(sig.get("entry", False)),
+                "exit_signal": bool(sig.get("exit", False)),
+                "tier": tier,
+                "corr_btc": cb,
+                "allow": allow,
+                "price": float(sig.get("current_price", float("nan"))),
+                "ema_long": ema_long_value,
+                "ema_dist_pct": ema_dist_pct,
+                "atr": float(sig.get("atr_value", float("nan"))),
+                "in_pos": in_pos,
+                "reason": reason,
+                "params": info.get("params", {}),
+                "stop_price": float(sig.get("stop_price", float("nan"))),
+            }
+        )
 
     if args.firing_only:
         rows = [r for r in rows if r["entry"]]
@@ -216,7 +220,7 @@ def run_signals(args: argparse.Namespace) -> None:
 
     for r in sorted(rows, key=lambda r: (not r["entry"], r["reason"], r["symbol"])):
         e_x = ("E" if r["entry"] else ".") + ("X" if r["exit_signal"] else ".")
-        price_str = f"${r['price']:>10.4f}" if pd.notna(r['price']) else f"{'n/a':>11}"
+        price_str = f"${r['price']:>10.4f}" if pd.notna(r["price"]) else f"{'n/a':>11}"
         atr_str = f"{r['atr']:>9.4f}" if pd.notna(r["atr"]) else f"{'n/a':>9}"
         print(
             f"{r['symbol']:<10} {r['strategy']:<20} {r['exit']:<14} "
@@ -239,4 +243,6 @@ def run_signals(args: argparse.Namespace) -> None:
     n_blocked = sum(1 for r in rows if not r["allow"])
     n_in_pos = sum(1 for r in rows if r["in_pos"])
     print()
-    print(f"Summary: {n_total} symbol(s) | {n_firing} firing | {n_blocked} regime-blocked | {n_in_pos} in position")
+    print(
+        f"Summary: {n_total} symbol(s) | {n_firing} firing | {n_blocked} regime-blocked | {n_in_pos} in position"
+    )

@@ -88,8 +88,7 @@ def run_repair(args: argparse.Namespace) -> None:
     since_ms = _parse_since(args.since)
 
     if args.dry_run:
-        print("[dry-run] Counting trades on Kraken since "
-              f"{args.since or 'epoch'}...")
+        print(f"[dry-run] Counting trades on Kraken since {args.since or 'epoch'}...")
         local_log = tracker.get_trade_log()
         local_count = len(local_log)
         local_ids: set[str] = set()
@@ -101,23 +100,20 @@ def run_repair(args: argparse.Namespace) -> None:
         # diagnostic"; the user can run without --dry-run if they want a full
         # reconciliation.
         try:
-            kraken_trades = exchange.fetch_my_trades(
-                symbol=None, since=since_ms or 0, limit=500
-            )
+            kraken_trades = exchange.fetch_my_trades(symbol=None, since=since_ms or 0, limit=500)
         except Exception as e:
             raise SystemExit(f"Kraken fetch_my_trades failed: {e!r}") from e
 
-        kraken_ids = {
-            str(t.get("order", t.get("id", ""))) for t in kraken_trades
-        }
+        kraken_ids = {str(t.get("order", t.get("id", ""))) for t in kraken_trades}
         new_ids = kraken_ids - local_ids
         print(f"[dry-run] Local trade_log.csv rows: {local_count}")
-        print(f"[dry-run] Kraken returned: {len(kraken_trades)} trades "
-              f"(may be capped at 500 — run without --dry-run for full sync)")
+        print(
+            f"[dry-run] Kraken returned: {len(kraken_trades)} trades "
+            f"(may be capped at 500 — run without --dry-run for full sync)"
+        )
         print(f"[dry-run] Trades on Kraken not in local log: {len(new_ids)}")
         if new_ids:
-            print(f"[dry-run] First 10 missing order IDs: "
-                  f"{sorted(new_ids)[:10]}")
+            print(f"[dry-run] First 10 missing order IDs: {sorted(new_ids)[:10]}")
         return
 
     print(f"Syncing trades from Kraken since {args.since or 'epoch'}...")

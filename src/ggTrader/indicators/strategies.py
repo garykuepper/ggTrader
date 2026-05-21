@@ -422,9 +422,7 @@ class MultiTimeframeMomentumEntry:
                 {"ema_fast": fast_len, "ema_slow": slow_len, "mtf_daily_ema": mtf_d}
             )
 
-        entries_stacked = [
-            ec.reshape(n_time, -1) if ec.ndim == 2 else ec for ec in entries_list
-        ]
+        entries_stacked = [ec.reshape(n_time, -1) if ec.ndim == 2 else ec for ec in entries_list]
         entries_array = (
             np.hstack(entries_stacked)
             if entries_stacked
@@ -621,9 +619,7 @@ class AdxFilteredMeanReversionEntry:
                 }
             )
 
-        entries_stacked = [
-            ec.reshape(n_time, -1) if ec.ndim == 2 else ec for ec in entries_list
-        ]
+        entries_stacked = [ec.reshape(n_time, -1) if ec.ndim == 2 else ec for ec in entries_list]
         entries_array = (
             np.hstack(entries_stacked)
             if entries_stacked
@@ -963,11 +959,13 @@ class StochRsiReversalEntry:
                     entries_combo = (k_col > ov) & (k_prev <= ov)
                     entries_combo[0] = False
                     entries_list.append(entries_combo.astype(bool))
-                    param_combos.append({
-                        "stochrsi_rsi_length": int(rsi_len),
-                        "stochrsi_stoch_length": int(stoch_len),
-                        "stochrsi_oversold": oversold,
-                    })
+                    param_combos.append(
+                        {
+                            "stochrsi_rsi_length": int(rsi_len),
+                            "stochrsi_stoch_length": int(stoch_len),
+                            "stochrsi_oversold": oversold,
+                        }
+                    )
 
         entries_stacked = [e.reshape(n_time, -1) for e in entries_list]
         entries_array = (

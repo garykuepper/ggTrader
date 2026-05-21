@@ -20,7 +20,7 @@ class PostgresIngestor:
     Uses a Producer-Consumer pattern to decouple parsing and database writing.
     """
 
-    def __init__(self, connection_string: str):
+    def __init__(self, connection_string: str, venue: str = "kraken_spot"):
         """
         Args:
             connection_string (str): SQLAlchemy connection string
@@ -28,6 +28,7 @@ class PostgresIngestor:
         self.engine = create_engine(connection_string, pool_size=20, max_overflow=10)
         self.connection_string = connection_string
         self.intervals = ["1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"]
+        self.venue = venue
         self._init_db()
 
     def _init_db(self) -> None:
@@ -46,7 +47,8 @@ class PostgresIngestor:
                     close DOUBLE PRECISION,
                     volume DOUBLE PRECISION,
                     trades INT,
-                    PRIMARY KEY (timestamp, symbol, interval)
+                    venue VARCHAR(20) NOT NULL DEFAULT 'kraken_spot',
+                    PRIMARY KEY (timestamp, symbol, interval, venue)
                 );
                 """
                 )
@@ -84,9 +86,11 @@ class PostgresIngestor:
         conn.autocommit = True
 
         upsert_query = """
-            INSERT INTO ohlcv (timestamp, symbol, interval, open, high, low, close, volume, trades)
+            INSERT INTO ohlcv (
+                timestamp, symbol, interval, open, high, low, close, volume, trades, venue
+            )
             VALUES %s
-            ON CONFLICT (timestamp, symbol, interval) DO UPDATE SET
+            ON CONFLICT (timestamp, symbol, interval, venue) DO UPDATE SET
                 open = EXCLUDED.open,
                 high = EXCLUDED.high,
                 low = EXCLUDED.low,
@@ -125,6 +129,7 @@ class PostgresIngestor:
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
             df["symbol"] = symbol
             df["interval"] = interval_str
+            df["venue"] = self.venue
 
             records = list(
                 df[
@@ -138,6 +143,7 @@ class PostgresIngestor:
                         "close",
                         "volume",
                         "trades",
+                        "venue",
                     ]
                 ].itertuples(index=False, name=None)
             )
@@ -161,6 +167,7 @@ class PostgresIngestor:
 
         final["symbol"] = symbol
         final["interval"] = interval
+        final["venue"] = self.venue
         final.reset_index(inplace=True)
 
         return list(
@@ -175,6 +182,7 @@ class PostgresIngestor:
                     "close",
                     "volume",
                     "trades",
+                    "venue",
                 ]
             ].itertuples(index=False, name=None)
         )

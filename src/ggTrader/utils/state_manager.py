@@ -78,6 +78,7 @@ def get_latest_research_run(results_dir: str = "results") -> Optional[LatestRese
     # 1) DB lookup
     try:
         from sqlalchemy import text
+
         from ggTrader.utils.result_db_manager import ResultDBManager
 
         m = ResultDBManager()

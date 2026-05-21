@@ -8,9 +8,7 @@ horizontal `pd.concat(axis=1)` raises `InvalidIndexError`.
 from __future__ import annotations
 
 import time
-from unittest.mock import MagicMock, patch
-
-import pandas as pd
+from unittest.mock import MagicMock
 
 from ggTrader.data.live.exchange_loader import LiveExchangeLoader
 

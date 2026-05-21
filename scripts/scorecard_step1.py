@@ -11,6 +11,7 @@ Phase 3 sanity numbers. Print to stdout; pipe to a file or jq as needed.
 Usage:
     python scripts/scorecard_step1.py results/research/research_20260508_135840
 """
+
 from __future__ import annotations
 
 import argparse
@@ -55,13 +56,15 @@ def scorecard(run_dir: Path) -> dict[str, Any]:
         oos_score = safe_float(r.get("oos_robustness_score"))
         cons = safe_float(r.get("fold_consistency"))
         gate = safe_float(r.get("robustness_score"))
-        rows.append({
-            "symbol": symbol,
-            "is": is_score,
-            "oos": oos_score,
-            "consistency": cons,
-            "gate": gate,
-        })
+        rows.append(
+            {
+                "symbol": symbol,
+                "is": is_score,
+                "oos": oos_score,
+                "consistency": cons,
+                "gate": gate,
+            }
+        )
 
     # B-criterion primary metrics
     oos_finite = [row["oos"] for row in rows if row["oos"] is not None]
@@ -73,9 +76,7 @@ def scorecard(run_dir: Path) -> dict[str, Any]:
     # Secondary metrics
     n_survivors = len(rows)
     gaps = [
-        row["is"] - row["oos"]
-        for row in rows
-        if row["is"] is not None and row["oos"] is not None
+        row["is"] - row["oos"] for row in rows if row["is"] is not None and row["oos"] is not None
     ]
     median_gap = statistics.median(gaps) if gaps else None
 
@@ -87,10 +88,14 @@ def scorecard(run_dir: Path) -> dict[str, Any]:
             ps = json.loads(phase_stats_path.read_text())
             p3 = ps.get("phase_3_stats") or {}
             phase3 = {
-                "total_return_pct": safe_float(p3.get("total_return_pct") or p3.get("total_return") or p3.get("profit_pct")),
+                "total_return_pct": safe_float(
+                    p3.get("total_return_pct") or p3.get("total_return") or p3.get("profit_pct")
+                ),
                 "cagr_pct": safe_float(p3.get("cagr_pct") or p3.get("cagr")),
                 "sharpe": safe_float(p3.get("sharpe")),
-                "max_drawdown_pct": safe_float(p3.get("max_drawdown_pct") or p3.get("max_drawdown")),
+                "max_drawdown_pct": safe_float(
+                    p3.get("max_drawdown_pct") or p3.get("max_drawdown")
+                ),
                 "btc_cagr_pct": safe_float(p3.get("btc_cagr_pct") or p3.get("benchmark_cagr_pct")),
             }
         except Exception as exc:

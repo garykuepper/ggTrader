@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import math
 import os
 import time
-from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import pandas as pd
 
@@ -47,25 +45,30 @@ from ggTrader.indicators.strategies import (
 
 def _safe_extract_filled_amount(order: Optional[Dict[str, Any]]) -> Optional[float]:
     """Extract cumulative filled quantity from CCXT order."""
-    if not order: return None
+    if not order:
+        return None
     filled = order.get("filled")
-    if filled and float(filled) > 0: return float(filled)
+    if filled and float(filled) > 0:
+        return float(filled)
     trades = order.get("trades") or []
     if trades:
         total = sum(float(t.get("amount") or 0) for t in trades)
-        if total > 0: return total
+        if total > 0:
+            return total
     return None
 
 
 def _safe_extract_fill_price(order: Optional[Dict[str, Any]]) -> Optional[float]:
     """Extract VWAP fill price from CCXT order response."""
-    if not order: return None
+    if not order:
+        return None
     cost = order.get("cost")
     filled = order.get("filled")
     if cost and filled and float(cost) > 0 and float(filled) > 0:
         return float(cost) / float(filled)
     avg = order.get("average")
-    if avg and float(avg) > 0: return float(avg)
+    if avg and float(avg) > 0:
+        return float(avg)
     trades = order.get("trades") or []
     if trades:
         total_amt = 0.0
@@ -76,7 +79,8 @@ def _safe_extract_fill_price(order: Optional[Dict[str, Any]]) -> Optional[float]
             if amt > 0 and px > 0:
                 total_amt += amt
                 total_val += amt * px
-        if total_amt > 0: return total_val / total_amt
+        if total_amt > 0:
+            return total_val / total_amt
     price = order.get("price")
     if price and float(price) > 0 and order.get("status") in ("closed", "filled"):
         return float(price)
@@ -120,14 +124,18 @@ class CryptoExecutionEngine(BaseExecutionEngine):
     ):
         config["ASSET_CLASS"] = "crypto"
         super().__init__(config, results_path, db_manager, run_id)
-        
+
         self.exchange_id = config.get("EXCHANGE", "kraken")
         self.loader = CachedExchangeLoader(exchange_id=self.exchange_id)
         self.exchange = self.loader.exchange
 
         if not self.exchange.apiKey:
-            self.exchange.apiKey = os.getenv("KRAKEN_KEY")
-            self.exchange.secret = os.getenv("KRAKEN_SECRET")
+            if self.exchange_id == "binanceus":
+                self.exchange.apiKey = os.getenv("BINANCE_API_LIVE_KEY")
+                self.exchange.secret = os.getenv("BINANCE_SECRET_LIVE_KEY")
+            else:
+                self.exchange.apiKey = os.getenv("KRAKEN_KEY")
+                self.exchange.secret = os.getenv("KRAKEN_SECRET")
 
         self._reopt_done_month: int | None = None
         self._reopt_state_key = f"last_reopt_month_{self.asset_class}"
@@ -163,6 +171,7 @@ class CryptoExecutionEngine(BaseExecutionEngine):
 
     def reload_params(self) -> None:
         from ggTrader.utils.state_manager import get_latest_research_run
+
         latest_res = get_latest_research_run()
         if latest_res:
             self.per_coin_params = {}
@@ -185,7 +194,10 @@ class CryptoExecutionEngine(BaseExecutionEngine):
 
             stale = [s for s in self.active_positions if s not in held_symbols]
             if stale:
-                self.logger.warning(f"  [Reconcile] {len(stale)} position(s) in local state but NOT held on exchange: {stale}")
+                self.logger.warning(
+                    f"  [Reconcile] {len(stale)} position(s) in local state but "
+                    f"NOT held on exchange: {stale}"
+                )
                 for s in stale:
                     pos = self.active_positions[s]
                     exit_id = pos.get("tsl_order_id") or pos.get("oco_order_id")
@@ -207,12 +219,17 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                 except Exception:
                     usd_val = 0.0
                 if usd_val < _DUST_THRESHOLD_USD:
-                    self.logger.info(f"  [Reconcile] Ignoring dust balance {s}: {held_symbols[s]:.8g} (~${usd_val:.4f})")
+                    self.logger.info(
+                        f"  [Reconcile] Ignoring dust balance {s}: "
+                        f"{held_symbols[s]:.8g} (~${usd_val:.4f})"
+                    )
                     continue
                 untracked.append(s)
-            
+
             if untracked:
-                self.logger.warning(f"  [Reconcile] {len(untracked)} untracked positions found: {untracked}")
+                self.logger.warning(
+                    f"  [Reconcile] {len(untracked)} untracked positions found: {untracked}"
+                )
                 for s in untracked:
                     coin_params = self.per_coin_params.get(s)
                     seeded = self.tracker.find_open_buy_for(s)
@@ -222,8 +239,12 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                         "entry_time": seeded["time"] if seeded else None,
                         "entry_fee": seeded["fee"] if seeded else 0.0,
                         "amount": held_symbols[s],
-                        "stop_pct": coin_params["params"].get("stop_pct", 3.0) if coin_params else 3.0,
-                        "exit_name": coin_params.get("exit_name", "atr_trailing") if coin_params else "atr_trailing",
+                        "stop_pct": coin_params["params"].get("stop_pct", 3.0)
+                        if coin_params
+                        else 3.0,
+                        "exit_name": coin_params.get("exit_name", "atr_trailing")
+                        if coin_params
+                        else "atr_trailing",
                         "tsl_order_id": None,
                     }
                 self.save_state()
@@ -239,7 +260,8 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                         if cur_val < _DUST_THRESHOLD_USD:
                             self.logger.info(f"  [Reconcile] Removing local dust position {sym}")
                             del self.active_positions[sym]
-                    except Exception: pass
+                    except Exception:
+                        pass
             self.save_state()
 
         except Exception as e:
@@ -292,20 +314,24 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                 return False
 
         exit_price = _safe_extract_fill_price(sell_order)
-        if (exit_price is None or exit_price <= 0):
+        if exit_price is None or exit_price <= 0:
             # Try fetch_my_trades
             try:
                 recent = self.exchange.fetch_my_trades(pair, limit=20)
                 matching = [t for t in recent if t.get("order") == sell_order_id]
                 if matching:
-                    exit_price = sum(float(t["amount"]) * float(t["price"]) for t in matching) / sum(float(t["amount"]) for t in matching)
-            except Exception: pass
+                    exit_price = sum(
+                        float(t["amount"]) * float(t["price"]) for t in matching
+                    ) / sum(float(t["amount"]) for t in matching)
+            except Exception:
+                pass
 
         if (exit_price is None or exit_price <= 0) and allow_ticker_fallback:
             try:
                 ticker = self.exchange.fetch_ticker(pair)
                 exit_price = float(ticker.get("last") or 0)
-            except Exception: pass
+            except Exception:
+                pass
 
         if not exit_price or exit_price <= 0:
             return False
@@ -313,7 +339,7 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         filled_amount = _safe_extract_filled_amount(sell_order) or float(pos.get("amount") or 0)
         fee_info = sell_order.get("fee") or {}
         sell_fee = float(fee_info.get("cost", 0) or 0)
-        
+
         self.tracker.record_sell(
             symbol=symbol,
             order_id=sell_order_id,
@@ -331,12 +357,21 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         try:
             strategy = self.per_coin_params.get(symbol, {}).get("strategy_name", "?")
             msg = _format_exit_alert(
-                symbol, strategy, exit_reason, pos.get("entry_price"), exit_price,
-                filled_amount, float(pos.get("entry_fee", 0)), sell_fee, pos.get("entry_time"),
-                len(self.active_positions) - 1, len(self.per_coin_params)
+                symbol,
+                strategy,
+                exit_reason,
+                pos.get("entry_price"),
+                exit_price,
+                filled_amount,
+                float(pos.get("entry_fee", 0)),
+                sell_fee,
+                pos.get("entry_time"),
+                len(self.active_positions) - 1,
+                len(self.per_coin_params),
             )
             self._notify(msg)
-        except Exception: pass
+        except Exception:
+            pass
         return True
 
     def _handle_emergency_rollback(self, symbol: str, amount: float) -> None:
@@ -346,7 +381,9 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         sell_id = self._execute_market_sell_order(symbol, amount)
         if sell_id:
             pos = self.active_positions.get(symbol) or {"amount": amount}
-            if self._record_exit(symbol, sell_id, pos, "emergency_rollback", allow_ticker_fallback=True):
+            if self._record_exit(
+                symbol, sell_id, pos, "emergency_rollback", allow_ticker_fallback=True
+            ):
                 self.active_positions.pop(symbol, None)
             elif symbol in self.active_positions:
                 self.active_positions[symbol]["pending_repair"] = True
@@ -365,7 +402,8 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             allowed_bases = {s.split("-")[0] for s in self.symbols}
             allowed_bases.update(s.split("-")[0] for s in self.active_positions.keys())
             for coin, amount in bal.get("total", {}).items():
-                if float(amount) <= 0: continue
+                if float(amount) <= 0:
+                    continue
                 norm_coin = norm_map.get(coin, coin)
                 if norm_coin in ("USD", "USDT", "USDC"):
                     total_usd += float(amount)
@@ -406,24 +444,31 @@ class CryptoExecutionEngine(BaseExecutionEngine):
     def _compute_latest_signals(self, ohlcv_df: pd.DataFrame) -> Dict[str, Dict[str, Any]]:
         results = {}
         for s in self.symbols:
-            if s not in ohlcv_df.columns.get_level_values(0): continue
+            if s not in ohlcv_df.columns.get_level_values(0):
+                continue
             info = self.per_coin_params.get(s)
-            if not info: continue
+            if not info:
+                continue
             strat = self.STRATEGY_MAP.get(info["strategy_name"])
             exit_s = self.EXIT_MAP.get(info["exit_name"])
-            if not strat or not exit_s: continue
-            
+            if not strat or not exit_s:
+                continue
+
             close, high, low = ohlcv_df[(s, "close")], ohlcv_df[(s, "high")], ohlcv_df[(s, "low")]
             pc = IndicatorPrecomputer(close, high, low)
             grid = {k: [v] for k, v in info["params"].items()}
             ent, _ = strat().compute_entries(pc, grid)
             ext, stops, pxs = exit_s().compute_exits(ent, pc, grid, 1)
-            
+
             atr = float("nan")
             if info["exit_name"] == "atr_trailing":
-                try: atr = float(pc.compute_atr(int(info["params"].get("atr_length", 14))).atrr.values[-1])
-                except Exception: pass
-                
+                try:
+                    atr = float(
+                        pc.compute_atr(int(info["params"].get("atr_length", 14))).atrr.values[-1]
+                    )
+                except Exception:
+                    pass
+
             results[s] = {
                 "entry": bool(ent[-1, 0]),
                 "exit": bool(ext[-1, 0]),
@@ -436,7 +481,8 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         return results
 
     def _validate_entry_preconditions(self, symbol: str, capital_usd: float) -> bool:
-        if self.config.get("DRY_RUN"): return True
+        if self.config.get("DRY_RUN"):
+            return True
         try:
             bal = self.exchange.fetch_balance()
             free_usd = float(bal.get("free", {}).get("USD", 0))
@@ -447,7 +493,8 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                 )
                 return False
             pair = symbol.replace("-", "/")
-            if not self.exchange.markets: self.exchange.load_markets()
+            if not self.exchange.markets:
+                self.exchange.load_markets()
             m = self.exchange.market(pair)
             ticker = self.exchange.fetch_ticker(pair)
             coin_amt = capital_usd / ticker["last"]
@@ -465,7 +512,8 @@ class CryptoExecutionEngine(BaseExecutionEngine):
 
     def _execute_market_buy_order(self, symbol: str, amount_usd: float) -> Optional[str]:
         self.logger.info(f"BUY {symbol} ${amount_usd}")
-        if self.config.get("DRY_RUN"): return "dry_run_id"
+        if self.config.get("DRY_RUN"):
+            return "dry_run_id"
         try:
             pair = symbol.replace("-", "/")
             ticker = self.exchange.fetch_ticker(pair)
@@ -478,7 +526,8 @@ class CryptoExecutionEngine(BaseExecutionEngine):
 
     def _execute_market_sell_order(self, symbol: str, amount: float) -> Optional[str]:
         self.logger.info(f"SELL {symbol} {amount}")
-        if self.config.get("DRY_RUN"): return "dry_run_sell_id"
+        if self.config.get("DRY_RUN"):
+            return "dry_run_sell_id"
         try:
             pair = symbol.replace("-", "/")
             amt = self.exchange.amount_to_precision(pair, amount)
@@ -488,45 +537,57 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             self.logger.error(f"Sell failed: {e}")
             return None
 
-    def _execute_trailing_stop_order(self, symbol: str, amount: float, stop_pct: float) -> Optional[str]:
+    def _execute_trailing_stop_order(
+        self, symbol: str, amount: float, stop_pct: float
+    ) -> Optional[str]:
         self.logger.info(f"TSL {symbol} -{stop_pct}%")
-        if self.config.get("DRY_RUN"): return "dry_run_tsl_id"
+        if self.config.get("DRY_RUN"):
+            return "dry_run_tsl_id"
         try:
             pair = symbol.replace("-", "/")
             ticker = self.exchange.fetch_ticker(pair)
             offset = ticker["last"] * (stop_pct / 100.0)
             m = self.exchange.market(pair)
             prec = m.get("precision", {}).get("price")
-            min_t = 10**(-prec) if isinstance(prec, int) else prec
+            min_t = 10 ** (-prec) if isinstance(prec, int) else prec
             offset = float(self.exchange.price_to_precision(pair, max(offset, min_t)))
             amt_p = self.exchange.amount_to_precision(pair, amount)
-            order = self.exchange.create_order(pair, "trailing-stop", "sell", amt_p, None, {"trailingAmount": offset})
+            order = self.exchange.create_order(
+                pair, "trailing-stop", "sell", amt_p, None, {"trailingAmount": offset}
+            )
             return order["id"]
         except Exception as e:
             self.logger.error(f"TSL failed: {e}")
             return None
 
-    def _execute_oco_exit_order(self, symbol: str, amount: float, sl: float, tp: float) -> Optional[str]:
+    def _execute_oco_exit_order(
+        self, symbol: str, amount: float, sl: float, tp: float
+    ) -> Optional[str]:
         self.logger.info(f"OCO {symbol} SL={sl} TP={tp}")
-        if self.config.get("DRY_RUN"): return "dry_run_oco_id"
+        if self.config.get("DRY_RUN"):
+            return "dry_run_oco_id"
         try:
             pair = symbol.replace("-", "/")
             sl_f = float(self.exchange.price_to_precision(pair, sl))
             tp_f = float(self.exchange.price_to_precision(pair, tp))
             amt_p = self.exchange.amount_to_precision(pair, amount)
-            order = self.exchange.create_order(pair, "limit", "sell", amt_p, tp_f, {"stopLossPrice": sl_f, "takeProfitPrice": tp_f})
+            order = self.exchange.create_order(
+                pair, "limit", "sell", amt_p, tp_f, {"stopLossPrice": sl_f, "takeProfitPrice": tp_f}
+            )
             return order["id"]
         except Exception as e:
             self.logger.error(f"OCO failed: {e}")
             return None
 
     def _cancel_open_orders(self, symbol: str) -> None:
-        if self.config.get("DRY_RUN"): return
+        if self.config.get("DRY_RUN"):
+            return
         try:
             pair = symbol.replace("-", "/")
             for o in self.exchange.fetch_open_orders(pair):
                 self.exchange.cancel_order(o["id"], pair)
-        except Exception: pass
+        except Exception:
+            pass
 
     def _estimate_stop_pct_for_sizing(self, symbol: str, sig: Dict[str, Any]) -> float:
         """Pre-buy estimate of the exit's stop distance as a percentage.
@@ -551,12 +612,15 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             stop_pct = float(coin_params.get("stop_pct", 3.0))
         return max(stop_pct, 0.5)
 
-    def _compute_post_buy_stop_pct(self, symbol: str, sig: Dict[str, Any], fill_price: float) -> float:
+    def _compute_post_buy_stop_pct(
+        self, symbol: str, sig: Dict[str, Any], fill_price: float
+    ) -> float:
         """Final stop-pct for placing the actual exit order after a fill.
 
         Thin wrapper around ``core.trailing_stop_utils.compute_post_buy_stop_pct``.
         """
         from ggTrader.core.trailing_stop_utils import compute_post_buy_stop_pct
+
         coin_params = self.per_coin_params[symbol]["params"]
         return compute_post_buy_stop_pct(
             symbol=symbol,
@@ -568,8 +632,12 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             logger=self.logger,
         )
 
-    def _compute_adaptive_position_usd(self, symbol: str, sig: Dict[str, Any], base_capital: float) -> Optional[float]:
-        """Volatility-normalized position size: position = (portfolio * TARGET_RISK_PCT) / stop_pct."""
+    def _compute_adaptive_position_usd(
+        self, symbol: str, sig: Dict[str, Any], base_capital: float
+    ) -> Optional[float]:
+        """Volatility-normalized position size:
+        position = (portfolio * TARGET_RISK_PCT) / stop_pct.
+        """
         target_risk_pct = float(self.config.get("TARGET_RISK_PCT", 0.01))
         max_position_pct = float(self.config.get("MAX_POSITION_PCT", 0.15))
         min_position_usd = float(self.config.get("MIN_POSITION_USD", 15.0))
@@ -596,7 +664,11 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         )
         return position_usd
 
-    def _execute_trade_logic(self, signals_dict: Dict[str, Dict[str, Any]], regime_allowance: Optional[Dict[str, bool]] = None) -> None:
+    def _execute_trade_logic(
+        self,
+        signals_dict: Dict[str, Dict[str, Any]],
+        regime_allowance: Optional[Dict[str, bool]] = None,
+    ) -> None:
         regime_allowance = regime_allowance or {}
         if self.circuit_breaker_triggered:
             self.logger.info("  [CircuitBreaker] ACTIVE")
@@ -628,12 +700,14 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                     cap = base_capital * weight
                     if cap < min_position_usd:
                         self.logger.info(
-                            f"  [Sizing] {s}: weighted ${cap:.2f} ({weight*100:.2f}% × ${base_capital:.2f}) "
+                            f"  [Sizing] {s}: weighted ${cap:.2f} "
+                            f"({weight * 100:.2f}% × ${base_capital:.2f}) "
                             f"below MIN_POSITION_USD=${min_position_usd:.2f} — skipping"
                         )
                         continue
                     self.logger.info(
-                        f"  [Sizing] {s}: weighted {weight*100:.2f}% × ${base_capital:.2f} -> ${cap:.2f}"
+                        f"  [Sizing] {s}: weighted {weight * 100:.2f}% × "
+                        f"${base_capital:.2f} -> ${cap:.2f}"
                     )
                 elif adaptive:
                     base_capital = self._get_total_portfolio_usd()
@@ -652,7 +726,8 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                     cap = float(cap)
                     self.logger.info(f"  [Sizing] {s}: fixed ${cap:.2f}")
 
-                if not self._validate_entry_preconditions(s, cap): continue
+                if not self._validate_entry_preconditions(s, cap):
+                    continue
                 oid = self._execute_market_buy_order(s, cap)
                 if oid:
                     time.sleep(1)
@@ -660,7 +735,7 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                     px = _safe_extract_fill_price(ord) or sig["current_price"]
                     amt = float(ord.get("filled", 0)) or (cap / px)
                     self.tracker.record_buy(s, oid, px, amt, px * amt, 0, "USD")
-                    
+
                     exit_n = sig["exit_name"]
                     stop_p = self._compute_post_buy_stop_pct(s, sig, px)
                     # Universal trailing: every live exit uses Kraken-native trailing-stop.
@@ -674,9 +749,11 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                         )
                     tslid = self._execute_trailing_stop_order(s, amt, stop_p)
                     self.active_positions[s] = {
-                        "entry_order_id": oid, "entry_price": px,
+                        "entry_order_id": oid,
+                        "entry_price": px,
                         "entry_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                        "amount": amt, "stop_pct": stop_p,
+                        "amount": amt,
+                        "stop_pct": stop_p,
                         "exit_name": "trailing_stop" if exit_n == "fixed_sl_tp" else exit_n,
                         "exit_name_original": exit_n,
                         "tsl_order_id": tslid,
@@ -687,17 +764,24 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                             s,
                             self.per_coin_params.get(s, {}).get("strategy_name", "?"),
                             self.active_positions[s]["exit_name"],
-                            px, amt, px * amt, stop_p,
-                            len(self.active_positions), len(self.per_coin_params),
+                            px,
+                            amt,
+                            px * amt,
+                            stop_p,
+                            len(self.active_positions),
+                            len(self.per_coin_params),
                         )
                         self._notify(msg)
-                    except Exception: pass
+                    except Exception:
+                        pass
             elif s in self.active_positions and sig["exit"]:
                 pos = self.active_positions[s]
                 if pos.get("exit_name") == "fixed_sl_tp":
                     self._cancel_open_orders(s)
                     sid = self._execute_market_sell_order(s, pos["amount"])
-                    if sid and self._record_exit(s, sid, pos, "strategy_signal", allow_ticker_fallback=True):
+                    if sid and self._record_exit(
+                        s, sid, pos, "strategy_signal", allow_ticker_fallback=True
+                    ):
                         del self.active_positions[s]
                         self.save_state()
 
@@ -711,17 +795,20 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                     if self._run_monthly_reoptimization():
                         self._reopt_done_month = now.month
                         self._save_reopt_flag(now.month)
-                
+
                 self._reconcile_positions()
                 self._check_circuit_breaker()
-                
+
                 total_usd = self._get_total_portfolio_usd()
                 if total_usd:
                     try:
                         bal = self.exchange.fetch_balance()
                         free_usd = float(bal.get("free", {}).get("USD", 0))
-                        self.tracker.record_balance_snapshot(total_usd, free_usd, total_usd - free_usd, len(self.active_positions))
-                    except Exception: pass
+                        self.tracker.record_balance_snapshot(
+                            total_usd, free_usd, total_usd - free_usd, len(self.active_positions)
+                        )
+                    except Exception:
+                        pass
                     try:
                         self.db_manager.add_positions_snapshot(
                             asset_class=self.asset_class,
@@ -729,15 +816,20 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                             positions=self.active_positions,
                             circuit_breaker_triggered=self.circuit_breaker_triggered,
                         )
-                    except Exception: pass
-                
+                    except Exception:
+                        pass
+
                 df = self._fetch_latest_data()
                 if not df.empty:
-                    self._execute_trade_logic(self._compute_latest_signals(df), self._compute_live_regime_allowance(df))
-                
+                    self._execute_trade_logic(
+                        self._compute_latest_signals(df), self._compute_live_regime_allowance(df)
+                    )
+
                 time.sleep(POLL_INTERVAL_SEC)
-                if self.active_positions: self._poll_open_exit_orders()
-        except KeyboardInterrupt: self.state = "STOPPED"
+                if self.active_positions:
+                    self._poll_open_exit_orders()
+        except KeyboardInterrupt:
+            self.state = "STOPPED"
 
     def _run_monthly_reoptimization(self) -> bool:
         import subprocess
@@ -749,8 +841,29 @@ class CryptoExecutionEngine(BaseExecutionEngine):
         project_root = Path(__file__).resolve().parent.parent.parent.parent
 
         try:
-            subprocess.run([sys.executable, "-u", "ggt.py", "research", "--top", "50", "--workers", "2", "--end-date", yesterday], cwd=str(project_root), check=True, timeout=7200)
-            subprocess.run([sys.executable, "-u", "ggt.py", "production"], cwd=str(project_root), check=True, timeout=1800)
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-u",
+                    "ggt.py",
+                    "research",
+                    "--top",
+                    "50",
+                    "--workers",
+                    "2",
+                    "--end-date",
+                    yesterday,
+                ],
+                cwd=str(project_root),
+                check=True,
+                timeout=7200,
+            )
+            subprocess.run(
+                [sys.executable, "-u", "ggt.py", "production"],
+                cwd=str(project_root),
+                check=True,
+                timeout=1800,
+            )
             self.reload_params()
             return True
         except Exception as e:

@@ -44,9 +44,7 @@ def _build_exchange() -> Any:
         exchange.apiKey = os.getenv("KRAKEN_KEY")
         exchange.secret = os.getenv("KRAKEN_SECRET")
     if not exchange.apiKey or not exchange.secret:
-        raise RuntimeError(
-            "Kraken API keys not found. Set KRAKEN_KEY and KRAKEN_SECRET in .env."
-        )
+        raise RuntimeError("Kraken API keys not found. Set KRAKEN_KEY and KRAKEN_SECRET in .env.")
     return exchange
 
 
@@ -126,7 +124,9 @@ def compute_kraken_realized_pnl(trades: list[dict]) -> dict[str, dict]:
                     # Pro-rated entry fee
                     trip_pnl -= b["fee"] * (consume / b["amount"]) if b["amount"] else 0
                     b["amount"] -= consume
-                    b["fee"] *= (b["amount"] / (b["amount"] + consume)) if (b["amount"] + consume) else 0
+                    b["fee"] *= (
+                        (b["amount"] / (b["amount"] + consume)) if (b["amount"] + consume) else 0
+                    )
                     remaining -= consume
                     if b["amount"] <= 1e-12:
                         open_buys.pop(0)
@@ -230,7 +230,8 @@ def build_report(
     lines.append("")
     stop_types = ["trailing-stop", "stop-loss", "stop-loss-limit", "take-profit"]
     stop_orders = [
-        o for o in kraken_orders
+        o
+        for o in kraken_orders
         if any(s in str(o.get("type", "")).lower() for s in stop_types)
         or any(
             s in str((o.get("info") or {}).get("descr", {}).get("ordertype", "")).lower()
@@ -251,9 +252,9 @@ def build_report(
         lines.append("| Time | Symbol | Type | Status | Avg Fill | Amount |")
         lines.append("|---|---|---|---|---|---|")
         for o in sorted(stop_orders, key=lambda x: x.get("timestamp") or 0):
-            ts = datetime.fromtimestamp(
-                (o.get("timestamp") or 0) / 1000, tz=timezone.utc
-            ).strftime("%Y-%m-%d %H:%M")
+            ts = datetime.fromtimestamp((o.get("timestamp") or 0) / 1000, tz=timezone.utc).strftime(
+                "%Y-%m-%d %H:%M"
+            )
             sym = o.get("symbol", "").replace("/", "-")
             typ = o.get("type") or "?"
             status = o.get("status") or "?"
@@ -284,7 +285,7 @@ def build_report(
 
             # Highlight discrepancy
             diff = total_realized - csv_total
-            lines.append(f"### Reconciliation: Kraken vs CSV")
+            lines.append("### Reconciliation: Kraken vs CSV")
             lines.append("")
             lines.append("| Source | Total Realized PnL |")
             lines.append("|---|---|")
@@ -389,7 +390,9 @@ def main() -> None:
     exchange = _build_exchange()
     since_ms = int((datetime.now(timezone.utc) - timedelta(days=args.days)).timestamp() * 1000)
 
-    print(f"Fetching Kraken closed orders since {datetime.fromtimestamp(since_ms/1000, tz=timezone.utc)}...")
+    print(
+        f"Fetching Kraken closed orders since {datetime.fromtimestamp(since_ms / 1000, tz=timezone.utc)}..."
+    )
     kraken_orders = fetch_kraken_orders(exchange, since_ms)
     print(f"  -> {len(kraken_orders)} orders")
 

@@ -41,6 +41,7 @@ sys.path.insert(0, str(ROOT / "src"))
 # Data extraction
 # ---------------------------------------------------------------------------
 
+
 def _per_coin_from_blob(blob: Any) -> dict[str, dict[str, Any]]:
     """Normalise either ``{per_coin: {...}}`` or a flat ``{sym: {...}}`` dict."""
     if not isinstance(blob, dict):
@@ -99,6 +100,7 @@ def _iter_runs_from_disk(limit: Optional[int]) -> Iterable[tuple[str, str, dict]
 # Aggregation
 # ---------------------------------------------------------------------------
 
+
 def aggregate_strategies(
     runs_iter: Iterable[tuple[str, str, dict]],
 ) -> tuple[dict, list[tuple[str, str, int]]]:
@@ -146,6 +148,7 @@ def aggregate_strategies(
 # Rendering
 # ---------------------------------------------------------------------------
 
+
 def _pct(n: int, d: int) -> str:
     return f"{(n / d * 100):.1f}%" if d else "n/a"
 
@@ -190,7 +193,9 @@ def render_table(
     rows.sort(key=lambda r: r[1], reverse=True)
 
     headers = ["strategy", "wins", "share", "med_rob", "p25_rob", "p75_rob", "uniq_coins"]
-    widths = [max(len(h), max((len(str(r[i])) for r in rows), default=0)) for i, h in enumerate(headers)]
+    widths = [
+        max(len(h), max((len(str(r[i])) for r in rows), default=0)) for i, h in enumerate(headers)
+    ]
     print()
     print("  ".join(h.ljust(w) for h, w in zip(headers, widths)))
     print("  ".join("-" * w for w in widths))
@@ -213,9 +218,12 @@ def render_exit_pairings(stats: dict[str, dict[str, Any]]) -> None:
 # Entrypoint
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "")
-    p.add_argument("--last", type=int, default=10, help="Aggregate the last N research runs (default: 10)")
+    p.add_argument(
+        "--last", type=int, default=10, help="Aggregate the last N research runs (default: 10)"
+    )
     p.add_argument(
         "--from-disk",
         action="store_true",
@@ -226,6 +234,7 @@ def main() -> None:
     # Pull the entry registry so the output includes 0-win strategies (the whole point).
     try:
         from ggTrader.indicators.strategies import ENTRY_REGISTRY
+
         full_registry = list(ENTRY_REGISTRY.keys())
     except Exception:
         full_registry = []

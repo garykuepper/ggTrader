@@ -111,8 +111,12 @@ def _load_csv_for_symbol(symbol: str) -> pd.DataFrame:
     native_files: list[str] = []
     sixty_files: list[str] = []
     for pair in _archive_pair_candidates(symbol):
-        native_files.extend(sorted(glob(str(ARCHIVE_ROOT / f"Kraken_OHLCVT_Q*_*/{pair}_{NATIVE_4H_MIN}.csv"))))
-        sixty_files.extend(sorted(glob(str(ARCHIVE_ROOT / f"Kraken_OHLCVT_Q*_*/{pair}_{RESAMPLE_SOURCE_MIN}.csv"))))
+        native_files.extend(
+            sorted(glob(str(ARCHIVE_ROOT / f"Kraken_OHLCVT_Q*_*/{pair}_{NATIVE_4H_MIN}.csv")))
+        )
+        sixty_files.extend(
+            sorted(glob(str(ARCHIVE_ROOT / f"Kraken_OHLCVT_Q*_*/{pair}_{RESAMPLE_SOURCE_MIN}.csv")))
+        )
 
     df_native = _read_csv_files(native_files)
     if not df_native.empty:
@@ -234,7 +238,9 @@ def main() -> int:
     args = ap.parse_args()
 
     if not ARCHIVE_ROOT.exists():
-        print(f"ERROR: archive not found at {ARCHIVE_ROOT} — mount /media/thesix/Kraken into the container.")
+        print(
+            f"ERROR: archive not found at {ARCHIVE_ROOT} — mount /media/thesix/Kraken into the container."
+        )
         return 2
 
     conn_str = _resolve_conn_str()
@@ -244,7 +250,9 @@ def main() -> int:
     else:
         symbols = [s.strip() for s in args.symbols.split(",") if s.strip()]
 
-    print(f"Backfilling {len(symbols)} symbol(s) from {ARCHIVE_ROOT} into interval={TARGET_INTERVAL}.\n")
+    print(
+        f"Backfilling {len(symbols)} symbol(s) from {ARCHIVE_ROOT} into interval={TARGET_INTERVAL}.\n"
+    )
 
     grand_total_in = 0
     grand_skipped: list[str] = []
@@ -253,14 +261,14 @@ def main() -> int:
         print(f"[{sym}] before: {before[0]} bars, range {before[1]} → {before[2]}")
         df_4h = _load_csv_for_symbol(sym)
         if df_4h.empty:
-            print(f"  no archive CSV for {sym} (looked for {_archive_pair_candidates(sym)}) — skipping\n")
+            print(
+                f"  no archive CSV for {sym} (looked for {_archive_pair_candidates(sym)}) — skipping\n"
+            )
             grand_skipped.append(sym)
             continue
         attempted, _ = _upsert_bars(conn_str, sym, df_4h)
         after = _coverage(conn_str, sym)
-        print(
-            f"  archive 4h bars: {len(df_4h)}  upsert attempted={attempted}"
-        )
+        print(f"  archive 4h bars: {len(df_4h)}  upsert attempted={attempted}")
         print(f"  after:  {after[0]} bars, range {after[1]} → {after[2]}\n")
         grand_total_in += attempted
 

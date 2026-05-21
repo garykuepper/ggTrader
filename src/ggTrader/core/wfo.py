@@ -79,7 +79,8 @@ def _process_wfo_fold(
     test_mask = mover_mask.loc[test_idx] if mover_mask is not None else None
     train_regime = (
         btc_regime_mask.reindex(train_idx, fill_value=False)
-        if btc_regime_mask is not None else None
+        if btc_regime_mask is not None
+        else None
     )
     test_regime = (
         btc_regime_mask.reindex(test_idx, fill_value=False) if btc_regime_mask is not None else None
@@ -91,7 +92,10 @@ def _process_wfo_fold(
     pf_train: Any = None
     try:
         train_engine = FastBacktest(
-            train_ohlcv, param_grid, config=wfo_train_cfg, mover_mask=train_mask,
+            train_ohlcv,
+            param_grid,
+            config=wfo_train_cfg,
+            mover_mask=train_mask,
             regime_mask=train_regime,
         )
         pf_train = train_engine.run(show_progress=show_progress)
@@ -103,9 +107,7 @@ def _process_wfo_fold(
         # When the vectorized path fails, skip this fold rather than running the slow
         # SignalFactory fallback (which takes 100x longer and still produces 0 trades
         # for data-quality issues like newly listed coins or shape mismatches).
-        print(
-            f"  WFO fold {fold_idx}: vectorized train failed ({vec_exc!r}), skipping fold."
-        )
+        print(f"  WFO fold {fold_idx}: vectorized train failed ({vec_exc!r}), skipping fold.")
         return {
             "fold_idx": fold_idx,
             "best_params": {},
@@ -205,7 +207,10 @@ def _process_wfo_fold(
     # USE_VECTORIZED False is fine here (scalar params).
     wfo_test_cfg = {**config, "USE_VECTORIZED": False}
     test_engine = FastBacktest(
-        test_ohlcv, fold_best_params, config=wfo_test_cfg, mover_mask=test_mask,
+        test_ohlcv,
+        fold_best_params,
+        config=wfo_test_cfg,
+        mover_mask=test_mask,
         regime_mask=test_regime,
     )
     pf_test = test_engine.run(show_progress=show_progress)
@@ -348,9 +353,9 @@ def _weighted_robustness_series(
         mat[:, j] = aligned.to_numpy(dtype=float, copy=False)
 
     # Vectorized weighted mean ignoring NaNs
-    finite_mask = np.isfinite(mat)                          # (n_keys, n_folds)
+    finite_mask = np.isfinite(mat)  # (n_keys, n_folds)
     weighted_vals = np.where(finite_mask, mat * wvec, 0.0)  # zero out non-finite
-    weighted_wts  = np.where(finite_mask, wvec, 0.0)        # zero out missing weights
+    weighted_wts = np.where(finite_mask, wvec, 0.0)  # zero out missing weights
     den = weighted_wts.sum(axis=1)
     num = weighted_vals.sum(axis=1)
     combined = np.where(den > 0.0, num / den, np.nan)
@@ -427,9 +432,8 @@ def _calculate_oos_robustness(
         oos_std_plain = float(np.std(oos_vals[mask], ddof=1))
         oos_stability = oos_mean_plain / (oos_std_plain + 0.5)
         oos_rob = (
-            (1.0 - oos_stability_weight) * weighted_mean
-            + oos_stability_weight * oos_stability
-        )
+            1.0 - oos_stability_weight
+        ) * weighted_mean + oos_stability_weight * oos_stability
     else:
         oos_rob = weighted_mean
 
@@ -479,7 +483,7 @@ def _param_cv_series(
     finite_counts = np.sum(np.isfinite(mat), axis=1)
     with np.errstate(invalid="ignore", divide="ignore"):
         row_mean = np.nanmean(mat, axis=1)
-        row_std  = np.nanstd(mat, axis=1, ddof=1)
+        row_std = np.nanstd(mat, axis=1, ddof=1)
     cv_vals = np.where(
         finite_counts >= 2,
         row_std / (np.abs(row_mean) + 1e-8),
@@ -685,7 +689,8 @@ def _save_wfo_results(
     """Handles persistence of metrics, parameters, and VectorBT dashboards."""
     # Exclude skipped folds (missing test_start/params) from the saved CSV/DB
     complete_stats = [
-        s for s in wfo_stats
+        s
+        for s in wfo_stats
         if not s.get("_skipped_vectorized_failure") and not s.get("_skipped_insufficient_bars")
     ]
     rm.save_metrics(
@@ -754,9 +759,7 @@ def run_wfo_orchestrator(
     )
 
     # Extract OOS Sharpe ratios from wfo_stats to measure generalization
-    {
-        fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
-    }
+    {fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)}
 
     dbg = bool(config.get("WFO_DEBUG_METRICS", False))
     robust_top_5, best_robust_params = _calculate_robustness(
@@ -872,9 +875,7 @@ def run_wfo_per_coin_orchestrator(
         )
 
         # Extract OOS Sharpe ratios from wfo_stats to measure generalization
-        {
-            fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)
-        }
+        {fold_idx: stats["oos_sharpe"] for fold_idx, stats in enumerate(wfo_stats, 1)}
 
         dbg = bool(config.get("WFO_DEBUG_METRICS", False))
         robust_top_5, best_robust_params = _calculate_robustness(

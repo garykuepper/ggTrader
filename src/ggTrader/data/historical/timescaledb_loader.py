@@ -36,6 +36,7 @@ class TimescaleDBLoader(BaseDataLoader):
         end_date: Optional[pd.Timestamp] = None,
         limit: Optional[int] = None,
         quote: str = "USD",
+        venue: str = "kraken_spot",
     ) -> pd.DataFrame:
         """
         Fetch historical OHLCV data from TimescaleDB and format it as a MultiIndex DataFrame
@@ -47,11 +48,12 @@ class TimescaleDBLoader(BaseDataLoader):
         formatted_symbols = [s if "-" in s or "/" in s else f"{s}-{quote}" for s in symbols]
 
         # Build query constraints
-        conditions = ["symbol = ANY(:symbols)", "interval = :interval"]
+        conditions = ["symbol = ANY(:symbols)", "interval = :interval", "venue = :venue"]
         params = {
             "symbols": formatted_symbols,
             "interval": interval,
             "quote": quote,
+            "venue": venue,
         }
 
         if start_date is not None:
@@ -113,12 +115,12 @@ class TimescaleDBLoader(BaseDataLoader):
         # Sometimes a column might be fully missing for a metric, reindex level 1
         return df_pivoted.reindex(columns=metrics, level=1)
 
-    def list_symbols(self, quote: str = "USD") -> List[str]:
-        """Returns a list of available symbols from this source (filtered by quote)."""
-        query = "SELECT DISTINCT symbol FROM ohlcv;"
+    def list_symbols(self, quote: str = "USD", venue: str = "kraken_spot") -> List[str]:
+        """Returns a list of available symbols from this source (filtered by quote and venue)."""
+        query = "SELECT DISTINCT symbol FROM ohlcv WHERE venue = :venue;"
         try:
             with self.engine.connect() as conn:
-                result = conn.execute(text(query))
+                result = conn.execute(text(query), {"venue": venue})
                 symbols = [row[0] for row in result]
 
             if quote:
@@ -135,6 +137,7 @@ class TimescaleDBLoader(BaseDataLoader):
         top_n: int = 20,
         quote: str = "USD",
         trades_threshold: int = 500,
+        venue: str = "kraken_spot",
     ) -> pd.DataFrame:
         """
         Build a (date x symbol) boolean mask of daily top-N movers.
@@ -150,6 +153,7 @@ class TimescaleDBLoader(BaseDataLoader):
                     (volume * close) AS notional_volume
                 FROM ohlcv
                 WHERE interval = '1d'
+                  AND venue = :venue
                   AND timestamp >= :start AND timestamp <= :end
                   AND symbol LIKE :quote_pattern
                   AND COALESCE(trades, 0) >= :trades_threshold
@@ -174,6 +178,7 @@ class TimescaleDBLoader(BaseDataLoader):
             "top_n": top_n,
             "quote_pattern": f"%-{quote}",
             "trades_threshold": trades_threshold,
+            "venue": venue,
         }
 
         try:
@@ -212,6 +217,7 @@ class TimescaleDBLoader(BaseDataLoader):
         trades_threshold: int = 500,
         stables: bool = False,
         quote: str = "USD",
+        venue: str = "kraken_spot",
     ) -> pd.DataFrame:
         """
         Calculates consistent movers over a lookback period.
@@ -236,6 +242,7 @@ class TimescaleDBLoader(BaseDataLoader):
                     ) as rank
                 FROM ohlcv
                 WHERE interval = '1d'
+                  AND venue = :venue
                   AND COALESCE(trades, 0) >= :threshold
                   AND timestamp >= :start
                   AND symbol LIKE :quote_pattern
@@ -257,6 +264,7 @@ class TimescaleDBLoader(BaseDataLoader):
             "quote_pattern": f"%-{quote}",
             "daily_limit": daily_top_n,
             "limit": output_n,
+            "venue": venue,
         }
 
         try:

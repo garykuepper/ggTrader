@@ -118,7 +118,6 @@ def _buy_hold_portfolio_stats(
     }
 
 
-
 def _load_spy_close(
     start_date: str,
     end_date: str,
@@ -151,9 +150,9 @@ def _load_spy_close(
         buffered_start = (pd.Timestamp(start_date) - pd.Timedelta(days=5)).strftime("%Y-%m-%d")
         buffered_end = (pd.Timestamp(end_date) + pd.Timedelta(days=5)).strftime("%Y-%m-%d")
         try:
-            spy_raw = yf.download(
-                "SPY", start=buffered_start, end=buffered_end, progress=False
-            )["Close"]
+            spy_raw = yf.download("SPY", start=buffered_start, end=buffered_end, progress=False)[
+                "Close"
+            ]
         except Exception as e:
             print(f"Warning: yfinance SPY download failed: {type(e).__name__}: {e}")
             return None
@@ -320,4 +319,3 @@ def _enrich_final_stats_with_cagr_and_benchmark(
     final_stats["spy_cagr_pct"] = spy_bench.get("cagr_pct")
     final_stats["spy_sharpe"] = spy_bench.get("sharpe")
     final_stats["spy_max_drawdown"] = spy_bench.get("max_drawdown")
-

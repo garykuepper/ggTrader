@@ -1,4 +1,3 @@
-
 import argparse
 from datetime import datetime
 
@@ -8,13 +7,12 @@ from ggTrader.utils.config import get_db_connection_string
 
 def register_ingest_parser(subparsers: argparse._SubParsersAction):
     """Registers the 'ingest' subcommand."""
-    parser = subparsers.add_parser(
-        "ingest", help="Sync Kraken OHLCV data to local TimescaleDB"
-    )
+    parser = subparsers.add_parser("ingest", help="Sync Kraken OHLCV data to local TimescaleDB")
     # Add help message/flags as needed from manage_data.py
     parser.add_argument(
         "--days", type=int, default=30, help="Number of days to ingest (default: 30)"
     )
+
 
 def run_ingest(args: argparse.Namespace):
     """Refactored logic for data ingestion into ggt CLI."""
@@ -26,7 +24,7 @@ def run_ingest(args: argparse.Namespace):
 
         # Pull symbols list if needed or use dynamic universe
         # For simplicity, if no symbols, ingest BTC as test
-        symbols = ["BTC-USD", "ETH-USD"] # Example
+        symbols = ["BTC-USD", "ETH-USD"]  # Example
 
         for sym in symbols:
             print(f"  > Syncing {sym}...")

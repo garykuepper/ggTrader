@@ -68,8 +68,10 @@ class LiveExchangeLoader(BaseDataLoader):
                     break
                 except (ccxt.NetworkError, ccxt.RateLimitExceeded) as e:
                     delay = _FETCH_RETRY_BASE_DELAY * (2 ** (attempt - 1))
-                    print(f"  [CCXT] Retry {attempt}/{_FETCH_MAX_RETRIES} for {pair} "
-                          f"({type(e).__name__}) — waiting {delay:.0f}s")
+                    print(
+                        f"  [CCXT] Retry {attempt}/{_FETCH_MAX_RETRIES} for {pair} "
+                        f"({type(e).__name__}) — waiting {delay:.0f}s"
+                    )
                     time.sleep(delay)
                 except Exception as e:
                     print(f"Failed to fetch live OHLCV for {pair}: {e}")

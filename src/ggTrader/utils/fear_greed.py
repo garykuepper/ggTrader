@@ -12,7 +12,7 @@ Used as a market sentiment indicator in PnL reports and ``ggt signals``.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from typing import Optional
 
 import requests
@@ -21,11 +21,15 @@ API_URL = "https://api.alternative.me/fng/"
 
 
 def _classification_emoji(value: int) -> str:
-    if value <= 25: return "😱"   # Extreme Fear
-    if value <= 46: return "😟"   # Fear
-    if value <= 54: return "😐"   # Neutral
-    if value <= 75: return "😊"   # Greed
-    return "🤑"                   # Extreme Greed
+    if value <= 25:
+        return "😱"  # Extreme Fear
+    if value <= 46:
+        return "😟"  # Fear
+    if value <= 54:
+        return "😐"  # Neutral
+    if value <= 75:
+        return "😊"  # Greed
+    return "🤑"  # Extreme Greed
 
 
 def fetch_fear_greed(limit: int = 1, timeout: float = 10.0) -> Optional[dict]:

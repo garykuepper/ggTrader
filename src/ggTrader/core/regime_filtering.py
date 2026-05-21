@@ -52,6 +52,7 @@ def _compute_leader_regime_mask(
 
     try:
         from ggTrader.data.historical.timescaledb_loader import TimescaleDBLoader
+
         loader = TimescaleDBLoader()
         leader_ohlcv = loader.fetch_ohlcv(
             symbols=[leader_symbol],
@@ -98,7 +99,8 @@ def _compute_btc_regime_mask(
     """BTC EMA regime mask. Uses ``BENCHMARK_SYMBOL`` (default BTC-USD) and
     ``BTC_REGIME_FILTER_SHORT_EMA``."""
     return _compute_leader_regime_mask(
-        ohlcv, config,
+        ohlcv,
+        config,
         leader_symbol=config.get("BENCHMARK_SYMBOL", "BTC-USD"),
         short_ema_key="BTC_REGIME_FILTER_SHORT_EMA",
     )
@@ -123,8 +125,4 @@ def _compute_leader_correlations(
 
 def _compute_btc_correlations(ohlcv: pd.DataFrame, config: Dict[str, Any]) -> Dict[str, float]:
     """Per-symbol correlation to BTC-USD returns."""
-    return _compute_leader_correlations(
-        ohlcv, config.get("BENCHMARK_SYMBOL", "BTC-USD")
-    )
-
-
+    return _compute_leader_correlations(ohlcv, config.get("BENCHMARK_SYMBOL", "BTC-USD"))

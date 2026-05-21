@@ -1,6 +1,7 @@
 """Broker adapters."""
 
 from ggTrader.execution.base import Broker  # noqa: F401
+from ggTrader.execution.binanceus_spot import BinanceUsSpotBroker  # noqa: F401
 from ggTrader.execution.errors import (  # noqa: F401
     BrokerError,
     InsufficientFunds,

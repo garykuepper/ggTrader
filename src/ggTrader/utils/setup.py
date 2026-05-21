@@ -43,6 +43,7 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
         raise ValueError("No symbols provided or symbols list is empty.")
 
     from ggTrader.data.live.cached_loader import CachedExchangeLoader
+
     loader = CachedExchangeLoader()
 
     ohlcv_df = loader.fetch_ohlcv(
@@ -269,6 +270,7 @@ def load_hybrid_validation_ohlcv(
         return tsdb.sort_index()
 
     from ggTrader.data.live.cached_loader import CachedExchangeLoader
+
     cache_loader = CachedExchangeLoader()
 
     try:

@@ -37,6 +37,13 @@ class CachedExchangeLoader(LiveExchangeLoader):
         self.db_loader = TimescaleDBLoader(connection_string=connection_string)
         self.connection_string = self.db_loader.connection_string
 
+    @property
+    def venue(self) -> str:
+        """Map exchange ID to DB venue string."""
+        if self.exchange_id == "binanceus":
+            return "binanceus_spot"
+        return "kraken_spot"
+
     def fetch_ohlcv(
         self,
         symbols: List[str],
@@ -62,6 +69,7 @@ class CachedExchangeLoader(LiveExchangeLoader):
             end_date=end_date,
             limit=limit,
             quote=quote,
+            venue=self.venue,
         )
 
         # Determine if we need to fetch more from live exchange
@@ -179,6 +187,7 @@ class CachedExchangeLoader(LiveExchangeLoader):
                         float(row["close"]) if not pd.isna(row["close"]) else None,
                         float(row["volume"]) if not pd.isna(row["volume"]) else None,
                         int(row["trades"]) if "trades" in row and not pd.isna(row["trades"]) else 0,
+                        self.venue,
                     )
                 )
 
@@ -186,9 +195,11 @@ class CachedExchangeLoader(LiveExchangeLoader):
             return
 
         query = """
-            INSERT INTO ohlcv (timestamp, symbol, interval, open, high, low, close, volume, trades)
+            INSERT INTO ohlcv (
+                timestamp, symbol, interval, open, high, low, close, volume, trades, venue
+            )
             VALUES %s
-            ON CONFLICT (timestamp, symbol, interval) DO UPDATE SET
+            ON CONFLICT (timestamp, symbol, interval, venue) DO UPDATE SET
                 open = EXCLUDED.open,
                 high = EXCLUDED.high,
                 low = EXCLUDED.low,

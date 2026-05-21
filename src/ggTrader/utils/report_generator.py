@@ -106,9 +106,7 @@ def generate_pipeline_report(
 
     lines.append("## Executive Summary")
     lines.append("")
-    lines.append(
-        f"**WFO Training/Test period:** {p2_period}  "
-    )
+    lines.append(f"**WFO Training/Test period:** {p2_period}  ")
     if p3_stats:
         lines.append(f"**YTD performance window:** {p3_period}  ")
     lines.append(f"**Coins:** {n_coins}")
@@ -131,11 +129,11 @@ def generate_pipeline_report(
             if len(sym_str) > 80:
                 sym_str = sym_str[:77] + "…"
             lines.append(
-                f"| {g['name']} | {g.get('threshold', '—')} | "
-                f"{g['dropped_count']} | {sym_str} |"
+                f"| {g['name']} | {g.get('threshold', '—')} | {g['dropped_count']} | {sym_str} |"
             )
         lines.append("")
     p3_col = "YTD" if p3_stats else "YTD"
+
     def _beat_emoji(strat_cagr: Any, bench_cagr: Any) -> str:
         """✅ if strategy meets or exceeds benchmark, ❌ if it doesn't."""
         try:
@@ -152,10 +150,7 @@ def generate_pipeline_report(
 
     lines.append(f"| | WFO Full Range | {p3_col} |")
     lines.append("|-|----------------|--------|")
-    lines.append(
-        f"| Strategy CAGR | {_fmt_pct_opt(p2_strat)} | "
-        f"{_fmt_pct_opt(p3_strat)} |"
-    )
+    lines.append(f"| Strategy CAGR | {_fmt_pct_opt(p2_strat)} | {_fmt_pct_opt(p3_strat)} |")
     lines.append(
         f"| BTC buy & hold CAGR | "
         f"{_fmt_pct_opt(p2_stats.get('benchmark_cagr_pct'))}"
@@ -182,8 +177,10 @@ def generate_pipeline_report(
         f"| Total Trades | {p2_stats.get('total_trades', 0)} | "
         f"{p3_stats.get('total_trades', 0) if p3_stats else 'n/a'} |"
     )
-    lines.append(f"| Win Rate | {_fmt_pct_opt(p2_stats.get('win_rate'))} | "
-                 f"{_fmt_pct_opt(p3_stats.get('win_rate') if p3_stats else None)} |")
+    lines.append(
+        f"| Win Rate | {_fmt_pct_opt(p2_stats.get('win_rate'))} | "
+        f"{_fmt_pct_opt(p3_stats.get('win_rate') if p3_stats else None)} |"
+    )
     lines.append("")
 
     # Embed dashboard plots directly in the executive summary
@@ -355,6 +352,7 @@ def generate_pipeline_report(
             sep = "|--------|---------------|--------|---------|-------------|"
             sep += "".join("--------|" for _ in range(max_folds))
             lines.append(sep)
+
             def _oos_sort_key(item: tuple) -> float:
                 val = item[1].get("oos_robustness_score")
                 try:
@@ -426,7 +424,6 @@ def generate_pipeline_report(
         "see [docs/architecture.md](../../../docs/architecture.md).*"
     )
     lines.append("")
-
 
     lines.append("---")
     lines.append("")

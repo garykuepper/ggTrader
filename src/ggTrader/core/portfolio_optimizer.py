@@ -22,7 +22,7 @@ def load_wfo_results(results_dir: str) -> Tuple[Dict, Dict]:
     if not res_path.exists():
         raise FileNotFoundError(f"Could not find run_results.json in {results_dir}")
 
-    with open(res_path, 'r') as f:
+    with open(res_path, "r") as f:
         data = json.load(f)
 
     config = data.get("configuration", {})
@@ -42,6 +42,7 @@ def load_wfo_results(results_dir: str) -> Tuple[Dict, Dict]:
         raise ValueError("Could not find per_coin_results in JSON")
 
     return per_coin_results, raw_config
+
 
 def generate_combined_signals(ohlcv: pd.DataFrame, per_coin_results: Dict, global_config: Dict):
     """Generate entries and exits for all coins using their best WFO parameters."""
@@ -76,7 +77,7 @@ def generate_combined_signals(ohlcv: pd.DataFrame, per_coin_results: Dict, globa
             "ENTRY_STRATEGY": best_strategy,
             "EXIT_STRATEGY": best_exit,
             "USE_VECTORIZED": False,
-            "USE_CASH_SHARING": False
+            "USE_CASH_SHARING": False,
         }
 
         sym_ohlcv = ohlcv[[symbol]]
@@ -125,13 +126,16 @@ def generate_combined_signals(ohlcv: pd.DataFrame, per_coin_results: Dict, globa
 
     return e_df, x_df, c_df, symbol_robustness
 
+
 def run_strategy_equal_share(close, entries, exits, config, share=0.1):
     c = close.astype(float).copy()
     e = entries.astype(bool).copy()
     x = exits.astype(bool).copy()
 
     pf = vbt.Portfolio.from_signals(
-        close=c, entries=e, exits=x,
+        close=c,
+        entries=e,
+        exits=x,
         init_cash=float(config.get("START_CASH", 1000.0)),
         fees=float(config.get("FEES", 0.004)),
         slippage=float(config.get("SLIPPAGE", 0.0)),
@@ -139,10 +143,11 @@ def run_strategy_equal_share(close, entries, exits, config, share=0.1):
         size=float(share),
         size_type="percent",
         cash_sharing=True,
-        group_by=np.full(close.shape[1], 0)
+        group_by=np.full(close.shape[1], 0),
     )
     weights = pd.DataFrame(share, index=close.index, columns=close.columns)
     return pf, weights
+
 
 def run_strategy_max_diversified(close, entries, exits, config):
     n = close.shape[1]
@@ -157,10 +162,11 @@ def run_strategy_max_diversified(close, entries, exits, config):
         size=1.0 / n,
         size_type="percent",
         cash_sharing=True,
-        group_by=np.full(close.shape[1], 0)
+        group_by=np.full(close.shape[1], 0),
     )
     weights = pd.DataFrame(1.0 / n, index=close.index, columns=close.columns)
     return pf, weights
+
 
 def run_strategy_robustness_weighted(close, entries, exits, config, robustness_scores):
     scores = pd.Series(robustness_scores)
@@ -187,9 +193,10 @@ def run_strategy_robustness_weighted(close, entries, exits, config, robustness_s
         size=weights_df,
         size_type="percent",
         cash_sharing=True,
-        group_by=np.full(close.shape[1], 0)
+        group_by=np.full(close.shape[1], 0),
     )
     return pf, weights_df
+
 
 def run_portfolio_competition(results_dir: str):
     """Orchestrates the portfolio competition and generates final weights."""
@@ -232,16 +239,18 @@ def run_portfolio_competition(results_dir: str):
     stats = []
     for name, pf in strategies.items():
         s = pf.stats()
-        stats.append({
-            "Strategy": name,
-            "Total Return [%]": s['Total Return [%]'],
-            "Sharpe Ratio": s['Sharpe Ratio'],
-            "Sortino Ratio": s['Sortino Ratio'],
-            "Max Drawdown [%]": s['Max Drawdown [%]'],
-            "Win Rate [%]": s['Win Rate [%]'],
-            "Profit Factor": s['Profit Factor'],
-            "Total Trades": s['Total Trades']
-        })
+        stats.append(
+            {
+                "Strategy": name,
+                "Total Return [%]": s["Total Return [%]"],
+                "Sharpe Ratio": s["Sharpe Ratio"],
+                "Sortino Ratio": s["Sortino Ratio"],
+                "Max Drawdown [%]": s["Max Drawdown [%]"],
+                "Win Rate [%]": s["Win Rate [%]"],
+                "Profit Factor": s["Profit Factor"],
+                "Total Trades": s["Total Trades"],
+            }
+        )
 
     df_stats = pd.DataFrame(stats).sort_values("Sharpe Ratio", ascending=False)
 
@@ -288,12 +297,16 @@ def run_portfolio_competition(results_dir: str):
                 latest_weights[s] += per_under
 
     weight_file = output_dir / "portfolio_weights.json"
-    with open(weight_file, 'w') as f:
-        json.dump({
-            "strategy": best_strat_name,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "weights": latest_weights
-        }, f, indent=4)
+    with open(weight_file, "w") as f:
+        json.dump(
+            {
+                "strategy": best_strat_name,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "weights": latest_weights,
+            },
+            f,
+            indent=4,
+        )
 
     print(f"\n[WINNER] Selected strategy: '{best_strat_name}'")
     print(f"Exported final Live Trading weights to {weight_file}")

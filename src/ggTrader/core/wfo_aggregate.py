@@ -16,6 +16,7 @@ Four gates are applied as pure PASS/FAIL filters (Pardo convention):
 Gates are NOT selection criteria. A combo passes (proceeds to per-coin
 selection in Task 7) or fails (excluded from candidate set).
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -149,12 +150,8 @@ def dd_ratio(train_dds: List[float], test_dds: List[float]) -> float:
     Drawdowns are stored as negative numbers (worse = more negative). The
     ratio uses absolute values so it's always >= 0.
     """
-    train_arr = np.asarray(
-        [abs(float(x)) for x in train_dds if x is not None and np.isfinite(x)]
-    )
-    test_arr = np.asarray(
-        [abs(float(x)) for x in test_dds if x is not None and np.isfinite(x)]
-    )
+    train_arr = np.asarray([abs(float(x)) for x in train_dds if x is not None and np.isfinite(x)])
+    test_arr = np.asarray([abs(float(x)) for x in test_dds if x is not None and np.isfinite(x)])
     if len(train_arr) == 0 or len(test_arr) == 0:
         return float("nan")
     train_mean = float(train_arr.mean())

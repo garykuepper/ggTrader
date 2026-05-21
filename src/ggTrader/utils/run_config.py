@@ -97,6 +97,7 @@ def full_pipeline_config() -> dict[str, Any]:
     return {
         "SYMBOLS_FILE": "data/top_25_USD_2023-01-01_2025-12-31.json",
         "MAX_SYMBOLS": 25,
+        "EXCHANGE": os.getenv("EXCHANGE", "kraken"),
         "START_DATE": os.getenv("GGTRADER_START_DATE", "2023-01-01"),
         "END_DATE": os.getenv("GGTRADER_END_DATE", "2025-12-31"),
         "INTERVAL": "4h",
@@ -151,7 +152,9 @@ def full_pipeline_config() -> dict[str, Any]:
         # until their exit triggers). Use to ban symbols that are unsuitable
         # for live trading despite scoring well in backtests (e.g. illiquid,
         # untradeable on Kraken with our minimum size, or known to misbehave).
-        "SYMBOL_BLACKLIST": ["TRUMP-USD"],
+        "SYMBOL_BLACKLIST": ["TRUMP-USD"]
+        if os.getenv("EXCHANGE") == "binanceus"
+        else ["TRUMP-USD", "TRX-USD"],
         # Number of warmup bars fetched before START_DATE when computing the BTC EMA.
         # Ensures the EMA is fully warm from bar 1 of the actual backtest window.
         "EMA_WARMUP_BARS": 100,

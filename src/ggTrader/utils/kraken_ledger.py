@@ -45,9 +45,7 @@ def _build_exchange() -> Any:
         exchange.apiKey = os.getenv("KRAKEN_KEY")
         exchange.secret = os.getenv("KRAKEN_SECRET")
     if not exchange.apiKey or not exchange.secret:
-        raise RuntimeError(
-            "Kraken API keys missing — set KRAKEN_KEY and KRAKEN_SECRET in .env"
-        )
+        raise RuntimeError("Kraken API keys missing — set KRAKEN_KEY and KRAKEN_SECRET in .env")
     return exchange
 
 
@@ -146,6 +144,7 @@ def _ledger_key(entry: dict) -> str:
 def _read_ledger_from_db() -> tuple[list[dict], Optional[datetime]]:
     """Return (rows-as-entries, last_fetched_at) from the kraken_ledger table."""
     from sqlalchemy import text
+
     from ggTrader.utils.result_db_manager import ResultDBManager
 
     m = ResultDBManager()
@@ -169,14 +168,16 @@ def _read_ledger_from_db() -> tuple[list[dict], Optional[datetime]]:
     entries = []
     latest_fetched = None
     for r in rows:
-        entries.append({
-            "id": r[0],
-            "timestamp_ms": int(r[1].timestamp() * 1000),
-            "type": r[2],
-            "currency": r[3],
-            "amount": float(r[4]) if r[4] is not None else 0.0,
-            "signed_amount": float(r[5]) if r[5] is not None else 0.0,
-        })
+        entries.append(
+            {
+                "id": r[0],
+                "timestamp_ms": int(r[1].timestamp() * 1000),
+                "type": r[2],
+                "currency": r[3],
+                "amount": float(r[4]) if r[4] is not None else 0.0,
+                "signed_amount": float(r[5]) if r[5] is not None else 0.0,
+            }
+        )
         if r[6] is not None and (latest_fetched is None or r[6] > latest_fetched):
             latest_fetched = r[6]
     return entries, latest_fetched
@@ -187,6 +188,7 @@ def _write_ledger_to_db(new_entries: list[dict]) -> None:
     if not new_entries:
         return
     from sqlalchemy import text
+
     from ggTrader.utils.result_db_manager import ResultDBManager
 
     m = ResultDBManager()
@@ -203,14 +205,16 @@ def _write_ledger_to_db(new_entries: list[dict]) -> None:
     for e in new_entries:
         amt = float(e["amount"])
         signed = amt if e["type"] == "deposit" else -amt
-        rows.append({
-            "lid": _ledger_key(e),
-            "ts": datetime.fromtimestamp(e["timestamp_ms"] / 1000.0, tz=timezone.utc),
-            "type": e["type"],
-            "curr": e["currency"],
-            "amt": amt,
-            "sa": signed,
-        })
+        rows.append(
+            {
+                "lid": _ledger_key(e),
+                "ts": datetime.fromtimestamp(e["timestamp_ms"] / 1000.0, tz=timezone.utc),
+                "type": e["type"],
+                "curr": e["currency"],
+                "amt": amt,
+                "sa": signed,
+            }
+        )
     try:
         with m.engine.begin() as conn:
             conn.execute(sql, rows)
@@ -248,9 +252,7 @@ def fetch_kraken_ledger_cached(
         try:
             exchange = _build_exchange()
         except Exception as e:
-            logger.warning(
-                f"  [Ledger] could not build exchange ({e!r}) — using DB cache only"
-            )
+            logger.warning(f"  [Ledger] could not build exchange ({e!r}) — using DB cache only")
             return _entries_to_df(db_entries)
 
     if db_entries:
@@ -273,7 +275,9 @@ def fetch_kraken_ledger_cached(
         # Bump last_fetched_at on existing rows so we don't re-poll for a TTL window.
         if db_entries:
             from sqlalchemy import text
+
             from ggTrader.utils.result_db_manager import ResultDBManager
+
             try:
                 m = ResultDBManager()
                 with m.engine.begin() as conn:

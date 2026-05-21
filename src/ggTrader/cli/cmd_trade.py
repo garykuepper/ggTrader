@@ -31,14 +31,14 @@ def register_trade_parser(subparsers: argparse._SubParsersAction):
         "--weighted-sizing",
         action="store_true",
         help="Use research-derived portfolio weights (default for crypto). "
-             "Each entry sizes to portfolio × allocation_weight[symbol]; coins "
-             "with 0% research weight are skipped.",
+        "Each entry sizes to portfolio × allocation_weight[symbol]; coins "
+        "with 0% research weight are skipped.",
     )
     sizing_group.add_argument(
         "--adaptive-sizing",
         action="store_true",
         help="Use volatility-normalized position sizing (1%% target risk per trade). "
-             "Ignores research allocation weights.",
+        "Ignores research allocation weights.",
     )
     parser.add_argument(
         "--min-trailing-stop-pct",
@@ -90,9 +90,12 @@ def register_trade_parser(subparsers: argparse._SubParsersAction):
             "(default: query exchange, fall back to START_CASH)"
         ),
     )
+
+
 def run_trade(args: argparse.Namespace):
     """Executes the live trading engine."""
     from dotenv import load_dotenv
+
     load_dotenv()
 
     from ggTrader.core.crypto_execution_engine import CryptoExecutionEngine
@@ -104,15 +107,13 @@ def run_trade(args: argparse.Namespace):
         latest = get_latest_research_run()
         if latest:
             results_source = latest
-            print(
-                f"Auto-detected latest research run: "
-                f"{latest.run_id} (run_dir={latest.run_dir})"
-            )
+            print(f"Auto-detected latest research run: {latest.run_id} (run_dir={latest.run_dir})")
         else:
             print("Error: No research run found. Run `ggt research` first, or pass --results PATH.")
             sys.exit(1)
 
     from ggTrader.utils.run_config import full_pipeline_config, merge_run_config
+
     base_config = full_pipeline_config()
 
     # Sizing mode: weighted (default) > adaptive > fixed.
@@ -136,6 +137,7 @@ def run_trade(args: argparse.Namespace):
     )
 
     from ggTrader.utils.result_db_manager import ResultDBManager
+
     rm = ResultDBManager()
 
     engine = CryptoExecutionEngine(

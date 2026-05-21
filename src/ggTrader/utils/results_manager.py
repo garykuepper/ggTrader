@@ -89,27 +89,17 @@ class ResultsManager:
                 if "strategy_parameters" in existing_data and isinstance(
                     existing_data["strategy_parameters"], dict
                 ):
-                    if (
-                        "per_coin" in existing_data["strategy_parameters"]
-                        and "per_coin" in params
-                    ):
-                        existing_data["strategy_parameters"]["per_coin"].update(
-                            params["per_coin"]
-                        )
+                    if "per_coin" in existing_data["strategy_parameters"] and "per_coin" in params:
+                        existing_data["strategy_parameters"]["per_coin"].update(params["per_coin"])
                     else:
                         existing_data["strategy_parameters"].update(params)
 
                 # Merge metrics
-                if "results" in existing_data and isinstance(
-                    existing_data["results"], dict
-                ):
+                if "results" in existing_data and isinstance(existing_data["results"], dict):
                     existing_data["results"].update(metrics)
 
                 # Update symbols list in configuration
-                if (
-                    "configuration" in existing_data
-                    and "symbols" in existing_data["configuration"]
-                ):
+                if "configuration" in existing_data and "symbols" in existing_data["configuration"]:
                     new_syms = metadata.get("SYMBOLS", [])
                     current_syms = existing_data["configuration"]["symbols"]
                     combined = list(set(current_syms) | set(new_syms))

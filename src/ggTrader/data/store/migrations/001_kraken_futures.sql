@@ -91,6 +91,7 @@ FROM perp_ohlcv p
 JOIN ohlcv s
   ON s."timestamp" = p."timestamp"
  AND s."interval"  = p."interval"
+ AND s.venue       = 'kraken_spot'
  AND s.symbol = CASE p.symbol
                     WHEN 'PF_XBTUSD' THEN 'BTC-USD'
                     WHEN 'PF_ETHUSD' THEN 'ETH-USD'

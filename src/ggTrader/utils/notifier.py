@@ -103,9 +103,7 @@ class TelegramNotifier(BaseNotifier):
                 timeout=15,
             )
             if not r.ok:
-                logger.warning(
-                    f"  [Telegram] sendMessage failed ({r.status_code}): {r.text[:200]}"
-                )
+                logger.warning(f"  [Telegram] sendMessage failed ({r.status_code}): {r.text[:200]}")
                 return False
             return True
         except Exception as e:
@@ -131,9 +129,7 @@ class TelegramNotifier(BaseNotifier):
                     timeout=30,
                 )
             if not r.ok:
-                logger.warning(
-                    f"  [Telegram] sendPhoto failed ({r.status_code}): {r.text[:200]}"
-                )
+                logger.warning(f"  [Telegram] sendPhoto failed ({r.status_code}): {r.text[:200]}")
                 return False
             return True
         except Exception as e:
@@ -195,9 +191,7 @@ class DiscordNotifier(BaseNotifier):
                     timeout=15,
                 )
             if not r.ok:
-                logger.warning(
-                    f"  [Discord] webhook failed ({r.status_code}): {r.text[:200]}"
-                )
+                logger.warning(f"  [Discord] webhook failed ({r.status_code}): {r.text[:200]}")
                 return False
             return True
         except Exception as e:
@@ -237,7 +231,5 @@ def build_notifiers_from_env() -> list[BaseNotifier]:
             "(set TELEGRAM_BOT_TOKEN+TELEGRAM_CHAT_ID or DISCORD_WEBHOOK_URL)"
         )
     else:
-        logger.info(
-            f"  [Notifier] Configured channels: {', '.join(n.name for n in notifiers)}"
-        )
+        logger.info(f"  [Notifier] Configured channels: {', '.join(n.name for n in notifiers)}")
     return notifiers
