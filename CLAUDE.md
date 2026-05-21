@@ -2,7 +2,7 @@
 
 ## Project
 
-ggTrader is an algorithmic crypto trading bot. It runs walk-forward optimization (WFO) research, then deploys optimized parameters to a live Kraken trader via Docker.
+ggTrader is an algorithmic crypto trading bot. It runs walk-forward optimization (WFO) research, then deploys optimized parameters to a live Kraken/Binance.US trader via Docker.
 
 ## Documentation Rules
 
