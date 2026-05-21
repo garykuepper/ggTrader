@@ -57,7 +57,7 @@ def register_pnl_daily_parser(subparsers: argparse._SubParsersAction) -> None:
         "--no-sync",
         action="store_true",
         help=(
-            "Skip the Kraken auto-sync that runs at the start of the report. "
+            "Skip the broker auto-sync that runs at the start of the report. "
             "Use --no-sync for fast offline runs only."
         ),
     )
@@ -96,7 +96,7 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
 
     stale_warning: str | None = None
     if not args.no_sync:
-        stale_warning = _autosync_from_kraken(data_dir)
+        stale_warning = _autosync_from_exchange(data_dir)
     else:
         print("[Sync] --no-sync set — skipping broker sync.")
 
@@ -182,8 +182,8 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
         print("[Notify] --no-notify set — skipping push.")
 
 
-def _autosync_from_kraken(data_dir: str) -> str | None:
-    """Pull recent trades from Kraken and rebuild position_closes via FIFO.
+def _autosync_from_exchange(data_dir: str) -> str | None:
+    """Pull recent trades from the active exchange and rebuild position_closes via FIFO.
 
     Returns None on success or a short error string on failure (used as a
     STALE banner at the top of the report).
@@ -193,23 +193,28 @@ def _autosync_from_kraken(data_dir: str) -> str | None:
     from ggTrader.core.trade_tracker import TradeTracker
     from ggTrader.data.live.cached_loader import CachedExchangeLoader
 
+    exchange_id = os.getenv("EXCHANGE", "kraken").lower()
     try:
-        loader = CachedExchangeLoader(exchange_id="kraken")
+        loader = CachedExchangeLoader(exchange_id=exchange_id)
         exchange = loader.exchange
         if not exchange.apiKey:
-            exchange.apiKey = os.getenv("KRAKEN_KEY")
-            exchange.secret = os.getenv("KRAKEN_SECRET")
+            if exchange_id == "binanceus":
+                exchange.apiKey = os.getenv("BINANCE_API_LIVE_KEY")
+                exchange.secret = os.getenv("BINANCE_SECRET_LIVE_KEY")
+            else:
+                exchange.apiKey = os.getenv("KRAKEN_KEY")
+                exchange.secret = os.getenv("KRAKEN_SECRET")
         if not exchange.apiKey or not exchange.secret:
-            msg = "KRAKEN_KEY/SECRET missing — cannot auto-sync"
+            msg = f"{exchange_id.upper()} credentials missing — cannot auto-sync"
             print(f"[Sync] WARNING: {msg}")
             return msg
 
         tracker = TradeTracker(data_dir=data_dir)
         new_count = tracker.sync_from_kraken(exchange)
-        print(f"[Sync] {new_count} new trade(s) pulled from Kraken")
+        print(f"[Sync] {new_count} new trade(s) pulled from {exchange_id.upper()}")
         return None
     except Exception as e:
-        msg = f"Kraken sync failed ({e!r}) — report uses local CSV as-is"
+        msg = f"{exchange_id.upper()} sync failed ({e!r}) — report uses local CSV as-is"
         print(f"[Sync] WARNING: {msg}")
         return msg
 

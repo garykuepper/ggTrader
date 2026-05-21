@@ -24,4 +24,4 @@ When making changes to the codebase, keep these docs updated:
 
 - **Monthly Recalibration**: The `ExecutionEngine` handles its own WFO run internally on the 1st of each month (~01:00 AM). It reloads the new parameters automatically once complete.
 - **2-Tier BTC Regime Filter** (`src/ggTrader/core/regime_filtering.py`, applied in `orchestrator._apply_tiered_regime_mask`): Coins with `corr_BTC ≥ LEADER_CORR_THRESHOLD` (default 0.7) only fire entries when `close > EMA(EMA_WARMUP_BARS=100)`; below the threshold they trade freely. `BTC_REGIME_FILTER_SHORT_EMA=None` means `close > long_EMA` (no short-EMA cross). Off by default (`BTC_REGIME_FILTER=False`). Live engine and research orchestrator both default the missing-symbol corr to **1.0** (conservative — gate by default).
-- **PNL Reporting**: Daily reports are sent at 08:00 AM local time. They include a "Market Regime" status compute on-the-fly from live `ccxt` data.
+- **PNL Reporting**: Daily reports are sent at 06:00 AM local time. They include a "Market Regime" status compute on-the-fly from live `ccxt` data.

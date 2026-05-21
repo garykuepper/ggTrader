@@ -7,8 +7,8 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 # Generates a daily PnL report from the ggTrader live trading data and pushes
 # it to all configured notification channels (Telegram / Discord) via env vars.
 #
-# Schedule via crontab (run daily at 9am local):
-#   0 9 * * * /home/flynn/ggTrader/scripts/daily_pnl_report.sh
+# Schedule via crontab (run daily at 6am local):
+#   0 6 * * * /home/flynn/ggTrader/scripts/daily_pnl_report.sh
 #
 # Logs to ~/logs/daily_pnl_report_YYYYMMDD.log
 

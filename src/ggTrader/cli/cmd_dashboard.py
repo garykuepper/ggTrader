@@ -7,6 +7,8 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+from ggTrader.core.trade_tracker import TradeTracker
+
 
 def register_dashboard_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("dashboard", help="View live trading performance")
@@ -48,9 +50,9 @@ def run_dashboard(args: argparse.Namespace) -> None:
 
     tracker = TradeTracker(data_dir="data/live")
 
-    # --sync / --since: pull trades from Kraken
+    # --sync / --since: pull trades from broker
     if args.sync or args.since:
-        _sync_from_kraken(tracker, args.since)
+        _sync_from_exchange(tracker, args.since)
 
     # Load data
     closes = tracker.get_closed_positions()
@@ -89,21 +91,24 @@ def run_dashboard(args: argparse.Namespace) -> None:
     print(f"{'=' * 52}\n")
 
 
-def _sync_from_kraken(tracker: TradeTracker, since_date: str | None) -> None:
+def _sync_from_exchange(tracker: TradeTracker, since_date: str | None) -> None:
     """Initialize CCXT exchange and sync trades."""
     from dotenv import load_dotenv
 
     load_dotenv()
 
-    import ccxt
+    from ggTrader.data.live.cached_loader import CachedExchangeLoader
 
-    exchange = ccxt.kraken(
-        {
-            "apiKey": os.getenv("KRAKEN_KEY"),
-            "secret": os.getenv("KRAKEN_SECRET"),
-            "enableRateLimit": True,
-        }
-    )
+    exchange_id = os.getenv("EXCHANGE", "kraken").lower()
+    loader = CachedExchangeLoader(exchange_id=exchange_id)
+    exchange = loader.exchange
+    if not exchange.apiKey:
+        if exchange_id == "binanceus":
+            exchange.apiKey = os.getenv("BINANCE_API_LIVE_KEY")
+            exchange.secret = os.getenv("BINANCE_SECRET_LIVE_KEY")
+        else:
+            exchange.apiKey = os.getenv("KRAKEN_KEY")
+            exchange.secret = os.getenv("KRAKEN_SECRET")
 
     since_ts = None
     if since_date:
@@ -114,7 +119,7 @@ def _sync_from_kraken(tracker: TradeTracker, since_date: str | None) -> None:
             print(f"  Invalid date format: {since_date} (expected YYYY-MM-DD)")
             return
 
-    print("  Syncing trades from Kraken...")
+    print(f"  Syncing trades from {exchange_id.upper()}...")
     new_count = tracker.sync_from_kraken(exchange, since_timestamp=since_ts)
     print(f"  Synced {new_count} new trade(s).\n")
 

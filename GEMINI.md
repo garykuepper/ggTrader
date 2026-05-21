@@ -1,6 +1,6 @@
 # ggTrader Project Context
 
-This directory contains **ggTrader**, an algorithmic crypto trading bot designed for Kraken, utilizing a Walk-Forward Optimization (WFO) pipeline and a tiered regime filtering system.
+This directory contains **ggTrader**, an algorithmic crypto trading bot designed for Binance.US and Kraken, utilizing a Walk-Forward Optimization (WFO) pipeline and a tiered regime filtering system.
 
 ## Core Architecture
 - **Unified CLI**: All operations are routed through `ggt.py`.
@@ -37,5 +37,5 @@ The bot employs a tiered correlation-based filter to prevent trading in unfavora
 - **Logs**: Active logs are found in `logs/live_trader.log` inside the container and mapped to the host `logs/` directory.
 
 ## Daily Operations
-- **PnL Reports**: Triggered at 08:00 AM local time via `scripts/daily_pnl_report.sh`.
-- **Sync**: The report builder automatically syncs recent trade history from Kraken to ensure local CSVs are accurate.
+- **PnL Reports**: Triggered at 06:00 AM local time via `scripts/daily_pnl_report.sh`.
+- **Sync**: The report builder automatically syncs recent trade history from the configured exchange to ensure local CSVs are accurate.
