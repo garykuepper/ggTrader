@@ -214,16 +214,55 @@ def main() -> None:
     order = btc_anchored_order(corr)
     corr = corr.reindex(index=order, columns=order)
 
-    ts = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
-    out_dir = ROOT / "results" / f"correlation_matrix_{ts}"
+    now = datetime.now(tz=timezone.utc)
+    ts = now.strftime("%Y%m%d_%H%M%S")
+    out_dir = ROOT / "results" / "correlation_matrix" / ts
     out_dir.mkdir(parents=True, exist_ok=True)
     heatmap = out_dir / "heatmap.png"
     render_heatmap(corr, args.threshold, heatmap)
-    corr.to_csv(out_dir / "correlation_matrix.csv")
+    persist_corr_to_db(corr, now, args.interval, start, end, args.top)
     print(f"\n  [output] heatmap → {heatmap}")
-    print(f"  [output] csv     → {out_dir / 'correlation_matrix.csv'}")
+    print(f"  [output] db      → correlation_matrices @ {now.isoformat()}")
 
     print_btc_ranking(corr, args.threshold)
+
+
+def persist_corr_to_db(
+    corr: pd.DataFrame,
+    computed_at: datetime,
+    interval: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    top_n: int,
+) -> None:
+    """Write a long-format correlation matrix to the ``correlation_matrices`` table."""
+    import psycopg2
+    from psycopg2.extras import execute_values
+
+    from ggTrader.utils.config import get_db_connection_string
+
+    rows = [
+        (computed_at, interval, start.date(), end.date(), top_n, a, b, float(corr.loc[a, b]))
+        for a in corr.index
+        for b in corr.columns
+        if not pd.isna(corr.loc[a, b])
+    ]
+    if not rows:
+        return
+    conn_str = get_db_connection_string().replace("postgresql+psycopg2://", "postgresql://")
+    conn = psycopg2.connect(conn_str)
+    conn.autocommit = True
+    try:
+        with conn.cursor() as cur:
+            execute_values(
+                cur,
+                "INSERT INTO correlation_matrices "
+                "(computed_at, interval, window_start, window_end, top_n, symbol_a, symbol_b, corr) "
+                "VALUES %s ON CONFLICT (computed_at, symbol_a, symbol_b) DO NOTHING",
+                rows,
+            )
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

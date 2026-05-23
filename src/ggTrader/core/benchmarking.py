@@ -1,6 +1,5 @@
 """Benchmark statistics: CAGR, BTC B&H, S&P 500 (SPY) B&H, and stats enrichment."""
 
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pandas as pd
@@ -123,57 +122,126 @@ def _load_spy_close(
     end_date: str,
     close_idx: pd.DatetimeIndex,
 ) -> Optional[pd.DataFrame]:
-    """Download SPY daily close, reindex to the strategy's bar timeline.
+    """Load SPY daily close from TimescaleDB (venue='yfinance'); fetch+persist if missing.
 
-    Cached per-day per-window in ``results/spy_cache_<today>_<start>_<end>.parquet``
-    so phase-2 and phase-3 of the same WFO run share the cache, but a different
-    day's run pulls fresh data.
+    The DB is the authoritative cache — rows are upserted on miss and reused on hit.
+    No per-day file cache; the DB naturally invalidates by date range.
     """
-    import yfinance as yf
+    # Buffer by 5 days to handle weekends/holidays at the range boundaries.
+    buffered_start = pd.Timestamp(start_date) - pd.Timedelta(days=5)
+    buffered_end = pd.Timestamp(end_date) + pd.Timedelta(days=5)
 
-    today_str = pd.Timestamp.now().strftime("%Y%m%d")
-    cache_dir = Path("results")
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    start_slug = str(start_date).replace("-", "")[:8]
-    end_slug = str(end_date).replace("-", "")[:8]
-    cache_path = cache_dir / f"spy_cache_{today_str}_{start_slug}_{end_slug}.parquet"
-
-    spy: Optional[pd.Series] = None
-    if cache_path.exists():
-        try:
-            spy = pd.read_parquet(cache_path).squeeze()
-        except Exception:
-            cache_path.unlink(missing_ok=True)
-
-    if spy is None:
-        # Buffer dates by 5 days to handle weekends/holidays at range boundaries.
-        buffered_start = (pd.Timestamp(start_date) - pd.Timedelta(days=5)).strftime("%Y-%m-%d")
-        buffered_end = (pd.Timestamp(end_date) + pd.Timedelta(days=5)).strftime("%Y-%m-%d")
-        try:
-            spy_raw = yf.download("SPY", start=buffered_start, end=buffered_end, progress=False)[
-                "Close"
-            ]
-        except Exception as e:
-            print(f"Warning: yfinance SPY download failed: {type(e).__name__}: {e}")
+    spy = _read_spy_from_db(buffered_start, buffered_end)
+    if spy is None or spy.empty or spy.index.max() < buffered_end - pd.Timedelta(days=7):
+        # Miss or stale: refresh from yfinance, persist, re-read.
+        if not _refresh_spy_in_db(buffered_start, buffered_end):
             return None
-        if isinstance(spy_raw, pd.DataFrame):
-            spy_raw = spy_raw.squeeze()
-        if spy_raw is None or spy_raw.empty:
+        spy = _read_spy_from_db(buffered_start, buffered_end)
+        if spy is None or spy.empty:
             return None
-        spy = spy_raw
-        try:
-            pd.DataFrame({"SPY": spy}).to_parquet(cache_path)
-        except Exception:
-            pass  # cache write failure is non-fatal
 
-    spy.index = pd.to_datetime(spy.index)
     if spy.index.tz is None:
-        spy.index = spy.index.tz_localize("America/New_York").tz_convert("UTC")
+        spy.index = spy.index.tz_localize("UTC")
     else:
         spy.index = spy.index.tz_convert("UTC")
 
     spy_df = spy.reindex(close_idx).ffill().bfill().to_frame("SPY")
     return spy_df if not spy_df["SPY"].isna().all() else None
+
+
+def _read_spy_from_db(start: pd.Timestamp, end: pd.Timestamp) -> Optional[pd.Series]:
+    """Read cached SPY close from ohlcv (venue='yfinance', interval='1d')."""
+    from sqlalchemy import create_engine, text
+
+    from ggTrader.utils.config import get_db_connection_string
+
+    try:
+        engine = create_engine(get_db_connection_string())
+        with engine.connect() as conn:
+            df = pd.read_sql(
+                text(
+                    "SELECT timestamp, close FROM ohlcv "
+                    "WHERE venue='yfinance' AND symbol='SPY' AND interval='1d' "
+                    "AND timestamp >= :start AND timestamp <= :end "
+                    "ORDER BY timestamp ASC"
+                ),
+                conn,
+                params={"start": start, "end": end},
+                parse_dates=["timestamp"],
+            )
+    except Exception as e:
+        print(f"Warning: SPY DB read failed: {type(e).__name__}: {e}")
+        return None
+    if df.empty:
+        return None
+    return df.set_index("timestamp")["close"].rename("SPY")
+
+
+def _refresh_spy_in_db(start: pd.Timestamp, end: pd.Timestamp) -> bool:
+    """Download SPY from yfinance and upsert into ohlcv."""
+    import psycopg2
+    import yfinance as yf
+    from psycopg2.extras import execute_values
+
+    from ggTrader.utils.config import get_db_connection_string
+
+    try:
+        raw = yf.download(
+            "SPY", start=start.strftime("%Y-%m-%d"), end=end.strftime("%Y-%m-%d"), progress=False
+        )
+    except Exception as e:
+        print(f"Warning: yfinance SPY download failed: {type(e).__name__}: {e}")
+        return False
+    if raw is None or raw.empty:
+        return False
+    if isinstance(raw.columns, pd.MultiIndex):
+        raw.columns = raw.columns.get_level_values(0)
+    # NY-local index → UTC midnight (matches how the prior cache stored it after conversion).
+    idx = pd.to_datetime(raw.index)
+    if idx.tz is None:
+        idx = idx.tz_localize("America/New_York").tz_convert("UTC").tz_localize(None)
+    else:
+        idx = idx.tz_convert("UTC").tz_localize(None)
+    raw.index = idx
+
+    records = [
+        (
+            ts.to_pydatetime(),
+            "SPY",
+            "1d",
+            float(row["Open"]) if "Open" in row and not pd.isna(row["Open"]) else None,
+            float(row["High"]) if "High" in row and not pd.isna(row["High"]) else None,
+            float(row["Low"]) if "Low" in row and not pd.isna(row["Low"]) else None,
+            float(row["Close"]) if not pd.isna(row["Close"]) else None,
+            float(row["Volume"]) if "Volume" in row and not pd.isna(row["Volume"]) else None,
+            0,
+            "yfinance",
+        )
+        for ts, row in raw.iterrows()
+        if not pd.isna(row.get("Close"))
+    ]
+    if not records:
+        return False
+
+    conn_str = get_db_connection_string().replace("postgresql+psycopg2://", "postgresql://")
+    try:
+        conn = psycopg2.connect(conn_str)
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            execute_values(
+                cur,
+                "INSERT INTO ohlcv (timestamp, symbol, interval, open, high, low, close, volume, trades, venue) "
+                "VALUES %s "
+                "ON CONFLICT (timestamp, symbol, interval, venue) DO UPDATE SET "
+                "open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low, "
+                "close=EXCLUDED.close, volume=EXCLUDED.volume",
+                records,
+            )
+        conn.close()
+    except Exception as e:
+        print(f"Warning: SPY DB write failed: {type(e).__name__}: {e}")
+        return False
+    return True
 
 
 def _sp500_buy_hold_portfolio_stats(

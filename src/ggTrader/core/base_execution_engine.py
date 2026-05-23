@@ -5,8 +5,6 @@ from __future__ import annotations
 import html
 import json
 import logging
-import os
-import tempfile
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -156,8 +154,6 @@ class BaseExecutionEngine(ABC):
         self.asset_class = "crypto"
         self.logger = setup_live_logger("live_trader.log")
 
-        self.persistence_path = config.get("PERSISTENCE_PATH", "data/active_positions.json")
-
         self.state = "INITIALIZED"
         self.interval = config.get("INTERVAL", "4h")
         self.symbols = config.get("SYMBOLS", [])
@@ -214,7 +210,10 @@ class BaseExecutionEngine(ABC):
                 self.logger.warning(f"Results source {path_str} not found.")
                 return
 
-        min_rob = float(self.config.get("MIN_ROBUSTNESS_SCORE", 0.0))
+        # None (legacy gate disabled — see run_config.py) and missing both map to 0.0,
+        # which makes the `min_rob > 0` filter at line ~231 a no-op.
+        min_rob_cfg = self.config.get("MIN_ROBUSTNESS_SCORE", 0.0)
+        min_rob = float(min_rob_cfg) if min_rob_cfg is not None else 0.0
         max_per_strategy = self.config.get("MAX_COINS_PER_STRATEGY", None)
         blacklist = {s.upper() for s in (self.config.get("SYMBOL_BLACKLIST", []) or [])}
         exchange_id = getattr(self, "exchange_id", self.config.get("EXCHANGE", "kraken"))
@@ -299,43 +298,68 @@ class BaseExecutionEngine(ABC):
             )
         )
 
+    _STATE_KEY = "live_trader_state"
+
     def load_state(self) -> None:
-        """Load state from persistence file."""
-        if os.path.exists(self.persistence_path):
-            try:
-                with open(self.persistence_path, "r") as f:
-                    data = json.load(f)
-                if isinstance(data, dict) and "positions" in data:
-                    self.active_positions = data["positions"]
-                    self.daily_start_equity = data.get("daily_start_equity")
-                    self.circuit_breaker_triggered = data.get("circuit_breaker_triggered", False)
-                    lcd = data.get("last_check_date")
-                    if lcd:
-                        self._last_check_date = datetime.fromisoformat(lcd).date()
-                else:
-                    self.active_positions = data
-                self.logger.info(f"Loaded {len(self.active_positions)} active positions.")
-            except Exception as e:
-                self.logger.error(f"Failed to load state: {e!r}")
+        """Load live trader state from ``system_state`` (DB-authoritative)."""
+        from sqlalchemy import create_engine, text
+
+        from ggTrader.utils.config import get_db_connection_string
+
+        try:
+            engine = create_engine(get_db_connection_string())
+            with engine.connect() as conn:
+                row = conn.execute(
+                    text("SELECT value FROM system_state WHERE key = :k"),
+                    {"k": self._STATE_KEY},
+                ).fetchone()
+        except Exception as e:
+            self.logger.error(f"Failed to load state from DB: {e!r}")
+            return
+
+        if row is None:
+            return
+
+        data = row[0]
+        if isinstance(data, str):
+            data = json.loads(data)
+        if not isinstance(data, dict):
+            return
+
+        self.active_positions = data.get("positions", {})
+        self.daily_start_equity = data.get("daily_start_equity")
+        self.circuit_breaker_triggered = data.get("circuit_breaker_triggered", False)
+        lcd = data.get("last_check_date")
+        if lcd:
+            self._last_check_date = datetime.fromisoformat(lcd).date()
+        self.logger.info(f"Loaded {len(self.active_positions)} active positions from DB.")
 
     def save_state(self) -> None:
-        """Save state to persistence file atomically."""
+        """Persist live trader state to ``system_state`` (atomic upsert)."""
+        from sqlalchemy import create_engine, text
+
+        from ggTrader.utils.config import get_db_connection_string
+
         state_data = {
             "positions": self.active_positions,
             "daily_start_equity": self.daily_start_equity,
             "circuit_breaker_triggered": self.circuit_breaker_triggered,
             "last_check_date": self._last_check_date.isoformat() if self._last_check_date else None,
         }
-        dir_name = os.path.dirname(self.persistence_path) or "."
-        os.makedirs(dir_name, exist_ok=True)
-        fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".tmp")
         try:
-            with os.fdopen(fd, "w") as f:
-                json.dump(state_data, f, indent=4)
-            os.replace(tmp_path, self.persistence_path)
+            engine = create_engine(get_db_connection_string())
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "INSERT INTO system_state (key, value, updated_at) "
+                        "VALUES (:k, CAST(:v AS jsonb), NOW()) "
+                        "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, "
+                        "updated_at = EXCLUDED.updated_at"
+                    ),
+                    {"k": self._STATE_KEY, "v": json.dumps(state_data)},
+                )
         except Exception as e:
-            self.logger.error(f"Failed to save state: {e!r}")
-            os.unlink(tmp_path)
+            self.logger.error(f"Failed to save state to DB: {e!r}")
 
     def _check_circuit_breaker(self) -> None:
         """Evaluate the intraday drawdown circuit breaker."""

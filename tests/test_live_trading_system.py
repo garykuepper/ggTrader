@@ -62,11 +62,12 @@ def test_system_dry_run_cycle(dry_run_config: dict):
     df = pd.DataFrame(data, index=idx)
     df.columns = pd.MultiIndex.from_tuples(df.columns, names=["symbol", "field"])
 
-    with patch("ggTrader.data.live.exchange_loader.LiveExchangeLoader") as mock_loader:
+    with patch("ggTrader.core.crypto_execution_engine.CachedExchangeLoader") as mock_loader:
         mock_loader_instance = mock_loader.return_value
         mock_loader_instance.fetch_ohlcv.return_value = df
         mock_loader_instance.exchange = MagicMock()
         mock_loader_instance.exchange.fetch_ticker.return_value = {"last": 110.0}
+        mock_loader_instance.exchange.fetch_order.return_value = {"filled": 0.0}
 
         # 2. Initialize Engine
         engine = ExecutionEngine(dry_run_config, results_path=dry_run_config["RESULTS_PATH"])

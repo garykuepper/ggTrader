@@ -43,7 +43,7 @@ def test_results_manager_save_metrics(mock_db_cls, results_dir):
 def test_result_db_manager_add_run(mock_engine, results_dir):
     from ggTrader.utils.result_db_manager import ResultDBManager
 
-    with patch.object(ResultDBManager, "_init_db"), patch.object(ResultDBManager, "_init_log"):
+    with patch.object(ResultDBManager, "_init_db"):
         db_manager = ResultDBManager(
             connection_string="sqlite://", log_path=str(results_dir / "log.csv")
         )

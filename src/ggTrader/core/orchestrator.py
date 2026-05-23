@@ -195,6 +195,32 @@ def _apply_wfo_selection_gates(
     min_robust_cfg = config.get("MIN_ROBUSTNESS_SCORE")
     if min_robust_cfg is not None:
         min_robust = float(min_robust_cfg)
+        # Guard against the textbook-reset score-sign conflict: the rank-composite
+        # IS score is structurally always negative (orchestrator.py:1109-1113), so a
+        # positive MIN_ROBUSTNESS_SCORE threshold would silently drop every coin and
+        # emit an empty per_coin downstream. If every score is negative *and* the
+        # threshold is positive, the legacy gate is incompatible with the textbook
+        # selection — skip it with a loud warning instead of erasing the results.
+        finite_scores = [
+            r["robustness_score"] for r in results.values() if np.isfinite(r["robustness_score"])
+        ]
+        if min_robust > 0 and finite_scores and all(s < 0 for s in finite_scores):
+            print(
+                f"\n  [Robustness gate] SKIPPED — MIN_ROBUSTNESS_SCORE={min_robust} is "
+                f"incompatible with textbook-reset rank-composite scores (all negative). "
+                f"Set MIN_ROBUSTNESS_SCORE=None in config to silence this warning."
+            )
+            if gate_stats is not None:
+                gate_stats["gates"].append(
+                    {
+                        "name": "MIN_ROBUSTNESS_SCORE",
+                        "threshold": min_robust,
+                        "dropped_count": 0,
+                        "dropped_symbols": [],
+                        "skipped_reason": "rank_composite_sign_mismatch",
+                    }
+                )
+            return results
         skipped = [
             sym
             for sym, r in results.items()
@@ -1263,6 +1289,10 @@ def run_multi_strategy_per_coin_wfo(
             # Populate per_coin_results with median params and metadata.
             # Preserve all keys consumed by _apply_wfo_selection_gates and Phase 3.
             chosen_wfo_stats = chosen_combo.get("wfo_stats_ref", [])
+            # NB: `gate_score` is the negative rank-composite (bounded [-N_cells, -1],
+            # see line ~1135). Incompatible with positive MIN_ROBUSTNESS_SCORE
+            # thresholds — kept disabled in run_config.py and guarded in
+            # _apply_wfo_selection_gates.
             per_coin_results[symbol] = {
                 "best_strategy": chosen_combo["strategy"],
                 "best_exit": chosen_combo["exit"],

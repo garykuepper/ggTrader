@@ -14,6 +14,33 @@ SHARED_DATES_AND_PORTFOLIO: dict[str, Any] = {
 SLIPPAGE_TIGHT = 0.001
 SLIPPAGE_STANDARD = 0.003
 
+# Per-side trading fees (multiply by 2 for round-trip). Closure-doc fee/edge curve
+# (docs/superpowers/closures/2026-05-12-...md §3) measured:
+#   0.0000 (frictionless)         → 36 passers on 7-coin diagnostic universe
+#   0.0020 (half-fees, 0.40% RT)  → 14 passers
+#   0.0025 (Kraken maker, 0.50%)  → 13 passers
+#   0.0040 (Kraken taker, 0.80%)  → 0 passers
+#   0.0002 (Binance.US, 0.04%)    → ~30-35 expected (interpolated)
+FEES_KRAKEN_TAKER = 0.004
+FEES_KRAKEN_MAKER = 0.0025
+FEES_BINANCEUS_TAKER = 0.0002
+
+
+def fees_for_exchange(exchange: str | None = None) -> float:
+    """Return per-side fee rate for the active exchange.
+
+    Defaults to Kraken-taker (0.004) when the exchange is unset or unknown.
+    Binance.US ($0-volume tier) uses 0.0002 per side. Per the closure-doc
+    fee/edge curve, running research at the wrong fee tier produces a
+    misleading deployable set (e.g., Kraken-taker rates yield 0 passers
+    even on universes where Binance.US fees would yield 30+).
+    """
+    venue = (exchange or os.getenv("EXCHANGE") or "kraken").lower()
+    if venue == "binanceus":
+        return FEES_BINANCEUS_TAKER
+    return FEES_KRAKEN_TAKER
+
+
 # Default PSAR+ADX parameters (single-strategy runs)
 DEFAULT_PSAR_ADX_PARAMS: dict[str, Any] = {
     "adx_threshold": 25,
@@ -104,7 +131,11 @@ def full_pipeline_config() -> dict[str, Any]:
         "FREQ": "4h",
         "START_CASH": 1000,
         "PORTFOLIO_SHARE": 0.10,
-        "FEES": 0.004,
+        # Per-side fee, exchange-aware. Binance.US ($0-tier) is 20× cheaper than
+        # Kraken taker — running research at the wrong rate produces a
+        # misleading deployable set (Kraken-taker rates → 0 passers; Binance.US
+        # rates → ~30 expected on the same universe).
+        "FEES": fees_for_exchange(),
         "SLIPPAGE": SLIPPAGE_STANDARD,
         # 10 folds × TEST_RATIO=3 keeps ~1515 train bars/fold (~253 days)
         # provides 10 OOS samples for a more reliable fold-consistency signal.
@@ -170,13 +201,23 @@ def full_pipeline_config() -> dict[str, Any]:
         "MAX_COIN_ALLOCATION": 0.25,
         # Coins whose OOS-weighted robustness falls below this threshold are excluded from
         # Phase 2/3 combined portfolio. Set to None to disable the gate.
-        "MIN_ROBUSTNESS_SCORE": 0.1,
+        #
+        # Disabled by default after the 2026-05 textbook reset: the rank-composite
+        # score written into `robustness_score` is structurally bounded in
+        # [-N_cells, -1] (always negative — see orchestrator.py:1109-1113), so any
+        # positive threshold here drops every coin and produces an empty `per_coin`.
+        # The four textbook aggregate gates (WFE, %profitable, paramCV, DD ratio)
+        # already enforce quality at selection time, making this legacy gate redundant.
+        "MIN_ROBUSTNESS_SCORE": None,
         # History shrinkage: scales each coin's effective robustness by
         # min(1, years_of_history / TARGET) and re-checks against MIN_ROBUSTNESS_SCORE.
         # Cuts brand-new coins (listed mid-window) whose noisy short-data WFO would
         # otherwise pass on small-sample lucky draws. 3.0 matches the default --days
         # 1095 (3y) research window; bump if you run longer windows. Set to None to
         # disable.
+        #
+        # No-op when MIN_ROBUSTNESS_SCORE is None (the shrinkage gate at
+        # orchestrator.py:235 short-circuits without a threshold to compare against).
         "HISTORY_SHRINKAGE_TARGET_YEARS": 3.0,
         # Minimum number of WFO training folds that must have produced at least one valid
         # param combo (finite is_sharpe). Strategies where most folds were rejected by the
