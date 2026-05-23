@@ -2,12 +2,24 @@
 
 How to take WFO output and put it on a real exchange. Read the [Architecture Guide](architecture.md) first if you want to know what's happening under the hood.
 
+## Contents
+
+1. [What you need](#what-you-need)
+2. [Going live, step by step](#going-live-step-by-step) — [Dry-run](#1-inspect-with---dry-run) · [Sizing mode](#2-pick-a-sizing-mode) · [Start the engine](#3-start-the-engine)
+3. [What the bot does each cycle](#what-the-bot-does-each-cycle)
+4. [State and persistence](#state-and-persistence)
+5. [Monitoring](#monitoring)
+6. [Monthly recalibration](#monthly-recalibration)
+7. [Troubleshooting](#troubleshooting)
+
+---
+
 ## What you need
 
-- A successful research run (`results/research/research_<timestamp>/run_results.json` exists)
-- Kraken API key + secret in `.env`
+- A successful research run (`results/research/research_<timestamp>/run_results.json` exists, with `strategy_parameters.per_coin` populated)
+- API key + secret for the active venue (Binance.US or Kraken Pro) in `.env` — Binance.US is the lower-fee target and the current Phase 2 deployment goal
 - TimescaleDB running and reachable
-- Enough USD on Kraken to fund at least one position at the configured size
+- Enough USD on the exchange to fund at least one position at the configured size
 
 ## Going live, step by step
 
@@ -36,7 +48,7 @@ You pick one or the other at startup; you can't mix.
 python ggt.py trade
 ```
 
-The bot runs as a long-lived loop, polling Kraken every 4 hours on UTC bar boundaries (00:00, 04:00, etc.).
+The bot runs as a long-lived loop, polling the active exchange every 4 hours on UTC bar boundaries (00:00, 04:00, etc.). Venue is selected by `EXCHANGE` in config (`binanceus` or `kraken`); the broker layer (`src/ggTrader/execution/`) wraps CCXT so the rest of the engine is venue-agnostic.
 
 ## What the bot does each cycle
 
@@ -45,14 +57,14 @@ The bot runs as a long-lived loop, polling Kraken every 4 hours on UTC bar bound
 3. Applies the regime filter (currently disabled by default — see Architecture).
 4. Checks the daily-loss circuit breaker — if intraday drawdown > 5%, no new entries until the next day.
 5. For triggering buys, sizes the position (weighted or adaptive) and places a limit-buy.
-6. After fill, places a Kraken-native trailing-stop so the position is protected even if our process dies.
+6. After fill, places a venue-native trailing-stop (Kraken) or an OCO order (Binance.US) so the position is protected even if our process dies.
 7. Reconciles local state with the exchange — picks up server-side stop fills that happened between heartbeats.
 
 ## State and persistence
 
-- **`data/active_positions.json`** — current positions, circuit-breaker status, and start-of-day equity baseline. Survives restarts.
-- **`data/live/`** — CSV logs (`trade_log.csv`, `position_closes.csv`, `balance_snapshots.csv`).
-- **TimescaleDB** — orders, trades, and equity curves are mirrored in real time so Grafana stays current.
+- **`data/active_positions.json`** — current positions, circuit-breaker status, and start-of-day equity baseline. Survives restarts. *(Migration to DB as authoritative source is on the roadmap.)*
+- **TimescaleDB** — orders (`orders`), trades (`trades`), balance snapshots (`live_balance_snapshots`), and position snapshots (`live_positions_snapshot`) are written in real time. This is the source of truth for everything except in-flight positions and circuit-breaker state.
+- **`data/live/dashboard/`** — rendered HTML dashboards (`cumulative_pnl.html`, `equity_curve.html`, etc.). Read-only artifacts; safe to delete.
 
 ## Monitoring
 

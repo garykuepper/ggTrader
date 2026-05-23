@@ -93,11 +93,13 @@ python ggt.py signals --symbols BTC-USD,SOL-USD --verbose
 | `purge-wfo-cache` | Clear cached WFO results (run after changing scoring config) |
 
 ### `ggt ingest`
-Sync historical OHLCV from Kraken into TimescaleDB.
+Sync historical OHLCV from the active exchange (Kraken or Binance.US) into TimescaleDB.
 
 ```bash
 python ggt.py ingest --days 180
 ```
+
+For bulk Binance.US backfills (faster than CCXT pagination), use `scripts/backfill_binanceus.py` which pulls Binance's zipped CSV archive.
 
 ## Performance tuning
 

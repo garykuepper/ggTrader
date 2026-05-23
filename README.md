@@ -5,16 +5,17 @@
 [![Linter: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Tested with pytest](https://img.shields.io/badge/tested%20with-pytest-white?logo=pytest&logoColor=2f9fe3)](https://docs.pytest.org/en/stable/)
 
-An algorithmic crypto trading bot for Kraken. Each month it runs walk-forward optimization across the most-traded coins, picks per-coin parameters that hold up out-of-sample, and trades them live.
+An algorithmic crypto trading bot. Each month it runs walk-forward optimization across the most-traded coins, picks per-coin parameters that hold up out-of-sample, and trades them live on Binance.US or Kraken Pro (CCXT-based; the venue is a config switch). Migrating live execution from Kraken Pro → Binance.US to capture the ~12× lower round-trip fees.
 
 The same code path runs research, backtest, and live execution — what you simulate is what trades.
 
 ## What you get
 
-- **Walk-forward optimization** with overfitting controls (fold-consistency, robustness, in-sample/out-of-sample blending)
-- **TimescaleDB** for time-series storage — historical and live data share one table
+- **Walk-forward optimization** with textbook-reset overfitting controls (4 aggregate gates: WFE, %profitable folds, parameter CV, DD ratio) + rank-based Sortino+Calmar+ProfitFactor composite scoring
+- **Multi-methodology**: WFO momentum, cash-and-carry (CashAndCarryBTC), funding-rate arbitrage (FundingCarryBTC) — all behind the same data + execution layer
+- **TimescaleDB** for time-series storage — historical and live data share one table; multi-venue OHLCV (Kraken + Binance.US) keyed by `(symbol, interval, venue)`
 - **VectorBT + Numba** for fast backtests across thousands of parameter combinations
-- **Live engine** for Kraken, with native trailing-stop orders, daily-loss circuit breaker, and Grafana mirroring
+- **Live engine** for Binance.US and Kraken Pro, with native trailing-stop orders, daily-loss circuit breaker, and Grafana mirroring
 - **Monthly auto-recalibration** that hot-reloads new parameters with no downtime
 
 ## Documentation
