@@ -248,40 +248,60 @@ def _fetch_regime_status() -> dict[str, Any]:
 
 
 def _fetch_crypto_regime_status() -> dict[str, Any]:
-    """Fetch current BTC/ETH prices + Fear & Greed for the daily PnL report.
+    """Daily-report market snapshot: BTC bull/bear, BTC/ETH prices, Fear & Greed.
 
-    Returns a dict with:
-        btc_price: float
-        eth_price: float
-        fear_greed: dict | None
-        error: str | None
+    BTC bull/bear is informational only — it does NOT gate the live trader since
+    the BTC regime filter was removed (2026-05-23). It's kept in the report
+    because it's useful at-a-glance market context.
+
+    Bull/bear definition: BTC daily close > 200-day EMA → bull. Computed from
+    230 daily bars (200 EMA + 30 warmup) pulled via ccxt.
+
+    Returns a dict with: btc_bull (bool|None), btc_price, eth_price, fear_greed,
+    error, plus rendered ``rows`` / ``lines`` / ``md_lines`` for the report.
     """
     try:
         import ccxt
+        import pandas as pd
 
         ex = ccxt.kraken({"enableRateLimit": True})
-        symbols = ["BTC/USD", "ETH/USD"]
+
+        # Live spot prices via single ticker fetch (cheap).
         prices: dict[str, float] = {}
-        for s in symbols:
+        for s in ("BTC/USD", "ETH/USD"):
             try:
                 t = ex.fetch_ticker(s)
                 prices[s] = float(t.get("last") or t.get("close") or 0.0)
             except Exception:
                 continue
-
         if not prices:
             return {"error": "Could not fetch price data"}
 
         btc_price = prices.get("BTC/USD", 0.0)
         eth_price = prices.get("ETH/USD", 0.0)
 
+        # BTC bull/bear from daily close > EMA(200).
+        btc_bull: bool | None = None
+        try:
+            bars = ex.fetch_ohlcv("BTC/USD", timeframe="1d", limit=230)
+            if bars and len(bars) >= 200:
+                closes = pd.Series([b[4] for b in bars])
+                ema200 = closes.ewm(span=200, adjust=False).mean().iloc[-1]
+                btc_bull = bool(closes.iloc[-1] > ema200)
+        except Exception:
+            btc_bull = None
+
+        btc_status = "BULL 🟢" if btc_bull is True else ("BEAR 🔴" if btc_bull is False else "n/a")
+
         fg_row = _fetch_and_persist_fear_greed()
         return {
+            "btc_bull": btc_bull,
             "btc_price": btc_price,
             "eth_price": eth_price,
             "fear_greed": fg_row,
             "error": None,
             "rows": [
+                ("BTC Regime", btc_status),
                 ("BTC Price", f"${btc_price:,.2f}"),
                 ("ETH Price", f"${eth_price:,.2f}"),
             ]
@@ -296,7 +316,7 @@ def _fetch_crypto_regime_status() -> dict[str, Any]:
                 else []
             ),
             "lines": [
-                f"🟠 BTC Price: ${btc_price:,.0f}",
+                f"🌐 BTC Regime: {btc_status} (${btc_price:,.0f})",
                 f"📈 ETH Price: ${eth_price:,.0f}",
             ]
             + (
@@ -307,6 +327,7 @@ def _fetch_crypto_regime_status() -> dict[str, Any]:
                 else []
             ),
             "md_lines": [
+                f"- **BTC Regime**: {btc_status}",
                 f"- **BTC Price**: ${btc_price:,.2f}",
                 f"- **ETH Price**: ${eth_price:,.2f}",
             ]
