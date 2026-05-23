@@ -19,7 +19,11 @@ services:
           cpus: '2.0'
           memory: 16G
     stop_grace_period: 10s
-    command: python -u ggt.py trade --weighted-sizing --min-trailing-stop-pct 4 --min-atr-trailing-pct 4
+    # Phase 1 (Binance.US venue validation): legacy pre-reset params, adaptive 10% cap.
+    # Goal: validate venue mechanics (fills, balances, API timing) before switching to
+    # textbook-validated params. Revert to --weighted-sizing default + auto-latest run
+    # after 1-2 weeks of clean operation.
+    command: python -u ggt.py trade --adaptive-sizing --max-position-pct 0.10 --min-trailing-stop-pct 4 --min-atr-trailing-pct 4 --results /app/results/research/archive/research_20260509_202450/run_results.json
 
   grafana:
     image: grafana/grafana-oss:10.4.0
