@@ -208,8 +208,10 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             for s in held_symbols:
                 if s in self.active_positions:
                     continue
+                # CCXT symbols use `BASE/QUOTE`; our internal symbol is `BASE-USD`.
+                ccxt_sym = s.replace("-", "/")
                 try:
-                    ticker = self.exchange.fetch_ticker(s)
+                    ticker = self.exchange.fetch_ticker(ccxt_sym)
                     usd_val = held_symbols[s] * (ticker.get("last") or 0)
                 except Exception:
                     usd_val = 0.0
