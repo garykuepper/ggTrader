@@ -1,10 +1,12 @@
 # Roadmap
 
-**Last updated:** 2026-05-22 · **Status:** Live on Kraken Pro, migrating to Binance.US · Crypto-only
+**Last updated:** 2026-05-23 · **Status:** Phase 1 live on Binance.US (small size, legacy pre-reset params) · Crypto-only
 
-This is the **single source of truth** for ggTrader's forward direction. Dated execution history lives in [`changelog.md`](changelog.md); the WFO-reset + venue-migration arc is closed out in [`superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md`](superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md).
+This is the **single source of truth** for ggTrader's forward direction. Dated execution history lives in [`changelog.md`](changelog.md); the walk-forward-optimization (WFO) reset + venue-migration arc is closed out in [`superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md`](superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md).
 
 > **Organization.** This doc is grouped by **function**, not chronology. §2 is time-bounded (next ~6 weeks); §§3–5 are open exploration. For "what happened when," see [`changelog.md`](changelog.md).
+>
+> **Vocabulary.** Acronyms used here — WFO, OOS (out-of-sample), CV (coefficient of variation), OHLCV (open/high/low/close/volume), PnL (profit and loss), ML (machine learning), RL (reinforcement learning) — are defined up front in the [Architecture Guide](architecture.md#vocabulary).
 
 ---
 
@@ -27,11 +29,11 @@ This is the **single source of truth** for ggTrader's forward direction. Dated e
 
 | State | Detail |
 |---|---|
-| 🟢 **Live now** | Kraken Pro, legacy pre-reset params, all 11 WFO entry strategies × 3 exits |
-| 🟡 **Actively working** | Binance.US OHLCV backfill · venue-migration Phase 1 prep |
-| 🔵 **Next up** | Phase 1 cutover (Binance.US, small size) → Phase 2 (textbook 22-combo set) → TRX 90-day re-eval |
-| 🧪 **Open exploration** | 13 methodology directions in §3 — from regime-conditional sizing to deep RL |
-| ⏸ **Deferred** | TRX deployment (90d), post-only limit entry on Kraken, stocks (removed) |
+| 🟢 **Live now** | Binance.US Phase 1 — legacy pre-reset params (ADA / DOGE / ETH / TRX), adaptive sizing capped at 10% per position, ~$140 portfolio. Venue validation phase, not strategy validation. |
+| 🟡 **Actively working** | Watching Phase 1 fills, balance reconciliation, API stability for 1–2 weeks before Phase 2 cutover. |
+| 🔵 **Next up** | Phase 2 — switch to textbook-validated set (BTC / DOGE / ETH / SUI / ZEC from today's research) once Phase 1 clean → TRX 90-day re-evaluation (2026-08-10) |
+| 🧪 **Open exploration** | 13 methodology directions in §3 — from regime-conditional sizing to deep reinforcement learning |
+| ⏸ **Deferred** | TRX deployment (90d), post-only limit entry on Kraken, stocks pipeline (removed) |
 
 **Status legend:** ✅ Done · 🟡 Active · 🔵 Next · ⚪ Idea · ⏸ Deferred
 
@@ -39,9 +41,9 @@ This is the **single source of truth** for ggTrader's forward direction. Dated e
 
 ## 1. North star
 
-Build a **flexible multi-strategy crypto trader** on **Binance.US** that exploits the venue's order-of-magnitude lower fees (0.04% RT vs Kraken Pro's 0.50–0.80% RT) to widen the set of strategies that survive real-world execution costs. The original WFO-on-momentum-signals pipeline is **one technique among several** — funding-rate carry, cash-and-carry, and (planned) ML/regime-conditional methods all coexist behind the same data layer, execution layer, and risk envelope.
+Build a **flexible multi-strategy crypto trader** on **Binance.US** that exploits the venue's order-of-magnitude lower fees (0.04% round-trip vs Kraken Pro's 0.50–0.80% round-trip) to widen the set of strategies that survive real-world execution costs. The original walk-forward-optimization-on-momentum-signals pipeline is **one technique among several** — funding-rate carry, cash-and-carry, and (planned) machine-learning / regime-conditional methods all coexist behind the same data layer, execution layer, and risk envelope.
 
-Key insight from the WFO textbook-reset arc: at Kraken taker rates (0.80% RT) the deployable set was empty; at Binance.US taker (0.04% RT) the deployable set is expected to be close to the frictionless 36 combos. **Fees, not signal alpha, were the binding constraint.** That changes which methodologies are worth exploring.
+Key insight from the WFO textbook-reset arc: at Kraken taker rates (0.80% round-trip) the deployable set was empty; at Binance.US taker (0.04% round-trip) the deployable set opens up to dozens of combos. **Fees, not signal alpha, were the binding constraint.** That changes which methodologies are worth exploring.
 
 ---
 
@@ -55,29 +57,30 @@ Key insight from the WFO textbook-reset arc: at Kraken taker rates (0.80% RT) th
 |:---:|---|---|
 | ✅ | Binance.US smoke tests (auth, spread, depth) | Snapshots at `results/binanceus_smoke/snapshots.jsonl` |
 | ✅ | `BinanceUSSpotBroker` integration | `src/ggTrader/execution/binanceus_spot.py` |
-| 🟡 | Historical OHLCV backfill (Binance.US, 4 pairs) | `scripts/backfill_binanceus.py` — verify coverage end-to-end |
-| 🔵 | **Phase 1** — live trader on Binance.US with **legacy pre-reset params**, small size | 1–2 weeks operational validation: fill quality, spread, API stability, balance reconciliation |
-| ✅ | **Phase 2 prerequisite** — fix legacy `MIN_ROBUSTNESS_SCORE` gate dropping textbook output ([#11](https://github.com/garykuepper/ggTrader/issues/11)) | Fixed 2026-05-22. Root cause: legacy gate threshold `0.1` incompatible with textbook rank-composite score (always-negative). Set default to `None`; added guard in `_apply_wfo_selection_gates`; handled `None` in `base_execution_engine.load_optimized_params`. Verified: research run produces populated `per_coin`, engine loads symbols, heartbeat completes. |
-| 🔵 | **Phase 2** — switch to **textbook-validated 22-combo set** (BTC/ETH/DOGE) | Only after Phase 1 validates cleanly. Discipline: never change venue + params simultaneously. |
-| ⏸ | **TRX 90-day re-eval** (≥ 2026-08-10) | Criteria pre-registered in closure doc §5. Volume ≥ $500K/24h + spread ≤ 15bp → migrate; otherwise continue defer or unshelve Path B (Kraken maker-only for TRX). |
+| ✅ | Historical OHLCV backfill — Binance.US top-50 universe (28 coins listed, 22 unlisted skipped cleanly) | Done 2026-05-23 via `scripts/backfill_binanceus_universe.py`. 19 coins have full 3-year history, 9 have partial. |
+| 🟡 | **Phase 1** — live trader on Binance.US with **legacy pre-reset params**, small size | Deployed 2026-05-23. 1–2 weeks operational validation: fill quality, spread, exchange API stability, balance reconciliation. Goal is venue mechanics, not strategy performance. |
+| ✅ | **Phase 2 prerequisite** — fix legacy `MIN_ROBUSTNESS_SCORE` gate dropping textbook output ([#11](https://github.com/garykuepper/ggTrader/issues/11)) | Fixed 2026-05-22. Root cause: legacy gate threshold `0.1` incompatible with the textbook rank-composite score (structurally always negative). Set default to `None`; added guard in `_apply_wfo_selection_gates`; made `base_execution_engine.load_optimized_params` `None`-safe. Verified: research run produces populated `per_coin`, engine loads symbols, heartbeat completes. |
+| 🔵 | **Phase 2** — switch to **textbook-validated set** (BTC / DOGE / ETH / SUI / ZEC from 2026-05-23 research) | Only after Phase 1 validates cleanly. Discipline: never change venue + params simultaneously. |
+| ⏸ | **TRX 90-day re-evaluation** (≥ 2026-08-10) | Criteria pre-registered in closure doc §5. Volume ≥ $500K/24h + spread ≤ 15bp → migrate; otherwise continue defer or unshelve Path B (Kraken maker-only for TRX). |
 
 ### 2b. Hardening / cleanup
 
 | Status | Effort | Item | Notes |
 |:---:|:---:|---|---|
 | 🔵 | ~2h | GitHub issue #10 — `fee_entry` recording bug from live-execution audit | Fix + backfill scope. |
-| 🔵 | ~5min | Rebuild live Docker image to pick up `f70d721` (venue filter on DB loader) | Deployed image pre-dates the venue filter; with Binance.US 4h bars now overlapping Kraken 4h bars in `ohlcv`, the old loader's `(symbol, interval, date)`-only query causes `pivot()` to fail with duplicate-index. `docker compose build --no-cache && docker compose up -d`. |
-| ✅ | — | `auto_trader.py` `regime_allowance` alignment + visible tracebacks | Fixed 2026-05-22 — `scripts/auto_trader.py:151` passes regime allowance into `_execute_trade_logic`; bare `except` now prints `traceback.print_exc()` so silent failures don't hide in the sleep loop. |
-| ✅ | — | Daily-loss circuit breaker (`DAILY_LOSS_LIMIT_PCT`, 5% intraday cap) | `base_execution_engine.py:340-368`, persistent across restarts, tests in `test_circuit_breaker.py`. |
-| 🔵 | ~3h | Position health scoring ("zombie trade" detector) | Flag positions open 3× longer than backtest avg holding time. |
-| ✅ | — | Purge pre-textbook-reset research runs from `results/research/` | 2026-05-22 — moved 40 pre-2026-05-10 dirs (~33 research + 2 legacy `run_wfo_per_coin_*` + small extras) into `results/research/archive/`. Top level now contains 13 textbook-era runs + the archive. Delete `archive/` later to reclaim ~1 GB if confident nothing else references those runs. |
-| 🔵 | ~10min | Don't create `results/auto_trader_<ts>/` dir on every script invocation | `scripts/auto_trader.py:110` calls `ResultsManager("auto_trader")` unconditionally at startup, creating an empty timestamped dir that nothing writes to. Each verification/dry-run pollutes `results/`. Fix: lazy-init the manager only when there's actual output to persist, or skip entirely if DRY_RUN. |
+| ✅ | — | Rebuild live Docker image to pick up `f70d721` (venue filter on the database loader) | Done 2026-05-23. Pre-fix the loader's `(symbol, interval, date)`-only query was crashing `pivot()` with a duplicate-index error once Binance.US 4-hour bars started overlapping Kraken's in the `ohlcv` table. |
+| ✅ | — | `auto_trader.py` `regime_allowance` alignment + visible tracebacks | Fixed 2026-05-22. `auto_trader.py` now surfaces tracebacks instead of swallowing them in the sleep loop. (`regime_allowance` itself was removed when the regime filter was deleted 2026-05-23.) |
+| ✅ | — | Daily-loss circuit breaker (`DAILY_LOSS_LIMIT_PCT`, 5% intraday cap) | `base_execution_engine.py`, persistent across restarts, tests in `test_circuit_breaker.py`. |
+| 🔵 | ~3h | Position health scoring ("zombie trade" detector) | Flag positions held 3× longer than backtest average holding time. |
+| ✅ | — | Migrate file-based state to TimescaleDB | Done 2026-05-22 — `data/active_positions.json`, `data/spy_cache/*.parquet`, and `results/correlation_matrix/*/correlation_matrix.csv` all migrated to DB. Single source of truth for live state. |
+| 🔵 | ~10min | Don't create `results/auto_trader_<ts>/` dir on every script invocation | `scripts/auto_trader.py` calls `ResultsManager("auto_trader")` unconditionally at startup, creating an empty timestamped dir that nothing writes to. Each verification/dry-run pollutes `results/`. Fix: lazy-init the manager only when there's actual output to persist, or skip entirely if `DRY_RUN` is set. |
+| 🔵 | ~30min | Eliminate `run_results.json` Phase B — stop writing the file and remove the disk fallback in `state_manager.py` | Phase A (DB-first auto-detect with disk fallback) is already shipped. Phase B touches 10+ files (`cmd_backtest`, `cmd_production`, `cmd_signals`, `cmd_report`, `cmd_status`, `portfolio_optimizer`, `base_execution_engine`, etc.). Do as a focused session after Phase 1 completes. |
 
 ### 2c. Methodology debt (banked from WFO closure)
 
 | Status | Item | Notes |
 |:---:|---|---|
-| 🔵 | Grid-size-aware `param_cv` gate | Current 0.30 threshold is mechanically inflated for large grids — psar_adx jumped from CV 0.39 (4 cells) to 1.22 (32 cells) without true instability change. Fix: either axis-aware CV (`unique_picks / grid_size_per_axis`) or `log(N_cells)`-relative threshold. Theory-justify before re-running. |
+| 🔵 | Grid-size-aware parameter coefficient-of-variation (CV) gate | Current 0.30 threshold is mechanically inflated for large parameter grids — `psar_adx` jumped from CV 0.39 (4 cells) to 1.22 (32 cells) without any actual instability change. Fix: either axis-aware CV (`unique_picks / grid_size_per_axis`) or `log(N_cells)`-relative threshold. Theory-justify before re-running. |
 | 🔵 | Pre-register *shape* metrics alongside distributional stats | Closure-doc §6 calibration lesson — gate-pass counts must be extracted on every research run, not retroactively reconstructed from worker logs. Cheap pipeline change. |
 
 ---
@@ -131,25 +134,25 @@ Today's `--adaptive-sizing` is **per-coin** vol normalization. The portfolio-lev
 - Why: caps drawdown in regime breaks without needing to predict them. Works well with regime-conditional allocation above.
 
 #### C. Bayesian / robust parameter selection (~1-2 weeks)
-WFO's point-estimate-per-fold is wasteful — it throws away the full IS distribution. A Bayesian alternative: posterior over parameter performance, decision rule selects parameters with **highest lower-credible-bound on OOS Sharpe** rather than highest point estimate. Inherently more robust to noise.
+WFO's point-estimate-per-fold is wasteful — it throws away the full in-sample (IS) distribution. A Bayesian alternative: build a posterior distribution over parameter performance, then pick parameters by **highest lower-credible-bound on OOS Sharpe ratio** rather than highest point estimate. Sparse-fire cells naturally get wider credible intervals → their lower bound is worse → they rank below dense-fire cells, no hard cliff needed.
 
-- Why: the grid-size-dependent `param_cv` gate is a symptom of treating WFO as a hypothesis test instead of a parameter inference problem. Bayesian framing dissolves the issue.
-- Risk: significantly more compute. Justify with a side-by-side run before adopting.
+- Why: the grid-size-dependent parameter-CV gate is a symptom of treating WFO as a hypothesis test instead of a parameter inference problem. The Bayesian framing dissolves the issue.
+- Risk: significantly more compute (bootstrap or Markov Chain Monte Carlo). Justify with a side-by-side run before adopting.
 
-#### D. ML feature gates on top of WFO entries (~2-3 weeks)
-Train a binary classifier (gradient-boosted trees or small NN) on **WFO entry signals** with features = (regime indicators, microstructure features, time-of-day, recent realized vol). Target: 1 if the entry's forward 24h return is positive, 0 otherwise. Use the classifier's probability as a gate (e.g., only take entries where P > 0.55).
+#### D. Machine-learning (ML) feature gates on top of WFO entries (~2-3 weeks)
+Train a binary classifier (gradient-boosted decision trees or a small neural network) on **WFO entry signals** with features = (regime indicators, microstructure features, time-of-day, recent realized volatility). Target: 1 if the entry's forward 24-hour return is positive, 0 otherwise. Use the classifier's probability as a gate — e.g., only take entries where `P > 0.55`.
 
 - Why: signal-conditional filtering is the natural place ML adds value — far easier than predicting raw returns. Keeps the WFO methodology intact and just adds a guardrail.
-- Risk: dataset is small (a few thousand entries across all coins/strategies). Heavy regularization required. Watch for lookahead.
+- Risk: dataset is small (a few thousand entries across all coins/strategies). Heavy regularization required. Watch for look-ahead bias.
 
 #### E. Statistical arbitrage / pairs trading (~3-4 weeks)
-With Binance.US's fee structure, BTC/ETH or similar coin-pair stat-arb becomes viable in a way it isn't on Kraken. Cointegration test → z-score entry → reversion exit. Pure mean-reversion methodology, completely orthogonal to the trend-following WFO set.
+With Binance.US's fee structure, BTC/ETH or similar coin-pair "stat-arb" (statistical arbitrage) becomes viable in a way it isn't on Kraken. Cointegration test → z-score entry → reversion exit. Pure mean-reversion methodology, completely orthogonal to the trend-following WFO set.
 
 - Why: diversification of methodology. Stat-arb performs best when trend strategies are getting chopped up.
 - Risk: cointegration is unstable in crypto — relationships break. Needs continuous monitoring + automatic decommission of broken pairs.
 
 #### F. Ensemble of strategies with rolling-window meta-allocation (~1-2 weeks, after C+D)
-Once we have WFO + carry + (possibly) stat-arb + ML-filtered WFO, the meta-question is **how to allocate**. Simple version: equal-risk weighting. Stronger version: rolling-window meta-optimizer that allocates capital proportional to each methodology's recent risk-adjusted return, with a floor (never zero) for diversification.
+Once we have WFO + carry + (possibly) stat-arb + ML-filtered WFO, the meta-question is **how to allocate capital across methodologies**. Simple version: equal-risk weighting (each methodology gets capital proportional to `1/recent_volatility`). Stronger version: rolling-window meta-optimizer that allocates capital proportional to each methodology's recent risk-adjusted return, with a floor (never zero) so diversification is preserved.
 
 ### 3.4 ML / modern techniques (longer-horizon)
 
@@ -166,45 +169,45 @@ Once we have WFO + carry + (possibly) stat-arb + ML-filtered WFO, the meta-quest
 | M | [Cross-exchange arbitrage scanner](#m-cross-exchange-arbitrage-scanner-2-weeks-scoped-narrow) | ~2 wk |
 
 #### G. Gradient-boosted regime classifier (~2-3 weeks)
-Build a regime model from scratch (the prior binary BTC EMA filter was deleted in 2026-05-23). XGBoost/LightGBM classifier outputs `P(market is trending)` from features like realized vol (multi-window), term-structure of BTC futures basis, BTC dominance, BTC funding rate, USDT premium, volume-weighted ADX. Use the probability as a continuous regime score that scales position sizing (§3.3.A).
+Build a regime model from scratch (the prior binary BTC EMA filter was deleted on 2026-05-23). An XGBoost or LightGBM classifier outputs `P(market is trending)` from features like realized volatility (multi-window), the term structure of BTC futures basis, BTC dominance (BTC's share of total crypto market cap), BTC funding rate, USDT premium against USD, and volume-weighted Average Directional Index (ADX). Use the probability as a continuous regime score that scales position sizing (§3.3.A).
 
-- Why: regimes aren't binary. A soft probability is more informative than EMA crossover and degrades more gracefully when wrong.
-- Risk: feature drift in crypto is real. Retrain monthly alongside WFO recalibration; monitor calibration with reliability diagrams.
+- Why: regimes aren't binary. A soft probability is more informative than an EMA crossover and degrades more gracefully when wrong.
+- Risk: feature drift in crypto is real. Retrain monthly alongside the WFO recalibration; monitor calibration with reliability diagrams.
 
 #### H. Microstructure features from L2 order book (~3-4 weeks; needs new data layer)
-Subscribe to L2 book snapshots from Binance.US (or aggregator) and persist 1-minute features: bid-ask imbalance, depth-weighted spread, top-of-book pressure, large-trade footprint. Use as **additional features** for the ML gate (§3.3.D) or as a standalone "execution-quality" signal that delays an entry by one bar if microstructure looks toxic.
+Subscribe to Level-2 (L2) order book snapshots from Binance.US (or an aggregator) and persist 1-minute features: bid-ask imbalance, depth-weighted spread, top-of-book pressure, large-trade footprint. Use as **additional features** for the ML gate (§3.3.D) or as a standalone "execution quality" signal that delays an entry by one bar if microstructure looks toxic.
 
-- Why: most academic crypto alpha post-2022 lives in microstructure, not in OHLCV. WFO on bar data leaves money on the table that L2 features would catch.
-- Risk: order book history is expensive to store; need TimescaleDB compression policy + tiered retention. The signal may decay below the new low Binance.US fee regime (0.04% RT) — but worth checking.
+- Why: most academic crypto-alpha research post-2022 lives in microstructure, not in OHLCV. WFO on bar data leaves money on the table that L2 features would catch.
+- Risk: order book history is expensive to store. Need TimescaleDB compression + tiered retention. The signal may also decay under Binance.US's already-low 0.04% round-trip fee regime — but worth checking.
 
-#### I. Deep RL for position sizing (~6-8 weeks; experimental)
-A PPO/SAC agent that, given state = (current portfolio, open positions, recent price + regime features, time-since-entry), outputs a per-coin sizing action in `[0, MAX_COIN_ALLOCATION]`. **Entry signals stay rule-based** (WFO/carry); only the sizing decision is learned. Reward = risk-adjusted realized PnL with drawdown penalty.
+#### I. Deep reinforcement learning (RL) for position sizing (~6-8 weeks; experimental)
+A PPO (Proximal Policy Optimization) or SAC (Soft Actor-Critic) agent that, given current state = (portfolio, open positions, recent price + regime features, time-since-entry), outputs a per-coin sizing action in `[0, MAX_COIN_ALLOCATION]`. **Entry signals stay rule-based** (WFO/carry); only the sizing decision is learned. Reward = risk-adjusted realized PnL with a drawdown penalty.
 
-- Why: position sizing is where path-dependence really matters and where a learned policy plausibly beats heuristics like Kelly or volatility-targeting. Constraining RL to sizing (not entry selection) keeps the action space small and interpretable.
-- Risk: RL on financial data is notoriously sample-poor. Walk-forward training with strict no-lookahead is essential; will likely produce noisy results in the first iteration. Treat as research, not a deployable line item.
+- Why: position sizing is where path-dependence really matters and where a learned policy plausibly beats heuristics like the Kelly criterion or volatility-targeting. Constraining RL to sizing (not entry selection) keeps the action space small and interpretable.
+- Risk: RL on financial data is notoriously sample-poor. Walk-forward training with strict no-lookahead is essential; first iterations will likely produce noisy results. Treat as research, not a deployable line item.
 
 #### J. Transformer signal models (~6-10 weeks; experimental)
-Pretrain a small transformer (TFT-style or patch-based) on multi-coin OHLCV + features, fine-tune to predict next-K-bar return distributions. Use the predicted **distribution shape** (not just point estimate) — e.g., enter when the median is positive AND the 10th percentile is above a vol-scaled threshold.
+Pretrain a small transformer (Temporal Fusion Transformer (TFT) style, or patch-based) on multi-coin OHLCV + features, then fine-tune to predict next-K-bar return distributions. Use the predicted **distribution shape** (not just the point estimate) — e.g., enter when the median is positive AND the 10th percentile is above a volatility-scaled threshold.
 
-- Why: transformers handle multi-series multi-horizon prediction well and naturally output distributions. Crypto data volumes (~100K bars/coin × 50+ coins × multi-feature) are right at the edge of what works without overfitting.
+- Why: transformers handle multi-series multi-horizon prediction well and naturally output distributions. Crypto data volumes (~100,000 bars/coin × 50+ coins × multi-feature) are right at the edge of what works without overfitting.
 - Risk: highest overfit risk on the roadmap. Pure research item; would gate adoption on rigorous OOS evaluation against the current WFO baseline.
 
 #### K. On-chain + sentiment features (~3-4 weeks; needs new data layer)
-Integrate on-chain metrics (exchange netflow, stablecoin issuance, miner reserves) from a provider like Glassnode or CryptoQuant, plus sentiment (Fear & Greed already wired; add Twitter/Reddit volume + tone via cheap LLM-based scoring). Use as features for ML gate (§3.3.D) or as standalone regime overlays.
+Integrate on-chain metrics (exchange netflow, stablecoin issuance, miner reserves) from a provider like Glassnode or CryptoQuant, plus sentiment (Fear & Greed already wired; add Twitter/Reddit volume + tone via cheap LLM-based scoring). Use as features for the ML gate (§3.3.D) or as standalone regime overlays.
 
-- Why: orthogonal information sources to price/volume. Crypto's structural reflexivity means on-chain leads price more often than equities.
+- Why: orthogonal information sources to price and volume. Crypto's structural reflexivity means on-chain often leads price more reliably than equity equivalents do.
 - Risk: data quality and provider lock-in. Free tiers usually give daily granularity, which limits intraday use. Start with the cheapest viable feed and validate signal-to-noise before scaling up.
 
 #### L. Funding-rate / basis surface modeling (~2-3 weeks; builds on Phase 4)
-Generalize `FundingCarryBTC` (single-coin BTC perp funding) to a **portfolio of funding carries** across BTC/ETH/SOL perps with dynamic allocation by realized funding vs. realized hedge cost. Add a basis-arb leg: when perp-spot basis exceeds funding-equivalent threshold, lean into the dislocation.
+Generalize `FundingCarryBTC` (single-coin BTC perpetual-futures funding) to a **portfolio of funding carries** across BTC / ETH / SOL perpetuals, with dynamic allocation by realized funding vs. realized hedge cost. Add a basis-arbitrage leg: when the perpetual-vs-spot basis exceeds a funding-equivalent threshold, lean into the dislocation.
 
-- Why: funding-carry has the highest empirical Sharpe of any strategy in the codebase. Scaling it across coins is the lowest-friction way to add carry exposure.
-- Risk: capacity-limited — funding rates compress as flows arrive. Position size must respect funding-rate response to capital deployment (price impact on the basis itself).
+- Why: funding-carry has the highest empirical Sharpe ratio of any strategy in the codebase. Scaling it across coins is the lowest-friction way to add carry exposure.
+- Risk: capacity-limited — funding rates compress as capital flows in. Position size must respect funding-rate response to deployment (your own trade moves the basis).
 
 #### M. Cross-exchange arbitrage scanner (~2 weeks; scoped narrow)
-A read-only monitor that compares Binance.US, Kraken, Coinbase, OKX prices on the same pairs and logs persistent spreads beyond 50bp. Not a trading strategy yet — start by **measuring** whether the opportunity exists at our access level. If yes, scope an executor.
+A read-only monitor that compares Binance.US, Kraken, Coinbase, OKX prices on the same pairs and logs persistent spreads beyond 50 basis points (0.5%). Not a trading strategy yet — start by **measuring** whether the opportunity exists at our account size and API access level. If yes, scope an executor.
 
-- Why: cheap to build, immediate diagnostic value. If structural spreads exist they're free alpha for the cost of multi-venue API integration.
+- Why: cheap to build, immediate diagnostic value. If structural spreads exist they're free alpha for the cost of multi-venue exchange-API integration.
 - Risk: low. Worst case it confirms there's no opportunity at our size.
 
 ---
@@ -213,12 +216,12 @@ A read-only monitor that compares Binance.US, Kraken, Coinbase, OKX prices on th
 
 | Status | Item | Notes |
 |:---:|---|---|
-| 🟡 | Binance.US data architecture | OHLCV schema accommodates Binance.US alongside Kraken history. Verify before Phase 1. |
-| ⚪ | MLflow experiment tracking for WFO runs | ~4h. Currently runs are dirs under `results/research/` — visual diff and search would be material UX. |
-| ✅ | Per-run `wfo_stats_snapshot.json` | Landed during WFO arc. Discipline: never purge cache before reading what the run produced. |
-| ⚪ | LLM post-mortem reports | ~4h. Auto-generate natural-language performance commentary for daily PnL. |
-| ⚪ | `ggt compare` — diff two research folders for selection drift | Helpful when comparing fee/edge regime runs (the WFO arc did this by hand). |
-| ⚪ | Backtest-vs-real "slippage gap" replay | Replay backtest logic against real fills to quantify slippage attribution. |
+| ✅ | Binance.US data architecture | Multi-venue OHLCV schema verified end-to-end (2026-05-23). 28 of top-50 Binance.US coins backfilled; 22 unlisted skipped cleanly. |
+| ⚪ | MLflow experiment tracking for WFO runs | ~4h. Runs are currently directories under `results/research/`; a visual diff + search interface would be a material UX improvement. |
+| ✅ | Per-run `wfo_stats_snapshot.json` | Landed during WFO arc. Discipline: never purge the cache before reading what the run produced. |
+| ⚪ | Large language model (LLM) post-mortem reports | ~4h. Auto-generate natural-language performance commentary for the daily PnL report. |
+| ⚪ | `ggt compare` — diff two research runs for selection drift | Helpful when comparing fee/edge regime runs (the WFO arc did this by hand). |
+| ⚪ | Backtest-vs-real "slippage gap" replay | Replay backtest logic against real fills to quantify slippage attribution per coin. |
 
 ---
 

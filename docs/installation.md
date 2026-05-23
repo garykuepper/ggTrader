@@ -1,6 +1,6 @@
 # Installation
 
-ggTrader needs three things to run: Python 3.10+, a TimescaleDB instance, and (for live trading) exchange API keys.
+ggTrader needs three things to run: Python 3.10+, a TimescaleDB instance (PostgreSQL with a time-series extension), and — for live trading — exchange Application Programming Interface (API) keys.
 
 ## 1. Python dependencies
 
@@ -59,7 +59,7 @@ DISCORD_WEBHOOK_URL=...
 # Verify DB connectivity
 python ggt.py db diag
 
-# Pull recent OHLCV for the live universe
+# Pull recent OHLCV (open/high/low/close/volume candles) for the live universe
 python ggt.py ingest --days 180
 
 # Optional: enable Timescale compression to shrink old data
