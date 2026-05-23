@@ -14,7 +14,7 @@ Optional flags:
     --interval 4h      bar interval (default 4h)
     --start YYYY-MM-DD start date (default 2024-01-01)
     --end YYYY-MM-DD   end date (default today)
-    --threshold T      highlight corrs ≥ T (default 0.7, matches LEADER_CORR_THRESHOLD)
+    --threshold T      highlight corrs ≥ T (default 0.7)
 """
 
 from __future__ import annotations

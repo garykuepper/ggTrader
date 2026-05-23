@@ -147,9 +147,8 @@ def main() -> None:
 
             # Manually trigger one cycle
             ohlcv = engine._fetch_latest_data()
-            regime_allowance = engine._compute_live_regime_allowance(ohlcv)
             signals = engine._compute_latest_signals(ohlcv)
-            engine._execute_trade_logic(signals, regime_allowance)
+            engine._execute_trade_logic(signals)
 
         except Exception as e:
             print(f"ERROR in trade cycle: {e}")

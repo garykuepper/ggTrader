@@ -411,7 +411,6 @@ class TestDataLoadOnce:
             "SLIPPAGE": 0.0,
             "FREQ": "4h",
             "EXIT_TOURNAMENT": [],
-            "BTC_REGIME_FILTER": False,
             "START_DATE": "2023-01-01",
             "END_DATE": "2023-12-31",
         }
@@ -440,7 +439,6 @@ class TestDataLoadOnce:
             "SLIPPAGE": 0.0,
             "FREQ": "4h",
             "EXIT_TOURNAMENT": [],
-            "BTC_REGIME_FILTER": False,
             "START_DATE": "2023-01-01",
             "END_DATE": "2023-12-31",
         }

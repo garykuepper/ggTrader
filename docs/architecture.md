@@ -6,11 +6,10 @@ How ggTrader is put together. For commands and day-to-day usage see [CLI Referen
 
 1. [What it is](#what-it-is)
 2. [The four layers](#the-four-layers) — [Data](#1-data) · [Strategy](#2-strategy) · [Optimization](#3-optimization-walk-forward) · [Execution](#4-execution)
-3. [Regime filter](#regime-filter)
-4. [Position sizing](#position-sizing)
-5. [Data flow](#data-flow) (diagram)
-6. [Monthly recalibration](#monthly-recalibration)
-7. [Where to find things](#where-to-find-things) (path map)
+3. [Position sizing](#position-sizing)
+4. [Data flow](#data-flow) (diagram)
+5. [Monthly recalibration](#monthly-recalibration)
+6. [Where to find things](#where-to-find-things) (path map)
 
 ---
 
@@ -72,17 +71,6 @@ Live trading.
 - `BaseExecutionEngine` handles state persistence (`data/active_positions.json`), the daily-loss circuit breaker (`DAILY_LOSS_LIMIT_PCT` = 5%), Telegram + Discord alerts, and the live mirror to TimescaleDB so Grafana sees orders in real time.
 - `CryptoExecutionEngine` polls the active venue every 4 hours (aligned to UTC bar boundaries), places orders through a `Broker` adapter (`src/ggTrader/execution/{kraken_spot,binanceus_spot,kraken_futures}.py`), and protects fills with venue-native trailing-stop (Kraken) or OCO (Binance.US) orders.
 - Code: `src/ggTrader/core/{base,crypto}_execution_engine.py`, `src/ggTrader/execution/`.
-
-## Regime filter
-
-A coin's returns correlation to BTC decides whether the BTC bull/bear regime gates its entries:
-
-- `corr_BTC ≥ LEADER_CORR_THRESHOLD` (default 0.7) → entries are only allowed when BTC is in a bull regime (close > EMA(200)).
-- `corr_BTC < threshold` → coin trades freely; the BTC regime doesn't affect it.
-
-The point is to mute correlated bets during BTC bear markets without holding back coins that march to their own beat (XMR, ZEC, TRX, etc.). The filter is currently `BTC_REGIME_FILTER=False` after research showed it underperformed unfiltered trading on recent data — kept available for future re-enabling.
-
-Code: `src/ggTrader/core/regime_filtering.py`.
 
 ## Position sizing
 

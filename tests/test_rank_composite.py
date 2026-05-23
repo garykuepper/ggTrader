@@ -132,8 +132,14 @@ def test_min_trades_gate_disqualifies_low_trade_cells():
     assert any(r["params"]["x"] == "B" for r in top)
 
 
-def test_eight_of_ten_forgiveness_drops_cells_below_threshold():
-    """A cell present in fewer than min_pass folds is forced to NaN everywhere."""
+def test_sparse_cell_survives_with_finite_score():
+    """Soft-sparsity (2026-05-23): sparse cells fill from fold median instead of being dropped.
+
+    Replaces the prior hard `pass_count >= MIN_TRAIN_FOLD_PASS_COUNT` cut that
+    set ineligible cells to -inf. A cell that fires in only 5 of 10 folds now
+    survives with a finite score; it just rarely wins because its score is
+    dominated by the fold-median fill.
+    """
     cells = [("A",), ("B",)]
     # 10 folds. A present in all 10, B present in only 5.
     is_metrics_by_fold = {}
@@ -143,17 +149,15 @@ def test_eight_of_ten_forgiveness_drops_cells_below_threshold():
         else:
             row = pd.Series([1.0, float("nan")], index=pd.Index(cells, dtype=object))
         is_metrics_by_fold[f] = row
-    config = {"MIN_TRAIN_FOLD_PASS_COUNT": 8}
     top, best = _calculate_robustness(
         is_metrics_by_fold=is_metrics_by_fold,
         param_names=["x"],
         param_grid={"x": ["A", "B"]},
-        config=config,
+        config={},
     )
-    # B passed only 5 folds (<8). It must be dropped.
-    assert not any(r["params"]["x"] == "B" for r in top), (
-        "B should be dropped by 8-of-10 forgiveness (only 5 finite folds)"
-    )
+    # Both cells must produce a finite, rankable score; B is no longer nullified.
+    assert any(r["params"]["x"] == "A" for r in top)
+    assert any(r["params"]["x"] == "B" for r in top)
 
 
 def test_eight_of_ten_forgiveness_fills_with_fold_median():

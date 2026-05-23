@@ -248,76 +248,40 @@ def _fetch_regime_status() -> dict[str, Any]:
 
 
 def _fetch_crypto_regime_status() -> dict[str, Any]:
-    """Fetch recent data for BTC and top coins to compute current regime status.
+    """Fetch current BTC/ETH prices + Fear & Greed for the daily PnL report.
 
     Returns a dict with:
-        btc_bull: bool
-        alt_bull: bool
         btc_price: float
-        alt_index: float (normalized)
+        eth_price: float
+        fear_greed: dict | None
         error: str | None
     """
     try:
         import ccxt
 
-        from ggTrader.core.regime_filtering import _compute_btc_regime_mask
-        from ggTrader.utils.run_config import full_pipeline_config
-
-        config = full_pipeline_config()
-        # Ensure we have enough bars for EMA warmup
-        n_warmup = int(config.get("EMA_WARMUP_BARS", 100))
-        limit = n_warmup + 50
-
         ex = ccxt.kraken({"enableRateLimit": True})
-        # We need BTC and a handful of top coins for the alt index.
-        # Using a fixed set of top coins is faster than fetching the whole universe.
-        symbols = ["BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "ADA/USD", "DOGE/USD"]
-        data = {}
+        symbols = ["BTC/USD", "ETH/USD"]
+        prices: dict[str, float] = {}
         for s in symbols:
             try:
-                ohlcv = ex.fetch_ohlcv(s, timeframe="4h", limit=limit)
-                df = pd.DataFrame(
-                    ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
-                )
-                df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
-                df.set_index("timestamp", inplace=True)
-                # Map to the format regime_filtering expects (MultiIndex: symbol, field)
-                sym_dashed = s.replace("/", "-")
-                for col in ["open", "high", "low", "close", "volume"]:
-                    data[(sym_dashed, col)] = df[col]
+                t = ex.fetch_ticker(s)
+                prices[s] = float(t.get("last") or t.get("close") or 0.0)
             except Exception:
                 continue
 
-        if not data:
-            return {"error": "Could not fetch regime data"}
+        if not prices:
+            return {"error": "Could not fetch price data"}
 
-        ohlcv_df = pd.DataFrame(data)
-
-        try:
-            btc_mask = _compute_btc_regime_mask(ohlcv_df, config)
-        except Exception:
-            btc_mask = None
-
-        btc_bull = bool(btc_mask.iloc[-1]) if btc_mask is not None else False
-
-        btc_price = 0.0
-        if ("BTC-USD", "close") in ohlcv_df.columns:
-            btc_price = float(ohlcv_df[("BTC-USD", "close")].iloc[-1])
-        eth_price = 0.0
-        if ("ETH-USD", "close") in ohlcv_df.columns:
-            eth_price = float(ohlcv_df[("ETH-USD", "close")].iloc[-1])
-
-        btc_status = "BULL 🟢" if btc_bull else "BEAR 🔴"
+        btc_price = prices.get("BTC/USD", 0.0)
+        eth_price = prices.get("ETH/USD", 0.0)
 
         fg_row = _fetch_and_persist_fear_greed()
         return {
-            "btc_bull": btc_bull,
             "btc_price": btc_price,
             "eth_price": eth_price,
             "fear_greed": fg_row,
             "error": None,
             "rows": [
-                ("BTC Regime", btc_status),
                 ("BTC Price", f"${btc_price:,.2f}"),
                 ("ETH Price", f"${eth_price:,.2f}"),
             ]
@@ -332,7 +296,7 @@ def _fetch_crypto_regime_status() -> dict[str, Any]:
                 else []
             ),
             "lines": [
-                f"🌐 BTC Regime: {btc_status} (${btc_price:,.0f})",
+                f"🟠 BTC Price: ${btc_price:,.0f}",
                 f"📈 ETH Price: ${eth_price:,.0f}",
             ]
             + (
@@ -343,7 +307,6 @@ def _fetch_crypto_regime_status() -> dict[str, Any]:
                 else []
             ),
             "md_lines": [
-                f"- **BTC Regime**: {btc_status}",
                 f"- **BTC Price**: ${btc_price:,.2f}",
                 f"- **ETH Price**: ${eth_price:,.2f}",
             ]
@@ -356,7 +319,7 @@ def _fetch_crypto_regime_status() -> dict[str, Any]:
             ),
         }
     except Exception as e:
-        return {"error": f"Regime compute failed: {e!r}"}
+        return {"error": f"Market snapshot failed: {e!r}"}
 
 
 def _gather_report_data(

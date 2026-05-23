@@ -78,7 +78,7 @@ ggt trade-report        # closed-trade table from CSVs
 ggt signals             # current bar, what's firing or blocked
 ```
 
-**Daily PnL** — sent to Telegram + Discord at 06:00 local time via `scripts/daily_pnl_report.sh` (cron). Includes realized/unrealized PnL, open positions, circuit-breaker status, BTC regime, and Fear & Greed.
+**Daily PnL** — sent to Telegram + Discord at 06:00 local time via `scripts/daily_pnl_report.sh` (cron). Includes realized/unrealized PnL, open positions, circuit-breaker status, BTC/ETH prices, and Fear & Greed.
 
 ## Monthly recalibration
 

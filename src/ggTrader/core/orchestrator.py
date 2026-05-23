@@ -41,10 +41,6 @@ from ggTrader.core.orchestrator_utils import (  # noqa: F401
     _wall_clock_eta,
     _wfo_per_coin_fallback_triple,
 )
-from ggTrader.core.regime_filtering import (
-    _compute_btc_correlations,
-    _compute_btc_regime_mask,
-)
 from ggTrader.core.sensitivity import (  # noqa: F401
     _cleanup_after_heavy_vectorized_run,
     _combo_index_keys,
@@ -80,60 +76,6 @@ from ggTrader.data.cache.wfo_cache import WFOCache
 from ggTrader.pipeline.exit_tournament import parse_exit_tournament
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_with_movers
-
-
-def _apply_tiered_regime_mask(
-    combined_entries: pd.DataFrame,
-    btc_corrs: Dict[str, float],
-    btc_regime: Optional[pd.Series],
-    config: Dict[str, Any],
-) -> pd.DataFrame:
-    """Apply BTC leader-regime filter to combined entries DataFrame.
-
-    Coins with ``corr_BTC >= LEADER_CORR_THRESHOLD`` are gated by
-    ``btc_regime`` (only fire when BTC is bull); below the threshold they
-    trade freely. Default corr 1.0 (conservative) for unknown symbols.
-    """
-    if btc_regime is None:
-        print("\n  [Regime Filter] No BTC mask available — filter skipped.")
-        return combined_entries
-
-    threshold = float(config.get("LEADER_CORR_THRESHOLD", 0.7))
-    n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
-
-    n = len(combined_entries)
-    all_true = np.ones(n, dtype=bool)
-    btc_aligned = btc_regime.reindex(combined_entries.index, fill_value=False).values
-
-    mask_arrays = []
-    by_tier: Dict[str, list[str]] = {"BTC": [], "Free": []}
-    for col in combined_entries.columns:
-        sym = col[0] if isinstance(col, tuple) else col
-        cb = float(btc_corrs.get(sym, 1.0))
-        if cb >= threshold:
-            mask_arrays.append(btc_aligned)
-            by_tier["BTC"].append(f"{sym}({cb:.2f})")
-        else:
-            mask_arrays.append(all_true)
-            by_tier["Free"].append(f"{sym}({cb:.2f})")
-
-    regime_arr = np.column_stack(mask_arrays)
-    n_blocked = int((combined_entries.values & ~regime_arr).sum())
-    filtered = pd.DataFrame(
-        combined_entries.values & regime_arr,
-        index=combined_entries.index,
-        columns=combined_entries.columns,
-    )
-
-    print(
-        f"\n  [Regime Filter] EMA({n_warmup}) BTC leader filter — blocked {n_blocked} signals "
-        f"(threshold={threshold:.2f})."
-    )
-    for tier_name, syms in by_tier.items():
-        if syms:
-            print(f"    {tier_name:<4}: {', '.join(syms)}")
-
-    return filtered
 
 
 def _compute_allocation_weights(
@@ -699,15 +641,6 @@ def run_frozen_params_combined_backtest(
     combined_exits = pd.concat(combined_exits_list, axis=1)
     combined_close = pd.concat(combined_close_list, axis=1)
 
-    # BTC leader-regime filter: coins with corr_BTC ≥ LEADER_CORR_THRESHOLD
-    # only fire entries when BTC is bull; below the threshold they trade freely.
-    if config.get("BTC_REGIME_FILTER", False):
-        btc_regime = _compute_btc_regime_mask(ohlcv, config)
-        btc_corrs = _compute_btc_correlations(ohlcv, config) if btc_regime is not None else {}
-        combined_entries = _apply_tiered_regime_mask(
-            combined_entries, btc_corrs, btc_regime, config
-        )
-
     # Optional warmup trim: if PHASE3_STATS_CUTOFF is set, we loaded extra bars before
     # the YTD start so indicators are warm at bar 0.  Trim signals/close back to the
     # intended window before building the portfolio so stats start from the right date.
@@ -984,21 +917,6 @@ def run_multi_strategy_per_coin_wfo(
     # Use wfo_ohlcv (not the original) for everything below this point.
     ohlcv = wfo_ohlcv
 
-    # Pre-compute BTC leader regime mask once for all WFO folds.
-    # Now operates on the 80% WFO window only, never on holdout-era bars.
-    wfo_btc_mask: Optional[pd.Series] = None
-    wfo_btc_corrs: Dict[str, float] = {}
-    if config.get("BTC_REGIME_FILTER", False):
-        wfo_btc_mask = _compute_btc_regime_mask(ohlcv, config)
-        wfo_btc_corrs = _compute_btc_correlations(ohlcv, config)
-    if wfo_btc_mask is not None:
-        n_wu = int(config.get("EMA_WARMUP_BARS", 200))
-        thr = float(config.get("LEADER_CORR_THRESHOLD", 0.7))
-        print(
-            f"  [Leader Regime] EMA({n_wu}) BTC mask pre-computed for WFO folds — "
-            f"threshold={thr:.2f}."
-        )
-
     n_splits = config.get("N_SPLITS", 5)
     test_ratio = config.get("TEST_RATIO", 3.0)
 
@@ -1052,13 +970,6 @@ def run_multi_strategy_per_coin_wfo(
                         "EXIT_STRATEGY": exit_name,
                     }
 
-                    threshold = float(config.get("LEADER_CORR_THRESHOLD", 0.7))
-                    cb = float(wfo_btc_corrs.get(symbol, 0.0)) if wfo_btc_mask is not None else 0.0
-                    if wfo_btc_mask is not None and cb >= threshold:
-                        coin_regime_mask = wfo_btc_mask
-                    else:
-                        coin_regime_mask = None
-
                     _cached = (
                         _wfo_cache.get(
                             symbol,
@@ -1085,7 +996,6 @@ def run_multi_strategy_per_coin_wfo(
                             test_ratio,
                             show_progress,
                             logger,
-                            btc_regime_mask=coin_regime_mask,
                         )
                         if _wfo_cache is not None:
                             _wfo_cache.put(

@@ -120,10 +120,10 @@ The carry strategies live in `strategies/carry/` under the **new** Phase 3 archi
 | F | [Ensemble + rolling meta-allocation](#f-ensemble-of-strategies-with-rolling-window-meta-allocation-1-2-weeks-after-cd) | ~1-2 wk |
 
 #### A. Regime-conditional allocation (~1 week)
-Today's `BTC_REGIME_FILTER` is binary (on/off entries). A stronger version conditions **position sizing** on regime, not just entry permission: scale exposure by BTC trend strength (e.g., distance from EMA200, or realized-vol percentile). Also: add an **altcoin regime** based on BTC dominance, not just BTC price.
+The previous binary BTC bull/bear filter was removed in 2026-05-23 — it underperformed unfiltered trading and added complexity without measurable edge. The right replacement is to condition **position sizing** on regime, not entry permission: scale exposure by BTC trend strength (e.g., distance from EMA200, or realized-vol percentile). Also: add an **altcoin regime** based on BTC dominance, not just BTC price.
 
 - Why: most of the 2026-05 fee/edge cliff is concentrated in chop regimes. If we already know the regime, we shouldn't size as if we don't.
-- Risk: regime detection is itself fragile — easy to overfit. Use simple, theory-justified thresholds.
+- Risk: regime detection is itself fragile — easy to overfit. Use simple, theory-justified thresholds. The deletion of the binary filter is a deliberate reset; the replacement must justify its complexity against the now-default "no regime modulation."
 
 #### B. Volatility-targeting at the portfolio level (~3-5 days)
 Today's `--adaptive-sizing` is **per-coin** vol normalization. The portfolio-level version targets a fixed realized portfolio vol (e.g. 15% annualized) and rescales the whole book. This is a standard institutional technique that ggTrader doesn't yet use.
@@ -166,7 +166,7 @@ Once we have WFO + carry + (possibly) stat-arb + ML-filtered WFO, the meta-quest
 | M | [Cross-exchange arbitrage scanner](#m-cross-exchange-arbitrage-scanner-2-weeks-scoped-narrow) | ~2 wk |
 
 #### G. Gradient-boosted regime classifier (~2-3 weeks)
-Replace the binary `BTC_REGIME_FILTER` with an XGBoost/LightGBM classifier that outputs `P(market is trending)` from features like realized vol (multi-window), term-structure of BTC futures basis, BTC dominance, BTC funding rate, USDT premium, volume-weighted ADX. Use the probability as a continuous regime score that scales position sizing (§3.3.A).
+Build a regime model from scratch (the prior binary BTC EMA filter was deleted in 2026-05-23). XGBoost/LightGBM classifier outputs `P(market is trending)` from features like realized vol (multi-window), term-structure of BTC futures basis, BTC dominance, BTC funding rate, USDT premium, volume-weighted ADX. Use the probability as a continuous regime score that scales position sizing (§3.3.A).
 
 - Why: regimes aren't binary. A soft probability is more informative than EMA crossover and degrades more gracefully when wrong.
 - Risk: feature drift in crypto is real. Retrain monthly alongside WFO recalibration; monitor calibration with reliability diagrams.

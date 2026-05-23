@@ -203,10 +203,10 @@ def phase_2_full_data_validation(
     )
 
     if ohlcv is None:
-        # Pre-load EMA_WARMUP_BARS before START_DATE so the regime filter EMA is fully
-        # warm from bar 0 of the actual backtest window — same approach as Phase 3.
-        # Without this, EMA50/EMA200 start cold and regime signals are unreliable for
-        # the first ~EMA_WARMUP_BARS × interval (default ~33 days at 4h).
+        # Pre-load warmup bars before START_DATE so EMA-based strategy indicators
+        # (e.g. EMA(200) in ema_cross / psar_adx) are warm from bar 0. Without
+        # this, slow-EMA strategies suppress all entries for the first
+        # ~warmup bars × interval (default ~33 days at 4h).
         from ggTrader.utils.setup import load_hybrid_validation_ohlcv
 
         interval_str = config.get("INTERVAL", "4h")
@@ -214,14 +214,14 @@ def phase_2_full_data_validation(
             interval_hours = int(interval_str.rstrip("h"))
         except ValueError:
             interval_hours = 4
-        n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
+        n_warmup = int(config.get("INDICATOR_WARMUP_BARS", 200))
         warmup_td = pd.Timedelta(hours=interval_hours * n_warmup)
         start_ts = pd.Timestamp(config["START_DATE"]).tz_localize("UTC")
         end_ts = pd.Timestamp(config["END_DATE"]).tz_localize("UTC")
         load_start = start_ts - warmup_td
         print(
             f"  [Phase 2] Loading warmup data from {load_start.date()} "
-            f"({n_warmup} bars before {start_ts.date()}) — regime EMA warm from bar 0."
+            f"({n_warmup} bars before {start_ts.date()}) — strategy EMAs warm from bar 0."
         )
         ohlcv = load_hybrid_validation_ohlcv(config, load_start, end_ts, use_ccxt_tail=True)
 
@@ -294,7 +294,7 @@ def phase_3_recent_performance(
         interval_hours = int(interval_str.rstrip("h"))
     except ValueError:
         interval_hours = 4
-    n_warmup = int(config.get("EMA_WARMUP_BARS", 200))
+    n_warmup = int(config.get("INDICATOR_WARMUP_BARS", 200))
     warmup_td = pd.Timedelta(hours=interval_hours * n_warmup)
     load_start = start - warmup_td
 

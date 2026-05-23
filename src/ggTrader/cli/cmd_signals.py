@@ -91,19 +91,6 @@ def run_signals(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     signals = engine._compute_latest_signals(df)
-    allowance = engine._compute_live_regime_allowance(df)
-
-    from ggTrader.core.regime_filtering import (
-        _compute_btc_correlations,
-        _compute_btc_regime_mask,
-    )
-
-    threshold = float(config.get("LEADER_CORR_THRESHOLD", 0.7))
-    btc_regime = (
-        _compute_btc_regime_mask(df, config) if config.get("BTC_REGIME_FILTER", False) else None
-    )
-    btc_corrs = _compute_btc_correlations(df, config) if btc_regime is not None else {}
-    btc_bull = bool(btc_regime.iloc[-1]) if btc_regime is not None else None
 
     ema_dist_span = 200
 
@@ -125,8 +112,8 @@ def run_signals(args: argparse.Namespace) -> None:
 
     print("=" * 120)
     print(f"  ggt signals — run_id={getattr(results_source, 'run_id', '<path>')}")
-    btc_label = "BULL" if btc_bull else ("BEAR" if btc_bull is not None else "OFF")
-    print(f"  BTC regime={btc_label}  threshold={threshold:.2f}{fg_str}")
+    if fg_str.strip():
+        print(f"  {fg_str.strip()}")
     print("=" * 120)
 
     rows: List[Dict[str, Any]] = []
@@ -138,18 +125,6 @@ def run_signals(args: argparse.Namespace) -> None:
         info = engine.per_coin_params.get(sym, {})
         sig = signals.get(sym, {})
         in_pos = sym in engine.active_positions
-        cb = float(btc_corrs.get(sym, float("nan")))
-
-        cb_for_class = cb if pd.notna(cb) else 0.0
-        if btc_bull is None:
-            tier = "OFF"
-            tier_ok = True
-        elif cb_for_class >= threshold:
-            tier = "BTC"
-            tier_ok = bool(btc_bull)
-        else:
-            tier = "Free"
-            tier_ok = True
 
         ema_long_value = float("nan")
         ema_dist_pct = float("nan")
@@ -163,16 +138,12 @@ def run_signals(args: argparse.Namespace) -> None:
         except Exception:
             pass
 
-        allow = bool(allowance.get(sym, True))
-
         if sig.get("entry"):
             reason = "ENTRY"
         elif not info:
             reason = "no_params"
         elif in_pos:
             reason = "in_position"
-        elif not allow:
-            reason = f"blocked:{tier}_bear" if tier_ok is False else "blocked:regime"
         else:
             reason = "no_signal"
 
@@ -183,9 +154,6 @@ def run_signals(args: argparse.Namespace) -> None:
                 "exit": info.get("exit_name", "-"),
                 "entry": bool(sig.get("entry", False)),
                 "exit_signal": bool(sig.get("exit", False)),
-                "tier": tier,
-                "corr_btc": cb,
-                "allow": allow,
                 "price": float(sig.get("current_price", float("nan"))),
                 "ema_long": ema_long_value,
                 "ema_dist_pct": ema_dist_pct,
@@ -206,14 +174,11 @@ def run_signals(args: argparse.Namespace) -> None:
 
     header = (
         f"{'Symbol':<10} {'Strategy':<20} {'Exit':<14} "
-        f"{'E/X':<5} {'Tier':<6} {'cBTC':>5} {'Allow':<5} "
+        f"{'E/X':<5} "
         f"{'Price':>11} {'%vs_EMA':>8} {'ATR':>9} {'InPos':<5} {'Reason':<28}"
     )
     print(header)
     print("-" * len(header))
-
-    def _fmt_corr(c: float) -> str:
-        return f"{c:>5.2f}" if pd.notna(c) else f"{'n/a':>5}"
 
     def _fmt_dist(d: float) -> str:
         return f"{d:>+7.2f}%" if pd.notna(d) else f"{'n/a':>8}"
@@ -224,8 +189,7 @@ def run_signals(args: argparse.Namespace) -> None:
         atr_str = f"{r['atr']:>9.4f}" if pd.notna(r["atr"]) else f"{'n/a':>9}"
         print(
             f"{r['symbol']:<10} {r['strategy']:<20} {r['exit']:<14} "
-            f"{e_x:<5} {r['tier']:<6} {_fmt_corr(r['corr_btc'])} "
-            f"{'yes' if r['allow'] else 'NO':<5} "
+            f"{e_x:<5} "
             f"{price_str:>11} {_fmt_dist(r['ema_dist_pct']):>8} {atr_str} "
             f"{'YES' if r['in_pos'] else '-':<5} {r['reason']:<28}"
         )
@@ -240,9 +204,6 @@ def run_signals(args: argparse.Namespace) -> None:
 
     n_total = len(rows)
     n_firing = sum(1 for r in rows if r["entry"])
-    n_blocked = sum(1 for r in rows if not r["allow"])
     n_in_pos = sum(1 for r in rows if r["in_pos"])
     print()
-    print(
-        f"Summary: {n_total} symbol(s) | {n_firing} firing | {n_blocked} regime-blocked | {n_in_pos} in position"
-    )
+    print(f"Summary: {n_total} symbol(s) | {n_firing} firing | {n_in_pos} in position")

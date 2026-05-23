@@ -116,7 +116,6 @@ class FastBacktest:
         config: Optional[dict] = None,
         signal_factory: Any = None,
         mover_mask: Optional[pd.DataFrame] = None,
-        regime_mask: Optional[pd.Series] = None,
     ):
         """
         Args:
@@ -125,8 +124,6 @@ class FastBacktest:
             config: Configuration dictionary (fees, slippage, etc)
             signal_factory: Optional custom signal factory
             mover_mask: Optional boolean mask to filter entries/exits
-            regime_mask: Optional boolean Series (indexed to ohlcv.index) that
-                blocks new long entries when False (e.g. BTC below EMA200).
         """
         # Merge caller config with defaults
         self.config = {**_DEFAULT_CONFIG, **(config or {})}
@@ -134,7 +131,6 @@ class FastBacktest:
         self.ohlcv = ohlcv
         self.params = params
         self.mover_mask = mover_mask
-        self.regime_mask = regime_mask
         self.pf = None  # Portfolio cache
         self.entries = None
         self.exits = None
@@ -166,11 +162,6 @@ class FastBacktest:
         # 2. Apply Mover Mask (if exists)
         if self.mover_mask is not None:
             entries = self._apply_mover_mask(entries)
-
-        # 2b. Apply Regime Mask (if exists) — blocks entries when BTC below EMA.
-        if self.regime_mask is not None:
-            rm_aligned = self.regime_mask.reindex(entries.index, fill_value=False).values
-            entries = entries & rm_aligned.reshape(-1, 1)
 
         entries, exits, price_for_orders = self._sort_multindex_columns_for_groupby(
             entries, exits, price_for_orders

@@ -165,7 +165,6 @@ def _dry_run_sizing(engine: Any, override_portfolio_usd: Optional[float] = None)
 
     # Compute signals
     signals = engine._compute_latest_signals(df)
-    regime = engine._compute_live_regime_allowance(df)
 
     # Determine portfolio value
     portfolio_usd = override_portfolio_usd
@@ -180,11 +179,6 @@ def _dry_run_sizing(engine: Any, override_portfolio_usd: Optional[float] = None)
     entries = []
     for symbol, sig in signals.items():
         if sig["entry"]:
-            allowed = regime.get(symbol, True)
-            if not allowed:
-                engine.logger.info(f"  [Regime] {symbol}: Blocked entry (bear regime)")
-                continue
-
             if engine.config.get("ADAPTIVE_SIZING"):
                 size_usd = engine._compute_adaptive_position_usd(symbol, sig, portfolio_usd)
             else:

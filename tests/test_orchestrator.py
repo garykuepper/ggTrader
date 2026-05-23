@@ -7,7 +7,6 @@ import pandas as pd
 import pytest
 
 from ggTrader.core.orchestrator import (
-    _apply_tiered_regime_mask,
     _compute_allocation_weights,
     run_backtest_orchestrator,
     run_frozen_params_combined_backtest,
@@ -99,61 +98,6 @@ def test_run_wfo_orchestrator(mock_rm, mock_load, mock_ohlcv):
 
 
 # ---------------------------------------------------------------------------
-# _apply_tiered_regime_mask
-# ---------------------------------------------------------------------------
-
-
-def _make_combined_entries(symbols, n=100):
-    """Build a simple entries DataFrame with all-True signals."""
-    idx = pd.date_range("2023-01-01", periods=n, freq="4h", tz="UTC")
-    data = {(sym, "entry"): np.ones(n, dtype=bool) for sym in symbols}
-    df = pd.DataFrame(data, index=idx)
-    df.columns = pd.MultiIndex.from_tuples(df.columns, names=["symbol", "field"])
-    return df
-
-
-def test_regime_mask_high_corr_blocked_on_bear_bars():
-    """Coins above LEADER_CORR_THRESHOLD to BTC are gated by btc_regime."""
-    n = 100
-    idx = pd.date_range("2023-01-01", periods=n, freq="4h", tz="UTC")
-    btc_regime = pd.Series([False] * 50 + [True] * 50, index=idx)
-    combined_entries = _make_combined_entries(["BTC-USD", "ETH-USD"], n=n)
-
-    config = {"LEADER_CORR_THRESHOLD": 0.7, "EMA_WARMUP_BARS": 0}
-    btc_corrs = {"BTC-USD": 1.0, "ETH-USD": 0.8}
-
-    filtered = _apply_tiered_regime_mask(combined_entries, btc_corrs, btc_regime, config)
-    assert not filtered.iloc[:50].any().any(), "Bear bars should be blocked"
-    assert filtered.iloc[50:].any().any(), "Bull bars should pass through"
-
-
-def test_regime_mask_low_corr_exempt_coins_always_pass():
-    """Coins below LEADER_CORR_THRESHOLD are never filtered."""
-    n = 100
-    idx = pd.date_range("2023-01-01", periods=n, freq="4h", tz="UTC")
-    btc_regime = pd.Series([False] * n, index=idx)
-    combined_entries = _make_combined_entries(["LOW-USD"], n=n)
-
-    config = {"LEADER_CORR_THRESHOLD": 0.7, "EMA_WARMUP_BARS": 0}
-    btc_corrs = {"LOW-USD": 0.3}
-
-    filtered = _apply_tiered_regime_mask(combined_entries, btc_corrs, btc_regime, config)
-    assert filtered.all().all()
-
-
-def test_regime_mask_none_btc_regime_returns_unchanged():
-    """If the BTC mask is None the function returns entries unchanged."""
-    n = 50
-    combined_entries = _make_combined_entries(["SOL-USD"], n=n)
-    config = {"LEADER_CORR_THRESHOLD": 0.7, "EMA_WARMUP_BARS": 0, "BENCHMARK_SYMBOL": "BTC-USD"}
-    btc_corrs = {"SOL-USD": 0.9}
-
-    result = _apply_tiered_regime_mask(combined_entries, btc_corrs, None, config)
-
-    pd.testing.assert_frame_equal(result, combined_entries)
-
-
-# ---------------------------------------------------------------------------
 # _compute_allocation_weights in combined backtest context
 # ---------------------------------------------------------------------------
 
@@ -222,7 +166,6 @@ def test_frozen_params_combined_backtest_returns_expected_keys():
         "FEES": 0.001,
         "SLIPPAGE": 0.0005,
         "FREQ": "4h",
-        "BTC_REGIME_FILTER": False,
         "BENCHMARK_SYMBOL": "BTC-USD",
         "MAX_COIN_ALLOCATION": 0.25,
     }
@@ -247,7 +190,6 @@ def test_frozen_params_allocation_weights_sum_to_one():
         "FEES": 0.001,
         "SLIPPAGE": 0.0005,
         "FREQ": "4h",
-        "BTC_REGIME_FILTER": False,
         "MAX_COIN_ALLOCATION": 0.5,
     }
     with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), patch(
@@ -260,35 +202,3 @@ def test_frozen_params_allocation_weights_sum_to_one():
     final_stats = result["final_stats"]
     # If the portfolio ran we should get at least some trades or a defined profit_pct
     assert final_stats.get("profit_pct") is not None
-
-
-def test_frozen_params_regime_filter_blocks_signals():
-    """When BTC_REGIME_FILTER=True and btc_regime=all-False, no entries should survive."""
-    ohlcv = _make_multi_symbol_ohlcv(symbols=("BTC-USD", "ETH-USD"), n=250)
-    per_coin = _per_coin_results_stub()
-    config = {
-        "START_CASH": 1000.0,
-        "FEES": 0.0,
-        "SLIPPAGE": 0.0,
-        "FREQ": "4h",
-        "BTC_REGIME_FILTER": True,
-        "LEADER_CORR_THRESHOLD": 0.7,
-        "EMA_WARMUP_BARS": 0,
-        "MAX_COIN_ALLOCATION": 0.5,
-        "BENCHMARK_SYMBOL": "BTC-USD",
-    }
-    len(ohlcv)
-    all_bear = pd.Series(False, index=ohlcv.index)
-
-    with patch("ggTrader.core.orchestrator._compute_btc_regime_mask", return_value=all_bear), patch(
-        "ggTrader.core.orchestrator._compute_btc_correlations",
-        return_value={"BTC-USD": 1.0, "ETH-USD": 0.9},
-    ), patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), patch(
-        "ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}
-    ):
-        result = run_frozen_params_combined_backtest(
-            ohlcv, per_coin, config, exit_tournament=["atr_trailing"], save_results=False
-        )
-
-    # No entries → no trades
-    assert result["final_stats"]["total_trades"] == 0

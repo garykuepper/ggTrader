@@ -36,7 +36,6 @@ def _process_wfo_fold(
     config: Dict[str, Any],
     show_progress: bool,
     param_names: List[str],
-    btc_regime_mask: Optional[pd.Series] = None,
 ) -> Dict[str, Any]:
     """Helper to process a single WFO fold (Train & Test).
 
@@ -77,14 +76,6 @@ def _process_wfo_fold(
 
     train_mask = mover_mask.loc[train_idx] if mover_mask is not None else None
     test_mask = mover_mask.loc[test_idx] if mover_mask is not None else None
-    train_regime = (
-        btc_regime_mask.reindex(train_idx, fill_value=False)
-        if btc_regime_mask is not None
-        else None
-    )
-    test_regime = (
-        btc_regime_mask.reindex(test_idx, fill_value=False) if btc_regime_mask is not None else None
-    )
 
     # Try vectorized train path first (honours ENTRY/EXIT_STRATEGY).
     wfo_train_cfg = {**config, "USE_VECTORIZED": True}
@@ -96,7 +87,6 @@ def _process_wfo_fold(
             param_grid,
             config=wfo_train_cfg,
             mover_mask=train_mask,
-            regime_mask=train_regime,
         )
         pf_train = train_engine.run(show_progress=show_progress)
         train_metrics, trade_for_gate = _vectorized_grid_metrics(
@@ -211,7 +201,6 @@ def _process_wfo_fold(
         fold_best_params,
         config=wfo_test_cfg,
         mover_mask=test_mask,
-        regime_mask=test_regime,
     )
     pf_test = test_engine.run(show_progress=show_progress)
 
@@ -611,7 +600,6 @@ def _execute_wfo_loop(
     test_ratio: float,
     show_progress: bool,
     logger: Any = None,
-    btc_regime_mask: Optional[pd.Series] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[int, pd.Series], List[pd.Series]]:
     """Iterates through the dataset and processes each WFO fold."""
     wfo_stats = []
@@ -638,7 +626,6 @@ def _execute_wfo_loop(
             config,
             show_progress,
             param_names,
-            btc_regime_mask=btc_regime_mask,
         )
 
         is_metrics_by_fold[fold_idx] = fold_result.pop("train_metrics")

@@ -19,10 +19,6 @@ from ggTrader.core.base_execution_engine import (
     _format_entry_alert,
     _format_exit_alert,
 )
-from ggTrader.core.regime_filtering import (
-    _compute_btc_correlations,
-    _compute_btc_regime_mask,
-)
 from ggTrader.data.live.cached_loader import CachedExchangeLoader
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
 from ggTrader.indicators.strategies import (
@@ -87,7 +83,6 @@ def _safe_extract_fill_price(order: Optional[Dict[str, Any]]) -> Optional[float]
     return None
 
 
-_BTC_SYMBOL = "BTC-USD"
 _DUST_THRESHOLD_USD = 1.00
 POLL_INTERVAL_SEC = 300
 
@@ -418,28 +413,9 @@ class CryptoExecutionEngine(BaseExecutionEngine):
             return None
 
     def _fetch_latest_data(self) -> pd.DataFrame:
-        fetch_symbols = list(self.symbols)
-        if self.config.get("BTC_REGIME_FILTER", False) and _BTC_SYMBOL not in fetch_symbols:
-            fetch_symbols = [_BTC_SYMBOL] + fetch_symbols
-        return self.loader.fetch_ohlcv(symbols=fetch_symbols, interval=self.interval, limit=200)
-
-    def _compute_live_regime_allowance(self, ohlcv_df: pd.DataFrame) -> Dict[str, bool]:
-        btc_on = bool(self.config.get("BTC_REGIME_FILTER", False))
-        if not btc_on:
-            return {s: True for s in self.symbols}
-        btc_regime = _compute_btc_regime_mask(ohlcv_df, self.config)
-        if btc_regime is None:
-            return {s: True for s in self.symbols}
-        btc_corrs = _compute_btc_correlations(ohlcv_df, self.config)
-        btc_bull = bool(btc_regime.iloc[-1])
-        threshold = float(self.config.get("LEADER_CORR_THRESHOLD", 0.7))
-        # Fallback corr=1.0 (conservative: gate by default) matches the
-        # research orchestrator's behaviour at orchestrator.py:111.
-        allowance = {}
-        for s in self.symbols:
-            cb = float(btc_corrs.get(s, 1.0))
-            allowance[s] = btc_bull if cb >= threshold else True
-        return allowance
+        return self.loader.fetch_ohlcv(
+            symbols=list(self.symbols), interval=self.interval, limit=200
+        )
 
     def _compute_latest_signals(self, ohlcv_df: pd.DataFrame) -> Dict[str, Dict[str, Any]]:
         results = {}
@@ -667,9 +643,7 @@ class CryptoExecutionEngine(BaseExecutionEngine):
     def _execute_trade_logic(
         self,
         signals_dict: Dict[str, Dict[str, Any]],
-        regime_allowance: Optional[Dict[str, bool]] = None,
     ) -> None:
-        regime_allowance = regime_allowance or {}
         if self.circuit_breaker_triggered:
             self.logger.info("  [CircuitBreaker] ACTIVE")
             return
@@ -680,10 +654,6 @@ class CryptoExecutionEngine(BaseExecutionEngine):
 
         for s, sig in signals_dict.items():
             if sig["entry"] and s not in self.active_positions:
-                if not regime_allowance.get(s, True):
-                    self.logger.info(f"  [Regime] BLOCKED entry for {s} (bear regime)")
-                    continue
-
                 if weighted:
                     base_capital = self._get_total_portfolio_usd()
                     if base_capital is None:
@@ -821,9 +791,7 @@ class CryptoExecutionEngine(BaseExecutionEngine):
 
                 df = self._fetch_latest_data()
                 if not df.empty:
-                    self._execute_trade_logic(
-                        self._compute_latest_signals(df), self._compute_live_regime_allowance(df)
-                    )
+                    self._execute_trade_logic(self._compute_latest_signals(df))
 
                 time.sleep(POLL_INTERVAL_SEC)
                 if self.active_positions:

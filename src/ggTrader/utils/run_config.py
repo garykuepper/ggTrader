@@ -186,16 +186,6 @@ def full_pipeline_config() -> dict[str, Any]:
         "SYMBOL_BLACKLIST": ["TRUMP-USD"]
         if os.getenv("EXCHANGE") == "binanceus"
         else ["TRUMP-USD", "TRX-USD"],
-        # Number of warmup bars fetched before START_DATE when computing the BTC EMA.
-        # Ensures the EMA is fully warm from bar 1 of the actual backtest window.
-        "EMA_WARMUP_BARS": 100,
-        # BTC leader-regime filter (2-tier). Coins whose return correlation to
-        # BTC is ≥ LEADER_CORR_THRESHOLD only fire entries when BTC is bull
-        # (close > EMA(EMA_WARMUP_BARS)); below the threshold they trade freely.
-        # SHORT_EMA=None means `close > long_EMA` (less brittle than EMA-cross).
-        "BTC_REGIME_FILTER": False,
-        "BTC_REGIME_FILTER_SHORT_EMA": None,
-        "LEADER_CORR_THRESHOLD": 0.7,
         # Max fraction of portfolio capital any single coin can receive under OOS-weighted
         # allocation. Prevents over-concentration on a single high-robustness coin.
         "MAX_COIN_ALLOCATION": 0.25,
