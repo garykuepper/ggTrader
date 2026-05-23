@@ -71,10 +71,23 @@ SYMBOL_TO_NAME = {
 
 
 def generate_ccxt_universe(
-    limit: int = 50, output_path: str = "data/top_50_ccxt_volume.json", window: str = "24h"
+    limit: int = 50,
+    output_path: str = "data/top_50_ccxt_volume.json",
+    window: str = "24h",
+    venue: str | None = None,
 ):
-    """Fetch tickers and select top volume USD pairs, optionally using historical windows."""
-    exchange = ccxt.kraken()
+    """Fetch tickers and select top volume USD pairs, optionally using historical windows.
+
+    Venue is picked from (in order): the ``venue`` arg, the ``EXCHANGE`` env var,
+    then "kraken" as a fallback. The selected venue is the exchange we'll trade
+    on, so top-N is filtered to its actual listing set — no more selecting coins
+    that turn out to be unlisted at deploy time.
+    """
+    venue = (venue or os.getenv("EXCHANGE") or "kraken").lower()
+    exchange_cls = {"kraken": ccxt.kraken, "binanceus": ccxt.binanceus}.get(venue)
+    if exchange_cls is None:
+        raise ValueError(f"Unsupported venue: {venue!r} (expected 'kraken' or 'binanceus')")
+    exchange = exchange_cls()
     print(f"Fetching live tickers from {exchange.id} (window: {window})...")
 
     # Load markets to get asset names
@@ -188,9 +201,18 @@ def main():
     parser.add_argument(
         "--window", type=str, default="30d", choices=["24h", "7d", "30d"], help="Volume window."
     )
+    parser.add_argument(
+        "--venue",
+        type=str,
+        default=None,
+        choices=["kraken", "binanceus"],
+        help="Exchange to query (default: $EXCHANGE env var, else 'kraken').",
+    )
 
     args = parser.parse_args()
-    generate_ccxt_universe(limit=args.limit, output_path=args.out, window=args.window)
+    generate_ccxt_universe(
+        limit=args.limit, output_path=args.out, window=args.window, venue=args.venue
+    )
 
 
 if __name__ == "__main__":

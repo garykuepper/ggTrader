@@ -62,6 +62,12 @@ def backfill_symbol_interval(
         try:
             bars = ex.fetch_ohlcv(ccxt_symbol, timeframe=interval, since=cursor_ms, limit=LIMIT)
         except Exception as e:
+            msg = str(e)
+            # Non-recoverable: symbol not listed on Binance.US. Bail immediately
+            # rather than retrying forever.
+            if "does not have market symbol" in msg or "BadSymbol" in type(e).__name__:
+                print(f"Skipping {ccxt_symbol} {interval}: not listed on Binance.US")
+                return inserted
             print(f"Error fetching {ccxt_symbol} {interval} since {cursor_ms}: {e}")
             time.sleep(2.0)
             continue

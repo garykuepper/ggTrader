@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -260,7 +261,10 @@ def run_research(args: argparse.Namespace):
     from ggTrader.utils.result_db_manager import ResultDBManager
 
     rm = ResultDBManager()
-    cache_key = f"{asset_class}_top{args.top}_{args.window}"
+    # Cache key includes venue so a kraken-derived universe doesn't get reused
+    # for a binanceus run on the same day (and vice versa). Listings differ.
+    _venue = (os.getenv("EXCHANGE") or "kraken").lower()
+    cache_key = f"{asset_class}_top{args.top}_{args.window}_{_venue}"
     today_d = _date.today()
 
     if args.symbols:

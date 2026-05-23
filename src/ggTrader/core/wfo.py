@@ -515,39 +515,30 @@ def _calculate_robustness(
     """
     # Selection uses train-window metrics only; folds get recency weights, no OOS.
     weights = {f: float(f) for f in is_metrics_by_fold.keys()}
-    # 8-of-10 forgiveness: for each cell, count how many folds have a finite IS
-    # metric (i.e., passed the per-fold MIN_TRADES_PER_TRAIN_FOLD gate). Cells
-    # that pass fewer than MIN_TRAIN_FOLD_PASS_COUNT folds are dropped entirely
-    # (assigned -inf so they never win). Cells that pass at least that many
-    # have the failing folds replaced with the per-fold median rank (neither
-    # rewarding nor penalizing the inactivity).
-    _cfg = config or {}
-    min_pass = int(_cfg.get("MIN_TRAIN_FOLD_PASS_COUNT", 8))
-    if min_pass > 0 and len(is_metrics_by_fold) > 0:
-        # Build presence matrix: cells × folds. Per-cell pass count is the row sum
-        # of finite values across the original is_metrics_by_fold.
+    # Soft sparsity handling (no hard cliff): every cell that has at least one
+    # finite IS metric across folds gets its missing folds filled with that
+    # fold's median. Sparse cells (few real-data folds) lean heavily on the
+    # fill, so they cluster near typical performance and rarely win the top;
+    # dense cells can still rank above the median when their real signal is
+    # strong. This replaces a prior hard `pass_count >= MIN_TRAIN_FOLD_PASS_COUNT`
+    # cut that nullified entire cells to -inf — too lenient on quiet coins
+    # and structurally incompatible with venues whose per-coin bar density
+    # varies (e.g. Binance.US fresh backfill). Lower-credible-bound ranking
+    # (roadmap §3.3.C) is the principled long-term replacement.
+    if len(is_metrics_by_fold) > 0:
         all_cells: set = set()
         for s in is_metrics_by_fold.values():
             all_cells.update(s.index.tolist())
         all_cells_idx = pd.Index(sorted(all_cells), dtype=object)
-        pass_counts = pd.Series(0, index=all_cells_idx)
         fold_medians: Dict[int, float] = {}
         for f, s in is_metrics_by_fold.items():
             aligned = s.reindex(all_cells_idx)
-            pass_counts = pass_counts + aligned.notna().astype(int)
             finite_vals = aligned[aligned.notna()]
             fold_medians[f] = float(finite_vals.median()) if len(finite_vals) > 0 else float("nan")
-        # Rebuild is_metrics_by_fold: cells with pass_count < min_pass keep NaN
-        # in all folds (so the weighted mean is NaN, then dropped); cells that
-        # pass get failing folds filled with that fold's median.
-        eligible = pass_counts >= min_pass
         is_metrics_by_fold = dict(is_metrics_by_fold)  # don't mutate caller's dict
         for f, s in list(is_metrics_by_fold.items()):
             aligned = s.reindex(all_cells_idx)
-            # Eligible cells: fill NaN with fold median.
             filled = aligned.where(aligned.notna(), other=fold_medians.get(f, float("nan")))
-            # Ineligible cells: force NaN regardless of fill.
-            filled = filled.where(eligible, other=float("nan"))
             is_metrics_by_fold[f] = filled
     robustness_scores = _weighted_robustness_series(is_metrics_by_fold, weights, config=config)
 
