@@ -335,7 +335,16 @@ class BaseExecutionEngine(ABC):
         self.logger.info(f"Loaded {len(self.active_positions)} active positions from DB.")
 
     def save_state(self) -> None:
-        """Persist live trader state to ``system_state`` (atomic upsert)."""
+        """Persist live trader state to ``system_state`` (atomic upsert).
+
+        Skipped when ``DRY_RUN=True``: dry runs compute a fake portfolio value
+        (``START_CASH`` default) for sizing, and persisting that into the live
+        state would contaminate the next real-trader startup's circuit-breaker
+        baseline (would-be loss vs. fake $1000 baseline → false trigger).
+        """
+        if self.config.get("DRY_RUN", False):
+            return
+
         from sqlalchemy import create_engine, text
 
         from ggTrader.utils.config import get_db_connection_string
