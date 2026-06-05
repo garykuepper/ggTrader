@@ -819,6 +819,10 @@ class CryptoExecutionEngine(BaseExecutionEngine):
                     "research",
                     "--top",
                     "50",
+                    # Volume floor matches the manual research default. On Binance.US only
+                    # ~11 USD pairs clear $50K/30d; --top is just a safety cap above the floor.
+                    "--min-volume",
+                    "50000",
                     "--workers",
                     "2",
                     "--end-date",

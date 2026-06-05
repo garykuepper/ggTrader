@@ -2,6 +2,52 @@
 
 ## 2026-06-04
 
+### Research universe: Binance.US 30-day volume floor (replaces fixed top-50)
+
+The research universe is now selected by a **minimum average-daily-USD volume floor** instead of a
+fixed top-N count. Default floor is **$50,000/day** over the **30-day** window. On Binance.US — the
+venue we actually execute on (0.04% RT fees) — only ~15 USD pairs are genuinely liquid; a `--top 50`
+rule reached down into <$2K/day dead markets (the same illiquidity that got TRX deferred). The floor,
+not the count, now defines the tradeable set; `--top` remains a safety cap above it.
+
+**Why average-daily, and a latent-bug fix:** the 7d/30d ranking path computed a 30-day *sum* of
+`volume × close` but stored it in a field named `average_notional_volume` — a sum masquerading as an
+average, ~30× inflated. So a naive `--min-volume 50000` filtered almost nothing (68/100 passed). Fixed
+`generate_ccxt_universe` to compute **mean daily** volume (`sum/len`) over the window, so `--min-volume`
+is an intuitive per-day floor and the stored value matches its label (consistent with the DB path's
+`AVG(notional_volume)` in `timescaledb_loader.py`). With the fix, $50K/day yields **15 coins**.
+
+**Measured Binance.US 30-day avg-daily volume (2026-06-04), coins ≥ $50K/day:**
+
+| Coin | $/day | Coin | $/day | Coin | $/day |
+|---|---|---|---|---|---|
+| BTC | $1,053,589 | HYPE | $383,889 | ADA | $96,998 |
+| XRP | $904,266 | SOL | $286,037 | PEPE | $81,768 |
+| ETH | $736,009 | FTM | $221,266 | KSHIB | $56,920 |
+| DOGE | $480,753 | MATIC | $133,671 | SUI | $53,376 |
+| HNT | $437,153 | BNB | $130,579 | XLM | $51,608 |
+
+First coin below the floor: LINK ($38,775/day). **Caveat:** the floor uses a 30-day *mean*, which a
+volume spike can distort — DOGE shows $481K mean but only ~$54K over the last 7 days (volume recently
+collapsed). A median-based or recency-weighted floor is a candidate refinement (deferred; flagged for
+the Step-2 WFO-gate review). This also confirms research *was* already sourcing from Binance.US (the
+HNT/FTM/MATIC tickers in the 2026-06-01 universe come from this 30-day ranking, not Kraken).
+
+**Files:**
+
+- `scripts/update_universe_ccxt.py` — `generate_ccxt_universe` gains a `min_volume` param + `--min-volume`
+  CLI arg; floor applied before the `--limit` cap; 7d/30d metric switched sum → mean-daily.
+- `src/ggTrader/cli/cmd_research.py` — `--min-volume` arg (default 50000), threaded into the universe
+  subprocess and the `universe_cache` `cache_key` (so changing the floor invalidates same-day cache);
+  `--venue` now passed explicitly (derived from `EXCHANGE`) so the subprocess can't fall back to Kraken.
+- `src/ggTrader/core/crypto_execution_engine.py` — monthly reopt subprocess passes `--min-volume 50000`
+  to match the manual path.
+
+**Deploy note:** `src/` and `scripts/` are baked into the image (not volume-mounted in prod), so the
+automated monthly-reopt path picks this up only after `docker compose build`. Verified standalone via a
+host-`scripts/`-mounted `docker compose run`. This is **Step 1** of the pipeline-fix plan; Steps 2–5
+(WFO-gate diagnostic, deploy/fallback guard, sizing mode, silent-inactivity alert) follow one at a time.
+
 ### Live sizing: raise adaptive MAX_POSITION_PCT 0.10 → 0.25 (unblock all entries)
 
 The live trader had **never opened a position since go-live (2026-05-23)** — `trades` empty, balance frozen at $137.44. Root cause: `docker-compose.yaml` ran `--adaptive-sizing --max-position-pct 0.10`. Adaptive sizing caps a position at `MAX_POSITION_PCT × portfolio` = 0.10 × $137.44 = **$13.74**, below `MIN_POSITION_USD` ($15 default), so `_compute_adaptive_position_usd` skipped **every** entry as "below MIN_POSITION_USD" regardless of signal. Raised the cap to **0.25** → max position $34.36, clearing the floor. With the legacy params' ~4%-floored stops and 1% target risk, positions now size ~$23–34.

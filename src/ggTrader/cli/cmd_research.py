@@ -50,6 +50,14 @@ def register_research_parser(subparsers: argparse._SubParsersAction):
         help="Volume aggregation window for asset selection (default: 30d)",
     )
     parser.add_argument(
+        "--min-volume",
+        type=float,
+        default=50000.0,
+        help="Minimum window USD volume floor for the universe (default: 50000). On "
+        "Binance.US only ~11 USD pairs clear $50K/30d; the floor — not --top — defines "
+        "the tradeable set. Set 0 to fall back to a pure top-N selection.",
+    )
+    parser.add_argument(
         "--workers", type=int, default=5, help="Number of parallel worker processes (default: 5)"
     )
     parser.add_argument(
@@ -264,7 +272,8 @@ def run_research(args: argparse.Namespace):
     # Cache key includes venue so a kraken-derived universe doesn't get reused
     # for a binanceus run on the same day (and vice versa). Listings differ.
     _venue = (os.getenv("EXCHANGE") or "kraken").lower()
-    cache_key = f"{asset_class}_top{args.top}_{args.window}_{_venue}"
+    # min_volume is part of the key so changing the floor invalidates the same-day cache.
+    cache_key = f"{asset_class}_top{args.top}_minvol{int(args.min_volume)}_{args.window}_{_venue}"
     today_d = _date.today()
 
     if args.symbols:
@@ -308,7 +317,8 @@ def run_research(args: argparse.Namespace):
         else:
             print(
                 f"\n[{datetime.now()}] Step 1: Fetching Live Crypto Universe for Research "
-                f"({args.top} assets, {args.window} window)..."
+                f"(venue={_venue}, {args.window} window, "
+                f"min_volume=${args.min_volume:,.0f}, top<= {args.top})..."
             )
             subprocess.run(
                 [
@@ -320,6 +330,12 @@ def run_research(args: argparse.Namespace):
                     str(universe_path),
                     "--window",
                     args.window,
+                    "--min-volume",
+                    str(args.min_volume),
+                    # Pass venue explicitly so the subprocess can't silently fall back to
+                    # Kraken if EXCHANGE fails to propagate — research must scan what we trade.
+                    "--venue",
+                    _venue,
                 ],
                 check=True,
             )

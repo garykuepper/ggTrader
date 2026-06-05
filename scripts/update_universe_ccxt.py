@@ -75,6 +75,7 @@ def generate_ccxt_universe(
     output_path: str = "data/top_50_ccxt_volume.json",
     window: str = "24h",
     venue: str | None = None,
+    min_volume: float = 0.0,
 ):
     """Fetch tickers and select top volume USD pairs, optionally using historical windows.
 
@@ -82,6 +83,12 @@ def generate_ccxt_universe(
     then "kraken" as a fallback. The selected venue is the exchange we'll trade
     on, so top-N is filtered to its actual listing set — no more selecting coins
     that turn out to be unlisted at deploy time.
+
+    ``min_volume`` is a hard floor (in USD, on the ranking window's volume) applied
+    *before* the ``limit`` cap. On thin venues like Binance.US only ~11 USD pairs
+    clear a $50K 30-day-avg floor, so the floor — not the count — defines the
+    tradeable universe and keeps dead <$2K/day markets out. ``limit`` remains a
+    safety cap. ``min_volume=0`` preserves the legacy fixed top-N behavior.
     """
     venue = (venue or os.getenv("EXCHANGE") or "kraken").lower()
     exchange_cls = {"kraken": ccxt.kraken, "binanceus": ccxt.binanceus}.get(venue)
@@ -150,12 +157,16 @@ def generate_ccxt_universe(
                     final_rankable.append({**c, "volume_window": c["volume_24h"]})
                     continue
 
-                # Sum of (volume * close) for the period
+                # Mean daily (volume * close) over the period — a true average-daily-USD
+                # figure so --min-volume is an intuitive per-day floor regardless of window
+                # (and so the stored value matches its `average_notional_volume` label).
                 # ohlcv: [timestamp, open, high, low, close, volume]
-                total_vol = sum(candle[5] * candle[4] for candle in ohlcv)
-                final_rankable.append({**c, "volume_window": total_vol})
+                daily = [candle[5] * candle[4] for candle in ohlcv]
+                avg_vol = (sum(daily) / len(daily)) if daily else c["volume_24h"]
+                final_rankable.append({**c, "volume_window": avg_vol})
                 print(
-                    f"  [{i + 1}/100] {c['symbol']:8s} | {window} Vol: ${total_vol:,.0f}", end="\r"
+                    f"  [{i + 1}/100] {c['symbol']:8s} | {window} avg/day: ${avg_vol:,.0f}",
+                    end="\r",
                 )
             except Exception:
                 # Fallback to 24h if history fails
@@ -166,6 +177,16 @@ def generate_ccxt_universe(
         vol_key = "volume_window"
     else:
         vol_key = "volume_24h"
+
+    # Apply the volume floor (on avg-daily USD volume for 7d/30d, else 24h) before the
+    # count cap. The floor defines the tradeable universe on thin venues; limit is a cap.
+    if min_volume > 0:
+        passed = [c for c in candidates if c[vol_key] >= min_volume]
+        print(
+            f"\nVolume floor ${min_volume:,.0f}/day ({window}): "
+            f"{len(passed)}/{len(candidates)} USD pairs passed on {exchange.id}."
+        )
+        candidates = passed
 
     top_candidates = candidates[:limit]
 
@@ -208,10 +229,21 @@ def main():
         choices=["kraken", "binanceus"],
         help="Exchange to query (default: $EXCHANGE env var, else 'kraken').",
     )
+    parser.add_argument(
+        "--min-volume",
+        type=float,
+        default=0.0,
+        help="Minimum window USD volume floor; coins below it are dropped before the "
+        "--limit cap. 0 (default) keeps legacy fixed top-N behavior.",
+    )
 
     args = parser.parse_args()
     generate_ccxt_universe(
-        limit=args.limit, output_path=args.out, window=args.window, venue=args.venue
+        limit=args.limit,
+        output_path=args.out,
+        window=args.window,
+        venue=args.venue,
+        min_volume=args.min_volume,
     )
 
 
