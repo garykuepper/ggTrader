@@ -2,6 +2,35 @@
 
 ## 2026-06-04
 
+### Research data: backtest on the execution venue (Binance.US), not Kraken
+
+The research/WFO data layer defaulted to Kraken everywhere, so WFO backtested on **Kraken** prices
+while the live trader executes on **Binance.US** — a venue mismatch that (a) made Binance.US-only coins
+unevaluable (`Failed to fetch live OHLCV for FTM/USD: kraken does not have market symbol`) and (b)
+optimized params on the wrong order book. Diagnosis (Step 2 of the pipeline-fix plan): coins fail the
+textbook gates overwhelmingly on `profitable_fraction` (~0.3 vs the 0.6 gate) — a genuine bear-market
+signal, **not** miscalibrated gates — but that verdict was being computed on Kraken data.
+
+`utils/setup.py` now resolves the data venue from the `EXCHANGE` env var (same source the live trader
+and the universe fetch use) and threads it through all three research load paths:
+
+- `load_data_and_setup` → `CachedExchangeLoader(exchange_id=EXCHANGE)` (reads `binanceus_spot`, and the
+  cached loader **auto-tails fresh bars from `ccxt.binanceus` and persists them** — so it also refreshes
+  the Binance.US history that was frozen at go-live 2026-05-23).
+- `build_mover_mask` → `get_daily_mover_mask(venue=…)`.
+- `load_hybrid_validation_ohlcv` → `TimescaleDBLoader.fetch_ohlcv(venue=…)` + `CachedExchangeLoader(exchange_id=…)`.
+
+New helpers `_resolve_exchange_id()` / `_venue_for_exchange()`. Default stays `kraken` when `EXCHANGE`
+is unset, so legacy behavior is unchanged. Verified: with `EXCHANGE=binanceus`, `load_data_and_setup`
+returns `binanceus_spot` data tailing to **2026-06-04** (auto-refreshed past the 05-23 cutoff).
+
+**DB state found:** `binanceus_spot` had 62 symbols at 4h (2023 → 2026-05-23) already backfilled. Of the
+15-coin universe, 11 have usable history; 4 (FTM/HNT/KSHIB/MATIC) are frozen at 2023 (ticker
+changes/relisting) and will be dropped for insufficient recent data — a flag on the 30d-mean ranking
+surfacing relisted tickers. **Not wired:** `benchmarking.py` BTC buy-&-hold reference still reads
+`kraken_spot` (intentional — BTC is priced ~identically across venues and Kraken's series is fresher for
+the benchmark line). Image rebuilt so research runs (`docker compose run`) and the monthly reopt use it.
+
 ### Research universe: Binance.US 30-day volume floor (replaces fixed top-50)
 
 The research universe is now selected by a **minimum average-daily-USD volume floor** instead of a

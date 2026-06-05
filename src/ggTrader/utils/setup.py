@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, List
 
 import pandas as pd
@@ -12,6 +13,18 @@ from ggTrader.utils.config import load_symbols_from_json
 # CCXT normalises Kraken markets to standard symbols (BTC/USD, DOGE/USD, etc.);
 # no base aliasing is needed when calling exchange.fetch_ohlcv via CCXT.
 _KRAKEN_BASE_ALIASES: dict[str, str] = {}
+
+
+def _resolve_exchange_id() -> str:
+    """Research data venue, from the EXCHANGE env var (matches the live trader and the
+    universe fetch). Defaults to 'kraken' so legacy behavior is unchanged when unset.
+    This is what aligns WFO backtests to the venue we actually execute on."""
+    return (os.getenv("EXCHANGE") or "kraken").lower()
+
+
+def _venue_for_exchange(exchange_id: str) -> str:
+    """Map a CCXT exchange id to the DB `venue` string (mirrors CachedExchangeLoader.venue)."""
+    return "binanceus_spot" if exchange_id == "binanceus" else "kraken_spot"
 
 
 def load_data_and_setup(config: dict) -> pd.DataFrame:
@@ -44,7 +57,9 @@ def load_data_and_setup(config: dict) -> pd.DataFrame:
 
     from ggTrader.data.live.cached_loader import CachedExchangeLoader
 
-    loader = CachedExchangeLoader()
+    # Read/refresh from the venue we trade on (binanceus_spot), not the kraken default.
+    # The cached loader auto-tails fresh bars from the matching exchange and persists them.
+    loader = CachedExchangeLoader(exchange_id=_resolve_exchange_id())
 
     ohlcv_df = loader.fetch_ohlcv(
         symbols=symbols,
@@ -104,7 +119,9 @@ def build_mover_mask(
     end = pd.to_datetime(config["END_DATE"]).tz_localize("UTC")
 
     loader = TimescaleDBLoader()
-    daily_mask = loader.get_daily_mover_mask(start=start, end=end, top_n=top_n)
+    daily_mask = loader.get_daily_mover_mask(
+        start=start, end=end, top_n=top_n, venue=_venue_for_exchange(_resolve_exchange_id())
+    )
 
     if daily_mask.empty:
         raise ValueError("No mover data returned from the database.")
@@ -232,10 +249,12 @@ def load_hybrid_validation_ohlcv(
     """
     Load OHLCV for ``[validation_start, validation_end]`` from TimescaleDB.
 
-    If ``use_ccxt_tail`` is True, append bars from Kraken via CCXT from the latest
-    DB timestamp through ``validation_end`` (deduped; CCXT wins on overlap).
-    Column names match TimescaleDB (e.g. BTC-USD).
+    If ``use_ccxt_tail`` is True, append bars from the configured exchange (EXCHANGE env;
+    binanceus when live on Binance.US) via CCXT from the latest DB timestamp through
+    ``validation_end`` (deduped; CCXT wins on overlap). Column names match TimescaleDB
+    (e.g. BTC-USD).
     """
+    exchange_id = _resolve_exchange_id()
     bases = _symbol_bases_from_config(config)
     if not bases:
         raise ValueError("No symbols resolved for hybrid validation load.")
@@ -260,6 +279,7 @@ def load_hybrid_validation_ohlcv(
         interval=config["INTERVAL"],
         start_date=ts_start,
         end_date=ts_end,
+        venue=_venue_for_exchange(exchange_id),
     )
 
     if not use_ccxt_tail:
@@ -271,7 +291,7 @@ def load_hybrid_validation_ohlcv(
 
     from ggTrader.data.live.cached_loader import CachedExchangeLoader
 
-    cache_loader = CachedExchangeLoader()
+    cache_loader = CachedExchangeLoader(exchange_id=exchange_id)
 
     try:
         combined = cache_loader.fetch_ohlcv(
