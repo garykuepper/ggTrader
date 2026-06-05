@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-05
+
+### WFO profiling: measured the real bottleneck (it's not the simulation)
+
+Answered the standing "vectorize `from_signals` / kill Python loops" request with a measured
+cProfile run instead of assumptions. Report: `docs/profiling_report_2026-06-05.md`; profile
+artifact `results/profiling/wfo_20260605_103005_primary.prof`.
+
+**Harness bug fixed first:** `scripts/profile_wfo.sh` profiled `ggt.py research`, but
+`run_research` always shells the WFO compute out to `scripts/run_walk_forward_optimization.py`
+via `subprocess.run` **even with `--no-parallel`** — so cProfile saw only the parent in
+`waitpid` (99.8%, zero backtest frames). The script now profiles the worker script
+**in-process**. `scripts/analyze_profile.py` gained metric-accessor watch entries and a
+narrowed `fixed_sl_tp` needle (was `strategies.py`, matched the whole file).
+
+**Finding (3 coins, Binance.US, 33 combos × 10 folds):**
+- `Portfolio.from_signals` (the simulation) = **7.9%**; the lone pure-Python `fixed_sl_tp`
+  loop = **~0.1%** (1.2 s). The original prompt's targets are rounding error.
+- **~58% of runtime is vectorbt metric-accessor overhead.** `TRAIN_METRIC=composite` calls
+  4 separate vbt accessors per fold (`sortino_ratio`, `total_return`, `max_drawdown`,
+  `trades.profit_factor`), each re-deriving returns and re-running vbt's config/type machinery
+  (`get_returns_acc` 58%, `__dir__` 7.9 M calls, `isinstance` 280 M calls, deepcopy, config
+  rebuilds). Root: `core/metrics.py:_train_metric_series` + `_calmar_ratio_series` /
+  `_profit_factor_series`.
+- **Recommendation:** GO on collapsing per-fold metrics to a single returns/value extraction
+  with numpy reductions (target ~1.5–2.5× on the WFO train phase, ≈97% of runtime). NO-GO on
+  numba-ifying `fixed_sl_tp` and on rewriting `from_signals` (both already near-optimal /
+  negligible). `call_seq="market"` and blanket `group_by=True` rejected (invalid / would
+  corrupt per-coin WFO).
+
 ## 2026-06-04
 
 ### Research data: backtest on the execution venue (Binance.US), not Kraken

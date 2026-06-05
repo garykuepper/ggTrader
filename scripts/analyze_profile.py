@@ -19,9 +19,18 @@ import pstats
 # Substrings identifying the functions we care about for the vectorization review.
 # Keyed label -> substring matched against "filename:lineno(funcname)".
 FUNCTIONS_OF_INTEREST = {
+    # --- the real bottleneck (per-fold train-metric accessors); see
+    #     docs/profiling_report_2026-06-05.md. Watch these to verify any metric-path fix. ---
+    "metric: get_returns_acc": "get_returns_acc",
+    "metric: returns": "base.py:4601(returns)",
+    "metric: value": "base.py:4514(value)",
+    "metric: _train_metric_series": "_train_metric_series",
+    "vbt config.__init__": "config.py:332(__init__)",
+    "vbt array_wrapper.__init__": "array_wrapper.py:122(__init__)",
+    # --- simulation + signal generation (the original prompt's targets) ---
     "compute_exits": "compute_exits",
     "compute_entries": "compute_entries",
-    "fixed_sl_tp loop": "strategies.py",  # narrowed below by also requiring compute_exits frames
+    "fixed_sl_tp loop": "strategies.py:1183",  # FixedSLTPExit.compute_exits (Python loop)
     "atr_trailing numba": "_atr_trailing_stop_long_ohlc_touch_2d_numba",
     "trailing numba": "_trailing_stop_long_ohlc_touch_2d_numba",
     "Portfolio.from_signals": "from_signals",
