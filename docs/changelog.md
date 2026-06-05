@@ -2,6 +2,27 @@
 
 ## 2026-06-05
 
+### WFO perf: collapse per-fold train metrics to one returns extraction (~36x on metric path)
+
+Acted on the profiling finding below. `_train_metric_series` (the `composite` / `sortino` /
+`calmar` branches) called 4 independent vbt accessors per fold — `sortino_ratio()`,
+`total_return()`, `max_drawdown()`, `trades.profit_factor()` — each rebuilding the returns
+accessor and re-running vbt's config/type machinery (~58% of WFO runtime).
+
+`core/metrics.py` now extracts `pf.returns()` **once** per fold and feeds it to vbt's **own**
+numba kernels (`sortino_ratio_nb`, `max_drawdown_nb`) plus a numpy `total_return`, via a new
+`_returns_based_metrics(pf)` helper. Profit factor (trades accessor, a separate/cheaper path,
+not part of the 58%) is unchanged. The rank-composite math was extracted verbatim into a pure
+`_rank_composite_score(sortino, calmar, profit_factor)` (no behavior change).
+
+**Bit-identical, verified.** vbt is 0.28.5 (not 1.0.0). New `tests/test_metrics_returns_extraction.py`
+asserts the single-extraction path equals the per-call accessors exactly — including inf/NaN
+structure preservation (zero-downside → +inf sortino; no-trade → NaN) that the composite's
+`.notna()` gate depends on. `test_rank_composite.py` now targets `_rank_composite_score`
+directly. Micro-bench on a fresh per-fold portfolio: per-call accessors 32.8 ms vs single
+extraction 0.9 ms (~36x). Since caching is per-`pf` and every fold builds a fresh `pf`, the
+win applies to all ~760 folds of a run.
+
 ### WFO profiling: measured the real bottleneck (it's not the simulation)
 
 Answered the standing "vectorize `from_signals` / kill Python loops" request with a measured

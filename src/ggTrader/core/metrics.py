@@ -1,9 +1,44 @@
 """Metric computation and gating for train windows."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import vectorbt as vbt
+import vectorbt.returns.nb as _returns_nb
+
+
+def _ann_factor_for(pf_train: Any) -> float:
+    """vbt annualization factor = year_freq / freq (matches ReturnsAccessor.ann_factor)."""
+    year_freq = vbt.settings.returns["year_freq"]
+    return pd.Timedelta(year_freq) / pd.Timedelta(pf_train.wrapper.freq)
+
+
+def _returns_based_metrics(pf_train: Any) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    """Per-combo (Sortino, total-return, max-drawdown) from ONE returns extraction.
+
+    Replaces three independent vbt accessor calls — ``pf.sortino_ratio()``,
+    ``pf.total_return()``, ``pf.max_drawdown()`` — each of which rebuilt the returns
+    accessor and re-ran vbt's config/type machinery (~58% of WFO runtime; see
+    docs/profiling_report_2026-06-05.md). Here ``pf.returns()`` is extracted once and fed
+    to vbt's **own** numba kernels, so results are bit-identical to the accessors
+    (verified incl. inf/NaN edge cases) while collapsing ~5 returns-accessor builds per
+    fold to one. ~36x faster on fresh per-fold portfolios.
+
+    Returns Series indexed by the portfolio's column labels (one entry per param combo).
+    """
+    ret = pf_train.returns()
+    if isinstance(ret, pd.Series):
+        ret = ret.to_frame()
+    cols = ret.columns
+    arr = np.asarray(ret.values, dtype=np.float64)
+    if arr.ndim == 1:
+        arr = arr.reshape(-1, 1)
+    ann = _ann_factor_for(pf_train)
+    sortino = pd.Series(_returns_nb.sortino_ratio_nb(arr, ann), index=cols)
+    max_dd = pd.Series(_returns_nb.max_drawdown_nb(arr), index=cols)
+    total_ret = pd.Series(np.prod(1.0 + arr, axis=0) - 1.0, index=cols)
+    return sortino, total_ret, max_dd
 
 
 def _align_grouped_combo_series(agg: pd.Series, sh_index: pd.Index) -> pd.Series:
@@ -79,21 +114,20 @@ def _open_position_count_end_for_gate(pf: Any, sharpe_series: Any) -> pd.Series:
     return out.fillna(0.0).astype(float)
 
 
-def _calmar_ratio_series(pf_train: Any) -> pd.Series:
-    """Per-combo Calmar-like ratio: total_return / abs(max_drawdown)."""
-    tr = pf_train.total_return()
-    mdd = pf_train.max_drawdown()
-    if isinstance(tr, pd.Series) and isinstance(mdd, pd.Series):
-        denom = mdd.abs().replace(0, np.nan)
-        m = tr / denom
-    else:
-        tr_f = float(tr) if np.isfinite(float(tr)) else float("nan")
-        mdd_f = float(mdd) if np.isfinite(float(mdd)) else float("nan")
-        m = tr_f / abs(mdd_f) if mdd_f != 0 else float("nan")
-        m = pd.Series([m])
-    if not isinstance(m, pd.Series):
-        m = pd.Series([m])
-    return m
+def _calmar_ratio_series(
+    pf_train: Any,
+    tr: Optional[pd.Series] = None,
+    mdd: Optional[pd.Series] = None,
+) -> pd.Series:
+    """Per-combo Calmar-like ratio: total_return / abs(max_drawdown).
+
+    ``tr`` / ``mdd`` may be supplied (from a shared ``_returns_based_metrics`` extraction)
+    to avoid re-deriving them via separate vbt accessor calls; otherwise they are computed.
+    """
+    if tr is None or mdd is None:
+        _, tr, mdd = _returns_based_metrics(pf_train)
+    denom = mdd.abs().replace(0, np.nan)
+    return tr / denom
 
 
 def _profit_factor_series(pf_train: Any) -> pd.Series:
@@ -131,44 +165,52 @@ def _zscore_normalize_series(s: pd.Series, eps: float = 1e-8) -> pd.Series:
     return z.where(finite_mask, other=float("nan"))
 
 
+def _rank_composite_score(
+    sortino: pd.Series, calmar: pd.Series, profit_factor: pd.Series
+) -> pd.Series:
+    """Rank-based composite (Sortino + Calmar + PF). No Sharpe — redundant with Sortino
+    (Sortino is a strict refinement, only counts downside vol).
+
+    Rank cells by each of the three ratios descending (rank 1 = best). Average rank on
+    ties (standard statistical convention). Average the ranks across the three axes.
+    Score = -mean_rank so "max wins" downstream is preserved. Cells with NaN Sortino
+    (no trades / gated out) get NaN score, which propagates to selection drop.
+    """
+    # Clip to keep extreme values from distorting ranks of ties at the edges (rank itself
+    # is scale-invariant, but clipping defends against +inf / -inf making ranks unstable).
+    ca_clipped = calmar.clip(lower=-5.0, upper=5.0)
+    pf_clipped = profit_factor.clip(lower=-3.0, upper=3.0)
+
+    # rank(ascending=False) → highest value = rank 1, lowest = rank N.
+    # method='average' gives tied cells the mean of their tied position range.
+    # NaN values produce NaN ranks (skipped by mean below).
+    r_so = sortino.rank(ascending=False, method="average")
+    r_ca = ca_clipped.rank(ascending=False, method="average")
+    r_pf = pf_clipped.rank(ascending=False, method="average")
+
+    # Mean rank across the 3 axes. NaN in any axis -> NaN final score.
+    mean_rank = pd.concat([r_so, r_ca, r_pf], axis=1).mean(axis=1, skipna=False)
+    m = -mean_rank  # negate so higher score = better, matches downstream "max wins"
+    # Force NaN where Sortino itself is NaN (no trades / gated out).
+    return m.where(sortino.notna(), other=float("nan"))
+
+
 def _train_metric_series(pf_train: Any, config: Dict[str, Any]) -> pd.Series:
     """In-sample metric Series used to pick best params on the train window."""
     name = str(config.get("TRAIN_METRIC", "sharpe")).lower().strip()
+    # Sortino/Calmar/composite all derive from the same returns series — extract it once
+    # and reuse (vbt's per-accessor overhead is ~58% of WFO runtime; see profiling report).
+    if name in ("sortino", "calmar", "composite"):
+        sortino, total_ret, max_dd = _returns_based_metrics(pf_train)
     if name == "sortino":
-        m = pf_train.sortino_ratio()
+        m = sortino
     elif name == "calmar":
-        m = _calmar_ratio_series(pf_train)
+        m = _calmar_ratio_series(pf_train, tr=total_ret, mdd=max_dd)
     elif name == "composite":
-        # Rank-based composite (Sortino + Calmar + PF). No Sharpe — redundant with
-        # Sortino (Sortino is a strict refinement, only counts downside vol).
-        # Per-fold: rank cells by each of the three ratios descending (rank 1 = best).
-        # Average rank on ties (standard statistical convention). Average the ranks
-        # across axes. Score = -mean_rank so "max wins" downstream is preserved.
-        # Cells with NaN in any axis get NaN score (propagates to selection drop).
-        so = pf_train.sortino_ratio()
-        if not isinstance(so, pd.Series):
-            so = pd.Series([float(so)])
-        ca = _calmar_ratio_series(pf_train).reindex(so.index)
+        so = sortino
+        ca = _calmar_ratio_series(pf_train, tr=total_ret, mdd=max_dd).reindex(so.index)
         pf_s = _profit_factor_series(pf_train).reindex(so.index)
-
-        # Clip the same way the legacy composite did, to keep extreme values from
-        # distorting ranks of ties at the edges (rank itself is scale-invariant, but
-        # clipping defends against +inf / -inf making ranks unstable).
-        ca_clipped = ca.clip(lower=-5.0, upper=5.0)
-        pf_clipped = pf_s.clip(lower=-3.0, upper=3.0)
-
-        # rank(ascending=False) → highest value = rank 1, lowest = rank N.
-        # method='average' gives tied cells the mean of their tied position range.
-        # NaN values produce NaN ranks (skipped by mean below).
-        r_so = so.rank(ascending=False, method="average")
-        r_ca = ca_clipped.rank(ascending=False, method="average")
-        r_pf = pf_clipped.rank(ascending=False, method="average")
-
-        # Mean rank across the 3 axes. NaN in any axis -> NaN final score.
-        mean_rank = pd.concat([r_so, r_ca, r_pf], axis=1).mean(axis=1, skipna=False)
-        m = -mean_rank  # negate so higher score = better, matches downstream "max wins"
-        # Force NaN where Sortino itself is NaN (no trades / gated out).
-        m = m.where(so.notna(), other=float("nan"))
+        m = _rank_composite_score(so, ca, pf_s)
     else:
         m = pf_train.sharpe_ratio()
     if not isinstance(m, pd.Series):

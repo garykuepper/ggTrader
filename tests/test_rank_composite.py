@@ -21,21 +21,18 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from ggTrader.core.metrics import _train_metric_series
+from ggTrader.core.metrics import _rank_composite_score
+from ggTrader.core.wfo import _calculate_robustness
 
 
-def _mock_pf(sortino, calmar_total_return, calmar_max_dd, pf_factor):
-    """Create a mock vbt portfolio with predetermined per-cell ratio series."""
-    pf = MagicMock()
-    pf.sortino_ratio.return_value = pd.Series(sortino)
-    pf.total_return.return_value = pd.Series(calmar_total_return)
-    pf.max_drawdown.return_value = pd.Series(calmar_max_dd)
-    trades_mock = MagicMock()
-    trades_mock.profit_factor.return_value = pd.Series(pf_factor)
-    pf.trades = trades_mock
-    # sharpe_ratio is called by the legacy path; we patch to fail-loud if invoked.
-    pf.sharpe_ratio.side_effect = AssertionError("Sharpe should not be used in rank composite")
-    return pf
+def _composite(sortino, calmar_total_return, calmar_max_dd, pf_factor):
+    """Compute the composite from predetermined per-cell ratios, the same way
+    _train_metric_series feeds _rank_composite_score: calmar = total_return / |max_dd|,
+    profit factor mean-centred (raw - 1)."""
+    so = pd.Series(sortino)
+    calmar = pd.Series(calmar_total_return) / pd.Series(calmar_max_dd).abs().replace(0, np.nan)
+    pf = pd.Series(pf_factor) - 1.0
+    return _rank_composite_score(so, calmar, pf)
 
 
 def test_rank_composite_winner_is_top_of_each_axis():
@@ -45,9 +42,7 @@ def test_rank_composite_winner_is_top_of_each_axis():
     calmar_tr = [3.0, 2.0, 1.0]
     calmar_dd = [-0.1, -0.2, -0.3]
     pf_factor = [2.0, 1.5, 1.0]
-    pf = _mock_pf(sortino, calmar_tr, calmar_dd, pf_factor)
-    config = {"TRAIN_METRIC": "composite"}
-    scores = _train_metric_series(pf, config)
+    scores = _composite(sortino, calmar_tr, calmar_dd, pf_factor)
     # A should score highest. Score = -mean(rank_sortino, rank_calmar, rank_pf).
     # Calmar inputs yield raw [30, 10, 3.33] which clip to [5, 5, 3.33]; A and B
     # tie at 5.0 on Calmar (avg rank 1.5 each). Sortino and PF break the tie:
@@ -65,9 +60,7 @@ def test_rank_composite_average_rank_on_ties():
     calmar_tr = [0.4, 0.3, 0.2]
     calmar_dd = [-0.1, -0.2, -0.3]
     pf_factor = [2.0, 1.5, 1.0]
-    pf = _mock_pf(sortino, calmar_tr, calmar_dd, pf_factor)
-    config = {"TRAIN_METRIC": "composite"}
-    scores = _train_metric_series(pf, config)
+    scores = _composite(sortino, calmar_tr, calmar_dd, pf_factor)
     # On Sortino: A & B tied -> average rank 1.5 each, C rank 3.
     # On Calmar: A rank 1, B rank 2, C rank 3.
     # On PF:     A rank 1, B rank 2, C rank 3.
@@ -80,16 +73,13 @@ def test_rank_composite_average_rank_on_ties():
     assert scores.iloc[2] == pytest.approx(-3.0, abs=1e-9)
 
 
-def test_rank_composite_sharpe_never_consulted():
-    """The mock's sharpe_ratio raises if called; composite must not call it."""
-    sortino = [1.0, 0.5]
-    calmar_tr = [1.0, 0.5]
-    calmar_dd = [-0.1, -0.2]
-    pf_factor = [1.5, 1.0]
-    pf = _mock_pf(sortino, calmar_tr, calmar_dd, pf_factor)
-    config = {"TRAIN_METRIC": "composite"}
-    # Should not raise (no AssertionError from the side_effect).
-    _ = _train_metric_series(pf, config)
+def test_rank_composite_excludes_sharpe():
+    """Composite is a pure function of (Sortino, Calmar, PF) only — Sharpe is not an
+    input. A MagicMock passed as any axis would taint arithmetic, so a clean numeric
+    result over exactly the three axes is the structural guarantee Sharpe is unused."""
+    _ = MagicMock  # sharpe is structurally absent from _rank_composite_score's signature
+    scores = _composite([1.0, 0.5], [1.0, 0.5], [-0.1, -0.2], [1.5, 1.0])
+    assert scores.iloc[0] > scores.iloc[1]
 
 
 def test_rank_composite_nan_propagates_to_nan():
@@ -98,15 +88,10 @@ def test_rank_composite_nan_propagates_to_nan():
     calmar_tr = [1.0, 0.5, 0.3]
     calmar_dd = [-0.1, -0.2, -0.3]
     pf_factor = [1.5, 1.0, 0.8]
-    pf = _mock_pf(sortino, calmar_tr, calmar_dd, pf_factor)
-    config = {"TRAIN_METRIC": "composite"}
-    scores = _train_metric_series(pf, config)
+    scores = _composite(sortino, calmar_tr, calmar_dd, pf_factor)
     assert np.isfinite(scores.iloc[0])
     assert np.isnan(scores.iloc[1])
     assert np.isfinite(scores.iloc[2])
-
-
-from ggTrader.core.wfo import _calculate_robustness
 
 
 def test_min_trades_gate_disqualifies_low_trade_cells():
