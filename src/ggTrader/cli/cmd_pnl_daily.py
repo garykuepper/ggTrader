@@ -100,6 +100,14 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
     else:
         print("[Sync] --no-sync set — skipping broker sync.")
 
+    connection_status = _check_exchange_connection()
+    _conn_state = (
+        "connected"
+        if connection_status["ok"]
+        else f"DISCONNECTED — {connection_status['detail']}"
+    )
+    print(f"[Conn] {connection_status['exchange']}: {_conn_state}")
+
     print(f"Building crypto PnL report for {since.date()} → {until.date()}...")
 
     report_md = build_daily_pnl_report(
@@ -108,6 +116,7 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
         since=since,
         until=until,
         stale_warning=stale_warning,
+        connection_status=connection_status,
     )
 
     summary_text = build_daily_pnl_summary_text(
@@ -116,6 +125,7 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
         since=since,
         until=until,
         stale_warning=stale_warning,
+        connection_status=connection_status,
     )
 
     summary_html = build_daily_pnl_summary_html(
@@ -124,6 +134,7 @@ def run_pnl_daily(args: argparse.Namespace) -> None:
         since=since,
         until=until,
         stale_warning=stale_warning,
+        connection_status=connection_status,
     )
 
     if args.output:
@@ -217,6 +228,49 @@ def _autosync_from_exchange(data_dir: str) -> str | None:
         msg = f"{exchange_id.upper()} sync failed ({e!r}) — report uses local CSV as-is"
         print(f"[Sync] WARNING: {msg}")
         return msg
+
+
+def _check_exchange_connection() -> dict:
+    """Probe the live exchange with an authenticated call for the report banner.
+
+    Returns ``{"ok": bool, "exchange": str, "detail": str}``. A failure here
+    (e.g. Binance.US ``-2015`` when the server IP drops off the key allowlist)
+    is the same condition that silently stops the live trader from reconciling
+    or placing orders, so surfacing it in the daily Telegram report makes the
+    connection state visible without reading container logs.
+    """
+    import os
+    import re
+
+    from ggTrader.data.live.cached_loader import CachedExchangeLoader
+
+    exchange_id = os.getenv("EXCHANGE", "kraken").lower()
+    label = {"binanceus": "Binance.US", "kraken": "Kraken"}.get(
+        exchange_id, exchange_id.upper()
+    )
+    try:
+        loader = CachedExchangeLoader(exchange_id=exchange_id)
+        exchange = loader.exchange
+        if not exchange.apiKey:
+            if exchange_id == "binanceus":
+                exchange.apiKey = os.getenv("BINANCE_API_LIVE_KEY")
+                exchange.secret = os.getenv("BINANCE_SECRET_LIVE_KEY")
+            else:
+                exchange.apiKey = os.getenv("KRAKEN_KEY")
+                exchange.secret = os.getenv("KRAKEN_SECRET")
+        if not exchange.apiKey or not exchange.secret:
+            return {"ok": False, "exchange": label, "detail": "credentials missing"}
+        exchange.fetch_balance()
+        return {"ok": True, "exchange": label, "detail": ""}
+    except Exception as e:
+        raw = str(e)
+        msg = re.search(r'"msg":"([^"]+)"', raw)
+        code = re.search(r'"code":(-?\d+)', raw)
+        if msg:
+            detail = f"{code.group(1)} {msg.group(1)}" if code else msg.group(1)
+        else:
+            detail = f"{type(e).__name__}: {raw[:120]}"
+        return {"ok": False, "exchange": label, "detail": detail}
 
 
 def _send_telegram_document(notifier, file_path: Path, caption: str = "") -> bool:

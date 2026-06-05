@@ -19,11 +19,14 @@ services:
           cpus: '2.0'
           memory: 16G
     stop_grace_period: 10s
-    # Phase 1 (Binance.US venue validation): legacy pre-reset params, adaptive 10% cap.
+    # Phase 1 (Binance.US venue validation): legacy pre-reset params, adaptive 25% cap.
+    # NOTE 2026-06-04: cap raised 0.10 -> 0.25. At a ~$137 balance the old 10% cap made
+    # the max position $13.74, below MIN_POSITION_USD ($15), so adaptive sizing skipped
+    # EVERY entry — zero fills since go-live. 0.25 -> max position $34.36, clears the floor.
     # Goal: validate venue mechanics (fills, balances, API timing) before switching to
     # textbook-validated params. Revert to --weighted-sizing default + auto-latest run
     # after 1-2 weeks of clean operation.
-    command: python -u ggt.py trade --adaptive-sizing --max-position-pct 0.10 --min-trailing-stop-pct 4 --min-atr-trailing-pct 4 --results /app/results/research/archive/research_20260509_202450/run_results.json
+    command: python -u ggt.py trade --adaptive-sizing --max-position-pct 0.25 --min-trailing-stop-pct 4 --min-atr-trailing-pct 4 --results /app/results/research/archive/research_20260509_202450/run_results.json
 
   grafana:
     image: grafana/grafana-oss:10.4.0

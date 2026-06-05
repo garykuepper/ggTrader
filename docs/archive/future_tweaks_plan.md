@@ -22,12 +22,37 @@ Fixes deployed in commit 2026-04-06 (see [changelog.md](changelog.md)):
 
 ## Current Live Configuration
 
-- **Research run**: `research_20260402_123248`
-- **Date range**: 2023-04-03 → 2026-04-02 (3 years, 8 WFO folds)
-- **Entry strategies**: 9 (original 7 + `stoch_rsi_reversal`, `keltner_breakout`)
-- **Exit strategies**: 3 (`atr_trailing`, `fixed_sl_tp`, `trailing_stop`)
-- **Coins selected**: 32 (29 after `MAX_COINS_PER_STRATEGY` gate)
-- **WFO CAGR**: 15.46% | **YTD CAGR**: -10.66% (vs BTC -20.92%)
+> Updated 2026-06-04. (Note: this file now lives under `docs/archive/`; CLAUDE.md still
+> points to `docs/future_tweaks_plan.md`. The day-to-day live-config record is now the
+> [changelog](../changelog.md) — this section is kept current as a quick snapshot.)
+
+- **Venue**: Binance.US (migrated from Kraken 2026-05-23; see [changelog](../changelog.md))
+- **Research run**: `research_20260509_202450` (archived legacy pre-reset set, pinned via `--results`)
+- **Coins (4)**: ETH-USD, TRX-USD, ADA-USD (`psar_adx`), DOGE-USD (`adx_filtered_rsi`) — robustness 0.24–0.76
+- **Timeframe**: 4h | **Balance**: ~$137.44
+- **Sizing**: `--adaptive-sizing`, **MAX_POSITION_PCT 0.25** (raised from 0.10 on 2026-06-04 — the 10% cap held max position below the $15 `MIN_POSITION_USD` floor, blocking every entry), TARGET_RISK_PCT 1%, MIN_POSITION_USD $15, min-trailing-stop 4%, min-atr-trailing 4%
+- **Trades to date**: 0 (was sizing-blocked since go-live; unblocked 2026-06-04). Under adaptive sizing all 4 coins are eligible — the per-coin allocation gate only applies in `--weighted-sizing` mode.
+
+**Pipeline caveat:** the 2026-06-01 monthly recalibration produced empty results (all coins filtered by textbook gates) and the latest stored run (BTC/PEPE) has negative robustness — so the live trader stays on the validated 2026-05-09 legacy set until research yields deployable params again. See WFO textbook-reset work.
+
+## Next Steps & Open Items (as of 2026-06-04)
+
+Ordered roughly by priority. Items 1–3 are the active thread after today's sizing unblock.
+
+1. **Confirm the first live fill.** Sizing was unblocked today (cap 0.10→0.25); the bot has never actually placed an order. Watch for the first `[Sizing]` → order on a 4h `psar_adx`/`adx_filtered_rsi` entry, and **verify fill-price bookkeeping** holds (a stale-`current_price`-as-entry bug bit us in April — see 2026-04-06 note above). The daily report's new `🔌 connection` line + balance delta should surface the first fill.
+2. **Decide adaptive vs weighted sizing.** Under `--adaptive-sizing`, all 4 coins trade (DOGE/ADA included); the 25/25/0/0 allocation is ignored. If only ETH/TRX should trade, switch to `--weighted-sizing`. Pick one deliberately rather than letting the mode decide the universe.
+3. **Unblock the research pipeline (biggest lever).** The textbook selection gates currently filter *every* coin to empty (2026-06-01 recal) and recent runs score negative robustness. Until this is fixed the trader can never advance off the 2026-05-09 legacy set to the textbook-validated 22-combo target. Investigate gate strictness (robustness floor, fold-consistency, OOS alpha, N_SPLITS) — likely too tight post-reset.
+4. **Reconcile TRX vs Path D.** The live legacy set *includes* TRX, but the Path D migration plan **deferred TRX 90 days** (re-evaluate ≥ 2026-08-10) due to Binance.US illiquidity ($2K/day vol). Confirm whether trading TRX on the legacy set now is intended or should be excluded until the Aug re-eval.
+5. **Capital.** At ~$137, positions are ~$23–34 and sit near Binance.US min-notional floors; the textbook 22-combo (BTC/ETH/DOGE) deployment really wants more capital. Decide on a top-up before Phase 2.
+6. **Phase 1 → Phase 2 transition.** Per the compose comment, revert to `--weighted-sizing` default + auto-latest research run after 1–2 weeks of clean Binance.US operation. Gate this on item 3 producing deployable params.
+7. **Residential IP drift.** The 2026-06-03 outage was Encom's public IP rotating off the Binance.US key allowlist. Consider a stable-egress fix (DDNS won't help an allowlist; needs static IP or proxy). The daily report now flags `❌ DISCONNECTED` if it recurs.
+8. **Doc hygiene.** CLAUDE.md points to `docs/future_tweaks_plan.md` but the file is at `docs/archive/future_tweaks_plan.md`. Either move it back or fix the CLAUDE.md reference.
+
+### Stale (Kraken era, 2026-04-02) — kept for history
+
+- **Research run**: `research_20260402_123248` | 3yr 2023-04-03 → 2026-04-02, 8 WFO folds
+- 9 entry / 3 exit strategies, 32 coins (29 after `MAX_COINS_PER_STRATEGY`)
+- WFO CAGR 15.46% | YTD CAGR -10.66% (vs BTC -20.92%)
 
 ### New Strategies Added (2026-04-02)
 

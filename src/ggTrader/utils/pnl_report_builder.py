@@ -53,6 +53,28 @@ def _h(s: Any) -> str:
     return _html.escape(str(s), quote=False)
 
 
+def _connection_status_line(status: dict) -> str:
+    """Plain-text exchange connection indicator (text summary + markdown report).
+
+    ``status`` is ``{"ok": bool, "exchange": str, "detail": str}`` as produced
+    by the report CLI's connection probe.
+    """
+    exchange = status.get("exchange", "Exchange")
+    if status.get("ok"):
+        return f"🔌 {exchange}: ✅ Connected"
+    detail = status.get("detail") or "auth/connection failed"
+    return f"🔌 {exchange}: ❌ DISCONNECTED — {detail}"
+
+
+def _connection_status_line_html(status: dict) -> str:
+    """HTML-mode variant of :func:`_connection_status_line` for Telegram."""
+    exchange = _h(status.get("exchange", "Exchange"))
+    if status.get("ok"):
+        return f"🔌 <b>{exchange}</b>: ✅ Connected"
+    detail = _h(status.get("detail") or "auth/connection failed")
+    return f"🔌 <b>{exchange}</b>: ❌ <b>DISCONNECTED</b> — <i>{detail}</i>"
+
+
 def _render_kv_table(rows: list[tuple[str, str]]) -> str:
     """Render a 2-column key/value block aligned for monospace display.
 
@@ -519,6 +541,7 @@ def build_daily_pnl_summary_text(
     until: Optional[datetime] = None,
     thresholds: Optional[dict[str, float]] = None,
     stale_warning: Optional[str] = None,
+    connection_status: Optional[dict] = None,
 ) -> str:
     """Plain-text Telegram/Discord-friendly summary (no markdown, no tables).
 
@@ -548,6 +571,11 @@ def build_daily_pnl_summary_text(
         lines.append("")
     lines.append(f"📊 ggTrader {label} Daily PnL — {_fmt_dt(until, '%Y-%m-%d')}")
     lines.append("")
+
+    # Exchange connection status
+    if connection_status is not None:
+        lines.append(_connection_status_line(connection_status))
+        lines.append("")
 
     # Regime
     regime = data.get("regime", {})
@@ -652,6 +680,7 @@ def build_daily_pnl_summary_html(
     max_open_rows: int = 10,
     max_recent_rows: int = 8,
     stale_warning: Optional[str] = None,
+    connection_status: Optional[dict] = None,
 ) -> str:
     """Build a Telegram HTML-mode daily summary with monospace tables.
 
@@ -689,6 +718,11 @@ def build_daily_pnl_summary_html(
     # ── Header ──────────────────────────────────────────────────────────
     parts.append(f"<b>📊 ggTrader {label} Daily PnL — {_h(_fmt_dt(until, '%Y-%m-%d'))}</b>")
     parts.append("")
+
+    # ── Exchange connection status ──────────────────────────────────────
+    if connection_status is not None:
+        parts.append(_connection_status_line_html(connection_status))
+        parts.append("")
 
     # ── Regime Status ───────────────────────────────────────────────────
     regime = data.get("regime", {})
@@ -881,6 +915,7 @@ def build_daily_pnl_report(
     until: Optional[datetime] = None,
     thresholds: Optional[dict[str, float]] = None,
     stale_warning: Optional[str] = None,
+    connection_status: Optional[dict] = None,
 ) -> str:
     """Build a markdown daily PnL report.
 
@@ -921,6 +956,9 @@ def build_daily_pnl_report(
     window_str = f"{_fmt_dt(since)} → {_fmt_dt(until)} PT"
     lines.append(f"*Window: {window_str}*")
     lines.append("")
+    if connection_status is not None:
+        lines.append(f"**{_connection_status_line(connection_status)}**")
+        lines.append("")
 
     # Regime
     regime = data.get("regime", {})

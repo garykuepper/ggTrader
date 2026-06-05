@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-06-04
+
+### Live sizing: raise adaptive MAX_POSITION_PCT 0.10 → 0.25 (unblock all entries)
+
+The live trader had **never opened a position since go-live (2026-05-23)** — `trades` empty, balance frozen at $137.44. Root cause: `docker-compose.yaml` ran `--adaptive-sizing --max-position-pct 0.10`. Adaptive sizing caps a position at `MAX_POSITION_PCT × portfolio` = 0.10 × $137.44 = **$13.74**, below `MIN_POSITION_USD` ($15 default), so `_compute_adaptive_position_usd` skipped **every** entry as "below MIN_POSITION_USD" regardless of signal. Raised the cap to **0.25** → max position $34.36, clearing the floor. With the legacy params' ~4%-floored stops and 1% target risk, positions now size ~$23–34.
+
+**Note:** under `--adaptive-sizing` the per-coin allocation weights (the "2/4 coins receive capital, DOGE/ADA 0%" log line) are **not** applied — that gate only runs in weighted-sizing mode. So all four legacy coins (ETH/TRX/ADA `psar_adx`, DOGE `adx_filtered_rsi`, all positive robustness 0.24–0.76) are now eligible. Switch to `--weighted-sizing` if only ETH/TRX should trade.
+
+Rebuilt the image (`docker compose build`) so the connection-status report change below is also baked in (the `src/` dir is not volume-mounted), then `docker compose up -d`.
+
+### Daily PnL report: exchange connection status line
+
+Added an explicit exchange connection indicator to the daily PnL report (`ggt pnl-daily`). The report now runs an authenticated `fetch_balance()` probe against the live exchange (`EXCHANGE` env, currently `binanceus`) and renders a status line directly under the header in all three outputs (Telegram HTML summary, plain-text summary, markdown file):
+
+- Connected: `🔌 Binance.US: ✅ Connected`
+- Down: `🔌 Binance.US: ❌ DISCONNECTED — -2015 Invalid API-key, IP, or permissions for action.`
+
+**Why:** on 2026-06-03 the live trader silently crash-looped for hours when Encom's residential IP rotated off the Binance.US API key's allowlist (`-2015`), and there was no at-a-glance signal in the Telegram report. This makes the connection state visible without reading container logs — the same auth condition that stops the trader from reconciling/placing orders now shows in the daily message.
+
+**Files:** `src/ggTrader/cli/cmd_pnl_daily.py` (new `_check_exchange_connection()` probe), `src/ggTrader/utils/pnl_report_builder.py` (new `_connection_status_line` / `_connection_status_line_html`, threaded `connection_status` through the three builders). Deployed live via `docker cp`; needs an image rebuild to persist across container restarts.
+
 ## 2026-05-12
 
 ### Path D selected: defer-TRX. BTC/ETH/DOGE → Binance.US; TRX waits 90 days.
