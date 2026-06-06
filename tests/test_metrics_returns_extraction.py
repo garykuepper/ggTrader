@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from ggTrader.core.metrics import (  # noqa: E402
     _calmar_ratio_series,
+    _fold_stats_metrics,
     _returns_based_metrics,
     _train_metric_series,
 )
@@ -65,6 +66,26 @@ def test_returns_based_metrics_match_vbt_accessors():
     # never silently coerced, since the composite's .notna() gate depends on it).
     assert np.array_equal(np.isinf(sortino.values), np.isinf(ref_so))
     assert np.array_equal(np.isnan(sortino.values), np.isnan(ref_so))
+
+
+def test_fold_stats_metrics_match_vbt_accessors():
+    """The per-fold OOS/train diagnostic helper (wfo._process_wfo_fold) must reproduce
+    pf.sharpe_ratio()/sortino_ratio()/total_return()/max_drawdown() and the reductions
+    used downstream (.mean()/.min()/.max()), which feed the aggregate gates."""
+    pf = _make_pf()
+    m = _fold_stats_metrics(pf)
+    assert _eq(m["sharpe"].values, pf.sharpe_ratio().values)
+    assert _eq(m["sortino"].values, pf.sortino_ratio().values)
+    assert _eq(m["total_return"].values, pf.total_return().values)
+    assert _eq(m["max_drawdown"].values, pf.max_drawdown().values)
+    # the reductions wfo.py applies must match too
+    assert _eq([m["sharpe"].mean()], [pf.sharpe_ratio().mean()])
+    assert _eq([m["sortino"].mean()], [pf.sortino_ratio().mean()])
+    assert _eq([m["total_return"].mean()], [pf.total_return().mean()])
+    assert _eq([m["max_drawdown"].min()], [pf.max_drawdown().min()])
+    assert _eq([m["total_return"].max()], [pf.total_return().max()])
+    # returned frame is exactly pf.returns() (stored downstream as oos_returns)
+    assert _eq(m["returns"].values, pf.returns().values)
 
 
 def test_calmar_matches_accessor_derivation():

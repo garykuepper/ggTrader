@@ -71,7 +71,13 @@ def test_bear_market_forgives_zero_trades(mock_metrics, mock_engine_cls, bear_ma
     mock_test_pf.init_cash.sum.return_value = 1000
     mock_test_pf.value.return_value.iloc.__getitem__.return_value.sum.return_value = 1100
     mock_test_pf.total_return.return_value.mean.return_value = 0.1
-    mock_test_pf.returns.return_value = pd.Series(dtype=float)
+    # _process_wfo_fold now derives OOS stats from one pf.returns() extraction via
+    # vbt kernels, so the mock needs a real returns frame + a freq for ann_factor.
+    _ret_idx = pd.date_range("2024-01-01", periods=4, freq="4h")
+    mock_test_pf.returns.return_value = pd.DataFrame(
+        {"c": [0.01, -0.005, 0.002, 0.0]}, index=_ret_idx
+    )
+    mock_test_pf.wrapper.freq = "4h"
     mock_test_engine.run.return_value = mock_test_pf
 
     # FastBacktest is instantiated twice per fold (train, then test)
@@ -132,7 +138,13 @@ def test_bull_market_rejects_zero_trades(mock_metrics, mock_engine_cls, bull_mar
     mock_test_pf.init_cash.sum.return_value = 1000
     mock_test_pf.value.return_value.iloc.__getitem__.return_value.sum.return_value = 1100
     mock_test_pf.total_return.return_value.mean.return_value = 0.1
-    mock_test_pf.returns.return_value = pd.Series(dtype=float)
+    # _process_wfo_fold now derives OOS stats from one pf.returns() extraction via
+    # vbt kernels, so the mock needs a real returns frame + a freq for ann_factor.
+    _ret_idx = pd.date_range("2024-01-01", periods=4, freq="4h")
+    mock_test_pf.returns.return_value = pd.DataFrame(
+        {"c": [0.01, -0.005, 0.002, 0.0]}, index=_ret_idx
+    )
+    mock_test_pf.wrapper.freq = "4h"
     mock_test_engine.run.return_value = mock_test_pf
     mock_engine_cls.return_value = mock_test_engine
 

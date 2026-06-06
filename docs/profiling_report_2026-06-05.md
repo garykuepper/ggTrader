@@ -140,6 +140,25 @@ vbt accessor passes. Target: [metrics.py `_train_metric_series`](../src/ggTrader
 
 ---
 
+## Outcome (implemented & validated, same day)
+
+The "Go" recommendation was implemented (commits `dd674f1`, `86a6c95`, + the OOS-stats follow-up).
+`core/metrics.py` `_returns_based_metrics` / `_fold_stats_metrics` extract `pf.returns()` once per
+fold and use vbt's own kernels; `wfo._process_wfo_fold` was updated likewise. Verified **bit-identical**
+to the per-call accessors by `tests/test_metrics_returns_extraction.py`.
+
+End-to-end cold re-profile (cache purged, same 3-coin workload):
+
+| | profiled runtime | get_returns_acc | from_signals |
+|---|---|---|---|
+| Baseline | 1048.8 s | 595 s (57%, 4034 calls) | 82.8 s (7.9%) |
+| Optimized | **507.2 s (2.07×)** | 4.3 s (0.9%, 14 calls) | 84.9 s (16.7%) |
+
+All 76 per-combo gate verdicts identical to baseline (same PASS/FAIL + failure reasons); only
+`wfe` differs at ≤1e-13 (floating-point reassociation). `Portfolio.from_signals` (the simulation)
+is now the largest single item — as predicted, the remaining headroom is small and not worth the
+risk of numba-ifying `fixed_sl_tp` (still ~0.1%).
+
 ## Reproduce
 
 ```bash

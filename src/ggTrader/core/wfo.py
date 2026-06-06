@@ -9,9 +9,11 @@ import vectorbt as vbt
 
 from ggTrader.core.fast_backtest import FastBacktest
 from ggTrader.core.metrics import (
+    _fold_stats_metrics,
     _max_drawdown_for_train_gate,
     _open_position_count_end_for_gate,
     _print_wfo_fold_all_rejected_diagnostics,
+    _returns_based_metrics,
 )
 from ggTrader.core.orchestrator_utils import (
     _default_params_from_grid,
@@ -215,20 +217,25 @@ def _process_wfo_fold(
     except Exception:
         oos_is_bear = False
 
+    # Per-fold OOS + train diagnostics. Each portfolio's returns are extracted ONCE and all
+    # metrics derived from it via vbt's own numba kernels — previously ~9 separate vbt
+    # accessor calls/fold, each rebuilding the returns layer (see
+    # docs/profiling_report_2026-06-05.md). Bit-identical to the per-call accessors
+    # (sharpe/sortino/total_return/max_drawdown), incl. inf/NaN edges.
+    _train_m = _returns_based_metrics(pf_train) if pf_train is not None else None
+    test_m = _fold_stats_metrics(pf_test) if pf_test is not None else None
+
     # Train-window scalars for aggregate gates (Task 6).
     try:
-        _pf_tr = pf_train.total_return().max() if pf_train is not None else float("nan")
-        train_total_ret = float(_pf_tr)
+        train_total_ret = float(_train_m[1].max()) if _train_m is not None else float("nan")
     except Exception:
         train_total_ret = float("nan")
     try:
-        _pf_dd = pf_train.max_drawdown().min() if pf_train is not None else float("nan")
-        train_dd = float(_pf_dd)
+        train_dd = float(_train_m[2].min()) if _train_m is not None else float("nan")
     except Exception:
         train_dd = float("nan")
     try:
-        _oos_dd = pf_test.max_drawdown().min() if pf_test is not None else float("nan")
-        oos_dd = float(_oos_dd)
+        oos_dd = float(test_m["max_drawdown"].min()) if test_m is not None else float("nan")
     except Exception:
         oos_dd = float("nan")
     # Annualized return via compounding: (1 + total_return)^(bars_per_year / n_bars) - 1.
@@ -245,9 +252,9 @@ def _process_wfo_fold(
             train_ann_ret = float("nan")
     except Exception:
         train_ann_ret = float("nan")
+    oos_total_ret = float("nan")
     try:
-        _oos_tr = pf_test.total_return().mean() if pf_test is not None else float("nan")
-        oos_total_ret = float(_oos_tr)
+        oos_total_ret = float(test_m["total_return"].mean()) if test_m is not None else float("nan")
         n_test_bars = float(len(test_ohlcv))
         if n_test_bars > 0 and np.isfinite(oos_total_ret) and oos_total_ret > -1.0:
             oos_ann_ret = (1.0 + oos_total_ret) ** (bars_per_year / n_test_bars) - 1.0
@@ -263,15 +270,15 @@ def _process_wfo_fold(
         "test_end": str(test_ohlcv.index[-1]),
         "params": _to_native(fold_best_params),
         "is_sharpe": _to_native(train_metrics.max()),
-        "oos_sharpe": _to_native(pf_test.sharpe_ratio().mean()),
+        "oos_sharpe": _to_native(test_m["sharpe"].mean()),
         "oos_is_bear": bool(oos_is_bear),
-        "sortino": _to_native(pf_test.sortino_ratio().mean()),
+        "sortino": _to_native(test_m["sortino"].mean()),
         "profit": _to_native(pf_test.total_profit().sum()),
         "start_capital": _to_native(pf_test.init_cash.sum()),
         "end_capital": _to_native(pf_test.value().iloc[-1].sum()),
-        "return_pct": _to_native(pf_test.total_return().mean() * 100),
+        "return_pct": _to_native(oos_total_ret * 100),
         "train_metrics": train_metrics,
-        "oos_returns": pf_test.returns(),
+        "oos_returns": test_m["returns"],
         "train_annualized_return": train_ann_ret,
         "train_max_dd": train_dd,
         "oos_max_dd": oos_dd,

@@ -2,7 +2,7 @@
 
 ## 2026-06-05
 
-### WFO perf: collapse per-fold train metrics to one returns extraction (~36x on metric path)
+### WFO perf: collapse per-fold metric extraction to one returns() call (2.07× end-to-end, verified)
 
 Acted on the profiling finding below. `_train_metric_series` (the `composite` / `sortino` /
 `calmar` branches) called 4 independent vbt accessors per fold — `sortino_ratio()`,
@@ -15,13 +15,25 @@ numba kernels (`sortino_ratio_nb`, `max_drawdown_nb`) plus a numpy `total_return
 not part of the 58%) is unchanged. The rank-composite math was extracted verbatim into a pure
 `_rank_composite_score(sortino, calmar, profit_factor)` (no behavior change).
 
+A second pass extended this to the **per-fold OOS/train diagnostic block** in
+`wfo._process_wfo_fold`, which separately made ~9 vbt accessor calls per fold on `pf_train`
+and `pf_test` (`total_return`/`max_drawdown`/`sharpe_ratio`/`sortino_ratio`/`value`/`returns`)
+feeding the aggregate gates. New `_fold_stats_metrics(pf)` extracts `pf.returns()` once and
+derives sharpe+sortino+total+maxdd via vbt's kernels (adds `sharpe_ratio_nb`).
+
 **Bit-identical, verified.** vbt is 0.28.5 (not 1.0.0). New `tests/test_metrics_returns_extraction.py`
-asserts the single-extraction path equals the per-call accessors exactly — including inf/NaN
-structure preservation (zero-downside → +inf sortino; no-trade → NaN) that the composite's
-`.notna()` gate depends on. `test_rank_composite.py` now targets `_rank_composite_score`
-directly. Micro-bench on a fresh per-fold portfolio: per-call accessors 32.8 ms vs single
-extraction 0.9 ms (~36x). Since caching is per-`pf` and every fold builds a fresh `pf`, the
-win applies to all ~760 folds of a run.
+asserts both helpers equal the per-call accessors exactly — including inf/NaN structure
+preservation (zero-downside → +inf sortino; no-trade → NaN) that the composite's `.notna()`
+gate depends on. `test_rank_composite.py` now targets `_rank_composite_score` directly.
+
+**End-to-end validation (3 coins, Binance.US, cold/full WFO, cache purged for fairness):**
+total profiled runtime **1048.8 s → 507.2 s (~2.07× faster)**, matching the report's predicted
+1.5–2.5×. `get_returns_acc` collapsed from 595 s (57%, 4034 calls) to 4.3 s (0.9%, 14 calls);
+`Portfolio.from_signals` (the irreducible simulation) is now the largest single item. **All 76
+per-combo gate verdicts identical** to baseline (same PASS/FAIL, same `failures=[...]`); only
+difference is `wfe` at the ~13th decimal (≤1e-13, floating-point reassociation from `np.prod`),
+which changes no selection. Note: re-run `ggt db purge-wfo-cache` was used — cached fold results
+predate the change (values are equivalent, but the cache was cleared to measure cold).
 
 ### WFO profiling: measured the real bottleneck (it's not the simulation)
 

@@ -41,6 +41,32 @@ def _returns_based_metrics(pf_train: Any) -> Tuple[pd.Series, pd.Series, pd.Seri
     return sortino, total_ret, max_dd
 
 
+def _fold_stats_metrics(pf: Any) -> Dict[str, pd.Series]:
+    """Sharpe + Sortino + total-return + max-drawdown (+ the returns frame) from ONE
+    ``pf.returns()`` extraction, via vbt's own numba kernels.
+
+    For the per-fold OOS/train diagnostic block in ``wfo._process_wfo_fold``, which
+    previously made ~9 separate vbt accessor calls per fold (each rebuilding the returns
+    accessor). Bit-identical to ``pf.sharpe_ratio()`` / ``sortino_ratio()`` /
+    ``total_return()`` / ``max_drawdown()`` (verified incl. inf/NaN). The returned
+    ``returns`` frame is the same object callers store as ``oos_returns`` (no re-call).
+    """
+    ret = pf.returns()
+    ret_df = ret.to_frame() if isinstance(ret, pd.Series) else ret
+    cols = ret_df.columns
+    arr = np.asarray(ret_df.values, dtype=np.float64)
+    if arr.ndim == 1:
+        arr = arr.reshape(-1, 1)
+    ann = _ann_factor_for(pf)
+    return {
+        "sharpe": pd.Series(_returns_nb.sharpe_ratio_nb(arr, ann), index=cols),
+        "sortino": pd.Series(_returns_nb.sortino_ratio_nb(arr, ann), index=cols),
+        "total_return": pd.Series(np.prod(1.0 + arr, axis=0) - 1.0, index=cols),
+        "max_drawdown": pd.Series(_returns_nb.max_drawdown_nb(arr), index=cols),
+        "returns": ret,
+    }
+
+
 def _align_grouped_combo_series(agg: pd.Series, sh_index: pd.Index) -> pd.Series:
     """Map ``groupby`` on column MultiIndex levels onto metric index (e.g. 0 -> (0,))."""
     if agg.index.equals(sh_index):
