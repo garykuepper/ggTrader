@@ -52,6 +52,13 @@ Three distinct strategy methodologies coexist behind the same data + execution s
 
 New strategies plug in by implementing the `Strategy` protocol in `src/ggTrader/strategies/`.
 
+> **Experimental — cross-sectional momentum (research only).** A separate
+> `CrossSectionalMomentum` track (`src/ggTrader/strategies/momentum/`, with an HMM regime overlay in
+> `strategies/regime/`) ranks the *whole universe* against itself each bar instead of deciding per
+> coin. It is **not** wired into the live engine (which is strictly per-coin) and is exercised offline
+> only via `scripts/run_cross_sectional_research.py`. Its HMM filter is intentionally disabled — the
+> regime emission features are not yet available as real data.
+
 ## The four layers
 
 Each layer has one job. They communicate through plain Python objects (DataFrames, dicts) — no message bus, no service mesh.
@@ -159,6 +166,7 @@ The live engine kicks off its own WFO research run on the **1st of each month at
 | `src/ggTrader/data/` | TimescaleDB loaders + live exchange loaders |
 | `src/ggTrader/utils/` | Config defaults, report generators, PnL report builder |
 | `scripts/` | One-off operational tooling (universe regeneration, correlation matrix, Binance.US backfill) |
+| `scripts/run_cross_sectional_research.py` | Offline WFO robustness harness for the experimental cross-sectional momentum strategy (Binance.US 4h, HMM disabled) — research only, not wired into live trading |
 | `results/research/` | Timestamped research output: `research_report.md` (human-readable), `run_results.json` (machine-readable), `wfo_stats_snapshot.json` (per-cell diagnostics), plots |
 | TimescaleDB `system_state` table | Live trader state (open positions, circuit-breaker status, start-of-day equity) — key = `live_trader_state` |
 

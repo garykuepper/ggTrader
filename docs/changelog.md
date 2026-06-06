@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-06-06
+
+### Research tooling: offline verification harness for the cross-sectional strategy
+
+Added [run_cross_sectional_research.py](file:///home/flynn/ggTrader/scripts/run_cross_sectional_research.py),
+a standalone harness that runs `CrossSectionalMomentum` through the new `WalkForwardOptimizer`
+on **real Binance.US 4h OHLCV** from TimescaleDB and emits a robustness summary
+(`mean_oos_sharpe`, `max_oos_dd`, `n_degraded_windows`, `deploy_ready`) plus an IS-vs-OOS scatter.
+- **Verification only** — not wired into the live trader. It writes results under
+  `run_type='cross_sectional_research'` (never `'research'`), so the live trader's discovery ignores it.
+- The HMM regime filter is held **disabled** (`hmm_filter_enabled=False`) because its emission
+  features (VIX / funding / stablecoin flows) are still mocked, not real.
+- Reuses `TimescaleDBLoader`, `MomentumConfig.for_crypto`, `WalkForwardOptimizer`, and `ResultsManager`;
+  auto-selects a recency-filtered Binance.US universe (BTC-USD always included for beta-stripping).
+- **Why:** the spec strategies are a cross-sectional/whole-universe paradigm, incompatible with the
+  per-coin live execution engine. This harness lets us judge the cross-sectional alpha offline before
+  committing to the (separately-scoped, larger) live-integration work.
+
+### Strategies & Backtesting: HMM Regime Gate and Walk-Forward Optimization (WFO) pipeline
+
+Implemented the runtime Hidden Markov Model (HMM) filter gate and Strategy 1 Walk-Forward Optimization (WFO) pipeline:
+- Created [hmm_filter.py](file:///home/flynn/ggTrader/src/ggTrader/strategies/regime/hmm_filter.py) to load pre-computed HMM states from TimescaleDB and construct a boolean regime gate.
+- Integrated the HMM filter gate into `CrossSectionalMomentum` in [cross_sectional.py](file:///home/flynn/ggTrader/src/ggTrader/strategies/momentum/cross_sectional.py) with standard logging for signal suppression diagnostics and added filtered/unfiltered run wrapper methods.
+- Updated `MomentumConfig` in [config.py](file:///home/flynn/ggTrader/src/ggTrader/strategies/momentum/config.py) to include `engaged_threshold` defaults and `hmm_filter_enabled` parameter toggle.
+- Developed [wfo.py](file:///home/flynn/ggTrader/src/ggTrader/backtesting/wfo.py) containing `WalkForwardOptimizer` and `WFOConfig` to orchestrate rolling walk-forward parameters optimization with grid chunking, robustness check status flagging, DB persistence, and scatter plot generation.
+- Created [test_hmm_filter.py](file:///home/flynn/ggTrader/tests/strategies/regime/test_hmm_filter.py) and [test_wfo.py](file:///home/flynn/ggTrader/tests/backtesting/test_wfo.py) to verify the implementations e2e under full ruff/formatting and PEP 8 compliance.
+
 ## 2026-06-05
 
 ### WFO perf: collapse per-fold metric extraction to one returns() call (2.07× end-to-end, verified)
