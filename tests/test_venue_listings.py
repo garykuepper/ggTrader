@@ -65,6 +65,7 @@ import json
 from ggTrader.data.core.venue_listings import (
     filter_to_listed,
     load_venue_listing_symbols,
+    write_venue_listings,
 )
 
 
@@ -85,3 +86,27 @@ def test_load_symbols_returns_set(tmp_path):
 def test_load_symbols_missing_file_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         load_venue_listing_symbols("kraken", listings_dir=str(tmp_path))
+
+
+def test_write_creates_snapshot(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        venue_listings,
+        "fetch_venue_listings",
+        lambda v: [{"symbol": "BTC", "ccxt_symbol": "BTC/USD", "base": "BTC", "quote": "USD"}],
+    )
+    out = write_venue_listings("binanceus", listings_dir=str(tmp_path))
+    payload = json.loads(out.read_text())
+    assert payload["venue"] == "binanceus"
+    assert payload["count"] == 1
+    assert payload["listings"][0]["symbol"] == "BTC"
+    assert "updated_at" in payload
+
+
+def test_write_empty_preserves_existing(monkeypatch, tmp_path):
+    existing = tmp_path / "kraken_listings.json"
+    existing.write_text('{"sentinel": true}')
+    monkeypatch.setattr(venue_listings, "fetch_venue_listings", lambda v: [])
+    with pytest.raises(RuntimeError):
+        write_venue_listings("kraken", listings_dir=str(tmp_path))
+    # existing good snapshot must be untouched
+    assert existing.read_text() == '{"sentinel": true}'

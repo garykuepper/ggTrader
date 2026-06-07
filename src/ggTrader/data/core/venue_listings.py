@@ -10,6 +10,8 @@ docs/superpowers/specs/2026-06-06-per-venue-availability-registry-design.md.
 from __future__ import annotations
 
 import json
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 import ccxt
@@ -106,3 +108,42 @@ def load_venue_listing_symbols(venue: str, listings_dir: str = DEFAULT_LISTINGS_
     with open(path) as f:
         payload = json.load(f)
     return {entry["symbol"] for entry in payload.get("listings", [])}
+
+
+def write_venue_listings(venue: str, listings_dir: str = DEFAULT_LISTINGS_DIR) -> Path:
+    """Fetch and atomically write a venue's availability snapshot.
+
+    Writes to a temp file then ``os.replace`` so a partial/failed write never
+    clobbers an existing good snapshot. Refuses to write an empty listing set
+    (treated as a fetch failure) to avoid wiping a valid snapshot.
+
+    Returns:
+        Path to the written ``{venue}_listings.json``.
+
+    Raises:
+        RuntimeError: If the fetched listing set is empty.
+    """
+    venue = venue.lower()
+    listings = fetch_venue_listings(venue)
+    if not listings:
+        raise RuntimeError(
+            f"Refusing to write empty listings for {venue!r}; "
+            "aborting to preserve any existing snapshot."
+        )
+
+    out_dir = Path(listings_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{venue}_listings.json"
+
+    payload = {
+        "venue": venue,
+        "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "count": len(listings),
+        "listings": listings,
+    }
+
+    tmp_path = out_path.with_suffix(".json.tmp")
+    with open(tmp_path, "w") as f:
+        json.dump(payload, f, indent=2)
+    os.replace(tmp_path, out_path)
+    return out_path
