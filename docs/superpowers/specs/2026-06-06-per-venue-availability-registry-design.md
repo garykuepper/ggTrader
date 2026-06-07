@@ -63,7 +63,8 @@ live fetch_tickers(venue) ─ rank by 30d $vol ─ ∩ listings ─ floor ─ to
    - Normalizes base via existing `SYMBOL_MAPPING`.
    - Returns `[{symbol, ccxt_symbol, base, quote}]`, where `symbol` is the
      normalized base (e.g. `"BTC"`), matching the key the ranker already uses
-     internally (`standard_base`).
+     internally (`standard_base`). `base` carries the raw pre-normalization ccxt
+     base (e.g. `"XXBT"`) for audit/debug; consumers match on `symbol`, not `base`.
    - Venue guard: only `kraken`, `binanceus` supported; else `ValueError`
      (reuse the existing `{"kraken": ccxt.kraken, "binanceus": ccxt.binanceus}`
      mapping pattern).
@@ -93,7 +94,7 @@ live fetch_tickers(venue) ─ rank by 30d $vol ─ ∩ listings ─ floor ─ to
   "updated_at": "2026-06-06T15:30:00Z",
   "count": 11,
   "listings": [
-    {"symbol": "BTC", "ccxt_symbol": "BTC/USD", "base": "BTC", "quote": "USD"}
+    {"symbol": "BTC", "ccxt_symbol": "BTC/USD", "base": "XXBT", "quote": "USD"}
   ]
 }
 ```

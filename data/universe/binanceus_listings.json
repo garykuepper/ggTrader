@@ -1,0 +1,313 @@
+{
+  "venue": "binanceus",
+  "updated_at": "2026-06-07T14:48:57Z",
+  "count": 51,
+  "listings": [
+    {
+      "symbol": "AAVE",
+      "ccxt_symbol": "AAVE/USD",
+      "base": "AAVE",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ADA",
+      "ccxt_symbol": "ADA/USD",
+      "base": "ADA",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ALGO",
+      "ccxt_symbol": "ALGO/USD",
+      "base": "ALGO",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ATOM",
+      "ccxt_symbol": "ATOM/USD",
+      "base": "ATOM",
+      "quote": "USD"
+    },
+    {
+      "symbol": "AVAX",
+      "ccxt_symbol": "AVAX/USD",
+      "base": "AVAX",
+      "quote": "USD"
+    },
+    {
+      "symbol": "BCH",
+      "ccxt_symbol": "BCH/USD",
+      "base": "BCH",
+      "quote": "USD"
+    },
+    {
+      "symbol": "BNB",
+      "ccxt_symbol": "BNB/USD",
+      "base": "BNB",
+      "quote": "USD"
+    },
+    {
+      "symbol": "BONK",
+      "ccxt_symbol": "BONK/USD",
+      "base": "BONK",
+      "quote": "USD"
+    },
+    {
+      "symbol": "BTC",
+      "ccxt_symbol": "BTC/USD",
+      "base": "BTC",
+      "quote": "USD"
+    },
+    {
+      "symbol": "CRV",
+      "ccxt_symbol": "CRV/USD",
+      "base": "CRV",
+      "quote": "USD"
+    },
+    {
+      "symbol": "DGB",
+      "ccxt_symbol": "DGB/USD",
+      "base": "DGB",
+      "quote": "USD"
+    },
+    {
+      "symbol": "DOGE",
+      "ccxt_symbol": "DOGE/USD",
+      "base": "DOGE",
+      "quote": "USD"
+    },
+    {
+      "symbol": "DOT",
+      "ccxt_symbol": "DOT/USD",
+      "base": "DOT",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ENS",
+      "ccxt_symbol": "ENS/USD",
+      "base": "ENS",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ETC",
+      "ccxt_symbol": "ETC/USD",
+      "base": "ETC",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ETH",
+      "ccxt_symbol": "ETH/USD",
+      "base": "ETH",
+      "quote": "USD"
+    },
+    {
+      "symbol": "FET",
+      "ccxt_symbol": "FET/USD",
+      "base": "FET",
+      "quote": "USD"
+    },
+    {
+      "symbol": "FLOKI",
+      "ccxt_symbol": "FLOKI/USD",
+      "base": "FLOKI",
+      "quote": "USD"
+    },
+    {
+      "symbol": "GALA",
+      "ccxt_symbol": "GALA/USD",
+      "base": "GALA",
+      "quote": "USD"
+    },
+    {
+      "symbol": "GRT",
+      "ccxt_symbol": "GRT/USD",
+      "base": "GRT",
+      "quote": "USD"
+    },
+    {
+      "symbol": "HBAR",
+      "ccxt_symbol": "HBAR/USD",
+      "base": "HBAR",
+      "quote": "USD"
+    },
+    {
+      "symbol": "HYPE",
+      "ccxt_symbol": "HYPE/USD",
+      "base": "HYPE",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ICP",
+      "ccxt_symbol": "ICP/USD",
+      "base": "ICP",
+      "quote": "USD"
+    },
+    {
+      "symbol": "IOTA",
+      "ccxt_symbol": "IOTA/USD",
+      "base": "IOTA",
+      "quote": "USD"
+    },
+    {
+      "symbol": "JUP",
+      "ccxt_symbol": "JUP/USD",
+      "base": "JUP",
+      "quote": "USD"
+    },
+    {
+      "symbol": "LINK",
+      "ccxt_symbol": "LINK/USD",
+      "base": "LINK",
+      "quote": "USD"
+    },
+    {
+      "symbol": "LPT",
+      "ccxt_symbol": "LPT/USD",
+      "base": "LPT",
+      "quote": "USD"
+    },
+    {
+      "symbol": "LTC",
+      "ccxt_symbol": "LTC/USD",
+      "base": "LTC",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ME",
+      "ccxt_symbol": "ME/USD",
+      "base": "ME",
+      "quote": "USD"
+    },
+    {
+      "symbol": "NEAR",
+      "ccxt_symbol": "NEAR/USD",
+      "base": "NEAR",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ONE",
+      "ccxt_symbol": "ONE/USD",
+      "base": "ONE",
+      "quote": "USD"
+    },
+    {
+      "symbol": "OP",
+      "ccxt_symbol": "OP/USD",
+      "base": "OP",
+      "quote": "USD"
+    },
+    {
+      "symbol": "PEPE",
+      "ccxt_symbol": "PEPE/USD",
+      "base": "PEPE",
+      "quote": "USD"
+    },
+    {
+      "symbol": "POL",
+      "ccxt_symbol": "POL/USD",
+      "base": "POL",
+      "quote": "USD"
+    },
+    {
+      "symbol": "RENDER",
+      "ccxt_symbol": "RENDER/USD",
+      "base": "RENDER",
+      "quote": "USD"
+    },
+    {
+      "symbol": "RVN",
+      "ccxt_symbol": "RVN/USD",
+      "base": "RVN",
+      "quote": "USD"
+    },
+    {
+      "symbol": "S",
+      "ccxt_symbol": "S/USD",
+      "base": "S",
+      "quote": "USD"
+    },
+    {
+      "symbol": "SAND",
+      "ccxt_symbol": "SAND/USD",
+      "base": "SAND",
+      "quote": "USD"
+    },
+    {
+      "symbol": "SHIB",
+      "ccxt_symbol": "SHIB/USD",
+      "base": "SHIB",
+      "quote": "USD"
+    },
+    {
+      "symbol": "SOL",
+      "ccxt_symbol": "SOL/USD",
+      "base": "SOL",
+      "quote": "USD"
+    },
+    {
+      "symbol": "SUI",
+      "ccxt_symbol": "SUI/USD",
+      "base": "SUI",
+      "quote": "USD"
+    },
+    {
+      "symbol": "SUSHI",
+      "ccxt_symbol": "SUSHI/USD",
+      "base": "SUSHI",
+      "quote": "USD"
+    },
+    {
+      "symbol": "THETA",
+      "ccxt_symbol": "THETA/USD",
+      "base": "THETA",
+      "quote": "USD"
+    },
+    {
+      "symbol": "TRUMP",
+      "ccxt_symbol": "TRUMP/USD",
+      "base": "TRUMP",
+      "quote": "USD"
+    },
+    {
+      "symbol": "TRX",
+      "ccxt_symbol": "TRX/USD",
+      "base": "TRX",
+      "quote": "USD"
+    },
+    {
+      "symbol": "UNI",
+      "ccxt_symbol": "UNI/USD",
+      "base": "UNI",
+      "quote": "USD"
+    },
+    {
+      "symbol": "VET",
+      "ccxt_symbol": "VET/USD",
+      "base": "VET",
+      "quote": "USD"
+    },
+    {
+      "symbol": "VTHO",
+      "ccxt_symbol": "VTHO/USD",
+      "base": "VTHO",
+      "quote": "USD"
+    },
+    {
+      "symbol": "XLM",
+      "ccxt_symbol": "XLM/USD",
+      "base": "XLM",
+      "quote": "USD"
+    },
+    {
+      "symbol": "XRP",
+      "ccxt_symbol": "XRP/USD",
+      "base": "XRP",
+      "quote": "USD"
+    },
+    {
+      "symbol": "ZIL",
+      "ccxt_symbol": "ZIL/USD",
+      "base": "ZIL",
+      "quote": "USD"
+    }
+  ]
+}
