@@ -7,6 +7,11 @@ import os
 import ccxt
 
 from ggTrader.data.core.constants import STABLE_BASES, SYMBOL_MAPPING
+from ggTrader.data.core.venue_listings import (
+    DEFAULT_LISTINGS_DIR,
+    filter_to_listed,
+    load_venue_listing_symbols,
+)
 
 SYMBOL_TO_NAME = {
     "AAVE": "Aave",
@@ -76,6 +81,7 @@ def generate_ccxt_universe(
     window: str = "24h",
     venue: str | None = None,
     min_volume: float = 0.0,
+    listings_dir: str = DEFAULT_LISTINGS_DIR,
 ):
     """Fetch tickers and select top volume USD pairs, optionally using historical windows.
 
@@ -137,6 +143,17 @@ def generate_ccxt_universe(
                 "name": full_name,
             }
         )
+
+    # Layer-1 availability intersection: keep only coins present in the venue's
+    # committed listings snapshot, BEFORE the volume floor / top-N cut. Fails loud
+    # if the snapshot is missing (no silent fall-through to an unfiltered universe).
+    listed_symbols = load_venue_listing_symbols(venue, listings_dir=listings_dir)
+    before = len(candidates)
+    candidates = filter_to_listed(candidates, listed_symbols)
+    print(
+        f"Availability filter ({venue}): {len(candidates)}/{before} USD candidates "
+        f"are in the listings snapshot."
+    )
 
     # Sort by 24h volume for the initial filter
     candidates.sort(key=lambda x: x["volume_24h"], reverse=True)

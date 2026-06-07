@@ -1,4 +1,6 @@
+import importlib.util
 import json
+from pathlib import Path as _Path
 
 import pytest
 
@@ -123,3 +125,50 @@ def test_write_empty_preserves_existing(monkeypatch, tmp_path):
         write_venue_listings("kraken", listings_dir=str(tmp_path))
     # existing good snapshot must be untouched
     assert existing.read_text() == '{"sentinel": true}'
+
+
+def _load_ranker():
+    path = _Path(__file__).resolve().parent.parent / "scripts" / "update_universe_ccxt.py"
+    spec = importlib.util.spec_from_file_location("update_universe_ccxt", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class _FakeRankExchange:
+    id = "kraken"
+
+    def load_markets(self):
+        return {}
+
+    def fetch_tickers(self):
+        return {
+            "BTC/USD": {"quoteVolume": 1000, "last": 1, "baseVolume": 1000},
+            "FOO/USD": {"quoteVolume": 900, "last": 1, "baseVolume": 900},
+            "ETH/USD": {"quoteVolume": 800, "last": 1, "baseVolume": 800},
+        }
+
+
+def test_ranker_drops_unlisted_before_topn(monkeypatch, tmp_path):
+    ranker = _load_ranker()
+    monkeypatch.setattr(ranker.ccxt, "kraken", lambda: _FakeRankExchange())
+
+    # snapshot lists BTC and ETH but NOT FOO
+    (tmp_path / "kraken_listings.json").write_text(
+        json.dumps({"listings": [{"symbol": "BTC"}, {"symbol": "ETH"}]})
+    )
+
+    out_path = tmp_path / "out.json"
+    ranker.generate_ccxt_universe(
+        limit=10,
+        output_path=str(out_path),
+        window="24h",
+        venue="kraken",
+        min_volume=0.0,
+        listings_dir=str(tmp_path),
+    )
+
+    results = json.loads(out_path.read_text())
+    symbols = {r["symbol"] for r in results}
+    assert "FOO" not in symbols
+    assert {"BTC", "ETH"} <= symbols
