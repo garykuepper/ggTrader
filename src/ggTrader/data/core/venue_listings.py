@@ -9,6 +9,9 @@ docs/superpowers/specs/2026-06-06-per-venue-availability-registry-design.md.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import ccxt
 
 from ggTrader.data.core.constants import STABLE_BASES, SYMBOL_MAPPING
@@ -73,3 +76,33 @@ def fetch_venue_listings(venue: str) -> list[dict]:
         seen.add(entry["symbol"])
         deduped.append(entry)
     return deduped
+
+
+def filter_to_listed(
+    candidates: list[dict], listed_symbols: set[str], key: str = "symbol"
+) -> list[dict]:
+    """Keep only candidates whose ``key`` value is in ``listed_symbols``.
+
+    Pure function; preserves input order.
+    """
+    return [c for c in candidates if c[key] in listed_symbols]
+
+
+def load_venue_listing_symbols(venue: str, listings_dir: str = DEFAULT_LISTINGS_DIR) -> set[str]:
+    """Load the set of available ``symbol`` values from a venue's snapshot.
+
+    Raises:
+        FileNotFoundError: If the snapshot does not exist (with a hint to run the
+            ``update_venue_listings`` command). The ranker must fail loud rather
+            than silently skip the availability filter.
+    """
+    venue = venue.lower()
+    path = Path(listings_dir) / f"{venue}_listings.json"
+    if not path.exists():
+        raise FileNotFoundError(
+            f"No availability snapshot at {path}. Run: "
+            f"python scripts/update_venue_listings.py --venue {venue}"
+        )
+    with open(path) as f:
+        payload = json.load(f)
+    return {entry["symbol"] for entry in payload.get("listings", [])}

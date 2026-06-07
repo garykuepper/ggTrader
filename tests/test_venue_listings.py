@@ -1,7 +1,7 @@
 import pytest
-from ggTrader.data.core.venue_listings import fetch_venue_listings
 
 from ggTrader.data.core import venue_listings
+from ggTrader.data.core.venue_listings import fetch_venue_listings
 
 # base/quote/active/spot mirror the ccxt market structure
 FAKE_MARKETS = {
@@ -58,3 +58,30 @@ def test_fetch_normalizes_and_keeps_first_ccxt_symbol(fake_kraken):
 def test_fetch_unsupported_venue_raises():
     with pytest.raises(ValueError):
         fetch_venue_listings("coinbase")
+
+
+import json
+
+from ggTrader.data.core.venue_listings import (
+    filter_to_listed,
+    load_venue_listing_symbols,
+)
+
+
+def test_filter_to_listed_drops_unlisted():
+    candidates = [{"symbol": "BTC"}, {"symbol": "FOO"}, {"symbol": "ETH"}]
+    kept = filter_to_listed(candidates, {"BTC", "ETH"})
+    assert [c["symbol"] for c in kept] == ["BTC", "ETH"]
+
+
+def test_load_symbols_returns_set(tmp_path):
+    (tmp_path / "kraken_listings.json").write_text(
+        json.dumps({"listings": [{"symbol": "BTC"}, {"symbol": "ETH"}]})
+    )
+    symbols = load_venue_listing_symbols("kraken", listings_dir=str(tmp_path))
+    assert symbols == {"BTC", "ETH"}
+
+
+def test_load_symbols_missing_file_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        load_venue_listing_symbols("kraken", listings_dir=str(tmp_path))
