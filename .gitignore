@@ -35,6 +35,10 @@ data/*.json
 data/live/
 !data/top_50_ccxt_volume.json
 
+# Per-venue availability snapshots (Layer 1 registry) — keep tracked
+!data/universe/
+!data/universe/*_listings.json
+
 # --- Research & Results (Selective Signal) ---
 # Ignore all result directories and log/txt files by default
 results/**/*
