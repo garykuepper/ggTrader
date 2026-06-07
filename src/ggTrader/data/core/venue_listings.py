@@ -21,6 +21,8 @@ from ggTrader.data.core.constants import STABLE_BASES, SYMBOL_MAPPING
 # Exchanges we support generating availability snapshots for.
 SUPPORTED_VENUES = {"kraken": ccxt.kraken, "binanceus": ccxt.binanceus}
 
+# Output directory for snapshots, relative to the process working directory
+# (callers run from the repo root, matching the rest of the data/ tooling).
 DEFAULT_LISTINGS_DIR = "data/universe"
 
 
@@ -44,7 +46,9 @@ def fetch_venue_listings(venue: str) -> list[dict]:
         raise ValueError(
             f"Unsupported venue: {venue!r} (expected one of {sorted(SUPPORTED_VENUES)})"
         )
-    exchange = exchange_cls()
+    # enableRateLimit matches every other ccxt caller in the project; load_markets
+    # can fan out to multiple HTTP requests on large venues.
+    exchange = exchange_cls({"enableRateLimit": True})
     markets = exchange.load_markets()
 
     listings: list[dict] = []
@@ -56,6 +60,8 @@ def fetch_venue_listings(venue: str) -> list[dict]:
         base = market.get("base") or ""
         if "." in base or ":" in base:
             continue
+        # SYMBOL_MAPPING is Kraken-specific (XXBT->BTC etc); a harmless no-op for
+        # other venues, which already use standard bases.
         std_base = SYMBOL_MAPPING.get(base, base)
         if std_base in STABLE_BASES:
             continue
@@ -63,7 +69,7 @@ def fetch_venue_listings(venue: str) -> list[dict]:
             {
                 "symbol": std_base,
                 "ccxt_symbol": ccxt_symbol,
-                "base": std_base,
+                "base": base,  # raw pre-normalization base, for audit/debug
                 "quote": "USD",
             }
         )
@@ -73,6 +79,8 @@ def fetch_venue_listings(venue: str) -> list[dict]:
     seen: set[str] = set()
     deduped: list[dict] = []
     for entry in listings:
+        # Stable sort preserves dict iteration order, so the first market id seen
+        # for a normalized symbol wins.
         if entry["symbol"] in seen:
             continue
         seen.add(entry["symbol"])
@@ -143,7 +151,11 @@ def write_venue_listings(venue: str, listings_dir: str = DEFAULT_LISTINGS_DIR) -
     }
 
     tmp_path = out_path.with_suffix(".json.tmp")
-    with open(tmp_path, "w") as f:
-        json.dump(payload, f, indent=2)
-    os.replace(tmp_path, out_path)
+    try:
+        with open(tmp_path, "w") as f:
+            json.dump(payload, f, indent=2)
+        os.replace(tmp_path, out_path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
     return out_path

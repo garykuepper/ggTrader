@@ -34,10 +34,20 @@ FAKE_MARKETS = {
         "active": True,
         "spot": True,
     },  # stable base -> drop
+    "BTC3L/USD": {
+        "base": "BTC3L.x",
+        "quote": "USD",
+        "active": True,
+        "spot": True,
+    },  # dot in base (synthetic/leveraged) -> drop
 }
 
 
 class _FakeExchange:
+    def __init__(self, *args, **kwargs):
+        # ccxt exchange classes accept a config dict; ignore it in the fake.
+        pass
+
     def load_markets(self):
         return FAKE_MARKETS
 
@@ -50,8 +60,13 @@ def fake_kraken(monkeypatch):
 def test_fetch_keeps_only_active_usd_spot_nonstable(fake_kraken):
     listings = fetch_venue_listings("kraken")
     symbols = [e["symbol"] for e in listings]
-    # BTC (deduped from BTC/USD + XXBT/USD) and ETH only; sorted
+    # BTC (deduped from BTC/USD + XXBT/USD) and ETH only; sorted. SOL (USDT quote),
+    # OLD (inactive), BTC/USD:USD (perp), USDT (stable), BTC3L (dot base) all dropped.
     assert symbols == ["BTC", "ETH"]
+
+
+def test_fetch_venue_is_case_insensitive(fake_kraken):
+    assert [e["symbol"] for e in fetch_venue_listings("KRAKEN")] == ["BTC", "ETH"]
 
 
 def test_fetch_normalizes_and_keeps_first_ccxt_symbol(fake_kraken):
