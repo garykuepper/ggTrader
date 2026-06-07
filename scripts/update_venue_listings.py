@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 
 from ggTrader.data.core.venue_listings import (
     DEFAULT_LISTINGS_DIR,
@@ -37,10 +38,21 @@ def main() -> None:
     args = parser.parse_args()
 
     venues = sorted(SUPPORTED_VENUES) if args.venue == "all" else [args.venue]
+    failures = []
     for venue in venues:
         print(f"Fetching live listings for {venue}...")
-        out_path = write_venue_listings(venue, listings_dir=args.out_dir)
-        print(f"  Wrote {out_path}")
+        try:
+            out_path = write_venue_listings(venue, listings_dir=args.out_dir)
+            print(f"  Wrote {out_path}")
+        except Exception as e:
+            # One venue failing (e.g. network) shouldn't block the others; the
+            # existing snapshot for that venue is left untouched. Report at the end.
+            failures.append(venue)
+            print(f"  FAILED {venue}: {type(e).__name__}: {e}")
+
+    if failures:
+        print(f"\nCompleted with failures: {', '.join(failures)}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

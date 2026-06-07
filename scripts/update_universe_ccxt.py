@@ -9,6 +9,7 @@ import ccxt
 from ggTrader.data.core.constants import STABLE_BASES, SYMBOL_MAPPING
 from ggTrader.data.core.venue_listings import (
     DEFAULT_LISTINGS_DIR,
+    SUPPORTED_VENUES,
     filter_to_listed,
     load_venue_listing_symbols,
 )
@@ -151,7 +152,7 @@ def generate_ccxt_universe(
     before = len(candidates)
     candidates = filter_to_listed(candidates, listed_symbols)
     print(
-        f"Availability filter ({venue}): {len(candidates)}/{before} USD candidates "
+        f"Availability filter ({exchange.id}): {len(candidates)}/{before} USD candidates "
         f"are in the listings snapshot."
     )
 
@@ -243,7 +244,7 @@ def main():
         "--venue",
         type=str,
         default=None,
-        choices=["kraken", "binanceus"],
+        choices=sorted(SUPPORTED_VENUES),
         help="Exchange to query (default: $EXCHANGE env var, else 'kraken').",
     )
     parser.add_argument(
@@ -253,6 +254,12 @@ def main():
         help="Minimum window USD volume floor; coins below it are dropped before the "
         "--limit cap. 0 (default) keeps legacy fixed top-N behavior.",
     )
+    parser.add_argument(
+        "--listings-dir",
+        type=str,
+        default=DEFAULT_LISTINGS_DIR,
+        help=f"Directory of per-venue listings snapshots (default: {DEFAULT_LISTINGS_DIR}).",
+    )
 
     args = parser.parse_args()
     generate_ccxt_universe(
@@ -261,6 +268,7 @@ def main():
         window=args.window,
         venue=args.venue,
         min_volume=args.min_volume,
+        listings_dir=args.listings_dir,
     )
 
 

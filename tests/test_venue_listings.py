@@ -141,7 +141,7 @@ class _FakeRankExchange:
     def load_markets(self):
         return {}
 
-    def fetch_tickers(self):
+    def fetch_tickers(self, symbols=None):
         return {
             "BTC/USD": {"quoteVolume": 1000, "last": 1, "baseVolume": 1000},
             "FOO/USD": {"quoteVolume": 900, "last": 1, "baseVolume": 900},
