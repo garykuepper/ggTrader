@@ -23,5 +23,12 @@ RUN pip install --no-cache-dir -e .
 # Create the data directory for persistence
 RUN mkdir -p /app/data
 
+# Run as a non-root user. uid 1000 matches the host user (flynn) so files written
+# to the mounted ./results, ./data, ./logs volumes are owned by the host user
+# rather than root. chown covers /app so the editable install and the runtime
+# .cache/indicators directory remain writable under the non-root user.
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
 # Default command: Start Live Exec Engine natively with Unbuffered output for log tailing
 CMD ["python", "-u", "ggt.py", "trade"]
