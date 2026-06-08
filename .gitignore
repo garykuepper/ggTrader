@@ -39,9 +39,11 @@ data/live/
 # Ignore all result directories and log/txt files by default
 results/**/*
 
-# BUT Always version-control the outcomes (Aggregated Data, Weights, Plots, Reports)
+# BUT Always version-control the outcomes (Weights, Plots, Reports).
+# NOTE: run_results.json is intentionally NOT whitelisted — these blobs are
+# large (0.6-1.2MB each), regenerable, and don't diff usefully. Keep only the
+# human-readable reports + small weight/stat summaries under version control.
 !results/**/
-!results/**/run_results.json
 !results/**/portfolio_weights.json
 !results/**/phase_stats.json
 !results/**/plots/
