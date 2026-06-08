@@ -98,6 +98,12 @@ def main() -> None:
         default=None,
         help="Identifier for the worker process",
     )
+    parser.add_argument(
+        "--exchange",
+        type=str,
+        default=None,
+        help="Override EXCHANGE data venue (e.g. kraken, binanceus)",
+    )
     args = parser.parse_args()
 
     # Default to all if none specified
@@ -116,6 +122,7 @@ def main() -> None:
         "EXPLICIT_RUN_DIR": args.run_dir,
         "PIPELINE_STAGE": args.pipeline_stage,
         "WORKER_ID": args.worker_id,
+        "EXCHANGE": args.exchange,
     }
     if args.symbols:
         config_overrides["SYMBOLS"] = args.symbols.split(",")
