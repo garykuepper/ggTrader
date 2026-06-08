@@ -44,7 +44,7 @@ venue via the `EXCHANGE` env var (passing `--venue` through, caching per-venue i
 
 ## Architecture
 
-```
+```text
 load_markets(venue) ──► data/universe/{venue}_listings.json      (Layer 1, git-committed)
                                    │
 live fetch_tickers(venue) ─ rank by 30d $vol ─ ∩ listings ─ floor ─ top-N ─► selected universe (Layer 2)
