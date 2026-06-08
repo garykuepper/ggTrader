@@ -35,6 +35,11 @@ def fees_for_exchange(exchange: str | None = None) -> float:
     misleading deployable set (e.g., Kraken-taker rates yield 0 passers
     even on universes where Binance.US fees would yield 30+).
     """
+    # Explicit per-run override (e.g. GGTRADER_FEES=0.0025 to research Kraken at the
+    # maker rate). No effect on existing runs when unset.
+    fee_override = os.getenv("GGTRADER_FEES")
+    if fee_override is not None:
+        return float(fee_override)
     venue = (exchange or os.getenv("EXCHANGE") or "kraken").lower()
     if venue == "binanceus":
         return FEES_BINANCEUS_TAKER

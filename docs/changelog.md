@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-06-08
+
+### Edge-search sweep (gates / universe / fees) — no deployable edge found
+
+Ran a structured sweep to answer why the default research run returns 0 coins and
+whether any deployable edge exists. Full writeup:
+[edge_search_report_2026-06-08.md](file:///home/flynn/ggTrader/docs/edge_search_report_2026-06-08.md).
+- **Findings:** fees dominate (Binance.US 0.02% yields a marginal +13.8% portfolio;
+  Kraken maker 0.25% on 100 coins yields **−10%**); widening the universe (11→51→100)
+  surfaces only more marginal coins; mean-reversion was the only entry style with any
+  life; every passing portfolio loses to BTC buy-and-hold. Cheap levers exhausted.
+- **Tooling added:** `scripts/gate_replay.py` (offline replay of the 4 aggregate gates
+  on a `wfo_stats_snapshot.json`, validated against live `[Gates]` verdicts) and a
+  `GGTRADER_FEES` env override in `utils/run_config.py:fees_for_exchange()` (no-op
+  unless set) for fee-tier experiments.
+- **Next lever:** strategy library (reversion-focused / regime-aware redesign), not
+  more threshold/universe runs.
+
 ## 2026-06-06
 
 ### Research tooling: offline verification harness for the cross-sectional strategy
