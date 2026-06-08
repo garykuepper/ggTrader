@@ -6,7 +6,7 @@
 
 Ran a structured sweep to answer why the default research run returns 0 coins and
 whether any deployable edge exists. Full writeup:
-[edge_search_report_2026-06-08.md](file:///home/flynn/ggTrader/docs/edge_search_report_2026-06-08.md).
+[edge_search_report_2026-06-08.md](file:///home/flynn/ggTrader/docs/archive/edge_search_report_2026-06-08.md).
 - **Findings:** fees dominate (Binance.US 0.02% yields a marginal +13.8% portfolio;
   Kraken maker 0.25% on 100 coins yields **−10%**); widening the universe (11→51→100)
   surfaces only more marginal coins; mean-reversion was the only entry style with any
@@ -83,7 +83,7 @@ predate the change (values are equivalent, but the cache was cleared to measure 
 ### WFO profiling: measured the real bottleneck (it's not the simulation)
 
 Answered the standing "vectorize `from_signals` / kill Python loops" request with a measured
-cProfile run instead of assumptions. Report: `docs/profiling_report_2026-06-05.md`; profile
+cProfile run instead of assumptions. Report: `docs/archive/profiling_report_2026-06-05.md`; profile
 artifact `results/profiling/wfo_20260605_103005_primary.prof`.
 
 **Harness bug fixed first:** `scripts/profile_wfo.sh` profiled `ggt.py research`, but
