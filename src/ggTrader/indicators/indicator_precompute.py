@@ -15,6 +15,9 @@ import vectorbt as vbt
 class PersistentIndicatorCache:
     """Manages disk-based caching of technical indicators to speed up repeats."""
 
+    # Class-level dictionary to cache indicators in memory across instances within the same process
+    _mem_cache: dict[str, Any] = {}
+
     def __init__(self, cache_dir: str = ".cache/indicators"):
         self.cache_dir = cache_dir
         if not os.path.exists(cache_dir):
@@ -36,6 +39,7 @@ class PersistentIndicatorCache:
 
     def save(self, data: Any, path: str) -> None:
         """Save indicator result to disk using compressed pickle."""
+        self._mem_cache[path] = data
         try:
             with gzip.open(path, "wb") as f:
                 pickle.dump(data, f)
@@ -44,11 +48,15 @@ class PersistentIndicatorCache:
 
     def load(self, path: str) -> Optional[Any]:
         """Load indicator result from disk if it exists."""
+        if path in self._mem_cache:
+            return self._mem_cache[path]
         if not os.path.exists(path):
             return None
         try:
             with gzip.open(path, "rb") as f:
-                return pickle.load(f)
+                data = pickle.load(f)
+                self._mem_cache[path] = data
+                return data
         except Exception as e:
             print(f"Warning: Failed to load cache from {path}: {e}")
             return None
