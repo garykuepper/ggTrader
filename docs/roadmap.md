@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last updated:** 2026-05-23 · **Status:** Phase 1 live on Binance.US (small size, legacy pre-reset params) · Crypto-only
+**Last updated:** 2026-06-08 · **Status:** Phase 1 deployed on Binance.US (legacy pre-reset params) but **zero fills since go-live** · Edge-search (2026-06-08) found no deployable crypto edge with the current signal library — cheap levers exhausted · Crypto-only today, **US-equities-via-Alpaca pivot under active reconsideration** (§5)
 
 This is the **single source of truth** for ggTrader's forward direction. Dated execution history lives in [`changelog.md`](changelog.md); the walk-forward-optimization (WFO) reset + venue-migration arc is closed out in [`superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md`](superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md).
 
@@ -12,8 +12,8 @@ This is the **single source of truth** for ggTrader's forward direction. Dated e
 
 ## Contents
 
-1. [North star](#1-north-star) — why we're migrating and what changes
-2. [In flight](#2-in-flight-next-6-weeks) — venue migration, hardening, methodology debt (time-bounded)
+1. [North star](#1-north-star) — revised thesis after the edge-search
+2. [In flight](#2-in-flight-next-6-weeks) — venue migration, hardening, methodology debt, strategy-library redesign (time-bounded)
 3. [Strategy methodology — beyond WFO](#3-strategy-methodology--beyond-wfo)
    - [3.1 Currently in the codebase](#31-currently-in-the-codebase)
    - [3.2 Pipeline integration debt](#32-methodology-debt--pipeline-integration)
@@ -29,11 +29,11 @@ This is the **single source of truth** for ggTrader's forward direction. Dated e
 
 | State | Detail |
 |---|---|
-| 🟢 **Live now** | Binance.US Phase 1 — legacy pre-reset params (ADA / DOGE / ETH / TRX), adaptive sizing capped at 10% per position, ~$140 portfolio. Venue validation phase, not strategy validation. |
-| 🟡 **Actively working** | Watching Phase 1 fills, balance reconciliation, API stability for 1–2 weeks before Phase 2 cutover. |
-| 🔵 **Next up** | Phase 2 — switch to textbook-validated set (BTC / DOGE / ETH / SUI / ZEC from today's research) once Phase 1 clean → TRX 90-day re-evaluation (2026-08-10) |
-| 🧪 **Open exploration** | 13 methodology directions in §3 — from regime-conditional sizing to deep reinforcement learning |
-| ⏸ **Deferred** | TRX deployment (90d), post-only limit entry on Kraken, stocks pipeline (removed) |
+| 🟢 **Live now** | Binance.US Phase 1 — legacy pre-reset params (ADA / DOGE / ETH / TRX), adaptive sizing capped at 10% per position, ~$137 portfolio. **Deployed 2026-05-23 but has never opened a trade** — the gates correctly find nothing tradeable in this regime. |
+| 🟡 **Actively working** | Strategy-library redesign (§2d). The 2026-06-08 edge-search proved the cheap levers (gates / universe size / venue fees) are exhausted: even at Binance.US 0.02%/side no combo beats BTC buy-and-hold. The only remaining crypto lever is a genuinely different signal set (reversion-focused / regime-aware), not more threshold runs. |
+| 🔵 **Next up** | Either (a) a redesigned crypto signal library that survives true out-of-sample (OOS) testing, or (b) **pivot to US equities via Alpaca** (§5). Phase 2 crypto param cutover is **on hold** — the 2026-05-23 "textbook-validated" set posted negative holdouts on re-test. |
+| 🧪 **Open exploration** | 13 methodology directions in §3 — now read through the edge-search lens: only methods that change the *signal or its conditioning*, not the *thresholds*, are worth the compute. |
+| ⏸ **Deferred** | Phase 2 crypto cutover, TRX deployment (90d, re-eval ≥ 2026-08-10), post-only limit entry on Kraken |
 
 **Status legend:** ✅ Done · 🟡 Active · 🔵 Next · ⚪ Idea · ⏸ Deferred
 
@@ -41,9 +41,9 @@ This is the **single source of truth** for ggTrader's forward direction. Dated e
 
 ## 1. North star
 
-Build a **flexible multi-strategy crypto trader** on **Binance.US** that exploits the venue's order-of-magnitude lower fees (0.04% round-trip vs Kraken Pro's 0.50–0.80% round-trip) to widen the set of strategies that survive real-world execution costs. The original walk-forward-optimization-on-momentum-signals pipeline is **one technique among several** — funding-rate carry, cash-and-carry, and (planned) machine-learning / regime-conditional methods all coexist behind the same data layer, execution layer, and risk envelope.
+Build a **flexible multi-strategy trader** with a clean data → signal → execution → risk envelope, and deploy capital only against an edge that survives true out-of-sample (OOS) testing. The walk-forward-optimization-on-momentum-signals pipeline is **one technique among several** — funding-rate carry, cash-and-carry, and (planned) machine-learning / regime-conditional methods all coexist behind the same data layer, execution layer, and risk envelope.
 
-Key insight from the WFO textbook-reset arc: at Kraken taker rates (0.80% round-trip) the deployable set was empty; at Binance.US taker (0.04% round-trip) the deployable set opens up to dozens of combos. **Fees, not signal alpha, were the binding constraint.** That changes which methodologies are worth exploring.
+**Revised thesis (2026-06-08).** The WFO textbook-reset arc suggested fees were the *sole* binding constraint: the deployable set was empty at Kraken taker (0.80% round-trip) and looked like it would open up at Binance.US taker (0.04% round-trip). The 2026-06-08 edge-search **disproved the optimistic half**: at Binance.US fees the realistic universe still yields **zero** full-cascade passers, and the widest universe's best portfolio (+13.8%) **loses to BTC buy-and-hold (+38.8%)** with no clean positive holdout. So the binding constraint is now understood as **fees *and* the current momentum signal library** — low fees were necessary but not sufficient. The forward direction is therefore: (a) redesign the signal library toward reversion / regime-aware methods (§3), and/or (b) take the same engine to a market where the existing methodology may have more room — **US equities via Alpaca (§5)**.
 
 ---
 
@@ -58,9 +58,9 @@ Key insight from the WFO textbook-reset arc: at Kraken taker rates (0.80% round-
 | ✅ | Binance.US smoke tests (auth, spread, depth) | Snapshots at `results/binanceus_smoke/snapshots.jsonl` |
 | ✅ | `BinanceUSSpotBroker` integration | `src/ggTrader/execution/binanceus_spot.py` |
 | ✅ | Historical OHLCV backfill — Binance.US top-50 universe (28 coins listed, 22 unlisted skipped cleanly) | Done 2026-05-23 via `scripts/backfill_binanceus_universe.py`. 19 coins have full 3-year history, 9 have partial. |
-| 🟡 | **Phase 1** — live trader on Binance.US with **legacy pre-reset params**, small size | Deployed 2026-05-23. 1–2 weeks operational validation: fill quality, spread, exchange API stability, balance reconciliation. Goal is venue mechanics, not strategy performance. |
+| 🟡 | **Phase 1** — live trader on Binance.US with **legacy pre-reset params**, small size | Deployed 2026-05-23. **Has never opened a trade** — the gates find nothing tradeable in this regime (consistent with the edge-search). Venue mechanics only partially validated: auth / data / heartbeat work, and a residential-IP rotation that broke the Binance.US key allowlist (`-2015` crash loop) was fixed 2026-06-04 by re-allowlisting — but fill quality and balance reconciliation remain **unexercised** because no order has fired. |
 | ✅ | **Phase 2 prerequisite** — fix legacy `MIN_ROBUSTNESS_SCORE` gate dropping textbook output ([#11](https://github.com/garykuepper/ggTrader/issues/11)) | Fixed 2026-05-22. Root cause: legacy gate threshold `0.1` incompatible with the textbook rank-composite score (structurally always negative). Set default to `None`; added guard in `_apply_wfo_selection_gates`; made `base_execution_engine.load_optimized_params` `None`-safe. Verified: research run produces populated `per_coin`, engine loads symbols, heartbeat completes. |
-| 🔵 | **Phase 2** — switch to **textbook-validated set** (BTC / DOGE / ETH / SUI / ZEC from 2026-05-23 research) | Only after Phase 1 validates cleanly. Discipline: never change venue + params simultaneously. |
+| ⏸ | **Phase 2** — switch to textbook-validated set | **On hold.** The 2026-05-23 "textbook-validated" set didn't survive re-test: 2026-06-08 holdouts were SUI **−8.06%** and DOGE **−1.29% / flat**. There is nothing to cut over to until the signal library is redesigned (§2d / §3) — swapping params is pointless when none have a positive OOS holdout. |
 | ⏸ | **TRX 90-day re-evaluation** (≥ 2026-08-10) | Criteria pre-registered in closure doc §5. Volume ≥ $500K/24h + spread ≤ 15bp → migrate; otherwise continue defer or unshelve Path B (Kraken maker-only for TRX). |
 
 ### 2b. Hardening / cleanup
@@ -83,6 +83,16 @@ Key insight from the WFO textbook-reset arc: at Kraken taker rates (0.80% round-
 | 🔵 | Grid-size-aware parameter coefficient-of-variation (CV) gate | Current 0.30 threshold is mechanically inflated for large parameter grids — `psar_adx` jumped from CV 0.39 (4 cells) to 1.22 (32 cells) without any actual instability change. Fix: either axis-aware CV (`unique_picks / grid_size_per_axis`) or `log(N_cells)`-relative threshold. Theory-justify before re-running. |
 | 🔵 | Pre-register *shape* metrics alongside distributional stats | Closure-doc §6 calibration lesson — gate-pass counts must be extracted on every research run, not retroactively reconstructed from worker logs. Cheap pipeline change. |
 
+### 2d. Strategy-library redesign (active focus — banked from the 2026-06-08 edge-search)
+
+The edge-search ([`archive/edge_search_report_2026-06-08.md`](archive/edge_search_report_2026-06-08.md)) closed out the "tune the cheap levers" hypothesis: gates, universe size, and venue/fees have all been swept and none produce a deployable crypto edge with the **current** entry library. The only remaining crypto lever is a different *signal*.
+
+| Status | Item | Notes |
+|:---:|---|---|
+| 🟡 | Reversion-focused entry set | Mean-reversion (`bbands_mean_reversion`, `rsi_reversal`) was the only style with any life in the sweep — every marginal passer used it. Worth a focused, theory-justified expansion rather than the current trend-heavy 11-entry grid. |
+| ⚪ | Regime-aware *signal selection* (not just sizing) | The edge cliff concentrates in chop regimes. See §3.3.A — but applied to *which signals fire*, not only position size. |
+| 🔵 | Wire up / de-mock the cross-sectional + HMM paradigm | The new `CrossSectionalMomentum` + HMM regime gate (landed 2026-06-06) is a whole-universe paradigm, evaluated offline via `scripts/run_cross_sectional_research.py`. It is **not wired to the per-coin live engine**, and the HMM emission features (VIX / funding / stablecoin flows) are still mocked. Real features + live integration are the gating work before it can matter. |
+
 ---
 
 ## 3. Strategy methodology — beyond WFO
@@ -91,11 +101,14 @@ Key insight from the WFO textbook-reset arc: at Kraken taker rates (0.80% round-
 
 The codebase now hosts three distinct methodologies. The roadmap goal is to keep that pluralism — different markets reward different techniques, and a single-methodology bot is fragile.
 
+> **Edge-search lens (2026-06-08).** Cheap levers (gates, universe, fees) are exhausted — see §2d. Re-read this menu accordingly: directions that change the **signal or its conditioning** (A regime sizing, C robust selection, D ML gate, E stat-arb, plus the reversion-focused entry set) now rank above anything that only re-tunes thresholds or re-weights the existing momentum entries — those will not clear the OOS bar the sweep just established.
+
 ### 3.1 Currently in the codebase
 
 | Status | Methodology | Where |
 |:---:|---|---|
-| ✅ | **WFO on directional momentum signals** — live. 11 entry × 3 exit, monthly recalibration. Currently on legacy pre-reset params; migration to textbook-validated 22-combo set is Phase 2 above. | `core/wfo.py`, `core/orchestrator.py`, `indicators/strategies.py` |
+| ✅ | **WFO on directional momentum signals** — live. 11 entry × 3 exit, monthly recalibration. Currently on legacy pre-reset params; Phase 2 param cutover is on hold (no positive-holdout set exists — §2d). | `core/wfo.py`, `core/orchestrator.py`, `indicators/strategies.py` |
+| 🧪 | **Cross-sectional momentum + HMM regime gate** — landed 2026-06-06, **offline-only**. Whole-universe ranking paradigm with a Hidden Markov Model regime filter; evaluated via `run_cross_sectional_research.py` (writes `run_type='cross_sectional_research'`, ignored by the live trader). HMM emission features still mocked. Not wired to the per-coin live engine — see §2d. | `strategies/momentum/cross_sectional.py`, `strategies/regime/hmm_filter.py`, `backtesting/wfo.py` |
 | ✅ | **Cash-and-carry (CashAndCarryBTC)** — Phase 3.5. Runs against synthetic basis; needs Kraken Futures historical data (or a venue with linear dated quarterlies) for real-data backtest. See [`archive/kraken_futures_backfill_design.md`](archive/kraken_futures_backfill_design.md). | `strategies/carry/cash_and_carry.py` |
 | ✅ | **Funding-rate carry (FundingCarryBTC)** — Phase 4. Long spot + short PF_XBTUSD perp; harvest funding. Hysteretic thresholds. Backtested on real Kraken funding-rate history (2025-05-15 → 2026-05-18). | `strategies/carry/funding_carry.py` |
 
@@ -217,6 +230,12 @@ A read-only monitor that compares Binance.US, Kraken, Coinbase, OKX prices on th
 | Status | Item | Notes |
 |:---:|---|---|
 | ✅ | Binance.US data architecture | Multi-venue OHLCV schema verified end-to-end (2026-05-23). 28 of top-50 Binance.US coins backfilled; 22 unlisted skipped cleanly. |
+| ✅ | Per-venue availability (listing) registry | 2026-06-07. Layer-1/2 per-venue listing snapshots under `data/universe/*_listings.json`; the ranker now **hard-fails without a snapshot** instead of silently ranking unlistable coins. |
+| ✅ | Research backtests on the execution venue | 2026-06-04. `EXCHANGE`-aware data resolution so WFO optimizes on Binance.US order books (not Kraken) and auto-tails fresh bars past the 05-23 go-live freeze. |
+| ✅ | Volume-floor research universe | 2026-06-04. Universe selected by a min avg-daily-USD floor ($50K/day → ~15 liquid Binance.US pairs) instead of a fixed top-N; fixed a sum-masquerading-as-average bug (~30× inflation). |
+| ✅ | WFO metric extraction — 2.07× faster | 2026-06-05. Collapsed per-fold vectorbt metric accessors (58% of runtime) to a single `returns()` extraction + vbt numba kernels. Bit-identical; all gate verdicts unchanged. |
+| ✅ | Offline gate-replay + fee-override tooling | 2026-06-08. `scripts/gate_replay.py` replays the 4 aggregate gates on a snapshot; `GGTRADER_FEES` env override in `run_config.py` for fee-tier experiments. |
+| ✅ | Container runs as non-root `appuser` (uid 1000) | 2026-06-07. Dockerfile hardening; results tree chowned off root. |
 | ⚪ | MLflow experiment tracking for WFO runs | ~4h. Runs are currently directories under `results/research/`; a visual diff + search interface would be a material UX improvement. |
 | ✅ | Per-run `wfo_stats_snapshot.json` | Landed during WFO arc. Discipline: never purge the cache before reading what the run produced. |
 | ⚪ | Large language model (LLM) post-mortem reports | ~4h. Auto-generate natural-language performance commentary for the daily PnL report. |
@@ -232,7 +251,7 @@ A read-only monitor that compares Binance.US, Kraken, Coinbase, OKX prices on th
 | ⏸ | Post-only limit entry on Kraken | Binance.US 0.02% taker is 12× cheaper than Kraken 0.25% maker. No code complexity needed. Spec at [`superpowers/specs/2026-05-12-post-only-limit-entry.md`](superpowers/specs/2026-05-12-post-only-limit-entry.md) — kept as reference for the 90-day TRX re-eval scenario. |
 | ⏸ | TRX deployment (90-day defer) | Binance.US TRX volume too thin ($2K/24h, 1246× less than Kraken). Re-eval criteria pre-registered (closure doc §5). |
 | ⚪ | Multi-timeframe gates (4h on daily trend) | Carried over from prior roadmap. Worth revisiting after methodology pluralism (§3.3) is in place. |
-| ⏸ | Stocks pipeline (removed) | Purged 2026-05-08. Crypto-only project. |
+| 🔵 | **US equities via Alpaca — under active reconsideration (2026-06-08)** | The stocks pipeline was purged 2026-05-08 to focus on crypto, but with the crypto edge-search exhausted (§2d) this is back on the table as a parallel direction: point the same data → signal → execution → risk engine at US equities through the **Alpaca API + Alpaca CLI**. Reference material was archived, not deleted — see [`archive/stock_trading_plan.md`](archive/stock_trading_plan.md) and [`archive/alpaca_cli.md`](archive/alpaca_cli.md). Scope as its own brainstorm before committing: market-hours / pattern-day-trader (PDT) rules, fractional shares, data feed (IEX vs SIP), and how much of the crypto risk envelope transfers. |
 
 ---
 
