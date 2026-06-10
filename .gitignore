@@ -39,6 +39,9 @@ data/live/
 # Per-venue availability snapshots (Layer 1 registry) — keep tracked
 !data/universe/
 !data/universe/*_listings.json
+# Equity universe data: PIT constituent history + static index snapshots
+!data/universe/sp500_constituents_history.csv.gz
+!data/universe/*_tickers_snapshot_*.txt
 
 # --- Research & Results (Selective Signal) ---
 # Ignore all result directories and log/txt files by default
