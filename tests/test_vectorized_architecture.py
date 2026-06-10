@@ -25,7 +25,6 @@ from ggTrader.indicators.strategies import (
     get_entry_strategy,
     get_exit_strategy,
 )
-from ggTrader.indicators.vectorized_signals import generate_psar_adx_entries_vectorized
 
 
 # Fixtures
@@ -134,10 +133,10 @@ class TestIndicatorPrecomputer:
 
 
 class TestVectorizedSignals:
-    """Test vectorized signal generation."""
+    """Test vectorized multi-combo signal generation via the strategy registry."""
 
     def test_psar_adx_entries(self, sample_ohlcv):
-        """Test vectorized PSAR+ADX entry generation."""
+        """Test vectorized PSAR+ADX entry generation across a param grid."""
         close, high, low, _ = sample_ohlcv
         pc = IndicatorPrecomputer(close, high, low)
 
@@ -149,7 +148,7 @@ class TestVectorizedSignals:
             "use_dmp_cross": [False],
         }
 
-        entries, param_combos = generate_psar_adx_entries_vectorized(pc, param_grid)
+        entries, param_combos = PsarAdxEntry(use_dmp_cross=False).compute_entries(pc, param_grid)
 
         assert entries.shape[0] == 500  # n_time
         assert entries.shape[1] == 4 * 3  # n_combos * n_symbols (2*2*1 combos, 3 symbols)

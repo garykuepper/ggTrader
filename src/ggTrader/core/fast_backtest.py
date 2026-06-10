@@ -13,11 +13,6 @@ from ggTrader.indicators.strategies import (
     get_entry_strategy,
     get_exit_strategy,
 )
-from ggTrader.utils.vbt_patches import apply_vbt_patches
-
-# Apply patches immediately on import
-apply_vbt_patches()
-
 
 # Defaults for portfolio-level config keys
 _DEFAULT_CONFIG = {
@@ -88,16 +83,6 @@ def _merge_entry_exit_param_combos(
                 row[k] = float(v) if isinstance(v, (float, np.floating)) else v
             out.append(row)
     return out
-
-
-def _merge_entry_atr_param_combos(
-    entry_combos: List[dict],
-    strat_params: dict,
-) -> List[dict]:
-    """Legacy alias kept for backward compatibility; delegates to the generic helper."""
-    return _merge_entry_exit_param_combos(
-        entry_combos, strat_params, ("atr_length", "atr_multiplier")
-    )
 
 
 class FastBacktest:

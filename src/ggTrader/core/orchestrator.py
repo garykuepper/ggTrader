@@ -21,7 +21,6 @@ from ggTrader.core.metrics import (  # noqa: F401
     _max_drawdown_for_train_gate,
     _open_position_count_end_for_gate,
     _print_wfo_fold_all_rejected_diagnostics,
-    _profit_factor_series,
     _trade_counts_for_train_gate,
     _train_metric_series,
 )

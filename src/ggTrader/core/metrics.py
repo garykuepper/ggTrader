@@ -31,7 +31,8 @@ def _returns_based_metrics(pf_train: Any) -> Tuple[pd.Series, pd.Series, pd.Seri
     if isinstance(ret, pd.Series):
         ret = ret.to_frame()
     cols = ret.columns
-    arr = np.asarray(ret.values, dtype=np.float64)
+    # copy=True: numba kernels need writable arrays; vbt can hand back read-only views.
+    arr = np.array(ret.values, dtype=np.float64, copy=True)
     if arr.ndim == 1:
         arr = arr.reshape(-1, 1)
     ann = _ann_factor_for(pf_train)
@@ -54,7 +55,8 @@ def _fold_stats_metrics(pf: Any) -> Dict[str, pd.Series]:
     ret = pf.returns()
     ret_df = ret.to_frame() if isinstance(ret, pd.Series) else ret
     cols = ret_df.columns
-    arr = np.asarray(ret_df.values, dtype=np.float64)
+    # copy=True: numba kernels need writable arrays; vbt can hand back read-only views.
+    arr = np.array(ret_df.values, dtype=np.float64, copy=True)
     if arr.ndim == 1:
         arr = arr.reshape(-1, 1)
     ann = _ann_factor_for(pf)
@@ -156,6 +158,34 @@ def _calmar_ratio_series(
     return tr / denom
 
 
+def _profit_factor_raw(pf: Any) -> pd.Series:
+    """Per-group profit factor = gross_profit / |gross_loss| from raw trade PnL.
+
+    Matches vbt's ``Trades.profit_factor()`` semantics — no trades -> NaN,
+    all-win -> inf, all-loss -> 0.0 — without its in-place NaN masking, which
+    crashes on the read-only arrays vbt's numba-backed accessors can return
+    (the reason ``vbt_patches.py`` used to exist).
+    """
+    trades = pf.trades
+    pnl = np.array(trades.pnl.values, dtype=np.float64, copy=True)
+    col_arr = np.asarray(trades.col_mapper.col_arr)
+    groups = np.asarray(trades.wrapper.grouper.get_groups())
+    labels = trades.wrapper.grouper.get_columns()
+    n_groups = len(labels)
+    total_win = np.zeros(n_groups, dtype=np.float64)
+    total_loss = np.zeros(n_groups, dtype=np.float64)
+    counts = np.zeros(n_groups, dtype=np.float64)
+    if pnl.size:
+        gidx = groups[col_arr]
+        np.add.at(total_win, gidx, np.where(pnl > 0, pnl, 0.0))
+        np.add.at(total_loss, gidx, np.where(pnl < 0, pnl, 0.0))
+        np.add.at(counts, gidx, 1.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = total_win / np.abs(total_loss)
+    result[counts == 0] = np.nan
+    return pd.Series(result, index=labels, name="profit_factor")
+
+
 def _profit_factor_series(pf_train: Any) -> pd.Series:
     """Per-combo profit factor, mean-centred: (gross_profit/gross_loss - 1), clipped [-3, 3].
 
@@ -163,7 +193,7 @@ def _profit_factor_series(pf_train: Any) -> pd.Series:
     NaN (no trades) propagates — the outer ``m.where(so.notna(), nan)`` gate then
     removes those combos, consistent with the Sortino NaN convention.
     """
-    raw = pf_train.trades.profit_factor()
+    raw = _profit_factor_raw(pf_train)
     if not isinstance(raw, pd.Series):
         raw = pd.Series([float(raw)])
     return (raw - 1.0).clip(lower=-3.0, upper=3.0).astype(float)

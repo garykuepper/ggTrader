@@ -44,8 +44,15 @@ def _make_pf():
     exits.iloc[380] = True
     entries.loc[:, "none"] = False  # no-trade column
     return vbt.Portfolio.from_signals(
-        close=prices, entries=entries, exits=exits, init_cash=1000.0,
-        fees=2e-4, slippage=3e-3, freq="4h", size=0.3, size_type="percent",
+        close=prices,
+        entries=entries,
+        exits=exits,
+        init_cash=1000.0,
+        fees=2e-4,
+        slippage=3e-3,
+        freq="4h",
+        size=0.3,
+        size_type="percent",
     ).copy()
 
 
@@ -98,12 +105,26 @@ def test_calmar_matches_accessor_derivation():
     assert _eq(_calmar_ratio_series(pf).values, ref.values)
 
 
+def _native_profit_factor_reference(trades) -> pd.Series:
+    """vbt's Trades.profit_factor() formula on writable copies — the real accessor
+    mutates in place and crashes on the read-only views vbt can return (the bug
+    metrics._profit_factor_raw exists to avoid)."""
+    total_win = np.array(np.atleast_1d(np.asarray(trades.winning.pnl.sum())), dtype=float)
+    total_loss = np.array(np.atleast_1d(np.asarray(trades.losing.pnl.sum())), dtype=float)
+    has_values = np.atleast_1d(np.asarray(trades.count())) > 0
+    total_win[np.isnan(total_win) & has_values] = 0.0
+    total_loss[np.isnan(total_loss) & has_values] = 0.0
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = total_win / np.abs(total_loss)
+    return pd.Series(result, index=trades.wrapper.grouper.get_columns())
+
+
 def test_composite_train_metric_identical_to_raw_accessor_reference():
     pf = _make_pf()
     # Reference composite built from RAW vbt accessors + the documented rank logic.
     so = pf.sortino_ratio()
     ca = (pf.total_return() / pf.max_drawdown().abs().replace(0, np.nan)).reindex(so.index)
-    pf_s = ((pf.trades.profit_factor() - 1.0).clip(-3, 3)).reindex(so.index)
+    pf_s = ((_native_profit_factor_reference(pf.trades) - 1.0).clip(-3, 3)).reindex(so.index)
     mean_rank = pd.concat(
         [
             so.rank(ascending=False, method="average"),

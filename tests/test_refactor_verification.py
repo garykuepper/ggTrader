@@ -2,30 +2,9 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
-import vectorbt as vbt
 
-import ggTrader.utils.vbt_patches as vbt_patches
 from ggTrader.core.fast_backtest import FastBacktest
 from ggTrader.utils.setup import load_data_with_movers
-
-
-def test_vbt_patches_applied():
-    """Verify that VBT patches are applied."""
-    # Check if reshape_fns.to_1d_array is the patched version
-    # Access the function and check if it has the _ensure_writable logic or if it's the wrapper
-    # Since we can't easily inspect the code object, we can check if it returns a writable array
-    # from a read-only input that VBT would typically produce or just a manually created RO array.
-
-    ro_array = np.array([1, 2, 3])
-    ro_array.flags.writeable = False
-
-    # Use the patched function directly
-    res = vbt_patches._patched_to_1d_array(ro_array)
-    assert res.flags.writeable, "Patched to_1d_array should return writable array"
-
-    # Check if a class has the patched property
-    # Trades.total_profit should be patched
-    assert hasattr(vbt.Portfolio.from_signals, "__call__"), "Sanity check"
 
 
 @patch("ggTrader.utils.setup.load_data_and_setup")
