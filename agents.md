@@ -93,7 +93,7 @@ ggTrader is an algorithmic crypto trading bot designed for Binance.US and Kraken
    * Aggregation: Prefer Notional Volume (`volume * close`) for cross-asset ranking to account for price discrepancies.
 9. **Path Safety**: Always use `os.path.join` or `pathlib.Path` for file paths. Resolve project root dynamically.
 10. **Error Handling**: Data loading functions must raise descriptive exceptions (e.g., `ValueError`, `FileNotFoundError`) on failure. Avoid returning `None` from functions expected to return iterables (handle empty data by returning empty structures).
-11. **Vectorization First**: Avoid iterating over rows in DataFrames for signal calculation. Use `vectorbt`, `numpy`, or `pandas` vectorized operations. Use `SignalFactory.run()` for indicator logic.
+11. **Vectorization First**: Avoid iterating over rows in DataFrames for signal calculation. Use `vectorbt`, `numpy`, or `pandas` vectorized operations. Strategy signals go through the entry/exit registries (`indicators/strategies.py`); indicators come from `IndicatorPrecomputer`.
 
 ### Jupyter Notebook Standards
 1. **Imports from `src`**: Notebooks must import core logic and indicators from `src`. Do not define complex strategy classes inline. Notebooks are for orchestration, analysis, and visualization only.

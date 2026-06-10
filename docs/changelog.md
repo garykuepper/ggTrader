@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-06-10
+
+### Core refactor: legacy signal path deleted; vectorbt-native engine only
+
+Aggressive simplification across 5 commits (`4e7af64` → `ee705e0`), validated with
+deterministic before/after snapshots (vectorized grid output **bit-identical**):
+- **Deleted** the scalar `SignalFactory`/`Signals` path and the `USE_VECTORIZED`
+  flag — every call site (WFO test folds, frozen replay, smoke/holdout, portfolio
+  optimizer) now uses the vectorized registry path. This **fixes two real bugs**:
+  the legacy path always ran psar_adx regardless of `ENTRY_STRATEGY` (frozen
+  replays of other strategies were silently wrong), and vbt's `from_pandas_ta("adx")`
+  wrapper mismapped the DMP/DMN columns (verified vs pandas_ta ground truth).
+- **Deleted** `utils/vbt_patches.py` monkey-patching: explicit array copies at the
+  extraction sites in `core/metrics.py`, plus raw profit-factor/expectancy
+  computation (`_profit_factor_raw`, `_expectancy_raw`) and `safe_portfolio_stats()`
+  for `pf.stats()` callers (vbt 0.28.5's native trade accessors mutate
+  numba-returned read-only arrays).
+- **Deleted** `indicators/vectorized_signals.py` (dead) and the indicator disk
+  cache (in-memory FIFO-bounded shared cache kept).
+- **Added** `avg_holding_days` to `FastBacktest.get_stats()`.
+- Test suite 260 passed; 3 pre-existing failures unchanged from baseline.
+
+### Equity research: point-in-time S&P 500 + honest monthly walk-forward harness
+
+Replaced the 5 duplicated stock research scripts with a research package and an
+out-of-sample-by-construction harness — full writeup:
+[equity_monthly_walkforward.md](file:///home/flynn/ggTrader/docs/equity_monthly_walkforward.md).
+- `data/core/index_constituents.py`: point-in-time S&P 500 membership (committed
+  history file, 1996→2026); `research/equity_wfo.py` + `research/monthly_walkforward.py`;
+  CLIs `scripts/equity_wfo_research.py` and `scripts/sp500_monthly_walkforward.py`.
+- Monthly loop: at each month-end T, full 11×3 entry×exit tournament per stock on a
+  2-year trailing window (data ≤ T only), select top-50 by OOS robustness, trade the
+  next month frozen, stitch. Checkpointed/resumable; `--leak-check` verifies the
+  selection layer has no lookahead (**passes**).
+- `CachedYFinanceLoader` rewritten: per-symbol freshness, `venue='yfinance'`,
+  TimescaleDB-backed incremental fetch.
+- Archived both 2026-06-09 draft docs to `docs/archive/` with corrections preambles
+  (fabricated vbt APIs; selection-biased Sharpe 2.15).
+
 ## 2026-06-08
 
 ### Edge-search sweep (gates / universe / fees) — no deployable edge found
