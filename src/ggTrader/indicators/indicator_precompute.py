@@ -1,9 +1,6 @@
 """Indicator pre-computation and caching layer for vectorized signal generation."""
 
-import gzip
 import hashlib
-import os
-import pickle
 from types import SimpleNamespace
 from typing import Any, Optional
 
@@ -12,66 +9,37 @@ import pandas as pd
 import vectorbt as vbt
 
 
-class PersistentIndicatorCache:
-    """Manages disk-based caching of technical indicators to speed up repeats."""
+def get_data_hash(high: np.ndarray, low: np.ndarray, close: np.ndarray) -> str:
+    """Create a unique hash of the input price data.
 
-    # Class-level dictionary to cache indicators in memory across instances within the same process
-    _mem_cache: dict[str, Any] = {}
-
-    def __init__(self, cache_dir: str = ".cache/indicators"):
-        self.cache_dir = cache_dir
-        if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir, exist_ok=True)
-
-    def get_data_hash(self, high: np.ndarray, low: np.ndarray, close: np.ndarray) -> str:
-        """Create a unique hash of the input price data."""
-        # Use first and last few points + total sum for speed, or full bytes for safety.
-        # Combined bytes of all 3 arrays ensures we don't mix up different assets.
-        combined = b"".join([high.tobytes(), low.tobytes(), close.tobytes()])
-        return hashlib.sha256(combined).hexdigest()[:16]
-
-    def get_cache_path(self, data_hash: str, indicator_name: str, params: tuple) -> str:
-        """Build a stable file path for the cached indicator result."""
-        # Param hash handles the combinatorial grid variations (length, etc).
-        param_str = hashlib.md5(str(params).encode()).hexdigest()[:8]
-        filename = f"{data_hash}_{indicator_name}_{param_str}.pkl.gz"
-        return os.path.join(self.cache_dir, filename)
-
-    def save(self, data: Any, path: str) -> None:
-        """Save indicator result to disk using compressed pickle."""
-        self._mem_cache[path] = data
-        try:
-            with gzip.open(path, "wb") as f:
-                pickle.dump(data, f)
-        except Exception as e:
-            print(f"Warning: Failed to save cache to {path}: {e}")
-
-    def load(self, path: str) -> Optional[Any]:
-        """Load indicator result from disk if it exists."""
-        if path in self._mem_cache:
-            return self._mem_cache[path]
-        if not os.path.exists(path):
-            return None
-        try:
-            with gzip.open(path, "rb") as f:
-                data = pickle.load(f)
-                self._mem_cache[path] = data
-                return data
-        except Exception as e:
-            print(f"Warning: Failed to load cache from {path}: {e}")
-            return None
+    Combined bytes of all 3 arrays ensure different assets/windows never collide.
+    """
+    combined = b"".join([high.tobytes(), low.tobytes(), close.tobytes()])
+    return hashlib.sha256(combined).hexdigest()[:16]
 
 
 class IndicatorPrecomputer:
     """Computes technical indicators once per parameter range and caches results.
 
     Eliminates redundant per-combo indicator recalculation by pre-computing
-    each indicator (PSAR, ADX, ATR) across all parameter values, then using
-    numpy broadcasting to combine them in signal logic.
+    each indicator (PSAR, ADX, ATR, ...) across all parameter values, then
+    using numpy broadcasting to combine them in signal logic.
+
+    Caching is two-level and in-memory only (the old gzip-pickle disk layer
+    was removed — research re-runs recompute, which is cheap):
+    - ``self._cache``: per-instance, cleared by ``clear_cache()``.
+    - ``IndicatorPrecomputer._shared_cache``: process-wide, keyed by
+      (data_hash, indicator, params), so repeated runs over the same window
+      (e.g. one FastBacktest per strategy combo in a WFO sweep) reuse
+      indicator arrays across instances. Bounded FIFO to keep memory flat
+      in long multi-window loops.
     """
 
+    _shared_cache: dict[tuple[str, str, Any], Any] = {}
+    _shared_cache_max_entries: int = 256
+
     def __init__(self, close: np.ndarray, high: np.ndarray, low: np.ndarray):
-        """Initialize with OHLCV arrays and setup disk cache."""
+        """Initialize with OHLCV arrays."""
         self.close = self._to_ndarray(close)
         self.high = self._to_ndarray(high)
         self.low = self._to_ndarray(low)
@@ -79,9 +47,7 @@ class IndicatorPrecomputer:
         # In-memory cache for the current run
         self._cache: dict[tuple[str, Any], Any] = {}
 
-        # Persistent disk cache
-        self._disk_cache = PersistentIndicatorCache()
-        self._data_hash = self._disk_cache.get_data_hash(self.high, self.low, self.close)
+        self._data_hash = get_data_hash(self.high, self.low, self.close)
 
     @staticmethod
     def _to_ndarray(x: object) -> np.ndarray:
@@ -124,24 +90,32 @@ class IndicatorPrecomputer:
         return SimpleNamespace(**outputs)
 
     def _get_persistent(self, name: str, params: dict) -> Optional[Any]:
-        """Check both in-memory and disk cache."""
+        """Check the instance cache, then the process-wide shared cache."""
         key = self._make_cache_key(name, params)
         if key in self._cache:
             return self._cache[key]
 
-        path = self._disk_cache.get_cache_path(self._data_hash, name, key[1])
-        data = self._disk_cache.load(path)
+        shared_key = (self._data_hash, *key)
+        data = IndicatorPrecomputer._shared_cache.get(shared_key)
         if data is not None:
             self._cache[key] = data
         return data
 
-    def _save_persistent(self, name: str, params: dict, data: Any) -> None:
-        """Save to both in-memory and disk cache."""
+    def _save_persistent(self, name: str, params: dict, data: Any) -> SimpleNamespace:
+        """Save to the instance cache and the process-wide shared cache.
+
+        Returns the wrapped (plain-ndarray) form so compute_* methods hand out
+        the same object on first call and cache hits alike.
+        """
         wrapped = self._wrap_indicator(data)
         key = self._make_cache_key(name, params)
         self._cache[key] = wrapped
-        path = self._disk_cache.get_cache_path(self._data_hash, name, key[1])
-        self._disk_cache.save(wrapped, path)
+
+        shared = IndicatorPrecomputer._shared_cache
+        shared[(self._data_hash, *key)] = wrapped
+        while len(shared) > self._shared_cache_max_entries:
+            shared.pop(next(iter(shared)))
+        return wrapped
 
     def compute_psar(
         self,
@@ -178,8 +152,7 @@ class IndicatorPrecomputer:
                 maximum=maxim,
                 param_product=True,
             )
-        self._save_persistent("psar", params, psar_ind)
-        return psar_ind
+        return self._save_persistent("psar", params, psar_ind)
 
     def compute_adx(
         self,
@@ -226,8 +199,7 @@ class IndicatorPrecomputer:
         dmp_arr = np.column_stack(dmp_cols) if dmp_cols else np.full((n_time, 0), np.nan)
         dmn_arr = np.column_stack(dmn_cols) if dmn_cols else np.full((n_time, 0), np.nan)
         adx_ind = SimpleNamespace(adx=adx_arr, dmp=dmp_arr, dmn=dmn_arr)
-        self._save_persistent("adx", params, adx_ind)
-        return adx_ind
+        return self._save_persistent("adx", params, adx_ind)
 
     def compute_atr(
         self,
@@ -253,8 +225,7 @@ class IndicatorPrecomputer:
                 length=[int(lo) for lo in lengths],
                 param_product=True,
             )
-        self._save_persistent("atr", params, atr_ind)
-        return atr_ind
+        return self._save_persistent("atr", params, atr_ind)
 
     def compute_ema(
         self,
@@ -276,8 +247,7 @@ class IndicatorPrecomputer:
             ema_ind = vbt.IndicatorFactory.from_pandas_ta("ema").run(
                 self.close, length=[int(lo) for lo in lengths], param_product=True
             )
-        self._save_persistent("ema", params, ema_ind)
-        return ema_ind
+        return self._save_persistent("ema", params, ema_ind)
 
     def compute_rsi(
         self,
@@ -299,8 +269,7 @@ class IndicatorPrecomputer:
             rsi_ind = vbt.IndicatorFactory.from_pandas_ta("rsi").run(
                 self.close, length=[int(lo) for lo in lengths], param_product=True
             )
-        self._save_persistent("rsi", params, rsi_ind)
-        return rsi_ind
+        return self._save_persistent("rsi", params, rsi_ind)
 
     def compute_macd(
         self,
@@ -337,8 +306,7 @@ class IndicatorPrecomputer:
                 signal=[int(x) for x in signals],
                 param_product=True,
             )
-        self._save_persistent("macd", params, macd_ind)
-        return macd_ind
+        return self._save_persistent("macd", params, macd_ind)
 
     def compute_bbands(
         self,
@@ -365,8 +333,7 @@ class IndicatorPrecomputer:
                 std=std_f,
                 param_product=True,
             )
-        self._save_persistent("bbands", params, bb_ind)
-        return bb_ind
+        return self._save_persistent("bbands", params, bb_ind)
 
     def compute_donchian(
         self,
@@ -385,8 +352,7 @@ class IndicatorPrecomputer:
             dc_ind = vbt.IndicatorFactory.from_pandas_ta("donchian").run(
                 self.high, self.low, lower_length=le_val, upper_length=le_val
             )
-            self._save_persistent("donchian", params, dc_ind)
-            return dc_ind
+            return self._save_persistent("donchian", params, dc_ind)
 
         dcu_stack: list[np.ndarray] = []
         dcl_stack: list[np.ndarray] = []
@@ -402,8 +368,7 @@ class IndicatorPrecomputer:
         dcu_3d = np.stack(dcu_stack, axis=1)
         dcl_3d = np.stack(dcl_stack, axis=1)
         wrapped = SimpleNamespace(dcu=dcu_3d, dcl=dcl_3d)
-        self._save_persistent("donchian", params, wrapped)
-        return wrapped
+        return self._save_persistent("donchian", params, wrapped)
 
     def compute_supertrend(
         self,
@@ -430,8 +395,7 @@ class IndicatorPrecomputer:
                 length=int(lengths[0]),
                 multiplier=float(mults[0]),
             )
-            self._save_persistent("supertrend", params, st_ind)
-            return st_ind
+            return self._save_persistent("supertrend", params, st_ind)
 
         td_stack: list[np.ndarray] = []
         for le_val in lengths:
@@ -447,8 +411,7 @@ class IndicatorPrecomputer:
                 td_stack.append(np.asarray(td, dtype=np.float64))
         td_3d = np.stack(td_stack, axis=1)
         wrapped = SimpleNamespace(supertd=td_3d)
-        self._save_persistent("supertrend", params, wrapped)
-        return wrapped
+        return self._save_persistent("supertrend", params, wrapped)
 
     def compute_stochrsi(
         self,
@@ -505,8 +468,7 @@ class IndicatorPrecomputer:
 
         k_arr = np.column_stack(k_cols) if k_cols else np.full((n_time, 0), np.nan)
         stochrsi_ind = SimpleNamespace(stochrsi_k=k_arr)
-        self._save_persistent("stochrsi", params, stochrsi_ind)
-        return stochrsi_ind
+        return self._save_persistent("stochrsi", params, stochrsi_ind)
 
     def compute_kc(
         self,
@@ -565,8 +527,7 @@ class IndicatorPrecomputer:
         kcu_3d = np.stack(kcu_stack, axis=1)
         kcl_3d = np.stack(kcl_stack, axis=1)
         wrapped = SimpleNamespace(kcu=kcu_3d, kcl=kcl_3d)
-        self._save_persistent("kc", params, wrapped)
-        return wrapped
+        return self._save_persistent("kc", params, wrapped)
 
     def clear_cache(self) -> None:
         """Clear the indicator cache to free memory."""

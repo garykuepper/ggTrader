@@ -383,6 +383,16 @@ class FastBacktest:
                 return default
             return default if (math.isnan(v) or math.isinf(v)) else v
 
+        # Average holding period across all trades, in days. trades.duration is
+        # measured in bars; scale by the bar interval. NaN-safe via _safe (0.0
+        # when there are no trades).
+        dur_bars = np.array(self.pf.trades.duration.values, dtype=np.float64, copy=True)
+        try:
+            bar_days = pd.Timedelta(self.pf.wrapper.freq) / pd.Timedelta(days=1)
+        except (TypeError, ValueError):
+            bar_days = pd.Timedelta(self.config.get("FREQ", "1d")) / pd.Timedelta(days=1)
+        avg_holding_days = float(dur_bars.mean() * bar_days) if dur_bars.size else float("nan")
+
         return {
             "total_value": _safe(total_value),
             "total_profit": _safe(total_profit),
@@ -392,6 +402,7 @@ class FastBacktest:
             "sharpe": _safe(self.pf.sharpe_ratio().mean()),
             "sortino": _safe(self.pf.sortino_ratio().mean()),
             "max_drawdown": _safe(self.pf.max_drawdown().min()) * 100,
+            "avg_holding_days": _safe(avg_holding_days),
         }
 
     def save_detailed_plots(self, results_manager, filename: str = "backtest_detailed") -> None:

@@ -83,6 +83,32 @@ def test_fast_backtest_stats_safety():
     assert isinstance(stats["sharpe"], float)
 
 
+def test_fast_backtest_avg_holding_days():
+    """avg_holding_days reflects trade durations scaled by the bar interval."""
+    ohlcv = create_trending_data(200)  # 4h bars
+    params = {
+        "adx_threshold": 10,
+        "adx_length": 5,
+        "atr_length": 5,
+        "atr_multiplier": 3.0,
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "use_dmp_cross": False,
+    }
+    engine = FastBacktest(ohlcv, params, config={"FREQ": "4h"})
+    pf = engine.run()
+    stats = engine.get_stats()
+
+    assert "avg_holding_days" in stats
+    if stats["total_trades"] > 0:
+        dur = np.array(pf.trades.duration.values, dtype=float)
+        expected = float(dur.mean() * (4 / 24))  # 4h bars -> days
+        assert stats["avg_holding_days"] == pytest.approx(expected)
+        assert stats["avg_holding_days"] > 0
+    else:
+        assert stats["avg_holding_days"] == 0.0
+
+
 def test_fast_backtest_insufficient_warmup_raises():
     """Too few bars for the configured indicators raises instead of silently
     returning empty signals (WFO skips such folds; callers must size windows)."""
