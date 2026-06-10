@@ -6,7 +6,6 @@ import pandas as pd
 import vectorbt as vbt
 
 from ggTrader.indicators.indicator_precompute import IndicatorPrecomputer
-from ggTrader.indicators.signals import SignalFactory
 from ggTrader.indicators.strategies import (
     EXIT_PARAM_AXIS_KEYS,
     filter_strat_params_for_exit,
@@ -23,7 +22,6 @@ _DEFAULT_CONFIG = {
     "FREQ": "4h",
     "N_JOBS": -1,  # Default to all cores for vectorized runs
     "USE_CASH_SHARING": True,  # New config for grouping
-    "USE_VECTORIZED": False,  # Use new vectorized signal path (default to old for safety)
     "ENTRY_STRATEGY": None,  # Entry strategy name (e.g., "psar_adx")
     "EXIT_STRATEGY": None,  # Exit strategy name (e.g., "atr_trailing")
 }
@@ -99,7 +97,6 @@ class FastBacktest:
         ohlcv: pd.DataFrame,
         params: dict,
         config: Optional[dict] = None,
-        signal_factory: Any = None,
         mover_mask: Optional[pd.DataFrame] = None,
     ):
         """
@@ -107,7 +104,6 @@ class FastBacktest:
             ohlcv: OHLCV DataFrame (MultiIndex columns: symbol, field)
             params: Strategy parameters
             config: Configuration dictionary (fees, slippage, etc)
-            signal_factory: Optional custom signal factory
             mover_mask: Optional boolean mask to filter entries/exits
         """
         # Merge caller config with defaults
@@ -119,7 +115,6 @@ class FastBacktest:
         self.pf = None  # Portfolio cache
         self.entries = None
         self.exits = None
-        self.signal_factory = signal_factory or SignalFactory
         self._last_param_combos: Optional[List[dict]] = None
 
     def run(self, show_progress: bool = False) -> vbt.Portfolio:
@@ -131,18 +126,8 @@ class FastBacktest:
 
         self._last_param_combos = None
 
-        # 1. Generate Signals
-        use_vectorized = self.config.get("USE_VECTORIZED", False)
-        if use_vectorized:
-            try:
-                entries, exits, price_for_orders = self._generate_signals_vectorized(show_progress)
-            except Exception:
-                # Re-raise — callers that set USE_VECTORIZED=True expect vectorized-only
-                # behaviour. Silently falling back to the SignalFactory path hides data
-                # quality issues and can take 100× longer for zero net benefit.
-                raise
-        else:
-            entries, exits, price_for_orders = self._generate_signals(show_progress)
+        # 1. Generate Signals (strategy registry; handles scalar params as 1-combo grids)
+        entries, exits, price_for_orders = self._generate_signals_vectorized(show_progress)
 
         # 2. Apply Mover Mask (if exists)
         if self.mover_mask is not None:
@@ -162,46 +147,6 @@ class FastBacktest:
             price_for_orders, entries, exits, group_by, use_cash_sharing
         )
         return self.pf
-
-    def _generate_signals(
-        self, show_progress: bool
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """Runs the signal factory to generate entry/exit signals."""
-        # Clean params for signal factory (remove non-strategy params)
-        strat_params = {
-            k: v
-            for k, v in self.params.items()
-            if k not in ["START_CASH", "PORTFOLIO_SHARE", "FEES", "SLIPPAGE", "FREQ"]
-        }
-
-        # Run signal generation
-        # Pass full OHLCV as signal factory expects it
-        # Use float64 to avoid Numba read-only assignment errors in metrics
-        ohlcv = self.ohlcv.astype(np.float64)
-
-        # Unpack OHLCV
-        close = ohlcv.xs("close", axis=1, level=1, drop_level=True)
-        high = ohlcv.xs("high", axis=1, level=1, drop_level=True)
-        low = ohlcv.xs("low", axis=1, level=1, drop_level=True)
-        open_ = ohlcv.xs("open", axis=1, level=1, drop_level=True)
-
-        sf = self.signal_factory.run(
-            close=close,
-            high=high,
-            low=low,
-            open_=open_,
-            **strat_params,
-            param_product=self.config.get("PARAM_PRODUCT", True),
-            n_jobs=self.config.get("N_JOBS", -1),
-            show_progress=show_progress,
-        )
-
-        # Prepare execution arrays
-        # Use close price for execution
-        # Ensure we use specific 'close' column to avoid ambiguity
-        price_for_orders = self.ohlcv.xs("close", level=1, axis=1)
-
-        return sf.entries, sf.exits, price_for_orders
 
     def _sort_multindex_columns_for_groupby(
         self,

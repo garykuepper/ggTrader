@@ -202,3 +202,38 @@ def test_frozen_params_allocation_weights_sum_to_one():
     final_stats = result["final_stats"]
     # If the portfolio ran we should get at least some trades or a defined profit_pct
     assert final_stats.get("profit_pct") is not None
+
+
+def test_frozen_params_replay_honours_non_psar_strategy():
+    """Regression guard: the replay must run the configured strategy.
+
+    The deleted non-vectorized path silently ran psar_adx (with default params)
+    for every strategy, so ema_cross coins were replayed with the wrong signals.
+    """
+    ohlcv = _make_multi_symbol_ohlcv(n=300)
+    per_coin = _per_coin_results_stub()
+    for sym in per_coin:
+        per_coin[sym]["best_strategy"] = "ema_cross"
+        per_coin[sym]["best_params"] = {
+            "ema_fast": 9,
+            "ema_slow": 50,
+            "atr_length": 14,
+            "atr_multiplier": 3.0,
+        }
+    config = {
+        "START_CASH": 1000.0,
+        "FEES": 0.001,
+        "SLIPPAGE": 0.0005,
+        "FREQ": "4h",
+        "MAX_COIN_ALLOCATION": 0.5,
+    }
+    with patch("ggTrader.core.benchmarking._btc_buy_hold_portfolio_stats", return_value={}), patch(
+        "ggTrader.core.benchmarking._sp500_buy_hold_portfolio_stats", return_value={}
+    ):
+        result = run_frozen_params_combined_backtest(
+            ohlcv, per_coin, config, exit_tournament=["atr_trailing"], save_results=False
+        )
+
+    assert result["final_stats"].get("profit_pct") is not None
+    for sym, stats in result["per_coin_final_stats"].items():
+        assert stats.get("strategy", "ema_cross") == "ema_cross"

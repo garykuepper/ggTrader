@@ -46,7 +46,6 @@ from ggTrader.core.sensitivity import (  # noqa: F401
     _execute_sensitivity_grid,
     _execute_sensitivity_vectorized,
     _metric_series_from_vectorized_pf,
-    _process_sensitivity_chunk,
     _save_sensitivity_results,
     _vectorized_grid_metrics,
     analyze_sensitivity_results,
@@ -507,14 +506,18 @@ def run_frozen_params_combined_backtest(
                 **config,
                 "ENTRY_STRATEGY": strategy_name,
                 "EXIT_STRATEGY": exit_name,
-                "USE_VECTORIZED": False,
             }
             try:
                 engine = FastBacktest(symbol_ohlcv, best_params, config=config_for_final)
                 engine.run(show_progress=False)
 
                 close = symbol_ohlcv.xs("close", axis=1, level=1, drop_level=True)
-                entries, exits, _ = engine._generate_signals(show_progress=False)
+                # Reuse the signals from run() — scalar params produce a single
+                # param_combo level which must be dropped so the combined-portfolio
+                # concat sees plain symbol columns. (The old non-vectorized replay
+                # here silently ran psar_adx regardless of strategy_name.)
+                entries = engine.entries.droplevel("param_combo", axis=1)
+                exits = engine.exits.droplevel("param_combo", axis=1)
                 stats = engine.get_stats()
                 total_trades = int(stats.get("total_trades", 0) or 0)
                 trades_per_year = (
@@ -1227,7 +1230,6 @@ def run_multi_strategy_per_coin_wfo(
                     params=median_grid,
                     config={
                         **config,
-                        "USE_VECTORIZED": False,
                         "ENTRY_STRATEGY": chosen_combo["strategy"],
                         "EXIT_STRATEGY": chosen_combo["exit"],
                     },
@@ -1261,7 +1263,6 @@ def run_multi_strategy_per_coin_wfo(
                         params=median_grid,
                         config={
                             **config,
-                            "USE_VECTORIZED": False,
                             "ENTRY_STRATEGY": chosen_combo["strategy"],
                             "EXIT_STRATEGY": chosen_combo["exit"],
                         },

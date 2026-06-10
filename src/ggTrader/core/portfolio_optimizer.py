@@ -13,6 +13,7 @@ import pandas as pd
 import vectorbt as vbt
 
 from ggTrader.core.fast_backtest import FastBacktest
+from ggTrader.core.metrics import safe_portfolio_stats
 from ggTrader.utils.setup import load_data_with_movers
 
 
@@ -76,7 +77,6 @@ def generate_combined_signals(ohlcv: pd.DataFrame, per_coin_results: Dict, globa
             **global_config,
             "ENTRY_STRATEGY": best_strategy,
             "EXIT_STRATEGY": best_exit,
-            "USE_VECTORIZED": False,
             "USE_CASH_SHARING": False,
         }
 
@@ -238,7 +238,7 @@ def run_portfolio_competition(results_dir: str):
 
     stats = []
     for name, pf in strategies.items():
-        s = pf.stats()
+        s = safe_portfolio_stats(pf)
         stats.append(
             {
                 "Strategy": name,

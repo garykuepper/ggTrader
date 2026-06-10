@@ -25,7 +25,6 @@ class TestStrategyDispatchInFastBacktest:
         config = {
             "ENTRY_STRATEGY": None,
             "EXIT_STRATEGY": None,
-            "USE_VECTORIZED": True,
             "START_CASH": 1000,
             "FEES": 0.001,
             "SLIPPAGE": 0.0005,
@@ -42,7 +41,6 @@ class TestStrategyDispatchInFastBacktest:
         config = {
             "ENTRY_STRATEGY": "ema_cross",
             "EXIT_STRATEGY": "atr_trailing",
-            "USE_VECTORIZED": True,
             "START_CASH": 1000,
             "FEES": 0.001,
             "SLIPPAGE": 0.0005,
@@ -59,7 +57,6 @@ class TestStrategyDispatchInFastBacktest:
         config = {
             "ENTRY_STRATEGY": "rsi_reversal",
             "EXIT_STRATEGY": "fixed_sl_tp",
-            "USE_VECTORIZED": True,
             "START_CASH": 1000,
             "FEES": 0.001,
             "SLIPPAGE": 0.0005,
@@ -76,7 +73,6 @@ class TestStrategyDispatchInFastBacktest:
         config = {
             "ENTRY_STRATEGY": "invalid_strategy",
             "EXIT_STRATEGY": "atr_trailing",
-            "USE_VECTORIZED": True,
             "START_CASH": 1000,
             "FEES": 0.001,
             "SLIPPAGE": 0.0005,

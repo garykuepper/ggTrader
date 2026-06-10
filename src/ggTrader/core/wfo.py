@@ -41,10 +41,10 @@ def _process_wfo_fold(
 ) -> Dict[str, Any]:
     """Helper to process a single WFO fold (Train & Test).
 
-    Train window uses the vectorized registry path so ENTRY_STRATEGY /
+    Both windows use the vectorized registry path so ENTRY_STRATEGY /
     EXIT_STRATEGY in ``config`` are honoured.  Metric alignment relies on
-    ``_vectorized_grid_metrics``.  Falls back to the legacy non-vectorized
-    SignalFactory path if the vectorized pass raises.
+    ``_vectorized_grid_metrics``.  Folds are skipped if the vectorized
+    pass raises (usually a data-quality issue).
     """
     train_ohlcv = ohlcv.loc[train_idx]
     test_ohlcv = ohlcv.loc[test_idx]
@@ -79,15 +79,13 @@ def _process_wfo_fold(
     train_mask = mover_mask.loc[train_idx] if mover_mask is not None else None
     test_mask = mover_mask.loc[test_idx] if mover_mask is not None else None
 
-    # Try vectorized train path first (honours ENTRY/EXIT_STRATEGY).
-    wfo_train_cfg = {**config, "USE_VECTORIZED": True}
     train_metrics: pd.Series
     pf_train: Any = None
     try:
         train_engine = FastBacktest(
             train_ohlcv,
             param_grid,
-            config=wfo_train_cfg,
+            config=config,
             mover_mask=train_mask,
         )
         pf_train = train_engine.run(show_progress=show_progress)
@@ -96,9 +94,8 @@ def _process_wfo_fold(
         )
         train_metrics_before_gates = train_metrics.copy()
     except Exception as vec_exc:
-        # When the vectorized path fails, skip this fold rather than running the slow
-        # SignalFactory fallback (which takes 100x longer and still produces 0 trades
-        # for data-quality issues like newly listed coins or shape mismatches).
+        # When the vectorized path fails, skip this fold — it almost always means a
+        # data-quality issue (newly listed coins, shape mismatches), not a code bug.
         print(f"  WFO fold {fold_idx}: vectorized train failed ({vec_exc!r}), skipping fold.")
         return {
             "fold_idx": fold_idx,
@@ -196,12 +193,11 @@ def _process_wfo_fold(
     fold_best_params = _extract_params(best_param_idx, train_metrics, param_names, param_grid)
 
     # Test (single winner): kept for downstream stats reporting (oos_sharpe, sortino, profit, etc.).
-    # USE_VECTORIZED False is fine here (scalar params).
-    wfo_test_cfg = {**config, "USE_VECTORIZED": False}
+    # Scalar params run through the registry path as a 1-combo grid.
     test_engine = FastBacktest(
         test_ohlcv,
         fold_best_params,
-        config=wfo_test_cfg,
+        config=config,
         mover_mask=test_mask,
     )
     pf_test = test_engine.run(show_progress=show_progress)

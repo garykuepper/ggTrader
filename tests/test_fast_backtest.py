@@ -62,10 +62,10 @@ def test_fast_backtest_empty_data():
 
 
 def test_fast_backtest_stats_safety():
-    """Test that stats handle NaN safely."""
-    ohlcv = create_trending_data(10)  # Not enough data for default indicators
+    """Stats must handle a zero-trade portfolio (NaN metrics) safely."""
+    ohlcv = create_trending_data(100)
     params = {
-        "adx_threshold": 25,
+        "adx_threshold": 150,  # beyond ADX's [0, 100] range -> no entries, no trades
         "adx_length": 14,
         "atr_length": 14,
         "atr_multiplier": 3.0,
@@ -78,5 +78,24 @@ def test_fast_backtest_stats_safety():
     stats = engine.get_stats()
 
     # Should not crash on division by zero or NaN
+    assert stats["total_trades"] == 0
     assert isinstance(stats["win_rate"], float)
     assert isinstance(stats["sharpe"], float)
+
+
+def test_fast_backtest_insufficient_warmup_raises():
+    """Too few bars for the configured indicators raises instead of silently
+    returning empty signals (WFO skips such folds; callers must size windows)."""
+    ohlcv = create_trending_data(10)
+    params = {
+        "adx_threshold": 25,
+        "adx_length": 14,
+        "atr_length": 14,
+        "atr_multiplier": 3.0,
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "use_dmp_cross": False,
+    }
+    engine = FastBacktest(ohlcv, params)
+    with pytest.raises(Exception):
+        engine.run()

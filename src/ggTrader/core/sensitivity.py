@@ -2,7 +2,6 @@
 
 import gc
 import itertools
-import time
 from math import prod
 from typing import Any, Dict, List, Tuple
 
@@ -18,11 +17,8 @@ from ggTrader.core.metrics import (
 )
 from ggTrader.core.orchestrator_utils import (
     _coerce_strategy_params_for_engine,
-    _eta_str,
     _extract_params,
-    _log_memory_usage,
     _to_native,
-    _wall_clock_eta,
 )
 from ggTrader.utils.results_manager import ResultsManager
 from ggTrader.utils.setup import load_data_with_movers
@@ -115,16 +111,12 @@ def _execute_sensitivity_vectorized(
     grid_values = [v if isinstance(v, list) else [v] for v in param_grid.values()]
     n_total = prod(len(v) for v in grid_values) if grid_values else 0
 
-    msg = (
-        f"Running vectorized sensitivity: {n_total} combinations in one pass "
-        f"(set USE_VECTORIZED_SENSITIVITY=False to use the slower chunked path)."
-    )
+    msg = f"Running vectorized sensitivity: {n_total} combinations in one pass."
     print(msg)
     if logger:
         logger.update(msg)
 
-    vec_cfg = {**config, "USE_VECTORIZED": True}
-    engine = FastBacktest(ohlcv, param_grid, config=vec_cfg)
+    engine = FastBacktest(ohlcv, param_grid, config=config)
     pf = engine.run(show_progress=show_progress)
     sharpe_series, trade_for_gate = _metric_series_from_vectorized_pf(pf, engine, keys, config)
     closed_for_output = trade_for_gate.copy()
@@ -137,66 +129,6 @@ def _execute_sensitivity_vectorized(
     return sharpe_series, closed_for_output
 
 
-def _process_sensitivity_chunk(
-    chunk: List[Tuple],
-    keys: List[str],
-    config: Dict[str, Any],
-    ohlcv: pd.DataFrame,
-    show_progress: bool,
-) -> Tuple[pd.Series, pd.Series]:
-    """Helper to process a single chunk of sensitivity parameters.
-
-    Returns:
-        (sharpe_series, closed_trades_series) with identical index for reporting/gating.
-    """
-    chunk_params = {k: [c[j] for c in chunk] for j, k in enumerate(keys)}
-    # Sensitivity analysis uses parallel lists (not grid), so must disable vectorized path
-    # The vectorized strategy path expects grids and treats parallel lists as cross-product ranges
-    chunk_config = {
-        **config,
-        "PARAM_PRODUCT": False,
-        "USE_VECTORIZED": False,
-        "N_JOBS": 2,  # Reduce from -1 (all cores) to 2 to avoid thread contention with NumBa
-    }
-
-    engine = FastBacktest(ohlcv, chunk_params, config=chunk_config)
-    pf = engine.run(show_progress=show_progress)
-
-    sharpe_series = pf.sharpe_ratio()
-
-    # Handle case where sharpe_series is a scalar (single combo)
-    if not isinstance(sharpe_series, pd.Series):
-        sharpe_series = pd.Series([sharpe_series])
-
-    trade_for_gate = _trade_counts_for_train_gate(pf, sharpe_series)
-    closed_for_output = trade_for_gate.copy()
-    sharpe_series = _apply_sensitivity_train_gates(sharpe_series, trade_for_gate, pf, config)
-
-    # Aggressive memory cleanup to prevent accumulation between chunks
-    del pf
-    del engine
-
-    # Clear NumBa JIT cache to free compiled function memory
-    try:
-        import numba
-
-        numba.core.registry.CPUTarget.clear()
-    except Exception:
-        pass
-
-    gc.collect()
-
-    # Force C memory trimming (Linux/POSIX) to reclaim fragmented malloc'd memory
-    try:
-        import ctypes
-
-        ctypes.CDLL(None).malloc_trim(0)
-    except Exception:
-        pass
-
-    return sharpe_series, closed_for_output
-
-
 def _execute_sensitivity_grid(
     ohlcv: pd.DataFrame,
     config: Dict[str, Any],
@@ -204,63 +136,13 @@ def _execute_sensitivity_grid(
     show_progress: bool,
     logger: Any = None,
 ) -> Tuple[pd.Series, pd.Series]:
-    """Generates combinations, splits into chunks, and executes the grid search."""
-    if config.get("USE_VECTORIZED_SENSITIVITY", True):
-        try:
-            return _execute_sensitivity_vectorized(ohlcv, config, param_grid, show_progress, logger)
-        except Exception as e:
-            print(
-                f"WARNING: Vectorized sensitivity failed ({type(e).__name__}: {e}); "
-                "falling back to chunked path (~100× slower). "
-                "Set USE_VECTORIZED_SENSITIVITY=False to suppress this warning."
-            )
+    """Execute the grid search in one vectorized pass.
 
-    keys = list(param_grid.keys())
-    values = [v if isinstance(v, list) else [v] for v in param_grid.values()]
-    combinations = list(itertools.product(*values))
-    total_total = len(combinations)
-
-    chunk_size = config.get("CHUNK_SIZE", 500)
-    total_chunks = (total_total + chunk_size - 1) // chunk_size
-
-    print(
-        f"Running chunked (non-vectorized) sensitivity in {total_chunks} chunks "
-        f"({total_total} total combinations, chunk_size={chunk_size})..."
-    )
-
-    all_sharpe_series: List[pd.Series] = []
-    all_closed_series: List[pd.Series] = []
-    t0 = time.time()
-
-    for i in range(0, total_total, chunk_size):
-        chunk_idx = i // chunk_size + 1
-        chunk = combinations[i : i + chunk_size]
-        chunk_end = min(i + chunk_size, total_total)
-        print(f"  > Processing chunk {chunk_idx}/{total_chunks} (combos {i}-{chunk_end})...")
-        _log_memory_usage("chunk start")
-        chunk_start = time.time()
-
-        sharpe_series, closed_series = _process_sensitivity_chunk(
-            chunk, keys, config, ohlcv, show_progress
-        )
-        all_sharpe_series.append(sharpe_series)
-        all_closed_series.append(closed_series)
-        _log_memory_usage("chunk end")
-
-        elapsed = time.time() - t0
-        avg_per_chunk = elapsed / chunk_idx
-        remaining_chunks = total_chunks - chunk_idx
-        eta = remaining_chunks * avg_per_chunk
-        chunk_msg = (
-            f"Chunk {chunk_idx}/{total_chunks} done in {time.time() - chunk_start:.1f}s "
-            f"| total elapsed {_eta_str(elapsed)} | ETA {_eta_str(eta)} "
-            f"(est. {_wall_clock_eta(eta)})"
-        )
-        print(f"  > {chunk_msg}")
-        if logger:
-            logger.update(f"  {chunk_msg}")
-
-    return pd.concat(all_sharpe_series), pd.concat(all_closed_series)
+    A vectorized failure raises instead of falling back: the old chunked
+    fallback was ~100x slower and silently ran psar_adx regardless of the
+    configured entry strategy.
+    """
+    return _execute_sensitivity_vectorized(ohlcv, config, param_grid, show_progress, logger)
 
 
 def _save_sensitivity_results(

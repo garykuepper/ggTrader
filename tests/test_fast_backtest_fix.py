@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from ggTrader.core.fast_backtest import FastBacktest
+from ggTrader.core.metrics import _profit_factor_raw, safe_portfolio_stats
 
 
 def test_fast_backtest_run():
@@ -56,30 +57,19 @@ def test_fast_backtest_run():
 
     # 4. Run backtest
     print("Running FastBacktest.run()...")
-    try:
-        pf = engine.run(show_progress=False)
-        print("FastBacktest.run() completed successfully.")
-        print(f"Portfolio Stats: {engine.get_stats()}")
+    pf = engine.run(show_progress=False)
+    stats = engine.get_stats()
+    assert isinstance(stats["sharpe"], float)
 
-        print("Testing profit_factor() to ensure no read-only errors...")
-        # Note: profit_factor is usually on the trades accessor or via stats()
-        try:
-            # Try direct access if available or via trades
-            pf_factor = pf.trades.profit_factor()
-            print(f"Profit Factor (from trades): {pf_factor.mean()}")
-        except Exception as e:
-            print(f"pf.trades.profit_factor() failed: {e}")
+    # profit factor via the writable-safe raw-PnL path (vbt's native accessor can
+    # crash with "assignment destination is read-only" depending on numba state)
+    pf_factor = _profit_factor_raw(pf)
+    assert len(pf_factor) >= 1
 
-        print("Testing pf.stats() which caused the original error...")
-        pf.stats()
-        print("pf.stats() completed successfully.")
-
-    except AttributeError as e:
-        print(f"FAILED with AttributeError: {e}")
-        raise
-    except Exception as e:
-        print(f"FAILED with Exception: {e}")
-        raise
+    # full stats table via the safe wrapper that survives the same vbt crash
+    s = safe_portfolio_stats(pf)
+    assert "Profit Factor" in s.index
+    assert "Expectancy" in s.index
 
 
 if __name__ == "__main__":

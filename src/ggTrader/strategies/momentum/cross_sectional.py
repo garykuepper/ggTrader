@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import vectorbt as vbt
 
+from ggTrader.core.metrics import safe_portfolio_stats
 from ggTrader.strategies.momentum.config import MomentumConfig
 from ggTrader.strategies.momentum.factors import (
     compute_liquidity_shock_nb,
@@ -234,7 +235,7 @@ class CrossSectionalMomentum:
         """Passthrough to portfolio stats."""
         if self.portfolio is None:
             raise ValueError("Portfolio has not been simulated yet. Run run() first.")
-        return self.portfolio.stats()
+        return safe_portfolio_stats(self.portfolio)
 
     def plot(self) -> None:
         """Passthrough to portfolio plot."""

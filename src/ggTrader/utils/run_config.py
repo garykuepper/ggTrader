@@ -90,7 +90,6 @@ def sensitivity_script_config() -> dict[str, Any]:
         "CHUNK_SIZE": 1000,
         "ENTRY_STRATEGY": "psar_adx",
         "EXIT_STRATEGY": "atr_trailing",
-        "USE_VECTORIZED": False,
     }
 
 
@@ -109,7 +108,6 @@ def wfo_script_config() -> dict[str, Any]:
         "ENTRY_STRATEGY": "psar_adx",
         "EXIT_STRATEGY": "atr_trailing",
         "WFO_MODE": "universal",
-        "USE_VECTORIZED": False,
     }
 
 
@@ -160,8 +158,6 @@ def full_pipeline_config() -> dict[str, Any]:
         "TRAIN_METRIC": "composite",
         "MAX_TRAIN_DRAWDOWN_PCT": None,
         "CHUNK_SIZE": 500,
-        "USE_VECTORIZED": True,
-        "USE_VECTORIZED_SENSITIVITY": True,
         "USE_MOVERS": 0,
         # Exit tournament: WFO picks the best per-coin exit. fixed_sl_tp is an
         # OCO bracket (entry-set SL + TP, no ratchet); when chosen at placement

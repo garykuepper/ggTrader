@@ -177,7 +177,6 @@ class TestFixedStopTakeProfitMultiCombo:
             **_BASE_CONFIG,
             "ENTRY_STRATEGY": "ema_cross",
             "EXIT_STRATEGY": "fixed_sl_tp",
-            "USE_VECTORIZED": True,
         }
         params = {
             "ema_fast": [5, 9],
@@ -202,7 +201,6 @@ class TestFixedStopTakeProfitMultiCombo:
             **_BASE_CONFIG,
             "ENTRY_STRATEGY": "ema_cross",
             "EXIT_STRATEGY": "fixed_sl_tp",
-            "USE_VECTORIZED": True,
         }
 
         tight_engine = FastBacktest(
@@ -240,7 +238,6 @@ class TestVectorizedLastParamCombosAtrRegression:
             **_BASE_CONFIG,
             "ENTRY_STRATEGY": "ema_cross",
             "EXIT_STRATEGY": "atr_trailing",
-            "USE_VECTORIZED": True,
         }
         params = {
             "ema_fast": [5, 9],
@@ -283,8 +280,6 @@ class TestExitTournamentInOrchestratorOutput:
             "MIN_CLOSED_TRADES_TRAIN": 0,
             "MIN_TRADES_PER_TRAIN_FOLD": 0,
             "MIN_TRAIN_FOLD_PASS_COUNT": 0,
-            "USE_VECTORIZED": True,
-            "USE_VECTORIZED_SENSITIVITY": True,
             "USE_MOVERS": 0,
             "EXIT_TOURNAMENT": ["atr_trailing", "fixed_sl_tp"],
             "_OHLCV_OVERRIDE": ohlcv,  # Injected below via monkeypatch
@@ -348,8 +343,6 @@ class TestExitTournamentInOrchestratorOutput:
             "MIN_CLOSED_TRADES_TRAIN": 0,
             "MIN_TRADES_PER_TRAIN_FOLD": 0,
             "MIN_TRAIN_FOLD_PASS_COUNT": 0,
-            "USE_VECTORIZED": True,
-            "USE_VECTORIZED_SENSITIVITY": True,
             "USE_MOVERS": 0,
             "EXIT_TOURNAMENT": ["atr_trailing"],
             # Lenient gate thresholds so synthetic 2-fold data passes (Task 7 gates).

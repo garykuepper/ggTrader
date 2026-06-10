@@ -13,6 +13,7 @@ import pandas as pd
 from pydantic import BaseModel
 from sqlalchemy import text
 
+from ggTrader.core.metrics import safe_portfolio_stats
 from ggTrader.utils.result_db_manager import ResultDBManager
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,7 @@ class WalkForwardOptimizer:
                     try:
                         strategy = self.strategy_cls(config)
                         portfolio = strategy.run(close_is, volume_is, **kwargs_is)
-                        stats = portfolio.stats()
+                        stats = safe_portfolio_stats(portfolio)
                         sharpe = stats.get("Sharpe Ratio", -np.inf)
                         if np.isnan(sharpe):
                             sharpe = -np.inf
@@ -199,7 +200,7 @@ class WalkForwardOptimizer:
             try:
                 strategy_oos = self.strategy_cls(config_oos)
                 portfolio_oos = strategy_oos.run(close_oos, volume_oos, **kwargs_oos)
-                oos_stats = portfolio_oos.stats()
+                oos_stats = safe_portfolio_stats(portfolio_oos)
                 oos_sharpe = oos_stats.get("Sharpe Ratio", 0.0)
                 if np.isnan(oos_sharpe):
                     oos_sharpe = 0.0

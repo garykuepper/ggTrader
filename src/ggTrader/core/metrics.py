@@ -186,6 +186,51 @@ def _profit_factor_raw(pf: Any) -> pd.Series:
     return pd.Series(result, index=labels, name="profit_factor")
 
 
+def _expectancy_raw(pf: Any) -> pd.Series:
+    """Per-group expectancy (average PnL per trade) from raw trade PnL.
+
+    Matches vbt's ``Trades.expectancy()`` (win_rate*avg_win + loss_rate*avg_loss
+    reduces to mean PnL) without its in-place NaN masking on read-only arrays.
+    """
+    trades = pf.trades
+    pnl = np.array(trades.pnl.values, dtype=np.float64, copy=True)
+    col_arr = np.asarray(trades.col_mapper.col_arr)
+    groups = np.asarray(trades.wrapper.grouper.get_groups())
+    labels = trades.wrapper.grouper.get_columns()
+    n_groups = len(labels)
+    totals = np.zeros(n_groups, dtype=np.float64)
+    counts = np.zeros(n_groups, dtype=np.float64)
+    if pnl.size:
+        gidx = groups[col_arr]
+        np.add.at(totals, gidx, pnl)
+        np.add.at(counts, gidx, 1.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = totals / counts
+    return pd.Series(result, index=labels, name="expectancy")
+
+
+def safe_portfolio_stats(pf: Any, **kwargs: Any) -> pd.Series:
+    """``pf.stats()`` that survives vbt's read-only-array crash.
+
+    vbt 0.28.5's ``Trades.profit_factor()`` and ``Trades.expectancy()`` mutate
+    numba-returned arrays in place and raise ``ValueError: assignment destination
+    is read-only`` depending on numba cache state. On that error, recompute the
+    stats without those two metrics and fill them from the raw-PnL equivalents.
+    """
+    try:
+        return pf.stats(**kwargs)
+    except ValueError as exc:
+        if "read-only" not in str(exc):
+            raise
+    metric_names = [m for m in pf.metrics.keys() if m not in ("profit_factor", "expectancy")]
+    stats = pf.stats(metrics=metric_names, **kwargs)
+    pf_raw = _profit_factor_raw(pf)
+    exp_raw = _expectancy_raw(pf)
+    stats.loc["Profit Factor"] = float(pf_raw.mean()) if len(pf_raw) else float("nan")
+    stats.loc["Expectancy"] = float(exp_raw.mean()) if len(exp_raw) else float("nan")
+    return stats
+
+
 def _profit_factor_series(pf_train: Any) -> pd.Series:
     """Per-combo profit factor, mean-centred: (gross_profit/gross_loss - 1), clipped [-3, 3].
 
