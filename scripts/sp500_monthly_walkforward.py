@@ -30,6 +30,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from ggTrader.indicators.strategies import ENTRY_REGISTRY, EXIT_REGISTRY  # noqa: E402
+from ggTrader.research.equity_wfo import STOCK_BASE_CONFIG  # noqa: E402
+from ggTrader.research.monthly_strategies import STRATEGY_NAMES, build_strategy  # noqa: E402
 from ggTrader.research.monthly_walkforward import (  # noqa: E402
     MonthlyHarnessConfig,
     leak_check,
@@ -59,6 +61,9 @@ def main() -> None:
     p.add_argument("--entries", default="all")
     p.add_argument("--exits", default="all")
     p.add_argument("--grid", choices=["coarse", "detailed"], default="detailed")
+    p.add_argument("--strategy", choices=STRATEGY_NAMES, default="wfo_tournament")
+    p.add_argument("--mom-lookback", type=int, default=252)
+    p.add_argument("--mom-skip", type=int, default=21)
     p.add_argument("--jobs", type=int, default=8)
     p.add_argument("--refit-every", type=int, default=1, help="Months between re-selections")
     p.add_argument("--max-stocks", type=int, default=None)
@@ -84,7 +89,8 @@ def main() -> None:
         n_jobs=args.jobs,
         refit_every_n_months=args.refit_every,
         max_stocks=args.max_stocks,
-        run_id=args.run_id or ("sp500_quick" if args.quick else "sp500_monthly"),
+        run_id=args.run_id
+        or (f"sp500_quick_{args.strategy}" if args.quick else f"sp500_{args.strategy}"),
     )
 
     if args.quick:
@@ -92,25 +98,31 @@ def main() -> None:
         cfg.top_n = min(cfg.top_n, 10)
         cfg.n_splits = 4
         cfg.eval_start = args.eval_start if args.eval_start != "2021-01-31" else "2025-11-30"
-        if args.entries == "all":
+        if args.entries == "all" and args.strategy == "wfo_tournament":
             cfg.entries = ["psar_adx", "ema_cross"]
-        if args.exits == "all":
+        if args.exits == "all" and args.strategy == "wfo_tournament":
             cfg.exits = ["atr_trailing"]
 
+    strategy = build_strategy(
+        args.strategy, cfg, dict(STOCK_BASE_CONFIG), args.mom_lookback, args.mom_skip
+    )
     if args.leak_check:
-        ok = leak_check(cfg)
+        ok = leak_check(cfg, strategy=strategy)
         raise SystemExit(0 if ok else 1)
 
-    summary = run_monthly_walkforward(cfg)
+    summary = run_monthly_walkforward(cfg, strategy=strategy)
     print("\n" + "=" * 78)
     print("MONTHLY WALK-FORWARD SUMMARY (out-of-sample by construction)")
     print("=" * 78)
     print(json.dumps(summary["report"], indent=2))
     print(f"holding days: {summary['holding_days']}")
     print(f"avg monthly turnover: {summary['avg_monthly_turnover']}")
-    print("combo selection counts (top 10):")
-    for combo, n in list(summary["combo_selection_counts"].items())[:10]:
-        print(f"  {combo:<40} {n}")
+    if summary.get("avg_exposure") is not None:
+        print(f"avg exposure: {summary['avg_exposure']:.2f}")
+    if summary["combo_selection_counts"]:
+        print("combo selection counts (top 10):")
+        for combo, n in list(summary["combo_selection_counts"].items())[:10]:
+            print(f"  {combo:<40} {n}")
 
 
 if __name__ == "__main__":

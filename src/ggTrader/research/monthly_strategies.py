@@ -346,3 +346,22 @@ class WfoTournamentStrategy:
             "month_return_pct": float((1.0 + month_returns).prod() - 1.0) * 100,
         }
         return month_returns, diags
+
+
+STRATEGY_NAMES = ("wfo_tournament", "xs_momentum", "dual_momentum")
+
+
+def build_strategy(
+    name: str,
+    cfg,
+    base_config: Dict[str, Any],
+    mom_lookback: int = 252,
+    mom_skip: int = 21,
+) -> "MonthlyStrategy":
+    if name == "wfo_tournament":
+        return WfoTournamentStrategy(cfg, base_config)
+    if name == "xs_momentum":
+        return CrossSectionalMomentum(cfg, base_config, mom_lookback, mom_skip)
+    if name == "dual_momentum":
+        return DualMomentum(cfg, base_config, mom_lookback, mom_skip)
+    raise ValueError(f"Unknown strategy {name!r}. Available: {STRATEGY_NAMES}")
