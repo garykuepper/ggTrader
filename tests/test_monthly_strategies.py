@@ -4,11 +4,12 @@ import json
 
 import numpy as np
 import pandas as pd
-from ggTrader.research.monthly_strategies import (
-    CrossSectionalMomentum,
-)
 
 from ggTrader.research.equity_wfo import STOCK_BASE_CONFIG
+from ggTrader.research.monthly_strategies import (
+    CrossSectionalMomentum,
+    simulate_hold_weights,
+)
 from ggTrader.research.monthly_walkforward import MonthlyHarnessConfig
 
 
@@ -81,3 +82,30 @@ def test_momentum_respects_top_n_and_short_history():
     sels = strat.select(idx[-1], ohlcv, ["A", "B", "C", "NEW"])
     assert [s["symbol"] for s in sels] == ["A", "B"]
     assert all(abs(s["weight"] - 0.5) < 1e-12 for s in sels)
+
+
+def test_simulate_hold_weights_matches_hand_computed_returns():
+    idx = _idx(42, start="2021-01-01")
+    a = pd.Series(100.0 * 1.01 ** np.arange(42), index=idx)  # +1%/day
+    b = pd.Series(np.full(42, 50.0), index=idx)  # flat
+    ohlcv = make_ohlcv({"A": a, "B": b})
+    asof, month_end = idx[20], idx[-1]
+    frictionless = {**STOCK_BASE_CONFIG, "FEES": 0.0, "SLIPPAGE": 0.0}
+    rets, diags = simulate_hold_weights(ohlcv, {"A": 0.5, "B": 0.5}, asof, month_end, frictionless)
+
+    # Buys at the close of the first forward bar (idx[21]); B is flat, so the
+    # portfolio return is exactly half of A's appreciation from that bar.
+    expected_total = 0.5 * (a.iloc[-1] / a.loc[idx[21]] - 1.0)
+    total = float((1.0 + rets).prod() - 1.0)
+    assert abs(total - expected_total) < 1e-9
+    assert rets.index.min() > asof and rets.index.max() <= month_end
+    assert diags["n_positions"] == 2
+    assert 0.90 <= diags["avg_exposure"] <= 1.01
+
+
+def test_simulate_hold_weights_empty_inputs_are_flat():
+    idx = _idx(42, start="2021-01-01")
+    ohlcv = make_ohlcv({"A": pd.Series(np.full(42, 10.0), index=idx)})
+    rets, diags = simulate_hold_weights(ohlcv, {}, idx[20], idx[-1], STOCK_BASE_CONFIG)
+    assert rets.empty
+    assert diags["n_positions"] == 0

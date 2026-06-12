@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Protocol, Tuple
 
 import numpy as np
 import pandas as pd
+import vectorbt as vbt
 
 
 class MonthlyStrategy(Protocol):
@@ -96,8 +97,58 @@ class CrossSectionalMomentum:
         return simulate_hold_weights(ohlcv, weights, asof, month_end, self.base_config)
 
 
-def simulate_hold_weights(ohlcv, weights, asof, month_end, base_config):
-    raise NotImplementedError  # implemented in Task 2
+def simulate_hold_weights(
+    ohlcv: pd.DataFrame,
+    weights: Dict[str, float],
+    asof: pd.Timestamp,
+    month_end: pd.Timestamp,
+    base_config: Dict[str, Any],
+) -> Tuple[pd.Series, Dict[str, Any]]:
+    """Buy target weights at the first bar after ``asof``, hold to ``month_end``.
+
+    Symbols with no price at the first forward bar are dropped (their weight
+    stays in cash). Mid-month gaps are forward-filled.
+    """
+    empty = pd.Series(dtype=float)
+    month_mask = (ohlcv.index > asof) & (ohlcv.index <= month_end)
+    if not month_mask.any() or not weights:
+        return empty, {"n_positions": 0, "n_trades": 0, "avg_exposure": 0.0}
+
+    have = set(ohlcv.columns.get_level_values(0))
+    close = (
+        pd.concat({s: ohlcv[s]["close"] for s in weights if s in have}, axis=1)
+        .loc[month_mask]
+        .ffill()
+    )
+    close = close.dropna(axis=1)  # NaN after ffill == no price at month start
+    if close.shape[1] == 0:
+        return empty, {"n_positions": 0, "n_trades": 0, "avg_exposure": 0.0}
+
+    size = pd.DataFrame(np.nan, index=close.index, columns=close.columns)
+    size.iloc[0] = [weights[s] for s in close.columns]
+    pf = vbt.Portfolio.from_orders(
+        close=close,
+        size=size,
+        size_type="targetpercent",
+        init_cash=float(base_config["START_CASH"]),
+        fees=float(base_config["FEES"]),
+        slippage=float(base_config["SLIPPAGE"]),
+        freq=base_config["FREQ"],
+        cash_sharing=True,
+        group_by=np.full(close.shape[1], 0),
+        call_seq="auto",
+    ).copy()
+
+    returns = pf.returns()
+    if isinstance(returns, pd.DataFrame):
+        returns = returns.iloc[:, 0]
+    diags = {
+        "n_positions": int(close.shape[1]),
+        "n_trades": int(pf.trades.count().sum()),
+        "avg_exposure": float(_portfolio_exposure(pf).mean()),
+        "month_return_pct": float((1.0 + returns).prod() - 1.0) * 100,
+    }
+    return returns, diags
 
 
 class DualMomentum(CrossSectionalMomentum):
