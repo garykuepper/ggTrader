@@ -11,11 +11,16 @@ receives data truncated to <= asof.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Protocol, Tuple
+from concurrent.futures import ProcessPoolExecutor
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 import numpy as np
 import pandas as pd
 import vectorbt as vbt
+
+from ggTrader.core.fast_backtest import FastBacktest
+from ggTrader.core.orchestrator_utils import _to_native
+from ggTrader.research.equity_wfo import grid_books, wfo_strategy_tournament_one_stock
 
 
 class MonthlyStrategy(Protocol):
@@ -165,3 +170,179 @@ class DualMomentum(CrossSectionalMomentum):
     ) -> List[Dict[str, Any]]:
         picks = super().select(asof, ohlcv, eligible)
         return [p for p in picks if p["momentum"] >= 0.0]
+
+
+def _select_worker(args: Tuple) -> Tuple[str, Optional[Dict[str, Any]]]:
+    """Tournament for one stock on its trailing window (process-pool worker)."""
+    (
+        symbol,
+        sym_ohlcv,
+        base_config,
+        entries,
+        exits,
+        entry_book,
+        exit_book,
+        n_splits,
+        test_ratio,
+    ) = args
+    try:
+        res = wfo_strategy_tournament_one_stock(
+            sym_ohlcv, base_config, entries, exits, entry_book, exit_book, n_splits, test_ratio
+        )
+    except Exception as exc:
+        print(f"    [{symbol}] tournament failed: {exc!r}")
+        return symbol, None
+    best = res.get("best")
+    if best is None or not np.isfinite(best.get("oos_robustness", float("nan"))):
+        return symbol, None
+
+    avg_hold = float("nan")
+    try:
+        replay_cfg = {
+            **base_config,
+            "ENTRY_STRATEGY": best["entry"],
+            "EXIT_STRATEGY": best["exit"],
+        }
+        engine = FastBacktest(sym_ohlcv, best["params"], config=replay_cfg)
+        engine.run(show_progress=False)
+        avg_hold = engine.get_stats().get("avg_holding_days", float("nan"))
+    except Exception:
+        pass
+
+    return symbol, {
+        "symbol": symbol,
+        "entry": best["entry"],
+        "exit": best["exit"],
+        "params": _to_native(best["params"]),
+        "oos_robustness": float(best["oos_robustness"]),
+        "fold_consistency": float(best["fold_consistency"]),
+        "is_robustness": float(best["is_robustness"]),
+        "avg_holding_days": float(avg_hold) if np.isfinite(avg_hold) else None,
+    }
+
+
+class WfoTournamentStrategy:
+    """Per-stock entry x exit WFO tournament; top-N by OOS robustness."""
+
+    name = "wfo_tournament"
+
+    def __init__(
+        self,
+        cfg,
+        base_config: Dict[str, Any],
+        entry_book: Optional[Dict[str, Dict[str, Any]]] = None,
+        exit_book: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> None:
+        if entry_book is None or exit_book is None:
+            entry_book, exit_book = grid_books(cfg.grid_book)
+        self.cfg = cfg
+        self.base_config = base_config
+        self.entry_book = entry_book
+        self.exit_book = exit_book
+
+    def select(
+        self, asof: pd.Timestamp, ohlcv: pd.DataFrame, eligible: List[str]
+    ) -> List[Dict[str, Any]]:
+        cfg = self.cfg
+        jobs = [
+            (
+                sym,
+                ohlcv[[sym]].tail(cfg.lookback_bars),
+                self.base_config,
+                cfg.entries,
+                cfg.exits,
+                self.entry_book,
+                self.exit_book,
+                cfg.n_splits,
+                cfg.test_ratio,
+            )
+            for sym in eligible
+        ]
+        results: List[Dict[str, Any]] = []
+        if cfg.n_jobs > 1:
+            with ProcessPoolExecutor(max_workers=cfg.n_jobs) as pool:
+                for _sym, rec in pool.map(_select_worker, jobs, chunksize=1):
+                    if rec is not None:
+                        results.append(rec)
+        else:
+            for job in jobs:
+                _sym, rec = _select_worker(job)
+                if rec is not None:
+                    results.append(rec)
+        results.sort(key=lambda r: r["oos_robustness"], reverse=True)
+        return results[: cfg.top_n]
+
+    def simulate(
+        self,
+        ohlcv: pd.DataFrame,
+        selections: List[Dict[str, Any]],
+        asof: pd.Timestamp,
+        month_end: pd.Timestamp,
+    ) -> Tuple[pd.Series, Dict[str, Any]]:
+        cfg, base_config = self.cfg, self.base_config
+        empty = pd.Series(dtype=float)
+        month_index = ohlcv.index[(ohlcv.index > asof) & (ohlcv.index <= month_end)]
+        if len(month_index) == 0 or not selections:
+            return empty, {"n_positions": 0, "n_trades": 0, "avg_exposure": 0.0}
+
+        all_entries, all_exits, all_close = [], [], []
+        for sel in selections:
+            sym = sel["symbol"]
+            if sym not in ohlcv.columns.get_level_values(0):
+                continue
+            window = ohlcv[[sym]].loc[:month_end].tail(cfg.warmup_bars + len(month_index))
+            sig_cfg = {
+                **base_config,
+                "ENTRY_STRATEGY": sel["entry"],
+                "EXIT_STRATEGY": sel["exit"],
+            }
+            try:
+                engine = FastBacktest(window, sel["params"], config=sig_cfg)
+                engine.run(show_progress=False)
+            except Exception as exc:
+                print(f"    [{sym}] forward signal generation failed: {exc!r}")
+                continue
+            entries = engine.entries.droplevel("param_combo", axis=1)
+            exits = engine.exits.droplevel("param_combo", axis=1)
+            entries.loc[entries.index <= asof] = False  # no pre-month positions
+            all_entries.append(entries)
+            all_exits.append(exits)
+            all_close.append(window.xs("close", axis=1, level=1, drop_level=True))
+
+        if not all_entries:
+            return empty, {"n_positions": 0, "n_trades": 0, "avg_exposure": 0.0}
+
+        entries_df = pd.concat(all_entries, axis=1).fillna(False)
+        exits_df = pd.concat(all_exits, axis=1).fillna(False)
+        close_df = pd.concat(all_close, axis=1)
+
+        pf = vbt.Portfolio.from_signals(
+            close=close_df,
+            entries=entries_df,
+            exits=exits_df,
+            init_cash=float(base_config["START_CASH"]),
+            fees=float(base_config["FEES"]),
+            slippage=float(base_config["SLIPPAGE"]),
+            freq=base_config["FREQ"],
+            size=cfg.max_position_pct,
+            size_type="percent",
+            cash_sharing=True,
+            group_by=np.full(entries_df.shape[1], 0),
+        ).copy()
+
+        returns = pf.returns()
+        if isinstance(returns, pd.DataFrame):
+            returns = returns.iloc[:, 0]
+        in_month = (returns.index > asof) & (returns.index <= month_end)
+        month_returns = returns.loc[in_month]
+        exposure = _portfolio_exposure(pf).loc[in_month]
+
+        dur = np.array(pf.trades.duration.values, dtype=np.float64, copy=True)
+        diags = {
+            "n_positions": int(len(selections)),
+            "n_trades": int(pf.trades.count().sum()),
+            "avg_holding_days": float(dur.mean()) if dur.size else None,
+            "avg_exposure": float(exposure.mean()) if len(exposure) else 0.0,
+            "month_return_pct": float((1.0 + month_returns).prod() - 1.0) * 100,
+        }
+        return month_returns, diags

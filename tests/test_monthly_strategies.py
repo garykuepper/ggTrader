@@ -143,3 +143,42 @@ def test_dual_momentum_all_negative_is_flat_month():
     assert sels == []
     rets, diags = strat.simulate(ohlcv, sels, idx[-60], idx[-1])
     assert rets.empty and diags["n_positions"] == 0
+
+
+def _trending_ohlcv(n: int = 600, seed: int = 7) -> pd.DataFrame:
+    rng = np.random.default_rng(seed)
+    idx = _idx(n, start="2018-01-02")
+    prices = {}
+    for i, sym in enumerate(["AAA", "BBB"]):
+        drift = 0.0006 * (i + 1)
+        steps = rng.normal(drift, 0.02, n)
+        prices[sym] = pd.Series(100.0 * np.exp(np.cumsum(steps)), index=idx)
+    return make_ohlcv(prices)
+
+
+def test_wfo_tournament_strategy_is_deterministic_and_jsonable():
+    from ggTrader.research.monthly_strategies import WfoTournamentStrategy
+
+    ohlcv = _trending_ohlcv()
+    asof = ohlcv.index[-40]
+    cfg = MonthlyHarnessConfig(
+        top_n=2,
+        entries=["psar_adx"],
+        exits=["atr_trailing"],
+        grid_book="coarse",
+        n_splits=4,
+        n_jobs=1,
+        lookback_bars=400,
+    )
+    strat = WfoTournamentStrategy(cfg, STOCK_BASE_CONFIG)
+    past = ohlcv.loc[:asof]
+    s1 = strat.select(asof, past, ["AAA", "BBB"])
+    s2 = strat.select(asof, past.copy(), ["AAA", "BBB"])
+    assert json.dumps(s1, sort_keys=True, default=str) == json.dumps(
+        s2, sort_keys=True, default=str
+    )
+    json.dumps(s1)
+    if len(s1) >= 2:  # gates may reject synthetic series; determinism is the contract
+        assert s1[0]["oos_robustness"] >= s1[1]["oos_robustness"]
+    rets, diags = strat.simulate(ohlcv, s1, asof, ohlcv.index[-1])
+    assert "avg_exposure" in diags
