@@ -8,6 +8,7 @@ import pandas as pd
 from ggTrader.research.equity_wfo import STOCK_BASE_CONFIG
 from ggTrader.research.monthly_strategies import (
     CrossSectionalMomentum,
+    DualMomentum,
     simulate_hold_weights,
 )
 from ggTrader.research.monthly_walkforward import MonthlyHarnessConfig
@@ -109,3 +110,36 @@ def test_simulate_hold_weights_empty_inputs_are_flat():
     rets, diags = simulate_hold_weights(ohlcv, {}, idx[20], idx[-1], STOCK_BASE_CONFIG)
     assert rets.empty
     assert diags["n_positions"] == 0
+
+
+def test_dual_momentum_drops_only_negative_momentum():
+    idx = _idx(300)
+    ohlcv = make_ohlcv(
+        {
+            "UP": pd.Series(np.linspace(10, 30, 300), index=idx),
+            "FLAT": pd.Series(np.full(300, 20.0), index=idx),
+            "DOWN": pd.Series(np.linspace(30, 10, 300), index=idx),
+        }
+    )
+    cfg = MonthlyHarnessConfig(top_n=3)
+    strat = DualMomentum(cfg, STOCK_BASE_CONFIG)
+    sels = strat.select(idx[-1], ohlcv, ["UP", "FLAT", "DOWN"])
+    assert [s["symbol"] for s in sels] == ["UP", "FLAT"]  # FLAT momentum == 0.0 kept
+    # weights are NOT renormalized — DOWN's slot stays in cash
+    assert all(abs(s["weight"] - 1.0 / 3.0) < 1e-12 for s in sels)
+
+
+def test_dual_momentum_all_negative_is_flat_month():
+    idx = _idx(300)
+    ohlcv = make_ohlcv(
+        {
+            "D1": pd.Series(np.linspace(30, 10, 300), index=idx),
+            "D2": pd.Series(np.linspace(40, 20, 300), index=idx),
+        }
+    )
+    cfg = MonthlyHarnessConfig(top_n=2)
+    strat = DualMomentum(cfg, STOCK_BASE_CONFIG)
+    sels = strat.select(idx[-60], ohlcv.loc[: idx[-60]], ["D1", "D2"])
+    assert sels == []
+    rets, diags = strat.simulate(ohlcv, sels, idx[-60], idx[-1])
+    assert rets.empty and diags["n_positions"] == 0

@@ -152,4 +152,16 @@ def simulate_hold_weights(
 
 
 class DualMomentum(CrossSectionalMomentum):
-    name = "dual_momentum"  # behavior added in Task 3
+    """Cross-sectional momentum + absolute filter: negative-momentum picks go to cash.
+
+    Weights are NOT renormalized — a dropped pick's 1/N slot stays in cash,
+    so the portfolio de-risks as breadth deteriorates.
+    """
+
+    name = "dual_momentum"
+
+    def select(
+        self, asof: pd.Timestamp, ohlcv: pd.DataFrame, eligible: List[str]
+    ) -> List[Dict[str, Any]]:
+        picks = super().select(asof, ohlcv, eligible)
+        return [p for p in picks if p["momentum"] >= 0.0]
