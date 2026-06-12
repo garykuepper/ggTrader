@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-06-12
+
+### Equity verdicts: WFO tournament NO-GO; momentum baselines market-like
+
+The full `sp500_monthly_v1` run (64 OOS months, 2021-02 → 2026-05) finished and
+[`equity_monthly_walkforward.md`](equity_monthly_walkforward.md) §4 is filled:
+- **WFO tournament: clear NO-GO.** +0.88% total vs SPY +103.8% (Sharpe 0.12 vs
+  0.89, hit rate 0.365). Mostly-cash portfolio (ann. vol 1.49%); in-sample
+  selection robustness does not transfer to the forward month. `psar_adx` won
+  2 of ~3,200 slots — its old crypto in-sample dominance was hindsight bias.
+- **xs_momentum (12-1, top-50): no risk-adjusted edge.** +126.0% vs SPY
+  +104.5% but Sharpe 0.82 vs 0.89 — raw outperformance bought with ~30% more
+  vol; fails the §5 decision rule. Validates the harness (textbook result).
+- **dual_momentum: vacuous at this book size.** Identical output — the
+  absolute filter never fired; minimum selected momentum across all 64 months
+  was +12.2% (Oct 2022). Needs a much smaller `top_n` or portfolio-level
+  application to matter.
+- Roadmap updated: Alpaca/equities execution shelved (nothing to deploy);
+  signal-library redesign (§2d/§3) is the only live path in both markets.
+
+Also fixed during plan execution (`f4a23f0`): both `select()` implementations
+indexed positionally from the end of the frame, which the strategy-generic
+leak check's unmasked defense-in-depth case caught as lookahead; every
+`select` now self-truncates to `asof`, with regression tests.
+
 ## 2026-06-10
 
 ### Core refactor: legacy signal path deleted; vectorbt-native engine only
