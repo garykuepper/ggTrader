@@ -75,6 +75,7 @@ class CrossSectionalMomentum:
     def select(
         self, asof: pd.Timestamp, ohlcv: pd.DataFrame, eligible: List[str]
     ) -> List[Dict[str, Any]]:
+        ohlcv = ohlcv.loc[:asof]  # defense in depth: invariant to post-asof rows
         scores: Dict[str, float] = {}
         for sym in eligible:
             closes = ohlcv[sym]["close"].dropna()
@@ -244,6 +245,7 @@ class WfoTournamentStrategy:
         self, asof: pd.Timestamp, ohlcv: pd.DataFrame, eligible: List[str]
     ) -> List[Dict[str, Any]]:
         cfg = self.cfg
+        ohlcv = ohlcv.loc[:asof]  # defense in depth: invariant to post-asof rows
         jobs = [
             (
                 sym,

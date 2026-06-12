@@ -67,6 +67,23 @@ def test_momentum_skip_window_is_actually_skipped():
     assert sels["BASE"] == sels["JUMP"]
 
 
+def test_momentum_ignores_rows_after_asof():
+    """Defense in depth: select must self-truncate to asof (leak_check unmasked case)."""
+    idx = _idx(300)
+    ohlcv = make_ohlcv(
+        {
+            "UP": pd.Series(np.linspace(10, 30, 300), index=idx),
+            "DOWN": pd.Series(np.linspace(30, 10, 300), index=idx),
+        }
+    )
+    asof = idx[-30]
+    cfg = MonthlyHarnessConfig(top_n=2)
+    strat = CrossSectionalMomentum(cfg, STOCK_BASE_CONFIG)
+    unmasked = strat.select(asof, ohlcv, ["UP", "DOWN"])
+    truncated = strat.select(asof, ohlcv.loc[:asof], ["UP", "DOWN"])
+    assert json.dumps(unmasked, sort_keys=True) == json.dumps(truncated, sort_keys=True)
+
+
 def test_momentum_respects_top_n_and_short_history():
     idx = _idx(300)
     short_idx = idx[-100:]  # < lookback+1 bars -> ineligible
@@ -174,8 +191,11 @@ def test_wfo_tournament_strategy_is_deterministic_and_jsonable():
     past = ohlcv.loc[:asof]
     s1 = strat.select(asof, past, ["AAA", "BBB"])
     s2 = strat.select(asof, past.copy(), ["AAA", "BBB"])
-    assert json.dumps(s1, sort_keys=True, default=str) == json.dumps(
-        s2, sort_keys=True, default=str
+    s3 = strat.select(asof, ohlcv, ["AAA", "BBB"])  # unmasked: must self-truncate to asof
+    assert (
+        json.dumps(s1, sort_keys=True, default=str)
+        == json.dumps(s2, sort_keys=True, default=str)
+        == json.dumps(s3, sort_keys=True, default=str)
     )
     json.dumps(s1)
     if len(s1) >= 2:  # gates may reject synthetic series; determinism is the contract
