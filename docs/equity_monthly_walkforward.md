@@ -138,10 +138,35 @@ Universe/data: 1,919 rows × 616 symbols (1d), 64 selection dates
 Quick-mode sanity run (10 stocks, 6 months — mechanics check only, not an
 estimate): monthly hit rate 0.6 vs SPY, median hold ~15.6d, turnover 0.44.
 
-For comparison, the same harness now takes `--strategy xs_momentum` /
-`dual_momentum` (always-invested monthly momentum baselines; see
-`research/monthly_strategies.py`) — those are the next candidates to evaluate
-over this same 64-month window.
+### Momentum baselines over the same window (run 2026-06-12)
+
+Same harness, same 64 selection dates, `--strategy xs_momentum` (12-1
+cross-sectional momentum, top-50 equal weight, always invested):
+
+| Metric | xs_momentum | SPY |
+|---|---|---|
+| Total return | +125.98% | +104.52% |
+| CAGR | 16.69% | 14.51% |
+| Sharpe | 0.82 | 0.89 |
+| Sortino | 1.13 | 1.22 |
+| Ann. volatility | 21.83% | 16.89% |
+| Max drawdown | −22.38% | −24.50% |
+| Monthly hit rate vs SPY | 0.49 | — |
+
+Avg exposure 1.00, avg monthly turnover 0.29. Beats SPY on raw return by
+taking ~30% more volatility — **fails the §5 risk-adjusted test** (Sharpe and
+Sortino both below SPY). A textbook result: the equity momentum premium is
+roughly market-like after 2021–26.
+
+`dual_momentum` produced **identical** results: with top-50 of ~500 names, the
+absolute-momentum filter never fired — checkpoint audit shows the *minimum*
+selected 12-1 momentum across all 64 months was +12.2% (October 2022, the bear
+low). The absolute filter only matters with a much smaller book or applied at
+the portfolio level (Antonacci-style, vs T-bills); as a stock-level filter on
+a top-50 S&P 500 book it is vacuous.
+
+Checkpoints: `results/monthly_wf/sp500_xs_momentum/`,
+`results/monthly_wf/sp500_dual_momentum/`.
 
 ## 5. Decision rule
 
