@@ -101,30 +101,47 @@ baseline.
 
 ## 4. Results — run `sp500_monthly_v1`
 
-> **Status: RUNNING** (started 2026-06-10, ~26 min/month on 4 cores, ~64
-> months). Fill this section from
-> `results/monthly_wf/sp500_monthly_v1/summary.json` when complete.
+> **Status: COMPLETE** (started 2026-06-10, finished 2026-06-11; ~26 min/month
+> on 4 cores, 64 months). **Verdict: clear NO-GO** — the strategy was nearly
+> flat over 5+ years while SPY doubled, and lost on every risk-adjusted metric.
 
 Universe/data: 1,919 rows × 616 symbols (1d), 64 selection dates
-2021-02-26 → 2026-05-29, 52 delisted tickers unavailable.
+2021-02-26 → 2026-05-29, 52 delisted tickers unavailable. 63 traded months.
 
 | Metric | Strategy | SPY |
 |---|---|---|
-| CAGR | _TBD_ | _TBD_ |
-| Sharpe | _TBD_ | _TBD_ |
-| Sortino | _TBD_ | _TBD_ |
-| Max drawdown | _TBD_ | _TBD_ |
-| Monthly hit rate vs SPY | _TBD_ | — |
+| Total return | +0.88% | +103.83% |
+| CAGR | 0.17% | 14.46% |
+| Sharpe | 0.12 | 0.89 |
+| Sortino | 0.15 | 1.22 |
+| Ann. volatility | 1.49% | 16.88% |
+| Max drawdown | −4.30% | −24.50% |
+| Monthly hit rate vs SPY | 0.365 | — |
 
-- **Holding-days distribution** (goal: 2–10 day average): _TBD_
-- **Avg monthly selection turnover:** _TBD_
-- **Combo tournament winners** (selection counts): _TBD — early checkpoints
-  show `rsi_reversal+fixed_sl_tp` dominating, with `bbands_mean_reversion`,
-  `supertrend_flip`, `adx_filtered_rsi` also winning slots; consistent with the
-  crypto edge-search finding that mean-reversion is where the life is._
+- **Holding-days distribution** (goal: 2–10 day average): p25 2.6 / median 4.9
+  / p75 9.4 — squarely in the target band, so the signals do trade; they just
+  don't make money after fees.
+- **Avg monthly selection turnover:** 0.83 — the tournament re-picks ~83% of
+  the book every month, i.e. selections are unstable month to month.
+- **Combo tournament winners** (selection counts, top of 25 combos that ever
+  won a slot): `rsi_reversal+fixed_sl_tp` 663, `supertrend_flip+fixed_sl_tp`
+  472, `bbands_mean_reversion+fixed_sl_tp` 421, `donchian_breakout+fixed_sl_tp`
+  250, `macd_cross+fixed_sl_tp` 240. Mean-reversion entries and fixed
+  stop/target exits dominate — consistent with the crypto edge-search finding —
+  but `psar_adx` (the old in-sample crypto favorite) won only 2 slots in 3,200,
+  confirming its earlier results were hindsight bias.
+- **Reading:** ann. vol of 1.49% with 2% per-position caps means the portfolio
+  was mostly in cash — per-stock WFO gates rejected most candidates most months,
+  and what passed didn't carry out-of-sample. Selection robustness in-sample
+  does not transfer to the forward month (hit rate 0.365 < coin flip).
 
 Quick-mode sanity run (10 stocks, 6 months — mechanics check only, not an
 estimate): monthly hit rate 0.6 vs SPY, median hold ~15.6d, turnover 0.44.
+
+For comparison, the same harness now takes `--strategy xs_momentum` /
+`dual_momentum` (always-invested monthly momentum baselines; see
+`research/monthly_strategies.py`) — those are the next candidates to evaluate
+over this same 64-month window.
 
 ## 5. Decision rule
 
