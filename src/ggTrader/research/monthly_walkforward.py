@@ -19,17 +19,13 @@ from __future__ import annotations
 
 import json
 import time
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-import vectorbt as vbt
 
-from ggTrader.core.fast_backtest import FastBacktest
-from ggTrader.core.orchestrator_utils import _to_native
 from ggTrader.data.core.index_constituents import (
     all_members_between,
     coverage_stats,
@@ -37,12 +33,8 @@ from ggTrader.data.core.index_constituents import (
     sp500_members_asof,
 )
 from ggTrader.indicators.strategies import ENTRY_REGISTRY, EXIT_REGISTRY
-from ggTrader.research.equity_wfo import (
-    STOCK_BASE_CONFIG,
-    fetch_stock_ohlcv,
-    grid_books,
-    wfo_strategy_tournament_one_stock,
-)
+from ggTrader.research.equity_wfo import STOCK_BASE_CONFIG, fetch_stock_ohlcv
+from ggTrader.research.monthly_strategies import MonthlyStrategy, WfoTournamentStrategy
 
 TRADING_DAYS_PER_YEAR = 252
 
@@ -69,204 +61,27 @@ class MonthlyHarnessConfig:
 
 
 # ---------------------------------------------------------------------------
-# Selection
+# Eligibility
 # ---------------------------------------------------------------------------
 
 
-def _select_worker(args: Tuple) -> Tuple[str, Optional[Dict[str, Any]]]:
-    """Tournament for one stock on its trailing window (process-pool worker)."""
-    (
-        symbol,
-        sym_ohlcv,
-        base_config,
-        entries,
-        exits,
-        entry_book,
-        exit_book,
-        n_splits,
-        test_ratio,
-    ) = args
-    try:
-        res = wfo_strategy_tournament_one_stock(
-            sym_ohlcv, base_config, entries, exits, entry_book, exit_book, n_splits, test_ratio
-        )
-    except Exception as exc:
-        print(f"    [{symbol}] tournament failed: {exc!r}")
-        return symbol, None
-    best = res.get("best")
-    if best is None or not np.isfinite(best.get("oos_robustness", float("nan"))):
-        return symbol, None
-
-    # Trailing-window replay with the winning combo for the holding-period
-    # diagnostic. Uses only data <= T (the window itself).
-    avg_hold = float("nan")
-    try:
-        replay_cfg = {
-            **base_config,
-            "ENTRY_STRATEGY": best["entry"],
-            "EXIT_STRATEGY": best["exit"],
-        }
-        engine = FastBacktest(sym_ohlcv, best["params"], config=replay_cfg)
-        engine.run(show_progress=False)
-        avg_hold = engine.get_stats().get("avg_holding_days", float("nan"))
-    except Exception:
-        pass
-
-    return symbol, {
-        "symbol": symbol,
-        "entry": best["entry"],
-        "exit": best["exit"],
-        "params": _to_native(best["params"]),
-        "oos_robustness": float(best["oos_robustness"]),
-        "fold_consistency": float(best["fold_consistency"]),
-        "is_robustness": float(best["is_robustness"]),
-        "avg_holding_days": float(avg_hold) if np.isfinite(avg_hold) else None,
-    }
-
-
-def select_for_month(
-    asof: pd.Timestamp,
-    ohlcv: pd.DataFrame,
-    cfg: MonthlyHarnessConfig,
-    base_config: Dict[str, Any],
-    entry_book: Dict[str, Dict[str, Any]],
-    exit_book: Dict[str, Dict[str, Any]],
-) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-    """Rank the point-in-time universe at ``asof`` and return (top-N, coverage).
-
-    Only data with index <= asof is ever passed to the tournament.
-    """
+def _eligibility(
+    asof: pd.Timestamp, past: pd.DataFrame, cfg: MonthlyHarnessConfig
+) -> Tuple[List[str], Dict[str, Any]]:
+    """PIT members at asof with enough history in ``past`` (data <= asof)."""
     members = [normalize_yf_ticker(m) for m in sp500_members_asof(asof)]
-    have = set(ohlcv.columns.get_level_values(0).unique())
-    past = ohlcv.loc[:asof]
-
+    have = set(past.columns.get_level_values(0).unique())
     eligible: List[str] = []
     for sym in members:
         if sym not in have:
             continue
-        closes = past[sym]["close"].dropna()
-        if len(closes) >= cfg.min_history_bars:
+        if len(past[sym]["close"].dropna()) >= cfg.min_history_bars:
             eligible.append(sym)
     if cfg.max_stocks is not None:
         eligible = sorted(eligible)[: cfg.max_stocks]
-
     coverage = coverage_stats(members, eligible)
     coverage["asof"] = str(asof.date())
-
-    jobs = []
-    for sym in eligible:
-        window = past[[sym]].tail(cfg.lookback_bars)
-        jobs.append(
-            (
-                sym,
-                window,
-                base_config,
-                cfg.entries,
-                cfg.exits,
-                entry_book,
-                exit_book,
-                cfg.n_splits,
-                cfg.test_ratio,
-            )
-        )
-
-    results: List[Dict[str, Any]] = []
-    if cfg.n_jobs > 1:
-        with ProcessPoolExecutor(max_workers=cfg.n_jobs) as pool:
-            for _sym, rec in pool.map(_select_worker, jobs, chunksize=1):
-                if rec is not None:
-                    results.append(rec)
-    else:
-        for job in jobs:
-            _sym, rec = _select_worker(job)
-            if rec is not None:
-                results.append(rec)
-
-    results.sort(key=lambda r: r["oos_robustness"], reverse=True)
-    return results[: cfg.top_n], coverage
-
-
-# ---------------------------------------------------------------------------
-# Forward simulation
-# ---------------------------------------------------------------------------
-
-
-def simulate_forward_month(
-    ohlcv: pd.DataFrame,
-    selections: List[Dict[str, Any]],
-    asof: pd.Timestamp,
-    month_end: pd.Timestamp,
-    cfg: MonthlyHarnessConfig,
-    base_config: Dict[str, Any],
-) -> Tuple[pd.Series, Dict[str, Any]]:
-    """Trade (asof, month_end] with the frozen selections.
-
-    Signals are generated on [asof - warmup, month_end] so indicators are warm,
-    then entries are masked to the forward month. Returns the month's daily
-    portfolio returns plus diagnostics.
-    """
-    month_index = ohlcv.index[(ohlcv.index > asof) & (ohlcv.index <= month_end)]
-    if len(month_index) == 0 or not selections:
-        return pd.Series(dtype=float), {"n_positions": 0, "n_trades": 0}
-
-    all_entries, all_exits, all_close = [], [], []
-    for sel in selections:
-        sym = sel["symbol"]
-        if sym not in ohlcv.columns.get_level_values(0):
-            continue
-        window = ohlcv[[sym]].loc[:month_end].tail(cfg.warmup_bars + len(month_index))
-        sig_cfg = {
-            **base_config,
-            "ENTRY_STRATEGY": sel["entry"],
-            "EXIT_STRATEGY": sel["exit"],
-        }
-        try:
-            engine = FastBacktest(window, sel["params"], config=sig_cfg)
-            engine.run(show_progress=False)
-        except Exception as exc:
-            print(f"    [{sym}] forward signal generation failed: {exc!r}")
-            continue
-        entries = engine.entries.droplevel("param_combo", axis=1)
-        exits = engine.exits.droplevel("param_combo", axis=1)
-        entries.loc[entries.index <= asof] = False  # no pre-month positions
-        all_entries.append(entries)
-        all_exits.append(exits)
-        all_close.append(window.xs("close", axis=1, level=1, drop_level=True))
-
-    if not all_entries:
-        return pd.Series(dtype=float), {"n_positions": 0, "n_trades": 0}
-
-    entries_df = pd.concat(all_entries, axis=1).fillna(False)
-    exits_df = pd.concat(all_exits, axis=1).fillna(False)
-    close_df = pd.concat(all_close, axis=1)
-
-    pf = vbt.Portfolio.from_signals(
-        close=close_df,
-        entries=entries_df,
-        exits=exits_df,
-        init_cash=float(base_config["START_CASH"]),
-        fees=float(base_config["FEES"]),
-        slippage=float(base_config["SLIPPAGE"]),
-        freq=base_config["FREQ"],
-        size=cfg.max_position_pct,
-        size_type="percent",
-        cash_sharing=True,
-        group_by=np.full(entries_df.shape[1], 0),
-    ).copy()
-
-    returns = pf.returns()
-    if isinstance(returns, pd.DataFrame):
-        returns = returns.iloc[:, 0]
-    month_returns = returns.loc[(returns.index > asof) & (returns.index <= month_end)]
-
-    dur = np.array(pf.trades.duration.values, dtype=np.float64, copy=True)
-    diags = {
-        "n_positions": int(len(selections)),
-        "n_trades": int(pf.trades.count().sum()),
-        "avg_holding_days": float(dur.mean()) if dur.size else None,
-        "month_return_pct": float((1.0 + month_returns).prod() - 1.0) * 100,
-    }
-    return month_returns, diags
+    return eligible, coverage
 
 
 # ---------------------------------------------------------------------------
@@ -353,12 +168,15 @@ def selection_turnover(selections_by_month: List[List[Dict[str, Any]]]) -> List[
 
 
 def run_monthly_walkforward(
-    cfg: MonthlyHarnessConfig, base_config: Optional[Dict[str, Any]] = None
+    cfg: MonthlyHarnessConfig,
+    base_config: Optional[Dict[str, Any]] = None,
+    strategy: Optional[MonthlyStrategy] = None,
 ) -> Dict[str, Any]:
     base_config = {**STOCK_BASE_CONFIG, **(base_config or {})}
-    entry_book, exit_book = grid_books(cfg.grid_book)
+    strategy = strategy or WfoTournamentStrategy(cfg, base_config)
     run_dir = Path(cfg.checkpoint_dir) / cfg.run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Strategy: {strategy.name}")
 
     eval_start = pd.Timestamp(cfg.eval_start, tz="UTC")
     eval_end = (
@@ -390,6 +208,7 @@ def run_monthly_walkforward(
     month_returns: List[pd.Series] = []
     selections_by_month: List[List[Dict[str, Any]]] = []
     active_selections: List[Dict[str, Any]] = []
+    exposures: List[float] = []
     t0 = time.time()
 
     for i, asof in enumerate(sel_dates):
@@ -404,19 +223,26 @@ def run_monthly_walkforward(
             cached = json.loads(sel_path.read_text())
             selections_by_month.append(cached["selections"])
             active_selections = cached["selections"]
+            cov_path = month_dir / "coverage.json"
+            if cov_path.exists():
+                prev = json.loads(cov_path.read_text()).get("diagnostics", {})
+                if prev.get("avg_exposure") is not None:
+                    exposures.append(float(prev["avg_exposure"]))
             print(f"[{i + 1}/{len(sel_dates)}] {tag}: checkpoint found, skipping")
             continue
 
         refit = (i % max(cfg.refit_every_n_months, 1) == 0) or not active_selections
         if refit:
-            selections, coverage = select_for_month(
-                asof, ohlcv, cfg, base_config, entry_book, exit_book
-            )
+            past = ohlcv.loc[:asof]
+            eligible, coverage = _eligibility(asof, past, cfg)
+            selections = strategy.select(asof, past, eligible)
             active_selections = selections
         else:
             selections, coverage = active_selections, {"reused_previous_selection": True}
 
-        rets, diags = simulate_forward_month(ohlcv, selections, asof, month_end, cfg, base_config)
+        rets, diags = strategy.simulate(ohlcv, selections, asof, month_end)
+        if diags.get("avg_exposure") is not None:
+            exposures.append(float(diags["avg_exposure"]))
 
         month_dir.mkdir(parents=True, exist_ok=True)
         pd.DataFrame({"ret": rets}).to_parquet(ret_path)
@@ -457,12 +283,15 @@ def run_monthly_walkforward(
     combo_counts: Dict[str, int] = {}
     for sels in selections_by_month:
         for s in sels:
-            key = f"{s['entry']}+{s['exit']}"
-            combo_counts[key] = combo_counts.get(key, 0) + 1
+            if "entry" in s and "exit" in s:
+                key = f"{s['entry']}+{s['exit']}"
+                combo_counts[key] = combo_counts.get(key, 0) + 1
 
     summary = {
         "config": {**cfg.__dict__},
+        "strategy": strategy.name,
         "report": report,
+        "avg_exposure": float(np.mean(exposures)) if exposures else None,
         "avg_monthly_turnover": float(np.mean(turnover)) if turnover else None,
         "holding_days": {
             "p25": float(np.percentile(holds, 25)) if holds else None,
@@ -480,10 +309,14 @@ def run_monthly_walkforward(
     return summary
 
 
-def leak_check(cfg: MonthlyHarnessConfig, base_config: Optional[Dict[str, Any]] = None) -> bool:
+def leak_check(
+    cfg: MonthlyHarnessConfig,
+    base_config: Optional[Dict[str, Any]] = None,
+    strategy: Optional[MonthlyStrategy] = None,
+) -> bool:
     """Selections at T must be identical with and without post-T data loaded."""
     base_config = {**STOCK_BASE_CONFIG, **(base_config or {})}
-    entry_book, exit_book = grid_books(cfg.grid_book)
+    strategy = strategy or WfoTournamentStrategy(cfg, base_config)
 
     eval_start = pd.Timestamp(cfg.eval_start, tz="UTC")
     eval_end = (
@@ -499,11 +332,16 @@ def leak_check(cfg: MonthlyHarnessConfig, base_config: Optional[Dict[str, Any]] 
     asof = sel_dates[len(sel_dates) // 2]
     print(f"Leak check at {asof.date()}...")
 
-    full, _ = select_for_month(asof, ohlcv, cfg, base_config, entry_book, exit_book)
-    truncated, _ = select_for_month(asof, ohlcv.loc[:asof], cfg, base_config, entry_book, exit_book)
-
-    ok = json.dumps(full, sort_keys=True, default=str) == json.dumps(
-        truncated, sort_keys=True, default=str
+    eligible, _ = _eligibility(asof, ohlcv.loc[:asof], cfg)
+    full = strategy.select(asof, ohlcv.loc[:asof], eligible)
+    truncated = strategy.select(asof, ohlcv.loc[:asof].copy(deep=True), eligible)
+    # Defense in depth: every strategy must be invariant to post-T rows even
+    # though the harness always truncates before calling select.
+    unmasked = strategy.select(asof, ohlcv, eligible)
+    ok = (
+        json.dumps(full, sort_keys=True, default=str)
+        == json.dumps(truncated, sort_keys=True, default=str)
+        == json.dumps(unmasked, sort_keys=True, default=str)
     )
     print("LEAK CHECK:", "PASS — selections identical" if ok else "FAIL — selections differ!")
     return ok
