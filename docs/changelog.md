@@ -39,6 +39,20 @@ out-of-sample-by-construction harness — full writeup:
 - Archived both 2026-06-09 draft docs to `docs/archive/` with corrections preambles
   (fabricated vbt APIs; selection-biased Sharpe 2.15).
 
+### Research: strategy-agnostic monthly harness + momentum plug-ins
+
+The honest monthly walk-forward harness now takes any `MonthlyStrategy`
+(select on data <= T, simulate the forward month) — spec:
+[2026-06-10-monthly-strategy-interface-design.md](file:///home/flynn/ggTrader/docs/superpowers/specs/2026-06-10-monthly-strategy-interface-design.md).
+The WFO tournament moved to `research/monthly_strategies.py` unchanged; new
+plug-ins `xs_momentum` (12-1 cross-sectional momentum, top-50 equal weight,
+fully invested) and `dual_momentum` (negative-momentum picks go to cash).
+CLI: `--strategy`, `--mom-lookback`, `--mom-skip`. Diagnostics and summaries
+now report `avg_exposure`; the leak check is strategy-generic and also feeds
+untruncated data to `select` as defense in depth — that case caught a real
+lookahead bug in the plan's own code (positional indexing from the end of the
+frame), fixed by self-truncating to `asof` inside every `select`.
+
 ## 2026-06-08
 
 ### Edge-search sweep (gates / universe / fees) — no deployable edge found
