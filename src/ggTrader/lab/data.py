@@ -33,8 +33,7 @@ def rebalance_dates(
 ) -> List[pd.Timestamp]:
     """Last trading day of each month in [eval_start, eval_end), excluding the final
     month (selecting there would leave no forward period to trade)."""
-    month_start = eval_start.replace(day=1)
-    idx = index[(index >= month_start) & (index <= eval_end)]
+    idx = index[(index >= eval_start) & (index <= eval_end)]
     if len(idx) == 0:
         return []
     series = pd.Series(idx, index=idx)

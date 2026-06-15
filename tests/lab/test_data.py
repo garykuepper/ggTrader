@@ -6,16 +6,12 @@ from ggTrader.lab.data import rebalance_dates
 
 def test_rebalance_dates_are_month_ends_excluding_last():
     idx = pd.date_range("2021-01-01", "2021-06-30", freq="B", tz="UTC")
+    # eval_start=2021-01-31 is past Jan's last trading day (Jan 29), so January is
+    # excluded — matching the production harness. June is the final span month (dropped).
     dates = rebalance_dates(
         idx, pd.Timestamp("2021-01-31", tz="UTC"), pd.Timestamp("2021-06-30", tz="UTC")
     )
-    assert [d.strftime("%Y-%m") for d in dates] == [
-        "2021-01",
-        "2021-02",
-        "2021-03",
-        "2021-04",
-        "2021-05",
-    ]
+    assert [d.strftime("%Y-%m") for d in dates] == ["2021-02", "2021-03", "2021-04", "2021-05"]
     assert all(d.tz is not None for d in dates)
 
 
