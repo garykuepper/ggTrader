@@ -1,7 +1,7 @@
 # vectorbt lab core — design spec
 
 **Date:** 2026-06-15
-**Status:** Plan 1 executed 2026-06-15 (momentum bench shipped on branch `lab-core-plan1`; validation gate passes, selections bit-identical). Plans 2 (wfo_tournament/signal family) and 3 (equity backfill + old-code deletion) pending.
+**Status:** Plan 1 executed 2026-06-15 (momentum bench + validation gate). Plan 3 executed 2026-06-16 (CachedYFinanceLoader bug fixed, S&P 500 backfilled into DB, research/WFO code cluster deleted). Plan 2 (wfo_tournament/signal family via from_signals) pending.
 **Supersedes (on cutover):** the `research/` monthly walk-forward harness, the old WFO/orchestrator/backtest stack
 
 ## 1. Purpose

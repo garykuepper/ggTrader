@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-06-16
+
+### Research: Lab Plan 3 — equity backfill + old research code deletion
+
+- **Fixed** `CachedYFinanceLoader._interval_to_timedelta` AttributeError that forced
+  every equity lab run to re-download ~600 symbols live (~2 min → ~22s after fix).
+- **Fixed** `CachedYFinanceLoader._db_fetch` timezone bug (`tz_convert` on tz-naive
+  timestamps from psycopg2 → now uses `tz_localize` when tz is None).
+- **Backfilled** full S&P 500 OHLCV history (2000–present, ~600 symbols, 4M rows)
+  into TimescaleDB via `scripts/equity_backfill.py`. Future lab runs are DB-only.
+- **Moved** `fetch_stock_ohlcv` + `STOCK_BASE_CONFIG` from deleted `research/equity_wfo.py`
+  into `lab/data.py`, making the `lab/` package fully self-contained.
+- **Deleted** the old research/WFO code cluster: `research/`, `pipeline/`,
+  `backtesting/`, `core/{wfo,orchestrator,fast_backtest,sensitivity,benchmarking,
+  orchestrator_utils,wfo_aggregate,portfolio_optimizer}.py`,
+  `utils/pipeline_phases.py`, and CLI commands `research`, `backtest`,
+  `production`, `report`. ~26k lines removed. Live trading engine untouched.
+  Pending: Plan 2 (signal-based `wfo_tournament` family via `from_signals`).
+
 ## 2026-06-15
 
 ### Research: vectorbt lab core (Plan 1 — momentum bench)
