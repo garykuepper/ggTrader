@@ -58,40 +58,16 @@ def _command(name: str, help_text: str, register_path: str, handler_path: str) -
 
 
 _command(
-    "research",
-    "Run the Grand Walk-Forward Optimization pipeline",
-    "ggTrader.cli.cmd_research:register_research_parser",
-    "ggTrader.cli.cmd_research:run_research",
-)
-_command(
     "status",
     "Show research/production status",
     "ggTrader.cli.cmd_status:register_status_parser",
     "ggTrader.cli.cmd_status:run_status",
 )
 _command(
-    "report",
-    "Generate reports from research results",
-    "ggTrader.cli.cmd_report:register_report_parser",
-    "ggTrader.cli.cmd_report:run_report",
-)
-_command(
-    "backtest",
-    "Run a single backtest",
-    "ggTrader.cli.cmd_backtest:register_backtest_parser",
-    "ggTrader.cli.cmd_backtest:run_backtest",
-)
-_command(
     "trade",
     "Live trading commands",
     "ggTrader.cli.cmd_trade:register_trade_parser",
     "ggTrader.cli.cmd_trade:run_trade",
-)
-_command(
-    "production",
-    "Run production portfolio competition",
-    "ggTrader.cli.cmd_production:register_production_parser",
-    "ggTrader.cli.cmd_production:run_production",
 )
 _command(
     "ingest",
