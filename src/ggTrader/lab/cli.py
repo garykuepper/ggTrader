@@ -10,12 +10,17 @@ import pandas as pd
 from ggTrader.lab.data import STOCK_BASE_CONFIG, eligible_at, equity_universe_between, load_ohlcv
 from ggTrader.lab.harness import walkforward
 from ggTrader.lab.strategies.momentum import STRATEGY_NAMES, build_strategy
+from ggTrader.lab.strategies.signals import SIGNAL_STRATEGY_NAMES, build_signal_strategy
 from ggTrader.lab.strategy import LabConfig
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Run a lab strategy walk-forward.")
-    p.add_argument("--strategy", choices=STRATEGY_NAMES, required=True)
+    p.add_argument(
+        "--strategy",
+        choices=tuple(STRATEGY_NAMES) + tuple(SIGNAL_STRATEGY_NAMES),
+        required=True,
+    )
     p.add_argument("--market", default="equity")
     p.add_argument("--eval-start", default="2021-01-31")
     p.add_argument("--eval-end", default=None)
@@ -31,7 +36,10 @@ def run_lab(argv: List[str] | None = None) -> str:
     cfg = LabConfig(
         top_n=args.top_n, lookback=args.lookback, skip=args.skip, max_stocks=args.max_stocks
     )
-    strat = build_strategy(args.strategy, cfg)
+    if args.strategy in SIGNAL_STRATEGY_NAMES:
+        strat = build_signal_strategy(args.strategy, cfg)
+    else:
+        strat = build_strategy(args.strategy, cfg)
 
     eval_start = pd.Timestamp(args.eval_start, tz="UTC")
     eval_end = (

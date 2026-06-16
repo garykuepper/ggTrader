@@ -19,6 +19,19 @@
   `production`, `report`. ~26k lines removed. Live trading engine untouched.
   Pending: Plan 2 (signal-based `wfo_tournament` family via `from_signals`).
 
+### Research: Lab Plan 2 — signal-based strategy family
+
+- **Added** `SignalTargets(entries, exits)` NamedTuple to the Strategy protocol.
+- **Added** `simulate_signals()` — one grouped `vbt.Portfolio.from_signals` call for all
+  signal strategies simultaneously (parallel to `simulate_weights`).
+- **Extended** `walkforward()` to detect `target_kind`, route strategies to the appropriate
+  sim call, and merge results. Mixed weight + signal runs now work end-to-end.
+- **Added** `EmaCrossSignal` — simple whole-window EMA crossover signal strategy.
+- **Added** `WfoTournamentSignal` — evaluates 4 EMA combos on a 70% IS window each
+  rebalance, picks the best by equal-weight portfolio Sharpe, generates piecewise
+  signals for each forward period. Resolves spec §10 open question.
+- **Extended** `ggt lab` CLI: `--strategy ema_cross` and `--strategy wfo_tournament` now work.
+
 ## 2026-06-15
 
 ### Research: vectorbt lab core (Plan 1 — momentum bench)

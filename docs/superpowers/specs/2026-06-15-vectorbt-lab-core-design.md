@@ -1,7 +1,7 @@
 # vectorbt lab core — design spec
 
 **Date:** 2026-06-15
-**Status:** Plan 1 executed 2026-06-15 (momentum bench + validation gate). Plan 3 executed 2026-06-16 (CachedYFinanceLoader bug fixed, S&P 500 backfilled into DB, research/WFO code cluster deleted). Plan 2 (wfo_tournament/signal family via from_signals) pending.
+**Status:** Plan 1 executed 2026-06-15 (momentum bench + validation gate). Plan 3 executed 2026-06-16 (CachedYFinanceLoader bug fixed, S&P 500 backfilled into DB, research/WFO code cluster deleted). Plan 2 executed 2026-06-16 (signal-based strategies: EmaCrossSignal + WfoTournamentSignal; from_signals harness; open §10 question resolved — two grouped calls + merged metrics).
 **Supersedes (on cutover):** the `research/` monthly walk-forward harness, the old WFO/orchestrator/backtest stack
 
 ## 1. Purpose
@@ -153,5 +153,6 @@ Build `lab/` alongside the old code. **Cutover = validation gate passes.** Then 
 ## 10. Open questions / risks
 
 - **WFO tournament inside `to_targets`:** the entry/exit strategy emits per-bar signals over each frozen forward period; confirm these compose cleanly into a single whole-window `from_signals` panel alongside the weight-based strategies (may require running weight strategies and signal strategies as two grouped calls, then merging metrics). Resolve in the implementation plan.
+  - **Resolved (Plan 2):** Weight and signal strategies use two separate grouped vbt calls (`from_orders` for weights, `from_signals` for signals) with metrics merged at the harness level before persisting.
 - **Package name:** `lab/` is a placeholder; confirm before scaffolding.
 - **Tolerance band** for the soft validation gate to be fixed in the plan (proposed: equity endpoint within 1% relative, Sharpe within 0.05 absolute).
