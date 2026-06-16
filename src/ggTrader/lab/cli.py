@@ -7,11 +7,10 @@ from typing import List
 
 import pandas as pd
 
-from ggTrader.lab.data import eligible_at, equity_universe_between, load_ohlcv
+from ggTrader.lab.data import STOCK_BASE_CONFIG, eligible_at, equity_universe_between, load_ohlcv
 from ggTrader.lab.harness import walkforward
 from ggTrader.lab.strategies.momentum import STRATEGY_NAMES, build_strategy
 from ggTrader.lab.strategy import LabConfig
-from ggTrader.research.equity_wfo import STOCK_BASE_CONFIG
 
 
 def build_arg_parser() -> argparse.ArgumentParser:

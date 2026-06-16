@@ -43,3 +43,13 @@ def test_load_ohlcv_returns_multiindex_frame():
     assert df.columns.names == ["symbol", "field"]
     assert "close" in df["SPY"].columns
     assert len(df) > 20
+
+
+@pytest.mark.integration
+def test_fetch_stock_ohlcv_returns_multiindex_frame():
+    from ggTrader.lab.data import fetch_stock_ohlcv
+
+    df = fetch_stock_ohlcv(["SPY", "AAPL"], start="2024-01-01", end="2024-03-01")
+    assert df.columns.names == ["symbol", "field"]
+    assert "close" in df["SPY"].columns
+    assert len(df) > 20
