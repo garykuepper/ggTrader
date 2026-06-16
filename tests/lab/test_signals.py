@@ -3,8 +3,8 @@ import json
 
 import numpy as np
 import pandas as pd
-from ggTrader.lab.strategies.signals import EmaCrossSignal, build_signal_strategy
 
+from ggTrader.lab.strategies.signals import EmaCrossSignal, build_signal_strategy
 from ggTrader.lab.strategy import LabConfig, SignalTargets
 
 
