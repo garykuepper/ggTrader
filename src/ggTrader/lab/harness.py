@@ -19,7 +19,11 @@ UniverseFn = Callable[[pd.Timestamp, pd.DataFrame], List[str]]
 def leak_check(
     strategy: Strategy, ohlcv: pd.DataFrame, asof: pd.Timestamp, eligible: List[str]
 ) -> bool:
-    """select at asof must be identical with and without post-asof rows present."""
+    """select at asof must be identical with and without post-asof rows present.
+
+    The ``unmasked`` call passes the full frame so a strategy that reads data
+    before self-truncating (e.g. at module/closure level) is caught here.
+    """
     full = strategy.select(asof, ohlcv.loc[:asof], eligible)
     truncated = strategy.select(asof, ohlcv.loc[:asof].copy(deep=True), eligible)
     unmasked = strategy.select(asof, ohlcv, eligible)
@@ -53,11 +57,12 @@ def walkforward(
         {s: ohlcv[s]["close"] for s in ohlcv.columns.get_level_values(0).unique()}, axis=1
     )
 
+    persist.init_schema()  # must precede start_run on a fresh database
     if run_id is None:
+        run_name = strategies[0].name if len(strategies) == 1 else "multi"
         run_id = persist.start_run(
-            strategies[0].name, market, freq, eval_start, eval_end, params=dict(base_config)
+            run_name, market, freq, eval_start, eval_end, params=dict(base_config)
         )
-    persist.init_schema()
 
     targets_by_strategy: Dict[str, pd.DataFrame] = {}
     for strat in strategies:

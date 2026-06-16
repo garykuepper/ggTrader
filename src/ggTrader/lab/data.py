@@ -37,7 +37,7 @@ def rebalance_dates(
     if len(idx) == 0:
         return []
     series = pd.Series(idx, index=idx)
-    month_ends = series.groupby(idx.tz_localize(None).to_period("M")).max().tolist()
+    month_ends = series.groupby(idx.tz_convert(None).to_period("M")).max().tolist()
     return month_ends[:-1]
 
 
