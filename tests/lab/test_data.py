@@ -4,6 +4,16 @@ import pytest
 from ggTrader.lab.data import rebalance_dates
 
 
+def test_cached_loader_interval_to_timedelta():
+    from ggTrader.data.live.cached_yfinance_loader import CachedYFinanceLoader
+
+    loader = CachedYFinanceLoader.__new__(CachedYFinanceLoader)  # skip __init__ (no DB needed)
+    assert loader._interval_to_timedelta("1d") == pd.Timedelta(days=1)
+    assert loader._interval_to_timedelta("1h") == pd.Timedelta(hours=1)
+    assert loader._interval_to_timedelta("1wk") == pd.Timedelta(weeks=1)
+    assert loader._interval_to_timedelta("1mo") == pd.Timedelta(days=30)
+
+
 def test_rebalance_dates_are_month_ends_excluding_last():
     idx = pd.date_range("2021-01-01", "2021-06-30", freq="B", tz="UTC")
     # eval_start=2021-01-31 is past Jan's last trading day (Jan 29), so January is

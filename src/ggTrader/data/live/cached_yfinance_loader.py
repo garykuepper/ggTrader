@@ -47,6 +47,26 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                 conn = _default_connection_string()
         self.connection_string = conn.replace("postgresql+psycopg2://", "postgresql://")
 
+    @staticmethod
+    def _interval_to_timedelta(interval: str) -> pd.Timedelta:
+        _MAP = {
+            "1m": pd.Timedelta(minutes=1),
+            "5m": pd.Timedelta(minutes=5),
+            "15m": pd.Timedelta(minutes=15),
+            "30m": pd.Timedelta(minutes=30),
+            "60m": pd.Timedelta(hours=1),
+            "1h": pd.Timedelta(hours=1),
+            "4h": pd.Timedelta(hours=4),
+            "1d": pd.Timedelta(days=1),
+            "5d": pd.Timedelta(days=5),
+            "1wk": pd.Timedelta(weeks=1),
+            "1mo": pd.Timedelta(days=30),
+            "3mo": pd.Timedelta(days=90),
+        }
+        if interval not in _MAP:
+            raise ValueError(f"Unknown interval {interval!r}")
+        return _MAP[interval]
+
     # ------------------------------------------------------------------
     # DB access
     # ------------------------------------------------------------------
