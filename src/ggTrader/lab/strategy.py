@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, NamedTuple, Protocol
+from typing import Any, Dict, List, NamedTuple, Protocol, Union
 
 import pandas as pd
 
