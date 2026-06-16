@@ -42,7 +42,7 @@
 - Create: `src/ggTrader/lab/strategy.py`
 - Test: `tests/lab/__init__.py` (empty), `tests/lab/test_strategy.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/lab/test_strategy.py
@@ -64,12 +64,12 @@ def test_labconfig_override():
     assert cfg.max_stocks == 20
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_strategy.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'ggTrader.lab'`
 
-- [ ] **Step 3: Create the package markers and `strategy.py`**
+- [x] **Step 3: Create the package markers and `strategy.py`**
 
 Create empty `src/ggTrader/lab/__init__.py`, `src/ggTrader/lab/strategies/__init__.py`, `tests/lab/__init__.py`.
 
@@ -117,12 +117,12 @@ class Strategy(Protocol):
         ...
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_strategy.py -q`
 Expected: PASS (2 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ggTrader/lab/__init__.py src/ggTrader/lab/strategies/__init__.py src/ggTrader/lab/strategy.py tests/lab/__init__.py tests/lab/test_strategy.py
@@ -141,7 +141,7 @@ The `select` logic is ported **verbatim** from `research/monthly_strategies.py` 
 - Create: `src/ggTrader/lab/strategies/momentum.py`
 - Test: `tests/lab/test_momentum.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/lab/test_momentum.py
@@ -243,12 +243,12 @@ def test_build_strategy_dispatch():
         pass
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_momentum.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'ggTrader.lab.strategies.momentum'`
 
-- [ ] **Step 3: Implement `momentum.py`**
+- [x] **Step 3: Implement `momentum.py`**
 
 ```python
 # src/ggTrader/lab/strategies/momentum.py
@@ -332,12 +332,12 @@ def build_strategy(name: str, cfg: LabConfig):
     return _REGISTRY[name](cfg)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_momentum.py -q`
 Expected: PASS (6 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ggTrader/lab/strategies/momentum.py tests/lab/test_momentum.py
@@ -356,7 +356,7 @@ Reuses the proven DB-first equity loader (`fetch_stock_ohlcv`) and PIT constitue
 - Create: `src/ggTrader/lab/data.py`
 - Test: `tests/lab/test_data.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/lab/test_data.py
@@ -391,12 +391,12 @@ def test_load_ohlcv_returns_multiindex_frame():
     assert len(df) > 20
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_data.py -q -m "not integration"`
 Expected: FAIL with `ModuleNotFoundError: No module named 'ggTrader.lab.data'`
 
-- [ ] **Step 3: Implement `data.py`**
+- [x] **Step 3: Implement `data.py`**
 
 ```python
 # src/ggTrader/lab/data.py
@@ -458,7 +458,7 @@ def eligible_at(
     return eligible, coverage
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_data.py -q -m "not integration"`
 Expected: PASS (2 passed, 1 deselected)
@@ -467,7 +467,7 @@ Then confirm the integration path against the real DB:
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_data.py -q -m integration`
 Expected: PASS (1 passed) — if the DB is unreachable it falls back to yfinance and still passes.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ggTrader/lab/data.py tests/lab/test_data.py
@@ -486,7 +486,7 @@ The heart of the "all strats simultaneously" requirement. `simulate_weights` tak
 - Create: `src/ggTrader/lab/simulate.py`
 - Test: `tests/lab/test_simulate.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/lab/test_simulate.py
@@ -532,12 +532,12 @@ def test_simulate_weights_runs_strategies_simultaneously_and_equally():
     pd.testing.assert_series_equal(eq_both["x"], eq_x["x"], check_names=False)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_simulate.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'ggTrader.lab.simulate'`
 
-- [ ] **Step 3: Implement `simulate.py`**
+- [x] **Step 3: Implement `simulate.py`**
 
 ```python
 # src/ggTrader/lab/simulate.py
@@ -604,12 +604,12 @@ def simulate_weights(
     return returns, value, diags
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_simulate.py -q`
 Expected: PASS (2 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ggTrader/lab/simulate.py tests/lab/test_simulate.py
@@ -628,7 +628,7 @@ Ported from the old harness's `benchmark_vs_spy`, adapted to take a precomputed 
 - Create: `src/ggTrader/lab/metrics.py`
 - Test: `tests/lab/test_metrics.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/lab/test_metrics.py
@@ -656,12 +656,12 @@ def test_benchmark_shape():
     assert "sharpe" in rep["strategy"] and "sharpe" in rep["spy"]
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_metrics.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'ggTrader.lab.metrics'`
 
-- [ ] **Step 3: Implement `metrics.py`**
+- [x] **Step 3: Implement `metrics.py`**
 
 ```python
 # src/ggTrader/lab/metrics.py
@@ -717,12 +717,12 @@ def benchmark(equity: pd.Series, spy_close: pd.Series, start_cash: float) -> Dic
     }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_metrics.py -q`
 Expected: PASS (2 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ggTrader/lab/metrics.py tests/lab/test_metrics.py
@@ -741,7 +741,7 @@ All run state in the DB. Schema init is idempotent (`CREATE TABLE IF NOT EXISTS`
 - Create: `src/ggTrader/lab/persist.py`
 - Test: `tests/lab/test_persist.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/lab/test_persist.py
@@ -792,12 +792,12 @@ def test_returns_equity_summary_write():
     # No exception == pass; the read paths are exercised by the harness integration test.
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_persist.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'ggTrader.lab.persist'`
 
-- [ ] **Step 3: Implement `persist.py`**
+- [x] **Step 3: Implement `persist.py`**
 
 ```python
 # src/ggTrader/lab/persist.py
@@ -973,12 +973,12 @@ def write_summary(run_id: str, strategy: str, metrics: Dict[str, Any],
             "b": json.dumps(benchmark_metrics), "d": json.dumps(diagnostics)})
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_persist.py -q`
 Expected: PASS (3 passed). If it errors with a connection failure, the DB at `localhost:5433` isn't reachable from this shell — start it / open the tunnel, then re-run.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ggTrader/lab/persist.py tests/lab/test_persist.py
@@ -997,7 +997,7 @@ Wires everything: per strategy, loop rebalance dates running `select` on `data.l
 - Create: `src/ggTrader/lab/harness.py`
 - Test: `tests/lab/test_harness.py`
 
-- [ ] **Step 1: Write the failing test** (synthetic, DB-backed → `integration`)
+- [x] **Step 1: Write the failing test** (synthetic, DB-backed → `integration`)
 
 ```python
 # tests/lab/test_harness.py
@@ -1057,12 +1057,12 @@ def test_walkforward_persists_and_resumes():
     assert run_id2 == run_id
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_harness.py -q -m "not integration"`
 Expected: FAIL with `ModuleNotFoundError: No module named 'ggTrader.lab.harness'`
 
-- [ ] **Step 3: Implement `harness.py`**
+- [x] **Step 3: Implement `harness.py`**
 
 ```python
 # src/ggTrader/lab/harness.py
@@ -1154,7 +1154,7 @@ def walkforward(
     return run_id
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_harness.py -q -m "not integration"`
 Expected: PASS (1 passed, 1 deselected)
@@ -1163,7 +1163,7 @@ Then the DB-backed end-to-end (resume) path:
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_harness.py -q -m integration`
 Expected: PASS (1 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ggTrader/lab/harness.py tests/lab/test_harness.py
@@ -1182,7 +1182,7 @@ A thin argparse CLI to run a lab strategy over the equity universe end-to-end, w
 - Create: `src/ggTrader/lab/cli.py`
 - Test: `tests/lab/test_cli.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/lab/test_cli.py
@@ -1206,12 +1206,12 @@ def test_arg_parser_rejects_unknown_strategy():
         pass
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_cli.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'ggTrader.lab.cli'`
 
-- [ ] **Step 3: Implement `cli.py`**
+- [x] **Step 3: Implement `cli.py`**
 
 ```python
 # src/ggTrader/lab/cli.py
@@ -1276,12 +1276,12 @@ if __name__ == "__main__":
     run_lab()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_cli.py -q`
 Expected: PASS (2 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ggTrader/lab/cli.py tests/lab/test_cli.py
@@ -1300,7 +1300,7 @@ The acceptance test for the whole architecture: the new core's per-rebalance sel
 - Create: `tests/lab/test_validation_gate.py`
 - Read-only reference: `results/monthly_wf/sp500_xs_momentum/month=*/selections.json`
 
-- [ ] **Step 1: Write the validation test** (`integration` — needs the DB + full universe)
+- [x] **Step 1: Write the validation test** (`integration` — needs the DB + full universe)
 
 ```python
 # tests/lab/test_validation_gate.py
@@ -1357,12 +1357,12 @@ def test_lab_reproduces_old_selections(strategy):
     assert not mismatches, f"selection mismatches at: {mismatches[:5]} ({len(mismatches)} total)"
 ```
 
-- [ ] **Step 2: Run it (expect PASS, since select is ported verbatim)**
+- [x] **Step 2: Run it (expect PASS, since select is ported verbatim)**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/test_validation_gate.py -q -m integration`
 Expected: PASS (2 passed). If a strategy's reference dir is absent it SKIPS — re-generate it with the old `scripts/sp500_monthly_walkforward.py --strategy <name>` first if needed. If selections mismatch, the port diverged from the original `select`; diff against `research/monthly_strategies.py` and fix before proceeding.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add tests/lab/test_validation_gate.py
@@ -1381,17 +1381,17 @@ Run the whole suite, then characterize the documented equity difference (single-
 - Modify: `docs/changelog.md`
 - Modify: `docs/superpowers/specs/2026-06-15-vectorbt-lab-core-design.md` (mark Plan 1 status)
 
-- [ ] **Step 1: Run the full unit suite (no integration)**
+- [x] **Step 1: Run the full unit suite (no integration)**
 
 Run: `source .venv/bin/activate && python -m pytest tests/ -m "not integration" -q`
 Expected: all lab unit tests pass; baseline 3 pre-existing failures unchanged (`test_circuit_breaker_persistence`, `test_system_dry_run_cycle`, `test_persistence_logic`).
 
-- [ ] **Step 2: Run the lab integration suite**
+- [x] **Step 2: Run the lab integration suite**
 
 Run: `source .venv/bin/activate && python -m pytest tests/lab/ -m integration -q`
 Expected: persistence, harness-resume, and validation-gate tests pass.
 
-- [ ] **Step 3: Characterize the equity delta**
+- [x] **Step 3: Characterize the equity delta**
 
 Run a full `xs_momentum` lab run via the CLI and compare its summary metrics to the old `results/monthly_wf/sp500_xs_momentum/summary.json` (old: total +125.98%, Sharpe 0.82):
 
@@ -1401,7 +1401,7 @@ source .venv/bin/activate && python -m ggTrader.lab.cli --strategy xs_momentum -
 
 Then read the new summary back from the DB (psql or a one-off `read` via `lab_summary`) and note total-return and Sharpe. **Soft gate:** total-return within 1% relative, Sharpe within 0.05 absolute, of the old run. Record the actual delta in the changelog entry below (any residual difference is attributed to single-pass compounding being more correct than stitching).
 
-- [ ] **Step 4: Add the changelog entry**
+- [x] **Step 4: Add the changelog entry**
 
 Add under a new `## 2026-06-15` heading at the top of `docs/changelog.md`:
 
@@ -1427,7 +1427,7 @@ old research/backtest code (Plan 3).
 
 Replace `<X%>`/`<Y>` with the measured deltas from Step 3.
 
-- [ ] **Step 5: Mark the plan executed and commit**
+- [x] **Step 5: Mark the plan executed and commit**
 
 In the spec file, change `**Status:** Approved...` to `**Status:** Plan 1 executed 2026-06-15`. Check off this plan's boxes. Then:
 

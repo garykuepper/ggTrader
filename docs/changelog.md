@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-06-15
+
+### Research: vectorbt lab core (Plan 1 — momentum bench)
+
+New `src/ggTrader/lab/` package: a simple, DB-only, vectorbt-centric research
+bench. One unified harness — point-in-time `select` (data ≤ T, resumable from
+the DB) then a single grouped `vbt.Portfolio.from_orders` that simulates all
+weight-based strategies simultaneously (`group_by="strategy"`, `cash_sharing`).
+All run state (plans, returns, equity, summary) lives in TimescaleDB (`lab_*`
+tables, returns/equity as hypertables); nothing is written to `results/`.
+Strategies `xs_momentum` and `dual_momentum` ported with `select` validated
+**bit-identical** against the old `sp500_xs_momentum`/`sp500_dual_momentum`
+runs — all 64 monthly selection sets reproduced exactly.
+
+Equity differs from the old numbers in the expected direction: lab `xs_momentum`
+total **+134.2% vs +125.98%** (Δ +8.2pp), Sharpe **0.848 vs 0.818**, Sortino
+**1.20 vs 1.13**. The gap is methodology, not noise — the old harness fully
+liquidated and rebought the entire book every month (paying slippage on 100%
+turnover monthly), whereas the single-pass `from_orders` only trades the weight
+deltas at each rebalance. The lab figure is the more realistic one.
+
+Two bugs caught during validation (both fixed): the data-load window was sized
+to the momentum lookback rather than `min_history_bars`, starving the first
+selection dates; and the scored equity included the warmup/cash prefix, which
+deflated Sharpe and stretched the SPY benchmark across untraded years.
+
+Spec: [2026-06-15-vectorbt-lab-core-design.md](superpowers/specs/2026-06-15-vectorbt-lab-core-design.md);
+plan: [2026-06-15-vectorbt-lab-core.md](superpowers/plans/2026-06-15-vectorbt-lab-core.md).
+Deferred: the signal-based `wfo_tournament` family (Plan 2), an equity-OHLCV
+backfill into TimescaleDB so runs read from the DB in seconds instead of
+re-downloading from yfinance, and deletion of the old research/backtest code
+(Plan 3).
+
 ## 2026-06-12
 
 ### Equity verdicts: WFO tournament NO-GO; momentum baselines market-like
