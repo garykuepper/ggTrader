@@ -10,8 +10,8 @@ import pandas as pd
 from ggTrader.lab import persist
 from ggTrader.lab.data import rebalance_dates
 from ggTrader.lab.metrics import benchmark
-from ggTrader.lab.simulate import simulate_weights
-from ggTrader.lab.strategy import Plan, Strategy
+from ggTrader.lab.simulate import simulate_signals, simulate_weights
+from ggTrader.lab.strategy import Plan, SignalTargets, Strategy
 
 UniverseFn = Callable[[pd.Timestamp, pd.DataFrame], List[str]]
 
@@ -46,7 +46,12 @@ def walkforward(
     base_config: Dict[str, Any],
     run_id: Optional[str] = None,
 ) -> str:
-    """Run one or more weight-based strategies over [eval_start, eval_end)."""
+    """Run one or more strategies (weight or signal) over [eval_start, eval_end).
+
+    Weight strategies (target_kind='weights') are simulated via from_orders.
+    Signal strategies (target_kind='signals') are simulated via from_signals.
+    Both groups run in a single grouped vbt call each; results are merged.
+    """
     start_ts = pd.Timestamp(eval_start, tz="UTC")
     end_ts = pd.Timestamp(eval_end, tz="UTC")
     dates = rebalance_dates(ohlcv.index, start_ts, end_ts)
@@ -64,7 +69,10 @@ def walkforward(
             run_name, market, freq, eval_start, eval_end, params=dict(base_config)
         )
 
-    targets_by_strategy: Dict[str, pd.DataFrame] = {}
+    # Phase 1: plan phase (point-in-time select, resumable)
+    weight_targets: Dict[str, pd.DataFrame] = {}
+    signal_targets: Dict[str, SignalTargets] = {}
+
     for strat in strategies:
         plans: Dict[pd.Timestamp, Plan] = {}
         for asof in dates:
@@ -83,9 +91,31 @@ def walkforward(
                 coverage={"n_eligible": len(eligible)},
             )
             plans[asof] = plan
-        targets_by_strategy[strat.name] = strat.to_targets(plans, ohlcv)
 
-    returns, equity, diags = simulate_weights(targets_by_strategy, prices, base_config)
+        targets = strat.to_targets(plans, ohlcv)
+        if strat.target_kind == "signals":
+            signal_targets[strat.name] = targets  # type: ignore[assignment]
+        else:
+            weight_targets[strat.name] = targets  # type: ignore[assignment]
+
+    # Phase 2: vectorized simulation (one grouped vbt call per family)
+    all_returns: Dict[str, pd.Series] = {}
+    all_equity: Dict[str, pd.Series] = {}
+    all_diags: Dict[str, Dict[str, Any]] = {}
+
+    if weight_targets:
+        w_rets, w_eq, w_diags = simulate_weights(weight_targets, prices, base_config)
+        for name in weight_targets:
+            all_returns[name] = w_rets[name]
+            all_equity[name] = w_eq[name]
+            all_diags[name] = w_diags[name]
+
+    if signal_targets:
+        s_rets, s_eq, s_diags = simulate_signals(signal_targets, prices, base_config)
+        for name in signal_targets:
+            all_returns[name] = s_rets[name]
+            all_equity[name] = s_eq[name]
+            all_diags[name] = s_diags[name]
 
     # The data window includes a warmup prefix (history for eligibility/lookback)
     # during which the portfolio is pure cash. Score only the traded span — from
@@ -96,8 +126,8 @@ def walkforward(
 
     for strat in strategies:
         name = strat.name
-        eq = equity[name].loc[trade_start:].dropna()
-        rets = returns[name].loc[trade_start:]
+        eq = all_equity[name].loc[trade_start:].dropna()
+        rets = all_returns[name].loc[trade_start:]
         rep = benchmark(eq, spy_close, float(base_config["START_CASH"]))
         spy = spy_close.reindex(eq.index).ffill()
         bench_curve = float(base_config["START_CASH"]) * (spy / spy.dropna().iloc[0])
@@ -108,7 +138,7 @@ def walkforward(
             rep["strategy"],
             rep["spy"],
             {
-                **diags[name],
+                **all_diags[name],
                 "monthly_hit_rate_vs_spy": rep["monthly_hit_rate_vs_spy"],
                 "n_months": rep["n_months"],
             },
