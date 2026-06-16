@@ -114,7 +114,8 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             flat = pd.read_sql(query, conn, params=params, parse_dates=["timestamp"])
         if flat.empty:
             return pd.DataFrame()
-        flat["timestamp"] = pd.DatetimeIndex(flat["timestamp"]).tz_convert("UTC")
+        idx = pd.DatetimeIndex(flat["timestamp"])
+        flat["timestamp"] = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
         wide = flat.pivot(
             index="timestamp", columns="symbol", values=["open", "high", "low", "close", "volume"]
         )
