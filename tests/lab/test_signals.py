@@ -4,7 +4,11 @@ import json
 import numpy as np
 import pandas as pd
 
-from ggTrader.lab.strategies.signals import EmaCrossSignal, build_signal_strategy
+from ggTrader.lab.strategies.signals import (
+    EmaCrossSignal,
+    WfoTournamentSignal,
+    build_signal_strategy,
+)
 from ggTrader.lab.strategy import LabConfig, SignalTargets
 
 
@@ -91,3 +95,49 @@ def test_build_signal_strategy_dispatch():
         assert False, "expected ValueError"
     except ValueError:
         pass
+
+
+def test_wfo_tournament_select_returns_plan_with_params():
+    ohlcv = _ohlcv(["A", "B", "C"])
+    strat = WfoTournamentSignal(LabConfig(top_n=3, min_history_bars=100))
+    asof = ohlcv.index[-1]
+    sels = strat.select(asof, ohlcv, ["A", "B", "C"])
+    assert len(sels) <= 3
+    if sels:
+        assert "ema_fast" in sels[0] and "ema_slow" in sels[0]
+        assert "is_sharpe" in sels[0]
+        # params must come from the known combo list
+        assert sels[0]["ema_fast"] in (5, 10, 20, 50)
+
+
+def test_wfo_tournament_select_no_lookahead():
+    ohlcv = _ohlcv(["A"])
+    strat = WfoTournamentSignal(LabConfig(min_history_bars=100))
+    asof = ohlcv.index[-30]
+    full = strat.select(asof, ohlcv.loc[:asof], ["A"])
+    unmasked = strat.select(asof, ohlcv, ["A"])
+    assert json.dumps(full, sort_keys=True) == json.dumps(unmasked, sort_keys=True)
+
+
+def test_wfo_tournament_to_targets_returns_signal_targets():
+    ohlcv = _ohlcv(["A", "B"])
+    strat = WfoTournamentSignal(LabConfig(min_history_bars=100))
+    asof1 = ohlcv.index[300]
+    asof2 = ohlcv.index[450]
+    plans = {
+        asof1: [{"symbol": "A", "weight": 0.0, "ema_fast": 20, "ema_slow": 50, "is_sharpe": 0.5}],
+        asof2: [
+            {"symbol": "A", "weight": 0.0, "ema_fast": 10, "ema_slow": 30, "is_sharpe": 0.7},
+            {"symbol": "B", "weight": 0.0, "ema_fast": 10, "ema_slow": 30, "is_sharpe": 0.7},
+        ],
+    }
+    result = strat.to_targets(plans, ohlcv)
+    assert isinstance(result, SignalTargets)
+    assert "A" in result.entries.columns
+    assert result.entries.dtypes.eq(bool).all()
+    assert result.entries.shape[0] == len(ohlcv)
+
+
+def test_build_signal_strategy_dispatch_wfo():
+    strat = build_signal_strategy("wfo_tournament", LabConfig())
+    assert strat.name == "wfo_tournament"
