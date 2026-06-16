@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -12,6 +13,18 @@ from sqlalchemy import create_engine, text
 from ggTrader.utils.config import get_db_connection_string
 
 _ENGINE = None
+
+
+def _sanitize(obj: Any) -> Any:
+    """Recursively replace NaN/Inf with None so json.dumps produces valid JSON."""
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize(v) for v in obj]
+    return obj
+
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS lab_runs (
@@ -231,8 +244,8 @@ def write_summary(
             {
                 "r": run_id,
                 "s": strategy,
-                "m": json.dumps(metrics),
-                "b": json.dumps(benchmark_metrics),
-                "d": json.dumps(diagnostics),
+                "m": json.dumps(_sanitize(metrics)),
+                "b": json.dumps(_sanitize(benchmark_metrics)),
+                "d": json.dumps(_sanitize(diagnostics)),
             },
         )
