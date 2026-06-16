@@ -40,7 +40,10 @@ def run_lab(argv: List[str] | None = None) -> str:
         if args.eval_end
         else pd.Timestamp.now(tz="UTC").normalize()
     )
-    data_start = eval_start - pd.Timedelta(days=int(cfg.lookback * 1.6) + 30)
+    # Window must cover the eligibility requirement (min_history_bars), not just
+    # the momentum lookback — else the first selection dates are starved of history.
+    warmup_days = int(max(cfg.lookback, cfg.min_history_bars) * 1.6) + 60
+    data_start = eval_start - pd.Timedelta(days=warmup_days)
     universe = equity_universe_between(eval_start, eval_end)
     ohlcv = load_ohlcv(universe + ["SPY"], str(data_start.date()), str(eval_end.date()))
     spy_close = ohlcv["SPY"]["close"].dropna()

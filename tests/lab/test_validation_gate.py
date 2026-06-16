@@ -36,7 +36,8 @@ def test_lab_reproduces_old_selections(strategy):
     strat = build_strategy(strategy, cfg)
     eval_start = pd.Timestamp("2021-01-31", tz="UTC")
     eval_end = pd.Timestamp("2026-05-31", tz="UTC")
-    data_start = eval_start - pd.Timedelta(days=int(cfg.lookback * 1.6) + 30)
+    warmup_days = int(max(cfg.lookback, cfg.min_history_bars) * 1.6) + 60
+    data_start = eval_start - pd.Timedelta(days=warmup_days)
     universe = equity_universe_between(eval_start, eval_end)
     ohlcv = load_ohlcv(universe, str(data_start.date()), str(eval_end.date()))
 
