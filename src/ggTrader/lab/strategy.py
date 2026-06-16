@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Protocol
+from typing import Any, Dict, List, NamedTuple, Protocol
 
 import pandas as pd
 
 Plan = List[Dict[str, Any]]  # JSON-able selection records, each with at least "symbol"
+
+
+class SignalTargets(NamedTuple):
+    """Return type for signal-based strategies' to_targets method."""
+
+    entries: pd.DataFrame  # (time x symbol) boolean — True = entry bar
+    exits: pd.DataFrame  # (time x symbol) boolean — True = exit bar
 
 
 @dataclass
@@ -35,6 +42,12 @@ class Strategy(Protocol):
         """JSON-able selections; MUST be a pure function of data <= asof."""
         ...
 
-    def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> pd.DataFrame:
-        """Whole-window (time x symbol) target matrix from per-rebalance plans."""
+    def to_targets(
+        self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame
+    ) -> Union[pd.DataFrame, SignalTargets]:
+        """Whole-window target matrix from per-rebalance plans.
+
+        Weight strategies return pd.DataFrame (time x symbol, weight values).
+        Signal strategies return SignalTargets(entries, exits) boolean frames.
+        """
         ...

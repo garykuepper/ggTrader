@@ -60,3 +60,64 @@ def simulate_weights(
         for name in names
     }
     return returns, value, diags
+
+
+def simulate_signals(
+    targets_by_strategy: Dict[str, Any],  # values are SignalTargets instances
+    prices: pd.DataFrame,
+    base_config: Dict[str, Any],
+) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Dict[str, Any]]]:
+    """Simulate every signal-based strategy in ONE from_signals call.
+
+    Args:
+        targets_by_strategy: name -> SignalTargets(entries, exits) where each
+            frame is (time x symbol) boolean — True = entry/exit on that bar.
+        prices: (time x symbol) close prices covering every target column.
+        base_config: START_CASH, FEES, SLIPPAGE, FREQ.
+            Optional SIGNAL_POSITION_SIZE (fraction of portfolio per entry, default 0.02).
+
+    Returns:
+        (returns_df, equity_df, diags) each keyed by strategy name (columns).
+    """
+    names = list(targets_by_strategy)
+    entry_blocks, exit_blocks, close_blocks, groups = [], [], [], []
+
+    for name in names:
+        st = targets_by_strategy[name]
+        cols = pd.MultiIndex.from_product(
+            [[name], st.entries.columns], names=["strategy", "symbol"]
+        )
+        entry_blocks.append(st.entries.set_axis(cols, axis=1))
+        exit_blocks.append(st.exits.set_axis(cols, axis=1))
+        px = prices[st.entries.columns].reindex(st.entries.index).ffill()
+        close_blocks.append(px.set_axis(cols, axis=1))
+        groups.extend([name] * st.entries.shape[1])
+
+    entries = pd.concat(entry_blocks, axis=1).fillna(False)
+    exits = pd.concat(exit_blocks, axis=1).fillna(False)
+    close = pd.concat(close_blocks, axis=1)
+
+    pf = vbt.Portfolio.from_signals(
+        close=close,
+        entries=entries,
+        exits=exits,
+        size=float(base_config.get("SIGNAL_POSITION_SIZE", 0.02)),
+        size_type="percent",
+        init_cash=float(base_config["START_CASH"]),
+        fees=float(base_config["FEES"]),
+        slippage=float(base_config["SLIPPAGE"]),
+        freq=base_config["FREQ"],
+        cash_sharing=True,
+        group_by=pd.Index(groups, name="strategy"),
+    ).copy()
+
+    value = pf.value()
+    if isinstance(value, pd.Series):
+        value = value.to_frame(names[0])
+    value = value[names]
+    returns = value.pct_change().fillna(0.0)
+    diags = {
+        name: {"n_strategies": 1, "n_symbols": int(targets_by_strategy[name].entries.shape[1])}
+        for name in names
+    }
+    return returns, value, diags
