@@ -82,13 +82,21 @@ def walkforward(
 
     returns, equity, diags = simulate_weights(targets_by_strategy, prices, base_config)
 
+    # The data window includes a warmup prefix (history for eligibility/lookback)
+    # during which the portfolio is pure cash. Score only the traded span — from
+    # the first bar after the first rebalance — so the cash prefix doesn't deflate
+    # Sharpe or stretch the SPY benchmark across untraded years.
+    forward = ohlcv.index[ohlcv.index > dates[0]]
+    trade_start = forward[0] if len(forward) else dates[0]
+
     for strat in strategies:
         name = strat.name
-        eq = equity[name].dropna()
+        eq = equity[name].loc[trade_start:].dropna()
+        rets = returns[name].loc[trade_start:]
         rep = benchmark(eq, spy_close, float(base_config["START_CASH"]))
         spy = spy_close.reindex(eq.index).ffill()
         bench_curve = float(base_config["START_CASH"]) * (spy / spy.dropna().iloc[0])
-        persist.write_returns_equity(run_id, name, returns[name], eq, bench_curve)
+        persist.write_returns_equity(run_id, name, rets, eq, bench_curve)
         persist.write_summary(
             run_id,
             name,
