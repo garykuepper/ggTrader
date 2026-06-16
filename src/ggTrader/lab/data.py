@@ -56,7 +56,9 @@ def fetch_stock_ohlcv(
             from ggTrader.data.live.cached_yfinance_loader import CachedYFinanceLoader
 
             loader = CachedYFinanceLoader()
-            df = loader.fetch_ohlcv(tickers, interval, start_date=start_ts, end_date=end_ts)
+            df = loader.fetch_ohlcv(
+                tickers, interval, start_date=start_ts, end_date=end_ts, limit=None
+            )
         except Exception as exc:
             print(f"  [data] DB cache unavailable ({exc!r}); falling back to yfinance only")
             loader = None
