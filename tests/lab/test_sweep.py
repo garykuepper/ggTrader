@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from ggTrader.lab.strategies.momentum import CrossSectionalMomentum, DualMomentum
 from ggTrader.lab.strategies.signals import EmaCrossSignal, WfoTournamentSignal
@@ -181,3 +182,48 @@ def test_wfo_tournament_sweep_signals_returns_all_combos():
     assert len(result) == 2
     for st in result.values():
         assert isinstance(st, SignalTargets)
+
+
+@pytest.mark.integration
+def test_sweep_persistence_roundtrip():
+    from sqlalchemy import text
+
+    from ggTrader.lab.persist import (
+        finish_sweep,
+        get_engine,
+        init_schema,
+        start_sweep,
+        write_sweep_combo,
+    )
+
+    init_schema()
+    sweep_id = start_sweep(
+        "ema_cross",
+        "equity",
+        {"ema_fast": [5, 10], "ema_slow": [20, 50]},
+        4,
+    )
+    assert sweep_id.startswith("sweep_ema_cross_")
+
+    write_sweep_combo(
+        sweep_id,
+        "ema_cross__ema_fast5_ema_slow20",
+        {"ema_fast": 5, "ema_slow": 20},
+        {"sharpe": 0.42, "cagr_pct": 3.1},
+        {"sharpe": 0.85},
+        {"n_symbols": 50},
+    )
+    finish_sweep(sweep_id)
+
+    with get_engine().connect() as conn:
+        row = conn.execute(
+            text("SELECT status FROM lab_sweeps WHERE sweep_id = :s"),
+            {"s": sweep_id},
+        ).first()
+        assert row[0] == "done"
+        combo_row = conn.execute(
+            text("SELECT params, metrics FROM lab_sweep_combos WHERE sweep_id = :s"),
+            {"s": sweep_id},
+        ).first()
+        assert combo_row[0]["ema_fast"] == 5
+        assert combo_row[1]["sharpe"] == 0.42

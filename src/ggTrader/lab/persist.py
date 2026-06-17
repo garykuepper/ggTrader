@@ -70,6 +70,24 @@ CREATE TABLE IF NOT EXISTS lab_summary (
     diagnostics JSONB,
     PRIMARY KEY (run_id, strategy)
 );
+CREATE TABLE IF NOT EXISTS lab_sweeps (
+    sweep_id TEXT PRIMARY KEY,
+    strategy TEXT NOT NULL,
+    market TEXT NOT NULL,
+    param_grid JSONB NOT NULL,
+    n_combos INT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'running',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS lab_sweep_combos (
+    sweep_id TEXT NOT NULL,
+    combo_name TEXT NOT NULL,
+    params JSONB NOT NULL,
+    metrics JSONB,
+    benchmark_metrics JSONB,
+    diagnostics JSONB,
+    PRIMARY KEY (sweep_id, combo_name)
+);
 """
 
 
@@ -248,4 +266,63 @@ def write_summary(
                 "b": json.dumps(_sanitize(benchmark_metrics)),
                 "d": json.dumps(_sanitize(diagnostics)),
             },
+        )
+
+
+def start_sweep(strategy: str, market: str, param_grid: Dict[str, Any], n_combos: int) -> str:
+    sweep_id = f"sweep_{strategy}_{uuid.uuid4().hex[:8]}"
+    with get_engine().begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO lab_sweeps"
+                " (sweep_id, strategy, market, param_grid, n_combos)"
+                " VALUES (:s, :st, :m, :pg, :n)"
+            ),
+            {
+                "s": sweep_id,
+                "st": strategy,
+                "m": market,
+                "pg": json.dumps(param_grid),
+                "n": n_combos,
+            },
+        )
+    return sweep_id
+
+
+def write_sweep_combo(
+    sweep_id: str,
+    combo_name: str,
+    params: Dict[str, Any],
+    metrics: Dict[str, Any],
+    benchmark_metrics: Dict[str, Any],
+    diagnostics: Dict[str, Any],
+) -> None:
+    with get_engine().begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO lab_sweep_combos"
+                " (sweep_id, combo_name, params, metrics,"
+                " benchmark_metrics, diagnostics)"
+                " VALUES (:s, :cn, :p, :m, :bm, :d)"
+                " ON CONFLICT (sweep_id, combo_name) DO UPDATE"
+                " SET metrics=EXCLUDED.metrics,"
+                " benchmark_metrics=EXCLUDED.benchmark_metrics,"
+                " diagnostics=EXCLUDED.diagnostics"
+            ),
+            {
+                "s": sweep_id,
+                "cn": combo_name,
+                "p": json.dumps(_sanitize(params)),
+                "m": json.dumps(_sanitize(metrics)),
+                "bm": json.dumps(_sanitize(benchmark_metrics)),
+                "d": json.dumps(_sanitize(diagnostics)),
+            },
+        )
+
+
+def finish_sweep(sweep_id: str) -> None:
+    with get_engine().begin() as conn:
+        conn.execute(
+            text("UPDATE lab_sweeps SET status='done' WHERE sweep_id=:s"),
+            {"s": sweep_id},
         )
