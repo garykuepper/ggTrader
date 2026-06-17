@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import List, Optional
 
 import pandas as pd
 import yfinance as yf
 
 from ggTrader.data.core.base_loader import BaseDataLoader
-from ggTrader.data.core.stock_constants import YFINANCE_INTERVAL_MAP, SP500_SYMBOLS
+from ggTrader.data.core.stock_constants import SP500_SYMBOLS, YFINANCE_INTERVAL_MAP
 
 
 class YFinanceDataLoader(BaseDataLoader):
@@ -51,7 +51,10 @@ class YFinanceDataLoader(BaseDataLoader):
         end_ts = end_date or pd.Timestamp.now(tz=timezone.utc)
         end = (end_ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
 
-        self.logger.info(f"Fetching {len(symbols)} stocks from yfinance ({yf_interval}): {start} -> {end}")
+        self.logger.info(
+            f"Fetching {len(symbols)} stocks from yfinance"
+            f" ({yf_interval}): {start} -> {end}"
+        )
 
         try:
             # group_by="ticker" ensures we always get a MultiIndex (symbol, metric)
@@ -76,7 +79,7 @@ class YFinanceDataLoader(BaseDataLoader):
         # yfinance >= 0.2.40 can return (Price, Ticker) instead of (Ticker, Price)
         if df.columns.names[0] == "Price":
             df = df.swaplevel(0, 1, axis=1)
-        
+
         df.sort_index(axis=1, inplace=True)
 
         # 2. Normalize metric names to lowercase
