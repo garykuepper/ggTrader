@@ -126,6 +126,27 @@ ggt.py lab --strategy ema_cross --market sp500 --wfo \
 for both. Signal strategies only (ema_cross, wfo_tournament); weight strategies
 raise an error if `--wfo` is used.
 
+## Recommended Live Params
+
+After the WFO backtest validates the process (OOS metrics printed), the system
+runs one final train window on the most recent 3 years of data —
+`[eval_end - 3yr, eval_end)` — and picks the composite winner. These are the
+params you'd deploy for live trading today.
+
+This final train window is **not** one of the WFO folds — it has no
+corresponding test fold (there's no future data to test against). It validates
+the *process* of re-optimization, then applies that same process one more time
+on the freshest data.
+
+The output includes:
+- The winning param combo
+- Its train-window composite score and metrics (Sharpe, CAGR, MaxDD)
+- Stability note: how many of the WFO folds selected the same combo
+
+In live deployment, you'd re-run this periodically (e.g., yearly or quarterly)
+to get updated params — the WFO backtest proves this re-optimization process
+produces edge.
+
 ## Output Format
 
 ```
@@ -140,6 +161,12 @@ Fold  Train Window       Test Window        Winner                          Trai
 
 OOS Aggregate: Sharpe 0.68 | CAGR 9.2% | MaxDD -18.3%
 SPY baseline:  Sharpe 0.72 | CAGR 15.0% | MaxDD -24.5%
+
+── Recommended Live Params ──────────────────────────────────────────────────────
+Train window: 2023-06 → 2026-06
+Winner:       ema_cross__ema_fast10_ema_slow200_atr_mult1.5_atr_period14
+Train Sharpe: 1.09 | CAGR 12.6% | MaxDD -10.5%
+Stability:    selected in 5/8 folds
 ```
 
 "Train" and "OOS" columns show the composite score for the winning combo on
@@ -195,15 +222,32 @@ def run_wfo(
 ) -> str:
     """Main WFO entry point. Returns formatted results string."""
 
+def select_live_params(
+    strategy_name: str,
+    strategy_cls: Type,
+    cfg: LabConfig,
+    ohlcv: pd.DataFrame,
+    eval_end: str,
+    base_config: Dict[str, Any],
+    grid: List[Dict[str, Any]],
+    fold_winners: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Train on the most recent 3yr window and pick the composite winner.
+
+    Returns dict with 'combo', 'params', 'train_metrics', 'stability'
+    (count of WFO folds that selected the same combo).
+    """
+
 def format_wfo_table(
     fold_results: List[Dict[str, Any]],
     oos_metrics: Dict[str, float],
     spy_metrics: Dict[str, float],
+    live_params: Dict[str, Any],
     strategy_name: str,
     n_combos: int,
     n_folds: int,
 ) -> str:
-    """Render per-fold + aggregate output table."""
+    """Render per-fold table + OOS aggregate + recommended live params."""
 ```
 
 ## Tests
@@ -217,6 +261,8 @@ def format_wfo_table(
 - `test_composite_score_single_combo` — degenerate case
 - `test_run_wfo_integration` — small synthetic data, verifies OOS curve
   continuity and output format
+- `test_select_live_params_uses_recent_window` — verifies final train window
+  is [eval_end - 3yr, eval_end) and stability count matches fold winners
 
 ## Constraints
 
