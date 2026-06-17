@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Tuple
 
+import numpy as np
 import pandas as pd
 import vectorbt as vbt
 
@@ -73,7 +74,6 @@ def compute_atr_stop(
 
     Returns (time x symbol) DataFrame of stop fractions for vbt's sl_stop.
     """
-    import numpy as np
 
     prev_close = close.shift(1)
     tr = pd.DataFrame(
@@ -142,6 +142,9 @@ def simulate_signals(
         stop_kwargs["sl_trail"] = True
     elif atr_mult is not None:
         atr_period = int(base_config.get("atr_period", 14))
+        if atr_period < 1:
+            msg = f"atr_period must be >= 1, got {atr_period}"
+            raise ValueError(msg)
         if ohlcv is None:
             msg = "ohlcv required for ATR trailing stop (atr_mult set)"
             raise ValueError(msg)
@@ -169,7 +172,7 @@ def simulate_signals(
             sl_blocks.append(
                 atr_stops[st.entries.columns].reindex(st.entries.index).set_axis(cols, axis=1)
             )
-        stop_kwargs["sl_stop"] = pd.concat(sl_blocks, axis=1).ffill().fillna(0.05)
+        stop_kwargs["sl_stop"] = pd.concat(sl_blocks, axis=1).ffill().fillna(np.inf)
         stop_kwargs["sl_trail"] = True
 
     pf = vbt.Portfolio.from_signals(

@@ -164,7 +164,7 @@ def test_simulate_signals_atr_trailing_stop():
 
     entries = pd.DataFrame(False, index=prices.index, columns=prices.columns)
     exits = pd.DataFrame(False, index=prices.index, columns=prices.columns)
-    entries.iloc[2, 0] = True
+    entries.iloc[20, 0] = True  # After ATR warmup (period=14)
 
     st = SignalTargets(entries=entries, exits=exits)
 
