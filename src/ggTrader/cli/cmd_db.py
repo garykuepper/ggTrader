@@ -20,9 +20,6 @@ def register_db_parser(subparsers: argparse._SubParsersAction):
     # Subcommand: ggt db diag
     db_subs.add_parser("diag", help="Check database and table sizes/stats")
 
-    # Subcommand: ggt db sync-live
-    db_subs.add_parser("sync-live", help="Import live CSV data into TimescaleDB")
-
     # Subcommand: ggt db clean
     db_subs.add_parser("clean", help="Remove old or malformed OHLCV data")
 
@@ -39,53 +36,11 @@ def register_db_parser(subparsers: argparse._SubParsersAction):
     exp.add_argument("--jobs", "-j", type=int, default=4, help="Parallel jobs")
     exp.add_argument("--remote", "-r", type=str, help="Remote host for rsync")
 
-    # Subcommand: ggt db migrate-wfo-cache
-    mwc = db_subs.add_parser(
-        "migrate-wfo-cache",
-        help="Import legacy results/wfo_cache/*.json files into the wfo_cache table",
-    )
-    mwc.add_argument(
-        "--cache-dir",
-        type=str,
-        default="results/wfo_cache",
-        help="Directory of legacy JSON files (default: results/wfo_cache)",
-    )
-    mwc.add_argument(
-        "--delete-after",
-        action="store_true",
-        help="Delete each JSON file after successful upsert (use with care)",
-    )
-
-    # Subcommand: ggt db purge-wfo-cache
-    pwc = db_subs.add_parser(
-        "purge-wfo-cache",
-        help="Truncate the wfo_cache table (use after scoring config changes)",
-    )
-    pwc.add_argument(
-        "--yes",
-        action="store_true",
-        help="Skip the confirmation prompt",
-    )
-
-    # Subcommand: ggt db backfill-runs
-    brn = db_subs.add_parser(
-        "backfill-runs",
-        help="Import legacy results/research/<run>/run_results.json + phase_stats.json into the runs table",
-    )
-    brn.add_argument(
-        "--research-dir",
-        type=str,
-        default="results/research",
-        help="Research directory (default: results/research)",
-    )
-
 
 def run_db(args: argparse.Namespace):
     """Executes database administration commands."""
     if args.db_command == "diag":
         _db_diag()
-    elif args.db_command == "sync-live":
-        _db_sync_live()
     elif args.db_command == "clean":
         _db_clean()
     elif args.db_command == "truncate":
@@ -97,28 +52,6 @@ def run_db(args: argparse.Namespace):
             _db_check_compression()
     elif args.db_command == "export":
         _db_export(args)
-    elif args.db_command == "migrate-wfo-cache":
-        _db_migrate_wfo_cache(args)
-    elif args.db_command == "purge-wfo-cache":
-        _db_purge_wfo_cache(args)
-    elif args.db_command == "backfill-runs":
-        _db_backfill_runs(args)
-
-
-def _db_sync_live():
-    from ggTrader.core.trade_tracker import TradeTracker
-    from ggTrader.utils.result_db_manager import ResultDBManager
-
-    print("\n--- Syncing Live CSV data to TimescaleDB ---")
-    db_manager = ResultDBManager()
-    tracker = TradeTracker(db_manager=db_manager, run_id="LIVE")
-
-    counts = tracker.backfill_to_db()
-
-    print("Sync complete:")
-    print(f"  - Orders added: {counts['orders']}")
-    print(f"  - Trades added: {counts['trades']}")
-    print(f"  - Equity points: {counts['equity']}")
 
 
 def _db_diag():
@@ -248,183 +181,3 @@ def _db_export(args):
     print(f"\nExecuting parallel dump of {db_params['dbname']} to {out_dir}...")
     subprocess.run(cmd, env=env, check=True)
     print("Export complete.")
-
-
-def _db_migrate_wfo_cache(args):
-    """One-time import of legacy results/wfo_cache/*.json into the wfo_cache table.
-
-    Each filename stem is the cache_key (MD5 hex). Reads the JSON payload, infers
-    symbol/strategy/exit/version from the payload itself, and upserts a row. Files
-    that fail to parse are reported and skipped.
-    """
-    import json as _json
-
-    cache_dir = Path(args.cache_dir)
-    if not cache_dir.is_dir():
-        print(f"Cache dir not found: {cache_dir}")
-        return
-
-    files = sorted(cache_dir.glob("*.json"))
-    if not files:
-        print(f"No *.json files in {cache_dir} — nothing to migrate.")
-        return
-
-    engine = create_db_engine_or_exit()
-    print(f"\n--- Migrating {len(files)} WFO cache files from {cache_dir} ---")
-
-    inserted = 0
-    skipped = 0
-    failed = 0
-    upsert_sql = text(
-        """
-        INSERT INTO wfo_cache (cache_key, symbol, strategy_name, exit_name,
-                               cache_version, payload)
-        VALUES (:k, :sym, :strat, :exit, :ver, CAST(:p AS JSONB))
-        ON CONFLICT (cache_key) DO NOTHING
-        """
-    )
-
-    with engine.begin() as conn:
-        for fp in files:
-            key = fp.stem
-            try:
-                payload = _json.loads(fp.read_text())
-            except Exception as e:
-                print(f"  SKIP {fp.name}: parse error ({e})")
-                failed += 1
-                continue
-            try:
-                res = conn.execute(
-                    upsert_sql,
-                    {
-                        "k": key,
-                        "sym": payload.get("symbol"),
-                        "strat": payload.get("strategy"),
-                        "exit": payload.get("exit"),
-                        "ver": payload.get("version", 1),
-                        "p": _json.dumps(payload),
-                    },
-                )
-                if res.rowcount == 1:
-                    inserted += 1
-                else:
-                    skipped += 1
-            except Exception as e:
-                print(f"  FAIL {fp.name}: {e}")
-                failed += 1
-
-    print(f"  inserted: {inserted}")
-    print(f"  already-present (skipped): {skipped}")
-    print(f"  failed: {failed}")
-
-    if args.delete_after and failed == 0:
-        print("Deleting migrated files…")
-        for fp in files:
-            try:
-                fp.unlink()
-            except OSError:
-                pass
-        try:
-            cache_dir.rmdir()
-            print(f"Removed empty {cache_dir}")
-        except OSError:
-            pass
-
-
-def _db_purge_wfo_cache(args):
-    """Truncate the wfo_cache table."""
-    if not args.yes:
-        ans = input("Truncate wfo_cache table? [y/N] ").strip().lower()
-        if ans != "y":
-            print("Aborted.")
-            return
-    engine = create_db_engine_or_exit()
-    with engine.begin() as conn:
-        conn.execute(text("TRUNCATE TABLE wfo_cache;"))
-    print("wfo_cache truncated.")
-
-
-def _db_backfill_runs(args):
-    """Import historical results/research/<run>/ artifacts into the runs table.
-
-    For each subdirectory we read run_results.json and (optionally) phase_stats.json,
-    extract the asset_class / per-coin params / metrics, and upsert via add_run.
-    """
-    import json as _json
-    from datetime import datetime
-
-    from ggTrader.utils.result_db_manager import ResultDBManager
-
-    research_dir = Path(args.research_dir)
-    if not research_dir.is_dir():
-        print(f"Research dir not found: {research_dir}")
-        return
-
-    run_dirs = sorted([d for d in research_dir.iterdir() if d.is_dir()])
-    if not run_dirs:
-        print(f"No subdirectories under {research_dir}")
-        return
-
-    m = ResultDBManager()
-    inserted = 0
-    skipped = 0
-    failed = 0
-
-    for d in run_dirs:
-        rj = d / "run_results.json"
-        if not rj.exists():
-            skipped += 1
-            continue
-        try:
-            data = _json.loads(rj.read_text())
-        except Exception as e:
-            print(f"  SKIP {d.name}: parse error ({e})")
-            failed += 1
-            continue
-
-        run_id = data.get("run_id") or d.name
-        ts_str = data.get("timestamp")
-        try:
-            ts = datetime.fromisoformat(ts_str) if ts_str else datetime.now()
-        except Exception:
-            ts = datetime.now()
-
-        asset_class = data.get("asset_class") or data.get("configuration", {}).get(
-            "_raw_config", {}
-        ).get("ASSET_CLASS", "crypto")
-        config = data.get("configuration", {})
-        strategy_params = data.get("strategy_parameters", {})
-        metrics = data.get("results", {})
-
-        phase_stats = None
-        ps_file = d / "phase_stats.json"
-        if ps_file.exists():
-            try:
-                phase_stats = _json.loads(ps_file.read_text())
-            except Exception:
-                phase_stats = None
-
-        try:
-            m.add_run(
-                run_id=run_id,
-                run_type="research",
-                script_name=data.get("script_name", "research"),
-                parameters=config.get("_raw_config", config),
-                metadata=config,
-                metrics=metrics,
-                pipeline_stage="research",
-                asset_class=asset_class,
-                strategy_params=strategy_params,
-                phase_stats=phase_stats,
-                run_dir=str(d),
-                status="success",
-                timestamp=ts,
-            )
-            inserted += 1
-        except Exception as e:
-            print(f"  FAIL {d.name}: {e}")
-            failed += 1
-
-    print(f"  inserted/upserted: {inserted}")
-    print(f"  skipped (no run_results.json): {skipped}")
-    print(f"  failed: {failed}")
