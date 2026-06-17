@@ -63,6 +63,13 @@ class EmaCrossSignal:
         self.ema_fast = ema_fast
         self.ema_slow = ema_slow
 
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        return {
+            "ema_fast": [5, 10, 20, 50],
+            "ema_slow": [20, 30, 50, 100, 200],
+        }
+
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         """All eligible symbols with enough history — fixed EMA params."""
         data = data.loc[:asof]
@@ -109,6 +116,12 @@ class WfoTournamentSignal:
     def __init__(self, cfg: LabConfig, is_fraction: float = 0.7) -> None:
         self.cfg = cfg
         self.is_fraction = is_fraction
+
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        return {
+            "is_fraction": [0.5, 0.6, 0.7, 0.8],
+        }
 
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         data = data.loc[:asof]

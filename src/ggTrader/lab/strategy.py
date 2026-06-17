@@ -51,3 +51,8 @@ class Strategy(Protocol):
         Signal strategies return SignalTargets(entries, exits) boolean frames.
         """
         ...
+
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        """Parameter names → candidate values for grid sweep."""
+        ...

@@ -19,6 +19,14 @@ class CrossSectionalMomentum:
     def __init__(self, cfg: LabConfig) -> None:
         self.cfg = cfg
 
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        return {
+            "top_n": [10, 20, 50],
+            "lookback": [126, 252],
+            "skip": [0, 21],
+        }
+
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         data = data.loc[:asof]  # defense in depth: invariant to post-asof rows
         lookback, skip = self.cfg.lookback, self.cfg.skip
