@@ -101,6 +101,33 @@ class EmaCrossSignal:
 
         return SignalTargets(entries=entries.astype(bool), exits=exits.astype(bool))
 
+    def sweep_signals(
+        self,
+        combos: list[dict],
+        symbols: list[str],
+        data: pd.DataFrame,
+    ) -> dict[str, "SignalTargets"]:
+        """Vectorized signal generation for all (ema_fast, ema_slow) combos at once."""
+        from ggTrader.lab.sweep import combo_name
+
+        close = pd.concat(
+            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
+            axis=1,
+        )
+        unique_spans = sorted({v for c in combos for v in c.values()})
+        emas: dict[int, pd.DataFrame] = {
+            span: close.ewm(span=span, adjust=False).mean() for span in unique_spans
+        }
+        result: dict[str, SignalTargets] = {}
+        for combo in combos:
+            fast, slow = int(combo["ema_fast"]), int(combo["ema_slow"])
+            ema_f, ema_s = emas[fast], emas[slow]
+            entries = ((ema_f > ema_s) & (ema_f.shift(1) <= ema_s.shift(1))).fillna(False)
+            exits = ((ema_f < ema_s) & (ema_f.shift(1) >= ema_s.shift(1))).fillna(False)
+            key = combo_name(self.name, combo)
+            result[key] = SignalTargets(entries=entries.astype(bool), exits=exits.astype(bool))
+        return result
+
 
 class WfoTournamentSignal:
     """EMA combo tournament: pick best (fast, slow) params on IS data each rebalance.
@@ -208,6 +235,44 @@ class WfoTournamentSignal:
                 )
 
         return SignalTargets(entries=entries.astype(bool), exits=exits.astype(bool))
+
+    def sweep_signals(
+        self,
+        combos: list[dict],
+        symbols: list[str],
+        data: pd.DataFrame,
+    ) -> dict[str, "SignalTargets"]:
+        """Sweep over is_fraction values -- each gets its own IS/OOS split and tournament."""
+        from ggTrader.lab.sweep import combo_name
+
+        close = pd.concat(
+            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
+            axis=1,
+        ).ffill()
+        unique_spans = sorted({v for combo_list in _EMA_COMBOS for v in combo_list.values()})
+        emas: dict[int, pd.DataFrame] = {
+            span: close.ewm(span=span, adjust=False).mean() for span in unique_spans
+        }
+
+        result: dict[str, SignalTargets] = {}
+        for combo in combos:
+            is_frac = float(combo["is_fraction"])
+            is_end = max(1, int(len(close) * is_frac))
+            close_is = close.iloc[:is_end].dropna(axis=1, how="all")
+            best_combo = _EMA_COMBOS[2]  # default 20/50
+            best_sharpe = float("-inf")
+            for ec in _EMA_COMBOS:
+                sharpe = _ema_combo_is_sharpe(close_is, ec["ema_fast"], ec["ema_slow"])
+                if sharpe > best_sharpe:
+                    best_sharpe = sharpe
+                    best_combo = ec
+            fast, slow = best_combo["ema_fast"], best_combo["ema_slow"]
+            ema_f, ema_s = emas[fast], emas[slow]
+            entries = ((ema_f > ema_s) & (ema_f.shift(1) <= ema_s.shift(1))).fillna(False)
+            exits = ((ema_f < ema_s) & (ema_f.shift(1) >= ema_s.shift(1))).fillna(False)
+            key = combo_name(self.name, combo)
+            result[key] = SignalTargets(entries=entries.astype(bool), exits=exits.astype(bool))
+        return result
 
 
 _SIGNAL_REGISTRY = {
