@@ -379,3 +379,93 @@ def test_sweep_end_to_end_ema_cross_small_grid():
             {"s": sweep_id},
         ).scalar()
         assert combo_count == 2
+
+
+def test_split_params_separates_signal_and_stop():
+    from ggTrader.lab.sweep import split_params
+
+    combo = {"ema_fast": 10, "ema_slow": 50, "ts_stop": 0.03}
+    signal, stop = split_params(combo)
+    assert signal == {"ema_fast": 10, "ema_slow": 50}
+    assert stop == {"ts_stop": 0.03}
+
+
+def test_split_params_no_stop_params():
+    from ggTrader.lab.sweep import split_params
+
+    combo = {"ema_fast": 10, "ema_slow": 50}
+    signal, stop = split_params(combo)
+    assert signal == {"ema_fast": 10, "ema_slow": 50}
+    assert stop == {}
+
+
+def test_split_params_atr_params():
+    from ggTrader.lab.sweep import split_params
+
+    combo = {"ema_fast": 10, "ema_slow": 50, "atr_period": 14, "atr_mult": 2.0}
+    signal, stop = split_params(combo)
+    assert signal == {"ema_fast": 10, "ema_slow": 50}
+    assert stop == {"atr_period": 14, "atr_mult": 2.0}
+
+
+def test_stop_params_constant():
+    from ggTrader.lab.sweep import STOP_PARAMS
+
+    assert "ts_stop" in STOP_PARAMS
+    assert "atr_period" in STOP_PARAMS
+    assert "atr_mult" in STOP_PARAMS
+    assert "ema_fast" not in STOP_PARAMS
+
+
+def test_grid_rejects_ts_stop_and_atr_mult_together():
+    from ggTrader.lab.sweep import _is_valid_combo
+
+    assert _is_valid_combo({"ema_fast": 10, "ema_slow": 50, "ts_stop": 0.03}) is True
+    assert _is_valid_combo({"ema_fast": 10, "ema_slow": 50, "atr_mult": 2.0}) is True
+    assert _is_valid_combo({"ts_stop": 0.03, "atr_mult": 2.0}) is False
+    assert _is_valid_combo({"ema_fast": 10, "ts_stop": 0.03, "atr_mult": 2.0}) is False
+
+
+@pytest.mark.integration
+def test_sweep_with_fixed_trailing_stop():
+    """Sweep with ts_stop produces different results than without."""
+    from sqlalchemy import text
+
+    from ggTrader.lab.data import STOCK_BASE_CONFIG
+    from ggTrader.lab.persist import get_engine, init_schema
+    from ggTrader.lab.strategies.signals import EmaCrossSignal
+    from ggTrader.lab.sweep import run_sweep
+
+    init_schema()
+    ohlcv = _ohlcv(["A", "B"], n=600)
+    spy_idx = ohlcv.index
+    spy_close = pd.Series(100.0 * 1.0004 ** np.arange(len(spy_idx)), index=spy_idx)
+
+    # 2 entry combos x 2 stop values = 4 total combos
+    grid = [
+        {"ema_fast": 5, "ema_slow": 50},
+        {"ema_fast": 5, "ema_slow": 50, "ts_stop": 0.03},
+        {"ema_fast": 10, "ema_slow": 50},
+        {"ema_fast": 10, "ema_slow": 50, "ts_stop": 0.03},
+    ]
+
+    cfg = LabConfig(min_history_bars=100, top_n=2)
+    sweep_id = run_sweep(
+        "ema_cross",
+        EmaCrossSignal,
+        cfg,
+        ohlcv,
+        spy_close,
+        eval_start=str(ohlcv.index[200].date()),
+        eval_end=str(ohlcv.index[-1].date()),
+        market="equity",
+        base_config=dict(STOCK_BASE_CONFIG),
+        grid=grid,
+    )
+
+    with get_engine().connect() as conn:
+        combo_count = conn.execute(
+            text("SELECT count(*) FROM lab_sweep_combos WHERE sweep_id = :s"),
+            {"s": sweep_id},
+        ).scalar()
+        assert combo_count == 4

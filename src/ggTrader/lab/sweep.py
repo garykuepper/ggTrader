@@ -5,9 +5,20 @@ from __future__ import annotations
 from itertools import product
 from typing import Any, Dict, List, Optional, Type
 
+STOP_PARAMS: frozenset = frozenset({"ts_stop", "atr_period", "atr_mult"})
+
+
+def split_params(combo: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]:
+    """Split a combo dict into (signal_params, stop_params)."""
+    signal = {k: v for k, v in combo.items() if k not in STOP_PARAMS}
+    stop = {k: v for k, v in combo.items() if k in STOP_PARAMS}
+    return signal, stop
+
 
 def _is_valid_combo(params: Dict[str, Any]) -> bool:
-    """Filter combos where a 'fast' param is >= a corresponding 'slow' param."""
+    """Filter invalid combos: fast >= slow, or both ts_stop and atr_mult."""
+    if "ts_stop" in params and "atr_mult" in params:
+        return False
     fast_keys = sorted(k for k in params if "fast" in k)
     slow_keys = sorted(k for k in params if "slow" in k)
     for fk, sk in zip(fast_keys, slow_keys):
@@ -112,13 +123,62 @@ def run_sweep(
     # Determine symbols from the universe (all available in ohlcv)
     symbols = sorted(ohlcv.columns.get_level_values(0).unique())
 
-    # Generate signals for all combos
+    # Generate signals and simulate — grouped by stop config
     strat_instance = strategy_cls(cfg)
+    all_eq: Dict[str, "pd.Series"] = {}
+    all_diags: Dict[str, Dict[str, Any]] = {}
+
+    # Batched simulation setup
+    start_cash = float(base_config["START_CASH"])
+
+    # Compute trade_start: first bar at or after eval_start (strip warmup/cash prefix)
+    eval_start_ts = pd.Timestamp(eval_start, tz="UTC")
+    trade_window = ohlcv.index[ohlcv.index >= eval_start_ts]
+    trade_start = trade_window[0] if len(trade_window) else ohlcv.index[0]
+
+    # Score SPY over the eval window only
+    spy_eval = spy_close.loc[trade_start:].dropna()
+    spy_stats = curve_stats(start_cash * (spy_eval / spy_eval.iloc[0]))
+
     if hasattr(strat_instance, "sweep_signals"):
-        all_targets = strat_instance.sweep_signals(grid, symbols, ohlcv)
+        # Group combos by stop config
+        from collections import defaultdict
+
+        stop_groups: Dict[tuple, List[Dict[str, Any]]] = defaultdict(list)
+        for combo in grid:
+            _signal_p, stop_p = split_params(combo)
+            stop_key = tuple(sorted(stop_p.items()))
+            stop_groups[stop_key].append(combo)
+
+        for stop_key, group_combos in stop_groups.items():
+            stop_config = dict(stop_key)
+            signal_combos = [split_params(c)[0] for c in group_combos]
+            # Deduplicate signal combos (same entry params, different stops)
+            seen: set = set()
+            unique_signal: List[Dict[str, Any]] = []
+            for sc in signal_combos:
+                k = tuple(sorted(sc.items()))
+                if k not in seen:
+                    seen.add(k)
+                    unique_signal.append(sc)
+            targets = strat_instance.sweep_signals(unique_signal, symbols, ohlcv)
+            # Map full combo names to their signal targets
+            group_targets: Dict[str, SignalTargets] = {}
+            for combo in group_combos:
+                signal_p, _ = split_params(combo)
+                signal_key = combo_name(strategy_name, signal_p)
+                full_key = combo_name(strategy_name, combo)
+                group_targets[full_key] = targets[signal_key]
+
+            sim_config = {**base_config, **stop_config}
+            ohlcv_arg = ohlcv if "atr_mult" in stop_config else None
+            _rets, eq, diag = simulate_signals(group_targets, prices, sim_config, ohlcv=ohlcv_arg)
+            for key in group_targets:
+                all_eq[key] = eq[key]
+                all_diags[key] = diag.get(key, {})
     else:
         # Weight strategies: build per-combo, simulate together
-        all_targets = {}
+        all_targets: Dict[str, Any] = {}
         start_ts = pd.Timestamp(eval_start, tz="UTC")
         end_ts = pd.Timestamp(eval_end, tz="UTC")
         dates = rebalance_dates(ohlcv.index, start_ts, end_ts)
@@ -140,37 +200,28 @@ def run_sweep(
                 past = ohlcv.loc[:asof]
                 elig = eligible_at(asof, past, combo_cfg)[0]
                 plans[asof] = strat.select(asof, past, elig)
-            targets = strat.to_targets(plans, ohlcv)
+            target = strat.to_targets(plans, ohlcv)
             key = combo_name(strategy_name, combo_params)
-            all_targets[key] = targets
+            all_targets[key] = target
 
-    # Batched simulation — one vbt call
-    start_cash = float(base_config["START_CASH"])
+        _rets_df, eq_df, wdiags = simulate_weights(all_targets, prices, base_config)
+        for key in all_targets:
+            all_eq[key] = eq_df[key]
+            all_diags[key] = wdiags.get(key, {})
 
-    # Compute trade_start: first bar at or after eval_start (strip warmup/cash prefix)
-    eval_start_ts = pd.Timestamp(eval_start, tz="UTC")
-    trade_window = ohlcv.index[ohlcv.index >= eval_start_ts]
-    trade_start = trade_window[0] if len(trade_window) else ohlcv.index[0]
-
-    # Score SPY over the eval window only
-    spy_eval = spy_close.loc[trade_start:].dropna()
-    spy_stats = curve_stats(start_cash * (spy_eval / spy_eval.iloc[0]))
-
-    if isinstance(next(iter(all_targets.values())), SignalTargets):
-        _rets_df, eq_df, diags = simulate_signals(all_targets, prices, base_config)
-    else:
-        _rets_df, eq_df, diags = simulate_weights(all_targets, prices, base_config)
+    # Convert all_eq to a DataFrame for consistent scoring
+    eq_df = pd.DataFrame(all_eq)
 
     # Score each combo over the eval window only (after warmup) and persist
     result_rows: List[Dict[str, Any]] = []
-    for key in all_targets:
+    for key in all_eq:
         eq = eq_df[key].loc[trade_start:].dropna()
         if len(eq) < 2:
             continue
         metrics = curve_stats(eq)
         combo_params = next(c for c in grid if combo_name(strategy_name, c) == key)
         persist.write_sweep_combo(
-            sweep_id, key, combo_params, metrics, spy_stats, diags.get(key, {})
+            sweep_id, key, combo_params, metrics, spy_stats, all_diags.get(key, {})
         )
         result_rows.append({"combo": key, **metrics})
 
