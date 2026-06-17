@@ -1,10 +1,13 @@
 # --- IDE & System ---
 .idea/
 .vscode/
+.cursor/
+.cursorrules
 .cache/
 .fsspec-cache/
 .agent/
 .claude/
+.hermes/
 .venv/
 __pycache__/
 *.py[cod]
@@ -26,6 +29,8 @@ scratch/
 
 # --- ggTrader Data & Logs ---
 logs/
+*.log
+grafana/
 data/raw/
 data/parquet/
 data/backups/
@@ -43,20 +48,5 @@ data/live/
 !data/universe/sp500_constituents_history.csv.gz
 !data/universe/*_tickers_snapshot_*.txt
 
-# --- Research & Results (Selective Signal) ---
-# Ignore all result directories and log/txt files by default
-results/**/*
-
-# BUT Always version-control the outcomes (Weights, Plots, Reports).
-# NOTE: run_results.json is intentionally NOT whitelisted — these blobs are
-# large (0.6-1.2MB each), regenerable, and don't diff usefully. Keep only the
-# human-readable reports + small weight/stat summaries under version control.
-!results/**/
-!results/**/portfolio_weights.json
-!results/**/phase_stats.json
-!results/**/plots/
-!results/**/plots/*.png
-!results/**/final_report.md
-!results/**/FINAL_WFO_RESEARCH_REPORT.md
-!results/**/research_report.md
-!results/research/*.md
+# --- Results (all generated, not tracked) ---
+results/
