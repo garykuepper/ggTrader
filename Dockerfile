@@ -18,7 +18,7 @@ COPY pyproject.toml .
 COPY . .
 
 # Install the package and dependencies
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -e ".[test]"
 
 # Create the data directory for persistence
 RUN mkdir -p /app/data
