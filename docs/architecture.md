@@ -38,8 +38,8 @@ src/ggTrader/
 ├── data/                    # Data loading infrastructure
 │   ├── core/
 │   │   ├── base_loader.py  # Abstract loader protocol
-│   │   ├── sp500_constituents.csv  # S&P 500 tickers (updated infrequently)
-│   │   └── constants.py     # Markets, intervals, holidays
+│   │   ├── stock_constants.py  # yfinance interval mapping, SP500 symbol list
+│   │   └── constants.py     # Kraken symbol mapping, quote currencies, intervals
 │   ├── historical/
 │   │   ├── timescaledb_loader.py  # TimescaleDB OHLCV fetch
 │   │   └── postgres_ingestor.py   # DB insert helpers
@@ -113,61 +113,67 @@ export: PostgreSQL dump
 
 ## Lab strategy interface
 
-All strategies implement the `Strategy` protocol:
+All strategies implement the `Strategy` protocol (defined in `lab/strategy.py`):
 
 ```python
-from ggTrader.lab.strategy import Strategy, LabConfig
+class Strategy(Protocol):
+    name: str
+    target_kind: str  # "weights" or "signals"
 
-class MyStrategy(Strategy):
-    def __call__(self, universe: List[str], ohlcv: DataFrame, cfg: LabConfig) -> Tuple[DataFrame, DataFrame]:
-        """
-        Args:
-            universe: list of stock/coin tickers available on this date
-            ohlcv: multi-index DataFrame (ticker, field) → values
-            cfg: LabConfig with top_n, lookback, skip, max_stocks
-        
-        Returns:
-            (weights, signals) as DataFrames (dates × symbols)
-                weights: fractional allocation per symbol each day [0, 1]
-                signals: +1 (long), 0 (no position), -1 (exit)
-        """
+    def select(self, asof: pd.Timestamp, data: pd.DataFrame,
+               eligible: List[str]) -> Plan:
+        """Point-in-time selection — must use only data <= asof."""
+        ...
+
+    def to_targets(self, plans: Dict[pd.Timestamp, Plan],
+                   data: pd.DataFrame) -> DataFrame | SignalTargets:
+        """Whole-window target matrix from per-rebalance plans.
+        Weight strategies → DataFrame (time x symbol, float weights).
+        Signal strategies → SignalTargets(entries, exits) boolean frames."""
+        ...
 ```
 
-All returns must be:
-- **Fully vectorized** — numpy arrays or pandas DataFrames, no per-bar loops
-- **Aligned to OHLCV index** — matching dates and symbols
-- **NaN-safe** — forward-fill or zero-fill missing values before passing to vectorbt
+- **Weight strategies** (target_kind="weights"): `to_targets` returns a `pd.DataFrame` with float weights (0.0 = exit, NaN = no order). Simulated via `vbt.Portfolio.from_orders(size_type="targetpercent")`.
+- **Signal strategies** (target_kind="signals"): `to_targets` returns `SignalTargets(entries, exits)` with boolean DataFrames. Simulated via `vbt.Portfolio.from_signals()`.
+
+All returns must be fully vectorized (no per-bar loops), aligned to the OHLCV index, and NaN-safe.
 
 ---
 
 ## Vectorbt portfolio simulation
 
-The `simulate()` function in `lab/simulate.py` wraps vectorbt:
+`lab/simulate.py` provides two simulation functions:
 
+**`simulate_weights()`** — for weight-based strategies (xs_momentum, dual_momentum):
 ```python
-import vectorbt as vbt
-
-pf = vbt.Portfolio.from_signals(
-    close=ohlcv['close'],           # 2D array (dates × symbols)
-    entries=signals == 1,           # boolean (dates × symbols)
-    exits=signals == -1,            # boolean (dates × symbols)
-    init_cash=INIT_CASH,
-    fees=TRADING_FEES,
-    freq='D',                       # daily rebalancing
-    group_by=True,                  # shared cash pool across symbols
+pf = vbt.Portfolio.from_orders(
+    close=close,                     # 2D (dates × [strategy, symbol])
+    size=size,                       # target-percent weights
+    size_type="targetpercent",
+    init_cash=START_CASH,
+    fees=FEES, slippage=SLIPPAGE,
+    cash_sharing=True,
+    group_by=strategy_index,         # shared cash per strategy group
+    call_seq="auto",
 )
-
-# Compute metrics
-sharpe = pf.sharpe_ratio(freq='D')
-calmar = pf.calmar_ratio()
-max_dd = pf.max_drawdown()
-returns = pf.returns()
 ```
 
-**Key configuration:**
-- `group_by=True` — all symbols share one capital pool (no per-symbol independent cash)
-- `freq='D'` — daily rebalancing (can be changed; monthly folds are handled by the harness, not vectorbt)
-- `init_cash` and `fees` set at call time from config
+**`simulate_signals()`** — for signal-based strategies (ema_cross, wfo_tournament):
+```python
+pf = vbt.Portfolio.from_signals(
+    close=close,                     # 2D (dates × [strategy, symbol])
+    entries=entries,                  # boolean entry signals
+    exits=exits,                     # boolean exit signals
+    size=SIGNAL_POSITION_SIZE,       # fraction per entry (default 0.02)
+    size_type="percent",
+    init_cash=START_CASH,
+    fees=FEES, slippage=SLIPPAGE,
+    cash_sharing=True,
+    group_by=strategy_index,
+)
+```
+
+Both functions batch all strategies into ONE vectorbt call via `group_by`, then split the results back out. This is the core performance advantage — no per-strategy loops.
 
 ---
 
@@ -199,7 +205,7 @@ All results are persisted to TimescaleDB:
 | `src/ggTrader/data/` | OHLCV loaders (yfinance, TimescaleDB), data schemas, market constants |
 | `src/ggTrader/utils/` | Config, paths, DB engine |
 | `src/ggTrader/cli/` | CLI commands (main, ingest, db) |
-| `data/core/sp500_constituents.csv` | S&P 500 ticker list (updated infrequently) |
+| `data/universe/sp500_constituents_history.csv.gz` | Point-in-time S&P 500 membership (2,712 snapshots, 1996–present) |
 | TimescaleDB `lab_runs` table | Lab run history (strategy, config, execution time, summary metrics) |
 | TimescaleDB `lab_periods` table | Per-fold results (strategy, fold dates, per-fold metrics) |
 

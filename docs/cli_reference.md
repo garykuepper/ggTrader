@@ -28,7 +28,7 @@ ggt lab --strategy <name> [options]
 
 | Flag | Choices | Description |
 |---|---|---|
-| `--strategy` | `wfo_tournament`, `xs_momentum`, `dual_momentum`, `ema_cross`, `wfo_tournament_signal` | Strategy to evaluate |
+| `--strategy` | `wfo_tournament`, `xs_momentum`, `dual_momentum`, `ema_cross` | Strategy to evaluate |
 
 ### Optional arguments
 
@@ -57,8 +57,8 @@ ggt lab --strategy xs_momentum --top-n 100 --eval-start 2023-01-01 --eval-end 20
 # Diagnostic run on a small universe
 ggt lab --strategy dual_momentum --top-n 10 --max-stocks 5
 
-# Evaluate a signal strategy
-ggt lab --strategy ema_cross --market equity
+# Signal strategies work the same way
+ggt lab --strategy wfo_tournament
 ```
 
 ### Output
@@ -111,8 +111,8 @@ ggt ingest --days 1095
 
 ### Notes
 
-- Ingestion uses the `CachedExchangeLoader` (CCXT wrapper) to pull from the active exchange configured in `config.py`.
-- Data is written to the TimescaleDB `ohlcv` table, keyed by `(timestamp, symbol, interval, venue)`.
+- Ingestion uses `PostgresIngestor` to pull from configured exchanges and write to TimescaleDB.
+- Data is written to the `ohlcv` table, keyed by `(timestamp, symbol, interval, venue)`.
 - Duplicate bars are skipped; updates are written in-place.
 
 ---

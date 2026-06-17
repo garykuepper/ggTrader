@@ -17,7 +17,7 @@ This document serves as the consolidated source of truth for all AI assistants (
   * **Strategy Layer**: `src/ggTrader/lab/strategies/` implements momentum and signal-based strategies. Each strategy is a callable that produces entry/exit signals over historical data.
   * **Simulation Layer**: `src/ggTrader/lab/simulate.py` uses `vectorbt.Portfolio` for fast vectorized backtesting.
   * **Walk-Forward Harness**: `src/ggTrader/lab/harness.py` runs overlapping monthly folds, computes metrics, and persists results to `lab_runs` and `lab_periods` TimescaleDB tables.
-  * **Metrics & Reporting**: `src/ggTrader/lab/metrics.py` computes Sharpe, Calmar, max drawdown, and win rate. Results are written to JSON and optionally to markdown.
+  * **Metrics & Reporting**: `src/ggTrader/lab/metrics.py` computes Sharpe, Calmar, max drawdown, and win rate.
 * **State Storage**: All lab run results (strategy name, parameters, performance metrics, timestamps) are persisted to TimescaleDB `lab_runs` and `lab_periods` tables. No JSON file fallback.
 
 ---
@@ -29,7 +29,7 @@ This document serves as the consolidated source of truth for all AI assistants (
   * **Research command**: `docker compose run --rm ggtrader_live python ggt.py lab --strategy <name>`
   * **Database connectivity**: Inside Docker, the TimescaleDB connection string uses `host.docker.internal:5433`. On the host, use `localhost:5433`.
 * **Lab Run Workflow**:
-  1. **Strategy Selection**: Choose a strategy from the registry (`wfo_tournament`, `xs_momentum`, `dual_momentum`, `ema_cross`, `wfo_tournament_signal` for equities; additional strategies may be added to `src/ggTrader/lab/strategies/`).
+  1. **Strategy Selection**: Choose a strategy from the registry (`wfo_tournament`, `ema_cross` for signal-based; `xs_momentum`, `dual_momentum` for weight-based; additional strategies may be added to `src/ggTrader/lab/strategies/`).
   2. **Universe Selection**: The lab auto-generates the trading universe for the eval period — SP500 constituents for equities (sourced from `data/universe/sp500_constituents_history.csv.gz`), or top-volume coins for crypto.
   3. **Walk-Forward Execution**: Overlapping monthly folds run in-memory using vectorbt. Each fold trains on historical data (in-sample) and validates on held-out future data (out-of-sample).
   4. **Persistence**: `lab_runs` table stores run metadata (strategy, config, timestamps). `lab_periods` table stores per-fold performance metrics. Results are not written to disk.
@@ -46,8 +46,9 @@ This document serves as the consolidated source of truth for all AI assistants (
 
 * **Adding a New Strategy**:
   * Implement the `Strategy` protocol in `src/ggTrader/lab/strategies/` (see `momentum.py` or `signals.py` as examples).
-  * The strategy callable takes `(universe, ohlcv, cfg: LabConfig)` and returns `(weights, signals)` — vectorized arrays suitable for `vectorbt.Portfolio`.
-  * Register the strategy name in the corresponding `STRATEGY_NAMES` list.
+  * The `Strategy` protocol requires `name`, `target_kind` ("weights" or "signals"), `select(asof, data, eligible) -> Plan`, and `to_targets(plans, data) -> DataFrame | SignalTargets`.
+  * Weight strategies return a `pd.DataFrame` (time x symbol, float weights). Signal strategies return `SignalTargets(entries, exits)` with boolean frames.
+  * Register the strategy name in `_REGISTRY` (momentum.py) or `_SIGNAL_REGISTRY` (signals.py).
   * New strategies are immediately available via `ggt lab --strategy <new_name>`.
 * **Data Access**:
   * Equities OHLCV: use `load_ohlcv()` from `src/ggTrader/lab/data.py`, which pulls from yfinance and caches locally.
@@ -79,17 +80,8 @@ This document serves as the consolidated source of truth for all AI assistants (
    * **Function/Class Docstrings**: Brief summary of purpose (Google Style).
    * **Inline Comments**: Explain *WHY*, not *WHAT*. Avoid obvious comments.
 4. **Single Source of Truth**: Core logic must live in `src/`. Do not duplicate definitions across files.
-5. **Orchestration Boilerplate**: Scripts in `scripts/` must follow a standard template: `sys.path` setup, `main()` orchestration, and `argparse` for inputs. Every script must handle the `--help` flag gracefully.
-6. **Results Management**: Use `ResultsManager` for all artifact, metric, and plot saving to ensure consistent output directory structures and metadata logging.
-7. **Symbol Normalization**:
-   * All scripts, notebooks, and models MUST use standardized asset symbols (e.g., `BTC`, `ETH`).
-   * Use the `SYMBOL_MAPPING` table (consolidated in `data_manager.py`) to convert exchange-specific prefixed symbols (e.g., `XBT`, `XETH`, `ZUSD`) to standard tickers.
-   * Output artifacts saved to `data/` or returned to the user must use the normalized symbol.
-8. **SQL Query Patterns**:
-   * When querying the `ohlcv` table, use standard PostgreSQL/TimescaleDB functions for asset separation:
-     * Asset Part: `split_part(symbol, '-', 1)`
-     * Quote Part: `split_part(symbol, '-', 2)`
-   * Aggregation: Prefer Notional Volume (`volume * close`) for cross-asset ranking to account for price discrepancies.
+5. **Scripts**: Utility scripts in `scripts/` should have a `main()` entry point and `argparse` for inputs.
+6. **Symbol Normalization**: Use the `SYMBOL_MAPPING` table in `data/core/constants.py` to convert exchange-specific prefixed symbols (e.g., `XBT`, `XETH`) to standard tickers (`BTC`, `ETH`).
 9. **Path Safety**: Always use `os.path.join` or `pathlib.Path` for file paths. Resolve project root dynamically.
 10. **Error Handling**: Data loading functions must raise descriptive exceptions (e.g., `ValueError`, `FileNotFoundError`) on failure. Avoid returning `None` from functions expected to return iterables (handle empty data by returning empty structures).
 11. **Vectorization First**: Avoid iterating over rows in DataFrames for signal calculation. Use `vectorbt`, `numpy`, or `pandas` vectorized operations. All strategy signals must be fully vectorized arrays (dates × symbols) before being passed to `vectorbt.Portfolio`.
