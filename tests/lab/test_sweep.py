@@ -331,3 +331,51 @@ def test_cli_parser_sweep_param_without_sweep_is_ok():
     args = p.parse_args(["--strategy", "ema_cross"])
     assert args.sweep is False
     assert args.sweep_param == []
+
+
+@pytest.mark.integration
+def test_sweep_end_to_end_ema_cross_small_grid(tmp_path):
+    """Full sweep: 2 combos, synthetic OHLCV, hits DB."""
+    from sqlalchemy import text
+
+    from ggTrader.lab.data import STOCK_BASE_CONFIG
+    from ggTrader.lab.persist import get_engine, init_schema
+    from ggTrader.lab.strategies.signals import EmaCrossSignal
+    from ggTrader.lab.sweep import build_grid, run_sweep
+
+    init_schema()
+    ohlcv = _ohlcv(["A", "B"], n=600)
+    spy_idx = ohlcv.index
+    spy_close = pd.Series(100.0 * 1.0004 ** np.arange(len(spy_idx)), index=spy_idx)
+
+    grid = build_grid(EmaCrossSignal, overrides={"ema_fast": [5, 10], "ema_slow": [50]})
+    assert len(grid) == 2
+
+    cfg = LabConfig(min_history_bars=100, top_n=2)
+    sweep_id = run_sweep(
+        "ema_cross",
+        EmaCrossSignal,
+        cfg,
+        ohlcv,
+        spy_close,
+        eval_start=str(ohlcv.index[200].date()),
+        eval_end=str(ohlcv.index[-1].date()),
+        market="equity",
+        base_config=dict(STOCK_BASE_CONFIG),
+        grid=grid,
+    )
+    assert sweep_id.startswith("sweep_ema_cross_")
+
+    with get_engine().connect() as conn:
+        sweep_row = conn.execute(
+            text("SELECT status, n_combos FROM lab_sweeps WHERE sweep_id = :s"),
+            {"s": sweep_id},
+        ).first()
+        assert sweep_row[0] == "done"
+        assert sweep_row[1] == 2
+
+        combo_count = conn.execute(
+            text("SELECT count(*) FROM lab_sweep_combos WHERE sweep_id = :s"),
+            {"s": sweep_id},
+        ).scalar()
+        assert combo_count == 2
