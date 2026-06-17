@@ -46,7 +46,11 @@ def format_results_table(
 ) -> str:
     """Ranked results table sorted by Sharpe descending."""
 
-    sorted_rows = sorted(rows, key=lambda r: r.get("sharpe", float("-inf")), reverse=True)
+    def _safe_sharpe(r: Dict[str, Any]) -> float:
+        v = r.get("sharpe", float("-inf"))
+        return v if v == v else float("-inf")  # NaN != NaN
+
+    sorted_rows = sorted(rows, key=_safe_sharpe, reverse=True)
     lines = [
         f"Sweep complete: {strategy_name} | {n_combos} combos | {eval_start} → {eval_end}",
         f"sweep_id: {sweep_id}",
@@ -92,7 +96,12 @@ def run_sweep(
     from ggTrader.lab.strategy import LabConfig, SignalTargets
 
     persist.init_schema()
-    param_grid = strategy_cls.sweep_params()
+    # Derive effective param ranges from the actual grid (respects CLI overrides)
+    param_grid: Dict[str, Any] = {}
+    for combo in grid:
+        for k, v in combo.items():
+            param_grid.setdefault(k, set()).add(v)
+    param_grid = {k: sorted(v) for k, v in param_grid.items()}
     sweep_id = persist.start_sweep(strategy_name, market, param_grid, len(grid))
 
     prices = pd.concat(
@@ -110,6 +119,9 @@ def run_sweep(
     else:
         # Weight strategies: build per-combo, simulate together
         all_targets = {}
+        start_ts = pd.Timestamp(eval_start, tz="UTC")
+        end_ts = pd.Timestamp(eval_end, tz="UTC")
+        dates = rebalance_dates(ohlcv.index, start_ts, end_ts)
         for combo_params in grid:
             merged = {
                 **{"top_n": cfg.top_n, "lookback": cfg.lookback, "skip": cfg.skip},
@@ -122,9 +134,6 @@ def run_sweep(
                 min_history_bars=cfg.min_history_bars,
                 max_stocks=cfg.max_stocks,
             )
-            start_ts = pd.Timestamp(eval_start, tz="UTC")
-            end_ts = pd.Timestamp(eval_end, tz="UTC")
-            dates = rebalance_dates(ohlcv.index, start_ts, end_ts)
             strat = strategy_cls(combo_cfg)
             plans: Dict[str, Any] = {}
             for asof in dates:
@@ -137,17 +146,25 @@ def run_sweep(
 
     # Batched simulation — one vbt call
     start_cash = float(base_config["START_CASH"])
-    spy_stats = curve_stats(start_cash * (spy_close / spy_close.dropna().iloc[0]))
+
+    # Compute trade_start: first bar at or after eval_start (strip warmup/cash prefix)
+    eval_start_ts = pd.Timestamp(eval_start, tz="UTC")
+    trade_window = ohlcv.index[ohlcv.index >= eval_start_ts]
+    trade_start = trade_window[0] if len(trade_window) else ohlcv.index[0]
+
+    # Score SPY over the eval window only
+    spy_eval = spy_close.loc[trade_start:].dropna()
+    spy_stats = curve_stats(start_cash * (spy_eval / spy_eval.iloc[0]))
 
     if isinstance(next(iter(all_targets.values())), SignalTargets):
-        rets_df, eq_df, diags = simulate_signals(all_targets, prices, base_config)
+        _rets_df, eq_df, diags = simulate_signals(all_targets, prices, base_config)
     else:
-        rets_df, eq_df, diags = simulate_weights(all_targets, prices, base_config)
+        _rets_df, eq_df, diags = simulate_weights(all_targets, prices, base_config)
 
-    # Score each combo and persist
+    # Score each combo over the eval window only (after warmup) and persist
     result_rows: List[Dict[str, Any]] = []
     for key in all_targets:
-        eq = eq_df[key].dropna()
+        eq = eq_df[key].loc[trade_start:].dropna()
         if len(eq) < 2:
             continue
         metrics = curve_stats(eq)

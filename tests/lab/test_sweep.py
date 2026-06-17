@@ -334,7 +334,7 @@ def test_cli_parser_sweep_param_without_sweep_is_ok():
 
 
 @pytest.mark.integration
-def test_sweep_end_to_end_ema_cross_small_grid(tmp_path):
+def test_sweep_end_to_end_ema_cross_small_grid():
     """Full sweep: 2 combos, synthetic OHLCV, hits DB."""
     from sqlalchemy import text
 
