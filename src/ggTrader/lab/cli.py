@@ -28,6 +28,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--lookback", type=int, default=252)
     p.add_argument("--skip", type=int, default=21)
     p.add_argument("--max-stocks", type=int, default=None)
+    p.add_argument(
+        "--sweep",
+        action="store_true",
+        default=False,
+        help="Run parameter sweep instead of single walk-forward.",
+    )
+    p.add_argument(
+        "--sweep-param",
+        action="append",
+        default=[],
+        help="Override sweep range: --sweep-param ema_fast=5,10,20",
+    )
     return p
 
 
@@ -36,10 +48,6 @@ def run_lab(argv: List[str] | None = None) -> str:
     cfg = LabConfig(
         top_n=args.top_n, lookback=args.lookback, skip=args.skip, max_stocks=args.max_stocks
     )
-    if args.strategy in SIGNAL_STRATEGY_NAMES:
-        strat = build_signal_strategy(args.strategy, cfg)
-    else:
-        strat = build_strategy(args.strategy, cfg)
 
     eval_start = pd.Timestamp(args.eval_start, tz="UTC")
     eval_end = (
@@ -57,6 +65,39 @@ def run_lab(argv: List[str] | None = None) -> str:
     sym_cols = [s for s in ohlcv.columns.get_level_values(0).unique() if s != "SPY"]
     ohlcv = ohlcv[sym_cols]
 
+    if args.sweep:
+        from ggTrader.lab.strategies.momentum import CrossSectionalMomentum, DualMomentum
+        from ggTrader.lab.strategies.signals import EmaCrossSignal, WfoTournamentSignal
+        from ggTrader.lab.sweep import build_grid, run_sweep
+
+        cls_map = {
+            "ema_cross": EmaCrossSignal,
+            "wfo_tournament": WfoTournamentSignal,
+            "xs_momentum": CrossSectionalMomentum,
+            "dual_momentum": DualMomentum,
+        }
+        strategy_cls = cls_map[args.strategy]
+        overrides = _parse_sweep_params(args.sweep_param)
+        grid = build_grid(strategy_cls, overrides=overrides if overrides else None)
+        print(f"Sweep: {args.strategy} | {len(grid)} param combos")
+        return run_sweep(
+            args.strategy,
+            strategy_cls,
+            cfg,
+            ohlcv,
+            spy_close,
+            eval_start=str(eval_start.date()),
+            eval_end=str(eval_end.date()),
+            market=args.market,
+            base_config=dict(STOCK_BASE_CONFIG),
+            grid=grid,
+        )
+
+    if args.strategy in SIGNAL_STRATEGY_NAMES:
+        strat = build_signal_strategy(args.strategy, cfg)
+    else:
+        strat = build_strategy(args.strategy, cfg)
+
     run_id = walkforward(
         [strat],
         ohlcv,
@@ -70,6 +111,27 @@ def run_lab(argv: List[str] | None = None) -> str:
     )
     print(f"lab run complete: {run_id}")
     return run_id
+
+
+def _parse_sweep_params(raw: List[str]) -> dict[str, list]:
+    """Parse CLI '--sweep-param key=v1,v2,v3' into {key: [v1, v2, v3]}."""
+    result: dict[str, list] = {}
+    for item in raw:
+        key, _, vals = item.partition("=")
+        if not key or not vals:
+            raise ValueError(f"Invalid --sweep-param: {item!r} (expected key=v1,v2,...)")
+        parsed = []
+        for v in vals.split(","):
+            v = v.strip()
+            try:
+                parsed.append(int(v))
+            except ValueError:
+                try:
+                    parsed.append(float(v))
+                except ValueError:
+                    parsed.append(v)
+        result[key.strip()] = parsed
+    return result
 
 
 if __name__ == "__main__":

@@ -296,3 +296,38 @@ def test_format_results_table_sorted_by_sharpe():
     data_lines = [l for l in lines if l.strip().startswith(("1", "2"))]
     assert "b" in data_lines[0]
     assert "a" in data_lines[1]
+
+
+def test_cli_parser_accepts_sweep_flag():
+    from ggTrader.lab.cli import build_arg_parser
+
+    p = build_arg_parser()
+    args = p.parse_args(["--strategy", "ema_cross", "--sweep"])
+    assert args.sweep is True
+
+
+def test_cli_parser_accepts_sweep_param():
+    from ggTrader.lab.cli import build_arg_parser
+
+    p = build_arg_parser()
+    args = p.parse_args(
+        [
+            "--strategy",
+            "ema_cross",
+            "--sweep",
+            "--sweep-param",
+            "ema_fast=5,10",
+            "--sweep-param",
+            "ema_slow=50,100",
+        ]
+    )
+    assert args.sweep_param == ["ema_fast=5,10", "ema_slow=50,100"]
+
+
+def test_cli_parser_sweep_param_without_sweep_is_ok():
+    from ggTrader.lab.cli import build_arg_parser
+
+    p = build_arg_parser()
+    args = p.parse_args(["--strategy", "ema_cross"])
+    assert args.sweep is False
+    assert args.sweep_param == []
