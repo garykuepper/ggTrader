@@ -227,3 +227,72 @@ def test_sweep_persistence_roundtrip():
         ).first()
         assert combo_row[0]["ema_fast"] == 5
         assert combo_row[1]["sharpe"] == 0.42
+
+
+def test_format_results_table_renders_header_and_rows():
+    from ggTrader.lab.sweep import format_results_table
+
+    rows = [
+        {
+            "combo": "ema_cross__ema_fast5_ema_slow20",
+            "sharpe": 0.42,
+            "cagr_pct": 3.1,
+            "max_drawdown_pct": -18.2,
+            "sortino": 0.61,
+            "total_return_pct": 12.4,
+        },
+        {
+            "combo": "ema_cross__ema_fast10_ema_slow30",
+            "sharpe": 0.38,
+            "cagr_pct": 2.7,
+            "max_drawdown_pct": -21.0,
+            "sortino": 0.54,
+            "total_return_pct": 10.8,
+        },
+    ]
+    spy = {"cagr_pct": 18.2, "sharpe": 0.85, "max_drawdown_pct": -24.5}
+    table = format_results_table(
+        rows, "ema_cross", 2, "2021-01-31", "2026-06-17", "sweep_ema_cross_abc123", spy
+    )
+    assert "ema_cross" in table
+    assert "2 combos" in table
+    assert "Sharpe" in table
+    assert "SPY" in table
+    assert "0.42" in table
+
+
+def test_format_results_table_sorted_by_sharpe():
+    from ggTrader.lab.sweep import format_results_table
+
+    rows = [
+        {
+            "combo": "a",
+            "sharpe": -0.1,
+            "cagr_pct": 0,
+            "max_drawdown_pct": 0,
+            "sortino": 0,
+            "total_return_pct": 0,
+        },
+        {
+            "combo": "b",
+            "sharpe": 0.5,
+            "cagr_pct": 0,
+            "max_drawdown_pct": 0,
+            "sortino": 0,
+            "total_return_pct": 0,
+        },
+    ]
+    table = format_results_table(
+        rows,
+        "x",
+        2,
+        "2021",
+        "2026",
+        "id",
+        {"cagr_pct": 0, "sharpe": 0, "max_drawdown_pct": 0},
+    )
+    lines = table.strip().split("\n")
+    # First data row (after header lines) should be the higher-sharpe combo
+    data_lines = [l for l in lines if l.strip().startswith(("1", "2"))]
+    assert "b" in data_lines[0]
+    assert "a" in data_lines[1]
