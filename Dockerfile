@@ -30,5 +30,5 @@ RUN mkdir -p /app/data
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Default command: Start Live Exec Engine natively with Unbuffered output for log tailing
-CMD ["python", "-u", "ggt.py", "trade"]
+# Default: show help
+CMD ["python", "-u", "ggt.py", "--help"]
