@@ -469,3 +469,59 @@ def test_sweep_with_fixed_trailing_stop():
             {"s": sweep_id},
         ).scalar()
         assert combo_count == 4
+
+
+@pytest.mark.integration
+def test_sweep_with_atr_trailing_stop():
+    """Sweep with atr_mult produces results and persists to DB."""
+    from sqlalchemy import text
+
+    from ggTrader.lab.data import STOCK_BASE_CONFIG
+    from ggTrader.lab.persist import get_engine, init_schema
+    from ggTrader.lab.strategies.signals import EmaCrossSignal
+    from ggTrader.lab.sweep import run_sweep
+
+    init_schema()
+    ohlcv = _ohlcv(["A", "B"], n=600)
+    spy_idx = ohlcv.index
+    spy_close = pd.Series(100.0 * 1.0004 ** np.arange(len(spy_idx)), index=spy_idx)
+
+    grid = [
+        {"ema_fast": 10, "ema_slow": 50, "atr_mult": 2.0, "atr_period": 14},
+        {"ema_fast": 10, "ema_slow": 50, "atr_mult": 3.0, "atr_period": 14},
+        {"ema_fast": 10, "ema_slow": 50},  # no stop baseline
+    ]
+
+    cfg = LabConfig(min_history_bars=100, top_n=2)
+    sweep_id = run_sweep(
+        "ema_cross",
+        EmaCrossSignal,
+        cfg,
+        ohlcv,
+        spy_close,
+        eval_start=str(ohlcv.index[200].date()),
+        eval_end=str(ohlcv.index[-1].date()),
+        market="equity",
+        base_config=dict(STOCK_BASE_CONFIG),
+        grid=grid,
+    )
+
+    with get_engine().connect() as conn:
+        sweep_row = conn.execute(
+            text("SELECT status, n_combos FROM lab_sweeps WHERE sweep_id = :s"),
+            {"s": sweep_id},
+        ).first()
+        assert sweep_row[0] == "done"
+        assert sweep_row[1] == 3
+
+        combos = conn.execute(
+            text(
+                "SELECT combo_name, params FROM lab_sweep_combos"
+                " WHERE sweep_id = :s ORDER BY combo_name"
+            ),
+            {"s": sweep_id},
+        ).fetchall()
+        assert len(combos) == 3
+        # At least one combo should have atr_mult in its params
+        atr_combos = [c for c in combos if c[1].get("atr_mult") is not None]
+        assert len(atr_combos) == 2
