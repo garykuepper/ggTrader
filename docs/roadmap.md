@@ -1,8 +1,14 @@
 # Roadmap
 
-**Last updated:** 2026-06-08 · **Status:** Phase 1 deployed on Binance.US (legacy pre-reset params) but **zero fills since go-live** · Edge-search (2026-06-08) found no deployable crypto edge with the current signal library — cheap levers exhausted · Crypto-only today, **US-equities-via-Alpaca pivot under active reconsideration** (§5)
+**ARCHIVED — Legacy code removed 2026-06-16.** The codebase is now **lab-only** — all live execution engines, strategy orchestration, and per-coin backtesting infrastructure have been removed. This roadmap references deleted modules and phases that no longer exist. See [Architecture](architecture.md) for the current lab structure.
 
-This is the **single source of truth** for ggTrader's forward direction. Dated execution history lives in [`changelog.md`](changelog.md); the walk-forward-optimization (WFO) reset + venue-migration arc is closed out in [`superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md`](superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md).
+**Previous status (pre-cleanup, now archived):** Phase 1 deployed on Binance.US (legacy pre-reset params) but zero fills since go-live · Edge-search (2026-06-08) found no deployable crypto edge with the current signal library — cheap levers exhausted.
+
+---
+
+This document is kept as historical reference only. For forward direction on new strategy research, see the lab-based architecture in [Architecture](architecture.md) and available strategies in [CLI Reference](cli_reference.md).
+
+---
 
 > **Organization.** This doc is grouped by **function**, not chronology. §2 is time-bounded (next ~6 weeks); §§3–5 are open exploration. For "what happened when," see [`changelog.md`](changelog.md).
 >

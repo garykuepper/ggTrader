@@ -1,174 +1,208 @@
 # Architecture
 
-How ggTrader is put together. For commands and day-to-day usage see [CLI Reference](cli_reference.md); for live deployment see the [Live Trading Guide](live_trading_guide.md).
-
-## Contents
-
-1. [What it is](#what-it-is)
-2. [The four layers](#the-four-layers) — [Data](#1-data) · [Strategy](#2-strategy) · [Optimization](#3-optimization-walk-forward) · [Execution](#4-execution)
-3. [Position sizing](#position-sizing)
-4. [Data flow](#data-flow) (diagram)
-5. [Monthly recalibration](#monthly-recalibration)
-6. [Where to find things](#where-to-find-things) (path map)
-
----
-
-## Vocabulary
-
-A few terms you'll see throughout — defined once so the rest of the doc can be brief.
-
-| Short | Long | What it means |
-|---|---|---|
-| **OHLCV** | Open / High / Low / Close / Volume | One candle of price data per time interval (e.g. one 4-hour bar) |
-| **WFO** | Walk-Forward Optimization | Find good parameters on a training window, validate on the next chunk of unseen data, slide forward, repeat |
-| **IS / OOS** | In-Sample / Out-of-Sample | "Training" data the optimizer was allowed to see vs. "test" data it was locked out of |
-| **CCXT** | (no expansion, library name) | Python library that wraps every major crypto exchange's REST/WebSocket API behind one interface |
-| **PnL** | Profit and Loss | The dollar gain or loss on a position or portfolio |
-| **OCO** | One-Cancels-Other | An exchange order type that pairs a stop-loss and a take-profit — when one fills, the other is automatically cancelled |
+How ggTrader is structured. For commands and usage see [CLI Reference](cli_reference.md); for codebase guidelines see [agents.md](../agents.md).
 
 ---
 
 ## At a glance
 
+ggTrader is now a **research-first lab** — a vectorbt-based walk-forward optimization framework for backtesting trading strategies on historical data. The codebase contains only the research engine; live execution, live trading, and monthly recalibration have been removed as of 2026-06-16.
+
 | Aspect | Detail |
 |---|---|
-| **Stack** | Python 3.10+ · TimescaleDB (PostgreSQL with time-series superpowers) · CCXT · Docker |
-| **Venues** | Binance.US (0.04% round-trip fees, current target) · Kraken Pro (0.50–0.80% round-trip, legacy) |
-| **Methodologies** | WFO on directional momentum signals (live) · Cash-and-carry on dated futures (backtest) · Funding-rate carry on perpetual futures (backtest) |
-| **Cadence** | Live trader polls every 4 hours on UTC bar boundaries · WFO recalibrates on the 1st of each month at ~01:00 UTC |
-| **Risk envelope** | `DAILY_LOSS_LIMIT_PCT=5%` intraday circuit breaker · `MAX_COIN_ALLOCATION=25%` per coin · venue-native trailing-stop or OCO order protects every open position |
+| **Core Stack** | Python 3.10+ · vectorbt · TimescaleDB · yfinance |
+| **Data Sources** | TimescaleDB (crypto OHLCV) · yfinance (equities) · CSV (SP500 constituents) |
+| **Lab Output** | TimescaleDB `lab_runs` / `lab_periods` tables (timestamped, immutable) |
+| **Supported Markets** | US equities (SP500 constituents) · Crypto (customizable universe) |
+| **Evaluation Window** | Monthly folds (overlapping calendar months) · Daily rebalancing (configurable) |
+| **Vectorization** | All calculations are fully vectorized via numpy/pandas/vectorbt — no per-bar iteration |
 
 ---
 
-## What it is
+## Module structure
 
-ggTrader is an algorithmic crypto trading bot. Once a month it searches three years of historical price data to find which strategy parameters have been working best **per coin**, then trades those parameters live on Binance.US or Kraken Pro (selected by the `EXCHANGE` config value). The same code path produces the research, runs the simulation, and places the orders — so what you backtest is what trades.
-
-Three distinct strategy methodologies coexist behind the same data + execution stack:
-
-- **WFO on directional momentum signals** — the original pipeline. Live today.
-- **Cash-and-carry on dated futures** (`CashAndCarryBTC`) — buy spot, sell a dated future, capture the basis. Backtest only.
-- **Funding-rate carry on perpetual futures** (`FundingCarryBTC`) — buy spot, short the perpetual, harvest the funding payment. Backtest only.
-
-New strategies plug in by implementing the `Strategy` protocol in `src/ggTrader/strategies/`.
-
-> **Experimental — cross-sectional momentum (research only).** A separate
-> `CrossSectionalMomentum` track (`src/ggTrader/strategies/momentum/`, with an HMM regime overlay in
-> `strategies/regime/`) ranks the *whole universe* against itself each bar instead of deciding per
-> coin. It is **not** wired into the live engine (which is strictly per-coin) and is exercised offline
-> only via `scripts/run_cross_sectional_research.py`. Its HMM filter is intentionally disabled — the
-> regime emission features are not yet available as real data.
-
-## The four layers
-
-Each layer has one job. They communicate through plain Python objects (DataFrames, dicts) — no message bus, no service mesh.
-
-### 1. Data
-
-Where every price bar lives and how the rest of the system reads it.
-
-- **Historical storage**: TimescaleDB. All spot OHLCV lives in one `ohlcv` table keyed by `(timestamp, symbol, interval, venue)`, so Kraken and Binance.US history coexist without colliding. Futures OHLCV (Kraken Futures + derived basis prices) lives in `futures_ohlcv`.
-- **Live fetch**: `CachedExchangeLoader` (a thin CCXT wrapper that talks to the active venue) pulls the most recent bars and writes them straight back to the database. A cold-start of the live trader doesn't re-download history.
-- **Read interface**: every component reads through `TimescaleDBLoader.fetch_ohlcv()`, which returns a pandas DataFrame with a two-level column index `(symbol, field) → values`. That shape is the contract across the rest of the system. Reads always filter by `venue` so multi-venue history stays segregated.
-- **Code**: `src/ggTrader/data/`.
-
-### 2. Strategy
-
-The bricks the optimizer picks from per coin.
-
-- An **entry strategy** decides when to buy. Eleven are registered:
-  - **PSAR + ADX** (`psar_adx`) — Parabolic Stop-and-Reverse trend follower, gated by Average Directional Index trend strength.
-  - **EMA crossover** (`ema_cross`) — buy when a fast Exponential Moving Average crosses above a slow one.
-  - **RSI reversal** (`rsi_reversal`) — buy when the Relative Strength Index touches oversold territory, confirms.
-  - Plus eight more (`bbands_mean_reversion`, `donchian_breakout`, `mtf_momentum`, etc.).
-  - New ones plug in by subclassing the `EntryStrategy` protocol and registering in `ENTRY_REGISTRY`.
-- An **exit strategy** decides when to sell. Three options:
-  - **`atr_trailing`** — trailing stop sized by Average True Range (volatility-adaptive).
-  - **`fixed_sl_tp`** — fixed-percent stop loss and take profit.
-  - **`trailing_stop`** — fixed-percent trailing stop.
-- `IndicatorPrecomputer` calculates each indicator (PSAR, ADX, RSI, etc.) once across the full parameter range. A 24-parameter grid for `rsi_reversal` reuses the same RSI series 24 times instead of recomputing it. This is the difference between a research run finishing in 30 minutes vs 3 hours.
-- **Code**: `src/ggTrader/indicators/`.
-
-### 3. Optimization (Walk-Forward)
-
-The layer that picks good parameters per coin without overfitting. Rebuilt in May 2026 around textbook standards: strict train-only selection, locked holdout, rank-based scoring.
-
-**How it works:**
-
-1. Slice the price history into **10 overlapping folds**. The most recent **20% of history is reserved as a locked holdout** before the fold bounds are computed — research never touches it during selection.
-2. Each fold has a **train window** (IS — where every parameter combination is tested) and a **test window** (OOS — used to evaluate the chosen parameters). The fold step size equals the test length, so every bar appears in exactly one test window.
-3. Within each fold, every parameter cell is scored by a **rank composite**: rank-of-Sortino + rank-of-Calmar + rank-of-Profit-Factor (no Sharpe ratio — Sortino dominates it for asymmetric returns).
-   - **Sortino ratio** = return per unit of *downside* volatility.
-   - **Calmar ratio** = return per unit of *maximum drawdown*.
-   - **Profit Factor** = total $ won / total $ lost.
-4. Cells with too-few trades per fold are softened (their missing folds fill from the fold-median) rather than disqualified — sparse-fire cells survive with a finite score but rarely rank at the top.
-5. After WFO, each `(entry strategy, exit strategy)` combo is scored against **four aggregate gates**. All four must pass.
-
-| Gate | Default | Plain meaning |
-|---|---|---|
-| **Walk-Forward Efficiency (WFE)** | `≥ 0.5` | OOS annualized return is at least half of IS. If it looks great in training but falls off a cliff on unseen data, this gate kills it. |
-| **% profitable folds** | `≥ 0.6` | At least 6 of the 10 historical chunks had positive OOS return. Not just lucky in one period. |
-| **Parameter Coefficient of Variation (CV)** | `≤ 0.3` | How much the "best" parameter changes across folds (CV = standard deviation / mean). Low CV = stable parameters = robust. Caveat: this is mechanically inflated for large parameter grids. |
-| **Drawdown (DD) ratio** | `≤ 2.0` | OOS drawdowns aren't more than 2× IS drawdowns. Risk profile doesn't blow up live. |
-
-6. Among the combos that pass all four gates: **rank by mean per-fold Sortino**, tie-break by lowest parameter CV (within 5% of the top). The live deployment parameters are the **median of per-fold winners**, snapped to the nearest grid value.
-7. The selected combo runs **once** on the locked holdout block. If holdout return is negative or max drawdown is worse than 1.5× the worst WFO test-fold drawdown, the result is flagged with a warning (but not auto-rejected — the warning is the operator's signal to investigate).
-
-**Code**: `src/ggTrader/core/wfo.py`, `src/ggTrader/core/wfo_aggregate.py`, `src/ggTrader/core/orchestrator.py`.
-
-### 4. Execution
-
-Live trading.
-
-- **`BaseExecutionEngine`** handles state persistence (live positions, circuit-breaker state, and start-of-day equity baseline live in the `system_state` TimescaleDB table, not a JSON file), the daily-loss circuit breaker (`DAILY_LOSS_LIMIT_PCT` = 5%), Telegram + Discord alerts, and the live mirror to TimescaleDB so Grafana dashboards see orders in real time.
-- **`CryptoExecutionEngine`** polls the active venue every 4 hours (aligned to UTC bar boundaries: 00:00, 04:00, 08:00, …), places orders through a `Broker` adapter (`src/ggTrader/execution/{kraken_spot,binanceus_spot,kraken_futures}.py`), and protects every fill with a venue-native trailing-stop (on Kraken) or OCO (on Binance.US) order. The protection is server-side, so even if our Python process dies, the exchange still respects the stop.
-- **Code**: `src/ggTrader/core/{base,crypto}_execution_engine.py`, `src/ggTrader/execution/`.
-
-## Position sizing
-
-Picked at trader startup. Pick one.
-
-- **Weighted sizing** (default): each coin gets a fraction of total capital proportional to its OOS robustness score (high-confidence research result = bigger share). No coin exceeds `MAX_COIN_ALLOCATION` (default 25%). Use this when you trust the research.
-- **Adaptive sizing** (`--adaptive-sizing`): Kelly-criterion-style. Each position is sized so a stop-out costs exactly `TARGET_RISK_PCT` (default 1%) of portfolio value — wider stops mean smaller positions. Use this when you want volatility to drive sizing.
-
-## Data flow
-
-```mermaid
-graph TD
-    A[Binance.US / Kraken Pro] -->|live bars| B[CachedExchangeLoader]
-    B -->|write-through, keyed by venue| C[(TimescaleDB)]
-    C -->|TimescaleDBLoader| D[FastBacktest engine]
-    E[Strategy registry + IndicatorPrecomputer] --> D
-    D --> F[WFO orchestrator]
-    F --> G[4 textbook gates + median-fold selection]
-    G --> H[runs table + run_results.json]
-    H --> I[CryptoExecutionEngine]
-    I -->|orders via Broker adapter| J[Binance.US / Kraken Pro]
-    I -->|mirror| C
-    C -->|metrics| K[Grafana dashboard]
-    H -->|markdown| L[research_report.md]
+```
+src/ggTrader/
+├── lab/                      # Research engine (vectorbt-first)
+│   ├── cli.py               # CLI entry point (ggt lab)
+│   ├── data.py              # Universe + OHLCV loading
+│   ├── harness.py           # Walk-forward driver + fold logic
+│   ├── metrics.py           # Sharpe, Calmar, max DD, win rate
+│   ├── persist.py           # DB persistence to lab_runs/lab_periods
+│   ├── simulate.py          # Vectorized portfolio sim (vectorbt.Portfolio)
+│   ├── strategy.py          # Strategy protocol + LabConfig
+│   └── strategies/
+│       ├── momentum.py      # Momentum-based strategies (wfo_tournament, xs_momentum, dual_momentum)
+│       └── signals.py       # Signal-based strategies (ema_cross, wfo_tournament_signal)
+│
+├── data/                    # Data loading infrastructure
+│   ├── core/
+│   │   ├── base_loader.py  # Abstract loader protocol
+│   │   ├── sp500_constituents.csv  # S&P 500 tickers (updated infrequently)
+│   │   └── constants.py     # Markets, intervals, holidays
+│   ├── historical/
+│   │   ├── timescaledb_loader.py  # TimescaleDB OHLCV fetch
+│   │   └── postgres_ingestor.py   # DB insert helpers
+│   └── live/
+│       └── yfinance_loader.py     # yfinance OHLCV fetch + cache
+│
+├── utils/
+│   ├── config.py            # Configuration schema + defaults
+│   ├── paths.py             # Project root resolution
+│   └── db_engine.py         # SQLAlchemy engine + connection pool
+│
+└── cli/
+    ├── main.py              # Typer CLI app (ggt command root)
+    ├── cmd_ingest.py        # ggt ingest subcommand
+    └── cmd_db.py            # ggt db subcommand
 ```
 
-## Monthly recalibration
+---
 
-The live engine kicks off its own WFO research run on the **1st of each month at ~01:00 UTC**. When it finishes, the new parameters hot-reload into the running bot — no restart, no downtime. The selection gates and sizing mode all carry over from the running config.
+## Key data flows
+
+### 1. Lab run (research)
+
+```
+ggt lab --strategy <name> --eval-start DATE --eval-end DATE
+    ↓
+load_ohlcv(universe, date_range)          [yfinance for equities, TimescaleDB for crypto]
+    ↓
+equity_universe_between(start, end)       [SP500 constituents on eval dates]
+    ↓
+build_strategy(name, cfg)                 [momentum or signal strategy from registry]
+    ↓
+walkforward([strat], ohlcv, ...)          [monthly folds, vectorized simulation]
+    ↓
+foreach fold:
+  - train_window = prior months (in-sample)
+  - test_window = next month (out-of-sample)
+  - simulate via vectorbt.Portfolio
+  - compute Sharpe, Calmar, max DD, win rate per fold
+    ↓
+persist to lab_runs + lab_periods tables
+    ↓
+print summary (stdout)
+```
+
+### 2. Data ingestion (crypto)
+
+```
+ggt ingest --days N
+    ↓
+TimescaleDBLoader.fetch_ohlcv()  [full universe from DB]
+    ↓
+or: CachedExchangeLoader         [CCXT live fetch + write-through to DB]
+    ↓
+persist to ohlcv table
+```
+
+### 3. Database administration
+
+```
+ggt db <diag|clean|truncate|compression|export>
+    ↓
+diagnostics: table sizes, row counts
+clean: remove malformed rows
+truncate: drop specific tables
+compression: enable TimescaleDB hypertable compression
+export: PostgreSQL dump
+```
+
+---
+
+## Lab strategy interface
+
+All strategies implement the `Strategy` protocol:
+
+```python
+from ggTrader.lab.strategy import Strategy, LabConfig
+
+class MyStrategy(Strategy):
+    def __call__(self, universe: List[str], ohlcv: DataFrame, cfg: LabConfig) -> Tuple[DataFrame, DataFrame]:
+        """
+        Args:
+            universe: list of stock/coin tickers available on this date
+            ohlcv: multi-index DataFrame (ticker, field) → values
+            cfg: LabConfig with top_n, lookback, skip, max_stocks
+        
+        Returns:
+            (weights, signals) as DataFrames (dates × symbols)
+                weights: fractional allocation per symbol each day [0, 1]
+                signals: +1 (long), 0 (no position), -1 (exit)
+        """
+```
+
+All returns must be:
+- **Fully vectorized** — numpy arrays or pandas DataFrames, no per-bar loops
+- **Aligned to OHLCV index** — matching dates and symbols
+- **NaN-safe** — forward-fill or zero-fill missing values before passing to vectorbt
+
+---
+
+## Vectorbt portfolio simulation
+
+The `simulate()` function in `lab/simulate.py` wraps vectorbt:
+
+```python
+import vectorbt as vbt
+
+pf = vbt.Portfolio.from_signals(
+    close=ohlcv['close'],           # 2D array (dates × symbols)
+    entries=signals == 1,           # boolean (dates × symbols)
+    exits=signals == -1,            # boolean (dates × symbols)
+    init_cash=INIT_CASH,
+    fees=TRADING_FEES,
+    freq='D',                       # daily rebalancing
+    group_by=True,                  # shared cash pool across symbols
+)
+
+# Compute metrics
+sharpe = pf.sharpe_ratio(freq='D')
+calmar = pf.calmar_ratio()
+max_dd = pf.max_drawdown()
+returns = pf.returns()
+```
+
+**Key configuration:**
+- `group_by=True` — all symbols share one capital pool (no per-symbol independent cash)
+- `freq='D'` — daily rebalancing (can be changed; monthly folds are handled by the harness, not vectorbt)
+- `init_cash` and `fees` set at call time from config
+
+---
+
+## Walk-forward fold logic
+
+The `walkforward()` harness in `lab/harness.py` implements textbook walk-forward optimization:
+
+1. **Universe eligibility** — stocks/coins with sufficient price history (e.g., 500+ trading days)
+2. **Monthly folds** — each fold is one calendar month
+   - **In-Sample (IS) / Train Window** — prior 12+ months of history (configurable)
+   - **Out-of-Sample (OOS) / Test Window** — the evaluation month itself
+3. **Evaluation period** — `--eval-start` to `--eval-end` spans all test windows
+4. **Warmup period** — data is loaded from `eval_start - warmup_days` to ensure sufficient history for indicators
+5. **Per-fold metrics** — Sharpe, Calmar, max drawdown, win rate, monthly return
+6. **Aggregation** — mean and std of metrics across all folds
+
+All results are persisted to TimescaleDB:
+- `lab_runs` — one row per lab invocation (strategy, config, timestamps, summary metrics)
+- `lab_periods` — one row per fold (strategy, fold #, start date, end date, per-fold metrics)
+
+---
 
 ## Where to find things
 
-| Path | What's there |
+| Path | Contents |
 |---|---|
-| `src/ggTrader/cli/` | The `ggt` command-line tool's subcommands (`research`, `trade`, `db`, etc.) |
-| `src/ggTrader/core/` | Backtest engine, WFO orchestrator, aggregate gates |
-| `src/ggTrader/indicators/` | Entry/exit strategy classes + `IndicatorPrecomputer` (the WFO methodology layer) |
-| `src/ggTrader/strategies/` | Newer-architecture strategies (`carry/cash_and_carry.py`, `carry/funding_carry.py`) implementing the `Strategy` protocol |
-| `src/ggTrader/execution/` | Venue-specific broker adapters (`binanceus_spot.py`, `kraken_spot.py`, `kraken_futures.py`) |
-| `src/ggTrader/features/` | Feature store, derivative features, synthetic basis prices |
-| `src/ggTrader/data/` | TimescaleDB loaders + live exchange loaders |
-| `src/ggTrader/utils/` | Config defaults, report generators, PnL report builder |
-| `scripts/` | One-off operational tooling (universe regeneration, correlation matrix, Binance.US backfill) |
-| `scripts/run_cross_sectional_research.py` | Offline WFO robustness harness for the experimental cross-sectional momentum strategy (Binance.US 4h, HMM disabled) — research only, not wired into live trading |
-| `results/research/` | Timestamped research output: `research_report.md` (human-readable), `run_results.json` (machine-readable), `wfo_stats_snapshot.json` (per-cell diagnostics), plots |
-| TimescaleDB `system_state` table | Live trader state (open positions, circuit-breaker status, start-of-day equity) — key = `live_trader_state` |
+| `src/ggTrader/lab/` | Lab engine: CLI, data loading, walk-forward harness, metrics, persistence, strategy registry |
+| `src/ggTrader/lab/strategies/` | Strategy implementations (momentum, signals) |
+| `src/ggTrader/data/` | OHLCV loaders (yfinance, TimescaleDB), data schemas, market constants |
+| `src/ggTrader/utils/` | Config, paths, DB engine |
+| `src/ggTrader/cli/` | CLI commands (main, ingest, db) |
+| `data/core/sp500_constituents.csv` | S&P 500 ticker list (updated infrequently) |
+| TimescaleDB `lab_runs` table | Lab run history (strategy, config, execution time, summary metrics) |
+| TimescaleDB `lab_periods` table | Per-fold results (strategy, fold dates, per-fold metrics) |
 
 ---
+
 *Back to [README.md](../README.md).*

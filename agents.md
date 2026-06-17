@@ -6,62 +6,61 @@ This document serves as the consolidated source of truth for all AI assistants (
 
 ## 1. Project Context & Core Architecture
 
-ggTrader is an algorithmic crypto trading bot designed for Binance.US and Kraken. It utilizes a Walk-Forward Optimization (WFO) pipeline, a tiered regime filtering system, and mirrors live trading state to TimescaleDB.
+**As of 2026-06-16:** ggTrader is a **research-first lab-based algorithmic trading platform**. Legacy execution engines, live trading, and strategy orchestration code have been removed. The codebase now contains only the **lab** — a vectorbt-based research bench for walk-forward optimization of trading strategies.
 
-* **Unified CLI**: All operations are routed through `ggt.py`.
-* **Execution Engine**: The live trading bot (`ggt trade`) is a long-running process that manages its own lifecycle, including monthly recalibrations.
-* **State Management**:
-  * **Primary Logs**: Uses `data/live/` (inside the container) for trade logs, balance snapshots, and active positions.
-  * **Database Mirroring**: Live trade events (buy/sell), orders, and balance snapshots are mirrored to TimescaleDB in real-time for observability.
-  * **Backfill**: Use `ggt db sync-live` to import existing CSV history into the database.
-* **Observability (Grafana)**:
-  * **Dashboard**: Accessible at `http://localhost:3002`.
-  * **Data Source**: Connects to the `ggtrader` TimescaleDB instance via `host.docker.internal:5433` (within Docker) or `localhost:5433` (on host).
-  * **Panels**: Real-time Equity Curve, PnL per Trade (categorized dots), and Recent Closed Trades.
-  * **Provisioning**: Configurations are stored in `grafana/provisioning/`.
+* **Single CLI entry point**: `ggt.py` with three commands:
+  * `ggt lab --strategy <name>` — run walk-forward optimization on a strategy over a historical universe (equities or crypto)
+  * `ggt ingest` — pull OHLCV data into TimescaleDB
+  * `ggt db <subcommand>` — database administration (diagnostics, cleanup, compression, export)
+* **Lab Architecture**: 
+  * **Data Layer**: `src/ggTrader/data/` loads OHLCV from TimescaleDB (crypto) or yfinance (equities). SP500 constituents are sourced from a static registry.
+  * **Strategy Layer**: `src/ggTrader/lab/strategies/` implements momentum and signal-based strategies. Each strategy is a callable that produces entry/exit signals over historical data.
+  * **Simulation Layer**: `src/ggTrader/lab/simulate.py` uses `vectorbt.Portfolio` for fast vectorized backtesting.
+  * **Walk-Forward Harness**: `src/ggTrader/lab/harness.py` runs overlapping monthly folds, computes metrics, and persists results to `lab_runs` and `lab_periods` TimescaleDB tables.
+  * **Metrics & Reporting**: `src/ggTrader/lab/metrics.py` computes Sharpe, Calmar, max drawdown, and win rate. Results are written to JSON and optionally to markdown.
+* **State Storage**: All lab run results (strategy name, parameters, performance metrics, timestamps) are persisted to TimescaleDB `lab_runs` and `lab_periods` tables. No JSON file fallback.
 
 ---
 
 ## 2. Rules & Deployment Nuances
 
-* **Docker-First Environment**: 
-  * The `ggtrader_live` container **does not** volume-mount the `src/` directory.
-  * **Updates**: Code changes made on the host must be copied into the container via `docker cp` (e.g., `docker cp src/ggTrader/path/to/file.py ggtrader_live:/app/src/ggTrader/path/to/file.py`) or applied by rebuilding the container (`docker compose build --no-cache && docker compose up -d`).
-  * **Logs**: Active container logs are written to `/app/logs/live_trader.log` inside the container, which maps to the host's `logs/` directory.
-* **Monthly Recalibration (WFO)**:
-  * **Automation**: On the 1st of every month, the `ExecutionEngine` internally triggers a full research and production pipeline run.
-  * **Process**:
-    1. **Phase 1 (WFO)**: Optimizes parameters for all symbols. Note: The Regime Filter is **NOT** applied during per-fold optimization.
-    2. **Phase 2 (Validation)**: Validates selected parameters in a combined portfolio. The Regime Filter **IS** applied here.
-    3. **Phase 3 (Recent Data)**: Evaluates performance on the most recent data (YTD) with filters active.
-  * **Reloading**: The bot reloads the new parameters automatically once Phase 2/3 complete. No container restart is required.
-* **WFO Cache**:
-  * Run `ggt db purge-wfo-cache` when changing scoring configurations (composite weights, fold consistency, OOS alpha, N_SPLITS) since cached results use old settings.
-  * The WFO cache resides in the TimescaleDB `wfo_cache` table.
-* **Market Regime Filtering**:
-  * The bot employs a tiered correlation-based filter to prevent trading in unfavorable market conditions.
-  * *Note: The historical BTC regime gating filter was disabled on 2026-05-23, but the bull/bear status is kept in daily PnL reports for context.*
-* **Daily Operations**:
-  * **PnL Reports**: Triggered at 06:00 AM local time via `scripts/daily_pnl_report.sh`. Reports include BTC/ETH prices and the Fear & Greed index, pulled live via `ccxt`.
-  * **Sync**: The report builder automatically syncs recent trade history from the configured exchange to ensure local CSVs are accurate.
+* **Docker Research Environment**: 
+  * The `ggtrader_live` container has the lab code copied in. For local development on the host, install with `pip install -e .` into a virtual environment.
+  * **Research command**: `docker compose run --rm ggtrader_live python ggt.py lab --strategy <name>`
+  * **Database connectivity**: Inside Docker, the TimescaleDB connection string uses `host.docker.internal:5433`. On the host, use `localhost:5433`.
+* **Lab Run Workflow**:
+  1. **Strategy Selection**: Choose a strategy from the registry (`wfo_tournament`, `xs_momentum`, `dual_momentum`, `ema_cross`, `wfo_tournament_signal` for equities; additional strategies may be added to `src/ggTrader/lab/strategies/`).
+  2. **Universe Selection**: The lab auto-generates the trading universe for the eval period — SP500 constituents for equities (sourced from `data/universe/sp500_constituents_history.csv.gz`), or top-volume coins for crypto.
+  3. **Walk-Forward Execution**: Overlapping monthly folds run in-memory using vectorbt. Each fold trains on historical data (in-sample) and validates on held-out future data (out-of-sample).
+  4. **Persistence**: `lab_runs` table stores run metadata (strategy, config, timestamps). `lab_periods` table stores per-fold performance metrics. Results are not written to disk.
+* **Strategy Parameters**:
+  * Use `--top-n` to control universe size (default 50 for equities, all eligible for crypto).
+  * Use `--lookback` to set momentum calculation window (default 252 days).
+  * Use `--skip` for rebalance frequency (default 21 trading days).
+  * Use `--eval-start` and `--eval-end` to pin the evaluation window (default 2021-01-31 → today).
+  * Use `--max-stocks` to cap universe at a specific count (optional, for diagnostic runs).
 
 ---
 
-## 3. Development Guidelines & Config Changes
+## 3. Development Guidelines & Strategy Addition
 
-* **Config Changes**: Test one at a time with a research run between each. Do not bundle multiple config tweaks so that results can be properly attributed.
-* **New Strategies**: Can be bundled together since they are purely additive and do not affect existing strategy scoring.
-* **Research Runs**: Run inside Docker (`docker compose run --rm ggtrader_live python -u ggt.py research`) to ensure `host.docker.internal` DB connections resolve correctly.
-* **Backtesting Architecture**:
-  * **Production per-coin pipeline**: `FastBacktest` is the engine for backtesting, sensitivity analysis, and the live monthly recalibration WFO. The old Optuna-based `WalkForwardOptimizer` for this pipeline is archived.
-  * **Experimental cross-sectional strategies** (`strategies/momentum/`, `strategies/regime/`): use the standalone `WalkForwardOptimizer` in `src/ggTrader/backtesting/wfo.py`, which drives `vectorbt` directly (not FastBacktest). This is a separate research track from the production pipeline — do not conflate the two.
-  * Always pass `config=CONSTANTS` for portfolio-level settings; keep signal `params` separate.
-  * Use `cash_sharing=True` and `group_by=True` — never independent cash pools per symbol.
-  * The `Trading` engine is legacy (paper/live trading only).
-* **Dynamic Mover Masking**:
-  * Use `build_mover_mask(ohlcv, config, top_n=N)` for daily top-N mover masks.
-  * Pass masks to `FastBacktest(mover_mask=mask)` to zero out entries for non-qualifying symbols.
-  * Masks are precomputed via a single SQL query (`get_daily_mover_mask`), not per-bar.
+* **Adding a New Strategy**:
+  * Implement the `Strategy` protocol in `src/ggTrader/lab/strategies/` (see `momentum.py` or `signals.py` as examples).
+  * The strategy callable takes `(universe, ohlcv, cfg: LabConfig)` and returns `(weights, signals)` — vectorized arrays suitable for `vectorbt.Portfolio`.
+  * Register the strategy name in the corresponding `STRATEGY_NAMES` list.
+  * New strategies are immediately available via `ggt lab --strategy <new_name>`.
+* **Data Access**:
+  * Equities OHLCV: use `load_ohlcv()` from `src/ggTrader/lab/data.py`, which pulls from yfinance and caches locally.
+  * Crypto OHLCV: TimescaleDB loader in `src/ggTrader/data/historical/timescaledb_loader.py` fetches keyed by venue and interval.
+  * SP500 constituents: sourced from `data/universe/sp500_constituents_history.csv.gz` (updated infrequently; refresh via `download_sp500_history()` in `data/core/index_constituents.py`).
+* **Backtesting with vectorbt**:
+  * Lab uses `vectorbt.Portfolio` for fast in-memory simulation. Passed a 2D signal array (dates × symbols) and OHLCV data.
+  * Weights are set daily (or per-rebalance) — the portfolio auto-rebalances on entry/exit signals.
+  * No per-symbol state — vectorbt is stateless. Any state needed across bars (e.g., time-in-trade) must be computed before simulation as a separate signal.
+  * Always use cash sharing and group_by for multi-symbol portfolios (prevents independent cash pools).
+* **Performance Analysis**:
+  * Lab computes Sharpe, Calmar, max drawdown, win rate, and monthly returns via `metrics.py`.
+  * Monthly folds allow out-of-sample validation — the walk-forward harness handles fold generation and metrics aggregation.
 
 ---
 
@@ -93,7 +92,7 @@ ggTrader is an algorithmic crypto trading bot designed for Binance.US and Kraken
    * Aggregation: Prefer Notional Volume (`volume * close`) for cross-asset ranking to account for price discrepancies.
 9. **Path Safety**: Always use `os.path.join` or `pathlib.Path` for file paths. Resolve project root dynamically.
 10. **Error Handling**: Data loading functions must raise descriptive exceptions (e.g., `ValueError`, `FileNotFoundError`) on failure. Avoid returning `None` from functions expected to return iterables (handle empty data by returning empty structures).
-11. **Vectorization First**: Avoid iterating over rows in DataFrames for signal calculation. Use `vectorbt`, `numpy`, or `pandas` vectorized operations. Strategy signals go through the entry/exit registries (`indicators/strategies.py`); indicators come from `IndicatorPrecomputer`.
+11. **Vectorization First**: Avoid iterating over rows in DataFrames for signal calculation. Use `vectorbt`, `numpy`, or `pandas` vectorized operations. All strategy signals must be fully vectorized arrays (dates × symbols) before being passed to `vectorbt.Portfolio`.
 
 ### Jupyter Notebook Standards
 1. **Imports from `src`**: Notebooks must import core logic and indicators from `src`. Do not define complex strategy classes inline. Notebooks are for orchestration, analysis, and visualization only.
@@ -105,12 +104,11 @@ ggTrader is an algorithmic crypto trading bot designed for Binance.US and Kraken
 ## 5. Documentation Standards
 
 * **Single Source of Truth**: Core architectural changes (e.g., database transitions, new CLI commands) must be reflected across all documentation in `docs/` and `README.md`.
-* **Changelog**: Add an entry to `docs/changelog.md` whenever strategies, config values, param grids, or infrastructure are changed. Include what changed, why, and research results if a run was done.
-* **Future Tweaks Plan**: Update the "Current Live Configuration" section of `docs/future_tweaks_plan.md` when new research params go live. Add new experiment ideas as they arise; remove or mark completed experiments that have been tested.
-* **CLI Alignment**: Whenever the `ggt` CLI is updated, corresponding guides in `docs/UNIFIED_PIPELINE.md` must be updated immediately.
-* **Standardized Reporting**: All `ggt research` summaries provided to the user must include:
-  * **Executive Metrics**: Aggregate Return, Win Rate %, Sharpe Ratio, and Max Drawdown.
-  * **Top Performers**: List the top 5 assets by Risk-Adjusted Return.
-  * **Optimization Insights**: Prevailing optimal param ranges (e.g., PSAR acceleration, ATR multipliers).
-  * **Visual Evidence**: Embed key portfolio PNG plots directly in the report.
-  * **File Artifacts**: Explicit links to `run_results.json` and the `plots/` directory.
+* **Changelog**: Add an entry to `docs/changelog.md` whenever strategies, data sources, or lab infrastructure changes. Include what changed, why, and research results if available.
+* **CLI Reference**: Keep `docs/cli_reference.md` synchronized with actual `ggt` commands and flags. Document `ggt lab`, `ggt ingest`, and `ggt db` subcommands.
+* **Architecture Guide**: Maintain `docs/architecture.md` as the authority on lab structure, data flow, and module responsibilities.
+* **Standardized Lab Reporting**: Lab runs produce `lab_runs` and `lab_periods` TimescaleDB table entries (timestamped, immutable). Optional: generate markdown summary with:
+  * **Executive Metrics**: Mean monthly return, Sharpe, max drawdown, win rate across all folds.
+  * **Top Performers**: List top 5 stocks/coins by risk-adjusted return.
+  * **Optimization Insights**: Parameter ranges that passed selection gates.
+  * **Visual Evidence**: Equity curve and drawdown plots (if generated).
