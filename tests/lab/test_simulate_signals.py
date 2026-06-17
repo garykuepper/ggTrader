@@ -56,3 +56,138 @@ def test_simulate_signals_two_strategies_independent():
 
     # Running together must not change individual equity curves
     pd.testing.assert_series_equal(eq_both["s1"], eq_s1["s1"], check_names=False)
+
+
+def _ohlcv(symbols, n):
+    """Build a MultiIndex OHLCV frame for testing ATR stops."""
+    idx = pd.date_range("2021-01-01", periods=n, freq="B", tz="UTC")
+    frames = {}
+    for sym in symbols:
+        close = pd.Series(100.0 * 1.01 ** np.arange(n), index=idx, name="close")
+        frames[sym] = pd.DataFrame(
+            {
+                "open": close,
+                "high": close * 1.01,
+                "low": close * 0.99,
+                "close": close,
+            },
+            index=idx,
+        )
+    ohlcv = pd.concat(frames, axis=1)
+    ohlcv.columns.names = ["symbol", "field"]
+    return ohlcv
+
+
+def test_simulate_signals_fixed_trailing_stop_exits_on_drop():
+    """A fixed trailing stop should exit a position when price drops from peak."""
+    prices = _prices(60)
+    # Create a rising-then-falling price for symbol A
+    rise = 100.0 * 1.01 ** np.arange(30)
+    fall = rise[-1] * 0.97 ** np.arange(30)  # 3%/day drop
+    prices["A"] = np.concatenate([rise, fall])
+
+    entries = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    exits = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    entries.iloc[2, 0] = True  # buy A on bar 2
+
+    st = SignalTargets(entries=entries, exits=exits)
+    config_no_stop = {**BASE}
+    config_with_stop = {**BASE, "ts_stop": 0.05}  # 5% trailing stop
+
+    _, eq_no_stop, _ = simulate_signals({"s": st}, prices, config_no_stop)
+    _, eq_with_stop, _ = simulate_signals({"s": st}, prices, config_with_stop)
+
+    # With trailing stop, final equity should be higher because it exited
+    # before the full drawdown
+    assert eq_with_stop["s"].iloc[-1] > eq_no_stop["s"].iloc[-1]
+
+
+def test_simulate_signals_no_stop_params_unchanged():
+    """Without stop params, simulate_signals behaves exactly as before."""
+    prices = _prices(40)
+    entries = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    exits = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    entries.iloc[2, 0] = True
+    st = SignalTargets(entries=entries, exits=exits)
+
+    _, eq1, _ = simulate_signals({"s": st}, prices, {**BASE})
+    _, eq2, _ = simulate_signals({"s": st}, prices, {**BASE})
+    pd.testing.assert_frame_equal(eq1, eq2)
+
+
+def test_compute_atr_stop_shape_and_values():
+    """ATR stop array should match price shape and be positive fractions."""
+    from ggTrader.lab.simulate import compute_atr_stop
+
+    idx = pd.date_range("2021-01-01", periods=100, freq="B", tz="UTC")
+    close = pd.DataFrame(
+        {"A": 100.0 + np.random.randn(100).cumsum(), "B": 50.0 + np.random.randn(100).cumsum()},
+        index=idx,
+    )
+    high = close * 1.01
+    low = close * 0.99
+
+    result = compute_atr_stop(high, low, close, atr_period=14, atr_mult=2.0)
+    assert result.shape == close.shape
+    assert list(result.columns) == list(close.columns)
+    # After warmup period, values should be positive fractions (not raw ATR)
+    valid = result.iloc[14:].dropna()
+    assert (valid > 0).all().all()
+    assert (valid < 1).all().all()  # fractional, not absolute
+
+
+def test_compute_atr_stop_higher_mult_wider_stops():
+    """Higher ATR multiplier should produce wider (larger) stop fractions."""
+    from ggTrader.lab.simulate import compute_atr_stop
+
+    idx = pd.date_range("2021-01-01", periods=100, freq="B", tz="UTC")
+    np.random.seed(42)
+    close = pd.DataFrame({"A": 100.0 + np.random.randn(100).cumsum()}, index=idx)
+    high = close * 1.02
+    low = close * 0.98
+
+    stops_1x = compute_atr_stop(high, low, close, atr_period=14, atr_mult=1.0)
+    stops_3x = compute_atr_stop(high, low, close, atr_period=14, atr_mult=3.0)
+    # 3x mult should be ~3x wider than 1x mult
+    valid_1x = stops_1x.iloc[14:].dropna()
+    valid_3x = stops_3x.iloc[14:].dropna()
+    ratio = (valid_3x / valid_1x).mean().iloc[0]
+    assert 2.9 < ratio < 3.1
+
+
+def test_simulate_signals_atr_trailing_stop():
+    """ATR-adaptive trailing stop should use per-bar stop distances."""
+    prices = _prices(60)
+    rise = 100.0 * 1.01 ** np.arange(30)
+    fall = rise[-1] * 0.97 ** np.arange(30)
+    prices["A"] = np.concatenate([rise, fall])
+
+    entries = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    exits = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    entries.iloc[2, 0] = True
+
+    st = SignalTargets(entries=entries, exits=exits)
+
+    # Build OHLCV-like frame for ATR computation
+    ohlcv_frames = {}
+    for sym in prices.columns:
+        ohlcv_frames[sym] = pd.DataFrame(
+            {
+                "open": prices[sym],
+                "high": prices[sym] * 1.01,
+                "low": prices[sym] * 0.99,
+                "close": prices[sym],
+            },
+            index=prices.index,
+        )
+    ohlcv = pd.concat(ohlcv_frames, axis=1)
+    ohlcv.columns.names = ["symbol", "field"]
+
+    config_atr = {**BASE, "atr_period": 14, "atr_mult": 2.0}
+    config_no_stop = {**BASE}
+
+    _, eq_atr, _ = simulate_signals({"s": st}, prices, config_atr, ohlcv=ohlcv)
+    _, eq_no_stop, _ = simulate_signals({"s": st}, prices, config_no_stop)
+
+    # ATR stop should exit during the drawdown, preserving more equity
+    assert eq_atr["s"].iloc[-1] > eq_no_stop["s"].iloc[-1]

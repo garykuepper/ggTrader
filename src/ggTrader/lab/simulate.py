@@ -62,10 +62,42 @@ def simulate_weights(
     return returns, value, diags
 
 
+def compute_atr_stop(
+    high: pd.DataFrame,
+    low: pd.DataFrame,
+    close: pd.DataFrame,
+    atr_period: int,
+    atr_mult: float,
+) -> pd.DataFrame:
+    """Vectorized ATR trailing stop as fractional distance from close.
+
+    Returns (time x symbol) DataFrame of stop fractions for vbt's sl_stop.
+    """
+    import numpy as np
+
+    prev_close = close.shift(1)
+    tr = pd.DataFrame(
+        {
+            col: np.maximum(
+                np.maximum(
+                    high[col] - low[col],
+                    (high[col] - prev_close[col]).abs(),
+                ),
+                (low[col] - prev_close[col]).abs(),
+            )
+            for col in close.columns
+        },
+        index=close.index,
+    )
+    atr = tr.rolling(window=atr_period, min_periods=atr_period).mean()
+    return (atr_mult * atr / close).clip(lower=0.001)
+
+
 def simulate_signals(
     targets_by_strategy: Dict[str, Any],  # values are SignalTargets instances
     prices: pd.DataFrame,
     base_config: Dict[str, Any],
+    ohlcv: pd.DataFrame | None = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Dict[str, Any]]]:
     """Simulate every signal-based strategy in ONE from_signals call.
 
@@ -75,6 +107,10 @@ def simulate_signals(
         prices: (time x symbol) close prices covering every target column.
         base_config: START_CASH, FEES, SLIPPAGE, FREQ.
             Optional SIGNAL_POSITION_SIZE (fraction of portfolio per entry, default 0.02).
+            Optional ts_stop (float): fixed trailing stop fraction (e.g. 0.05 = 5%).
+            Optional atr_mult (float) + atr_period (int, default 14): ATR-adaptive
+            trailing stop. Requires ohlcv kwarg.
+        ohlcv: MultiIndex (symbol, field) OHLCV DataFrame. Required when atr_mult is set.
 
     Returns:
         (returns_df, equity_df, diags) each keyed by strategy name (columns).
@@ -97,6 +133,45 @@ def simulate_signals(
     exits = pd.concat(exit_blocks, axis=1).fillna(False)
     close = pd.concat(close_blocks, axis=1)
 
+    # --- Stop params ---
+    stop_kwargs: Dict[str, Any] = {}
+    ts_stop = base_config.get("ts_stop")
+    atr_mult = base_config.get("atr_mult")
+    if ts_stop is not None:
+        stop_kwargs["sl_stop"] = float(ts_stop)
+        stop_kwargs["sl_trail"] = True
+    elif atr_mult is not None:
+        atr_period = int(base_config.get("atr_period", 14))
+        if ohlcv is None:
+            msg = "ohlcv required for ATR trailing stop (atr_mult set)"
+            raise ValueError(msg)
+        syms = list(prices.columns)
+        high_df = pd.concat(
+            {s: ohlcv[s]["high"] for s in syms if s in ohlcv.columns.get_level_values(0)},
+            axis=1,
+        )
+        low_df = pd.concat(
+            {s: ohlcv[s]["low"] for s in syms if s in ohlcv.columns.get_level_values(0)},
+            axis=1,
+        )
+        close_df = pd.concat(
+            {s: ohlcv[s]["close"] for s in syms if s in ohlcv.columns.get_level_values(0)},
+            axis=1,
+        )
+        atr_stops = compute_atr_stop(high_df, low_df, close_df, atr_period, float(atr_mult))
+        # Broadcast ATR stops to match the stacked multi-strategy column layout
+        sl_blocks = []
+        for name in names:
+            st = targets_by_strategy[name]
+            cols = pd.MultiIndex.from_product(
+                [[name], st.entries.columns], names=["strategy", "symbol"]
+            )
+            sl_blocks.append(
+                atr_stops[st.entries.columns].reindex(st.entries.index).set_axis(cols, axis=1)
+            )
+        stop_kwargs["sl_stop"] = pd.concat(sl_blocks, axis=1).ffill().fillna(0.05)
+        stop_kwargs["sl_trail"] = True
+
     pf = vbt.Portfolio.from_signals(
         close=close,
         entries=entries,
@@ -109,6 +184,7 @@ def simulate_signals(
         freq=base_config["FREQ"],
         cash_sharing=True,
         group_by=pd.Index(groups, name="strategy"),
+        **stop_kwargs,
     ).copy()
 
     value = pf.value()
