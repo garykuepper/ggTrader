@@ -74,12 +74,19 @@ def run_lab(argv: List[str] | None = None) -> str:
 
     if args.sweep:
         from ggTrader.lab.strategies.momentum import CrossSectionalMomentum, DualMomentum
-        from ggTrader.lab.strategies.signals import EmaCrossSignal, WfoTournamentSignal
+        from ggTrader.lab.strategies.signals import (
+            BollingerReversionSignal,
+            EmaCrossSignal,
+            RsiReversionSignal,
+            WfoTournamentSignal,
+        )
         from ggTrader.lab.sweep import build_grid, run_sweep
 
         cls_map = {
             "ema_cross": EmaCrossSignal,
             "wfo_tournament": WfoTournamentSignal,
+            "bb_reversion": BollingerReversionSignal,
+            "rsi_reversion": RsiReversionSignal,
             "xs_momentum": CrossSectionalMomentum,
             "dual_momentum": DualMomentum,
         }
@@ -105,7 +112,9 @@ def run_lab(argv: List[str] | None = None) -> str:
             SIGNAL_STRATEGY_NAMES as _SIG_NAMES,
         )
         from ggTrader.lab.strategies.signals import (
+            BollingerReversionSignal,
             EmaCrossSignal,
+            RsiReversionSignal,
             WfoTournamentSignal,
         )
         from ggTrader.lab.sweep import build_grid
@@ -116,6 +125,8 @@ def run_lab(argv: List[str] | None = None) -> str:
         cls_map = {
             "ema_cross": EmaCrossSignal,
             "wfo_tournament": WfoTournamentSignal,
+            "bb_reversion": BollingerReversionSignal,
+            "rsi_reversion": RsiReversionSignal,
         }
         strategy_cls = cls_map[args.strategy]
         overrides = _parse_sweep_params(args.sweep_param)

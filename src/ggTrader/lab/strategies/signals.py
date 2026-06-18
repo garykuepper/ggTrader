@@ -275,9 +275,201 @@ class WfoTournamentSignal:
         return result
 
 
+class BollingerReversionSignal:
+    """Bollinger Band mean-reversion: buy below lower band, sell at middle band.
+
+    Entry: close crosses below lower Bollinger Band (oversold).
+    Exit: close crosses above the middle band (SMA) or upper band.
+    """
+
+    name = "bb_reversion"
+    target_kind = "signals"
+
+    def __init__(self, cfg: LabConfig, bb_period: int = 20, bb_std: float = 2.0) -> None:
+        self.cfg = cfg
+        self.bb_period = bb_period
+        self.bb_std = bb_std
+
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        return {
+            "bb_period": [10, 15, 20, 30],
+            "bb_std": [1.5, 2.0, 2.5, 3.0],
+        }
+
+    def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
+        data = data.loc[:asof]
+        have = set(data.columns.get_level_values(0).unique())
+        return [
+            {
+                "symbol": s,
+                "weight": 0.0,
+                "bb_period": self.bb_period,
+                "bb_std": self.bb_std,
+            }
+            for s in eligible
+            if s in have and len(data[s]["close"].dropna()) >= self.cfg.min_history_bars
+        ]
+
+    def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        close = pd.concat(
+            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
+            axis=1,
+        )
+        entries, exits = _bb_signals(close, self.bb_period, self.bb_std)
+        return SignalTargets(entries=entries, exits=exits)
+
+    def sweep_signals(
+        self,
+        combos: list[dict],
+        symbols: list[str],
+        data: pd.DataFrame,
+    ) -> dict[str, "SignalTargets"]:
+        from ggTrader.lab.sweep import combo_name
+
+        close = pd.concat(
+            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
+            axis=1,
+        )
+        cache: dict[tuple[int, float], tuple[pd.DataFrame, pd.DataFrame]] = {}
+        result: dict[str, SignalTargets] = {}
+        for combo in combos:
+            period = int(combo["bb_period"])
+            std = float(combo["bb_std"])
+            key = (period, std)
+            if key not in cache:
+                cache[key] = _bb_signals(close, period, std)
+            ent, ext = cache[key]
+            result[combo_name(self.name, combo)] = SignalTargets(entries=ent, exits=ext)
+        return result
+
+
+class RsiReversionSignal:
+    """RSI mean-reversion: buy on oversold RSI, sell when RSI returns to neutral.
+
+    Entry: RSI crosses below oversold threshold.
+    Exit: RSI crosses above exit threshold (neutral zone).
+    """
+
+    name = "rsi_reversion"
+    target_kind = "signals"
+
+    def __init__(
+        self,
+        cfg: LabConfig,
+        rsi_period: int = 14,
+        rsi_oversold: int = 30,
+        rsi_exit: int = 50,
+    ) -> None:
+        self.cfg = cfg
+        self.rsi_period = rsi_period
+        self.rsi_oversold = rsi_oversold
+        self.rsi_exit = rsi_exit
+
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        return {
+            "rsi_period": [7, 14, 21],
+            "rsi_oversold": [20, 25, 30],
+            "rsi_exit": [50, 55, 60],
+        }
+
+    def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
+        data = data.loc[:asof]
+        have = set(data.columns.get_level_values(0).unique())
+        return [
+            {
+                "symbol": s,
+                "weight": 0.0,
+                "rsi_period": self.rsi_period,
+                "rsi_oversold": self.rsi_oversold,
+                "rsi_exit": self.rsi_exit,
+            }
+            for s in eligible
+            if s in have and len(data[s]["close"].dropna()) >= self.cfg.min_history_bars
+        ]
+
+    def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        close = pd.concat(
+            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
+            axis=1,
+        )
+        entries, exits = _rsi_signals(close, self.rsi_period, self.rsi_oversold, self.rsi_exit)
+        return SignalTargets(entries=entries, exits=exits)
+
+    def sweep_signals(
+        self,
+        combos: list[dict],
+        symbols: list[str],
+        data: pd.DataFrame,
+    ) -> dict[str, "SignalTargets"]:
+        from ggTrader.lab.sweep import combo_name
+
+        close = pd.concat(
+            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
+            axis=1,
+        )
+        cache: dict[tuple[int, int, int], tuple[pd.DataFrame, pd.DataFrame]] = {}
+        result: dict[str, SignalTargets] = {}
+        for combo in combos:
+            period = int(combo["rsi_period"])
+            oversold = int(combo["rsi_oversold"])
+            exit_level = int(combo["rsi_exit"])
+            key = (period, oversold, exit_level)
+            if key not in cache:
+                cache[key] = _rsi_signals(close, period, oversold, exit_level)
+            ent, ext = cache[key]
+            result[combo_name(self.name, combo)] = SignalTargets(entries=ent, exits=ext)
+        return result
+
+
+def _bb_signals(close: pd.DataFrame, period: int, std: float) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Vectorized Bollinger Band entry/exit signals."""
+    sma = close.rolling(window=period, min_periods=period).mean()
+    rolling_std = close.rolling(window=period, min_periods=period).std()
+    lower = sma - std * rolling_std
+
+    prev_above = close.shift(1) >= lower.shift(1)
+    now_below = close < lower
+    entries = (prev_above & now_below).fillna(False).astype(bool)
+
+    prev_below = close.shift(1) < sma.shift(1)
+    now_above = close >= sma
+    exits = (prev_below & now_above).fillna(False).astype(bool)
+
+    return entries, exits
+
+
+def _rsi_signals(
+    close: pd.DataFrame, period: int, oversold: int, exit_level: int
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Vectorized RSI entry/exit signals."""
+    delta = close.diff()
+    gain = delta.clip(lower=0.0)
+    loss = -delta.clip(upper=0.0)
+    avg_gain = gain.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+
+    prev_above = rsi.shift(1) >= oversold
+    now_below = rsi < oversold
+    entries = (prev_above & now_below).fillna(False).astype(bool)
+
+    prev_below = rsi.shift(1) < exit_level
+    now_above = rsi >= exit_level
+    exits = (prev_below & now_above).fillna(False).astype(bool)
+
+    return entries, exits
+
+
 _SIGNAL_REGISTRY = {
     "ema_cross": EmaCrossSignal,
     "wfo_tournament": WfoTournamentSignal,
+    "bb_reversion": BollingerReversionSignal,
+    "rsi_reversion": RsiReversionSignal,
 }
 
 SIGNAL_STRATEGY_NAMES = tuple(_SIGNAL_REGISTRY)
