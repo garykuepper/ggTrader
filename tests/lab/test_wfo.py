@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
+import pytest
 
+from ggTrader.lab.cli import build_arg_parser
 from ggTrader.lab.strategy import LabConfig, SignalTargets
 from ggTrader.lab.wfo import composite_score, generate_folds, run_wfo, select_live_params
 
@@ -199,3 +201,31 @@ def test_select_live_params_uses_recent_window():
     assert isinstance(result["stability"], int)
     assert "train_metrics" in result
     assert "sharpe" in result["train_metrics"]
+
+
+def test_cli_parser_accepts_wfo_flag():
+    p = build_arg_parser()
+    args = p.parse_args(["--strategy", "ema_cross", "--wfo"])
+    assert args.wfo is True
+    assert args.sweep is False
+
+
+def test_cli_parser_wfo_and_sweep_mutually_exclusive():
+    p = build_arg_parser()
+    with pytest.raises(SystemExit):
+        p.parse_args(["--strategy", "ema_cross", "--wfo", "--sweep"])
+
+
+def test_cli_parser_wfo_with_sweep_param():
+    p = build_arg_parser()
+    args = p.parse_args(
+        [
+            "--strategy",
+            "ema_cross",
+            "--wfo",
+            "--sweep-param",
+            "atr_mult=1.5,2.0",
+        ]
+    )
+    assert args.wfo is True
+    assert len(args.sweep_param) == 1

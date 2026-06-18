@@ -28,11 +28,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--lookback", type=int, default=252)
     p.add_argument("--skip", type=int, default=21)
     p.add_argument("--max-stocks", type=int, default=None)
-    p.add_argument(
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument(
         "--sweep",
         action="store_true",
         default=False,
         help="Run parameter sweep instead of single walk-forward.",
+    )
+    mode.add_argument(
+        "--wfo",
+        action="store_true",
+        default=False,
+        help="Walk-forward optimization: rolling train/test folds with OOS scoring.",
     )
     p.add_argument(
         "--sweep-param",
@@ -92,6 +99,41 @@ def run_lab(argv: List[str] | None = None) -> str:
             base_config=dict(STOCK_BASE_CONFIG),
             grid=grid,
         )
+
+    if args.wfo:
+        from ggTrader.lab.strategies.signals import (
+            SIGNAL_STRATEGY_NAMES as _SIG_NAMES,
+        )
+        from ggTrader.lab.strategies.signals import (
+            EmaCrossSignal,
+            WfoTournamentSignal,
+        )
+        from ggTrader.lab.sweep import build_grid
+        from ggTrader.lab.wfo import run_wfo
+
+        if args.strategy not in _SIG_NAMES:
+            raise SystemExit(f"--wfo only supports signal strategies: {_SIG_NAMES}")
+        cls_map = {
+            "ema_cross": EmaCrossSignal,
+            "wfo_tournament": WfoTournamentSignal,
+        }
+        strategy_cls = cls_map[args.strategy]
+        overrides = _parse_sweep_params(args.sweep_param)
+        grid = build_grid(strategy_cls, overrides=overrides if overrides else None)
+        print(f"WFO: {args.strategy} | {len(grid)} param combos")
+        result = run_wfo(
+            args.strategy,
+            strategy_cls,
+            cfg,
+            ohlcv,
+            spy_close,
+            eval_start=str(eval_start.date()),
+            eval_end=str(eval_end.date()),
+            market=args.market,
+            base_config=dict(STOCK_BASE_CONFIG),
+            grid=grid,
+        )
+        return result
 
     if args.strategy in SIGNAL_STRATEGY_NAMES:
         strat = build_signal_strategy(args.strategy, cfg)
