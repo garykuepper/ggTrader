@@ -216,23 +216,9 @@ def test_dsr_check_data_mined_fails():
 
 def test_dsr_check_threshold_respected():
     """Custom threshold is used, not hardcoded 0.80."""
-    result_strict = dsr_check(
-        observed_sr=0.8,
-        n_obs=252,
-        n_trials=50,
-        skew=0.0,
-        kurtosis_excess=0.0,
-        threshold=0.95,
-    )
-    result_relaxed = dsr_check(
-        observed_sr=0.8,
-        n_obs=252,
-        n_trials=50,
-        skew=0.0,
-        kurtosis_excess=0.0,
-        threshold=0.50,
-    )
-    assert result_relaxed.passed is True or result_strict.passed is False
-    # At least one should differ
-    if result_relaxed.passed:
-        assert result_strict.dsr_value < 0.95 or result_strict.passed is True
+    kwargs = dict(observed_sr=0.3, n_obs=252, n_trials=500, skew=0.0, kurtosis_excess=0.0)
+    result_strict = dsr_check(**kwargs, threshold=0.999)
+    result_relaxed = dsr_check(**kwargs, threshold=0.01)
+    assert result_relaxed.passed is True
+    assert result_strict.passed is False
+    assert result_relaxed.dsr_value == result_strict.dsr_value

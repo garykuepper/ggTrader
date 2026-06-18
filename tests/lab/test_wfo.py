@@ -237,8 +237,12 @@ def test_run_wfo_reports_gate_status():
         base_config,
         grid,
     )
-    # Gate columns should appear in the table
-    assert "NDH" in output or "Gate" in output
+    assert "Gate" in output
+    # Each fold line should show PASS or FAIL
+    fold_lines = [ln for ln in output.splitlines() if ln.strip().startswith(tuple("0123456789"))]
+    assert len(fold_lines) > 0
+    for line in fold_lines:
+        assert "PASS" in line or "FAIL" in line
 
 
 def test_cli_parser_accepts_wfo_flag():
@@ -536,3 +540,44 @@ def test_run_wfo_shows_anchor_set():
         grid,
     )
     assert "Anchor Set" in output
+
+
+def test_run_wfo_anchor_fallback_on_gate_failure():
+    """When gates fail (impossible thresholds), anchor params are used ([A] marker)."""
+    symbols = ["X", "Y"]
+    n = 252 * 7
+    ohlcv = _ohlcv(symbols, n)
+    spy_close = ohlcv["X"]["close"].copy()
+    cfg = LabConfig(top_n=10, lookback=20, skip=5, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+        "SIGNAL_POSITION_SIZE": 0.5,
+    }
+    eval_start = ohlcv.index[0]
+    eval_end = ohlcv.index[-1]
+    grid = [{"param_a": 1}, {"param_a": 2}]
+
+    output = run_wfo(
+        "tiny",
+        _TinySignal,
+        cfg,
+        ohlcv,
+        spy_close,
+        str(eval_start.date()),
+        str(eval_end.date()),
+        "test",
+        base_config,
+        grid,
+        ndh_threshold=1.0,
+        dsr_threshold=1.0,
+    )
+    # At least one fold should fail gates and use anchor fallback
+    fold_lines = [ln for ln in output.splitlines() if ln.strip().startswith(tuple("0123456789"))]
+    assert len(fold_lines) > 0
+    anchor_lines = [ln for ln in fold_lines if "[A]" in ln]
+    assert len(anchor_lines) >= 1
+    for line in anchor_lines:
+        assert "FAIL" in line

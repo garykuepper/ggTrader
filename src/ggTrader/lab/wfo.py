@@ -340,8 +340,11 @@ def _extract_grid_arrays(
     if not grid:
         return np.array([]), np.array([]), (), {}
 
-    # Discover param axes from the grid
+    # Requires uniform keys across all grid combos (Cartesian product)
     param_keys = sorted(grid[0].keys())
+    if any(sorted(c.keys()) != param_keys for c in grid):
+        return np.array([]), np.array([]), (), {}
+
     axes: Dict[str, List[Any]] = {k: sorted(set(c[k] for c in grid)) for k in param_keys}
     shape = tuple(len(axes[k]) for k in param_keys)
 
