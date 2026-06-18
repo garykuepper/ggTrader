@@ -13,8 +13,8 @@ from ggTrader.lab.simulate import simulate_signals
 from ggTrader.lab.strategy import LabConfig, SignalTargets
 from ggTrader.lab.sweep import combo_name, split_params
 
-TRAIN_YEARS = 3
-TEST_YEARS = 1
+TRAIN_MONTHS = 12
+TEST_MONTHS = 3
 
 
 class Fold(NamedTuple):
@@ -27,19 +27,19 @@ class Fold(NamedTuple):
 def generate_folds(
     eval_start: pd.Timestamp,
     eval_end: pd.Timestamp,
-    train_years: int = TRAIN_YEARS,
-    test_years: int = TEST_YEARS,
+    train_months: int = TRAIN_MONTHS,
+    test_months: int = TEST_MONTHS,
 ) -> List[Fold]:
-    """Rolling fixed-width folds. Slides forward by test_years each step."""
+    """Rolling fixed-width folds. Slides forward by test_months each step."""
     folds: List[Fold] = []
     cursor = eval_start
     while True:
-        train_end = cursor + pd.DateOffset(years=train_years)
-        test_end = train_end + pd.DateOffset(years=test_years)
+        train_end = cursor + pd.DateOffset(months=train_months)
+        test_end = train_end + pd.DateOffset(months=test_months)
         if test_end > eval_end:
             break
         folds.append(Fold(cursor, train_end, train_end, test_end))
-        cursor += pd.DateOffset(years=test_years)
+        cursor += pd.DateOffset(months=test_months)
     return folds
 
 
@@ -168,7 +168,9 @@ def run_wfo(
     eval_end_ts = pd.Timestamp(eval_end, tz="UTC")
     folds = generate_folds(eval_start_ts, eval_end_ts)
     if not folds:
-        return f"WFO: {strategy_name} | no valid folds (need >= {TRAIN_YEARS + TEST_YEARS} years)"
+        return (
+            f"WFO: {strategy_name} | no valid folds (need >= {TRAIN_MONTHS + TEST_MONTHS} months)"
+        )
 
     strat_instance = strategy_cls(cfg)
     start_cash = float(base_config["START_CASH"])
@@ -304,9 +306,9 @@ def select_live_params(
     grid: List[Dict[str, Any]],
     fold_winners: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """Train on the most recent TRAIN_YEARS window and pick the composite winner."""
+    """Train on the most recent TRAIN_MONTHS window and pick the composite winner."""
     eval_end_ts = pd.Timestamp(eval_end, tz="UTC")
-    live_train_start = eval_end_ts - pd.DateOffset(years=TRAIN_YEARS)
+    live_train_start = eval_end_ts - pd.DateOffset(months=TRAIN_MONTHS)
     strat_instance = strategy_cls(cfg)
 
     train_metrics = _sweep_fold(
@@ -352,7 +354,7 @@ def format_wfo_table(
     """Render per-fold table + OOS aggregate + recommended live params."""
     lines = [
         f"WFO: {strategy_name} | {n_combos} combos x {n_folds} folds"
-        f" | rolling {TRAIN_YEARS}yr/{TEST_YEARS}yr",
+        f" | rolling {TRAIN_MONTHS}mo/{TEST_MONTHS}mo",
         "",
         f"{'Fold':<6}{'Train Window':<20}{'Test Window':<20}{'Winner':<36}{'Train':>7}{'OOS':>7}",
         "─" * 96,

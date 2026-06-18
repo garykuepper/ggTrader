@@ -59,37 +59,36 @@ class _TinySignal:
 
 
 def test_generate_folds_count_and_boundaries():
-    """11-year span with 3yr train / 1yr test -> 8 folds, no overlap."""
-    start = pd.Timestamp("2015-01-01", tz="UTC")
-    end = pd.Timestamp("2026-01-01", tz="UTC")
+    """5-year span with 12mo train / 3mo test -> 16 folds, no overlap."""
+    start = pd.Timestamp("2020-01-01", tz="UTC")
+    end = pd.Timestamp("2025-01-01", tz="UTC")
     folds = generate_folds(start, end)
-    assert len(folds) == 8
+    assert len(folds) == 16
     for f in folds:
         assert f.test_start == f.train_end  # no gap
-        train_years = (f.train_end - f.train_start).days / 365.25
-        test_years = (f.test_end - f.test_start).days / 365.25
-        assert abs(train_years - 3.0) < 0.05
-        assert abs(test_years - 1.0) < 0.05
-    # No fold's test_end exceeds data_end
+        train_months = (f.train_end - f.train_start).days / 30.44
+        test_months = (f.test_end - f.test_start).days / 30.44
+        assert abs(train_months - 12.0) < 1.0
+        assert abs(test_months - 3.0) < 1.0
     assert all(f.test_end <= end for f in folds)
-    # Folds slide by 1 year
+    # Folds slide by 3 months
     for i in range(1, len(folds)):
-        delta_years = (folds[i].train_start - folds[i - 1].train_start).days / 365.25
-        assert abs(delta_years - 1.0) < 0.05
+        delta_months = (folds[i].train_start - folds[i - 1].train_start).days / 30.44
+        assert abs(delta_months - 3.0) < 1.0
 
 
 def test_generate_folds_short_data_returns_fewer():
-    """Only 3.5 years of data -> not enough for train+test, returns 0 folds."""
-    start = pd.Timestamp("2020-01-01", tz="UTC")
-    end = pd.Timestamp("2023-06-01", tz="UTC")
+    """Only 12 months of data -> not enough for 12mo train + 3mo test."""
+    start = pd.Timestamp("2024-01-01", tz="UTC")
+    end = pd.Timestamp("2025-01-01", tz="UTC")
     folds = generate_folds(start, end)
     assert len(folds) == 0
 
 
-def test_generate_folds_exact_4_years():
-    """Exactly 4 years -> 1 fold."""
-    start = pd.Timestamp("2020-01-01", tz="UTC")
-    end = pd.Timestamp("2024-01-01", tz="UTC")
+def test_generate_folds_exact_15_months():
+    """Exactly 15 months (12 + 3) -> 1 fold."""
+    start = pd.Timestamp("2024-01-01", tz="UTC")
+    end = pd.Timestamp("2025-04-01", tz="UTC")
     folds = generate_folds(start, end)
     assert len(folds) == 1
     assert folds[0].train_start == start
@@ -130,7 +129,7 @@ def test_composite_score_nan_handling():
 
 
 def test_run_wfo_integration():
-    """Full WFO with tiny strategy: 2014-2020 data, 3yr/1yr -> 3 folds."""
+    """Full WFO with tiny strategy: ~7yr data, 12mo/3mo folds."""
     symbols = ["X", "Y"]
     n = 252 * 7  # ~7 years of daily bars
     ohlcv = _ohlcv(symbols, n)
@@ -167,7 +166,7 @@ def test_run_wfo_integration():
 
 
 def test_select_live_params_uses_recent_window():
-    """Live params trained on most recent 3yr; stability counts matching fold winners."""
+    """Live params trained on most recent 12mo; stability counts matching fold winners."""
     symbols = ["X", "Y"]
     n = 252 * 7
     ohlcv = _ohlcv(symbols, n)
