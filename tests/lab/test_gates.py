@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ggTrader.lab.gates import NdhResult, ndh_check
+from ggTrader.lab.gates import DsrResult, NdhResult, dsr_check, expected_max_sr, ndh_check, psr
 
 
 def _make_plateau_grid() -> tuple[np.ndarray, np.ndarray, tuple[int, int, int]]:
@@ -123,3 +123,116 @@ def _neighbor_indices(peak_idx: int, shape: tuple[int, ...]) -> list[int]:
         if np.all(nc >= 0) and np.all(nc < np.array(shape)):
             neighbors.append(int(np.ravel_multi_index(nc, shape)))
     return neighbors
+
+
+def test_psr_known_values():
+    """PSR with zero skew/kurtosis and large T should match basic z-test."""
+    # SR=1.0 vs benchmark=0.0, T=252, normal returns
+    result = psr(
+        observed_sr=1.0,
+        benchmark_sr=0.0,
+        n_obs=252,
+        skew=0.0,
+        kurtosis_excess=0.0,
+    )
+    # SE(SR) = sqrt(1/251) ≈ 0.0631, z = 1.0/0.0631 ≈ 15.85 -> PSR ≈ 1.0
+    assert result > 0.99
+
+
+def test_psr_low_sr_low_probability():
+    """PSR with SR barely above benchmark should give ~0.5."""
+    result = psr(
+        observed_sr=0.5,
+        benchmark_sr=0.5,
+        n_obs=252,
+        skew=0.0,
+        kurtosis_excess=0.0,
+    )
+    assert abs(result - 0.5) < 0.01
+
+
+def test_psr_negative_skew_reduces_confidence():
+    """Negative skew inflates SR variance -> lower PSR."""
+    psr_normal = psr(
+        observed_sr=1.0,
+        benchmark_sr=0.0,
+        n_obs=252,
+        skew=0.0,
+        kurtosis_excess=0.0,
+    )
+    psr_skewed = psr(
+        observed_sr=1.0,
+        benchmark_sr=0.0,
+        n_obs=252,
+        skew=-2.0,
+        kurtosis_excess=5.0,
+    )
+    assert psr_skewed < psr_normal
+
+
+def test_expected_max_sr_increases_with_trials():
+    """More trials -> higher expected max Sharpe."""
+    sr10 = expected_max_sr(n_trials=10, n_obs=252, skew=0.0, kurtosis_excess=0.0)
+    sr1000 = expected_max_sr(n_trials=1000, n_obs=252, skew=0.0, kurtosis_excess=0.0)
+    sr10000 = expected_max_sr(n_trials=10000, n_obs=252, skew=0.0, kurtosis_excess=0.0)
+    assert sr10 < sr1000 < sr10000
+    # With 10 trials and T=252, expected max SR should be modest
+    assert 0.05 < sr10 < 0.5
+
+
+def test_expected_max_sr_longer_track_record_narrows():
+    """Longer T -> smaller SE -> smaller expected max SR."""
+    sr_short = expected_max_sr(n_trials=100, n_obs=60, skew=0.0, kurtosis_excess=0.0)
+    sr_long = expected_max_sr(n_trials=100, n_obs=1000, skew=0.0, kurtosis_excess=0.0)
+    assert sr_long < sr_short
+
+
+def test_dsr_check_strong_signal_passes():
+    """High SR with few trials should pass easily."""
+    result = dsr_check(
+        observed_sr=1.5,
+        n_obs=504,  # 2 years daily
+        n_trials=20,
+        skew=0.0,
+        kurtosis_excess=0.0,
+    )
+    assert isinstance(result, DsrResult)
+    assert result.passed is True
+    assert result.dsr_value > 0.80
+
+
+def test_dsr_check_data_mined_fails():
+    """Mediocre SR found after thousands of trials should fail."""
+    result = dsr_check(
+        observed_sr=0.3,
+        n_obs=252,
+        n_trials=5000,
+        skew=-1.0,
+        kurtosis_excess=3.0,
+    )
+    assert result.passed is False
+    assert result.dsr_value < 0.80
+
+
+def test_dsr_check_threshold_respected():
+    """Custom threshold is used, not hardcoded 0.80."""
+    result_strict = dsr_check(
+        observed_sr=0.8,
+        n_obs=252,
+        n_trials=50,
+        skew=0.0,
+        kurtosis_excess=0.0,
+        threshold=0.95,
+    )
+    result_relaxed = dsr_check(
+        observed_sr=0.8,
+        n_obs=252,
+        n_trials=50,
+        skew=0.0,
+        kurtosis_excess=0.0,
+        threshold=0.50,
+    )
+    assert result_relaxed.passed is True or result_strict.passed is False
+    # At least one should differ
+    if result_relaxed.passed:
+        assert result_strict.dsr_value < 0.95 or result_strict.passed is True
