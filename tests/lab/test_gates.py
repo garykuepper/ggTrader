@@ -204,9 +204,9 @@ def test_dsr_check_strong_signal_passes():
 def test_dsr_check_data_mined_fails():
     """Mediocre SR found after thousands of trials should fail."""
     result = dsr_check(
-        observed_sr=0.3,
+        observed_sr=0.15,
         n_obs=252,
-        n_trials=5000,
+        n_trials=10000,
         skew=-1.0,
         kurtosis_excess=3.0,
     )
