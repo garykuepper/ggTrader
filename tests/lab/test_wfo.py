@@ -4,7 +4,12 @@ import pytest
 
 from ggTrader.lab.cli import build_arg_parser
 from ggTrader.lab.strategy import LabConfig, SignalTargets
-from ggTrader.lab.wfo import composite_score, generate_folds, run_wfo, select_live_params
+from ggTrader.lab.wfo import (
+    composite_score,
+    generate_folds,
+    run_wfo,
+    select_live_params,
+)
 
 
 def _ohlcv(symbols, n):
@@ -262,3 +267,175 @@ def test_cli_parser_wfo_with_sweep_param():
     )
     assert args.wfo is True
     assert len(args.sweep_param) == 1
+
+
+# ── compute_wfe tests ──────────────────────────────────────────────────
+
+
+def test_compute_wfe_normal():
+    """WFE = OOS sharpe / IS sharpe when IS >= floor."""
+    from ggTrader.lab.wfo import compute_wfe
+
+    assert compute_wfe(is_sharpe=1.0, oos_sharpe=0.6) == pytest.approx(0.6)
+    assert compute_wfe(is_sharpe=2.0, oos_sharpe=1.0) == pytest.approx(0.5)
+
+
+def test_compute_wfe_neutral_window():
+    """IS Sharpe below floor returns None (neutral, excluded from average)."""
+    from ggTrader.lab.wfo import compute_wfe
+
+    assert compute_wfe(is_sharpe=0.3, oos_sharpe=0.1) is None
+    assert compute_wfe(is_sharpe=0.0, oos_sharpe=-0.5) is None
+
+
+def test_compute_wfe_negative_oos():
+    """Negative OOS sharpe -> negative WFE (valid, not neutral)."""
+    from ggTrader.lab.wfo import compute_wfe
+
+    result = compute_wfe(is_sharpe=1.0, oos_sharpe=-0.5)
+    assert result == pytest.approx(-0.5)
+
+
+def test_compute_wfe_custom_floor():
+    """Custom IS floor is respected."""
+    from ggTrader.lab.wfo import compute_wfe
+
+    assert compute_wfe(is_sharpe=0.35, oos_sharpe=0.1, is_floor=0.3) == pytest.approx(0.1 / 0.35)
+    assert compute_wfe(is_sharpe=0.35, oos_sharpe=0.1, is_floor=0.4) is None
+
+
+# ── circuit breaker tests ──────────────────────────────────────────────
+
+
+def test_circuit_breaker_chronic_decay():
+    """Trailing 4-window WFE avg < 0.25 triggers halt."""
+    from ggTrader.lab.wfo import WfoState, check_circuit_breaker
+
+    state = WfoState(wfe_history=[0.2, 0.1, 0.3, 0.15])
+    result = check_circuit_breaker(state)
+    assert result.halted is True
+    assert "chronic" in result.halt_reason.lower()
+
+
+def test_circuit_breaker_acute_failure():
+    """Two consecutive negative OOS Sharpe windows trigger halt."""
+    from ggTrader.lab.wfo import WfoState, check_circuit_breaker
+
+    state = WfoState(
+        wfe_history=[0.8, 0.6],
+        oos_sharpes=[-0.1, -0.2],
+    )
+    result = check_circuit_breaker(state)
+    assert result.halted is True
+    assert "acute" in result.halt_reason.lower()
+
+
+def test_circuit_breaker_healthy():
+    """Healthy WFE history does not trigger halt."""
+    from ggTrader.lab.wfo import WfoState, check_circuit_breaker
+
+    state = WfoState(wfe_history=[0.6, 0.7, 0.5, 0.8])
+    result = check_circuit_breaker(state)
+    assert result.halted is False
+    assert result.halt_reason is None
+
+
+def test_circuit_breaker_neutral_windows_excluded():
+    """None values in WFE history are excluded from average, not counted as 0."""
+    from ggTrader.lab.wfo import WfoState, check_circuit_breaker
+
+    state = WfoState(wfe_history=[0.6, None, None, 0.8])
+    result = check_circuit_breaker(state)
+    # avg of [0.6, 0.8] = 0.7 > 0.25 -> healthy
+    assert result.halted is False
+
+
+def test_circuit_breaker_single_negative_oos_not_halt():
+    """One negative OOS Sharpe is not enough (need 2 consecutive)."""
+    from ggTrader.lab.wfo import WfoState, check_circuit_breaker
+
+    state = WfoState(
+        wfe_history=[0.8],
+        oos_sharpes=[0.5, -0.1, 0.3],
+    )
+    result = check_circuit_breaker(state)
+    assert result.halted is False
+
+
+# ── shadow re-entry tests ─────────────────────────────────────────────
+
+
+def test_shadow_reentry_needs_two_consecutive():
+    """First clean shadow strike doesn't restore -- need 2 consecutive."""
+    from ggTrader.lab.wfo import WfoState, check_shadow_reentry
+
+    state = WfoState(halted=True, halt_reason="test", shadow_strikes=0)
+    result = check_shadow_reentry(
+        state,
+        ndh_passed=True,
+        dsr_passed=True,
+        wfe=0.6,
+    )
+    assert result.halted is True
+    assert result.shadow_strikes == 1
+
+
+def test_shadow_reentry_second_strike_restores():
+    """Second consecutive clean shadow window ends the halt."""
+    from ggTrader.lab.wfo import WfoState, check_shadow_reentry
+
+    state = WfoState(halted=True, halt_reason="test", shadow_strikes=1)
+    result = check_shadow_reentry(
+        state,
+        ndh_passed=True,
+        dsr_passed=True,
+        wfe=0.6,
+    )
+    assert result.halted is False
+    assert result.shadow_strikes == 0
+    assert result.halt_reason is None
+
+
+def test_shadow_reentry_failed_check_resets_strikes():
+    """Any gate failure resets the consecutive counter."""
+    from ggTrader.lab.wfo import WfoState, check_shadow_reentry
+
+    state = WfoState(halted=True, halt_reason="test", shadow_strikes=1)
+    result = check_shadow_reentry(
+        state,
+        ndh_passed=True,
+        dsr_passed=False,
+        wfe=0.6,
+    )
+    assert result.halted is True
+    assert result.shadow_strikes == 0
+
+
+def test_shadow_reentry_requires_wfe_healthy():
+    """WFE < 0.5 (healthy target) fails the re-entry check."""
+    from ggTrader.lab.wfo import WfoState, check_shadow_reentry
+
+    state = WfoState(halted=True, halt_reason="test", shadow_strikes=1)
+    result = check_shadow_reentry(
+        state,
+        ndh_passed=True,
+        dsr_passed=True,
+        wfe=0.3,
+    )
+    assert result.halted is True
+    assert result.shadow_strikes == 0
+
+
+def test_shadow_reentry_neutral_wfe_fails():
+    """Neutral WFE (None) fails re-entry -- can't confirm recovery."""
+    from ggTrader.lab.wfo import WfoState, check_shadow_reentry
+
+    state = WfoState(halted=True, halt_reason="test", shadow_strikes=1)
+    result = check_shadow_reentry(
+        state,
+        ndh_passed=True,
+        dsr_passed=True,
+        wfe=None,
+    )
+    assert result.halted is True
+    assert result.shadow_strikes == 0

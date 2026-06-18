@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, NamedTuple, Type
 
 import numpy as np
@@ -17,6 +18,111 @@ from ggTrader.lab.sweep import combo_name, split_params
 
 TRAIN_MONTHS = 12
 TEST_MONTHS = 3
+
+
+# ── WFE & Circuit Breaker ──────────────────────────────────────────────
+
+
+def compute_wfe(
+    is_sharpe: float,
+    oos_sharpe: float,
+    is_floor: float = 0.4,
+) -> float | None:
+    """Walk-Forward Efficiency: OOS Sharpe / IS Sharpe.
+
+    Returns None for neutral windows (IS Sharpe < floor) — these are excluded
+    from the rolling WFE average, not counted as zero.
+    """
+    if is_sharpe < is_floor:
+        return None
+    return oos_sharpe / is_sharpe
+
+
+@dataclass
+class WfoState:
+    """Tracks WFE history and circuit breaker state across WFO folds."""
+
+    wfe_history: List[float | None] = field(default_factory=list)
+    oos_sharpes: List[float] = field(default_factory=list)
+    halted: bool = False
+    halt_reason: str | None = None
+    shadow_strikes: int = 0
+
+
+def check_circuit_breaker(
+    state: WfoState,
+    window_size: int = 4,
+    wfe_floor: float = 0.25,
+) -> WfoState:
+    """Check the OR-gate circuit breaker.
+
+    Triggers halt if EITHER:
+    1. Chronic decay: trailing window_size non-None WFE average < wfe_floor
+    2. Acute failure: two consecutive negative OOS Sharpe Ratios
+    """
+    new_state = WfoState(
+        wfe_history=list(state.wfe_history),
+        oos_sharpes=list(state.oos_sharpes),
+        halted=state.halted,
+        halt_reason=state.halt_reason,
+        shadow_strikes=state.shadow_strikes,
+    )
+
+    # Chronic decay: trailing non-None WFE avg
+    valid_wfes = [w for w in state.wfe_history if w is not None]
+    recent = valid_wfes[-window_size:] if len(valid_wfes) >= window_size else valid_wfes
+    if len(recent) >= window_size:
+        avg_wfe = sum(recent) / len(recent)
+        if avg_wfe < wfe_floor:
+            new_state.halted = True
+            new_state.halt_reason = (
+                f"Chronic decay: trailing {window_size}-window WFE avg {avg_wfe:.3f} < {wfe_floor}"
+            )
+            return new_state
+
+    # Acute failure: 2 consecutive negative OOS Sharpes
+    if len(state.oos_sharpes) >= 2:
+        if state.oos_sharpes[-1] < 0 and state.oos_sharpes[-2] < 0:
+            new_state.halted = True
+            new_state.halt_reason = (
+                f"Acute failure: 2 consecutive negative OOS Sharpe"
+                f" ({state.oos_sharpes[-2]:.2f}, {state.oos_sharpes[-1]:.2f})"
+            )
+            return new_state
+
+    return new_state
+
+
+def check_shadow_reentry(
+    state: WfoState,
+    ndh_passed: bool,
+    dsr_passed: bool,
+    wfe: float | None,
+    wfe_healthy: float = 0.5,
+) -> WfoState:
+    """Check shadow re-entry: 2 consecutive clean windows restore live trading.
+
+    A clean window requires all three: NDH pass, DSR pass, WFE >= wfe_healthy.
+    """
+    new_state = WfoState(
+        wfe_history=list(state.wfe_history),
+        oos_sharpes=list(state.oos_sharpes),
+        halted=state.halted,
+        halt_reason=state.halt_reason,
+        shadow_strikes=state.shadow_strikes,
+    )
+
+    clean = ndh_passed and dsr_passed and wfe is not None and wfe >= wfe_healthy
+    if clean:
+        new_state.shadow_strikes += 1
+        if new_state.shadow_strikes >= 2:
+            new_state.halted = False
+            new_state.halt_reason = None
+            new_state.shadow_strikes = 0
+    else:
+        new_state.shadow_strikes = 0
+
+    return new_state
 
 
 class Fold(NamedTuple):
@@ -252,6 +358,7 @@ def run_wfo(
     oos_curves: List[pd.Series] = []
     oos_running_value = start_cash
     fold_winners: List[Dict[str, Any]] = []
+    wfo_state = WfoState()
 
     for i, fold in enumerate(folds):
         # Train: sweep all combos on train window
@@ -347,6 +454,22 @@ def run_wfo(
                 oos_curves.append(normalized)
                 oos_running_value = float(normalized.iloc[-1])
 
+        # --- WFE + circuit breaker ---
+        is_sharpe = winner.get("sharpe", float("nan"))
+        oos_sharpe = float("nan")
+        if test_metrics:
+            oos_sharpe = test_metrics[0].get("sharpe", float("nan"))
+
+        wfe_val = compute_wfe(is_sharpe, oos_sharpe)
+        wfo_state.wfe_history.append(wfe_val)
+        if np.isfinite(oos_sharpe):
+            wfo_state.oos_sharpes.append(oos_sharpe)
+
+        if not wfo_state.halted:
+            wfo_state = check_circuit_breaker(wfo_state)
+        else:
+            wfo_state = check_shadow_reentry(wfo_state, ndh_passed, dsr_passed, wfe_val)
+
         fold_results.append(
             {
                 "fold_num": i + 1,
@@ -363,6 +486,10 @@ def run_wfo(
                 "gates_passed": gates_passed,
                 "ndh_density": ndh_density,
                 "dsr_value": dsr_value,
+                "wfe": wfe_val,
+                "is_sharpe": is_sharpe,
+                "oos_sharpe": oos_sharpe,
+                "halted": wfo_state.halted,
             }
         )
         fold_winners.append(winner)
@@ -410,6 +537,7 @@ def run_wfo(
         strategy_name,
         len(grid),
         len(folds),
+        halted=wfo_state.halted,
     )
     print(table)
     return table
@@ -469,6 +597,7 @@ def format_wfo_table(
     strategy_name: str,
     n_combos: int,
     n_folds: int,
+    halted: bool = False,
 ) -> str:
     """Render per-fold table + OOS aggregate + recommended live params."""
     lines = [
@@ -476,7 +605,7 @@ def format_wfo_table(
         f" | rolling {TRAIN_MONTHS}mo/{TEST_MONTHS}mo",
         "",
         f"{'Fold':<6}{'Train Window':<20}{'Test Window':<20}"
-        f"{'Winner':<30}{'Train':>6}{'OOS':>6}  {'Gate':<4}",
+        f"{'Winner':<26}{'Train':>6}{'OOS':>6}  {'Gate':<4} {'WFE':>5}",
         "─" * 96,
     ]
     for r in fold_results:
@@ -485,13 +614,15 @@ def format_wfo_table(
         os_ = r["test_start"].strftime("%Y-%m")
         oe = r["test_end"].strftime("%Y-%m")
         short = r["winner_combo"].replace(f"{strategy_name}__", "")
-        if len(short) > 28:
-            short = short[:25] + "..."
+        if len(short) > 24:
+            short = short[:21] + "..."
         gate_str = "PASS" if r.get("gates_passed", False) else "FAIL"
+        wfe_str = f"{r['wfe']:.2f}" if r.get("wfe") is not None else " n/a"
+        halt_str = " [H]" if r.get("halted") else ""
         lines.append(
             f"{r['fold_num']:<6}{ts} → {te:<13}{os_} → {oe:<13}"
-            f"{short:<30}{r['train_score']:>6.2f}{r['oos_score']:>6.2f}"
-            f"  {gate_str:<4}"
+            f"{short:<26}{r['train_score']:>6.2f}{r['oos_score']:>6.2f}"
+            f"  {gate_str:<4} {wfe_str:>5}{halt_str}"
         )
 
     lines.append("")
@@ -505,6 +636,12 @@ def format_wfo_table(
         f" | CAGR {spy_metrics.get('cagr_pct', float('nan')):.1f}%"
         f" | MaxDD {spy_metrics.get('max_drawdown_pct', float('nan')):.1f}%"
     )
+
+    valid_wfes = [r["wfe"] for r in fold_results if r.get("wfe") is not None]
+    avg_wfe = sum(valid_wfes) / len(valid_wfes) if valid_wfes else float("nan")
+    lines.append(f"Aggregate WFE: {avg_wfe:.2f} (target >= 0.50)")
+    if halted:
+        lines.append("!! REGIME HALT ACTIVE -- trading on anchor params")
 
     # Recommended live params
     lines.append("")
