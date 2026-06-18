@@ -6,8 +6,10 @@ import math
 from collections import defaultdict
 from typing import Any, Dict, List, NamedTuple, Type
 
+import numpy as np
 import pandas as pd
 
+from ggTrader.lab.gates import dsr_check, ndh_check
 from ggTrader.lab.metrics import curve_stats
 from ggTrader.lab.simulate import simulate_signals
 from ggTrader.lab.strategy import LabConfig, SignalTargets
@@ -89,12 +91,14 @@ def _sweep_fold(
     window_end: pd.Timestamp,
     base_config: Dict[str, Any],
     grid: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+) -> tuple[List[Dict[str, Any]], Dict[str, pd.Series]]:
     """Run all combos on a single time window and return per-combo metrics.
 
     Signal generation uses all data up to window_end (for EMA warmup).
     Scoring uses only [window_start, window_end).
-    Returns list of dicts with keys: 'combo', 'params', and all curve_stats keys.
+    Returns (results, all_eq) where results is a list of dicts with keys:
+    'combo', 'params', and all curve_stats keys; all_eq maps combo keys
+    to full equity series.
     """
     ohlcv_window = ohlcv.loc[:window_end]
     symbols = sorted(ohlcv_window.columns.get_level_values(0).unique())
@@ -148,7 +152,75 @@ def _sweep_fold(
         metrics = curve_stats(eq_scaled)
         combo_params = next(c for c in grid if combo_name(strategy_name, c) == key)
         results.append({"combo": key, "params": combo_params, **metrics})
-    return results
+    return results, all_eq
+
+
+def _extract_grid_arrays(
+    train_metrics: List[Dict[str, Any]],
+    grid: List[Dict[str, Any]],
+    strategy_name: str,
+) -> tuple[np.ndarray, np.ndarray, tuple[int, ...], Dict[int, int]]:
+    """Map sweep results to N-dim grid arrays for NDH.
+
+    Returns:
+        sharpe_grid: 1D array indexed by flat grid position
+        expectancy_grid: 1D array indexed by flat grid position
+        grid_shape: shape of the N-dim grid
+        result_to_grid: mapping from train_metrics index to grid flat index
+    """
+    if not grid:
+        return np.array([]), np.array([]), (), {}
+
+    # Discover param axes from the grid
+    param_keys = sorted(grid[0].keys())
+    axes: Dict[str, List[Any]] = {k: sorted(set(c[k] for c in grid)) for k in param_keys}
+    shape = tuple(len(axes[k]) for k in param_keys)
+
+    n_cells = 1
+    for s in shape:
+        n_cells *= s
+
+    sharpe_arr = np.full(n_cells, float("nan"))
+    expectancy_arr = np.full(n_cells, float("nan"))
+
+    # Build lookup: combo params -> flat index
+    axis_idx = {k: {v: i for i, v in enumerate(axes[k])} for k in param_keys}
+
+    def _flat_idx(params: Dict[str, Any]) -> int:
+        coords = tuple(axis_idx[k][params[k]] for k in param_keys)
+        return int(np.ravel_multi_index(coords, shape))
+
+    # Map results to grid
+    result_to_grid: Dict[int, int] = {}
+    for ri, m in enumerate(train_metrics):
+        combo_params = m["params"]
+        flat = _flat_idx(combo_params)
+        sharpe_arr[flat] = m.get("sharpe", float("nan"))
+        # Trade expectancy: approximate as total_return / max(1, n_trades)
+        # For now use total_return_pct as proxy since we don't have n_trades
+        expectancy_arr[flat] = m.get("total_return_pct", 0.0) / 100.0
+        result_to_grid[ri] = flat
+
+    # Replace NaN with 0 for the gate check (missing combos count as zero-edge)
+    sharpe_arr = np.nan_to_num(sharpe_arr, nan=0.0)
+    expectancy_arr = np.nan_to_num(expectancy_arr, nan=0.0)
+
+    return sharpe_arr, expectancy_arr, shape, result_to_grid
+
+
+def _compute_dsr_inputs(eq_series: pd.Series) -> tuple[int, float, float]:
+    """Extract (n_obs, skew, excess_kurtosis) from an equity curve for DSR."""
+    rets = eq_series.pct_change().dropna()
+    n_obs = len(rets)
+    if n_obs < 3:
+        return n_obs, 0.0, 0.0
+    skew = float(rets.skew())
+    kurt = float(rets.kurtosis())  # pandas .kurtosis() returns excess kurtosis
+    if not np.isfinite(skew):
+        skew = 0.0
+    if not np.isfinite(kurt):
+        kurt = 0.0
+    return n_obs, skew, kurt
 
 
 def run_wfo(
@@ -162,6 +234,8 @@ def run_wfo(
     market: str,
     base_config: Dict[str, Any],
     grid: List[Dict[str, Any]],
+    ndh_threshold: float = 0.85,
+    dsr_threshold: float = 0.80,
 ) -> str:
     """Main WFO entry point: fold, train, test, concatenate, report."""
     eval_start_ts = pd.Timestamp(eval_start, tz="UTC")
@@ -181,7 +255,7 @@ def run_wfo(
 
     for i, fold in enumerate(folds):
         # Train: sweep all combos on train window
-        train_metrics = _sweep_fold(
+        train_metrics, train_eq = _sweep_fold(
             strategy_name,
             strat_instance,
             ohlcv,
@@ -198,9 +272,49 @@ def run_wfo(
         best_idx = max(range(len(scores)), key=lambda j: scores[j])
         winner = train_metrics[best_idx]
 
+        # --- Gate checks ---
+        ndh_passed = False
+        dsr_passed = False
+        ndh_density = 0.0
+        dsr_value = 0.0
+
+        sharpe_grid, exp_grid, grid_shape, r2g = _extract_grid_arrays(
+            train_metrics,
+            grid,
+            strategy_name,
+        )
+        if best_idx in r2g and len(grid_shape) > 0:
+            ndh_result = ndh_check(
+                peak_idx=r2g[best_idx],
+                sharpe_grid=sharpe_grid,
+                expectancy_grid=exp_grid,
+                grid_shape=grid_shape,
+                density_threshold=ndh_threshold,
+            )
+            ndh_passed = ndh_result.passed
+            ndh_density = ndh_result.density
+
+        winner_key = winner["combo"]
+        eq_is = train_eq.get(winner_key, pd.Series(dtype=float))
+        eq_is = eq_is.loc[fold.train_start : fold.train_end].dropna()
+        if len(eq_is) > 10:
+            n_obs, skew_val, kurt_val = _compute_dsr_inputs(eq_is)
+            dsr_result = dsr_check(
+                observed_sr=winner.get("sharpe", 0.0),
+                n_obs=n_obs,
+                n_trials=len(grid),
+                skew=skew_val,
+                kurtosis_excess=kurt_val,
+                threshold=dsr_threshold,
+            )
+            dsr_passed = dsr_result.passed
+            dsr_value = dsr_result.dsr_value
+
+        gates_passed = ndh_passed and dsr_passed
+
         # Test: simulate winner only on data up to test_end, score test window
         winner_grid = [winner["params"]]
-        test_metrics = _sweep_fold(
+        test_metrics, _test_eq = _sweep_fold(
             strategy_name,
             strat_instance,
             ohlcv,
@@ -244,6 +358,11 @@ def run_wfo(
                 "winner_params": winner["params"],
                 "train_score": scores[best_idx],
                 "oos_score": oos_score,
+                "ndh_passed": ndh_passed,
+                "dsr_passed": dsr_passed,
+                "gates_passed": gates_passed,
+                "ndh_density": ndh_density,
+                "dsr_value": dsr_value,
             }
         )
         fold_winners.append(winner)
@@ -311,7 +430,7 @@ def select_live_params(
     live_train_start = eval_end_ts - pd.DateOffset(months=TRAIN_MONTHS)
     strat_instance = strategy_cls(cfg)
 
-    train_metrics = _sweep_fold(
+    train_metrics, _train_eq = _sweep_fold(
         strategy_name,
         strat_instance,
         ohlcv,
@@ -356,7 +475,8 @@ def format_wfo_table(
         f"WFO: {strategy_name} | {n_combos} combos x {n_folds} folds"
         f" | rolling {TRAIN_MONTHS}mo/{TEST_MONTHS}mo",
         "",
-        f"{'Fold':<6}{'Train Window':<20}{'Test Window':<20}{'Winner':<36}{'Train':>7}{'OOS':>7}",
+        f"{'Fold':<6}{'Train Window':<20}{'Test Window':<20}"
+        f"{'Winner':<30}{'Train':>6}{'OOS':>6}  {'Gate':<4}",
         "─" * 96,
     ]
     for r in fold_results:
@@ -364,13 +484,14 @@ def format_wfo_table(
         te = r["train_end"].strftime("%Y-%m")
         os_ = r["test_start"].strftime("%Y-%m")
         oe = r["test_end"].strftime("%Y-%m")
-        # Shorten winner name: strip strategy prefix
         short = r["winner_combo"].replace(f"{strategy_name}__", "")
-        if len(short) > 34:
-            short = short[:31] + "..."
+        if len(short) > 28:
+            short = short[:25] + "..."
+        gate_str = "PASS" if r.get("gates_passed", False) else "FAIL"
         lines.append(
             f"{r['fold_num']:<6}{ts} → {te:<13}{os_} → {oe:<13}"
-            f"{short:<36}{r['train_score']:>7.2f}{r['oos_score']:>7.2f}"
+            f"{short:<30}{r['train_score']:>6.2f}{r['oos_score']:>6.2f}"
+            f"  {gate_str:<4}"
         )
 
     lines.append("")
