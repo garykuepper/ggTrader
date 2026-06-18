@@ -125,6 +125,16 @@ def check_shadow_reentry(
     return new_state
 
 
+class AnchorSet(NamedTuple):
+    """Global min-drawdown parameter set for defensive fallback."""
+
+    combo: str
+    params: Dict[str, Any]
+    max_drawdown_pct: float
+    cagr_pct: float
+    sharpe: float
+
+
 class Fold(NamedTuple):
     train_start: pd.Timestamp
     train_end: pd.Timestamp
@@ -261,6 +271,59 @@ def _sweep_fold(
     return results, all_eq
 
 
+def compute_anchor_set(
+    strategy_name: str,
+    strategy_cls: Type,
+    cfg: LabConfig,
+    ohlcv: pd.DataFrame,
+    base_config: Dict[str, Any],
+    grid: List[Dict[str, Any]],
+    risk_free_rate: float = 4.0,
+) -> AnchorSet:
+    """Derive the anchor set: minimize max drawdown subject to CAGR > risk-free.
+
+    Runs all grid combos over the full available history and picks the combo
+    with the smallest absolute drawdown among those with CAGR > risk_free_rate.
+    Falls back to the least-drawdown combo if none clears the CAGR constraint.
+    """
+    strat_instance = strategy_cls(cfg)
+    full_start = ohlcv.index[0]
+    full_end = ohlcv.index[-1]
+
+    metrics_list, _eq = _sweep_fold(
+        strategy_name,
+        strat_instance,
+        ohlcv,
+        full_start,
+        full_end,
+        base_config,
+        grid,
+    )
+    if not metrics_list:
+        return AnchorSet(
+            combo="none",
+            params={},
+            max_drawdown_pct=0.0,
+            cagr_pct=0.0,
+            sharpe=float("nan"),
+        )
+
+    # Filter: CAGR > risk-free rate
+    viable = [m for m in metrics_list if m.get("cagr_pct", 0.0) > risk_free_rate]
+    candidates = viable if viable else metrics_list
+
+    # Sort by least drawdown (max_drawdown_pct is negative, so max = least drawdown)
+    best = max(candidates, key=lambda m: m.get("max_drawdown_pct", float("-inf")))
+
+    return AnchorSet(
+        combo=best["combo"],
+        params=best["params"],
+        max_drawdown_pct=best.get("max_drawdown_pct", 0.0),
+        cagr_pct=best.get("cagr_pct", 0.0),
+        sharpe=best.get("sharpe", float("nan")),
+    )
+
+
 def _extract_grid_arrays(
     train_metrics: List[Dict[str, Any]],
     grid: List[Dict[str, Any]],
@@ -360,6 +423,19 @@ def run_wfo(
     fold_winners: List[Dict[str, Any]] = []
     wfo_state = WfoState()
 
+    anchor = compute_anchor_set(
+        strategy_name,
+        strategy_cls,
+        cfg,
+        ohlcv,
+        base_config,
+        grid,
+    )
+    print(
+        f"  Anchor set: {anchor.combo}"
+        f" (MaxDD {anchor.max_drawdown_pct:.1f}%, CAGR {anchor.cagr_pct:.1f}%)"
+    )
+
     for i, fold in enumerate(folds):
         # Train: sweep all combos on train window
         train_metrics, train_eq = _sweep_fold(
@@ -419,8 +495,15 @@ def run_wfo(
 
         gates_passed = ndh_passed and dsr_passed
 
-        # Test: simulate winner only on data up to test_end, score test window
-        winner_grid = [winner["params"]]
+        # Fallback to anchor when gates fail or system is halted
+        deploy_params = winner["params"]
+        used_anchor = False
+        if not gates_passed or wfo_state.halted:
+            deploy_params = anchor.params
+            used_anchor = True
+
+        # Test: simulate deploy params on data up to test_end, score test window
+        winner_grid = [deploy_params]
         test_metrics, _test_eq = _sweep_fold(
             strategy_name,
             strat_instance,
@@ -438,11 +521,11 @@ def run_wfo(
             test_ohlcv = ohlcv.loc[: fold.test_end]
             symbols = sorted(test_ohlcv.columns.get_level_values(0).unique())
             prices = pd.concat({s: test_ohlcv[s]["close"] for s in symbols}, axis=1)
-            signal_combos = [split_params(winner["params"])[0]]
-            _, stop_p = split_params(winner["params"])
+            signal_combos = [split_params(deploy_params)[0]]
+            _, stop_p = split_params(deploy_params)
             targets = strat_instance.sweep_signals(signal_combos, symbols, test_ohlcv)
             key = combo_name(strategy_name, signal_combos[0])
-            full_key = combo_name(strategy_name, winner["params"])
+            full_key = combo_name(strategy_name, deploy_params)
             sim_config = {**base_config, **stop_p}
             ohlcv_arg = test_ohlcv if "atr_mult" in stop_p else None
             _r, eq, _d = simulate_signals(
@@ -490,6 +573,7 @@ def run_wfo(
                 "is_sharpe": is_sharpe,
                 "oos_sharpe": oos_sharpe,
                 "halted": wfo_state.halted,
+                "used_anchor": used_anchor,
             }
         )
         fold_winners.append(winner)
@@ -538,6 +622,7 @@ def run_wfo(
         len(grid),
         len(folds),
         halted=wfo_state.halted,
+        anchor=anchor,
     )
     print(table)
     return table
@@ -598,6 +683,7 @@ def format_wfo_table(
     n_combos: int,
     n_folds: int,
     halted: bool = False,
+    anchor: AnchorSet | None = None,
 ) -> str:
     """Render per-fold table + OOS aggregate + recommended live params."""
     lines = [
@@ -619,10 +705,11 @@ def format_wfo_table(
         gate_str = "PASS" if r.get("gates_passed", False) else "FAIL"
         wfe_str = f"{r['wfe']:.2f}" if r.get("wfe") is not None else " n/a"
         halt_str = " [H]" if r.get("halted") else ""
+        anchor_str = " [A]" if r.get("used_anchor") else ""
         lines.append(
             f"{r['fold_num']:<6}{ts} → {te:<13}{os_} → {oe:<13}"
             f"{short:<26}{r['train_score']:>6.2f}{r['oos_score']:>6.2f}"
-            f"  {gate_str:<4} {wfe_str:>5}{halt_str}"
+            f"  {gate_str:<4} {wfe_str:>5}{halt_str}{anchor_str}"
         )
 
     lines.append("")
@@ -661,5 +748,15 @@ def format_wfo_table(
     lines.append(
         f"Stability:    selected in {live_params.get('stability', 0)}/{len(fold_results)} folds"
     )
+
+    if anchor is not None:
+        lines.append("")
+        lines.append("── Anchor Set (Defensive Fallback) " + "─" * 63)
+        lines.append(f"Combo:    {anchor.combo}")
+        lines.append(
+            f"MaxDD:    {anchor.max_drawdown_pct:.1f}%"
+            f" | CAGR {anchor.cagr_pct:.1f}%"
+            f" | Sharpe {anchor.sharpe:.2f}"
+        )
 
     return "\n".join(lines)

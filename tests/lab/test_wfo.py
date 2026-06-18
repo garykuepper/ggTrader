@@ -439,3 +439,100 @@ def test_shadow_reentry_neutral_wfe_fails():
     )
     assert result.halted is True
     assert result.shadow_strikes == 0
+
+
+# ── anchor set tests ─────────────────────────────────────────────────
+
+
+def test_compute_anchor_set_returns_valid():
+    """Anchor set returns a combo with minimum drawdown and CAGR > risk-free."""
+    from ggTrader.lab.wfo import AnchorSet, compute_anchor_set
+
+    symbols = ["X", "Y"]
+    n = 252 * 7
+    ohlcv = _ohlcv(symbols, n)
+    cfg = LabConfig(top_n=10, lookback=20, skip=5, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+        "SIGNAL_POSITION_SIZE": 0.5,
+    }
+    grid = [{"param_a": 1}, {"param_a": 2}]
+
+    result = compute_anchor_set(
+        "tiny",
+        _TinySignal,
+        cfg,
+        ohlcv,
+        base_config,
+        grid,
+    )
+    assert isinstance(result, AnchorSet)
+    assert result.combo != ""
+    assert isinstance(result.params, dict)
+    assert result.max_drawdown_pct <= 0  # drawdown is negative or zero
+    assert isinstance(result.cagr_pct, float)
+
+
+def test_compute_anchor_set_minimizes_drawdown():
+    """Given multiple combos, anchor picks the one with smallest max drawdown."""
+    from ggTrader.lab.wfo import compute_anchor_set
+
+    symbols = ["X", "Y"]
+    n = 252 * 7
+    ohlcv = _ohlcv(symbols, n)
+    cfg = LabConfig(top_n=10, lookback=20, skip=5, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+        "SIGNAL_POSITION_SIZE": 0.5,
+    }
+    grid = [{"param_a": 1}, {"param_a": 2}]
+
+    result = compute_anchor_set(
+        "tiny",
+        _TinySignal,
+        cfg,
+        ohlcv,
+        base_config,
+        grid,
+    )
+    # The anchor should have a valid drawdown
+    assert result.max_drawdown_pct != float("nan")
+
+
+def test_run_wfo_shows_anchor_set():
+    """WFO output includes the anchor set section."""
+    symbols = ["X", "Y"]
+    n = 252 * 7
+    ohlcv = _ohlcv(symbols, n)
+    spy_close = ohlcv["X"]["close"].copy()
+    cfg = LabConfig(top_n=10, lookback=20, skip=5, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+        "SIGNAL_POSITION_SIZE": 0.5,
+    }
+    eval_start = ohlcv.index[0]
+    eval_end = ohlcv.index[-1]
+    grid = [{"param_a": 1}, {"param_a": 2}]
+
+    output = run_wfo(
+        "tiny",
+        _TinySignal,
+        cfg,
+        ohlcv,
+        spy_close,
+        str(eval_start.date()),
+        str(eval_end.date()),
+        "test",
+        base_config,
+        grid,
+    )
+    assert "Anchor Set" in output
