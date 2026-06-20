@@ -36,8 +36,9 @@ This document is kept as historical reference only. For forward direction on new
 | State | Detail |
 |---|---|
 | 🟢 **Live now** | Binance.US Phase 1 — legacy pre-reset params (ADA / DOGE / ETH / TRX), adaptive sizing capped at 10% per position, ~$137 portfolio. **Deployed 2026-05-23 but has never opened a trade** — the gates correctly find nothing tradeable in this regime. |
-| 🟡 **Actively working** | Edge research phase 2 (§2d). Mean-reversion signals (bb_reversion, rsi_reversion) are the first to beat SPY risk-adjusted (Sharpe 0.80 vs 0.59). Now pursuing: (1) vol targeting overlay, (2) signal ensemble, (3) conviction-weighted sizing, (4) expanded reversion library. |
-| 🔵 **Next up** | Signal ensemble (combine reversion + trend via majority-vote) — the most likely path to a deployable strategy. If ensemble + vol targeting clears WFO, scope live deployment. |
+| 🟢 **Paper live** | Ensemble strategy on Alpaca paper ($102K account). Cron fires 1:30 PM PT Mon-Fri. First signal-driven run pending (initial seed trades only so far). |
+| ✅ **WFO validated** | **Ensemble + vol targeting clears WFO** (2026-06-20): OOS Sharpe 0.84 vs SPY 0.59, CAGR 18.8% vs 13.0%, MaxDD -23.4% vs -22.1%, WFE 1.25. First strategy to beat SPY risk-adjusted in honest out-of-sample testing across 17 rolling folds. Vol targeting adds marginal benefit over baseline ensemble (0.84 vs 0.83 Sharpe). |
+| 🔵 **Next up** | Scope live deployment — the ensemble has earned it. Monitor Alpaca paper results for confirmation, then deploy real capital. |
 | 🧪 **Open exploration** | 13 methodology directions in §3 — now read through the edge-search lens: only methods that change the *signal or its conditioning*, not the *thresholds*, are worth the compute. |
 | ⏸ **Deferred** | Phase 2 crypto cutover, TRX deployment (90d, re-eval ≥ 2026-08-10), post-only limit entry on Kraken |
 
@@ -97,11 +98,13 @@ The edge-search ([`archive/edge_search_report_2026-06-08.md`](archive/edge_searc
 
 **Update (2026-06-18).** Mean-reversion strategies (`bb_reversion`, `rsi_reversion`) are the first signals to beat SPY risk-adjusted in WFO (Sharpe 0.80 vs 0.59, CAGR 17%+ vs 13%). Trailing stops confirmed destructive on reversion. The research direction is now: (1) vol targeting overlay, (2) signal ensemble (combine reversion + trend), (3) conviction-weighted sizing, (4) expand the reversion signal library. See plan: [`superpowers/plans/2026-06-19-edge-research-phase2.md`](superpowers/plans/2026-06-19-edge-research-phase2.md).
 
+**Update (2026-06-20).** **Ensemble + vol targeting validated in WFO.** 17-fold rolling 12mo/3mo walk-forward on SP500 (2021-01 → 2026-04): OOS Sharpe 0.84 vs SPY 0.59, CAGR 18.8% vs 13.0%, WFE 1.25. Baseline ensemble without vol targeting nearly identical (Sharpe 0.83, CAGR 18.0%) — signal diversification is the primary driver. Circuit breaker fired once (fold 7) and self-recovered. Recommended live params: `min_agree=2, bb_period=20, bb_std=2.0, rsi_period=14, rsi_oversold=30, ema_fast=20, ema_slow=50, vol_target=0.25`. Stable in 11/17 folds.
+
 | Status | Item | Notes |
 |:---:|---|---|
 | ✅ | Reversion-focused entry set (initial) | `bb_reversion` + `rsi_reversion` landed 2026-06-18. Both beat SPY in WFO. Trailing stops destructive on reversion — confirmed and documented. |
-| 🟡 | **Vol targeting overlay** | `compute_vol_scalar` + `simulate_signals` integration built (uncommitted). Tests written. Needs: commit, sweep on bb_reversion, WFO validation. |
-| 🟡 | **Signal ensemble** | Combine bb_reversion + rsi_reversion + ema_cross via majority-vote or weighted agreement. Diversification = smoothed equity curve. New `EnsembleSignal` strategy class. |
+| ✅ | **Vol targeting overlay** | `compute_vol_scalar` + `simulate_signals` integration shipped + tested. WFO sweep: marginal benefit over baseline ensemble (+0.01 Sharpe). Best: `vol_target=0.20-0.25`. |
+| ✅ | **Signal ensemble** | `EnsembleSignal` (bb+rsi+ema majority vote) **clears WFO** — OOS Sharpe 0.84, CAGR 18.8%, WFE 1.25. First strategy to beat SPY risk-adjusted in honest OOS. Paper trading on Alpaca. |
 | 🔵 | Conviction-weighted sizing | Size positions by signal strength (BB distance below band, RSI depth below threshold) instead of fixed 2%. |
 | 🔵 | Expanded reversion signals | MACD divergence, volume-confirmed reversion, multi-timeframe reversion. |
 | ⏸ | Regime-aware *signal selection* (not just sizing) | Vol targeting gives 80% of the benefit at 10% of the complexity. Revisit after ensemble results. |
@@ -143,8 +146,8 @@ The carry strategies live in `strategies/carry/` under the **new** Phase 3 archi
 | | Technique | Effort | Status |
 |:---:|---|:---:|:---:|
 | A | [Regime-conditional allocation](#a-regime-conditional-allocation-1-week) | ~1 wk | ⏸ Deferred — vol targeting covers 80% |
-| B | [Volatility-targeting at the portfolio level](#b-volatility-targeting-at-the-portfolio-level-3-5-days) | ~3-5d | 🟡 Built, needs sweep/WFO |
-| B+ | [Signal ensemble](#b-signal-ensemble-2-3-days) | ~2-3d | 🟡 Active |
+| B | [Volatility-targeting at the portfolio level](#b-volatility-targeting-at-the-portfolio-level-3-5-days) | ~3-5d | ✅ WFO validated (marginal over baseline) |
+| B+ | [Signal ensemble](#b-signal-ensemble-2-3-days) | ~2-3d | ✅ **WFO validated — Sharpe 0.84 vs SPY 0.59** |
 | C | [Bayesian / robust parameter selection](#c-bayesian--robust-parameter-selection-1-2-weeks) | ~1-2 wk | ⚪ |
 | D | [ML feature gates on WFO entries](#d-ml-feature-gates-on-top-of-wfo-entries-2-3-weeks) | ~2-3 wk | ⚪ |
 | E | [Statistical arbitrage / pairs trading](#e-statistical-arbitrage--pairs-trading-3-4-weeks) | ~3-4 wk | ⚪ |
