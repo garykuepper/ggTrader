@@ -25,9 +25,12 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     return PaperTrader(broker, notifier, position_size=0.02), broker, notifier
 
 
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
 class TestSellExits:
     @patch("ggTrader.paper.trader.generate_signals")
-    def test_sells_positions_with_exit_signal(self, mock_signals):
+    def test_sells_positions_with_exit_signal(self, mock_signals, *_):
         mock_signals.return_value = {
             "buys": [],
             "sells": ["AAPL"],
@@ -49,7 +52,7 @@ class TestSellExits:
         assert "AAPL" in result["sells"]
 
     @patch("ggTrader.paper.trader.generate_signals")
-    def test_skips_sell_if_not_holding(self, mock_signals):
+    def test_skips_sell_if_not_holding(self, mock_signals, *_):
         mock_signals.return_value = {
             "buys": [],
             "sells": ["AAPL"],
@@ -62,9 +65,12 @@ class TestSellExits:
         assert result["sells"] == []
 
 
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
 class TestBuyEntries:
     @patch("ggTrader.paper.trader.generate_signals")
-    def test_buys_new_positions(self, mock_signals):
+    def test_buys_new_positions(self, mock_signals, *_):
         mock_signals.return_value = {
             "buys": ["MSFT"],
             "sells": [],
@@ -77,7 +83,7 @@ class TestBuyEntries:
         assert "MSFT" in result["buys"]
 
     @patch("ggTrader.paper.trader.generate_signals")
-    def test_skips_buy_if_already_holding(self, mock_signals):
+    def test_skips_buy_if_already_holding(self, mock_signals, *_):
         mock_signals.return_value = {
             "buys": ["AAPL"],
             "sells": [],
@@ -99,9 +105,12 @@ class TestBuyEntries:
         assert result["buys"] == []
 
 
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
 class TestNotifications:
     @patch("ggTrader.paper.trader.generate_signals")
-    def test_sends_trade_alerts(self, mock_signals):
+    def test_sends_trade_alerts(self, mock_signals, *_):
         mock_signals.return_value = {
             "buys": ["MSFT"],
             "sells": [],
@@ -116,7 +125,7 @@ class TestNotifications:
         assert call_args[1] == "MSFT"
 
     @patch("ggTrader.paper.trader.generate_signals")
-    def test_sends_daily_summary(self, mock_signals):
+    def test_sends_daily_summary(self, mock_signals, *_):
         mock_signals.return_value = {
             "buys": [],
             "sells": [],
@@ -128,9 +137,12 @@ class TestNotifications:
         notifier.daily_summary.assert_called_once()
 
 
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
 class TestErrorHandling:
     @patch("ggTrader.paper.trader.generate_signals")
-    def test_order_error_captured_not_raised(self, mock_signals):
+    def test_order_error_captured_not_raised(self, mock_signals, *_):
         mock_signals.return_value = {
             "buys": ["MSFT"],
             "sells": [],
