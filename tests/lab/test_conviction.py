@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ggTrader.lab.strategies.conviction import ConvictionBBSignal
+from ggTrader.lab.strategies.signals import build_signal_strategy
 from ggTrader.lab.strategy import LabConfig, SignalTargets
 
 
@@ -137,14 +138,13 @@ def test_conviction_bb_sweep_signals():
 
 def test_conviction_bb_registered():
     """conviction_bb is in the signal registry."""
-    from ggTrader.lab.strategies.signals import _SIGNAL_REGISTRY
+    from ggTrader.lab.strategies.signals import _get_registry
 
-    assert "conviction_bb" in _SIGNAL_REGISTRY
+    assert "conviction_bb" in _get_registry()
 
 
 def test_conviction_bb_build():
     """build_signal_strategy can create ConvictionBBSignal."""
-    from ggTrader.lab.strategies.signals import build_signal_strategy
 
     strat = build_signal_strategy("conviction_bb", LabConfig())
     assert strat.name == "conviction_bb"
@@ -157,3 +157,51 @@ def test_cli_accepts_conviction_bb():
     parser = build_arg_parser()
     args = parser.parse_args(["--strategy", "conviction_bb"])
     assert args.strategy == "conviction_bb"
+
+
+def test_conviction_sizes_override_vol_target():
+    """When both vol_target and conviction sizes are present, conviction wins on entry bars."""
+    from ggTrader.lab.simulate import simulate_signals
+
+    np.random.seed(42)
+    idx = _idx(200)
+    prices = pd.DataFrame(
+        100.0 * np.exp(np.cumsum(np.random.normal(0.0003, 0.015, (200, 2)), axis=0)),
+        index=idx,
+        columns=["S0", "S1"],
+    )
+    # Create a simple signal with entries every 30 bars
+    idx = prices.index
+    cols = prices.columns
+    entries = pd.DataFrame(False, index=idx, columns=cols)
+    exits = pd.DataFrame(False, index=idx, columns=cols)
+    sizes = pd.DataFrame(np.nan, index=idx, columns=cols)
+    for i in range(50, len(idx), 30):
+        entries.iloc[i] = True
+        sizes.iloc[i] = 0.04  # fixed conviction size
+        if i + 5 < len(idx):
+            exits.iloc[i + 5] = True
+
+    targets_with_sizes = SignalTargets(
+        entries=entries.astype(bool), exits=exits.astype(bool), sizes=sizes
+    )
+    targets_no_sizes = SignalTargets(entries=entries.astype(bool), exits=exits.astype(bool))
+
+    config_vol = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+        "SIGNAL_POSITION_SIZE": 0.02,
+        "vol_target": 0.15,
+        "vol_lookback": 20,
+    }
+    # With conviction sizes: sizes override vol-scaled base on entry bars
+    _, eq_conviction, _ = simulate_signals({"test": targets_with_sizes}, prices, config_vol)
+    # Without conviction sizes: vol targeting scales the flat 2%
+    _, eq_vol_only, _ = simulate_signals({"test": targets_no_sizes}, prices, config_vol)
+
+    # Equity curves must differ (conviction uses 4% vs vol-scaled 2%)
+    assert not eq_conviction["test"].equals(eq_vol_only["test"]), (
+        "Conviction sizes should produce different equity than vol-only"
+    )

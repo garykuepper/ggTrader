@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import vectorbt as vbt
 
+from ggTrader.lab.strategies.indicators import bb_signals, rsi_signals
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
 _EMA_COMBOS = [
@@ -425,62 +426,46 @@ class RsiReversionSignal:
         return result
 
 
-def _bb_signals(close: pd.DataFrame, period: int, std: float) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Vectorized Bollinger Band entry/exit signals."""
-    sma = close.rolling(window=period, min_periods=period).mean()
-    rolling_std = close.rolling(window=period, min_periods=period).std()
-    lower = sma - std * rolling_std
-
-    prev_above = close.shift(1) >= lower.shift(1)
-    now_below = close < lower
-    entries = (prev_above & now_below).fillna(False).astype(bool)
-
-    prev_below = close.shift(1) < sma.shift(1)
-    now_above = close >= sma
-    exits = (prev_below & now_above).fillna(False).astype(bool)
-
-    return entries, exits
+_bb_signals = bb_signals
+_rsi_signals = rsi_signals
 
 
-def _rsi_signals(
-    close: pd.DataFrame, period: int, oversold: int, exit_level: int
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Vectorized RSI entry/exit signals."""
-    delta = close.diff()
-    gain = delta.clip(lower=0.0)
-    loss = -delta.clip(upper=0.0)
-    avg_gain = gain.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
-    avg_loss = loss.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
-    rs = avg_gain / avg_loss.replace(0, np.nan)
-    rsi = 100.0 - (100.0 / (1.0 + rs))
+def _build_signal_registry() -> dict[str, Any]:
+    from ggTrader.lab.strategies.conviction import ConvictionBBSignal
+    from ggTrader.lab.strategies.ensemble import EnsembleSignal
 
-    prev_above = rsi.shift(1) >= oversold
-    now_below = rsi < oversold
-    entries = (prev_above & now_below).fillna(False).astype(bool)
-
-    prev_below = rsi.shift(1) < exit_level
-    now_above = rsi >= exit_level
-    exits = (prev_below & now_above).fillna(False).astype(bool)
-
-    return entries, exits
+    return {
+        "ema_cross": EmaCrossSignal,
+        "wfo_tournament": WfoTournamentSignal,
+        "bb_reversion": BollingerReversionSignal,
+        "rsi_reversion": RsiReversionSignal,
+        "ensemble": EnsembleSignal,
+        "conviction_bb": ConvictionBBSignal,
+    }
 
 
-from ggTrader.lab.strategies.conviction import ConvictionBBSignal
-from ggTrader.lab.strategies.ensemble import EnsembleSignal
+_SIGNAL_REGISTRY: dict[str, Any] | None = None
 
-_SIGNAL_REGISTRY = {
-    "ema_cross": EmaCrossSignal,
-    "wfo_tournament": WfoTournamentSignal,
-    "bb_reversion": BollingerReversionSignal,
-    "rsi_reversion": RsiReversionSignal,
-    "ensemble": EnsembleSignal,
-    "conviction_bb": ConvictionBBSignal,
-}
 
-SIGNAL_STRATEGY_NAMES = tuple(_SIGNAL_REGISTRY)
+def _get_registry() -> dict[str, Any]:
+    global _SIGNAL_REGISTRY  # noqa: PLW0603
+    if _SIGNAL_REGISTRY is None:
+        _SIGNAL_REGISTRY = _build_signal_registry()
+    return _SIGNAL_REGISTRY
+
+
+SIGNAL_STRATEGY_NAMES = (
+    "ema_cross",
+    "wfo_tournament",
+    "bb_reversion",
+    "rsi_reversion",
+    "ensemble",
+    "conviction_bb",
+)
 
 
 def build_signal_strategy(name: str, cfg: LabConfig) -> Any:
-    if name not in _SIGNAL_REGISTRY:
+    registry = _get_registry()
+    if name not in registry:
         raise ValueError(f"Unknown signal strategy {name!r}. Available: {SIGNAL_STRATEGY_NAMES}")
-    return _SIGNAL_REGISTRY[name](cfg)
+    return registry[name](cfg)

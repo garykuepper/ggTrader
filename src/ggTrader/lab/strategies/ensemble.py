@@ -6,19 +6,8 @@ from typing import Dict, List
 
 import pandas as pd
 
-from ggTrader.lab.strategies.signals import _bb_signals, _rsi_signals
+from ggTrader.lab.strategies.indicators import bb_signals, ema_signals, rsi_signals
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
-
-
-def _ema_signals(
-    close: pd.DataFrame, ema_fast: int, ema_slow: int
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """EMA crossover entry/exit signals."""
-    ema_f = close.ewm(span=ema_fast, adjust=False).mean()
-    ema_s = close.ewm(span=ema_slow, adjust=False).mean()
-    entries = ((ema_f > ema_s) & (ema_f.shift(1) <= ema_s.shift(1))).fillna(False)
-    exits = ((ema_f < ema_s) & (ema_f.shift(1) >= ema_s.shift(1))).fillna(False)
-    return entries.astype(bool), exits.astype(bool)
 
 
 class EnsembleSignal:
@@ -76,9 +65,9 @@ class EnsembleSignal:
 
     def _generate_signals(self, close: pd.DataFrame) -> SignalTargets:
         """Run all 3 sub-signals, sum entry/exit votes, threshold at min_agree."""
-        bb_ent, bb_ext = _bb_signals(close, self.bb_period, self.bb_std)
-        rsi_ent, rsi_ext = _rsi_signals(close, self.rsi_period, self.rsi_oversold, self.rsi_exit)
-        ema_ent, ema_ext = _ema_signals(close, self.ema_fast, self.ema_slow)
+        bb_ent, bb_ext = bb_signals(close, self.bb_period, self.bb_std)
+        rsi_ent, rsi_ext = rsi_signals(close, self.rsi_period, self.rsi_oversold, self.rsi_exit)
+        ema_ent, ema_ext = ema_signals(close, self.ema_fast, self.ema_slow)
 
         entry_votes = bb_ent.astype(int) + rsi_ent.astype(int) + ema_ent.astype(int)
         exit_votes = bb_ext.astype(int) + rsi_ext.astype(int) + ema_ext.astype(int)

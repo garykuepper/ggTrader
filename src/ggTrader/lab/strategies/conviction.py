@@ -7,7 +7,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from ggTrader.lab.strategies.signals import _bb_signals
+from ggTrader.lab.strategies.indicators import bb_signals
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
 
@@ -72,7 +72,7 @@ class ConvictionBBSignal:
             {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
             axis=1,
         )
-        entries, exits = _bb_signals(close, self.bb_period, self.bb_std)
+        entries, exits = bb_signals(close, self.bb_period, self.bb_std)
         sizes = self._compute_conviction_sizes(close, entries)
         return SignalTargets(entries=entries, exits=exits, sizes=sizes)
 
@@ -94,7 +94,7 @@ class ConvictionBBSignal:
             std = float(combo["bb_std"])
             min_s = float(combo.get("min_size", self.min_size))
             max_s = float(combo.get("max_size", self.max_size))
-            entries, exits = _bb_signals(close, period, std)
+            entries, exits = bb_signals(close, period, std)
             strat = ConvictionBBSignal(
                 self.cfg, bb_period=period, bb_std=std, min_size=min_s, max_size=max_s
             )
