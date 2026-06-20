@@ -55,7 +55,7 @@ def simulate_weights(
     if isinstance(value, pd.Series):
         value = value.to_frame(names[0])
     value = value[names]
-    returns = value.pct_change().fillna(0.0)
+    returns = value.pct_change(fill_method=None).fillna(0.0)
     diags = {
         name: {"n_strategies": 1, "n_symbols": int(targets_by_strategy[name].shape[1])}
         for name in names
@@ -242,7 +242,7 @@ def simulate_signals(
     if isinstance(value, pd.Series):
         value = value.to_frame(names[0])
     value = value[names]
-    returns = value.pct_change().fillna(0.0)
+    returns = value.pct_change(fill_method=None).fillna(0.0)
     diags = {
         name: {"n_strategies": 1, "n_symbols": int(targets_by_strategy[name].entries.shape[1])}
         for name in names
