@@ -465,11 +465,14 @@ def _rsi_signals(
     return entries, exits
 
 
+from ggTrader.lab.strategies.ensemble import EnsembleSignal
+
 _SIGNAL_REGISTRY = {
     "ema_cross": EmaCrossSignal,
     "wfo_tournament": WfoTournamentSignal,
     "bb_reversion": BollingerReversionSignal,
     "rsi_reversion": RsiReversionSignal,
+    "ensemble": EnsembleSignal,
 }
 
 SIGNAL_STRATEGY_NAMES = tuple(_SIGNAL_REGISTRY)
