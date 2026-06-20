@@ -7,10 +7,10 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import (
-    all_members_between,
     coverage_stats,
     normalize_yf_ticker,
-    sp500_members_asof,
+    universe_all_between,
+    universe_members_asof,
 )
 from ggTrader.lab.strategy import LabConfig
 
@@ -28,6 +28,8 @@ STOCK_BASE_CONFIG: dict[str, Any] = {
     "MAX_TRAIN_DRAWDOWN_PCT": 75,
     "BENCHMARK_SYMBOL": "SPY",
 }
+
+DEFAULT_UNIVERSE = "sp500"
 
 
 def fetch_stock_ohlcv(
@@ -109,9 +111,15 @@ def load_ohlcv(symbols: List[str], start: str, end: Optional[str] = None) -> pd.
     return fetch_stock_ohlcv(symbols, start=start, end=end, interval="1d", use_db_cache=True)
 
 
-def equity_universe_between(eval_start: pd.Timestamp, eval_end: pd.Timestamp) -> List[str]:
-    """All yfinance-normalized S&P 500 members that existed anywhere in the span."""
-    return sorted({normalize_yf_ticker(t) for t in all_members_between(eval_start, eval_end)})
+def equity_universe_between(
+    eval_start: pd.Timestamp,
+    eval_end: pd.Timestamp,
+    universe: str = DEFAULT_UNIVERSE,
+) -> List[str]:
+    """All yfinance-normalized members that existed anywhere in the span."""
+    return sorted(
+        {normalize_yf_ticker(t) for t in universe_all_between(universe, eval_start, eval_end)}
+    )
 
 
 def rebalance_dates(
@@ -128,10 +136,13 @@ def rebalance_dates(
 
 
 def eligible_at(
-    asof: pd.Timestamp, past: pd.DataFrame, cfg: LabConfig
+    asof: pd.Timestamp,
+    past: pd.DataFrame,
+    cfg: LabConfig,
+    universe: str = DEFAULT_UNIVERSE,
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """PIT members at asof with enough history in ``past`` (data <= asof)."""
-    members = [normalize_yf_ticker(m) for m in sp500_members_asof(asof)]
+    """Members at asof with enough history in ``past`` (data <= asof)."""
+    members = [normalize_yf_ticker(m) for m in universe_members_asof(universe, asof)]
     have = set(past.columns.get_level_values(0).unique())
     eligible: List[str] = []
     for sym in members:

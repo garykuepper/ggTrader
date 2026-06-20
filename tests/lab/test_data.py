@@ -35,6 +35,61 @@ def test_rebalance_dates_empty_when_no_overlap():
     )
 
 
+def test_universe_members_asof_sp500():
+    from ggTrader.data.core.index_constituents import universe_members_asof
+
+    members = universe_members_asof("sp500", pd.Timestamp("2025-01-15", tz="UTC"))
+    assert len(members) > 400
+    assert "AAPL" in members
+
+
+def test_universe_members_asof_nasdaq100():
+    from ggTrader.data.core.index_constituents import universe_members_asof
+
+    members = universe_members_asof("nasdaq100", pd.Timestamp("2025-01-15", tz="UTC"))
+    assert len(members) > 90
+    assert "NVDA" in members
+
+
+def test_universe_all_between_nasdaq100():
+    from ggTrader.data.core.index_constituents import universe_all_between
+
+    members = universe_all_between(
+        "nasdaq100",
+        pd.Timestamp("2024-01-01", tz="UTC"),
+        pd.Timestamp("2025-01-01", tz="UTC"),
+    )
+    assert len(members) > 90
+    assert all(isinstance(m, str) for m in members)
+
+
+def test_universe_members_asof_unknown_raises():
+    from ggTrader.data.core.index_constituents import universe_members_asof
+
+    with pytest.raises(ValueError, match="Unknown snapshot universe"):
+        universe_members_asof("nikkei225", pd.Timestamp("2025-01-15", tz="UTC"))
+
+
+def test_snapshot_members_nasdaq100():
+    from ggTrader.data.core.index_constituents import snapshot_members
+
+    members = snapshot_members("nasdaq100")
+    assert len(members) == 101
+    assert "NVDA" in members
+
+
+def test_equity_universe_between_with_universe_arg():
+    from ggTrader.lab.data import equity_universe_between
+
+    members = equity_universe_between(
+        pd.Timestamp("2024-01-01", tz="UTC"),
+        pd.Timestamp("2025-01-01", tz="UTC"),
+        universe="nasdaq100",
+    )
+    assert len(members) > 90
+    assert "NVDA" in members
+
+
 @pytest.mark.integration
 def test_load_ohlcv_returns_multiindex_frame():
     from ggTrader.lab.data import load_ohlcv

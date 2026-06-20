@@ -102,6 +102,7 @@ def run_sweep(
     market: str,
     base_config: Dict[str, Any],
     grid: List[Dict[str, Any]],
+    universe: str = "sp500",
 ) -> str:
     """Run a full parameter sweep: vectorized signals -> batched vbt sim -> persist + print."""
     import pandas as pd  # noqa: F811
@@ -204,7 +205,7 @@ def run_sweep(
             plans: Dict[str, Any] = {}
             for asof in dates:
                 past = ohlcv.loc[:asof]
-                elig = eligible_at(asof, past, combo_cfg)[0]
+                elig = eligible_at(asof, past, combo_cfg, universe=universe)[0]
                 plans[asof] = strat.select(asof, past, elig)
             target = strat.to_targets(plans, ohlcv)
             key = combo_name(strategy_name, combo_params)

@@ -128,3 +128,55 @@ def coverage_stats(members: Iterable[str], available: Iterable[str]) -> Dict[str
         "coverage_pct": 100.0 * (n - len(missing)) / n if n else 0.0,
         "missing": missing,
     }
+
+
+# ---------------------------------------------------------------------------
+# Static-snapshot universe loader (Nasdaq-100, Russell 2000, etc.)
+# ---------------------------------------------------------------------------
+
+_SNAPSHOT_DIR = PROJECT_ROOT / "data" / "universe"
+
+
+def _load_snapshot(filename: str) -> List[str]:
+    """Load a newline-delimited ticker snapshot file."""
+    path = _SNAPSHOT_DIR / filename
+    if not path.exists():
+        raise FileNotFoundError(f"Universe snapshot not found: {path}")
+    return [line.strip() for line in path.read_text().splitlines() if line.strip()]
+
+
+_SNAPSHOT_REGISTRY: Dict[str, str] = {
+    "nasdaq100": "nasdaq100_tickers_snapshot_2026-06-09.txt",
+    "russell2000": "russell2000_tickers_snapshot_2026-06-09.txt",
+}
+
+
+def snapshot_members(universe: str) -> List[str]:
+    """Return members from a static snapshot file.
+
+    Unlike ``sp500_members_asof``, these are NOT point-in-time — they use a
+    single snapshot date. Backtests on these universes carry survivorship bias
+    from the snapshot date.
+    """
+    filename = _SNAPSHOT_REGISTRY.get(universe)
+    if filename is None:
+        raise ValueError(
+            f"Unknown snapshot universe {universe!r}. Available: {sorted(_SNAPSHOT_REGISTRY)}"
+        )
+    return _load_snapshot(filename)
+
+
+def universe_members_asof(
+    universe: str, asof: pd.Timestamp, history: Optional[pd.DataFrame] = None
+) -> List[str]:
+    """Unified universe lookup: PIT for sp500, static snapshot for others."""
+    if universe == "sp500":
+        return sp500_members_asof(asof, history)
+    return snapshot_members(universe)
+
+
+def universe_all_between(universe: str, start: pd.Timestamp, end: pd.Timestamp) -> List[str]:
+    """All members across [start, end]: PIT union for sp500, snapshot for others."""
+    if universe == "sp500":
+        return all_members_between(start, end)
+    return sorted({normalize_yf_ticker(t) for t in snapshot_members(universe)})

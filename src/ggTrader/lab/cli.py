@@ -7,11 +7,19 @@ from typing import List
 
 import pandas as pd
 
-from ggTrader.lab.data import STOCK_BASE_CONFIG, eligible_at, equity_universe_between, load_ohlcv
+from ggTrader.lab.data import (
+    DEFAULT_UNIVERSE,
+    STOCK_BASE_CONFIG,
+    eligible_at,
+    equity_universe_between,
+    load_ohlcv,
+)
 from ggTrader.lab.harness import walkforward
 from ggTrader.lab.strategies.momentum import STRATEGY_NAMES, build_strategy
 from ggTrader.lab.strategies.signals import SIGNAL_STRATEGY_NAMES, build_signal_strategy
 from ggTrader.lab.strategy import LabConfig
+
+UNIVERSE_CHOICES = ("sp500", "nasdaq100", "russell2000")
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -22,6 +30,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         required=True,
     )
     p.add_argument("--market", default="equity")
+    p.add_argument(
+        "--universe",
+        choices=UNIVERSE_CHOICES,
+        default=DEFAULT_UNIVERSE,
+        help="Stock universe to select from (default: sp500).",
+    )
     p.add_argument("--eval-start", default="2021-01-31")
     p.add_argument("--eval-end", default=None)
     p.add_argument("--top-n", type=int, default=50)
@@ -55,6 +69,7 @@ def run_lab(argv: List[str] | None = None) -> str:
     cfg = LabConfig(
         top_n=args.top_n, lookback=args.lookback, skip=args.skip, max_stocks=args.max_stocks
     )
+    univ = args.universe
 
     eval_start = pd.Timestamp(args.eval_start, tz="UTC")
     eval_end = (
@@ -62,11 +77,10 @@ def run_lab(argv: List[str] | None = None) -> str:
         if args.eval_end
         else pd.Timestamp.now(tz="UTC").normalize()
     )
-    # Window must cover the eligibility requirement (min_history_bars), not just
-    # the momentum lookback — else the first selection dates are starved of history.
     warmup_days = int(max(cfg.lookback, cfg.min_history_bars) * 1.6) + 60
     data_start = eval_start - pd.Timedelta(days=warmup_days)
-    universe = equity_universe_between(eval_start, eval_end)
+    universe = equity_universe_between(eval_start, eval_end, universe=univ)
+    print(f"  [universe] {univ}: {len(universe)} symbols")
     ohlcv = load_ohlcv(universe + ["SPY"], str(data_start.date()), str(eval_end.date()))
     spy_close = ohlcv["SPY"]["close"].dropna()
     sym_cols = [s for s in ohlcv.columns.get_level_values(0).unique() if s != "SPY"]
@@ -109,6 +123,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             market=args.market,
             base_config=dict(STOCK_BASE_CONFIG),
             grid=grid,
+            universe=univ,
         )
 
     if args.wfo:
@@ -169,7 +184,7 @@ def run_lab(argv: List[str] | None = None) -> str:
         eval_end=str(eval_end.date()),
         market=args.market,
         freq="monthly",
-        universe_fn=lambda asof, past: eligible_at(asof, past, cfg)[0],
+        universe_fn=lambda asof, past: eligible_at(asof, past, cfg, universe=univ)[0],
         base_config=dict(STOCK_BASE_CONFIG),
     )
     print(f"lab run complete: {run_id}")
