@@ -211,6 +211,18 @@ def simulate_signals(
     else:
         size_param = base_size
 
+    # --- Per-bar conviction sizing (overrides vol targeting where present) ---
+    for name in names:
+        st = targets_by_strategy[name]
+        if hasattr(st, "sizes") and st.sizes is not None:
+            cols = pd.MultiIndex.from_product(
+                [[name], st.sizes.columns], names=["strategy", "symbol"]
+            )
+            conviction_sizes = st.sizes.set_axis(cols, axis=1).reindex(index=close.index)
+            if not isinstance(size_param, pd.DataFrame):
+                size_param = pd.DataFrame(base_size, index=close.index, columns=close.columns)
+            size_param.update(conviction_sizes)
+
     pf = vbt.Portfolio.from_signals(
         close=close,
         entries=entries,

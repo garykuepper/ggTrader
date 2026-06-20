@@ -15,6 +15,7 @@ class SignalTargets(NamedTuple):
 
     entries: pd.DataFrame  # (time x symbol) boolean — True = entry bar
     exits: pd.DataFrame  # (time x symbol) boolean — True = exit bar
+    sizes: pd.DataFrame | None = None  # (time x symbol) float, optional per-bar sizing
 
 
 @dataclass

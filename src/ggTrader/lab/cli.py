@@ -73,6 +73,7 @@ def run_lab(argv: List[str] | None = None) -> str:
     ohlcv = ohlcv[sym_cols]
 
     if args.sweep:
+        from ggTrader.lab.strategies.conviction import ConvictionBBSignal
         from ggTrader.lab.strategies.ensemble import EnsembleSignal
         from ggTrader.lab.strategies.momentum import CrossSectionalMomentum, DualMomentum
         from ggTrader.lab.strategies.signals import (
@@ -89,6 +90,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             "bb_reversion": BollingerReversionSignal,
             "rsi_reversion": RsiReversionSignal,
             "ensemble": EnsembleSignal,
+            "conviction_bb": ConvictionBBSignal,
             "xs_momentum": CrossSectionalMomentum,
             "dual_momentum": DualMomentum,
         }
@@ -110,6 +112,9 @@ def run_lab(argv: List[str] | None = None) -> str:
         )
 
     if args.wfo:
+        from ggTrader.lab.strategies.conviction import (
+            ConvictionBBSignal as _WfoConviction,
+        )
         from ggTrader.lab.strategies.ensemble import EnsembleSignal as _WfoEnsemble
         from ggTrader.lab.strategies.signals import (
             SIGNAL_STRATEGY_NAMES as _SIG_NAMES,
@@ -131,6 +136,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             "bb_reversion": BollingerReversionSignal,
             "rsi_reversion": RsiReversionSignal,
             "ensemble": _WfoEnsemble,
+            "conviction_bb": _WfoConviction,
         }
         strategy_cls = cls_map[args.strategy]
         overrides = _parse_sweep_params(args.sweep_param)

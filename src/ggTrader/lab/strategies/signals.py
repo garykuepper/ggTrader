@@ -465,6 +465,7 @@ def _rsi_signals(
     return entries, exits
 
 
+from ggTrader.lab.strategies.conviction import ConvictionBBSignal
 from ggTrader.lab.strategies.ensemble import EnsembleSignal
 
 _SIGNAL_REGISTRY = {
@@ -473,6 +474,7 @@ _SIGNAL_REGISTRY = {
     "bb_reversion": BollingerReversionSignal,
     "rsi_reversion": RsiReversionSignal,
     "ensemble": EnsembleSignal,
+    "conviction_bb": ConvictionBBSignal,
 }
 
 SIGNAL_STRATEGY_NAMES = tuple(_SIGNAL_REGISTRY)
