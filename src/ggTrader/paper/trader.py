@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.notifier import TelegramNotifier
+from ggTrader.paper.persist import init_paper_schema, log_snapshot, log_trade
 from ggTrader.paper.signal_runner import generate_signals
 
 
@@ -21,6 +22,7 @@ class PaperTrader:
         self._position_size = position_size
 
     def run(self) -> dict:
+        init_paper_schema()
         signals = generate_signals()
         account = self._broker.get_account()
         positions = self._broker.get_positions()
@@ -39,6 +41,7 @@ class PaperTrader:
                 oid = self._broker.submit_sell(symbol, qty)
                 executed_sells.append(symbol)
                 self._notifier.trade_alert("SELL", symbol, positions[symbol]["market_value"], oid)
+                log_trade(signals["as_of"], "SELL", symbol, positions[symbol]["market_value"], oid)
             except Exception as exc:
                 errors.append(f"SELL {symbol}: {exc}")
 
@@ -51,6 +54,7 @@ class PaperTrader:
                 oid = self._broker.submit_buy(symbol, notional)
                 executed_buys.append(symbol)
                 self._notifier.trade_alert("BUY", symbol, notional, oid)
+                log_trade(signals["as_of"], "BUY", symbol, notional, oid)
             except Exception as exc:
                 errors.append(f"BUY {symbol}: {exc}")
 
@@ -60,6 +64,13 @@ class PaperTrader:
         new_account = self._broker.get_account()
         daily_pnl = new_account["portfolio_value"] - prev_value
         self._notifier.daily_summary(new_account["portfolio_value"], daily_pnl, updated_positions)
+
+        log_snapshot(
+            signals["as_of"],
+            new_account["portfolio_value"],
+            new_account["cash"],
+            updated_positions,
+        )
 
         return {"buys": executed_buys, "sells": executed_sells, "errors": errors}
 
