@@ -66,6 +66,19 @@ def db(ctx: typer.Context) -> None:
     run_db(ns)
 
 
+@app.command()
+def paper() -> None:
+    """Run daily paper trading: generate ensemble signals and execute on Alpaca."""
+    from ggTrader.paper.trader import run_paper_trading
+
+    result = run_paper_trading()
+    print("Paper trading complete:")
+    print(f"  Buys:   {result['buys']}")
+    print(f"  Sells:  {result['sells']}")
+    if result["errors"]:
+        print(f"  Errors: {result['errors']}")
+
+
 def main() -> None:
     app()
 

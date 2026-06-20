@@ -26,7 +26,7 @@ services:
     # Goal: validate venue mechanics (fills, balances, API timing) before switching to
     # textbook-validated params. Revert to --weighted-sizing default + auto-latest run
     # after 1-2 weeks of clean operation.
-    command: python -u ggt.py trade --adaptive-sizing --max-position-pct 0.25 --min-trailing-stop-pct 4 --min-atr-trailing-pct 4 --results /app/results/research/archive/research_20260509_202450/run_results.json
+    command: sleep infinity
 
   grafana:
     image: grafana/grafana-oss:10.4.0
