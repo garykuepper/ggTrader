@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+import logging
+
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.notifier import TelegramNotifier
-from ggTrader.paper.persist import init_paper_schema, log_snapshot, log_trade
+from ggTrader.paper.persist import (
+    get_latest_snapshot,
+    init_paper_schema,
+    log_snapshot,
+    log_trade,
+)
 from ggTrader.paper.signal_runner import generate_signals
+
+_log = logging.getLogger(__name__)
 
 
 class PaperTrader:
@@ -22,8 +31,17 @@ class PaperTrader:
         self._position_size = position_size
 
     def run(self) -> dict:
-        init_paper_schema()
-        signals = generate_signals()
+        try:
+            init_paper_schema()
+        except Exception as exc:
+            _log.warning("DB schema init failed (non-fatal): %s", exc)
+
+        try:
+            signals = generate_signals()
+        except Exception as exc:
+            self._notifier.send(f"Paper trading failed: signal generation error\n{exc}")
+            raise
+
         account = self._broker.get_account()
         positions = self._broker.get_positions()
         portfolio_value = account["portfolio_value"]
@@ -32,7 +50,6 @@ class PaperTrader:
         executed_buys: list[str] = []
         errors: list[str] = []
 
-        # Phase 1: Sell exits (free up capital first)
         for symbol in signals["sells"]:
             if symbol not in positions:
                 continue
@@ -45,7 +62,6 @@ class PaperTrader:
             except Exception as exc:
                 errors.append(f"SELL {symbol}: {exc}")
 
-        # Phase 2: Buy entries (skip if already holding)
         notional = round(portfolio_value * self._position_size, 2)
         for symbol in signals["buys"]:
             if symbol in positions:
@@ -58,19 +74,28 @@ class PaperTrader:
             except Exception as exc:
                 errors.append(f"BUY {symbol}: {exc}")
 
-        # Phase 3: Daily summary
-        updated_positions = self._broker.get_positions()
-        prev_value = portfolio_value
         new_account = self._broker.get_account()
-        daily_pnl = new_account["portfolio_value"] - prev_value
-        self._notifier.daily_summary(new_account["portfolio_value"], daily_pnl, updated_positions)
+        new_value = new_account["portfolio_value"]
+        updated_positions = self._broker.get_positions()
 
-        log_snapshot(
-            signals["as_of"],
-            new_account["portfolio_value"],
-            new_account["cash"],
-            updated_positions,
-        )
+        prev_snapshot_value = None
+        try:
+            prev_snapshot_value = get_latest_snapshot()
+        except Exception:
+            pass
+        daily_pnl = new_value - (prev_snapshot_value or portfolio_value)
+
+        self._notifier.daily_summary(new_value, daily_pnl, updated_positions)
+
+        try:
+            log_snapshot(
+                signals["as_of"],
+                new_value,
+                new_account["cash"],
+                updated_positions,
+            )
+        except Exception as exc:
+            _log.warning("DB snapshot failed (non-fatal): %s", exc)
 
         return {"buys": executed_buys, "sells": executed_sells, "errors": errors}
 

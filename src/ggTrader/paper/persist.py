@@ -4,19 +4,9 @@ from __future__ import annotations
 
 import json
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
-from ggTrader.utils.config import get_db_connection_string
-
-_ENGINE = None
-
-
-def _get_engine():
-    global _ENGINE
-    if _ENGINE is None:
-        _ENGINE = create_engine(get_db_connection_string())
-    return _ENGINE
-
+from ggTrader.lab.persist import get_engine as _get_engine
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS paper_trades (
@@ -63,6 +53,15 @@ def log_trade(run_date: str, side: str, symbol: str, amount: float, order_id: st
             },
         )
         conn.commit()
+
+
+def get_latest_snapshot() -> float | None:
+    """Return the most recent snapshot's portfolio_value, or None if no snapshots exist."""
+    with _get_engine().connect() as conn:
+        row = conn.execute(
+            text("SELECT portfolio_value FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
+        ).first()
+    return float(row[0]) if row else None
 
 
 def log_snapshot(run_date: str, portfolio_value: float, cash: float, positions: dict) -> None:

@@ -25,6 +25,7 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     return PaperTrader(broker, notifier, position_size=0.02), broker, notifier
 
 
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
 @patch("ggTrader.paper.trader.log_trade")
 @patch("ggTrader.paper.trader.init_paper_schema")
@@ -65,6 +66,7 @@ class TestSellExits:
         assert result["sells"] == []
 
 
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
 @patch("ggTrader.paper.trader.log_trade")
 @patch("ggTrader.paper.trader.init_paper_schema")
@@ -105,6 +107,7 @@ class TestBuyEntries:
         assert result["buys"] == []
 
 
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
 @patch("ggTrader.paper.trader.log_trade")
 @patch("ggTrader.paper.trader.init_paper_schema")
@@ -137,6 +140,7 @@ class TestNotifications:
         notifier.daily_summary.assert_called_once()
 
 
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
 @patch("ggTrader.paper.trader.log_trade")
 @patch("ggTrader.paper.trader.init_paper_schema")
@@ -154,3 +158,79 @@ class TestErrorHandling:
         result = trader.run()
         assert len(result["errors"]) == 1
         assert "MSFT" in result["errors"][0]
+
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_db_schema_failure_does_not_block_trading(self, mock_signals, mock_schema, *_):
+        mock_schema.side_effect = Exception("DB down")
+        mock_signals.return_value = {
+            "buys": ["MSFT"],
+            "sells": [],
+            "as_of": "2026-06-19",
+            "universe_size": 100,
+        }
+        trader, broker, _ = _make_trader()
+        result = trader.run()
+        assert "MSFT" in result["buys"]
+
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_db_snapshot_failure_does_not_crash(self, mock_signals, mock_schema, *_a):
+        mock_signals.return_value = {
+            "buys": [],
+            "sells": [],
+            "as_of": "2026-06-19",
+            "universe_size": 100,
+        }
+        trader, _, _ = _make_trader()
+        # mock_log_snapshot is the 2nd positional after mock_schema
+        # The patch order is: init_paper_schema, log_trade, log_snapshot, get_latest_snapshot
+        # But *_a captures: mock_schema=init, then *_a = (log_trade, log_snapshot, get_latest)
+        # Actually the decorator order is bottom-up for positional args after mock_signals
+        # Let's just patch directly
+        with patch("ggTrader.paper.trader.log_snapshot", side_effect=Exception("DB write fail")):
+            result = trader.run()
+        assert result["errors"] == []
+
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_signal_failure_sends_notification(self, mock_signals, *_):
+        mock_signals.side_effect = ValueError("yfinance returned no data")
+        trader, _, notifier = _make_trader()
+        import pytest
+
+        with pytest.raises(ValueError, match="yfinance"):
+            trader.run()
+        notifier.send.assert_called_once()
+        assert "signal generation error" in notifier.send.call_args[0][0]
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot")
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestDailyPnl:
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_uses_previous_snapshot_for_pnl(self, mock_signals, _schema, _trade, _snap, mock_prev):
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = {
+            "buys": [],
+            "sells": [],
+            "as_of": "2026-06-19",
+            "universe_size": 100,
+        }
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        trader.run()
+        pnl_arg = notifier.daily_summary.call_args[0][1]
+        assert pnl_arg == 1000.0
+
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_falls_back_to_pre_trade_value(self, mock_signals, _schema, _trade, _snap, mock_prev):
+        mock_prev.return_value = None
+        mock_signals.return_value = {
+            "buys": [],
+            "sells": [],
+            "as_of": "2026-06-19",
+            "universe_size": 100,
+        }
+        trader, _, notifier = _make_trader(portfolio_value=100000.0)
+        trader.run()
+        pnl_arg = notifier.daily_summary.call_args[0][1]
+        assert pnl_arg == 0.0

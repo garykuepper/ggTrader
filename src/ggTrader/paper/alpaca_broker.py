@@ -47,7 +47,7 @@ class AlpacaBroker:
             symbol=symbol,
             notional=round(notional, 2),
             side=OrderSide.BUY,
-            time_in_force=TimeInForce.DAY,
+            time_in_force=TimeInForce.GTC,
         )
         order = self._client.submit_order(req)
         return str(order.id)
@@ -57,7 +57,7 @@ class AlpacaBroker:
             symbol=symbol,
             qty=qty,
             side=OrderSide.SELL,
-            time_in_force=TimeInForce.DAY,
+            time_in_force=TimeInForce.GTC,
         )
         order = self._client.submit_order(req)
         return str(order.id)

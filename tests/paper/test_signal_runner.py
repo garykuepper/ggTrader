@@ -67,6 +67,32 @@ class TestGenerateSignals:
 
     @patch("ggTrader.paper.signal_runner.sp500_members_asof")
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_empty_data_returns_no_signals(self, mock_fetch, mock_members):
+        mock_members.return_value = ["AAPL"]
+        empty = pd.DataFrame(
+            columns=pd.MultiIndex.from_tuples(
+                [
+                    ("AAPL", "open"),
+                    ("AAPL", "high"),
+                    ("AAPL", "low"),
+                    ("AAPL", "close"),
+                    ("AAPL", "volume"),
+                ],
+                names=["symbol", "field"],
+            )
+        )
+        mock_fetch.return_value = empty
+
+        from ggTrader.paper.signal_runner import generate_signals
+
+        result = generate_signals(lookback_days=120)
+
+        assert result["buys"] == []
+        assert result["sells"] == []
+        assert result["universe_size"] == 0
+
+    @patch("ggTrader.paper.signal_runner.sp500_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
     def test_as_of_is_last_bar_date(self, mock_fetch, mock_members):
         symbols = ["AAPL"]
         mock_members.return_value = symbols

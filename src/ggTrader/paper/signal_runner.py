@@ -26,11 +26,22 @@ def generate_signals(lookback_days: int = 120) -> dict:
     sym_cols = list(ohlcv.columns.get_level_values(0).unique())
     close = pd.concat({s: ohlcv[s]["close"] for s in sym_cols}, axis=1)
 
-    cfg = LabConfig()
-    ensemble = EnsembleSignal(cfg)
-    targets = ensemble._generate_signals(close)
+    if close.empty:
+        return {"buys": [], "sells": [], "as_of": str(today.date()), "universe_size": 0}
 
     last_bar = close.index[-1]
+    cfg = LabConfig(min_history_bars=60)
+    ensemble = EnsembleSignal(cfg)
+    plan = ensemble.select(last_bar, ohlcv, sym_cols)
+    if not plan:
+        return {
+            "buys": [],
+            "sells": [],
+            "as_of": str(last_bar.date()),
+            "universe_size": len(sym_cols),
+        }
+    targets = ensemble.to_targets({last_bar: plan}, ohlcv)
+
     last_entries = targets.entries.loc[last_bar]
     last_exits = targets.exits.loc[last_bar]
 
