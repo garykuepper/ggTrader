@@ -7,7 +7,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from ggTrader.lab.strategies.indicators import bb_signals
+from ggTrader.lab.strategies.indicators import bb_signals, eligible_symbols, extract_close
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
 
@@ -46,11 +46,9 @@ class ConvictionBBSignal:
 
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         data = data.loc[:asof]
-        have = set(data.columns.get_level_values(0).unique())
         return [
             {"symbol": s, "weight": 0.0}
-            for s in eligible
-            if s in have and len(data[s]["close"].dropna()) >= self.cfg.min_history_bars
+            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
         ]
 
     def _compute_conviction_sizes(self, close: pd.DataFrame, entries: pd.DataFrame) -> pd.DataFrame:
@@ -58,20 +56,15 @@ class ConvictionBBSignal:
         sma = close.rolling(window=self.bb_period, min_periods=self.bb_period).mean()
         rolling_std = close.rolling(window=self.bb_period, min_periods=self.bb_period).std()
         lower = sma - self.bb_std * rolling_std
-        # depth = how far below the lower band (0 = at band, 1 = one band-width below)
         band_width = self.bb_std * rolling_std
         depth = ((lower - close) / band_width.replace(0, np.nan)).clip(lower=0.0, upper=1.0)
         sizes = self.min_size + depth * (self.max_size - self.min_size)
-        # Only set sizes where entries fire; NaN elsewhere
         sizes = sizes.where(entries, np.nan)
         return sizes
 
     def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
+        close = extract_close(data, symbols)
         entries, exits = bb_signals(close, self.bb_period, self.bb_std)
         sizes = self._compute_conviction_sizes(close, entries)
         return SignalTargets(entries=entries, exits=exits, sizes=sizes)
@@ -84,10 +77,7 @@ class ConvictionBBSignal:
     ) -> dict[str, SignalTargets]:
         from ggTrader.lab.sweep import combo_name
 
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
+        close = extract_close(data, symbols)
         result: dict[str, SignalTargets] = {}
         for combo in combos:
             period = int(combo["bb_period"])

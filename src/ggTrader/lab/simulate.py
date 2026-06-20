@@ -75,7 +75,7 @@ def compute_vol_scalar(
     shifted by 1 day to prevent lookahead.  Capped at ``vol_cap`` (no
     leverage when cap=1.0) and floored at 0.1.
     """
-    rets = prices.pct_change()
+    rets = prices.pct_change(fill_method=None)
     avg_ret = rets.mean(axis=1)
     realized = avg_ret.rolling(window=vol_lookback, min_periods=vol_lookback).std() * np.sqrt(252)
     scalar = (vol_target / realized).shift(1).clip(lower=0.1, upper=vol_cap).fillna(1.0)

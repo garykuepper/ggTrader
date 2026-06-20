@@ -86,7 +86,7 @@ def run_lab(argv: List[str] | None = None) -> str:
     sym_cols = [s for s in ohlcv.columns.get_level_values(0).unique() if s != "SPY"]
     ohlcv = ohlcv[sym_cols]
 
-    if args.sweep:
+    if args.sweep or args.wfo:
         from ggTrader.lab.strategies.conviction import ConvictionBBSignal
         from ggTrader.lab.strategies.ensemble import EnsembleSignal
         from ggTrader.lab.strategies.momentum import CrossSectionalMomentum, DualMomentum
@@ -96,7 +96,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             RsiReversionSignal,
             WfoTournamentSignal,
         )
-        from ggTrader.lab.sweep import build_grid, run_sweep
+        from ggTrader.lab.sweep import build_grid
 
         cls_map = {
             "ema_cross": EmaCrossSignal,
@@ -111,6 +111,10 @@ def run_lab(argv: List[str] | None = None) -> str:
         strategy_cls = cls_map[args.strategy]
         overrides = _parse_sweep_params(args.sweep_param)
         grid = build_grid(strategy_cls, overrides=overrides if overrides else None)
+
+    if args.sweep:
+        from ggTrader.lab.sweep import run_sweep
+
         print(f"Sweep: {args.strategy} | {len(grid)} param combos")
         return run_sweep(
             args.strategy,
@@ -127,37 +131,12 @@ def run_lab(argv: List[str] | None = None) -> str:
         )
 
     if args.wfo:
-        from ggTrader.lab.strategies.conviction import (
-            ConvictionBBSignal as _WfoConviction,
-        )
-        from ggTrader.lab.strategies.ensemble import EnsembleSignal as _WfoEnsemble
-        from ggTrader.lab.strategies.signals import (
-            SIGNAL_STRATEGY_NAMES as _SIG_NAMES,
-        )
-        from ggTrader.lab.strategies.signals import (
-            BollingerReversionSignal,
-            EmaCrossSignal,
-            RsiReversionSignal,
-            WfoTournamentSignal,
-        )
-        from ggTrader.lab.sweep import build_grid
         from ggTrader.lab.wfo import run_wfo
 
-        if args.strategy not in _SIG_NAMES:
-            raise SystemExit(f"--wfo only supports signal strategies: {_SIG_NAMES}")
-        cls_map = {
-            "ema_cross": EmaCrossSignal,
-            "wfo_tournament": WfoTournamentSignal,
-            "bb_reversion": BollingerReversionSignal,
-            "rsi_reversion": RsiReversionSignal,
-            "ensemble": _WfoEnsemble,
-            "conviction_bb": _WfoConviction,
-        }
-        strategy_cls = cls_map[args.strategy]
-        overrides = _parse_sweep_params(args.sweep_param)
-        grid = build_grid(strategy_cls, overrides=overrides if overrides else None)
+        if args.strategy not in SIGNAL_STRATEGY_NAMES:
+            raise SystemExit(f"--wfo only supports signal strategies: {SIGNAL_STRATEGY_NAMES}")
         print(f"WFO: {args.strategy} | {len(grid)} param combos")
-        result = run_wfo(
+        return run_wfo(
             args.strategy,
             strategy_cls,
             cfg,
@@ -169,7 +148,6 @@ def run_lab(argv: List[str] | None = None) -> str:
             base_config=dict(STOCK_BASE_CONFIG),
             grid=grid,
         )
-        return result
 
     if args.strategy in SIGNAL_STRATEGY_NAMES:
         strat = build_signal_strategy(args.strategy, cfg)

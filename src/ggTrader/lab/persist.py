@@ -211,20 +211,33 @@ def write_returns_equity(
 ) -> None:
     bench = benchmark_equity.reindex(equity.index) if benchmark_equity is not None else None
     with get_engine().begin() as conn:
-        for dt, r in rets.items():
+        ret_rows = [
+            {"r": run_id, "s": strategy, "d": pd.Timestamp(dt).to_pydatetime(), "v": float(r)}
+            for dt, r in rets.items()
+        ]
+        if ret_rows:
             conn.execute(
                 text(
                     "INSERT INTO lab_returns (run_id, strategy, date, ret) VALUES (:r,:s,:d,:v) "
                     "ON CONFLICT (run_id, strategy, date) DO UPDATE SET ret=EXCLUDED.ret"
                 ),
-                {"r": run_id, "s": strategy, "d": pd.Timestamp(dt).to_pydatetime(), "v": float(r)},
+                ret_rows,
             )
-        for dt, e in equity.items():
-            be = (
-                None
-                if bench is None
-                else (None if pd.isna(bench.loc[dt]) else float(bench.loc[dt]))
-            )
+        eq_rows = [
+            {
+                "r": run_id,
+                "s": strategy,
+                "d": pd.Timestamp(dt).to_pydatetime(),
+                "e": float(e),
+                "b": (
+                    None
+                    if bench is None
+                    else (None if pd.isna(bench.loc[dt]) else float(bench.loc[dt]))
+                ),
+            }
+            for dt, e in equity.items()
+        ]
+        if eq_rows:
             conn.execute(
                 text(
                     "INSERT INTO lab_equity"
@@ -233,13 +246,7 @@ def write_returns_equity(
                     "SET strategy_equity=EXCLUDED.strategy_equity,"
                     " benchmark_equity=EXCLUDED.benchmark_equity"
                 ),
-                {
-                    "r": run_id,
-                    "s": strategy,
-                    "d": pd.Timestamp(dt).to_pydatetime(),
-                    "e": float(e),
-                    "b": be,
-                },
+                eq_rows,
             )
 
 

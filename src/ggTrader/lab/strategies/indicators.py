@@ -3,8 +3,22 @@
 
 from __future__ import annotations
 
+from typing import List
+
 import numpy as np
 import pandas as pd
+
+
+def extract_close(data: pd.DataFrame, symbols: List[str]) -> pd.DataFrame:
+    """Extract a (time x symbol) close-price DataFrame from multi-level OHLCV data."""
+    have = set(data.columns.get_level_values(0))
+    return pd.concat({s: data[s]["close"] for s in symbols if s in have}, axis=1)
+
+
+def eligible_symbols(data: pd.DataFrame, eligible: List[str], min_history_bars: int) -> List[str]:
+    """Filter eligible symbols to those present in data with enough history."""
+    have = set(data.columns.get_level_values(0).unique())
+    return [s for s in eligible if s in have and len(data[s]["close"].dropna()) >= min_history_bars]
 
 
 def bb_signals(close: pd.DataFrame, period: int, std: float) -> tuple[pd.DataFrame, pd.DataFrame]:

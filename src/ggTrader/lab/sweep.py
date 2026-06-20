@@ -52,6 +52,60 @@ def combo_name(strategy_name: str, params: Dict[str, Any]) -> str:
     return strategy_name + "__" + "_".join(parts)
 
 
+def group_by_stop_config(
+    grid: List[Dict[str, Any]],
+) -> Dict[tuple, List[Dict[str, Any]]]:
+    """Group combos by their stop/overlay config for batched simulation."""
+    from collections import defaultdict
+
+    groups: Dict[tuple, List[Dict[str, Any]]] = defaultdict(list)
+    for combo in grid:
+        _, stop_p = split_params(combo)
+        groups[tuple(sorted(stop_p.items()))].append(combo)
+    return groups
+
+
+def sweep_signal_group(
+    strategy_name: str,
+    strat_instance: Any,
+    stop_key: tuple,
+    group_combos: List[Dict[str, Any]],
+    symbols: List[str],
+    ohlcv: Any,
+    prices: Any,
+    base_config: Dict[str, Any],
+) -> tuple[Dict[str, Any], Dict[str, Dict[str, Any]]]:
+    """Run signal generation + simulation for one stop-config group.
+
+    Returns (eq_dict, diags_dict) mapping combo keys to equity Series and diagnostics.
+    """
+    from ggTrader.lab.simulate import simulate_signals
+    from ggTrader.lab.strategy import SignalTargets
+
+    stop_config = dict(stop_key)
+    signal_combos = [split_params(c)[0] for c in group_combos]
+    seen: set = set()
+    unique_signal: List[Dict[str, Any]] = []
+    for sc in signal_combos:
+        k = tuple(sorted(sc.items()))
+        if k not in seen:
+            seen.add(k)
+            unique_signal.append(sc)
+    targets = strat_instance.sweep_signals(unique_signal, symbols, ohlcv)
+    group_targets: Dict[str, SignalTargets] = {}
+    for combo in group_combos:
+        signal_p, _ = split_params(combo)
+        signal_key = combo_name(strategy_name, signal_p)
+        full_key = combo_name(strategy_name, combo)
+        group_targets[full_key] = targets[signal_key]
+
+    sim_config = {**base_config, **stop_config}
+    ohlcv_arg = ohlcv if "atr_mult" in stop_config else None
+    _rets, eq, diag = simulate_signals(group_targets, prices, sim_config, ohlcv=ohlcv_arg)
+    eq_dict = {key: eq[key] for key in group_targets}
+    return eq_dict, {key: diag.get(key, {}) for key in group_targets}
+
+
 def format_results_table(
     rows: List[Dict[str, Any]],
     strategy_name: str,
@@ -110,11 +164,11 @@ def run_sweep(
     from ggTrader.lab import persist
     from ggTrader.lab.data import eligible_at, rebalance_dates
     from ggTrader.lab.metrics import curve_stats
-    from ggTrader.lab.simulate import simulate_signals, simulate_weights
-    from ggTrader.lab.strategy import LabConfig, SignalTargets
+    from ggTrader.lab.simulate import simulate_weights
+    from ggTrader.lab.strategies.indicators import extract_close
+    from ggTrader.lab.strategy import LabConfig
 
     persist.init_schema()
-    # Derive effective param ranges from the actual grid (respects CLI overrides)
     param_grid: Dict[str, Any] = {}
     for combo in grid:
         for k, v in combo.items():
@@ -122,13 +176,8 @@ def run_sweep(
     param_grid = {k: sorted(v) for k, v in param_grid.items()}
     sweep_id = persist.start_sweep(strategy_name, market, param_grid, len(grid))
 
-    prices = pd.concat(
-        {s: ohlcv[s]["close"] for s in ohlcv.columns.get_level_values(0).unique()},
-        axis=1,
-    )
-
-    # Determine symbols from the universe (all available in ohlcv)
     symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    prices = extract_close(ohlcv, symbols)
 
     # Generate signals and simulate — grouped by stop config
     strat_instance = strategy_cls(cfg)
@@ -148,41 +197,19 @@ def run_sweep(
     spy_stats = curve_stats(start_cash * (spy_eval / spy_eval.iloc[0]))
 
     if hasattr(strat_instance, "sweep_signals"):
-        # Group combos by stop config
-        from collections import defaultdict
-
-        stop_groups: Dict[tuple, List[Dict[str, Any]]] = defaultdict(list)
-        for combo in grid:
-            _signal_p, stop_p = split_params(combo)
-            stop_key = tuple(sorted(stop_p.items()))
-            stop_groups[stop_key].append(combo)
-
-        for stop_key, group_combos in stop_groups.items():
-            stop_config = dict(stop_key)
-            signal_combos = [split_params(c)[0] for c in group_combos]
-            # Deduplicate signal combos (same entry params, different stops)
-            seen: set = set()
-            unique_signal: List[Dict[str, Any]] = []
-            for sc in signal_combos:
-                k = tuple(sorted(sc.items()))
-                if k not in seen:
-                    seen.add(k)
-                    unique_signal.append(sc)
-            targets = strat_instance.sweep_signals(unique_signal, symbols, ohlcv)
-            # Map full combo names to their signal targets
-            group_targets: Dict[str, SignalTargets] = {}
-            for combo in group_combos:
-                signal_p, _ = split_params(combo)
-                signal_key = combo_name(strategy_name, signal_p)
-                full_key = combo_name(strategy_name, combo)
-                group_targets[full_key] = targets[signal_key]
-
-            sim_config = {**base_config, **stop_config}
-            ohlcv_arg = ohlcv if "atr_mult" in stop_config else None
-            _rets, eq, diag = simulate_signals(group_targets, prices, sim_config, ohlcv=ohlcv_arg)
-            for key in group_targets:
-                all_eq[key] = eq[key]
-                all_diags[key] = diag.get(key, {})
+        for stop_key, group_combos in group_by_stop_config(grid).items():
+            eq_dict, diag_dict = sweep_signal_group(
+                strategy_name,
+                strat_instance,
+                stop_key,
+                group_combos,
+                symbols,
+                ohlcv,
+                prices,
+                base_config,
+            )
+            all_eq.update(eq_dict)
+            all_diags.update(diag_dict)
     else:
         # Weight strategies: build per-combo, simulate together
         all_targets: Dict[str, Any] = {}

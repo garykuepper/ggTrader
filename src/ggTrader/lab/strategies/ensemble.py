@@ -6,7 +6,13 @@ from typing import Dict, List
 
 import pandas as pd
 
-from ggTrader.lab.strategies.indicators import bb_signals, ema_signals, rsi_signals
+from ggTrader.lab.strategies.indicators import (
+    bb_signals,
+    eligible_symbols,
+    ema_signals,
+    extract_close,
+    rsi_signals,
+)
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
 
@@ -56,11 +62,9 @@ class EnsembleSignal:
 
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         data = data.loc[:asof]
-        have = set(data.columns.get_level_values(0).unique())
         return [
             {"symbol": s, "weight": 0.0}
-            for s in eligible
-            if s in have and len(data[s]["close"].dropna()) >= self.cfg.min_history_bars
+            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
         ]
 
     def _generate_signals(self, close: pd.DataFrame) -> SignalTargets:
@@ -78,11 +82,7 @@ class EnsembleSignal:
 
     def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
-        return self._generate_signals(close)
+        return self._generate_signals(extract_close(data, symbols))
 
     def sweep_signals(
         self,
@@ -92,10 +92,7 @@ class EnsembleSignal:
     ) -> dict[str, SignalTargets]:
         from ggTrader.lab.sweep import combo_name
 
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
+        close = extract_close(data, symbols)
         result: dict[str, SignalTargets] = {}
         for combo in combos:
             strat = EnsembleSignal(

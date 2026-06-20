@@ -7,9 +7,14 @@ from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
-import vectorbt as vbt
 
-from ggTrader.lab.strategies.indicators import bb_signals, rsi_signals
+from ggTrader.lab.strategies.indicators import (
+    bb_signals,
+    eligible_symbols,
+    ema_signals,
+    extract_close,
+    rsi_signals,
+)
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
 _EMA_COMBOS = [
@@ -22,10 +27,9 @@ _EMA_COMBOS = [
 
 def _ema_combo_is_sharpe(close_is: pd.DataFrame, ema_fast: int, ema_slow: int) -> float:
     """Equal-weight portfolio IS Sharpe for a single EMA combo."""
-    ema_f = close_is.ewm(span=ema_fast, adjust=False).mean()
-    ema_s = close_is.ewm(span=ema_slow, adjust=False).mean()
-    entries = ((ema_f > ema_s) & (ema_f.shift(1) <= ema_s.shift(1))).fillna(False)
-    exits = ((ema_f < ema_s) & (ema_f.shift(1) >= ema_s.shift(1))).fillna(False)
+    import vectorbt as vbt
+
+    entries, exits = ema_signals(close_is, ema_fast, ema_slow)
     n_syms = close_is.shape[1]
     if n_syms == 0:
         return float("-inf")
@@ -74,7 +78,6 @@ class EmaCrossSignal:
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         """All eligible symbols with enough history — fixed EMA params."""
         data = data.loc[:asof]
-        have = set(data.columns.get_level_values(0).unique())
         return [
             {
                 "symbol": s,
@@ -82,25 +85,15 @@ class EmaCrossSignal:
                 "ema_fast": self.ema_fast,
                 "ema_slow": self.ema_slow,
             }
-            for s in eligible
-            if s in have and len(data[s]["close"].dropna()) >= self.cfg.min_history_bars
+            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
         ]
 
     def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
         """Compute EMA cross signals over the full window for all selected symbols."""
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
-
-        ema_f = close.ewm(span=self.ema_fast, adjust=False).mean()
-        ema_s = close.ewm(span=self.ema_slow, adjust=False).mean()
-
-        entries = ((ema_f > ema_s) & (ema_f.shift(1) <= ema_s.shift(1))).fillna(False)
-        exits = ((ema_f < ema_s) & (ema_f.shift(1) >= ema_s.shift(1))).fillna(False)
-
-        return SignalTargets(entries=entries.astype(bool), exits=exits.astype(bool))
+        close = extract_close(data, symbols)
+        entries, exits = ema_signals(close, self.ema_fast, self.ema_slow)
+        return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(
         self,
@@ -111,10 +104,7 @@ class EmaCrossSignal:
         """Vectorized signal generation for all (ema_fast, ema_slow) combos at once."""
         from ggTrader.lab.sweep import combo_name
 
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
+        close = extract_close(data, symbols)
         unique_spans = sorted({v for c in combos for v in c.values()})
         emas: dict[int, pd.DataFrame] = {
             span: close.ewm(span=span, adjust=False).mean() for span in unique_spans
@@ -153,16 +143,11 @@ class WfoTournamentSignal:
 
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         data = data.loc[:asof]
-        have = set(data.columns.get_level_values(0).unique())
-        syms = [
-            s
-            for s in eligible
-            if s in have and len(data[s]["close"].dropna()) >= self.cfg.min_history_bars
-        ]
+        syms = eligible_symbols(data, eligible, self.cfg.min_history_bars)
         if not syms:
             return []
 
-        close_all = pd.concat({s: data[s]["close"] for s in syms}, axis=1).ffill()
+        close_all = extract_close(data, syms).ffill()
         is_end = max(1, int(len(close_all) * self.is_fraction))
         close_is = close_all.iloc[:is_end].dropna(axis=1, how="all")
 
@@ -219,20 +204,15 @@ class WfoTournamentSignal:
                 sym = sel["symbol"]
                 if sym not in have:
                     continue
-                ema_fast = int(sel.get("ema_fast", 20))
-                ema_slow = int(sel.get("ema_slow", 50))
-
-                close = data[sym]["close"].dropna()
-                ema_f = close.ewm(span=ema_fast, adjust=False).mean()
-                ema_s = close.ewm(span=ema_slow, adjust=False).mean()
-                sym_entries = (ema_f > ema_s) & (ema_f.shift(1) <= ema_s.shift(1))
-                sym_exits = (ema_f < ema_s) & (ema_f.shift(1) >= ema_s.shift(1))
-
+                close_sym = data[sym]["close"].dropna().to_frame(sym)
+                sym_ent, sym_ext = ema_signals(
+                    close_sym, int(sel.get("ema_fast", 20)), int(sel.get("ema_slow", 50))
+                )
                 entries.loc[period_index, sym] = (
-                    sym_entries.reindex(period_index).fillna(False).to_numpy()
+                    sym_ent[sym].reindex(period_index).fillna(False).to_numpy()
                 )
                 exits.loc[period_index, sym] = (
-                    sym_exits.reindex(period_index).fillna(False).to_numpy()
+                    sym_ext[sym].reindex(period_index).fillna(False).to_numpy()
                 )
 
         return SignalTargets(entries=entries.astype(bool), exits=exits.astype(bool))
@@ -246,14 +226,7 @@ class WfoTournamentSignal:
         """Sweep over is_fraction values -- each gets its own IS/OOS split and tournament."""
         from ggTrader.lab.sweep import combo_name
 
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        ).ffill()
-        unique_spans = sorted({v for combo_list in _EMA_COMBOS for v in combo_list.values()})
-        emas: dict[int, pd.DataFrame] = {
-            span: close.ewm(span=span, adjust=False).mean() for span in unique_spans
-        }
+        close = extract_close(data, symbols).ffill()
 
         result: dict[str, SignalTargets] = {}
         for combo in combos:
@@ -268,11 +241,9 @@ class WfoTournamentSignal:
                     best_sharpe = sharpe
                     best_combo = ec
             fast, slow = best_combo["ema_fast"], best_combo["ema_slow"]
-            ema_f, ema_s = emas[fast], emas[slow]
-            entries = ((ema_f > ema_s) & (ema_f.shift(1) <= ema_s.shift(1))).fillna(False)
-            exits = ((ema_f < ema_s) & (ema_f.shift(1) >= ema_s.shift(1))).fillna(False)
+            entries, exits = ema_signals(close, fast, slow)
             key = combo_name(self.name, combo)
-            result[key] = SignalTargets(entries=entries.astype(bool), exits=exits.astype(bool))
+            result[key] = SignalTargets(entries=entries, exits=exits)
         return result
 
 
@@ -300,7 +271,6 @@ class BollingerReversionSignal:
 
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         data = data.loc[:asof]
-        have = set(data.columns.get_level_values(0).unique())
         return [
             {
                 "symbol": s,
@@ -308,17 +278,13 @@ class BollingerReversionSignal:
                 "bb_period": self.bb_period,
                 "bb_std": self.bb_std,
             }
-            for s in eligible
-            if s in have and len(data[s]["close"].dropna()) >= self.cfg.min_history_bars
+            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
         ]
 
     def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
-        entries, exits = _bb_signals(close, self.bb_period, self.bb_std)
+        close = extract_close(data, symbols)
+        entries, exits = bb_signals(close, self.bb_period, self.bb_std)
         return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(
@@ -329,10 +295,7 @@ class BollingerReversionSignal:
     ) -> dict[str, "SignalTargets"]:
         from ggTrader.lab.sweep import combo_name
 
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
+        close = extract_close(data, symbols)
         cache: dict[tuple[int, float], tuple[pd.DataFrame, pd.DataFrame]] = {}
         result: dict[str, SignalTargets] = {}
         for combo in combos:
@@ -340,7 +303,7 @@ class BollingerReversionSignal:
             std = float(combo["bb_std"])
             key = (period, std)
             if key not in cache:
-                cache[key] = _bb_signals(close, period, std)
+                cache[key] = bb_signals(close, period, std)
             ent, ext = cache[key]
             result[combo_name(self.name, combo)] = SignalTargets(entries=ent, exits=ext)
         return result
@@ -378,7 +341,6 @@ class RsiReversionSignal:
 
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         data = data.loc[:asof]
-        have = set(data.columns.get_level_values(0).unique())
         return [
             {
                 "symbol": s,
@@ -387,17 +349,13 @@ class RsiReversionSignal:
                 "rsi_oversold": self.rsi_oversold,
                 "rsi_exit": self.rsi_exit,
             }
-            for s in eligible
-            if s in have and len(data[s]["close"].dropna()) >= self.cfg.min_history_bars
+            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
         ]
 
     def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
-        entries, exits = _rsi_signals(close, self.rsi_period, self.rsi_oversold, self.rsi_exit)
+        close = extract_close(data, symbols)
+        entries, exits = rsi_signals(close, self.rsi_period, self.rsi_oversold, self.rsi_exit)
         return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(
@@ -408,10 +366,7 @@ class RsiReversionSignal:
     ) -> dict[str, "SignalTargets"]:
         from ggTrader.lab.sweep import combo_name
 
-        close = pd.concat(
-            {s: data[s]["close"] for s in symbols if s in data.columns.get_level_values(0)},
-            axis=1,
-        )
+        close = extract_close(data, symbols)
         cache: dict[tuple[int, int, int], tuple[pd.DataFrame, pd.DataFrame]] = {}
         result: dict[str, SignalTargets] = {}
         for combo in combos:
@@ -420,14 +375,10 @@ class RsiReversionSignal:
             exit_level = int(combo["rsi_exit"])
             key = (period, oversold, exit_level)
             if key not in cache:
-                cache[key] = _rsi_signals(close, period, oversold, exit_level)
+                cache[key] = rsi_signals(close, period, oversold, exit_level)
             ent, ext = cache[key]
             result[combo_name(self.name, combo)] = SignalTargets(entries=ent, exits=ext)
         return result
-
-
-_bb_signals = bb_signals
-_rsi_signals = rsi_signals
 
 
 def _build_signal_registry() -> dict[str, Any]:

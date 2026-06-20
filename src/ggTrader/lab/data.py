@@ -53,6 +53,7 @@ def fetch_stock_ohlcv(
     from ggTrader.data.live.yfinance_loader import YFinanceDataLoader
 
     loader: Any = None
+    df = pd.DataFrame()
     if use_db_cache:
         try:
             from ggTrader.data.live.cached_yfinance_loader import CachedYFinanceLoader
@@ -64,12 +65,10 @@ def fetch_stock_ohlcv(
         except Exception as exc:
             print(f"  [data] DB cache unavailable ({exc!r}); falling back to yfinance only")
             loader = None
-            df = pd.DataFrame()
-    else:
-        df = pd.DataFrame()
 
-    plain = YFinanceDataLoader()
+    plain: YFinanceDataLoader | None = None
     if df.empty:
+        plain = YFinanceDataLoader()
         df = plain.fetch_ohlcv(tickers, interval, start_date=start_ts, end_date=end_ts)
         if df.empty:
             raise ValueError("yfinance returned no data for the requested universe")
@@ -78,6 +77,8 @@ def fetch_stock_ohlcv(
     missing = [t for t in tickers if t not in have]
     if missing:
         print(f"  [data] fetching {len(missing)} symbols missing from cache...")
+        if plain is None:
+            plain = YFinanceDataLoader()
         extra = plain.fetch_ohlcv(missing, interval, start_date=start_ts, end_date=end_ts)
         if not extra.empty:
             if loader is not None:

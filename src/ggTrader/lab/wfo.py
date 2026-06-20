@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, NamedTuple, Type
 
@@ -13,7 +12,7 @@ import pandas as pd
 from ggTrader.lab.gates import dsr_check, ndh_check
 from ggTrader.lab.metrics import curve_stats
 from ggTrader.lab.simulate import simulate_signals
-from ggTrader.lab.strategy import LabConfig, SignalTargets
+from ggTrader.lab.strategy import LabConfig
 from ggTrader.lab.sweep import combo_name, split_params
 
 TRAIN_MONTHS = 12
@@ -216,46 +215,28 @@ def _sweep_fold(
     'combo', 'params', and all curve_stats keys; all_eq maps combo keys
     to full equity series.
     """
+    from ggTrader.lab.strategies.indicators import extract_close
+    from ggTrader.lab.sweep import group_by_stop_config, sweep_signal_group
+
     ohlcv_window = ohlcv.loc[:window_end]
     symbols = sorted(ohlcv_window.columns.get_level_values(0).unique())
-    prices = pd.concat(
-        {s: ohlcv_window[s]["close"] for s in symbols},
-        axis=1,
-    )
+    prices = extract_close(ohlcv_window, symbols)
 
     start_cash = float(base_config["START_CASH"])
 
-    # Group by stop config (same logic as sweep.py)
-    stop_groups: Dict[tuple, List[Dict[str, Any]]] = defaultdict(list)
-    for combo in grid:
-        _, stop_p = split_params(combo)
-        stop_key = tuple(sorted(stop_p.items()))
-        stop_groups[stop_key].append(combo)
-
     all_eq: Dict[str, pd.Series] = {}
-    for stop_key, group_combos in stop_groups.items():
-        stop_config = dict(stop_key)
-        signal_combos = [split_params(c)[0] for c in group_combos]
-        seen: set = set()
-        unique_signal: List[Dict[str, Any]] = []
-        for sc in signal_combos:
-            k = tuple(sorted(sc.items()))
-            if k not in seen:
-                seen.add(k)
-                unique_signal.append(sc)
-        targets = strat_instance.sweep_signals(unique_signal, symbols, ohlcv_window)
-        group_targets: Dict[str, SignalTargets] = {}
-        for combo in group_combos:
-            signal_p, _ = split_params(combo)
-            signal_key = combo_name(strategy_name, signal_p)
-            full_key = combo_name(strategy_name, combo)
-            group_targets[full_key] = targets[signal_key]
-
-        sim_config = {**base_config, **stop_config}
-        ohlcv_arg = ohlcv_window if "atr_mult" in stop_config else None
-        _rets, eq, _diag = simulate_signals(group_targets, prices, sim_config, ohlcv=ohlcv_arg)
-        for key in group_targets:
-            all_eq[key] = eq[key]
+    for stop_key, group_combos in group_by_stop_config(grid).items():
+        eq_dict, _ = sweep_signal_group(
+            strategy_name,
+            strat_instance,
+            stop_key,
+            group_combos,
+            symbols,
+            ohlcv_window,
+            prices,
+            base_config,
+        )
+        all_eq.update(eq_dict)
 
     # Score each combo over the scoring window only
     results: List[Dict[str, Any]] = []
