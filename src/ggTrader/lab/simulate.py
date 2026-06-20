@@ -63,6 +63,25 @@ def simulate_weights(
     return returns, value, diags
 
 
+def compute_vol_scalar(
+    prices: pd.DataFrame,
+    vol_target: float,
+    vol_lookback: int,
+    vol_cap: float = 2.0,
+) -> pd.Series:
+    """Daily vol-targeting scalar: target_vol / realized_vol, lagged by 1 bar.
+
+    Uses the equal-weight universe's trailing annualized vol. The scalar is
+    shifted by 1 day to prevent lookahead.  Capped at ``vol_cap`` (no
+    leverage when cap=1.0) and floored at 0.1.
+    """
+    rets = prices.pct_change()
+    avg_ret = rets.mean(axis=1)
+    realized = avg_ret.rolling(window=vol_lookback, min_periods=vol_lookback).std() * np.sqrt(252)
+    scalar = (vol_target / realized).shift(1).clip(lower=0.1, upper=vol_cap).fillna(1.0)
+    return scalar
+
+
 def compute_atr_stop(
     high: pd.DataFrame,
     low: pd.DataFrame,
@@ -175,11 +194,28 @@ def simulate_signals(
         stop_kwargs["sl_stop"] = pd.concat(sl_blocks, axis=1).ffill().fillna(np.inf)
         stop_kwargs["sl_trail"] = True
 
+    # --- Vol targeting ---
+    base_size = float(base_config.get("SIGNAL_POSITION_SIZE", 0.02))
+    vol_target = base_config.get("vol_target")
+    if vol_target is not None:
+        vol_lookback = int(base_config.get("vol_lookback", 20))
+        vol_cap = float(base_config.get("vol_cap", 2.0))
+        scalar = compute_vol_scalar(prices, float(vol_target), vol_lookback, vol_cap)
+        size_param: float | pd.DataFrame = pd.DataFrame(
+            {
+                col: base_size * scalar.reindex(close.index).ffill().fillna(1.0)
+                for col in close.columns
+            },
+            index=close.index,
+        )
+    else:
+        size_param = base_size
+
     pf = vbt.Portfolio.from_signals(
         close=close,
         entries=entries,
         exits=exits,
-        size=float(base_config.get("SIGNAL_POSITION_SIZE", 0.02)),
+        size=size_param,
         size_type="percent",
         init_cash=float(base_config["START_CASH"]),
         fees=float(base_config["FEES"]),

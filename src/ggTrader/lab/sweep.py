@@ -6,13 +6,19 @@ from itertools import product
 from typing import Any, Dict, List, Optional, Type
 
 STOP_PARAMS: frozenset = frozenset({"ts_stop", "atr_period", "atr_mult"})
+VOL_PARAMS: frozenset = frozenset({"vol_target", "vol_lookback"})
+OVERLAY_PARAMS: frozenset = STOP_PARAMS | VOL_PARAMS
 
 
 def split_params(combo: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]:
-    """Split a combo dict into (signal_params, stop_params)."""
-    signal = {k: v for k, v in combo.items() if k not in STOP_PARAMS}
-    stop = {k: v for k, v in combo.items() if k in STOP_PARAMS}
-    return signal, stop
+    """Split a combo dict into (signal_params, overlay_params).
+
+    Overlay params include stop-loss and vol-targeting settings; they are
+    passed to the simulation config rather than signal generation.
+    """
+    signal = {k: v for k, v in combo.items() if k not in OVERLAY_PARAMS}
+    overlay = {k: v for k, v in combo.items() if k in OVERLAY_PARAMS}
+    return signal, overlay
 
 
 def _is_valid_combo(params: Dict[str, Any]) -> bool:

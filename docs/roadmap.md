@@ -36,8 +36,8 @@ This document is kept as historical reference only. For forward direction on new
 | State | Detail |
 |---|---|
 | 🟢 **Live now** | Binance.US Phase 1 — legacy pre-reset params (ADA / DOGE / ETH / TRX), adaptive sizing capped at 10% per position, ~$137 portfolio. **Deployed 2026-05-23 but has never opened a trade** — the gates correctly find nothing tradeable in this regime. |
-| 🟡 **Actively working** | Strategy-library redesign (§2d). The 2026-06-08 edge-search proved the cheap levers (gates / universe size / venue fees) are exhausted: even at Binance.US 0.02%/side no combo beats BTC buy-and-hold. The only remaining crypto lever is a genuinely different signal set (reversion-focused / regime-aware), not more threshold runs. |
-| 🔵 **Next up** | Either (a) a redesigned crypto signal library that survives true out-of-sample (OOS) testing, or (b) **pivot to US equities via Alpaca** (§5). Phase 2 crypto param cutover is **on hold** — the 2026-05-23 "textbook-validated" set posted negative holdouts on re-test. |
+| 🟡 **Actively working** | Edge research phase 2 (§2d). Mean-reversion signals (bb_reversion, rsi_reversion) are the first to beat SPY risk-adjusted (Sharpe 0.80 vs 0.59). Now pursuing: (1) vol targeting overlay, (2) signal ensemble, (3) conviction-weighted sizing, (4) expanded reversion library. |
+| 🔵 **Next up** | Signal ensemble (combine reversion + trend via majority-vote) — the most likely path to a deployable strategy. If ensemble + vol targeting clears WFO, scope live deployment. |
 | 🧪 **Open exploration** | 13 methodology directions in §3 — now read through the edge-search lens: only methods that change the *signal or its conditioning*, not the *thresholds*, are worth the compute. |
 | ⏸ **Deferred** | Phase 2 crypto cutover, TRX deployment (90d, re-eval ≥ 2026-08-10), post-only limit entry on Kraken |
 
@@ -95,11 +95,17 @@ Build a **flexible multi-strategy trader** with a clean data → signal → exec
 
 The edge-search ([`archive/edge_search_report_2026-06-08.md`](archive/edge_search_report_2026-06-08.md)) closed out the "tune the cheap levers" hypothesis: gates, universe size, and venue/fees have all been swept and none produce a deployable crypto edge with the **current** entry library. The only remaining crypto lever is a different *signal*.
 
+**Update (2026-06-18).** Mean-reversion strategies (`bb_reversion`, `rsi_reversion`) are the first signals to beat SPY risk-adjusted in WFO (Sharpe 0.80 vs 0.59, CAGR 17%+ vs 13%). Trailing stops confirmed destructive on reversion. The research direction is now: (1) vol targeting overlay, (2) signal ensemble (combine reversion + trend), (3) conviction-weighted sizing, (4) expand the reversion signal library. See plan: [`superpowers/plans/2026-06-19-edge-research-phase2.md`](superpowers/plans/2026-06-19-edge-research-phase2.md).
+
 | Status | Item | Notes |
 |:---:|---|---|
-| 🟡 | Reversion-focused entry set | Mean-reversion (`bbands_mean_reversion`, `rsi_reversal`) was the only style with any life in the sweep — every marginal passer used it. Worth a focused, theory-justified expansion rather than the current trend-heavy 11-entry grid. |
-| ⚪ | Regime-aware *signal selection* (not just sizing) | The edge cliff concentrates in chop regimes. See §3.3.A — but applied to *which signals fire*, not only position size. |
-| 🔵 | Wire up / de-mock the cross-sectional + HMM paradigm | The new `CrossSectionalMomentum` + HMM regime gate (landed 2026-06-06) is a whole-universe paradigm, evaluated offline via `scripts/run_cross_sectional_research.py`. It is **not wired to the per-coin live engine**, and the HMM emission features (VIX / funding / stablecoin flows) are still mocked. Real features + live integration are the gating work before it can matter. |
+| ✅ | Reversion-focused entry set (initial) | `bb_reversion` + `rsi_reversion` landed 2026-06-18. Both beat SPY in WFO. Trailing stops destructive on reversion — confirmed and documented. |
+| 🟡 | **Vol targeting overlay** | `compute_vol_scalar` + `simulate_signals` integration built (uncommitted). Tests written. Needs: commit, sweep on bb_reversion, WFO validation. |
+| 🟡 | **Signal ensemble** | Combine bb_reversion + rsi_reversion + ema_cross via majority-vote or weighted agreement. Diversification = smoothed equity curve. New `EnsembleSignal` strategy class. |
+| 🔵 | Conviction-weighted sizing | Size positions by signal strength (BB distance below band, RSI depth below threshold) instead of fixed 2%. |
+| 🔵 | Expanded reversion signals | MACD divergence, volume-confirmed reversion, multi-timeframe reversion. |
+| ⏸ | Regime-aware *signal selection* (not just sizing) | Vol targeting gives 80% of the benefit at 10% of the complexity. Revisit after ensemble results. |
+| ⏸ | Wire up / de-mock the cross-sectional + HMM paradigm | Deferred — focus is on reversion edge discovery, not infrastructure. |
 
 ---
 
@@ -134,14 +140,15 @@ The carry strategies live in `strategies/carry/` under the **new** Phase 3 archi
 
 *Near-term — buildable on top of the existing stack. Roughly ordered by effort × expected payoff.*
 
-| | Technique | Effort |
-|:---:|---|:---:|
-| A | [Regime-conditional allocation](#a-regime-conditional-allocation-1-week) | ~1 wk |
-| B | [Volatility-targeting at the portfolio level](#b-volatility-targeting-at-the-portfolio-level-3-5-days) | ~3-5d |
-| C | [Bayesian / robust parameter selection](#c-bayesian--robust-parameter-selection-1-2-weeks) | ~1-2 wk |
-| D | [ML feature gates on WFO entries](#d-ml-feature-gates-on-top-of-wfo-entries-2-3-weeks) | ~2-3 wk |
-| E | [Statistical arbitrage / pairs trading](#e-statistical-arbitrage--pairs-trading-3-4-weeks) | ~3-4 wk |
-| F | [Ensemble + rolling meta-allocation](#f-ensemble-of-strategies-with-rolling-window-meta-allocation-1-2-weeks-after-cd) | ~1-2 wk |
+| | Technique | Effort | Status |
+|:---:|---|:---:|:---:|
+| A | [Regime-conditional allocation](#a-regime-conditional-allocation-1-week) | ~1 wk | ⏸ Deferred — vol targeting covers 80% |
+| B | [Volatility-targeting at the portfolio level](#b-volatility-targeting-at-the-portfolio-level-3-5-days) | ~3-5d | 🟡 Built, needs sweep/WFO |
+| B+ | [Signal ensemble](#b-signal-ensemble-2-3-days) | ~2-3d | 🟡 Active |
+| C | [Bayesian / robust parameter selection](#c-bayesian--robust-parameter-selection-1-2-weeks) | ~1-2 wk | ⚪ |
+| D | [ML feature gates on WFO entries](#d-ml-feature-gates-on-top-of-wfo-entries-2-3-weeks) | ~2-3 wk | ⚪ |
+| E | [Statistical arbitrage / pairs trading](#e-statistical-arbitrage--pairs-trading-3-4-weeks) | ~3-4 wk | ⚪ |
+| F | [Ensemble + rolling meta-allocation](#f-ensemble-of-strategies-with-rolling-window-meta-allocation-1-2-weeks-after-cd) | ~1-2 wk | ⚪ |
 
 #### A. Regime-conditional allocation (~1 week)
 The previous binary BTC bull/bear filter was removed in 2026-05-23 — it underperformed unfiltered trading and added complexity without measurable edge. The right replacement is to condition **position sizing** on regime, not entry permission: scale exposure by BTC trend strength (e.g., distance from EMA200, or realized-vol percentile). Also: add an **altcoin regime** based on BTC dominance, not just BTC price.
@@ -153,6 +160,12 @@ The previous binary BTC bull/bear filter was removed in 2026-05-23 — it underp
 Today's `--adaptive-sizing` is **per-coin** vol normalization. The portfolio-level version targets a fixed realized portfolio vol (e.g. 15% annualized) and rescales the whole book. This is a standard institutional technique that ggTrader doesn't yet use.
 
 - Why: caps drawdown in regime breaks without needing to predict them. Works well with regime-conditional allocation above.
+
+#### B+. Signal ensemble (~2-3 days)
+Combine orthogonal signal types — reversion (bb_reversion, rsi_reversion) and trend (ema_cross) — into a single strategy that enters when N-of-M signals agree. This is fundamentally different from the WFO tournament (which picks one signal per fold): the ensemble holds multiple views simultaneously and enters on consensus.
+
+- Why: reversion and trend signals are negatively correlated — when trend gets whipsawed in chop, reversion thrives. A diversified signal set smooths the equity curve, which is exactly what Sharpe rewards. The bb_reversion Sharpe of 0.80 is promising, but it will have drawdown periods where trend signals would have helped.
+- Risk: majority-vote thresholds are another parameter to overfit. Keep it simple (2-of-3), validate with WFO, and compare against the best single signal.
 
 #### C. Bayesian / robust parameter selection (~1-2 weeks)
 WFO's point-estimate-per-fold is wasteful — it throws away the full in-sample (IS) distribution. A Bayesian alternative: build a posterior distribution over parameter performance, then pick parameters by **highest lower-credible-bound on OOS Sharpe ratio** rather than highest point estimate. Sparse-fire cells naturally get wider credible intervals → their lower bound is worse → they rank below dense-fire cells, no hard cliff needed.
