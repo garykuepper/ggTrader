@@ -19,13 +19,8 @@ services:
           cpus: '2.0'
           memory: 16G
     stop_grace_period: 10s
-    # Phase 1 (Binance.US venue validation): legacy pre-reset params, adaptive 25% cap.
-    # NOTE 2026-06-04: cap raised 0.10 -> 0.25. At a ~$137 balance the old 10% cap made
-    # the max position $13.74, below MIN_POSITION_USD ($15), so adaptive sizing skipped
-    # EVERY entry — zero fills since go-live. 0.25 -> max position $34.36, clears the floor.
-    # Goal: validate venue mechanics (fills, balances, API timing) before switching to
-    # textbook-validated params. Revert to --weighted-sizing default + auto-latest run
-    # after 1-2 weeks of clean operation.
+    # Container stays up for one-shot paper trading runs via:
+    #   docker compose run --rm ggtrader_live python -u ggt.py paper
     command: sleep infinity
 
   grafana:
