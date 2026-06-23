@@ -42,6 +42,18 @@ class PaperTrader:
             self._notifier.send(f"Paper trading failed: signal generation error\n{exc}")
             raise
 
+        gate = signals.get("gate", {})
+        if gate.get("gate_enabled") and gate.get("scores"):
+            scores = gate["scores"]
+            kept = gate.get("kept_buys", 0)
+            raw = gate.get("raw_buys", 0)
+            score_strs = [f"{s}({v:.2f})" for s, v in sorted(scores.items(), key=lambda x: -x[1])]
+            self._notifier.send(
+                f"<b>🤖 ML Gate:</b> kept {kept}/{raw} signals\n" + ", ".join(score_strs)
+            )
+        elif gate.get("gate_enabled") is False:
+            _log.info("ML gate disabled (no model file)")
+
         account = self._broker.get_account()
         positions = self._broker.get_positions()
         portfolio_value = account["portfolio_value"]

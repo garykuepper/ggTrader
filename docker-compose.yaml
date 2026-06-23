@@ -9,6 +9,7 @@ services:
       - ./results:/app/results
       - ./data:/app/data
       - ./logs:/app/logs
+      - ./models:/app/models
     environment:
       - TZ=America/Los_Angeles
     extra_hosts:

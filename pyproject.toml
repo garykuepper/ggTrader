@@ -37,6 +37,7 @@ dependencies = [
     "typer>=0.12",
     "typing-extensions",
     "hmmlearn",
+    "lightgbm",
 ]
 
 [project.optional-dependencies]

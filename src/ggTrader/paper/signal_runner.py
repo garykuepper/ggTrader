@@ -48,9 +48,27 @@ def generate_signals(lookback_days: int = 120) -> dict:
     buys = sorted(last_entries[last_entries].index.tolist())
     sells = sorted(last_exits[last_exits].index.tolist())
 
+    # ML feature gate — filter low-confidence buy signals
+    gate_info: dict = {}
+    from ggTrader.paper.feature_gate import FeatureGate
+
+    gate = FeatureGate()
+    if gate.enabled and buys:
+        raw_count = len(buys)
+        buys, scores = gate.filter_buys(buys, ohlcv)
+        gate_info = {
+            "gate_enabled": True,
+            "raw_buys": raw_count,
+            "kept_buys": len(buys),
+            "scores": scores,
+        }
+    else:
+        gate_info = {"gate_enabled": gate.enabled}
+
     return {
         "buys": buys,
         "sells": sells,
         "as_of": str(last_bar.date()),
         "universe_size": len(sym_cols),
+        "gate": gate_info,
     }
