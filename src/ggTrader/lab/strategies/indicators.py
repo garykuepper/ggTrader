@@ -149,3 +149,53 @@ def macd_strength(close: pd.DataFrame, fast: int, slow: int, signal_period: int)
     strength = strength.copy()
     strength.iloc[:slow] = np.nan
     return strength
+
+
+def extract_volume(data: pd.DataFrame, symbols: List[str]) -> pd.DataFrame:
+    """Extract a (time x symbol) volume DataFrame from multi-level OHLCV data."""
+    have = set(data.columns.get_level_values(0))
+    return pd.concat({s: data[s]["volume"] for s in symbols if s in have}, axis=1)
+
+
+def volume_bb_signals(
+    close: pd.DataFrame,
+    volume: pd.DataFrame,
+    bb_period: int,
+    bb_std: float,
+    vol_period: int,
+    vol_mult: float,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """BB reversion entry gated by a volume spike above vol_mult * SMA(volume)."""
+    sma = close.rolling(window=bb_period, min_periods=bb_period).mean()
+    rolling_std = close.rolling(window=bb_period, min_periods=bb_period).std()
+    lower = sma - bb_std * rolling_std
+
+    prev_above = close.shift(1) >= lower.shift(1)
+    now_below = close < lower
+    bb_entry = (prev_above & now_below).fillna(False)
+
+    vol_avg = volume.rolling(window=vol_period, min_periods=vol_period).mean()
+    vol_spike = volume > (vol_mult * vol_avg)
+
+    entries = (bb_entry & vol_spike).fillna(False).astype(bool)
+
+    prev_below_sma = close.shift(1) < sma.shift(1)
+    now_above_sma = close >= sma
+    exits = (prev_below_sma & now_above_sma).fillna(False).astype(bool)
+
+    return entries, exits
+
+
+def volume_bb_strength(
+    close: pd.DataFrame,
+    volume: pd.DataFrame,
+    bb_period: int,
+    bb_std: float,
+    vol_period: int,
+) -> pd.DataFrame:
+    """BB depth strength scaled by volume spike intensity, clipped to [0, 1]."""
+    bb_str = bb_strength(close, bb_period, bb_std)
+    vol_avg = volume.rolling(window=vol_period, min_periods=vol_period).mean()
+    vol_ratio = (volume / vol_avg.replace(0, np.nan)).clip(upper=3.0) / 3.0
+    combined = (bb_str + vol_ratio) / 2.0
+    return combined.clip(lower=0.0, upper=1.0)
