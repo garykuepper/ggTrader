@@ -89,6 +89,28 @@ def fetch_stock_ohlcv(
             df = pd.concat([df, extra], axis=1)
             df.sort_index(axis=1, inplace=True)
 
+    have = set(df.columns.get_level_values(0).unique())
+    still_missing = [t for t in tickers if t not in have]
+    if still_missing:
+        try:
+            from ggTrader.data.live.tiingo_loader import TiingoDataLoader
+
+            tiingo = TiingoDataLoader()
+            print(f"  [data] trying Tiingo for {len(still_missing)} symbols yfinance missed...")
+            tiingo_extra = tiingo.fetch_ohlcv(
+                still_missing, interval, start_date=start_ts, end_date=end_ts
+            )
+            if not tiingo_extra.empty:
+                if loader is not None:
+                    try:
+                        loader._cache_to_db(tiingo_extra, interval)
+                    except Exception as exc:
+                        print(f"  [data] failed to persist Tiingo data: {exc!r}")
+                df = pd.concat([df, tiingo_extra], axis=1)
+                df.sort_index(axis=1, inplace=True)
+        except Exception as exc:
+            print(f"  [data] Tiingo fallback unavailable: {exc!r}")
+
     df = df[df.index >= start_ts]
     if end_ts is not None:
         df = df[df.index <= end_ts]
