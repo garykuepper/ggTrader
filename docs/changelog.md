@@ -1,5 +1,101 @@
 # Changelog
 
+## 2026-06-23
+
+### Research: expanded reversion signals — 6-voter ensemble
+
+- **Added** `MACDDivergenceSignal` — bearish/bullish MACD divergence detection with
+  configurable fast/slow/signal periods and divergence window.
+- **Added** `VolumeBBReversionSignal` — Bollinger Band reversion confirmed by volume
+  spike (volume > period mean × multiplier).
+- **Added** `MultiTimeframeReversionSignal` — weekly RSI oversold + daily BB touch for
+  higher-conviction entries.
+- **Added** indicator functions: `macd_signals`, `macd_strength`, `extract_volume`,
+  `volume_bb_signals`, `volume_bb_strength`, `_weekly_rsi`, `mtf_signals`, `mtf_strength`.
+- **Expanded** `EnsembleSignal` from 3 to 6 sub-signals (+ MACD, volume BB, MTF).
+  `min_agree` now configurable (2, 3, or 4). Sweep params include all 6 signal families.
+- **Expanded** `EnsembleConvictionSignal` with strength functions for all 6 sub-signals.
+- **Added** `scripts/ml_signal_screen.py` — standalone ML pre-screen using LightGBM
+  5-fold time-series CV. Evaluates any signal's entry quality with precision/recall/F1
+  and a DROP/BORDERLINE/STRONG verdict.
+- **Added** 65 new tests across 6 test files (37 signal indicator + 22 ensemble + 6 ML screen).
+
+## 2026-06-22
+
+### Research: conviction sizing + ML feature gate + Tiingo loader
+
+- **Added** `bb_strength`, `rsi_strength`, `ema_strength` indicator functions for
+  conviction-weighted sizing (distance below band, RSI depth, EMA spread).
+- **Added** `EnsembleConvictionSignal` — ensemble variant that sizes positions by
+  average strength of agreeing sub-signals (1%–4% range).
+- **Added** Tiingo data loader (`TiingoDataLoader`) as fallback for delisted tickers
+  that yfinance misses. Integrated into `fetch_stock_ohlcv` with 72s rate-limit handling.
+- **Added** `feature_gate.py` — LightGBM classifier trained on 3,203 historical entries
+  (10 OHLCV features, 5-day forward return labels). Precision 0.585, coverage 42%.
+  Filters low-confidence buy signals in production paper trading.
+- **Added** `risk.py` — risk guardrails: 30 max positions, 3.3%/trade, 5% max
+  concentration, 3% daily loss halt, 15% max drawdown halt. Telegram on halt events.
+- **Fixed** DAY time-in-force for fractional/notional orders (was GTC, which Alpaca
+  rejects for fractional shares).
+
+## 2026-06-20
+
+### Research: ensemble WFO validated + paper trading deployed
+
+- **Validated** ensemble strategy in walk-forward optimization: 17-fold rolling 12mo/3mo
+  on SP500 (2021-01 → 2026-04). OOS Sharpe 0.84 vs SPY 0.59, CAGR 18.8% vs 13.0%,
+  MaxDD -23.4% vs -22.1%, WFE 1.25. First strategy to beat SPY risk-adjusted in
+  honest out-of-sample testing.
+- **Added** multi-universe support: `--universe sp500|nasdaq100|russell2000` CLI flag.
+  Each universe uses its own point-in-time constituents file.
+- **Deployed** ensemble strategy to Alpaca paper trading ($102K account):
+  - `alpaca_broker.py` — Alpaca TradingClient adapter (paper-only)
+  - `signal_runner.py` — daily ensemble signal generation
+  - `trader.py` — signal → order orchestration
+  - `notifier.py` — Telegram trade alerts + daily summaries
+  - `persist.py` — trade + snapshot persistence to TimescaleDB
+  - CLI command `ggt paper` + Docker integration + cron wrapper
+- **Fixed** code review issues: GTC → DAY orders, DB resilience, public API coupling.
+- **Refactored** shared patterns, suppressed vectorbt FutureWarning.
+
+## 2026-06-18 – 2026-06-19
+
+### Research: reversion strategies + WFO framework + robustness gates
+
+- **Added** `BollingerReversionSignal` — enter on lower band touch, exit at middle band.
+  Beat SPY in WFO (Sharpe 0.80 vs 0.59, CAGR 17%+).
+- **Added** `RsiReversionSignal` — enter when RSI < oversold, exit when RSI > exit threshold.
+- **Added** `EnsembleSignal` — majority-vote of bb+rsi+ema sub-signals.
+- **Added** `ConvictionBBSignal` — position size proportional to distance below BB band.
+- **Added** vol targeting overlay (`compute_vol_scalar` + `simulate_signals` integration).
+  WFO sweep showed marginal benefit over baseline ensemble (+0.01 Sharpe).
+- **Confirmed** trailing stops are destructive on reversion strategies — documented.
+- **Extracted** shared indicators to `strategies/indicators.py` to break circular imports.
+- **Added** `--wfo` CLI flag for walk-forward optimization with rolling train/test folds.
+- **Added** WFO fold generation, composite scoring, OOS aggregation, and recommended
+  live params output.
+- **Added** NDH plateau filter — reject isolated parameter spikes in the sweep grid.
+- **Added** DSR gate — deflated Sharpe ratio with probabilistic Sharpe ratio (PSR) and
+  expected-max-SR correction for data-mining bias.
+- **Added** WFE monitoring, circuit breaker (auto-halt on degradation), and shadow re-entry.
+- **Added** anchor global parameter set with min-drawdown fallback.
+- **Refactored** WFO windows from 3yr/1yr to 12mo/3mo quarterly re-optimization.
+
+## 2026-06-17
+
+### Research: parameter sweep framework + trailing stops
+
+- **Added** `sweep_params()` to the strategy protocol and all existing strategies.
+- **Added** grid generation and combo naming for parameter sweeps (`sweep.py`).
+- **Added** vectorized `sweep_signals()` for EmaCross and WfoTournament.
+- **Added** `lab_sweeps` + `lab_sweep_combos` DB schema and persistence helpers.
+- **Added** sweep orchestrator — batched vbt simulation and results table.
+- **Added** `--sweep` and `--sweep-param` CLI flags.
+- **Added** end-to-end integration test for sweep pipeline.
+- **Fixed** sweep scoring window, NaN sort, param provenance.
+- **Added** trailing stop exits — fixed `ts_stop` and ATR-adaptive in `simulate_signals`.
+- **Added** sweep param splitting and stop-config grouping for trailing stops.
+
 ## 2026-06-16
 
 ### Research: Lab Plan 3 — equity backfill + old research code deletion
