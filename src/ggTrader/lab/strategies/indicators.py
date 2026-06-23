@@ -199,3 +199,64 @@ def volume_bb_strength(
     vol_ratio = (volume / vol_avg.replace(0, np.nan)).clip(upper=3.0) / 3.0
     combined = (bb_str + vol_ratio) / 2.0
     return combined.clip(lower=0.0, upper=1.0)
+
+
+def _weekly_rsi(close: pd.DataFrame, period: int) -> pd.DataFrame:
+    """Compute RSI on weekly-resampled close, forward-filled to daily index."""
+    weekly = close.resample("W").last().dropna(how="all")
+    delta = weekly.diff()
+    gain = delta.clip(lower=0.0)
+    loss = -delta.clip(upper=0.0)
+    avg_gain = gain.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    return rsi.reindex(close.index, method="ffill")
+
+
+def mtf_signals(
+    close: pd.DataFrame,
+    weekly_rsi_period: int,
+    weekly_rsi_oversold: int,
+    weekly_rsi_exit: int,
+    daily_bb_period: int,
+    daily_bb_std: float,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Multi-timeframe reversion: weekly RSI oversold + daily BB breakdown."""
+    w_rsi = _weekly_rsi(close, weekly_rsi_period)
+
+    sma = close.rolling(window=daily_bb_period, min_periods=daily_bb_period).mean()
+    rolling_std = close.rolling(window=daily_bb_period, min_periods=daily_bb_period).std()
+    lower = sma - daily_bb_std * rolling_std
+
+    weekly_oversold = w_rsi < weekly_rsi_oversold
+    daily_below_bb = close < lower
+
+    entries = (weekly_oversold & daily_below_bb).fillna(False).astype(bool)
+
+    weekly_recovered = w_rsi >= weekly_rsi_exit
+    prev_weekly_below = w_rsi.shift(1) < weekly_rsi_exit
+    weekly_exit = (weekly_recovered & prev_weekly_below).fillna(False)
+
+    prev_below_sma = close.shift(1) < sma.shift(1)
+    now_above_sma = close >= sma
+    daily_exit = (prev_below_sma & now_above_sma).fillna(False)
+
+    exits = (weekly_exit | daily_exit).fillna(False).astype(bool)
+
+    return entries, exits
+
+
+def mtf_strength(
+    close: pd.DataFrame,
+    weekly_rsi_period: int,
+    weekly_rsi_oversold: int,
+    daily_bb_period: int,
+    daily_bb_std: float,
+) -> pd.DataFrame:
+    """Average of weekly RSI depth and daily BB depth, clipped to [0, 1]."""
+    w_rsi = _weekly_rsi(close, weekly_rsi_period)
+    rsi_depth = ((weekly_rsi_oversold - w_rsi) / weekly_rsi_oversold).clip(lower=0.0, upper=1.0)
+    bb_str = bb_strength(close, daily_bb_period, daily_bb_std)
+    combined = (rsi_depth + bb_str) / 2.0
+    return combined.clip(lower=0.0, upper=1.0)
