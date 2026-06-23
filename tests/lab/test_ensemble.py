@@ -82,6 +82,15 @@ def test_ensemble_sweep_signals_keys_match_combos():
             "rsi_oversold": 30,
             "ema_fast": 20,
             "ema_slow": 50,
+            "macd_fast": 12,
+            "macd_slow": 26,
+            "macd_signal": 9,
+            "divergence_window": 20,
+            "vol_period": 20,
+            "vol_mult": 2.0,
+            "weekly_rsi_period": 14,
+            "weekly_rsi_oversold": 30,
+            "weekly_rsi_exit": 50,
         }
     ]
     result = strat.sweep_signals(combos, symbols, ohlcv)
@@ -123,3 +132,22 @@ def test_ensemble_target_kind():
     """Ensemble must declare target_kind='signals'."""
     assert EnsembleSignal.target_kind == "signals"
     assert EnsembleSignal.name == "ensemble"
+
+
+def test_ensemble_sweep_params_includes_new_signals():
+    params = EnsembleSignal.sweep_params()
+    assert "macd_fast" in params
+    assert "vol_mult" in params
+    assert "weekly_rsi_period" in params
+    assert 4 in params["min_agree"]
+
+
+def test_ensemble_6_voter_min_agree_4():
+    """With min_agree=4 (majority of 6), entries should be very rare."""
+    cfg = LabConfig(min_history_bars=50)
+    strat = EnsembleSignal(cfg, min_agree=4)
+    ohlcv = _ohlcv(n=300)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    plans = {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
+    targets = strat.to_targets(plans, ohlcv)
+    assert targets.entries.sum().sum() <= targets.entries.shape[0] * len(symbols) * 0.005

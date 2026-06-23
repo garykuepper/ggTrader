@@ -116,6 +116,15 @@ class TestEnsembleConvictionSignal:
                 "rsi_oversold": 30,
                 "ema_fast": 20,
                 "ema_slow": 50,
+                "macd_fast": 12,
+                "macd_slow": 26,
+                "macd_signal": 9,
+                "divergence_window": 20,
+                "vol_period": 20,
+                "vol_mult": 2.0,
+                "weekly_rsi_period": 14,
+                "weekly_rsi_oversold": 30,
+                "weekly_rsi_exit": 50,
             }
         ]
         result = strat.sweep_signals(combos, symbols, ohlcv)
