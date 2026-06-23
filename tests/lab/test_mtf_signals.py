@@ -81,3 +81,53 @@ class TestMTFStrength:
         if not valid.empty:
             assert (valid >= 0.0).all().all()
             assert (valid <= 1.0).all().all()
+
+
+def test_mtf_registered():
+    from ggTrader.lab.strategies.signals import _get_registry
+
+    assert "mtf_reversion" in _get_registry()
+
+
+def test_build_mtf():
+    from ggTrader.lab.strategies.signals import build_signal_strategy
+    from ggTrader.lab.strategy import LabConfig
+
+    strat = build_signal_strategy("mtf_reversion", LabConfig())
+    assert strat.name == "mtf_reversion"
+
+
+def test_cli_accepts_mtf():
+    from ggTrader.lab.cli import build_arg_parser
+
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "mtf_reversion"])
+    assert args.strategy == "mtf_reversion"
+
+
+def test_mtf_to_targets():
+    from ggTrader.lab.strategies.signals import MultiTimeframeReversionSignal
+    from ggTrader.lab.strategy import LabConfig, SignalTargets
+
+    cfg = LabConfig(min_history_bars=50)
+    strat = MultiTimeframeReversionSignal(cfg)
+    close_data = _close(300)
+    idx = close_data.index
+    frames = {}
+    for sym in close_data.columns:
+        frames[sym] = pd.DataFrame(
+            {
+                "open": close_data[sym] * 0.999,
+                "high": close_data[sym] * 1.005,
+                "low": close_data[sym] * 0.995,
+                "close": close_data[sym],
+                "volume": np.random.randint(1000, 10000, len(idx)).astype(float),
+            },
+            index=idx,
+        )
+    ohlcv = pd.concat(frames, axis=1)
+    ohlcv.columns.names = ["symbol", "field"]
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    plans = {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
+    targets = strat.to_targets(plans, ohlcv)
+    assert isinstance(targets, SignalTargets)

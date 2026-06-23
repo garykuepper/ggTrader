@@ -87,3 +87,71 @@ class TestMACDStrength:
         strength = macd_strength(close, fast=12, slow=26, signal_period=9)
         # First slow bars should be NaN
         assert strength.iloc[:26].isna().all().all()
+
+
+def _ohlcv_multi(n=300, n_syms=3, seed=42):
+    """Synthetic OHLCV with (symbol, field) MultiIndex columns."""
+    np.random.seed(seed)
+    idx = _idx(n)
+    frames = {}
+    for i in range(n_syms):
+        sym = f"S{i}"
+        close = 100.0 * np.exp(np.cumsum(np.random.normal(0.0003, 0.015, n)))
+        frames[sym] = pd.DataFrame(
+            {
+                "open": close * 0.999,
+                "high": close * 1.005,
+                "low": close * 0.995,
+                "close": close,
+                "volume": np.random.randint(1000, 10000, n).astype(float),
+            },
+            index=idx,
+        )
+    df = pd.concat(frames, axis=1)
+    df.columns.names = ["symbol", "field"]
+    return df
+
+
+def test_macd_divergence_registered():
+    from ggTrader.lab.strategies.signals import _get_registry
+
+    assert "macd_divergence" in _get_registry()
+
+
+def test_build_macd_divergence():
+    from ggTrader.lab.strategies.signals import build_signal_strategy
+    from ggTrader.lab.strategy import LabConfig
+
+    strat = build_signal_strategy("macd_divergence", LabConfig())
+    assert strat.name == "macd_divergence"
+    assert strat.target_kind == "signals"
+
+
+def test_cli_accepts_macd_divergence():
+    from ggTrader.lab.cli import build_arg_parser
+
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "macd_divergence"])
+    assert args.strategy == "macd_divergence"
+
+
+def test_macd_divergence_sweep_params():
+    from ggTrader.lab.strategies.signals import MACDDivergenceSignal
+
+    params = MACDDivergenceSignal.sweep_params()
+    assert "macd_fast" in params
+    assert "divergence_window" in params
+
+
+def test_macd_divergence_to_targets():
+    from ggTrader.lab.strategies.signals import MACDDivergenceSignal
+    from ggTrader.lab.strategy import LabConfig, SignalTargets
+
+    cfg = LabConfig(min_history_bars=50)
+    strat = MACDDivergenceSignal(cfg)
+    ohlcv = _ohlcv_multi(300)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    plans = {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
+    targets = strat.to_targets(plans, ohlcv)
+    assert isinstance(targets, SignalTargets)
+    assert targets.entries.shape[1] == len(symbols)

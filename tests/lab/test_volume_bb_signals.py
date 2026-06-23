@@ -112,3 +112,39 @@ class TestVolumeBBStrength:
         if not valid.empty:
             assert (valid >= 0.0).all().all()
             assert (valid <= 1.0).all().all()
+
+
+def test_volume_bb_registered():
+    from ggTrader.lab.strategies.signals import _get_registry
+
+    assert "volume_bb_reversion" in _get_registry()
+
+
+def test_build_volume_bb():
+    from ggTrader.lab.strategies.signals import build_signal_strategy
+    from ggTrader.lab.strategy import LabConfig
+
+    strat = build_signal_strategy("volume_bb_reversion", LabConfig())
+    assert strat.name == "volume_bb_reversion"
+
+
+def test_cli_accepts_volume_bb():
+    from ggTrader.lab.cli import build_arg_parser
+
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "volume_bb_reversion"])
+    assert args.strategy == "volume_bb_reversion"
+
+
+def test_volume_bb_to_targets():
+    from ggTrader.lab.strategies.signals import VolumeBBReversionSignal
+    from ggTrader.lab.strategy import LabConfig, SignalTargets
+
+    cfg = LabConfig(min_history_bars=50)
+    strat = VolumeBBReversionSignal(cfg)
+    ohlcv = _ohlcv(300)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    plans = {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
+    targets = strat.to_targets(plans, ohlcv)
+    assert isinstance(targets, SignalTargets)
+    assert targets.entries.shape[1] == len(symbols)

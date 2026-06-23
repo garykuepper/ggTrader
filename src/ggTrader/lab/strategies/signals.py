@@ -13,7 +13,11 @@ from ggTrader.lab.strategies.indicators import (
     eligible_symbols,
     ema_signals,
     extract_close,
+    extract_volume,
+    macd_signals,
+    mtf_signals,
     rsi_signals,
+    volume_bb_signals,
 )
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
@@ -381,6 +385,216 @@ class RsiReversionSignal:
         return result
 
 
+class MACDDivergenceSignal:
+    """MACD bullish divergence: price makes lower low, histogram makes higher low."""
+
+    name = "macd_divergence"
+    target_kind = "signals"
+
+    def __init__(
+        self,
+        cfg: LabConfig,
+        macd_fast: int = 12,
+        macd_slow: int = 26,
+        macd_signal: int = 9,
+        divergence_window: int = 20,
+    ) -> None:
+        self.cfg = cfg
+        self.macd_fast = macd_fast
+        self.macd_slow = macd_slow
+        self.macd_signal = macd_signal
+        self.divergence_window = divergence_window
+
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        return {
+            "macd_fast": [8, 12],
+            "macd_slow": [21, 26],
+            "macd_signal": [9],
+            "divergence_window": [10, 20],
+        }
+
+    def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
+        data = data.loc[:asof]
+        return [
+            {"symbol": s, "weight": 0.0}
+            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
+        ]
+
+    def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        close = extract_close(data, symbols)
+        entries, exits = macd_signals(
+            close, self.macd_fast, self.macd_slow, self.macd_signal, self.divergence_window
+        )
+        return SignalTargets(entries=entries, exits=exits)
+
+    def sweep_signals(
+        self,
+        combos: list[dict],
+        symbols: list[str],
+        data: pd.DataFrame,
+    ) -> dict[str, SignalTargets]:
+        from ggTrader.lab.sweep import combo_name
+
+        close = extract_close(data, symbols)
+        result: dict[str, SignalTargets] = {}
+        for combo in combos:
+            ent, ext = macd_signals(
+                close,
+                int(combo["macd_fast"]),
+                int(combo["macd_slow"]),
+                int(combo["macd_signal"]),
+                int(combo["divergence_window"]),
+            )
+            result[combo_name(self.name, combo)] = SignalTargets(entries=ent, exits=ext)
+        return result
+
+
+class VolumeBBReversionSignal:
+    """BB reversion gated by a volume spike — capitulation filter."""
+
+    name = "volume_bb_reversion"
+    target_kind = "signals"
+
+    def __init__(
+        self,
+        cfg: LabConfig,
+        bb_period: int = 20,
+        bb_std: float = 2.0,
+        vol_period: int = 20,
+        vol_mult: float = 2.0,
+    ) -> None:
+        self.cfg = cfg
+        self.bb_period = bb_period
+        self.bb_std = bb_std
+        self.vol_period = vol_period
+        self.vol_mult = vol_mult
+
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        return {
+            "bb_period": [15, 20],
+            "bb_std": [2.0, 2.5],
+            "vol_period": [20],
+            "vol_mult": [1.5, 2.0, 2.5],
+        }
+
+    def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
+        data = data.loc[:asof]
+        return [
+            {"symbol": s, "weight": 0.0}
+            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
+        ]
+
+    def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        close = extract_close(data, symbols)
+        volume = extract_volume(data, symbols)
+        entries, exits = volume_bb_signals(
+            close, volume, self.bb_period, self.bb_std, self.vol_period, self.vol_mult
+        )
+        return SignalTargets(entries=entries, exits=exits)
+
+    def sweep_signals(
+        self,
+        combos: list[dict],
+        symbols: list[str],
+        data: pd.DataFrame,
+    ) -> dict[str, SignalTargets]:
+        from ggTrader.lab.sweep import combo_name
+
+        close = extract_close(data, symbols)
+        volume = extract_volume(data, symbols)
+        result: dict[str, SignalTargets] = {}
+        for combo in combos:
+            ent, ext = volume_bb_signals(
+                close,
+                volume,
+                int(combo["bb_period"]),
+                float(combo["bb_std"]),
+                int(combo["vol_period"]),
+                float(combo["vol_mult"]),
+            )
+            result[combo_name(self.name, combo)] = SignalTargets(entries=ent, exits=ext)
+        return result
+
+
+class MultiTimeframeReversionSignal:
+    """Multi-timeframe: weekly RSI oversold confirms daily BB breakdown."""
+
+    name = "mtf_reversion"
+    target_kind = "signals"
+
+    def __init__(
+        self,
+        cfg: LabConfig,
+        weekly_rsi_period: int = 14,
+        weekly_rsi_oversold: int = 30,
+        weekly_rsi_exit: int = 50,
+        daily_bb_period: int = 20,
+        daily_bb_std: float = 2.0,
+    ) -> None:
+        self.cfg = cfg
+        self.weekly_rsi_period = weekly_rsi_period
+        self.weekly_rsi_oversold = weekly_rsi_oversold
+        self.weekly_rsi_exit = weekly_rsi_exit
+        self.daily_bb_period = daily_bb_period
+        self.daily_bb_std = daily_bb_std
+
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        return {
+            "weekly_rsi_period": [7, 14],
+            "weekly_rsi_oversold": [30, 35],
+            "weekly_rsi_exit": [50, 55],
+            "daily_bb_period": [15, 20],
+            "daily_bb_std": [2.0, 2.5],
+        }
+
+    def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
+        data = data.loc[:asof]
+        return [
+            {"symbol": s, "weight": 0.0}
+            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
+        ]
+
+    def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        close = extract_close(data, symbols)
+        entries, exits = mtf_signals(
+            close,
+            self.weekly_rsi_period,
+            self.weekly_rsi_oversold,
+            self.weekly_rsi_exit,
+            self.daily_bb_period,
+            self.daily_bb_std,
+        )
+        return SignalTargets(entries=entries, exits=exits)
+
+    def sweep_signals(
+        self,
+        combos: list[dict],
+        symbols: list[str],
+        data: pd.DataFrame,
+    ) -> dict[str, SignalTargets]:
+        from ggTrader.lab.sweep import combo_name
+
+        close = extract_close(data, symbols)
+        result: dict[str, SignalTargets] = {}
+        for combo in combos:
+            ent, ext = mtf_signals(
+                close,
+                int(combo["weekly_rsi_period"]),
+                int(combo["weekly_rsi_oversold"]),
+                int(combo["weekly_rsi_exit"]),
+                int(combo["daily_bb_period"]),
+                float(combo["daily_bb_std"]),
+            )
+            result[combo_name(self.name, combo)] = SignalTargets(entries=ent, exits=ext)
+        return result
+
+
 def _build_signal_registry() -> dict[str, Any]:
     from ggTrader.lab.strategies.conviction import ConvictionBBSignal
     from ggTrader.lab.strategies.ensemble import EnsembleConvictionSignal, EnsembleSignal
@@ -390,6 +604,9 @@ def _build_signal_registry() -> dict[str, Any]:
         "wfo_tournament": WfoTournamentSignal,
         "bb_reversion": BollingerReversionSignal,
         "rsi_reversion": RsiReversionSignal,
+        "macd_divergence": MACDDivergenceSignal,
+        "volume_bb_reversion": VolumeBBReversionSignal,
+        "mtf_reversion": MultiTimeframeReversionSignal,
         "ensemble": EnsembleSignal,
         "conviction_bb": ConvictionBBSignal,
         "ensemble_conviction": EnsembleConvictionSignal,
@@ -411,6 +628,9 @@ SIGNAL_STRATEGY_NAMES = (
     "wfo_tournament",
     "bb_reversion",
     "rsi_reversion",
+    "macd_divergence",
+    "volume_bb_reversion",
+    "mtf_reversion",
     "ensemble",
     "conviction_bb",
     "ensemble_conviction",
