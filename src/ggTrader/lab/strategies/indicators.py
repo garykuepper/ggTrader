@@ -70,3 +70,33 @@ def ema_signals(
     entries = ((ema_f > ema_s) & (ema_f.shift(1) <= ema_s.shift(1))).fillna(False)
     exits = ((ema_f < ema_s) & (ema_f.shift(1) >= ema_s.shift(1))).fillna(False)
     return entries.astype(bool), exits.astype(bool)
+
+
+def bb_strength(close: pd.DataFrame, period: int, std: float) -> pd.DataFrame:
+    """Normalized depth below the lower Bollinger Band, clipped to [0, 1]."""
+    sma = close.rolling(window=period, min_periods=period).mean()
+    rolling_std = close.rolling(window=period, min_periods=period).std()
+    band_width = std * rolling_std
+    depth = (sma - std * rolling_std - close) / band_width.replace(0, np.nan)
+    return depth.clip(lower=0.0, upper=1.0)
+
+
+def rsi_strength(close: pd.DataFrame, period: int, oversold: int) -> pd.DataFrame:
+    """Normalized RSI depth below oversold threshold, clipped to [0, 1]."""
+    delta = close.diff()
+    gain = delta.clip(lower=0.0)
+    loss = -delta.clip(upper=0.0)
+    avg_gain = gain.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    depth = (oversold - rsi) / oversold
+    return depth.clip(lower=0.0, upper=1.0)
+
+
+def ema_strength(close: pd.DataFrame, ema_fast: int, ema_slow: int) -> pd.DataFrame:
+    """Normalized EMA gap (fast above slow) / slow, clipped to [0, 1]."""
+    ema_f = close.ewm(span=ema_fast, adjust=False).mean()
+    ema_s = close.ewm(span=ema_slow, adjust=False).mean()
+    gap = (ema_f - ema_s) / ema_s.replace(0, np.nan)
+    return gap.clip(lower=0.0, upper=1.0)
