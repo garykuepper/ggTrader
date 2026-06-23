@@ -88,7 +88,7 @@ def run_lab(argv: List[str] | None = None) -> str:
 
     if args.sweep or args.wfo:
         from ggTrader.lab.strategies.conviction import ConvictionBBSignal
-        from ggTrader.lab.strategies.ensemble import EnsembleSignal
+        from ggTrader.lab.strategies.ensemble import EnsembleConvictionSignal, EnsembleSignal
         from ggTrader.lab.strategies.momentum import CrossSectionalMomentum, DualMomentum
         from ggTrader.lab.strategies.signals import (
             BollingerReversionSignal,
@@ -105,6 +105,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             "rsi_reversion": RsiReversionSignal,
             "ensemble": EnsembleSignal,
             "conviction_bb": ConvictionBBSignal,
+            "ensemble_conviction": EnsembleConvictionSignal,
             "xs_momentum": CrossSectionalMomentum,
             "dual_momentum": DualMomentum,
         }

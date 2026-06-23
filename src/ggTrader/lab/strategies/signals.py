@@ -383,7 +383,7 @@ class RsiReversionSignal:
 
 def _build_signal_registry() -> dict[str, Any]:
     from ggTrader.lab.strategies.conviction import ConvictionBBSignal
-    from ggTrader.lab.strategies.ensemble import EnsembleSignal
+    from ggTrader.lab.strategies.ensemble import EnsembleConvictionSignal, EnsembleSignal
 
     return {
         "ema_cross": EmaCrossSignal,
@@ -392,6 +392,7 @@ def _build_signal_registry() -> dict[str, Any]:
         "rsi_reversion": RsiReversionSignal,
         "ensemble": EnsembleSignal,
         "conviction_bb": ConvictionBBSignal,
+        "ensemble_conviction": EnsembleConvictionSignal,
     }
 
 
@@ -412,6 +413,7 @@ SIGNAL_STRATEGY_NAMES = (
     "rsi_reversion",
     "ensemble",
     "conviction_bb",
+    "ensemble_conviction",
 )
 
 

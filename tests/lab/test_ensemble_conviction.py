@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 
+from ggTrader.lab.simulate import simulate_signals
 from ggTrader.lab.strategies.ensemble import EnsembleConvictionSignal, EnsembleSignal
 from ggTrader.lab.strategy import LabConfig, SignalTargets
 
@@ -132,3 +133,56 @@ class TestEnsembleConvictionSignal:
         symbols = sorted(ohlcv.columns.get_level_values(0).unique())
         plan = strat.select(ohlcv.index[200], ohlcv, symbols)
         assert len(plan) == len(symbols)
+
+
+def test_registered_in_signal_registry():
+    from ggTrader.lab.strategies.signals import _get_registry
+
+    assert "ensemble_conviction" in _get_registry()
+
+
+def test_build_signal_strategy():
+    from ggTrader.lab.strategies.signals import build_signal_strategy
+
+    strat = build_signal_strategy("ensemble_conviction", LabConfig())
+    assert strat.name == "ensemble_conviction"
+
+
+def test_cli_accepts_ensemble_conviction():
+    from ggTrader.lab.cli import build_arg_parser
+
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "ensemble_conviction"])
+    assert args.strategy == "ensemble_conviction"
+
+
+def test_simulate_signals_with_conviction_sizes():
+    """Conviction sizes flow through simulate_signals and produce different equity than flat."""
+
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=42)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    close = pd.concat({s: ohlcv[s]["close"] for s in symbols}, axis=1)
+
+    # Generate conviction targets
+    conv_strat = EnsembleConvictionSignal(cfg, min_agree=1, min_size=0.01, max_size=0.04)
+    plans = {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
+    conv_targets = conv_strat.to_targets(plans, ohlcv)
+
+    # Generate plain ensemble targets (no sizes)
+    plain_strat = EnsembleSignal(cfg, min_agree=1)
+    plain_targets = plain_strat.to_targets(plans, ohlcv)
+
+    config = {
+        "START_CASH": 100000.0,
+        "FEES": 0.001,
+        "SLIPPAGE": 0.0005,
+        "FREQ": "1d",
+        "SIGNAL_POSITION_SIZE": 0.02,
+    }
+
+    if conv_targets.entries.sum().sum() > 0:
+        _, eq_conv, _ = simulate_signals({"conv": conv_targets}, close, config)
+        _, eq_plain, _ = simulate_signals({"plain": plain_targets}, close, config)
+        # They use different sizing, so equity curves should differ
+        assert not eq_conv["conv"].equals(eq_plain["plain"])
