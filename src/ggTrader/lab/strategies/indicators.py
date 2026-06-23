@@ -100,3 +100,52 @@ def ema_strength(close: pd.DataFrame, ema_fast: int, ema_slow: int) -> pd.DataFr
     ema_s = close.ewm(span=ema_slow, adjust=False).mean()
     gap = (ema_f - ema_s) / ema_s.replace(0, np.nan)
     return gap.clip(lower=0.0, upper=1.0)
+
+
+def macd_signals(
+    close: pd.DataFrame,
+    fast: int,
+    slow: int,
+    signal_period: int,
+    divergence_window: int,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """MACD bullish divergence entry + histogram-crosses-zero exit."""
+    macd_line = (
+        close.ewm(span=fast, adjust=False).mean() - close.ewm(span=slow, adjust=False).mean()
+    )
+    signal_line = macd_line.ewm(span=signal_period, adjust=False).mean()
+    histogram = macd_line - signal_line
+
+    price_low = close.rolling(window=divergence_window, min_periods=divergence_window).min()
+    hist_low = histogram.rolling(window=divergence_window, min_periods=divergence_window).min()
+
+    price_at_low = close <= price_low
+    hist_above_low = histogram > hist_low
+    entries = (price_at_low & hist_above_low).fillna(False).astype(bool)
+
+    # Mask out warmup period (slow + signal + divergence_window bars)
+    warmup = slow + signal_period + divergence_window
+    entries = entries.copy()
+    entries.iloc[:warmup] = False
+
+    prev_above = histogram.shift(1) >= 0
+    now_below = histogram < 0
+    exits = (prev_above & now_below).fillna(False).astype(bool)
+
+    return entries, exits
+
+
+def macd_strength(close: pd.DataFrame, fast: int, slow: int, signal_period: int) -> pd.DataFrame:
+    """Normalized absolute MACD histogram magnitude, clipped to [0, 1]."""
+    macd_line = (
+        close.ewm(span=fast, adjust=False).mean() - close.ewm(span=slow, adjust=False).mean()
+    )
+    signal_line = macd_line.ewm(span=signal_period, adjust=False).mean()
+    histogram = macd_line - signal_line
+    hist_max = histogram.abs().rolling(window=50, min_periods=1).max()
+    strength = histogram.abs() / hist_max.replace(0, np.nan)
+    strength = strength.clip(lower=0.0, upper=1.0)
+    # Mask out warmup period (slow bars) — set to NaN
+    strength = strength.copy()
+    strength.iloc[:slow] = np.nan
+    return strength
