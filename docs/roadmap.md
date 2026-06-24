@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Organization.** §1 is the thesis. §2 is time-bounded work (~4 weeks). §3 is open research. §4 is infrastructure. For dated history see [`changelog.md`](changelog.md). For the pre-lab roadmap (crypto venue migration, WFO textbook reset, etc.) see [`archive/roadmap-pre-lab.md`](archive/roadmap-pre-lab.md).
+> **Organization.** §1 is the thesis. §2 is time-bounded work (~4 weeks). §3 is open research. §4 is infrastructure. For dated history see [`changelog.md`](changelog.md). For the pre-lab roadmap (crypto venue migration, WFO textbook reset, etc.) see [`archive/roadmap-pre-lab.md`](archive/roadmap-pre-lab.md). For the full engineering snapshot, see [`project_snapshot_2026-06-23.md`](project_snapshot_2026-06-23.md).
 
 ---
 
@@ -8,29 +8,47 @@
 
 | State | Detail |
 |---|---|
-| ✅ **Lab shipped** | vectorbt-centric research bench (2026-06-15). 12 strategies, parameter sweep, WFO framework, monthly folds, DB persistence. |
-| ✅ **WFO validated** | Ensemble reversion (bb+rsi+ema 3-voter) clears WFO: OOS Sharpe 0.84 vs SPY 0.59, CAGR 18.8%, WFE 1.25. First strategy to beat SPY risk-adjusted in honest OOS. |
-| ✅ **6-voter ensemble** | Expanded to 6 sub-signals (+ MACD divergence, volume-confirmed BB, multi-timeframe reversion). Conviction-weighted sizing variant available. |
-| ✅ **ML feature gate** | LightGBM classifier (precision 0.585, 3.2K samples). Filters low-confidence buys in production. ML pre-screen script for evaluating new signals. |
-| 🟢 **Paper live** | Ensemble on Alpaca paper ($102K account). Cron fires 1:30 PM PT Mon–Fri. ML gate + risk guardrails active. |
-| 🔵 **Next up** | Paper monitoring → live go-live. Target: 5–10 clean trading days, then fund Alpaca live ($1K), swap keys. |
-| 🧪 **Research** | Conviction ensemble WFO validation, expanded signal library, regime-aware signal selection. |
+| ✅ **Lab shipped** | vectorbt-centric research bench (2026-06-15). 10 strategies, parameter sweep, WFO framework, 17-fold rolling windows, DB persistence. |
+| ✅ **WFO validated** | 3-voter ensemble (BB+RSI+EMA) clears WFO: OOS Sharpe 0.61–0.84, CAGR 12.6–18.8%, WFE 1.11–1.25. First strategy to beat SPY risk-adjusted in honest OOS. |
+| ❌ **6-voter rejected** | Expanded to 6 sub-signals: OOS Sharpe degraded 0.61 → 0.36. Ablation proved MTF harmful, RSI critical, BB/EMA/MACD/VolBB near-zero individual impact. Reverted to 3-voter. |
+| ✅ **ML feature gate** | LightGBM classifier (precision 0.585, 10 features, 3.2K samples). Known defect: ATR feature uses close-only proxy, not true range. |
+| 🟢 **Paper live** | 3-voter ensemble on Alpaca paper ($102,459). Cron fires 1:30 PM PT Mon–Fri. ML gate + risk guardrails active. PnL baseline reset 2026-06-23. |
+| 🔵 **Next up** | Asymmetric exit architecture + ATR fix → WFO validation → paper monitoring → live go-live. |
+| 🧪 **Research** | IC-weighted voting, regime-adaptive gating, exit optimization. |
 
-**Status legend:** ✅ Done · 🟢 Live · 🔵 Next · 🧪 Research · ⏸ Deferred
+**Status legend:** ✅ Done · 🟢 Live · 🔵 Next · 🧪 Research · ❌ Rejected · ⏸ Deferred
 
 ---
 
 ## 1. North star
 
-Build a **flexible multi-strategy research lab** with honest walk-forward evaluation, and deploy capital only against edges that survive true out-of-sample testing. The lab tests strategies on US equities (SP500/Nasdaq-100/Russell 2000) via vectorbt, with monthly rolling folds and point-in-time universe membership.
+Build a **flexible multi-strategy research lab** with honest walk-forward evaluation, and deploy capital only against edges that survive true out-of-sample testing. The lab tests strategies on US equities (SP500/Nasdaq-100/Russell 2000) via vectorbt, with rolling 12mo/3mo folds and point-in-time universe membership.
 
-**Current thesis (2026-06-20).** Signal diversification is the primary driver of edge. The 3-voter ensemble (BB reversion + RSI reversion + EMA cross) beat SPY in 17-fold WFO because reversion and trend signals are negatively correlated — when trend gets whipsawed, reversion thrives. Expanding the signal library (6 voters, conviction weighting) and validating in WFO is the active research direction.
+**Current thesis (2026-06-23).** The 3-voter ensemble works because BB reversion, RSI exhaustion, and EMA trend signals are negatively correlated in their failure modes — when one gets whipsawed, the others don't fire. The 6-voter experiment proved that adding correlated signals (MACD divergence, volume-confirmed BB) dilutes rather than diversifies. The next alpha lever is not more signals — it's **smarter exits, weighted voting, and fixing known ML gate defects**.
 
 ---
 
 ## 2. In flight (~4 weeks)
 
-### 2a. Paper trading → live go-live
+### Phase 1: Alpha Architecture Fixes (Immediate)
+
+These are high-payoff, low-risk changes to the existing codebase. Each must be WFO-validated before deployment.
+
+| Status | Item | File(s) | Notes |
+|:---:|---|---|---|
+| 🔵 | **Asymmetric exit logic** | `ensemble.py` | Decouple entry/exit thresholds. RSI exit fires independently (`exits = rsi_ext \| (exit_votes >= min_agree_exit)`). Prevents profit give-back from waiting for slow consensus. 2-line core change + new `min_agree_exit` sweep param. |
+| 🔵 | **ATR True Range fix** | `feature_gate.py`, `train_gate.py` | Current `atr_ratio` uses `c.diff().abs()` (close-only proxy), not actual True Range. Thread OHLCV (high/low/close) through `extract_features()`. Retrain `ensemble_gate.joblib` after fix. |
+| 🔵 | **WFO validation of Phase 1** | `wfo.py` | Run 3-voter + asymmetric exits through 17-fold WFO on 50 stocks. Compare OOS Sharpe/CAGR/MaxDD against 3-voter symmetric baseline (0.61/12.6%/-23.4%). |
+
+### Phase 2: ML Gate & Voting Upgrades
+
+| Status | Item | File(s) | Notes |
+|:---:|---|---|---|
+| ⚪ | **IC-weighted signal voting** | `ensemble.py`, `wfo.py` | Replace unweighted `entry_votes` sum with Sharpe-weighted linear combination. Per-signal IS Sharpe computed during each WFO fold's training sweep. Zero-out signals with negative train Sharpe. Requires running individual signal backtests per fold. |
+| ⚪ | **Adaptive ML threshold** | `feature_gate.py` | Replace static 0.55 threshold with rolling percentile of recent classifier scores. Loosens gate in low-vol (collect steady alpha), tightens in high-vol (avoid cluster risk). Start with score-based percentile; VIX integration deferred until data pipeline exists. |
+| ⚪ | **Exit signal optimization** | `ensemble.py`, `sweep.py` | Add `exit_mode` sweep param: symmetric (current), time-based (N days), profit-target, RSI-priority. WFO grid sweeps over exit variants alongside entry params. |
+
+### Phase 3: Paper → Live Go-Live
 
 | Status | Step |
 |:---:|---|
@@ -38,47 +56,41 @@ Build a **flexible multi-strategy research lab** with honest walk-forward evalua
 | ✅ | ML feature gate (LightGBM, precision 0.585) |
 | ✅ | Risk guardrails (30 max positions, 3.3%/trade, 5% concentration, 3% daily loss halt, 15% drawdown halt) |
 | ✅ | DAY time-in-force fix for fractional/notional orders |
+| ✅ | PnL baseline reset ($102,459 — 2026-06-23) |
 | 🟢 | Monitor paper fills for 5–10 clean trading days |
+| 🔵 | Deploy Phase 1 alpha fixes to paper (after WFO validation) |
 | 🔵 | Fund Alpaca live account ($1K) |
 | 🔵 | Swap to live API keys |
 | 🔵 | Confirm position sizing / order fills match expectations |
 
-### 2b. Expanded signal validation
+### Completed & Rejected (2b)
 
 | Status | Item | Notes |
 |:---:|---|---|
-| ✅ | MACD divergence signal | `MACDDivergenceSignal` — bearish/bullish divergence detection |
-| ✅ | Volume-confirmed BB reversion | `VolumeBBReversionSignal` — BB touch + volume spike confirmation |
-| ✅ | Multi-timeframe reversion | `MultiTimeframeReversionSignal` — weekly RSI oversold + daily BB touch |
-| ✅ | 6-voter ensemble | `EnsembleSignal` expanded from 3 to 6 sub-signals, `min_agree` configurable |
-| ✅ | Conviction-weighted sizing | `EnsembleConvictionSignal` — size by average strength of agreeing signals |
-| ✅ | ML pre-screen script | `scripts/ml_signal_screen.py` — LightGBM precision gate for any signal |
-| 🧪 | WFO validation of 6-voter ensemble | Running — compare against 3-voter baseline |
-| 🧪 | WFO validation of conviction sizing | Compare risk-adjusted metrics vs fixed sizing |
-
-### 2c. Signal library expansion (research)
-
-| Status | Item | Notes |
-|:---:|---|---|
-| ⚪ | Keltner Channel reversion | ATR-based bands, orthogonal to BB |
-| ⚪ | Stochastic momentum | %K/%D crossover in oversold zone |
-| ⚪ | Volume profile signals | VWAP deviation + volume anomaly detection |
-| ⚪ | Breadth-based signals | Advance/decline ratio, new highs/lows |
+| ✅ | MACD divergence signal | `MACDDivergenceSignal` — built and tested. Near-zero individual impact in ablation. |
+| ✅ | Volume-confirmed BB reversion | `VolumeBBReversionSignal` — built and tested. Near-zero individual impact in ablation. |
+| ✅ | Multi-timeframe reversion | `MultiTimeframeReversionSignal` — built and tested. **Harmful**: dropping it improved OOS Sharpe 0.55 → 0.64. |
+| ✅ | 6-voter ensemble | Expanded from 3 to 6 sub-signals. **Rejected**: OOS Sharpe 0.36 vs 3-voter 0.61. Signal dilution. |
+| ✅ | Conviction-weighted sizing | `EnsembleConvictionSignal` — Sharpe 0.83 vs 0.84 baseline. Risk reducer, not alpha generator. Available but not deployed. |
+| ✅ | ML pre-screen script | `scripts/ml_signal_screen.py` — LightGBM precision gate for evaluating new signals. |
+| ❌ | Trailing stops on reversion | Both fixed and ATR-adaptive stops destroy reversion returns by exiting during expected drawdown. |
+| ❌ | Momentum strategies | `xs_momentum`, `dual_momentum` — deeply negative OOS Sharpe. Well-arbitraged in US large caps. |
 
 ---
 
 ## 3. Research directions
 
-*Open exploration — not time-bounded. Ordered roughly by expected payoff.*
+*Open exploration — not time-bounded. Ordered by expected payoff given ablation findings.*
 
 | | Direction | Status | Notes |
 |:---:|---|:---:|---|
-| A | **Conviction ensemble tuning** | 🧪 | Optimize strength-weighted sizing thresholds in WFO |
-| B | **Regime-aware signal selection** | ⚪ | Select which sub-signals vote based on vol regime |
-| C | **Bayesian parameter selection** | ⚪ | Posterior over IS performance → highest lower-credible-bound |
-| D | **Statistical arbitrage / pairs** | ⚪ | Cointegrated pair z-score reversion (orthogonal to momentum) |
-| E | **Meta-allocation across strategies** | ⚪ | Equal-risk or rolling meta-optimizer across signal families |
-| F | **Deep RL for position sizing** | ⚪ | PPO/SAC agent for sizing, entries stay rule-based |
+| A | **Regime-adaptive signal selection** | 🧪 | Classify market regime (trending vs mean-reverting via ADX/vol) and conditionally activate only signals suited to current regime. Must be trained only on WFO train window to prevent lookahead. |
+| B | **Dynamic position sizing (Kelly)** | ⚪ | Use ML gate probability + recent win/loss ratio to compute fractional Kelly sizing per trade. Quarter-Kelly standard for estimation error. `EnsembleConvictionSignal.sizes` already supports per-bar sizing. |
+| C | **Cross-sectional entry ranking** | ⚪ | When multiple entries fire simultaneously, rank by conviction score + sector diversification. Prevents correlated cluster entries. |
+| D | **Macro-enriched ML features** | ⚪ | Add VIX level/change, sector relative strength, earnings proximity, short interest to `extract_features()`. Orthogonal to price-based technicals. Requires external data pipeline. |
+| E | **Regime-aware WFO folds** | ⚪ | Exponential time-weighting within training windows to discount data from misaligned regimes. **High risk**: adds new decay-rate parameter that can itself be overfit. Reduces effective sample size. Deprioritized behind simpler regime approaches (A). |
+| F | **Statistical arbitrage / pairs** | ⚪ | Cointegrated pair z-score reversion (orthogonal to momentum). |
+| G | **S&P MidCap 400 universe** | ⚪ | Institutional blind spot — more inefficient than SP500, more liquid than Russell 2000. Requires PIT membership data sourcing. |
 
 ---
 
@@ -93,16 +105,49 @@ Build a **flexible multi-strategy research lab** with honest walk-forward evalua
 | ✅ | Parameter sweep framework | `--sweep` + `--sweep-param` for grid search |
 | ✅ | WFO framework | `--wfo` for rolling train/test with OOS scoring |
 | ✅ | WFE monitoring + circuit breaker | Walk-forward efficiency tracking, auto-halt on degradation |
-| ✅ | NDH + DSR robustness gates | Neighbor distance heuristic, deflated Sharpe ratio |
-| ✅ | 2.07× WFO speed | Collapsed per-fold metric accessors to single `returns()` extraction |
+| ✅ | NDH + DSR robustness gates | Neighbor density hurdle, deflated Sharpe ratio |
+| ✅ | 2.07x WFO speed | Collapsed per-fold metric accessors to single `returns()` extraction |
+| ✅ | WFO per-fold progress output | `flush=True` + `PYTHONUNBUFFERED=1` for Docker real-time output |
+| ✅ | `--max-stocks` preload trim | Universe trimmed before data load, not just strategy selection |
 | ⚪ | WFO DB persistence | Persist per-fold WFO results to TimescaleDB (deferred to go-live) |
 | ⚪ | `ggt compare` — diff two research runs | Side-by-side metric comparison |
+| ⚪ | Per-signal backtest within WFO folds | Required for IC-weighted voting (Phase 2). Run individual signal backtests during training sweep. |
 
 ---
 
-## 5. Evolution since lab creation
+## 5. Key Research Findings (2026-06-15 → 2026-06-23)
 
-The lab was created 2026-06-15, replacing ~26K lines of legacy live-trading infrastructure with a focused vectorbt research bench. Key milestones:
+### What Worked
+
+| Finding | Evidence |
+|---------|---------|
+| 3-voter ensemble (BB+RSI+EMA) | OOS Sharpe 0.61–0.84 vs SPY 0.59. WFE 1.11–1.25. |
+| Negatively correlated signal families | Reversion + trend signals cancel each other's failures. |
+| vectorbt grouped simulation | 50-stock, 17-fold WFO in ~47s. 2.07x speedup from profiling. |
+| Point-in-time universe membership | Prevents 1-3% annual survivorship bias inflation. |
+| NDH + DSR robustness gates | Caught overfit parameter spikes across 17 folds. |
+
+### What Failed
+
+| Finding | Evidence |
+|---------|---------|
+| 6-voter ensemble | OOS Sharpe degraded 0.61 → 0.36. Correlated signals dilute, not diversify. |
+| Trailing stops on reversion | Exits during expected drawdown, destroying the reversion thesis. |
+| Momentum strategies | OOS Sharpe -5.11. Well-arbitraged in US large caps. |
+| MTF signal | Ablation: removing it *improved* Sharpe 0.55 → 0.64. Actively harmful. |
+| Conviction sizing | Sharpe 0.83 vs 0.84. No alpha improvement. |
+
+### Known Defects
+
+| Defect | Location | Impact |
+|--------|----------|--------|
+| ATR uses close-only proxy | `feature_gate.py:61-65` | Understates volatility in high-vol regimes, corrupts `atr_ratio` ML feature |
+| Symmetric exit consensus | `ensemble.py:148-149` | Profit give-back from slow exit signals |
+| Static ML threshold | `feature_gate.py:164` | Blocks good trades in low-vol, passes bad trades in high-vol |
+
+---
+
+## 6. Evolution timeline
 
 | Date | Milestone |
 |---|---|
@@ -120,13 +165,16 @@ The lab was created 2026-06-15, replacing ~26K lines of legacy live-trading infr
 | 2026-06-22 | ML feature gate (LightGBM, precision 0.585) + risk guardrails |
 | 2026-06-22 | Conviction-weighted ensemble sizing (`EnsembleConvictionSignal`) |
 | 2026-06-22 | Tiingo data loader — fallback for delisted tickers |
-| 2026-06-23 | Expanded to 6-voter ensemble (MACD divergence, volume-confirmed BB, multi-timeframe) |
-| 2026-06-23 | ML pre-screen script for evaluating signal quality |
+| 2026-06-23 | **6-voter expansion → rejected.** OOS Sharpe 0.36. Ablation: RSI critical, MTF harmful, rest noise. |
+| 2026-06-23 | WFO infrastructure fixes (sweep grid 12K→24, max-stocks preload, progress output) |
+| 2026-06-23 | PnL baseline reset ($102,459). Reverted to 3-voter. |
+| 2026-06-23 | Project snapshot + alpha expansion engineering report |
 
 ---
 
 ## Reference
 
+- **Project snapshot**: [`project_snapshot_2026-06-23.md`](project_snapshot_2026-06-23.md)
 - **Architecture**: [`architecture.md`](architecture.md)
 - **CLI usage**: [`cli_reference.md`](cli_reference.md)
 - **Changelog**: [`changelog.md`](changelog.md)
