@@ -130,12 +130,15 @@ def train() -> None:
     print("\n[2/6] Generating ensemble entry signals...")
     sym_cols = list(ohlcv.columns.get_level_values(0).unique())
     close = pd.concat({s: ohlcv[s]["close"] for s in sym_cols}, axis=1)
+    volume = pd.concat(
+        {s: ohlcv[s].get("volume", pd.Series(1.0, index=ohlcv.index)) for s in sym_cols}, axis=1
+    )
 
     cfg = LabConfig(min_history_bars=60)
     ensemble = EnsembleSignal(cfg)
     from ggTrader.lab.strategy import SignalTargets
 
-    targets: SignalTargets = ensemble._generate_signals(close)
+    targets: SignalTargets = ensemble._generate_signals(close, volume)
     n_entries = int(targets.entries.sum().sum())
     print(f"    Found {n_entries} entry signals")
 
