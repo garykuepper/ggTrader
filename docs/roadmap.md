@@ -9,10 +9,10 @@
 | State | Detail |
 |---|---|
 | ✅ **Lab shipped** | vectorbt-centric research bench (2026-06-15). 10 strategies, parameter sweep, WFO framework, 17-fold rolling windows, DB persistence. |
-| ⚠️ **WFO "validation" revisited (2026-06-24)** | On the full 603-stock SP500 universe, **both** 3-voter and 6-voter fall back to the defensive **anchor** on ~every fold (NDH/DSR gates reject nearly all selected winners: 3-voter 0/17 PASS, 6-voter 2/17). Reported OOS is anchor-driven, not a gate-validated edge. 3-voter: Sharpe 0.81 / CAGR 19% / DD -21% / WFE 1.15. 6-voter: Sharpe 1.04 / CAGR 11.3% / DD -11.1% / WFE nan. Earlier 0.61–0.84 figures were a 50-stock subset and do not reproduce here. |
-| ⚠️ **6-voter vs 3-voter (2026-06-24)** | The "revert to 3-voter" was a **documented decision never implemented in code** — `EnsembleSignal` ran all 6 voters and the live paper trader was running the 6-voter. Configurable `voters` param now added (default still 6 to preserve live behaviour; `THREE_VOTERS` available). The full-universe comparison does **not** show the 3-voter is clearly better; neither is gate-validated. **Open: why do the gates reject ~every fold?** (likely NDH 85% density hurdle too strict for a 48-combo grid). |
+| ✅ **Voter ablation redone under fixed gates (2026-06-24)** | The 2026-06-23 ablation ran on the broken NDH gate (anchor-driven) + pre-ATR exits. Clean 11-config rerun on full 603-stock SP500 **overturns the dilution thesis**: adding voters didn't dilute — the bug did. Best real edge = **`core+macd+vbb` (drop MTF, 5 voters): Sharpe 0.89 / CAGR 10.5% / DD -10.5% / gate 14/17 / anchor only 3/17** (the 3 anchors are the 2022 bear folds; folds 5–17 all PASS). 6-voter is healthy too (0.92 / -10.3% / 11/17), not the old "0.36 dilution". 3-voter core: 0.68 / -20.5% / 10/17. SPY: 0.58 / 13.0% / -22.1%. Tooling: `scripts/ablation_voters.py` (3-way parallel, ~30min). |
+| ⚠️ **MTF is the one harmful voter (2026-06-24)** | `core+mtf` is the worst non-degenerate config (Sharpe 0.49 / CAGR 6.0%). The 2026-06-23 "MTF harmful" call survives the rerun. Dropping bb or rsi → zero trades (2-voter unanimity artifact). ema is the droppable core voter (`core-ema` = bb+rsi still 0.79). **Open: live-config decision** — current paper trader runs the 6-voter; `core+macd+vbb` is the better candidate but switch not yet made. |
 | ✅ **ML feature gate** | LightGBM classifier (precision 0.585, 10 features, 3.2K samples). Known defect: ATR feature uses close-only proxy, not true range. |
-| 🟢 **Paper live** | 3-voter ensemble on Alpaca paper ($102,459). Cron fires 1:30 PM PT Mon–Fri. ML gate + risk guardrails active. PnL baseline reset 2026-06-23. |
+| 🟢 **Paper live** | Ensemble on Alpaca paper ($102,459) — actually the **6-voter** (`DEFAULT_VOTERS = ALL_VOTERS` in `ensemble.py`), not the 3-voter as previously documented. Cron fires 1:30 PM PT Mon–Fri. ML gate + risk guardrails active. PnL baseline reset 2026-06-23. **Candidate switch: `core+macd+vbb` (5v) — best ablation config.** |
 | 🔵 **Next up** | Asymmetric exit architecture + ATR fix → WFO validation → paper monitoring → live go-live. |
 | 🧪 **Research** | IC-weighted voting, regime-adaptive gating, exit optimization. |
 
@@ -24,7 +24,7 @@
 
 Build a **flexible multi-strategy research lab** with honest walk-forward evaluation, and deploy capital only against edges that survive true out-of-sample testing. The lab tests strategies on US equities (SP500/Nasdaq-100/Russell 2000) via vectorbt, with rolling 12mo/3mo folds and point-in-time universe membership.
 
-**Current thesis (2026-06-23).** The 3-voter ensemble works because BB reversion, RSI exhaustion, and EMA trend signals are negatively correlated in their failure modes — when one gets whipsawed, the others don't fire. The 6-voter experiment proved that adding correlated signals (MACD divergence, volume-confirmed BB) dilutes rather than diversifies. The next alpha lever is not more signals — it's **smarter exits, weighted voting, and fixing known ML gate defects**.
+**Current thesis (2026-06-24, revised).** The ensemble works because BB reversion, RSI exhaustion, and EMA trend signals are negatively correlated in their failure modes — when one gets whipsawed, the others don't fire. The earlier claim that "adding MACD/VolBB voters dilutes" was a **gate/exit-bug artifact** — under the fixed NDH gate + ATR exits, MACD and VolBB *add* edge: **`core+macd+vbb` (5 voters, MTF dropped) is the best config** (Sharpe 0.89, DD -10.5%, 14/17 gate-validated). Only MTF is genuinely harmful. So the lever set is: **drop MTF, prefer the 5-voter config, then smarter exits, weighted voting, and ML gate fixes.**
 
 ---
 
@@ -69,10 +69,10 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 
 | Status | Item | Notes |
 |:---:|---|---|
-| ✅ | MACD divergence signal | `MACDDivergenceSignal` — built and tested. Near-zero individual impact in ablation. |
-| ✅ | Volume-confirmed BB reversion | `VolumeBBReversionSignal` — built and tested. Near-zero individual impact in ablation. |
-| ✅ | Multi-timeframe reversion | `MultiTimeframeReversionSignal` — built and tested. **Harmful**: dropping it improved OOS Sharpe 0.55 → 0.64. |
-| ✅ | 6-voter ensemble | Expanded from 3 to 6 sub-signals. **Rejected**: OOS Sharpe 0.36 vs 3-voter 0.61. Signal dilution. |
+| ✅ | MACD divergence signal | `MACDDivergenceSignal` — built and tested. **Helps under fixed gates (2026-06-24):** `core+macd+vbb` Sharpe 0.89 vs core 0.68. (Old "near-zero" call was a gate-bug artifact.) |
+| ✅ | Volume-confirmed BB reversion | `VolumeBBReversionSignal` — built and tested. **Helps:** part of the best config `core+macd+vbb` (14/17 gate-validated, anchor only 3/17). |
+| ✅ | Multi-timeframe reversion | `MultiTimeframeReversionSignal` — built and tested. **Harmful** (confirmed 2026-06-24 rerun): `core+mtf` Sharpe 0.49 vs core 0.68 — the only voter that consistently degrades. |
+| ↩️ | 6-voter ensemble | Original "rejected, Sharpe 0.36, dilution" verdict **reversed (2026-06-24)**: under fixed gates the 6-voter is 0.92 / DD -10.3% / 11-17 gate-pass. The standout is the **5-voter (6-voter minus MTF)**, not the 3-voter. |
 | ✅ | Conviction-weighted sizing | `EnsembleConvictionSignal` — Sharpe 0.83 vs 0.84 baseline. Risk reducer, not alpha generator. Available but not deployed. |
 | ✅ | ML pre-screen script | `scripts/ml_signal_screen.py` — LightGBM precision gate for evaluating new signals. |
 | ❌ | Trailing stops on reversion | Both fixed and ATR-adaptive stops destroy reversion returns by exiting during expected drawdown. |
@@ -123,7 +123,8 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 
 | Finding | Evidence |
 |---------|---------|
-| 3-voter ensemble (BB+RSI+EMA) | OOS Sharpe 0.61–0.84 vs SPY 0.59. WFE 1.11–1.25. |
+| 5-voter ensemble (BB+RSI+EMA+MACD+VolBB) | **Best config (2026-06-24):** OOS Sharpe 0.89 / DD -10.5% vs SPY 0.58 / -22.1%. 14/17 folds gate-validated (anchor only in 2022 bear). |
+| 3-voter ensemble (BB+RSI+EMA) | OOS Sharpe 0.68 / DD -20.5% under fixed gates. Solid but beaten by the 5-voter. (Earlier 0.61–0.84 figures were a 50-stock subset.) |
 | Negatively correlated signal families | Reversion + trend signals cancel each other's failures. |
 | vectorbt grouped simulation | 50-stock, 17-fold WFO in ~47s. 2.07x speedup from profiling. |
 | Point-in-time universe membership | Prevents 1-3% annual survivorship bias inflation. |
@@ -133,7 +134,7 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 
 | Finding | Evidence |
 |---------|---------|
-| 6-voter ensemble | OOS Sharpe degraded 0.61 → 0.36. Correlated signals dilute, not diversify. |
+| ~~6-voter ensemble dilution~~ | **Retracted (2026-06-24).** The 0.61→0.36 "dilution" was a broken-gate + pre-ATR-exit artifact. Under fixed gates: 6-voter 0.92, 5-voter 0.89. Adding voters helps; only MTF hurts. |
 | Trailing stops on reversion | Exits during expected drawdown, destroying the reversion thesis. |
 | Momentum strategies | OOS Sharpe -5.11. Well-arbitraged in US large caps. |
 | MTF signal | Ablation: removing it *improved* Sharpe 0.55 → 0.64. Actively harmful. |
@@ -168,9 +169,10 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 | 2026-06-22 | ML feature gate (LightGBM, precision 0.585) + risk guardrails |
 | 2026-06-22 | Conviction-weighted ensemble sizing (`EnsembleConvictionSignal`) |
 | 2026-06-22 | Tiingo data loader — fallback for delisted tickers |
-| 2026-06-23 | **6-voter expansion → rejected.** OOS Sharpe 0.36. Ablation: RSI critical, MTF harmful, rest noise. |
+| 2026-06-23 | **6-voter expansion → rejected** (later retracted). OOS Sharpe 0.36. Ablation: RSI critical, MTF harmful, rest noise. |
+| 2026-06-24 | **Voter ablation redone under fixed gates → dilution thesis overturned.** 11-config rerun (`scripts/ablation_voters.py`): best = `core+macd+vbb` (5v, Sharpe 0.89, 14/17 gate). MACD/VolBB help; only MTF harmful. 6-voter healthy (0.92). |
 | 2026-06-23 | WFO infrastructure fixes (sweep grid 12K→24, max-stocks preload, progress output) |
-| 2026-06-23 | PnL baseline reset ($102,459). Reverted to 3-voter. |
+| 2026-06-23 | PnL baseline reset ($102,459). "Reverted to 3-voter" was documented but **never coded** — live still runs the 6-voter default. |
 | 2026-06-23 | Project snapshot + alpha expansion engineering report |
 
 ---
