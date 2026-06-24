@@ -22,7 +22,7 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     notifier.trade_alert.return_value = True
     notifier.daily_summary.return_value = True
 
-    return PaperTrader(broker, notifier, position_size=0.02), broker, notifier
+    return PaperTrader(broker, notifier), broker, notifier
 
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
@@ -81,7 +81,7 @@ class TestBuyEntries:
         }
         trader, broker, notifier = _make_trader(portfolio_value=100000.0)
         result = trader.run()
-        broker.submit_buy.assert_called_once_with("MSFT", 2000.0)  # 0.02 * 100000
+        broker.submit_buy.assert_called_once_with("MSFT", 3300.0)  # 0.033 * 100000
         assert "MSFT" in result["buys"]
 
     @patch("ggTrader.paper.trader.generate_signals")

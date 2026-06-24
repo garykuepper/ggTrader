@@ -59,8 +59,9 @@ include = '\.pyi?$'
 extend-exclude = '/(\.git|\.venv|archive)/'
 
 [tool.pytest.ini_options]
+addopts = "-m 'not integration'"
 markers = [
-    "integration: tests that hit live external services (network, DB); deselect with -m 'not integration'",
+    "integration: tests that hit live external services (network, DB); run with -m integration",
 ]
 
 [tool.mypy]
