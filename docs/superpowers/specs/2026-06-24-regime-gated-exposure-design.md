@@ -1,7 +1,7 @@
 # Regime-Gated Exposure Scaling — Design Spec
 
 **Date:** 2026-06-24
-**Status:** Design (pending implementation plan)
+**Status:** Diagnostic complete (2026-06-24) — exposure scaling confirmed as the lever; flat 0.03 beats SPY (16.2%/1.09/-11%). Regime payoff is INVERTED vs the trend-following assumption (reversion profits in down/turbulent regimes), so the Component-3 scalar_map must favor down/turbulent, not calm-uptrend.
 **Author:** brainstormed with Claude
 
 ## Problem
