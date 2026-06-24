@@ -26,13 +26,24 @@ from ggTrader.lab.strategies.indicators import (
 )
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
+#: All available sub-signal voters.
+ALL_VOTERS: tuple[str, ...] = ("bb", "rsi", "ema", "macd", "vbb", "mtf")
+#: Ablation-validated default. The macd/vbb/mtf voters were shown to dilute
+#: (MTF actively harmful, MACD/VolBB near-zero), so the 3-voter is the intended
+#: production config. Kept as the full set here ONLY to preserve current live
+#: behaviour until the deliberate switch is made; see roadmap Phase 1.
+DEFAULT_VOTERS: tuple[str, ...] = ALL_VOTERS
+#: The validated 3-voter production target (BB reversion + RSI + EMA trend).
+THREE_VOTERS: tuple[str, ...] = ("bb", "rsi", "ema")
+
 
 class EnsembleSignal:
     """Majority-vote ensemble: enter when >= min_agree sub-signals fire together.
 
-    Sub-signals: bb_reversion, rsi_reversion, ema_cross, macd_divergence,
-    volume_bb_reversion, mtf_reversion.
-    Exit: RSI fires independently; other exits require >= min_agree_exit votes.
+    Sub-signals (configurable via ``voters``): bb_reversion, rsi_reversion,
+    ema_cross, macd_divergence, volume_bb_reversion, mtf_reversion.
+    Exit: RSI fires independently (when active); other exits require
+    >= min_agree_exit votes.
     """
 
     name = "ensemble"
@@ -59,7 +70,14 @@ class EnsembleSignal:
         weekly_rsi_period: int = 14,
         weekly_rsi_oversold: int = 30,
         weekly_rsi_exit: int = 50,
+        voters: tuple[str, ...] | list[str] = DEFAULT_VOTERS,
     ) -> None:
+        unknown = [v for v in voters if v not in ALL_VOTERS]
+        if unknown:
+            raise ValueError(f"unknown voter(s) {unknown}; valid: {ALL_VOTERS}")
+        if not voters:
+            raise ValueError("voters must be non-empty")
+        self.voters = tuple(voters)
         self.cfg = cfg
         self.min_agree = min_agree
         self.min_agree_exit = min_agree_exit if min_agree_exit is not None else min_agree
@@ -112,44 +130,42 @@ class EnsembleSignal:
         ]
 
     def _generate_signals(self, close: pd.DataFrame, volume: pd.DataFrame) -> SignalTargets:
-        """Run all 6 sub-signals, sum entry/exit votes, threshold at min_agree."""
-        bb_ent, bb_ext = bb_signals(close, self.bb_period, self.bb_std)
-        rsi_ent, rsi_ext = rsi_signals(close, self.rsi_period, self.rsi_oversold, self.rsi_exit)
-        ema_ent, ema_ext = ema_signals(close, self.ema_fast, self.ema_slow)
-        macd_ent, macd_ext = macd_signals(
-            close, self.macd_fast, self.macd_slow, self.macd_signal, self.divergence_window
-        )
-        vbb_ent, vbb_ext = volume_bb_signals(
-            close, volume, self.bb_period, self.bb_std, self.vol_period, self.vol_mult
-        )
-        mtf_ent, mtf_ext = mtf_signals(
-            close,
-            self.weekly_rsi_period,
-            self.weekly_rsi_oversold,
-            self.weekly_rsi_exit,
-            self.bb_period,
-            self.bb_std,
-        )
+        """Run the active sub-signals, sum entry/exit votes, threshold at min_agree."""
+        ent: Dict[str, pd.DataFrame] = {}
+        ext: Dict[str, pd.DataFrame] = {}
+        if "bb" in self.voters:
+            ent["bb"], ext["bb"] = bb_signals(close, self.bb_period, self.bb_std)
+        if "rsi" in self.voters:
+            ent["rsi"], ext["rsi"] = rsi_signals(
+                close, self.rsi_period, self.rsi_oversold, self.rsi_exit
+            )
+        if "ema" in self.voters:
+            ent["ema"], ext["ema"] = ema_signals(close, self.ema_fast, self.ema_slow)
+        if "macd" in self.voters:
+            ent["macd"], ext["macd"] = macd_signals(
+                close, self.macd_fast, self.macd_slow, self.macd_signal, self.divergence_window
+            )
+        if "vbb" in self.voters:
+            ent["vbb"], ext["vbb"] = volume_bb_signals(
+                close, volume, self.bb_period, self.bb_std, self.vol_period, self.vol_mult
+            )
+        if "mtf" in self.voters:
+            ent["mtf"], ext["mtf"] = mtf_signals(
+                close,
+                self.weekly_rsi_period,
+                self.weekly_rsi_oversold,
+                self.weekly_rsi_exit,
+                self.bb_period,
+                self.bb_std,
+            )
 
-        entry_votes = (
-            bb_ent.astype(int)
-            + rsi_ent.astype(int)
-            + ema_ent.astype(int)
-            + macd_ent.astype(int)
-            + vbb_ent.astype(int)
-            + mtf_ent.astype(int)
-        )
-        exit_votes = (
-            bb_ext.astype(int)
-            + rsi_ext.astype(int)
-            + ema_ext.astype(int)
-            + macd_ext.astype(int)
-            + vbb_ext.astype(int)
-            + mtf_ext.astype(int)
-        )
+        entry_votes = sum(df.astype(int) for df in ent.values())
+        exit_votes = sum(df.astype(int) for df in ext.values())
 
         entries = (entry_votes >= self.min_agree).astype(bool)
-        exits = rsi_ext | (exit_votes >= self.min_agree_exit)
+        # RSI exit fires independently when RSI is an active voter.
+        independent_exit = ext["rsi"] if "rsi" in ext else False
+        exits = independent_exit | (exit_votes >= self.min_agree_exit)
         return SignalTargets(entries=entries, exits=exits)
 
     def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
@@ -190,6 +206,7 @@ class EnsembleSignal:
                 weekly_rsi_period=int(combo.get("weekly_rsi_period", self.weekly_rsi_period)),
                 weekly_rsi_oversold=int(combo.get("weekly_rsi_oversold", self.weekly_rsi_oversold)),
                 weekly_rsi_exit=int(combo.get("weekly_rsi_exit", self.weekly_rsi_exit)),
+                voters=self.voters,
             )
             targets = strat._generate_signals(close, volume)
             key = combo_name(self.name, combo)

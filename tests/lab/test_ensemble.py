@@ -179,3 +179,83 @@ def test_sweep_params_includes_min_agree_exit():
     params = EnsembleSignal.sweep_params()
     assert "min_agree_exit" in params
     assert 1 in params["min_agree_exit"]
+
+
+# ── Configurable voters ────────────────────────────────────────────────
+
+
+def test_voters_default_preserves_six_voter_behaviour():
+    """Default construction must keep all 6 voters (no live behaviour change)."""
+    cfg = LabConfig(min_history_bars=50)
+    strat = EnsembleSignal(cfg)
+    assert set(strat.voters) == {"bb", "rsi", "ema", "macd", "vbb", "mtf"}
+
+
+def test_three_voter_matches_manual_bb_rsi_ema():
+    """voters=(bb,rsi,ema) must equal a hand-computed 3-voter vote."""
+    from ggTrader.lab.strategies.indicators import (
+        bb_signals,
+        ema_signals,
+        extract_close,
+        rsi_signals,
+    )
+
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=7)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    close = extract_close(ohlcv, symbols)
+
+    strat = EnsembleSignal(cfg, min_agree=2, min_agree_exit=2, voters=("bb", "rsi", "ema"))
+    plans = {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
+    got = strat.to_targets(plans, ohlcv)
+
+    bb_ent, bb_ext = bb_signals(close, strat.bb_period, strat.bb_std)
+    rsi_ent, rsi_ext = rsi_signals(close, strat.rsi_period, strat.rsi_oversold, strat.rsi_exit)
+    ema_ent, ema_ext = ema_signals(close, strat.ema_fast, strat.ema_slow)
+    entry_votes = bb_ent.astype(int) + rsi_ent.astype(int) + ema_ent.astype(int)
+    exit_votes = bb_ext.astype(int) + rsi_ext.astype(int) + ema_ext.astype(int)
+    exp_entries = (entry_votes >= 2).astype(bool)
+    exp_exits = rsi_ext | (exit_votes >= 2)
+
+    pd.testing.assert_frame_equal(got.entries, exp_entries)
+    pd.testing.assert_frame_equal(got.exits, exp_exits)
+
+
+def test_three_voter_differs_from_six_voter():
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=11)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    plans = {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
+
+    three = EnsembleSignal(cfg, min_agree=2, voters=("bb", "rsi", "ema")).to_targets(plans, ohlcv)
+    six = EnsembleSignal(cfg, min_agree=2).to_targets(plans, ohlcv)
+    assert not three.entries.equals(six.entries)
+
+
+def test_voters_threaded_through_sweep_signals():
+    """sweep_signals must not silently drop the voters config."""
+    from ggTrader.lab.sweep import combo_name
+
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=200, seed=5)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+
+    strat = EnsembleSignal(cfg, voters=("bb", "rsi", "ema"))
+    combo = {"min_agree": 2, "min_agree_exit": 2, "bb_std": 2.0, "rsi_oversold": 30, "ema_fast": 20}
+    swept = strat.sweep_signals([combo], symbols, ohlcv)
+    key = combo_name("ensemble", combo)
+
+    direct = EnsembleSignal(
+        cfg, min_agree=2, min_agree_exit=2, voters=("bb", "rsi", "ema")
+    ).to_targets({ohlcv.index[50]: [{"symbol": s, "weight": 0.0} for s in symbols]}, ohlcv)
+    pd.testing.assert_frame_equal(swept[key].entries, direct.entries)
+
+
+def test_invalid_voter_name_raises():
+    cfg = LabConfig(min_history_bars=50)
+    try:
+        EnsembleSignal(cfg, voters=("bb", "nope"))
+    except ValueError as exc:
+        assert "nope" in str(exc)
+    else:
+        raise AssertionError("expected ValueError for unknown voter")
