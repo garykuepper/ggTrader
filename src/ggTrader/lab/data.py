@@ -39,16 +39,35 @@ def fetch_stock_ohlcv(
     interval: str = "1d",
     use_db_cache: bool = True,
     min_coverage: float = 0.0,
+    use_negative_cache: bool = False,
 ) -> pd.DataFrame:
     """Fetch daily OHLCV for ``symbols`` as a (symbol, field) MultiIndex frame.
 
     DB-first via CachedYFinanceLoader (TimescaleDB) when reachable; falls back
     to plain yfinance. Symbols absent from the cached result are fetched for
     the full range and persisted.
+
+    When ``use_negative_cache`` is set, symbols recorded as no-data within the
+    TTL window (permanently-delisted tickers) are skipped to avoid the slow
+    per-run yfinance/Tiingo retries. Opt-in only — the live paper trader must
+    keep the default (always try) so a transient outage never silently drops
+    an active symbol.
     """
     tickers = sorted({normalize_yf_ticker(s) for s in symbols})
     start_ts = pd.Timestamp(start, tz="UTC")
     end_ts = pd.Timestamp(end, tz="UTC") if end else None
+
+    skip: set[str] = set()
+    if use_negative_cache:
+        try:
+            from ggTrader.lab.negative_cache import load_skip_symbols
+
+            skip = load_skip_symbols(interval)
+            if skip:
+                print(f"  [data] negative cache: skipping {len(skip)} known no-data symbols")
+        except Exception as exc:
+            print(f"  [data] negative cache unavailable ({exc!r}); fetching all")
+            skip = set()
 
     from ggTrader.data.live.yfinance_loader import YFinanceDataLoader
 
@@ -74,7 +93,7 @@ def fetch_stock_ohlcv(
             raise ValueError("yfinance returned no data for the requested universe")
 
     have = set(df.columns.get_level_values(0).unique())
-    missing = [t for t in tickers if t not in have]
+    missing = [t for t in tickers if t not in have and t not in skip]
     if missing:
         print(f"  [data] fetching {len(missing)} symbols missing from cache...")
         if plain is None:
@@ -90,7 +109,7 @@ def fetch_stock_ohlcv(
             df.sort_index(axis=1, inplace=True)
 
     have = set(df.columns.get_level_values(0).unique())
-    still_missing = [t for t in tickers if t not in have]
+    still_missing = [t for t in tickers if t not in have and t not in skip]
     if still_missing:
         try:
             from ggTrader.data.live.tiingo_loader import TiingoDataLoader
@@ -111,6 +130,20 @@ def fetch_stock_ohlcv(
         except Exception as exc:
             print(f"  [data] Tiingo fallback unavailable: {exc!r}")
 
+    # Record symbols we tried (not skipped) that no provider could supply, so
+    # future opt-in runs skip them for the TTL window.
+    if use_negative_cache:
+        have = set(df.columns.get_level_values(0).unique())
+        newly_dead = [t for t in tickers if t not in have and t not in skip]
+        if newly_dead:
+            try:
+                from ggTrader.lab.negative_cache import record_no_data
+
+                record_no_data(newly_dead, interval)
+                print(f"  [data] negative cache: recorded {len(newly_dead)} no-data symbols")
+            except Exception as exc:
+                print(f"  [data] negative cache write failed ({exc!r})")
+
     df = df[df.index >= start_ts]
     if end_ts is not None:
         df = df[df.index <= end_ts]
@@ -129,9 +162,21 @@ def fetch_stock_ohlcv(
     return df
 
 
-def load_ohlcv(symbols: List[str], start: str, end: Optional[str] = None) -> pd.DataFrame:
+def load_ohlcv(
+    symbols: List[str],
+    start: str,
+    end: Optional[str] = None,
+    use_negative_cache: bool = False,
+) -> pd.DataFrame:
     """DB-first daily OHLCV as a (symbol, field) MultiIndex frame."""
-    return fetch_stock_ohlcv(symbols, start=start, end=end, interval="1d", use_db_cache=True)
+    return fetch_stock_ohlcv(
+        symbols,
+        start=start,
+        end=end,
+        interval="1d",
+        use_db_cache=True,
+        use_negative_cache=use_negative_cache,
+    )
 
 
 def equity_universe_between(

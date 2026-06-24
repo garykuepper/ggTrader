@@ -83,7 +83,12 @@ def run_lab(argv: List[str] | None = None) -> str:
     if cfg.max_stocks and len(universe) > cfg.max_stocks:
         universe = universe[: cfg.max_stocks]
     print(f"  [universe] {univ}: {len(universe)} symbols", flush=True)
-    ohlcv = load_ohlcv(universe + ["SPY"], str(data_start.date()), str(eval_end.date()))
+    ohlcv = load_ohlcv(
+        universe + ["SPY"],
+        str(data_start.date()),
+        str(eval_end.date()),
+        use_negative_cache=True,
+    )
     spy_close = ohlcv["SPY"]["close"].dropna()
     sym_cols = [s for s in ohlcv.columns.get_level_values(0).unique() if s != "SPY"]
     ohlcv = ohlcv[sym_cols]
