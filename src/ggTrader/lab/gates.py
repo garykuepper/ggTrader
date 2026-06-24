@@ -19,16 +19,28 @@ class NdhResult(NamedTuple):
 
 
 def _neighbor_flat_indices(peak_idx: int, grid_shape: tuple[int, ...]) -> list[int]:
-    """Return flat indices of all ±1-step neighbors in an N-dim grid."""
+    """Return flat indices of all ±1-step neighbors in an N-dim grid.
+
+    Only dimensions with size > 1 can have valid ±1 neighbors; a ±1 step in a
+    singleton dimension is always out of bounds. We therefore generate offsets
+    only along the varying dimensions, keeping the offset grid at 3**(n_varying)
+    instead of 3**ndim. This is behaviour-preserving and avoids an exponential
+    blow-up when many params are pinned (e.g. the 17-key ensemble grid, where
+    3**17 ≈ 129M offset vectors would exhaust memory).
+    """
+    shape_arr = np.array(grid_shape)
     coords = np.array(np.unravel_index(peak_idx, grid_shape))
-    ndim = len(grid_shape)
-    offsets = np.array(np.meshgrid(*[[-1, 0, 1]] * ndim)).T.reshape(-1, ndim)
+    varying = [d for d, size in enumerate(grid_shape) if size > 1]
+    if not varying:
+        return []
+    offsets = np.array(np.meshgrid(*[[-1, 0, 1]] * len(varying))).T.reshape(-1, len(varying))
     neighbors: list[int] = []
     for offset in offsets:
         if np.all(offset == 0):
             continue
-        nc = coords + offset
-        if np.all(nc >= 0) and np.all(nc < np.array(grid_shape)):
+        nc = coords.copy()
+        nc[varying] += offset
+        if np.all(nc >= 0) and np.all(nc < shape_arr):
             neighbors.append(int(np.ravel_multi_index(nc, grid_shape)))
     return neighbors
 

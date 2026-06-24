@@ -2,7 +2,15 @@
 
 import numpy as np
 
-from ggTrader.lab.gates import DsrResult, NdhResult, dsr_check, expected_max_sr, ndh_check, psr
+from ggTrader.lab.gates import (
+    DsrResult,
+    NdhResult,
+    _neighbor_flat_indices,
+    dsr_check,
+    expected_max_sr,
+    ndh_check,
+    psr,
+)
 
 
 def _make_plateau_grid() -> tuple[np.ndarray, np.ndarray, tuple[int, int, int]]:
@@ -73,6 +81,22 @@ def test_ndh_fails_high_variance():
     assert result.density > 0.85
     assert result.passed is False
     assert result.variance_ratio > 0.20
+
+
+def test_ndh_singleton_dims_do_not_explode():
+    """Pinned (size-1) params must not blow up the neighbor offset grid.
+
+    The ensemble grid has 17 param keys but only ~5 vary; the rest are size-1.
+    Trailing size-1 dims don't change C-order flat indices, so the neighbor set
+    for a 17-dim shape must equal the 5-dim base case. Before the fix, a 17-dim
+    shape allocated 3**17 (~129M) offset vectors and OOM-killed the process.
+    """
+    base_shape = (3, 2, 2, 2, 2)
+    full_shape = base_shape + (1,) * 12  # mirrors the 17-key ensemble grid
+    peak = int(np.ravel_multi_index((1, 0, 0, 0, 0), base_shape))
+    expected = sorted(_neighbor_flat_indices(peak, base_shape))
+    got = sorted(_neighbor_flat_indices(peak, full_shape))
+    assert got == expected
 
 
 def test_ndh_edge_peak_has_fewer_neighbors():
