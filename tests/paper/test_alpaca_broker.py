@@ -23,7 +23,10 @@ def _make_broker():
 
 
 class TestAlpacaBrokerInit:
-    def test_requires_api_keys(self):
+    @patch("ggTrader.paper.alpaca_broker._load_env")
+    def test_requires_api_keys(self, _mock_load_env):
+        # Patch _load_env so it can't repopulate keys from the real .env file
+        # on disk, which would defeat the cleared environment below.
         from ggTrader.paper.alpaca_broker import AlpacaBroker
 
         with patch.dict("os.environ", {}, clear=True):

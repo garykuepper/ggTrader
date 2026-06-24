@@ -18,7 +18,10 @@ def _make_notifier(**env_overrides):
 
 
 class TestTelegramNotifierInit:
-    def test_disabled_when_no_token(self):
+    @patch("ggTrader.paper.notifier._load_env")
+    def test_disabled_when_no_token(self, _mock_load_env):
+        # Patch _load_env so it can't repopulate the token from the real .env
+        # file on disk, which would defeat the cleared environment below.
         with patch.dict("os.environ", {}, clear=True):
             from ggTrader.paper.notifier import TelegramNotifier
 
@@ -31,12 +34,18 @@ class TestTelegramNotifierInit:
 
 
 class TestSend:
-    def test_send_disabled_returns_false(self):
+    @patch("ggTrader.paper.notifier.requests.post")
+    @patch("ggTrader.paper.notifier._load_env")
+    def test_send_disabled_returns_false(self, _mock_load_env, mock_post):
+        # _load_env patched so the cleared env actually disables the notifier;
+        # requests.post patched as a hard safety net so this can never make a
+        # real Telegram API call even if the disabled-guard regresses.
         with patch.dict("os.environ", {}, clear=True):
             from ggTrader.paper.notifier import TelegramNotifier
 
             n = TelegramNotifier()
             assert n.send("hello") is False
+            mock_post.assert_not_called()
 
     @patch("ggTrader.paper.notifier.requests.post")
     def test_send_posts_to_telegram(self, mock_post):
