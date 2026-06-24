@@ -184,11 +184,12 @@ def test_sweep_params_includes_min_agree_exit():
 # ── Configurable voters ────────────────────────────────────────────────
 
 
-def test_voters_default_preserves_six_voter_behaviour():
-    """Default construction must keep all 6 voters (no live behaviour change)."""
+def test_voters_default_is_validated_five_voter():
+    """Default = ablation-validated 5-voter (2026-06-24): all voters minus MTF."""
     cfg = LabConfig(min_history_bars=50)
     strat = EnsembleSignal(cfg)
-    assert set(strat.voters) == {"bb", "rsi", "ema", "macd", "vbb", "mtf"}
+    assert set(strat.voters) == {"bb", "rsi", "ema", "macd", "vbb"}
+    assert "mtf" not in strat.voters
 
 
 def test_three_voter_matches_manual_bb_rsi_ema():

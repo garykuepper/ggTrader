@@ -28,12 +28,16 @@ from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
 #: All available sub-signal voters.
 ALL_VOTERS: tuple[str, ...] = ("bb", "rsi", "ema", "macd", "vbb", "mtf")
-#: Ablation-validated default. The macd/vbb/mtf voters were shown to dilute
-#: (MTF actively harmful, MACD/VolBB near-zero), so the 3-voter is the intended
-#: production config. Kept as the full set here ONLY to preserve current live
-#: behaviour until the deliberate switch is made; see roadmap Phase 1.
-DEFAULT_VOTERS: tuple[str, ...] = ALL_VOTERS
-#: The validated 3-voter production target (BB reversion + RSI + EMA trend).
+#: The validated 5-voter production target (2026-06-24 ablation under fixed NDH
+#: gate + ATR exits): the full set MINUS MTF. MTF is the one consistently
+#: harmful voter (`core+mtf` Sharpe 0.49 vs core 0.68); MACD and VolBB *add*
+#: edge (`core+macd+vbb` Sharpe 0.89 / DD -10.5% / 14-of-17 gate-validated, the
+#: best config). The earlier "MACD/VolBB dilute" call was a broken-gate artifact.
+FIVE_VOTERS: tuple[str, ...] = ("bb", "rsi", "ema", "macd", "vbb")
+#: Default for live + lab + gate training: the ablation-validated 5-voter.
+DEFAULT_VOTERS: tuple[str, ...] = FIVE_VOTERS
+#: The 3-voter core (BB reversion + RSI + EMA trend) — defensive, solid but
+#: beaten by the 5-voter (Sharpe 0.68 / DD -20.5%).
 THREE_VOTERS: tuple[str, ...] = ("bb", "rsi", "ema")
 
 
