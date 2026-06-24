@@ -117,6 +117,7 @@ def simulate_signals(
     prices: pd.DataFrame,
     base_config: Dict[str, Any],
     ohlcv: pd.DataFrame | None = None,
+    return_pf: bool = False,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Dict[str, Any]]]:
     """Simulate every signal-based strategy in ONE from_signals call.
 
@@ -247,4 +248,6 @@ def simulate_signals(
         name: {"n_strategies": 1, "n_symbols": int(targets_by_strategy[name].entries.shape[1])}
         for name in names
     }
+    if return_pf:
+        return returns, value, diags, pf
     return returns, value, diags
