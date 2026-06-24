@@ -30,7 +30,7 @@ def _make_plateau_grid() -> tuple[np.ndarray, np.ndarray, tuple[int, int, int]]:
 
 
 def test_ndh_passes_stable_plateau():
-    """A plateau where all 26 neighbors have positive sharpe+expectancy passes."""
+    """A plateau where all 6 axis-aligned neighbors are positive passes."""
     sharpe, expectancy, shape = _make_plateau_grid()
     result = ndh_check(
         peak_idx=62,
@@ -40,8 +40,9 @@ def test_ndh_passes_stable_plateau():
     )
     assert isinstance(result, NdhResult)
     assert result.passed is True
-    assert result.n_neighbors == 26
-    assert result.n_positive == 26
+    # Axis-aligned (von-Neumann) neighborhood: 2 per axis × 3 axes = 6.
+    assert result.n_neighbors == 6
+    assert result.n_positive == 6
     assert result.density == 1.0
 
 
@@ -100,7 +101,7 @@ def test_ndh_singleton_dims_do_not_explode():
 
 
 def test_ndh_edge_peak_has_fewer_neighbors():
-    """Peak at grid corner (0,0,0) has only 7 neighbors, not 26."""
+    """Peak at grid corner (0,0,0) has only 3 axis-aligned neighbors."""
     shape = (5, 5, 5)
     n = 125
     sharpe = np.full(n, 0.5)
@@ -112,7 +113,8 @@ def test_ndh_edge_peak_has_fewer_neighbors():
         expectancy_grid=expectancy,
         grid_shape=shape,
     )
-    assert result.n_neighbors == 7
+    # Corner: only +1 reachable in each of 3 axes = 3 neighbors.
+    assert result.n_neighbors == 3
     assert result.passed is True
 
 
@@ -120,33 +122,45 @@ def test_ndh_needs_both_sharpe_and_expectancy_positive():
     """Neighbor with positive sharpe but negative expectancy doesn't count."""
     sharpe, expectancy, shape = _make_plateau_grid()
     idxs = _neighbor_indices(62, shape)
-    # Make 5 neighbors have negative expectancy
-    for idx in idxs[:5]:
-        expectancy[idx] = -0.001
+    # One of 6 neighbors gets negative expectancy -> 5/6 = 0.833 < 0.85.
+    expectancy[idxs[0]] = -0.001
     result = ndh_check(
         peak_idx=62,
         sharpe_grid=sharpe,
         expectancy_grid=expectancy,
         grid_shape=shape,
     )
-    # 21/26 positive = 0.808 < 0.85 threshold
-    assert result.n_positive == 21
+    assert result.n_neighbors == 6
+    assert result.n_positive == 5
     assert result.passed is False
 
 
+def test_ndh_excludes_regime_axes():
+    """neighbor_axes restricts the neighborhood to the given (tuning) axes."""
+    shape = (3, 2, 2, 2, 2)  # axis 0 = a regime param like min_agree
+    n = int(np.prod(shape))
+    sharpe = np.full(n, 0.8)
+    expectancy = np.full(n, 0.01)
+    peak = int(np.ravel_multi_index((1, 0, 0, 0, 0), shape))
+    sharpe[peak] = 1.0
+    # Make the axis-0 (regime) neighbors terrible — they must be ignored.
+    for nb in _neighbor_flat_indices(peak, shape, axes=(0,)):
+        sharpe[nb] = -5.0
+        expectancy[nb] = -1.0
+    result = ndh_check(
+        peak_idx=peak,
+        sharpe_grid=sharpe,
+        expectancy_grid=expectancy,
+        grid_shape=shape,
+        neighbor_axes=(1, 2, 3, 4),  # exclude regime axis 0
+    )
+    assert result.density == 1.0
+    assert result.passed is True
+
+
 def _neighbor_indices(peak_idx: int, shape: tuple[int, ...]) -> list[int]:
-    """Helper to get neighbor flat indices (same logic the implementation should use)."""
-    coords = np.array(np.unravel_index(peak_idx, shape))
-    ndim = len(shape)
-    offsets = np.array(np.meshgrid(*[[-1, 0, 1]] * ndim)).T.reshape(-1, ndim)
-    neighbors = []
-    for offset in offsets:
-        if np.all(offset == 0):
-            continue
-        nc = coords + offset
-        if np.all(nc >= 0) and np.all(nc < np.array(shape)):
-            neighbors.append(int(np.ravel_multi_index(nc, shape)))
-    return neighbors
+    """Helper delegating to the real axis-aligned neighbor implementation."""
+    return _neighbor_flat_indices(peak_idx, shape)
 
 
 def test_psr_known_values():

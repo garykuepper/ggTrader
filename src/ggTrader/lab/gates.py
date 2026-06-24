@@ -18,30 +18,38 @@ class NdhResult(NamedTuple):
     n_neighbors: int
 
 
-def _neighbor_flat_indices(peak_idx: int, grid_shape: tuple[int, ...]) -> list[int]:
-    """Return flat indices of all ±1-step neighbors in an N-dim grid.
+def _neighbor_flat_indices(
+    peak_idx: int,
+    grid_shape: tuple[int, ...],
+    axes: tuple[int, ...] | list[int] | None = None,
+) -> list[int]:
+    """Return flat indices of axis-aligned ±1-step neighbors in an N-dim grid.
 
-    Only dimensions with size > 1 can have valid ±1 neighbors; a ±1 step in a
-    singleton dimension is always out of bounds. We therefore generate offsets
-    only along the varying dimensions, keeping the offset grid at 3**(n_varying)
-    instead of 3**ndim. This is behaviour-preserving and avoids an exponential
-    blow-up when many params are pinned (e.g. the 17-key ensemble grid, where
-    3**17 ≈ 129M offset vectors would exhaust memory).
+    Uses a von-Neumann neighborhood (one axis changed at a time, no diagonals).
+    A Moore neighborhood (diagonals) over a coarse grid connects nearly every
+    cell to every other — on a (3,2,2,2,2) grid a single cell had 47 of 48
+    "neighbors", so NDH degenerated into a grid-wide quality check instead of a
+    local-plateau check.
+
+    ``axes`` restricts which dimensions are treated as neighbors. Pass the
+    smooth tuning axes only; regime axes (e.g. min_agree, where ±1 is a
+    different strategy rather than a small perturbation) should be excluded so
+    the neighborhood measures genuine parameter robustness. Defaults to every
+    dimension with size > 1.
     """
     shape_arr = np.array(grid_shape)
     coords = np.array(np.unravel_index(peak_idx, grid_shape))
-    varying = [d for d, size in enumerate(grid_shape) if size > 1]
-    if not varying:
-        return []
-    offsets = np.array(np.meshgrid(*[[-1, 0, 1]] * len(varying))).T.reshape(-1, len(varying))
+    if axes is None:
+        axes = tuple(d for d, size in enumerate(grid_shape) if size > 1)
     neighbors: list[int] = []
-    for offset in offsets:
-        if np.all(offset == 0):
+    for d in axes:
+        if grid_shape[d] <= 1:
             continue
-        nc = coords.copy()
-        nc[varying] += offset
-        if np.all(nc >= 0) and np.all(nc < shape_arr):
-            neighbors.append(int(np.ravel_multi_index(nc, grid_shape)))
+        for delta in (-1, 1):
+            nc = coords.copy()
+            nc[d] += delta
+            if 0 <= nc[d] < shape_arr[d]:
+                neighbors.append(int(np.ravel_multi_index(nc, grid_shape)))
     return neighbors
 
 
@@ -52,16 +60,21 @@ def ndh_check(
     grid_shape: tuple[int, ...],
     density_threshold: float = 0.85,
     variance_cap: float = 0.20,
+    neighbor_axes: tuple[int, ...] | list[int] | None = None,
 ) -> NdhResult:
     """Neighborhood Density Hurdle: reject isolated parameter spikes.
 
-    Checks a ±1-step neighborhood around peak_idx in an N-dimensional grid:
+    Checks an axis-aligned ±1-step neighborhood around peak_idx:
     1. Density: fraction of neighbors with BOTH positive Sharpe AND positive
        trade expectancy must be >= density_threshold (default 85%).
     2. Variance cap: std(neighbor Sharpes) / peak Sharpe <= variance_cap
        (default 20%).
+
+    ``neighbor_axes`` restricts the neighborhood to the smooth tuning axes;
+    regime axes (min_agree, etc.) should be excluded so a ±1 step is a genuine
+    small perturbation rather than a different strategy.
     """
-    neighbor_idxs = _neighbor_flat_indices(peak_idx, grid_shape)
+    neighbor_idxs = _neighbor_flat_indices(peak_idx, grid_shape, axes=neighbor_axes)
     n_neighbors = len(neighbor_idxs)
     if n_neighbors == 0:
         return NdhResult(

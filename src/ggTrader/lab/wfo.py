@@ -18,6 +18,10 @@ from ggTrader.lab.sweep import combo_name, split_params
 TRAIN_MONTHS = 12
 TEST_MONTHS = 3
 
+#: Discrete "regime" params where a ±1 grid step is a different strategy rather
+#: than a small perturbation. Excluded from the NDH plateau neighborhood.
+REGIME_PARAMS: frozenset = frozenset({"min_agree", "min_agree_exit"})
+
 
 # ── WFE & Circuit Breaker ──────────────────────────────────────────────
 
@@ -458,12 +462,18 @@ def run_wfo(
             strategy_name,
         )
         if best_idx in r2g and len(grid_shape) > 0:
+            # Restrict the NDH neighborhood to smooth tuning axes — a ±1 step in
+            # a regime param (min_agree) is a different strategy, not a small
+            # perturbation, and would wrongly drag the plateau density down.
+            param_keys = sorted(grid[0].keys())
+            neighbor_axes = tuple(i for i, k in enumerate(param_keys) if k not in REGIME_PARAMS)
             ndh_result = ndh_check(
                 peak_idx=r2g[best_idx],
                 sharpe_grid=sharpe_grid,
                 expectancy_grid=exp_grid,
                 grid_shape=grid_shape,
                 density_threshold=ndh_threshold,
+                neighbor_axes=neighbor_axes,
             )
             ndh_passed = ndh_result.passed
             ndh_density = ndh_result.density
