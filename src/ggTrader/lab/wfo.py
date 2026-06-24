@@ -417,10 +417,17 @@ def run_wfo(
     )
     print(
         f"  Anchor set: {anchor.combo}"
-        f" (MaxDD {anchor.max_drawdown_pct:.1f}%, CAGR {anchor.cagr_pct:.1f}%)"
+        f" (MaxDD {anchor.max_drawdown_pct:.1f}%, CAGR {anchor.cagr_pct:.1f}%)",
+        flush=True,
     )
 
     for i, fold in enumerate(folds):
+        print(
+            f"  Fold {i + 1}/{len(folds)}: train {fold.train_start.date()}→{fold.train_end.date()}"
+            f" | test {fold.test_start.date()}→{fold.test_end.date()}",
+            end="",
+            flush=True,
+        )
         # Train: sweep all combos on train window
         train_metrics, train_eq = _sweep_fold(
             strategy_name,
@@ -561,6 +568,9 @@ def run_wfo(
             }
         )
         fold_winners.append(winner)
+        oos_s = f" OOS Sharpe {oos_sharpe:.2f}" if np.isfinite(oos_sharpe) else ""
+        wfe_s = f" WFE {wfe_val:.2f}" if wfe_val is not None else ""
+        print(f" → done{oos_s}{wfe_s}", flush=True)
 
     # Concatenate OOS curves and score
     if oos_curves:

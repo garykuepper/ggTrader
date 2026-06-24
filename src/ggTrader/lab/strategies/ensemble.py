@@ -80,22 +80,24 @@ class EnsembleSignal:
 
     @classmethod
     def sweep_params(cls) -> dict[str, list]:
+        # Core ensemble params swept; new signal params pinned to defaults.
+        # Use --sweep-param to widen individual axes.
         return {
             "min_agree": [2, 3, 4],
-            "bb_period": [15, 20],
+            "bb_period": [20],
             "bb_std": [2.0, 2.5],
-            "rsi_period": [7, 14],
+            "rsi_period": [14],
             "rsi_oversold": [25, 30],
             "ema_fast": [10, 20],
-            "ema_slow": [50, 100],
-            "macd_fast": [8, 12],
-            "macd_slow": [21, 26],
+            "ema_slow": [50],
+            "macd_fast": [12],
+            "macd_slow": [26],
             "macd_signal": [9],
-            "divergence_window": [10, 20],
+            "divergence_window": [10],
             "vol_period": [20],
-            "vol_mult": [1.5, 2.0],
-            "weekly_rsi_period": [7, 14],
-            "weekly_rsi_oversold": [30, 35],
+            "vol_mult": [1.5],
+            "weekly_rsi_period": [14],
+            "weekly_rsi_oversold": [30],
             "weekly_rsi_exit": [50],
         }
 
@@ -249,20 +251,20 @@ class EnsembleConvictionSignal:
     def sweep_params(cls) -> dict[str, list]:
         return {
             "min_agree": [2, 3, 4],
-            "bb_period": [15, 20],
+            "bb_period": [20],
             "bb_std": [2.0, 2.5],
-            "rsi_period": [7, 14],
+            "rsi_period": [14],
             "rsi_oversold": [25, 30],
             "ema_fast": [10, 20],
-            "ema_slow": [50, 100],
-            "macd_fast": [8, 12],
-            "macd_slow": [21, 26],
+            "ema_slow": [50],
+            "macd_fast": [12],
+            "macd_slow": [26],
             "macd_signal": [9],
-            "divergence_window": [10, 20],
+            "divergence_window": [10],
             "vol_period": [20],
-            "vol_mult": [1.5, 2.0],
-            "weekly_rsi_period": [7, 14],
-            "weekly_rsi_oversold": [30, 35],
+            "vol_mult": [1.5],
+            "weekly_rsi_period": [14],
+            "weekly_rsi_oversold": [30],
             "weekly_rsi_exit": [50],
         }
 

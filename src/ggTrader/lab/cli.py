@@ -80,7 +80,9 @@ def run_lab(argv: List[str] | None = None) -> str:
     warmup_days = int(max(cfg.lookback, cfg.min_history_bars) * 1.6) + 60
     data_start = eval_start - pd.Timedelta(days=warmup_days)
     universe = equity_universe_between(eval_start, eval_end, universe=univ)
-    print(f"  [universe] {univ}: {len(universe)} symbols")
+    if cfg.max_stocks and len(universe) > cfg.max_stocks:
+        universe = universe[: cfg.max_stocks]
+    print(f"  [universe] {univ}: {len(universe)} symbols", flush=True)
     ohlcv = load_ohlcv(universe + ["SPY"], str(data_start.date()), str(eval_end.date()))
     spy_close = ohlcv["SPY"]["close"].dropna()
     sym_cols = [s for s in ohlcv.columns.get_level_values(0).unique() if s != "SPY"]
@@ -93,7 +95,10 @@ def run_lab(argv: List[str] | None = None) -> str:
         from ggTrader.lab.strategies.signals import (
             BollingerReversionSignal,
             EmaCrossSignal,
+            MACDDivergenceSignal,
+            MultiTimeframeReversionSignal,
             RsiReversionSignal,
+            VolumeBBReversionSignal,
             WfoTournamentSignal,
         )
         from ggTrader.lab.sweep import build_grid
@@ -139,7 +144,7 @@ def run_lab(argv: List[str] | None = None) -> str:
 
         if args.strategy not in SIGNAL_STRATEGY_NAMES:
             raise SystemExit(f"--wfo only supports signal strategies: {SIGNAL_STRATEGY_NAMES}")
-        print(f"WFO: {args.strategy} | {len(grid)} param combos")
+        print(f"WFO: {args.strategy} | {len(grid)} param combos", flush=True)
         return run_wfo(
             args.strategy,
             strategy_cls,
