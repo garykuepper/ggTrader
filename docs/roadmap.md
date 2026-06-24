@@ -9,8 +9,8 @@
 | State | Detail |
 |---|---|
 | ✅ **Lab shipped** | vectorbt-centric research bench (2026-06-15). 10 strategies, parameter sweep, WFO framework, 17-fold rolling windows, DB persistence. |
-| ✅ **WFO validated** | 3-voter ensemble (BB+RSI+EMA) clears WFO: OOS Sharpe 0.61–0.84, CAGR 12.6–18.8%, WFE 1.11–1.25. First strategy to beat SPY risk-adjusted in honest OOS. |
-| ❌ **6-voter rejected** | Expanded to 6 sub-signals: OOS Sharpe degraded 0.61 → 0.36. Ablation proved MTF harmful, RSI critical, BB/EMA/MACD/VolBB near-zero individual impact. Reverted to 3-voter. |
+| ⚠️ **WFO "validation" revisited (2026-06-24)** | On the full 603-stock SP500 universe, **both** 3-voter and 6-voter fall back to the defensive **anchor** on ~every fold (NDH/DSR gates reject nearly all selected winners: 3-voter 0/17 PASS, 6-voter 2/17). Reported OOS is anchor-driven, not a gate-validated edge. 3-voter: Sharpe 0.81 / CAGR 19% / DD -21% / WFE 1.15. 6-voter: Sharpe 1.04 / CAGR 11.3% / DD -11.1% / WFE nan. Earlier 0.61–0.84 figures were a 50-stock subset and do not reproduce here. |
+| ⚠️ **6-voter vs 3-voter (2026-06-24)** | The "revert to 3-voter" was a **documented decision never implemented in code** — `EnsembleSignal` ran all 6 voters and the live paper trader was running the 6-voter. Configurable `voters` param now added (default still 6 to preserve live behaviour; `THREE_VOTERS` available). The full-universe comparison does **not** show the 3-voter is clearly better; neither is gate-validated. **Open: why do the gates reject ~every fold?** (likely NDH 85% density hurdle too strict for a 48-combo grid). |
 | ✅ **ML feature gate** | LightGBM classifier (precision 0.585, 10 features, 3.2K samples). Known defect: ATR feature uses close-only proxy, not true range. |
 | 🟢 **Paper live** | 3-voter ensemble on Alpaca paper ($102,459). Cron fires 1:30 PM PT Mon–Fri. ML gate + risk guardrails active. PnL baseline reset 2026-06-23. |
 | 🔵 **Next up** | Asymmetric exit architecture + ATR fix → WFO validation → paper monitoring → live go-live. |
@@ -38,7 +38,8 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 |:---:|---|---|---|
 | ✅ | **Asymmetric exit logic** | `ensemble.py` | RSI exit fires independently (`exits = rsi_ext \| (exit_votes >= min_agree_exit)`). New `min_agree_exit` sweep param (default=`min_agree` for backward compat). Both `EnsembleSignal` and `EnsembleConvictionSignal` updated. |
 | ✅ | **ATR True Range fix** | `feature_gate.py`, `train_gate.py` | `extract_features()` now accepts optional `high`/`low` series for true ATR. `filter_buys()` and `_build_dataset()` thread OHLCV high/low through. Falls back to close-diff when unavailable. Retrain `ensemble_gate.joblib` after fix. |
-| 🔵 | **WFO validation of Phase 1** | `wfo.py` | Run 3-voter + asymmetric exits through 17-fold WFO on 50 stocks. Compare OOS Sharpe/CAGR/MaxDD against 3-voter symmetric baseline (0.61/12.6%/-23.4%). |
+| ✅ | **WFO validation of Phase 1** | `wfo.py` | Done on full 603-stock universe (2026-06-24). Finding: gates reject ~every fold for both voter sets → results are anchor-driven, not edge-validated. Asymmetric exit + ATR fix are in; the blocker is now the over-strict gates, not the exits. |
+| 🔵 | **Investigate gate over-rejection** | `gates.py`, `wfo.py` | NDH (85% neighbor density) + DSR reject nearly all fold winners on a 48-combo grid, forcing anchor fallback. Loosen/recalibrate the density hurdle or widen the grid so WFO deploys a real parameter set instead of always defaulting to anchor. |
 
 ### Phase 2: ML Gate & Voting Upgrades
 
