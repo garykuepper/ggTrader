@@ -2,11 +2,10 @@
 import numpy as np
 import pandas as pd
 
+from ggTrader.lab.strategies.indicators import bb_signals, rsi_signals
 from ggTrader.lab.strategies.signals import (
     BollingerReversionSignal,
     RsiReversionSignal,
-    _bb_signals,
-    _rsi_signals,
     build_signal_strategy,
 )
 from ggTrader.lab.strategy import LabConfig, SignalTargets
@@ -90,7 +89,7 @@ def test_bb_signals_entry_on_lower_band_cross():
     base = np.full(100, 100.0)
     base[50] = 80.0  # sharp drop below lower band
     close = pd.DataFrame({"A": base}, index=idx)
-    entries, exits = _bb_signals(close, period=20, std=2.0)
+    entries, exits = bb_signals(close, period=20, std=2.0)
     assert entries["A"].iloc[50], "Should enter on sharp drop below lower band"
 
 
@@ -101,7 +100,7 @@ def test_bb_signals_exit_on_sma_cross():
     base[50] = 80.0  # drop below lower band
     base[51:] = 100.0  # snap back to mean
     close = pd.DataFrame({"A": base}, index=idx)
-    _, exits = _bb_signals(close, period=20, std=2.0)
+    _, exits = bb_signals(close, period=20, std=2.0)
     exit_bars = exits["A"].iloc[51:55]
     assert exit_bars.any(), "Should exit when price returns to SMA"
 
@@ -110,7 +109,7 @@ def test_bb_signals_no_entry_in_warmup():
     """No signals during the warmup period (before enough bars for rolling)."""
     idx = _idx(50)
     close = pd.DataFrame({"A": np.full(50, 100.0)}, index=idx)
-    entries, exits = _bb_signals(close, period=20, std=2.0)
+    entries, exits = bb_signals(close, period=20, std=2.0)
     assert not entries["A"].iloc[:20].any()
 
 
@@ -142,8 +141,8 @@ def test_bb_wider_std_fewer_entries():
     idx = _idx(500)
     np.random.seed(42)
     close = pd.DataFrame({"A": 100.0 + np.cumsum(np.random.normal(0, 1, 500))}, index=idx)
-    entries_tight, _ = _bb_signals(close, period=20, std=1.5)
-    entries_wide, _ = _bb_signals(close, period=20, std=3.0)
+    entries_tight, _ = bb_signals(close, period=20, std=1.5)
+    entries_wide, _ = bb_signals(close, period=20, std=3.0)
     assert entries_tight["A"].sum() >= entries_wide["A"].sum()
 
 
@@ -186,7 +185,7 @@ def test_rsi_signals_entry_on_oversold():
     price[50:55] = [price[49], price[49] - 3, price[49] - 7, price[49] - 12, price[49] - 18]
     price[55:] = price[54] + np.cumsum(np.random.normal(0.2, 0.3, 45))
     close = pd.DataFrame({"A": price}, index=idx)
-    entries, _ = _rsi_signals(close, period=14, oversold=30, exit_level=50)
+    entries, _ = rsi_signals(close, period=14, oversold=30, exit_level=50)
     assert entries["A"].any(), "Should have entries when RSI drops below 30"
 
 
@@ -195,7 +194,7 @@ def test_rsi_signals_exit_on_neutral():
     idx = _idx(200)
     price = _mean_reverting_close(200)
     close = pd.DataFrame({"A": price}, index=idx)
-    _, exits = _rsi_signals(close, period=14, oversold=30, exit_level=50)
+    _, exits = rsi_signals(close, period=14, oversold=30, exit_level=50)
     assert exits["A"].any(), "Should have exits when RSI returns above 50"
 
 
@@ -203,7 +202,7 @@ def test_rsi_signals_no_entry_in_warmup():
     """No signals in the first rsi_period bars."""
     idx = _idx(50)
     close = pd.DataFrame({"A": np.linspace(100, 90, 50)}, index=idx)
-    entries, _ = _rsi_signals(close, period=14, oversold=30, exit_level=50)
+    entries, _ = rsi_signals(close, period=14, oversold=30, exit_level=50)
     assert not entries["A"].iloc[:14].any()
 
 
@@ -232,8 +231,8 @@ def test_rsi_lower_oversold_fewer_entries():
     idx = _idx(500)
     price = _mean_reverting_close(500)
     close = pd.DataFrame({"A": price}, index=idx)
-    entries_loose, _ = _rsi_signals(close, period=14, oversold=30, exit_level=50)
-    entries_strict, _ = _rsi_signals(close, period=14, oversold=20, exit_level=50)
+    entries_loose, _ = rsi_signals(close, period=14, oversold=30, exit_level=50)
+    entries_strict, _ = rsi_signals(close, period=14, oversold=20, exit_level=50)
     assert entries_loose["A"].sum() >= entries_strict["A"].sum()
 
 

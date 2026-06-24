@@ -32,7 +32,7 @@ class EnsembleSignal:
 
     Sub-signals: bb_reversion, rsi_reversion, ema_cross, macd_divergence,
     volume_bb_reversion, mtf_reversion.
-    Exit: when >= min_agree sub-signals fire an exit.
+    Exit: RSI fires independently; other exits require >= min_agree_exit votes.
     """
 
     name = "ensemble"
@@ -42,6 +42,7 @@ class EnsembleSignal:
         self,
         cfg: LabConfig,
         min_agree: int = 2,
+        min_agree_exit: int | None = None,
         bb_period: int = 20,
         bb_std: float = 2.0,
         rsi_period: int = 14,
@@ -61,6 +62,7 @@ class EnsembleSignal:
     ) -> None:
         self.cfg = cfg
         self.min_agree = min_agree
+        self.min_agree_exit = min_agree_exit if min_agree_exit is not None else min_agree
         self.bb_period = bb_period
         self.bb_std = bb_std
         self.rsi_period = rsi_period
@@ -84,6 +86,7 @@ class EnsembleSignal:
         # Use --sweep-param to widen individual axes.
         return {
             "min_agree": [2, 3, 4],
+            "min_agree_exit": [1, 2],
             "bb_period": [20],
             "bb_std": [2.0, 2.5],
             "rsi_period": [14],
@@ -146,7 +149,7 @@ class EnsembleSignal:
         )
 
         entries = (entry_votes >= self.min_agree).astype(bool)
-        exits = (exit_votes >= self.min_agree).astype(bool)
+        exits = rsi_ext | (exit_votes >= self.min_agree_exit)
         return SignalTargets(entries=entries, exits=exits)
 
     def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
@@ -170,6 +173,7 @@ class EnsembleSignal:
             strat = EnsembleSignal(
                 self.cfg,
                 min_agree=int(combo.get("min_agree", self.min_agree)),
+                min_agree_exit=int(combo.get("min_agree_exit", self.min_agree_exit)),
                 bb_period=int(combo.get("bb_period", self.bb_period)),
                 bb_std=float(combo.get("bb_std", self.bb_std)),
                 rsi_period=int(combo.get("rsi_period", self.rsi_period)),
@@ -207,6 +211,7 @@ class EnsembleConvictionSignal:
         self,
         cfg: LabConfig,
         min_agree: int = 2,
+        min_agree_exit: int | None = None,
         bb_period: int = 20,
         bb_std: float = 2.0,
         rsi_period: int = 14,
@@ -228,6 +233,7 @@ class EnsembleConvictionSignal:
     ) -> None:
         self.cfg = cfg
         self.min_agree = min_agree
+        self.min_agree_exit = min_agree_exit if min_agree_exit is not None else min_agree
         self.bb_period = bb_period
         self.bb_std = bb_std
         self.rsi_period = rsi_period
@@ -251,6 +257,7 @@ class EnsembleConvictionSignal:
     def sweep_params(cls) -> dict[str, list]:
         return {
             "min_agree": [2, 3, 4],
+            "min_agree_exit": [1, 2],
             "bb_period": [20],
             "bb_std": [2.0, 2.5],
             "rsi_period": [14],
@@ -315,7 +322,7 @@ class EnsembleConvictionSignal:
         )
 
         entries = (entry_votes >= self.min_agree).astype(bool)
-        exits = (exit_votes >= self.min_agree).astype(bool)
+        exits = rsi_ext | (exit_votes >= self.min_agree_exit)
 
         bb_str = bb_strength(close, self.bb_period, self.bb_std)
         rsi_str = rsi_strength(close, self.rsi_period, self.rsi_oversold)
@@ -362,6 +369,7 @@ class EnsembleConvictionSignal:
             strat = EnsembleConvictionSignal(
                 self.cfg,
                 min_agree=int(combo.get("min_agree", self.min_agree)),
+                min_agree_exit=int(combo.get("min_agree_exit", self.min_agree_exit)),
                 bb_period=int(combo.get("bb_period", self.bb_period)),
                 bb_std=float(combo.get("bb_std", self.bb_std)),
                 rsi_period=int(combo.get("rsi_period", self.rsi_period)),

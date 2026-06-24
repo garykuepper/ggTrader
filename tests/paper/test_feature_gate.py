@@ -74,6 +74,27 @@ def test_gate_filters_low_confidence(sample_close, sample_volume):
     assert scores["AAPL"] < 0.55
 
 
+def test_extract_features_true_range_with_high_low(sample_close, sample_volume):
+    """ATR should use true range when high/low are provided."""
+    bar_date = sample_close.index[-1]
+    high = sample_close * 1.02
+    low = sample_close * 0.98
+
+    feats_proxy = extract_features(sample_close, sample_volume, bar_date)
+    feats_true = extract_features(sample_close, sample_volume, bar_date, high=high, low=low)
+
+    assert feats_true["atr_ratio"] != pytest.approx(feats_proxy["atr_ratio"], abs=1e-6)
+    assert not np.isnan(feats_true["atr_ratio"])
+
+
+def test_extract_features_fallback_without_high_low(sample_close, sample_volume):
+    """Without high/low, ATR should still work (close-diff fallback)."""
+    bar_date = sample_close.index[-1]
+    feats = extract_features(sample_close, sample_volume, bar_date)
+    assert "atr_ratio" in feats
+    assert not np.isnan(feats["atr_ratio"])
+
+
 def test_gate_passes_high_confidence(sample_close, sample_volume):
     class FakeModel:
         def predict_proba(self, X):

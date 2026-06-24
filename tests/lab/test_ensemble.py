@@ -151,3 +151,31 @@ def test_ensemble_6_voter_min_agree_4():
     plans = {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
     targets = strat.to_targets(plans, ohlcv)
     assert targets.entries.sum().sum() <= targets.entries.shape[0] * len(symbols) * 0.005
+
+
+def test_asymmetric_exit_more_exits_than_symmetric():
+    """min_agree_exit=1 should produce >= exits than min_agree_exit=min_agree."""
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=99)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    plans = {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
+
+    sym = EnsembleSignal(cfg, min_agree=2, min_agree_exit=2)
+    asym = EnsembleSignal(cfg, min_agree=2, min_agree_exit=1)
+
+    t_sym = sym.to_targets(plans, ohlcv)
+    t_asym = asym.to_targets(plans, ohlcv)
+
+    assert t_asym.exits.sum().sum() >= t_sym.exits.sum().sum()
+
+
+def test_min_agree_exit_defaults_to_min_agree():
+    cfg = LabConfig(min_history_bars=50)
+    strat = EnsembleSignal(cfg, min_agree=3)
+    assert strat.min_agree_exit == 3
+
+
+def test_sweep_params_includes_min_agree_exit():
+    params = EnsembleSignal.sweep_params()
+    assert "min_agree_exit" in params
+    assert 1 in params["min_agree_exit"]

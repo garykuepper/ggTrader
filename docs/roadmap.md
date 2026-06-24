@@ -36,8 +36,8 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 
 | Status | Item | File(s) | Notes |
 |:---:|---|---|---|
-| 🔵 | **Asymmetric exit logic** | `ensemble.py` | Decouple entry/exit thresholds. RSI exit fires independently (`exits = rsi_ext \| (exit_votes >= min_agree_exit)`). Prevents profit give-back from waiting for slow consensus. 2-line core change + new `min_agree_exit` sweep param. |
-| 🔵 | **ATR True Range fix** | `feature_gate.py`, `train_gate.py` | Current `atr_ratio` uses `c.diff().abs()` (close-only proxy), not actual True Range. Thread OHLCV (high/low/close) through `extract_features()`. Retrain `ensemble_gate.joblib` after fix. |
+| ✅ | **Asymmetric exit logic** | `ensemble.py` | RSI exit fires independently (`exits = rsi_ext \| (exit_votes >= min_agree_exit)`). New `min_agree_exit` sweep param (default=`min_agree` for backward compat). Both `EnsembleSignal` and `EnsembleConvictionSignal` updated. |
+| ✅ | **ATR True Range fix** | `feature_gate.py`, `train_gate.py` | `extract_features()` now accepts optional `high`/`low` series for true ATR. `filter_buys()` and `_build_dataset()` thread OHLCV high/low through. Falls back to close-diff when unavailable. Retrain `ensemble_gate.joblib` after fix. |
 | 🔵 | **WFO validation of Phase 1** | `wfo.py` | Run 3-voter + asymmetric exits through 17-fold WFO on 50 stocks. Compare OOS Sharpe/CAGR/MaxDD against 3-voter symmetric baseline (0.61/12.6%/-23.4%). |
 
 ### Phase 2: ML Gate & Voting Upgrades
@@ -141,9 +141,10 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 
 | Defect | Location | Impact |
 |--------|----------|--------|
-| ATR uses close-only proxy | `feature_gate.py:61-65` | Understates volatility in high-vol regimes, corrupts `atr_ratio` ML feature |
-| Symmetric exit consensus | `ensemble.py:148-149` | Profit give-back from slow exit signals |
+| ~~ATR uses close-only proxy~~ | ~~`feature_gate.py`~~ | **Fixed.** Now uses true range when high/low available. |
+| ~~Symmetric exit consensus~~ | ~~`ensemble.py`~~ | **Fixed.** RSI exit fires independently; `min_agree_exit` decouples entry/exit thresholds. |
 | Static ML threshold | `feature_gate.py:164` | Blocks good trades in low-vol, passes bad trades in high-vol |
+| Model needs retraining | `models/ensemble_gate.joblib` | Stale: trained with close-only ATR proxy. Retrain with `python -m ggTrader.lab.train_gate`. |
 
 ---
 

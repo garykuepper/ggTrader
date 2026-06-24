@@ -49,18 +49,24 @@ def _build_dataset(ohlcv: pd.DataFrame, entries: pd.DataFrame) -> pd.DataFrame:
     """Build feature matrix + labels from ensemble entry signals."""
     records: list[dict] = []
     sym_cols = list(entries.columns)
-    close_frames = {
-        s: ohlcv[s]["close"].dropna() for s in sym_cols if s in ohlcv.columns.get_level_values(0)
-    }
-    volume_frames = {}
+    available_syms = set(ohlcv.columns.get_level_values(0))
+    close_frames = {s: ohlcv[s]["close"].dropna() for s in sym_cols if s in available_syms}
+    volume_frames: dict = {}
+    high_frames: dict = {}
+    low_frames: dict = {}
     for s in sym_cols:
-        if s in ohlcv.columns.get_level_values(0):
-            v = ohlcv[s].get("volume")
-            volume_frames[s] = (
-                v.dropna()
-                if v is not None and not v.empty
-                else pd.Series(1.0, index=close_frames[s].index)
-            )
+        if s not in available_syms:
+            continue
+        v = ohlcv[s].get("volume")
+        volume_frames[s] = (
+            v.dropna()
+            if v is not None and not v.empty
+            else pd.Series(1.0, index=close_frames[s].index)
+        )
+        h = ohlcv[s].get("high")
+        high_frames[s] = h.dropna() if h is not None and not h.empty else None
+        lo = ohlcv[s].get("low")
+        low_frames[s] = lo.dropna() if lo is not None and not lo.empty else None
 
     for bar_date in entries.index:
         for symbol in sym_cols:
@@ -85,8 +91,14 @@ def _build_dataset(ohlcv: pd.DataFrame, entries: pd.DataFrame) -> pd.DataFrame:
             fwd_ret = close.iloc[future_idx] / close.iloc[bar_idx] - 1.0
             label = 1 if fwd_ret > 0 else 0
 
+            high = high_frames.get(symbol)
+            low = low_frames.get(symbol)
             feats = extract_features(
-                close.iloc[: bar_idx + 1], volume.iloc[: bar_idx + 1], bar_date
+                close.iloc[: bar_idx + 1],
+                volume.iloc[: bar_idx + 1],
+                bar_date,
+                high=high.iloc[: bar_idx + 1] if high is not None else None,
+                low=low.iloc[: bar_idx + 1] if low is not None else None,
             )
             feats["label"] = label
             feats["date"] = bar_date
