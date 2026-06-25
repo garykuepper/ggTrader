@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-"""One-time S&P 500 equity OHLCV backfill into TimescaleDB.
+"""Equity OHLCV backfill into TimescaleDB for any universe.
 
-Run once (takes ~5-10 min for ~600 symbols). After this, equity lab runs
+Run once per universe (takes ~5-10 min). After this, equity lab runs
 hit the DB cache instead of downloading live from yfinance.
 
 Usage:
     source .venv/bin/activate
-    python scripts/equity_backfill.py [--start 2000-01-01] [--batch 50]
+    python scripts/equity_backfill.py [--universe sp500] [--start 2000-01-01] [--batch 50]
+    python scripts/equity_backfill.py --universe midcap400 --start 2018-01-01
 """
 
 from __future__ import annotations
@@ -19,24 +20,39 @@ sys.path.insert(0, "src")
 
 import pandas as pd
 
-from ggTrader.data.core.index_constituents import all_members_between, normalize_yf_ticker
+from ggTrader.data.core.index_constituents import (
+    normalize_yf_ticker,
+    universe_all_between,
+)
 from ggTrader.lab.data import fetch_stock_ohlcv
 
 
+def resolve_symbols(
+    universe: str, start_ts: pd.Timestamp, end_ts: pd.Timestamp, benchmark: str
+) -> list[str]:
+    """All members of `universe` across [start, end] plus the benchmark, normalized + sorted."""
+    members = {normalize_yf_ticker(t) for t in universe_all_between(universe, start_ts, end_ts)}
+    members.add(normalize_yf_ticker(benchmark))
+    return sorted(members)
+
+
 def main() -> None:
-    p = argparse.ArgumentParser(description="Backfill S&P 500 OHLCV into TimescaleDB.")
+    p = argparse.ArgumentParser(description="Backfill equity OHLCV into TimescaleDB.")
     p.add_argument("--start", default="2000-01-01", help="History start date (default: 2000-01-01)")
     p.add_argument("--batch", type=int, default=50, help="Symbols per yfinance batch (default: 50)")
+    p.add_argument("--universe", default="sp500", help="Universe to backfill (default: sp500)")
+    p.add_argument(
+        "--benchmark",
+        default=None,
+        help="Benchmark ticker to include (default: SPY for sp500, MDY for midcap400)",
+    )
     args = p.parse_args()
 
     start_ts = pd.Timestamp(args.start, tz="UTC")
     end_ts = pd.Timestamp.now(tz="UTC").normalize()
 
-    # All S&P 500 members from start to today (PIT union).
-    members = sorted({normalize_yf_ticker(t) for t in all_members_between(start_ts, end_ts)})
-    # Always include SPY (benchmark).
-    if "SPY" not in members:
-        members = ["SPY"] + members
+    benchmark = args.benchmark or ("MDY" if args.universe == "midcap400" else "SPY")
+    members = resolve_symbols(args.universe, start_ts, end_ts, benchmark)
 
     print(f"Backfilling {len(members)} symbols from {args.start} to {end_ts.date()}")
     print(f"Batch size: {args.batch}")
