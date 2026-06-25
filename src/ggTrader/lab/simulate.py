@@ -118,7 +118,10 @@ def simulate_signals(
     base_config: Dict[str, Any],
     ohlcv: pd.DataFrame | None = None,
     return_pf: bool = False,
-) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Dict[str, Any]]]:
+) -> (
+    Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Dict[str, Any]]]
+    | Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Dict[str, Any]], Any]
+):
     """Simulate every signal-based strategy in ONE from_signals call.
 
     Args:
@@ -126,7 +129,9 @@ def simulate_signals(
             frame is (time x symbol) boolean — True = entry/exit on that bar.
         prices: (time x symbol) close prices covering every target column.
         base_config: START_CASH, FEES, SLIPPAGE, FREQ.
-            Optional SIGNAL_POSITION_SIZE (fraction of portfolio per entry, default 0.02).
+            Optional SIGNAL_POSITION_SIZE (fraction of portfolio per entry,
+            function fallback 0.02; STOCK_BASE_CONFIG sets the lab default 0.03).
+        return_pf: when True, append the vbt Portfolio as a 4th return element.
             Optional ts_stop (float): fixed trailing stop fraction (e.g. 0.05 = 5%).
             Optional atr_mult (float) + atr_period (int, default 14): ATR-adaptive
             trailing stop. Requires ohlcv kwarg.
