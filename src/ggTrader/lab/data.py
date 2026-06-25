@@ -21,6 +21,12 @@ STOCK_BASE_CONFIG: dict[str, Any] = {
     "FEES": 0.0,
     "SLIPPAGE": 0.0005,
     "FREQ": "1d",
+    # 3% per entry: the 2026-06-24 lever diagnostic (scripts/lever_diagnostic.py)
+    # showed the 5-voter book sits ~61% in cash at the old 0.02 default. Raising
+    # to 0.03 deploys that idle cash (no leverage) and beats SPY outright in the
+    # 17-fold WFO: OOS CAGR 16.2% / Sharpe 1.09 / DD -11% (vs 0.02: 10.5% / 0.89).
+    # Matches the live paper trader's position_pct (risk.py, 0.033).
+    "SIGNAL_POSITION_SIZE": 0.03,
     "USE_CASH_SHARING": False,
     "TRAIN_METRIC": "composite",
     "MIN_CLOSED_TRADES_TRAIN": 0,
