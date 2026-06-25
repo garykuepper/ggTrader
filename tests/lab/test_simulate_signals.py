@@ -2,8 +2,16 @@
 import numpy as np
 import pandas as pd
 
+from ggTrader.lab.data import STOCK_BASE_CONFIG
 from ggTrader.lab.simulate import simulate_signals
 from ggTrader.lab.strategy import SignalTargets
+
+
+def test_stock_base_config_deploys_at_three_percent():
+    """Validated 2026-06-24 (lever diagnostic): 0.03 deploys idle cash and
+    beats SPY outright. Guards against silent regression to the old 0.02."""
+    assert STOCK_BASE_CONFIG["SIGNAL_POSITION_SIZE"] == 0.03
+
 
 BASE = {
     "START_CASH": 10000.0,
