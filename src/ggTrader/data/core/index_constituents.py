@@ -148,6 +148,7 @@ def _load_snapshot(filename: str) -> List[str]:
 _SNAPSHOT_REGISTRY: Dict[str, str] = {
     "nasdaq100": "nasdaq100_tickers_snapshot_2026-06-09.txt",
     "russell2000": "russell2000_tickers_snapshot_2026-06-09.txt",
+    "midcap400": "midcap400_tickers_snapshot_2026-06-24.txt",
 }
 
 
