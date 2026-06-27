@@ -164,11 +164,11 @@ def test_run_wfo_integration():
         base_config,
         grid,
     )
-    assert "WFO:" in output
-    assert "OOS Aggregate:" in output
-    assert "Recommended Live Params" in output
+    assert "WFO:" in output.table
+    assert "OOS Aggregate:" in output.table
+    assert "Recommended Live Params" in output.table
     # Should have at least 1 fold
-    assert "Fold" in output
+    assert "Fold" in output.table
 
 
 def test_pick_live_winner_prefers_fold_proven_combo():
@@ -276,9 +276,11 @@ def test_run_wfo_reports_gate_status():
         base_config,
         grid,
     )
-    assert "Gate" in output
+    assert "Gate" in output.table
     # Each fold line should show PASS or FAIL
-    fold_lines = [ln for ln in output.splitlines() if ln.strip().startswith(tuple("0123456789"))]
+    fold_lines = [
+        ln for ln in output.table.splitlines() if ln.strip().startswith(tuple("0123456789"))
+    ]
     assert len(fold_lines) > 0
     for line in fold_lines:
         assert "PASS" in line or "FAIL" in line
@@ -617,7 +619,7 @@ def test_run_wfo_shows_anchor_set():
         base_config,
         grid,
     )
-    assert "Anchor Set" in output
+    assert "Anchor Set" in output.table
 
 
 def test_run_wfo_anchor_fallback_on_gate_failure():
@@ -653,9 +655,24 @@ def test_run_wfo_anchor_fallback_on_gate_failure():
         dsr_threshold=1.0,
     )
     # At least one fold should fail gates and use anchor fallback
-    fold_lines = [ln for ln in output.splitlines() if ln.strip().startswith(tuple("0123456789"))]
+    fold_lines = [
+        ln for ln in output.table.splitlines() if ln.strip().startswith(tuple("0123456789"))
+    ]
     assert len(fold_lines) > 0
     anchor_lines = [ln for ln in fold_lines if "[A]" in ln]
     assert len(anchor_lines) >= 1
     for line in anchor_lines:
         assert "FAIL" in line
+
+
+def test_run_wfo_returns_wforesult_namedtuple():
+    from ggTrader.lab.wfo import WfoResult
+
+    r = WfoResult(
+        oos_equity=__import__("pandas").Series(dtype=float),
+        fold_results=[],
+        live_params={},
+        table="x",
+    )
+    assert r.table == "x"
+    assert list(r._fields) == ["oos_equity", "fold_results", "live_params", "table"]

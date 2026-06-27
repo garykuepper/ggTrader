@@ -159,6 +159,15 @@ class Fold(NamedTuple):
     test_end: pd.Timestamp
 
 
+class WfoResult(NamedTuple):
+    """Structured result of a walk-forward run (the table is also printed)."""
+
+    oos_equity: pd.Series
+    fold_results: List[Dict[str, Any]]
+    live_params: Dict[str, Any]
+    table: str
+
+
 def generate_folds(
     eval_start: pd.Timestamp,
     eval_end: pd.Timestamp,
@@ -619,6 +628,7 @@ def run_wfo(
                 "max_drawdown_pct": float("nan"),
             }
     else:
+        oos_equity = pd.Series(dtype=float)
         oos_metrics = {
             "sharpe": float("nan"),
             "cagr_pct": float("nan"),
@@ -650,7 +660,12 @@ def run_wfo(
         anchor=anchor,
     )
     print(table)
-    return table
+    return WfoResult(
+        oos_equity=oos_equity,
+        fold_results=fold_results,
+        live_params=live,
+        table=table,
+    )
 
 
 def _pick_live_winner(

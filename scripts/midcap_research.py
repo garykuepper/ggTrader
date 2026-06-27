@@ -199,7 +199,7 @@ def main() -> None:
     print(
         f"\n{'=' * 70}\n[midcap400] Starting 5-voter WFO (benchmark=MDY)...\n{'=' * 70}", flush=True
     )
-    table = run_wfo(
+    result = run_wfo(
         "ensemble",
         EnsembleSignal,
         cfg,
@@ -214,7 +214,7 @@ def main() -> None:
     elapsed = time.time() - t0
     print(f"[midcap400] Finished in {elapsed:.0f}s", flush=True)
 
-    mid = parse_table(table)
+    mid = parse_table(result.table)
 
     # ── SPY cross-reference (buy-hold) ───────────────────────────────
     spy_bh = _compute_buy_hold(spy_close, eval_start_str, eval_end_str)
