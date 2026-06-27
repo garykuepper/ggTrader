@@ -101,8 +101,7 @@ def get_engine():
 def init_schema() -> None:
     eng = get_engine()
     with eng.begin() as conn:
-        for stmt in [s for s in _SCHEMA.split(";") if s.strip()]:
-            conn.execute(text(stmt))
+        conn.execute(text(_SCHEMA))
         for tbl in ("lab_returns", "lab_equity"):
             try:
                 conn.execute(

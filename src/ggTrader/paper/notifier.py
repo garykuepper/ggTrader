@@ -33,13 +33,30 @@ class TelegramNotifier:
         except Exception:
             return False
 
-    def trade_alert(self, side: str, symbol: str, amount: float, order_id: str) -> bool:
-        msg = (
-            f"<b>📊 Paper Trade</b>\n"
-            f"{side} <b>{symbol}</b>\n"
-            f"Amount: ${amount:.2f}\n"
-            f"Order: <code>{order_id}</code>"
-        )
+    def trade_alert(
+        self,
+        side: str,
+        symbol: str,
+        amount: float,
+        order_id: str,
+        qty: float | None = None,
+        price: float | None = None,
+        status: str | None = None,
+    ) -> bool:
+        status_suffix = ""
+        if status and status not in ("filled", "partially_filled"):
+            status_suffix = f" ({status.upper()})"
+
+        msg = f"<b>📊 Paper Trade{status_suffix}</b>\n"
+        msg += f"{side} <b>{symbol}</b>\n"
+        if qty is not None and qty > 0 and price is not None and price > 0:
+            msg += (
+                f"Shares: {qty:.4f} @ ${price:.2f}\n"
+                f"Total Value: ${qty * price:.2f}\n"
+            )
+        else:
+            msg += f"Amount: ${amount:.2f}\n"
+        msg += f"Order: <code>{order_id}</code>"
         return self.send(msg)
 
     def daily_summary(
@@ -57,5 +74,7 @@ class TelegramNotifier:
             for sym, info in sorted(positions.items()):
                 pl = info.get("unrealized_pl", 0.0)
                 pl_arrow = "+" if pl >= 0 else ""
-                lines.append(f"  {sym}: {info.get('qty', 0):.0f} sh (${pl_arrow}{pl:,.2f})")
+                qty = info.get("qty", 0.0)
+                qty_str = f"{qty:.0f}" if float(qty).is_integer() else f"{qty:.4f}"
+                lines.append(f"  {sym}: {qty_str} sh (${pl_arrow}{pl:,.2f})")
         return self.send("\n".join(lines))

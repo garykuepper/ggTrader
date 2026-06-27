@@ -83,7 +83,7 @@ class PostgresIngestor:
         conn = psycopg2.connect(
             self.connection_string.replace("postgresql+psycopg2://", "postgresql://")
         )
-        conn.autocommit = True
+        conn.autocommit = False
 
         upsert_query = """
             INSERT INTO ohlcv (

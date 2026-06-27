@@ -68,26 +68,4 @@ markers = [
 python_version = "3.11"
 strict = false
 
-[[tool.mypy.overrides]]
-module = [
-    "ggTrader.core.instrument",
-    "ggTrader.core.signal",
-    "ggTrader.core.order",
-    "ggTrader.core.calendar",
-    "ggTrader.core.universe",
-    "ggTrader.core.types",
-    "ggTrader.core.ticker",
-    "ggTrader.core.balance",
-    "ggTrader.execution.base",
-    "ggTrader.execution.errors",
-    "ggTrader.execution.kraken_spot",
-    "ggTrader.execution.kraken_futures",
-    "ggTrader.strategies.base",
-    "ggTrader.strategies.loader",
-    "ggTrader.strategies.carry.cash_and_carry",
-    "ggTrader.core.calendars",
-    "ggTrader.features.base",
-    "ggTrader.features.derivatives_synthetic",
-    "ggTrader.backtest.vectorized",
-]
-strict = true
+

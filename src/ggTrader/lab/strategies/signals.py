@@ -29,32 +29,49 @@ _EMA_COMBOS = [
 ]
 
 
-def _ema_combo_is_sharpe(close_is: pd.DataFrame, ema_fast: int, ema_slow: int) -> float:
-    """Equal-weight portfolio IS Sharpe for a single EMA combo."""
+def _vectorized_ema_tournament(close_is: pd.DataFrame) -> tuple[dict[str, Any], float]:
+    """Find the best EMA combo in _EMA_COMBOS using a single vectorized vbt call."""
     import vectorbt as vbt
-
-    entries, exits = ema_signals(close_is, ema_fast, ema_slow)
     n_syms = close_is.shape[1]
     if n_syms == 0:
-        return float("-inf")
+        return _EMA_COMBOS[2], float("-inf")
+
+    entries_list = []
+    exits_list = []
+    for combo in _EMA_COMBOS:
+        ent, ext = ema_signals(close_is, combo["ema_fast"], combo["ema_slow"])
+        entries_list.append(ent)
+        exits_list.append(ext)
+
+    entries_stacked = pd.concat(entries_list, axis=1)
+    exits_stacked = pd.concat(exits_list, axis=1)
+    close_stacked = pd.concat([close_is] * len(_EMA_COMBOS), axis=1)
+
+    group_by = np.repeat(np.arange(len(_EMA_COMBOS)), n_syms)
+
     try:
         pf = vbt.Portfolio.from_signals(
-            close=close_is,
-            entries=entries,
-            exits=exits,
+            close=close_stacked,
+            entries=entries_stacked,
+            exits=exits_stacked,
             size=1.0 / n_syms,
             size_type="percent",
             init_cash=10000.0,
             fees=0.0,
             freq="1d",
-            group_by=np.zeros(n_syms, dtype=int),
+            group_by=group_by,
             cash_sharing=True,
-        ).copy()
-        sharpe = pf.sharpe_ratio()
-        val = float(sharpe.iloc[0] if hasattr(sharpe, "iloc") else sharpe)
-        return val if np.isfinite(val) else float("-inf")
+        )
+        sharpes = pf.sharpe_ratio()
+        sharpe_values = [
+            float(sharpes.iloc[j]) if np.isfinite(sharpes.iloc[j]) else float("-inf")
+            for j in range(len(_EMA_COMBOS))
+        ]
     except Exception:
-        return float("-inf")
+        sharpe_values = [float("-inf")] * len(_EMA_COMBOS)
+
+    best_idx = max(range(len(_EMA_COMBOS)), key=lambda j: sharpe_values[j])
+    return _EMA_COMBOS[best_idx], sharpe_values[best_idx]
 
 
 class EmaCrossSignal:
@@ -158,13 +175,7 @@ class WfoTournamentSignal:
         if len(close_is) < self.cfg.min_history_bars or close_is.shape[1] == 0:
             return []
 
-        best_sharpe = float("-inf")
-        best_combo: Dict[str, Any] = _EMA_COMBOS[2]  # default: 20/50
-        for combo in _EMA_COMBOS:
-            sharpe = _ema_combo_is_sharpe(close_is, combo["ema_fast"], combo["ema_slow"])
-            if sharpe > best_sharpe:
-                best_sharpe = sharpe
-                best_combo = combo
+        best_combo, best_sharpe = _vectorized_ema_tournament(close_is)
 
         result = [
             {
@@ -237,13 +248,7 @@ class WfoTournamentSignal:
             is_frac = float(combo["is_fraction"])
             is_end = max(1, int(len(close) * is_frac))
             close_is = close.iloc[:is_end].dropna(axis=1, how="all")
-            best_combo = _EMA_COMBOS[2]  # default 20/50
-            best_sharpe = float("-inf")
-            for ec in _EMA_COMBOS:
-                sharpe = _ema_combo_is_sharpe(close_is, ec["ema_fast"], ec["ema_slow"])
-                if sharpe > best_sharpe:
-                    best_sharpe = sharpe
-                    best_combo = ec
+            best_combo, best_sharpe = _vectorized_ema_tournament(close_is)
             fast, slow = best_combo["ema_fast"], best_combo["ema_slow"]
             entries, exits = ema_signals(close, fast, slow)
             key = combo_name(self.name, combo)

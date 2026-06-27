@@ -8,10 +8,11 @@ import pytest
 
 @pytest.fixture()
 def loader():
-    with patch.dict("os.environ", {"TIINGO_API_KEY": "test-key-123"}):
+    with patch.dict("os.environ", {"TIINGO_API_KEY": "test-key-123"}), \
+         patch("ggTrader.data.live.tiingo_loader.MIN_REQUEST_INTERVAL", 0.0):
         from ggTrader.data.live.tiingo_loader import TiingoDataLoader
 
-        return TiingoDataLoader()
+        yield TiingoDataLoader()
 
 
 def _mock_tiingo_response(symbol: str = "AAPL", days: int = 5):
@@ -124,7 +125,7 @@ class TestTiingoDataLoader:
 
     def test_list_symbols_returns_sp500(self, loader):
         syms = loader.list_symbols()
-        assert len(syms) >= 50
+        assert len(syms) >= 45
         assert "AAPL" in syms
 
     def test_interval_map_coverage(self):

@@ -4,6 +4,18 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _stub_pending_order_db():
+    """Keep the pending-order reconciliation off the real DB by default.
+    Individual tests override these patches to exercise reconciliation."""
+    with patch("ggTrader.paper.trader.get_pending_orders", return_value=[]):
+        with patch("ggTrader.paper.trader.log_pending_order"):
+            with patch("ggTrader.paper.trader.clear_pending_order"):
+                yield
+
 
 def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     from ggTrader.paper.trader import PaperTrader
@@ -17,6 +29,17 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     broker.get_positions.return_value = positions or {}
     broker.submit_buy.return_value = "buy-order-1"
     broker.submit_sell.return_value = "sell-order-1"
+    broker.get_clock.return_value = {"is_open": True}
+    broker.get_order.side_effect = lambda oid: {
+        "id": oid,
+        "symbol": "MSFT" if "buy" in oid else "AAPL",
+        "side": "buy" if "buy" in oid else "sell",
+        "qty": 10.0,
+        "notional": 3300.0,
+        "filled_qty": 10.0,
+        "filled_avg_price": 150.0,
+        "status": "filled",
+    }
 
     notifier = MagicMock()
     notifier.trade_alert.return_value = True
@@ -200,6 +223,222 @@ class TestErrorHandling:
             trader.run()
         notifier.send.assert_called_once()
         assert "signal generation error" in notifier.send.call_args[0][0]
+
+
+def _clock_after(open_calls):
+    """time.time() stub: returns 0.0 for the first `open_calls` invocations
+    (so the poll loop opens), then a large value (so it times out instantly)."""
+    state = {"n": 0}
+
+    def _t():
+        state["n"] += 1
+        return 0.0 if state["n"] <= open_calls else 1000.0
+
+    return _t
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestFillLogging:
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_logs_actual_fill_value_not_notional(self, mock_signals, mock_log_trade, *_):
+        mock_signals.return_value = {
+            "buys": ["MSFT"],
+            "sells": [],
+            "as_of": "2026-06-19",
+            "universe_size": 100,
+        }
+        trader, broker, _ = _make_trader(portfolio_value=100000.0)
+        trader.run()
+        # Order submitted for $3300 notional but filled 10 sh @ $150 = $1500.
+        mock_log_trade.assert_called_once()
+        logged_amount = mock_log_trade.call_args[0][3]
+        assert logged_amount == 1500.0
+
+    @patch("ggTrader.paper.trader.time.sleep")
+    @patch("ggTrader.paper.trader.time.time", side_effect=_clock_after(2))
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_unfilled_order_alerts_but_not_logged(
+        self, mock_signals, mock_log_trade, _time, _sleep, *_
+    ):
+        mock_signals.return_value = {
+            "buys": ["MSFT"],
+            "sells": [],
+            "as_of": "2026-06-19",
+            "universe_size": 100,
+        }
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "accepted",
+        }
+        with patch("ggTrader.paper.trader.log_pending_order") as mock_pending:
+            trader.run()
+        # No phantom ledger entry for an order that never filled...
+        mock_log_trade.assert_not_called()
+        # ...but it is persisted for next-run reconciliation...
+        mock_pending.assert_called_once()
+        assert mock_pending.call_args[0][4] == "buy-order-1"  # order_id
+        # ...and the user is still alerted the order was placed.
+        notifier.trade_alert.assert_called_once()
+        assert notifier.trade_alert.call_args.kwargs["status"] == "accepted"
+
+    @patch("ggTrader.paper.trader.time.sleep")
+    @patch("ggTrader.paper.trader.time.time", side_effect=_clock_after(2))
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_partial_fill_persisted_not_booked(
+        self, mock_signals, mock_log_trade, _time, _sleep, *_
+    ):
+        mock_signals.return_value = {
+            "buys": ["MSFT"],
+            "sells": [],
+            "as_of": "2026-06-19",
+            "universe_size": 100,
+        }
+        trader, broker, _ = _make_trader(portfolio_value=100000.0)
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 4.0,
+            "filled_avg_price": 150.0,
+            "status": "partially_filled",
+        }
+        with patch("ggTrader.paper.trader.log_pending_order") as mock_pending:
+            trader.run()
+        # A still-working partial fill is NOT booked yet (it may complete);
+        # it is persisted so the next run settles the final fill.
+        mock_log_trade.assert_not_called()
+        mock_pending.assert_called_once()
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestReconciliation:
+    @patch("ggTrader.paper.trader.clear_pending_order")
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.get_pending_orders")
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_filled_pending_order_booked_and_cleared(
+        self, mock_signals, mock_get_pending, mock_log_trade, mock_clear, *_
+    ):
+        mock_signals.return_value = {
+            "buys": [],
+            "sells": [],
+            "as_of": "2026-06-22",
+            "universe_size": 100,
+        }
+        mock_get_pending.return_value = [
+            {
+                "order_id": "buy-order-99",
+                "run_date": "2026-06-19",
+                "side": "BUY",
+                "symbol": "MSFT",
+                "notional": 3300.0,
+            }
+        ]
+        trader, broker, notifier = _make_trader()
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": 22.0,
+            "notional": 3300.0,
+            "filled_qty": 22.0,
+            "filled_avg_price": 150.0,
+            "status": "filled",
+        }
+        trader.run()
+        # Booked at the real fill value, under the original order date.
+        mock_log_trade.assert_called_once_with("2026-06-19", "BUY", "MSFT", 3300.0, "buy-order-99")
+        mock_clear.assert_called_once_with("buy-order-99")
+
+    @patch("ggTrader.paper.trader.clear_pending_order")
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.get_pending_orders")
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_canceled_pending_order_dropped_without_booking(
+        self, mock_signals, mock_get_pending, mock_log_trade, mock_clear, *_
+    ):
+        mock_signals.return_value = {
+            "buys": [],
+            "sells": [],
+            "as_of": "2026-06-22",
+            "universe_size": 100,
+        }
+        mock_get_pending.return_value = [
+            {
+                "order_id": "buy-order-99",
+                "run_date": "2026-06-19",
+                "side": "BUY",
+                "symbol": "MSFT",
+                "notional": 3300.0,
+            }
+        ]
+        trader, broker, _ = _make_trader()
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "canceled",
+        }
+        trader.run()
+        mock_log_trade.assert_not_called()
+        mock_clear.assert_called_once_with("buy-order-99")
+
+    @patch("ggTrader.paper.trader.clear_pending_order")
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.get_pending_orders")
+    @patch("ggTrader.paper.trader.generate_signals")
+    def test_still_working_pending_order_left_alone(
+        self, mock_signals, mock_get_pending, mock_log_trade, mock_clear, *_
+    ):
+        mock_signals.return_value = {
+            "buys": [],
+            "sells": [],
+            "as_of": "2026-06-22",
+            "universe_size": 100,
+        }
+        mock_get_pending.return_value = [
+            {
+                "order_id": "buy-order-99",
+                "run_date": "2026-06-19",
+                "side": "BUY",
+                "symbol": "MSFT",
+                "notional": 3300.0,
+            }
+        ]
+        trader, broker, _ = _make_trader()
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "accepted",
+        }
+        trader.run()
+        mock_log_trade.assert_not_called()
+        mock_clear.assert_not_called()
 
 
 @patch("ggTrader.paper.trader.get_latest_snapshot")

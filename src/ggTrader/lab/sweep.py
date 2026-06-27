@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+    from ggTrader.lab.strategy import LabConfig
 
 STOP_PARAMS: frozenset = frozenset({"ts_stop", "atr_period", "atr_mult"})
 VOL_PARAMS: frozenset = frozenset({"vol_target", "vol_lookback"})
@@ -50,6 +55,11 @@ def combo_name(strategy_name: str, params: Dict[str, Any]) -> str:
     """Deterministic label from strategy name + sorted param key-value pairs."""
     parts = [f"{k}{v}" for k, v in sorted(params.items())]
     return strategy_name + "__" + "_".join(parts)
+
+
+def build_combo_lookup(strategy_name: str, grid: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """Map each combo's deterministic name back to its params for O(1) lookup."""
+    return {combo_name(strategy_name, c): c for c in grid}
 
 
 def group_by_stop_config(
@@ -245,6 +255,7 @@ def run_sweep(
 
     # Convert all_eq to a DataFrame for consistent scoring
     eq_df = pd.DataFrame(all_eq)
+    combo_lookup = build_combo_lookup(strategy_name, grid)
 
     # Score each combo over the eval window only (after warmup) and persist
     result_rows: List[Dict[str, Any]] = []
@@ -253,7 +264,7 @@ def run_sweep(
         if len(eq) < 2:
             continue
         metrics = curve_stats(eq)
-        combo_params = next(c for c in grid if combo_name(strategy_name, c) == key)
+        combo_params = combo_lookup[key]
         persist.write_sweep_combo(
             sweep_id, key, combo_params, metrics, spy_stats, all_diags.get(key, {})
         )

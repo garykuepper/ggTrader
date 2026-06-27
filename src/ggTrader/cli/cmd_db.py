@@ -155,8 +155,11 @@ def _db_export(args):
     out_dir = Path("data/exports") / f"ggtrader_dump_{timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Try common pg_dump paths for Windows
-    pg_dump = shutil.which("pg_dump") or r"C:\Program Files\PostgreSQL\16\bin\pg_dump.exe"
+    pg_dump = shutil.which("pg_dump")
+    if not pg_dump:
+        prog_files = os.environ.get("ProgramFiles", r"C:\Program Files")
+        candidate = os.path.join(prog_files, "PostgreSQL", "16", "bin", "pg_dump.exe")
+        pg_dump = candidate if os.path.exists(candidate) else "pg_dump"
 
     cmd = [
         pg_dump,
