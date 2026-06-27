@@ -2,6 +2,20 @@
 
 ## 2026-06-26
 
+### Fix: NDH variance-cap exemption on perfect-density plateaus
+
+- **Fixed** `ndh_check` in `src/ggTrader/lab/gates.py`: the Sharpe-dispersion
+  variance cap over-rejected perfectly robust neighborhoods. When every neighbor
+  is profitable (`density == 1.0`), dispersion among positive Sharpes is not an
+  overfit signal, so the cap is now exempted there; it still applies when any
+  neighbor is unprofitable (`density < 1.0`).
+- **Validated** on the SP500 universe (ensemble, 17 rolling 12mo/3mo folds):
+  NDH gate tally **13/17 → 16/17** — the fix flips folds 1–3 (perfect density,
+  variance 0.22–0.23 > 0.20 cap) from spurious FAIL to PASS, while fold 4
+  (density 0.67) still correctly fails. OOS aggregate **Sharpe 1.12 / CAGR 16.3%
+  / MaxDD −11.0%** vs SPY 0.58 / 13.0% / −22.1%; aggregate WFE 1.13 (no overfit).
+  Consistent with the earlier midcap400 result (15.0% / 1.08).
+
 ### Fix: honest paper-trade fill logging + cleanups
 
 - **Fixed** phantom trade-ledger entries in `src/ggTrader/paper/trader.py`: orders
