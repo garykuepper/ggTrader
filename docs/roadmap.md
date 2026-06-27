@@ -9,12 +9,14 @@
 | State | Detail |
 |---|---|
 | ✅ **Lab shipped** | vectorbt-centric research bench (2026-06-15). 10 strategies, parameter sweep, WFO framework, 17-fold rolling windows, DB persistence. |
-| ✅ **Voter ablation redone under fixed gates (2026-06-24)** | The 2026-06-23 ablation ran on the broken NDH gate (anchor-driven) + pre-ATR exits. Clean 11-config rerun on full 603-stock SP500 **overturns the dilution thesis**: adding voters didn't dilute — the bug did. Best real edge = **`core+macd+vbb` (drop MTF, 5 voters): Sharpe 0.89 / CAGR 10.5% / DD -10.5% / gate 14/17 / anchor only 3/17** (the 3 anchors are the 2022 bear folds; folds 5–17 all PASS). 6-voter is healthy too (0.92 / -10.3% / 11/17), not the old "0.36 dilution". 3-voter core: 0.68 / -20.5% / 10/17. SPY: 0.58 / 13.0% / -22.1%. Tooling: `scripts/ablation_voters.py` (3-way parallel, ~30min). |
-| ⚠️ **MTF is the one harmful voter (2026-06-24)** | `core+mtf` is the worst non-degenerate config (Sharpe 0.49 / CAGR 6.0%). The 2026-06-23 "MTF harmful" call survives the rerun. Dropping bb or rsi → zero trades (2-voter unanimity artifact). ema is the droppable core voter (`core-ema` = bb+rsi still 0.79). **Open: live-config decision** — current paper trader runs the 6-voter; `core+macd+vbb` is the better candidate but switch not yet made. |
-| ✅ **ML feature gate** | LightGBM classifier (precision 0.585, 10 features, 3.2K samples). Known defect: ATR feature uses close-only proxy, not true range. |
-| 🟢 **Paper live** | Ensemble on Alpaca paper ($102,459) — actually the **6-voter** (`DEFAULT_VOTERS = ALL_VOTERS` in `ensemble.py`), not the 3-voter as previously documented. Cron fires 1:30 PM PT Mon–Fri. ML gate + risk guardrails active. PnL baseline reset 2026-06-23. **Candidate switch: `core+macd+vbb` (5v) — best ablation config.** |
-| 🔵 **Next up** | Asymmetric exit architecture + ATR fix → WFO validation → paper monitoring → live go-live. |
-| 🧪 **Research** | IC-weighted voting, regime-adaptive gating, exit optimization. |
+| ✅ **5-voter shipped as default (2026-06-25)** | The 2026-06-24 ablation overturned the dilution thesis (adding voters didn't dilute — the broken NDH gate did). The live-config decision is now **made and coded**: `DEFAULT_VOTERS = FIVE_VOTERS` (`bb+rsi+ema+macd+vbb`, MTF dropped) in `ensemble.py`. Best edge = **`core+macd+vbb`: Sharpe 0.89 / DD -10.5% / gate 14/17 / anchor only 3/17**. MTF stays out (the one genuinely harmful voter, `core+mtf` 0.49). Tooling: `scripts/ablation_voters.py`. |
+| ✅ **3% exposure shipped — beats SPY outright (2026-06-25)** | Root cause of the CAGR gap was under-deployment (5-voter sat 61.5% in cash). `SIGNAL_POSITION_SIZE = 0.03` (up from 0.02) now the default in `data.py`. OOS **CAGR 16.2% / Sharpe 1.09 / DD -11%** beats SPY (13.0% / 0.58 / -22.1%) at a *higher* Sharpe. Lever diagnostic: `scripts/lever_diagnostic.py`. |
+| ✅ **NDH variance-cap exemption (2026-06-26)** | `ndh_check` no longer over-rejects perfectly-robust plateaus: when every neighbor is profitable (density 1.0), Sharpe dispersion isn't an overfit signal, so the variance cap is exempted. SP500 gate tally **13/17 → 16/17**; OOS **Sharpe 1.12 / CAGR 16.3% / DD -11%**, WFE 1.13 (no overfit). |
+| ✅ **Stability-aware live params (2026-06-26)** | `select_live_params` now prefers fold-proven combos (`_pick_live_winner`, `MIN_LIVE_STABILITY`) instead of the best score on the most-recent train window — closes an overfit-to-recent-regime trap (SP500 moved from a 0/17-stability combo to a 2/17 fold-proven one). |
+| ✅ **ML feature gate** | LightGBM classifier (precision 0.585, 10 features, 3.2K samples). ATR true-range fix landed; gate retrained (1.9.0). |
+| 🟢 **Paper live** | 5-voter ensemble on Alpaca paper ($102,459), `SIGNAL_POSITION_SIZE = 0.03`. Cron fires 1:30 PM PT Mon–Fri. ML gate + risk guardrails active. **Honest fill logging (2026-06-26):** only real fills booked to `paper_trades`; after-close/partial fills reconciled next run via `paper_pending_orders`. PnL baseline reset 2026-06-23. |
+| 🔵 **Next up** | Paper monitoring of the shipped 5-voter/3% config → fund Alpaca live ($1K) → live go-live. Research: portfolio blend (SP500 + MidCap 400), reversion-aware regime map. |
+| 🧪 **Research** | Portfolio blend / diversification, regime-aware exposure, IC-weighted voting, Kelly sizing. |
 
 **Status legend:** ✅ Done · 🟢 Live · 🔵 Next · 🧪 Research · ❌ Rejected · ⏸ Deferred
 
@@ -24,7 +26,7 @@
 
 Build a **flexible multi-strategy research lab** with honest walk-forward evaluation, and deploy capital only against edges that survive true out-of-sample testing. The lab tests strategies on US equities (SP500/Nasdaq-100/Russell 2000) via vectorbt, with rolling 12mo/3mo folds and point-in-time universe membership.
 
-**Current thesis (2026-06-24, revised).** The ensemble works because BB reversion, RSI exhaustion, and EMA trend signals are negatively correlated in their failure modes — when one gets whipsawed, the others don't fire. The earlier claim that "adding MACD/VolBB voters dilutes" was a **gate/exit-bug artifact** — under the fixed NDH gate + ATR exits, MACD and VolBB *add* edge: **`core+macd+vbb` (5 voters, MTF dropped) is the best config** (Sharpe 0.89, DD -10.5%, 14/17 gate-validated). Only MTF is genuinely harmful. So the lever set is: **drop MTF, prefer the 5-voter config, then smarter exits, weighted voting, and ML gate fixes.**
+**Current thesis (2026-06-26).** The ensemble works because BB reversion, RSI exhaustion, and EMA trend signals are negatively correlated in their failure modes — when one gets whipsawed, the others don't fire. MACD and VolBB *add* edge (the earlier "dilution" was a gate/exit-bug artifact); only MTF is genuinely harmful. The **5-voter `core+macd+vbb` config is now the shipped default**, and the CAGR gap to SPY was closed not by a smarter signal but by **fixing under-deployment** — flat 3% position sizing deploys the idle 61% cash and beats SPY outright at a higher Sharpe (16.2% CAGR / 1.09). With voters, exposure, and the gate fixes (NDH neighborhood + variance exemption) all landed, the remaining levers are **diversification (portfolio blend across SP500 + MidCap 400), reversion-aware regime exposure, weighted voting, and ML gate fixes.**
 
 ---
 
@@ -40,7 +42,10 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 | ✅ | **ATR True Range fix** | `feature_gate.py`, `train_gate.py` | `extract_features()` now accepts optional `high`/`low` series for true ATR. `filter_buys()` and `_build_dataset()` thread OHLCV high/low through. Falls back to close-diff when unavailable. Retrain `ensemble_gate.joblib` after fix. |
 | ✅ | **WFO validation of Phase 1** | `wfo.py` | Done on full 603-stock universe (2026-06-24). Finding: gates reject ~every fold for both voter sets → results are anchor-driven, not edge-validated. Asymmetric exit + ATR fix are in; the blocker is now the over-strict gates, not the exits. |
 | ✅ | **Gate over-rejection fixed (2026-06-24)** | `gates.py`, `wfo.py` | Root cause: NDH used a diagonal (Moore) ±1 neighborhood that, on a coarse grid, counted 47/48 cells as "neighbors" → grid-wide quality check, never a plateau. Fixed: axis-aligned (von-Neumann) neighborhood + exclude regime params (min_agree). Gate PASS folds: 3-voter 0→11/17, 6-voter 2→11/17. WFO now deploys real winners. Remaining marginal lever: variance cap (0.20). |
-| ✅ | **Stability investigated — deployable config found (2026-06-24)** | — | The "0/17 stability" was a metric artifact (demands exact 5-tuple repeat). Per-axis winner modes are stable: ema_fast=10 (13/17), bb_std=2.5 (11/17), rsi_oversold=25 (10/17); `min_agree_exit` is noise; `min_agree` is the one regime-dependent knob (=1 won in 2024, =2 elsewhere). A **single fixed modal 3-voter** (min_agree=2, min_agree_exit=2, bb_std=2.5, rsi_oversold=25, ema_fast=10), deployed unchanged across all 17 folds with no reopt: **OOS Sharpe 0.70 vs SPY 0.58, MaxDD -13.0% vs -22.1%, WFE 1.28** — but **CAGR 7.7% vs SPY 13.0%**. Verdict: a stable, deployable **defensive** edge (wins risk-adjusted + drawdown, trails raw growth). Natural next lever to lift CAGR = regime-adaptive `min_agree` (research direction A). Live deployment decision deferred. |
+| ✅ | **Stability investigated — deployable config found (2026-06-24)** | — | The "0/17 stability" was a metric artifact (demands exact 5-tuple repeat). Per-axis winner modes are stable: ema_fast=10 (13/17), bb_std=2.5 (11/17), rsi_oversold=25 (10/17); `min_agree_exit` is noise; `min_agree` is the one regime-dependent knob (=1 won in 2024, =2 elsewhere). A **single fixed modal 3-voter** (min_agree=2, min_agree_exit=2, bb_std=2.5, rsi_oversold=25, ema_fast=10), deployed unchanged across all 17 folds with no reopt: **OOS Sharpe 0.70 vs SPY 0.58, MaxDD -13.0% vs -22.1%, WFE 1.28** — but **CAGR 7.7% vs SPY 13.0%**. CAGR gap later closed by 3% exposure scaling (research direction A). |
+| ✅ | **3% exposure scaling shipped (2026-06-25)** | `data.py` | `SIGNAL_POSITION_SIZE` 0.02 → 0.03. Deploys the idle 61% cash; **OOS CAGR 16.2% / Sharpe 1.09 / DD -11% beats SPY outright.** See research direction A. |
+| ✅ | **NDH variance-cap exemption (2026-06-26)** | `gates.py` | Variance cap exempted when neighborhood density = 1.0 (all neighbors profitable). SP500 gates 13/17 → 16/17; OOS Sharpe 1.12 / CAGR 16.3% / DD -11%, WFE 1.13. |
+| ✅ | **Stability-aware live-param selection (2026-06-26)** | `wfo.py` | `select_live_params` prefers fold-proven combos (`_pick_live_winner`, `MIN_LIVE_STABILITY`) over best-recent-window score — closes an overfit-to-recent-regime trap. |
 
 ### Phase 2: ML Gate & Voting Upgrades
 
@@ -59,8 +64,9 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 | ✅ | Risk guardrails (30 max positions, 3.3%/trade, 5% concentration, 3% daily loss halt, 15% drawdown halt) |
 | ✅ | DAY time-in-force fix for fractional/notional orders |
 | ✅ | PnL baseline reset ($102,459 — 2026-06-23) |
-| 🟢 | Monitor paper fills for 5–10 clean trading days |
-| 🔵 | Deploy Phase 1 alpha fixes to paper (after WFO validation) |
+| ✅ | Deploy 5-voter + 3% exposure to paper (Docker rebuild, gate retrained 1.9.0) |
+| ✅ | Honest paper fill logging + next-run reconciliation (`paper_pending_orders`) |
+| 🟢 | Monitor paper fills of the shipped config for 5–10 clean trading days |
 | 🔵 | Fund Alpaca live account ($1K) |
 | 🔵 | Swap to live API keys |
 | 🔵 | Confirm position sizing / order fills match expectations |
@@ -86,12 +92,13 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 
 | | Direction | Status | Notes |
 |:---:|---|:---:|---|
-| A | **Exposure scaling (was: regime-adaptive `min_agree`)** | ✅🧪 | **Lever diagnostic resolved this (2026-06-24, `scripts/lever_diagnostic.py`).** Root cause of the CAGR gap = **under-deployment**: the static 5-voter sits 61.5% in cash (only 38.5% deployed). Lever comparison: **exposure scaling wins** — flat 3% position size (`SIGNAL_POSITION_SIZE=0.03`, up from 0.02) gives **OOS CAGR 16.2% / Sharpe 1.09 / DD -11%**, which **beats SPY outright** (13.0% / 0.58 / -22.1%) at a *higher* Sharpe than the 0.02 baseline. `min_agree` can't lift CAGR past ~12%; vol-targeting is dominated (0.25 → 15.0% CAGR but Sharpe 0.96, DD -14.5%). **Surprise:** regime breakdown shows reversion earns most in *down/turbulent* regimes (deepest dips) and is flat in calm uptrends — the inverse of trend-following intuition, so naive "scale up in calm uptrend" gating would *hurt*. Open: does a reversion-aware regime map beat flat 0.03? (Tasks 4-5.) |
+| A | **Exposure scaling (was: regime-adaptive `min_agree`)** | ✅ **shipped** 🧪 | **Resolved and shipped (2026-06-25).** Root cause of the CAGR gap = **under-deployment**: the static 5-voter sat 61.5% in cash. **Exposure scaling won and is now the default** — `SIGNAL_POSITION_SIZE=0.03` (up from 0.02) in `data.py` gives **OOS CAGR 16.2% / Sharpe 1.09 / DD -11%**, beating SPY outright (13.0% / 0.58 / -22.1%) at a higher Sharpe. `min_agree` can't lift CAGR past ~12%; vol-targeting is dominated (0.25 → 15.0% / 0.96 / -14.5%). **Surprise:** reversion earns most in *down/turbulent* regimes and is flat in calm uptrends — inverse of trend-following intuition, so naive "scale up in calm uptrend" gating would *hurt*. **Still open:** does a reversion-aware regime map beat flat 0.03? (`scripts/lever_diagnostic.py`.) |
 | B | **Dynamic position sizing (Kelly)** | ⚪ | Use ML gate probability + recent win/loss ratio to compute fractional Kelly sizing per trade. Quarter-Kelly standard for estimation error. `EnsembleConvictionSignal.sizes` already supports per-bar sizing. |
 | C | **Cross-sectional entry ranking** | ⚪ | When multiple entries fire simultaneously, rank by conviction score + sector diversification. Prevents correlated cluster entries. |
 | D | **Macro-enriched ML features** | ⚪ | Add VIX level/change, sector relative strength, earnings proximity, short interest to `extract_features()`. Orthogonal to price-based technicals. Requires external data pipeline. |
 | E | **Regime-aware WFO folds** | ⚪ | Exponential time-weighting within training windows to discount data from misaligned regimes. **High risk**: adds new decay-rate parameter that can itself be overfit. Reduces effective sample size. Deprioritized behind simpler regime approaches (A). |
 | F | **Statistical arbitrage / pairs** | ⚪ | Cointegrated pair z-score reversion (orthogonal to momentum). |
+| H | **Portfolio blend (Large + Mid Cap diversification)** | 🧪 | **Tool shipped 2026-06-25** (`scripts/portfolio_blend.py`). Computes OOS WFO returns for SP500, MidCap 400, a unified blended universe, and 50/50, 70/30, and risk-parity blends; measures asset-class correlation and diversification benefit. Motivated by the favorable midcap Sharpe edge (direction G) — open question is whether a blend lifts risk-adjusted return above either sleeve alone. Note: risk-parity weighting carries the usual in-sample-vol caveat. |
 | G | **S&P MidCap 400 universe** | 🟡 | **Researched 2026-06-25** (`scripts/midcap_research.py`, bias-quantified — clean PIT data doesn't exist publicly, so current snapshot + calibrated haircut). **Promising but not deploy-clean.** Midcap reversion beats the midcap index decisively: raw CAGR 10.9% / Sharpe 0.91, bias-adjusted 14.5% / 1.07, vs **MDY 9.1% / 0.40** (huge Sharpe edge); ≈ SPY's 14.7% CAGR but far better Sharpe (1.07 vs 0.70). Survivorship Δ is **favorable** (SP500 calibration: snapshot *under*states PIT by 3.6pp CAGR — the dropped names are good reversion fodder — so the snapshot result is a conservative floor). **BUT the WFO ran anchor-driven: gates passed only 6/17 folds, anchor used 15/17, and the circuit breaker halted at fold 5.** So this validates the *defensive config* on midcaps, not adaptive selection. Same over-rejection pattern as the pre-fix SP500 NDH gate — the gates likely over-reject on noisier midcap names. **Next: investigate gate/circuit-breaker calibration for midcaps before any deployment.** Data: midcap400 snapshot universe + MDY backfilled; coverage 400/400. |
 
 ---
@@ -111,6 +118,11 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 | ✅ | 2.07x WFO speed | Collapsed per-fold metric accessors to single `returns()` extraction |
 | ✅ | WFO per-fold progress output | `flush=True` + `PYTHONUNBUFFERED=1` for Docker real-time output |
 | ✅ | `--max-stocks` preload trim | Universe trimmed before data load, not just strategy selection |
+| ✅ | MCP server for research DB | `scripts/mcp_server.py` (FastMCP) — query backtest runs/metrics, list strategies/tickers, ops status, run backtests over TimescaleDB. Code-review hardened (contextlib.closing conn handling, env creds). |
+| ✅ | Portfolio-blend analysis tool | `scripts/portfolio_blend.py` — SP500 / MidCap 400 / blended-universe + 50-50/70-30/risk-parity OOS comparison with correlation. |
+| ✅ | Stability-aware live-param selection | `select_live_params` / `_pick_live_winner` in `wfo.py` (`MIN_LIVE_STABILITY`) |
+| ✅ | Honest paper fill logging + reconciliation | Real fills only to `paper_trades`; pending fills reconciled next run via `paper_pending_orders` |
+| ✅ | Any-universe backfill + benchmark | `data.py` — backfill any universe with its benchmark (wired midcap400 + MDY) |
 | ⚪ | WFO DB persistence | Persist per-fold WFO results to TimescaleDB (deferred to go-live) |
 | ⚪ | `ggt compare` — diff two research runs | Side-by-side metric comparison |
 | ⚪ | Per-signal backtest within WFO folds | Required for IC-weighted voting (Phase 2). Run individual signal backtests during training sweep. |
@@ -123,7 +135,7 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 
 | Finding | Evidence |
 |---------|---------|
-| 5-voter ensemble (BB+RSI+EMA+MACD+VolBB) | **Best config (2026-06-24):** OOS Sharpe 0.89 / DD -10.5% vs SPY 0.58 / -22.1%. 14/17 folds gate-validated (anchor only in 2022 bear). |
+| 5-voter ensemble (BB+RSI+EMA+MACD+VolBB) | **Shipped default.** Ablation (2026-06-24): Sharpe 0.89 / DD -10.5% at 0.02 sizing, 14/17 gate-validated. With 3% exposure + NDH variance-exemption (2026-06-26): **OOS Sharpe 1.12 / CAGR 16.3% / DD -11%**, 16/17 gates — beats SPY (0.58 / 13.0% / -22.1%). |
 | 3-voter ensemble (BB+RSI+EMA) | OOS Sharpe 0.68 / DD -20.5% under fixed gates. Solid but beaten by the 5-voter. (Earlier 0.61–0.84 figures were a 50-stock subset.) |
 | Negatively correlated signal families | Reversion + trend signals cancel each other's failures. |
 | vectorbt grouped simulation | 50-stock, 17-fold WFO in ~47s. 2.07x speedup from profiling. |
@@ -174,6 +186,13 @@ These are high-payoff, low-risk changes to the existing codebase. Each must be W
 | 2026-06-23 | WFO infrastructure fixes (sweep grid 12K→24, max-stocks preload, progress output) |
 | 2026-06-23 | PnL baseline reset ($102,459). "Reverted to 3-voter" was documented but **never coded** — live still runs the 6-voter default. |
 | 2026-06-23 | Project snapshot + alpha expansion engineering report |
+| 2026-06-24 | Lever diagnostic: CAGR gap is under-deployment, not signal — exposure scaling beats SPY |
+| 2026-06-25 | **5-voter + 3% exposure shipped to main & paper** (`DEFAULT_VOTERS=FIVE_VOTERS`, `SIGNAL_POSITION_SIZE=0.03`). Gate retrained 1.9.0. First config to beat SPY outright (16.2% CAGR / 1.09). |
+| 2026-06-25 | MidCap 400 research (snapshot + MDY backfill, bias-quantified) — promising but anchor-driven. Senior code-review pass (voter bypass, concentration guardrail, O(1) sweep lookups, conn leaks). |
+| 2026-06-25 | MCP research server + portfolio-blend tool (code-review hardened) |
+| 2026-06-26 | **NDH variance-cap exemption** — SP500 gates 13→16/17, OOS Sharpe 1.12 / CAGR 16.3% / DD -11% |
+| 2026-06-26 | Stability-aware `select_live_params` (prefer fold-proven combos) |
+| 2026-06-26 | Honest paper fill logging + next-run reconciliation (`paper_pending_orders`) |
 
 ---
 
