@@ -98,7 +98,7 @@ def _run_one_wfo(
     """Run a single WFO and parse the result table."""
     t0 = time.time()
     print(f"\n{'=' * 70}\n[{label}] Starting WFO...\n{'=' * 70}", flush=True)
-    table = run_wfo(
+    result = run_wfo(
         "ensemble",
         EnsembleSignal,
         cfg,
@@ -112,7 +112,7 @@ def _run_one_wfo(
     )
     elapsed = time.time() - t0
     print(f"[{label}] Finished in {elapsed:.0f}s", flush=True)
-    parsed = parse_table(table)
+    parsed = parse_table(result.table)
     parsed["label"] = label
     parsed["elapsed_s"] = round(elapsed, 1)
     return parsed

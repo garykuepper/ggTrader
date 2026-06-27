@@ -127,7 +127,7 @@ def _run_lever(
     t0 = time.time()
     with open(log_path, "w") as fh, contextlib.redirect_stdout(fh):
         print(f"=== {label}  overrides={bc_overrides}  grid_ov={grid_overrides} ===", flush=True)
-        table = run_wfo(
+        result = run_wfo(
             "ensemble",
             EnsembleSignal,
             _CFG,
@@ -140,7 +140,7 @@ def _run_lever(
             grid=grid,
         )
     elapsed = time.time() - t0
-    parsed = parse_table(table)
+    parsed = parse_table(result.table)
     parsed.update(
         {
             "label": label,
