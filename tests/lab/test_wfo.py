@@ -5,6 +5,7 @@ import pytest
 from ggTrader.lab.cli import build_arg_parser
 from ggTrader.lab.strategy import LabConfig, SignalTargets
 from ggTrader.lab.wfo import (
+    _pick_live_winner,
     composite_score,
     generate_folds,
     run_wfo,
@@ -168,6 +169,44 @@ def test_run_wfo_integration():
     assert "Recommended Live Params" in output
     # Should have at least 1 fold
     assert "Fold" in output
+
+
+def test_pick_live_winner_prefers_fold_proven_combo():
+    """A combo that wins folds is chosen over a higher-scoring combo that never
+    won out-of-sample (the overfit-to-recent-window trap)."""
+    train_metrics = [
+        {"combo": "durable"},  # won folds, lower recent score
+        {"combo": "overfit"},  # best recent score, never won a fold
+    ]
+    scores = [0.40, 0.99]
+    fold_win_counts = {"durable": 11}
+    idx, stability = _pick_live_winner(train_metrics, scores, fold_win_counts)
+    assert train_metrics[idx]["combo"] == "durable"
+    assert stability == 11
+
+
+def test_pick_live_winner_picks_best_score_among_durable():
+    """Among combos that cleared the stability bar, the best recent score wins."""
+    train_metrics = [
+        {"combo": "a"},
+        {"combo": "b"},
+        {"combo": "overfit"},
+    ]
+    scores = [0.50, 0.70, 0.99]
+    fold_win_counts = {"a": 3, "b": 6}
+    idx, stability = _pick_live_winner(train_metrics, scores, fold_win_counts)
+    assert train_metrics[idx]["combo"] == "b"
+    assert stability == 6
+
+
+def test_pick_live_winner_falls_back_when_no_fold_winners():
+    """With no fold winners (e.g. every fold failed gates), fall back to the
+    global best composite score rather than recommending nothing."""
+    train_metrics = [{"combo": "a"}, {"combo": "b"}]
+    scores = [0.30, 0.90]
+    idx, stability = _pick_live_winner(train_metrics, scores, {})
+    assert train_metrics[idx]["combo"] == "b"
+    assert stability == 0
 
 
 def test_select_live_params_uses_recent_window():

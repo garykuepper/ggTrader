@@ -18,6 +18,12 @@ from ggTrader.lab.sweep import build_combo_lookup, combo_name, split_params
 TRAIN_MONTHS = 12
 TEST_MONTHS = 3
 
+#: Minimum number of walk-forward folds a combo must have won to be eligible as
+#: a live-param recommendation. Guards against deploying a combo that scores
+#: best only on the most recent window but never proved out-of-sample (a
+#: classic overfit-to-recent-regime trap). Set to 0 to disable the filter.
+MIN_LIVE_STABILITY = 1
+
 #: Discrete "regime" params where a ±1 grid step is a different strategy rather
 #: than a small perturbation. Excluded from the NDH plateau neighborhood.
 REGIME_PARAMS: frozenset = frozenset({"min_agree", "min_agree_exit"})
@@ -639,6 +645,34 @@ def run_wfo(
     return table
 
 
+def _pick_live_winner(
+    train_metrics: List[Dict[str, Any]],
+    scores: List[float],
+    fold_win_counts: Dict[str, int],
+    min_stability: int = MIN_LIVE_STABILITY,
+) -> tuple[int, int]:
+    """Pick the live-param combo, preferring out-of-sample durability.
+
+    Among combos that won at least ``min_stability`` walk-forward folds, return
+    the one with the best composite score on the recent training window. If no
+    combo cleared that bar (e.g. every fold failed its gates, so there are no
+    fold winners), fall back to the global best composite score so a
+    recommendation is still produced.
+
+    Returns ``(winner_index, stability)`` where ``stability`` is the winner's
+    fold-win count.
+    """
+    durable = [
+        j
+        for j in range(len(train_metrics))
+        if fold_win_counts.get(train_metrics[j]["combo"], 0) >= min_stability
+    ]
+    pool = durable or list(range(len(train_metrics)))
+    best_idx = max(pool, key=lambda j: scores[j])
+    stability = fold_win_counts.get(train_metrics[best_idx]["combo"], 0)
+    return best_idx, stability
+
+
 def select_live_params(
     strategy_name: str,
     strategy_cls: Type,
@@ -649,7 +683,11 @@ def select_live_params(
     grid: List[Dict[str, Any]],
     fold_winners: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """Train on the most recent TRAIN_MONTHS window and pick the composite winner."""
+    """Train on the most recent TRAIN_MONTHS window and pick the durable winner.
+
+    Prefers combos proven across walk-forward folds over those that merely score
+    best on the most recent window — see :func:`_pick_live_winner`.
+    """
     eval_end_ts = pd.Timestamp(eval_end, tz="UTC")
     live_train_start = eval_end_ts - pd.DateOffset(months=TRAIN_MONTHS)
     strat_instance = strategy_cls(cfg)
@@ -667,11 +705,12 @@ def select_live_params(
         return {"combo": "none", "params": {}, "train_metrics": {}, "stability": 0}
 
     scores = composite_score(train_metrics)
-    best_idx = max(range(len(scores)), key=lambda j: scores[j])
-    winner = train_metrics[best_idx]
+    fold_win_counts: Dict[str, int] = {}
+    for fw in fold_winners:
+        fold_win_counts[fw["combo"]] = fold_win_counts.get(fw["combo"], 0) + 1
 
-    # Stability: count how many WFO folds selected the same combo
-    stability = sum(1 for fw in fold_winners if fw["combo"] == winner["combo"])
+    best_idx, stability = _pick_live_winner(train_metrics, scores, fold_win_counts)
+    winner = train_metrics[best_idx]
 
     return {
         "combo": winner["combo"],
