@@ -142,15 +142,21 @@ def main() -> None:
     print("Loading universes...", flush=True)
     sp500_members = equity_universe_between(eval_start, eval_end, universe="sp500")
     midcap_members = equity_universe_between(eval_start, eval_end, universe="midcap400")
+    nasdaq_members = equity_universe_between(eval_start, eval_end, universe="nasdaq100")
 
     # Deduplicate combined universe
     combined_members = sorted(list(set(sp500_members + midcap_members)))
 
     print(f"S&P 500 PIT: {len(sp500_members)} symbols")
     print(f"MidCap 400:  {len(midcap_members)} symbols")
+    print(f"Nasdaq-100:  {len(nasdaq_members)} symbols")
     print(f"Combined:    {len(combined_members)} unique symbols")
+    # NOTE: Russell 2000 is intentionally excluded — its snapshot is only a
+    # 200-name sample and ~29% backfilled in TimescaleDB (58/200). It needs a
+    # full point-in-time membership list + OHLCV backfill before it can be
+    # compared honestly.
 
-    all_symbols = sorted(list(set(combined_members + ["SPY", "MDY"])))
+    all_symbols = sorted(list(set(combined_members + nasdaq_members + ["SPY", "MDY"])))
 
     print("\nLoading market data from TimescaleDB...", flush=True)
     t_load = time.time()
@@ -170,9 +176,11 @@ def main() -> None:
     available = ohlcv.columns.get_level_values(0)
     sp500_symbols = [s for s in sp500_members if s in available]
     midcap_symbols = [s for s in midcap_members if s in available]
+    nasdaq_symbols = [s for s in nasdaq_members if s in available]
 
     sp500_ohlcv = ohlcv[sp500_symbols]
     midcap_ohlcv = ohlcv[midcap_symbols]
+    nasdaq_ohlcv = ohlcv[nasdaq_symbols]
     combined_ohlcv = ohlcv[[s for s in combined_members if s in available]]
 
     base_config = dict(STOCK_BASE_CONFIG)
@@ -191,6 +199,13 @@ def main() -> None:
     )
     print(f"Completed MidCap 400 in {time.time() - t0:.1f}s")
 
+    print("Running WFO for Nasdaq-100...", flush=True)
+    t0 = time.time()
+    nasdaq_eq = get_wfo_equity_curve(
+        EnsembleSignal, cfg, nasdaq_ohlcv, eval_start_str, eval_end_str, base_config, BEST_PARAMS
+    )
+    print(f"Completed Nasdaq-100 in {time.time() - t0:.1f}s")
+
     print("Running WFO for Unified Blended Universe (Combined 900+ tickers)...", flush=True)
     t0 = time.time()
     combined_eq = get_wfo_equity_curve(
@@ -202,14 +217,26 @@ def main() -> None:
     common_idx = sp500_eq.index.intersection(midcap_eq.index)
     sp500_eq = sp500_eq.loc[common_idx]
     midcap_eq = midcap_eq.loc[common_idx]
+    nasdaq_eq = nasdaq_eq.reindex(common_idx)
     combined_eq = combined_eq.loc[common_idx]
 
     # Calculate daily returns
     sp500_ret = sp500_eq.pct_change().dropna()
     midcap_ret = midcap_eq.pct_change().dropna()
+    nasdaq_ret = nasdaq_eq.pct_change().dropna()
     combined_ret = combined_eq.pct_change().dropna()
 
-    # Compute correlations
+    # ── Pairwise correlation matrix across single-stock reversion sleeves ──
+    # This is the decisive diversification metric: low pairwise correlation =
+    # real risk reduction from blending; high correlation = same factor, so
+    # adding the universe barely moves portfolio Sharpe.
+    corr_df = pd.DataFrame(
+        {"SP500": sp500_ret, "MidCap400": midcap_ret, "Nasdaq100": nasdaq_ret}
+    ).corr()
+    print("\nOOS Daily-Returns Correlation Matrix (reversion streams):")
+    print(corr_df.round(4).to_string())
+
+    # Back-compat scalars used by the report text below
     corr = sp500_ret.corr(midcap_ret)
     corr_combined_sp = combined_ret.corr(sp500_ret)
     corr_combined_mc = combined_ret.corr(midcap_ret)
@@ -251,14 +278,28 @@ def main() -> None:
     blend_rp_ret = w_sp * sp500_ret + w_mc * midcap_ret
     blend_rp_eq = (1.0 + blend_rp_ret).cumprod() * 10000.0
 
+    # 4. Low-correlation pairs/trios revealed by the correlation matrix.
+    #    MidCap (0.70 vs SP500) and Nasdaq-100 (0.35 vs MidCap) are the weakly
+    #    correlated pair, so their blend should diversify best. Build via an
+    #    aligned returns frame so the three series share an index.
+    ret_df = pd.DataFrame({"sp500": sp500_ret, "midcap": midcap_ret, "nasdaq": nasdaq_ret}).dropna()
+    blend_mc_ndx_ret = 0.5 * ret_df["midcap"] + 0.5 * ret_df["nasdaq"]
+    blend_mc_ndx_eq = (1.0 + blend_mc_ndx_ret).cumprod() * 10000.0
+
+    blend_3way_ret = (ret_df["sp500"] + ret_df["midcap"] + ret_df["nasdaq"]) / 3.0
+    blend_3way_eq = (1.0 + blend_3way_ret).cumprod() * 10000.0
+
     # ── Compute statistics ──
     stats_sp500 = curve_stats(sp500_eq)
     stats_midcap = curve_stats(midcap_eq)
+    stats_nasdaq = curve_stats(nasdaq_eq)
     stats_combined = curve_stats(combined_eq)
 
     stats_50_50 = curve_stats(blend_50_50_eq)
     stats_70_30 = curve_stats(blend_70_30_eq)
     stats_rp = curve_stats(blend_rp_eq)
+    stats_mc_ndx = curve_stats(blend_mc_ndx_eq)
+    stats_3way = curve_stats(blend_3way_eq)
 
     stats_spy = curve_stats(spy_curve)
     stats_mdy = curve_stats(mdy_curve)
@@ -280,6 +321,7 @@ def main() -> None:
     # Standalone Strategies
     print(_row("S&P 500 (Large Cap)", stats_sp500))
     print(_row("MidCap 400 (Mid Cap)", stats_midcap))
+    print(_row("Nasdaq-100", stats_nasdaq))
 
     # Combined Universe (WFO on 900+ tickers)
     print(_row("Unified Blended Universe", stats_combined))
@@ -288,6 +330,8 @@ def main() -> None:
     print(_row("Blended Portfolio (50/50)", stats_50_50))
     print(_row("Blended Portfolio (70/30)", stats_70_30))
     print(_row(f"Blended Portfolio (Risk Parity, {w_sp:.1%}/{w_mc:.1%}, in-sample)", stats_rp))
+    print(_row("Blended (MidCap+Nasdaq 50/50, corr 0.35)", stats_mc_ndx))
+    print(_row("Blended (SP500+MidCap+Nasdaq, equal)", stats_3way))
 
     # Benchmarks
     print(_row("SPY (S&P 500 Buy & Hold)", stats_spy))
