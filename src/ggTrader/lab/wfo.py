@@ -55,7 +55,8 @@ class WfoState:
     oos_sharpes: List[float] = field(default_factory=list)
     halted: bool = False
     halt_reason: str | None = None
-    shadow_strikes: int = 0
+    #: Rolling clean/dirty flags for the last 3 shadow windows during a halt.
+    shadow_window: List[bool] = field(default_factory=list)
 
 
 def check_circuit_breaker(
@@ -74,7 +75,7 @@ def check_circuit_breaker(
         oos_sharpes=list(state.oos_sharpes),
         halted=state.halted,
         halt_reason=state.halt_reason,
-        shadow_strikes=state.shadow_strikes,
+        shadow_window=list(state.shadow_window),
     )
 
     # Chronic decay: trailing non-None WFE avg
@@ -108,28 +109,35 @@ def check_shadow_reentry(
     dsr_passed: bool,
     wfe: float | None,
     wfe_healthy: float = 0.5,
+    window_size: int = 3,
+    clean_required: int = 2,
 ) -> WfoState:
-    """Check shadow re-entry: 2 consecutive clean windows restore live trading.
+    """Check shadow re-entry: 2 of the last 3 clean windows restore live trading.
 
     A clean window requires all three: NDH pass, DSR pass, WFE >= wfe_healthy.
+
+    The original rule required 2 *consecutive* clean windows. On a noisy
+    universe (e.g. MidCap 400) genuinely-good strategies alternate clean/dirty
+    windows, so a tripped halt never released and the system stayed pinned to
+    defensive anchor params indefinitely. Using "k of the last n" over a rolling
+    window tolerates that noise while still demanding real, recent recovery.
     """
     new_state = WfoState(
         wfe_history=list(state.wfe_history),
         oos_sharpes=list(state.oos_sharpes),
         halted=state.halted,
         halt_reason=state.halt_reason,
-        shadow_strikes=state.shadow_strikes,
+        shadow_window=list(state.shadow_window),
     )
 
     clean = ndh_passed and dsr_passed and wfe is not None and wfe >= wfe_healthy
-    if clean:
-        new_state.shadow_strikes += 1
-        if new_state.shadow_strikes >= 2:
-            new_state.halted = False
-            new_state.halt_reason = None
-            new_state.shadow_strikes = 0
-    else:
-        new_state.shadow_strikes = 0
+    new_state.shadow_window.append(clean)
+    new_state.shadow_window = new_state.shadow_window[-window_size:]
+
+    if sum(new_state.shadow_window) >= clean_required:
+        new_state.halted = False
+        new_state.halt_reason = None
+        new_state.shadow_window = []
 
     return new_state
 
