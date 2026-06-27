@@ -2,8 +2,10 @@
 # Daily paper trading wrapper for cron.
 # Runs the ensemble strategy on Alpaca paper trading.
 #
-# Schedule via crontab (run daily at 4:30 PM ET / 1:30 PM PT):
-#   30 13 * * 1-5 /home/flynn/ggTrader/scripts/paper_trade.sh
+# Schedule via crontab (run daily at 3:45 PM ET / 12:45 PM PT — 15 min before
+# the US close so DAY market orders fill same session instead of queuing to the
+# next open, which otherwise adds overnight-gap slippage vs the backtest):
+#   45 12 * * 1-5 /home/flynn/ggTrader/scripts/paper_trade.sh
 #
 # Logs to ~/logs/paper_trade_YYYYMMDD.log
 

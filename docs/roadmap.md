@@ -37,7 +37,7 @@ This table shows the current status of the main project components.
 | **Gate Safety Adjustment** | ✅ Done | Modified our safety gates to prevent them from rejecting strategy settings that are consistently profitable. This improved overall test outcomes. |
 | **Stable Settings Selection** | ✅ Done | Made the system select parameters that have a history of working consistently over many past months rather than just the most recent month. |
 | **Machine Learning Filter** | ✅ Done | Retrained our LightGBM machine learning filter, which blocks trades that have a low probability of success. |
-| **Live Paper Trading** | 🟢 Live | Running our 5-indicator strategy with 3% trade size on virtual money with automated safety limits. Logs only real, completed fills to avoid accounting errors. |
+| **Live Paper Trading** | 🟢 Live | Running our 5-indicator strategy with 3% trade size on virtual money with automated safety limits. Logs only real, completed fills to avoid accounting errors. (June 27: verified live fills reconcile exactly against the broker; redeployed the trader so the honest-fill-logging code is actually running; moved the daily run 30 min earlier so orders fill before the close instead of queuing overnight.) |
 | **Next Steps** | 🔵 Next | Monitor virtual trading for 5–10 days → fund a live $1,000 account → go live. Start research on blending S&P 500 and MidCap 400 stocks. |
 | **Future Research** | 🧪 Research | Exploring weighted voting, macro market data filters, and Kelly sizing (smart trade sizing). |
 
@@ -99,7 +99,7 @@ These are open research paths that are not bound to a specific deadline, ordered
 * **Diversification Ranking** (⚪ Planned): If the system generates more buy signals than we have cash for, rank them by indicator strength and sector diversity to avoid buying too many stocks in the same industry.
 * **Macro Machine Learning Features** (⚪ Planned): Feed broader market metrics (like the VIX fear index or interest rates) into the machine learning filter.
 * **Pairs Trading (Statistical Arbitrage)** (⚪ Planned): Identify pairs of stocks that historically move together, buying one and selling the other when they drift apart, expecting them to converge.
-* **Large + Mid-Cap Portfolio Blend** (🧪 Researching): Tested a 50/50 and 70/30 blend of S&P 500 (Large Cap) and MidCap 400 (Mid Cap) stocks. Mid-caps show promising reversion characteristics, but our safety gates need calibration for noisier mid-cap stock data.
+* **Large + Mid-Cap Portfolio Blend** (🧪 Researching): Tested a 50/50 and 70/30 blend of S&P 500 (Large Cap) and MidCap 400 (Mid Cap) stocks. Mid-caps show promising reversion characteristics (beats MDY: 15.0% CAGR / 1.08 Sharpe after survivorship haircut vs 9.1% / 0.40). **Gate investigation (June 27) settled the "anchor-driven" question:** the safety gates are *not* miscalibrated — the Deflated Sharpe gate passes every fold, and the rejections come from the Neighborhood Density gate correctly flagging that mid-cap optimal settings sit on genuinely noisier, less-robust plateaus. We improved the circuit-breaker's recovery rule (now "2 of the last 3 clean windows" instead of "2 consecutive," which cut defensive-anchor folds from 15 to 10), but the residual caution is real, not a bug. **Decision:** rather than weakening overfit protection to force mid-caps through, deploy mid-cap only as a ~30% diversification sleeve *behind* the deploy-clean large-cap core — judged on blend diversification, not as a standalone gated strategy.
 
 ---
 
@@ -152,6 +152,7 @@ This table tracks the technical foundation that supports our research and tradin
 * **June 24, 2026**: Ran a comprehensive voting ablation test, proving that a 5-indicator majority vote is our most robust trading signal.
 * **June 25, 2026**: Raised trade sizes to 3% to utilize cash, successfully beating the S&P 500 index on a risk-adjusted basis. Shipped this config as the default.
 * **June 26, 2026**: Adjusted our safety gates to prevent over-rejection of good rules and added stable settings selection to the live trader.
+* **June 27, 2026**: Reconciled live paper fills against the broker (clean); found and fixed a stale deployment so the honest-fill-logging code actually runs, and moved the daily run before the close. Improved the circuit-breaker recovery rule (2-of-3 clean windows). Settled the mid-cap question: the gates are working as designed (mid-cap settings are genuinely noisier), so mid-cap will be a diversification sleeve, not a standalone strategy.
 
 ---
 
