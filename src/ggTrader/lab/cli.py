@@ -94,35 +94,10 @@ def run_lab(argv: List[str] | None = None) -> str:
     ohlcv = ohlcv[sym_cols]
 
     if args.sweep or args.wfo:
-        from ggTrader.lab.strategies.conviction import ConvictionBBSignal
-        from ggTrader.lab.strategies.ensemble import EnsembleConvictionSignal, EnsembleSignal
-        from ggTrader.lab.strategies.momentum import CrossSectionalMomentum, DualMomentum
-        from ggTrader.lab.strategies.signals import (
-            BollingerReversionSignal,
-            EmaCrossSignal,
-            MACDDivergenceSignal,
-            MultiTimeframeReversionSignal,
-            RsiReversionSignal,
-            VolumeBBReversionSignal,
-            WfoTournamentSignal,
-        )
+        from ggTrader.lab.strategies import STRATEGY_REGISTRY
         from ggTrader.lab.sweep import build_grid
 
-        cls_map = {
-            "ema_cross": EmaCrossSignal,
-            "wfo_tournament": WfoTournamentSignal,
-            "bb_reversion": BollingerReversionSignal,
-            "rsi_reversion": RsiReversionSignal,
-            "macd_divergence": MACDDivergenceSignal,
-            "volume_bb_reversion": VolumeBBReversionSignal,
-            "mtf_reversion": MultiTimeframeReversionSignal,
-            "ensemble": EnsembleSignal,
-            "conviction_bb": ConvictionBBSignal,
-            "ensemble_conviction": EnsembleConvictionSignal,
-            "xs_momentum": CrossSectionalMomentum,
-            "dual_momentum": DualMomentum,
-        }
-        strategy_cls = cls_map[args.strategy]
+        strategy_cls = STRATEGY_REGISTRY[args.strategy]
         overrides = _parse_sweep_params(args.sweep_param)
         grid = build_grid(strategy_cls, overrides=overrides if overrides else None)
 

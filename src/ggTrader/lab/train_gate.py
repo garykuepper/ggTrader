@@ -21,7 +21,7 @@ from sklearn.model_selection import TimeSeriesSplit
 from ggTrader.lab.data import fetch_stock_ohlcv
 from ggTrader.lab.strategies.ensemble import EnsembleSignal
 from ggTrader.lab.strategy import LabConfig
-from ggTrader.paper.feature_gate import FEATURE_NAMES, extract_features
+from ggTrader.paper.feature_gate import DEFAULT_THRESHOLD, FEATURE_NAMES, extract_features
 
 MODEL_DIR = Path(__file__).resolve().parents[3] / "models"
 MODEL_PATH = MODEL_DIR / "ensemble_gate.joblib"
@@ -220,7 +220,7 @@ def train() -> None:
         "n_features": len(FEATURE_NAMES),
         "features": FEATURE_NAMES,
         "forward_days": FORWARD_DAYS,
-        "threshold": 0.55,
+        "threshold": DEFAULT_THRESHOLD,
         "lgb_params": LGB_PARAMS,
         "fold_metrics": fold_metrics,
         "feature_importance": importance,

@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS paper_snapshots (
     positions JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS paper_pending_orders (
+    order_id TEXT PRIMARY KEY,
+    run_date DATE NOT NULL,
+    side TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    notional DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 """
 
 
@@ -51,6 +59,52 @@ def log_trade(run_date: str, side: str, symbol: str, amount: float, order_id: st
                 "amount": amount,
                 "order_id": order_id,
             },
+        )
+        conn.commit()
+
+
+def log_pending_order(
+    run_date: str, side: str, symbol: str, notional: float, order_id: str
+) -> None:
+    """Record an order that was submitted but had not filled by run end, so the
+    next run can reconcile its final status. Idempotent on order_id."""
+    with _get_engine().connect() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO paper_pending_orders "
+                "(order_id, run_date, side, symbol, notional) "
+                "VALUES (:order_id, :run_date, :side, :symbol, :notional) "
+                "ON CONFLICT (order_id) DO NOTHING"
+            ),
+            {
+                "order_id": order_id,
+                "run_date": run_date,
+                "side": side,
+                "symbol": symbol,
+                "notional": notional,
+            },
+        )
+        conn.commit()
+
+
+def get_pending_orders() -> list[dict]:
+    """Return all unresolved pending orders awaiting reconciliation."""
+    with _get_engine().connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT order_id, run_date, side, symbol, notional "
+                "FROM paper_pending_orders ORDER BY created_at"
+            )
+        ).mappings()
+        return [dict(r) for r in rows]
+
+
+def clear_pending_order(order_id: str) -> None:
+    """Remove a pending order once it has reached a terminal status."""
+    with _get_engine().connect() as conn:
+        conn.execute(
+            text("DELETE FROM paper_pending_orders WHERE order_id = :order_id"),
+            {"order_id": order_id},
         )
         conn.commit()
 

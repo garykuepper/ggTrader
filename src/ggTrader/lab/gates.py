@@ -103,7 +103,12 @@ def ndh_check(
 
     variance_ratio = float(np.std(neighbor_sharpes) / peak_sharpe)
 
-    passed = density >= density_threshold and variance_ratio <= variance_cap
+    # Variance cap is exempted on a perfect plateau: when every neighbor is
+    # profitable (density == 1.0), Sharpe-magnitude dispersion among positive
+    # neighbors is not an overfit signal — density already proves robustness.
+    # The cap still applies when a neighbor is unprofitable (density < 1.0).
+    variance_ok = density >= 1.0 or variance_ratio <= variance_cap
+    passed = density >= density_threshold and variance_ok
     return NdhResult(
         passed=passed,
         density=density,

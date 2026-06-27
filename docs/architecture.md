@@ -206,9 +206,9 @@ feature_gate.filter(entries)              [LightGBM precision filter, drop < 0.5
     ↓
 risk.check_guardrails()                   [max positions, drawdown, daily loss]
     ↓
-trader.execute(buys, sells)               [Alpaca paper orders, DAY TIF]
+trader.execute(buys, sells)               [Alpaca paper orders, DAY TIF; poll for fills]
     ↓
-persist.save(trades, snapshots)           [TimescaleDB]
+persist.save(trades, snapshots)           [TimescaleDB; ledger only for actual fills]
     ↓
 notifier.send(alerts)                     [Telegram]
 ```

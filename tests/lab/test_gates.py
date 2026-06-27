@@ -65,23 +65,48 @@ def test_ndh_fails_isolated_spike():
     assert result.density == 0.0
 
 
-def test_ndh_fails_high_variance():
-    """A neighborhood with wildly varying sharpes fails variance cap."""
+def test_ndh_perfect_plateau_exempt_from_variance_cap():
+    """A perfect-density plateau (every neighbor profitable) passes even with
+    high Sharpe-magnitude dispersion. Dispersion among *positive* neighbors is
+    not an overfit signal — density already proves robustness. (2026-06-25:
+    the variance cap was over-rejecting these on midcaps.)"""
     sharpe, expectancy, shape = _make_plateau_grid()
-    # Make some neighbors very high, others near zero -> high std
-    idxs = _neighbor_indices(62, shape)
+    idxs = _neighbor_flat_indices(62, shape)
     for i, idx in enumerate(idxs):
-        sharpe[idx] = 2.0 if i % 2 == 0 else 0.01
+        sharpe[idx] = 2.0 if i % 2 == 0 else 0.01  # all positive, high std
     result = ndh_check(
         peak_idx=62,
         sharpe_grid=sharpe,
         expectancy_grid=expectancy,
         grid_shape=shape,
     )
-    # Density passes (all positive), but variance should fail
-    assert result.density > 0.85
-    assert result.passed is False
+    assert result.density == 1.0
+    assert result.variance_ratio > 0.20  # would have failed the old cap
+    assert result.passed is True
+
+
+def test_ndh_variance_cap_still_applies_below_perfect_density():
+    """When density is below 1.0 (a neighbor is unprofitable) but still clears
+    the density threshold, the variance cap still bites — it is only exempted
+    for perfect plateaus."""
+    sharpe, expectancy, shape = _make_plateau_grid()
+    idxs = _neighbor_flat_indices(62, shape)
+    for i, idx in enumerate(idxs):
+        sharpe[idx] = 2.0 if i % 2 == 0 else 0.01
+    # Make ONE neighbor unprofitable -> density 5/6 ≈ 0.83 (< 1.0)
+    sharpe[idxs[1]] = -0.3
+    expectancy[idxs[1]] = -0.005
+    result = ndh_check(
+        peak_idx=62,
+        sharpe_grid=sharpe,
+        expectancy_grid=expectancy,
+        grid_shape=shape,
+        density_threshold=0.8,  # 0.83 clears density, so only variance can fail
+    )
+    assert result.density < 1.0
+    assert result.density >= 0.8
     assert result.variance_ratio > 0.20
+    assert result.passed is False
 
 
 def test_ndh_singleton_dims_do_not_explode():

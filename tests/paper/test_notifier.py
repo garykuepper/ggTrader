@@ -81,6 +81,18 @@ class TestTradeAlert:
         assert "AAPL" in body
         assert "1000" in body
 
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_trade_alert_formats_filled_message(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        result = n.trade_alert("BUY", "AAPL", 1000.0, "order-123", qty=5.0, price=200.0, status="filled")
+        assert result is True
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "BUY" in body
+        assert "AAPL" in body
+        assert "Shares: 5.0000 @ $200.00" in body
+        assert "Total Value: $1000.00" in body
+
 
 class TestDailySummary:
     @patch("ggTrader.paper.notifier.requests.post")

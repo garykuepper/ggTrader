@@ -21,15 +21,15 @@ import psycopg2
 from psycopg2.extras import execute_values
 
 from ggTrader.data.live.yfinance_loader import YFinanceDataLoader
+from ggTrader.utils.config import get_db_connection_string
 
 STOCK_VENUE = "yfinance"
 
 
 def _default_connection_string() -> str:
-    return os.environ.get(
-        "GGTRADER_DB_URL",
-        "postgresql://ggtrader:ggtrader@localhost:5433/ggtrader",
-    )
+    if "GGTRADER_DB_URL" in os.environ:
+        return os.environ["GGTRADER_DB_URL"]
+    return get_db_connection_string()
 
 
 class CachedYFinanceLoader(YFinanceDataLoader):
@@ -163,14 +163,20 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                 volume = EXCLUDED.volume,
                 trades = EXCLUDED.trades;
         """
+        conn = None
         try:
             conn = self._connect()
             conn.autocommit = True
             with conn.cursor() as cur:
                 execute_values(cur, query, records, page_size=5000)
-            conn.close()
         except Exception as e:
             self.logger.error(f"Failed to cache stock data to DB: {e}")
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     # ------------------------------------------------------------------
     # Public API

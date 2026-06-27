@@ -50,7 +50,6 @@ SP500_SYMBOLS = [
     "WMT",
     "BAC",
     "CRM",
-    "AVGO",
     "MCD",
     "CSCO",
     "ACN",

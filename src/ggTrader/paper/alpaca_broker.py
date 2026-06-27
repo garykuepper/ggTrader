@@ -62,6 +62,19 @@ class AlpacaBroker:
         order = self._client.submit_order(req)
         return str(order.id)
 
+    def get_order(self, order_id: str) -> dict:
+        o = self._client.get_order_by_id(order_id)
+        return {
+            "id": str(o.id),
+            "symbol": o.symbol,
+            "side": o.side.value if hasattr(o.side, "value") else str(o.side),
+            "qty": float(o.qty) if o.qty is not None else None,
+            "notional": float(o.notional) if o.notional is not None else None,
+            "filled_qty": float(o.filled_qty) if o.filled_qty is not None else 0.0,
+            "filled_avg_price": float(o.filled_avg_price) if o.filled_avg_price is not None else 0.0,
+            "status": o.status.value if hasattr(o.status, "value") else str(o.status),
+        }
+
     def get_clock(self) -> dict:
         clock = self._client.get_clock()
         return {

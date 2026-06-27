@@ -1,5 +1,57 @@
 # Changelog
 
+## 2026-06-26
+
+### Fix: honest paper-trade fill logging + cleanups
+
+- **Fixed** phantom trade-ledger entries in `src/ggTrader/paper/trader.py`: orders
+  that never filled (e.g. queued after the close by the 21:30 stocks cron) were
+  written to `paper_trades` at their *intended notional* as if executed. The
+  ledger now records an entry only when an order actually fills, at its real
+  executed value (`filled_qty × filled_avg_price`); unfilled/pending orders still
+  send a Telegram alert but create no ledger row.
+- **Added** next-run reconciliation of pending fills: orders still working at run
+  end (queued after the close, or a partial not yet complete) are persisted to a
+  new `paper_pending_orders` table (`persist.py`). At the start of each run,
+  `PaperTrader._reconcile_pending_orders` re-checks them — a completed fill is
+  booked at its real value under the original order date, a terminally-failed
+  order is dropped, and anything still working is left for a later run. This
+  closes the gap where after-close fills were never logged.
+- **Fixed** partial-fill handling in the order poll loop: `partially_filled` is no
+  longer treated as terminal, so the poller keeps waiting for completion (or
+  timeout); a partial still working at run end is persisted for reconciliation
+  rather than booked early and its remainder dropped.
+- **Refactored** the trade alert/log loop to a single code path (removed the
+  duplicated `if/else` alert+log calls).
+- **Extracted** `_validate_voters()` in `ensemble.py`, removing the voter-validation
+  block duplicated verbatim across `EnsembleSignal` and `EnsembleConvictionSignal`.
+- **Extracted** `build_combo_lookup()` in `sweep.py`, shared by `sweep.py` and
+  `wfo.py` (was duplicated inline in both).
+- **Moved** `import time` to module top in `trader.py` (was a lazy in-function import).
+- **Moved** the `get_db_connection_string` import to module top in
+  `cached_yfinance_loader.py` (was a lazy in-function import).
+- **Fixed** `F821` lint errors in `sweep.py` by declaring the `LabConfig`/`pd`
+  string annotations under a `TYPE_CHECKING` block.
+
+## 2026-06-25
+
+### Refactoring: senior software engineering code review & critical bug fixes
+
+- **Fixed** `EnsembleConvictionSignal` voter bypass in `src/ggTrader/lab/strategies/ensemble.py` — now accepts and respects `voters` parameter, aligning research signals with configuration parameters.
+- **Fixed** logical paradox in concentration check guardrails: modified `RiskGuard.check_concentration` in `src/ggTrader/paper/risk.py` and its caller in `src/ggTrader/paper/trader.py` to evaluate prospective order notional instead of returning dead `False` values.
+- **Optimized** parameter sweep and WFO grid search execution time: changed sweep lookups from quadratic $O(N^2)$ linear searches to $O(1)$ dictionary lookups in `sweep.py` and `wfo.py`.
+- **Sped up** the unit test suite from 1 minute 49 seconds to 36 seconds by patching `MIN_REQUEST_INTERVAL` to 0.0 in the Tiingo unit tests loader fixture using `yield` context manager.
+- **Resolved** connection leak inside `CachedYFinanceLoader._cache_to_db` by using a `try...finally` block to guarantee connection close on exception paths.
+- **Fixed** conflicting transaction autocommit state in database ingestion thread worker (`postgres_ingestor.py`) to prevent corrupt or incomplete bulk writes.
+- **Deduplicated** `AVGO` ticker in S&P 500 constituents symbols list (`stock_constants.py`).
+- **Removed** hardcoded database credentials in `cached_yfinance_loader.py` — now uses secure database configuration module fallbacks.
+- **Pruned** legacy `tool.mypy.overrides` configuration overrides for non-existent modules in `pyproject.toml`.
+- **Vectorized** tournament EMA combo selection in `signals.py` to replace slow loop instantiations of `vbt.Portfolio`.
+- **De-duplicated** `DEFAULT_THRESHOLD` constant between `feature_gate.py` and `train_gate.py`.
+- **Exposed** package public API via package `__init__.py` using `STRATEGY_REGISTRY` to prevent duplicate CLI and strategy registry definitions.
+- **Resolved** fragile SQL schema splitting in `persist.py` by executing `_SCHEMA` directly.
+- **Fixed** absolute Windows path fallback for `pg_dump` in `cmd_db.py` to follow project-scoped relative paths rules.
+
 ## 2026-06-23
 
 ### Research: expanded reversion signals — 6-voter ensemble

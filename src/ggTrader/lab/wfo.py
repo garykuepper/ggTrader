@@ -13,7 +13,7 @@ from ggTrader.lab.gates import dsr_check, ndh_check
 from ggTrader.lab.metrics import curve_stats
 from ggTrader.lab.simulate import simulate_signals
 from ggTrader.lab.strategy import LabConfig
-from ggTrader.lab.sweep import combo_name, split_params
+from ggTrader.lab.sweep import build_combo_lookup, combo_name, split_params
 
 TRAIN_MONTHS = 12
 TEST_MONTHS = 3
@@ -244,6 +244,7 @@ def _sweep_fold(
 
     # Score each combo over the scoring window only
     results: List[Dict[str, Any]] = []
+    combo_lookup = build_combo_lookup(strategy_name, grid)
     for key, eq_series in all_eq.items():
         eq_window = eq_series.loc[window_start:window_end].dropna()
         if len(eq_window) < 2:
@@ -251,7 +252,7 @@ def _sweep_fold(
         # Rescale to start at start_cash for consistent metrics
         eq_scaled = start_cash * (eq_window / eq_window.iloc[0])
         metrics = curve_stats(eq_scaled)
-        combo_params = next(c for c in grid if combo_name(strategy_name, c) == key)
+        combo_params = combo_lookup[key]
         results.append({"combo": key, "params": combo_params, **metrics})
     return results, all_eq
 
@@ -454,6 +455,7 @@ def run_wfo(
         ndh_passed = False
         dsr_passed = False
         ndh_density = 0.0
+        ndh_variance = float("nan")
         dsr_value = 0.0
 
         sharpe_grid, exp_grid, grid_shape, r2g = _extract_grid_arrays(
@@ -477,6 +479,7 @@ def run_wfo(
             )
             ndh_passed = ndh_result.passed
             ndh_density = ndh_result.density
+            ndh_variance = ndh_result.variance_ratio
 
         winner_key = winner["combo"]
         eq_is = train_eq.get(winner_key, pd.Series(dtype=float))
@@ -580,7 +583,11 @@ def run_wfo(
         fold_winners.append(winner)
         oos_s = f" OOS Sharpe {oos_sharpe:.2f}" if np.isfinite(oos_sharpe) else ""
         wfe_s = f" WFE {wfe_val:.2f}" if wfe_val is not None else ""
-        print(f" → done{oos_s}{wfe_s}", flush=True)
+        gate_s = (
+            f" [NDH dens {ndh_density:.2f} var {ndh_variance:.2f}/0.20 "
+            f"{'✓' if ndh_passed else '✗'} DSR {dsr_value:.2f}{'✓' if dsr_passed else '✗'}]"
+        )
+        print(f" → done{oos_s}{wfe_s}{gate_s}", flush=True)
 
     # Concatenate OOS curves and score
     if oos_curves:

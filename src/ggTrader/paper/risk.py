@@ -60,10 +60,9 @@ class RiskGuard:
         return round(portfolio_value * self.cfg.position_pct, 2)
 
     def check_concentration(
-        self, symbol: str, positions: dict[str, dict], portfolio_value: float
+        self, symbol: str, positions: dict[str, dict], portfolio_value: float, prospective_notional: float = 0.0
     ) -> bool:
         """Returns True if adding to this symbol would exceed concentration limit."""
-        if symbol not in positions:
-            return False
-        current_value = positions[symbol].get("market_value", 0.0)
-        return (current_value / portfolio_value) >= self.cfg.max_concentration_pct
+        current_value = positions.get(symbol, {}).get("market_value", 0.0)
+        total_prospective_value = current_value + prospective_notional
+        return (total_prospective_value / portfolio_value) >= self.cfg.max_concentration_pct

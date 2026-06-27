@@ -41,6 +41,16 @@ DEFAULT_VOTERS: tuple[str, ...] = FIVE_VOTERS
 THREE_VOTERS: tuple[str, ...] = ("bb", "rsi", "ema")
 
 
+def _validate_voters(voters: tuple[str, ...] | list[str]) -> tuple[str, ...]:
+    """Validate a voter selection and return it as a tuple."""
+    if not voters:
+        raise ValueError("voters must be non-empty")
+    unknown = [v for v in voters if v not in ALL_VOTERS]
+    if unknown:
+        raise ValueError(f"unknown voter(s) {unknown}; valid: {ALL_VOTERS}")
+    return tuple(voters)
+
+
 class EnsembleSignal:
     """Majority-vote ensemble: enter when >= min_agree sub-signals fire together.
 
@@ -76,12 +86,7 @@ class EnsembleSignal:
         weekly_rsi_exit: int = 50,
         voters: tuple[str, ...] | list[str] = DEFAULT_VOTERS,
     ) -> None:
-        unknown = [v for v in voters if v not in ALL_VOTERS]
-        if unknown:
-            raise ValueError(f"unknown voter(s) {unknown}; valid: {ALL_VOTERS}")
-        if not voters:
-            raise ValueError("voters must be non-empty")
-        self.voters = tuple(voters)
+        self.voters = _validate_voters(voters)
         self.cfg = cfg
         self.min_agree = min_agree
         self.min_agree_exit = min_agree_exit if min_agree_exit is not None else min_agree
@@ -251,7 +256,9 @@ class EnsembleConvictionSignal:
         weekly_rsi_exit: int = 50,
         min_size: float = 0.01,
         max_size: float = 0.04,
+        voters: tuple[str, ...] | list[str] = DEFAULT_VOTERS,
     ) -> None:
+        self.voters = _validate_voters(voters)
         self.cfg = cfg
         self.min_agree = min_agree
         self.min_agree_exit = min_agree_exit if min_agree_exit is not None else min_agree
@@ -307,61 +314,61 @@ class EnsembleConvictionSignal:
         self, close: pd.DataFrame, volume: pd.DataFrame
     ) -> SignalTargets:
         """Entry/exit via majority vote + conviction-weighted sizes."""
-        bb_ent, bb_ext = bb_signals(close, self.bb_period, self.bb_std)
-        rsi_ent, rsi_ext = rsi_signals(close, self.rsi_period, self.rsi_oversold, self.rsi_exit)
-        ema_ent, ema_ext = ema_signals(close, self.ema_fast, self.ema_slow)
-        macd_ent, macd_ext = macd_signals(
-            close, self.macd_fast, self.macd_slow, self.macd_signal, self.divergence_window
-        )
-        vbb_ent, vbb_ext = volume_bb_signals(
-            close, volume, self.bb_period, self.bb_std, self.vol_period, self.vol_mult
-        )
-        mtf_ent, mtf_ext = mtf_signals(
-            close,
-            self.weekly_rsi_period,
-            self.weekly_rsi_oversold,
-            self.weekly_rsi_exit,
-            self.bb_period,
-            self.bb_std,
-        )
+        ent: Dict[str, pd.DataFrame] = {}
+        ext: Dict[str, pd.DataFrame] = {}
+        strengths: Dict[str, pd.DataFrame] = {}
 
-        entry_votes = (
-            bb_ent.astype(int)
-            + rsi_ent.astype(int)
-            + ema_ent.astype(int)
-            + macd_ent.astype(int)
-            + vbb_ent.astype(int)
-            + mtf_ent.astype(int)
-        )
-        exit_votes = (
-            bb_ext.astype(int)
-            + rsi_ext.astype(int)
-            + ema_ext.astype(int)
-            + macd_ext.astype(int)
-            + vbb_ext.astype(int)
-            + mtf_ext.astype(int)
-        )
+        if "bb" in self.voters:
+            ent["bb"], ext["bb"] = bb_signals(close, self.bb_period, self.bb_std)
+            strengths["bb"] = bb_strength(close, self.bb_period, self.bb_std)
+        if "rsi" in self.voters:
+            ent["rsi"], ext["rsi"] = rsi_signals(
+                close, self.rsi_period, self.rsi_oversold, self.rsi_exit
+            )
+            strengths["rsi"] = rsi_strength(close, self.rsi_period, self.rsi_oversold)
+        if "ema" in self.voters:
+            ent["ema"], ext["ema"] = ema_signals(close, self.ema_fast, self.ema_slow)
+            strengths["ema"] = ema_strength(close, self.ema_fast, self.ema_slow)
+        if "macd" in self.voters:
+            ent["macd"], ext["macd"] = macd_signals(
+                close, self.macd_fast, self.macd_slow, self.macd_signal, self.divergence_window
+            )
+            strengths["macd"] = macd_strength(
+                close, self.macd_fast, self.macd_slow, self.macd_signal
+            )
+        if "vbb" in self.voters:
+            ent["vbb"], ext["vbb"] = volume_bb_signals(
+                close, volume, self.bb_period, self.bb_std, self.vol_period, self.vol_mult
+            )
+            strengths["vbb"] = volume_bb_strength(
+                close, volume, self.bb_period, self.bb_std, self.vol_period
+            )
+        if "mtf" in self.voters:
+            ent["mtf"], ext["mtf"] = mtf_signals(
+                close,
+                self.weekly_rsi_period,
+                self.weekly_rsi_oversold,
+                self.weekly_rsi_exit,
+                self.bb_period,
+                self.bb_std,
+            )
+            strengths["mtf"] = mtf_strength(
+                close,
+                self.weekly_rsi_period,
+                self.weekly_rsi_oversold,
+                self.bb_period,
+                self.bb_std,
+            )
+
+        entry_votes = sum(df.astype(int) for df in ent.values())
+        exit_votes = sum(df.astype(int) for df in ext.values())
 
         entries = (entry_votes >= self.min_agree).astype(bool)
-        exits = rsi_ext | (exit_votes >= self.min_agree_exit)
+        independent_exit = ext["rsi"] if "rsi" in ext else False
+        exits = independent_exit | (exit_votes >= self.min_agree_exit)
 
-        bb_str = bb_strength(close, self.bb_period, self.bb_std)
-        rsi_str = rsi_strength(close, self.rsi_period, self.rsi_oversold)
-        ema_str = ema_strength(close, self.ema_fast, self.ema_slow)
-        macd_str = macd_strength(close, self.macd_fast, self.macd_slow, self.macd_signal)
-        vbb_str = volume_bb_strength(close, volume, self.bb_period, self.bb_std, self.vol_period)
-        mtf_str = mtf_strength(
-            close, self.weekly_rsi_period, self.weekly_rsi_oversold, self.bb_period, self.bb_std
-        )
-
-        strength_sum = (
-            bb_str.where(bb_ent, 0.0)
-            + rsi_str.where(rsi_ent, 0.0)
-            + ema_str.where(ema_ent, 0.0)
-            + macd_str.where(macd_ent, 0.0)
-            + vbb_str.where(vbb_ent, 0.0)
-            + mtf_str.where(mtf_ent, 0.0)
-        )
+        # Conviction average strength of agreeing sub-signals
+        strength_sum = sum(strengths[k].where(ent[k], 0.0) for k in ent)
         conviction = strength_sum / entry_votes.replace(0, np.nan)
 
         sizes = self.min_size + conviction * (self.max_size - self.min_size)
@@ -409,6 +416,7 @@ class EnsembleConvictionSignal:
                 weekly_rsi_exit=int(combo.get("weekly_rsi_exit", self.weekly_rsi_exit)),
                 min_size=self.min_size,
                 max_size=self.max_size,
+                voters=self.voters,
             )
             targets = strat._generate_signals_with_sizes(close, volume)
             key = combo_name(self.name, combo)
