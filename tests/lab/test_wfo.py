@@ -408,11 +408,11 @@ def test_circuit_breaker_single_negative_oos_not_halt():
 # ── shadow re-entry tests ─────────────────────────────────────────────
 
 
-def test_shadow_reentry_needs_two_consecutive():
-    """First clean shadow strike doesn't restore -- need 2 consecutive."""
+def test_shadow_reentry_needs_two_clean():
+    """First clean shadow window doesn't restore -- need 2 of last 3."""
     from ggTrader.lab.wfo import WfoState, check_shadow_reentry
 
-    state = WfoState(halted=True, halt_reason="test", shadow_strikes=0)
+    state = WfoState(halted=True, halt_reason="test")
     result = check_shadow_reentry(
         state,
         ndh_passed=True,
@@ -420,14 +420,14 @@ def test_shadow_reentry_needs_two_consecutive():
         wfe=0.6,
     )
     assert result.halted is True
-    assert result.shadow_strikes == 1
+    assert result.shadow_window == [True]
 
 
-def test_shadow_reentry_second_strike_restores():
-    """Second consecutive clean shadow window ends the halt."""
+def test_shadow_reentry_two_consecutive_restores():
+    """Two consecutive clean windows end the halt (2 of last 2)."""
     from ggTrader.lab.wfo import WfoState, check_shadow_reentry
 
-    state = WfoState(halted=True, halt_reason="test", shadow_strikes=1)
+    state = WfoState(halted=True, halt_reason="test", shadow_window=[True])
     result = check_shadow_reentry(
         state,
         ndh_passed=True,
@@ -435,15 +435,37 @@ def test_shadow_reentry_second_strike_restores():
         wfe=0.6,
     )
     assert result.halted is False
-    assert result.shadow_strikes == 0
+    assert result.shadow_window == []
     assert result.halt_reason is None
 
 
-def test_shadow_reentry_failed_check_resets_strikes():
-    """Any gate failure resets the consecutive counter."""
+def test_shadow_reentry_two_of_three_restores():
+    """A dirty window BETWEEN two clean windows no longer blocks re-entry.
+
+    This is the mid-cap fix: noisy universes alternate clean/dirty, so the old
+    '2 consecutive' rule left the halt permanently stuck. 'clean, dirty, clean'
+    is 2 of the last 3 and must restore live trading.
+    """
     from ggTrader.lab.wfo import WfoState, check_shadow_reentry
 
-    state = WfoState(halted=True, halt_reason="test", shadow_strikes=1)
+    # window so far: clean, then dirty
+    state = WfoState(halted=True, halt_reason="test", shadow_window=[True, False])
+    result = check_shadow_reentry(
+        state,
+        ndh_passed=True,
+        dsr_passed=True,
+        wfe=0.6,
+    )
+    assert result.halted is False
+    assert result.shadow_window == []
+    assert result.halt_reason is None
+
+
+def test_shadow_reentry_dirty_window_does_not_wipe_history():
+    """A single dirty window appends False but keeps the rolling history."""
+    from ggTrader.lab.wfo import WfoState, check_shadow_reentry
+
+    state = WfoState(halted=True, halt_reason="test", shadow_window=[True])
     result = check_shadow_reentry(
         state,
         ndh_passed=True,
@@ -451,14 +473,31 @@ def test_shadow_reentry_failed_check_resets_strikes():
         wfe=0.6,
     )
     assert result.halted is True
-    assert result.shadow_strikes == 0
+    assert result.shadow_window == [True, False]
+
+
+def test_shadow_reentry_only_last_three_count():
+    """Rolling window caps at 3: an old clean window ages out and can't restore."""
+    from ggTrader.lab.wfo import WfoState, check_shadow_reentry
+
+    # last 3 would be [False, False, <new>]; one stale clean is dropped
+    state = WfoState(halted=True, halt_reason="test", shadow_window=[True, False, False])
+    result = check_shadow_reentry(
+        state,
+        ndh_passed=True,
+        dsr_passed=True,
+        wfe=0.6,
+    )
+    # window becomes [False, False, True] -> only 1 of last 3 clean -> stay halted
+    assert result.halted is True
+    assert result.shadow_window == [False, False, True]
 
 
 def test_shadow_reentry_requires_wfe_healthy():
-    """WFE < 0.5 (healthy target) fails the re-entry check."""
+    """WFE < 0.5 (healthy target) is not a clean window."""
     from ggTrader.lab.wfo import WfoState, check_shadow_reentry
 
-    state = WfoState(halted=True, halt_reason="test", shadow_strikes=1)
+    state = WfoState(halted=True, halt_reason="test", shadow_window=[True])
     result = check_shadow_reentry(
         state,
         ndh_passed=True,
@@ -466,14 +505,14 @@ def test_shadow_reentry_requires_wfe_healthy():
         wfe=0.3,
     )
     assert result.halted is True
-    assert result.shadow_strikes == 0
+    assert result.shadow_window == [True, False]
 
 
 def test_shadow_reentry_neutral_wfe_fails():
-    """Neutral WFE (None) fails re-entry -- can't confirm recovery."""
+    """Neutral WFE (None) is not a clean window -- can't confirm recovery."""
     from ggTrader.lab.wfo import WfoState, check_shadow_reentry
 
-    state = WfoState(halted=True, halt_reason="test", shadow_strikes=1)
+    state = WfoState(halted=True, halt_reason="test", shadow_window=[True])
     result = check_shadow_reentry(
         state,
         ndh_passed=True,
@@ -481,7 +520,7 @@ def test_shadow_reentry_neutral_wfe_fails():
         wfe=None,
     )
     assert result.halted is True
-    assert result.shadow_strikes == 0
+    assert result.shadow_window == [True, False]
 
 
 # ── anchor set tests ─────────────────────────────────────────────────
