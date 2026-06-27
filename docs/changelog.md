@@ -2,6 +2,19 @@
 
 ## 2026-06-26
 
+### Fix: stability-aware live-param recommendation
+
+- **Fixed** `select_live_params` in `src/ggTrader/lab/wfo.py`: it picked the
+  combo with the best composite score on the *most recent* train window while
+  ignoring out-of-sample durability, so it could (and on SP500 did) recommend a
+  combo that never won a single walk-forward fold — an overfit-to-recent-regime
+  trap. Selection now prefers combos proven across folds via the new
+  `_pick_live_winner` helper: among combos that won >= `MIN_LIVE_STABILITY`
+  (default 1) folds, pick the best recent-window score; fall back to the global
+  best only when no fold produced a winner. On SP500 the recommendation moved
+  from a `0/17`-stability `min_agree2` combo to a `2/17` fold-proven `min_agree3`
+  combo. Gate logic and aggregate OOS results are unaffected.
+
 ### Fix: NDH variance-cap exemption on perfect-density plateaus
 
 - **Fixed** `ndh_check` in `src/ggTrader/lab/gates.py`: the Sharpe-dispersion
