@@ -5,77 +5,102 @@
 [![Linter: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Tested with pytest](https://img.shields.io/badge/tested%20with-pytest-white?logo=pytest&logoColor=2f9fe3)](https://docs.pytest.org/en/stable/)
 
-A **vectorbt-based research lab** for walk-forward optimization of trading strategies. Each evaluation run splits historical data into monthly folds, trains strategy parameters on in-sample data, validates on held-out out-of-sample data, and persists results to TimescaleDB.
+Welcome to ggTrader! This is a research platform (or "lab") designed to help you test, tune, and deploy trading strategies. 
 
-The lab supports US equities (S&P 500 via yfinance) and crypto (via TimescaleDB OHLCV). All simulation is fully vectorized through vectorbt — no per-bar iteration.
+It simulates how a trading strategy would have performed in the past using **Walk-Forward Optimization**—a realistic testing method where strategy parameters are tuned on past data and evaluated on subsequent "unseen" data on a rolling basis.
 
-## What you get
+The platform supports both US equities (stocks like the S&P 500 via Yahoo Finance) and cryptocurrencies (loaded from a local database).
 
-- **Walk-forward optimization** with monthly folds — in-sample training, out-of-sample validation, no lookahead.
-- **Vectorized backtesting** via `vectorbt.Portfolio` — one grouped call simulates all strategies simultaneously with shared cash pools.
-- **Point-in-time universes** — S&P 500 membership as of each selection date (2,712 snapshots, 1996–present), preventing survivorship bias.
-- **Pluggable strategies** — implement the `Strategy` protocol (`select` + `to_targets`) and it's immediately available via the CLI.
-- **TimescaleDB persistence** — all run results stored in `lab_runs` and `lab_periods` tables. No file-based state.
+---
 
-## Available strategies
+## Core Features (Plain English)
 
-| Name | Type | Description |
+- **Realistic Backtesting (Walk-Forward Optimization)**: Instead of cheating by testing rules on the same data used to create them, we split history into monthly segments. We find the best rules on a "training" segment (in-sample) and test them on the next "testing" segment (out-of-sample).
+- **Super-Fast Simulations (Vectorization)**: Traditional backtesters test day-by-day in a slow loop. ggTrader uses the **vectorbt** library to calculate your entire portfolio's performance all at once, letting you run years of history across hundreds of stocks in seconds.
+- **Constituent History (No Survivorship Bias)**: Most people test stock strategies using the current list of S&P 500 stocks. This is a mistake because it ignores companies that went bankrupt or got acquired. ggTrader tracks the historical "point-in-time" list of S&P 500 members to make your tests realistic.
+- **Easy Strategy Customization**: Implement a simple Python blueprint (the `Strategy` protocol) and your new trading rules are immediately usable from the command line.
+- **Database Storage**: Saves all test results directly to **TimescaleDB** (a time-series database) so you never lose your results.
+
+---
+
+## Available Strategies
+
+Strategies are split into two kinds:
+1. **Signal Strategies**: Decides **when** to buy or sell (e.g. buying when moving averages cross).
+2. **Weight Strategies**: Decides **how much** of each stock to hold (e.g. putting equal amounts into the top 10 momentum stocks).
+
+| Strategy Name | Type | Description |
 |------|------|-------------|
-| `wfo_tournament` | Signal | EMA combo tournament per rebalance (4 fast/slow pairs, 70% IS window) |
-| `ema_cross` | Signal | Simple whole-window EMA crossover |
-| `xs_momentum` | Weight | Cross-sectional momentum (top-N by 12-1 momentum) |
-| `dual_momentum` | Weight | Absolute + relative momentum filter |
+| `wfo_tournament` | Signal | Automatically finds the best moving average parameters by running a mini-competition on past data. |
+| `ema_cross` | Signal | A classic strategy that buys when a fast moving average crosses above a slow moving average, and sells when it crosses below. |
+| `xs_momentum` | Weight | Ranks stocks by their past 12-month returns and holds the top performers. |
+| `dual_momentum` | Weight | Ranks stocks by momentum, but moves the entire portfolio to safe cash if the overall market is falling. |
 
-## Quick start
+---
 
+## Quick Start
+
+### 1. Installation
+Install the project dependencies in your Python environment:
 ```bash
-# Install
 pip install -e .
+```
 
-# Verify
+### 2. Verify
+Check that the command-line interface is working:
+```bash
 ggt --help
+```
 
-# Run a strategy over SP500 (2021–present, top 50 stocks)
+### 3. Run a Simulation
+Simulate a strategy over the S&P 500 universe (from 2021 to present on the top 50 stocks):
+```bash
 ggt lab --strategy wfo_tournament
+```
 
-# Smaller diagnostic run
+### 4. Diagnostic Run
+Run a small, fast test run on just 10 stocks:
+```bash
 ggt lab --strategy xs_momentum --top-n 10 --eval-start 2024-01-01
 ```
 
-## Project layout
+---
+
+## Folder Layout
 
 ```
 src/ggTrader/
-├── lab/              # Research engine (vectorbt-first)
-│   ├── cli.py        # CLI entry point
-│   ├── data.py       # Universe selection + OHLCV loading
-│   ├── harness.py    # Walk-forward driver
-│   ├── metrics.py    # Sharpe, Calmar, max drawdown, win rate
-│   ├── persist.py    # DB persistence
-│   ├── simulate.py   # vbt.Portfolio wrappers (from_orders, from_signals)
-│   ├── strategy.py   # Strategy protocol + LabConfig
-│   └── strategies/   # Strategy implementations
-├── data/             # Data loading infrastructure
-│   ├── core/         # Base loader, SP500 constituents, constants
-│   ├── historical/   # TimescaleDB loader + ingestor
-│   └── live/         # yfinance loader
-├── utils/            # Config, paths, DB engine
-└── cli/              # ggt lab | ingest | db
+├── lab/              # The Research Engine (running simulations)
+│   ├── cli.py        # Command-line entry point for simulation commands
+│   ├── data.py       # Handles downloading/loading price data
+│   ├── harness.py    # The simulation controller (handles rolling folds)
+│   ├── metrics.py    # Calculates return, Sharpe ratio, and drawdowns
+│   ├── persist.py    # Saves test results to the database
+│   ├── simulate.py   # Runs the vectorbt backtesting math
+│   ├── strategy.py   # Strategy interfaces and blueprints
+│   └── strategies/   # Code for individual trading strategies
+├── data/             # Data Loaders (Yahoo Finance, database loaders)
+├── utils/            # Shared utilities (database connections, config)
+└── cli/              # Main CLI entry subcommands (ggt lab | ingest | db)
 ```
 
-| Other paths | Contents |
+| Additional Files | Description |
 |---|---|
-| `data/universe/` | SP500 constituent history, venue listing snapshots |
-| `scripts/` | Data backfill utilities |
-| `tests/lab/` | Lab test suite |
+| `data/universe/` | Historical S&P 500 membership records. |
+| `scripts/` | Script utilities for cleaning and backfilling data. |
+| `tests/lab/` | Code tests to ensure the simulator is working correctly. |
+
+---
 
 ## Documentation
 
-- [**Architecture**](docs/architecture.md) — module structure, data flows, strategy protocol
-- [**CLI Reference**](docs/cli_reference.md) — `ggt` commands and flags
-- [**Installation**](docs/installation.md) — TimescaleDB, environment, Docker
-- [**Roadmap**](docs/roadmap.md) — research history and direction (archived)
-- [**Changelog**](docs/changelog.md) — dated record of changes
+For a deeper dive, check out our detailed guides:
+- [**Installation Guide**](docs/installation.md) — How to set up Python, TimescaleDB, and Docker.
+- [**CLI Reference**](docs/cli_reference.md) — A breakdown of all commands, flags, and parameters.
+- [**Architecture Guide**](docs/architecture.md) — How the codebase is built, how data flows, and how the simulation works.
+- [**Changelog**](docs/changelog.md) — A record of updates made to the project.
+
+---
 
 ## License
 

@@ -1,333 +1,298 @@
-# Architecture
+# Architecture Guide
 
-How ggTrader is structured. For commands and usage see [CLI Reference](cli_reference.md); for codebase guidelines see [agents.md](../agents.md).
+This guide explains how the ggTrader codebase is structured and how its components work together. For commands and usage see the [CLI Reference](cli_reference.md); for developer-specific guidelines, see [Developer Guidelines](../agents.md).
 
 ---
 
-## At a glance
+## Technical Concepts & Terminology (Plain English)
 
-ggTrader is a **research-first lab** — a vectorbt-based walk-forward optimization framework for backtesting trading strategies on historical data, with a paper-trading deployment pipeline for validated strategies.
+Before diving into the code, here are the core concepts used throughout ggTrader:
 
-| Aspect | Detail |
+- **Backtesting (Simulating)**: Running a trading strategy on historical price data to see how much money it would have made or lost in the past.
+- **Walk-Forward Optimization (WFO)**: A realistic testing method. Instead of finding one rule that fits all of history, we split history into rolling time blocks. We use an earlier block (the **In-Sample** or train period) to find the best rules, and then test those rules on the immediate next block (the **Out-of-Sample** or test period). Then we shift forward and repeat.
+- **Overfitting**: A common trap where a strategy is tuned so perfectly to past data that it looks amazing on paper, but fails completely on new, unseen data (because it "memorized" the past instead of finding a general pattern).
+- **Walk-Forward Efficiency (WFE)**: A score that compares a strategy's performance during testing (out-of-sample) to its performance during training (in-sample). A high WFE suggests the strategy is robust; a low WFE suggests it is overfitted.
+- **Vectorization**: Traditional simulators run day-by-day in a slow loop. ggTrader uses **vectorbt**, a library that performs backtesting calculations on entire arrays of data all at once using fast math. This allows you to simulate years of trading across hundreds of stocks in seconds.
+- **Survivorship Bias**: Cheating in backtests by only testing on stocks that exist *today*. We prevent this by using a **Point-in-Time Universe**, which tracks exactly which companies were in the index on any specific day in the past (including those that later went bankrupt or were acquired).
+- **OHLCV Data**: The basic building blocks of price charts—stands for **O**pen, **H**igh, **L**ow, **C**lose, and **V**olume for a given time period.
+
+---
+
+## ggTrader at a Glance
+
+| Component | What it does in plain English |
 |---|---|
-| **Core Stack** | Python 3.10+ · vectorbt · TimescaleDB · yfinance · Tiingo (fallback) |
-| **Data Sources** | TimescaleDB (crypto OHLCV, equity backfill) · yfinance (equities) · Tiingo (delisted tickers) · CSV (SP500/Nasdaq-100/Russell 2000 constituents) |
-| **Lab Output** | TimescaleDB `lab_runs` / `lab_periods` tables (timestamped, immutable) |
-| **Paper Trading** | Alpaca paper via `ggt paper` · ML feature gate · risk guardrails · Telegram alerts |
-| **Supported Markets** | US equities (SP500, Nasdaq-100, Russell 2000 universes) · Crypto (customizable) |
-| **Evaluation Window** | Monthly folds (overlapping calendar months) · Daily rebalancing (configurable) |
-| **Vectorization** | All calculations are fully vectorized via numpy/pandas/vectorbt — no per-bar iteration |
+| **Core Libraries** | **Python 3.10+** (language) · **vectorbt** (fast calculations) · **TimescaleDB** (database) · **yfinance** (free Yahoo Finance data). |
+| **Data Sources** | Fetches live stock data from Yahoo Finance, uses Tiingo as a backup, loads crypto data from the database, and uses historical CSVs to track S&P 500 constituents over time. |
+| **Lab Output** | Saves test records to `lab_runs` (overall results) and `lab_periods` (month-by-month results) in the database. |
+| **Paper Trading** | Virtual trading on Alpaca. Includes a machine learning guard (ML feature gate) to filter bad trades, risk checks (guardrails), and Telegram notifications. |
+| **Supported Markets** | US stock indices (S&P 500, Nasdaq-100, Russell 2000) and customizable cryptocurrency pairs. |
+| **Vectorization** | All portfolio calculations run instantly using NumPy and Pandas vector operations. |
 
 ---
 
-## Module structure
+## Directory & File Structure
+
+Here is where the source code lives inside `src/ggTrader/`:
 
 ```
 src/ggTrader/
-├── lab/                          # Research engine (vectorbt-first)
-│   ├── cli.py                   # CLI entry point (ggt lab)
-│   ├── data.py                  # Universe + OHLCV loading (yfinance, Tiingo, TimescaleDB)
-│   ├── harness.py               # Walk-forward driver + fold logic
-│   ├── metrics.py               # Sharpe, Calmar, max DD, win rate
-│   ├── persist.py               # DB persistence to lab_runs/lab_periods
-│   ├── simulate.py              # Vectorized portfolio sim (vectorbt.Portfolio)
-│   ├── strategy.py              # Strategy protocol + LabConfig
-│   ├── sweep.py                 # Parameter sweep grid builder + runner
-│   ├── wfo.py                   # Walk-forward optimization (rolling folds, WFE, circuit breaker)
-│   ├── gates.py                 # Robustness gates (NDH plateau filter, DSR)
-│   ├── train_gate.py            # LightGBM train gate for signal quality
-│   └── strategies/
-│       ├── momentum.py          # Weight strategies (xs_momentum, dual_momentum)
-│       ├── signals.py           # Signal strategies (ema_cross, wfo_tournament, bb_reversion,
-│       │                        #   rsi_reversion, macd_divergence, volume_bb_reversion,
-│       │                        #   mtf_reversion)
-│       ├── ensemble.py          # Ensemble strategies (ensemble, ensemble_conviction)
-│       ├── conviction.py        # Conviction-weighted BB sizing (conviction_bb)
-│       └── indicators.py        # Shared vectorized indicator functions (BB, RSI, EMA,
-│                                #   MACD, volume, multi-timeframe)
+├── lab/                          # The Research & Simulation Engine
+│   ├── cli.py                   # Command-line entry point for running simulations (ggt lab)
+│   ├── data.py                  # Loads stock lists and historical prices (yfinance, TimescaleDB)
+│   ├── harness.py               # Manages the walk-forward simulation loop and time periods
+│   ├── metrics.py               # Calculates return, Sharpe ratio, and drawdowns
+│   ├── persist.py               # Saves simulation results to database tables
+│   ├── simulate.py              # Feeds data into vectorbt to run the portfolio math
+│   ├── strategy.py              # Templates and rules for writing a custom strategy
+│   ├── sweep.py                 # Generates grids of parameters to test (parameter sweeps)
+│   ├── wfo.py                   # Handles rolling optimization, testing, and safety limits
+│   ├── gates.py                 # Quality checks to filter out weak or noisy strategies
+│   ├── train_gate.py            # Trains the machine learning model to filter trade signals
+│   └── strategies/              # Individual Strategy Files
+│       ├── momentum.py          # Weight strategies (e.g., buying top gainers)
+│       ├── signals.py           # Signal strategies (e.g., buying moving average crosses)
+│       ├── ensemble.py          # Voting strategies that combine multiple indicators
+│       ├── conviction.py        # Position-sizing based on indicators
+│       └── indicators.py        # Math for technical indicators (RSI, Bollinger Bands, EMA)
 │
-├── paper/                       # Paper trading deployment
-│   ├── alpaca_broker.py         # Alpaca TradingClient adapter (paper-only)
-│   ├── signal_runner.py         # Daily ensemble signal generation
-│   ├── trader.py                # Signal → order orchestration
-│   ├── feature_gate.py          # LightGBM ML feature gate (precision filter)
-│   ├── risk.py                  # Risk guardrails (max positions, drawdown, daily loss)
-│   ├── notifier.py              # Telegram trade alerts + daily summaries
-│   └── persist.py               # Trade + snapshot persistence to TimescaleDB
+├── paper/                       # The Live Paper-Trading Deployment
+│   ├── alpaca_broker.py         # Adapter to talk to Alpaca (our paper trading broker)
+│   ├── signal_runner.py         # Generates the daily buy/sell votes from indicators
+│   ├── trader.py                # Coordinates signals, risk checks, and submits orders
+│   ├── feature_gate.py          # The machine learning model that blocks risky trades
+│   ├── risk.py                  # Safety checks (caps position sizes, halts on losses)
+│   ├── notifier.py              # Sends trade updates to Telegram
+│   └── persist.py               # Saves daily paper trading logs and portfolio balances
 │
-├── data/                        # Data loading infrastructure
+├── data/                        # Data Downloader & Database Loader
 │   ├── core/
-│   │   ├── base_loader.py       # Abstract loader protocol
-│   │   ├── stock_constants.py   # yfinance interval mapping, SP500 symbol list
-│   │   └── constants.py         # Kraken symbol mapping, quote currencies, intervals
+│   │   ├── base_loader.py       # Basic instructions for downloading data
+│   │   ├── stock_constants.py   # Yahoo Finance parameters and S&P 500 constants
+│   │   └── constants.py         # Crypto mappings and quote currencies
 │   ├── historical/
-│   │   ├── timescaledb_loader.py # TimescaleDB OHLCV fetch
-│   │   └── postgres_ingestor.py  # DB insert helpers
+│   │   ├── timescaledb_loader.py # Fetches historical prices from your local database
+│   │   └── postgres_ingestor.py  # Inserts newly downloaded data into the database
 │   └── live/
-│       └── yfinance_loader.py    # yfinance OHLCV fetch + cache
+│       └── yfinance_loader.py    # Downloads live stock data and saves it to a cache
 │
-├── utils/
-│   ├── config.py                # Configuration schema + defaults
-│   ├── paths.py                 # Project root resolution
-│   └── db_engine.py             # SQLAlchemy engine + connection pool
+├── utils/                       # Common Helpers
+│   ├── config.py                # Global settings and defaults
+│   ├── paths.py                 # Locates files relative to the project root directory
+│   └── db_engine.py             # Manages connections to the database
 │
-└── cli/
-    ├── main.py                  # Typer CLI app (ggt command root)
-    ├── cmd_ingest.py            # ggt ingest subcommand
-    └── cmd_db.py                # ggt db subcommand
+└── cli/                         # Command-Line Subcommands
+    ├── main.py                  # Root CLI setup (the main 'ggt' command)
+    ├── cmd_ingest.py            # The 'ggt ingest' command to download data
+    └── cmd_db.py                # The 'ggt db' command to manage the database
 ```
 
 ---
 
-## Strategy taxonomy
+## Strategy Classification
 
-### Weight strategies (target_kind="weights")
+Strategies in ggTrader belong to one of two categories:
 
-`to_targets` returns a `pd.DataFrame` with float weights (0.0 = exit, NaN = no order). Simulated via `vbt.Portfolio.from_orders(size_type="targetpercent")`.
+### 1. Weight-Based Strategies (`target_kind="weights"`)
+These strategies return a target percentage for each asset. For example, "allocate 5% of money to Apple, and 10% to Tesla." The simulator automatically generates buy/sell orders to match these weights at every rebalance.
 
-| Strategy | Description |
+| Strategy | Plain English Description |
 |---|---|
-| `xs_momentum` | Cross-sectional momentum — rank stocks by lookback return, equal-weight top N |
-| `dual_momentum` | Dual momentum — same ranking but drops negative-momentum picks to cash |
+| `xs_momentum` | **Cross-Sectional Momentum:** Ranks stocks by their past 12-month returns and divides portfolio money equally among the top N stocks. |
+| `dual_momentum` | **Dual Momentum:** Same as above, but if the overall market trend is negative, it drops underperforming stocks and moves the money into cash for safety. |
 
-### Signal strategies (target_kind="signals")
+### 2. Signal-Based Strategies (`target_kind="signals"`)
+These strategies return binary flags: `True` for buy (entry) and `True` for sell (exit). The simulator executes trades based on these flags, allocating a fixed position size (default is 2% of cash) to each trade.
 
-`to_targets` returns `SignalTargets(entries, exits)` with boolean DataFrames. Simulated via `vbt.Portfolio.from_signals()`.
-
-| Strategy | Description |
+| Strategy | Plain English Description |
 |---|---|
-| `ema_cross` | EMA crossover — enter when fast EMA crosses above slow, exit on cross below |
-| `wfo_tournament` | Evaluates 4 EMA combos on 70% IS window, picks best by Sharpe, generates piecewise signals |
-| `bb_reversion` | Bollinger Band mean reversion — enter on lower band touch, exit at middle band |
-| `rsi_reversion` | RSI mean reversion — enter when RSI < oversold threshold, exit when RSI > exit threshold |
-| `macd_divergence` | MACD bearish/bullish divergence detection over configurable window |
-| `volume_bb_reversion` | BB reversion confirmed by volume spike (volume > period mean × multiplier) |
-| `mtf_reversion` | Multi-timeframe — weekly RSI oversold + daily BB touch for higher-conviction entries |
-| `ensemble` | Majority-vote of N sub-signals (bb, rsi, ema, macd, vol_bb, mtf). Configurable `min_agree` |
-| `ensemble_conviction` | Same as ensemble but sizes positions by average strength of agreeing sub-signals |
-| `conviction_bb` | Conviction-weighted BB sizing — position size proportional to distance below band |
+| `ema_cross` | **EMA Crossover:** Buys when a fast average price crosses above a slow average price (uptrend), and exits when it crosses below. |
+| `wfo_tournament` | **Tournament:** Automatically selects the best performing EMA configuration from a list of combinations on recent past data. |
+| `bb_reversion` | **Bollinger Band Reversion:** Buys when the price dips below the lower Bollinger Band (cheap) and sells when it returns to the middle average band. |
+| `rsi_reversion` | **RSI Reversion:** Buys when the Relative Strength Index falls below 30 (oversold) and sells when it rebounds. |
+| `macd_divergence` | **MACD Divergence:** Buys when price is falling but selling momentum is weakening (divergence). |
+| `volume_bb_reversion` | **Volume Bollinger Band:** Reversion buy confirmed by a massive surge in volume (high activity at the bottom). |
+| `mtf_reversion` | **Multi-Timeframe Reversion:** Buys only when the asset is oversold on both weekly (long-term) and daily (short-term) charts. |
+| `ensemble` | **Voting Ensemble:** Combines multiple strategies and enters a trade only if a majority of them agree. |
+| `ensemble_conviction` | **Conviction Voting:** Voting strategy that buys larger position sizes when more indicators agree. |
+| `conviction_bb` | **Conviction Bollinger Band:** Buys larger positions the further the price plunges below the lower band. |
 
-All strategies implement the `Strategy` protocol (defined in `lab/strategy.py`):
+---
+
+## Code Interfaces (Developer Reference)
+
+All strategies must implement the `Strategy` protocol defined in [strategy.py](file:///home/flynn/ggTrader/src/ggTrader/lab/strategy.py):
 
 ```python
 class Strategy(Protocol):
     name: str
-    target_kind: str  # "weights" or "signals"
+    target_kind: str  # Must be "weights" or "signals"
 
     def select(self, asof, data, eligible) -> Plan:
-        """Point-in-time selection — must use only data <= asof."""
+        """
+        Point-in-time selection.
+        Must use only data available on or before the 'asof' date (no future peeking).
+        """
 
     def to_targets(self, plans, data) -> DataFrame | SignalTargets:
-        """Target matrix from per-rebalance plans."""
+        """
+        Converts the plans generated during rebalancing into a target matrix
+        (either weights or buy/sell signal matrices).
+        """
 ```
 
-Signal strategies additionally support:
+Signal-based strategies also support parameter sweeps and walk-forward parameter updates:
 
 ```python
     def sweep_params(self) -> Dict[str, List[Any]]:
-        """Parameter grid for sweep mode."""
+        """Returns the grid of settings to test (e.g. fast/slow EMA lengths)."""
 
     def sweep_signals(self, ohlcv, symbols) -> Tuple[entries, exits]:
-        """Generate entry/exit signals for the current parameter set."""
+        """Generates entry and exit signals for a specific parameter combination."""
 ```
 
 ---
 
-## Key data flows
+## Core Workflows and Data Flows
 
-### 1. Lab run (research)
-
-```
-ggt lab --strategy <name> --eval-start DATE --eval-end DATE [--universe sp500|nasdaq100|russell2000]
-    ↓
-load_ohlcv(universe, date_range)          [TimescaleDB backfill, yfinance live, Tiingo fallback]
-    ↓
-equity_universe_between(start, end)       [point-in-time constituents on eval dates]
-    ↓
-build_strategy(name, cfg)                 [from strategy registry]
-    ↓
-walkforward([strat], ohlcv, ...)          [monthly folds, vectorized simulation]
-    ↓
-foreach fold:
-  - train_window = prior months (in-sample)
-  - test_window = next month (out-of-sample)
-  - simulate via vectorbt.Portfolio
-  - compute Sharpe, Calmar, max DD, win rate per fold
-    ↓
-persist to lab_runs + lab_periods tables
-    ↓
-print summary (stdout)
-```
-
-### 2. Parameter sweep
+### 1. Lab Simulation Run (`ggt lab`)
 
 ```
-ggt lab --strategy <name> --sweep [--sweep-param key=v1,v2,v3]
+User runs command: ggt lab --strategy ensemble
     ↓
-strategy.sweep_params()                   [default grid or --sweep-param overrides]
+1. load_ohlcv()                 -> Downloads/loads price history from database or cache.
     ↓
-build_grid(params)                        [cartesian product of all param combos]
+2. equity_universe_between()    -> Filters which stocks were active in the index on each date (prevents survivorship bias).
     ↓
-foreach combo:
-  - instantiate strategy with combo params
-  - run walk-forward
-  - collect OOS metrics
+3. build_strategy()             -> Instantiates the requested strategy from the registry.
     ↓
-format_results_table()                    [ranked by Sharpe, stdout]
+4. walkforward()                -> Starts the simulation harness.
+    ↓
+5. For each Month (Fold):
+   - Train Window: Identifies prior historical months (In-Sample).
+   - Test Window: Evaluates the strategy on the current month (Out-of-Sample).
+   - Runs vectorbt.Portfolio simulation on the test month.
+   - Calculates Sharpe ratio, return, drawdowns, and trade counts.
+    ↓
+6. Saves results to `lab_runs` and `lab_periods` database tables.
+    ↓
+7. Prints a summary table to the terminal.
 ```
 
-### 3. Walk-forward optimization (WFO)
+### 2. Parameter Sweep (`ggt lab --sweep`)
 
 ```
-ggt lab --strategy <name> --wfo
+User runs command: ggt lab --strategy rsi_reversion --sweep
     ↓
-generate_folds(eval_start, eval_end)      [rolling 12mo train / 3mo test windows]
+1. strategy.sweep_params()      -> Retrieves the default grid of parameters (e.g. RSI thresholds = 20, 25, 30).
     ↓
-foreach fold:
-  - sweep all param combos on train window
-  - select best combo by composite score
-  - evaluate on test window (OOS)
-  - compute WFE = OOS_metric / IS_metric
-  - check circuit breaker (halt if WFE < threshold)
+2. build_grid()                 -> Creates every combination of parameters (Cartesian product).
     ↓
-compute_anchor_set()                      [stable params across folds]
+3. For each combination:
+   - Sets up the strategy with those parameters.
+   - Runs the walk-forward simulation.
+   - Gathers out-of-sample metrics (returns, Sharpe ratio).
     ↓
-print OOS summary + WFE + anchor params
+4. Prints a summary table ranking all combinations from best to worst.
 ```
 
-### 4. Paper trading
+### 3. Walk-Forward Optimization (`ggt lab --wfo`)
 
 ```
-ggt paper                                [daily cron, Mon-Fri]
+User runs command: ggt lab --strategy ensemble --wfo
     ↓
-signal_runner.generate_signals()          [ensemble on current market data]
+1. generate_folds()             -> Divides history into rolling folds (e.g., 12 months training / 3 months testing).
     ↓
-feature_gate.filter(entries)              [LightGBM precision filter, drop < 0.50]
+2. For each Fold:
+   - Runs a parameter sweep on the 12-month training window.
+   - Finds the parameter set that performed best.
+   - Uses those parameters to trade during the 3-month test window.
+   - Calculates Walk-Forward Efficiency (WFE) = Test Return / Train Return.
+   - Circuit Breaker: Stops the test early if WFE drops below safety limits (indicating the strategy is failing).
     ↓
-risk.check_guardrails()                   [max positions, drawdown, daily loss]
+3. Calculates "Anchor Parameters" (settings that were stable across most folds).
     ↓
-trader.execute(buys, sells)               [Alpaca paper orders, DAY TIF; poll for fills]
-    ↓
-persist.save(trades, snapshots)           [TimescaleDB; ledger only for actual fills]
-    ↓
-notifier.send(alerts)                     [Telegram]
+4. Prints the final test results, WFE, and recommended stable parameters.
 ```
 
-### 5. Data ingestion (crypto)
+### 4. Paper Trading Cycle (`ggt paper`)
 
 ```
-ggt ingest --days N
+System runs daily cron job: ggt paper
     ↓
-TimescaleDBLoader.fetch_ohlcv()           [full universe from DB]
+1. signal_runner.generate_signals() -> Generates buy/sell flags on today's latest market prices.
     ↓
-or: CachedExchangeLoader                  [CCXT live fetch + write-through to DB]
+2. feature_gate.filter()            -> The LightGBM Machine Learning model acts as a security guard,
+                                       dropping any signals with <50% calculated chance of success.
     ↓
-persist to ohlcv table
-```
-
-### 6. Database administration
-
-```
-ggt db <diag|clean|truncate|compression|export>
+3. risk.check_guardrails()          -> Safety checks: ensures max 30 positions, max 5% size per stock,
+                                       and blocks trading if daily loss (>3%) or drawdown (>15%) limits are hit.
     ↓
-diagnostics: table sizes, row counts
-clean: remove malformed rows
-truncate: drop specific tables
-compression: enable TimescaleDB hypertable compression
-export: PostgreSQL dump
+4. trader.execute()                 -> Connects to Alpaca and submits buy/sell orders.
+    ↓
+5. persist.save()                   -> Saves order details and daily portfolio values to the database.
+    ↓
+6. notifier.send()                  -> Sends a Telegram message listing the executed trades.
 ```
 
 ---
 
-## Vectorbt portfolio simulation
+## Vectorbt Portfolio Simulation
 
-`lab/simulate.py` provides two simulation functions:
+The module [simulate.py](file:///home/flynn/ggTrader/src/ggTrader/lab/simulate.py) handles the backtesting math. Instead of iterating day-by-day (which is slow), it batches everything.
 
-**`simulate_weights()`** — for weight-based strategies (xs_momentum, dual_momentum):
+### 1. Weight-Based Simulation (`simulate_weights()`)
+Feeds target weights into vectorbt. Uses `cash_sharing=True` so all assets draw from the same money pool, and `group_by=strategy_index` to run multiple simulations in a single calculation.
+
 ```python
 pf = vbt.Portfolio.from_orders(
     close=close,
-    size=size,                       # target-percent weights
+    size=size,                       # Target weights (0.0 to 1.0)
     size_type="targetpercent",
-    cash_sharing=True,
-    group_by=strategy_index,
+    cash_sharing=True,               # Shared capital pool
+    group_by=strategy_index,         # Grouped for speed
 )
 ```
 
-**`simulate_signals()`** — for signal-based strategies (all signal strategies):
+### 2. Signal-Based Simulation (`simulate_signals()`)
+Feeds entry/exit flags into vectorbt. It purchases a fixed percentage size (default 2% of portfolio cash) per signal.
+
 ```python
 pf = vbt.Portfolio.from_signals(
     close=close,
     entries=entries,
     exits=exits,
-    size=SIGNAL_POSITION_SIZE,       # fraction per entry (default 0.02)
+    size=SIGNAL_POSITION_SIZE,       # Fraction per entry (e.g. 0.02)
     size_type="percent",
-    cash_sharing=True,
-    group_by=strategy_index,
+    cash_sharing=True,               # Shared capital pool
+    group_by=strategy_index,         # Grouped for speed
 )
 ```
 
-Both functions batch all strategies into ONE vectorbt call via `group_by`, then split the results back out.
+---
+
+## Walk-Forward Fold Logic Details
+
+The walk-forward driver in [harness.py](file:///home/flynn/ggTrader/src/ggTrader/lab/harness.py) splits historical data systematically:
+
+1. **Universe Eligibility**: Filters out new stocks that do not have enough price history (e.g., needs 500+ trading days).
+2. **Monthly Folds**: Runs simulations month-by-month.
+3. **Warmup Period**: Automatically loads data from days prior to the start date (e.g., 252 days prior) so indicators (like moving averages) have enough history to calculate values on day one.
+4. **Aggregation**: Calculates the mean and standard deviation of returns and Sharpe ratios across all test periods to gauge consistency.
 
 ---
 
-## Walk-forward fold logic
+## Technical Indicator Functions
 
-The `walkforward()` harness in `lab/harness.py` implements textbook walk-forward optimization:
+The file [indicators.py](file:///home/flynn/ggTrader/src/ggTrader/lab/strategies/indicators.py) contains the math behind the trading signals:
 
-1. **Universe eligibility** — stocks/coins with sufficient price history (e.g., 500+ trading days)
-2. **Monthly folds** — each fold is one calendar month
-   - **In-Sample (IS) / Train Window** — prior 12+ months of history (configurable)
-   - **Out-of-Sample (OOS) / Test Window** — the evaluation month itself
-3. **Evaluation period** — `--eval-start` to `--eval-end` spans all test windows
-4. **Warmup period** — data is loaded from `eval_start - warmup_days` to ensure sufficient history for indicators
-5. **Per-fold metrics** — Sharpe, Calmar, max drawdown, win rate, monthly return
-6. **Aggregation** — mean and std of metrics across all folds
-
-All results are persisted to TimescaleDB:
-- `lab_runs` — one row per lab invocation (strategy, config, timestamps, summary metrics)
-- `lab_periods` — one row per fold (strategy, fold #, start date, end date, per-fold metrics)
-
----
-
-## Indicator library
-
-`lab/strategies/indicators.py` provides all vectorized indicator functions used by signal strategies:
-
-| Function | Purpose |
-|---|---|
-| `extract_close(ohlcv, symbols)` | Extract close prices from multi-index OHLCV |
-| `extract_volume(ohlcv, symbols)` | Extract volume from multi-index OHLCV |
-| `eligible_symbols(close, min_bars)` | Filter symbols with sufficient history |
-| `bb_signals(close, period, std)` | Bollinger Band entry/exit signals |
-| `bb_strength(close, period, std)` | BB conviction strength (distance below band) |
-| `ema_signals(close, fast, slow)` | EMA crossover entry/exit signals |
-| `ema_strength(close, fast, slow)` | EMA conviction strength (spread magnitude) |
-| `rsi_signals(close, period, oversold, exit)` | RSI mean-reversion entry/exit signals |
-| `rsi_strength(close, period, oversold)` | RSI conviction strength (depth below threshold) |
-| `macd_signals(close, fast, slow, signal, window)` | MACD divergence entry/exit signals |
-| `macd_strength(close, fast, slow, signal)` | MACD conviction strength |
-| `volume_bb_signals(close, volume, ...)` | Volume-confirmed BB reversion signals |
-| `volume_bb_strength(close, volume, ...)` | Volume-BB conviction strength |
-| `mtf_signals(close, ...)` | Multi-timeframe reversion signals (weekly RSI + daily BB) |
-| `mtf_strength(close, ...)` | Multi-timeframe conviction strength |
-
----
-
-## Where to find things
-
-| Path | Contents |
-|---|---|
-| `src/ggTrader/lab/` | Lab engine: CLI, data loading, walk-forward harness, metrics, persistence, strategy registry |
-| `src/ggTrader/lab/strategies/` | Strategy implementations (momentum, signals, ensemble, conviction, indicators) |
-| `src/ggTrader/paper/` | Paper trading: Alpaca broker, signal runner, trader, ML gate, risk, notifications, persistence |
-| `src/ggTrader/data/` | OHLCV loaders (yfinance, Tiingo, TimescaleDB), data schemas, market constants |
-| `src/ggTrader/utils/` | Config, paths, DB engine |
-| `src/ggTrader/cli/` | CLI commands (main, ingest, db) |
-| `scripts/ml_signal_screen.py` | Standalone ML pre-screen for evaluating signal quality |
-| `data/universe/sp500_constituents_history.csv.gz` | Point-in-time S&P 500 membership (2,712 snapshots, 1996–present) |
-| TimescaleDB `lab_runs` table | Lab run history (strategy, config, execution time, summary metrics) |
-| TimescaleDB `lab_periods` table | Per-fold results (strategy, fold dates, per-fold metrics) |
+- `bb_signals(close, period, std)`: Bollinger Band entry/exit flags.
+- `bb_strength(close, period, std)`: Distance below the band (measures how cheap the stock is).
+- `ema_signals(close, fast, slow)`: EMA Crossover entry/exit flags.
+- `rsi_signals(close, period, oversold, exit)`: RSI entry/exit flags.
+- `macd_signals(close, fast, slow, signal, window)`: MACD Divergence flags.
+- `volume_bb_signals(...)`: Volume-confirmed Bollinger Band reversion.
+- `mtf_signals(...)`: Multi-timeframe flags (weekly RSI + daily BB).
 
 ---
 
