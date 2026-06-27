@@ -33,3 +33,16 @@ def inverse_vol_weights(vols: dict[str, float]) -> dict[str, float]:
     inv = {k: 1.0 / v for k, v in valid.items()}
     total = sum(inv.values())
     return {k: x / total for k, x in inv.items()}
+
+
+def target_vol_scale(
+    blend_trailing_vol: float, target_vol: float, max_leverage: float = 2.0
+) -> float:
+    """Exposure multiplier to bring a blend's trailing vol to target_vol.
+
+    clip(target_vol / blend_trailing_vol, 0.0, max_leverage). Returns 0.0 when
+    blend vol is non-positive or NaN (cannot size safely).
+    """
+    if not np.isfinite(blend_trailing_vol) or blend_trailing_vol <= 0:
+        return 0.0
+    return float(np.clip(target_vol / blend_trailing_vol, 0.0, max_leverage))
