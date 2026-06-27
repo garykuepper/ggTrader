@@ -50,3 +50,6 @@ data/live/
 
 # --- Results (all generated, not tracked) ---
 results/
+
+# Generated MCP ticker cache
+scripts/mcp_cache.json
