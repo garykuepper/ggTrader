@@ -125,7 +125,7 @@ def run_lab(argv: List[str] | None = None) -> str:
         if args.strategy not in SIGNAL_STRATEGY_NAMES:
             raise SystemExit(f"--wfo only supports signal strategies: {SIGNAL_STRATEGY_NAMES}")
         print(f"WFO: {args.strategy} | {len(grid)} param combos", flush=True)
-        return run_wfo(
+        result = run_wfo(
             args.strategy,
             strategy_cls,
             cfg,
@@ -137,6 +137,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             base_config=dict(STOCK_BASE_CONFIG),
             grid=grid,
         )
+        return result.table
 
     if args.strategy in SIGNAL_STRATEGY_NAMES:
         strat = build_signal_strategy(args.strategy, cfg)

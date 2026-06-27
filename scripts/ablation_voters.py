@@ -175,7 +175,7 @@ def _run_one(label: str, voters: Tuple[str, ...]) -> Dict[str, Any]:
             f"=== {label}  voters={voters}  ({len(voters)}v, {len(grid)} combos) ===",
             flush=True,
         )
-        table = run_wfo(
+        result = run_wfo(
             "ensemble",
             cls,
             _CFG,
@@ -188,7 +188,7 @@ def _run_one(label: str, voters: Tuple[str, ...]) -> Dict[str, Any]:
             grid=grid,
         )
     elapsed = time.time() - t0
-    parsed = parse_table(table)
+    parsed = parse_table(result.table)
     parsed.update(
         {
             "label": label,
