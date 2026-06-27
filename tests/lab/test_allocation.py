@@ -51,3 +51,47 @@ def test_target_vol_scale_levers_up_and_caps():
     # degenerate blend vol -> no exposure
     assert target_vol_scale(0.0, 0.068) == 0.0
     assert target_vol_scale(float("nan"), 0.068) == 0.0
+
+
+def test_combine_sleeves_no_lookahead_and_diag_shape():
+    from ggTrader.lab.allocation import combine_sleeves
+
+    idx = pd.date_range("2021-01-01", periods=120, freq="D")
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "sp500": rng.normal(0.0005, 0.01, 120),
+            "midcap": rng.normal(0.0005, 0.012, 120),
+            "nasdaq": rng.normal(0.0005, 0.009, 120),
+        },
+        index=idx,
+    )
+    blended, diag = combine_sleeves(df, target_vol=0.068, window=60, max_leverage=2.0)
+
+    # blended is a daily series aligned to the input index
+    assert isinstance(blended, pd.Series)
+    assert blended.index.equals(df.index)
+
+    # diagnostics carries a weight column per sleeve + blend_vol + scale
+    for col in ("w_sp500", "w_midcap", "w_nasdaq", "blend_vol", "scale"):
+        assert col in diag.columns
+
+    # LOOK-AHEAD GUARD: mutating returns AFTER the last rebalance date must not
+    # change any weight/scale decided at-or-before that date.
+    last_reb = diag.index[-1]
+    df2 = df.copy()
+    df2.loc[df2.index > last_reb] += 5.0  # perturb only the future
+    _, diag2 = combine_sleeves(df2, target_vol=0.068, window=60, max_leverage=2.0)
+    pd.testing.assert_frame_equal(diag, diag2)
+
+
+def test_combine_sleeves_warmup_is_equal_weight_scale_one():
+    from ggTrader.lab.allocation import combine_sleeves
+
+    idx = pd.date_range("2021-01-01", periods=40, freq="D")  # < window
+    df = pd.DataFrame({"sp500": 0.001, "midcap": 0.001, "nasdaq": 0.001}, index=idx)
+    blended, diag = combine_sleeves(df, target_vol=0.068, window=60)
+
+    # All-warmup: equal weights, scale 1.0 -> blended equals the equal-weight mean
+    expected = df.mean(axis=1)
+    pd.testing.assert_series_equal(blended, expected, check_names=False)
