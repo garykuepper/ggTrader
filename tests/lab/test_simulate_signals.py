@@ -123,6 +123,37 @@ def test_simulate_signals_no_stop_params_unchanged():
     pd.testing.assert_frame_equal(eq1, eq2)
 
 
+def test_simulate_signals_take_profit_caps_gain_on_rise():
+    """A take-profit stop should close the position once price hits the target,
+    capping the gain below a buy-and-hold on a monotonically rising price."""
+    prices = _prices(40)  # A rises 1%/bar, never falls
+    entries = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    exits = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    entries.iloc[2, 0] = True  # buy A on bar 2, no signal exit
+    st = SignalTargets(entries=entries, exits=exits)
+
+    _, eq_no_tp, _ = simulate_signals({"s": st}, prices, {**BASE})
+    _, eq_tp, _ = simulate_signals({"s": st}, prices, {**BASE, "tp_stop": 0.05})
+
+    # TP exits at +5%; buy-and-hold rides the full rise -> ends higher.
+    assert eq_tp["s"].iloc[-1] < eq_no_tp["s"].iloc[-1]
+    # And the TP position actually captured a gain vs starting cash.
+    assert eq_tp["s"].iloc[-1] > BASE["START_CASH"]
+
+
+def test_simulate_signals_tp_stop_none_unchanged():
+    """tp_stop=None must behave exactly like no tp_stop key at all."""
+    prices = _prices(40)
+    entries = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    exits = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    entries.iloc[2, 0] = True
+    st = SignalTargets(entries=entries, exits=exits)
+
+    _, eq_base, _ = simulate_signals({"s": st}, prices, {**BASE})
+    _, eq_none, _ = simulate_signals({"s": st}, prices, {**BASE, "tp_stop": None})
+    pd.testing.assert_frame_equal(eq_base, eq_none)
+
+
 def test_compute_atr_stop_shape_and_values():
     """ATR stop array should match price shape and be positive fractions."""
     from ggTrader.lab.simulate import compute_atr_stop

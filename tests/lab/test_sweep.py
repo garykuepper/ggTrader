@@ -333,6 +333,18 @@ def test_cli_parser_sweep_param_without_sweep_is_ok():
     assert args.sweep_param == []
 
 
+def test_sweep_param_coerces_none_and_bool():
+    """Exit-sweep grids need None / True / False, not the literal strings."""
+    from ggTrader.lab.cli import _parse_sweep_params
+
+    out = _parse_sweep_params(
+        ["td_stop=None,5,10", "exits_enabled=True,False", "tp_stop=None,0.03"]
+    )
+    assert out["td_stop"] == [None, 5, 10]
+    assert out["exits_enabled"] == [True, False]
+    assert out["tp_stop"] == [None, 0.03]
+
+
 @pytest.mark.integration
 def test_sweep_end_to_end_ema_cross_small_grid():
     """Full sweep: 2 combos, synthetic OHLCV, hits DB."""
@@ -424,6 +436,50 @@ def test_grid_rejects_ts_stop_and_atr_mult_together():
     assert _is_valid_combo({"ema_fast": 10, "ema_slow": 50, "atr_mult": 2.0}) is True
     assert _is_valid_combo({"ts_stop": 0.03, "atr_mult": 2.0}) is False
     assert _is_valid_combo({"ema_fast": 10, "ts_stop": 0.03, "atr_mult": 2.0}) is False
+
+
+def test_tp_stop_in_stop_params():
+    from ggTrader.lab.sweep import STOP_PARAMS
+
+    assert "tp_stop" in STOP_PARAMS
+
+
+def test_split_params_routes_tp_stop_to_overlay():
+    """tp_stop is a portfolio-side stop, not a signal param."""
+    from ggTrader.lab.sweep import split_params
+
+    signal, overlay = split_params({"min_agree": 2, "tp_stop": 0.05})
+    assert signal == {"min_agree": 2}
+    assert overlay == {"tp_stop": 0.05}
+
+
+def test_split_params_keeps_td_stop_and_exits_enabled_as_signal():
+    """td_stop and exits_enabled are signal params (go to the strategy ctor)."""
+    from ggTrader.lab.sweep import split_params
+
+    signal, overlay = split_params(
+        {"min_agree": 2, "td_stop": 5, "exits_enabled": False, "tp_stop": 0.05}
+    )
+    assert signal == {"min_agree": 2, "td_stop": 5, "exits_enabled": False}
+    assert overlay == {"tp_stop": 0.05}
+
+
+def test_valid_combo_rejects_strategy_that_never_exits():
+    """exits_enabled=False with neither a time-stop nor a take-profit can never
+    close a position -> invalid."""
+    from ggTrader.lab.sweep import _is_valid_combo
+
+    assert _is_valid_combo({"min_agree": 2, "exits_enabled": False}) is False
+    assert _is_valid_combo({"min_agree": 2, "exits_enabled": False, "td_stop": 5}) is True
+    assert _is_valid_combo({"min_agree": 2, "exits_enabled": False, "tp_stop": 0.05}) is True
+    # td_stop / tp_stop explicitly None still count as "no exit"
+    assert (
+        _is_valid_combo({"min_agree": 2, "exits_enabled": False, "td_stop": None, "tp_stop": None})
+        is False
+    )
+    # exits_enabled True (default) always has the indicator exits available
+    assert _is_valid_combo({"min_agree": 2, "exits_enabled": True}) is True
+    assert _is_valid_combo({"min_agree": 2}) is True
 
 
 @pytest.mark.integration

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
     from ggTrader.lab.strategy import LabConfig
 
-STOP_PARAMS: frozenset = frozenset({"ts_stop", "atr_period", "atr_mult"})
+STOP_PARAMS: frozenset = frozenset({"ts_stop", "atr_period", "atr_mult", "tp_stop"})
 VOL_PARAMS: frozenset = frozenset({"vol_target", "vol_lookback"})
 OVERLAY_PARAMS: frozenset = STOP_PARAMS | VOL_PARAMS
 
@@ -27,8 +27,17 @@ def split_params(combo: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]
 
 
 def _is_valid_combo(params: Dict[str, Any]) -> bool:
-    """Filter invalid combos: fast >= slow, or both ts_stop and atr_mult."""
+    """Filter invalid combos: fast >= slow, both ts_stop and atr_mult, or a
+    strategy that can never exit (indicator exits off with no time/profit stop)."""
     if "ts_stop" in params and "atr_mult" in params:
+        return False
+    # exits_enabled=False removes indicator exits; without a time-stop or
+    # take-profit the position could never close.
+    if (
+        params.get("exits_enabled") is False
+        and params.get("td_stop") is None
+        and params.get("tp_stop") is None
+    ):
         return False
     fast_keys = sorted(k for k in params if "fast" in k)
     slow_keys = sorted(k for k in params if "slow" in k)

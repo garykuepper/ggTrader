@@ -135,6 +135,8 @@ def simulate_signals(
             Optional ts_stop (float): fixed trailing stop fraction (e.g. 0.05 = 5%).
             Optional atr_mult (float) + atr_period (int, default 14): ATR-adaptive
             trailing stop. Requires ohlcv kwarg.
+            Optional tp_stop (float): take-profit fraction (e.g. 0.05 = exit at
+            +5% from entry). Independent of the trailing/ATR stop.
         ohlcv: MultiIndex (symbol, field) OHLCV DataFrame. Required when atr_mult is set.
 
     Returns:
@@ -199,6 +201,11 @@ def simulate_signals(
             )
         stop_kwargs["sl_stop"] = pd.concat(sl_blocks, axis=1).ffill().fillna(np.inf)
         stop_kwargs["sl_trail"] = True
+
+    # --- Take-profit (independent of the trailing/ATR stop) ---
+    tp_stop = base_config.get("tp_stop")
+    if tp_stop is not None:
+        stop_kwargs["tp_stop"] = float(tp_stop)
 
     # --- Vol targeting ---
     base_size = float(base_config.get("SIGNAL_POSITION_SIZE", 0.02))

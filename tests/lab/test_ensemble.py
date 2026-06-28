@@ -260,3 +260,101 @@ def test_invalid_voter_name_raises():
         assert "nope" in str(exc)
     else:
         raise AssertionError("expected ValueError for unknown voter")
+
+
+# ── Exit-rule controls: time-stop (td_stop) + exits_enabled ────────────
+
+
+def _entry_plans(ohlcv):
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    return symbols, {ohlcv.index[100]: [{"symbol": s, "weight": 0.0} for s in symbols]}
+
+
+def test_td_stop_and_exits_enabled_defaults():
+    """New exit knobs default to off: td_stop=None, exits_enabled=True."""
+    cfg = LabConfig(min_history_bars=50)
+    strat = EnsembleSignal(cfg)
+    assert strat.td_stop is None
+    assert strat.exits_enabled is True
+
+
+def test_td_stop_none_matches_baseline_exits():
+    """td_stop=None must leave the exits matrix byte-identical to before."""
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=3)
+    _, plans = _entry_plans(ohlcv)
+    base = EnsembleSignal(cfg, min_agree=1).to_targets(plans, ohlcv)
+    td = EnsembleSignal(cfg, min_agree=1, td_stop=None).to_targets(plans, ohlcv)
+    pd.testing.assert_frame_equal(base.exits, td.exits)
+
+
+def test_td_stop_adds_exit_n_bars_after_each_entry():
+    """With td_stop=N, every entry has a forced exit exactly N bars later."""
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=3)
+    _, plans = _entry_plans(ohlcv)
+    strat = EnsembleSignal(cfg, min_agree=1, td_stop=5)
+    t = strat.to_targets(plans, ohlcv)
+    assert t.entries.sum().sum() > 0  # meaningful
+    shifted = t.entries.shift(5, fill_value=False).astype(bool)
+    # every shifted entry must be present in exits (time-stop OR'd in)
+    assert int((shifted & ~t.exits).sum().sum()) == 0
+
+
+def test_td_stop_only_adds_exits_never_removes():
+    """Time-stop is additive: baseline exits remain a subset."""
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=3)
+    _, plans = _entry_plans(ohlcv)
+    base = EnsembleSignal(cfg, min_agree=1).to_targets(plans, ohlcv)
+    td = EnsembleSignal(cfg, min_agree=1, td_stop=5).to_targets(plans, ohlcv)
+    assert int((base.exits & ~td.exits).sum().sum()) == 0
+
+
+def test_exits_enabled_false_suppresses_indicator_exits():
+    """Replacement arm with no stops: no exits at all (position would not close)."""
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=3)
+    _, plans = _entry_plans(ohlcv)
+    strat = EnsembleSignal(cfg, min_agree=1, exits_enabled=False)
+    t = strat.to_targets(plans, ohlcv)
+    assert int(t.exits.sum().sum()) == 0
+
+
+def test_exits_enabled_false_with_td_stop_exits_only_on_time():
+    """Replacement arm: exits are exactly the time-stop shifts, nothing else."""
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=3)
+    _, plans = _entry_plans(ohlcv)
+    strat = EnsembleSignal(cfg, min_agree=1, exits_enabled=False, td_stop=5)
+    t = strat.to_targets(plans, ohlcv)
+    expected = t.entries.shift(5, fill_value=False).astype(bool)
+    pd.testing.assert_frame_equal(t.exits, expected)
+
+
+def test_exits_enabled_false_does_not_change_entries():
+    """Suppressing exits must not touch the entry signals."""
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=300, seed=3)
+    _, plans = _entry_plans(ohlcv)
+    on = EnsembleSignal(cfg, min_agree=1).to_targets(plans, ohlcv)
+    off = EnsembleSignal(cfg, min_agree=1, exits_enabled=False).to_targets(plans, ohlcv)
+    pd.testing.assert_frame_equal(on.entries, off.entries)
+
+
+def test_exit_controls_threaded_through_sweep_signals():
+    """sweep_signals must honor td_stop and exits_enabled from the combo."""
+    from ggTrader.lab.sweep import combo_name
+
+    cfg = LabConfig(min_history_bars=50)
+    ohlcv = _ohlcv(n=200, seed=5)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    strat = EnsembleSignal(cfg, min_agree=1)
+    combo = {"min_agree": 1, "td_stop": 5, "exits_enabled": False}
+    swept = strat.sweep_signals([combo], symbols, ohlcv)
+    key = combo_name("ensemble", combo)
+
+    direct = EnsembleSignal(cfg, min_agree=1, td_stop=5, exits_enabled=False).to_targets(
+        {ohlcv.index[50]: [{"symbol": s, "weight": 0.0} for s in symbols]}, ohlcv
+    )
+    pd.testing.assert_frame_equal(swept[key].exits, direct.exits)
