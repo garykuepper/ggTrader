@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,19 @@ import pandas as pd
 
 DEFAULT_MODEL_PATH = Path(__file__).resolve().parents[3] / "models" / "ensemble_gate.joblib"
 DEFAULT_THRESHOLD = 0.55
+
+#: The gate is OFF unless explicitly enabled. A return-based out-of-sample
+#: ablation (scripts/gate_value_ablation.py, 2026-06-27) showed the current
+#: P(up) model is anti-predictive for this mean-reversion ensemble: the entries
+#: it BLOCKS earned ~2x the entries it KEEPS (1.09% vs 0.56% mean 5d return), so
+#: gating REDUCED per-entry return vs ungated. Win-rate classification is the
+#: wrong objective for reversion. Re-enable only with a redesigned model
+#: (predict return magnitude / expected value, not direction).
+_GATE_ENV_VAR = "ML_GATE_ENABLED"
+
+
+def _gate_enabled_by_env() -> bool:
+    return os.environ.get(_GATE_ENV_VAR, "false").strip().lower() in ("1", "true", "yes", "on")
 
 
 def extract_features(
@@ -117,8 +131,11 @@ class FeatureGate:
         self._model: Any = None
         self._enabled = False
 
+        # Disabled by default: the current model is anti-predictive for this
+        # reversion ensemble (see module docstring). Only load it when the
+        # ML_GATE_ENABLED env var is explicitly set truthy.
         path = model_path or DEFAULT_MODEL_PATH
-        if path.exists():
+        if _gate_enabled_by_env() and path.exists():
             import joblib
 
             self._model = joblib.load(path)
