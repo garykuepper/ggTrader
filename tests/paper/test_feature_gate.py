@@ -45,6 +45,51 @@ def test_gate_disabled_when_no_model(tmp_path):
     assert gate.score({"vol_5d": 0.1}) == 1.0
 
 
+def test_gate_env_parsing(monkeypatch):
+    from ggTrader.paper.feature_gate import _GATE_ENV_VAR, _gate_enabled_by_env
+
+    monkeypatch.delenv(_GATE_ENV_VAR, raising=False)
+    assert _gate_enabled_by_env() is False
+    for on in ("1", "true", "TRUE", "yes", "on"):
+        monkeypatch.setenv(_GATE_ENV_VAR, on)
+        assert _gate_enabled_by_env() is True
+    for off in ("0", "false", "no", "off", ""):
+        monkeypatch.setenv(_GATE_ENV_VAR, off)
+        assert _gate_enabled_by_env() is False
+
+
+def test_gate_disabled_by_default_even_when_model_present(tmp_path, monkeypatch):
+    """Default-OFF: a present model is NOT loaded unless ML_GATE_ENABLED is set.
+
+    The dummy file is not a real model, so if the gate tried to load it the
+    constructor would raise — proving load is skipped when the env is unset.
+    """
+    from ggTrader.paper.feature_gate import _GATE_ENV_VAR
+
+    monkeypatch.delenv(_GATE_ENV_VAR, raising=False)
+    dummy = tmp_path / "ensemble_gate.joblib"
+    dummy.write_text("not a real model")
+    gate = FeatureGate(model_path=dummy)
+    assert not gate.enabled
+
+
+def test_gate_loads_when_env_enabled(tmp_path, monkeypatch):
+    """With the env set truthy, a present model IS loaded (gate enabled).
+
+    A picklable placeholder stands in for the model — ``enabled`` is set purely
+    on a successful load, independent of the model's interface.
+    """
+    import joblib
+
+    from ggTrader.paper.feature_gate import _GATE_ENV_VAR
+
+    model_file = tmp_path / "ensemble_gate.joblib"
+    joblib.dump({"placeholder": True}, model_file)
+    monkeypatch.setenv(_GATE_ENV_VAR, "true")
+    gate = FeatureGate(model_path=model_file)
+    assert gate.enabled
+
+
 def test_gate_filter_passthrough_when_disabled(tmp_path):
     gate = FeatureGate(model_path=tmp_path / "nonexistent.joblib")
     ohlcv = pd.DataFrame()
@@ -63,7 +108,6 @@ def test_gate_filters_low_confidence(sample_close, sample_volume):
     gate._enabled = True
     gate._threshold = 0.55
 
-    dates = sample_close.index
     ohlcv = pd.concat(
         {"AAPL": pd.DataFrame({"close": sample_close, "volume": sample_volume})},
         axis=1,
