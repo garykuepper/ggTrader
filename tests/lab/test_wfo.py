@@ -101,6 +101,28 @@ def test_generate_folds_exact_15_months():
     assert folds[0].test_end == end
 
 
+def test_extract_grid_arrays_handles_none_valued_axis():
+    """Exit-sweep axes (td_stop / tp_stop) mix None ('no stop') with numbers.
+    The categorical NDH grid must build without choking on None vs int order."""
+    from ggTrader.lab.wfo import _extract_grid_arrays
+
+    grid = [
+        {"min_agree": 2, "td_stop": None},
+        {"min_agree": 2, "td_stop": 5},
+        {"min_agree": 2, "td_stop": 10},
+    ]
+    train_metrics = [{"params": g, "sharpe": 1.0, "total_return_pct": 10.0} for g in grid]
+
+    sharpe_grid, exp_grid, shape, r2g = _extract_grid_arrays(train_metrics, grid, "ensemble")
+
+    # param_keys sorted: ['min_agree', 'td_stop'] -> shape (1 x 3)
+    assert shape == (1, 3)
+    assert len(sharpe_grid) == 3
+    assert len(r2g) == 3
+    # every combo maps to a distinct grid cell
+    assert len(set(r2g.values())) == 3
+
+
 def test_composite_score_ranking():
     """Combo with best sharpe+sortino and least drawdown scores highest."""
     metrics = [

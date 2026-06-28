@@ -354,7 +354,12 @@ def _extract_grid_arrays(
     if any(sorted(c.keys()) != param_keys for c in grid):
         return np.array([]), np.array([]), (), {}
 
-    axes: Dict[str, List[Any]] = {k: sorted(set(c[k] for c in grid)) for k in param_keys}
+    # Axes are categorical coordinates for the NDH lattice; the sort only needs
+    # to be deterministic. None ("no stop", e.g. td_stop/tp_stop) is not
+    # orderable against numbers, so key it to sort last without comparing values.
+    axes: Dict[str, List[Any]] = {
+        k: sorted({c[k] for c in grid}, key=lambda v: (v is None, v)) for k in param_keys
+    }
     shape = tuple(len(axes[k]) for k in param_keys)
 
     n_cells = 1
