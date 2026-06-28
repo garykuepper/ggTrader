@@ -36,7 +36,7 @@ This table shows the current status of the main project components.
 | **3% Trade Size (Position Sizing)** | ✅ Done | Increased trade size per signal from 2% to 3% of cash. This utilizes idle cash and allows us to beat the market index (SPY) on a risk-adjusted basis. |
 | **Gate Safety Adjustment** | ✅ Done | Modified our safety gates to prevent them from rejecting strategy settings that are consistently profitable. This improved overall test outcomes. |
 | **Stable Settings Selection** | ✅ Done | Made the system select parameters that have a history of working consistently over many past months rather than just the most recent month. |
-| **Machine Learning Filter** | ✅ Done | Retrained our LightGBM machine learning filter, which blocks trades that have a low probability of success. |
+| **Machine Learning Filter** | ❌ Rejected | The LightGBM entry filter is off and stays off. A June-28 bake-off falsified it three ways: the win-probability model is anti-predictive, an expected-value redesign is *worse*, and the only robust-looking axis (volatility) is a 2020 artifact that adds nothing out-of-sample. These 10 daily features hold no stable entry-selection signal. |
 | **Live Paper Trading** | 🟢 Live | Running our 5-indicator strategy with 3% trade size on virtual money with automated safety limits. Logs only real, completed fills to avoid accounting errors. (June 27: verified live fills reconcile exactly against the broker; redeployed the trader so the honest-fill-logging code is actually running; moved the daily run 30 min earlier so orders fill before the close instead of queuing overnight.) |
 | **Next Steps** | 🔵 Next | Monitor virtual trading for 5–10 days → fund a live $1,000 account → go live. Start research on blending S&P 500 and MidCap 400 stocks. |
 | **Future Research** | 🧪 Research | Exploring weighted voting, macro market data filters, and Kelly sizing (smart trade sizing). |
@@ -66,9 +66,9 @@ These are changes made directly to the trading logic to optimize performance.
 - **Stable Parameters** (`wfo.py`): Programmed the live trader to choose settings with a track record of stability across past folds.
 
 ### Phase 2: Voting & Filter Upgrades (Up Next)
+- **Exit Strategy Sweeps** (`ensemble.py`) — **now the priority lever**: Run simulation sweeps over different exit rules (fixed profit targets, time-based limits, band-touch exits) versus the current decoupled-RSI exit. Reversion P&L is dominated by *when you exit*, not which name you pick, and this surface has never been swept. No ML, low overfit risk, composes with the 3% sizing that already beat SPY.
 - **Weighted Indicator Voting** (`ensemble.py`): Give more voting weight to indicators that have performed better in past training, rather than treating all votes equally.
-- **Dynamic Machine Learning Filter** (`feature_gate.py`): Make the machine learning filter adjust dynamically—blocking more trades when the market is highly volatile, and loosening up when the market is calm.
-- **Exit Strategy Sweeps** (`ensemble.py`): Run simulation sweeps over different exit rules (like fixed profit targets or time-based limits) to find the best way to close trades.
+- **~~Dynamic Machine Learning Filter~~** (`feature_gate.py`) — ❌ **Rejected (June 28).** A "blocks more trades when volatile, loosens when calm" filter is exactly the volatility filter the June-28 bake-off proved is a 2020 artifact with no out-of-sample value. Entry-level ML/feature gating is closed; do not re-attempt on these features.
 
 ### Phase 3: Transitioning from Virtual to Live Trading
 - [x] Alpaca paper trading adapter, signal generator, risk checks, and Telegram alerts set up.
@@ -139,6 +139,7 @@ This table tracks the technical foundation that supports our research and tradin
 * **Momentum Strategies**: Ranks stocks by momentum. Performed poorly over the last 5 years in large-cap stocks.
 * **Weekly Indicators (MTF)**: Harmed overall performance because weekly signals were too slow for daily trading.
 * **Conviction-Based Position Sizing**: Sizing trades based on indicator strength did not add extra profits compared to flat trade sizing.
+* **ML / Feature Entry Gate (falsified three ways, June 28)**: We tried to pick *better* entries with a machine-learning filter on 10 daily features. (1) The original win-probability model is anti-predictive — the entries it blocks out-earn the ones it keeps. (2) Rebuilding it to predict expected return (magnitude) instead of direction is *worse*, not better — its scores are even more inversely correlated with realized return out-of-sample. (3) The one robust-looking axis, a volatility-expansion filter ("skip falling-knife dips"), turned out to be entirely a March-2020 effect: in 2024–2025 the high-volatility entries actually did *better*, and an honest split (set the threshold on the first half of history, apply to the second) showed zero benefit. Conclusion: these features carry no stable cross-sectional entry-selection signal. Our edge has always come from exposure/sizing and exits, never from filtering which name to buy.
 
 ---
 
@@ -155,6 +156,7 @@ This table tracks the technical foundation that supports our research and tradin
 * **June 25, 2026**: Raised trade sizes to 3% to utilize cash, successfully beating the S&P 500 index on a risk-adjusted basis. Shipped this config as the default.
 * **June 26, 2026**: Adjusted our safety gates to prevent over-rejection of good rules and added stable settings selection to the live trader.
 * **June 27, 2026**: Reconciled live paper fills against the broker (clean); found and fixed a stale deployment so the honest-fill-logging code actually runs, and moved the daily run before the close. Improved the circuit-breaker recovery rule (2-of-3 clean windows). Settled the mid-cap question: the gates are working as designed (mid-cap settings are genuinely noisier), so mid-cap will be a diversification sleeve, not a standalone strategy.
+* **June 28, 2026**: Ran a gate-objective bake-off to decide the best way forward on the ML filter. Falsified entry-level ML/feature gating three ways (anti-predictive classifier; even-worse EV regressor; volatility filter is a 2020 artifact). Verified the gate is *not* live on the paper trader (disabled by default, no env enables it). Closed the ML-gate research arc and redirected Phase 2 to exit-rule sweeps as the next lever.
 
 ---
 
