@@ -84,6 +84,8 @@ class EnsembleSignal:
         weekly_rsi_period: int = 14,
         weekly_rsi_oversold: int = 30,
         weekly_rsi_exit: int = 50,
+        td_stop: int | None = None,
+        exits_enabled: bool = True,
         voters: tuple[str, ...] | list[str] = DEFAULT_VOTERS,
     ) -> None:
         self.voters = _validate_voters(voters)
@@ -106,6 +108,12 @@ class EnsembleSignal:
         self.weekly_rsi_period = weekly_rsi_period
         self.weekly_rsi_oversold = weekly_rsi_oversold
         self.weekly_rsi_exit = weekly_rsi_exit
+        #: Exit controls (2026-06-28 exit-rule sweep). td_stop = forced exit N
+        #: bars after each entry (max-hold); exits_enabled=False suppresses the
+        #: indicator exits so the position exits only on td_stop / tp_stop
+        #: (tp_stop is a portfolio-side overlay applied in simulate_signals).
+        self.td_stop = td_stop
+        self.exits_enabled = exits_enabled
 
     @classmethod
     def sweep_params(cls) -> dict[str, list]:
@@ -172,10 +180,27 @@ class EnsembleSignal:
         exit_votes = sum(df.astype(int) for df in ext.values())
 
         entries = (entry_votes >= self.min_agree).astype(bool)
-        # RSI exit fires independently when RSI is an active voter.
-        independent_exit = ext["rsi"] if "rsi" in ext else False
-        exits = independent_exit | (exit_votes >= self.min_agree_exit)
+        if self.exits_enabled:
+            # RSI exit fires independently when RSI is an active voter.
+            independent_exit = ext["rsi"] if "rsi" in ext else False
+            exits = independent_exit | (exit_votes >= self.min_agree_exit)
+        else:
+            # Replacement arm: drop indicator exits; only td_stop/tp_stop close.
+            exits = pd.DataFrame(False, index=entries.index, columns=entries.columns)
+        exits = self._apply_time_stop(entries, exits)
         return SignalTargets(entries=entries, exits=exits)
+
+    def _apply_time_stop(self, entries: pd.DataFrame, exits: pd.DataFrame) -> pd.DataFrame:
+        """OR a forced exit `td_stop` bars after each entry (max-hold).
+
+        Correct under vbt from_signals semantics: an exit on a flat position is
+        ignored, so if an indicator exit already closed the trade the time-exit
+        is a no-op. (vbt 0.28.5 has no native time stop.)
+        """
+        if self.td_stop is None:
+            return exits.astype(bool)
+        timed = entries.shift(self.td_stop, fill_value=False).astype(bool)
+        return (exits.astype(bool) | timed).astype(bool)
 
     def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
@@ -215,12 +240,19 @@ class EnsembleSignal:
                 weekly_rsi_period=int(combo.get("weekly_rsi_period", self.weekly_rsi_period)),
                 weekly_rsi_oversold=int(combo.get("weekly_rsi_oversold", self.weekly_rsi_oversold)),
                 weekly_rsi_exit=int(combo.get("weekly_rsi_exit", self.weekly_rsi_exit)),
+                td_stop=_opt_int(combo.get("td_stop", self.td_stop)),
+                exits_enabled=bool(combo.get("exits_enabled", self.exits_enabled)),
                 voters=self.voters,
             )
             targets = strat._generate_signals(close, volume)
             key = combo_name(self.name, combo)
             result[key] = targets
         return result
+
+
+def _opt_int(value: object) -> int | None:
+    """Coerce a sweep value to int, preserving None (used for td_stop)."""
+    return None if value is None else int(value)  # type: ignore[arg-type]
 
 
 class EnsembleConvictionSignal:

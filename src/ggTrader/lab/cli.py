@@ -169,13 +169,20 @@ def _parse_sweep_params(raw: List[str]) -> dict[str, list]:
         parsed = []
         for v in vals.split(","):
             v = v.strip()
-            try:
-                parsed.append(int(v))
-            except ValueError:
+            if v == "None":
+                parsed.append(None)
+            elif v == "True":
+                parsed.append(True)
+            elif v == "False":
+                parsed.append(False)
+            else:
                 try:
-                    parsed.append(float(v))
+                    parsed.append(int(v))
                 except ValueError:
-                    parsed.append(v)
+                    try:
+                        parsed.append(float(v))
+                    except ValueError:
+                        parsed.append(v)
         result[key.strip()] = parsed
     return result
 
