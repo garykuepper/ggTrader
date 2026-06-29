@@ -132,6 +132,8 @@ The contrarian case: US large-caps are the most efficient, most heavily arbitrag
 
 **Resolution.** Run live as a low-maintenance capital-preservation sleeve, and execute **Rank 1 (IC-weighted voting) as the singular final experiment** on the equity book. If IC-weighting fails to beat the 1.12 baseline post-DSR, the equity book is officially closed to further research, and development transitions to alternative asset classes with structural, leverage-driven premiums.
 
+> **RESULT (2026-06-28) — NO-GO. Equity selection book CLOSED.** `ensemble_ic` was built (leak-safe, 291 tests, whole-branch review clean) and run gate-honest on SP500 (same harness/window; SPY 0.58 confirms apples-to-apples). OOS **Sharpe 1.01 < 1.12 baseline**, CAGR 19.6% (higher) but **MaxDD -17.3% vs -11%** (worse), gate **14/17 vs 16/17**. The WFO winner (`consensus_threshold=0.7, ic_lookback=12mo`) was selected in only **3/17 folds** — fold-to-fold flip, the same noise signature as the exit-rule-sweep NO-GO. IC weighting buys raw CAGR by concentrating into higher-threshold entries at the cost of drawdown, so Sharpe falls: no risk-adjusted edge. `ensemble_ic` is kept as a registered **non-default** research strategy; **not deployed** — live stays on the `ensemble` baseline. Per this resolution, the equity selection book is now closed; next active lever = the parked crypto-carry sleeve below.
+
 ### Parked Direction: Delta-Neutral Carry Arbitrage Sleeve on Kraken Futures
 
 Opened only once operating capital exceeds **$10,000**. Buy spot on Kraken Spot, short equivalent notional on Kraken Futures, capture perpetual funding / calendar basis (timed via the CF Benchmarks KFRI). Open when 30-day average funding or basis exceeds an 8–10% APR cost-adjusted hurdle.
