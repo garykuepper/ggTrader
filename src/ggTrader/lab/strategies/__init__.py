@@ -4,6 +4,7 @@ from typing import Any
 
 from .conviction import ConvictionBBSignal
 from .ensemble import EnsembleConvictionSignal, EnsembleSignal
+from .ensemble_ic import EnsembleICSignal
 from .momentum import CrossSectionalMomentum, DualMomentum
 from .signals import (
     BollingerReversionSignal,
@@ -24,6 +25,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "volume_bb_reversion": VolumeBBReversionSignal,
     "mtf_reversion": MultiTimeframeReversionSignal,
     "ensemble": EnsembleSignal,
+    "ensemble_ic": EnsembleICSignal,
     "conviction_bb": ConvictionBBSignal,
     "ensemble_conviction": EnsembleConvictionSignal,
     "xs_momentum": CrossSectionalMomentum,
@@ -42,6 +44,7 @@ __all__ = [
     "VolumeBBReversionSignal",
     "MultiTimeframeReversionSignal",
     "EnsembleSignal",
+    "EnsembleICSignal",
     "ConvictionBBSignal",
     "EnsembleConvictionSignal",
 ]

@@ -32,6 +32,7 @@ _EMA_COMBOS = [
 def _vectorized_ema_tournament(close_is: pd.DataFrame) -> tuple[dict[str, Any], float]:
     """Find the best EMA combo in _EMA_COMBOS using a single vectorized vbt call."""
     import vectorbt as vbt
+
     n_syms = close_is.shape[1]
     if n_syms == 0:
         return _EMA_COMBOS[2], float("-inf")
@@ -603,6 +604,7 @@ class MultiTimeframeReversionSignal:
 def _build_signal_registry() -> dict[str, Any]:
     from ggTrader.lab.strategies.conviction import ConvictionBBSignal
     from ggTrader.lab.strategies.ensemble import EnsembleConvictionSignal, EnsembleSignal
+    from ggTrader.lab.strategies.ensemble_ic import EnsembleICSignal
 
     return {
         "ema_cross": EmaCrossSignal,
@@ -613,6 +615,7 @@ def _build_signal_registry() -> dict[str, Any]:
         "volume_bb_reversion": VolumeBBReversionSignal,
         "mtf_reversion": MultiTimeframeReversionSignal,
         "ensemble": EnsembleSignal,
+        "ensemble_ic": EnsembleICSignal,
         "conviction_bb": ConvictionBBSignal,
         "ensemble_conviction": EnsembleConvictionSignal,
     }
@@ -637,6 +640,7 @@ SIGNAL_STRATEGY_NAMES = (
     "volume_bb_reversion",
     "mtf_reversion",
     "ensemble",
+    "ensemble_ic",
     "conviction_bb",
     "ensemble_conviction",
 )

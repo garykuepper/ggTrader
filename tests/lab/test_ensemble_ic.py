@@ -4,8 +4,10 @@ import numpy as np
 import pandas as pd
 
 import ggTrader.lab.strategies.ensemble_ic as eic_mod
+from ggTrader.lab.strategies import STRATEGY_REGISTRY
 from ggTrader.lab.strategies.ensemble import EnsembleSignal
 from ggTrader.lab.strategies.ensemble_ic import EnsembleICSignal
+from ggTrader.lab.strategies.signals import SIGNAL_STRATEGY_NAMES, build_signal_strategy
 from ggTrader.lab.strategy import LabConfig
 
 
@@ -89,3 +91,12 @@ def test_to_targets_truncation_invariance():
     d = ohlcv.index[300]
     trunc = strat.to_targets(_plans(ohlcv.loc[:d]), ohlcv.loc[:d])
     pd.testing.assert_frame_equal(full.entries.loc[:d], trunc.entries.loc[:d])
+
+
+def test_ensemble_ic_registered():
+    assert "ensemble_ic" in SIGNAL_STRATEGY_NAMES
+    assert "ensemble_ic" in STRATEGY_REGISTRY
+    cfg = LabConfig(min_history_bars=50)
+    strat = build_signal_strategy("ensemble_ic", cfg)
+    assert strat.name == "ensemble_ic"
+    assert strat.target_kind == "signals"
