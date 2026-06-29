@@ -260,3 +260,55 @@ def mtf_strength(
     bb_str = bb_strength(close, daily_bb_period, daily_bb_std)
     combined = (rsi_depth + bb_str) / 2.0
     return combined.clip(lower=0.0, upper=1.0)
+
+
+def rsi_raw(close: pd.DataFrame, period: int) -> pd.DataFrame:
+    """Raw RSI level, NEGATED so higher = more oversold (bullish)."""
+    delta = close.diff()
+    gain = delta.clip(lower=0.0)
+    loss = -delta.clip(upper=0.0)
+    avg_gain = gain.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    return -rsi
+
+
+def bb_raw(close: pd.DataFrame, period: int, std: float) -> pd.DataFrame:
+    """Negated Bollinger %b; higher = deeper below the lower band (bullish)."""
+    sma = close.rolling(window=period, min_periods=period).mean()
+    rolling_std = close.rolling(window=period, min_periods=period).std()
+    upper = sma + std * rolling_std
+    lower = sma - std * rolling_std
+    pct_b = (close - lower) / (upper - lower).replace(0, np.nan)
+    return -pct_b
+
+
+def ema_raw(close: pd.DataFrame, fast: int, slow: int) -> pd.DataFrame:
+    """Signed EMA gap (fast - slow) / slow; higher = stronger bullish trend."""
+    ema_f = close.ewm(span=fast, adjust=False).mean()
+    ema_s = close.ewm(span=slow, adjust=False).mean()
+    return (ema_f - ema_s) / ema_s.replace(0, np.nan)
+
+
+def macd_raw(close: pd.DataFrame, fast: int, slow: int, signal_period: int) -> pd.DataFrame:
+    """MACD histogram (macd - signal); higher = stronger bullish momentum."""
+    macd_line = (
+        close.ewm(span=fast, adjust=False).mean() - close.ewm(span=slow, adjust=False).mean()
+    )
+    signal_line = macd_line.ewm(span=signal_period, adjust=False).mean()
+    return macd_line - signal_line
+
+
+def vbb_raw(
+    close: pd.DataFrame, volume: pd.DataFrame, period: int, std: float, vol_period: int
+) -> pd.DataFrame:
+    """Negated %b scaled by volume ratio; higher = deep oversold on heavy volume."""
+    sma = close.rolling(window=period, min_periods=period).mean()
+    rolling_std = close.rolling(window=period, min_periods=period).std()
+    upper = sma + std * rolling_std
+    lower = sma - std * rolling_std
+    pct_b = (close - lower) / (upper - lower).replace(0, np.nan)
+    vol_avg = volume.rolling(window=vol_period, min_periods=vol_period).mean()
+    vol_ratio = (volume / vol_avg.replace(0, np.nan)).clip(upper=3.0)
+    return (-pct_b) * vol_ratio
