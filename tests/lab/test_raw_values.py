@@ -35,12 +35,22 @@ def _volume(close, seed=8):
 
 
 def test_rsi_raw_higher_when_more_oversold():
-    """A monotonically falling series (oversold) ranks ABOVE a rising one."""
+    """A net-falling series (oversold) ranks ABOVE a net-rising one.
+
+    Both series carry small periodic counter-moves so each has gains AND
+    losses — otherwise a perfect monotonic trend yields avg_loss/avg_gain == 0
+    and RSI is NaN (a degenerate, downstream-harmless case the IC drops).
+    """
     idx = _idx(60)
-    falling = pd.Series(np.linspace(100, 60, 60), index=idx)
-    rising = pd.Series(np.linspace(60, 100, 60), index=idx)
+    t = np.arange(60, dtype=float)
+    falling = pd.Series(100.0 - t * 0.5, index=idx)
+    falling.iloc[::5] += 1.0  # small bounces -> nonzero gains
+    rising = pd.Series(60.0 + t * 0.5, index=idx)
+    rising.iloc[::5] -= 1.0  # small dips -> nonzero losses
     close = pd.DataFrame({"DOWN": falling, "UP": rising})
     raw = rsi_raw(close, period=14)
+    assert np.isfinite(raw["DOWN"].iloc[-1])
+    assert np.isfinite(raw["UP"].iloc[-1])
     assert raw["DOWN"].iloc[-1] > raw["UP"].iloc[-1]
 
 
