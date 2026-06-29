@@ -45,7 +45,7 @@ def ic_weight_schedule(
     *,
     lookback_months: int,
     horizon: int = 3,
-    rebalance: str = "Q",
+    rebalance: str = "QE",
     min_names: int = 10,
 ) -> pd.DataFrame:
     """Causal (time x voter) weight schedule, recomputed each rebalance date.
