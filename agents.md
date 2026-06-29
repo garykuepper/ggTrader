@@ -10,6 +10,7 @@ This document serves as the consolidated source of truth for all AI assistants (
 
 * **Single CLI entry point**: `ggt.py` with three commands:
   * `ggt lab --strategy <name>` — run walk-forward optimization on a strategy over a historical universe (equities or crypto)
+  * `ggt lab --blend "<strategy>@<universe>,..."` — blend multiple `strategy@universe` sleeves through the gated WFO with the inverse-vol/target-vol overlay (`--target-vol`/`--blend-window`/`--max-leverage`), persisted as a `blend:` lab run. (Infra for orthogonal sleeves; equity-only diversification is a closed NO-GO.)
   * `ggt ingest` — pull OHLCV data into TimescaleDB
   * `ggt db <subcommand>` — database administration (diagnostics, cleanup, compression, export)
 * **Lab Architecture**: 
@@ -48,8 +49,8 @@ This document serves as the consolidated source of truth for all AI assistants (
   * Implement the `Strategy` protocol in `src/ggTrader/lab/strategies/` (see `momentum.py` or `signals.py` as examples).
   * The `Strategy` protocol requires `name`, `target_kind` ("weights" or "signals"), `select(asof, data, eligible) -> Plan`, and `to_targets(plans, data) -> DataFrame | SignalTargets`.
   * Weight strategies return a `pd.DataFrame` (time x symbol, float weights). Signal strategies return `SignalTargets(entries, exits)` with boolean frames.
-  * Register the strategy name in `_REGISTRY` (momentum.py) or `_SIGNAL_REGISTRY` (signals.py).
-  * New strategies are immediately available via `ggt lab --strategy <new_name>`.
+  * Register the strategy in the single-source `STRATEGY_REGISTRY` dict in `src/ggTrader/lab/strategies/__init__.py` (one line: `"<name>": <Class>`). Signal-vs-weight membership and the CLI name lists derive automatically from each class's `target_kind` (see `strategies/registry.py`); the old `signals.py`/`momentum.py` name tuples are now lazy shims over this one dict.
+  * New strategies are immediately available via `ggt lab --strategy <new_name>` (and as a `--blend` sleeve).
 * **Data Access**:
   * Equities OHLCV: use `load_ohlcv()` from `src/ggTrader/lab/data.py`, which pulls from yfinance and caches locally.
   * Crypto OHLCV: TimescaleDB loader in `src/ggTrader/data/historical/timescaledb_loader.py` fetches keyed by venue and interval.

@@ -6,6 +6,13 @@ from .conviction import ConvictionBBSignal
 from .ensemble import EnsembleConvictionSignal, EnsembleSignal
 from .ensemble_ic import EnsembleICSignal
 from .momentum import CrossSectionalMomentum, DualMomentum
+from .registry import (
+    all_strategy_names,
+    build_strategy,
+    signal_registry,
+    signal_strategy_names,
+    weight_strategy_names,
+)
 from .signals import (
     BollingerReversionSignal,
     EmaCrossSignal,
@@ -34,6 +41,11 @@ STRATEGY_REGISTRY: dict[str, Any] = {
 
 __all__ = [
     "STRATEGY_REGISTRY",
+    "all_strategy_names",
+    "build_strategy",
+    "signal_registry",
+    "signal_strategy_names",
+    "weight_strategy_names",
     "CrossSectionalMomentum",
     "DualMomentum",
     "EmaCrossSignal",

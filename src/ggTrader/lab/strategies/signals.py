@@ -601,53 +601,13 @@ class MultiTimeframeReversionSignal:
         return result
 
 
-def _build_signal_registry() -> dict[str, Any]:
-    from ggTrader.lab.strategies.conviction import ConvictionBBSignal
-    from ggTrader.lab.strategies.ensemble import EnsembleConvictionSignal, EnsembleSignal
-    from ggTrader.lab.strategies.ensemble_ic import EnsembleICSignal
+def __getattr__(name: str):  # PEP 562 — derive public names from the single registry
+    from ggTrader.lab.strategies import registry
 
-    return {
-        "ema_cross": EmaCrossSignal,
-        "wfo_tournament": WfoTournamentSignal,
-        "bb_reversion": BollingerReversionSignal,
-        "rsi_reversion": RsiReversionSignal,
-        "macd_divergence": MACDDivergenceSignal,
-        "volume_bb_reversion": VolumeBBReversionSignal,
-        "mtf_reversion": MultiTimeframeReversionSignal,
-        "ensemble": EnsembleSignal,
-        "ensemble_ic": EnsembleICSignal,
-        "conviction_bb": ConvictionBBSignal,
-        "ensemble_conviction": EnsembleConvictionSignal,
-    }
-
-
-_SIGNAL_REGISTRY: dict[str, Any] | None = None
-
-
-def _get_registry() -> dict[str, Any]:
-    global _SIGNAL_REGISTRY  # noqa: PLW0603
-    if _SIGNAL_REGISTRY is None:
-        _SIGNAL_REGISTRY = _build_signal_registry()
-    return _SIGNAL_REGISTRY
-
-
-SIGNAL_STRATEGY_NAMES = (
-    "ema_cross",
-    "wfo_tournament",
-    "bb_reversion",
-    "rsi_reversion",
-    "macd_divergence",
-    "volume_bb_reversion",
-    "mtf_reversion",
-    "ensemble",
-    "ensemble_ic",
-    "conviction_bb",
-    "ensemble_conviction",
-)
-
-
-def build_signal_strategy(name: str, cfg: LabConfig) -> Any:
-    registry = _get_registry()
-    if name not in registry:
-        raise ValueError(f"Unknown signal strategy {name!r}. Available: {SIGNAL_STRATEGY_NAMES}")
-    return registry[name](cfg)
+    if name == "SIGNAL_STRATEGY_NAMES":
+        return registry.signal_strategy_names()
+    if name == "build_signal_strategy":
+        return registry.build_strategy
+    if name == "_get_registry":
+        return registry.signal_registry
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

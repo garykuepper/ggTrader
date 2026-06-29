@@ -72,15 +72,11 @@ class DualMomentum(CrossSectionalMomentum):
         return [p for p in super().select(asof, data, eligible) if p["momentum"] >= 0.0]
 
 
-_REGISTRY = {
-    "xs_momentum": CrossSectionalMomentum,
-    "dual_momentum": DualMomentum,
-}
+def __getattr__(name: str):  # PEP 562 — derive public names from the single registry
+    from ggTrader.lab.strategies import registry
 
-STRATEGY_NAMES = tuple(_REGISTRY)
-
-
-def build_strategy(name: str, cfg: LabConfig):
-    if name not in _REGISTRY:
-        raise ValueError(f"Unknown strategy {name!r}. Available: {STRATEGY_NAMES}")
-    return _REGISTRY[name](cfg)
+    if name == "STRATEGY_NAMES":
+        return registry.weight_strategy_names()
+    if name == "build_strategy":
+        return registry.build_strategy
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
