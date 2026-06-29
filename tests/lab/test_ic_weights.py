@@ -110,3 +110,18 @@ def test_truncation_invariance_leak_guard():
     trunc = ic_weight_schedule(raw_trunc, close.loc[:d], lookback_months=6)
     aligned = full.loc[:d]
     assert np.allclose(aligned.to_numpy(), trunc.to_numpy(), atol=1e-9, equal_nan=True)
+
+
+def test_nan_ic_voter_pruned_rows_still_sum_to_one():
+    """A voter whose raw is all-NaN over the window gets weight 0; rows sum to 1."""
+    close = _ramp_close()
+    # Use perfect-predictor raw (forward returns) so the "good" voter always has
+    # positive IC regardless of the random seed — this guarantees the degenerate
+    # equal-weight fallback never fires and the nanvoter is unambiguously 0.
+    good = forward_returns(close, 3).fillna(0.0)
+    nanvoter = pd.DataFrame(np.nan, index=close.index, columns=close.columns)
+    raw = {"good": good, "nanvoter": nanvoter}
+    w = ic_weight_schedule(raw, close, lookback_months=6)
+    assert np.allclose(w.sum(axis=1).to_numpy(), 1.0, atol=1e-9)
+    # after warmup, the all-NaN voter carries ~zero weight
+    assert w["nanvoter"].iloc[-1] < 1e-9

@@ -25,6 +25,11 @@ from ggTrader.lab.strategies.indicators import (
 )
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
+# Tiny epsilon used when comparing the weighted score to consensus_threshold.
+# Equal weights (e.g. 5 voters at 0.2 each) summing to exactly the threshold
+# can miss the boundary due to floating-point accumulation; epsilon hardens it.
+_SCORE_EPS = 1e-9
+
 
 class EnsembleICSignal:
     """Enter when the IC-weighted sum of voter entries clears a consensus threshold.
@@ -149,7 +154,7 @@ class EnsembleICSignal:
         )
         # weighted_score[d, s] = sum_j w_j[d] * ent_j[d, s]; rows of w sum to 1.
         score = sum(ent[j].astype(float).mul(weights[j], axis=0) for j in ent)
-        entries = (score >= self.consensus_threshold).astype(bool)
+        entries = (score >= self.consensus_threshold - _SCORE_EPS).astype(bool)
 
         exit_votes = sum(df.astype(int) for df in ext.values())
         if self.exits_enabled:

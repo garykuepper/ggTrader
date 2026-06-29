@@ -79,7 +79,7 @@ def ic_weight_schedule(
         else:
             win = daily_ic.loc[(daily_ic.index > window_start) & (daily_ic.index <= usable_end)]
             ic = win.mean()
-            pos = ic.clip(lower=0.0)
+            pos = ic.clip(lower=0.0).fillna(0.0)
             total = pos.sum()
             w = pos / total if total > 0 else pd.Series(eq, index=voters)
         weights.loc[t_k:] = w.values
