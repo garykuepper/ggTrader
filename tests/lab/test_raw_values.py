@@ -55,11 +55,18 @@ def test_rsi_raw_higher_when_more_oversold():
 
 
 def test_bb_raw_higher_below_lower_band():
-    """Negated %b: a price far below its mean ranks above one at its mean."""
-    close = _close()
+    """A price driven below its lower band ranks ABOVE one sitting at its mean."""
+    idx = _idx(40)
+    np.random.seed(1)
+    base = 100.0 + np.random.normal(0, 0.5, 40)
+    mid = pd.Series(base, index=idx)
+    low = mid.copy()
+    low.iloc[-1] = base[-1] - 10.0  # last bar dumps well below the lower band
+    close = pd.DataFrame({"MID": mid, "LOW": low})
     raw = bb_raw(close, period=20, std=2.0)
-    assert raw.shape == close.shape
-    assert raw.notna().any().any()
+    assert np.isfinite(raw["MID"].iloc[-1])
+    assert np.isfinite(raw["LOW"].iloc[-1])
+    assert raw["LOW"].iloc[-1] > raw["MID"].iloc[-1]
 
 
 def test_ema_raw_positive_in_uptrend():
@@ -70,15 +77,28 @@ def test_ema_raw_positive_in_uptrend():
     assert raw["UP"].iloc[-1] > 0
 
 
-def test_macd_raw_shape_and_finite():
-    close = _close()
+def test_macd_raw_higher_in_uptrend_than_downtrend():
+    """MACD histogram is higher for an accelerating uptrend than a downtrend."""
+    idx = _idx(80)
+    t = np.arange(80.0)
+    up = pd.Series(100.0 * np.exp(0.01 * t), index=idx)
+    down = pd.Series(100.0 * np.exp(-0.01 * t), index=idx)
+    close = pd.DataFrame({"UP": up, "DOWN": down})
     raw = macd_raw(close, fast=12, slow=26, signal_period=9)
-    assert raw.shape == close.shape
-    assert np.isfinite(raw.iloc[-1].to_numpy()).all()
+    assert raw["UP"].iloc[-1] > raw["DOWN"].iloc[-1]
 
 
-def test_vbb_raw_shape():
-    close = _close()
-    vol = _volume(close)
+def test_vbb_raw_higher_below_lower_band():
+    """vbb_raw: a price below its lower band ranks ABOVE one at its mean."""
+    idx = _idx(40)
+    np.random.seed(2)
+    base = 100.0 + np.random.normal(0, 0.5, 40)
+    mid = pd.Series(base, index=idx)
+    low = mid.copy()
+    low.iloc[-1] = base[-1] - 10.0
+    close = pd.DataFrame({"MID": mid, "LOW": low})
+    vol = pd.DataFrame(5000.0, index=idx, columns=close.columns)
     raw = vbb_raw(close, vol, period=20, std=2.0, vol_period=20)
-    assert raw.shape == close.shape
+    assert np.isfinite(raw["MID"].iloc[-1])
+    assert np.isfinite(raw["LOW"].iloc[-1])
+    assert raw["LOW"].iloc[-1] > raw["MID"].iloc[-1]
