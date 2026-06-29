@@ -19,7 +19,7 @@ from ggTrader.lab.metrics import curve_stats
 from ggTrader.lab.strategies import STRATEGY_REGISTRY
 from ggTrader.lab.strategy import LabConfig
 from ggTrader.lab.sweep import build_grid
-from ggTrader.lab.wfo import run_wfo
+from ggTrader.lab.wfo import WfoResult, run_wfo
 
 
 def blend_curves(
@@ -92,6 +92,12 @@ def run_blend(
     for strategy, universe in sleeves:
         label = f"{strategy}@{universe}"
         syms = [x for x in members[universe] if x in available]
+        if not syms:
+            raise SystemExit(
+                f"blend sleeve {label!r}: no symbols available for universe {universe!r}"
+            )
+        if label in curves:
+            raise SystemExit(f"duplicate sleeve {label!r}; each strategy@universe must be unique")
         cls = STRATEGY_REGISTRY[strategy]
         result = run_wfo(
             strategy,
@@ -105,13 +111,15 @@ def run_blend(
             base_config=base_config,
             grid=build_grid(cls),
         )
+        if not isinstance(result, WfoResult):
+            raise SystemExit(f"blend sleeve {label!r}: WFO produced no valid folds ({result})")
         curves[label] = result.oos_equity
 
     blend_eq, returns_df, diag = blend_curves(
         curves, target_vol=target_vol, window=window, max_leverage=max_leverage
     )
     common = returns_df.index
-    start_cash = float(base_config["START_CASH"])
+    start_cash = float(STOCK_BASE_CONFIG["START_CASH"])
     spy_common = spy_close.reindex(common).ffill()
     spy_bench = start_cash * (spy_common / spy_common.dropna().iloc[0])
     spy_stats = curve_stats(spy_common)

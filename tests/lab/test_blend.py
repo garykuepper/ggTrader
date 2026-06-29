@@ -117,3 +117,85 @@ def test_run_blend_orchestrates_and_persists(monkeypatch):
     assert calls["returns"] == 3  # 2 sleeves + 1 blend
     assert calls["summary"] == 1
     assert "blend" in result.table.lower()
+
+
+def _make_monkeypatched_base(monkeypatch, rng, idx, spy):
+    """Shared setup for run_blend guard tests."""
+    monkeypatch.setattr(blend_mod, "equity_universe_between", lambda *a, **k: ["AAA"])
+
+    def _fake_load(symbols, start, end, **k):
+        frames = {"SPY": pd.DataFrame({"close": spy}, index=idx)}
+        frames["AAA"] = pd.DataFrame({"close": spy.values}, index=idx)
+        df = pd.concat(frames, axis=1)
+        df.columns.names = ["symbol", "field"]
+        return df
+
+    monkeypatch.setattr(blend_mod, "load_ohlcv", _fake_load)
+    monkeypatch.setattr(blend_mod, "build_grid", lambda cls: [{}])
+
+    monkeypatch.setattr(blend_mod.persist, "init_schema", lambda: None)
+    monkeypatch.setattr(blend_mod.persist, "start_run", lambda *a, **k: "run-x")
+    monkeypatch.setattr(blend_mod.persist, "write_returns_equity", lambda *a, **k: None)
+    monkeypatch.setattr(blend_mod.persist, "write_summary", lambda *a, **k: None)
+    monkeypatch.setattr(blend_mod.persist, "finish_run", lambda *a, **k: None)
+
+
+def test_run_blend_raises_on_wfo_no_folds(monkeypatch):
+    """run_wfo returning a bare str (no-folds path) must raise SystemExit."""
+    idx = _idx(400)
+    rng = np.random.default_rng(3)
+    spy = _equity_from_returns(pd.Series(rng.normal(0.0003, 0.01, 400), index=idx))
+
+    _make_monkeypatched_base(monkeypatch, rng, idx, spy)
+
+    # Simulate the no-folds return value: run_wfo returns a plain str
+    monkeypatch.setattr(blend_mod, "run_wfo", lambda *a, **k: "no valid folds")
+
+    import pytest
+
+    with pytest.raises(SystemExit):
+        run_blend(
+            [("ensemble", "sp500")],
+            LabConfig(),
+            "2021-01-01",
+            "2022-07-01",
+            market="equity",
+            base_config=dict(blend_mod.STOCK_BASE_CONFIG),
+        )
+
+
+def test_run_blend_raises_on_empty_symbols(monkeypatch):
+    """No overlap between universe members and available OHLCV must raise SystemExit."""
+    idx = _idx(400)
+    rng = np.random.default_rng(4)
+    spy = _equity_from_returns(pd.Series(rng.normal(0.0003, 0.01, 400), index=idx))
+
+    # Override equity_universe_between to return a symbol NOT in the loaded ohlcv
+    monkeypatch.setattr(blend_mod, "equity_universe_between", lambda *a, **k: ["MISSING_SYM"])
+
+    def _fake_load(symbols, start, end, **k):
+        # Only loads SPY — MISSING_SYM is absent so syms will be empty
+        frames = {"SPY": pd.DataFrame({"close": spy}, index=idx)}
+        df = pd.concat(frames, axis=1)
+        df.columns.names = ["symbol", "field"]
+        return df
+
+    monkeypatch.setattr(blend_mod, "load_ohlcv", _fake_load)
+    monkeypatch.setattr(blend_mod, "build_grid", lambda cls: [{}])
+    monkeypatch.setattr(blend_mod.persist, "init_schema", lambda: None)
+    monkeypatch.setattr(blend_mod.persist, "start_run", lambda *a, **k: "run-x")
+    monkeypatch.setattr(blend_mod.persist, "write_returns_equity", lambda *a, **k: None)
+    monkeypatch.setattr(blend_mod.persist, "write_summary", lambda *a, **k: None)
+    monkeypatch.setattr(blend_mod.persist, "finish_run", lambda *a, **k: None)
+
+    import pytest
+
+    with pytest.raises(SystemExit):
+        run_blend(
+            [("ensemble", "sp500")],
+            LabConfig(),
+            "2021-01-01",
+            "2022-07-01",
+            market="equity",
+            base_config=dict(blend_mod.STOCK_BASE_CONFIG),
+        )
