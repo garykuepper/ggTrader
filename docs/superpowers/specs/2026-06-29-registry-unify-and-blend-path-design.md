@@ -27,17 +27,28 @@ The name→class mapping is duplicated across three hand-synced sites:
 No test asserts they agree. Adding a signal strategy = 4 edits across 3 files.
 
 ### Design
-`STRATEGY_REGISTRY` in `strategies/__init__.py` becomes the **one** source of truth (it already lists all 13). Derive the rest from it, keyed off each class's existing `target_kind` attribute:
+`STRATEGY_REGISTRY` in `strategies/__init__.py` stays the **one** source of truth (it already lists all 13). All names/builders derive from it, keyed off each class's existing `target_kind` attribute.
 
-- New helpers in `strategies/__init__.py` (or a small `strategies/registry.py` it re-exports):
-  - `signal_strategy_names() -> tuple[str, ...]` = keys where `cls.target_kind == "signals"`.
-  - `weight_strategy_names() -> tuple[str, ...]` = keys where `cls.target_kind == "weights"`.
-  - `all_strategy_names() -> tuple[str, ...]`.
-  - `build_strategy(name: str, cfg: LabConfig)` — look up the class, return `cls(cfg)`.
-- **Backward-compat shims** (smaller diff, lower risk — keep external importers working):
-  - `signals.py`: `SIGNAL_STRATEGY_NAMES = signal_strategy_names()`; `build_signal_strategy = build_strategy`; delete `_build_signal_registry`.
-  - `momentum.py`: `STRATEGY_NAMES = weight_strategy_names()`; keep `build_strategy` as a re-export of the unified one; delete `_REGISTRY`.
-- Instantiation is uniform: every strategy's constructor takes `cfg` as the first positional with all else defaulted (verified across `EnsembleSignal`, `EnsembleICSignal`, `CrossSectionalMomentum`, etc.). `build_strategy` calls `cls(cfg)`. (Confirm during implementation; if any class needs extra args, surface it.)
+**New module `strategies/registry.py`** — the derivation helpers. It must NOT import the strategy classes at module top level (that would re-introduce the cycle); instead it imports `STRATEGY_REGISTRY` lazily *inside* each function:
+```python
+def _registry() -> dict[str, type]:
+    from ggTrader.lab.strategies import STRATEGY_REGISTRY
+    return STRATEGY_REGISTRY
+def signal_strategy_names() -> tuple[str, ...]: ...   # target_kind == "signals"
+def weight_strategy_names() -> tuple[str, ...]: ...   # target_kind == "weights"
+def all_strategy_names() -> tuple[str, ...]: ...
+def signal_registry() -> dict[str, type]: ...         # filtered view (for back-compat)
+def build_strategy(name: str, cfg: LabConfig): ...    # reg[name](cfg), ValueError if unknown
+```
+`__init__.py` re-exports these helpers (so `from ggTrader.lab.strategies import build_strategy` works).
+
+**Circular import:** `__init__.py` imports the strategy modules to build `STRATEGY_REGISTRY`, so those modules cannot read the registry at *their* import time. The shims below therefore resolve lazily.
+
+**Backward-compat shims via module `__getattr__` (PEP 562)** — keeps all ~10 existing importers (cli.py, 2 scripts, ~6 test files) working with ZERO call-site edits, while making the old names derive from the single source:
+- `signals.py`: delete the literal `_build_signal_registry`, `_get_registry`, `SIGNAL_STRATEGY_NAMES`, `build_signal_strategy`. Add a module `__getattr__(name)` returning, lazily: `SIGNAL_STRATEGY_NAMES` → `registry.signal_strategy_names()`; `build_signal_strategy` → `registry.build_strategy`; `_get_registry` → `registry.signal_registry` (so existing `_get_registry()` calls still return the signal-only dict).
+- `momentum.py`: delete the literal `_REGISTRY`, `STRATEGY_NAMES`, `build_strategy`. Add a module `__getattr__(name)` returning `STRATEGY_NAMES` → `registry.weight_strategy_names()`; `build_strategy` → `registry.build_strategy`. (The unified `build_strategy` handles all kinds; momentum's old one only handled weights — superset behavior, existing call sites unaffected.)
+
+**Instantiation is uniform:** every strategy constructor takes `cfg` first-positional with all else defaulted (verified across `EnsembleSignal`, `EnsembleICSignal`, `CrossSectionalMomentum`, `DualMomentum`, the 7 `signals.py` classes). `build_strategy` calls `cls(cfg)`.
 
 ### Sync test (new)
 `tests/lab/test_registry.py`: for every `(name, cls)` in `STRATEGY_REGISTRY` assert `cls.name == name` and `cls.target_kind in {"signals", "weights"}`; assert `set(signal_strategy_names()) | set(weight_strategy_names()) == set(STRATEGY_REGISTRY)` and the two are disjoint; assert `build_strategy(name, cfg)` returns an object whose `.name == name` for every name.
@@ -92,9 +103,10 @@ Inherited, not re-derived: `combine_sleeves` is OOS-correct (weights/scale at ea
 
 | File | Change |
 |---|---|
-| `src/ggTrader/lab/strategies/__init__.py` | `STRATEGY_REGISTRY` = sole source; add `signal_strategy_names`/`weight_strategy_names`/`all_strategy_names`/`build_strategy` |
-| `src/ggTrader/lab/strategies/signals.py` | delete `_build_signal_registry`; `SIGNAL_STRATEGY_NAMES`/`build_signal_strategy` become derived shims |
-| `src/ggTrader/lab/strategies/momentum.py` | delete `_REGISTRY`; `STRATEGY_NAMES` derived; `build_strategy` re-exports unified |
+| `src/ggTrader/lab/strategies/registry.py` | new — lazy derivation helpers (`signal_strategy_names`, `weight_strategy_names`, `all_strategy_names`, `signal_registry`, `build_strategy`) |
+| `src/ggTrader/lab/strategies/__init__.py` | `STRATEGY_REGISTRY` = sole source; re-export the registry helpers |
+| `src/ggTrader/lab/strategies/signals.py` | delete `_build_signal_registry`/`_get_registry`/`SIGNAL_STRATEGY_NAMES`/`build_signal_strategy` literals; add module `__getattr__` lazy shims deriving from `registry` |
+| `src/ggTrader/lab/strategies/momentum.py` | delete `_REGISTRY`/`STRATEGY_NAMES`/`build_strategy` literals; add module `__getattr__` lazy shims deriving from `registry` |
 | `src/ggTrader/lab/blend.py` | new — `run_blend` + `BlendResult` |
 | `src/ggTrader/lab/cli.py` | `--blend`/`--target-vol`/`--blend-window`/`--max-leverage` args; blend dispatch branch; guard single-universe load |
 | `scripts/multi_sleeve_research.py`, `scripts/portfolio_blend.py` | delete |
