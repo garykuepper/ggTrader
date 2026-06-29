@@ -22,6 +22,25 @@ from ggTrader.lab.strategy import LabConfig
 UNIVERSE_CHOICES = ("sp500", "nasdaq100", "russell2000", "midcap400")
 
 
+def _parse_blend_sleeves(spec: str) -> List[tuple[str, str]]:
+    """Parse 'strat@univ,strat@univ' into [(strategy, universe), ...]; validate."""
+    from ggTrader.lab.strategies import all_strategy_names
+
+    valid_strats = set(all_strategy_names())
+    sleeves: List[tuple[str, str]] = []
+    for part in spec.split(","):
+        item = part.strip()
+        if item.count("@") != 1:
+            raise SystemExit(f"Bad sleeve {item!r}; expected 'strategy@universe'")
+        strategy, universe = item.split("@")
+        if strategy not in valid_strats:
+            raise SystemExit(f"Unknown strategy {strategy!r}; choices: {sorted(valid_strats)}")
+        if universe not in UNIVERSE_CHOICES:
+            raise SystemExit(f"Unknown universe {universe!r}; choices: {UNIVERSE_CHOICES}")
+        sleeves.append((strategy, universe))
+    return sleeves
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Run a lab strategy walk-forward.")
     p.add_argument(
@@ -55,6 +74,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=False,
         help="Walk-forward optimization: rolling train/test folds with OOS scoring.",
     )
+    mode.add_argument(
+        "--blend",
+        default=None,
+        metavar="S@U,...",
+        help="Blend sleeves: --blend ensemble@sp500,xs_momentum@nasdaq100",
+    )
+    p.add_argument("--target-vol", type=float, default=0.068)
+    p.add_argument("--blend-window", type=int, default=60)
+    p.add_argument("--max-leverage", type=float, default=2.0)
     p.add_argument(
         "--sweep-param",
         action="append",
@@ -77,6 +105,25 @@ def run_lab(argv: List[str] | None = None) -> str:
         if args.eval_end
         else pd.Timestamp.now(tz="UTC").normalize()
     )
+    if args.blend:
+        from ggTrader.lab.blend import run_blend
+
+        sleeves = _parse_blend_sleeves(args.blend)
+        result = run_blend(
+            sleeves,
+            cfg,
+            str(eval_start.date()),
+            str(eval_end.date()),
+            market=args.market,
+            base_config=dict(STOCK_BASE_CONFIG),
+            target_vol=args.target_vol,
+            window=args.blend_window,
+            max_leverage=args.max_leverage,
+        )
+        print(result.table)
+        print(f"blend run complete: {result.run_id}")
+        return result.run_id
+
     warmup_days = int(max(cfg.lookback, cfg.min_history_bars) * 1.6) + 60
     data_start = eval_start - pd.Timedelta(days=warmup_days)
     universe = equity_universe_between(eval_start, eval_end, universe=univ)
