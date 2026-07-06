@@ -13,7 +13,7 @@ The platform supports both US equities (stocks like the S&P 500 via Yahoo Financ
 
 ---
 
-## Core Features (Plain English)
+## Core Features 
 
 - **Realistic Backtesting (Walk-Forward Optimization)**: Instead of cheating by testing rules on the same data used to create them, we split history into monthly segments. We find the best rules on a "training" segment (in-sample) and test them on the next "testing" segment (out-of-sample).
 - **Super-Fast Simulations (Vectorization)**: Traditional backtesters test day-by-day in a slow loop. ggTrader uses the **vectorbt** library to calculate your entire portfolio's performance all at once, letting you run years of history across hundreds of stocks in seconds.
