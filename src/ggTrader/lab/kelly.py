@@ -79,3 +79,48 @@ def extract_trades(entries: pd.DataFrame, exits: pd.DataFrame, close: pd.DataFra
     if trades.empty:
         return trades
     return trades.sort_values(["exit_time", "symbol"]).reset_index(drop=True)
+
+
+def expanding_kelly_fraction(trades: pd.DataFrame, min_trades: int = 10) -> pd.Series:
+    """Pooled expanding Kelly fraction f* = W - (1-W)/R, one value per row of
+    `trades` (must be pre-sorted by exit_time ascending, as extract_trades
+    returns). f*.iloc[i] is computed only from trades[0:i+1] — it never
+    looks at a later trade.
+
+    NaN until `min_trades` trades have closed, or while there are zero wins
+    or zero losses in the pool so far (the payoff ratio R is undefined
+    without both).
+    """
+    if trades.empty:
+        return pd.Series(dtype=float)
+    ret = trades["ret"].to_numpy()
+    is_win = ret > 0
+    is_loss = ret < 0
+    n = np.arange(1, len(ret) + 1)
+    win_count = np.cumsum(is_win)
+    loss_count = np.cumsum(is_loss)
+    win_rate = win_count / n
+    sum_win = np.cumsum(np.where(is_win, ret, 0.0))
+    sum_loss = np.cumsum(np.where(is_loss, -ret, 0.0))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        avg_win = np.where(win_count > 0, sum_win / np.maximum(win_count, 1), np.nan)
+        avg_loss = np.where(loss_count > 0, sum_loss / np.maximum(loss_count, 1), np.nan)
+        payoff_ratio = avg_win / avg_loss
+        f_star = win_rate - (1.0 - win_rate) / payoff_ratio
+    valid = (n >= min_trades) & (win_count > 0) & (loss_count > 0)
+    f_star = np.where(valid, f_star, np.nan)
+    return pd.Series(f_star, index=trades["exit_time"], name="f_star")
+
+
+def kelly_fraction_asof(f_star: pd.Series, asof: pd.Timestamp) -> float:
+    """f* using only trades closed strictly before `asof`; NaN if none qualify.
+
+    `f_star` must be indexed by exit_time, sorted ascending (the output of
+    expanding_kelly_fraction).
+    """
+    if f_star.empty:
+        return float("nan")
+    pos = f_star.index.searchsorted(asof, side="left")
+    if pos == 0:
+        return float("nan")
+    return float(f_star.iloc[pos - 1])
