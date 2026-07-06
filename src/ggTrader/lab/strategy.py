@@ -27,6 +27,7 @@ class LabConfig:
     skip: int = 21  # most-recent bars excluded (12-1 momentum)
     min_history_bars: int = 400  # required non-NaN closes to be eligible
     max_stocks: int | None = None  # cap the per-rebalance universe (deterministic)
+    max_sector_count: int | None = None  # maximum assets to pick per GICS sector
 
 
 class Strategy(Protocol):
