@@ -2,9 +2,9 @@
 
 import numpy as np
 import pandas as pd
-from ggTrader.lab.strategies.ensemble_kelly import EnsembleKellySignal
 
 from ggTrader.lab.strategies.ensemble import EnsembleSignal
+from ggTrader.lab.strategies.ensemble_kelly import EnsembleKellySignal
 from ggTrader.lab.strategy import LabConfig, SignalTargets
 
 
@@ -108,3 +108,31 @@ class TestEnsembleKellySignal:
         assert len(result) == 3
         for targets in result.values():
             assert targets.sizes is not None
+
+
+def test_registered_in_strategy_registry():
+    from ggTrader.lab.strategies import STRATEGY_REGISTRY
+
+    assert "ensemble_kelly" in STRATEGY_REGISTRY
+    assert STRATEGY_REGISTRY["ensemble_kelly"] is EnsembleKellySignal
+
+
+def test_registered_in_signal_strategy_names():
+    from ggTrader.lab.strategies.registry import signal_strategy_names
+
+    assert "ensemble_kelly" in signal_strategy_names()
+
+
+def test_build_signal_strategy():
+    from ggTrader.lab.strategies.signals import build_signal_strategy
+
+    strat = build_signal_strategy("ensemble_kelly", LabConfig())
+    assert strat.name == "ensemble_kelly"
+
+
+def test_cli_accepts_ensemble_kelly():
+    from ggTrader.lab.cli import build_arg_parser
+
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "ensemble_kelly"])
+    assert args.strategy == "ensemble_kelly"

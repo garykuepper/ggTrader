@@ -5,6 +5,7 @@ from typing import Any
 from .conviction import ConvictionBBSignal
 from .ensemble import EnsembleConvictionSignal, EnsembleSignal
 from .ensemble_ic import EnsembleICSignal
+from .ensemble_kelly import EnsembleKellySignal
 from .momentum import CrossSectionalMomentum, DualMomentum
 from .registry import (
     all_strategy_names,
@@ -33,6 +34,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "mtf_reversion": MultiTimeframeReversionSignal,
     "ensemble": EnsembleSignal,
     "ensemble_ic": EnsembleICSignal,
+    "ensemble_kelly": EnsembleKellySignal,
     "conviction_bb": ConvictionBBSignal,
     "ensemble_conviction": EnsembleConvictionSignal,
     "xs_momentum": CrossSectionalMomentum,
@@ -57,6 +59,7 @@ __all__ = [
     "MultiTimeframeReversionSignal",
     "EnsembleSignal",
     "EnsembleICSignal",
+    "EnsembleKellySignal",
     "ConvictionBBSignal",
     "EnsembleConvictionSignal",
 ]
