@@ -4,7 +4,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ggTrader.lab.kelly import expanding_kelly_fraction, extract_trades, kelly_fraction_asof
+from ggTrader.lab.kelly import (
+    expanding_kelly_fraction,
+    extract_trades,
+    kelly_fraction_asof,
+    kelly_sizes,
+)
 
 
 def _idx(n, start="2020-01-01"):
@@ -123,3 +128,100 @@ class TestKellyFractionAsof:
 
     def test_empty_series_returns_nan(self):
         assert np.isnan(kelly_fraction_asof(pd.Series(dtype=float), pd.Timestamp("2020-01-01")))
+
+
+class TestKellySizes:
+    def test_nan_where_no_entry(self):
+        idx = _idx(5)
+        entries = pd.DataFrame({"A": [True, False, False, False, False]}, index=idx)
+        exits = pd.DataFrame({"A": [False, True, False, False, False]}, index=idx)
+        close = pd.DataFrame({"A": [100.0, 101, 102, 103, 104]}, index=idx)
+        sizes = kelly_sizes(
+            entries, exits, close, kelly_multiplier=0.5, base_size=0.03, max_size=0.05
+        )
+        no_entry = ~entries
+        assert sizes[no_entry].isna().all().all()
+
+    def test_falls_back_to_base_size_without_measurable_edge(self):
+        idx = _idx(5)
+        entries = pd.DataFrame({"A": [True, False, False, False, False]}, index=idx)
+        exits = pd.DataFrame({"A": [False, True, False, False, False]}, index=idx)
+        close = pd.DataFrame({"A": [100.0, 101, 102, 103, 104]}, index=idx)
+        sizes = kelly_sizes(
+            entries, exits, close, kelly_multiplier=0.5, base_size=0.03, max_size=0.05
+        )
+        assert sizes.at[idx[0], "A"] == pytest.approx(0.03)
+
+    def test_capped_at_max_size(self):
+        idx = _idx(40)
+        entries = pd.DataFrame({"A": [False] * 40}, index=idx)
+        exits = pd.DataFrame({"A": [False] * 40}, index=idx)
+        prices = [100.0] * 40
+        # 6 winning round-trips (+10%) then 4 losing round-trips (-5%).
+        for i in range(10):
+            entry_bar, exit_bar = 2 * i, 2 * i + 1
+            entries.iloc[entry_bar, 0] = True
+            exits.iloc[exit_bar, 0] = True
+            prices[exit_bar] = 110.0 if i < 6 else 95.0
+        entries.iloc[35, 0] = True
+        exits.iloc[36, 0] = True
+        close = pd.DataFrame({"A": prices}, index=idx)
+
+        sizes = kelly_sizes(
+            entries,
+            exits,
+            close,
+            kelly_multiplier=5.0,
+            base_size=0.03,
+            max_size=0.05,
+            min_trades=3,
+        )
+        # W=0.6, avg_win=0.10, avg_loss=0.05, R=2 -> f*=0.4; k*f*=2.0, must cap.
+        assert sizes.at[idx[35], "A"] == pytest.approx(0.05)
+
+
+class TestKellySizesCausality:
+    def test_future_trades_do_not_affect_earlier_sizes(self):
+        """Appending more trades/bars to the end of the data must not change
+        the Kelly size computed for an earlier entry — the no-look-ahead
+        property this sizing mechanism relies on for honest walk-forward."""
+        idx = _idx(30)
+        entries = pd.DataFrame({"A": [False] * 30}, index=idx)
+        exits = pd.DataFrame({"A": [False] * 30}, index=idx)
+        prices = [100.0] * 30
+        for i in range(8):
+            entry_bar, exit_bar = 2 * i, 2 * i + 1
+            entries.iloc[entry_bar, 0] = True
+            exits.iloc[exit_bar, 0] = True
+            prices[exit_bar] = 110.0 if i % 2 == 0 else 95.0
+        entries.iloc[20, 0] = True
+        exits.iloc[21, 0] = True
+        close_short = pd.DataFrame({"A": prices}, index=idx)
+        sizes_short = kelly_sizes(
+            entries,
+            exits,
+            close_short,
+            kelly_multiplier=0.5,
+            base_size=0.03,
+            max_size=0.05,
+            min_trades=3,
+        )
+
+        idx_long = _idx(38)
+        entries_long = entries.reindex(idx_long, fill_value=False)
+        exits_long = exits.reindex(idx_long, fill_value=False)
+        prices_long = prices + [100.0] * 8
+        entries_long.iloc[36, 0] = True
+        exits_long.iloc[37, 0] = True
+        prices_long[37] = 50.0  # a huge future loss
+        close_long = pd.DataFrame({"A": prices_long}, index=idx_long)
+        sizes_long = kelly_sizes(
+            entries_long,
+            exits_long,
+            close_long,
+            kelly_multiplier=0.5,
+            base_size=0.03,
+            max_size=0.05,
+            min_trades=3,
+        )
+        assert sizes_long.at[idx[20], "A"] == pytest.approx(sizes_short.at[idx[20], "A"])

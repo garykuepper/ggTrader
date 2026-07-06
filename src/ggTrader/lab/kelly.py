@@ -124,3 +124,37 @@ def kelly_fraction_asof(f_star: pd.Series, asof: pd.Timestamp) -> float:
     if pos == 0:
         return float("nan")
     return float(f_star.iloc[pos - 1])
+
+
+def kelly_sizes(
+    entries: pd.DataFrame,
+    exits: pd.DataFrame,
+    close: pd.DataFrame,
+    *,
+    kelly_multiplier: float,
+    base_size: float,
+    max_size: float,
+    min_trades: int = 10,
+) -> pd.DataFrame:
+    """Per-bar, per-symbol position size (time x symbol) for SignalTargets.sizes.
+
+    NaN everywhere `entries` is False. Where `entries` is True:
+    `kelly_multiplier * f*`, capped at `max_size`, using only the causal
+    pooled expanding Kelly fraction as of that entry's time. Falls back to
+    `base_size` whenever there isn't yet a positive measurable edge (fewer
+    than `min_trades` closed trades, or f* <= 0).
+    """
+    trades = extract_trades(entries, exits, close)
+    f_star = expanding_kelly_fraction(trades, min_trades=min_trades)
+
+    sizes = pd.DataFrame(np.nan, index=entries.index, columns=entries.columns)
+    for col in entries.columns:
+        entry_times = entries.index[entries[col].to_numpy()]
+        for t in entry_times:
+            f = kelly_fraction_asof(f_star, t)
+            if np.isnan(f) or f <= 0:
+                size = base_size
+            else:
+                size = min(kelly_multiplier * f, max_size)
+            sizes.at[t, col] = size
+    return sizes
