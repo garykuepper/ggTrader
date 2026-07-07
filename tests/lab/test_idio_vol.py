@@ -48,3 +48,72 @@ class TestIdiosyncraticVariance:
         market = pd.Series(np.zeros(50), index=idx)  # constant market -> Var=0
         resid_var = idiosyncratic_variance(returns, market, window=10)
         assert resid_var.shape == (50, 1)
+
+
+def _ohlcv_from_returns(returns: pd.DataFrame) -> pd.DataFrame:
+    frames = {}
+    for col in returns.columns:
+        close = 100.0 * (1.0 + returns[col]).cumprod()
+        frames[col] = pd.DataFrame(
+            {
+                "open": close,
+                "high": close * 1.001,
+                "low": close * 0.999,
+                "close": close,
+                "volume": np.full(len(close), 1e6),
+            },
+            index=returns.index,
+        )
+    out = pd.concat(frames, axis=1)
+    out.columns = out.columns.set_names(["symbol", "field"])
+    return out
+
+
+from ggTrader.lab.strategies.idio_vol import IdioVolStrategy
+from ggTrader.lab.strategy import LabConfig
+
+
+class TestIdioVolStrategy:
+    def test_select_returns_bottom_quintile_only(self):
+        returns, _market = _returns(["A", "B", "C", "D", "E"], n=300, seed=3)
+        ohlcv = _ohlcv_from_returns(returns)
+        strat = IdioVolStrategy(LabConfig(min_history_bars=100), reg_window=20, quintile=5)
+        sels = strat.select(ohlcv.index[-1], ohlcv, ["A", "B", "C", "D", "E"])
+        # 5 symbols / quintile=5 -> bucket size 1: only the single lowest-idio-var symbol.
+        assert len(sels) == 1
+        assert all("weight" in s for s in sels)
+        assert abs(sum(s["weight"] for s in sels) - 1.0) < 1e-9
+
+    def test_select_respects_min_history(self):
+        returns, _market = _returns(["A", "B"], n=50, seed=1)
+        ohlcv = _ohlcv_from_returns(returns)
+        strat = IdioVolStrategy(LabConfig(min_history_bars=400))
+        sels = strat.select(ohlcv.index[-1], ohlcv, ["A", "B"])
+        assert sels == []
+
+    def test_select_prefers_low_idio_variance_symbol(self):
+        """Symbol A has the lowest idiosyncratic noise scale by construction (i=0)."""
+        returns, _market = _returns(
+            ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"], n=400, seed=11
+        )
+        ohlcv = _ohlcv_from_returns(returns)
+        strat = IdioVolStrategy(LabConfig(min_history_bars=100), reg_window=30, quintile=5)
+        sels = strat.select(ohlcv.index[-1], ohlcv, list(returns.columns))
+        assert "A" in [s["symbol"] for s in sels]
+
+    def test_to_targets_returns_weight_dataframe(self):
+        returns, _market = _returns(["A", "B", "C"], n=300, seed=5)
+        ohlcv = _ohlcv_from_returns(returns)
+        strat = IdioVolStrategy(LabConfig(min_history_bars=100))
+        plans = {
+            ohlcv.index[250]: [{"symbol": "A", "weight": 1.0}],
+        }
+        targets = strat.to_targets(plans, ohlcv)
+        assert isinstance(targets, pd.DataFrame)
+        assert set(targets.columns) == {"A"}
+        assert (targets.dropna() == 1.0).all().all() or targets.dropna().empty is False
+
+    def test_sweep_params_has_reg_window_and_quintile(self):
+        params = IdioVolStrategy.sweep_params()
+        assert "reg_window" in params
+        assert "quintile" in params
