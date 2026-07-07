@@ -9,6 +9,7 @@ from .ensemble_kelly import EnsembleKellySignal
 from .momentum import CrossSectionalMomentum, DualMomentum
 from .registry import (
     all_strategy_names,
+    apply_sector_constraints,
     build_strategy,
     signal_registry,
     signal_strategy_names,
@@ -46,6 +47,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
 __all__ = [
     "STRATEGY_REGISTRY",
     "all_strategy_names",
+    "apply_sector_constraints",
     "build_strategy",
     "signal_registry",
     "signal_strategy_names",

@@ -39,3 +39,27 @@ def build_strategy(name: str, cfg: LabConfig) -> Any:
     if name not in reg:
         raise ValueError(f"Unknown strategy {name!r}. Available: {tuple(reg)}")
     return reg[name](cfg)
+
+
+def apply_sector_constraints(symbols: list[str], max_sec: int) -> list[str]:
+    """Prune list of symbols to satisfy max_sec limit per GICS sector."""
+    import json
+    from pathlib import Path
+
+    proj_root = Path(__file__).resolve().parents[4]
+    sector_path = proj_root / "data" / "universe" / "sp500_sectors.json"
+    if sector_path.exists():
+        with open(sector_path, "r") as f:
+            sector_map = json.load(f)
+    else:
+        sector_map = {}
+
+    selected = []
+    sector_counts = {}
+    for sym in symbols:
+        sec = sector_map.get(sym, "Unknown")
+        curr_count = sector_counts.get(sec, 0)
+        if curr_count < max_sec:
+            selected.append(sym)
+            sector_counts[sec] = curr_count + 1
+    return selected

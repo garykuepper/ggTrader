@@ -141,10 +141,13 @@ class EnsembleSignal:
 
     def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
         data = data.loc[:asof]
-        return [
-            {"symbol": s, "weight": 0.0}
-            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
-        ]
+        syms = eligible_symbols(data, eligible, self.cfg.min_history_bars)
+        max_sec = self.cfg.max_sector_count
+        if max_sec is not None:
+            from ggTrader.lab.strategies.registry import apply_sector_constraints
+
+            syms = apply_sector_constraints(syms, max_sec)
+        return [{"symbol": s, "weight": 0.0} for s in syms]
 
     def _generate_signals(self, close: pd.DataFrame, volume: pd.DataFrame) -> SignalTargets:
         """Run the active sub-signals, sum entry/exit votes, threshold at min_agree."""

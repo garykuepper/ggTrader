@@ -40,7 +40,20 @@ class CrossSectionalMomentum:
             if past <= 0.0 or not np.isfinite(past) or not np.isfinite(recent):
                 continue
             scores[sym] = recent / past - 1.0
-        ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[: self.cfg.top_n]
+        ranked_all = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
+        if not ranked_all:
+            return []
+
+        # Enforce GICS sector constraints if configured
+        max_sec = self.cfg.max_sector_count
+        if max_sec is not None:
+            from ggTrader.lab.strategies.registry import apply_sector_constraints
+
+            selected_symbols = apply_sector_constraints([sym for sym, _ in ranked_all], max_sec)
+            ranked = [(sym, scores[sym]) for sym in selected_symbols][: self.cfg.top_n]
+        else:
+            ranked = ranked_all[: self.cfg.top_n]
+
         if not ranked:
             return []
         weight = 1.0 / len(ranked)

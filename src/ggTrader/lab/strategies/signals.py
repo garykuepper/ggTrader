@@ -171,6 +171,16 @@ class WfoTournamentSignal:
         if not syms:
             return []
 
+        # Enforce GICS sector constraints if configured
+        max_sec = self.cfg.max_sector_count
+        if max_sec is not None:
+            from ggTrader.lab.strategies.registry import apply_sector_constraints
+
+            syms = apply_sector_constraints(syms, max_sec)
+
+        if not syms:
+            return []
+
         close_all = extract_close(data, syms).ffill()
         is_end = max(1, int(len(close_all) * self.is_fraction))
         close_is = close_all.iloc[:is_end].dropna(axis=1, how="all")

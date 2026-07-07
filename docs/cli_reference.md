@@ -70,6 +70,7 @@ Strategies are divided into two types:
 | `--lookback` | 252 | How many trading days of history the strategy looks back at to calculate momentum (252 days ≈ 1 calendar year). |
 | `--skip` | 21 | How often the strategy updates its portfolio holdings (21 trading days ≈ 1 calendar month). |
 | `--max-stocks` | None | Cap the total number of stocks loaded (useful for running super-fast test runs). |
+| `--max-sector-count` | None | Cap the maximum number of stock holdings selected from any single GICS sector (risk management). |
 
 ### Simulation Modes (Choose One)
 
@@ -122,6 +123,9 @@ ggt lab --strategy dual_momentum --top-n 10 --max-stocks 5
 
 # Run a Walk-Forward Optimization for Nasdaq-100 and MidCap 400 sleeves and blend them
 ggt lab --strategy ensemble --blend "ensemble@nasdaq100,ensemble@midcap400" --eval-start 2021-01-31 --eval-end 2026-05-18
+
+# Run cross-sectional momentum on the S&P 500 while capping holdings to at most 2 per GICS sector
+ggt lab --strategy xs_momentum --max-sector-count 2
 ```
 
 ---

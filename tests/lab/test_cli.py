@@ -46,3 +46,9 @@ def test_blend_is_mutually_exclusive_with_wfo():
     parser = build_arg_parser()
     with pytest.raises(SystemExit):
         parser.parse_args(["--strategy", "ensemble", "--wfo", "--blend", "ensemble@sp500"])
+
+
+def test_parse_max_sector_count():
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "ensemble", "--max-sector-count", "2"])
+    assert args.max_sector_count == 2

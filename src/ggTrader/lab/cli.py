@@ -61,6 +61,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--lookback", type=int, default=252)
     p.add_argument("--skip", type=int, default=21)
     p.add_argument("--max-stocks", type=int, default=None)
+    p.add_argument("--max-sector-count", type=int, default=None)
     mode = p.add_mutually_exclusive_group()
     mode.add_argument(
         "--sweep",
@@ -95,7 +96,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def run_lab(argv: List[str] | None = None) -> str:
     args = build_arg_parser().parse_args(argv)
     cfg = LabConfig(
-        top_n=args.top_n, lookback=args.lookback, skip=args.skip, max_stocks=args.max_stocks
+        top_n=args.top_n,
+        lookback=args.lookback,
+        skip=args.skip,
+        max_stocks=args.max_stocks,
+        max_sector_count=args.max_sector_count,
     )
     univ = args.universe
 
@@ -105,6 +110,7 @@ def run_lab(argv: List[str] | None = None) -> str:
         if args.eval_end
         else pd.Timestamp.now(tz="UTC").normalize()
     )
+
     if args.blend:
         from ggTrader.lab.blend import run_blend
 
