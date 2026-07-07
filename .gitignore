@@ -53,3 +53,6 @@ results/
 
 # Generated MCP ticker cache
 scripts/mcp_cache.json
+
+# Subagent-driven-development scratch (progress ledgers, not project artifacts)
+.superpowers/
