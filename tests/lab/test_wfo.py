@@ -103,6 +103,130 @@ def _tiny_weight_universe_fn(asof, past):
     return sorted(past.columns.get_level_values(0).unique())
 
 
+def _ohlcv_varied_growth(symbols, n, rates):
+    """Like _ohlcv but each symbol grows at its own rate (rates: dict symbol->pct/bar).
+
+    Needed to make selection-dependent tests meaningful: _ohlcv's uniform
+    0.0003/bar growth for every symbol means *which* symbol gets picked never
+    affects the resulting equity curve, so a bug that silently ignores a
+    combo's selection-driving kwarg would go undetected. Distinct growth
+    rates per symbol make the equity curve depend on which symbols were
+    actually selected.
+    """
+    idx = pd.date_range("2014-01-01", periods=n, freq="B", tz="UTC")
+    frames = {}
+    for s in symbols:
+        rate = rates[s]
+        close = 100.0 * (1 + rate * np.arange(n))
+        frames[s] = pd.DataFrame(
+            {
+                "open": close * 0.999,
+                "high": close * 1.005,
+                "low": close * 0.995,
+                "close": close,
+                "volume": np.full(n, 1e6),
+            },
+            index=idx,
+        )
+    return pd.concat(frames, axis=1)
+
+
+class _TinyWeightKwarg:
+    """Weight strategy whose selection depends on a non-LabConfig constructor
+    kwarg (``multiplier``), mirroring IdioVolStrategy's reg_window/quintile.
+
+    This is the regression fixture for the bug where _sweep_fold_weights
+    built every grid combo's strategy from only the merged LabConfig,
+    silently dropping any sweep_params() key that isn't top_n/lookback/skip
+    (e.g. IdioVolStrategy's reg_window/quintile) — so every combo in a
+    real idio_vol WFO sweep was constructed with identical defaults
+    regardless of the grid.
+    """
+
+    name = "tinyweightkwarg"
+    target_kind = "weights"
+
+    def __init__(self, cfg, multiplier=1):
+        self.cfg = cfg
+        self.multiplier = multiplier
+
+    @classmethod
+    def sweep_params(cls) -> dict:
+        return {"multiplier": [1, -1]}
+
+    def select(self, asof, data, eligible):
+        # multiplier=1 picks the lowest-growth symbol, multiplier=-1 the
+        # highest-growth symbol (alphabetical order == growth-rate order in
+        # the test fixture below), so different multipliers must select
+        # different symbols and thus produce different equity curves.
+        ordered = sorted(eligible, reverse=self.multiplier < 0)
+        chosen = ordered[: self.cfg.top_n]
+        if not chosen:
+            return []
+        w = 1.0 / len(chosen)
+        return [{"symbol": s, "weight": w} for s in chosen]
+
+    def to_targets(self, plans, data):
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        targets = pd.DataFrame(np.nan, index=data.index, columns=symbols)
+        for asof in sorted(plans):
+            forward = data.index[data.index > asof]
+            if len(forward) == 0:
+                continue
+            bar = forward[0]
+            targets.loc[bar, symbols] = 0.0
+            for sel in plans[asof]:
+                targets.loc[bar, sel["symbol"]] = float(sel["weight"])
+        return targets
+
+
+def test_sweep_fold_weights_threads_non_labconfig_kwargs():
+    """Regression test: combo_params keys outside top_n/lookback/skip (e.g.
+    IdioVolStrategy's reg_window/quintile) must reach the strategy
+    constructor, not be silently dropped in favor of the class default.
+    """
+    from ggTrader.lab.wfo import _sweep_fold_weights
+
+    symbols = ["A", "B", "C"]
+    rates = {"A": 0.0001, "B": 0.0006, "C": 0.0012}
+    n = 300
+    ohlcv = _ohlcv_varied_growth(symbols, n, rates)
+    cfg = LabConfig(top_n=1, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+    }
+    window_start = ohlcv.index[100]
+    window_end = ohlcv.index[250]
+    # Only the extra kwarg varies across combos; top_n is constant so any
+    # difference in outcome is attributable solely to `multiplier` having
+    # been threaded through the constructor.
+    grid = [{"multiplier": 1}, {"multiplier": -1}]
+
+    results, all_eq = _sweep_fold_weights(
+        "tinyweightkwarg",
+        _TinyWeightKwarg,
+        cfg,
+        ohlcv,
+        window_start,
+        window_end,
+        base_config,
+        grid,
+        _tiny_weight_universe_fn,
+    )
+
+    assert len(results) == 2
+    eq_curves = list(all_eq.values())
+    assert len(eq_curves) == 2
+    # If `multiplier` were never forwarded (the bug), both combos would fall
+    # back to the same default and produce byte-identical equity curves.
+    assert not eq_curves[0].equals(eq_curves[1])
+    total_returns = sorted(r["total_return_pct"] for r in results)
+    assert total_returns[0] != pytest.approx(total_returns[1])
+
+
 def test_sweep_fold_weights_basic():
     from ggTrader.lab.wfo import _sweep_fold_weights
 

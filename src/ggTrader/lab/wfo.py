@@ -29,6 +29,13 @@ MIN_LIVE_STABILITY = 1
 #: than a small perturbation. Excluded from the NDH plateau neighborhood.
 REGIME_PARAMS: frozenset = frozenset({"min_agree", "min_agree_exit"})
 
+#: combo_params keys that are absorbed into the merged LabConfig instance
+#: passed to weight-strategy constructors in _sweep_fold_weights. Any other
+#: key present in a combo (e.g. IdioVolStrategy's reg_window/quintile) is a
+#: constructor kwarg and must be forwarded separately, or it's silently
+#: dropped and every combo ends up built with identical defaults.
+LAB_CONFIG_COMBO_KEYS: frozenset = frozenset({"top_n", "lookback", "skip"})
+
 
 # ── WFE & Circuit Breaker ──────────────────────────────────────────────
 
@@ -327,7 +334,8 @@ def _sweep_fold_weights(
             max_stocks=cfg.max_stocks,
             max_sector_count=cfg.max_sector_count,
         )
-        strat = strategy_cls(combo_cfg)
+        extra_kwargs = {k: v for k, v in combo_params.items() if k not in LAB_CONFIG_COMBO_KEYS}
+        strat = strategy_cls(combo_cfg, **extra_kwargs)
         plans: Dict[pd.Timestamp, Any] = {}
         for asof in dates:
             past = ohlcv_window.loc[:asof]
