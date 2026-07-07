@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 
 from ggTrader.lab.strategies.indicators import extract_open, overnight_gap_signals
+from ggTrader.lab.strategies.signals import OvernightGapReversionSignal
+from ggTrader.lab.strategy import LabConfig, SignalTargets
 
 
 def _idx(n, start="2020-01-01"):
@@ -92,3 +94,47 @@ class TestOvernightGapSignals:
         entries_loose, _ = overnight_gap_signals(close, open_, 20, -1.0, -0.5)
         entries_strict, _ = overnight_gap_signals(close, open_, 20, -2.5, -0.5)
         assert entries_loose["A"].sum() >= entries_strict["A"].sum()
+
+
+def test_overnight_gap_select_returns_eligible():
+    ohlcv = _ohlcv(["A", "B", "C"], n=500)
+    strat = OvernightGapReversionSignal(LabConfig(min_history_bars=400))
+    sels = strat.select(ohlcv.index[-1], ohlcv, ["A", "B", "C"])
+    assert [s["symbol"] for s in sels] == ["A", "B", "C"]
+    assert all("gap_lookback" in s and "gap_z_entry" in s and "gap_z_exit" in s for s in sels)
+
+
+def test_overnight_gap_select_respects_min_history():
+    ohlcv = _ohlcv(["A"], n=200)
+    strat = OvernightGapReversionSignal(LabConfig(min_history_bars=400))
+    sels = strat.select(ohlcv.index[-1], ohlcv, ["A"])
+    assert sels == []
+
+
+def test_overnight_gap_to_targets_returns_signal_targets():
+    ohlcv = _ohlcv(["A", "B"], n=500)
+    strat = OvernightGapReversionSignal(LabConfig(min_history_bars=100))
+    plans = {
+        ohlcv.index[300]: [
+            {
+                "symbol": "A",
+                "weight": 0.0,
+                "gap_lookback": 20,
+                "gap_z_entry": -1.5,
+                "gap_z_exit": -0.5,
+            },
+            {
+                "symbol": "B",
+                "weight": 0.0,
+                "gap_lookback": 20,
+                "gap_z_entry": -1.5,
+                "gap_z_exit": -0.5,
+            },
+        ],
+    }
+    result = strat.to_targets(plans, ohlcv)
+    assert isinstance(result, SignalTargets)
+    assert result.entries.shape == result.exits.shape
+    assert set(result.entries.columns) == {"A", "B"}
+    assert result.entries.dtypes.eq(bool).all()
+    assert result.exits.dtypes.eq(bool).all()

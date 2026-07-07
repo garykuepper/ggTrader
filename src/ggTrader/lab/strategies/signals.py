@@ -13,9 +13,11 @@ from ggTrader.lab.strategies.indicators import (
     eligible_symbols,
     ema_signals,
     extract_close,
+    extract_open,
     extract_volume,
     macd_signals,
     mtf_signals,
+    overnight_gap_signals,
     rsi_signals,
     volume_bb_signals,
 )
@@ -389,6 +391,60 @@ class RsiReversionSignal:
             ent, ext = cache[key]
             result[combo_name(self.name, combo)] = SignalTargets(entries=ent, exits=ext)
         return result
+
+
+class OvernightGapReversionSignal:
+    """Overnight-gap fade: enter after an extreme overnight gap-down Z-score.
+
+    Entry: gap Z-score (open vs. prior close, rolling-normalized) crosses below
+    gap_z_entry — an unusually large overnight gap-down (capitulation open).
+    Exit: gap Z-score normalizes back above gap_z_exit.
+    """
+
+    name = "overnight_gap"
+    target_kind = "signals"
+
+    def __init__(
+        self,
+        cfg: LabConfig,
+        gap_lookback: int = 20,
+        gap_z_entry: float = -1.5,
+        gap_z_exit: float = -0.5,
+    ) -> None:
+        self.cfg = cfg
+        self.gap_lookback = gap_lookback
+        self.gap_z_entry = gap_z_entry
+        self.gap_z_exit = gap_z_exit
+
+    @classmethod
+    def sweep_params(cls) -> dict[str, list]:
+        return {
+            "gap_lookback": [10, 20, 30],
+            "gap_z_entry": [-2.5, -2.0, -1.5],
+            "gap_z_exit": [-1.0, -0.5, 0.0],
+        }
+
+    def select(self, asof: pd.Timestamp, data: pd.DataFrame, eligible: List[str]) -> Plan:
+        data = data.loc[:asof]
+        return [
+            {
+                "symbol": s,
+                "weight": 0.0,
+                "gap_lookback": self.gap_lookback,
+                "gap_z_entry": self.gap_z_entry,
+                "gap_z_exit": self.gap_z_exit,
+            }
+            for s in eligible_symbols(data, eligible, self.cfg.min_history_bars)
+        ]
+
+    def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        close = extract_close(data, symbols)
+        open_ = extract_open(data, symbols)
+        entries, exits = overnight_gap_signals(
+            close, open_, self.gap_lookback, self.gap_z_entry, self.gap_z_exit
+        )
+        return SignalTargets(entries=entries, exits=exits)
 
 
 class MACDDivergenceSignal:
