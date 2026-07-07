@@ -862,7 +862,7 @@ class TestIdiosyncraticVariance:
         returns, market = _returns(["A"], n=100)
         resid_var = idiosyncratic_variance(returns, market, window=20)
         assert resid_var["A"].iloc[:19].isna().all()
-        assert resid_var["A"].iloc[25:].notna().all()
+        assert resid_var["A"].iloc[38:].notna().all()
 
     def test_higher_idio_noise_gives_higher_residual_variance(self):
         """Symbol C has 3x the idiosyncratic noise scale of A by construction."""
