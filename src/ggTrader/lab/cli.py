@@ -178,8 +178,6 @@ def run_lab(argv: List[str] | None = None) -> str:
     if args.wfo:
         from ggTrader.lab.wfo import run_wfo
 
-        if args.strategy not in SIGNAL_STRATEGY_NAMES:
-            raise SystemExit(f"--wfo only supports signal strategies: {SIGNAL_STRATEGY_NAMES}")
         print(f"WFO: {args.strategy} | {len(grid)} param combos", flush=True)
         result = run_wfo(
             args.strategy,
@@ -192,6 +190,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             market=args.market,
             base_config=dict(base_config),
             grid=grid,
+            universe_fn=lambda asof, past: eligible_at(asof, past, cfg, universe=univ)[0],
         )
         return result.table
 

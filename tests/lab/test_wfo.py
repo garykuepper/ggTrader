@@ -849,7 +849,22 @@ def test_run_wfo_weight_strategy_without_universe_fn_raises():
 
     with pytest.raises(ValueError, match="universe_fn"):
         run_wfo(
-            "tinyweight", _TinyWeight, cfg, ohlcv, spy_close,
-            str(ohlcv.index[0].date()), str(ohlcv.index[-1].date()),
-            "test", base_config, grid,
+            "tinyweight",
+            _TinyWeight,
+            cfg,
+            ohlcv,
+            spy_close,
+            str(ohlcv.index[0].date()),
+            str(ohlcv.index[-1].date()),
+            "test",
+            base_config,
+            grid,
         )
+
+
+def test_cli_wfo_accepts_weight_strategy():
+    """--wfo must accept a weight strategy name (xs_momentum), not just signals."""
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "xs_momentum", "--wfo"])
+    assert args.strategy == "xs_momentum"
+    assert args.wfo is True
