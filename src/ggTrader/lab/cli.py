@@ -8,6 +8,7 @@ from typing import List
 import pandas as pd
 
 from ggTrader.lab.data import (
+    CRYPTO_BASE_CONFIG,
     DEFAULT_UNIVERSE,
     STOCK_BASE_CONFIG,
     eligible_at,
@@ -111,6 +112,8 @@ def run_lab(argv: List[str] | None = None) -> str:
         else pd.Timestamp.now(tz="UTC").normalize()
     )
 
+    base_config = CRYPTO_BASE_CONFIG if args.market == "crypto" else STOCK_BASE_CONFIG
+
     if args.blend:
         from ggTrader.lab.blend import run_blend
 
@@ -121,7 +124,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             str(eval_start.date()),
             str(eval_end.date()),
             market=args.market,
-            base_config=dict(STOCK_BASE_CONFIG),
+            base_config=dict(base_config),
             target_vol=args.target_vol,
             window=args.blend_window,
             max_leverage=args.max_leverage,
@@ -167,7 +170,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             eval_start=str(eval_start.date()),
             eval_end=str(eval_end.date()),
             market=args.market,
-            base_config=dict(STOCK_BASE_CONFIG),
+            base_config=dict(base_config),
             grid=grid,
             universe=univ,
         )
@@ -187,7 +190,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             eval_start=str(eval_start.date()),
             eval_end=str(eval_end.date()),
             market=args.market,
-            base_config=dict(STOCK_BASE_CONFIG),
+            base_config=dict(base_config),
             grid=grid,
         )
         return result.table
@@ -206,7 +209,7 @@ def run_lab(argv: List[str] | None = None) -> str:
         market=args.market,
         freq="monthly",
         universe_fn=lambda asof, past: eligible_at(asof, past, cfg, universe=univ)[0],
-        base_config=dict(STOCK_BASE_CONFIG),
+        base_config=dict(base_config),
     )
     print(f"lab run complete: {run_id}")
     return run_id

@@ -35,6 +35,22 @@ STOCK_BASE_CONFIG: dict[str, Any] = {
     "BENCHMARK_SYMBOL": "SPY",
 }
 
+#: Default research config for daily-bar cryptocurrencies (low-volume baseline).
+CRYPTO_BASE_CONFIG: dict[str, Any] = {
+    "START_CASH": 10000.0,
+    "PORTFOLIO_SHARE": 1.0,
+    "FEES": 0.0040,  # 0.40% baseline taker fee (Kraken Pro <$10k tier)
+    "SLIPPAGE": 0.0015,  # 0.15% baseline slippage / bid-ask spread penalty
+    "FREQ": "1d",
+    "SIGNAL_POSITION_SIZE": 0.03,
+    "USE_CASH_SHARING": True,  # Default to cash sharing for portfolio-level routing
+    "TRAIN_METRIC": "composite",
+    "MIN_CLOSED_TRADES_TRAIN": 0,
+    "MIN_TRADES_PER_TRAIN_FOLD": 8,
+    "MAX_TRAIN_DRAWDOWN_PCT": 75,
+    "BENCHMARK_SYMBOL": "BTC",
+}
+
 DEFAULT_UNIVERSE = "sp500"
 
 

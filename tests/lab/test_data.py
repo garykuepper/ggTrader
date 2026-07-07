@@ -108,3 +108,11 @@ def test_fetch_stock_ohlcv_returns_multiindex_frame():
     assert df.columns.names == ["symbol", "field"]
     assert "close" in df["SPY"].columns
     assert len(df) > 20
+
+
+def test_crypto_base_config_exists_and_has_low_volume_defaults():
+    from ggTrader.lab.data import CRYPTO_BASE_CONFIG
+
+    assert CRYPTO_BASE_CONFIG["FEES"] == 0.0040
+    assert CRYPTO_BASE_CONFIG["SLIPPAGE"] == 0.0015
+    assert CRYPTO_BASE_CONFIG["BENCHMARK_SYMBOL"] == "BTC"

@@ -52,3 +52,9 @@ def test_parse_max_sector_count():
     parser = build_arg_parser()
     args = parser.parse_args(["--strategy", "ensemble", "--max-sector-count", "2"])
     assert args.max_sector_count == 2
+
+
+def test_arg_parser_market_crypto():
+    p = build_arg_parser()
+    args = p.parse_args(["--strategy", "xs_momentum", "--market", "crypto"])
+    assert args.market == "crypto"
