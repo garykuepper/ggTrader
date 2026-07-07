@@ -79,6 +79,13 @@ If you don't specify any of these flags, the lab runs a single simulation using 
 |---|---|---|
 | `--sweep` | **Parameter Sweep (Grid Search)** | Tests a grid of different parameter combinations (e.g. testing RSI thresholds of 20, 25, 30, and 35) to find which setting was the most profitable. |
 | `--wfo` | **Walk-Forward Optimization** | Simulates a realistic trading setup where the parameters are continuously re-optimized on a rolling training block of past data and then tested on a subsequent test block. |
+| `--blend` | **Portfolio Sleeve Blending** | Blends multiple independent strategy@universe sleeves (e.g. `ensemble@sp500,ensemble@midcap400`) using rolling inverse-volatility to target-volatility scaling. |
+
+#### Portfolio Blending Parameters
+When running a `--blend` optimization, you can customize the portfolio combination overlay using:
+- `--target-vol`: The annualized target volatility for the blended portfolio (default: `0.068` or 6.8%).
+- `--blend-window`: The lookback window in days for computing sleeve covariance and returns volatility (default: `60` days).
+- `--max-leverage`: Capping the portfolio leverage scale (default: `2.0` or 200%).
 
 #### Customizing your Sweep range
 If you are running a `--sweep`, you can override the default parameter settings using the `--sweep-param` flag.
@@ -112,6 +119,9 @@ ggt lab --strategy xs_momentum --eval-start 2023-01-01 --eval-end 2024-12-31
 
 # Run a quick diagnostic test on just 10 stocks capped at 5 total positions
 ggt lab --strategy dual_momentum --top-n 10 --max-stocks 5
+
+# Run a Walk-Forward Optimization for Nasdaq-100 and MidCap 400 sleeves and blend them
+ggt lab --strategy ensemble --blend "ensemble@nasdaq100,ensemble@midcap400" --eval-start 2021-01-31 --eval-end 2026-05-18
 ```
 
 ---
