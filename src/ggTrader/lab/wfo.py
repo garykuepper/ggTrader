@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, NamedTuple, Type
+from typing import Any, Callable, Dict, List, NamedTuple, Type
 
 import numpy as np
 import pandas as pd
@@ -14,6 +14,8 @@ from ggTrader.lab.metrics import curve_stats
 from ggTrader.lab.simulate import simulate_signals
 from ggTrader.lab.strategy import LabConfig
 from ggTrader.lab.sweep import build_combo_lookup, combo_name, split_params
+
+UniverseFn = Callable[[pd.Timestamp, pd.DataFrame], List[str]]
 
 TRAIN_MONTHS = 12
 TEST_MONTHS = 3
@@ -277,6 +279,80 @@ def _sweep_fold(
         metrics = curve_stats(eq_scaled)
         combo_params = combo_lookup[key]
         results.append({"combo": key, "params": combo_params, **metrics})
+    return results, all_eq
+
+
+def _sweep_fold_weights(
+    strategy_name: str,
+    strategy_cls: Type,
+    cfg: LabConfig,
+    ohlcv: pd.DataFrame,
+    window_start: pd.Timestamp,
+    window_end: pd.Timestamp,
+    base_config: Dict[str, Any],
+    grid: List[Dict[str, Any]],
+    universe_fn: UniverseFn,
+) -> tuple[List[Dict[str, Any]], Dict[str, pd.Series]]:
+    """Weight-strategy analog of _sweep_fold: plan + simulate every combo on one window.
+
+    Mirrors sweep.py's weight branch (run_sweep), scoped to [window_start,
+    window_end] instead of the full eval span, using a caller-supplied
+    universe_fn (the same UniverseFn protocol harness.py's walkforward() uses)
+    instead of a hardcoded universe string.
+    """
+    from ggTrader.lab.data import rebalance_dates
+    from ggTrader.lab.simulate import simulate_weights
+    from ggTrader.lab.strategies.indicators import extract_close
+
+    ohlcv_window = ohlcv.loc[:window_end]
+    symbols = sorted(ohlcv_window.columns.get_level_values(0).unique())
+    prices = extract_close(ohlcv_window, symbols)
+
+    dates = rebalance_dates(ohlcv_window.index, window_start, window_end)
+    if not dates:
+        return [], {}
+
+    all_targets: Dict[str, pd.DataFrame] = {}
+    for combo_params in grid:
+        merged = {
+            "top_n": cfg.top_n,
+            "lookback": cfg.lookback,
+            "skip": cfg.skip,
+            **combo_params,
+        }
+        combo_cfg = LabConfig(
+            top_n=int(merged.get("top_n", cfg.top_n)),
+            lookback=int(merged.get("lookback", cfg.lookback)),
+            skip=int(merged.get("skip", cfg.skip)),
+            min_history_bars=cfg.min_history_bars,
+            max_stocks=cfg.max_stocks,
+            max_sector_count=cfg.max_sector_count,
+        )
+        strat = strategy_cls(combo_cfg)
+        plans: Dict[pd.Timestamp, Any] = {}
+        for asof in dates:
+            past = ohlcv_window.loc[:asof]
+            eligible = universe_fn(asof, past)
+            plans[asof] = strat.select(asof, past, eligible)
+        target = strat.to_targets(plans, ohlcv_window)
+        key = combo_name(strategy_name, combo_params)
+        all_targets[key] = target
+
+    start_cash = float(base_config["START_CASH"])
+    _rets, eq_df, _diags = simulate_weights(all_targets, prices, base_config)
+
+    results: List[Dict[str, Any]] = []
+    all_eq: Dict[str, pd.Series] = {}
+    combo_lookup = build_combo_lookup(strategy_name, grid)
+    for key in all_targets:
+        eq_series = eq_df[key]
+        all_eq[key] = eq_series
+        eq_window = eq_series.loc[window_start:window_end].dropna()
+        if len(eq_window) < 2:
+            continue
+        eq_scaled = start_cash * (eq_window / eq_window.iloc[0])
+        metrics = curve_stats(eq_scaled)
+        results.append({"combo": key, "params": combo_lookup[key], **metrics})
     return results, all_eq
 
 

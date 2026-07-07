@@ -64,6 +64,109 @@ class _TinySignal:
         return result
 
 
+class _TinyWeight:
+    """Minimal weight strategy for testing: equal-weight top param_a symbols."""
+
+    name = "tinyweight"
+    target_kind = "weights"
+
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+    @classmethod
+    def sweep_params(cls):
+        return {"top_n": [1, 2]}
+
+    def select(self, asof, data, eligible):
+        data = data.loc[:asof]
+        chosen = sorted(eligible)[: self.cfg.top_n]
+        if not chosen:
+            return []
+        w = 1.0 / len(chosen)
+        return [{"symbol": s, "weight": w} for s in chosen]
+
+    def to_targets(self, plans, data):
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        targets = pd.DataFrame(np.nan, index=data.index, columns=symbols)
+        for asof in sorted(plans):
+            forward = data.index[data.index > asof]
+            if len(forward) == 0:
+                continue
+            bar = forward[0]
+            targets.loc[bar, symbols] = 0.0
+            for sel in plans[asof]:
+                targets.loc[bar, sel["symbol"]] = float(sel["weight"])
+        return targets
+
+
+def _tiny_weight_universe_fn(asof, past):
+    return sorted(past.columns.get_level_values(0).unique())
+
+
+def test_sweep_fold_weights_basic():
+    from ggTrader.lab.wfo import _sweep_fold_weights
+
+    symbols = ["X", "Y", "Z"]
+    n = 300
+    ohlcv = _ohlcv(symbols, n)
+    cfg = LabConfig(top_n=2, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+    }
+    window_start = ohlcv.index[100]
+    window_end = ohlcv.index[250]
+    grid = [{"top_n": 1}, {"top_n": 2}]
+
+    results, all_eq = _sweep_fold_weights(
+        "tinyweight",
+        _TinyWeight,
+        cfg,
+        ohlcv,
+        window_start,
+        window_end,
+        base_config,
+        grid,
+        _tiny_weight_universe_fn,
+    )
+
+    assert len(results) == 2
+    for r in results:
+        assert "combo" in r and "params" in r and "sharpe" in r
+    assert set(all_eq.keys()) == {r["combo"] for r in results}
+    for eq in all_eq.values():
+        assert eq.notna().sum() > 0
+
+
+def test_sweep_fold_weights_no_rebalance_dates_returns_empty():
+    from ggTrader.lab.wfo import _sweep_fold_weights
+
+    symbols = ["X", "Y"]
+    ohlcv = _ohlcv(symbols, 50)
+    cfg = LabConfig(top_n=1, min_history_bars=5)
+    base_config = {"START_CASH": 10000.0, "FEES": 0.0, "SLIPPAGE": 0.0, "FREQ": "1d"}
+    # A window with no full month inside it produces no rebalance dates.
+    window_start = ohlcv.index[0]
+    window_end = ohlcv.index[1]
+    grid = [{"top_n": 1}]
+
+    results, all_eq = _sweep_fold_weights(
+        "tinyweight",
+        _TinyWeight,
+        cfg,
+        ohlcv,
+        window_start,
+        window_end,
+        base_config,
+        grid,
+        _tiny_weight_universe_fn,
+    )
+    assert results == []
+    assert all_eq == {}
+
+
 def test_generate_folds_count_and_boundaries():
     """5-year span with 12mo train / 3mo test -> 16 folds, no overlap."""
     start = pd.Timestamp("2020-01-01", tz="UTC")
