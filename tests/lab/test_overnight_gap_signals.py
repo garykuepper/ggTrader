@@ -160,3 +160,25 @@ def test_overnight_gap_sweep_signals_produces_all_combos():
     for st in result.values():
         assert isinstance(st, SignalTargets)
         assert set(st.entries.columns) == {"A", "B"}
+
+
+def test_overnight_gap_registered():
+    from ggTrader.lab.strategies.signals import _get_registry
+
+    assert "overnight_gap" in _get_registry()
+
+
+def test_build_overnight_gap_strategy():
+    from ggTrader.lab.strategies.signals import build_signal_strategy
+
+    strat = build_signal_strategy("overnight_gap", LabConfig())
+    assert strat.name == "overnight_gap"
+    assert strat.target_kind == "signals"
+
+
+def test_cli_accepts_overnight_gap():
+    from ggTrader.lab.cli import build_arg_parser
+
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "overnight_gap"])
+    assert args.strategy == "overnight_gap"
