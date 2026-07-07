@@ -15,6 +15,12 @@ def extract_close(data: pd.DataFrame, symbols: List[str]) -> pd.DataFrame:
     return pd.concat({s: data[s]["close"] for s in symbols if s in have}, axis=1)
 
 
+def extract_open(data: pd.DataFrame, symbols: List[str]) -> pd.DataFrame:
+    """Extract a (time x symbol) open-price DataFrame from multi-level OHLCV data."""
+    have = set(data.columns.get_level_values(0))
+    return pd.concat({s: data[s]["open"] for s in symbols if s in have}, axis=1)
+
+
 def eligible_symbols(data: pd.DataFrame, eligible: List[str], min_history_bars: int) -> List[str]:
     """Filter eligible symbols to those present in data with enough history."""
     have = set(data.columns.get_level_values(0).unique())
@@ -34,6 +40,40 @@ def bb_signals(close: pd.DataFrame, period: int, std: float) -> tuple[pd.DataFra
     prev_below = close.shift(1) < sma.shift(1)
     now_above = close >= sma
     exits = (prev_below & now_above).fillna(False).astype(bool)
+
+    return entries, exits
+
+
+def overnight_gap_signals(
+    close: pd.DataFrame,
+    open_: pd.DataFrame,
+    gap_lookback: int,
+    gap_z_entry: float,
+    gap_z_exit: float,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Vectorized overnight-gap reversion entry/exit signals.
+
+    gap_t = (open_t - close_{t-1}) / close_{t-1} — known as soon as open_t prints,
+    so it is causal at the close of bar t (the fill bar). Entry fires when the
+    rolling Z-score of the gap crosses below gap_z_entry (an unusually large
+    overnight gap-down); exit fires when the Z-score normalizes back above
+    gap_z_exit. Both are filled at close_t, matching every other voter's
+    same-bar-close-fill convention (see simulate_signals).
+    """
+    prev_close = close.shift(1)
+    gap = (open_ - prev_close) / prev_close
+
+    gap_mean = gap.rolling(window=gap_lookback, min_periods=gap_lookback).mean()
+    gap_std = gap.rolling(window=gap_lookback, min_periods=gap_lookback).std()
+    gap_z = (gap - gap_mean) / gap_std.replace(0, np.nan)
+
+    prev_above_entry = gap_z.shift(1) >= gap_z_entry
+    now_below_entry = gap_z < gap_z_entry
+    entries = (prev_above_entry & now_below_entry).fillna(False).astype(bool)
+
+    prev_below_exit = gap_z.shift(1) < gap_z_exit
+    now_above_exit = gap_z >= gap_z_exit
+    exits = (prev_below_exit & now_above_exit).fillna(False).astype(bool)
 
     return entries, exits
 
