@@ -801,3 +801,55 @@ def test_run_wfo_returns_wforesult_namedtuple():
     )
     assert r.table == "x"
     assert list(r._fields) == ["oos_equity", "fold_results", "live_params", "table"]
+
+
+def test_run_wfo_weight_strategy_integration():
+    """Weight strategies flow through the full gated WFO: folds, gates, table."""
+    symbols = ["X", "Y", "Z"]
+    n = 252 * 7
+    ohlcv = _ohlcv(symbols, n)
+    spy_close = ohlcv["X"]["close"].copy()
+    cfg = LabConfig(top_n=2, lookback=20, skip=5, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+    }
+    eval_start = ohlcv.index[0]
+    eval_end = ohlcv.index[-1]
+    grid = [{"top_n": 1}, {"top_n": 2}]
+
+    output = run_wfo(
+        "tinyweight",
+        _TinyWeight,
+        cfg,
+        ohlcv,
+        spy_close,
+        str(eval_start.date()),
+        str(eval_end.date()),
+        "test",
+        base_config,
+        grid,
+        universe_fn=_tiny_weight_universe_fn,
+    )
+    assert "WFO:" in output.table
+    assert "OOS Aggregate:" in output.table
+    assert "Recommended Live Params" in output.table
+
+
+def test_run_wfo_weight_strategy_without_universe_fn_raises():
+    """A weight strategy with no universe_fn is a caller bug, not a silent no-op."""
+    symbols = ["X", "Y"]
+    ohlcv = _ohlcv(symbols, 252 * 2)
+    spy_close = ohlcv["X"]["close"].copy()
+    cfg = LabConfig(top_n=1, min_history_bars=10)
+    base_config = {"START_CASH": 10000.0, "FEES": 0.0, "SLIPPAGE": 0.0, "FREQ": "1d"}
+    grid = [{"top_n": 1}]
+
+    with pytest.raises(ValueError, match="universe_fn"):
+        run_wfo(
+            "tinyweight", _TinyWeight, cfg, ohlcv, spy_close,
+            str(ohlcv.index[0].date()), str(ohlcv.index[-1].date()),
+            "test", base_config, grid,
+        )
