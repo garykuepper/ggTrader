@@ -117,3 +117,18 @@ class TestIdioVolStrategy:
         params = IdioVolStrategy.sweep_params()
         assert "reg_window" in params
         assert "quintile" in params
+
+
+def test_idio_vol_registered():
+    from ggTrader.lab.strategies import STRATEGY_REGISTRY
+
+    assert "idio_vol" in STRATEGY_REGISTRY
+    assert STRATEGY_REGISTRY["idio_vol"] is IdioVolStrategy
+
+
+def test_cli_accepts_idio_vol():
+    from ggTrader.lab.cli import build_arg_parser
+
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "idio_vol"])
+    assert args.strategy == "idio_vol"
