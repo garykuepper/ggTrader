@@ -138,3 +138,25 @@ def test_overnight_gap_to_targets_returns_signal_targets():
     assert set(result.entries.columns) == {"A", "B"}
     assert result.entries.dtypes.eq(bool).all()
     assert result.exits.dtypes.eq(bool).all()
+
+
+def test_overnight_gap_sweep_params():
+    params = OvernightGapReversionSignal.sweep_params()
+    assert "gap_lookback" in params
+    assert "gap_z_entry" in params
+    assert "gap_z_exit" in params
+    assert len(params["gap_lookback"]) >= 3
+
+
+def test_overnight_gap_sweep_signals_produces_all_combos():
+    ohlcv = _ohlcv(["A", "B"], n=500)
+    strat = OvernightGapReversionSignal(LabConfig(min_history_bars=100))
+    combos = [
+        {"gap_lookback": 10, "gap_z_entry": -2.0, "gap_z_exit": -1.0},
+        {"gap_lookback": 20, "gap_z_entry": -1.5, "gap_z_exit": -0.5},
+    ]
+    result = strat.sweep_signals(combos, ["A", "B"], ohlcv)
+    assert len(result) == 2
+    for st in result.values():
+        assert isinstance(st, SignalTargets)
+        assert set(st.entries.columns) == {"A", "B"}

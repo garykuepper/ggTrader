@@ -446,6 +446,29 @@ class OvernightGapReversionSignal:
         )
         return SignalTargets(entries=entries, exits=exits)
 
+    def sweep_signals(
+        self,
+        combos: list[dict],
+        symbols: list[str],
+        data: pd.DataFrame,
+    ) -> dict[str, "SignalTargets"]:
+        from ggTrader.lab.sweep import combo_name
+
+        close = extract_close(data, symbols)
+        open_ = extract_open(data, symbols)
+        cache: dict[tuple[int, float, float], tuple[pd.DataFrame, pd.DataFrame]] = {}
+        result: dict[str, SignalTargets] = {}
+        for combo in combos:
+            lookback = int(combo["gap_lookback"])
+            z_entry = float(combo["gap_z_entry"])
+            z_exit = float(combo["gap_z_exit"])
+            key = (lookback, z_entry, z_exit)
+            if key not in cache:
+                cache[key] = overnight_gap_signals(close, open_, lookback, z_entry, z_exit)
+            ent, ext = cache[key]
+            result[combo_name(self.name, combo)] = SignalTargets(entries=ent, exits=ext)
+        return result
+
 
 class MACDDivergenceSignal:
     """MACD bullish divergence: price makes lower low, histogram makes higher low."""
