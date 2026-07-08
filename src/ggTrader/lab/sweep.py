@@ -14,6 +14,15 @@ STOP_PARAMS: frozenset = frozenset({"ts_stop", "atr_period", "atr_mult", "tp_sto
 VOL_PARAMS: frozenset = frozenset({"vol_target", "vol_lookback"})
 OVERLAY_PARAMS: frozenset = STOP_PARAMS | VOL_PARAMS
 
+#: combo_params keys absorbed into the merged LabConfig instance passed to
+#: weight-strategy constructors below. Any other key in a combo (e.g.
+#: IdioVolStrategy's reg_window/quintile) is a constructor kwarg and must be
+#: forwarded separately, or it's silently dropped and every combo ends up
+#: built with identical defaults. Mirrors wfo.py's LAB_CONFIG_COMBO_KEYS
+#: (duplicated rather than imported to avoid a circular import: wfo.py
+#: already imports from this module).
+LAB_CONFIG_COMBO_KEYS: frozenset = frozenset({"top_n", "lookback", "skip"})
+
 
 def split_params(combo: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]:
     """Split a combo dict into (signal_params, overlay_params).
@@ -247,7 +256,8 @@ def run_sweep(
                 min_history_bars=cfg.min_history_bars,
                 max_stocks=cfg.max_stocks,
             )
-            strat = strategy_cls(combo_cfg)
+            extra_kwargs = {k: v for k, v in combo_params.items() if k not in LAB_CONFIG_COMBO_KEYS}
+            strat = strategy_cls(combo_cfg, **extra_kwargs)
             plans: Dict[str, Any] = {}
             for asof in dates:
                 past = ohlcv.loc[:asof]

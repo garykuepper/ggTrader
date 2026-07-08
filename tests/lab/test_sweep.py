@@ -393,6 +393,103 @@ def test_sweep_end_to_end_ema_cross_small_grid():
         assert combo_count == 2
 
 
+class _TinyWeightKwarg:
+    """Weight strategy whose selection depends on a non-LabConfig constructor
+    kwarg (``multiplier``), mirroring IdioVolStrategy's reg_window/quintile.
+
+    Regression fixture for the bug where run_sweep's weight branch built
+    every grid combo's strategy from only the merged LabConfig, silently
+    dropping any sweep_params() key that isn't top_n/lookback/skip — so every
+    combo was constructed with identical defaults regardless of the grid.
+    """
+
+    name = "tinyweightkwarg"
+    target_kind = "weights"
+
+    def __init__(self, cfg, multiplier=1):
+        self.cfg = cfg
+        self.multiplier = multiplier
+
+    @classmethod
+    def sweep_params(cls) -> dict:
+        return {"multiplier": [1, -1]}
+
+    def select(self, asof, data, eligible):
+        # multiplier=1 picks the lowest-growth symbol, multiplier=-1 the
+        # highest-growth symbol (alphabetical order == growth-rate order in
+        # this file's _ohlcv fixture), so different multipliers must select
+        # different symbols and thus produce different equity curves.
+        ordered = sorted(eligible, reverse=self.multiplier < 0)
+        chosen = ordered[: self.cfg.top_n]
+        if not chosen:
+            return []
+        w = 1.0 / len(chosen)
+        return [{"symbol": s, "weight": w} for s in chosen]
+
+    def to_targets(self, plans, data):
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        targets = pd.DataFrame(np.nan, index=data.index, columns=symbols)
+        for asof in sorted(plans):
+            forward = data.index[data.index > asof]
+            if len(forward) == 0:
+                continue
+            bar = forward[0]
+            targets.loc[bar, symbols] = 0.0
+            for sel in plans[asof]:
+                targets.loc[bar, sel["symbol"]] = float(sel["weight"])
+        return targets
+
+
+def test_sweep_end_to_end_weight_strategy_threads_combo_kwargs(monkeypatch):
+    """Regression: run_sweep's weight branch must forward non-LabConfig combo
+    kwargs (e.g. IdioVolStrategy's reg_window/quintile) to the strategy
+    constructor, not silently drop them in favor of shared defaults."""
+    from sqlalchemy import text
+
+    from ggTrader.lab.data import STOCK_BASE_CONFIG
+    from ggTrader.lab.persist import get_engine, init_schema
+    from ggTrader.lab.sweep import build_grid, run_sweep
+
+    def _fake_eligible_at(asof, past, cfg, universe="sp500"):
+        return sorted(past.columns.get_level_values(0).unique()), {}
+
+    monkeypatch.setattr("ggTrader.lab.data.eligible_at", _fake_eligible_at)
+
+    init_schema()
+    symbols = ["A", "B", "C"]
+    ohlcv = _ohlcv(symbols, n=600)  # distinct per-symbol growth rates by construction
+    spy_close = pd.Series(100.0 * 1.0004 ** np.arange(len(ohlcv.index)), index=ohlcv.index)
+
+    grid = build_grid(_TinyWeightKwarg)
+    assert len(grid) == 2
+
+    cfg = LabConfig(top_n=1, min_history_bars=10)
+    sweep_id = run_sweep(
+        "tinyweightkwarg",
+        _TinyWeightKwarg,
+        cfg,
+        ohlcv,
+        spy_close,
+        eval_start=str(ohlcv.index[200].date()),
+        eval_end=str(ohlcv.index[-1].date()),
+        market="test",
+        base_config=dict(STOCK_BASE_CONFIG),
+        grid=grid,
+    )
+
+    with get_engine().connect() as conn:
+        rows = conn.execute(
+            text("SELECT params, metrics FROM lab_sweep_combos WHERE sweep_id = :s"),
+            {"s": sweep_id},
+        ).fetchall()
+    assert len(rows) == 2
+    by_multiplier = {r[0]["multiplier"]: r[1]["total_return_pct"] for r in rows}
+    assert set(by_multiplier) == {1, -1}
+    # If `multiplier` were never forwarded (the bug), both combos would fall
+    # back to the same default and produce identical total returns.
+    assert by_multiplier[1] != pytest.approx(by_multiplier[-1])
+
+
 def test_split_params_separates_signal_and_stop():
     from ggTrader.lab.sweep import split_params
 
