@@ -4,16 +4,17 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, NamedTuple, Type
+from typing import Any, Callable, Dict, List, NamedTuple, Type
 
 import numpy as np
 import pandas as pd
 
 from ggTrader.lab.gates import dsr_check, ndh_check
 from ggTrader.lab.metrics import curve_stats
-from ggTrader.lab.simulate import simulate_signals
 from ggTrader.lab.strategy import LabConfig
-from ggTrader.lab.sweep import build_combo_lookup, combo_name, split_params
+from ggTrader.lab.sweep import build_combo_lookup, combo_name
+
+UniverseFn = Callable[[pd.Timestamp, pd.DataFrame], List[str]]
 
 TRAIN_MONTHS = 12
 TEST_MONTHS = 3
@@ -27,6 +28,13 @@ MIN_LIVE_STABILITY = 1
 #: Discrete "regime" params where a ±1 grid step is a different strategy rather
 #: than a small perturbation. Excluded from the NDH plateau neighborhood.
 REGIME_PARAMS: frozenset = frozenset({"min_agree", "min_agree_exit"})
+
+#: combo_params keys that are absorbed into the merged LabConfig instance
+#: passed to weight-strategy constructors in _sweep_fold_weights. Any other
+#: key present in a combo (e.g. IdioVolStrategy's reg_window/quintile) is a
+#: constructor kwarg and must be forwarded separately, or it's silently
+#: dropped and every combo ends up built with identical defaults.
+LAB_CONFIG_COMBO_KEYS: frozenset = frozenset({"top_n", "lookback", "skip"})
 
 
 # ── WFE & Circuit Breaker ──────────────────────────────────────────────
@@ -280,6 +288,116 @@ def _sweep_fold(
     return results, all_eq
 
 
+def _sweep_fold_weights(
+    strategy_name: str,
+    strategy_cls: Type,
+    cfg: LabConfig,
+    ohlcv: pd.DataFrame,
+    window_start: pd.Timestamp,
+    window_end: pd.Timestamp,
+    base_config: Dict[str, Any],
+    grid: List[Dict[str, Any]],
+    universe_fn: UniverseFn,
+) -> tuple[List[Dict[str, Any]], Dict[str, pd.Series]]:
+    """Weight-strategy analog of _sweep_fold: plan + simulate every combo on one window.
+
+    Mirrors sweep.py's weight branch (run_sweep), scoped to [window_start,
+    window_end] instead of the full eval span, using a caller-supplied
+    universe_fn (the same UniverseFn protocol harness.py's walkforward() uses)
+    instead of a hardcoded universe string.
+    """
+    from ggTrader.lab.data import rebalance_dates
+    from ggTrader.lab.simulate import simulate_weights
+    from ggTrader.lab.strategies.indicators import extract_close
+
+    ohlcv_window = ohlcv.loc[:window_end]
+    symbols = sorted(ohlcv_window.columns.get_level_values(0).unique())
+    prices = extract_close(ohlcv_window, symbols)
+
+    dates = rebalance_dates(ohlcv_window.index, window_start, window_end)
+    if not dates:
+        return [], {}
+
+    all_targets: Dict[str, pd.DataFrame] = {}
+    for combo_params in grid:
+        merged = {
+            "top_n": cfg.top_n,
+            "lookback": cfg.lookback,
+            "skip": cfg.skip,
+            **combo_params,
+        }
+        combo_cfg = LabConfig(
+            top_n=int(merged.get("top_n", cfg.top_n)),
+            lookback=int(merged.get("lookback", cfg.lookback)),
+            skip=int(merged.get("skip", cfg.skip)),
+            min_history_bars=cfg.min_history_bars,
+            max_stocks=cfg.max_stocks,
+            max_sector_count=cfg.max_sector_count,
+        )
+        extra_kwargs = {k: v for k, v in combo_params.items() if k not in LAB_CONFIG_COMBO_KEYS}
+        strat = strategy_cls(combo_cfg, **extra_kwargs)
+        plans: Dict[pd.Timestamp, Any] = {}
+        for asof in dates:
+            past = ohlcv_window.loc[:asof]
+            eligible = universe_fn(asof, past)
+            plans[asof] = strat.select(asof, past, eligible)
+        target = strat.to_targets(plans, ohlcv_window)
+        key = combo_name(strategy_name, combo_params)
+        all_targets[key] = target
+
+    start_cash = float(base_config["START_CASH"])
+    _rets, eq_df, _diags = simulate_weights(all_targets, prices, base_config)
+
+    results: List[Dict[str, Any]] = []
+    all_eq: Dict[str, pd.Series] = {}
+    combo_lookup = build_combo_lookup(strategy_name, grid)
+    for key in all_targets:
+        eq_series = eq_df[key]
+        all_eq[key] = eq_series
+        eq_window = eq_series.loc[window_start:window_end].dropna()
+        if len(eq_window) < 2:
+            continue
+        eq_scaled = start_cash * (eq_window / eq_window.iloc[0])
+        metrics = curve_stats(eq_scaled)
+        results.append({"combo": key, "params": combo_lookup[key], **metrics})
+    return results, all_eq
+
+
+def _sweep_fold_dispatch(
+    strategy_name: str,
+    strat_instance: Any,
+    strategy_cls: Type,
+    cfg: LabConfig,
+    ohlcv: pd.DataFrame,
+    window_start: pd.Timestamp,
+    window_end: pd.Timestamp,
+    base_config: Dict[str, Any],
+    grid: List[Dict[str, Any]],
+    universe_fn: "UniverseFn | None",
+) -> tuple[List[Dict[str, Any]], Dict[str, pd.Series]]:
+    """Route to the signal or weight fold-sweep path by strategy target_kind."""
+    if getattr(strat_instance, "target_kind", "signals") == "weights":
+        if universe_fn is None:
+            raise ValueError(
+                f"{strategy_name}: weight strategies require universe_fn "
+                "(e.g. lambda asof, past: eligible_at(asof, past, cfg, universe=...)[0])"
+            )
+        return _sweep_fold_weights(
+            strategy_name,
+            strategy_cls,
+            cfg,
+            ohlcv,
+            window_start,
+            window_end,
+            base_config,
+            grid,
+            universe_fn,
+        )
+    return _sweep_fold(
+        strategy_name, strat_instance, ohlcv, window_start, window_end, base_config, grid
+    )
+
+
 def compute_anchor_set(
     strategy_name: str,
     strategy_cls: Type,
@@ -288,6 +406,7 @@ def compute_anchor_set(
     base_config: Dict[str, Any],
     grid: List[Dict[str, Any]],
     risk_free_rate: float = 4.0,
+    universe_fn: "UniverseFn | None" = None,
 ) -> AnchorSet:
     """Derive the anchor set: minimize max drawdown subject to CAGR > risk-free.
 
@@ -299,14 +418,17 @@ def compute_anchor_set(
     full_start = ohlcv.index[0]
     full_end = ohlcv.index[-1]
 
-    metrics_list, _eq = _sweep_fold(
+    metrics_list, _eq = _sweep_fold_dispatch(
         strategy_name,
         strat_instance,
+        strategy_cls,
+        cfg,
         ohlcv,
         full_start,
         full_end,
         base_config,
         grid,
+        universe_fn,
     )
     if not metrics_list:
         return AnchorSet(
@@ -422,6 +544,7 @@ def run_wfo(
     grid: List[Dict[str, Any]],
     ndh_threshold: float = 0.85,
     dsr_threshold: float = 0.80,
+    universe_fn: "UniverseFn | None" = None,
 ) -> str:
     """Main WFO entry point: fold, train, test, concatenate, report."""
     eval_start_ts = pd.Timestamp(eval_start, tz="UTC")
@@ -447,6 +570,7 @@ def run_wfo(
         ohlcv,
         base_config,
         grid,
+        universe_fn=universe_fn,
     )
     print(
         f"  Anchor set: {anchor.combo}"
@@ -462,14 +586,17 @@ def run_wfo(
             flush=True,
         )
         # Train: sweep all combos on train window
-        train_metrics, train_eq = _sweep_fold(
+        train_metrics, train_eq = _sweep_fold_dispatch(
             strategy_name,
             strat_instance,
+            strategy_cls,
+            cfg,
             ohlcv,
             fold.train_start,
             fold.train_end,
             base_config,
             grid,
+            universe_fn,
         )
         if not train_metrics:
             continue
@@ -536,34 +663,24 @@ def run_wfo(
 
         # Test: simulate deploy params on data up to test_end, score test window
         winner_grid = [deploy_params]
-        test_metrics, _test_eq = _sweep_fold(
+        test_metrics, test_eq = _sweep_fold_dispatch(
             strategy_name,
             strat_instance,
+            strategy_cls,
+            cfg,
             ohlcv,
             fold.test_start,
             fold.test_end,
             base_config,
             winner_grid,
+            universe_fn,
         )
         oos_score = 0.0
         if test_metrics:
             oos_score = composite_score(test_metrics)[0]
-
-            # Build continuous OOS equity curve
-            test_ohlcv = ohlcv.loc[: fold.test_end]
-            symbols = sorted(test_ohlcv.columns.get_level_values(0).unique())
-            prices = pd.concat({s: test_ohlcv[s]["close"] for s in symbols}, axis=1)
-            signal_combos = [split_params(deploy_params)[0]]
-            _, stop_p = split_params(deploy_params)
-            targets = strat_instance.sweep_signals(signal_combos, symbols, test_ohlcv)
-            key = combo_name(strategy_name, signal_combos[0])
             full_key = combo_name(strategy_name, deploy_params)
-            sim_config = {**base_config, **stop_p}
-            ohlcv_arg = test_ohlcv if "atr_mult" in stop_p else None
-            _r, eq, _d = simulate_signals(
-                {full_key: targets[key]}, prices, sim_config, ohlcv=ohlcv_arg
-            )
-            eq_test = eq[full_key].loc[fold.test_start : fold.test_end].dropna()
+            eq_test = test_eq.get(full_key, pd.Series(dtype=float))
+            eq_test = eq_test.loc[fold.test_start : fold.test_end].dropna()
             if len(eq_test) > 0:
                 normalized = oos_running_value * (eq_test / eq_test.iloc[0])
                 oos_curves.append(normalized)
@@ -651,6 +768,7 @@ def run_wfo(
         base_config,
         grid,
         fold_winners,
+        universe_fn=universe_fn,
     )
 
     table = format_wfo_table(
@@ -710,6 +828,7 @@ def select_live_params(
     base_config: Dict[str, Any],
     grid: List[Dict[str, Any]],
     fold_winners: List[Dict[str, Any]],
+    universe_fn: "UniverseFn | None" = None,
 ) -> Dict[str, Any]:
     """Train on the most recent TRAIN_MONTHS window and pick the durable winner.
 
@@ -720,14 +839,17 @@ def select_live_params(
     live_train_start = eval_end_ts - pd.DateOffset(months=TRAIN_MONTHS)
     strat_instance = strategy_cls(cfg)
 
-    train_metrics, _train_eq = _sweep_fold(
+    train_metrics, _train_eq = _sweep_fold_dispatch(
         strategy_name,
         strat_instance,
+        strategy_cls,
+        cfg,
         ohlcv,
         live_train_start,
         eval_end_ts,
         base_config,
         grid,
+        universe_fn,
     )
     if not train_metrics:
         return {"combo": "none", "params": {}, "train_metrics": {}, "stability": 0}

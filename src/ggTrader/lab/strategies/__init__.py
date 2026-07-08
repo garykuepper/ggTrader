@@ -6,6 +6,7 @@ from .conviction import ConvictionBBSignal
 from .ensemble import EnsembleConvictionSignal, EnsembleSignal
 from .ensemble_ic import EnsembleICSignal
 from .ensemble_kelly import EnsembleKellySignal
+from .idio_vol import IdioVolStrategy
 from .momentum import CrossSectionalMomentum, DualMomentum
 from .registry import (
     all_strategy_names,
@@ -42,6 +43,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "ensemble_conviction": EnsembleConvictionSignal,
     "xs_momentum": CrossSectionalMomentum,
     "dual_momentum": DualMomentum,
+    "idio_vol": IdioVolStrategy,
 }
 
 __all__ = [
@@ -54,6 +56,7 @@ __all__ = [
     "weight_strategy_names",
     "CrossSectionalMomentum",
     "DualMomentum",
+    "IdioVolStrategy",
     "EmaCrossSignal",
     "WfoTournamentSignal",
     "BollingerReversionSignal",

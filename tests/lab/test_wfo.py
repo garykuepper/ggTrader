@@ -64,6 +64,233 @@ class _TinySignal:
         return result
 
 
+class _TinyWeight:
+    """Minimal weight strategy for testing: equal-weight top param_a symbols."""
+
+    name = "tinyweight"
+    target_kind = "weights"
+
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+    @classmethod
+    def sweep_params(cls):
+        return {"top_n": [1, 2]}
+
+    def select(self, asof, data, eligible):
+        data = data.loc[:asof]
+        chosen = sorted(eligible)[: self.cfg.top_n]
+        if not chosen:
+            return []
+        w = 1.0 / len(chosen)
+        return [{"symbol": s, "weight": w} for s in chosen]
+
+    def to_targets(self, plans, data):
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        targets = pd.DataFrame(np.nan, index=data.index, columns=symbols)
+        for asof in sorted(plans):
+            forward = data.index[data.index > asof]
+            if len(forward) == 0:
+                continue
+            bar = forward[0]
+            targets.loc[bar, symbols] = 0.0
+            for sel in plans[asof]:
+                targets.loc[bar, sel["symbol"]] = float(sel["weight"])
+        return targets
+
+
+def _tiny_weight_universe_fn(asof, past):
+    return sorted(past.columns.get_level_values(0).unique())
+
+
+def _ohlcv_varied_growth(symbols, n, rates):
+    """Like _ohlcv but each symbol grows at its own rate (rates: dict symbol->pct/bar).
+
+    Needed to make selection-dependent tests meaningful: _ohlcv's uniform
+    0.0003/bar growth for every symbol means *which* symbol gets picked never
+    affects the resulting equity curve, so a bug that silently ignores a
+    combo's selection-driving kwarg would go undetected. Distinct growth
+    rates per symbol make the equity curve depend on which symbols were
+    actually selected.
+    """
+    idx = pd.date_range("2014-01-01", periods=n, freq="B", tz="UTC")
+    frames = {}
+    for s in symbols:
+        rate = rates[s]
+        close = 100.0 * (1 + rate * np.arange(n))
+        frames[s] = pd.DataFrame(
+            {
+                "open": close * 0.999,
+                "high": close * 1.005,
+                "low": close * 0.995,
+                "close": close,
+                "volume": np.full(n, 1e6),
+            },
+            index=idx,
+        )
+    return pd.concat(frames, axis=1)
+
+
+class _TinyWeightKwarg:
+    """Weight strategy whose selection depends on a non-LabConfig constructor
+    kwarg (``multiplier``), mirroring IdioVolStrategy's reg_window/quintile.
+
+    This is the regression fixture for the bug where _sweep_fold_weights
+    built every grid combo's strategy from only the merged LabConfig,
+    silently dropping any sweep_params() key that isn't top_n/lookback/skip
+    (e.g. IdioVolStrategy's reg_window/quintile) — so every combo in a
+    real idio_vol WFO sweep was constructed with identical defaults
+    regardless of the grid.
+    """
+
+    name = "tinyweightkwarg"
+    target_kind = "weights"
+
+    def __init__(self, cfg, multiplier=1):
+        self.cfg = cfg
+        self.multiplier = multiplier
+
+    @classmethod
+    def sweep_params(cls) -> dict:
+        return {"multiplier": [1, -1]}
+
+    def select(self, asof, data, eligible):
+        # multiplier=1 picks the lowest-growth symbol, multiplier=-1 the
+        # highest-growth symbol (alphabetical order == growth-rate order in
+        # the test fixture below), so different multipliers must select
+        # different symbols and thus produce different equity curves.
+        ordered = sorted(eligible, reverse=self.multiplier < 0)
+        chosen = ordered[: self.cfg.top_n]
+        if not chosen:
+            return []
+        w = 1.0 / len(chosen)
+        return [{"symbol": s, "weight": w} for s in chosen]
+
+    def to_targets(self, plans, data):
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        targets = pd.DataFrame(np.nan, index=data.index, columns=symbols)
+        for asof in sorted(plans):
+            forward = data.index[data.index > asof]
+            if len(forward) == 0:
+                continue
+            bar = forward[0]
+            targets.loc[bar, symbols] = 0.0
+            for sel in plans[asof]:
+                targets.loc[bar, sel["symbol"]] = float(sel["weight"])
+        return targets
+
+
+def test_sweep_fold_weights_threads_non_labconfig_kwargs():
+    """Regression test: combo_params keys outside top_n/lookback/skip (e.g.
+    IdioVolStrategy's reg_window/quintile) must reach the strategy
+    constructor, not be silently dropped in favor of the class default.
+    """
+    from ggTrader.lab.wfo import _sweep_fold_weights
+
+    symbols = ["A", "B", "C"]
+    rates = {"A": 0.0001, "B": 0.0006, "C": 0.0012}
+    n = 300
+    ohlcv = _ohlcv_varied_growth(symbols, n, rates)
+    cfg = LabConfig(top_n=1, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+    }
+    window_start = ohlcv.index[100]
+    window_end = ohlcv.index[250]
+    # Only the extra kwarg varies across combos; top_n is constant so any
+    # difference in outcome is attributable solely to `multiplier` having
+    # been threaded through the constructor.
+    grid = [{"multiplier": 1}, {"multiplier": -1}]
+
+    results, all_eq = _sweep_fold_weights(
+        "tinyweightkwarg",
+        _TinyWeightKwarg,
+        cfg,
+        ohlcv,
+        window_start,
+        window_end,
+        base_config,
+        grid,
+        _tiny_weight_universe_fn,
+    )
+
+    assert len(results) == 2
+    eq_curves = list(all_eq.values())
+    assert len(eq_curves) == 2
+    # If `multiplier` were never forwarded (the bug), both combos would fall
+    # back to the same default and produce byte-identical equity curves.
+    assert not eq_curves[0].equals(eq_curves[1])
+    total_returns = sorted(r["total_return_pct"] for r in results)
+    assert total_returns[0] != pytest.approx(total_returns[1])
+
+
+def test_sweep_fold_weights_basic():
+    from ggTrader.lab.wfo import _sweep_fold_weights
+
+    symbols = ["X", "Y", "Z"]
+    n = 300
+    ohlcv = _ohlcv(symbols, n)
+    cfg = LabConfig(top_n=2, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+    }
+    window_start = ohlcv.index[100]
+    window_end = ohlcv.index[250]
+    grid = [{"top_n": 1}, {"top_n": 2}]
+
+    results, all_eq = _sweep_fold_weights(
+        "tinyweight",
+        _TinyWeight,
+        cfg,
+        ohlcv,
+        window_start,
+        window_end,
+        base_config,
+        grid,
+        _tiny_weight_universe_fn,
+    )
+
+    assert len(results) == 2
+    for r in results:
+        assert "combo" in r and "params" in r and "sharpe" in r
+    assert set(all_eq.keys()) == {r["combo"] for r in results}
+    for eq in all_eq.values():
+        assert eq.notna().sum() > 0
+
+
+def test_sweep_fold_weights_no_rebalance_dates_returns_empty():
+    from ggTrader.lab.wfo import _sweep_fold_weights
+
+    symbols = ["X", "Y"]
+    ohlcv = _ohlcv(symbols, 50)
+    cfg = LabConfig(top_n=1, min_history_bars=5)
+    base_config = {"START_CASH": 10000.0, "FEES": 0.0, "SLIPPAGE": 0.0, "FREQ": "1d"}
+    # A window with no full month inside it produces no rebalance dates.
+    window_start = ohlcv.index[0]
+    window_end = ohlcv.index[1]
+    grid = [{"top_n": 1}]
+
+    results, all_eq = _sweep_fold_weights(
+        "tinyweight",
+        _TinyWeight,
+        cfg,
+        ohlcv,
+        window_start,
+        window_end,
+        base_config,
+        grid,
+        _tiny_weight_universe_fn,
+    )
+    assert results == []
+    assert all_eq == {}
+
+
 def test_generate_folds_count_and_boundaries():
     """5-year span with 12mo train / 3mo test -> 16 folds, no overlap."""
     start = pd.Timestamp("2020-01-01", tz="UTC")
@@ -698,3 +925,70 @@ def test_run_wfo_returns_wforesult_namedtuple():
     )
     assert r.table == "x"
     assert list(r._fields) == ["oos_equity", "fold_results", "live_params", "table"]
+
+
+def test_run_wfo_weight_strategy_integration():
+    """Weight strategies flow through the full gated WFO: folds, gates, table."""
+    symbols = ["X", "Y", "Z"]
+    n = 252 * 7
+    ohlcv = _ohlcv(symbols, n)
+    spy_close = ohlcv["X"]["close"].copy()
+    cfg = LabConfig(top_n=2, lookback=20, skip=5, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+    }
+    eval_start = ohlcv.index[0]
+    eval_end = ohlcv.index[-1]
+    grid = [{"top_n": 1}, {"top_n": 2}]
+
+    output = run_wfo(
+        "tinyweight",
+        _TinyWeight,
+        cfg,
+        ohlcv,
+        spy_close,
+        str(eval_start.date()),
+        str(eval_end.date()),
+        "test",
+        base_config,
+        grid,
+        universe_fn=_tiny_weight_universe_fn,
+    )
+    assert "WFO:" in output.table
+    assert "OOS Aggregate:" in output.table
+    assert "Recommended Live Params" in output.table
+
+
+def test_run_wfo_weight_strategy_without_universe_fn_raises():
+    """A weight strategy with no universe_fn is a caller bug, not a silent no-op."""
+    symbols = ["X", "Y"]
+    ohlcv = _ohlcv(symbols, 252 * 2)
+    spy_close = ohlcv["X"]["close"].copy()
+    cfg = LabConfig(top_n=1, min_history_bars=10)
+    base_config = {"START_CASH": 10000.0, "FEES": 0.0, "SLIPPAGE": 0.0, "FREQ": "1d"}
+    grid = [{"top_n": 1}]
+
+    with pytest.raises(ValueError, match="universe_fn"):
+        run_wfo(
+            "tinyweight",
+            _TinyWeight,
+            cfg,
+            ohlcv,
+            spy_close,
+            str(ohlcv.index[0].date()),
+            str(ohlcv.index[-1].date()),
+            "test",
+            base_config,
+            grid,
+        )
+
+
+def test_cli_wfo_accepts_weight_strategy():
+    """--wfo must accept a weight strategy name (xs_momentum), not just signals."""
+    parser = build_arg_parser()
+    args = parser.parse_args(["--strategy", "xs_momentum", "--wfo"])
+    assert args.strategy == "xs_momentum"
+    assert args.wfo is True
