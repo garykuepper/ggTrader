@@ -164,6 +164,70 @@ def test_run_blend_raises_on_wfo_no_folds(monkeypatch):
         )
 
 
+def test_run_blend_passes_per_sleeve_universe_fn(monkeypatch):
+    """Weight-based strategies need universe_fn; each sleeve's closure must be
+    scoped to its own universe, not the last-iterated loop value (late-binding
+    closure bug)."""
+    idx = _idx(400)
+    rng = np.random.default_rng(5)
+    eqs = {
+        "xs_momentum@sp500": _equity_from_returns(
+            pd.Series(rng.normal(0.0004, 0.011, 400), index=idx)
+        ),
+        "idio_vol@nasdaq100": _equity_from_returns(
+            pd.Series(rng.normal(0.0003, 0.013, 400), index=idx)
+        ),
+    }
+    spy = _equity_from_returns(pd.Series(rng.normal(0.0003, 0.01, 400), index=idx))
+
+    monkeypatch.setattr(blend_mod, "equity_universe_between", lambda *a, **k: ["AAA"])
+
+    def _fake_load(symbols, start, end, **k):
+        frames = {"SPY": pd.DataFrame({"close": spy}, index=idx)}
+        frames["AAA"] = pd.DataFrame({"close": spy.values}, index=idx)
+        df = pd.concat(frames, axis=1)
+        df.columns.names = ["symbol", "field"]
+        return df
+
+    monkeypatch.setattr(blend_mod, "load_ohlcv", _fake_load)
+    monkeypatch.setattr(blend_mod, "build_grid", lambda cls: [{}])
+    monkeypatch.setattr(blend_mod.persist, "init_schema", lambda: None)
+    monkeypatch.setattr(blend_mod.persist, "start_run", lambda *a, **k: "run-x")
+    monkeypatch.setattr(blend_mod.persist, "write_returns_equity", lambda *a, **k: None)
+    monkeypatch.setattr(blend_mod.persist, "write_summary", lambda *a, **k: None)
+    monkeypatch.setattr(blend_mod.persist, "finish_run", lambda *a, **k: None)
+
+    labels = iter(eqs.values())
+    captured_universe_fns: list = []
+
+    def _fake_wfo(name, cls, cfg, ohlcv, spy_close, **k):
+        assert "universe_fn" in k
+        captured_universe_fns.append(k["universe_fn"])
+        return WfoResult(oos_equity=next(labels), fold_results=[], live_params={}, table="t")
+
+    monkeypatch.setattr(blend_mod, "run_wfo", _fake_wfo)
+
+    def _fake_eligible_at(asof, past, cfg, *, universe):
+        return ([f"ELIGIBLE_{universe.upper()}"], {})
+
+    monkeypatch.setattr(blend_mod, "eligible_at", _fake_eligible_at)
+
+    run_blend(
+        [("xs_momentum", "sp500"), ("idio_vol", "nasdaq100")],
+        LabConfig(),
+        "2021-01-01",
+        "2022-07-01",
+        market="equity",
+        base_config=dict(blend_mod.STOCK_BASE_CONFIG),
+    )
+
+    assert len(captured_universe_fns) == 2
+    # Each sleeve's universe_fn must resolve to ITS OWN universe, not both
+    # resolving to the last-iterated "nasdaq100" (the late-binding bug).
+    assert captured_universe_fns[0](None, None) == ["ELIGIBLE_SP500"]
+    assert captured_universe_fns[1](None, None) == ["ELIGIBLE_NASDAQ100"]
+
+
 def test_run_blend_raises_on_empty_symbols(monkeypatch):
     """No overlap between universe members and available OHLCV must raise SystemExit."""
     idx = _idx(400)

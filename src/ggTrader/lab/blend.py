@@ -14,7 +14,7 @@ import pandas as pd
 
 from ggTrader.lab import persist
 from ggTrader.lab.allocation import combine_sleeves
-from ggTrader.lab.data import STOCK_BASE_CONFIG, equity_universe_between, load_ohlcv
+from ggTrader.lab.data import STOCK_BASE_CONFIG, eligible_at, equity_universe_between, load_ohlcv
 from ggTrader.lab.metrics import curve_stats
 from ggTrader.lab.strategies import STRATEGY_REGISTRY
 from ggTrader.lab.strategy import LabConfig
@@ -110,6 +110,9 @@ def run_blend(
             market=market,
             base_config=base_config,
             grid=build_grid(cls),
+            universe_fn=lambda asof, past, universe=universe: eligible_at(
+                asof, past, cfg, universe=universe
+            )[0],
         )
         if not isinstance(result, WfoResult):
             raise SystemExit(f"blend sleeve {label!r}: WFO produced no valid folds ({result})")
