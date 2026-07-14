@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 
@@ -82,3 +83,118 @@ class TestRotatePositions:
             breadth, upper_threshold=0.6, lower_threshold=0.4, min_hold_months=1
         )
         assert states.iloc[0] == "cash"
+
+
+def _ohlcv_from_returns(returns: pd.DataFrame) -> pd.DataFrame:
+    frames = {}
+    for col in returns.columns:
+        close = 100.0 * (1.0 + returns[col].fillna(0.0)).cumprod()
+        frames[col] = pd.DataFrame(
+            {
+                "open": close,
+                "high": close * 1.001,
+                "low": close * 0.999,
+                "close": close,
+                "volume": np.full(len(close), 1e6),
+            },
+            index=returns.index,
+        )
+    out = pd.concat(frames, axis=1)
+    out.columns = out.columns.set_names(["symbol", "field"])
+    return out
+
+
+def _daily_returns(symbols, n=500, seed=0, start="2020-01-01"):
+    rng = np.random.default_rng(seed)
+    idx = pd.bdate_range(start, periods=n, tz="UTC")
+    data = {s: rng.normal(0.0003, 0.01, n) for s in symbols}
+    return pd.DataFrame(data, index=idx)
+
+
+def _concrete_cls():
+    """A concrete subclass for testing the base class directly."""
+    from ggTrader.lab.strategies.leveraged_rotation import _LeveragedRotationBase
+
+    class _Concrete(_LeveragedRotationBase):
+        name = "leveraged_rotation_test"
+        PAIR_3X = ("LONG3X", "INV3X")
+        PAIR_2X = ("LONG2X", "INV2X")
+
+    return _Concrete
+
+
+class TestLeveragedRotationBaseSelect:
+    def test_select_returns_active_tier_pair_only(self):
+        from ggTrader.lab.strategy import LabConfig
+
+        strat = _concrete_cls()(LabConfig(), leverage_tier="3x")
+        eligible = ["LONG3X", "INV3X", "LONG2X", "INV2X"]
+        plan = strat.select(pd.Timestamp("2020-06-30", tz="UTC"), pd.DataFrame(), eligible)
+        symbols = {s["symbol"] for s in plan}
+        assert symbols == {"LONG3X", "INV3X"}
+
+    def test_select_2x_tier(self):
+        from ggTrader.lab.strategy import LabConfig
+
+        strat = _concrete_cls()(LabConfig(), leverage_tier="2x")
+        eligible = ["LONG3X", "INV3X", "LONG2X", "INV2X"]
+        plan = strat.select(pd.Timestamp("2020-06-30", tz="UTC"), pd.DataFrame(), eligible)
+        symbols = {s["symbol"] for s in plan}
+        assert symbols == {"LONG2X", "INV2X"}
+
+
+class TestLeveragedRotationBaseToTargets:
+    def test_to_targets_shape_and_columns(self):
+        from ggTrader.lab.strategy import LabConfig
+
+        stocks = [f"S{i}" for i in range(20)]
+        etfs = ["LONG3X", "INV3X", "LONG2X", "INV2X"]
+        returns = _daily_returns(stocks + etfs, n=400, seed=1)
+        ohlcv = _ohlcv_from_returns(returns)
+
+        strat = _concrete_cls()(
+            LabConfig(min_history_bars=60),
+            leverage_tier="3x",
+            upper_threshold=0.6,
+            lower_threshold=0.4,
+            min_hold_months=1,
+        )
+        rebalance_dates = ohlcv.index[[200, 260, 320]]
+        eligible = etfs
+        plans = {d: strat.select(d, ohlcv.loc[:d], eligible) for d in rebalance_dates}
+        targets = strat.to_targets(plans, ohlcv)
+
+        assert isinstance(targets, pd.DataFrame)
+        assert set(targets.columns) == {"LONG3X", "INV3X"}
+        assert targets.index.equals(ohlcv.index)
+
+    def test_to_targets_never_selects_inactive_tier(self):
+        from ggTrader.lab.strategy import LabConfig
+
+        stocks = [f"S{i}" for i in range(20)]
+        etfs = ["LONG3X", "INV3X", "LONG2X", "INV2X"]
+        returns = _daily_returns(stocks + etfs, n=400, seed=2)
+        ohlcv = _ohlcv_from_returns(returns)
+
+        strat = _concrete_cls()(LabConfig(min_history_bars=60), leverage_tier="2x")
+        rebalance_dates = ohlcv.index[[200, 260]]
+        plans = {d: strat.select(d, ohlcv.loc[:d], etfs) for d in rebalance_dates}
+        targets = strat.to_targets(plans, ohlcv)
+
+        assert set(targets.columns) == {"LONG2X", "INV2X"}
+
+    def test_empty_plans_returns_empty_frame(self):
+        from ggTrader.lab.strategy import LabConfig
+
+        strat = _concrete_cls()(LabConfig())
+        targets = strat.to_targets({}, pd.DataFrame())
+        assert isinstance(targets, pd.DataFrame)
+        assert len(targets) == 0
+
+    def test_sweep_params_grid(self):
+        params = _concrete_cls().sweep_params()
+        assert "upper_threshold" in params
+        assert "lower_threshold" in params
+        assert "min_hold_months" in params
+        assert "leverage_tier" in params
+        assert set(params["leverage_tier"]) == {"2x", "3x"}
