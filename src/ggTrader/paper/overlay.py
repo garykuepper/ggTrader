@@ -23,7 +23,21 @@ def compute_sleeve_curve(universe: str, asof: pd.Timestamp, window_days: int = 9
     construction signal_runner.generate_signals uses live, so the vol
     estimate describes the strategy actually trading (Invariant 1).
     """
-    start = asof - pd.Timedelta(days=window_days + 60)  # extra warmup for indicators
+    # window_days is a calendar-day span; the fetch buffer and the returned
+    # curve's trim margin are both padded well past that, because:
+    #  (a) min_history_bars=60 is TRADING days, so the fetch needs generous
+    #      calendar-day slack beyond window_days to give the earliest kept
+    #      bar a full 60-trading-day lookback, and
+    #  (b) compute_weights_and_scale computes returns via curve.pct_change(),
+    #      which drops one row -- a curve trimmed to exactly `window` trading
+    #      days (the vol window, default 60) yields only `window - 1`
+    #      returns, permanently one short of that function's `len(r) >=
+    #      window` guard, silently collapsing to the equal-weight/scale=0.0
+    #      fallback. The +20-calendar-day trim margin below (~14 extra
+    #      trading days) keeps this comfortably clear of that boundary.
+    trim_margin_days = 20
+    warmup_days = 90
+    start = asof - pd.Timedelta(days=window_days + trim_margin_days + warmup_days)
 
     members = universe_members_asof(universe, asof)
     symbols = sorted({normalize_yf_ticker(t) for t in members})
@@ -40,8 +54,9 @@ def compute_sleeve_curve(universe: str, asof: pd.Timestamp, window_days: int = 9
     cfg = LabConfig(min_history_bars=60)
     ensemble = EnsembleSignal(cfg)
 
+    trim_start = asof - pd.Timedelta(days=window_days + trim_margin_days)
     plans = {}
-    for bar in close.loc[str((asof - pd.Timedelta(days=window_days)).date()) :].index:
+    for bar in close.loc[str(trim_start.date()) :].index:
         plan = ensemble.select(bar, ohlcv, sym_cols)
         if plan:
             plans[bar] = plan
@@ -53,7 +68,7 @@ def compute_sleeve_curve(universe: str, asof: pd.Timestamp, window_days: int = 9
         {"ensemble": targets}, close, dict(STOCK_BASE_CONFIG), ohlcv=ohlcv
     )
     curve = equity_df["ensemble"].dropna()
-    return curve.loc[curve.index >= (asof - pd.Timedelta(days=window_days))]
+    return curve.loc[curve.index >= trim_start]
 
 
 def compute_weights_and_scale(
