@@ -1,17 +1,17 @@
-"""Generate today's ensemble signals from the S&P 500 universe."""
+"""Generate today's ensemble signals from a given equity universe."""
 
 from __future__ import annotations
 
 import pandas as pd
 
-from ggTrader.data.core.index_constituents import normalize_yf_ticker, sp500_members_asof
+from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
 from ggTrader.lab.data import fetch_stock_ohlcv
 from ggTrader.lab.strategies.ensemble import EnsembleSignal
 from ggTrader.lab.strategy import LabConfig
 
 
-def generate_signals(lookback_days: int = 120) -> dict:
-    """Fetch recent data for PIT S&P 500 and return today's ensemble signals.
+def generate_signals(universe: str = "sp500", lookback_days: int = 120) -> dict:
+    """Fetch recent data for a PIT universe and return today's ensemble signals.
 
     Returns dict with keys: buys (list[str]), sells (list[str]),
     as_of (str date), universe_size (int).
@@ -19,7 +19,7 @@ def generate_signals(lookback_days: int = 120) -> dict:
     today = pd.Timestamp.now(tz="UTC").normalize()
     start = today - pd.Timedelta(days=lookback_days)
 
-    members = sp500_members_asof(today)
+    members = universe_members_asof(universe, today)
     symbols = sorted({normalize_yf_ticker(t) for t in members})
 
     ohlcv = fetch_stock_ohlcv(symbols, start=str(start.date()), end=str(today.date()))

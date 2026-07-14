@@ -31,7 +31,7 @@ def _mock_ohlcv(symbols: list[str], n_days: int = 120) -> pd.DataFrame:
 
 
 class TestGenerateSignals:
-    @patch("ggTrader.paper.signal_runner.sp500_members_asof")
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
     def test_returns_buys_and_sells(self, mock_fetch, mock_members):
         symbols = ["AAPL", "MSFT", "GOOG"]
@@ -50,7 +50,7 @@ class TestGenerateSignals:
         assert isinstance(result["sells"], list)
         assert result["universe_size"] == 3
 
-    @patch("ggTrader.paper.signal_runner.sp500_members_asof")
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
     def test_buys_and_sells_are_disjoint(self, mock_fetch, mock_members):
         symbols = [f"SYM{i}" for i in range(20)]
@@ -65,7 +65,7 @@ class TestGenerateSignals:
         sells = set(result["sells"])
         assert buys.isdisjoint(sells), "A symbol cannot be both a buy and sell"
 
-    @patch("ggTrader.paper.signal_runner.sp500_members_asof")
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
     def test_empty_data_returns_no_signals(self, mock_fetch, mock_members):
         mock_members.return_value = ["AAPL"]
@@ -91,7 +91,7 @@ class TestGenerateSignals:
         assert result["sells"] == []
         assert result["universe_size"] == 0
 
-    @patch("ggTrader.paper.signal_runner.sp500_members_asof")
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
     def test_as_of_is_last_bar_date(self, mock_fetch, mock_members):
         symbols = ["AAPL"]
@@ -105,3 +105,18 @@ class TestGenerateSignals:
 
         expected_date = str(ohlcv.index[-1].date())
         assert result["as_of"] == expected_date
+
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_universe_param_passed_through(self, mock_fetch, mock_members):
+        symbols = ["AAPL", "MSFT", "GOOG"]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+
+        from ggTrader.paper.signal_runner import generate_signals
+
+        result = generate_signals(universe="midcap400", lookback_days=120)
+
+        mock_members.assert_called_once()
+        assert mock_members.call_args[0][0] == "midcap400"
+        assert result["universe_size"] == 3
