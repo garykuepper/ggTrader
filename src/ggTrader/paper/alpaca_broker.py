@@ -36,8 +36,11 @@ class AlpacaBroker:
             p.symbol: {
                 "qty": float(p.qty),
                 "market_value": float(p.market_value),
+                "current_price": float(p.current_price),
                 "avg_entry": float(p.avg_entry_price),
                 "unrealized_pl": float(p.unrealized_pl),
+                "unrealized_plpc": float(p.unrealized_plpc),
+                "change_today": float(p.change_today),
             }
             for p in positions
         }

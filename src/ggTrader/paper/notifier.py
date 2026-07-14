@@ -63,18 +63,26 @@ class TelegramNotifier:
         self, portfolio_value: float, daily_pnl: float, positions: dict[str, dict]
     ) -> bool:
         arrow = "🟢" if daily_pnl >= 0 else "🔴"
+        day_start = portfolio_value - daily_pnl
+        pnl_pct = (daily_pnl / day_start * 100) if day_start > 0 else 0.0
         lines = [
             "<b>📈 Paper Portfolio Summary</b>",
             f"Value: <b>${portfolio_value:,.2f}</b>",
-            f"Daily P&L: {arrow} ${daily_pnl:+,.2f}",
+            f"Daily P&L: {arrow} ${daily_pnl:+,.2f} ({pnl_pct:+.2f}%)",
             f"Positions: {len(positions)}",
         ]
         if positions:
             lines.append("")
             for sym, info in sorted(positions.items()):
                 pl = info.get("unrealized_pl", 0.0)
+                plpc = info.get("unrealized_plpc", 0.0) * 100
+                tod = info.get("change_today", 0.0) * 100
                 pl_arrow = "+" if pl >= 0 else ""
                 qty = info.get("qty", 0.0)
+                price = info.get("current_price", 0.0)
                 qty_str = f"{qty:.0f}" if float(qty).is_integer() else f"{qty:.4f}"
-                lines.append(f"  {sym}: {qty_str} sh (${pl_arrow}{pl:,.2f})")
+                lines.append(
+                    f"  {sym}: {qty_str} @ ${price:.2f} — "
+                    f"${pl_arrow}{pl:,.2f} ({pl_arrow}{plpc:.2f}%)"
+                )
         return self.send("\n".join(lines))
