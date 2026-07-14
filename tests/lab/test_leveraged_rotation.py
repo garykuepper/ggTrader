@@ -198,3 +198,58 @@ class TestLeveragedRotationBaseToTargets:
         assert "min_hold_months" in params
         assert "leverage_tier" in params
         assert set(params["leverage_tier"]) == {"2x", "3x"}
+
+
+class TestPerUniverseSubclasses:
+    def test_sp500_pairs(self):
+        from ggTrader.lab.strategies.leveraged_rotation import LeveragedRotationSp500
+
+        assert LeveragedRotationSp500.PAIR_3X == ("UPRO", "SPXU")
+        assert LeveragedRotationSp500.PAIR_2X == ("SSO", "SDS")
+        assert LeveragedRotationSp500.BREADTH_UNIVERSE == "sp500"
+        assert LeveragedRotationSp500.name == "leveraged_rotation_sp500"
+
+    def test_nasdaq100_pairs(self):
+        from ggTrader.lab.strategies.leveraged_rotation import LeveragedRotationNasdaq100
+
+        assert LeveragedRotationNasdaq100.PAIR_3X == ("TQQQ", "SQQQ")
+        assert LeveragedRotationNasdaq100.PAIR_2X == ("QLD", "QID")
+        assert LeveragedRotationNasdaq100.BREADTH_UNIVERSE == "nasdaq100"
+
+    def test_russell2000_pairs(self):
+        from ggTrader.lab.strategies.leveraged_rotation import LeveragedRotationRussell2000
+
+        assert LeveragedRotationRussell2000.PAIR_3X == ("TNA", "TZA")
+        assert LeveragedRotationRussell2000.PAIR_2X == ("UWM", "TWM")
+        assert LeveragedRotationRussell2000.BREADTH_UNIVERSE == "russell2000"
+
+    def test_bare_construction_works_without_extra_args(self):
+        """wfo.py calls strategy_cls(cfg) with no extra args in some paths
+        (anchor-set computation) -- every subclass must support this."""
+        from ggTrader.lab.strategies.leveraged_rotation import (
+            LeveragedRotationNasdaq100,
+            LeveragedRotationRussell2000,
+            LeveragedRotationSp500,
+        )
+        from ggTrader.lab.strategy import LabConfig
+
+        for cls in (
+            LeveragedRotationSp500,
+            LeveragedRotationNasdaq100,
+            LeveragedRotationRussell2000,
+        ):
+            strat = cls(LabConfig())
+            assert strat.leverage_tier == "3x"
+
+
+def test_all_three_registered():
+    from ggTrader.lab.strategies import STRATEGY_REGISTRY
+    from ggTrader.lab.strategies.leveraged_rotation import (
+        LeveragedRotationNasdaq100,
+        LeveragedRotationRussell2000,
+        LeveragedRotationSp500,
+    )
+
+    assert STRATEGY_REGISTRY["leveraged_rotation_sp500"] is LeveragedRotationSp500
+    assert STRATEGY_REGISTRY["leveraged_rotation_nasdaq100"] is LeveragedRotationNasdaq100
+    assert STRATEGY_REGISTRY["leveraged_rotation_russell2000"] is LeveragedRotationRussell2000

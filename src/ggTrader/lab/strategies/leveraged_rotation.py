@@ -135,3 +135,24 @@ class _LeveragedRotationBase:
             targets.loc[bar, long_t] = 1.0 if state == "long" else 0.0
             targets.loc[bar, inv_t] = 1.0 if state == "inverse" else 0.0
         return targets
+
+
+class LeveragedRotationSp500(_LeveragedRotationBase):
+    name = "leveraged_rotation_sp500"
+    BREADTH_UNIVERSE = "sp500"
+    PAIR_3X = ("UPRO", "SPXU")
+    PAIR_2X = ("SSO", "SDS")
+
+
+class LeveragedRotationNasdaq100(_LeveragedRotationBase):
+    name = "leveraged_rotation_nasdaq100"
+    BREADTH_UNIVERSE = "nasdaq100"
+    PAIR_3X = ("TQQQ", "SQQQ")
+    PAIR_2X = ("QLD", "QID")
+
+
+class LeveragedRotationRussell2000(_LeveragedRotationBase):
+    name = "leveraged_rotation_russell2000"
+    BREADTH_UNIVERSE = "russell2000"
+    PAIR_3X = ("TNA", "TZA")
+    PAIR_2X = ("UWM", "TWM")

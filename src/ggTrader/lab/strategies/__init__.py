@@ -7,6 +7,11 @@ from .ensemble import EnsembleConvictionSignal, EnsembleSignal
 from .ensemble_ic import EnsembleICSignal
 from .ensemble_kelly import EnsembleKellySignal
 from .idio_vol import IdioVolStrategy
+from .leveraged_rotation import (
+    LeveragedRotationNasdaq100,
+    LeveragedRotationRussell2000,
+    LeveragedRotationSp500,
+)
 from .momentum import CrossSectionalMomentum, DualMomentum
 from .registry import (
     all_strategy_names,
@@ -44,6 +49,9 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "xs_momentum": CrossSectionalMomentum,
     "dual_momentum": DualMomentum,
     "idio_vol": IdioVolStrategy,
+    "leveraged_rotation_sp500": LeveragedRotationSp500,
+    "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
+    "leveraged_rotation_russell2000": LeveragedRotationRussell2000,
 }
 
 __all__ = [
@@ -57,6 +65,9 @@ __all__ = [
     "CrossSectionalMomentum",
     "DualMomentum",
     "IdioVolStrategy",
+    "LeveragedRotationSp500",
+    "LeveragedRotationNasdaq100",
+    "LeveragedRotationRussell2000",
     "EmaCrossSignal",
     "WfoTournamentSignal",
     "BollingerReversionSignal",
