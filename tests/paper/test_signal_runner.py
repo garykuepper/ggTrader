@@ -120,3 +120,89 @@ class TestGenerateSignals:
         mock_members.assert_called_once()
         assert mock_members.call_args[0][0] == "midcap400"
         assert result["universe_size"] == 3
+
+
+class TestGenerateBlendedSignals:
+    @patch("ggTrader.paper.signal_runner.save_rebalance_state")
+    @patch("ggTrader.paper.signal_runner.compute_weights_and_scale")
+    @patch("ggTrader.paper.signal_runner.compute_sleeve_curve")
+    @patch("ggTrader.paper.signal_runner.get_rebalance_state")
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_first_run_rebalances_and_returns_all_sleeves(
+        self, mock_fetch, mock_members, mock_get_state, mock_curve, mock_weights, mock_save
+    ):
+        symbols = ["AAPL", "MSFT"]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+        mock_get_state.return_value = None  # no prior rebalance
+        mock_curve.return_value = pd.Series([1.0, 1.01, 1.02])
+        mock_weights.return_value = ({"sp500": 0.4, "midcap400": 0.3, "nasdaq100": 0.3}, 0.9)
+
+        from ggTrader.paper.signal_runner import generate_blended_signals
+
+        result = generate_blended_signals()
+
+        assert set(result["sleeves"]) == {"sp500", "midcap400", "nasdaq100"}
+        assert result["weights"] == {"sp500": 0.4, "midcap400": 0.3, "nasdaq100": 0.3}
+        assert result["scale"] == 0.9
+        assert result["rebalanced_today"] is True
+        assert result["fallback_used"] is False
+        mock_save.assert_called_once()
+
+    @patch("ggTrader.paper.signal_runner.save_rebalance_state")
+    @patch("ggTrader.paper.signal_runner.compute_weights_and_scale")
+    @patch("ggTrader.paper.signal_runner.compute_sleeve_curve")
+    @patch("ggTrader.paper.signal_runner.get_rebalance_state")
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_mid_month_reuses_stored_weights(
+        self, mock_fetch, mock_members, mock_get_state, mock_curve, mock_weights, mock_save
+    ):
+        symbols = ["AAPL", "MSFT"]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+        today_str = str(pd.Timestamp.now(tz="UTC").normalize().date())
+        mock_get_state.return_value = {
+            "rebalance_date": today_str,
+            "weights": {"sp500": 0.5, "midcap400": 0.25, "nasdaq100": 0.25},
+            "scale": 0.8,
+        }
+
+        from ggTrader.paper.signal_runner import generate_blended_signals
+
+        result = generate_blended_signals()
+
+        assert result["weights"] == {"sp500": 0.5, "midcap400": 0.25, "nasdaq100": 0.25}
+        assert result["scale"] == 0.8
+        assert result["rebalanced_today"] is False
+        mock_curve.assert_not_called()
+        mock_save.assert_not_called()
+
+    @patch("ggTrader.paper.signal_runner.save_rebalance_state")
+    @patch("ggTrader.paper.signal_runner.compute_weights_and_scale")
+    @patch("ggTrader.paper.signal_runner.compute_sleeve_curve")
+    @patch("ggTrader.paper.signal_runner.get_rebalance_state")
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_rebalance_fetch_failure_falls_back_to_stored_weights(
+        self, mock_fetch, mock_members, mock_get_state, mock_curve, mock_weights, mock_save
+    ):
+        symbols = ["AAPL", "MSFT"]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+        mock_get_state.return_value = {
+            "rebalance_date": "2026-05-01",  # stale -- would normally trigger a rebalance
+            "weights": {"sp500": 0.6, "midcap400": 0.2, "nasdaq100": 0.2},
+            "scale": 0.7,
+        }
+        mock_curve.side_effect = RuntimeError("OHLCV fetch failed")
+
+        from ggTrader.paper.signal_runner import generate_blended_signals
+
+        result = generate_blended_signals()
+
+        assert result["weights"] == {"sp500": 0.6, "midcap400": 0.2, "nasdaq100": 0.2}
+        assert result["scale"] == 0.7
+        assert result["fallback_used"] is True
+        mock_save.assert_not_called()

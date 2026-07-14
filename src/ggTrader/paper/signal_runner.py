@@ -8,6 +8,13 @@ from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_
 from ggTrader.lab.data import fetch_stock_ohlcv
 from ggTrader.lab.strategies.ensemble import EnsembleSignal
 from ggTrader.lab.strategy import LabConfig
+from ggTrader.paper.overlay import (
+    SLEEVE_UNIVERSES,
+    compute_sleeve_curve,
+    compute_weights_and_scale,
+    should_rebalance,
+)
+from ggTrader.paper.persist import get_rebalance_state, save_rebalance_state
 
 
 def generate_signals(universe: str = "sp500", lookback_days: int = 120) -> dict:
@@ -71,4 +78,39 @@ def generate_signals(universe: str = "sp500", lookback_days: int = 120) -> dict:
         "as_of": str(last_bar.date()),
         "universe_size": len(sym_cols),
         "gate": gate_info,
+    }
+
+
+def generate_blended_signals() -> dict:
+    """Generate today's signals for all three sleeves, recomputing the
+    inverse-vol/target-vol overlay monthly. On any failure to recompute
+    (e.g. an OHLCV fetch error on a rebalance date), falls back to the last
+    stored weights/scale rather than raising."""
+    today = pd.Timestamp.now(tz="UTC").normalize()
+    sleeves = {universe: generate_signals(universe=universe) for universe in SLEEVE_UNIVERSES}
+
+    state = get_rebalance_state()
+    rebalanced_today = False
+    fallback_used = False
+
+    if should_rebalance(state["rebalance_date"] if state else None, today):
+        try:
+            curves = {u: compute_sleeve_curve(u, today) for u in SLEEVE_UNIVERSES}
+            weights, scale = compute_weights_and_scale(curves)
+            save_rebalance_state(str(today.date()), weights, scale)
+            rebalanced_today = True
+        except Exception:
+            if state is None:
+                raise  # no fallback available on the very first run
+            weights, scale = state["weights"], state["scale"]
+            fallback_used = True
+    else:
+        weights, scale = state["weights"], state["scale"]
+
+    return {
+        "sleeves": sleeves,
+        "weights": weights,
+        "scale": scale,
+        "rebalanced_today": rebalanced_today,
+        "fallback_used": fallback_used,
     }
