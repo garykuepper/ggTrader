@@ -95,6 +95,19 @@ def test_sleeve_slot_caps_minimum_one_slot_for_small_weight():
     assert sum(caps.values()) <= 10
 
 
+def test_sleeve_slot_caps_overflow_correction_holds_invariant_six_sleeves():
+    # Reviewer-reported failing case: 6 sleeves at equal weight ~0.1667 with
+    # max_positions=5. Every sleeve's floor is max(1, int(0.1667*5)) = 1, so
+    # the naive total is 6 -- one over budget. The old one-shot subtraction
+    # from the single largest-weight sleeve, followed by a clamp back up to
+    # a minimum of 1, silently undid the correction and left total == 6.
+    cfg = RiskConfig(max_positions=5)
+    guard = RiskGuard(cfg)
+    weights = {f"sleeve_{i}": 1 / 6 for i in range(6)}
+    caps = guard.sleeve_slot_caps(weights)
+    assert sum(caps.values()) <= 5
+
+
 def test_sleeve_position_notional_fixed_fraction_of_sleeve_capital(guard):
     # portfolio_value * sleeve_weight * scale * position_pct(0.033) --
     # independent of how many signals fire that day.

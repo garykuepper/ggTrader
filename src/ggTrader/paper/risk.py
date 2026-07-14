@@ -60,11 +60,7 @@ class RiskGuard:
         return round(portfolio_value * self.cfg.position_pct, 2)
 
     def check_concentration(
-        self,
-        symbol: str,
-        positions: dict[str, dict],
-        portfolio_value: float,
-        prospective_notional: float = 0.0,
+        self, symbol: str, positions: dict[str, dict], portfolio_value: float, prospective_notional: float = 0.0
     ) -> bool:
         """Returns True if adding to this symbol would exceed concentration limit."""
         current_value = positions.get(symbol, {}).get("market_value", 0.0)
@@ -75,18 +71,30 @@ class RiskGuard:
         """Per-sleeve share of max_positions, proportional to weight.
 
         floor(weight_i * max_positions), minimum 1 slot for any sleeve with
-        weight_i > 0, with leftover slots from rounding assigned to the
-        highest-weight sleeve so the total never exceeds max_positions.
+        weight_i > 0, with leftover slots trimmed one at a time from whichever
+        sleeve currently holds the largest cap until the total no longer
+        exceeds max_positions.
+
+        Invariant: sum(caps.values()) <= max_positions, always. When the
+        number of positive-weight sleeves is <= max_positions, every such
+        sleeve keeps its guaranteed >= 1 slot (the loop drains larger sleeves
+        first, so it never needs to touch a sleeve already down to 1 in that
+        case). When there are literally more positive-weight sleeves than
+        max_positions, giving every one of them a slot is impossible by
+        pigeonhole -- this system only ever calls this with 3 sleeves, so
+        that's not expected in practice, but rather than silently exceeding
+        max_positions, the loop degrades sensibly by also trimming sleeves
+        down to 0 once every sleeve is tied at 1, until the hard cap holds.
         """
         raw = {
             label: (max(1, int(w * self.cfg.max_positions)) if w > 0 else 0)
             for label, w in weights.items()
         }
         total = sum(raw.values())
-        if total > self.cfg.max_positions and raw:
-            top = max(raw, key=lambda k: weights[k])
-            raw[top] -= total - self.cfg.max_positions
-            raw[top] = max(raw[top], 1 if weights[top] > 0 else 0)
+        while total > self.cfg.max_positions and any(cap > 0 for cap in raw.values()):
+            top = max(raw, key=lambda k: raw[k])
+            raw[top] -= 1
+            total -= 1
         return raw
 
     def sleeve_position_notional(
