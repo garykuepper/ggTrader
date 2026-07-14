@@ -50,10 +50,7 @@ class TelegramNotifier:
         msg = f"<b>📊 Paper Trade{status_suffix}</b>\n"
         msg += f"{side} <b>{symbol}</b>\n"
         if qty is not None and qty > 0 and price is not None and price > 0:
-            msg += (
-                f"Shares: {qty:.4f} @ ${price:.2f}\n"
-                f"Total Value: ${qty * price:.2f}\n"
-            )
+            msg += f"Shares: {qty:.4f} @ ${price:.2f}\nTotal Value: ${qty * price:.2f}\n"
         else:
             msg += f"Amount: ${amount:.2f}\n"
         msg += f"Order: <code>{order_id}</code>"
@@ -73,7 +70,10 @@ class TelegramNotifier:
         ]
         if positions:
             lines.append("")
-            for sym, info in sorted(positions.items()):
+            ranked = sorted(
+                positions.items(), key=lambda kv: kv[1].get("unrealized_plpc", 0.0), reverse=True
+            )
+            for sym, info in ranked:
                 pl = info.get("unrealized_pl", 0.0)
                 plpc = info.get("unrealized_plpc", 0.0) * 100
                 tod = info.get("change_today", 0.0) * 100
