@@ -6,12 +6,12 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-**Step 3: Re-measure the SP500-core 1.12 baseline under `eligible_at()` PIT
-universe construction** (same mechanism `blend.py`'s sleeves already use),
-same `--eval-start 2021-01-31 --eval-end 2026-04-30` window, so it's directly
-comparable to the July-12 leverage-realistic blend result (Sharpe 1.14, MaxDD
-−5.39%, `roadmap.md` §3). The current 1.12 baseline used
-`equity_universe_between()`, a static union of every symbol that was ever a
-member across the full window — not true per-fold membership — so the
-1.14-vs-1.12 comparison isn't single-methodology yet. This is the one open
-item blocking a deploy call on the 3-sleeve blend.
+(Empty — the leverage-realistic 3-sleeve blend was resolved July 13 as a
+clean GO on a matched-window comparison: blend Sharpe 1.14 / MaxDD −5.39%
+vs. SP500-core's own same-window Sharpe 0.97 / MaxDD −11.0%. See `roadmap.md`
+§3. No Step 4 queued yet. One flagged-but-not-actioned side finding worth
+picking up eventually: the "1.12" SP500-core figure cited elsewhere in the
+roadmap (Kelly sizing, IC-weighted voting, exit-rule sweep) came from a
+different eval window than this study used — a lightweight audit of which
+eval window each of those comparisons actually used would be worth doing
+before leaning further on any single "beats/misses 1.12" claim.)
