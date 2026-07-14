@@ -353,9 +353,18 @@ class PaperTrader:
         return {"buys": executed_buys, "sells": executed_sells, "errors": errors}
 
 
-def run_paper_trading() -> dict:
-    """Convenience entry point: wire up broker + notifier and run."""
+def run_paper_trading(dry_run: bool = True) -> dict:
+    """Convenience entry point: wire up broker + notifier and run.
+
+    Also checks the account isn't margin-enabled, since the blend's
+    target-vol overlay assumes max_leverage=1.0 (unlevered)."""
     broker = AlpacaBroker()
+    account = broker.get_account()
+    if account["multiplier"] > 1.0:
+        raise RuntimeError(
+            f"Account multiplier is {account['multiplier']}x (margin-enabled); "
+            "the blend overlay assumes an unlevered (1.0x) account."
+        )
     notifier = TelegramNotifier()
-    trader = PaperTrader(broker, notifier)
+    trader = PaperTrader(broker, notifier, dry_run=dry_run)
     return trader.run()

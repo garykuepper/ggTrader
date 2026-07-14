@@ -67,11 +67,15 @@ def db(ctx: typer.Context) -> None:
 
 
 @app.command()
-def paper() -> None:
+def paper(
+    live: bool = typer.Option(
+        False, "--live", help="Submit real paper orders instead of dry-run logging."
+    ),
+) -> None:
     """Run daily paper trading: generate ensemble signals and execute on Alpaca."""
     from ggTrader.paper.trader import run_paper_trading
 
-    result = run_paper_trading()
+    result = run_paper_trading(dry_run=not live)
     print("Paper trading complete:")
     print(f"  Buys:   {result['buys']}")
     print(f"  Sells:  {result['sells']}")

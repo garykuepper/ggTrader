@@ -55,9 +55,26 @@ class TestGetAccount:
         mock_acct.cash = "50000.00"
         mock_acct.portfolio_value = "52000.00"
         mock_acct.buying_power = "100000.00"
+        mock_acct.multiplier = "1"
         broker._client.get_account.return_value = mock_acct
         result = broker.get_account()
-        assert result == {"cash": 50000.0, "portfolio_value": 52000.0, "buying_power": 100000.0}
+        assert result == {
+            "cash": 50000.0,
+            "portfolio_value": 52000.0,
+            "buying_power": 100000.0,
+            "multiplier": 1.0,
+        }
+
+    def test_includes_multiplier(self):
+        broker = _make_broker()
+        mock_acct = MagicMock()
+        mock_acct.cash = "50000.00"
+        mock_acct.portfolio_value = "52000.00"
+        mock_acct.buying_power = "100000.00"
+        mock_acct.multiplier = "1"
+        broker._client.get_account.return_value = mock_acct
+        result = broker.get_account()
+        assert result["multiplier"] == 1.0
 
 
 class TestGetPositions:
