@@ -9,9 +9,14 @@ any) — don't let this file accumulate a backlog.
 (Empty — the leverage-realistic 3-sleeve blend was resolved July 13 as a
 clean GO on a matched-window comparison: blend Sharpe 1.14 / MaxDD −5.39%
 vs. SP500-core's own same-window Sharpe 0.97 / MaxDD −11.0%. See `roadmap.md`
-§3. No Step 4 queued yet. One flagged-but-not-actioned side finding worth
-picking up eventually: the "1.12" SP500-core figure cited elsewhere in the
-roadmap (Kelly sizing, IC-weighted voting, exit-rule sweep) came from a
-different eval window than this study used — a lightweight audit of which
-eval window each of those comparisons actually used would be worth doing
-before leaning further on any single "beats/misses 1.12" claim.)
+§3.
+
+The follow-up eval-window audit is also closed (July 13, no re-runs needed):
+commit dates show the 1.12 baseline (~June 26), exit-rule sweep (June 28),
+IC-weighted voting (June 28), and Kelly sizing (July 6) all used the
+implicit `--eval-end="now"` within ~10 days of each other — negligible drift
+given a full 2.5-month window shift only moved Sharpe by 0.15 in the blend
+check. Only the blend studies pinned an explicit, much-earlier `--eval-end
+2026-04-30`, and that mismatch is the one already fixed. No further action.
+
+No Step 4 queued — nothing else outstanding from this arc.)
