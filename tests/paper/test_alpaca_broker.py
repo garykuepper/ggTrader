@@ -67,12 +67,23 @@ class TestGetPositions:
         mock_pos.symbol = "AAPL"
         mock_pos.qty = "10"
         mock_pos.market_value = "1500.00"
+        mock_pos.current_price = "150.00"
         mock_pos.avg_entry_price = "145.00"
         mock_pos.unrealized_pl = "50.00"
+        mock_pos.unrealized_plpc = "0.0345"
+        mock_pos.change_today = "0.012"
         broker._client.get_all_positions.return_value = [mock_pos]
         result = broker.get_positions()
         assert result == {
-            "AAPL": {"qty": 10.0, "market_value": 1500.0, "avg_entry": 145.0, "unrealized_pl": 50.0}
+            "AAPL": {
+                "qty": 10.0,
+                "market_value": 1500.0,
+                "current_price": 150.0,
+                "avg_entry": 145.0,
+                "unrealized_pl": 50.0,
+                "unrealized_plpc": 0.0345,
+                "change_today": 0.012,
+            }
         }
 
     def test_empty_positions(self):
