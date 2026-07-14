@@ -456,42 +456,63 @@ combine_sleeves(rebalance=\"ME\") cadence validated in research."
 
 - [ ] **Step 1: Write the failing test**
 
-Read `tests/paper/test_paper_persist.py` first to match its existing DB-mocking/fixture style, then add:
+Every existing test class in `tests/paper/test_paper_persist.py` follows the same pattern: `@patch("ggTrader.paper.persist._get_engine")` on the class, a `MagicMock()` standing in for the connection (wired via `mock_engine.return_value.connect.return_value.__enter__`/`__exit__`), and assertions on `mock_conn.execute.call_args_list` — there is no real DB roundtrip anywhere in this file. Follow that exact pattern (mirroring `TestLogSnapshot`/`TestGetLatestSnapshot`), not a real database call:
 
 ```python
-def test_rebalance_state_roundtrip():
-    from ggTrader.paper.persist import (
-        get_rebalance_state,
-        init_paper_schema,
-        save_rebalance_state,
-    )
+@patch("ggTrader.paper.persist._get_engine")
+class TestRebalanceState:
+    def test_save_rebalance_state_inserts_row(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
 
-    init_paper_schema()
-    save_rebalance_state(
-        "2026-07-01", {"sp500": 0.5, "midcap400": 0.3, "nasdaq100": 0.2}, 0.87
-    )
+        from ggTrader.paper.persist import save_rebalance_state
 
-    state = get_rebalance_state()
+        save_rebalance_state(
+            "2026-07-01", {"sp500": 0.5, "midcap400": 0.3, "nasdaq100": 0.2}, 0.87
+        )
 
-    assert state["rebalance_date"] == "2026-07-01"
-    assert state["weights"] == {"sp500": 0.5, "midcap400": 0.3, "nasdaq100": 0.2}
-    assert state["scale"] == 0.87
+        mock_conn.execute.assert_called_once()
+        sql_str = str(mock_conn.execute.call_args[0][0])
+        assert "paper_rebalance_state" in sql_str
+        params = mock_conn.execute.call_args[0][1]
+        assert params["rd"] == "2026-07-01"
+        assert params["s"] == 0.87
 
+    def test_get_rebalance_state_returns_parsed_row(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.first.return_value = (
+            "2026-07-01",
+            {"sp500": 0.5, "midcap400": 0.3, "nasdaq100": 0.2},
+            0.87,
+        )
 
-def test_get_rebalance_state_returns_none_when_empty():
-    from ggTrader.paper.persist import get_rebalance_state, init_paper_schema
+        from ggTrader.paper.persist import get_rebalance_state
 
-    init_paper_schema()
-    # Assumes a clean test DB/table per existing test fixture conventions
-    # used elsewhere in this file -- follow whatever setup/teardown pattern
-    # test_paper_persist.py already uses for paper_snapshots/paper_trades.
+        state = get_rebalance_state()
+
+        assert state["rebalance_date"] == "2026-07-01"
+        assert state["weights"] == {"sp500": 0.5, "midcap400": 0.3, "nasdaq100": 0.2}
+        assert state["scale"] == 0.87
+
+    def test_get_rebalance_state_returns_none_when_empty(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.first.return_value = None
+
+        from ggTrader.paper.persist import get_rebalance_state
+
+        assert get_rebalance_state() is None
 ```
 
-(Match this test's exact fixture/teardown mechanics to whatever `test_paper_persist.py` already does for `paper_snapshots` — read that file's existing setup before finalizing this step, since the plan author has not seen its fixture internals.)
+Also add `"paper_rebalance_state"` to the existing `TestInitSchema.test_creates_tables` assertion list (that test already asserts `"paper_trades"`/`"paper_snapshots"` appear in the executed SQL — add the new table name alongside them).
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `source .venv/bin/activate && pytest tests/paper/test_paper_persist.py -v -k rebalance_state`
+Run: `source .venv/bin/activate && pytest tests/paper/test_paper_persist.py -v -k Rebalance`
 Expected: FAIL — `save_rebalance_state`/`get_rebalance_state` don't exist.
 
 - [ ] **Step 3: Implement**
