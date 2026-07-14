@@ -17,7 +17,7 @@ from ggTrader.paper.persist import (
     log_trade,
 )
 from ggTrader.paper.risk import RiskConfig, RiskGuard
-from ggTrader.paper.signal_runner import generate_signals
+from ggTrader.paper.signal_runner import generate_blended_signals
 
 _log = logging.getLogger(__name__)
 
@@ -30,10 +30,12 @@ class PaperTrader:
         broker: AlpacaBroker,
         notifier: TelegramNotifier,
         risk_cfg: RiskConfig | None = None,
+        dry_run: bool = True,
     ) -> None:
         self._broker = broker
         self._notifier = notifier
         self._risk = RiskGuard(risk_cfg)
+        self._dry_run = dry_run
 
     def _reconcile_pending_orders(self) -> None:
         """Settle orders that were still working at the end of a prior run.
@@ -93,22 +95,47 @@ class PaperTrader:
         self._reconcile_pending_orders()
 
         try:
-            signals = generate_signals()
+            blend = generate_blended_signals()
         except Exception as exc:
             self._notifier.send(f"Paper trading failed: signal generation error\n{exc}")
             raise
 
-        gate = signals.get("gate", {})
-        if gate.get("gate_enabled") and gate.get("scores"):
-            scores = gate["scores"]
-            kept = gate.get("kept_buys", 0)
-            raw = gate.get("raw_buys", 0)
-            score_strs = [f"{s}({v:.2f})" for s, v in sorted(scores.items(), key=lambda x: -x[1])]
+        if blend["fallback_used"]:
             self._notifier.send(
-                f"<b>🤖 ML Gate:</b> kept {kept}/{raw} signals\n" + ", ".join(score_strs)
+                "<b>⚠️ Overlay fallback:</b> rebalance-day data fetch failed; "
+                "reusing last month's sleeve weights."
             )
-        elif gate.get("gate_enabled") is False:
-            _log.info("ML gate disabled (no model file)")
+
+        weights, scale = blend["weights"], blend["scale"]
+        all_buys: list[tuple[str, str]] = []  # (symbol, sleeve)
+        all_sells: list[str] = []
+        gate_infos: dict[str, dict] = {}
+        for universe, sleeve_signals in blend["sleeves"].items():
+            for sym in sleeve_signals["buys"]:
+                all_buys.append((sym, universe))
+            all_sells.extend(sleeve_signals["sells"])
+            gate_infos[universe] = sleeve_signals.get("gate", {})
+
+        signals = {
+            "buys": [sym for sym, _u in all_buys],
+            "sells": sorted(set(all_sells)),
+            "as_of": next(iter(blend["sleeves"].values()))["as_of"],
+        }
+
+        for universe, gate in gate_infos.items():
+            if gate.get("gate_enabled") and gate.get("scores"):
+                scores = gate["scores"]
+                kept = gate.get("kept_buys", 0)
+                raw = gate.get("raw_buys", 0)
+                score_strs = [
+                    f"{s}({v:.2f})" for s, v in sorted(scores.items(), key=lambda x: -x[1])
+                ]
+                self._notifier.send(
+                    f"<b>🤖 ML Gate ({universe}):</b> kept {kept}/{raw} signals\n"
+                    + ", ".join(score_strs)
+                )
+            elif gate.get("gate_enabled") is False:
+                _log.info("ML gate disabled for %s (no model file)", universe)
 
         account = self._broker.get_account()
         positions = self._broker.get_positions()
@@ -146,6 +173,10 @@ class PaperTrader:
             if symbol not in positions:
                 continue
             qty = positions[symbol]["qty"]
+            if self._dry_run:
+                executed_sells.append(symbol)
+                self._notifier.send(f"<b>🔍 DRY RUN sell:</b> {symbol} (qty {qty})")
+                continue
             try:
                 oid = self._broker.submit_sell(symbol, qty)
                 executed_sells.append(symbol)
@@ -153,31 +184,58 @@ class PaperTrader:
             except Exception as exc:
                 errors.append(f"SELL {symbol}: {exc}")
 
-        # Buys — respect position limits
-        slots_available = self._risk.max_new_positions(len(positions) - len(executed_sells))
-        notional = self._risk.position_notional(portfolio_value)
+        # Buys — respect global + per-sleeve position limits. Each position is
+        # sized as a fixed fraction of its own sleeve's allocated capital
+        # (weight * scale * portfolio_value), independent of how many signals
+        # fire that day within the sleeve — sleeve_slot_caps governs sleeve
+        # concurrency, sleeve_position_notional governs per-trade size.
+        slot_caps = self._risk.sleeve_slot_caps(weights)
+        sleeve_open_count = {u: 0 for u in weights}
+        buys_by_sleeve: dict[str, list[str]] = {}
+        for symbol, universe in all_buys:
+            buys_by_sleeve.setdefault(universe, []).append(symbol)
 
+        slots_available = self._risk.max_new_positions(len(positions) - len(executed_sells))
         buys_attempted = 0
-        for symbol in signals["buys"]:
-            if symbol in positions:
-                continue
-            if buys_attempted >= slots_available:
-                _log.info(
-                    "Max positions reached (%d), skipping %s", self._risk.cfg.max_positions, symbol
-                )
-                break
-            if self._risk.check_concentration(
-                symbol, positions, portfolio_value, prospective_notional=notional
-            ):
-                _log.info("Concentration limit for %s, skipping", symbol)
-                continue
-            try:
-                oid = self._broker.submit_buy(symbol, notional)
-                executed_buys.append(symbol)
-                buys_attempted += 1
-                pending_orders.append((oid, "BUY", symbol, notional))
-            except Exception as exc:
-                errors.append(f"BUY {symbol}: {exc}")
+        for universe, syms in buys_by_sleeve.items():
+            sleeve_notional = self._risk.sleeve_position_notional(
+                portfolio_value, weights.get(universe, 0.0), scale
+            )
+            sleeve_cap = slot_caps.get(universe, 0)
+            for symbol in syms:
+                if symbol in positions:
+                    continue
+                if buys_attempted >= slots_available:
+                    _log.info(
+                        "Max positions reached (%d), skipping %s",
+                        self._risk.cfg.max_positions,
+                        symbol,
+                    )
+                    break
+                if sleeve_open_count[universe] >= sleeve_cap:
+                    _log.info("Sleeve %s slot cap reached, skipping %s", universe, symbol)
+                    break
+                if self._risk.check_concentration(
+                    symbol, positions, portfolio_value, prospective_notional=sleeve_notional
+                ):
+                    _log.info("Concentration limit for %s, skipping", symbol)
+                    continue
+                if self._dry_run:
+                    executed_buys.append(symbol)
+                    buys_attempted += 1
+                    sleeve_open_count[universe] += 1
+                    self._notifier.send(
+                        f"<b>🔍 DRY RUN buy:</b> {symbol} (${sleeve_notional:.0f}, sleeve={universe})"
+                    )
+                    continue
+                try:
+                    oid = self._broker.submit_buy(symbol, sleeve_notional)
+                    executed_buys.append(symbol)
+                    buys_attempted += 1
+                    sleeve_open_count[universe] += 1
+                    pending_orders.append((oid, "BUY", symbol, sleeve_notional))
+                except Exception as exc:
+                    errors.append(f"BUY {symbol}: {exc}")
 
         # Poll submitted orders until they fill (or timeout)
         filled_orders: dict[str, dict] = {}
@@ -274,9 +332,10 @@ class PaperTrader:
 
         daily_pnl = new_value - day_start
 
+        weight_str = ", ".join(f"{u}={w:.0%}" for u, w in weights.items())
         risk_line = (
             f"Positions: {len(updated_positions)}/{self._risk.cfg.max_positions} | "
-            f"Size: ${notional:.0f}/trade ({self._risk.cfg.position_pct:.1%})"
+            f"Scale: {scale:.2f}x | Weights: {weight_str}"
         )
         self._notifier.daily_summary(new_value, daily_pnl, updated_positions)
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
