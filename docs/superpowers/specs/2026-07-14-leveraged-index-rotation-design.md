@@ -67,22 +67,43 @@ Real price history confirmed for all six tickers below, full-history back to
 
 ## Mechanism
 
-**Signal (breadth).** For a given universe and `asof` date, run the
+**Rebalance cadence: monthly, not daily.** The existing weight-strategy WFO
+harness (`rebalance_dates()` in `wfo.py`, shared with `idio_vol` and every
+other weight-based strategy) only re-evaluates positions on the last trading
+day of each month — hardcoded, not a parameter. Reusing it as-is (per this
+spec's "no framework changes" scope) means this is a **monthly
+regime-timing strategy**, not a fast tactical rotation: breadth is checked
+once a month, and whatever state that implies is held for the following
+month. This is treated as a feature, not just a constraint — frequent flips
+are exactly what causes the worst decay on leveraged ETFs, so a monthly
+cadence is arguably the lower-whipsaw-risk design anyway. Extending the
+harness to daily cadence was considered and explicitly deferred as separate,
+larger-scoped work that would touch shared code other strategies depend on.
+
+**Signal (breadth).** As of each month-end rebalance date, run the
 *unmodified* `EnsembleSignal(LabConfig())` — same construction as the
 deployed core strategy, no separate params — against that universe's
-point-in-time eligible constituents. Compute
-`breadth = (# stocks with an active buy signal) / (# eligible stocks)`.
+point-in-time eligible constituents, vectorized across the strategy's full
+data window in one pass (mirroring how `EnsembleSignal.to_targets()` already
+computes its own entries/exits — no per-day loop needed). Compute
+`breadth = (# stocks with an active buy signal that day) / (# stocks in the
+breadth universe)`, using a fixed denominator (the full breadth-universe
+size, not the count of stocks currently past warmup) — a deliberate
+simplification that slightly understates breadth in the first ~1-2 years of
+the window while few symbols have enough trailing history; each WFO fold's
+own training window already begins well after this warmup period, so it
+doesn't affect the eval folds.
 
-**Rotation rule.** Three states, one held at a time:
+**Rotation rule.** Three states, one held at a time, decided at each
+monthly rebalance from that date's breadth value:
 - `breadth > upper_threshold` → 100% long the universe's leveraged-long ETF
 - `breadth < lower_threshold` → 100% long the universe's inverse ETF
 - otherwise → cash
 
-**Hysteresis / minimum hold.** A `min_hold_days` parameter prevents
-re-evaluating the rotation decision more often than every N trading days,
-guarding against whipsaw (rapid flips are especially costly here because
-leveraged ETFs compound daily-rebalancing decay on top of any trading
-losses). Swept, not fixed.
+**Hysteresis / minimum hold.** A `min_hold_months` parameter requires N
+consecutive monthly signals in the same direction before the position
+actually flips, guarding against whipsaw between adjacent regime states.
+Swept, not fixed.
 
 **Leverage tier.** `{2x, 3x}` swept per universe, using that tier's real ETF
 pair from the table above — not a synthetic leveraged-multiple of the
@@ -90,35 +111,54 @@ underlying index, since the whole point is to capture actual decay behavior.
 
 ## Architecture
 
-New `LeveragedRotationStrategy` in
-`src/ggTrader/lab/strategies/leveraged_rotation.py`, `target_kind="weights"`
-(same protocol `xs_momentum`/`idio_vol` already use — a full weight on one
-ETF, zero on the other, simulated via the existing `Portfolio.from_orders`
-path; no new `target_kind` needed).
+A shared `_LeveragedRotationBase` in
+`src/ggTrader/lab/strategies/leveraged_rotation.py` holding all breadth +
+rotation + hysteresis logic, plus one thin subclass per universe
+(`LeveragedRotationSp500`, `LeveragedRotationNasdaq100`,
+`LeveragedRotationRussell2000`), each fixing its own class-level ETF-pair
+constants (`PAIR_3X`, `PAIR_2X`). `target_kind = "weights"` (same protocol
+`xs_momentum`/`idio_vol` already use — a full weight on one ETF, zero on the
+other, simulated via the existing `Portfolio.from_orders` path; no new
+`target_kind` needed).
 
-**Data flow:** the OHLCV frame passed to `select()` combines the universe's
-constituent stocks (for breadth) *and* that universe's ETF pair, both tiers
-(4 tickers) in one combined fetch. `universe_fn` for this strategy returns a
-fixed `eligible = [long_ticker, inverse_ticker]` for the active leverage
-tier — it does not vary by `asof` the way stock-universe membership does.
-`select()` computes breadth from the constituent columns of `data` (present
-in the frame but outside `eligible`) and returns a plan targeting one of the
-two ETFs, or neither (cash). This requires zero changes to `wfo.py` or the
-`Strategy` protocol — it's a normal weight-based strategy from the harness's
-point of view, just with a data frame that mixes a large breadth-source
-universe and a tiny 2-ticker tradeable universe.
+Three subclasses rather than one universe-parametrized class because
+`wfo.py` constructs strategy instances as `strategy_cls(cfg)` (bare, no
+extra args — used for anchor-set computation) and `strategy_cls(combo_cfg,
+**extra_kwargs)` (swept params only) in multiple places. Any constructor
+argument that isn't part of `sweep_params()` has to come from a class
+default, not a required parameter — so the universe binding lives on the
+class, not the instance.
 
-**Registration:** added to `STRATEGY_REGISTRY` like every other strategy.
-`sweep_params()` returns the grid: `upper_threshold`, `lower_threshold`,
-`min_hold_days`, `leverage_tier`.
+**Data flow:** the OHLCV frame passed into `run_wfo()` combines the
+universe's constituent stocks (for breadth) *and* **all four** ETF tickers
+for that universe (both leverage tiers), in one combined fetch. `universe_fn`
+returns that fixed 4-ticker list regardless of `asof`/`past` — it can't be
+leverage-tier-aware, because `universe_fn(asof, past)` is called once per
+`(asof, combo)` pair without seeing which combo is active. Instead,
+`select()` reads `self.leverage_tier` (its own swept param) to pick 2 of the
+4 eligible tickers to actually target, and computes breadth from the *other*
+columns present in `data` — the breadth-universe stocks, which are in the
+combined frame but outside `eligible`. This requires zero changes to
+`wfo.py` or the `Strategy` protocol.
 
-**Execution:** run the existing `--wfo` CLI once per universe
-(`--strategy leveraged_rotation --universe sp500`, `--universe nasdaq100`,
-`--universe russell2000`), each gate-honest (NDH + DSR, same gates every
-other strategy in this project uses) against its own SPY-benchmarked window
-starting 2010 (per your call — this doesn't need to match the SP500 core's
-exact eval window; it's a new baseline in its own right, apples-to-apples
-against SPY on the same dates within each universe's own run).
+**Registration:** all three subclasses added to `STRATEGY_REGISTRY`.
+`sweep_params()` (shared via the base class) returns the grid:
+`upper_threshold`, `lower_threshold`, `min_hold_months`, `leverage_tier`.
+
+**Execution:** the generic `ggt lab --wfo` CLI path always derives `eligible`
+from real point-in-time index membership (`equity_universe_between` +
+`eligible_at`) and has no hook to override it — only `blend.py`'s
+`run_blend()` threads a custom `universe_fn` into `run_wfo()`. Since this
+strategy needs the fixed 4-ticker `universe_fn` described above, it gets its
+own small orchestration script, `scripts/leveraged_rotation_research.py`
+(same shape as `blend.py`'s `run_blend()`, not a new CLI mode): for each of
+the 3 universes, loads the combined OHLCV (constituents + 4 ETF tickers),
+calls `run_wfo()` directly with the fixed `universe_fn` and that universe's
+subclass, gate-honest (NDH + DSR, same gates every other strategy in this
+project uses) against its own SPY-benchmarked window starting 2010 (per your
+call — this doesn't need to match the SP500 core's exact eval window; it's a
+new baseline in its own right, apples-to-apples against SPY on the same
+dates within each universe's own run).
 
 ## Verification
 
@@ -136,8 +176,11 @@ against SPY on the same dates within each universe's own run).
 
 ## Deliverable
 
-- `src/ggTrader/lab/strategies/leveraged_rotation.py` + tests, registered in
-  `STRATEGY_REGISTRY`.
+- `src/ggTrader/lab/strategies/leveraged_rotation.py` (base class + 3
+  per-universe subclasses) + tests, registered in `STRATEGY_REGISTRY`.
+- `scripts/leveraged_rotation_research.py` orchestration script (loads
+  combined OHLCV per universe, runs `run_wfo()` with the fixed `universe_fn`,
+  prints/persists a summary table across all 3 universes × 2 leverage tiers).
 - One research report (following `docs/research/TEMPLATE`'s standard
   6-section structure) covering all three universes and both leverage
   tiers, with a GO/NO-GO verdict per universe and a combined verdict.
