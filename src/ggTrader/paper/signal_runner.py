@@ -97,13 +97,17 @@ def generate_blended_signals() -> dict:
         try:
             curves = {u: compute_sleeve_curve(u, today) for u in SLEEVE_UNIVERSES}
             weights, scale = compute_weights_and_scale(curves)
-            save_rebalance_state(str(today.date()), weights, scale)
-            rebalanced_today = True
         except Exception:
             if state is None:
                 raise  # no fallback available on the very first run
             weights, scale = state["weights"], state["scale"]
             fallback_used = True
+        else:
+            # Only a recompute failure (fetch/compute) falls back to stale
+            # state. A persistence failure here is a genuine error and
+            # should propagate rather than be swallowed into fallback_used.
+            save_rebalance_state(str(today.date()), weights, scale)
+            rebalanced_today = True
     else:
         weights, scale = state["weights"], state["scale"]
 

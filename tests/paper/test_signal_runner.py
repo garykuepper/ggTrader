@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 
 def _mock_ohlcv(symbols: list[str], n_days: int = 120) -> pd.DataFrame:
@@ -205,4 +206,26 @@ class TestGenerateBlendedSignals:
         assert result["weights"] == {"sp500": 0.6, "midcap400": 0.2, "nasdaq100": 0.2}
         assert result["scale"] == 0.7
         assert result["fallback_used"] is True
+        mock_save.assert_not_called()
+
+    @patch("ggTrader.paper.signal_runner.save_rebalance_state")
+    @patch("ggTrader.paper.signal_runner.compute_weights_and_scale")
+    @patch("ggTrader.paper.signal_runner.compute_sleeve_curve")
+    @patch("ggTrader.paper.signal_runner.get_rebalance_state")
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_first_run_rebalance_failure_raises(
+        self, mock_fetch, mock_members, mock_get_state, mock_curve, mock_weights, mock_save
+    ):
+        symbols = ["AAPL", "MSFT"]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+        mock_get_state.return_value = None  # no prior rebalance -- nothing to fall back to
+        mock_curve.side_effect = RuntimeError("OHLCV fetch failed")
+
+        from ggTrader.paper.signal_runner import generate_blended_signals
+
+        with pytest.raises(RuntimeError, match="OHLCV fetch failed"):
+            generate_blended_signals()
+
         mock_save.assert_not_called()
