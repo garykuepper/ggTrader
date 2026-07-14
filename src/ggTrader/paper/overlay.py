@@ -54,3 +54,46 @@ def compute_sleeve_curve(universe: str, asof: pd.Timestamp, window_days: int = 9
     )
     curve = equity_df["ensemble"].dropna()
     return curve.loc[curve.index >= (asof - pd.Timedelta(days=window_days))]
+
+
+def compute_weights_and_scale(
+    curves: dict[str, pd.Series],
+    target_vol: float = 0.068,
+    window: int = 60,
+    max_leverage: float = 1.0,
+) -> tuple[dict[str, float], float]:
+    """Inverse-vol weights + target-vol leverage scale for the given sleeve
+    curves, reusing the unmodified lab/allocation.py functions."""
+    from ggTrader.lab.allocation import (
+        inverse_vol_weights,
+        target_vol_scale,
+        trailing_realized_vol,
+    )
+
+    returns = {label: curve.pct_change().dropna() for label, curve in curves.items()}
+    vols = {
+        label: float(trailing_realized_vol(r, window=window).iloc[-1]) if len(r) >= window else None
+        for label, r in returns.items()
+    }
+    weights = inverse_vol_weights(vols)
+
+    common = None
+    for label, r in returns.items():
+        common = r.index if common is None else common.intersection(r.index)
+    blended = sum(returns[label].reindex(common) * w for label, w in weights.items())
+    blend_vol = (
+        float(trailing_realized_vol(blended, window=window).iloc[-1])
+        if common is not None and len(common) >= window
+        else float("nan")
+    )
+    scale = target_vol_scale(blend_vol, target_vol, max_leverage=max_leverage)
+    return weights, scale
+
+
+def should_rebalance(last_rebalance_date: str | None, today: pd.Timestamp) -> bool:
+    """True on the first run after entering a new calendar month, or if
+    there is no prior rebalance recorded."""
+    if last_rebalance_date is None:
+        return True
+    last = pd.Timestamp(last_rebalance_date, tz="UTC")
+    return (today.year, today.month) != (last.year, last.month)

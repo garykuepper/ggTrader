@@ -63,3 +63,39 @@ class TestComputeSleeveCurve:
         assert "EnsembleSignal(cfg)" in runner_src
         assert "LabConfig(min_history_bars=60)" in overlay_src
         assert "LabConfig(min_history_bars=60)" in runner_src
+
+
+class TestComputeWeightsAndScale:
+    def test_weights_sum_to_one_and_scale_capped(self):
+        from ggTrader.paper.overlay import compute_weights_and_scale
+
+        dates = pd.bdate_range("2026-01-01", periods=120, tz="UTC")
+        rng = np.random.default_rng(3)
+        curves = {
+            "sp500": pd.Series(10000 * np.exp(rng.normal(0, 0.01, 120).cumsum()), index=dates),
+            "midcap400": pd.Series(10000 * np.exp(rng.normal(0, 0.02, 120).cumsum()), index=dates),
+            "nasdaq100": pd.Series(10000 * np.exp(rng.normal(0, 0.015, 120).cumsum()), index=dates),
+        }
+
+        weights, scale = compute_weights_and_scale(curves, max_leverage=1.0)
+
+        assert set(weights) == {"sp500", "midcap400", "nasdaq100"}
+        assert abs(sum(weights.values()) - 1.0) < 1e-9
+        assert 0.0 <= scale <= 1.0
+
+
+class TestShouldRebalance:
+    def test_none_last_rebalance_triggers(self):
+        from ggTrader.paper.overlay import should_rebalance
+
+        assert should_rebalance(None, pd.Timestamp("2026-07-13", tz="UTC")) is True
+
+    def test_same_month_does_not_trigger(self):
+        from ggTrader.paper.overlay import should_rebalance
+
+        assert should_rebalance("2026-07-01", pd.Timestamp("2026-07-13", tz="UTC")) is False
+
+    def test_new_month_triggers(self):
+        from ggTrader.paper.overlay import should_rebalance
+
+        assert should_rebalance("2026-06-15", pd.Timestamp("2026-07-01", tz="UTC")) is True
