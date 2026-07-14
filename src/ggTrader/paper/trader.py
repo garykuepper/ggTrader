@@ -356,11 +356,14 @@ class PaperTrader:
 def run_paper_trading(dry_run: bool = True) -> dict:
     """Convenience entry point: wire up broker + notifier and run.
 
-    Also checks the account isn't margin-enabled, since the blend's
-    target-vol overlay assumes max_leverage=1.0 (unlevered)."""
+    Before submitting real orders (dry_run=False), checks the account isn't
+    margin-enabled, since the blend's target-vol overlay assumes
+    max_leverage=1.0 (unlevered). Dry-run never submits real orders, so it
+    is allowed regardless of account type -- gating it too would defeat its
+    purpose as a safe burn-in/smoke-test mode."""
     broker = AlpacaBroker()
     account = broker.get_account()
-    if account["multiplier"] > 1.0:
+    if not dry_run and account["multiplier"] > 1.0:
         raise RuntimeError(
             f"Account multiplier is {account['multiplier']}x (margin-enabled); "
             "the blend overlay assumes an unlevered (1.0x) account."

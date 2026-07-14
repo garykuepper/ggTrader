@@ -448,3 +448,57 @@ class TestDryRun:
         notifier.send.assert_any_call(
             f"<b>🔍 DRY RUN buy:</b> AAPL (${round(10000.0 * 1.0 * 1.0 * 0.033, 0):.0f}, sleeve=sp500)"
         )
+
+
+class TestRunPaperTrading:
+    """The margin pre-flight check must not block dry-run: dry-run submits no
+    real orders regardless of the account's margin capability, so gating it
+    on account type defeats the smoke-test/burn-in mode it exists to enable.
+    The check should only fire before real order submission (dry_run=False)."""
+
+    @patch("ggTrader.paper.trader.TelegramNotifier")
+    @patch("ggTrader.paper.trader.AlpacaBroker")
+    @patch("ggTrader.paper.trader.PaperTrader")
+    def test_margin_account_allowed_in_dry_run(self, mock_trader_cls, mock_broker_cls, _notif):
+        from ggTrader.paper.trader import run_paper_trading
+
+        mock_broker = mock_broker_cls.return_value
+        mock_broker.get_account.return_value = {"multiplier": 4.0}
+        mock_trader_cls.return_value.run.return_value = {"buys": [], "sells": [], "errors": []}
+
+        run_paper_trading(dry_run=True)
+
+        mock_trader_cls.assert_called_once()
+        assert mock_trader_cls.call_args.kwargs["dry_run"] is True
+
+    @patch("ggTrader.paper.trader.TelegramNotifier")
+    @patch("ggTrader.paper.trader.AlpacaBroker")
+    @patch("ggTrader.paper.trader.PaperTrader")
+    def test_margin_account_rejected_when_going_live(
+        self, mock_trader_cls, mock_broker_cls, _notif
+    ):
+        from ggTrader.paper.trader import run_paper_trading
+
+        mock_broker = mock_broker_cls.return_value
+        mock_broker.get_account.return_value = {"multiplier": 4.0}
+
+        with pytest.raises(RuntimeError, match="margin-enabled"):
+            run_paper_trading(dry_run=False)
+
+        mock_trader_cls.assert_not_called()
+
+    @patch("ggTrader.paper.trader.TelegramNotifier")
+    @patch("ggTrader.paper.trader.AlpacaBroker")
+    @patch("ggTrader.paper.trader.PaperTrader")
+    def test_unlevered_account_allowed_when_going_live(
+        self, mock_trader_cls, mock_broker_cls, _notif
+    ):
+        from ggTrader.paper.trader import run_paper_trading
+
+        mock_broker = mock_broker_cls.return_value
+        mock_broker.get_account.return_value = {"multiplier": 1.0}
+        mock_trader_cls.return_value.run.return_value = {"buys": [], "sells": [], "errors": []}
+
+        run_paper_trading(dry_run=False)
+
+        assert mock_trader_cls.call_args.kwargs["dry_run"] is False
