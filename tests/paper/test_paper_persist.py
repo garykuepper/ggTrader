@@ -19,6 +19,7 @@ class TestInitSchema:
         executed_sql = " ".join(str(call[0][0]) for call in mock_conn.execute.call_args_list)
         assert "paper_trades" in executed_sql
         assert "paper_snapshots" in executed_sql
+        assert "paper_rebalance_state" in executed_sql
 
 
 @patch("ggTrader.paper.persist._get_engine")
@@ -74,3 +75,50 @@ class TestGetLatestSnapshot:
         from ggTrader.paper.persist import get_latest_snapshot
 
         assert get_latest_snapshot() is None
+
+
+@patch("ggTrader.paper.persist._get_engine")
+class TestRebalanceState:
+    def test_save_rebalance_state_inserts_row(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+
+        from ggTrader.paper.persist import save_rebalance_state
+
+        save_rebalance_state("2026-07-01", {"sp500": 0.5, "midcap400": 0.3, "nasdaq100": 0.2}, 0.87)
+
+        mock_conn.execute.assert_called_once()
+        sql_str = str(mock_conn.execute.call_args[0][0])
+        assert "paper_rebalance_state" in sql_str
+        params = mock_conn.execute.call_args[0][1]
+        assert params["rd"] == "2026-07-01"
+        assert params["s"] == 0.87
+
+    def test_get_rebalance_state_returns_parsed_row(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.first.return_value = (
+            "2026-07-01",
+            {"sp500": 0.5, "midcap400": 0.3, "nasdaq100": 0.2},
+            0.87,
+        )
+
+        from ggTrader.paper.persist import get_rebalance_state
+
+        state = get_rebalance_state()
+
+        assert state["rebalance_date"] == "2026-07-01"
+        assert state["weights"] == {"sp500": 0.5, "midcap400": 0.3, "nasdaq100": 0.2}
+        assert state["scale"] == 0.87
+
+    def test_get_rebalance_state_returns_none_when_empty(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.first.return_value = None
+
+        from ggTrader.paper.persist import get_rebalance_state
+
+        assert get_rebalance_state() is None
