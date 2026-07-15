@@ -66,3 +66,51 @@ class RiskGuard:
         current_value = positions.get(symbol, {}).get("market_value", 0.0)
         total_prospective_value = current_value + prospective_notional
         return (total_prospective_value / portfolio_value) >= self.cfg.max_concentration_pct
+
+    def sleeve_slot_caps(self, weights: dict[str, float]) -> dict[str, int]:
+        """Per-sleeve share of max_positions, proportional to weight.
+
+        floor(weight_i * max_positions), minimum 1 slot for any sleeve with
+        weight_i > 0, with leftover slots trimmed one at a time from whichever
+        sleeve currently holds the largest cap until the total no longer
+        exceeds max_positions.
+
+        Invariant: sum(caps.values()) <= max_positions, always. When the
+        number of positive-weight sleeves is <= max_positions, every such
+        sleeve keeps its guaranteed >= 1 slot (the loop drains larger sleeves
+        first, so it never needs to touch a sleeve already down to 1 in that
+        case). When there are literally more positive-weight sleeves than
+        max_positions, giving every one of them a slot is impossible by
+        pigeonhole -- this system only ever calls this with 3 sleeves, so
+        that's not expected in practice, but rather than silently exceeding
+        max_positions, the loop degrades sensibly by also trimming sleeves
+        down to 0 once every sleeve is tied at 1, until the hard cap holds.
+        """
+        raw = {
+            label: (max(1, int(w * self.cfg.max_positions)) if w > 0 else 0)
+            for label, w in weights.items()
+        }
+        total = sum(raw.values())
+        while total > self.cfg.max_positions and any(cap > 0 for cap in raw.values()):
+            top = max(raw, key=lambda k: raw[k])
+            raw[top] -= 1
+            total -= 1
+        return raw
+
+    def sleeve_position_notional(
+        self,
+        portfolio_value: float,
+        sleeve_weight: float,
+        scale: float,
+    ) -> float:
+        """Dollar amount for a single new position within one sleeve.
+
+        A fixed fraction (position_pct) of that sleeve's allocated capital
+        (portfolio_value * sleeve_weight * scale) -- independent of how many
+        signals fire that day. Matches the same fixed-fraction-per-entry
+        convention simulate_signals used to generate each sleeve's own
+        validated backtest curve; the weight*scale overlay caps how much
+        total capital a sleeve may deploy (via sleeve_slot_caps), it does
+        not resize individual positions based on signal count.
+        """
+        return round(portfolio_value * sleeve_weight * scale * self.cfg.position_pct, 2)

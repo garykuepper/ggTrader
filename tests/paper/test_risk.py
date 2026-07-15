@@ -76,3 +76,55 @@ def test_concentration_below_limit(guard):
 def test_concentration_above_limit(guard):
     positions = {"AAPL": {"market_value": 60.0}}
     assert guard.check_concentration("AAPL", positions, 1000.0)
+
+
+def test_sleeve_slot_caps_proportional(guard):
+    caps = guard.sleeve_slot_caps({"sp500": 0.5, "midcap400": 0.3, "nasdaq100": 0.2})
+    assert caps["sp500"] == 15
+    assert caps["midcap400"] == 9
+    assert caps["nasdaq100"] == 6
+    assert sum(caps.values()) <= guard.cfg.max_positions
+
+
+def test_sleeve_slot_caps_minimum_one_slot_for_small_weight():
+    cfg = RiskConfig(max_positions=10)
+    guard = RiskGuard(cfg)
+    caps = guard.sleeve_slot_caps({"sp500": 0.95, "midcap400": 0.03, "nasdaq100": 0.02})
+    assert caps["midcap400"] >= 1
+    assert caps["nasdaq100"] >= 1
+    assert sum(caps.values()) <= 10
+
+
+def test_sleeve_slot_caps_overflow_correction_holds_invariant_six_sleeves():
+    # Reviewer-reported failing case: 6 sleeves at equal weight ~0.1667 with
+    # max_positions=5. Every sleeve's floor is max(1, int(0.1667*5)) = 1, so
+    # the naive total is 6 -- one over budget. The old one-shot subtraction
+    # from the single largest-weight sleeve, followed by a clamp back up to
+    # a minimum of 1, silently undid the correction and left total == 6.
+    cfg = RiskConfig(max_positions=5)
+    guard = RiskGuard(cfg)
+    weights = {f"sleeve_{i}": 1 / 6 for i in range(6)}
+    caps = guard.sleeve_slot_caps(weights)
+    assert sum(caps.values()) <= 5
+
+
+def test_sleeve_position_notional_fixed_fraction_of_sleeve_capital(guard):
+    # portfolio_value * sleeve_weight * scale * position_pct(0.033) --
+    # independent of how many signals fire that day.
+    notional = guard.sleeve_position_notional(portfolio_value=10000.0, sleeve_weight=0.4, scale=0.9)
+    assert notional == round(10000.0 * 0.4 * 0.9 * 0.033, 2)
+
+
+def test_sleeve_position_notional_zero_weight_is_zero(guard):
+    notional = guard.sleeve_position_notional(portfolio_value=10000.0, sleeve_weight=0.0, scale=0.9)
+    assert notional == 0.0
+
+
+def test_sleeve_position_notional_matches_flat_when_full_weight_full_scale(guard):
+    # Sanity check: a single sleeve at weight=1.0, scale=1.0 must reproduce
+    # today's flat position_notional exactly -- this is the degenerate case
+    # a 1-sleeve "blend" should collapse back to current live behavior.
+    sleeve_notional = guard.sleeve_position_notional(
+        portfolio_value=10000.0, sleeve_weight=1.0, scale=1.0
+    )
+    assert sleeve_notional == guard.position_notional(10000.0)

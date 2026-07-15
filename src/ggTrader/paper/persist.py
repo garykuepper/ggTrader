@@ -33,6 +33,14 @@ CREATE TABLE IF NOT EXISTS paper_pending_orders (
     notional DOUBLE PRECISION NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS paper_rebalance_state (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    rebalance_date DATE NOT NULL,
+    weights JSONB NOT NULL,
+    scale DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT single_row CHECK (id = 1)
+);
 """
 
 
@@ -135,5 +143,38 @@ def log_snapshot(run_date: str, portfolio_value: float, cash: float, positions: 
                 "cash": cash,
                 "pos": json.dumps(positions),
             },
+        )
+        conn.commit()
+
+
+def get_rebalance_state() -> dict | None:
+    """Return the current sleeve weights/scale, or None if never set."""
+    with _get_engine().connect() as conn:
+        row = conn.execute(
+            text("SELECT rebalance_date, weights, scale FROM paper_rebalance_state WHERE id = 1")
+        ).first()
+    if row is None:
+        return None
+    rebalance_date, weights, scale = row
+    return {
+        "rebalance_date": str(rebalance_date),
+        "weights": weights if isinstance(weights, dict) else json.loads(weights),
+        "scale": float(scale),
+    }
+
+
+def save_rebalance_state(rebalance_date: str, weights: dict[str, float], scale: float) -> None:
+    """Upsert the single current rebalance-state row (id=1)."""
+    with _get_engine().connect() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO paper_rebalance_state (id, rebalance_date, weights, scale) "
+                "VALUES (1, :rd, :w, :s) "
+                "ON CONFLICT (id) DO UPDATE SET "
+                "rebalance_date = EXCLUDED.rebalance_date, "
+                "weights = EXCLUDED.weights, "
+                "scale = EXCLUDED.scale"
+            ),
+            {"rd": rebalance_date, "w": json.dumps(weights), "s": scale},
         )
         conn.commit()

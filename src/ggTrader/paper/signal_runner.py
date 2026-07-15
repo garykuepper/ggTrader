@@ -1,17 +1,24 @@
-"""Generate today's ensemble signals from the S&P 500 universe."""
+"""Generate today's ensemble signals from a given equity universe."""
 
 from __future__ import annotations
 
 import pandas as pd
 
-from ggTrader.data.core.index_constituents import normalize_yf_ticker, sp500_members_asof
+from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
 from ggTrader.lab.data import fetch_stock_ohlcv
 from ggTrader.lab.strategies.ensemble import EnsembleSignal
 from ggTrader.lab.strategy import LabConfig
+from ggTrader.paper.overlay import (
+    SLEEVE_UNIVERSES,
+    compute_sleeve_curve,
+    compute_weights_and_scale,
+    should_rebalance,
+)
+from ggTrader.paper.persist import get_rebalance_state, save_rebalance_state
 
 
-def generate_signals(lookback_days: int = 120) -> dict:
-    """Fetch recent data for PIT S&P 500 and return today's ensemble signals.
+def generate_signals(universe: str = "sp500", lookback_days: int = 120) -> dict:
+    """Fetch recent data for a PIT universe and return today's ensemble signals.
 
     Returns dict with keys: buys (list[str]), sells (list[str]),
     as_of (str date), universe_size (int).
@@ -19,7 +26,7 @@ def generate_signals(lookback_days: int = 120) -> dict:
     today = pd.Timestamp.now(tz="UTC").normalize()
     start = today - pd.Timedelta(days=lookback_days)
 
-    members = sp500_members_asof(today)
+    members = universe_members_asof(universe, today)
     symbols = sorted({normalize_yf_ticker(t) for t in members})
 
     ohlcv = fetch_stock_ohlcv(symbols, start=str(start.date()), end=str(today.date()))
@@ -71,4 +78,43 @@ def generate_signals(lookback_days: int = 120) -> dict:
         "as_of": str(last_bar.date()),
         "universe_size": len(sym_cols),
         "gate": gate_info,
+    }
+
+
+def generate_blended_signals() -> dict:
+    """Generate today's signals for all three sleeves, recomputing the
+    inverse-vol/target-vol overlay monthly. On any failure to recompute
+    (e.g. an OHLCV fetch error on a rebalance date), falls back to the last
+    stored weights/scale rather than raising."""
+    today = pd.Timestamp.now(tz="UTC").normalize()
+    sleeves = {universe: generate_signals(universe=universe) for universe in SLEEVE_UNIVERSES}
+
+    state = get_rebalance_state()
+    rebalanced_today = False
+    fallback_used = False
+
+    if should_rebalance(state["rebalance_date"] if state else None, today):
+        try:
+            curves = {u: compute_sleeve_curve(u, today) for u in SLEEVE_UNIVERSES}
+            weights, scale = compute_weights_and_scale(curves)
+        except Exception:
+            if state is None:
+                raise  # no fallback available on the very first run
+            weights, scale = state["weights"], state["scale"]
+            fallback_used = True
+        else:
+            # Only a recompute failure (fetch/compute) falls back to stale
+            # state. A persistence failure here is a genuine error and
+            # should propagate rather than be swallowed into fallback_used.
+            save_rebalance_state(str(today.date()), weights, scale)
+            rebalanced_today = True
+    else:
+        weights, scale = state["weights"], state["scale"]
+
+    return {
+        "sleeves": sleeves,
+        "weights": weights,
+        "scale": scale,
+        "rebalanced_today": rebalanced_today,
+        "fallback_used": fallback_used,
     }

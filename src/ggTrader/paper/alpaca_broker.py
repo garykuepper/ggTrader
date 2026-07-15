@@ -28,6 +28,7 @@ class AlpacaBroker:
             "cash": float(acct.cash),
             "portfolio_value": float(acct.portfolio_value),
             "buying_power": float(acct.buying_power),
+            "multiplier": float(acct.multiplier),
         }
 
     def get_positions(self) -> dict[str, dict]:
@@ -74,7 +75,9 @@ class AlpacaBroker:
             "qty": float(o.qty) if o.qty is not None else None,
             "notional": float(o.notional) if o.notional is not None else None,
             "filled_qty": float(o.filled_qty) if o.filled_qty is not None else 0.0,
-            "filled_avg_price": float(o.filled_avg_price) if o.filled_avg_price is not None else 0.0,
+            "filled_avg_price": float(o.filled_avg_price)
+            if o.filled_avg_price is not None
+            else 0.0,
             "status": o.status.value if hasattr(o.status, "value") else str(o.status),
         }
 

@@ -85,7 +85,9 @@ class TestTradeAlert:
     def test_trade_alert_formats_filled_message(self, mock_post):
         mock_post.return_value = MagicMock(status_code=200)
         n = _make_notifier()
-        result = n.trade_alert("BUY", "AAPL", 1000.0, "order-123", qty=5.0, price=200.0, status="filled")
+        result = n.trade_alert(
+            "BUY", "AAPL", 1000.0, "order-123", qty=5.0, price=200.0, status="filled"
+        )
         assert result is True
         body = mock_post.call_args[1]["json"]["text"]
         assert "BUY" in body
@@ -105,3 +107,16 @@ class TestDailySummary:
         body = mock_post.call_args[1]["json"]["text"]
         assert "102,000" in body or "102000" in body
         assert "AAPL" in body
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_sorts_positions_by_gain_descending(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        positions = {
+            "AAPL": {"qty": 10.0, "unrealized_pl": -50.0, "unrealized_plpc": -0.02},
+            "MSFT": {"qty": 5.0, "unrealized_pl": 300.0, "unrealized_plpc": 0.15},
+            "GOOG": {"qty": 2.0, "unrealized_pl": 10.0, "unrealized_plpc": 0.01},
+        }
+        n.daily_summary(102000.0, 500.0, positions)
+        body = mock_post.call_args[1]["json"]["text"]
+        assert body.index("MSFT") < body.index("GOOG") < body.index("AAPL")
