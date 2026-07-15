@@ -60,6 +60,7 @@ extend-exclude = '/(\.git|\.venv|archive)/'
 
 [tool.pytest.ini_options]
 addopts = "-m 'not integration'"
+pythonpath = ["."]
 markers = [
     "integration: tests that hit live external services (network, DB); run with -m integration",
 ]
