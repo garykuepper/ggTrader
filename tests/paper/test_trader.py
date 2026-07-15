@@ -446,7 +446,8 @@ class TestDryRun:
         broker.submit_sell.assert_not_called()
         assert result["buys"] == ["AAPL"]
         notifier.send.assert_any_call(
-            f"<b>🔍 DRY RUN buy:</b> AAPL (${round(10000.0 * 1.0 * 1.0 * 0.033, 0):.0f}, sleeve=sp500)"
+            f"<b>🔍 DRY RUN buy:</b> AAPL "
+            f"(${round(10000.0 * 1.0 * 1.0 * 0.033, 0):.0f}, sleeve=sp500)"
         )
 
 

@@ -225,7 +225,8 @@ class PaperTrader:
                     buys_attempted += 1
                     sleeve_open_count[universe] += 1
                     self._notifier.send(
-                        f"<b>🔍 DRY RUN buy:</b> {symbol} (${sleeve_notional:.0f}, sleeve={universe})"
+                        f"<b>🔍 DRY RUN buy:</b> {symbol} "
+                        f"(${sleeve_notional:.0f}, sleeve={universe})"
                     )
                     continue
                 try:
