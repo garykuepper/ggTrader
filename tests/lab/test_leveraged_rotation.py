@@ -4,6 +4,21 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _clear_breadth_cache():
+    """The module-level breadth cache is keyed by (start, end, length,
+    symbols) -- safe for real market data (same window + universe always
+    implies the same real prices), but several tests below reuse the same
+    default synthetic date range with different random seeds, which would
+    collide on that key without clearing between tests."""
+    from ggTrader.lab.strategies.leveraged_rotation import _breadth_cache
+
+    _breadth_cache.clear()
+    yield
+    _breadth_cache.clear()
 
 
 def _idx(n, start="2020-01-31", freq="ME"):
@@ -198,6 +213,46 @@ class TestLeveragedRotationBaseToTargets:
         assert "min_hold_months" in params
         assert "leverage_tier" in params
         assert set(params["leverage_tier"]) == {"2x", "3x"}
+
+    def test_breadth_computation_is_cached_across_combos(self):
+        """Breadth doesn't depend on upper_threshold/lower_threshold/
+        min_hold_months/leverage_tier (the strategy's own swept params),
+        but the WFO harness constructs a fresh strategy instance per combo
+        and calls to_targets() on the SAME data window for every one of
+        them (see wfo.py's _sweep_fold_weights). Without caching, the full
+        vectorized EnsembleSignal pass over the whole breadth universe gets
+        redundantly recomputed once per combo -- dozens of times per fold.
+        This test simulates that exact harness pattern (many instances,
+        same data object, varying only the swept params) and asserts the
+        underlying EnsembleSignal.to_targets call happens once, not once
+        per instance."""
+        from unittest.mock import patch
+
+        from ggTrader.lab.strategies.ensemble import EnsembleSignal
+        from ggTrader.lab.strategy import LabConfig
+
+        stocks = [f"S{i}" for i in range(20)]
+        etfs = ["LONG3X", "INV3X", "LONG2X", "INV2X"]
+        returns = _daily_returns(stocks + etfs, n=400, seed=9)
+        ohlcv = _ohlcv_from_returns(returns)
+        rebalance_dates = ohlcv.index[[200, 260, 320]]
+        eligible = etfs
+
+        real_to_targets = EnsembleSignal.to_targets
+        with patch.object(
+            EnsembleSignal, "to_targets", autospec=True, side_effect=real_to_targets
+        ) as mock_to_targets:
+            for tier in ("3x", "2x"):
+                for upper in (0.55, 0.60, 0.65):
+                    strat = _concrete_cls()(
+                        LabConfig(min_history_bars=60),
+                        leverage_tier=tier,
+                        upper_threshold=upper,
+                    )
+                    plans = {d: strat.select(d, ohlcv.loc[:d], eligible) for d in rebalance_dates}
+                    strat.to_targets(plans, ohlcv)
+
+        assert mock_to_targets.call_count == 1
 
 
 class TestPerUniverseSubclasses:

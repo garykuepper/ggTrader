@@ -63,6 +63,28 @@ def rotate_positions(
     return pd.Series(states, index=breadth.index)
 
 
+#: Memoizes the EnsembleSignal breadth pass, keyed by a content-derived
+#: fingerprint of the data window and breadth-universe symbol set. Breadth
+#: doesn't depend on the strategy's own swept params (upper_threshold/
+#: lower_threshold/min_hold_months/leverage_tier), but the WFO harness
+#: constructs a fresh strategy instance per combo and calls to_targets() on
+#: the same data window for every one of them -- without this cache, the
+#: full vectorized EnsembleSignal pass over the whole breadth universe (up
+#: to ~500+ stocks) gets redundantly recomputed once per combo, dozens of
+#: times per fold.
+_breadth_cache: dict[tuple, pd.Series] = {}
+
+
+def _cached_breadth(cfg: LabConfig, data: pd.DataFrame, breadth_symbols: list[str]) -> pd.Series:
+    key = (data.index[0], data.index[-1], len(data.index), tuple(breadth_symbols))
+    if key not in _breadth_cache:
+        ensemble = EnsembleSignal(cfg)
+        placeholder = [{"symbol": s, "weight": 0.0} for s in breadth_symbols]
+        signal_targets = ensemble.to_targets({data.index[0]: placeholder}, data)
+        _breadth_cache[key] = compute_breadth(signal_targets.entries)
+    return _breadth_cache[key]
+
+
 class _LeveragedRotationBase:
     """Rotates between a leveraged-long ETF, an inverse ETF, and cash,
     driven by monthly breadth of EnsembleSignal across the universe's own
@@ -115,10 +137,7 @@ class _LeveragedRotationBase:
         have = set(data.columns.get_level_values(0).unique())
         breadth_symbols = sorted(have - self._all_etf_tickers())
 
-        ensemble = EnsembleSignal(self.cfg)
-        placeholder = [{"symbol": s, "weight": 0.0} for s in breadth_symbols]
-        signal_targets = ensemble.to_targets({data.index[0]: placeholder}, data)
-        breadth = compute_breadth(signal_targets.entries)
+        breadth = _cached_breadth(self.cfg, data, breadth_symbols)
 
         monthly_breadth = breadth.reindex(rebalance_dates)
         states = rotate_positions(
