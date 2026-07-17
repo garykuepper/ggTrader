@@ -41,8 +41,8 @@ def build_strategy(name: str, cfg: LabConfig) -> Any:
     return reg[name](cfg)
 
 
-def apply_sector_constraints(symbols: list[str], max_sec: int) -> list[str]:
-    """Prune list of symbols to satisfy max_sec limit per GICS sector."""
+def load_sector_map() -> dict[str, str]:
+    """symbol -> GICS sector, from the static SP500 sector registry."""
     import json
     from pathlib import Path
 
@@ -50,9 +50,13 @@ def apply_sector_constraints(symbols: list[str], max_sec: int) -> list[str]:
     sector_path = proj_root / "data" / "universe" / "sp500_sectors.json"
     if sector_path.exists():
         with open(sector_path, "r") as f:
-            sector_map = json.load(f)
-    else:
-        sector_map = {}
+            return json.load(f)
+    return {}
+
+
+def apply_sector_constraints(symbols: list[str], max_sec: int) -> list[str]:
+    """Prune list of symbols to satisfy max_sec limit per GICS sector."""
+    sector_map = load_sector_map()
 
     selected = []
     sector_counts = {}

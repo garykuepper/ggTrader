@@ -41,3 +41,22 @@ def test_simulate_weights_runs_strategies_simultaneously_and_equally():
     r_x, eq_x, _ = simulate_weights({"x": together["x"]}, prices, BASE)
     # Grouped multi-strategy run must equal the strategy run alone (vectorization guard).
     pd.testing.assert_series_equal(eq_both["x"], eq_x["x"], check_names=False)
+
+
+def test_simulate_weights_negative_target_opens_short_with_correct_pnl():
+    """Load-bearing gate check for any market-neutral strategy built on top
+    of simulate_weights: a negative targetpercent must open a real short
+    that profits when price falls, not silently clamp to flat/zero."""
+    idx = pd.date_range("2021-01-01", periods=10, freq="B", tz="UTC")
+    prices = pd.DataFrame(
+        {"A": np.full(10, 100.0), "B": 100.0 * 0.98 ** np.arange(10)},  # B falls ~2%/day
+        index=idx,
+    )
+    targets = pd.DataFrame(np.nan, index=idx, columns=["A", "B"])
+    targets.iloc[1] = [0.0, -0.5]  # short B only, 50% of book
+    rets, equity, diags = simulate_weights({"x": targets}, prices, BASE)
+    total = float(equity["x"].iloc[-1] / BASE["START_CASH"] - 1.0)
+    # Shorting a falling asset must show a GAIN, not a loss or a no-op.
+    assert total > 0.0
+    expected = -0.5 * (prices["B"].iloc[-1] / prices["B"].iloc[1] - 1.0)
+    assert abs(total - expected) < 1e-6

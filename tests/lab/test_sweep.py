@@ -59,6 +59,23 @@ def test_build_grid_with_overrides():
     assert all(c["ema_fast"] in (5, 10) for c in grid)
 
 
+def test_build_grid_rejects_exit_z_at_or_above_entry_z():
+    from ggTrader.lab.strategies.pairs_stat_arb import PairsStatArb
+    from ggTrader.lab.sweep import build_grid
+
+    grid = build_grid(PairsStatArb)
+    assert grid  # some combos must survive
+    assert all(c["exit_z"] < c["entry_z"] for c in grid)
+
+
+def test_is_valid_combo_rejects_exit_z_ge_entry_z_directly():
+    from ggTrader.lab.sweep import _is_valid_combo
+
+    assert _is_valid_combo({"entry_z": 2.0, "exit_z": 0.5}) is True
+    assert _is_valid_combo({"entry_z": 2.0, "exit_z": 2.0}) is False
+    assert _is_valid_combo({"entry_z": 2.0, "exit_z": 2.5}) is False
+
+
 def test_build_grid_no_constraint_strategies():
     from ggTrader.lab.sweep import build_grid
 

@@ -36,9 +36,14 @@ def split_params(combo: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]
 
 
 def _is_valid_combo(params: Dict[str, Any]) -> bool:
-    """Filter invalid combos: fast >= slow, both ts_stop and atr_mult, or a
-    strategy that can never exit (indicator exits off with no time/profit stop)."""
+    """Filter invalid combos: fast >= slow, both ts_stop and atr_mult, a
+    strategy that can never exit (indicator exits off with no time/profit
+    stop), or a pairs/stat-arb combo whose exit threshold is at or beyond
+    its entry threshold (could never revert far enough to exit before
+    re-triggering entry)."""
     if "ts_stop" in params and "atr_mult" in params:
+        return False
+    if "exit_z" in params and "entry_z" in params and params["exit_z"] >= params["entry_z"]:
         return False
     # exits_enabled=False removes indicator exits; without a time-stop or
     # take-profit the position could never close.
