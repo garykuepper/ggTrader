@@ -28,15 +28,25 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 ---
 
-(Empty — as of July 16, the leverage-realistic 3-sleeve blend (Sharpe 1.14 /
-MaxDD −5.39%, July 13 GO) is wired into the live `PaperTrader` (sleeve-aware
-sizing, margin pre-flight check, `--live` flag) — deployed, not just
-researched. The two leveraged/inverse-ETF timing arcs (breadth rotation and
-long-only trend filter) both closed NO-GO the same day; see `roadmap.md` §3
-and `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` /
-`docs/research/2026-07-16-leveraged-trend-following-nogo.md`.
+(Empty — as of July 17, the leverage-realistic 3-sleeve blend (Sharpe 1.14 /
+MaxDD −5.39%, July 13 GO) remains wired into the live `PaperTrader` —
+deployed, not just researched. Since then, three research arcs have closed
+NO-GO: the two leveraged/inverse-ETF timing arcs (July 16) and market-neutral
+pairs/stat-arb mean reversion (July 17, the first of `RESEARCH_SNAPSHOT.md`
+§6's 4 candidates). See `roadmap.md` §3 and
+`docs/research/2026-07-16-leveraged-index-rotation-nogo.md` /
+`docs/research/2026-07-16-leveraged-trend-following-nogo.md` /
+`docs/research/2026-07-17-pairs-stat-arb-nogo.md`.
 
-No Step 4 queued — nothing else outstanding from either arc, and
-`docs/research/WEB_RESEARCH_CANDIDATES.md` is empty pending its first
-web-research run. See the pipeline above for how to get a concrete step onto
-this list.)
+`docs/research/WEB_RESEARCH_CANDIDATES.md` is no longer empty — its first
+web-research run (July 16) landed 14 externally-sourced candidates,
+triaged into first/second/third-wave priority. No Step 4 queued yet: pick
+one of the first-wave candidates (#1 Form 4 insider cluster buying, #2
+analyst estimate-revision momentum, #7 Anomaly-Driven Demand, or the
+free-data-only cut of #3 short-interest/cost-to-borrow) or one of
+`RESEARCH_SNAPSHOT.md` §6's remaining 3 internal candidates (PEAD,
+options-derived signal, revisit parked crypto-carry — note the first two of
+those now have more-detailed, citation-backed counterparts in
+`WEB_RESEARCH_CANDIDATES.md` #12/#14, cross-referenced there), copy it into
+`docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
+it here. See the pipeline above for the mechanics.)
