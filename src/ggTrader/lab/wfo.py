@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, List, NamedTuple, Type
 
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 
 from ggTrader.lab.gates import dsr_check, ndh_check
 from ggTrader.lab.metrics import curve_stats
@@ -288,6 +289,49 @@ def _sweep_fold(
     return results, all_eq
 
 
+def _run_one_weight_combo(
+    strategy_name: str,
+    strategy_cls: Type,
+    cfg: LabConfig,
+    combo_params: Dict[str, Any],
+    dates: List[pd.Timestamp],
+    ohlcv_window: pd.DataFrame,
+    universe_fn: UniverseFn,
+) -> tuple[str, pd.DataFrame]:
+    """One grid combo's plan + to_targets: fresh strategy instance, select()
+    at every rebalance date, then to_targets(). Split out of
+    _sweep_fold_weights so joblib can run combos across processes -- each
+    combo builds its own strategy instance/state with no cross-combo
+    dependency (per-strategy memoization, e.g. pairs_stat_arb's module-level
+    pair-candidate cache, is keyed by args that are identical across combos
+    on the same window, so each process rebuilding it independently is
+    redundant work, not a correctness risk)."""
+    merged = {
+        "top_n": cfg.top_n,
+        "lookback": cfg.lookback,
+        "skip": cfg.skip,
+        **combo_params,
+    }
+    combo_cfg = LabConfig(
+        top_n=int(merged.get("top_n", cfg.top_n)),
+        lookback=int(merged.get("lookback", cfg.lookback)),
+        skip=int(merged.get("skip", cfg.skip)),
+        min_history_bars=cfg.min_history_bars,
+        max_stocks=cfg.max_stocks,
+        max_sector_count=cfg.max_sector_count,
+    )
+    extra_kwargs = {k: v for k, v in combo_params.items() if k not in LAB_CONFIG_COMBO_KEYS}
+    strat = strategy_cls(combo_cfg, **extra_kwargs)
+    plans: Dict[pd.Timestamp, Any] = {}
+    for asof in dates:
+        past = ohlcv_window.loc[:asof]
+        eligible = universe_fn(asof, past)
+        plans[asof] = strat.select(asof, past, eligible)
+    target = strat.to_targets(plans, ohlcv_window)
+    key = combo_name(strategy_name, combo_params)
+    return key, target
+
+
 def _sweep_fold_weights(
     strategy_name: str,
     strategy_cls: Type,
@@ -318,32 +362,17 @@ def _sweep_fold_weights(
     if not dates:
         return [], {}
 
-    all_targets: Dict[str, pd.DataFrame] = {}
-    for combo_params in grid:
-        merged = {
-            "top_n": cfg.top_n,
-            "lookback": cfg.lookback,
-            "skip": cfg.skip,
-            **combo_params,
-        }
-        combo_cfg = LabConfig(
-            top_n=int(merged.get("top_n", cfg.top_n)),
-            lookback=int(merged.get("lookback", cfg.lookback)),
-            skip=int(merged.get("skip", cfg.skip)),
-            min_history_bars=cfg.min_history_bars,
-            max_stocks=cfg.max_stocks,
-            max_sector_count=cfg.max_sector_count,
+    # Combos are fully independent of each other (each builds its own
+    # strategy instance/state) -- run them across processes to use all
+    # cores. n_jobs=1 for trivial grids skips pool-spawn overhead entirely.
+    n_jobs = 1 if len(grid) <= 1 else -1
+    combo_results = Parallel(n_jobs=n_jobs)(
+        delayed(_run_one_weight_combo)(
+            strategy_name, strategy_cls, cfg, combo_params, dates, ohlcv_window, universe_fn
         )
-        extra_kwargs = {k: v for k, v in combo_params.items() if k not in LAB_CONFIG_COMBO_KEYS}
-        strat = strategy_cls(combo_cfg, **extra_kwargs)
-        plans: Dict[pd.Timestamp, Any] = {}
-        for asof in dates:
-            past = ohlcv_window.loc[:asof]
-            eligible = universe_fn(asof, past)
-            plans[asof] = strat.select(asof, past, eligible)
-        target = strat.to_targets(plans, ohlcv_window)
-        key = combo_name(strategy_name, combo_params)
-        all_targets[key] = target
+        for combo_params in grid
+    )
+    all_targets: Dict[str, pd.DataFrame] = dict(combo_results)
 
     start_cash = float(base_config["START_CASH"])
     _rets, eq_df, _diags = simulate_weights(all_targets, prices, base_config)
