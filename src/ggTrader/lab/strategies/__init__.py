@@ -12,6 +12,11 @@ from .leveraged_rotation import (
     LeveragedRotationRussell2000,
     LeveragedRotationSp500,
 )
+from .leveraged_trend import (
+    LeveragedTrendNasdaq100,
+    LeveragedTrendRussell2000,
+    LeveragedTrendSp500,
+)
 from .momentum import CrossSectionalMomentum, DualMomentum
 from .registry import (
     all_strategy_names,
@@ -52,6 +57,9 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "leveraged_rotation_sp500": LeveragedRotationSp500,
     "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
     "leveraged_rotation_russell2000": LeveragedRotationRussell2000,
+    "leveraged_trend_sp500": LeveragedTrendSp500,
+    "leveraged_trend_nasdaq100": LeveragedTrendNasdaq100,
+    "leveraged_trend_russell2000": LeveragedTrendRussell2000,
 }
 
 __all__ = [
@@ -68,6 +76,9 @@ __all__ = [
     "LeveragedRotationSp500",
     "LeveragedRotationNasdaq100",
     "LeveragedRotationRussell2000",
+    "LeveragedTrendSp500",
+    "LeveragedTrendNasdaq100",
+    "LeveragedTrendRussell2000",
     "EmaCrossSignal",
     "WfoTournamentSignal",
     "BollingerReversionSignal",
