@@ -123,15 +123,18 @@ verdict — more durable than the roster above:
   the failure mode is specifically "binary gate on entries," not
   "vol-aware sizing" in general.
 
-## 5. Known documentation gaps (found this run)
+## 5. Known documentation gaps
 
-- `docs/roadmap.md` §6 "Project Timeline" stops at **July 6, 2026**, even
-  though its own §3 prose contains later entries (diversification
-  correlation study, 3-vs-4-sleeve blend, leverage-realistic blend GO through
-  **July 13**) — the timeline section specifically is stale.
-- `docs/next_steps.md` predates the July 13 blend's wiring into the live
-  paper trader and both July 16 leveraged-ETF NO-GOs — it states "no Step 4
-  queued," which was accurate as of its last edit but is now behind.
+- ~~`docs/roadmap.md` §6 "Project Timeline" stops at July 6~~ — **fixed
+  2026-07-16**: timeline extended through July 13 (leverage-realistic blend
+  GO + eval-window audit closure), July 14 (blend wired into live
+  `PaperTrader`), and July 16 (both leveraged-ETF NO-GOs, this skill's own
+  creation). Glance table, §1 thesis prose, and §5 "What Failed" updated to
+  match.
+- `docs/next_steps.md` still predates the July 13 blend's live wiring and
+  both July 16 leveraged-ETF NO-GOs — not fixed this run (out of this
+  skill's scope; `roadmap.md` is now the more current of the two hand-edited
+  docs). Worth a follow-up pass if `next_steps.md` is actively relied on.
 - `conviction_bb`/`ensemble_conviction` have no dedicated WFO verdict
   document with numbers — roadmap.md describes "Conviction Position Sizing"
   generically (shipped, unused, no extra profit) but doesn't cite a specific
