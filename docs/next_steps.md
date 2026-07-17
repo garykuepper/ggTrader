@@ -30,23 +30,29 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 (Empty — as of July 17, the leverage-realistic 3-sleeve blend (Sharpe 1.14 /
 MaxDD −5.39%, July 13 GO) remains wired into the live `PaperTrader` —
-deployed, not just researched. Since then, three research arcs have closed
-NO-GO: the two leveraged/inverse-ETF timing arcs (July 16) and market-neutral
+deployed, not just researched. Since then, four research arcs have closed
+NO-GO: the two leveraged/inverse-ETF timing arcs (July 16), market-neutral
 pairs/stat-arb mean reversion (July 17, the first of `RESEARCH_SNAPSHOT.md`
-§6's 4 candidates). See `roadmap.md` §3 and
+§6's 4 internal candidates), and the MAX-effect/lottery-demand quintile
+filter (July 17, candidate #11 from the new web backlog — deliberately
+picked as the lowest-effort item to clear first; rejected both standalone
+and as a diversification sleeve, see
+`docs/research/2026-07-17-max-effect-nogo.md`). See `roadmap.md` §3 and
 `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` /
 `docs/research/2026-07-16-leveraged-trend-following-nogo.md` /
-`docs/research/2026-07-17-pairs-stat-arb-nogo.md`.
+`docs/research/2026-07-17-pairs-stat-arb-nogo.md` /
+`docs/research/2026-07-17-max-effect-nogo.md`.
 
-`docs/research/WEB_RESEARCH_CANDIDATES.md` is no longer empty — its first
-web-research run (July 16) landed 14 externally-sourced candidates,
-triaged into first/second/third-wave priority. No Step 4 queued yet: pick
-one of the first-wave candidates (#1 Form 4 insider cluster buying, #2
-analyst estimate-revision momentum, #7 Anomaly-Driven Demand, or the
-free-data-only cut of #3 short-interest/cost-to-borrow) or one of
-`RESEARCH_SNAPSHOT.md` §6's remaining 3 internal candidates (PEAD,
-options-derived signal, revisit parked crypto-carry — note the first two of
-those now have more-detailed, citation-backed counterparts in
-`WEB_RESEARCH_CANDIDATES.md` #12/#14, cross-referenced there), copy it into
+Effort-ordered remaining backlog (per the July 17 low-effort-first
+approach): next lowest-effort items are **#2 analyst estimate-revision
+momentum** and **the free-data-only cut of #3 short-interest/cost-to-borrow**
+(both need one new, simple free data feed), then **#12 PEAD**, **#13
+index-deletion overshoot fade**, and **#7 Anomaly-Driven Demand** (new feed
++ real engineering), then **#1 Form 4 insider cluster buying**, **#9
+Congressional STOCK Act trades**, **#8 retail-attention factors**, **#5
+stealthy shorts** (scraping/classification effort), then **#4 crypto
+funding-rate carry** and **#14 options IV skew** (different asset
+class/execution model, or paid-data risk) last. No Step 4 queued yet: pick
+the next one, copy it into
 `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
 it here. See the pipeline above for the mechanics.)

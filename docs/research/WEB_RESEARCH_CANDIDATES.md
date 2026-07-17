@@ -220,7 +220,17 @@ risk — would need feeds from DeFi/tokenization platforms, a newer and less
 standardized data landscape. **Do not build — watch-and-revisit only**
 until a dedicated source-check is done.
 
-### 11. MAX effect / lottery-demand anomaly (avoid or fade high-MAX stocks)
+### 11. MAX effect / lottery-demand anomaly (avoid or fade high-MAX stocks) — RESOLVED, NO-GO (2026-07-17)
+`docs/research/2026-07-17-max-effect-nogo.md`. Built as `max_effect`
+strategy (`src/ggTrader/lab/strategies/max_effect.py`), 6-combo WFO, SP500,
+2015-present: OOS Sharpe 0.39-0.45 vs SPY 0.76-0.88 (healthy WFE 0.84-0.97,
+gate pass 31/42 — not an overfitting rejection, a genuine "too weak to
+beat SPY" result). Diversification follow-up (same methodology as
+`idio_vol`'s 2026-07-07 check): OOS correlation to the deployed core =
+0.692, higher than `idio_vol`'s already-insufficient 0.447 — rejected as a
+blend candidate too. Closed both standalone and diversification angles;
+remove from active backlog.
+
 Compute MAX (highest single daily return over the trailing month) per
 stock; underweight/avoid the highest-MAX decile (optionally
 overweight/long the lowest-MAX decile), monthly rebalance, as a

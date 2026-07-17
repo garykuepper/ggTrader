@@ -17,6 +17,7 @@ from .leveraged_trend import (
     LeveragedTrendRussell2000,
     LeveragedTrendSp500,
 )
+from .max_effect import MaxEffectStrategy
 from .momentum import CrossSectionalMomentum, DualMomentum
 from .pairs_stat_arb import PairsStatArb
 from .registry import (
@@ -55,6 +56,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "xs_momentum": CrossSectionalMomentum,
     "dual_momentum": DualMomentum,
     "idio_vol": IdioVolStrategy,
+    "max_effect": MaxEffectStrategy,
     "pairs_stat_arb": PairsStatArb,
     "leveraged_rotation_sp500": LeveragedRotationSp500,
     "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
@@ -75,6 +77,7 @@ __all__ = [
     "CrossSectionalMomentum",
     "DualMomentum",
     "IdioVolStrategy",
+    "MaxEffectStrategy",
     "PairsStatArb",
     "LeveragedRotationSp500",
     "LeveragedRotationNasdaq100",
