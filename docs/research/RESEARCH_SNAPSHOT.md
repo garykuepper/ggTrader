@@ -152,11 +152,20 @@ verdict — more durable than the roster above:
   pre-rewrite era without an explicit "still rejected" restatement in current
   `roadmap.md` — likely still dead, but not freshly confirmed.
 
-## 6. Ranked recommendations for new edge
+## 6. Internally-derived candidate ideas
 
-See `docs/research/prompts/edge-research-agent-prompt.md` for the
-self-contained version of this list (kept in sync — do not edit one without
-the other).
+These are reasoned from *what's failed and why* (§4) — not from external
+research. For genuinely new ideas sourced from outside literature/practice,
+see `docs/research/WEB_RESEARCH_CANDIDATES.md` (a separate, accumulating
+backlog fed by running `docs/research/prompts/web-strategy-research-prompt.md`
+in an external web-research tool). Both feed the same next step: pick a
+candidate, fill it into
+`docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, queue it in
+`docs/next_steps.md`.
+
+The don't-re-propose list embedded in both prompt files (§2/§4 above,
+condensed) is kept in sync with this section — do not edit one without the
+other.
 
 1. **Rank 1 — Market-neutral pairs / stat-arb mean reversion.** Long/short
    dollar-neutral pairs within correlated stock clusters, reverting on spread
