@@ -131,10 +131,11 @@ verdict — more durable than the roster above:
   `PaperTrader`), and July 16 (both leveraged-ETF NO-GOs, this skill's own
   creation). Glance table, §1 thesis prose, and §5 "What Failed" updated to
   match.
-- `docs/next_steps.md` still predates the July 13 blend's live wiring and
-  both July 16 leveraged-ETF NO-GOs — not fixed this run (out of this
-  skill's scope; `roadmap.md` is now the more current of the two hand-edited
-  docs). Worth a follow-up pass if `next_steps.md` is actively relied on.
+- ~~`docs/next_steps.md` predates the July 13 blend's live wiring and both
+  July 16 leveraged-ETF NO-GOs~~ — **fixed 2026-07-16**: reset to its
+  correct empty-worklist state (both arcs closed, nothing queued), with a
+  pointer to this snapshot's §6 recommendations for scoping the next step
+  rather than treating the whole ranked list as "next."
 - `conviction_bb`/`ensemble_conviction` have no dedicated WFO verdict
   document with numbers — roadmap.md describes "Conviction Position Sizing"
   generically (shipped, unused, no extra profit) but doesn't cite a specific

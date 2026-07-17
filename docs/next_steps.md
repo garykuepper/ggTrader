@@ -6,17 +6,17 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-(Empty — the leverage-realistic 3-sleeve blend was resolved July 13 as a
-clean GO on a matched-window comparison: blend Sharpe 1.14 / MaxDD −5.39%
-vs. SP500-core's own same-window Sharpe 0.97 / MaxDD −11.0%. See `roadmap.md`
-§3.
+(Empty — as of July 16, the leverage-realistic 3-sleeve blend (Sharpe 1.14 /
+MaxDD −5.39%, July 13 GO) is wired into the live `PaperTrader` (sleeve-aware
+sizing, margin pre-flight check, `--live` flag) — deployed, not just
+researched. The two leveraged/inverse-ETF timing arcs (breadth rotation and
+long-only trend filter) both closed NO-GO the same day; see `roadmap.md` §3
+and `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` /
+`docs/research/2026-07-16-leveraged-trend-following-nogo.md`.
 
-The follow-up eval-window audit is also closed (July 13, no re-runs needed):
-commit dates show the 1.12 baseline (~June 26), exit-rule sweep (June 28),
-IC-weighted voting (June 28), and Kelly sizing (July 6) all used the
-implicit `--eval-end="now"` within ~10 days of each other — negligible drift
-given a full 2.5-month window shift only moved Sharpe by 0.15 in the blend
-check. Only the blend studies pinned an explicit, much-earlier `--eval-end
-2026-04-30`, and that mismatch is the one already fixed. No further action.
-
-No Step 4 queued — nothing else outstanding from this arc.)
+No Step 4 queued — nothing else outstanding from either arc. For the next
+research direction, `docs/research/RESEARCH_SNAPSHOT.md` §6 has 4 ranked
+candidates (market-neutral pairs/stat-arb, post-earnings-announcement drift,
+options-derived signals, revisiting parked crypto-carry) — pick one and queue
+it here as a concrete step once scoped, rather than treating the whole list
+as "next.")
