@@ -9,6 +9,7 @@ description = "A sleek algorithmic trading bot"
 requires-python = ">=3.8"
 dependencies = [
     "ccxt",
+    "defusedxml",
     "fsspec",
     "joblib",
     "matplotlib",

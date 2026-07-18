@@ -8,6 +8,7 @@ from .ensemble_ic import EnsembleICSignal
 from .ensemble_kelly import EnsembleKellySignal
 from .idio_vol import IdioVolStrategy
 from .index_deletion import IndexDeletionFadeStrategy
+from .insider_cluster import InsiderClusterBuyStrategy
 from .leveraged_rotation import (
     LeveragedRotationNasdaq100,
     LeveragedRotationRussell2000,
@@ -60,6 +61,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "dual_momentum": DualMomentum,
     "idio_vol": IdioVolStrategy,
     "index_deletion_fade": IndexDeletionFadeStrategy,
+    "insider_cluster_buy": InsiderClusterBuyStrategy,
     "max_effect": MaxEffectStrategy,
     "pairs_stat_arb": PairsStatArb,
     "pead": PeadStrategy,
@@ -84,6 +86,7 @@ __all__ = [
     "DualMomentum",
     "IdioVolStrategy",
     "IndexDeletionFadeStrategy",
+    "InsiderClusterBuyStrategy",
     "MaxEffectStrategy",
     "PairsStatArb",
     "PeadStrategy",
