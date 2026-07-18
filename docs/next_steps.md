@@ -32,18 +32,22 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 MaxDD −5.39%, July 13 GO) remains wired into the live `PaperTrader` —
 deployed, not just researched, and reconfirmed exactly (Sharpe 1.14, MaxDD
 -5.39%) via a fresh blend run this session — no tooling drift. Since the
-July 16 leveraged-ETF closures, six research arcs have closed NO-GO:
+July 16 leveraged-ETF closures, seven research arcs have closed NO-GO:
 market-neutral pairs/stat-arb (July 17, first of `RESEARCH_SNAPSHOT.md`
 §6's 4 internal candidates), the MAX-effect quintile filter (July 17,
 candidate #11), the free-data-only short-interest cut (July 17, candidate
-#3), and PEAD (July 17, candidate #12 — see note below, the most
-instructive rejection of the four). See `roadmap.md` §3 and
+#3), PEAD (July 17, candidate #12 — see note below, the most instructive
+rejection), and the S&P 500 index-deletion overshoot fade (July 17,
+candidate #13 — the fastest build of the session, zero new data
+infrastructure, but also the worst outcome: MaxDD -68.7%, the largest
+drawdown of any candidate this session). See `roadmap.md` §3 and
 `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` /
 `docs/research/2026-07-16-leveraged-trend-following-nogo.md` /
 `docs/research/2026-07-17-pairs-stat-arb-nogo.md` /
 `docs/research/2026-07-17-max-effect-nogo.md` /
 `docs/research/2026-07-17-short-interest-nogo.md` /
-`docs/research/2026-07-17-pead-nogo.md`.
+`docs/research/2026-07-17-pead-nogo.md` /
+`docs/research/2026-07-17-index-deletion-fade-nogo.md`.
 
 **PEAD is worth reading as a process lesson, not just a rejection.** Its
 initial long-window (2015-2026) SP500 result looked like the strongest
@@ -66,12 +70,12 @@ point-in-time history; building it would need a paid I/B/E/S-style feed or
 would introduce look-ahead bias. Deprioritized pending a paid-data decision
 — skip past it in the effort ordering below.
 
-Effort-ordered remaining backlog: next up are **#13 index-deletion
-overshoot fade** and **#7 Anomaly-Driven Demand** (new feed + real
-engineering), then **#1 Form 4 insider cluster buying**, **#9 Congressional
-STOCK Act trades**, **#8 retail-attention factors**, **#5 stealthy shorts**
-(scraping/classification effort), then **#4 crypto funding-rate carry**
-and **#14 options IV skew** (different asset class/execution model, or
-paid-data risk) last. No Step 4 queued yet: pick the next one, copy it
-into `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and
-queue it here. See the pipeline above for the mechanics.)
+Effort-ordered remaining backlog: next up is **#7 Anomaly-Driven Demand**
+(new feed + real engineering), then **#1 Form 4 insider cluster buying**,
+**#9 Congressional STOCK Act trades**, **#8 retail-attention factors**,
+**#5 stealthy shorts** (scraping/classification effort), then **#4 crypto
+funding-rate carry** and **#14 options IV skew** (different asset
+class/execution model, or paid-data risk) last. No Step 4 queued yet: pick
+the next one, copy it into
+`docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
+it here. See the pipeline above for the mechanics.)

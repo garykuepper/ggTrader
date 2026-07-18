@@ -246,7 +246,23 @@ drift. Russell 2000 (the candidate's own "lower-coverage" test) also only
 tied SPY with a much higher regime-halt rate (60% vs SP500's 20%),
 contrary to the literature's expectation of a stronger effect there.
 **Rejected, both standalone (matched window) and as a blend sleeve.** Full
-report: `docs/research/2026-07-17-pead-nogo.md`.
+report: `docs/research/2026-07-17-pead-nogo.md`. Next, tested #13 (S&P 500
+index-deletion overshoot fade) — the fastest build of the whole session
+(zero new data infrastructure, built directly on the already-maintained
+point-in-time SP500 membership history). **Rejected, and not a close
+call**: OOS Sharpe 0.30 vs SPY 0.76, MaxDD **-68.7%** (worst drawdown of
+any candidate closed this session, nearly double SPY's own -33.7%), gate
+pass 17/42 (40%), regime halt 32/42 folds (76%). Likely cause: many real
+S&P 500 deletions reflect genuine fundamental deterioration (bankruptcy
+risk, earnings collapse), not just mechanical index-committee timing —
+buying the deletion buys falling knives as often as oversold-but-fine
+names. Also found and fixed a real infrastructure bug: `simulate_weights`
+crashed (`IndexError`, deep in vectorbt) on a fold where every grid combo
+picked zero symbols across the whole window — a scenario only a
+sparse-event strategy like this one can trigger; fixed with a flat-equity
+short-circuit for the all-empty case, two regression tests added,
+benefits any future sparse-event strategy in this lab. Full report:
+`docs/research/2026-07-17-index-deletion-fade-nogo.md`.
 
 ---
 

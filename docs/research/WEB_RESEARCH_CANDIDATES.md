@@ -302,7 +302,23 @@ no longer work in the exact universe (liquid large/mid-cap U.S. equities)
 already traded here — worth testing with real skepticism, probably only
 worthwhile extended into smaller-cap/lower-coverage names.
 
-### 13. S&P 500 index-reconstitution deletion overshoot (fade the deletion)
+### 13. S&P 500 index-reconstitution deletion overshoot (fade the deletion) — RESOLVED, NO-GO (2026-07-17)
+`docs/research/2026-07-17-index-deletion-fade-nogo.md`. Zero new data
+infrastructure needed — built directly on the already-maintained
+point-in-time SP500 membership history
+(`ggTrader.data.core.index_constituents`). WFO (SP500, 42 folds): OOS
+Sharpe 0.30 vs SPY 0.76, MaxDD **-68.7%** (worst of any candidate closed
+this session, nearly double SPY's own drawdown), gate pass 17/42 (40%),
+regime halt 32/42 folds (76%). Likely explanation: many real S&P 500
+deletions reflect genuine fundamental deterioration (bankruptcy risk,
+earnings collapse), not just mechanical index-committee timing — "buy the
+deletion and wait for reversion" buys falling knives as often as
+oversold-but-fine names. Also found and fixed a real infrastructure bug
+along the way: `simulate_weights` crashed on an all-empty-combo fold
+(a scenario only a sparse-event strategy like this one triggers) —
+fixed with a flat-equity short-circuit, benefits any future sparse-event
+strategy in this lab.
+
 On announcement of an S&P 500/Russell deletion, go long the deleted stock
 shortly after the effective reconstitution date, betting on mean-reversion
 of mechanical forced-selling pressure from index/benchmark-tracking funds.

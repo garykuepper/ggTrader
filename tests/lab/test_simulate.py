@@ -43,6 +43,38 @@ def test_simulate_weights_runs_strategies_simultaneously_and_equally():
     pd.testing.assert_series_equal(eq_both["x"], eq_x["x"], check_names=False)
 
 
+def test_simulate_weights_all_combos_empty_returns_flat_equity_not_crash():
+    """Regression: an event-driven strategy (e.g. index_deletion_fade) with
+    a short hold window can legitimately pick nothing for an entire fold --
+    every combo's target frame has zero columns. vbt.Portfolio.from_orders
+    on a fully empty size/close/group_by degenerates to zero groups and
+    crashes deep inside vectorbt's reduce logic (IndexError: index 0 is out
+    of bounds for axis 0 with size 0) rather than returning a sane
+    never-held-anything (flat cash) result."""
+    prices = _prices()
+    empty = pd.DataFrame(index=prices.index, columns=[])
+    targets = {"x": empty, "y": empty}
+    rets, equity, diags = simulate_weights(targets, prices, BASE)
+    assert list(equity["x"]) == [BASE["START_CASH"]] * len(prices.index)
+    assert list(equity["y"]) == [BASE["START_CASH"]] * len(prices.index)
+    assert (rets["x"] == 0.0).all()
+    assert diags["x"]["n_symbols"] == 0
+
+
+def test_simulate_weights_some_combos_empty_others_not():
+    """Partial case: one combo picks nothing, another does -- only the
+    fully-empty-across-ALL-combos case is degenerate for vbt; a mix must
+    still simulate correctly."""
+    prices = _prices()
+    empty = pd.DataFrame(index=prices.index, columns=[])
+    targets = {"x": empty, "y": _targets(prices, {"A": 1.0})}
+    rets, equity, diags = simulate_weights(targets, prices, BASE)
+    assert list(equity["x"]) == [BASE["START_CASH"]] * len(prices.index)
+    expected = prices["A"].iloc[-1] / prices["A"].iloc[1] - 1.0
+    total_y = float(equity["y"].iloc[-1] / BASE["START_CASH"] - 1.0)
+    assert abs(total_y - expected) < 1e-6
+
+
 def test_simulate_weights_negative_target_opens_short_with_correct_pnl():
     """Load-bearing gate check for any market-neutral strategy built on top
     of simulate_weights: a negative targetpercent must open a real short

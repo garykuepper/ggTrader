@@ -7,6 +7,7 @@ from .ensemble import EnsembleConvictionSignal, EnsembleSignal
 from .ensemble_ic import EnsembleICSignal
 from .ensemble_kelly import EnsembleKellySignal
 from .idio_vol import IdioVolStrategy
+from .index_deletion import IndexDeletionFadeStrategy
 from .leveraged_rotation import (
     LeveragedRotationNasdaq100,
     LeveragedRotationRussell2000,
@@ -58,6 +59,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "xs_momentum": CrossSectionalMomentum,
     "dual_momentum": DualMomentum,
     "idio_vol": IdioVolStrategy,
+    "index_deletion_fade": IndexDeletionFadeStrategy,
     "max_effect": MaxEffectStrategy,
     "pairs_stat_arb": PairsStatArb,
     "pead": PeadStrategy,
@@ -81,6 +83,7 @@ __all__ = [
     "CrossSectionalMomentum",
     "DualMomentum",
     "IdioVolStrategy",
+    "IndexDeletionFadeStrategy",
     "MaxEffectStrategy",
     "PairsStatArb",
     "PeadStrategy",

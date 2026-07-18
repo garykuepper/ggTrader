@@ -26,8 +26,28 @@ def simulate_weights(
         (returns_df, equity_df, diags) each keyed by strategy name (columns).
     """
     names = list(targets_by_strategy)
+    start_cash = float(base_config["START_CASH"])
+    diags = {
+        name: {"n_strategies": 1, "n_symbols": int(targets_by_strategy[name].shape[1])}
+        for name in names
+    }
+
+    # An event-driven strategy (e.g. index_deletion_fade) with a short hold
+    # window can legitimately pick nothing for an entire fold+combo -- zero
+    # columns. vbt.Portfolio.from_orders on a fully empty size/close/
+    # group_by degenerates to zero groups and crashes deep inside
+    # vectorbt's reduce logic rather than returning a sane
+    # never-held-anything (flat cash) result, so that case is short-
+    # circuited here rather than handed to vbt at all.
+    non_empty = [n for n in names if targets_by_strategy[n].shape[1] > 0]
+    flat_value = pd.Series(start_cash, index=prices.index)
+    if not non_empty:
+        value = pd.DataFrame({name: flat_value for name in names})
+        returns = value.pct_change(fill_method=None).fillna(0.0)
+        return returns, value, diags
+
     size_blocks, close_blocks, groups = [], [], []
-    for name in names:
+    for name in non_empty:
         tgt = targets_by_strategy[name]
         cols = pd.MultiIndex.from_product([[name], tgt.columns], names=["strategy", "symbol"])
         size_blocks.append(tgt.set_axis(cols, axis=1))
@@ -42,7 +62,7 @@ def simulate_weights(
         close=close,
         size=size,
         size_type="targetpercent",
-        init_cash=float(base_config["START_CASH"]),
+        init_cash=start_cash,
         fees=float(base_config["FEES"]),
         slippage=float(base_config["SLIPPAGE"]),
         freq=base_config["FREQ"],
@@ -53,13 +73,13 @@ def simulate_weights(
 
     value = pf.value()  # (time x strategy) once grouped
     if isinstance(value, pd.Series):
-        value = value.to_frame(names[0])
-    value = value[names]
+        value = value.to_frame(non_empty[0])
+    value = value[non_empty]
+    for name in names:
+        if name not in non_empty:
+            value[name] = flat_value
+    value = value[names]  # restore caller's original column order
     returns = value.pct_change(fill_method=None).fillna(0.0)
-    diags = {
-        name: {"n_strategies": 1, "n_symbols": int(targets_by_strategy[name].shape[1])}
-        for name in names
-    }
     return returns, value, diags
 
 
