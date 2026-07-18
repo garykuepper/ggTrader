@@ -88,7 +88,21 @@ work: fundamentals-expectations signal, orthogonal to the
 Bollinger/RSI/EMA/MACD ensemble and to the already-rejected price-momentum
 test.
 
-### 3. Hard-to-borrow / short-interest signal
+### 3. Hard-to-borrow / short-interest signal — RESOLVED, NO-GO (2026-07-17, free-data cut)
+`docs/research/2026-07-17-short-interest-nogo.md`. Built as `short_interest`
+strategy on a new FINRA consolidated-short-interest data pipeline
+(`src/ggTrader/lab/short_interest_data.py`, 86,793-row backfill, 150
+settlement dates 2020-04 through present). WFO (SP500, 20 folds): OOS
+Sharpe 0.27 vs SPY 0.61, WFE 0.11 (below the 0.50 floor), regime-halt 16/20
+folds — a noise/overfitting rejection, consistent with the
+value-weighted-insignificance caveat already flagged below. The paid
+cost-to-borrow/utilization version remains untested (feasibility risk, not
+attempted). Notable reusable infrastructure: `discover_settlement_dates()`
+corrects a real bug where guessing FINRA's settlement-date calendar (15th/
+month-end) silently missed 47% of real cycles (dates shift to the nearest
+business day around weekends/holidays) — use it for any future FINRA
+short-interest work rather than re-deriving dates from a calendar rule.
+
 Underweight/avoid/short names transitioning from easy- to hard-to-borrow
 with rising fees. Verdad Capital "Costly Shorts" (2024) is the primary
 source; Asquith-Pathak-Ritter (JFE 2005) is real but **narrower than often

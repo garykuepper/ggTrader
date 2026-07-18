@@ -215,7 +215,19 @@ effect that's simply too weak to beat SPY, not an overfitting artifact. A
 diversification follow-up (same method as `idio_vol`'s July 7 check) found
 0.692 OOS return correlation to the deployed core — higher than
 `idio_vol`'s already-insufficient 0.447 — closing the diversification angle
-too. Full report: `docs/research/2026-07-17-max-effect-nogo.md`.
+too. Full report: `docs/research/2026-07-17-max-effect-nogo.md`. Continuing
+effort-first through the backlog, also built and tested the free-data cut
+of #3 (short-interest/cost-to-borrow): `short_interest` strategy on a new
+FINRA consolidated-short-interest data pipeline
+(`short_interest_data.py`, 86,793-row backfill covering 150 real settlement
+dates 2020-04–present — a real correctness bug was found and fixed here,
+`discover_settlement_dates()` replacing a naive calendar-guess that
+silently missed 47% of actual cycles due to weekend/holiday date shifts).
+**Rejected**: OOS Sharpe 0.27 vs SPY 0.61, WFE 0.11 (below the 0.50 floor),
+regime-halt 16/20 folds — a noise/overfitting rejection this time (unlike
+`max_effect`'s healthy-but-weak profile), consistent with the literature's
+own value-weighted-insignificance caveat for large-cap short-interest
+effects. Full report: `docs/research/2026-07-17-short-interest-nogo.md`.
 
 ---
 

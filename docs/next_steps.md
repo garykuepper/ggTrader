@@ -30,23 +30,31 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 (Empty — as of July 17, the leverage-realistic 3-sleeve blend (Sharpe 1.14 /
 MaxDD −5.39%, July 13 GO) remains wired into the live `PaperTrader` —
-deployed, not just researched. Since then, four research arcs have closed
+deployed, not just researched. Since then, five research arcs have closed
 NO-GO: the two leveraged/inverse-ETF timing arcs (July 16), market-neutral
 pairs/stat-arb mean reversion (July 17, the first of `RESEARCH_SNAPSHOT.md`
-§6's 4 internal candidates), and the MAX-effect/lottery-demand quintile
-filter (July 17, candidate #11 from the new web backlog — deliberately
-picked as the lowest-effort item to clear first; rejected both standalone
-and as a diversification sleeve, see
-`docs/research/2026-07-17-max-effect-nogo.md`). See `roadmap.md` §3 and
+§6's 4 internal candidates), the MAX-effect/lottery-demand quintile filter
+(July 17, candidate #11 — rejected both standalone and as a diversification
+sleeve), and the free-data-only cut of #3 short-interest/cost-to-borrow
+(July 17 — new FINRA data pipeline built, `short_interest_data.py`, 150
+settlement dates backfilled; rejected as a noise/overfitting result,
+consistent with the literature's own large-cap-insignificance caveat). See
+`roadmap.md` §3 and
 `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` /
 `docs/research/2026-07-16-leveraged-trend-following-nogo.md` /
 `docs/research/2026-07-17-pairs-stat-arb-nogo.md` /
-`docs/research/2026-07-17-max-effect-nogo.md`.
+`docs/research/2026-07-17-max-effect-nogo.md` /
+`docs/research/2026-07-17-short-interest-nogo.md`.
 
-Effort-ordered remaining backlog (per the July 17 low-effort-first
-approach): next lowest-effort items are **#2 analyst estimate-revision
-momentum** and **the free-data-only cut of #3 short-interest/cost-to-borrow**
-(both need one new, simple free data feed), then **#12 PEAD**, **#13
+**Candidate #2 (analyst estimate-revision momentum) was checked and found
+infeasible for an honest historical WFO** — every free source checked
+(`yfinance`'s `eps_trend`/`eps_revisions`/`earnings_estimate`, this
+project's other integrated sources) is current-snapshot-only, no queryable
+point-in-time history; building it would need a paid I/B/E/S-style feed or
+would introduce look-ahead bias. Deprioritized pending a paid-data decision
+— skip past it in the effort ordering below.
+
+Effort-ordered remaining backlog: next up are **#12 PEAD**, **#13
 index-deletion overshoot fade**, and **#7 Anomaly-Driven Demand** (new feed
 + real engineering), then **#1 Form 4 insider cluster buying**, **#9
 Congressional STOCK Act trades**, **#8 retail-attention factors**, **#5

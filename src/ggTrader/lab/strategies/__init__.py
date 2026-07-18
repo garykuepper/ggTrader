@@ -28,6 +28,7 @@ from .registry import (
     signal_strategy_names,
     weight_strategy_names,
 )
+from .short_interest import ShortInterestStrategy
 from .signals import (
     BollingerReversionSignal,
     EmaCrossSignal,
@@ -58,6 +59,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "idio_vol": IdioVolStrategy,
     "max_effect": MaxEffectStrategy,
     "pairs_stat_arb": PairsStatArb,
+    "short_interest": ShortInterestStrategy,
     "leveraged_rotation_sp500": LeveragedRotationSp500,
     "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
     "leveraged_rotation_russell2000": LeveragedRotationRussell2000,
@@ -79,6 +81,7 @@ __all__ = [
     "IdioVolStrategy",
     "MaxEffectStrategy",
     "PairsStatArb",
+    "ShortInterestStrategy",
     "LeveragedRotationSp500",
     "LeveragedRotationNasdaq100",
     "LeveragedRotationRussell2000",
