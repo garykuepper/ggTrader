@@ -158,6 +158,20 @@ class TestAvailableAsOf:
         out = available_as_of(df, asof, lag_days=PUBLISH_LAG_DAYS)
         assert len(out) == 1
 
+    def test_returned_frame_has_tz_naive_settlement_date_even_if_input_was_tz_aware(self):
+        """Regression: the filter mask was tz-normalized internally but the
+        RETURNED dataframe's column kept the original tz-aware values --
+        any downstream datetime arithmetic on the result (e.g. a trend
+        calc's age-in-days) would crash with a tz-naive/tz-aware mismatch."""
+        df = pd.DataFrame(
+            {"symbol": ["AAPL"], "settlement_date": [pd.Timestamp("2026-06-01", tz="UTC")]}
+        )
+        asof = pd.Timestamp("2026-06-20", tz="UTC")
+        out = available_as_of(df, asof, lag_days=PUBLISH_LAG_DAYS)
+        assert out["settlement_date"].dt.tz is None
+        age = pd.Timestamp(asof).tz_localize(None) - out["settlement_date"].iloc[0]
+        assert age.days == 19
+
 
 @pytest.mark.integration
 def test_cache_and_load_roundtrip():

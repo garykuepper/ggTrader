@@ -175,7 +175,9 @@ def available_as_of(
     settlement = pd.to_datetime(df["settlement_date"])
     if settlement.dt.tz is not None:
         settlement = settlement.dt.tz_localize(None)
-    return df[settlement <= cutoff]
+    out = df.copy()
+    out["settlement_date"] = settlement
+    return out[settlement <= cutoff]
 
 
 def ensure_schema() -> None:

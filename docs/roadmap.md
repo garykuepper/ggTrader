@@ -228,6 +228,25 @@ regime-halt 16/20 folds — a noise/overfitting rejection this time (unlike
 `max_effect`'s healthy-but-weak profile), consistent with the literature's
 own value-weighted-insignificance caveat for large-cap short-interest
 effects. Full report: `docs/research/2026-07-17-short-interest-nogo.md`.
+Next, built and tested #12 (PEAD, lower-coverage names) on a new yfinance
+earnings-surprise pipeline (`earnings_surprise_data.py`, 62,552 rows). This
+one is worth reading closely as a process lesson, not just a rejection: an
+initial long-window (2015-2026) SP500 test looked like the strongest
+standalone result of the whole session — beat SPY (Sharpe 0.93 vs
+0.76-0.90), healthy WFE (1.01), low regime-halt (20%), moderate 0.422
+correlation to the deployed core. Per the established playbook (the
+`idio_vol` precedent), this triggered an actual 4-sleeve blend test rather
+than being reported as a standalone win — and that test **overturned the
+finding**. Re-run on the exact window the deployed 3-sleeve blend was
+validated on (2021-2026), the edge evaporated (Sharpe 0.58, tied with
+SPY), and adding it as a 4th sleeve made the deployed blend measurably
+worse (Sharpe 1.14→1.06, MaxDD -5.39%→-6.51%). The 3-sleeve baseline
+reproduced exactly (Sharpe 1.14, MaxDD -5.39%) confirming no tooling
+drift. Russell 2000 (the candidate's own "lower-coverage" test) also only
+tied SPY with a much higher regime-halt rate (60% vs SP500's 20%),
+contrary to the literature's expectation of a stronger effect there.
+**Rejected, both standalone (matched window) and as a blend sleeve.** Full
+report: `docs/research/2026-07-17-pead-nogo.md`.
 
 ---
 

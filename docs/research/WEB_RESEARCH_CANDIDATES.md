@@ -262,7 +262,23 @@ ranking or the VIX-regime filter already tested — but note the effect has
 degraded/been re-explained in newer literature; treat as a portfolio tilt
 to test cautiously, not a standalone strategy.
 
-### 12. Post-earnings-announcement drift (PEAD), lower-coverage names only
+### 12. Post-earnings-announcement drift (PEAD), lower-coverage names only — RESOLVED, NO-GO (2026-07-17)
+`docs/research/2026-07-17-pead-nogo.md`. Built as `pead` strategy on a new
+yfinance earnings-surprise pipeline (`earnings_surprise_data.py`, 62,552
+rows, 949 symbols). **Important methodological result, not just a
+rejection**: an initial long-window (2015-2026) SP500 test looked
+genuinely promising — beat SPY (Sharpe 0.93 vs 0.76-0.90), healthy WFE
+(1.01), low regime-halt (20%), moderate 0.422 correlation to the deployed
+core. A matched-window retest (2021-2026, the deployed blend's own
+validation window) and 4-sleeve blend test overturned it: standalone edge
+evaporates (Sharpe 0.58, tied with SPY) and adding it to the deployed
+blend makes it worse (Sharpe 1.14→1.06, MaxDD -5.39%→-6.51%). Russell 2000
+(the "lower-coverage" test the candidate itself calls for) also only tied
+SPY with a much higher regime-halt rate (60%), contrary to the
+literature's expectation. Confirms: never trust a standalone "beats SPY"
+result without a matched-window retest against the deployed blend's exact
+eval window.
+
 *Overlaps with `RESEARCH_SNAPSHOT.md` §6 internal Rank 2 (PEAD) — this
 entry is the more detailed, citation-backed version, including the 2022/2025
 large-cap-decay findings the internal entry doesn't have; check here first.*
