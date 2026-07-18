@@ -168,7 +168,25 @@ currently unsupported by a tradeable effect size. Data: free (EDGAR Form
 replication shows an economically meaningful effect — not worth research
 time as currently evidenced.
 
-### 7. Anomaly-Driven Demand (ADD) — factor-crowding rebalancing pressure
+### 7. Anomaly-Driven Demand (ADD) — factor-crowding rebalancing pressure — INFEASIBLE (checked 2026-07-18)
+Verified against the actual Chen & Zimmermann dataset (via the
+`openassetpricing` Python package's source, `_dl_signal`/`_dl_individual_signal`
+in `openap_download.py`): the firm-level characteristics data is keyed
+purely by CRSP `permno` + `yyyymm` — **no ticker column at all**, and the
+package's own pipeline calls `wrds.Connection()` directly for some signals
+(Price/Size/STreversal). No free permno-to-ticker crosswalk exists;
+complete ticker-history identity mapping is part of CRSP's proprietary
+NYSE/AMEX/NASDAQ monthly stock file (a WRDS subscription product) —
+confirmed via search, no institution-free alternative found. Same class of
+blocker as candidate #2 (analyst estimate-revision momentum): the
+"free" framing in the original write-up describes the predictor CSVs
+themselves, not what's needed to actually join them to a ticker-based
+universe. Building a name-matching heuristic crosswalk was considered and
+rejected — ticker reuse over the dataset's multi-decade span makes this a
+real silent-data-corruption risk, not proportionate to a "moderate effort"
+candidate. Deprioritized pending a WRDS-access decision; skip past it in
+the effort ordering.
+
 Replicate a broad cross-section of published return anomalies (value,
 asset growth, accruals, share issuance, etc.); score each stock monthly by
 net change in long-leg vs. short-leg anomaly membership; long biggest

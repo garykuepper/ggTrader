@@ -70,12 +70,23 @@ point-in-time history; building it would need a paid I/B/E/S-style feed or
 would introduce look-ahead bias. Deprioritized pending a paid-data decision
 — skip past it in the effort ordering below.
 
-Effort-ordered remaining backlog: next up is **#7 Anomaly-Driven Demand**
-(new feed + real engineering), then **#1 Form 4 insider cluster buying**,
-**#9 Congressional STOCK Act trades**, **#8 retail-attention factors**,
-**#5 stealthy shorts** (scraping/classification effort), then **#4 crypto
-funding-rate carry** and **#14 options IV skew** (different asset
-class/execution model, or paid-data risk) last. No Step 4 queued yet: pick
-the next one, copy it into
+**Candidate #7 (Anomaly-Driven Demand) was also checked and found
+infeasible (2026-07-18)** — same class of blocker as #2. Verified against
+the actual Chen & Zimmermann dataset source code
+(`openassetpricing` package): the firm-level characteristics data is keyed
+purely by CRSP `permno`, no ticker column, and the package's own pipeline
+calls a WRDS connection directly for some signals. No free permno-to-ticker
+crosswalk exists (confirmed via search — CRSP ticker-history identity data
+is a WRDS subscription product). A name-matching heuristic crosswalk was
+considered and rejected as a silent-data-corruption risk given ticker
+reuse over the dataset's multi-decade span. Deprioritized pending a
+WRDS-access decision — skip past it too.
+
+Effort-ordered remaining backlog: next up is **#1 Form 4 insider cluster
+buying**, then **#9 Congressional STOCK Act trades**, **#8 retail-attention
+factors**, **#5 stealthy shorts** (scraping/classification tier), then
+**#4 crypto funding-rate carry** and **#14 options IV skew** (different
+asset class/execution model, or paid-data risk) last. No Step 4 queued
+yet: pick the next one, copy it into
 `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
 it here. See the pipeline above for the mechanics.)

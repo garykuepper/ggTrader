@@ -263,6 +263,19 @@ sparse-event strategy like this one can trigger; fixed with a flat-equity
 short-circuit for the all-empty case, two regression tests added,
 benefits any future sparse-event strategy in this lab. Full report:
 `docs/research/2026-07-17-index-deletion-fade-nogo.md`.
+* **July 18, 2026**: Checked #7 (Anomaly-Driven Demand) for feasibility
+  before building anything — **infeasible**, same class of blocker as #2.
+  The Chen & Zimmermann firm-level characteristics dataset (verified
+  against the `openassetpricing` package's actual source code) is keyed
+  purely by CRSP `permno`, has no ticker column, and the package's own
+  pipeline calls a WRDS connection directly for some signals. No free
+  permno-to-ticker crosswalk exists — confirmed via search, CRSP's
+  ticker-history identity mapping is a WRDS subscription product. A
+  name-matching heuristic crosswalk was considered and rejected (ticker
+  reuse over the dataset's multi-decade span makes it a real silent-data-
+  corruption risk). Deprioritized pending a WRDS-access decision, not
+  built. See `docs/research/WEB_RESEARCH_CANDIDATES.md` candidate #7 for
+  detail.
 
 ---
 
