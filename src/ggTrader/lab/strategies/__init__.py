@@ -34,6 +34,7 @@ from .registry import (
 )
 from .retail_attention import RetailAttentionStrategy
 from .short_interest import ShortInterestStrategy
+from .short_volume_ratio import ShortVolumeRatioStrategy
 from .signals import (
     BollingerReversionSignal,
     EmaCrossSignal,
@@ -70,6 +71,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "pead": PeadStrategy,
     "retail_attention": RetailAttentionStrategy,
     "short_interest": ShortInterestStrategy,
+    "short_volume_ratio": ShortVolumeRatioStrategy,
     "leveraged_rotation_sp500": LeveragedRotationSp500,
     "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
     "leveraged_rotation_russell2000": LeveragedRotationRussell2000,
@@ -97,6 +99,7 @@ __all__ = [
     "PeadStrategy",
     "RetailAttentionStrategy",
     "ShortInterestStrategy",
+    "ShortVolumeRatioStrategy",
     "LeveragedRotationSp500",
     "LeveragedRotationNasdaq100",
     "LeveragedRotationRussell2000",
