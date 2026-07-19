@@ -31,36 +31,45 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 (Empty — as of July 17, the leverage-realistic 3-sleeve blend (Sharpe 1.14 /
 MaxDD −5.39%, July 13 GO) remains wired into the live `PaperTrader` —
 deployed, not just researched, and reconfirmed exactly (Sharpe 1.14, MaxDD
--5.39%) via a fresh blend run this session — no tooling drift. Since the
-July 16 leveraged-ETF closures, seven research arcs have closed NO-GO:
+-5.39%) via fresh blend runs this session — no tooling drift. Since the
+July 16 leveraged-ETF closures, eight research arcs have closed NO-GO:
 market-neutral pairs/stat-arb (July 17, first of `RESEARCH_SNAPSHOT.md`
 §6's 4 internal candidates), the MAX-effect quintile filter (July 17,
 candidate #11), the free-data-only short-interest cut (July 17, candidate
-#3), PEAD (July 17, candidate #12 — see note below, the most instructive
-rejection), and the S&P 500 index-deletion overshoot fade (July 17,
-candidate #13 — the fastest build of the session, zero new data
-infrastructure, but also the worst outcome: MaxDD -68.7%, the largest
-drawdown of any candidate this session). See `roadmap.md` §3 and
+#3), PEAD (July 17, candidate #12 — see note below, the process-lesson
+rejection), the S&P 500 index-deletion overshoot fade (July 17, candidate
+#13 — the fastest build of the session, but also the worst outcome: MaxDD
+-68.7%), and insider cluster-buying (July 19, candidate #1 — the
+highest-effort build of the session, ~24-hour SEC Form 4 backfill, closed
+on the same matched-window+blend-test discipline PEAD established). See
+`roadmap.md` §3 and
 `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` /
 `docs/research/2026-07-16-leveraged-trend-following-nogo.md` /
 `docs/research/2026-07-17-pairs-stat-arb-nogo.md` /
 `docs/research/2026-07-17-max-effect-nogo.md` /
 `docs/research/2026-07-17-short-interest-nogo.md` /
 `docs/research/2026-07-17-pead-nogo.md` /
-`docs/research/2026-07-17-index-deletion-fade-nogo.md`.
+`docs/research/2026-07-17-index-deletion-fade-nogo.md` /
+`docs/research/2026-07-19-insider-cluster-buy-nogo.md`.
 
-**PEAD is worth reading as a process lesson, not just a rejection.** Its
-initial long-window (2015-2026) SP500 result looked like the strongest
-standalone finding of the whole session (beat SPY, healthy WFE/gate-pass/
-regime-halt diagnostics, moderate 0.422 correlation to the deployed core)
-— but a matched-window retest against the deployed blend's own 2021-2026
-validation window erased the edge entirely, and a 4-sleeve blend test
-confirmed it actively hurts the deployed blend (Sharpe 1.14→1.06, MaxDD
--5.39%→-6.51%). **Any future candidate showing a standalone "beats SPY"
-result must be re-verified on the deployed blend's exact eval window
-before being reported as promising** — a long, favorable eval window can
-hide an edge that's concentrated in a stretch that doesn't overlap with
-the window that actually matters.
+**PEAD established a process lesson that insider cluster-buying then
+confirmed a second time.** PEAD's initial long-window (2015-2026) SP500
+result looked like the strongest standalone finding of the session so far
+(beat SPY, healthy diagnostics, moderate 0.422 core-correlation) — but a
+matched-window retest against the deployed blend's own 2021-2026
+validation window erased the edge, and a 4-sleeve blend test confirmed it
+actively hurt the deployed blend (Sharpe 1.14→1.06). Insider cluster-buying
+then showed the same shape independently: long-window Sharpe 0.76
+(near-tied SPY) with the *lowest* core-correlation of any candidate this
+session (0.382) — genuinely the most distinctive-looking result yet — but
+the matched-window retest again showed real underperformance (Sharpe 0.39
+vs SPY 0.58) and the blend test again showed no improvement (1.14→1.12).
+**Any future candidate showing a standalone "beats SPY" or "low
+correlation" result must be re-verified on the deployed blend's exact eval
+window (and, if still promising, an actual blend test) before being
+reported as promising** — two independent candidates have now shown this
+exact failure mode, so treat it as the default expectation, not an
+exception.
 
 **Candidate #2 (analyst estimate-revision momentum) was checked and found
 infeasible for an honest historical WFO** — every free source checked
@@ -82,11 +91,11 @@ considered and rejected as a silent-data-corruption risk given ticker
 reuse over the dataset's multi-decade span. Deprioritized pending a
 WRDS-access decision — skip past it too.
 
-Effort-ordered remaining backlog: next up is **#1 Form 4 insider cluster
-buying**, then **#9 Congressional STOCK Act trades**, **#8 retail-attention
-factors**, **#5 stealthy shorts** (scraping/classification tier), then
-**#4 crypto funding-rate carry** and **#14 options IV skew** (different
-asset class/execution model, or paid-data risk) last. No Step 4 queued
-yet: pick the next one, copy it into
+Effort-ordered remaining backlog: next up is **#9 Congressional STOCK Act
+trades**, then **#8 retail-attention factors**, **#5 stealthy shorts**
+(same scraping/classification tier as the now-closed #1), then **#4
+crypto funding-rate carry** and **#14 options IV skew** (different asset
+class/execution model, or paid-data risk) last. No Step 4 queued yet: pick
+the next one, copy it into
 `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
 it here. See the pipeline above for the mechanics.)

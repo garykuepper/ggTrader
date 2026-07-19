@@ -276,6 +276,27 @@ benefits any future sparse-event strategy in this lab. Full report:
   corruption risk). Deprioritized pending a WRDS-access decision, not
   built. See `docs/research/WEB_RESEARCH_CANDIDATES.md` candidate #7 for
   detail.
+* **July 18-19, 2026**: Built and tested #1 (insider cluster-buying, SEC
+  Form 4) — the highest-effort candidate in the backlog, explicitly
+  scoped to full SP500 despite an estimated multi-hour build (user
+  decision). Built a full SEC EDGAR Form 4 pipeline
+  (`src/ggTrader/lab/form4_data.py`: ticker→CIK resolution, per-issuer
+  filing enumeration with pagination, ownership-XML parsing via
+  `defusedxml`), verified against real SEC endpoints before committing to
+  the build. Backfill: 833,158 transaction rows across 764 SP500 symbols
+  since 2015, ~24 hours (rate-limited to respect SEC's ~10 req/sec
+  guidance), essentially zero fetch errors throughout. Initial long-window
+  WFO looked distinctive: OOS Sharpe 0.76 (near-tied SPY 0.77), shallowest
+  drawdown and lowest deployed-core correlation (0.382) of any candidate
+  this session. Following the process lesson from PEAD's closure, a
+  matched-window retest (deployed blend's own 2021-2026 validation window)
+  and a real 4-sleeve blend test both overturned the initial impression:
+  standalone Sharpe fell to 0.39 vs SPY 0.58, and the blend showed no
+  improvement (Sharpe 1.14→1.12, MaxDD -5.39%→-5.45%). **Rejected,
+  standalone and as a blend sleeve** — the third diversification-sleeve
+  candidate closed this way this session (after `idio_vol` and `pead`).
+  `form4_data.py` and the backfill remain reusable infrastructure. Full
+  report: `docs/research/2026-07-19-insider-cluster-buy-nogo.md`.
 
 ---
 

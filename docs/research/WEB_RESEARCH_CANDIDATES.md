@@ -67,7 +67,23 @@ mid-investigation outside either list (untracked `pairs_stat_arb.py` +
 `pairs_stat_arb_research.py`, per project memory: signals long-only, shorts
 unverified, pairwise-correlation missing).
 
-### 1. Insider cluster-buying signal (SEC Form 4)
+### 1. Insider cluster-buying signal (SEC Form 4) — RESOLVED, NO-GO (2026-07-19)
+`docs/research/2026-07-19-insider-cluster-buy-nogo.md`. The highest-effort
+candidate built this session — full SEC EDGAR Form 4 pipeline
+(`form4_data.py`), 833,158 transaction rows across 764 SP500 symbols since
+2015, ~24-hour rate-limited backfill. Initial long-window SP500 test
+looked distinctive (Sharpe 0.76 near-tied SPY, shallowest drawdown and
+lowest core-correlation of any candidate this session at 0.382) — but
+following the process lesson from PEAD's closure, a matched-window retest
+against the deployed blend's own 2021-2026 validation window showed real
+underperformance (Sharpe 0.39 vs SPY 0.58), and a 4-sleeve blend test
+confirmed no improvement (Sharpe 1.14→1.12, MaxDD -5.39%→-5.45%). Third
+diversification-sleeve candidate rejected this way this session (after
+`idio_vol` and `pead`) — moderate-to-low core-correlation alone hasn't
+been sufficient in any case tested so far. `form4_data.py` and the
+833,158-row backfill remain reusable for any future insider-transaction
+work (e.g. parked candidate #6).
+
 3+ distinct insiders (officers/directors/10%+ holders) making open-market
 purchases (code "P") within ~2 weeks, excluding 10b5-1/option-exercise/grant
 transactions; long the basket, 6–12mo hold. Key modern reference: Cohen,
