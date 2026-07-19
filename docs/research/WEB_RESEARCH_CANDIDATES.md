@@ -220,7 +220,22 @@ standard monthly fundamentals/returns). Differs from prior work: not a bet
 on any one anomaly (unlike the already-rejected cross-sectional momentum
 test) — a meta-signal about mechanical flows *around* anomalies.
 
-### 8. Retail-attention-conditioned factor anomalies
+### 8. Retail-attention-conditioned factor anomalies — BUILT, BLOCKED ON LIVE DATA (2026-07-19)
+Implemented as `retail_attention` strategy testing Da/Engelberg/Gao's
+actual validated core finding (search-volume spikes → short-term buying
+pressure) rather than the vaguer, unconfirmed "condition an unspecified
+factor" framing below — `src/ggTrader/lab/google_trends_data.py`
+(pytrends), full test coverage (19 tests, all passing against injected
+fakes — the parsing/strategy logic is proven correct). **Not resolved
+yet**: a small feasibility spot-check (39/40 rapid queries succeeded)
+under-sampled Google's actual rate limiting — starting the real ~750-symbol
+backfill immediately after triggered a 429 lockout that didn't clear on
+retry (unlike a simple per-request rate limit, this looks like an IP-level
+cooldown of unknown duration). Paused, not closed — retry the backfill
+(`scripts/google_trends_backfill.py`) in a later session once the block has
+likely cleared, with more conservative pacing than the 2s/request already
+used. Do not attempt IP rotation or other circumvention.
+
 Apply standard factor signals (value, momentum, etc.) only to the subset of
 stocks with unusually high retail attention (search-volume/clickstream
 spikes vs. volume-matched peers), on the theory anomalies are less

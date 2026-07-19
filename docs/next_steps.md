@@ -95,10 +95,23 @@ considered and rejected as a silent-data-corruption risk given ticker
 reuse over the dataset's multi-decade span. Deprioritized pending a
 WRDS-access decision — skip past it too.
 
-Effort-ordered remaining backlog: next up is **#8 retail-attention
-factors**, then **#5 stealthy shorts** (same scraping/classification tier
-as the now-closed #1 and #9), then **#4 crypto funding-rate carry** and
-**#14 options IV skew** (different asset class/execution model, or
-paid-data risk) last. No Step 4 queued yet: pick the next one, copy it
-into `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and
-queue it here. See the pipeline above for the mechanics.)
+**Candidate #8 (retail-attention factors) is built and tested but PAUSED,
+not resolved (2026-07-19)** — `retail_attention` strategy + Google Trends
+pipeline (`google_trends_data.py`) are complete, 19 tests passing. The
+live backfill (`scripts/google_trends_backfill.py`) hit a Google rate-limit
+lockout (429s that didn't clear on retry) partway through — a quick
+feasibility spot-check beforehand under-sampled the real constraint. Retry
+the backfill in a later session with more conservative pacing (current
+script already uses 2s/request; consider longer, or spread across multiple
+sessions) once the block has likely cleared. Do not attempt IP rotation.
+Skip past it for now — it's not blocking the effort-ordered queue below,
+just not runnable this session.
+
+Effort-ordered remaining backlog: next up is **#5 stealthy shorts** (same
+scraping/classification tier as the now-closed #1 and #9), then **#4
+crypto funding-rate carry** and **#14 options IV skew** (different asset
+class/execution model, or paid-data risk) last. Once #8's Google Trends
+block clears, revisit it before or alongside those. No Step 4 queued yet:
+pick the next one, copy it into
+`docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
+it here. See the pipeline above for the mechanics.)

@@ -24,6 +24,7 @@ dependencies = [
     "pyarrow",
     "pypdf",
     "python-dotenv",
+    "pytrends",
     "requests",
     "scikit-learn",
     "seaborn",

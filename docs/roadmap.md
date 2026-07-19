@@ -318,6 +318,17 @@ benefits any future sparse-event strategy in this lab. Full report:
   tracking, not three independent coincidences. `house_ptr_data.py` and
   the backfill remain reusable infrastructure. Full report:
   `docs/research/2026-07-19-congress-trades-nogo.md`.
+* **July 19, 2026**: Built #8 (retail-attention-conditioned factors) as
+  `retail_attention`, testing Da/Engelberg & Gao's actual validated core
+  finding (search-volume spikes → short-term buying pressure) via a new
+  Google Trends pipeline (`google_trends_data.py`, pytrends), 19 tests
+  passing against injected fakes. **Not resolved** — an initial feasibility
+  spot-check (39/40 rapid queries succeeded) under-sampled Google's real
+  rate limiting; starting the actual ~750-symbol backfill triggered a 429
+  lockout that didn't clear on retry. Paused (not closed, not
+  infeasible) pending a later retry with more conservative pacing — no
+  IP-rotation or other circumvention attempted. See
+  `docs/research/WEB_RESEARCH_CANDIDATES.md` candidate #8.
 
 ---
 

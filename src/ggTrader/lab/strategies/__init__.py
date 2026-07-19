@@ -32,6 +32,7 @@ from .registry import (
     signal_strategy_names,
     weight_strategy_names,
 )
+from .retail_attention import RetailAttentionStrategy
 from .short_interest import ShortInterestStrategy
 from .signals import (
     BollingerReversionSignal,
@@ -67,6 +68,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "max_effect": MaxEffectStrategy,
     "pairs_stat_arb": PairsStatArb,
     "pead": PeadStrategy,
+    "retail_attention": RetailAttentionStrategy,
     "short_interest": ShortInterestStrategy,
     "leveraged_rotation_sp500": LeveragedRotationSp500,
     "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
@@ -93,6 +95,7 @@ __all__ = [
     "MaxEffectStrategy",
     "PairsStatArb",
     "PeadStrategy",
+    "RetailAttentionStrategy",
     "ShortInterestStrategy",
     "LeveragedRotationSp500",
     "LeveragedRotationNasdaq100",
