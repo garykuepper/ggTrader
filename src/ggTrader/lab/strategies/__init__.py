@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .congress_trades import CongressTradeMirrorStrategy
 from .conviction import ConvictionBBSignal
 from .ensemble import EnsembleConvictionSignal, EnsembleSignal
 from .ensemble_ic import EnsembleICSignal
@@ -55,6 +56,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "ensemble": EnsembleSignal,
     "ensemble_ic": EnsembleICSignal,
     "ensemble_kelly": EnsembleKellySignal,
+    "congress_trades": CongressTradeMirrorStrategy,
     "conviction_bb": ConvictionBBSignal,
     "ensemble_conviction": EnsembleConvictionSignal,
     "xs_momentum": CrossSectionalMomentum,
@@ -82,6 +84,7 @@ __all__ = [
     "signal_registry",
     "signal_strategy_names",
     "weight_strategy_names",
+    "CongressTradeMirrorStrategy",
     "CrossSectionalMomentum",
     "DualMomentum",
     "IdioVolStrategy",

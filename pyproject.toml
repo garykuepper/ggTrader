@@ -22,6 +22,7 @@ dependencies = [
     "plotly",
     "psycopg2-binary",
     "pyarrow",
+    "pypdf",
     "python-dotenv",
     "requests",
     "scikit-learn",
