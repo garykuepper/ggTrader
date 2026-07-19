@@ -151,7 +151,21 @@ the historical average carry holds. Data: free/cheap via exchange APIs
 already integrated. Differs from prior work: market-neutral carry, not
 directional timing — first candidate with no price-direction bet at all.
 
-### 5. Informed liquidity-supplying short sellers ("stealthy shorts")
+### 5. Informed liquidity-supplying short sellers ("stealthy shorts") — RESOLVED, NO-GO (2026-07-19)
+`docs/research/2026-07-19-short-volume-ratio-nogo.md`. Built as
+`short_volume_ratio`, the free-data-only cut (plain trailing short-volume
+ratio, no liquidity-demand/supply decomposition — that needs
+transaction-level tick data this project doesn't have). New FINRA daily
+short-volume pipeline (`short_volume_data.py`, different dataset than
+short_interest_data.py's bi-monthly one; verified CDN retention starts
+2018-08-01). 1,189,652 rows backfilled. WFO (SP500, 27 folds): OOS Sharpe
+0.21 vs SPY 0.72, gate pass 16/27 (59%), regime halt 20/27 (74%,
+persistent) — a market-neutral book with shallow drawdown but near-zero
+return, consistent with the construction working mechanically but not
+capturing a differentiating signal at this fidelity. No matched-window
+follow-up needed (never showed standalone promise). `short_volume_data.py`
+and the backfill remain reusable for future daily-short-volume research.
+
 Decompose daily short-sale volume into liquidity-demanding vs.
 liquidity-supplying components (standard trade-classification on FINRA
 short-sale volume); short highest-quintile passive-short-volume names, long

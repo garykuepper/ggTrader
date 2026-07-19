@@ -329,6 +329,23 @@ benefits any future sparse-event strategy in this lab. Full report:
   infeasible) pending a later retry with more conservative pacing — no
   IP-rotation or other circumvention attempted. See
   `docs/research/WEB_RESEARCH_CANDIDATES.md` candidate #8.
+* **July 19, 2026**: Built and tested #5 (stealthy shorts, free-data-only
+  cut) as `short_volume_ratio` — market-neutral, long lowest-quintile /
+  short highest-quintile by trailing short-volume ratio, the second
+  market-neutral construction in this lab after `pairs_stat_arb`. New
+  FINRA daily short-volume pipeline (`short_volume_data.py`, a different
+  dataset than `short_interest_data.py`'s bi-monthly consolidated short
+  interest; CDN retention verified via bisection to start 2018-08-01),
+  1,189,652 rows backfilled. WFO (SP500, 27 folds): OOS Sharpe 0.21 vs SPY
+  0.72, gate pass 16/27 (59%), regime halt active 20/27 folds (74%,
+  persistent) — a market-neutral book with a shallow drawdown (-9.2%) but
+  near-zero return, reading as "mechanically correct construction, no
+  differentiating signal at this fidelity" rather than an overfitting or
+  eval-window-drift rejection. **Rejected.** No matched-window follow-up
+  needed — never showed standalone promise on the long window to begin
+  with. `short_volume_data.py` and the backfill remain reusable
+  infrastructure. Full report:
+  `docs/research/2026-07-19-short-volume-ratio-nogo.md`.
 
 ---
 

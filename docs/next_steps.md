@@ -32,7 +32,7 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 MaxDD −5.39%, July 13 GO) remains wired into the live `PaperTrader` —
 deployed, not just researched, and reconfirmed exactly (Sharpe 1.14, MaxDD
 -5.39%) via fresh blend runs this session — no tooling drift. Since the
-July 16 leveraged-ETF closures, nine research arcs have closed NO-GO:
+July 16 leveraged-ETF closures, ten research arcs have closed NO-GO:
 market-neutral pairs/stat-arb (July 17, first of `RESEARCH_SNAPSHOT.md`
 §6's 4 internal candidates), the MAX-effect quintile filter (July 17,
 candidate #11), the free-data-only short-interest cut (July 17, candidate
@@ -40,9 +40,11 @@ candidate #11), the free-data-only short-interest cut (July 17, candidate
 fade (July 17, candidate #13 — the fastest build of the session, but also
 the worst outcome: MaxDD -68.7%), insider cluster-buying (July 19,
 candidate #1 — the highest-effort build, ~24-hour SEC Form 4 backfill),
-and Congressional trade mirroring (July 19, candidate #9 — see note below,
-the third and clearest confirmation of the eval-window-drift pattern). See
-`roadmap.md` §3 and
+Congressional trade mirroring (July 19, candidate #9 — see note below, the
+third and clearest confirmation of the eval-window-drift pattern), and
+short-volume-ratio/"stealthy shorts" free-data cut (July 19, candidate #5
+— a clean "no signal at this fidelity" rejection, not an eval-window or
+overfitting one). See `roadmap.md` §3 and
 `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` /
 `docs/research/2026-07-16-leveraged-trend-following-nogo.md` /
 `docs/research/2026-07-17-pairs-stat-arb-nogo.md` /
@@ -51,7 +53,8 @@ the third and clearest confirmation of the eval-window-drift pattern). See
 `docs/research/2026-07-17-pead-nogo.md` /
 `docs/research/2026-07-17-index-deletion-fade-nogo.md` /
 `docs/research/2026-07-19-insider-cluster-buy-nogo.md` /
-`docs/research/2026-07-19-congress-trades-nogo.md`.
+`docs/research/2026-07-19-congress-trades-nogo.md` /
+`docs/research/2026-07-19-short-volume-ratio-nogo.md`.
 
 **The eval-window-drift pattern is now confirmed three times and should be
 treated as a standing expectation, not a caveat.** PEAD (July 17) first
@@ -107,11 +110,10 @@ sessions) once the block has likely cleared. Do not attempt IP rotation.
 Skip past it for now — it's not blocking the effort-ordered queue below,
 just not runnable this session.
 
-Effort-ordered remaining backlog: next up is **#5 stealthy shorts** (same
-scraping/classification tier as the now-closed #1 and #9), then **#4
-crypto funding-rate carry** and **#14 options IV skew** (different asset
-class/execution model, or paid-data risk) last. Once #8's Google Trends
-block clears, revisit it before or alongside those. No Step 4 queued yet:
-pick the next one, copy it into
+Effort-ordered remaining backlog: next up is **#4 crypto funding-rate
+carry** and **#14 options IV skew** (different asset class/execution
+model, or paid-data risk) — the last two in the active queue. Once #8's
+Google Trends block clears, revisit it alongside those. No Step 4 queued
+yet: pick the next one, copy it into
 `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
 it here. See the pipeline above for the mechanics.)
