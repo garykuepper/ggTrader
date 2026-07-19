@@ -297,6 +297,27 @@ benefits any future sparse-event strategy in this lab. Full report:
   candidate closed this way this session (after `idio_vol` and `pead`).
   `form4_data.py` and the backfill remain reusable infrastructure. Full
   report: `docs/research/2026-07-19-insider-cluster-buy-nogo.md`.
+* **July 19, 2026**: Built and tested #9 (Congressional/House STOCK Act
+  trade mirroring), House-only scope. New data pipeline
+  (`src/ggTrader/lab/house_ptr_data.py`: House Clerk's bulk annual index +
+  text-extractable PTR PDF parsing, verified no OCR needed even for
+  2015-era filings), 41,443 rows across 7,578 filings 2015-2026,
+  essentially clean backfill. **This was the strongest long-window
+  standalone result of the entire session**: OOS Sharpe 0.89 vs SPY 0.77,
+  gate pass 34/40 (85%), stability 13/40 (33%) — all the highest of any
+  candidate tested. Applied the now-established matched-window + blend-test
+  discipline immediately rather than reporting it as promising, and it
+  overturned a third time this session: standalone Sharpe fell to 0.36 vs
+  SPY 0.58 on the deployed blend's 2021-2026 validation window, and the
+  4-sleeve blend test showed the worst degradation of any diversification
+  candidate tested (Sharpe 1.14→1.04, MaxDD -5.39%→-5.43%, worse than
+  `pead`'s 1.06 and `insider_cluster_buy`'s 1.12). **Rejected, standalone
+  and as a blend sleeve.** Three consecutive candidates (`pead`,
+  `insider_cluster_buy`, `congress_trades`) have now failed this exact
+  way — flagged in the closure report as a standing pattern worth
+  tracking, not three independent coincidences. `house_ptr_data.py` and
+  the backfill remain reusable infrastructure. Full report:
+  `docs/research/2026-07-19-congress-trades-nogo.md`.
 
 ---
 

@@ -237,7 +237,22 @@ technical rule — independent of the rejected ML-gating experiment (that
 gate used price/volume features; this one is an alternative-data signal
 about who's trading).
 
-### 9. Congressional (STOCK Act) trade disclosures — treat with real skepticism
+### 9. Congressional (STOCK Act) trade disclosures — RESOLVED, NO-GO (2026-07-19)
+`docs/research/2026-07-19-congress-trades-nogo.md`. Built House-only
+(Senate's efdsearch.senate.gov needs a stateful CSRF session, not
+attempted) — `house_ptr_data.py`, 41,443 rows across 7,578 PTR filings
+2015-2026. **This was the strongest long-window standalone result of the
+entire session** (OOS Sharpe 0.89 vs SPY 0.77, gate pass 34/40 = 85%,
+stability 13/40 = 33%, all highest seen) — but per the discipline
+established by `pead` and confirmed by `insider_cluster_buy`, a
+matched-window retest and blend test both overturned it: standalone
+Sharpe fell to 0.36 vs SPY 0.58, and the 4-sleeve blend showed the worst
+degradation of any diversification candidate this session (Sharpe
+1.14→1.04). Third consecutive candidate to fail this exact way — the
+eval-window-drift pattern is now a standing expectation, not a caveat.
+`house_ptr_data.py` and the backfill remain reusable for any future
+congressional-disclosure research (including a Senate extension).
+
 Track members-of-Congress stock trade disclosures (45-day disclosure
 window under the 2012 STOCK Act) and mirror buy-side trades, optionally
 weighted toward committee assignments relevant to the traded sector.
