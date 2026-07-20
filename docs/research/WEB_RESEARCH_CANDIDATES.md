@@ -584,7 +584,9 @@ Structure,"* NBER WP 32472 (2024); (ii) macro-regime-conditional duration
 rotation (HMM classifying growth/inflation regimes) — sources (GitHub repo,
 unverified arXiv/SSRN IDs) **not independently verified**. Data: free
 (TLT/IEF/SHY, FRED macro series). **Confidence: High** for (i), **Low** for
-(ii) — prototype the static factor version first.
+(ii) — prototype the static factor version first. **Status: C-i untriaged;
+C-ii deprioritized — low confidence, do not resurface without a
+verified source.**
 
 **D. FOMC-window spillover trading in country ETFs.** Trade U.S.-listed
 country ETFs representing markets closed during FOMC announcements —
@@ -684,25 +686,30 @@ Deribit DVOL methodology + practitioner pieces, none independently
 verified for crypto specifically; the underlying mechanism (implied >
 realized on average, delta-hedged harvest) is standard, well-established
 options theory generally. **Confidence: Medium** on mechanism, **Low** on
-crypto-specific sourcing.
+crypto-specific sourcing. **Status: deprioritized — low confidence, do
+not resurface without a verified crypto-specific source.**
 
 **O. Stablecoin yield arbitrage (CeFi/DeFi rate differential).** Industry
 reports only (Galaxy Research, DeFiLlama, Messari), no academic
 verification — but the rate fragmentation itself is observable market
 structure, not a contested claim. **Confidence: Medium** on mechanism,
-**Low** on cited figures.
+**Low** on cited figures. **Status: deprioritized — low confidence, do
+not resurface without academic verification.**
 
 **P. Crypto spot-perp calendar basis trade.** CME commentary + practitioner
 pieces, no academic source; the mechanism (quarterly futures converge to
 spot, basis reflects funding/term-structure expectations) is real,
 documented institutional practice (post-spot-ETF CME basis trading).
 **Confidence: Medium** on mechanism, **Low** on specific sources. (See
-relation note above re: candidate #4.)
+relation note above re: candidate #4.) **Status: deprioritized — low
+confidence, do not resurface without a verified source.**
 
 **Q. Token unlock event-driven short.** Data-vendor calendars (DefiLlama,
 CoinGlass, Tokenomist), no empirical crypto-specific study found — the
 equity IPO-lockup-expiry analogy is real literature. **Confidence:
-Low-Medium** — reasonable mechanism, untested claim.
+Low-Medium** — reasonable mechanism, untested claim. **Status:
+deprioritized — low confidence, do not resurface without an empirical
+crypto-specific study.**
 
 ### Tier 4 — Weak sourcing or corrected/flagged claims — most caution
 
@@ -714,24 +721,33 @@ and broadly supported in FX literature (see idea E; Menkhoff, Sarno,
 Schmeling & Schrimpf on currency momentum, or AQR's "Value and Momentum
 Everywhere" dataset are real alternatives) — replace the citation before
 treating this as strongly evidenced. **Confidence: Low** on the citation,
-**Medium** on the underlying concept.
+**Medium** on the underlying concept. **Status: deprioritized — low
+confidence, do not resurface unless a real citation for the three-factor
+core is found (idea E already covers the FX carry/value/trend concept with
+a solid citation).**
 
 **S. Treasury duration rotation via HMM regime-switching.** Same as idea
 C's variant (ii) — leans entirely on a GitHub repo and unverified IDs.
 **Confidence: Low** — see Tier 1C for the better-supported static-factor
-alternative.
+alternative. **Status: deprioritized — duplicate of C-ii, do not
+resurface.**
 
 **T. Commodity seasonality (harvest/planting cycles).** ⚠ The cited paper
 (PMC11305200) is real but studies economic-policy-uncertainty co-movement,
 not planting/harvest seasonality — off-topic relative to the claim.
-**Confidence: Low** pending a genuine seasonality citation.
+**Confidence: Low** pending a genuine seasonality citation. **Status:
+deprioritized — low confidence, do not resurface without a genuine
+on-topic citation.**
 
 **U. ETH/BTC ratio mean-reversion with macro filter.** All-practitioner-
 blog sourcing, no academic backing found. **Confidence: Low** — fast-test-
-and-discard only.
+and-discard only. **Status: deprioritized — low confidence, do not
+resurface without academic backing.**
 
 **V. Energy pre-holiday seasonal sleeve.** Self-flagged by its own source
 report as non-academic (Quantpedia write-up only). **Confidence: Low.**
+**Status: deprioritized — low confidence, do not resurface without
+academic backing.**
 
 **W. DeFi delta-neutral concentrated LP + funding harvest.** Mechanism is
 sound (observable market facts), but operationally the heaviest idea in
@@ -748,33 +764,41 @@ citation.
 
 ### Summary triage table (24 candidates)
 
-| # | Candidate | Asset class | Data cost | Confidence | Notes |
-|---|---|---|---|---|---|
-| A | Cross-currency basis / CIP harvesting | FX | Free | High | Best-supported idea overall |
-| B | Commodity carry+trend+basis reversal | Commodities | Free/cheap | High | 3 independent verified sources |
-| C-i | Treasury term-structure factors (static) | Rates | Free | High | Prototype this variant first |
-| C-ii | Treasury duration rotation (HMM regime) | Rates | Free | Low | Unverified sourcing |
-| D | FOMC country-ETF spillover | FX/equity (intl) | Free/cheap | High | Strong recent primary source |
-| E | Dynamic FX hedge overlay | FX | Free/cheap | High | Published, high-pedigree |
-| F | Cross-asset base-pair selection | Multi-asset | Futures-heavy (ETF-proxy feasible) | High | Portfolio-construction insight |
-| G | Bond ETF discount-to-NAV reversal | Credit/HY bonds | Free | High | Lean on 2026 paper, not 2013 figure |
-| H | Stablecoin-stress jump-risk hedge | Crypto | Free/cheap | High | 2 verified, high-tier papers |
-| I | Country/factor rotation + FX hedge signal | FX/equity (intl) | Free/cheap | Medium/Low | Re-confirm Bräuer paper's actual claim |
-| J | Session-aware crypto intraday | Crypto | Free/cheap | High | Small scope, cleanest citation match |
-| K | Pre-FOMC Treasury drift | Rates | Free | Medium | Use idea D's citation, not the unverified one |
-| L | Headline/LLM sentiment (small/mid caps) | Equity (alt-data) | Free/cheap (LLM cost) | High | See relation note re: #8 |
-| M | Cross-asset carry rotation | Multi-asset | Free/cheap | High | Shares idea B's evidentiary base |
-| N | Crypto options vol risk premium | Crypto derivatives | Feasibility risk | Medium/Low | Standard mechanism, crypto sourcing thin |
-| O | Stablecoin yield arbitrage | Crypto/DeFi | Free (industry reports) | Medium/Low | No academic verification |
-| P | Crypto spot-perp calendar basis | Crypto derivatives | Free/cheap | Medium/Low | See relation note re: #4 |
-| Q | Token unlock event-driven short | Crypto | Free (calendars) | Low-Medium | Untested in crypto specifically |
-| R | G10 currency 3-factor core | FX | Free/cheap | Low/Medium | ⚠ fabricated citation, real concept |
-| S | Treasury HMM regime rotation | Rates | Free | Low | Same as C-ii |
-| T | Commodity seasonality | Commodities | Free | Low | ⚠ cited paper is off-topic |
-| U | ETH/BTC ratio mean-reversion | Crypto | Free | Low | Blog-only sourcing |
-| V | Energy pre-holiday seasonal | Commodities | Free | Low | Self-flagged thin by its own source |
-| W | DeFi delta-neutral LP + funding harvest | Crypto/DeFi | Feasibility risk (infra-heavy) | Medium | Engineering long-shot, not citation risk |
-| X | Automated multi-asset strategy discovery | Meta/framework | N/A | High (citation) | Framework, not a strategy — most speculative application |
+| # | Candidate | Asset class | Data cost | Confidence | Status | Notes |
+|---|---|---|---|---|---|---|
+| A | Cross-currency basis / CIP harvesting | FX | Free | High | untriaged | Best-supported idea overall |
+| B | Commodity carry+trend+basis reversal | Commodities | Free/cheap | High | untriaged | 3 independent verified sources |
+| C-i | Treasury term-structure factors (static) | Rates | Free | High | untriaged | Prototype this variant first |
+| C-ii | Treasury duration rotation (HMM regime) | Rates | Free | Low | **deprioritized** | Unverified sourcing |
+| D | FOMC country-ETF spillover | FX/equity (intl) | Free/cheap | High | untriaged | Strong recent primary source |
+| E | Dynamic FX hedge overlay | FX | Free/cheap | High | untriaged | Published, high-pedigree |
+| F | Cross-asset base-pair selection | Multi-asset | Futures-heavy (ETF-proxy feasible) | High | untriaged | Portfolio-construction insight |
+| G | Bond ETF discount-to-NAV reversal | Credit/HY bonds | Free | High | untriaged | Lean on 2026 paper, not 2013 figure |
+| H | Stablecoin-stress jump-risk hedge | Crypto | Free/cheap | High | untriaged | 2 verified, high-tier papers |
+| I | Country/factor rotation + FX hedge signal | FX/equity (intl) | Free/cheap | Medium/Low | untriaged | Re-confirm Bräuer paper's actual claim |
+| J | Session-aware crypto intraday | Crypto | Free/cheap | High | untriaged | Small scope, cleanest citation match |
+| K | Pre-FOMC Treasury drift | Rates | Free | Medium | untriaged | Use idea D's citation, not the unverified one |
+| L | Headline/LLM sentiment (small/mid caps) | Equity (alt-data) | Free/cheap (LLM cost) | High | untriaged | See relation note re: #8 |
+| M | Cross-asset carry rotation | Multi-asset | Free/cheap | High | untriaged | Shares idea B's evidentiary base |
+| N | Crypto options vol risk premium | Crypto derivatives | Feasibility risk | Medium/Low | **deprioritized** | Standard mechanism, crypto sourcing thin |
+| O | Stablecoin yield arbitrage | Crypto/DeFi | Free (industry reports) | Medium/Low | **deprioritized** | No academic verification |
+| P | Crypto spot-perp calendar basis | Crypto derivatives | Free/cheap | Medium/Low | **deprioritized** | See relation note re: #4 |
+| Q | Token unlock event-driven short | Crypto | Free (calendars) | Low-Medium | **deprioritized** | Untested in crypto specifically |
+| R | G10 currency 3-factor core | FX | Free/cheap | Low/Medium | **deprioritized** | ⚠ fabricated citation, real concept |
+| S | Treasury HMM regime rotation | Rates | Free | Low | **deprioritized** | Duplicate of C-ii |
+| T | Commodity seasonality | Commodities | Free | Low | **deprioritized** | ⚠ cited paper is off-topic |
+| U | ETH/BTC ratio mean-reversion | Crypto | Free | Low | **deprioritized** | Blog-only sourcing |
+| V | Energy pre-holiday seasonal | Commodities | Free | Low | **deprioritized** | Self-flagged thin by its own source |
+| W | DeFi delta-neutral LP + funding harvest | Crypto/DeFi | Feasibility risk (infra-heavy) | Medium | untriaged | Engineering long-shot, not citation risk — kept active despite Tier-4 grouping |
+| X | Automated multi-asset strategy discovery | Meta/framework | N/A | High (citation) | untriaged | Framework, not a strategy — most speculative application |
+
+**Deprioritized (11 ideas: C-ii, N, O, P, Q, R, S, T, U, V).** None of
+these were tried/tested — they're low-confidence on sourcing, not
+NO-GO — so they stay in this file as the record of "already looked at,
+weakly sourced." `web-strategy-research-prompt.md` now lists them by name
+so a future discovery pass doesn't waste output resurfacing the same or
+similar weakly-sourced ideas without a stronger citation than what's
+already been found here.
 
 **First wave (Tier 1, all independently verified, genuinely diversifying
 from the all-US-equity ensemble):** A, B, D, E, F, C-i (in roughly that

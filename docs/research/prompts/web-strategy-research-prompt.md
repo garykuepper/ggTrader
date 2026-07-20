@@ -99,6 +99,25 @@ without a genuinely different mechanism:**
   problem** in our experience, no matter how many free sources we checked —
   if your idea needs one of these, flag the data question loudly rather
   than assuming a workaround exists.
+- A later, cross-asset-focused research pass (FX, commodities, rates,
+  crypto) already surfaced and evaluated a wide net of ideas in those
+  categories. Most were well-supported, but several were found to be
+  weakly sourced (unverified or fabricated citations, blog-only sourcing,
+  off-topic citations) and are deliberately not worth re-proposing unless
+  you can bring a genuinely stronger source than what's already been
+  checked: a Treasury-duration regime-switching signal driven by an
+  unverified GitHub/arXiv source; a crypto options volatility-risk-premium
+  harvest with no crypto-specific academic backing; stablecoin CeFi/DeFi
+  yield arbitrage sourced only from industry reports; a crypto token-
+  unlock event-driven short with no empirical crypto study; a G10
+  currency three-factor model whose primary citation could not be located
+  anywhere (likely fabricated); an ETH/BTC ratio mean-reversion idea with
+  only practitioner-blog sourcing; a commodity harvest/planting
+  seasonality signal whose only located citation turned out to study an
+  unrelated topic; and an energy pre-holiday seasonal trade that its own
+  source labeled non-academic. If you land on something in these same
+  specific niches, it needs a materially better citation than "an industry
+  report" or "a practitioner blog post" to be worth including.
 
 The throughline in most of these failures: technical, price-action-only
 signals on this specific universe are close to fully arbitraged, adding
