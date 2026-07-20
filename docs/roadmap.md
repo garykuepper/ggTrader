@@ -447,6 +447,20 @@ benefits any future sparse-event strategy in this lab. Full report:
   pre-existing unrelated failures). No mechanical re-run of all closed
   strategies — the n_trades fix doesn't change their math and no other
   concrete bugs were found on inspection.
+* **July 20, 2026**: Built and tested candidate A3 (commodity medium-term
+  trend) — **REJECTED**. New 14-ETF single-commodity universe (metals/
+  energy/ags; BAL and JJC checked and found delisted 2023, excluded) +
+  `commodity_trend` strategy: 12-1 cross-sectional momentum (reusing this
+  lab's established `xs_momentum` pattern) plus a market-wide realized-
+  volatility regime filter distinct from the already-rejected equity
+  VIX-regime-throttling idea, tested on its own merits in a different
+  asset class. Full 50-fold WFO: OOS Sharpe 0.13 vs SPY 0.74, **MaxDD
+  -37.0% — worse than SPY's -33.7%** despite the vol-regime filter being
+  specifically designed to avoid crash exposure, aggregate WFE undefined,
+  regime halt active despite 82% fold-stability for the recommended
+  combo. Full report: `docs/research/2026-07-20-commodity-trend-nogo.md`.
+  Next up: candidate A5 (Treasury term-structure factors, ETF-
+  approximation version).
 
 ---
 

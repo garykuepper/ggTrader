@@ -204,37 +204,53 @@ not an eval-window or data-quality artifact. Full report:
 `docs/research/2026-07-20-fomc-drift-nogo.md`. `fomc_calendar.py` remains
 reusable for any future macro-calendar-timed candidate.
 
+**A3 (commodity medium-term trend) was built and tested — REJECTED
+(2026-07-20)**. Built a 14-ETF single-commodity universe (metals/energy/
+ags; BAL and JJC checked and found delisted 2023, excluded) +
+`commodity_trend` strategy (12-1 cross-sectional momentum, reusing this
+lab's established `xs_momentum` pattern, plus a market-wide realized-vol
+regime filter — a distinct construction from the already-rejected equity
+VIX-regime-throttling idea, tested on its own merits in a different asset
+class). Full 50-fold WFO: OOS Sharpe 0.13 vs SPY 0.74, **MaxDD -37.0%
+(worse than SPY's -33.7%)** despite the vol-regime filter being
+specifically meant to avoid crash exposure, aggregate WFE undefined
+(`nan`), regime halt active despite 82% fold-stability for the
+recommended combo. Full report:
+`docs/research/2026-07-20-commodity-trend-nogo.md`. The `commodity_trend`
+universe and code remain reusable for A2 (commodity carry, same universe,
+untested) if commodity exposure is revisited — A4 (short-term basis
+reversal) is **not** ETF-approximable per the register's own note (needs
+futures data this project doesn't have).
+
 **Effort-ordered next-up, per the register's own "home-lab / mostly-ETF
 workflow" ranking** (this project's actual setup):
-1. **A3 — Commodity medium-term trend. Now next up.** Free/cheap ETF
-   proxies. Note this is now a standalone candidate — the register split
-   what was one combined "carry+trend+basis reversal" idea into three
-   independently-evidenced sub-signals (A2/A3/A4); don't assume they
-   combine as originally proposed without testing each separately.
-2. **A5 — Treasury term-structure factors, static/ETF-approximation
-   version only.** Free (TLT/IEF/SHY). Must be explicitly labeled an
-   approximation, not a replication — the underlying paper (now upgraded
-   to "accepted at Review of Finance") specifies 4 factors, a 3-ETF
-   version only captures 3.
-3. **A8 — Headline/LLM sentiment on small/mid-cap equities.** Needs
+1. **A5 — Treasury term-structure factors, static/ETF-approximation
+   version only. Now next up.** Free (TLT/IEF/SHY). Must be explicitly
+   labeled an approximation, not a replication — the underlying paper
+   (now upgraded to "accepted at Review of Finance") specifies 4 factors,
+   a 3-ETF version only captures 3.
+2. **A8 — Headline/LLM sentiment on small/mid-cap equities.** Needs
    credible point-in-time headline data — do not proceed on a look-ahead-
    biased feed. Authors themselves warn of a crowding/decay effect as LLM
    use spreads.
-4. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
+3. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
    overlay, not a standalone short — the underlying papers show stress
    raises *two-sided* jump risk, not a reliably negative one.
 
-Pick ONE (A3 is the natural next pick), copy its entry from
+Pick ONE (A5 is the natural next pick), copy its entry from
 `WEB_RESEARCH_CANDIDATES.md` into
 `docs/research/prompts/local-implementation-prompt-TEMPLATE.md` — **also
 apply the register's "Minimum validation standard" 7-point checklist**
 (frozen rule, point-in-time data, full costs, nested OOS, multiple-testing
 correction, stress-period behavior, shadow portfolio) on top of this
-project's usual WFO/NDH/DSR gate. Two candidates in, the standing lesson
-is now: **identify the actual correct benchmark for the paper's specific
-claim before running the WFO, not after** (A1's SPY-vs-static lesson),
-**and watch for all-zero/all-flat results as a signal something is
-structurally broken, not just "no edge"** (A7's timestamp-matching bug —
-verify the mechanism is actually firing before trusting a null result).
-Also still open, lower priority: retry #8's Google Trends backfill once
-the rate-limit has likely cleared.)
+project's usual WFO/NDH/DSR gate. Three candidates in, standing lessons:
+**identify the actual correct benchmark for the paper's specific claim
+before running the WFO, not after** (A1's SPY-vs-static lesson), **watch
+for all-zero/all-flat results as a signal something is structurally
+broken, not just "no edge"** (A7's timestamp-matching bug), and **for
+sparse/event-driven candidates specifically, run the event-study
+supplementary test** (`src/ggTrader/lab/event_study.py`) alongside the
+WFO — it distinguishes "no real effect" from "real effect, eaten by
+costs" far more precisely than fold-level Sharpe alone. Also still open,
+lower priority: retry #8's Google Trends backfill once the rate-limit
+has likely cleared.)

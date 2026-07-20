@@ -657,9 +657,17 @@ Literature only.
 
 ---
 
-### A3. Commodity medium-term trend
+### A3. Commodity medium-term trend — RESOLVED, NO-GO (2026-07-20)
 
 *(Prior draft: part of item 2/3, Tier 1 — split, see A2.)*
+
+**Built and tested — clean NO-GO.** 14-ETF single-commodity universe
+(metals/energy/ags), 12-1 cross-sectional momentum + market-wide vol-
+regime filter. 50-fold WFO: OOS Sharpe 0.13 vs SPY 0.74, MaxDD -37.0%
+(worse than SPY's -33.7%), gate pass 54%, aggregate WFE undefined, regime
+halt active despite 82% fold-stability for the recommended combo — the
+vol-regime filter did not prevent a deeper-than-equity drawdown. Full
+report: `docs/research/2026-07-20-commodity-trend-nogo.md`.
 
 **Mechanism.** Cross-sectional 12-1 month momentum across a liquid
 commodity ETF/futures universe, with a volatility-regime filter to avoid
@@ -679,9 +687,9 @@ trend reasonably well.
 
 **Evidence status:** Practitioner. **Rule correspondence:** Close
 adaptation. **Implementation class:** Retail-feasible via ETFs.
-**Validation stage:** Literature only.
+**Validation stage:** Walk-forward OOS (rejected).
 
-**Status: untriaged.**
+**Status: resolved, NO-GO. See `docs/research/2026-07-20-commodity-trend-nogo.md`.**
 
 ---
 
@@ -1366,9 +1374,11 @@ stronger source or a tightly-scoped falsification test.**
    REJECTED 2026-07-20**: OOS total return 0.45% over 13.5 years
    (essentially flat), WFE below the overfitting floor, regime halt
    active. See `docs/research/2026-07-20-fomc-drift-nogo.md`.
-3. **Commodity trend (A3) — now next up.**
-4. Simplified Treasury curve relative value (A5), clearly labeled an
-   approximation
+3. ~~Commodity trend (A3)~~ — **built and tested, REJECTED 2026-07-20**:
+   OOS Sharpe 0.13 vs SPY 0.74, MaxDD -37.0% (worse than SPY), regime halt
+   active. See `docs/research/2026-07-20-commodity-trend-nogo.md`.
+4. **Simplified Treasury curve relative value (A5), clearly labeled an
+   approximation — now next up.**
 5. LLM headline drift (A8), only with credible point-in-time data
 6. Stablecoin stress as a risk overlay (B1)
 7. FOMC country-ETF residual-continuation test (B2)

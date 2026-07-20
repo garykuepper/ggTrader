@@ -159,6 +159,13 @@ _SNAPSHOT_REGISTRY: Dict[str, str] = {
     "fx_hedge": "fx_hedge_tickers_snapshot_2026-07-20.txt",
     # Long-duration Treasury ETFs for fomc_drift (candidate A7).
     "fomc_treasury": "fomc_treasury_tickers_snapshot_2026-07-20.txt",
+    # Liquid single-commodity ETFs for commodity_trend (candidate A3):
+    # metals (GLD/SLV/CPER/PALL/PPLT/DBB), energy (USO/UNG/UGA), ags
+    # (DBA/CORN/WEAT/SOYB/CANE). BAL and JJC were checked and found
+    # delisted 2023 -- excluded. Broad multi-commodity baskets (DBC/GSG)
+    # deliberately excluded from the cross-sectional universe itself --
+    # they'd dilute the ranking signal, not add a distinct commodity.
+    "commodity_trend": "commodity_trend_tickers_snapshot_2026-07-20.txt",
 }
 
 

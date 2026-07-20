@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .commodity_trend import CommodityTrendStrategy
 from .congress_trades import CongressTradeMirrorStrategy
 from .conviction import ConvictionBBSignal
 from .ensemble import EnsembleConvictionSignal, EnsembleSignal
@@ -76,6 +77,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "short_volume_ratio": ShortVolumeRatioStrategy,
     "fx_hedge_overlay": FxHedgeOverlayStrategy,
     "fomc_drift": FomcDriftStrategy,
+    "commodity_trend": CommodityTrendStrategy,
     "leveraged_rotation_sp500": LeveragedRotationSp500,
     "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
     "leveraged_rotation_russell2000": LeveragedRotationRussell2000,
@@ -106,6 +108,7 @@ __all__ = [
     "ShortVolumeRatioStrategy",
     "FxHedgeOverlayStrategy",
     "FomcDriftStrategy",
+    "CommodityTrendStrategy",
     "LeveragedRotationSp500",
     "LeveragedRotationNasdaq100",
     "LeveragedRotationRussell2000",
