@@ -8,7 +8,7 @@ anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
 Regenerate the "context" section below from `docs/research/RESEARCH_SNAPSHOT.md`
-whenever it's materially out of date — last synced 2026-07-16.
+whenever it's materially out of date — last synced 2026-07-19.
 
 ---
 
@@ -71,13 +71,45 @@ without a genuinely different mechanism:**
   trend-following-with-volatility-overlay version) — both lost to simply
   buying and holding the same leveraged ETF; leveraged-instrument decay in
   choppy markets is a real, hard-to-time cost.
+- **Nine additional U.S.-equity "diversification sleeve" ideas, each a
+  different fundamental/event-driven signal, were all tried and rejected**:
+  post-earnings-announcement drift, insider-buying clusters, mirroring
+  elected officials' stock trades, short-interest level, daily short-sale
+  volume, S&P 500 index-deletion overshoot, lottery-demand/skewness
+  avoidance, and long/short pairs mean-reversion. Every one either (a)
+  correlated too heavily with the existing signal to add real
+  diversification, or (b) looked genuinely strong on a long backtest window
+  but the strength was concentrated in an earlier period that doesn't
+  overlap with the period actually used to validate the current live
+  configuration — once tested on the matched, current-relevant window, the
+  edge mostly vanished and made the overall portfolio *worse*, not better.
+  **We now believe another cross-sectional signal on the same U.S.
+  large/mid-cap equity universe is unlikely to add real value — a genuinely
+  different asset class, geography, or holding-period horizon is a much
+  higher-value direction than another characteristic/event-driven sort on
+  the same stocks.**
+- Four other ideas were investigated and found to require data we can't
+  access affordably: analyst-estimate-revision momentum, a firm-
+  characteristics rebalancing-flow signal keyed to an academic database
+  identifier with no free ticker mapping, option-implied volatility skew,
+  and crypto perpetual-futures funding-rate carry beyond about a year of
+  history. The common thread: **genuine point-in-time historical depth for
+  analyst estimates, options chains, and permno/CRSP-style academic
+  identifiers has consistently turned out to be a paid-vendor-only
+  problem** in our experience, no matter how many free sources we checked —
+  if your idea needs one of these, flag the data question loudly rather
+  than assuming a workaround exists.
 
 The throughline in most of these failures: technical, price-action-only
-signals on this specific universe are close to fully arbitraged, and adding
+signals on this specific universe are close to fully arbitraged, adding
 model complexity on top of a simple ensemble has consistently made things
-worse, not better. **The most valuable thing you can bring is a genuinely
-different signal category or market structure** — not another variation on
-technical/price-action timing of the same large-cap U.S. equities.
+worse, and even genuinely different *signal categories* (fundamental,
+event-driven, behavioral) have failed to diversify the portfolio as long as
+they're still U.S. large/mid-cap equities. **The most valuable thing you can
+bring now is a genuinely different asset class, market, or time horizon** —
+not another variation on technical/price-action timing, and not another
+characteristic-based cross-sectional sort of the same large-cap U.S.
+equities, however different the underlying data source.
 
 ## Constraints — keep recommendations realistic for a retail/home-lab setup
 
@@ -88,9 +120,13 @@ technical/price-action timing of the same large-cap U.S. equities.
   say so explicitly and flag it as a feasibility risk rather than skipping
   it — some ideas are still worth flagging even if the data question needs
   resolving first.
-- **Instrument scope**: primarily U.S. equities (large/mid/small-cap
-  indices) and, secondarily, major crypto assets. Note if an idea is
-  specific to a different asset class.
+- **Instrument scope**: U.S. equities (large/mid/small-cap indices) and
+  major crypto assets remain in scope, but per the note above, ideas in
+  **other liquid, retail-accessible asset classes** (developed-market
+  international equities, Treasury/duration instruments, commodities,
+  currencies) reachable via common ETFs are now explicitly welcome and
+  probably higher-value than another U.S.-equity cross-sectional sort. Note
+  which asset class each idea is in.
 - **Execution realism**: this is a single retail-sized account, not a fund
   — avoid strategies that only work at institutional scale/capacity, or
   that require latency/infrastructure a retail trader can't get.
