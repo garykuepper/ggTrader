@@ -154,7 +154,36 @@ equities, however different the underlying data source.
 
 ## Required output format
 
-Produce a ranked markdown list. For **each** candidate idea, include:
+**Group candidates into confidence tiers, and give every candidate all
+seven fields below — both parts are required, not either/or.** A prior run
+produced a well-organized tiered report but skipped several of the
+per-candidate fields (especially field 6); that's the failure mode to
+avoid — the tiering is a good organizing structure on top of the fields,
+not a replacement for them.
+
+### Tiering
+
+Organize the candidates into tiers by how well-supported the sourcing is,
+roughly:
+- **Tier 1** — primary source(s) independently real and directly on-point;
+  no caveats.
+- **Tier 2** — real, verified source(s), but with a specific caveat (a
+  dated figure, a narrower scope than the headline claim, a related-but-
+  not-identical finding).
+- **Tier 3** — plausible mechanism, but sourcing is thin (practitioner
+  blogs/industry reports only, no academic backing) or only partially
+  verified.
+- **Tier 4** — weak, unverified, or flagged sourcing (a citation you
+  couldn't locate, a citation that turned out to be about something else,
+  or a citation you're not fully confident is real). Still include these —
+  a labeled long-shot is useful triage material — but say plainly that the
+  sourcing is weak rather than dressing it up.
+
+Within each tier, order roughly by how promising + feasible you judge each
+idea. Aim for at least 5-8 candidates total across all tiers so there's
+real triage material.
+
+### Per-candidate fields (required for every candidate, in every tier)
 
 1. **Name** — short, descriptive.
 2. **Mechanism** — 2-4 sentences: what the signal/strategy actually is and
@@ -162,16 +191,23 @@ Produce a ranked markdown list. For **each** candidate idea, include:
 3. **Source(s)** — real citations: paper titles/authors/links, blog posts,
    or other sources you actually found. Do not fabricate citations — if you
    can't find a solid source for something you believe is promising, say so
-   explicitly rather than inventing one.
-4. **Why it's plausible** — the economic or structural rationale for why
-   this edge should exist.
-5. **Data requirements** — what data it needs, and whether that's
+   explicitly rather than inventing one. If you're reusing a source already
+   cited for another candidate in this same report, say so rather than
+   re-describing it as new.
+4. **Confidence** — your own calibrated rating (High/Medium/Low, split by
+   sub-claim if a source is solid on the mechanism but weak on a specific
+   figure) — this is what determines the tier, so it should be consistent
+   with tier placement above.
+5. **Why it's plausible** — the economic or structural rationale for why
+   this edge should exist. Do not fold this silently into the mechanism
+   description — call it out explicitly, even briefly, so it's clear
+   *why* this should work, not just *what* it does.
+6. **Data requirements** — what data it needs, and whether that's
    free/cheap or a feasibility risk (see constraints above).
-6. **How it differs from what's already been tried** — one sentence tying
-   it back to the "don't re-propose" list above, so it's clear this isn't a
-   near-variant of a rejected idea.
-
-Aim for at least 5-8 candidates so there's real triage material, ranked
-roughly by how promising + feasible you judge each to be. It's fine — good,
-even — to include a couple of longer-shot or more speculative ideas at the
-bottom, clearly labeled as such.
+7. **How it differs from what's already been tried** — one explicit
+   sentence per candidate tying it back to the "don't re-propose" list
+   above (both the technical-signal list and, if relevant, the specific
+   weakly-sourced niches named there from a prior pass). This field is
+   easy to skip when candidates are visually grouped by tier instead of
+   listed flat — don't skip it; every candidate needs its own sentence,
+   not just a shared intro paragraph for the whole report.
