@@ -139,35 +139,41 @@ instrument anyway. No code built.
 **First 14-candidate batch is fully resolved** (10 NO-GO, 4 infeasible —
 #2/#7/#4/#14, 1 paused — #8). See prior paragraphs above for detail.
 
-**New 2026-07-19 batch: 24 candidates (A-X), all non-US-equity asset
-classes** — merged into `WEB_RESEARCH_CANDIDATES.md` from a discovery pass
-explicitly scoped away from equities per the pivot recommendation in
+**2026-07-19 batch: 25 candidates, all non-US-equity asset classes** —
+merged into `WEB_RESEARCH_CANDIDATES.md` from a discovery pass explicitly
+scoped away from equities per the pivot recommendation in
 `RESEARCH_SNAPSHOT.md` §4/§6 (nine consecutive equity diversification
 sleeves had failed). Covers FX, commodities, Treasuries/rates, and crypto.
-All untriaged — nothing backtested yet. Full detail, citations, and a
-25-row triage table in `WEB_RESEARCH_CANDIDATES.md`'s new batch section.
+Re-pasted in the prompt's proper per-candidate format (2026-07-19,
+superseding an earlier non-compliant draft — see
+`web-strategy-research-prompt.md`'s "Required output format," tightened
+because of the gap) — numbering is now 1-25. 15 untriaged, 10
+deprioritized (weak sourcing, not tested — see the file's own status
+table). Full detail, citations, and the triage table in
+`WEB_RESEARCH_CANDIDATES.md`'s batch section.
 
 **Effort-ordered next-up, per the batch's own Tier 1 (all independently
 verified, high-pedigree, from a genuinely different asset class than
 anything tried so far):**
-1. **A — Cross-currency basis / CIP deviation harvesting (FX).** Free FRED
-   data + FX ETFs. Best-supported idea in the whole batch (2 independently
-   verified papers).
-2. **B — Commodity carry + trend + short-term basis reversal.** Free/cheap
-   ETF proxies (PDBC/GCC/DBC); 3 independently verified sources, the
-   strongest cross-report overlap in the batch.
-3. **C-i — Treasury term-structure factors (static version only, skip the
-   unverified HMM-regime variant C-ii).** Free (TLT/IEF/SHY + FRED).
-4. **D — FOMC-window spillover trading in country ETFs.** Free/cheap
+1. **Item 1 — Cross-currency basis / CIP deviation harvesting (FX).** Free
+   FRED data + FX ETFs. Best-supported idea in the whole batch (2
+   independently verified papers).
+2. **Item 2 — Commodity carry + trend + short-term basis reversal.**
+   Free/cheap ETF proxies (PDBC/GCC/DBC); 3 independently verified
+   sources, the strongest cross-report overlap in the batch.
+3. **Item 3 — FOMC-window spillover trading in country ETFs.** Free/cheap
    (FOMC calendar + intraday country-ETF bars) — note this needs intraday
    data, check what's already available in this project before assuming
    it's free.
-5. **E — Dynamic FX hedge overlay (carry+value+trend).** Free/cheap.
-6. **F — Cross-asset base-pair selection.** Portfolio-construction
+4. **Item 4 — Dynamic FX hedge overlay (carry+value+trend).** Free/cheap.
+5. **Item 5 — Cross-asset base-pair selection.** Portfolio-construction
    technique rather than a single signal; full version is futures-heavy,
    home-lab version needs an ETF-proxy design pass first.
+6. **Item 6 — Treasury term-structure factors (static version only, skip
+   the deprioritized HMM-regime variant, item 20).** Free (TLT/IEF/SHY +
+   FRED).
 
-Pick ONE (A is the natural first pick — best-supported, plainest data
+Pick ONE (item 1 is the natural first pick — best-supported, plainest data
 requirements, most different from anything in the roster), copy its entry
 from `WEB_RESEARCH_CANDIDATES.md` into
 `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
