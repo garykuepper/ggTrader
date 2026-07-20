@@ -80,7 +80,25 @@ def simulate_weights(
             value[name] = flat_value
     value = value[names]  # restore caller's original column order
     returns = value.pct_change(fill_method=None).fillna(0.0)
+    _add_trade_counts(diags, pf, non_empty)
     return returns, value, diags
+
+
+def _add_trade_counts(
+    diags: Dict[str, Dict[str, Any]], pf: "vbt.Portfolio", grouped_names: list
+) -> None:
+    """Attach real per-group closed-trade counts to diags -- the WFO gate's
+    expectancy calc previously used raw total-return as a stand-in for
+    per-trade expectancy because n_trades wasn't tracked anywhere."""
+    if not grouped_names:
+        for name in diags:
+            diags[name]["n_trades"] = 0
+        return
+    counts = pf.trades.count()
+    if isinstance(counts, (int, np.integer)):
+        counts = pd.Series({grouped_names[0]: int(counts)})
+    for name in diags:
+        diags[name]["n_trades"] = int(counts.get(name, 0))
 
 
 def compute_vol_scalar(
@@ -280,6 +298,7 @@ def simulate_signals(
         name: {"n_strategies": 1, "n_symbols": int(targets_by_strategy[name].entries.shape[1])}
         for name in names
     }
+    _add_trade_counts(diags, pf, names)
     if return_pf:
         return returns, value, diags, pf
     return returns, value, diags

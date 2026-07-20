@@ -261,8 +261,9 @@ def _sweep_fold(
     start_cash = float(base_config["START_CASH"])
 
     all_eq: Dict[str, pd.Series] = {}
+    all_diags: Dict[str, Dict[str, Any]] = {}
     for stop_key, group_combos in group_by_stop_config(grid).items():
-        eq_dict, _ = sweep_signal_group(
+        eq_dict, diag_dict = sweep_signal_group(
             strategy_name,
             strat_instance,
             stop_key,
@@ -273,6 +274,7 @@ def _sweep_fold(
             base_config,
         )
         all_eq.update(eq_dict)
+        all_diags.update(diag_dict)
 
     # Score each combo over the scoring window only
     results: List[Dict[str, Any]] = []
@@ -284,6 +286,7 @@ def _sweep_fold(
         # Rescale to start at start_cash for consistent metrics
         eq_scaled = start_cash * (eq_window / eq_window.iloc[0])
         metrics = curve_stats(eq_scaled)
+        metrics["n_trades"] = all_diags.get(key, {}).get("n_trades", 0)
         combo_params = combo_lookup[key]
         results.append({"combo": key, "params": combo_params, **metrics})
     return results, all_eq
@@ -375,7 +378,7 @@ def _sweep_fold_weights(
     all_targets: Dict[str, pd.DataFrame] = dict(combo_results)
 
     start_cash = float(base_config["START_CASH"])
-    _rets, eq_df, _diags = simulate_weights(all_targets, prices, base_config)
+    _rets, eq_df, diags = simulate_weights(all_targets, prices, base_config)
 
     results: List[Dict[str, Any]] = []
     all_eq: Dict[str, pd.Series] = {}
@@ -388,7 +391,8 @@ def _sweep_fold_weights(
             continue
         eq_scaled = start_cash * (eq_window / eq_window.iloc[0])
         metrics = curve_stats(eq_scaled)
-        results.append({"combo": key, "params": combo_lookup[key], **metrics})
+        n_trades = diags.get(key, {}).get("n_trades", 0)
+        results.append({"combo": key, "params": combo_lookup[key], "n_trades": n_trades, **metrics})
     return results, all_eq
 
 
@@ -533,9 +537,14 @@ def _extract_grid_arrays(
         combo_params = m["params"]
         flat = _flat_idx(combo_params)
         sharpe_arr[flat] = m.get("sharpe", float("nan"))
-        # Trade expectancy: approximate as total_return / max(1, n_trades)
-        # For now use total_return_pct as proxy since we don't have n_trades
-        expectancy_arr[flat] = m.get("total_return_pct", 0.0) / 100.0
+        # Real per-trade expectancy: total_return / n_trades. n_trades is
+        # threaded from simulate_weights/simulate_signals' diags (added
+        # 2026-07-20 -- previously this used raw total_return_pct as a
+        # stand-in, which conflates "many small wins" with "one lucky
+        # trade" and is especially misleading for sparse event-driven
+        # strategies where a handful of trades dominate the whole curve).
+        n_trades = max(1, int(m.get("n_trades", 0)))
+        expectancy_arr[flat] = (m.get("total_return_pct", 0.0) / 100.0) / n_trades
         result_to_grid[ri] = flat
 
     # Replace NaN with 0 for the gate check (missing combos count as zero-edge)

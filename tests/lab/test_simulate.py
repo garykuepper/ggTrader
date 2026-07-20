@@ -34,6 +34,19 @@ def test_simulate_weights_matches_hand_computed_return():
     assert diags["x"]["n_strategies"] == 1
 
 
+def test_simulate_weights_diags_include_real_trade_count():
+    """Regression: the WFO gate's expectancy calc was using raw total-return
+    as a proxy for per-trade expectancy because n_trades wasn't tracked
+    anywhere -- diags must expose the real vbt trade count so gates.py can
+    divide by it properly instead of approximating."""
+    prices = _prices(n=40)
+    targets = pd.DataFrame(np.nan, index=prices.index, columns=prices.columns)
+    targets.iloc[1] = [0.5, 0.5]  # open
+    targets.iloc[10] = [0.0, 0.0]  # close -- one round-trip trade per symbol
+    rets, equity, diags = simulate_weights({"x": targets}, prices, BASE)
+    assert diags["x"]["n_trades"] == 2  # one closed round-trip each for A and B
+
+
 def test_simulate_weights_runs_strategies_simultaneously_and_equally():
     prices = _prices()
     together = {"x": _targets(prices, {"A": 1.0}), "y": _targets(prices, {"B": 1.0})}

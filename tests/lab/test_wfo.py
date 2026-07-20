@@ -264,6 +264,62 @@ def test_sweep_fold_weights_basic():
         assert eq.notna().sum() > 0
 
 
+def test_extract_grid_arrays_uses_real_per_trade_expectancy():
+    """Regression: expectancy_arr previously used raw total_return_pct as a
+    stand-in for per-trade expectancy ("we don't have n_trades" per the old
+    comment). Two combos with identical total return but very different
+    trade counts must now score very differently -- the one that earned
+    the same return from fewer trades has higher per-trade expectancy."""
+    from ggTrader.lab.wfo import _extract_grid_arrays
+
+    grid = [{"k": 1}, {"k": 2}]
+    train_metrics = [
+        {"params": {"k": 1}, "sharpe": 1.0, "total_return_pct": 10.0, "n_trades": 2},
+        {"params": {"k": 2}, "sharpe": 1.0, "total_return_pct": 10.0, "n_trades": 20},
+    ]
+    _sharpe_grid, expectancy_grid, _shape, result_to_grid = _extract_grid_arrays(
+        train_metrics, grid, "teststrat"
+    )
+    exp_k1 = expectancy_grid[result_to_grid[0]]
+    exp_k2 = expectancy_grid[result_to_grid[1]]
+    assert exp_k1 == pytest.approx(0.10 / 2)
+    assert exp_k2 == pytest.approx(0.10 / 20)
+    assert exp_k1 > exp_k2
+
+
+def test_sweep_fold_weights_results_include_real_trade_count():
+    """Regression: the NDH gate's expectancy calc used raw total-return as
+    a stand-in for per-trade expectancy because n_trades was never threaded
+    from simulate_weights' diags into the per-combo result dict."""
+    from ggTrader.lab.wfo import _sweep_fold_weights
+
+    symbols = ["X", "Y", "Z"]
+    n = 300
+    ohlcv = _ohlcv(symbols, n)
+    cfg = LabConfig(top_n=2, min_history_bars=10)
+    base_config = {"START_CASH": 10000.0, "FEES": 0.0, "SLIPPAGE": 0.0, "FREQ": "1d"}
+    window_start = ohlcv.index[100]
+    window_end = ohlcv.index[250]
+    grid = [{"top_n": 1}, {"top_n": 2}]
+
+    results, _all_eq = _sweep_fold_weights(
+        "tinyweight",
+        _TinyWeight,
+        cfg,
+        ohlcv,
+        window_start,
+        window_end,
+        base_config,
+        grid,
+        _tiny_weight_universe_fn,
+    )
+
+    for r in results:
+        assert "n_trades" in r
+        assert isinstance(r["n_trades"], int)
+        assert r["n_trades"] >= 1  # this fixture always opens at least one position
+
+
 def test_sweep_fold_weights_no_rebalance_dates_returns_empty():
     from ggTrader.lab.wfo import _sweep_fold_weights
 

@@ -47,6 +47,23 @@ def test_simulate_signals_buy_and_hold_a():
     assert diags["strat_a"]["n_symbols"] == 2
 
 
+def test_simulate_signals_diags_include_real_trade_count():
+    """Regression: gates.py's expectancy calc used raw total-return as a
+    proxy for per-trade expectancy because n_trades wasn't tracked -- diags
+    must expose the real vbt trade count."""
+    prices = _prices(40)
+    entries = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    exits = pd.DataFrame(False, index=prices.index, columns=prices.columns)
+    entries.iloc[2, 0] = True  # buy A
+    exits.iloc[10, 0] = True  # sell A -- one closed trade
+    entries.iloc[15, 1] = True  # buy B
+    exits.iloc[20, 1] = True  # sell B -- one closed trade
+    st = SignalTargets(entries=entries, exits=exits)
+
+    _rets, _equity, diags = simulate_signals({"strat_a": st}, prices, BASE)
+    assert diags["strat_a"]["n_trades"] == 2
+
+
 def test_simulate_signals_two_strategies_independent():
     prices = _prices(40)
     e1 = pd.DataFrame(False, index=prices.index, columns=prices.columns)
