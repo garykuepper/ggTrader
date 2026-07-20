@@ -359,6 +359,25 @@ benefits any future sparse-event strategy in this lab. Full report:
   methodology requires. Same class of blocker as #2 and #7 (infeasible
   for the required methodology, not an engineering-effort problem). See
   `docs/research/WEB_RESEARCH_CANDIDATES.md` candidate #4.
+* **July 19, 2026**: Checked #14 (option-implied volatility skew) for
+  feasibility before building anything — **infeasible for an honest WFO**,
+  same class of blocker as #2/#7/#4. `yfinance`'s `option_chain()` takes
+  only a future-expiry selector, no historical/as-of parameter
+  (current-snapshot-only). Alpaca's option-bars API (already integrated
+  here) returned zero bars for a real contract in both 2022 and 2024
+  windows — its options market data only starts in 2024, with no
+  historical listed-contracts feed to reconstruct past chains from. Deep
+  historical options-chain data remains a paid-vendor problem
+  (OptionMetrics IvyDB), exactly as the original candidate write-up
+  flagged, and the signal may just be re-deriving #3's already-NO-GO'd
+  borrow-cost signal through a noisier instrument anyway. No code built.
+  **This closes out the effort-ordered candidate queue entirely** — all 14
+  `WEB_RESEARCH_CANDIDATES.md` candidates and all 4 `RESEARCH_SNAPSHOT.md`
+  §6 internal candidates are now resolved (10 NO-GO, 4 infeasible, 1
+  paused pending a transient rate-limit retry). The deployed 3-sleeve
+  blend (Sharpe 1.14, MaxDD -5.39%) survived every diversification
+  attempt this session. See `docs/research/WEB_RESEARCH_CANDIDATES.md`
+  candidate #14.
 
 ---
 

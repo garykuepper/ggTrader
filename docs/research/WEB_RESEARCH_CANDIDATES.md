@@ -436,7 +436,29 @@ OHLCV). Flagged as more speculative than the other "structural" candidates
 given credible evidence the effect has been decaying toward zero in the
 exact index already traded here.
 
-### 14. Option-implied volatility skew as a return predictor — feasibility-limited
+### 14. Option-implied volatility skew as a return predictor — RESOLVED, INFEASIBLE (2026-07-19)
+**Checked and confirmed infeasible for an honest historical WFO** — same
+class of blocker as #2 (analyst revisions) and #7 (Anomaly-Driven Demand):
+no free or already-integrated source has the historical depth this
+project's WFO methodology needs (many folds, each 12mo train + 3mo test,
+spanning back to ~2015-2018 across other strategies in this lab).
+Concretely checked two sources: (1) `yfinance`'s `option_chain()` — its
+signature (`date=None, tz=None`) takes only a *future* expiry selector, no
+historical/as-of parameter; it is current-snapshot-only, identical to the
+`eps_trend`/`eps_revisions` problem found for #2. (2) Alpaca's option-bars
+API (already integrated in this project for equities/paper trading) —
+queried a real contract (`AAPL260116C00200000`) for both 2022-01 and
+2024-01 date ranges and got zero bars both times; Alpaca's options market
+data only started in 2024, and even then a historical panel needs to know
+*which contracts were listed* on each past date, which Alpaca's contract
+endpoints don't expose historically either. Deep historical options-chain
+data with clean bid/ask across strikes remains a paid-vendor problem
+(OptionMetrics IvyDB is the academic standard) exactly as the original
+candidate write-up flagged. Combined with the pre-existing note that this
+signal may just be re-deriving #3's already-NO-GO'd borrow-cost signal
+through a noisier instrument, this is not worth pursuing further without a
+paid-data decision. Deprioritized alongside #2/#7/#4 — no code built.
+
 *Overlaps with `RESEARCH_SNAPSHOT.md` §6 internal Rank 3 (options-derived
 conditioning/covered-call overlay) — this entry is the more detailed,
 citation-backed version, including the likely redundancy with #3's

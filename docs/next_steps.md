@@ -123,10 +123,28 @@ don't offer bulk historical download; paid ones would still fall short of
 this project's usual eval-window convention. Deprioritized pending either
 a much longer free-data source or a paid-data decision.
 
-Effort-ordered remaining backlog: **#14 options IV skew** is the last
-active item (already flagged from the original scouting report as the
-clearest feasibility risk on the whole list — likely blocked on paid
-historical options data too; check before building). Once #8's Google
-Trends block clears, revisit it. No Step 4 queued yet: pick the next one,
-copy it into `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`,
-and queue it here. See the pipeline above for the mechanics.)
+**Candidate #14 (options IV skew) was checked and found infeasible
+(2026-07-19)** — same class of blocker as #2/#7/#4. Verified concretely:
+`yfinance`'s `option_chain()` takes only a future-expiry selector, no
+historical/as-of parameter (current-snapshot-only, like #2's
+`eps_trend`/`eps_revisions`); Alpaca's option-bars API (already integrated
+here) returned zero data for a real contract in both 2022 and 2024 windows
+— Alpaca's options market data only starts in 2024, and even then there's
+no historical listed-contracts feed to reconstruct past chains from. Deep
+historical options-chain data remains a paid-vendor problem (OptionMetrics
+IvyDB), exactly as originally flagged, and the signal may just be
+re-deriving #3's already-NO-GO'd borrow-cost signal through a noisier
+instrument anyway. No code built.
+
+**Effort-ordered backlog is now empty of active items.** All 14
+`WEB_RESEARCH_CANDIDATES.md` candidates and all 4
+`RESEARCH_SNAPSHOT.md` §6 internal candidates have been either closed
+NO-GO (10, with the deployed 3-sleeve blend surviving every diversification
+attempt), found infeasible for an honest WFO (#2, #7, #4, #14 — all the
+same paid/point-in-time-data class of blocker), or paused pending a
+transient external block (#8, Google Trends rate limit — retry later, not
+blocked on a design decision). No Step 4 queued: the next move is either
+(a) retry #8's backfill once the rate-limit likely cleared, or (b) run a
+fresh discovery pass (`docs/research/prompts/web-strategy-research-prompt.md`)
+for a new batch of candidates, since this batch is exhausted. See the
+pipeline above for the mechanics.)
