@@ -144,38 +144,63 @@ merged into `WEB_RESEARCH_CANDIDATES.md` from a discovery pass explicitly
 scoped away from equities per the pivot recommendation in
 `RESEARCH_SNAPSHOT.md` §4/§6 (nine consecutive equity diversification
 sleeves had failed). Covers FX, commodities, Treasuries/rates, and crypto.
-Re-pasted in the prompt's proper per-candidate format (2026-07-19,
-superseding an earlier non-compliant draft — see
-`web-strategy-research-prompt.md`'s "Required output format," tightened
-because of the gap) — numbering is now 1-25. 15 untriaged, 10
-deprioritized (weak sourcing, not tested — see the file's own status
-table). Full detail, citations, and the triage table in
-`WEB_RESEARCH_CANDIDATES.md`'s batch section.
 
-**Effort-ordered next-up, per the batch's own Tier 1 (all independently
-verified, high-pedigree, from a genuinely different asset class than
-anything tried so far):**
-1. **Item 1 — Cross-currency basis / CIP deviation harvesting (FX).** Free
-   FRED data + FX ETFs. Best-supported idea in the whole batch (2
-   independently verified papers).
-2. **Item 2 — Commodity carry + trend + short-term basis reversal.**
-   Free/cheap ETF proxies (PDBC/GCC/DBC); 3 independently verified
-   sources, the strongest cross-report overlap in the batch.
-3. **Item 3 — FOMC-window spillover trading in country ETFs.** Free/cheap
-   (FOMC calendar + intraday country-ETF bars) — note this needs intraday
-   data, check what's already available in this project before assuming
-   it's free.
-4. **Item 4 — Dynamic FX hedge overlay (carry+value+trend).** Free/cheap.
-5. **Item 5 — Cross-asset base-pair selection.** Portfolio-construction
-   technique rather than a single signal; full version is futures-heavy,
-   home-lab version needs an ETF-proxy design pass first.
-6. **Item 6 — Treasury term-structure factors (static version only, skip
-   the deprioritized HMM-regime variant, item 20).** Free (TLT/IEF/SHY +
-   FRED).
+**Corrected and reorganized a second time (2026-07-19)** following an
+independent review of the reformatted draft — the review caught real
+citation errors (one paper wrongly called "fabricated," a venue
+misattribution, a magnitude error, a reversed-then-re-reversed finding
+now flagged contested) and replaced the single "Confidence" score with
+four independent ratings (Evidence status / Rule correspondence /
+Implementation class / Validation stage — see `WEB_RESEARCH_CANDIDATES.md`
+for the full explanation). Candidates are now organized by strategy type
+— **A. Active strategy replication queue** (A1-A9), **B. Risk/exposure
+overlays** (B1-B4), **C. Portfolio-construction methods** (C1-C2), **D.
+Parked hypotheses** — rather than by source-prestige tier. Every
+candidate is still at Validation stage: Literature only.
 
-Pick ONE (item 1 is the natural first pick — best-supported, plainest data
-requirements, most different from anything in the roster), copy its entry
-from `WEB_RESEARCH_CANDIDATES.md` into
-`docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
-it here as the concrete next step. Also still open, lower priority: retry
-#8's Google Trends backfill once the rate-limit has likely cleared.)
+**Most consequential change: the previous #1 pick (direct CIP/basis
+harvesting) is explicitly demoted for this project's home-lab/ETF
+workflow** — the literature validates the CIP deviation's existence and
+cause, not "tilt an FX-ETF carry portfolio using the basis as a signal,"
+which is a separate, untested extension. FX ETFs can't implement the
+actual documented arbitrage (needs forwards/swaps/funding access this
+project doesn't have). **The dynamic FX hedge overlay (A1) is now the
+clear top pick** instead.
+
+**Effort-ordered next-up, per the register's own "home-lab / mostly-ETF
+workflow" ranking** (this project's actual setup):
+1. **A1 — Dynamic FX hedge overlay (carry+value+trend).** Free/cheap spot
+   FX, rate differentials, CPI data. Cleanest source-to-rule
+   correspondence in the whole register — published, high-pedigree paper
+   (Castro/Hamill/Harber/Harvey/Van Hemert 2025).
+2. **A7 — Pre-FOMC long-Treasury drift.** Free (TLT/IEF/EDV + FOMC
+   calendar). Promoted from parked status after its citation was replaced
+   with a verified, current (June 2026), directly-on-point paper (Pan &
+   Peng) — the prior version's citation was an unverified draft.
+3. **A3 — Commodity medium-term trend.** Free/cheap ETF proxies. Note this
+   is now a standalone candidate — the register split what was one
+   combined "carry+trend+basis reversal" idea into three independently-
+   evidenced sub-signals (A2/A3/A4); don't assume they combine as
+   originally proposed without testing each separately.
+4. **A5 — Treasury term-structure factors, static/ETF-approximation
+   version only.** Free (TLT/IEF/SHY). Must be explicitly labeled an
+   approximation, not a replication — the underlying paper (now upgraded
+   to "accepted at Review of Finance") specifies 4 factors, a 3-ETF
+   version only captures 3.
+5. **A8 — Headline/LLM sentiment on small/mid-cap equities.** Needs
+   credible point-in-time headline data — do not proceed on a look-ahead-
+   biased feed. Authors themselves warn of a crowding/decay effect as LLM
+   use spreads.
+6. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
+   overlay, not a standalone short — the underlying papers show stress
+   raises *two-sided* jump risk, not a reliably negative one.
+
+Pick ONE (A1 is the natural first pick), copy its entry from
+`WEB_RESEARCH_CANDIDATES.md` into
+`docs/research/prompts/local-implementation-prompt-TEMPLATE.md` — **also
+apply the register's "Minimum validation standard" 7-point checklist**
+(frozen rule, point-in-time data, full costs, nested OOS, multiple-testing
+correction, stress-period behavior, shadow portfolio) on top of this
+project's usual WFO/NDH/DSR gate — and queue it here as the concrete next
+step. Also still open, lower priority: retry #8's Google Trends backfill
+once the rate-limit has likely cleared.)

@@ -515,956 +515,693 @@ at all — placeholder only).
 
 ---
 
-## 2026-07-19 batch — Master Consolidated Cross-Asset Strategy Report (25 candidates)
+## 2026-07-19 batch — Master Strategy Candidate Register (evidence-screened, corrected 2026-07-19)
 
-Source: web-research pass explicitly scoped to non-US-equity asset classes
-(FX, commodities, Treasuries/rates, crypto), per the discovery-pivot
-recommendation added to `web-strategy-research-prompt.md` after the
-2026-07-16 batch's 9 equity-diversification-sleeve candidates all failed
-(see `RESEARCH_SNAPSHOT.md` §4/§6). Merges three separate research passes
-(8 + 8 + 12 ideas = 28 before dedup) into 25 distinct candidates.
+**This replaces the earlier tiered draft of the same batch entirely.** An
+independent review of that draft made a key methodological point: source
+validation, mechanism validation, and tradable-strategy validation are
+three different things, and a single "Confidence" score collapsed them
+into one. This version separates them into four independent ratings (see
+below), corrects several citation errors the review caught (including one
+case where a real paper had wrongly been called "fabricated" — see item
+18 below), and reorganizes by **strategy type** — active trades, risk
+overlays, portfolio-construction methods, parked hypotheses — rather than
+by paper prestige. **No return, alpha, Sharpe, drawdown, or correlation
+figure in any source document has been independently reproduced; this
+register validates literature mapping and mechanism logic, not
+backtests.**
 
-**This supersedes an earlier draft of the same underlying research** that
-was pasted in non-compliant format (missing the required per-candidate
-"how it differs from what's already been tried" field, tiering used as a
-substitute for the fields rather than an addition to them — see
-`web-strategy-research-prompt.md`'s "Required output format," which was
-tightened specifically because of that gap). This version follows the
-correct format: every candidate has all 7 required fields (Name,
-Mechanism, Source(s), Confidence, Why it's plausible, Data requirements,
-How it differs), organized into the same Tier 1-4 structure. Content below
-replaces the prior lettered (A-X) draft entirely — numbering is now 1-25.
-One dedup improvement over the prior draft: the two duplicate HMM-regime
-Treasury-rotation entries (previously "C-ii" and "S") are now a single
-entry (20).
+### How to read this batch
 
-No overlap found with any of the 2026-07-16 batch's 14 candidates or with
-this lab's tried/rejected roster — every idea here is a genuinely
-different asset class from everything tested so far.
+Each candidate carries four independent ratings instead of one:
 
-**Two soft relations to flag (not duplicates, different mechanism):**
-- **Items 13 (cross-asset carry rotation) and 16 (crypto spot-perp
-  calendar basis)** are adjacent to, but distinct from, this lab's
-  already-infeasible candidate #4 (perpetual-futures *funding-rate*
-  carry, rejected 2026-07-20 — Kraken retains only ~1yr of funding
-  history). These trade the *futures-to-spot basis* (quarterly-expiry
-  convergence) or *rate differentials across assets*, not the funding
-  rate itself — worth re-checking data depth independently rather than
-  assuming the same infeasibility carries over.
-- **Item 12 (headline/LLM sentiment)** is adjacent to, but distinct from,
-  the paused candidate #8 (Google Trends retail-attention). Item 12 uses
-  NLP sentiment scoring of news text; #8 uses raw search-volume spikes.
-  Different data source, different mechanism — no redundancy, just the
-  same broad "alternative/behavioral data" category.
+| Field | Values | Answers |
+|---|---|---|
+| **Evidence status** | Peer-reviewed / Accepted / Working paper / Practitioner / Unsupported | How mature and credible is the source? |
+| **Rule correspondence** | Direct / Close adaptation / Mechanism only / Unrelated | Did the source test *this exact* tradable rule, or just the underlying mechanism? |
+| **Implementation class** | Retail / Professional / Institutional | Can the proposed instruments actually reproduce the studied effect? |
+| **Validation stage** | Literature only / Replicated / Walk-forward OOS / Shadow live / Capital live | What has been independently established, as opposed to asserted? |
 
-**Status: `untriaged` for 15 of 25** (see per-item status below and the
-triage table) — **10 are `deprioritized`**: low-confidence sourcing
-(unverified, fabricated, off-topic, or blog-only citations) that isn't
-worth building on without a materially better source than what's already
-been checked here. None of the 10 were tried/tested — deprioritized means
-"looked at, weakly sourced, not worth research time," not NO-GO. Recommended
-triage order for the untriaged 15 follows the report's own tiers below.
+**Every candidate here is at Validation stage: Literature only** unless
+noted — that's true across the board and is the main thing this register
+is not yet claiming. This maps onto this lab's own methodology as the
+first of many required gates: literature review is not a substitute for
+this project's own honest walk-forward/NDH/DSR gate framework
+(`src/ggTrader/lab/wfo.py`) — a candidate reaching "high confidence" here
+still starts at zero WFO evidence.
 
----
+**Numbering:** items keep the register's own letter+number IDs (A1-A9,
+B1-B4, C1-C2, plus lettered sub-splits like 18A/18B in the parked-
+hypotheses section) rather than being renumbered into this file's running
+1-25 sequence, since several items were split or merged from the prior
+draft and a flat renumbering would obscure the mapping. A crosswalk to
+the prior draft's numbering is noted per item below.
 
-## Tier 1 — Best supported: verified, high-pedigree, low equity correlation
+**One item from the prior draft (old item 13, cross-asset carry rotation,
+same AQR "Carry" citation as A2/old item 2) was not addressed by this
+independent review** — carried forward unchanged from the prior draft
+rather than dropped; treat it as `untriaged`, same evidentiary base as A2.
 
-### 1. Cross-currency basis / CIP deviation harvesting
-
-**Mechanism.** Tilt G10 carry positions using the cross-currency basis
-swap spread as a signal for dealer balance-sheet stress: when the basis
-for a currency widens beyond a threshold, tilt carry weight toward that
-currency's funding side, since post-Basel III capital constraints prevent
-the basis from arbitraging fully to zero. Combine with existing
-carry/momentum signals rather than trading standalone.
-
-**Source(s).** Wenxin Du, Alexander Tepper & Adrien Verdelhan,
-*"Deviations from Covered Interest Rate Parity,"* *Journal of Finance* 73
-(2018): 915–957 — the foundational paper; verified real, extremely
-well-established. Mai Dao, Pierre-Olivier Gourinchas & Oleg Itskhoki,
-*"Breaking Parity: Equilibrium Exchange Rates and Currency Premia,"* NBER
-WP 34443 / IMF WP 2025/153 (2025) — verified real, high-pedigree
-(IMF/Berkeley/Harvard-NBER), independently confirms the same
-balance-sheet-constraint mechanism via a newer unifying model of covered
-and uncovered currency premia.
-
-⚠ *A third citation elsewhere in the source material — "Du, Tepper,
-Verdelhan (2025), arXiv:2605.20137" — misattributes a real paper. That
-arXiv ID is solo-authored by Useong Shin (posted May 2026); it builds on
-but was not written by Du, Tepper & Verdelhan. Cite it separately under
-Shin's name if used.*
-
-**Confidence: High.** Two independently verified, high-pedigree papers
-support this from different angles (2018 foundational result, 2025
-unifying model) — the single best-supported idea across all three
-reports.
-
-**Why it's plausible.** CIP deviations persist because dealer-bank
-balance-sheet constraints (regulatory capital, leverage ratio,
-risk-weighted assets) limit arbitrage capital; the basis is effectively
-the shadow price of balance sheet, widening when dealers are constrained.
-This is mainstream, high-quality international finance research, not a
-fringe claim.
-
-**Data requirements.** Free — FRED cross-currency basis series (EUR, JPY,
-GBP, CAD, AUD, CHF), FX ETFs for implementation.
-
-**How it differs from what's already been tried.** A microstructure/
-balance-sheet anomaly, not a macro factor or technical signal — funding-
-cost alpha rather than price prediction, exploiting post-GFC regulatory
-constraints on dealer intermediation. Distinct asset class from every
-prior candidate tried in this lab.
-
-**Status: untriaged.**
+**Relation to this lab's existing roster (unchanged from before):** A9
+(direct CIP basis harvesting) and the parked spot-perp/calendar-basis
+hypothesis are adjacent to, but distinct from, this lab's already-
+infeasible candidate #4 (perpetual-futures funding-rate carry). The A8
+LLM/headline-sentiment candidate is adjacent to, but distinct from, the
+paused candidate #8 (Google Trends retail-attention).
 
 ---
 
-### 2. Commodity carry + trend + short-term basis reversal
+# A. Active strategy replication queue
 
-**Mechanism.** Combine three independent commodity signals at the
-portfolio level: (1) term-structure carry/roll-yield — long backwardation,
-short/flat contango; (2) trend/cross-sectional momentum with a
-volatility-regime filter to avoid crash periods; (3) short-term (weekly)
-mean-reversion in the front-minus-second-month futures basis. Equal-risk-
-weight the three sleeves.
+Candidates with a plausible path to a specific tradable rule, roughly
+ordered by how directly the cited evidence maps to the proposed trade.
 
-**Source(s).** Koijen, Moskowitz, Pedersen & Vrugt, *"Carry,"* *Journal of
-Financial Economics* 127 (2018): 197–225 — foundational carry paper,
-verified real, covers commodities among other asset classes. Bloomberg
-Professional Services, *"Capturing curve, carry and trend premia in
-commodity markets"* (Feb 2026) — verified real practitioner confirmation
-(product commentary, not independent research, but useful corroboration).
-Alberto Rossi, Yingguang Zhang & Yandi Zhu, *"Short-Term Basis Reversal,"*
-SSRN 5250499 (May 2025) — verified real and unusually well-corroborated by
-independent practitioner replication (Quantitativo, QuantSeeker, and CXO
-Advisory all discuss/replicate it). Documents weekly negative
-autocorrelation in the front/second-month basis, pre-cost Sharpe ratios
-above 1, present in commodities, equity index futures, and bonds.
+### A1. Dynamic FX hedge overlay (carry + value + trend)
 
-**Confidence: High.** Three independently verified sources across two
-separate reports — the strongest thematic overlap between any two reports
-in the whole pool, and the Rossi/Zhang/Zhu basis-reversal result in
-particular is a genuinely new, well-corroborated anomaly.
-
-**Why it's plausible.** Carry compensates for hedging pressure and
-convenience-yield effects; trend captures slow price adjustment to
-supply/demand shocks; short-term basis reversal reflects differential
-price sensitivity to news across the futures curve. Three economically
-distinct, low-correlated drivers rather than one signal repeated three
-ways.
-
-**Data requirements.** Free/cheap — ETF proxies (PDBC, GCC, DBC, GSG,
-COMT) for carry/trend legs; continuous futures data improves the
-basis-reversal leg; CFTC COT data (free) for positioning context.
-
-**How it differs from what's already been tried.** Different asset class,
-different structural drivers (storage/convenience yield, physical supply
-constraints), three independent signal categories rather than a single
-equity cross-sectional sort.
-
-**Status: untriaged.**
-
----
-
-### 3. FOMC-window spillover trading in country ETFs
-
-**Mechanism.** Trade U.S.-listed country ETFs representing markets closed
-during the FOMC announcement window. Clean version: classify the Fed
-surprise as hawkish/dovish, trade affected country ETFs during the U.S.
-session, exit after the foreign market's next opening gap is incorporated.
-Retail variant: use the ETF's own first 15–30 minute reaction as the
-signal, hold until the next local market open.
-
-**Source(s).** Fatih Kansoy (University of Oxford), *"The Immediate
-Global Impact of US Monetary Policy"* (SSRN 5871422, Dec 2025) — verified
-real and current. Confirms U.S.-traded country ETFs provide real-time
-price discovery for foreign markets during FOMC windows; a geographic
-discontinuity test shows ETF returns predict overnight local-index gaps
-only for markets closed during the announcement; a typical contractionary
-surprise destroys ~$280 billion in foreign equity value within 30
-minutes, across 37 countries. Andreas Neuhierl & Michael Weber, *"Monetary
-Momentum,"* NBER WP 24748 (2018) — verified real, well-established;
-documents broad international FOMC-related return drift as a
-complementary (not identical) mechanism.
-
-**Confidence: High.** Both sources independently verified; Kansoy's paper
-is a strong, recent, directly on-point primary source.
-
-**Why it's plausible.** The structural edge is time-zone mismatch: when a
-foreign cash market is shut but its U.S.-listed ETF is open, price
-discovery temporarily migrates to the ETF, and daily-index approaches are
-badly contaminated by intervening news relative to a clean 30-minute ETF
-window.
-
-**Data requirements.** Cheap/free — FOMC calendar, liquid intraday
-country-ETF data from most brokers; the paper's exact orthogonalized
-surprise measure needs rate-derivative data, but a reaction-based
-implementation can sidestep this.
-
-**How it differs from what's already been tried.** An ex-U.S.
-price-discovery effect created by asynchronous market hours around
-scheduled macro events — not a U.S. equity cross-sectional signal or
-technical overlay.
-
-**Status: untriaged.**
-
----
-
-### 4. Dynamic FX hedge overlay (carry + value + trend)
+*(Prior draft: item 4, Tier 1, "High" confidence.)*
 
 **Mechanism.** Vary the hedge ratio on international equity/bond exposure
-using three slow-moving signals — FX carry, PPP-style value, and
-medium-term trend — instead of a static hedged/unhedged policy. Retail
-version: a rules-based hedge score toggling between hedged/unhedged ETFs,
-or a standalone G10 FX sleeve.
+using carry, PPP-value, and trend signals instead of a static
+hedged/unhedged policy.
 
-**Source(s).** Pedro Castro, Carl Hamill, John Harber, Campbell R. Harvey
-& Otto Van Hemert, *"The Best Strategies for FX Hedging,"* *Journal of
-Portfolio Management* 51(9): 37–78 (2025); SSRN 5047797 — verified real,
-now published (not just a working paper), high-pedigree authorship (Man
-Group researchers with Campbell Harvey as academic advisor). Confirms
-incorporating trend, value, and carry into hedging decisions delivers
-significant portfolio benefits over static policies across 20 currencies
-since 1973.
+**Source(s).** Castro, Hamill, Harber, Harvey & Van Hemert, *"The Best
+Strategies for FX Hedging,"* *Journal of Portfolio Management* 51(9)
+(2025) — verified, published, high-pedigree.
 
-**Confidence: High.** Cleanly verified, published, high-pedigree source,
-accurately represented.
+**Why it's plausible.** Currency exposure isn't random noise: carry
+monetizes rate differentials, value exploits PPP mean reversion, trend
+captures macro repricing.
 
-**Why it's plausible.** Currency exposure from international assets isn't
-random noise: carry monetizes rate differentials, value exploits long-run
-PPP mean reversion, trend captures persistent macro repricing.
+**Data requirements.** Free/cheap — spot FX, rate differentials, CPI data.
+Specify home currency, exposed-asset set, continuous vs. binary hedge
+ratio, rebalance frequency, forward-roll treatment, and costs — hedged/
+unhedged ETF switching is only an approximation of the paper's forward-
+based implementation.
 
-**Data requirements.** Free/cheap and retail-friendly — spot FX, short-
-rate differentials or policy-rate proxies, inflation/CPI data. Executable
-with plain ETFs, spot FX, or hedged/unhedged ETF switching.
+**How it differs from what's already been tried.** A separate currency/
+hedging sleeve, not another equity-entry refinement.
 
-**How it differs from what's already been tried.** A separate
-currency/hedging sleeve, not another attempt to refine U.S. equity entries
-or a blunt equity risk filter.
+**Evidence status:** Peer-reviewed/published. **Rule correspondence:**
+Direct to close. **Implementation class:** Professional natively; retail
+proxy available via hedged/unhedged ETF pairs. **Validation stage:**
+Literature only. **This remains the cleanest source-to-rule
+correspondence in the whole register — the top build candidate,
+including for a home-lab/ETF workflow.**
 
 **Status: untriaged.**
 
 ---
 
-### 5. Cross-asset base-pair selection (portfolio construction)
+### A2. Commodity carry (standalone)
 
-**Mechanism.** Instead of applying value/carry/momentum one asset at a
-time, decompose the opportunity set into asset pairs and keep only pairs
-with historically strong own-asset and cross-asset explanatory power,
-discarding "junk" pairs. Retail adaptation: a compact ETF universe across
-equities, Treasuries, commodities, gold, and major FX, testing whether
-"keep only the best pairs" improves diversification versus naïve
-cross-asset sleeves.
+*(Prior draft: part of item 2, Tier 1 — split here into three
+independently-evidenced sub-signals; do not assume they combine as a
+single strategy without testing each separately.)*
 
-**Source(s).** Christian L. Goulding & Campbell R. Harvey, *"Investment
-Base Pairs"* (SSRN 5193565, March 2025) — verified real, high-pedigree
-(Duke/NBER). Using 1,710 futures pair portfolios across equities, bonds,
-currencies, and commodities, targeting top pairs and discarding junk pairs
-roughly triples average annualized returns at fixed leverage over 20 years
-(aggregate portfolio: 3.4% → 10.4%). Own-asset effects contribute 37–51%
-and cross-asset effects 32–49% of performance across most signal/
-asset-class groups.
+**Mechanism.** Long commodity futures/ETFs in backwardation, short/flat
+those in contango.
 
-**Confidence: High.** Verified, high-pedigree, and accurately represented
-— one of the two or three best-supported ideas in the entire pool.
+**Source(s).** Koijen, Moskowitz, Pedersen & Vrugt, *"Carry,"* *Journal of
+Financial Economics* 127 (2018) — verified, foundational, covers
+commodities among other asset classes.
 
-**Why it's plausible.** The core claim isn't "momentum/carry still
-works" but that conventional portfolio construction (quantile sorts,
-linear weighting) discards valuable cross-asset information — a
-structural methodology critique rather than a fragile anomaly claim.
+**Why it's plausible.** Compensation for hedging pressure and convenience-
+yield effects.
 
-**Data requirements.** The full academic version is futures/forwards-
-heavy; a reduced ETF-proxy version is home-lab testable but only an
-approximation.
+**Data requirements.** ETF proxies (PDBC, GCC, DBC) are a feasible but
+approximate substitute for true futures-curve carry.
 
-**How it differs from what's already been tried.** Not "more momentum" or
-"another stock ranking" — a multi-asset portfolio-construction hypothesis
-about cross-asset information and pair selection.
+**How it differs from what's already been tried.** Different asset class,
+structural (not price-action) driver.
+
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Direct for
+futures; close adaptation for ETF proxies. **Implementation class:**
+Professional (futures) / Retail (ETF approximation). **Validation stage:**
+Literature only.
 
 **Status: untriaged.**
 
 ---
 
-### 6. Treasury term-structure factors (static version)
+### A3. Commodity medium-term trend
 
-**Mechanism.** Build signals on Treasury ETFs (SHY/IEF/TLT) or futures
-across duration buckets: steepener/flattener positioning, relative value
-across intermediate vs. long duration, or a carry/rolldown proxy based on
-investable, non-parametric term-structure factors.
+*(Prior draft: part of item 2/3, Tier 1 — split, see A2.)*
+
+**Mechanism.** Cross-sectional 12-1 month momentum across a liquid
+commodity ETF/futures universe, with a volatility-regime filter to avoid
+crash periods.
+
+**Source(s).** Bloomberg Professional Services, *"Capturing curve, carry
+and trend premia in commodity markets"* (Feb 2026) — verified real,
+practitioner-grade (product commentary for Bloomberg's BERY index, not
+independent research).
+
+**Why it's plausible.** Slow price adjustment to supply/demand shocks.
+
+**Data requirements.** Broad commodity ETFs can approximate directional
+trend reasonably well.
+
+**How it differs from what's already been tried.** Same as A2.
+
+**Evidence status:** Practitioner. **Rule correspondence:** Close
+adaptation. **Implementation class:** Retail-feasible via ETFs.
+**Validation stage:** Literature only.
+
+**Status: untriaged.**
+
+---
+
+### A4. Short-term futures-basis reversal
+
+*(Prior draft: part of item 2, Tier 1 — split, see A2. Data-feasibility
+downgraded — see below.)*
+
+**Mechanism.** Weekly mean-reversion in the front-minus-second-month
+futures basis, traded cross-sectionally or in time series.
+
+**Source(s).** Alberto Rossi, Yingguang Zhang & Yandi Zhu, *"Short-Term
+Basis Reversal,"* SSRN 5250499 (May 2025) — verified, and unusually
+well-corroborated by independent practitioner replication (Quantitativo,
+QuantSeeker, CXO Advisory all discuss/replicate it). Weekly negative
+autocorrelation in the front/second-month basis, pre-cost Sharpe >1,
+present in commodities, equity index futures, and bonds.
+
+**Why it's plausible.** Differential price sensitivity to news across the
+futures curve.
+
+**Data requirements.** **Important limitation the prior draft glossed
+over:** broad commodity ETFs generally cannot reproduce this signal — it
+requires actual adjacent-contract futures data (continuous front/second-
+month series), not an ETF proxy. This is the least retail-friendly of the
+three commodity sub-signals.
+
+**How it differs from what's already been tried.** A genuinely new
+anomaly (2025), not a repackaging of carry or trend.
+
+**Evidence status:** Working paper, but unusually well externally
+corroborated for one this new. **Rule correspondence:** Direct.
+**Implementation class:** Professional (needs futures access) — **not** a
+clean retail ETF strategy despite being cheap in data terms. **Validation
+stage:** Literature only.
+
+**Status: untriaged.**
+
+---
+
+### A5. Treasury term-structure factors
+
+*(Prior draft: item 6, Tier 1. Citation status upgraded; important
+implementation caveat added.)*
+
+**Mechanism.** Curve-factor positioning (steepener/flattener, relative
+value across duration buckets, roll-down) using investable, non-
+parametric term-structure factors.
 
 **Source(s).** Filipović, Pelger & Ye, *"Shrinking the Term Structure,"*
-NBER WP 32472 (2024); SSRN 4182649 — verified real, high-pedigree
-(EPFL/Swiss Finance Institute, Stanford). Proposes investable
-term-structure factors; four factors explain time-series variation and
-risk premia of Treasury excess returns, including a state-dependent
-"complexity premium" that pays off in recessions.
-
-**Confidence: High.** Cleanly verified, high-pedigree, correctly
-attributed (this citation was previously conflated with the separate
-Adrian-Crump-Moench Treasury model in an earlier draft — now corrected to
-attribute the paper only to its actual authors).
+NBER WP 32472 (2024) — verified, high-pedigree (EPFL, Stanford). ⚠
+**Update:** per Markus Pelger's own faculty page, this paper is now listed
+as **accepted at the Review of Finance** — stronger than "NBER working
+paper" status. ⚠ **Important implementation caveat the prior draft
+missed:** the paper identifies **four** investable factors from a rich
+cross-section of Treasury cash flows, including a fourth "complexity"
+factor tied to recession performance. A simple SHY/IEF/TLT three-ETF
+implementation provides only three broad duration buckets and **cannot be
+presumed to reproduce the fourth factor.** A closer replication needs cash
+Treasuries, STRIPS, Treasury futures, or a substantially richer
+instrument set.
 
 **Why it's plausible.** The term structure is driven by monetary-policy
-expectations, inflation risk, and duration-risk appetite — slow-moving
-drivers supporting medium-horizon signals, in a market too deep to be
-fully trivialized when worked across curve segments.
+expectations, inflation risk, and duration-risk appetite.
 
-**Data requirements.** Free — Treasury ETF data; a stronger implementation
-uses yield-curve or futures data with careful roll handling.
+**Data requirements.** Free for the three-ETF approximation; richer
+instruments needed for a fuller replication.
 
-**How it differs from what's already been tried.** Moves entirely out of
-equities, using curve/term-structure signals rather than price-only
-timing or cross-sectional stock sorting.
+**How it differs from what's already been tried.** Curve/term-structure
+signals, not price-only timing.
 
-**Status: untriaged.** *Note: a related but distinct macro-regime-
-conditional duration-rotation approach (HMM classifying growth/inflation
-regimes, mapping to duration tilts) also surfaced in the source material
-— see item 20 (Tier 4, deprioritized). Prototype this static-factor
-version first.*
-
----
-
-## Tier 2 — Verified citations with a specific attached caveat
-
-### 7. Bond ETF discount-to-NAV reversal (credit/high-yield)
-
-**Mechanism.** Buy bond ETFs at unusually wide discounts to NAV, avoid or
-short unusually rich premiums, hold over the short horizon during which
-the discount normalizes. Higher-conviction version concentrates on
-corporate/high-yield ETFs, where the underlying bond market is illiquid
-and NAVs lag price, especially during rate shocks.
-
-**Source(s).** Jon A. Fulkerson, Susan D. Jordan & Timothy B. Riley,
-*"Predictability in Bond ETF Returns,"* *Journal of Fixed Income* 23(3):
-50 (2013) — verified real; large discounts followed by materially higher
-subsequent returns than large premiums, long-short alpha ~0.96%/month
-(~11.5%/year) in-sample. Egle Karmaziene & Juan M. Terrada, *"Fast ETFs,
-Slow Bonds: Price Adjustment under Monetary Tightening,"* *Finance
-Research Letters* 90 (2026) — verified real and current; confirms the
-same mechanism was active during the 2022–2023 tightening cycle
-specifically in high-yield ETFs, with discounts mean-reverting quickly.
-
-**Confidence: High** on both citations, **with a dating caveat**: treat
-the 2013 paper's 11.5%/year alpha figure as dated in-sample evidence; the
-2026 paper is the more decision-relevant confirmation the mechanism
-remains live.
-
-**Why it's plausible.** A classic liquidity mismatch: bond ETFs trade
-continuously, many underlying corporate bonds don't, so the ETF can
-reprice faster than stale/matrix-priced bond marks.
-
-**Data requirements.** Live premium/discount data is often free from
-issuers and ETF portals; building a long, clean historical series is the
-main friction.
-
-**How it differs from what's already been tried.** Fixed-income ETF
-market microstructure — not a cross-sectional equity sort, stock factor
-sleeve, or technical-timing rule on familiar equities.
+**Evidence status:** Peer-reviewed, now accepted at a strong journal.
+**Rule correspondence:** Direct for the full model; **mechanism only**
+for a 3-ETF approximation. **Implementation class:** Professional for the
+full model; Retail for the explicitly-labeled approximation. **Validation
+stage:** Literature only. **Label any ETF-only version as an exploratory
+approximation, not a replication.**
 
 **Status: untriaged.**
 
 ---
 
-### 8. Stablecoin-stress signal for BTC/ETH (jump-risk hedge)
+### A6. ETF-implied FX expectations (hedge/unhedged flow signal)
 
-**Mechanism.** Use major stablecoin stress (depeg, implied
-collateral/settlement stress) as a crypto plumbing signal: reduce crypto
-beta immediately or run a short-horizon downside trade in BTC/ETH on
-detection. A slower overlay distinguishes "adoption" from "risk-premium
-compression" using stablecoin balance growth.
+*(Prior draft: item 9, Tier 2. Its own deprioritized-caution status is
+now itself contested — see below; keep as untriaged pending a direct
+re-read, do not deprioritize.)*
 
-**Source(s).** Baptiste Perez Riaza & Jean-Yves Gnabo, *"From depegs to
-jumps: The role of stablecoin instabilities in crypto market dynamics,"*
-*Journal of International Money and Finance* 155 (2025) — verified real.
-A Tether depeg raises BTC/USD jump probability nearly fivefold within 5
-minutes (co-jump probability 6.5x), based on high-frequency data across
-70 crypto-assets. Yiming Ma, Yao Zeng & Anthony Lee Zhang, *"Stablecoin
-Runs and the Centralization of Arbitrage,"* NBER WP 33882 (2025), now in
-the *Journal of Finance* — verified real, top-tier venue. Confirms
-stablecoin arbitrage/redemption is highly concentrated (Tether allows ~6
-agents/month to redeem for cash) — the structural reason pegs can become
-stress-transmission channels.
+**Mechanism.** Extract currency-return expectations from investors'
+revealed choices between matched hedged and unhedged share classes of the
+same underlying international ETF; use the inferred expectations to trade
+FX or set hedge ratios.
 
-**Confidence: High** for these two verified, top-venue papers.
-**Caveat:** a third supporting citation (Adams/Ibert/Liao on crypto
-pricing) remains unverified.
+**Source(s).** Leonie Bräuer, *"Exchange Rate Expectations and Currency
+Demand"* (working paper, 2025 drafts).
 
-**Why it's plausible.** Stablecoins function as settlement rails,
-collateral, and working capital for crypto — closer to market plumbing
-than a side sentiment indicator, so instability transmits directly into
-jump risk via leverage and balance-sheet capacity across venues.
+⚠ **Correction to a correction:** the prior draft warned that this
+paper's finding might be reversed — that survey expectations explain ETF
+allocations, rather than ETF-implied expectations outperforming surveys
+at forecasting FX returns. An independent review disputes that reading,
+stating the paper reports portfolio-implied expectations **do** forecast
+subsequent exchange rates more accurately than survey expectations, macro
+models, and conventional currency-pricing factors — and that there are
+two distinct questions in the paper (whether hedge choices relate to
+expected returns, and whether expectations inferred from those choices
+predict subsequent FX rates), both of which the paper is said to support.
+**This reversal has not been independently re-confirmed by directly
+re-reading the paper's own claims section a third time** — given that
+this citation has now been characterized two different ways by two
+different passes, the responsible position is to flag it as **contested
+pending a direct re-read**, not to simply flip the verdict a second time.
+Read the paper's results section yourself before relying on either
+characterization.
+
+**Why it's plausible.** Extracting beliefs from capital-backed choices
+(hedge ratio selection) is conceptually more grounded than survey-based
+sentiment, since it reflects money actually at risk.
+
+**Data requirements.** Feasible but tedious — matched ETF pairs,
+consistent AUM history, clean same-exposure/different-hedge-status
+mapping. The operational difficulty (assembling point-in-time AUM, flow,
+and holdings data without survivorship or staleness problems) is real
+regardless of which reading of the finding is correct.
+
+**How it differs from what's already been tried.** A revealed-preference
+FX signal from investor hedging choices, not another U.S. equity
+characteristic sort.
+
+**Evidence status:** Working paper (real, exists). **Rule
+correspondence:** Contested — Direct per the review's reading, Mechanism-
+only-with-reversed-sign per the prior reading. **Implementation class:**
+Professional/complex data assembly. **Validation stage:** Literature
+only, and specifically flagged as needing direct primary-source
+confirmation before use either way.
+
+**Status: untriaged — do not build without first directly re-reading the
+paper's results section to resolve which characterization is correct.**
+
+---
+
+### A7. Pre-FOMC long-Treasury drift
+
+*(Prior draft: item 11, Tier 3, "Medium" confidence, sourced to an
+unverified "AEA 2026 draft." Citation now replaced with a verified,
+current, directly-on-point paper — upgraded from parked/Tier-3 status.)*
+
+**Mechanism.** Long TLT/IEF/EDV on the day before scheduled FOMC meetings,
+exit at or around the announcement.
+
+**Source(s).** ⚠ **Replaces the previously-cited unverified "AEA 2026
+draft."** Jun Pan & Qing Peng, *"The Pre-FOMC Drift in Long-Term Treasury
+Bonds"* (current draft June 2, 2026; also circulated as *"The Pre-FOMC
+Drift and the Secular Decline in Long-Term Interest Rates,"* AEA 2026
+conference program) — **verified real.** Documents positive,
+statistically significant long-Treasury returns specifically on the day
+*before* scheduled FOMC announcements (earlier than the equity pre-FOMC
+drift), concentrated at longer maturities, driven primarily by the
+term-premium component and uncertainty resolution (captured by a
+pre-FOMC drop in the MOVE index). Explicitly contrasts with Lucca &
+Moench (2015)'s original 24-hour-window equity framing. Neuhierl &
+Weber's "Monetary Momentum" (NBER WP 24748, verified separately) remains a
+valid *related* FOMC-drift reference but should not be the principal
+citation for this specific Treasury-timing rule.
+
+**Why it's plausible.** An uncertainty premium: elevated labor-market
+uncertainty predicts and strengthens the drift; the pre-FOMC MOVE-index
+decline captures uncertainty resolution.
+
+**Data requirements.** Free — TLT/IEF/EDV daily prices, FOMC calendar.
+Define the event window precisely (previous close → announcement open, or
+another interval) before testing.
+
+**How it differs from what's already been tried.** A pure event-driven
+calendar anomaly with a direct, current (2026) academic citation.
+
+**Evidence status:** Working paper (current, June 2026, from a credible
+institution — SAIF/Shanghai Jiao Tong). **Rule correspondence:** Direct.
+**Implementation class:** Retail/Professional. **Validation stage:**
+Literature only — recent result, not yet broadly independently replicated
+outside its own paper. Treat as a **replication candidate**, not an
+established production anomaly.
+
+**Status: untriaged — no longer test-and-discard given the stronger
+citation; promoted into the active queue.**
+
+---
+
+### A8. Headline/LLM sentiment on small/mid-cap equities
+
+*(Prior draft: item 12, Tier 3, "High" confidence. Publication claim
+corrected; author-acknowledged decay risk added.)*
+
+**Mechanism.** LLM/NLP classifier on news headlines generates a daily
+long/flat/short signal; trade the delayed post-publication response in
+smaller names.
+
+**Source(s).** Lopez-Lira & Tang, *"Can ChatGPT Forecast Stock Price
+Movements?,"* SSRN/arXiv, latest public revision **October 28, 2025**. ⚠
+**Remove the "forthcoming Journal of Financial Economics" claim** — the
+public SSRN/arXiv records confirm the paper and its latest working-paper
+revision but do not independently confirm JFE acceptance; state it as
+"working paper, publication status not independently confirmed." The
+latest abstract adds two points worth including: the drift is stronger in
+smaller stocks and after negative news (as previously noted), **and**
+strategy returns decline as LLM use becomes more widespread — an explicit
+crowding/decay warning from the authors themselves. Saqur, Kato, Vinden &
+Rudzicz, *"NIFTY Financial News Headlines Dataset,"* arXiv:2405.09747 —
+verified real; **use as a data resource, not as independent replication
+of the alpha result.**
+
+**Data requirements.** Point-in-time headline feed, immutable model/
+version specification, latency assumptions, delisted-firm handling,
+execution-cost threshold.
+
+**How it differs from what's already been tried.** Not another equity
+price-action/fundamental sort. See relation note above re: paused
+candidate #8 (Google Trends) — different mechanism, no redundancy.
+
+**Evidence status:** Working paper (real, actively revised). **Rule
+correspondence:** Direct, with an author-acknowledged decay risk.
+**Implementation class:** Professional (point-in-time data is the hard
+part). **Validation stage:** Literature only.
+
+**Status: untriaged — only with credible point-in-time data; do not
+proceed on a look-ahead-biased headline feed.**
+
+---
+
+### A9. Direct CIP/cross-currency basis trading
+
+*(Prior draft: item 1, Tier 1, "High" confidence, ranked #1 overall.
+Materially reframed and downgraded for a retail/ETF workflow — read this
+one carefully before treating it as the automatic top pick.)*
+
+**Mechanism.** Harvest the covered-interest-parity deviation itself (the
+cross-currency basis swap spread) directly, via forwards/swaps — **not**
+as a tilt on an ETF-based carry portfolio.
+
+**Source(s).** Wenxin Du, Alexander Tepper & Adrien Verdelhan, *"Deviations
+from Covered Interest Rate Parity,"* *Journal of Finance* 73 (2018) —
+verified, foundational. Mai Dao, Pierre-Olivier Gourinchas & Oleg
+Itskhoki, *"Breaking Parity,"* NBER WP 34443 (2025) — verified,
+high-pedigree, independently confirms the balance-sheet-constraint
+mechanism.
+
+⚠ **Important reframing:** the literature strongly validates the *CIP
+deviation and its regulatory/balance-sheet cause* — it does **not**
+validate "tilt a G10 carry ETF portfolio using the basis as a signal,"
+which is a separate, untested predictive hypothesis layered on top.
+**Direct** CIP arbitrage requires spot, forwards/swaps, funding,
+collateral, and balance-sheet capacity that FX ETFs do not provide. Split
+this into two distinct candidates: **(a) direct basis arbitrage**
+(institutional-only), and **(b) a basis-conditioned carry tilt on retail
+FX ETFs** (an unvalidated extension).
+
+**Data requirements.** Free FRED basis series for monitoring; actual
+harvesting requires institutional derivatives access.
+
+**How it differs from what's already been tried.** Balance-sheet/
+regulatory-constraint anomaly, not price prediction.
+
+**Evidence status:** Peer-reviewed (both papers). **Rule correspondence:**
+Direct mechanism for (a); mechanism-only for (b). **Implementation
+class:** Institutional for (a); Retail proxy (unvalidated) for (b).
+**Validation stage:** Literature only.
+
+**Status: untriaged, but demoted from the previous draft's #1 ranking —
+do not rank this first for a retail/ETF-based workflow, this project's
+default. FX ETFs do not directly implement the documented arbitrage. It
+belongs near the top only for a desk with actual forwards/swaps/funding
+access, which this project does not have.**
+
+---
+
+# B. Risk and exposure overlays
+
+Candidates better used as risk-management triggers than as standalone
+directional trades.
+
+### B1. Stablecoin stress signal
+
+*(Prior draft: item 8, Tier 2, "High" confidence. Venue and directionality
+corrected.)*
+
+**Mechanism.** Use stablecoin depeg/stress events as a crypto plumbing
+signal.
+
+**Source(s).** Perez Riaza & Gnabo, *"From depegs to jumps,"* *Journal of
+International Money and Finance* 155 (2025) — verified; a Tether depeg
+raises BTC/USD jump probability nearly fivefold within 5 minutes. Ma, Zeng
+& Zhang, *"Stablecoin Runs and the Centralization of Arbitrage,"* NBER WP
+33882 (2025) — verified.
+
+⚠ **Venue correction:** this paper is **accepted at the Review of
+Financial Studies**, not the *Journal of Finance* as the prior draft
+stated — confirmed directly via the lead author's own faculty page
+(yimingma.com), which lists it explicitly as "Review of Financial
+Studies, Accepted," also noting IMF Global Financial Stability Report and
+Financial Times/Forbes/NPR coverage.
+
+⚠ **Mechanism correction:** the depeg paper documents a sharp increase in
+the *probability and magnitude* of BTC price jumps — it does **not**
+establish that the expected jump is reliably negative. Depegs raise *jump
+risk* (two-sided), not a guaranteed short opportunity. The runs/
+arbitrage-concentration paper explains why pegs are structurally fragile;
+it doesn't make every depeg an automatic short signal either.
+
+**Recommended use:** a leverage-reduction trigger, a position-size/risk-
+limit overlay, a convexity-purchase trigger where options are liquid, or
+a directional short only when an independently validated price-direction
+signal agrees — **not an unconditional short.**
 
 **Data requirements.** Free — recent exchange-level minute bars via free
 exchange APIs or CCXT-style pulls; cross-venue data quality (especially
 around delistings) is the main practical risk.
 
 **How it differs from what's already been tried.** A crypto-specific
-collateral/settlement stress signal tied to market structure — neither
-perpetual-funding carry nor generic technical crypto timing.
+collateral/settlement stress signal tied to market structure.
 
-**Status: untriaged.**
+**Evidence status:** Peer-reviewed (both, one now at a top-tier venue).
+**Rule correspondence:** Mechanism only for direction (jump risk is
+two-sided). **Implementation class:** Professional. **Validation stage:**
+Literature only.
 
----
-
-### 9. Currency-hedge-flow signal for international equities/FX
-
-**Mechanism.** Two related framings surfaced: (a) track paired
-international ETFs holding identical foreign exposure but differing by
-currency-hedge status, reading persistent capital flow toward the hedged
-or unhedged class as a revealed-preference FX signal; (b) layer this same
-signal into a broader ex-US country/factor rotation with a dynamic hedge
-overlay (see item 19).
-
-**Source(s).** Leonie Bräuer, *"Exchange Rate Expectations and Currency
-Demand"* (working paper, Oct–Dec 2025 drafts) — verified as a real,
-current working paper (350 matched hedged/unhedged ETF pairs, 2014–2025,
-presented at AFA and a central-bank workshop).
-
-⚠ **Significant correction:** the source material describes this paper's
-finding as showing portfolio-implied expectations extracted from
-hedge/unhedged allocations *predict* future FX returns and *outperform*
-survey expectations. Based on the paper's own text, the actual finding
-appears closer to the opposite: ETF investors' hedge-ratio choices show no
-significant sensitivity to model-implied expectations once controlling
-for time trends, while **survey expectations are the ones that are highly
-significant** in explaining those allocations. That's closer to "ETF
-hedging flows are consistent with survey expectations" than to "ETF-
-derived expectations beat surveys at forecasting FX returns." A separate
-citation elsewhere in the source material (SSRN ID 6447259) for what
-appears to be the same paper was not reconciled with the ID found via
-direct verification (5047797 is a different, unrelated paper — the FX
-hedging paper in item 4 above).
-
-**Confidence: Low-Medium.** Real source, but re-read the paper directly
-before building anything on the specific predictive claim — as currently
-sourced, the claim appears to have the causality reversed.
-
-**Why it's plausible (mechanism, independent of the citation issue).**
-Extracting beliefs from capital-backed choices (hedge ratio selection) is
-conceptually more grounded than survey-based sentiment, since it reflects
-money actually at risk — even if this particular paper's own conclusion
-runs the other direction.
-
-**Data requirements.** Feasible but tedious: matched ETF pairs, consistent
-AUM history, a clean "same exposure, different hedge status" mapping.
-
-**How it differs from what's already been tried.** A revealed-preference
-FX signal from investor hedging choices, not another U.S. equity
-characteristic sort.
-
-**Status: untriaged — re-confirm the paper's actual finding directly
-before scoping any build**, per the correction above. Not marked
-deprioritized since the underlying source is real and verified, just
-possibly mischaracterized in the source material.
+**Status: untriaged — scope as a risk overlay, not a standalone
+directional strategy, per the correction above.**
 
 ---
 
-## Tier 3 — Plausible mechanisms, thin or unverified sourcing
+### B2. FOMC country-ETF price discovery
 
-### 10. Session-aware crypto intraday mean reversion/trend
+*(Prior draft: item 3, Tier 1, "High" confidence, framed as a standalone
+spillover trade. Magnitude corrected; the trading-rule claim itself is
+now unproven and needs its own test.)*
 
-**Mechanism.** Segment crypto returns by time-of-day/session; trade only
-periods with persistent structure — fade flow imbalances around session
-transitions, trend-follow around high-persistence blocks (Asian/European/
-US sessions, macro-release windows).
+**Mechanism.** Originally proposed as a spillover *trade*: enter on the
+ETF's early reaction, hold for the local market's opening gap.
 
-**Source(s).** Wątorek, Skupień, Kwapień & Drożdż, *"Decomposing
-cryptocurrency high-frequency price dynamics into recurring and noisy
-components,"* *Chaos* 33, 083146 (2023); arXiv:2306.17095 — verified real.
-Confirms three enhanced-activity phases aligned with Asian, European, and
-U.S. sessions, plus recurring bursts around major U.S. macro releases —
-matching the proposed mechanism closely.
+**Source(s).** Fatih Kansoy (Oxford), *"The Immediate Global Impact of US
+Monetary Policy"* (SSRN 5871422) — verified, real, current. ⚠ **Magnitude
+correction:** the current draft reports approximately **$150–300
+billion** in non-U.S. equity repricing for a one-standard-deviation shock
+(a range), not a single fixed "$280 billion" figure as previously stated
+— an earlier abstract/version may have used a different point estimate;
+use the range from the current draft. The paper also notes announcement
+effects do not fully reverse.
 
-**Confidence: High** on the citation — the single best citation-to-claim
-match found across all three reports, though narrower in scope (a single
-intraday signal) than the portfolio-level Tier 1 ideas.
+⚠ **Important reframing:** this is strong evidence of *price discovery* —
+that U.S.-listed country ETFs rapidly and accurately incorporate FOMC
+shocks while local markets are closed. It does **not** by itself
+demonstrate that a trader can (1) observe the ETF's first 15–30 minute
+reaction, (2) enter *after* that reaction, and (3) earn abnormal returns
+waiting for the local market to reopen. By the time you observe and act
+on the ETF's reaction, the ETF has already done the price discovery — the
+later local-market gap is not automatically additional *ETF* profit; it's
+evidence the ETF was right, not evidence there's a second bite of the
+apple. Rename this candidate **"FOMC country-ETF price discovery and
+residual continuation test,"** and separate two distinct proposed trades:
+trading immediately from an independently measured rate surprise, versus
+trading after observing the ETF's own reaction (the latter needs a direct
+entry-to-exit return test before being called a strategy).
 
-**Why it's plausible.** Crypto trades 24/7 but liquidity/participation
-still cycles with global sessions — a structural, not chart-pattern,
-source of repeatable short-horizon behavior.
+**Data requirements.** Free/cheap — FOMC calendar, intraday country-ETF
+data.
 
-**Data requirements.** Intraday OHLCV; free for major pairs at
-minute-to-hour resolution.
+**How it differs from what's already been tried.** An ex-U.S. price-
+discovery effect created by asynchronous market hours around scheduled
+macro events.
 
-**How it differs from what's already been tried.** Different market and
-holding-period horizon than the equity ensemble; not an overnight-gap or
-leveraged-ETF rule.
+**Evidence status:** Peer-reviewed-quality working paper (Oxford). **Rule
+correspondence:** High for the price-discovery mechanism; **Low-Medium
+for the specific retail trading rule as originally proposed** — this
+needs its own direct test. **Implementation class:** Retail/Professional.
+**Validation stage:** Literature only for the mechanism; no test yet for
+the actual proposed rule.
 
-**Status: untriaged.**
-
----
-
-### 11. Pre-FOMC drift in long Treasuries (test-and-discard)
-
-**Mechanism.** Long TLT/IEF/EDV the day before scheduled FOMC meetings,
-exit at/around the announcement (or hold through the press conference if
-drift extends). Explicitly framed as a fast test with a likely-decayed
-post-2023 edge.
-
-**Source(s).** The source material cites an unverified "AEA 2026 draft"
-claiming possible post-2023 decay. **Better-anchored alternative:** the
-already-verified Neuhierl & Weber "Monetary Momentum" paper (item 3 above)
-independently documents this same broad FOMC-drift phenomenon with a
-real, peer-reviewed citation.
-
-**Confidence: Medium** — the underlying phenomenon is real (via the
-better citation in item 3), but the specific "has it decayed post-2023"
-claim is unverified. Cheap and fast to test directly (~30 minutes per the
-source material), so this is well-postured regardless of citation
-quality.
-
-**Why it's plausible.** An uncertainty premium — dealers hedge gamma/vega
-ahead of FOMC, bidding up long-duration convexity. If Fed communication
-became more transparent post-2023, this premium may have compressed.
-
-**Data requirements.** Free — Yahoo Finance TLT/IEF/EDV, FOMC calendar.
-
-**How it differs from what's already been tried.** A pure event-driven
-calendar anomaly (8–12 trades/year), low correlation to everything else in
-the pool.
-
-**Status: untriaged.**
+**Status: untriaged — rename applied, treat the two entry variants (trade
+the surprise directly vs. trade after the ETF's reaction) as two separate
+hypotheses to test.**
 
 ---
 
-### 12. Headline/LLM sentiment on small/mid-cap equities
+### B3. Bond ETF stale-NAV/fair-value dislocations
 
-**Mechanism.** Use an LLM or NLP classifier on news headlines to generate
-a daily long/flat/short signal, trading the delayed response after
-publication in smaller names where underreaction is more plausible.
+*(Prior draft: item 7, Tier 2, "High" confidence, framed as a raw-
+discount-buying rule. Logical gap identified — the raw rule is downgraded;
+a redesigned version is proposed.)*
 
-**Source(s).** Lopez-Lira & Tang, *"Can ChatGPT Forecast Stock Price
-Movements? Return Predictability and Large Language Models,"*
-arXiv:2304.07619 (2023), forthcoming *Journal of Financial Economics* —
-verified real. GPT-4 scores predict out-of-sample daily returns, stronger
-in smaller stocks and after negative news. Saqur, Kato, Vinden & Rudzicz,
-*"NIFTY Financial News Headlines Dataset,"* arXiv:2405.09747 (2024) —
-verified real; a public, point-in-time-usable headline dataset.
+**Mechanism.** Originally proposed as: buy raw NAV discounts, especially
+in high-yield ETFs.
 
-**Confidence: High**, with a link fix applied — the original source
-material had these two arXiv IDs cross-linked to the wrong papers; both
-are now correctly attributed.
+**Source(s).** Fulkerson, Jordan & Riley, *"Predictability in Bond ETF
+Returns,"* *Journal of Fixed Income* 23(3) (2013) — ⚠ published in the
+**Winter 2014 issue** (the DOI and working-paper date are 2013, but the
+print issue is Winter 2014 — a minor but real correction); confirms large
+historical return differences, ~0.96%/month long-short alpha in-sample.
+Karmaziene & Terrada, *"Fast ETFs, Slow Bonds,"* *Finance Research
+Letters* 90 (2026) — verified; rising yields widen discounts primarily in
+high-yield ETFs; ETF prices react quickly while NAVs lag because
+underlying bonds trade infrequently; discounts subsequently disappear.
 
-**Why it's plausible.** Attention constraints mean headlines are
-processed slowly/inconsistently in smaller names, creating an
-underreaction channel distinct from technical timing.
+⚠ **Important logical gap the prior draft missed:** "the discount
+disappears" does **not** necessarily mean the ETF price rises to close
+the gap. It may instead disappear because the *stale NAV* falls toward an
+already-informed ETF price — i.e., the ETF may have been right all along
+and the NAV is the one catching down, not up. A raw discount strategy
+that assumes the ETF price will rise is not directly supported by this
+mechanism as described.
 
-**Data requirements.** A clean, point-in-time headline feed mapped to
-tickers; survivorship-safe historical coverage is the main feasibility
-risk.
+**Recommended rewrite of the strategy:** estimate an independent fair-
+value NAV using recent bond trades, Treasury moves, credit-index moves,
+and ETF price discovery. Trade the residual deviation between ETF price
+and estimated *contemporaneous* fair value — not the raw reported
+premium/discount against a potentially stale official NAV. Before relying
+on this, separately measure: subsequent ETF-price return, subsequent
+reported-NAV change, the portion of convergence attributable to each, and
+bid-ask/shorting costs.
 
-**How it differs from what's already been tried.** Not another
-price-action or fundamental sort on the same large-cap universe. See
-relation note above re: paused candidate #8 (Google Trends) — different
-mechanism, no redundancy.
+**Data requirements.** Live premium/discount data is often free from
+issuers and ETF portals; building a long, clean historical series is the
+main friction; the fair-value redesign needs bond-trade/Treasury/credit-
+index data too.
 
-**Status: untriaged.**
+**How it differs from what's already been tried.** Fixed-income ETF
+market microstructure.
 
----
+**Evidence status:** Peer-reviewed (both). **Rule correspondence:**
+Mechanism only, pending the fair-value-residual redesign — the raw-
+discount rule as originally stated is **downgraded**. **Implementation
+class:** Professional (fair-value estimation is nontrivial). **Validation
+stage:** Literature only.
 
-### 13. Cross-asset carry rotation (risk-on/off via carry)
-
-**Mechanism.** Rotate across liquid multi-asset ETFs (equities, bonds,
-commodities, gold/FX) using a carry framework — favor positive
-carry/roll-down/forward premium — rather than momentum, combined with a
-volatility budget.
-
-**Source(s).** Same AQR "Carry" paper as item 2 — legitimately reused, as
-it explicitly documents carry premia across global equities, bonds,
-currencies, commodities, and Treasuries.
-
-**Confidence: High** on the citation — effectively the same evidentiary
-base as item 2, applied more broadly.
-
-**Why it's plausible.** Carry compensation is often more durable than a
-pure directional forecast; a multi-asset sleeve diversifies further than
-another single-asset-class anomaly.
-
-**Data requirements.** ETF yields, distributions, and roll behavior —
-relatively retail-feasible.
-
-**How it differs from what's already been tried.** Shifts the edge search
-into other liquid asset classes entirely, applied at the broadest
-multi-asset level. See relation note above re: infeasible candidate #4 —
-different mechanism (cross-asset carry, not perp funding rate).
-
-**Status: untriaged.**
+**Status: untriaged — build the fair-value-residual version, not the raw
+discount rule.**
 
 ---
 
-### 14. Crypto options volatility risk premium (DVOL vs. realized vol)
+### B4. Crypto volatility-premium regime indicator
 
-**Mechanism.** Harvest the volatility risk premium in BTC/ETH options:
-compare Deribit's DVOL (model-free implied vol) to realized vol; short
-delta-hedged straddles/strangles when DVOL exceeds realized vol by a
-threshold, long vol in the reverse case, on a weekly options-expiry cycle.
+*(Prior draft: item 14, Tier 3, "Medium/Low" confidence, deprioritized.
+New academic support found — promoted out of deprioritized status, but
+still an indicator, not a complete strategy.)*
 
-**Source(s).** Deribit DVOL methodology and several practitioner pieces
-(Delphi Digital, RegimeRisk, Harbourfront Quant) — **not independently
-verified in this pass.** The underlying volatility-risk-premium mechanism
-(implied systematically exceeding realized vol on average, delta-hedged
-harvest) is standard, well-established options-market theory generally,
-just not confirmed specifically for crypto via any citation checked here.
+**Mechanism.** Compare Deribit DVOL to realized vol as an indicator of
+options-market risk appetite; originally proposed as a complete tradable
+rule ("short weekly straddles whenever DVOL exceeds trailing realized
+vol").
 
-**Confidence: Medium** on mechanism (standard finance), **Low** on the
-specific crypto-market citations, none independently checked.
-
-**Why it's plausible.** Options market-makers and hedgers pay a
-persistent premium for downside protection; in crypto, endogenous hedging
-demand plus retail speculation plausibly creates a net vol risk premium
-analogous to equity index options.
+**Source(s).** Deribit DVOL methodology (practitioner). ⚠ **New academic
+support found:** *"Risk Premia in the Bitcoin Market,"* arXiv:2410.15195
+— reports Bitcoin has a larger variance risk premium than the S&P 500,
+with risk premia varying across volatility regimes. This supports the
+broad insurance-premium mechanism but does **not** validate the specific
+proposed DVOL-minus-realized-vol trading rule as written. The strategy
+still needs to define: option tenor and strike selection, delta-hedging
+frequency, whether realized vol is backward-looking or forecast,
+skew/jump exposure, bid-ask spreads and settlement assumptions,
+margin/collateral/liquidation/venue risk, and tail-loss limits.
 
 **Data requirements.** Free — Deribit public API, CoinGlass/CoinGecko.
 
 **How it differs from what's already been tried.** Delta-neutral, weekly
-options-expiry horizon — a distinct economic mechanism (insurance
-provision) from any directional crypto strategy already tried.
+options-expiry horizon.
 
-**Status: deprioritized — low confidence, do not resurface without a
-verified crypto-specific source.**
+**Evidence status:** Academic mechanism now supported (Medium-High);
+specific DVOL rule unsupported as a complete strategy (Medium-Low). **Rule
+correspondence:** Mechanism only. **Implementation class:** Professional
+(real options mechanics). **Validation stage:** Literature only. **Treat
+DVOL-minus-realized as an indicator, not a complete tradable return
+definition.**
 
----
-
-### 15. Stablecoin yield arbitrage (CeFi/DeFi rate differential)
-
-**Mechanism.** Borrow the cheapest stablecoin on a lending protocol, lend/
-deploy the highest-yielding stablecoin instrument, net the spread
-delta-neutrally, capped by battle-tested-stablecoin selection and
-per-protocol allocation limits.
-
-**Source(s).** Industry reports (Galaxy Research, DeFiLlama Yields API,
-Messari, Portals.fi) — none academic, none independently verified. The
-underlying rate fragmentation across DeFi protocols is closer to
-observable market structure than a contested empirical claim.
-
-**Confidence: Medium** on mechanism, **Low** on specific cited figures.
-
-**Why it's plausible.** Stablecoin lending markets are genuinely
-fragmented across protocols/chains with heterogeneous borrower needs and
-token-emission subsidies, creating a persistent, structural (not
-price-prediction) spread.
-
-**Data requirements.** Free — DeFiLlama Yields API.
-
-**How it differs from what's already been tried.** Near-zero directional
-risk, high-frequency rebalance, yield capture rather than price
-prediction.
-
-**Status: deprioritized — low confidence, do not resurface without
-academic verification.**
+**Status: untriaged — no longer deprioritized given the new citation, but
+still needs full rule specification before this is buildable.**
 
 ---
 
-### 16. Crypto spot-perp calendar basis trade
+# C. Portfolio-construction and research methods
 
-**Mechanism.** Trade the calendar spread between quarterly futures (CME,
-Deribit, Binance) and perpetual swaps: short quarterly/long perp when the
-annualized quarterly basis exceeds perp funding by a threshold, and vice
-versa, holding to expiry or an early roll.
+These are not standalone alpha sources — they're methods for improving an
+existing strategy set, and should be evaluated by whether they add value
+out-of-sample to what you already have, not as independent trades.
 
-**Source(s).** CME Group and CME OpenMarkets commentary, a GitHub repo, a
-practitioner cross-exchange stat-arb piece — none academic, none
-independently verified. The underlying mechanism (fixed-expiry futures
-must converge to spot; the basis reflects funding-expectation term
-structure) is well-documented as real institutional practice, notably the
-post-spot-ETF CME-basis trade.
+### C1. Investment Base Pairs
 
-**Confidence: Medium** on mechanism (well-known real institutional
-practice), **Low** on the specific secondary sources cited.
+*(Prior draft: item 5, Tier 1, "High" confidence — largely unchanged,
+with an explicit note that the ETF adaptation is a new application, not
+a replication.)*
 
-**Why it's plausible.** Quarterly futures have a fixed expiry and must
-converge to spot; perpetuals are anchored by funding instead — the basis
-between the two reflects genuine term-structure and convenience-yield
-information.
+**Mechanism.** Decompose cross-sectional signals into asset-pair
+portfolios; keep only pairs with strong own- and cross-asset explanatory
+power.
 
-**Data requirements.** Free — CoinGecko/CoinGlass, CME public data.
+**Source(s).** Christian Goulding & Campbell Harvey, *"Investment Base
+Pairs,"* SSRN 5193565 (2025) — verified, high-pedigree.
 
-**How it differs from what's already been tried.** Term-structure/
-calendar-spread mechanism, delta-neutral, defined expiry horizon. See
-relation note above re: infeasible candidate #4 — trades the futures-spot
-basis, not the funding rate itself.
+**Why it matters here.** A genuine methodology critique of conventional
+quantile/linear-weighting portfolio construction, not a fragile anomaly
+claim.
 
-**Status: deprioritized — low confidence, do not resurface without a
-verified source.**
+**Data requirements.** The 1,710-pair academic search is futures/
+forwards-heavy; an ETF adaptation is materially different from the
+original study and needs its own nested selection, untouched holdout, and
+multiple-testing controls — it is not a direct replication.
 
----
+**How it differs from what's already been tried.** Not "more momentum" or
+"another stock ranking" — a multi-asset portfolio-construction hypothesis.
 
-### 17. Token unlock event-driven short
+**Evidence status:** Peer-reviewed, high-pedigree. **Rule
+correspondence:** Direct for the futures study; the ETF adaptation is a
+new, separately-untested application. **Implementation class:**
+Professional (full model) / Retail (approximate ETF version). **Validation
+stage:** Literature only.
 
-**Mechanism.** Monitor token unlock calendars; short ahead of large
-scheduled cliff unlocks (anticipatory insider/VC selling pressure), cover
-after the unlock and consider a mean-reversion long if price overshoots.
-
-**Source(s).** Data-vendor calendars (DefiLlama, CoinGlass, Tokenomist.ai)
-and a trading-guide write-up — no empirical academic study found showing
-this specific edge exists in crypto, though the equity IPO-lockup-expiry
-analogy is real, established literature.
-
-**Confidence: Low-Medium** — reasonable mechanism, but no cited study
-demonstrates the edge specifically in crypto; worth a cheap backtest
-before trusting the narrative.
-
-**Why it's plausible.** Cliff unlocks are predictable, scheduled supply
-shocks with clear incentives for early/mechanical selling — publicly
-known but plausibly behaviorally underreacted to, similar in spirit to
-lockup expiry.
-
-**Data requirements.** Free — the unlock calendars are the product.
-
-**How it differs from what's already been tried.** A genuinely novel,
-catalyst-driven, short-biased mechanism with a defined event window.
-
-**Status: deprioritized — low confidence, do not resurface without an
-empirical crypto-specific study.**
+**Status: untriaged.**
 
 ---
 
-## Tier 4 — Weakest sourcing: fabricated, misattributed, off-topic, or purely anecdotal citations
-
-### 18. G10 currency three-factor core (carry + momentum + value)
-
-**Mechanism.** Equal-risk-weight carry, cross-sectional momentum, and
-PPP/REER value across G10 currency ETFs, with volatility targeting and an
-HMM-based regime filter to avoid carry-crash episodes.
-
-**Source(s).** ⚠ **The primary citation appears fabricated.** "Survival of
-the Fittest: A Three-Factor Core in the Currency Market" (claimed SSRN
-6609879) could not be found anywhere under that title or ID — no matching
-paper on SSRN, Google Scholar, RePEc, or general web search. This is a
-different, more serious problem than the citation slips found elsewhere
-(wrong link, conflated authors), where a real paper was always findable
-nearby; here, nothing matches.
-
-**Confidence: Low** on the citation specifically — **this was originally
-ranked #1 with "most robust academic support"; that characterization does
-not currently hold.** Replace the citation with a real paper before
-allocating meaningful research time. **Medium** on the underlying
-three-factor concept given the broader literature.
-
-**Why it's plausible (mechanism, independent of the fabricated citation).**
-The three-factor combination itself is a real, broadly supported concept
-in FX literature generally — see item 4 above, and decades of published
-carry/momentum/value FX research (e.g., Menkhoff, Sarno, Schmeling &
-Schrimpf on currency momentum; the well-known AQR "Value and Momentum
-Everywhere" dataset, not independently re-verified here but extremely
-well-established).
-
-**Data requirements.** Free — Yahoo Finance for G10 ETFs, FRED for basis
-and PPP/REER data.
-
-**How it differs from what's already been tried.** Different asset class,
-different macro/funding-structure drivers, low correlation to equities —
-this framing is sound regardless of the citation problem.
-
-**Status: deprioritized — fabricated citation, do not resurface without a
-real replacement source (e.g. Menkhoff/Sarno/Schmeling/Schrimpf or AQR's
-"Value and Momentum Everywhere," both real alternatives already named
-above).**
-
----
-
-### 19. Country/factor rotation ex-US with dynamic currency hedge
-
-**Mechanism.** Two-layer rotation: country momentum across developed
-ex-US equity ETFs, plus factor rotation within countries, plus a dynamic
-currency-hedge overlay using carry/momentum/PPP signals.
-
-**Source(s).** Largely the same underlying signal and citation issue as
-item 9 above (the Bräuer paper, cited here under a different, unreconciled
-SSRN ID). AQR ex-US factor data and various practitioner pieces (Robeco,
-Alpha Architect, iShares) were not independently re-verified.
-
-**Confidence: Low-Medium** — carries forward the same caution as item 9
-about the currency-hedge-signal claim specifically.
-
-**Why it's plausible.** Combines two well-established, separately verified
-ideas (factor investing in non-US markets + dynamic FX hedging from item
-4) into a country-selection framework — reasonable in principle.
-
-**Data requirements.** Free/cheap for ETF prices and macro data; hedged/
-unhedged flow data is more manually assembled.
-
-**How it differs from what's already been tried.** Different geography,
-explicit currency factor layered on top of country rotation.
-
-**Status: deprioritized — same citation caution as item 9, but here it's
-load-bearing for the whole idea rather than one input among several; do
-not resurface without directly re-confirming the Bräuer paper's actual
-finding.**
-
----
-
-### 20. Treasury duration rotation via HMM regime-switching
-
-**Mechanism.** A 3-state Gaussian HMM on ~12 FRED macro series classifies
-growth/inflation regimes, mapping each to a duration tilt (e.g., long
-duration in slowing growth, short duration in overheating), with a
-momentum confirmation filter and volatility targeting.
-
-**Source(s).** A GitHub repo, an unverified arXiv paper, an unverified
-SSRN paper on volatility scaling, and an MDPI *FinTech* paper — **none
-independently verified in this pass.**
-
-**Confidence: Low**, pending direct verification of every cited source —
-prototype item 6 first.
-
-**Why it's plausible (mechanism, independent of citations).** Duration is
-a genuine first-order macro asset class with well-understood growth/
-inflation sensitivities; regime-switching models for macro allocation are
-a real, established technique broadly, even where these specific
-citations are unconfirmed.
-
-**Data requirements.** Free — Yahoo Finance, FRED, MOVE index.
-
-**How it differs from what's already been tried.** Different asset class,
-macro regime-conditional rather than a static factor sort — see item 6
-for the better-sourced static alternative.
-
-**Status: deprioritized — low confidence, do not resurface without
-verified sourcing; item 6 is the better-supported version of this same
-asset class.**
-
----
-
-### 21. Commodity seasonality (harvest/planting cycles)
-
-**Mechanism.** Trade agricultural commodity proxies using seasonal windows
-tied to planting/growing/harvest calendars, conditioned on inventory/price
-context.
-
-**Source(s).** ⚠ The cited paper (PMC11305200, *Heliyon* 2024) is real but
-studies wavelet-based co-movement between commodity prices and
-economic-policy-uncertainty indices across crisis periods — it does not
-address planting/harvest seasonality at all. Real paper, off-topic
-relative to the claim.
-
-**Confidence: Low** pending a genuine seasonality citation — source a
-paper that actually studies planting/harvest-cycle effects before relying
-on this.
-
-**Why it's plausible (mechanism, independent of the citation).**
-Agricultural commodities are tied to biological production cycles and
-storage constraints, giving seasonality a genuine economic basis distinct
-from arbitraged equity calendar effects.
-
-**Data requirements.** Feasible with commodity ETFs; better with
-contract-level futures data.
-
-**How it differs from what's already been tried.** A supply-cycle anomaly
-in a different market, not a large-cap equity or price-action signal.
-
-**Status: deprioritized — low confidence, do not resurface without a
-genuine on-topic citation.**
-
----
-
-### 22. ETH/BTC ratio mean-reversion with macro regime filter
-
-**Mechanism.** Z-score mean-reversion on the ETH/BTC ratio, gated by a
-DXY/liquidity/VIX macro regime filter, beta-neutral long/short.
-
-**Source(s).** All practitioner/blog sources (BacktestEverything,
-Ecoinometrics, Acheron Trading, Galaxy) — no academic backing found, none
-independently verified.
-
-**Confidence: Low** — weakest source base among the higher-effort ideas;
-treat as fast-test-and-discard.
-
-**Why it's plausible.** The ETH-as-utility-asset vs. BTC-as-store-of-value
-framing is a widely used industry narrative with real behavioral logic,
-but rests entirely on commentary rather than any peer-reviewed source.
-
-**Data requirements.** Free — CoinGecko/Yahoo Finance, FRED.
-
-**How it differs from what's already been tried.** Market-neutral within
-crypto, macro-conditioned relative value.
-
-**Status: deprioritized — low confidence, do not resurface without
-academic backing.**
-
----
-
-### 23. Energy pre-holiday seasonal sleeve
-
-**Mechanism.** Long energy exposure (USO/UGA) in the days before major
-U.S. holidays, exploiting travel-driven fuel-demand anticipation.
-
-**Source(s).** Quantpedia, *"Pre-Holiday Effect in Commodities"* (2024) —
-explicitly self-flagged by its own original source as not a canonical
-academic paper.
-
-**Confidence: Low**, correctly self-labeled by its own source as the
-thinnest idea in that report — good fast-falsification candidate given
-how cheap it is to test.
-
-**Why it's plausible.** A physical-demand story (travel-heavy holidays
-create fuel pre-positioning), not pure pattern-mining.
-
-**Data requirements.** Very light — exchange holiday calendar, daily ETF
-prices.
-
-**How it differs from what's already been tried.** A short-window
-commodity seasonality sleeve tied to physical demand and calendar
-structure.
-
-**Status: deprioritized — low confidence, do not resurface without
-academic backing.**
-
----
-
-### 24. DeFi delta-neutral concentrated LP + funding harvest (long-shot)
-
-**Mechanism.** Provide concentrated Uniswap v3 liquidity in stable-
-volatile pairs, delta-hedged with a short perp position, earning both
-concentrated-LP swap fees and perp funding.
-
-**Source(s).** Industry pieces (Delphi Digital, Thrive.fi, Galaxy,
-Hyperdash) — no academic backing, none independently verified.
-
-**Confidence: Medium** on mechanism, but correctly flagged by its own
-source as a long-shot for execution-complexity reasons rather than
-citation reasons.
-
-**Why it's plausible.** Concentrated-liquidity fee mechanics and
-positive-average perp funding are both observable market facts, not
-contested claims — closer to an engineering problem than an unproven
-anomaly.
-
-**Data requirements.** Free data, but operationally heavy: smart contract
-deployment, keeper bots, multi-venue connectivity.
-
-**How it differs from what's already been tried.** A different tech stack
-entirely (on-chain DeFi primitive plus CeFi/DeFi perp funding).
-
-**Status: untriaged — kept active despite Tier 4 grouping; the concern
-here is engineering effort, not citation confidence, so it doesn't fit
-the "weakly sourced, don't resurface" reason for deprioritizing the other
-Tier 4 items.**
-
----
-
-### 25. Automated multi-asset strategy discovery (QuantEvolve-style)
-
-**Mechanism.** Use a constrained evolutionary/multi-agent search system to
-discover simple, interpretable rules across a multi-asset panel, keeping
-only strategies that survive strict walk-forward and deflated-Sharpe
-validation.
-
-**Source(s).** Yun, Lee & Jeon, *"QuantEvolve: Automating Quantitative
-Strategy Discovery through Multi-Agent Evolutionary Framework,"*
-arXiv:2510.18569 (2025) — verified real, authors from Qraft Technologies,
-accepted for oral presentation at an ACM ICAIF-affiliated workshop (Oct
-2025).
-
-**Confidence: High** on the citation itself; correctly framed by its
-original source as the most speculative *application* in that report
-(a framework, not a validated strategy) even though the paper backing it
-is solid.
-
-**Why it's plausible.** A structured search system can surface
-interactions humans wouldn't hand-engineer outside an already-saturated
-hypothesis space; overfitting risk is severe and explicitly the main
-caveat.
+### C2. QuantEvolve-style automated strategy discovery
+
+*(Prior draft: item 25, Tier 4, "High" confidence on citation. Reclassified
+as a method, not a strategy — matches its own original framing.)*
+
+**Mechanism.** Constrained evolutionary/multi-agent search for
+interpretable rules across a multi-asset panel, gated by walk-forward and
+deflated-Sharpe validation.
+
+**Source(s).** Yun, Lee & Jeon, *"QuantEvolve,"* arXiv:2510.18569 (2025) —
+verified, Qraft Technologies, accepted at an ACM ICAIF-affiliated
+workshop.
+
+**Why it matters here.** A hypothesis-generation framework, not a
+strategy — treat it as research infrastructure. Cap the search budget,
+maintain an immutable final holdout, record every attempted rule, and
+report multiple-testing-adjusted results if used.
 
 **Data requirements.** Broad multi-asset data plus a strict validation
 pipeline.
@@ -1472,60 +1209,208 @@ pipeline.
 **How it differs from what's already been tried.** A discovery framework,
 not a single hand-built signal.
 
-**Status: untriaged — citation is solid, but this is a meta-framework, not
-a strategy; lowest priority to actually build given effort required to
-stand up an evolutionary search pipeline.**
+**Evidence status:** Peer-reviewed-quality (workshop-accepted). **Rule
+correspondence:** N/A — this is a method, not a rule. **Implementation
+class:** Research infrastructure. **Validation stage:** Literature only.
+
+**Status: untriaged — lowest build priority given the effort to stand up
+an evolutionary search pipeline; a method to keep in mind, not a queued
+candidate.**
 
 ---
 
-### Summary triage table (25 candidates)
+# D. Parked hypotheses — cheap falsification only, not research priorities
 
-| # | Candidate | Asset class | Data cost | Confidence | Status | Notes |
-|---|---|---|---|---|---|---|
-| 1 | Cross-currency basis / CIP harvesting | FX | Free | High | untriaged | Best-supported idea overall |
-| 2 | Commodity carry+trend+basis reversal | Commodities | Free/cheap | High | untriaged | 3 independent verified sources |
-| 3 | FOMC country-ETF spillover | FX/equity (intl) | Free/cheap | High | untriaged | Strong recent primary source |
-| 4 | Dynamic FX hedge overlay | FX | Free/cheap | High | untriaged | Published, high-pedigree |
-| 5 | Cross-asset base-pair selection | Multi-asset | Futures-heavy (ETF-proxy feasible) | High | untriaged | Portfolio-construction insight |
-| 6 | Treasury term-structure factors (static) | Rates | Free | High | untriaged | Prototype this variant first |
-| 7 | Bond ETF discount-to-NAV reversal | Credit/HY bonds | Free | High | untriaged | Lean on 2026 paper, not 2013 figure |
-| 8 | Stablecoin-stress jump-risk hedge | Crypto | Free/cheap | High | untriaged | 2 verified, high-tier papers |
-| 9 | Currency-hedge-flow signal | FX/equity (intl) | Free/cheap | Low-Medium | untriaged | Re-confirm Bräuer paper's actual claim directly |
-| 10 | Session-aware crypto intraday | Crypto | Free/cheap | High | untriaged | Small scope, cleanest citation match |
-| 11 | Pre-FOMC Treasury drift | Rates | Free | Medium | untriaged | Cheap, fast to test regardless of citation |
-| 12 | Headline/LLM sentiment (small/mid caps) | Equity (alt-data) | Free/cheap (LLM cost) | High | untriaged | See relation note re: #8 |
-| 13 | Cross-asset carry rotation | Multi-asset | Free/cheap | High | untriaged | Shares item 2's evidentiary base |
-| 14 | Crypto options vol risk premium | Crypto derivatives | Feasibility risk | Medium/Low | **deprioritized** | Standard mechanism, crypto sourcing thin |
-| 15 | Stablecoin yield arbitrage | Crypto/DeFi | Free (industry reports) | Medium/Low | **deprioritized** | No academic verification |
-| 16 | Crypto spot-perp calendar basis | Crypto derivatives | Free/cheap | Medium/Low | **deprioritized** | See relation note re: #4 |
-| 17 | Token unlock event-driven short | Crypto | Free (calendars) | Low-Medium | **deprioritized** | Untested in crypto specifically |
-| 18 | G10 currency 3-factor core | FX | Free/cheap | Low/Medium | **deprioritized** | ⚠ fabricated citation, real concept |
-| 19 | Country/factor rotation ex-US + FX hedge | FX/equity (intl) | Free/cheap | Low-Medium | **deprioritized** | Same citation issue as #9, load-bearing here |
-| 20 | Treasury HMM regime rotation | Rates | Free | Low | **deprioritized** | Item 6 is the better-sourced alternative |
-| 21 | Commodity seasonality | Commodities | Free | Low | **deprioritized** | ⚠ cited paper is off-topic |
-| 22 | ETH/BTC ratio mean-reversion | Crypto | Free | Low | **deprioritized** | Blog-only sourcing |
-| 23 | Energy pre-holiday seasonal | Commodities | Free | Low | **deprioritized** | Self-flagged thin by its own source |
-| 24 | DeFi delta-neutral LP + funding harvest | Crypto/DeFi | Feasibility risk (infra-heavy) | Medium | untriaged | Engineering long-shot, not citation risk |
-| 25 | Automated multi-asset strategy discovery | Meta/framework | N/A | High (citation) | untriaged | Framework, not a strategy — lowest build priority |
+Each of these has a plausible mechanism but thin, unverified, or off-topic
+sourcing. Budget a fast, cheap, frozen-rule test for each rather than
+committing real research time; do not iterate specifications after seeing
+results. **All marked `deprioritized` in the sense used throughout this
+file — not tested, not worth committing real research time to without a
+stronger source or a tightly-scoped falsification test.**
 
-**Where to spend research time first (per the source report):**
-- **Tier 1 — start here (6 ideas, fully verified, genuinely
-  diversifying):** items 1-6, in roughly that priority order.
-- **Tier 2 — good second wave, verified with a fixable caveat:** items 7
-  and 8 next; re-confirm item 9 directly before using it.
-- **Tier 3 — plausible, worth cheap tests:** item 10 has the cleanest
-  citation despite narrower scope; items 11 and 12 are solid once anchored
-  to their corrected citations; item 13 shares item 2's evidentiary base.
-- **Needs a citation fix before serious investment:** item 18 (replace
-  the fabricated citation), item 9/19 (re-confirm the Bräuer paper's
-  actual claim), item 1's misattributed arXiv ID (easy fix — correct
-  author is Useong Shin).
-- **Deprioritized (10 items: 14, 15, 16, 17, 18, 19, 20, 21, 22, 23) —
-  do not resurface without a materially better source than what's already
-  been checked.** None were tried/tested — they're weak on sourcing, not
-  NO-GO. `web-strategy-research-prompt.md` names these specific niches so
-  a future discovery pass doesn't waste output resurfacing them.
-- **Kept active despite Tier 4 grouping (24, 25):** neither is
-  citation-weak — 24's issue is engineering effort, 25 is a solid citation
-  for a meta-framework rather than a strategy. Lowest build priority, not
-  lowest confidence.
+- **Crypto session directionality** *(prior draft: item 10, Tier 3, "High"
+  confidence — downgraded here).* Wątorek, Skupień, Kwapień & Drożdż
+  (*Chaos*, 2023; arXiv:2306.17095, verified real) documents recurring
+  crypto *activity* patterns (volume, volatility, session concentration,
+  macro-announcement bursts) — it does **not** establish that expected
+  returns during these windows have a stable sign, or that a session-
+  specific mean-reversion or trend rule is profitable after costs. ⚠
+  Downgrade from the prior draft's "single best citation-to-claim match"
+  framing — the citation is genuinely strong for *activity patterns*, but
+  that's a different claim than *return predictability*. Rename:
+  "Session-conditioned crypto return predictability — hypothesis
+  motivated by recurring activity patterns." Pre-register exact sessions
+  and whether the test is trend, reversal, breakout, or vol-timing before
+  running it. **Status: deprioritized (downgraded from active queue).**
+- **G10 currency three-factor core** *(prior draft: item 18, Tier 4,
+  deprioritized as "fabricated citation" — that verdict was itself
+  wrong; see the major correction below).* ⚠ **Major correction:** the
+  prior draft stated this citation was fabricated. That was wrong. A real
+  paper exists: Sining Liu (Soochow University), Yan Wang (City
+  University of Macau) & Lingxiao Zhao (Peking University), *"Survival of
+  the Fittest: A Three-Factor Model in the Currency Market,"* Working
+  Paper 20260104 (January 2026) — verified real, scheduled for
+  presentation at AsianFA 2026 (July 2026). **However, the title was
+  slightly misquoted ("Core" vs. "Model") and, more importantly, the
+  paper does not support a carry-momentum-value model at all.** Using a
+  Bayesian model-comparison framework, it finds a parsimonious **dollar
+  (DOL) + carry (CAR) + business-cycle/output-gap (GAP)** three-factor
+  model dominates the currency-factor model space — a completely
+  different factor structure. Split into two separate candidates:
+  **18A, a DOL-CAR-GAP model** (now genuinely supported by this paper,
+  status: `untriaged`, promoted out of deprioritized), and **18B, a
+  carry-momentum-value FX portfolio** (which needs a different citation
+  — e.g., Menkhoff, Sarno, Schmeling & Schrimpf on currency momentum, or
+  the AQR "Value and Momentum Everywhere" dataset, neither independently
+  re-verified here; status: `deprioritized`, still needs a real
+  citation). Do not use the new paper as evidence for momentum or value
+  specifically. Keep the HMM regime filter as a separate, untested
+  hypothesis regardless of which factor model is used.
+- **Ex-US country/factor/hedge rotation** *(prior draft: item 19, Tier 4,
+  deprioritized).* Decompose into three separate layers — country
+  momentum, within-country factor rotation, FX hedging — and test each
+  independently before stacking. The Bräuer paper (A6 above) is evidence
+  for inferred FX expectations specifically, not for country momentum or
+  factor rotation. **Status: deprioritized**, same underlying-citation
+  caution as A6, but here it's load-bearing for the whole idea rather
+  than one input among several.
+- **Treasury HMM regime rotation** *(prior draft: item 20, Tier 4,
+  deprioritized — unchanged, additional methodology requirements
+  spelled out).* Needs real-time macro vintages (ALFRED-style, not final
+  revised data), expanding-window estimation, no full-sample scaling,
+  stable state-label rules, and explicit handling of state-probability
+  uncertainty before it's a fair test. Currently rests on a GitHub repo
+  and unverified arXiv/SSRN IDs. **Status: deprioritized** — A5 is the
+  better-sourced static alternative.
+- **Commodity seasonality (harvest/planting cycles)** *(prior draft: item
+  21, Tier 4, deprioritized — off-topic citation confirmed, unchanged).*
+  The previously cited paper (PMC11305200) is confirmed off-topic — it
+  studies commodity/policy-uncertainty co-movement, not planting/harvest
+  cycles. Remove until a genuine, contract-specific agricultural-
+  seasonality paper is sourced; note ETF proxies may blur contract-month
+  and harvest-cycle effects even once sourced. **Status: deprioritized.**
+- **ETH/BTC ratio mean reversion** *(prior draft: item 22, Tier 4,
+  deprioritized — unchanged, methodology requirements spelled out).*
+  Test stationarity, cointegration stability, half-life stability, and
+  structural breaks *before* adding DXY/VIX/liquidity filters — each
+  added filter is another researcher degree of freedom on an
+  all-practitioner-blog evidence base. **Status: deprioritized.**
+- **Energy pre-holiday seasonal sleeve** *(prior draft: item 23, Tier 4,
+  deprioritized — unchanged).* Few independent holidays in any sample,
+  overlapping seasonal effects, high specification flexibility. Run one
+  frozen falsification test; do not iterate windows after seeing results.
+  Self-flagged by its own original source as non-academic. **Status:
+  deprioritized.**
+- **Stablecoin credit, liquidity, and technology carry** *(prior draft:
+  item 15, "stablecoin yield arbitrage," Tier 3, deprioritized — renamed
+  to reflect real risk).* ⚠ Renamed from "stablecoin yield spreads" — it
+  is not riskless arbitrage and is not near-zero-risk merely because USD
+  price exposure is matched. Include depeg, protocol, bridge, oracle,
+  governance, liquidation, withdrawal, and reward-token risk explicitly.
+  **Status: deprioritized.**
+- **Spot-perpetual/calendar basis** *(prior draft: item 16, Tier 3,
+  deprioritized — split into two).* Split into two distinct strategies:
+  spot-vs-dated-futures cash-and-carry, and perpetual-vs-dated-futures
+  relative value. Funding-rate paths, margin currency, venue default
+  risk, collateral haircuts, and liquidation mechanics differ materially
+  between the two. **Status: deprioritized (both halves).** See relation
+  note above re: infeasible lab candidate #4.
+- **Token unlock shorts** *(prior draft: item 17, Tier 3, deprioritized —
+  unchanged, more nuance added).* Scheduled unlock amount is not the same
+  as immediately sellable float — record recipient type, vesting
+  structure, circulating-supply effect, exchange inflows, borrow
+  availability, funding rate, and prior announcement date before treating
+  this as more than a cheap event study. **Status: deprioritized.**
+- **Concentrated-liquidity LP + funding harvest** *(prior draft: item 24,
+  Tier 4, "Medium" confidence, kept active — reclassified here as an
+  engineering experiment, not a strategy).* Not fully delta-neutral in
+  practice (nonlinear inventory from concentrated ranges, gamma/
+  impermanent-loss, adverse selection, rebalancing, MEV, gas, oracle, and
+  smart-contract exposure all remain). **Status: untriaged as an
+  engineering experiment**, not scored on the same axis as a strategy
+  candidate.
+
+---
+
+## Where to spend research time first (per the independent review)
+
+**For a home-lab / mostly-ETF workflow — this project's own default:**
+1. Dynamic FX hedge overlay (A1)
+2. Pre-FOMC Treasury drift replication (A7)
+3. Commodity trend (A3)
+4. Simplified Treasury curve relative value (A5), clearly labeled an
+   approximation
+5. LLM headline drift (A8), only with credible point-in-time data
+6. Stablecoin stress as a risk overlay (B1)
+7. FOMC country-ETF residual-continuation test (B2)
+
+*CIP should not rank first here — FX ETFs do not directly implement the
+documented arbitrage (see A9). This reverses the prior draft's #1
+ranking.*
+
+**For a professional futures/forwards/options workflow (not this
+project's current setup, noted for completeness):**
+1. Dynamic FX hedging (A1)
+2. Commodity carry and trend as separate sleeves (A2, A3)
+3. Treasury term-structure factors, full model (A5)
+4. Short-term basis reversal replication (A4)
+5. ETF-implied FX expectations (A6)
+6. Pre-FOMC Treasury drift (A7)
+7. Bitcoin options variance-risk-premium research (B4)
+8. Investment Base Pairs as an overlay to established signals (C1)
+
+**For an institutional FX/rates desk (not applicable here):** cross-
+currency basis (A9) can rank near the top, since the desk plausibly has
+the forwards, swaps, funding, collateral, and balance-sheet access to
+actually express the anomaly directly — but even there, keep harvesting-
+the-basis-itself distinct from using-the-basis-to-tilt-a-carry-portfolio.
+
+## Minimum validation standard before committing capital to any candidate
+
+Applies on top of, not instead of, this lab's own WFO/NDH/DSR gate
+framework:
+
+1. **Freeze the rule before testing** — instruments, timestamps, signal
+   lags, rebalance rules, missing-data handling, leverage, entry/exit
+   rules, risk limits, all specified in advance.
+2. **Use point-in-time data** — futures rolls, ETF holdings, NAVs, macro
+   releases, security universes, and event calendars must reflect what
+   was actually observable at each historical decision point.
+3. **Model the full implementation cost** — spreads, commissions, market
+   impact, rolls, financing, borrow, margin, collateral yield, funding
+   rates, gas/on-chain costs where applicable, forced-liquidation
+   behavior.
+4. **Use nested out-of-sample testing** — parameter selection inside
+   training windows only; keep a genuinely untouched final holdout,
+   especially for Base Pairs, LLM news drift, token unlocks, ETH/BTC mean
+   reversion, pre-holiday effects, and any HMM regime model.
+5. **Correct for multiple testing** — 25+ candidates across this batch
+   alone, many with alternative windows/filters/thresholds, create real
+   false-discovery risk. Report deflated Sharpe ratios, a probability-of-
+   backtest-overfitting diagnostic, the number of specifications actually
+   attempted, and the frozen rule's performance in an untouched sample.
+6. **Measure stress behavior, not just full-sample correlation** — equity
+   beta, duration beta, dollar beta, liquidity beta, crisis-period
+   correlation, tail dependence, max drawdown, and drawdown overlap with
+   the existing portfolio. A strategy can look diversified in calm
+   conditions and become sharply equity-sensitive during funding stress —
+   which is exactly why "low equity correlation" has been removed from
+   this register's language until stress-period analysis actually
+   demonstrates it.
+7. **Run a shadow portfolio** — a sustained paper or low-capital live test
+   surfaces timestamp errors, stale NAVs, unavailable borrow, venue
+   outages, funding surprises, real slippage, execution delays, data
+   revisions, and other operational failure modes no backtest catches.
+
+## Bottom line
+
+This batch is a strong **research-candidate list**, not yet a list of
+validated strategies. Nothing here should be read as "verified" beyond
+the specific, narrow claim that a cited paper exists and says
+approximately what's attributed to it — exact-rule evidence, cost-aware
+backtesting, and live validation are separate, mostly unstarted stages.
+The defensible path:
+
+> **paper → mechanism → exact rule → replication → shadow portfolio → capital**
+
+not collapsing those stages into a single word like "validated."

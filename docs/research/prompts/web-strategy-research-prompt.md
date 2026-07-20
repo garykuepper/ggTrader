@@ -154,60 +154,91 @@ equities, however different the underlying data source.
 
 ## Required output format
 
-**Group candidates into confidence tiers, and give every candidate all
-seven fields below — both parts are required, not either/or.** A prior run
-produced a well-organized tiered report but skipped several of the
-per-candidate fields (especially field 6); that's the failure mode to
-avoid — the tiering is a good organizing structure on top of the fields,
-not a replacement for them.
+**Group candidates by strategy type, and give every candidate all seven
+fields below (four of which are now independent ratings, not one) — both
+parts are required, not either/or.** Two prior runs each fixed one gap:
+the first produced a well-organized report but skipped several
+per-candidate fields; the second added the fields back but used a single
+"Confidence" score, which a later independent review showed conflates
+three genuinely different questions (is the source real? does it test
+*this* exact rule? can this project's instruments actually reproduce the
+effect?) — collapsing them cost real accuracy (a real paper wrongly
+labeled "fabricated," a venue misattributed, a magnitude overstated, a
+finding's direction flipped without a direct re-read to confirm). Both
+fixes now apply together.
 
-### Tiering
+### Grouping
 
-Organize the candidates into tiers by how well-supported the sourcing is,
-roughly:
-- **Tier 1** — primary source(s) independently real and directly on-point;
-  no caveats.
-- **Tier 2** — real, verified source(s), but with a specific caveat (a
-  dated figure, a narrower scope than the headline claim, a related-but-
-  not-identical finding).
-- **Tier 3** — plausible mechanism, but sourcing is thin (practitioner
-  blogs/industry reports only, no academic backing) or only partially
-  verified.
-- **Tier 4** — weak, unverified, or flagged sourcing (a citation you
-  couldn't locate, a citation that turned out to be about something else,
-  or a citation you're not fully confident is real). Still include these —
-  a labeled long-shot is useful triage material — but say plainly that the
-  sourcing is weak rather than dressing it up.
+Organize candidates by **strategy type**, not by source-prestige tier:
+- **A. Active strategy replication queue** — candidates with a plausible
+  path to a specific tradable rule. Order roughly by how directly the
+  cited evidence maps to the proposed trade (not by how prestigious the
+  journal is).
+- **B. Risk and exposure overlays** — candidates better used as risk-
+  management triggers (position-size cuts, leverage reduction, hedge
+  ratio) than as standalone directional trades. A source can strongly
+  support the *mechanism* (e.g. "X raises jump risk") without supporting
+  the *direction* of a trade built on it (e.g. "so always short after
+  X") — say so explicitly when that's the case rather than proposing the
+  more aggressive standalone-trade framing by default.
+- **C. Portfolio-construction and research methods** — not standalone
+  alpha sources; methods for improving an existing strategy set (pair
+  selection, automated discovery frameworks, etc.).
+- **D. Parked hypotheses** — plausible mechanism, thin/unverified/
+  off-topic sourcing. Still include these (a labeled long-shot is useful
+  triage material), but say plainly the sourcing is weak rather than
+  dressing it up, and don't recommend real research time on them —
+  a fast, cheap, frozen-rule falsification test is the right scope, not
+  a full build.
 
-Within each tier, order roughly by how promising + feasible you judge each
-idea. Aim for at least 5-8 candidates total across all tiers so there's
-real triage material.
+Within each group, order roughly by how promising + feasible you judge
+each idea. Aim for at least 5-8 candidates total so there's real triage
+material.
 
-### Per-candidate fields (required for every candidate, in every tier)
+### Per-candidate fields (required for every candidate, in every group)
 
 1. **Name** — short, descriptive.
 2. **Mechanism** — 2-4 sentences: what the signal/strategy actually is and
-   how it would generate trades.
+   how it would generate trades. If a source only supports the underlying
+   *mechanism* but not the *specific trading rule* being proposed on top
+   of it, say so here explicitly (this is the single most common gap
+   found on review — don't let a well-cited mechanism paper silently
+   stand in for an untested rule built on top of it).
 3. **Source(s)** — real citations: paper titles/authors/links, blog posts,
-   or other sources you actually found. Do not fabricate citations — if you
-   can't find a solid source for something you believe is promising, say so
-   explicitly rather than inventing one. If you're reusing a source already
-   cited for another candidate in this same report, say so rather than
-   re-describing it as new.
-4. **Confidence** — your own calibrated rating (High/Medium/Low, split by
-   sub-claim if a source is solid on the mechanism but weak on a specific
-   figure) — this is what determines the tier, so it should be consistent
-   with tier placement above.
+   or other sources you actually found. Do not fabricate citations. If you
+   can't find a solid source, say so explicitly rather than inventing one
+   — but also don't declare a citation "fabricated" without a thorough
+   search (title, claimed ID, author names, working-paper repositories,
+   conference programs, faculty pages) — a citation that looks unfindable
+   on a first pass can still be real under a slightly different title or
+   ID. If you're reusing a source already cited for another candidate in
+   this same report, say so rather than re-describing it as new. Check
+   basic facts that are easy to get wrong: publication venue (a working
+   paper can have been accepted since your training data), exact figures
+   (don't round or misremember a headline number), and date.
+4. **Ratings** — four independent ratings, not one combined score:
+   - **Evidence status**: Peer-reviewed / Accepted / Working paper /
+     Practitioner / Unsupported — how mature and credible is the source
+     itself?
+   - **Rule correspondence**: Direct / Close adaptation / Mechanism only /
+     Unrelated — did the source test *this exact* tradable rule, or just
+     the underlying mechanism?
+   - **Implementation class**: Retail / Professional / Institutional —
+     can retail-accessible instruments (ETFs, spot FX, major exchange
+     APIs) actually reproduce the studied effect, or does it need
+     futures/forwards/swaps/institutional access this project doesn't
+     have? Flag explicitly when a retail proxy is only an approximation
+     of what the paper actually studied.
+   - **Validation stage**: always "Literature only" at this stage (a
+     source existing is not the same as a rule being backtested) — state
+     it anyway for consistency with how this project tracks
+     already-built candidates.
 5. **Why it's plausible** — the economic or structural rationale for why
    this edge should exist. Do not fold this silently into the mechanism
-   description — call it out explicitly, even briefly, so it's clear
-   *why* this should work, not just *what* it does.
+   description — call it out explicitly.
 6. **Data requirements** — what data it needs, and whether that's
    free/cheap or a feasibility risk (see constraints above).
 7. **How it differs from what's already been tried** — one explicit
    sentence per candidate tying it back to the "don't re-propose" list
    above (both the technical-signal list and, if relevant, the specific
-   weakly-sourced niches named there from a prior pass). This field is
-   easy to skip when candidates are visually grouped by tier instead of
-   listed flat — don't skip it; every candidate needs its own sentence,
-   not just a shared intro paragraph for the whole report.
+   weakly-sourced niches named there from a prior pass).

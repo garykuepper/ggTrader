@@ -145,6 +145,32 @@ Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
   anything where index membership timing matters — the latter is
   survivorship-biased.
 - Full methodology lessons: `docs/research/RESEARCH_SNAPSHOT.md` §3.
+- **If the candidate came from `WEB_RESEARCH_CANDIDATES.md`'s cross-asset
+  register, apply its "Minimum validation standard" checklist on top of
+  this project's usual WFO/NDH/DSR gate**, since a source existing and
+  saying something plausible (Validation stage: Literature only, by
+  construction, for every entry there) is not the same as a tested rule:
+  freeze the exact rule before testing (instruments, timestamps, signal
+  lags, rebalance rules, entry/exit, risk limits — specified in advance,
+  not tuned after seeing results); use point-in-time data throughout
+  (futures rolls, ETF holdings/NAVs, macro-release timing, universe
+  membership); model full implementation cost (spreads, commissions,
+  market impact, rolls, financing, borrow, margin, funding, on-chain
+  costs where relevant); use a nested, genuinely untouched OOS holdout;
+  correct for multiple testing given how many specifications/windows/
+  filters get tried; measure stress-period behavior (equity/duration/
+  liquidity beta, crisis-period correlation, drawdown overlap with the
+  existing portfolio), not just full-sample correlation — a candidate
+  can look diversified in calm conditions and become equity-sensitive
+  exactly when it matters. A shadow/paper period before real capital is
+  the final step, not a substitute for the above.
+- **A source can validate a mechanism without validating the specific
+  trading rule proposed on top of it** — check `WEB_RESEARCH_CANDIDATES.md`'s
+  per-candidate "Rule correspondence" rating (Direct / Close adaptation /
+  Mechanism only / Unrelated) before assuming the cited paper's result
+  transfers directly to the rule being built. "Mechanism only" candidates
+  need the exact rule designed and justified independently, not just
+  copied from the paper's framing.
 
 ## What you must produce
 
