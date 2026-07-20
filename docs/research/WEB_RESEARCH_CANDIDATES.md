@@ -132,7 +132,30 @@ free but bi-monthly/low-frequency; real-time borrow-fee/utilization data
 engineering time; a free-data-only (bi-monthly short interest) version is
 the first-wave-feasible fallback.
 
-### 4. Crypto perpetual-futures funding-rate carry (delta-neutral)
+### 4. Crypto perpetual-futures funding-rate carry (delta-neutral) — INFEASIBLE for honest WFO (checked 2026-07-20)
+Checked before building anything. Two corrections to the original framing:
+(1) Binance.US does not offer perpetual futures at all (`ccxt.binanceus()`
+reports `has['future']=False`, `has['swap']=False` — spot only, consistent
+with US regulatory restrictions on retail crypto derivatives), so "Kraken
+Futures/Binance US" was never really a two-venue choice — Kraken Futures is
+the only option. (2) Kraken's historical-funding-rates data — verified via
+both `ccxt`'s `fetchFundingRateHistory` (pagination stalls, no further
+progress) and Kraken's own native API
+(`futures.kraken.com/derivatives/api/v3/historical-funding-rates`
+directly) — only retains a **rolling ~1 year** of hourly records (earliest
+available: 2025-07-13, as of this check on 2026-07-20; 8,912 hourly rows ≈
+372 days). This project's WFO methodology needs 12-month train + 3-month
+test *per fold*, with many folds for a credible result (every other
+candidate this session got double-digit folds) — 1 year of total history
+supports essentially zero valid folds. Free third-party aggregators
+(Coinalyze, CF Benchmarks' KFRI) don't offer bulk historical download;
+paid ones (CoinAPI, back to ~2021) would still fall short of this
+project's usual 2015-2020-era eval-window convention and require a paid
+subscription regardless. Deprioritized pending either a much longer
+free-data source or a paid-data decision — same class of blocker as
+candidates #2 and #7 (infeasible for the required methodology, not an
+engineering-effort problem).
+
 *Overlaps with `RESEARCH_SNAPSHOT.md` §6 internal Rank 4 (revisit parked
 crypto-carry) — this entry is the more detailed, citation-backed version;
 check here before restarting that internal item.*

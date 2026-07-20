@@ -110,10 +110,23 @@ sessions) once the block has likely cleared. Do not attempt IP rotation.
 Skip past it for now — it's not blocking the effort-ordered queue below,
 just not runnable this session.
 
-Effort-ordered remaining backlog: next up is **#4 crypto funding-rate
-carry** and **#14 options IV skew** (different asset class/execution
-model, or paid-data risk) — the last two in the active queue. Once #8's
-Google Trends block clears, revisit it alongside those. No Step 4 queued
-yet: pick the next one, copy it into
-`docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
-it here. See the pipeline above for the mechanics.)
+**Candidate #4 (crypto funding-rate carry) was checked and found
+infeasible for an honest WFO (2026-07-20)** — same class of blocker as #2
+and #7, closing the long-parked internal crypto-carry line
+(`RESEARCH_SNAPSHOT.md` §6 Rank 4) on the same evidentiary basis. Kraken
+Futures is the only real venue (Binance.US has no perpetual futures at
+all, spot-only). Kraken's historical-funding-rates data — verified via
+both `ccxt` and Kraken's own native API directly — only retains a rolling
+~1 year of hourly records, nowhere near the 12mo-train + 3mo-test-per-fold,
+many-folds depth this project's WFO requires. Free third-party aggregators
+don't offer bulk historical download; paid ones would still fall short of
+this project's usual eval-window convention. Deprioritized pending either
+a much longer free-data source or a paid-data decision.
+
+Effort-ordered remaining backlog: **#14 options IV skew** is the last
+active item (already flagged from the original scouting report as the
+clearest feasibility risk on the whole list — likely blocked on paid
+historical options data too; check before building). Once #8's Google
+Trends block clears, revisit it. No Step 4 queued yet: pick the next one,
+copy it into `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`,
+and queue it here. See the pipeline above for the mechanics.)

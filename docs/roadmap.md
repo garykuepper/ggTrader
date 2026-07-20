@@ -346,6 +346,19 @@ benefits any future sparse-event strategy in this lab. Full report:
   with. `short_volume_data.py` and the backfill remain reusable
   infrastructure. Full report:
   `docs/research/2026-07-19-short-volume-ratio-nogo.md`.
+* **July 20, 2026**: Checked #4 (crypto perpetual-futures funding-rate
+  carry) for feasibility before building anything — **infeasible for an
+  honest WFO**, closing the long-parked crypto-carry line (§6 internal
+  Rank 4) on the same evidentiary basis, not just deprioritization.
+  Binance.US doesn't offer perpetual futures at all (spot-only, per
+  `ccxt`), so Kraken Futures was always the only real venue. Verified via
+  both `ccxt` and Kraken's own native historical-funding-rates API
+  directly: only a rolling ~1 year of hourly funding data is retained
+  (earliest available 2025-07-13 as of this check) — nowhere near the
+  12mo-train + 3mo-test-per-fold, many-folds depth this project's WFO
+  methodology requires. Same class of blocker as #2 and #7 (infeasible
+  for the required methodology, not an engineering-effort problem). See
+  `docs/research/WEB_RESEARCH_CANDIDATES.md` candidate #4.
 
 ---
 
