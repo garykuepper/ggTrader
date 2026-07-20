@@ -822,11 +822,21 @@ paper's results section to resolve which characterization is correct.**
 
 ---
 
-### A7. Pre-FOMC long-Treasury drift
+### A7. Pre-FOMC long-Treasury drift — RESOLVED, NO-GO (2026-07-20)
 
 *(Prior draft: item 11, Tier 3, "Medium" confidence, sourced to an
 unverified "AEA 2026 draft." Citation now replaced with a verified,
 current, directly-on-point paper — upgraded from parked/Tier-3 status.)*
+
+**Built and tested — clean NO-GO.** New `fomc_calendar.py` (free Fed
+calendar scraper, 122 scheduled meeting dates 2011-2026) + `fomc_drift`
+strategy (long TLT/IEF/EDV the day before, exit at/after). Full 54-fold
+WFO: OOS total return **0.45% over 13.5 years** (essentially flat),
+Sharpe 0.10, WFE 0.44 (below this project's 0.50 overfitting floor),
+regime halt active (winning combo unstable, selected in only 14/54
+folds). Not an eval-window or data-quality artifact — a genuine "no
+exploitable drift in this implementation" result. Full report:
+`docs/research/2026-07-20-fomc-drift-nogo.md`.
 
 **Mechanism.** Long TLT/IEF/EDV on the day before scheduled FOMC meetings,
 exit at or around the announcement.
@@ -864,8 +874,7 @@ Literature only — recent result, not yet broadly independently replicated
 outside its own paper. Treat as a **replication candidate**, not an
 established production anomaly.
 
-**Status: untriaged — no longer test-and-discard given the stronger
-citation; promoted into the active queue.**
+**Status: resolved, NO-GO. See `docs/research/2026-07-20-fomc-drift-nogo.md`.**
 
 ---
 
@@ -1353,8 +1362,11 @@ stronger source or a tightly-scoped falsification test.**
    2026-07-20**: underperforms every static hedge baseline on the same
    instruments (the paper's actual claim). See
    `docs/research/2026-07-20-fx-hedge-overlay-nogo.md`.
-2. **Pre-FOMC Treasury drift replication (A7) — now next up.**
-3. Commodity trend (A3)
+2. ~~Pre-FOMC Treasury drift replication (A7)~~ — **built and tested,
+   REJECTED 2026-07-20**: OOS total return 0.45% over 13.5 years
+   (essentially flat), WFE below the overfitting floor, regime halt
+   active. See `docs/research/2026-07-20-fomc-drift-nogo.md`.
+3. **Commodity trend (A3) — now next up.**
 4. Simplified Treasury curve relative value (A5), clearly labeled an
    approximation
 5. LLM headline drift (A8), only with credible point-in-time data

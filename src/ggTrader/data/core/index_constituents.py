@@ -157,6 +157,8 @@ _SNAPSHOT_REGISTRY: Dict[str, str] = {
     # single-country hedged ETFs (HEWG, HEWU) were delisted 2023-2024 --
     # deliberately excluded, only currently-active pairs included.
     "fx_hedge": "fx_hedge_tickers_snapshot_2026-07-20.txt",
+    # Long-duration Treasury ETFs for fomc_drift (candidate A7).
+    "fomc_treasury": "fomc_treasury_tickers_snapshot_2026-07-20.txt",
 }
 
 

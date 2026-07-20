@@ -398,6 +398,27 @@ benefits any future sparse-event strategy in this lab. Full report:
   CSV data). Full report:
   `docs/research/2026-07-20-fx-hedge-overlay-nogo.md`. Next up: candidate
   A7 (pre-FOMC long-Treasury drift).
+* **July 20, 2026**: Built and tested candidate A7 (pre-FOMC long-Treasury
+  drift) — **REJECTED**, despite a strong, current, directly-on-point
+  citation (Pan & Peng, June 2026). New `fomc_calendar.py` module (free
+  Federal Reserve calendar scraper, two source-page formats stitched
+  together, 122 scheduled FOMC dates 2011-2026, cross-checked against
+  known dates like the December 2015 "liftoff" meeting) + `fomc_drift`
+  strategy (long TLT/IEF/EDV the day before a scheduled announcement,
+  exit at/after, using the `"signals"` protocol for exact-bar timing
+  rather than this lab's monthly-rebalance `"weights"` protocol). Found
+  and fixed a real bug on first run: this lab's OHLCV bars carry a
+  non-midnight time-of-day (`16:00:00+00:00`) while FOMC dates are
+  midnight-normalized, so an exact-timestamp equality check silently
+  matched zero events (an all-zero-trades result was the tell that
+  something was structurally broken, not that there was no signal) —
+  fixed by comparing on calendar date, regression-tested before the fix.
+  Full 54-fold WFO: **OOS total return 0.45% over 13.5 years**
+  (essentially flat), Sharpe 0.10, WFE 0.44 (below the 0.50 overfitting
+  floor), regime halt active (winning combo selected in only 14/54
+  folds) — a clean "no exploitable drift in this implementation" result.
+  Full report: `docs/research/2026-07-20-fomc-drift-nogo.md`. Next up:
+  candidate A3 (commodity medium-term trend).
 
 ---
 

@@ -186,39 +186,55 @@ over this window. Full report:
 the `fx_hedge` universe remain reusable infrastructure for A5/A7 (both
 need FRED-adjacent macro data).
 
+**A7 (pre-FOMC long-Treasury drift) was built and tested — REJECTED
+(2026-07-20)**, despite a strong, current, directly-on-point citation
+(Pan & Peng, June 2026). Built `src/ggTrader/lab/fomc_calendar.py` (free
+Fed calendar scraper, 122 scheduled FOMC dates 2011-2026, two source
+formats stitched together and cross-checked) + `fomc_drift` strategy
+(long TLT/IEF/EDV the day before, exit at/after, `target_kind="signals"`
+protocol for exact-bar entries/exits). Found and fixed a real bug on
+first run: OHLCV bars carry a non-midnight time-of-day
+(`16:00:00+00:00`) while FOMC dates are midnight-normalized, so an
+exact-timestamp match silently matched zero events — fixed by comparing
+on calendar date, regression-tested. Full 54-fold WFO: **OOS total
+return 0.45% over 13.5 years (essentially flat)**, Sharpe 0.10, WFE 0.44
+(below the 0.50 overfitting floor), regime halt active (winning combo
+selected in only 14/54 folds) — a clean "no exploitable drift" result,
+not an eval-window or data-quality artifact. Full report:
+`docs/research/2026-07-20-fomc-drift-nogo.md`. `fomc_calendar.py` remains
+reusable for any future macro-calendar-timed candidate.
+
 **Effort-ordered next-up, per the register's own "home-lab / mostly-ETF
 workflow" ranking** (this project's actual setup):
-1. **A7 — Pre-FOMC long-Treasury drift. Now next up.** Free (TLT/IEF/EDV +
-   FOMC calendar). Promoted from parked status after its citation was
-   replaced with a verified, current (June 2026), directly-on-point paper
-   (Pan & Peng) — the prior version's citation was an unverified draft.
-2. **A3 — Commodity medium-term trend.** Free/cheap ETF proxies. Note this
-   is now a standalone candidate — the register split what was one
-   combined "carry+trend+basis reversal" idea into three independently-
-   evidenced sub-signals (A2/A3/A4); don't assume they combine as
-   originally proposed without testing each separately.
-3. **A5 — Treasury term-structure factors, static/ETF-approximation
+1. **A3 — Commodity medium-term trend. Now next up.** Free/cheap ETF
+   proxies. Note this is now a standalone candidate — the register split
+   what was one combined "carry+trend+basis reversal" idea into three
+   independently-evidenced sub-signals (A2/A3/A4); don't assume they
+   combine as originally proposed without testing each separately.
+2. **A5 — Treasury term-structure factors, static/ETF-approximation
    version only.** Free (TLT/IEF/SHY). Must be explicitly labeled an
    approximation, not a replication — the underlying paper (now upgraded
    to "accepted at Review of Finance") specifies 4 factors, a 3-ETF
    version only captures 3.
-4. **A8 — Headline/LLM sentiment on small/mid-cap equities.** Needs
+3. **A8 — Headline/LLM sentiment on small/mid-cap equities.** Needs
    credible point-in-time headline data — do not proceed on a look-ahead-
    biased feed. Authors themselves warn of a crowding/decay effect as LLM
    use spreads.
-5. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
+4. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
    overlay, not a standalone short — the underlying papers show stress
    raises *two-sided* jump risk, not a reliably negative one.
 
-Pick ONE (A7 is the natural next pick), copy its entry from
+Pick ONE (A3 is the natural next pick), copy its entry from
 `WEB_RESEARCH_CANDIDATES.md` into
 `docs/research/prompts/local-implementation-prompt-TEMPLATE.md` — **also
 apply the register's "Minimum validation standard" 7-point checklist**
 (frozen rule, point-in-time data, full costs, nested OOS, multiple-testing
 correction, stress-period behavior, shadow portfolio) on top of this
-project's usual WFO/NDH/DSR gate, and per A1's lesson, **identify the
-actual correct benchmark for the paper's claim before running the WFO,
-not after** — a standalone-vs-SPY comparison alone would have been
-misleading here. Queue it here as the concrete next step. Also still
-open, lower priority: retry #8's Google Trends backfill once the
-rate-limit has likely cleared.)
+project's usual WFO/NDH/DSR gate. Two candidates in, the standing lesson
+is now: **identify the actual correct benchmark for the paper's specific
+claim before running the WFO, not after** (A1's SPY-vs-static lesson),
+**and watch for all-zero/all-flat results as a signal something is
+structurally broken, not just "no edge"** (A7's timestamp-matching bug —
+verify the mechanism is actually firing before trusting a null result).
+Also still open, lower priority: retry #8's Google Trends backfill once
+the rate-limit has likely cleared.)
