@@ -111,3 +111,23 @@ the magnitude of this rejection (-68.7% MaxDD, worst of the session) and
 that the underlying academic literature already documents the effect
 decaying toward zero even without this distress-filtering, this isn't
 worth the added engineering. Closing this line rather than parking it.
+
+## Addendum (2026-07-20): Event-Study Confirms a Genuine Null, Not a Gate Artifact
+
+Following a broader audit of this project's high strategy-rejection rate,
+a new supplementary test (`src/ggTrader/lab/event_study.py`, a two-sample
+Welch's t-test comparing mean return on "held" days vs ordinary days for
+the same universe) was built specifically because this project's Sharpe-
+based WFO gates are a poor statistical fit for sparse/event-driven
+strategies. Re-checked this candidate through that lens as a
+cross-validation of the original verdict, independent of any Sharpe/NDH
+noise: **6,468 event-day observations vs 511,897 ordinary-day
+observations, mean return 0.084% vs 0.069%, t = 0.35, p = 0.72** — not
+remotely significant, and this is the *gross* (pre-cost) comparison.
+Unlike candidate A7 (pre-FOMC drift), where the same test found a real
+gross effect that trading costs later erased, here there is no
+detectable gross effect at all. This confirms the original NO-GO
+verdict on independent grounds — the catastrophic -68.7% MaxDD reflects
+genuine exposure to a basket of distressed, adverse-selected names during
+market-wide selloffs, not a real reversal signal obscured by noisy gate
+mechanics. No further action warranted.

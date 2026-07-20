@@ -146,3 +146,63 @@ result is not marginally negative but essentially zero, and the
 regime-halt/WFE evidence independently points to instability rather than
 a diluted-but-present signal, this isn't ranked as an active next step;
 noted for the record rather than queued.
+
+## 7. Addendum (2026-07-20): Event-Study Confirms the Effect Is Real But Cost-Eaten
+
+Following a broader audit of this project's high strategy-rejection rate
+(prompted by the user), a new supplementary test was built —
+`src/ggTrader/lab/event_study.py` — specifically because this project's
+Sharpe/NDH/DSR gate machinery is a poor statistical fit for sparse,
+event-driven strategies like this one: individual-fold OOS Sharpe swung
+from **-3.59 to +3.35** across the 54 folds above, because a handful of
+trades dominate an otherwise-flat-cash equity curve. The new tool runs a
+Welch's t-test comparing mean return on "event days" (the trading day
+before a scheduled FOMC announcement) against mean return on ordinary
+days, for the same TLT/IEF/EDV instruments — the same style of test the
+source paper itself uses, and a much less noisy lens than annualized
+fold-level Sharpe for this shape of data.
+
+**Result: the raw effect is real and statistically significant.**
+
+| | n | mean daily return | 
+|---|---|---|
+| Event days (day before FOMC) | 726 | 0.119% |
+| Ordinary days | 10,995 | 0.006% |
+
+**Gross mean difference: 0.113%/day, t = 2.70, p = 0.007** — genuinely
+significant, not noise. This directly corroborates Pan & Peng's finding:
+there *is* a real, detectable pre-FOMC drift in these instruments over
+this sample. The event-study lens is a meaningfully better-powered test
+than the WFO's fold-level Sharpe for this question, precisely because it
+isn't trying to annualize a mostly-flat-cash curve.
+
+**But the effect does not survive realistic trading costs.** Subtracting
+this project's standard round-trip cost assumption (10bps: 5bps slippage
+on entry + 5bps on exit, `STOCK_BASE_CONFIG`'s default) from each
+event-day return collapses the result to noise:
+
+| | mean daily return | t-stat | p-value |
+|---|---|---|---|
+| Gross | 0.113% | 2.70 | **0.007** (significant) |
+| Net of round-trip cost | 0.013% | 0.30 | **0.762** (not significant) |
+
+Annualized (at ~9 scheduled FOMC meetings/year touching all 3
+instruments): **~1.01%/year gross, ~0.11%/year net** — which is
+consistent with, and now precisely explains, the WFO's near-zero
+aggregate CAGR (0.03-0.29% depending on position sizing tested). This
+also confirms position sizing was not the cause of the flat result — a
+10x larger position size (33% vs the 3% default) scaled CAGR
+proportionally (0.03%→0.29%) with Sharpe essentially unchanged, exactly
+as expected mathematically (Sharpe is scale-invariant to leverage absent
+fixed costs).
+
+**Refined verdict: still NO-GO, but now for a precise, well-understood
+reason.** This is not "no effect" (the WFO-only read) and not "a missed
+edge" (a naive read of the gross event-study result alone) — it's "a
+real, academically-genuine anomaly that is too small, at this trading
+frequency (~9 events/year), to clear even modest realistic transaction
+costs." A venue with meaningfully lower round-trip costs than 10bps
+(unlikely for retail-accessible TLT/IEF/EDV) or a much higher-frequency
+variant of the same mechanism would be needed to make this tradeable —
+neither is available to this project. No change to the operational
+recommendation in §5.

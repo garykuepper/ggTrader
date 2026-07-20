@@ -419,6 +419,34 @@ benefits any future sparse-event strategy in this lab. Full report:
   folds) — a clean "no exploitable drift in this implementation" result.
   Full report: `docs/research/2026-07-20-fomc-drift-nogo.md`. Next up:
   candidate A3 (commodity medium-term trend).
+* **July 20, 2026**: Audited the project's high strategy-rejection rate
+  (~30 tried, ~6 deployed) at the user's request. Found and fixed one
+  real gap: `gates.py`'s NDH expectancy calc used raw `total_return_pct`
+  as a stand-in for per-trade expectancy because trade count was never
+  tracked (`simulate_weights`/`simulate_signals` now expose real
+  `n_trades` via vbt's `pf.trades.count()`) — traced through the gate
+  math and confirmed this doesn't retroactively flip any past verdict
+  (NDH only tests expectancy's sign, which was already correct). Built a
+  new supplementary test, `src/ggTrader/lab/event_study.py` (Welch's
+  t-test, event-day vs ordinary-day mean return), specifically for
+  sparse/event-driven candidates where annualized Sharpe is a poor fit
+  (fomc_drift's per-fold OOS Sharpe swung -3.59 to +3.35). Re-checked
+  both sparse closed candidates through this lens: **fomc_drift's effect
+  is real and significant gross (p=0.007, ~1%/year) but is entirely
+  consumed by realistic round-trip trading costs (p=0.76 net)** — a
+  precise, well-understood reason for the NO-GO, not noisy gate math (see
+  addendum in `docs/research/2026-07-20-fomc-drift-nogo.md`).
+  **index_deletion_fade shows no detectable gross effect at all**
+  (p=0.72), confirming its NO-GO independently (addendum in
+  `docs/research/2026-07-17-index-deletion-fade-nogo.md`). Conclusion: the
+  high rejection rate is mostly real and expected (decades-old published
+  anomalies subject to documented decay, retail-implementation gaps for
+  institutional-edge candidates) — not evidence of broken tooling, though
+  the event-study addition is a genuine, lasting improvement for future
+  sparse candidates. 15 new tests, full suite still passing (same 2
+  pre-existing unrelated failures). No mechanical re-run of all closed
+  strategies — the n_trades fix doesn't change their math and no other
+  concrete bugs were found on inspection.
 
 ---
 
