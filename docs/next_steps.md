@@ -136,15 +136,40 @@ IvyDB), exactly as originally flagged, and the signal may just be
 re-deriving #3's already-NO-GO'd borrow-cost signal through a noisier
 instrument anyway. No code built.
 
-**Effort-ordered backlog is now empty of active items.** All 14
-`WEB_RESEARCH_CANDIDATES.md` candidates and all 4
-`RESEARCH_SNAPSHOT.md` §6 internal candidates have been either closed
-NO-GO (10, with the deployed 3-sleeve blend surviving every diversification
-attempt), found infeasible for an honest WFO (#2, #7, #4, #14 — all the
-same paid/point-in-time-data class of blocker), or paused pending a
-transient external block (#8, Google Trends rate limit — retry later, not
-blocked on a design decision). No Step 4 queued: the next move is either
-(a) retry #8's backfill once the rate-limit likely cleared, or (b) run a
-fresh discovery pass (`docs/research/prompts/web-strategy-research-prompt.md`)
-for a new batch of candidates, since this batch is exhausted. See the
-pipeline above for the mechanics.)
+**First 14-candidate batch is fully resolved** (10 NO-GO, 4 infeasible —
+#2/#7/#4/#14, 1 paused — #8). See prior paragraphs above for detail.
+
+**New 2026-07-19 batch: 24 candidates (A-X), all non-US-equity asset
+classes** — merged into `WEB_RESEARCH_CANDIDATES.md` from a discovery pass
+explicitly scoped away from equities per the pivot recommendation in
+`RESEARCH_SNAPSHOT.md` §4/§6 (nine consecutive equity diversification
+sleeves had failed). Covers FX, commodities, Treasuries/rates, and crypto.
+All untriaged — nothing backtested yet. Full detail, citations, and a
+25-row triage table in `WEB_RESEARCH_CANDIDATES.md`'s new batch section.
+
+**Effort-ordered next-up, per the batch's own Tier 1 (all independently
+verified, high-pedigree, from a genuinely different asset class than
+anything tried so far):**
+1. **A — Cross-currency basis / CIP deviation harvesting (FX).** Free FRED
+   data + FX ETFs. Best-supported idea in the whole batch (2 independently
+   verified papers).
+2. **B — Commodity carry + trend + short-term basis reversal.** Free/cheap
+   ETF proxies (PDBC/GCC/DBC); 3 independently verified sources, the
+   strongest cross-report overlap in the batch.
+3. **C-i — Treasury term-structure factors (static version only, skip the
+   unverified HMM-regime variant C-ii).** Free (TLT/IEF/SHY + FRED).
+4. **D — FOMC-window spillover trading in country ETFs.** Free/cheap
+   (FOMC calendar + intraday country-ETF bars) — note this needs intraday
+   data, check what's already available in this project before assuming
+   it's free.
+5. **E — Dynamic FX hedge overlay (carry+value+trend).** Free/cheap.
+6. **F — Cross-asset base-pair selection.** Portfolio-construction
+   technique rather than a single signal; full version is futures-heavy,
+   home-lab version needs an ETF-proxy design pass first.
+
+Pick ONE (A is the natural first pick — best-supported, plainest data
+requirements, most different from anything in the roster), copy its entry
+from `WEB_RESEARCH_CANDIDATES.md` into
+`docs/research/prompts/local-implementation-prompt-TEMPLATE.md`, and queue
+it here as the concrete next step. Also still open, lower priority: retry
+#8's Google Trends backfill once the rate-limit has likely cleared.)
