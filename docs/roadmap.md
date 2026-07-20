@@ -378,6 +378,26 @@ benefits any future sparse-event strategy in this lab. Full report:
   blend (Sharpe 1.14, MaxDD -5.39%) survived every diversification
   attempt this session. See `docs/research/WEB_RESEARCH_CANDIDATES.md`
   candidate #14.
+* **July 20, 2026**: Built and tested candidate A1 (dynamic FX hedge
+  overlay) from the cross-asset register's home-lab priority queue —
+  **REJECTED**. New `fred_data.py` module (free FRED CSV data, no API
+  key, point-in-time correct) + `fx_hedge_overlay` strategy (carry+PPP-
+  value+trend on EWJ/DXJ and EZU/HEZU hedged/unhedged pairs, the only
+  currently-active such pairs). Standalone WFO Sharpe 0.41 vs SPY 0.74
+  looked like a routine NO-GO, but SPY is the wrong benchmark for this
+  candidate — the paper's actual claim is dynamic-vs-static hedging, not
+  beating equities. The decisive test compared the dynamic strategy
+  against static 100%-unhedged/100%-hedged/50-50 baselines on the same
+  instruments over the same OOS window: **the dynamic strategy
+  underperformed every static alternative** (0.41 vs 0.53/0.66/0.73
+  Sharpe), a clean "the signal construction adds no value" rejection
+  (WFE 1.10, not overfitting). Found and fixed two real bugs along the
+  way: a `DataFrame.iterrows()` pandas gotcha that silently corrupted
+  cached FRED values to `NaT`, and a mis-verified FRED series ID (an
+  `curl | wc -l` check had miscounted an HTML 404 page's lines as real
+  CSV data). Full report:
+  `docs/research/2026-07-20-fx-hedge-overlay-nogo.md`. Next up: candidate
+  A7 (pre-FOMC long-Treasury drift).
 
 ---
 

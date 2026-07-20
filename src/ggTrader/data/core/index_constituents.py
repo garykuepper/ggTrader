@@ -149,6 +149,14 @@ _SNAPSHOT_REGISTRY: Dict[str, str] = {
     "nasdaq100": "nasdaq100_tickers_snapshot_2026-06-09.txt",
     "russell2000": "russell2000_tickers_snapshot_2026-06-09.txt",
     "midcap400": "midcap400_tickers_snapshot_2026-06-24.txt",
+    # Fixed basket, not an index -- no point-in-time membership changes to
+    # track, but reuses the snapshot-universe path since it's the same
+    # "static ticker list" shape. Currency-hedged/unhedged ETF pairs for
+    # fx_hedge_overlay: EWJ/DXJ (Japan, JPY, active since 2006) and
+    # EZU/HEZU (Eurozone, EUR, active since 2014). Several other
+    # single-country hedged ETFs (HEWG, HEWU) were delisted 2023-2024 --
+    # deliberately excluded, only currently-active pairs included.
+    "fx_hedge": "fx_hedge_tickers_snapshot_2026-07-20.txt",
 }
 
 

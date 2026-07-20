@@ -20,7 +20,7 @@ from ggTrader.lab.strategies.momentum import STRATEGY_NAMES, build_strategy
 from ggTrader.lab.strategies.signals import SIGNAL_STRATEGY_NAMES, build_signal_strategy
 from ggTrader.lab.strategy import LabConfig
 
-UNIVERSE_CHOICES = ("sp500", "nasdaq100", "russell2000", "midcap400")
+UNIVERSE_CHOICES = ("sp500", "nasdaq100", "russell2000", "midcap400", "fx_hedge")
 
 
 def _parse_blend_sleeves(spec: str) -> List[tuple[str, str]]:

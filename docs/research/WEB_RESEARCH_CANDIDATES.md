@@ -576,9 +576,20 @@ paused candidate #8 (Google Trends retail-attention).
 Candidates with a plausible path to a specific tradable rule, roughly
 ordered by how directly the cited evidence maps to the proposed trade.
 
-### A1. Dynamic FX hedge overlay (carry + value + trend)
+### A1. Dynamic FX hedge overlay (carry + value + trend) — RESOLVED, NO-GO (2026-07-20)
 
 *(Prior draft: item 4, Tier 1, "High" confidence.)*
+
+**Built and tested — clean NO-GO.** Retail-proxy implementation (EWJ/DXJ +
+EZU/HEZU hedged/unhedged pairs, carry via FRED short rates, PPP-value via
+FRED CPI+spot, trend via price-ratio momentum). SPY is not the right
+benchmark for this candidate — the decisive test compares the dynamic
+strategy against static hedge-ratio baselines on the same instruments
+(the paper's actual claim): dynamic OOS Sharpe 0.41 vs static 50/50's
+0.66 and static 100%-hedged's 0.73 — **the dynamic strategy underperforms
+every static alternative tested**, not an eval-window or overfitting
+rejection (WFE 1.10, healthy). Full report:
+`docs/research/2026-07-20-fx-hedge-overlay-nogo.md`.
 
 **Mechanism.** Vary the hedge ratio on international equity/bond exposure
 using carry, PPP-value, and trend signals instead of a static
@@ -604,11 +615,14 @@ hedging sleeve, not another equity-entry refinement.
 **Evidence status:** Peer-reviewed/published. **Rule correspondence:**
 Direct to close. **Implementation class:** Professional natively; retail
 proxy available via hedged/unhedged ETF pairs. **Validation stage:**
-Literature only. **This remains the cleanest source-to-rule
-correspondence in the whole register — the top build candidate,
-including for a home-lab/ETF workflow.**
+Walk-forward OOS (rejected). Had the cleanest source-to-rule
+correspondence in the whole register, and was tested first for that
+reason — the citation/mechanism strength did not translate into a viable
+rule once actually built and tested against the paper's own benchmark
+(static hedging), which is exactly the kind of gap this register's
+"Rule correspondence" rating exists to flag as a risk, not a guarantee.
 
-**Status: untriaged.**
+**Status: resolved, NO-GO. See `docs/research/2026-07-20-fx-hedge-overlay-nogo.md`.**
 
 ---
 
@@ -1335,8 +1349,11 @@ stronger source or a tightly-scoped falsification test.**
 ## Where to spend research time first (per the independent review)
 
 **For a home-lab / mostly-ETF workflow — this project's own default:**
-1. Dynamic FX hedge overlay (A1)
-2. Pre-FOMC Treasury drift replication (A7)
+1. ~~Dynamic FX hedge overlay (A1)~~ — **built and tested, REJECTED
+   2026-07-20**: underperforms every static hedge baseline on the same
+   instruments (the paper's actual claim). See
+   `docs/research/2026-07-20-fx-hedge-overlay-nogo.md`.
+2. **Pre-FOMC Treasury drift replication (A7) — now next up.**
 3. Commodity trend (A3)
 4. Simplified Treasury curve relative value (A5), clearly labeled an
    approximation

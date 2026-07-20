@@ -7,6 +7,7 @@ from .conviction import ConvictionBBSignal
 from .ensemble import EnsembleConvictionSignal, EnsembleSignal
 from .ensemble_ic import EnsembleICSignal
 from .ensemble_kelly import EnsembleKellySignal
+from .fx_hedge_overlay import FxHedgeOverlayStrategy
 from .idio_vol import IdioVolStrategy
 from .index_deletion import IndexDeletionFadeStrategy
 from .insider_cluster import InsiderClusterBuyStrategy
@@ -72,6 +73,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "retail_attention": RetailAttentionStrategy,
     "short_interest": ShortInterestStrategy,
     "short_volume_ratio": ShortVolumeRatioStrategy,
+    "fx_hedge_overlay": FxHedgeOverlayStrategy,
     "leveraged_rotation_sp500": LeveragedRotationSp500,
     "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
     "leveraged_rotation_russell2000": LeveragedRotationRussell2000,
@@ -100,6 +102,7 @@ __all__ = [
     "RetailAttentionStrategy",
     "ShortInterestStrategy",
     "ShortVolumeRatioStrategy",
+    "FxHedgeOverlayStrategy",
     "LeveragedRotationSp500",
     "LeveragedRotationNasdaq100",
     "LeveragedRotationRussell2000",

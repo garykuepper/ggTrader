@@ -167,40 +167,58 @@ actual documented arbitrage (needs forwards/swaps/funding access this
 project doesn't have). **The dynamic FX hedge overlay (A1) is now the
 clear top pick** instead.
 
+**A1 (dynamic FX hedge overlay) was built and tested — REJECTED
+(2026-07-20)**, despite having the cleanest source-to-rule correspondence
+in the whole register. Built `src/ggTrader/lab/fred_data.py` (free FRED
+CSV data, no API key, point-in-time correct) + `fx_hedge_overlay` strategy
+(carry+PPP-value+trend on EWJ/DXJ + EZU/HEZU hedged/unhedged pairs, the
+only currently-active such pairs — others were found delisted 2023-2024).
+Standalone WFO Sharpe 0.41 looked weak but SPY isn't the real benchmark
+here — the decisive test compared the dynamic strategy against static
+hedge-ratio baselines (100% unhedged / 100% hedged / 50-50) on the *same*
+instruments, the paper's actual claim. **The dynamic strategy
+underperformed every static alternative** (0.41 vs 0.53/0.66/0.73 Sharpe),
+not an eval-window or overfitting rejection (WFE 1.10, healthy) — the
+signal construction just doesn't add value over doing nothing clever;
+simply staying 100% hedged was the best of the four FX configurations
+over this window. Full report:
+`docs/research/2026-07-20-fx-hedge-overlay-nogo.md`. `fred_data.py` and
+the `fx_hedge` universe remain reusable infrastructure for A5/A7 (both
+need FRED-adjacent macro data).
+
 **Effort-ordered next-up, per the register's own "home-lab / mostly-ETF
 workflow" ranking** (this project's actual setup):
-1. **A1 — Dynamic FX hedge overlay (carry+value+trend).** Free/cheap spot
-   FX, rate differentials, CPI data. Cleanest source-to-rule
-   correspondence in the whole register — published, high-pedigree paper
-   (Castro/Hamill/Harber/Harvey/Van Hemert 2025).
-2. **A7 — Pre-FOMC long-Treasury drift.** Free (TLT/IEF/EDV + FOMC
-   calendar). Promoted from parked status after its citation was replaced
-   with a verified, current (June 2026), directly-on-point paper (Pan &
-   Peng) — the prior version's citation was an unverified draft.
-3. **A3 — Commodity medium-term trend.** Free/cheap ETF proxies. Note this
+1. **A7 — Pre-FOMC long-Treasury drift. Now next up.** Free (TLT/IEF/EDV +
+   FOMC calendar). Promoted from parked status after its citation was
+   replaced with a verified, current (June 2026), directly-on-point paper
+   (Pan & Peng) — the prior version's citation was an unverified draft.
+2. **A3 — Commodity medium-term trend.** Free/cheap ETF proxies. Note this
    is now a standalone candidate — the register split what was one
    combined "carry+trend+basis reversal" idea into three independently-
    evidenced sub-signals (A2/A3/A4); don't assume they combine as
    originally proposed without testing each separately.
-4. **A5 — Treasury term-structure factors, static/ETF-approximation
+3. **A5 — Treasury term-structure factors, static/ETF-approximation
    version only.** Free (TLT/IEF/SHY). Must be explicitly labeled an
    approximation, not a replication — the underlying paper (now upgraded
    to "accepted at Review of Finance") specifies 4 factors, a 3-ETF
    version only captures 3.
-5. **A8 — Headline/LLM sentiment on small/mid-cap equities.** Needs
+4. **A8 — Headline/LLM sentiment on small/mid-cap equities.** Needs
    credible point-in-time headline data — do not proceed on a look-ahead-
    biased feed. Authors themselves warn of a crowding/decay effect as LLM
    use spreads.
-6. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
+5. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
    overlay, not a standalone short — the underlying papers show stress
    raises *two-sided* jump risk, not a reliably negative one.
 
-Pick ONE (A1 is the natural first pick), copy its entry from
+Pick ONE (A7 is the natural next pick), copy its entry from
 `WEB_RESEARCH_CANDIDATES.md` into
 `docs/research/prompts/local-implementation-prompt-TEMPLATE.md` — **also
 apply the register's "Minimum validation standard" 7-point checklist**
 (frozen rule, point-in-time data, full costs, nested OOS, multiple-testing
 correction, stress-period behavior, shadow portfolio) on top of this
-project's usual WFO/NDH/DSR gate — and queue it here as the concrete next
-step. Also still open, lower priority: retry #8's Google Trends backfill
-once the rate-limit has likely cleared.)
+project's usual WFO/NDH/DSR gate, and per A1's lesson, **identify the
+actual correct benchmark for the paper's claim before running the WFO,
+not after** — a standalone-vs-SPY comparison alone would have been
+misleading here. Queue it here as the concrete next step. Also still
+open, lower priority: retry #8's Google Trends backfill once the
+rate-limit has likely cleared.)
