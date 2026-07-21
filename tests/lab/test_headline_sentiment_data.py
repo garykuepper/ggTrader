@@ -138,6 +138,42 @@ class TestScoreHeadline:
         assert score == 0.0
 
 
+class TestScoreUniqueHeadlines:
+    def test_scores_each_unique_headline_exactly_once(self):
+        """A headline tagging 3 symbols must only trigger one LLM call, not
+        3 -- sentiment doesn't depend on which tagged symbol you ask about,
+        and re-scoring the same text per symbol wastes real backfill time
+        (and, for a paid model, real money)."""
+        from ggTrader.lab.headline_sentiment_data import score_unique_headlines
+
+        news_df = pd.DataFrame(
+            {
+                "news_id": [1, 1, 1, 2],
+                "symbol": ["AAPL", "MSFT", "GOOG", "TSLA"],
+                "headline": ["Same headline"] * 3 + ["Different headline"],
+                "created_at": pd.to_datetime(["2024-01-01"] * 4),
+            }
+        )
+        calls = []
+
+        def fake_llm_call(prompt: str) -> str:
+            calls.append(prompt)
+            return "1"
+
+        scores = score_unique_headlines(news_df, llm_call=fake_llm_call)
+        assert len(calls) == 2  # one per unique news_id, not one per row
+        assert sorted(scores["news_id"]) == [1, 2]
+
+    def test_empty_input_returns_empty_frame(self):
+        from ggTrader.lab.headline_sentiment_data import score_unique_headlines
+
+        df = score_unique_headlines(
+            pd.DataFrame(columns=["news_id", "symbol", "headline", "created_at"])
+        )
+        assert df.empty
+        assert set(df.columns) == {"news_id", "score"}
+
+
 class TestAvailableAsOf:
     def test_excludes_headlines_within_the_publish_lag(self):
         df = pd.DataFrame(
@@ -185,7 +221,7 @@ def test_cache_news_and_scores_roundtrip():
     marker = "ZZTEST_NEWS"
     with get_engine().begin() as conn:
         conn.execute(text("DELETE FROM news_headlines WHERE symbol = :s"), {"s": marker})
-        conn.execute(text("DELETE FROM headline_sentiment_scores WHERE symbol = :s"), {"s": marker})
+        conn.execute(text("DELETE FROM headline_sentiment_scores WHERE news_id = 999001"))
 
     news_df = pd.DataFrame(
         {
@@ -202,9 +238,7 @@ def test_cache_news_and_scores_roundtrip():
     assert len(loaded) == 1
     assert loaded.iloc[0]["headline"] == "Test headline for roundtrip"
 
-    n2 = cache_sentiment_scores(
-        pd.DataFrame({"news_id": [999001], "symbol": [marker], "score": [1.0]})
-    )
+    n2 = cache_sentiment_scores(pd.DataFrame({"news_id": [999001], "score": [1.0]}))
     assert n2 == 1
     scores = load_sentiment_scores([marker], "2026-01-01", "2026-12-31")
     assert len(scores) == 1
@@ -212,7 +246,7 @@ def test_cache_news_and_scores_roundtrip():
 
     with get_engine().begin() as conn:
         conn.execute(text("DELETE FROM news_headlines WHERE symbol = :s"), {"s": marker})
-        conn.execute(text("DELETE FROM headline_sentiment_scores WHERE symbol = :s"), {"s": marker})
+        conn.execute(text("DELETE FROM headline_sentiment_scores WHERE news_id = 999001"))
 
 
 class TestDefaultNewsFetchPagination:

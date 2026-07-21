@@ -219,10 +219,8 @@ CREATE TABLE IF NOT EXISTS news_headlines (
 
 _SENTIMENT_SCHEMA = """
 CREATE TABLE IF NOT EXISTS headline_sentiment_scores (
-    news_id bigint NOT NULL,
-    symbol text NOT NULL,
-    score double precision NOT NULL,
-    PRIMARY KEY (news_id, symbol)
+    news_id bigint PRIMARY KEY,
+    score double precision NOT NULL
 )
 """
 
@@ -278,19 +276,25 @@ def load_news(symbols: List[str], start: str, end: str) -> pd.DataFrame:
 
 
 def cache_sentiment_scores(scores_df: pd.DataFrame) -> int:
-    """Upsert a (news_id, symbol, score) frame into the DB."""
+    """Upsert a (news_id, score) frame into the DB -- one row per UNIQUE
+    headline, not per (headline, symbol) pair. A headline's sentiment
+    doesn't depend on which of its tagged symbols you're evaluating, so
+    scoring it once per news_id (not once per symbol it happens to
+    mention) avoids redundant LLM calls -- a real cost/time difference at
+    backfill scale, since some headlines tag several tickers."""
     if scores_df.empty:
         return 0
     ensure_schema()
+    deduped = scores_df.drop_duplicates(subset="news_id")
     rows = [
-        {"news_id": int(rec["news_id"]), "symbol": rec["symbol"], "score": float(rec["score"])}
-        for rec in scores_df.to_dict("records")
+        {"news_id": int(rec["news_id"]), "score": float(rec["score"])}
+        for rec in deduped.to_dict("records")
     ]
     upsert_sql = text(
         """
-        INSERT INTO headline_sentiment_scores (news_id, symbol, score)
-        VALUES (:news_id, :symbol, :score)
-        ON CONFLICT (news_id, symbol) DO UPDATE SET score = EXCLUDED.score
+        INSERT INTO headline_sentiment_scores (news_id, score)
+        VALUES (:news_id, :score)
+        ON CONFLICT (news_id) DO UPDATE SET score = EXCLUDED.score
         """
     )
     with get_engine().begin() as conn:
@@ -299,13 +303,16 @@ def cache_sentiment_scores(scores_df: pd.DataFrame) -> int:
 
 
 def load_sentiment_scores(symbols: List[str], start: str, end: str) -> pd.DataFrame:
-    """Load cached sentiment scores, joined to their headline's created_at,
-    for ``symbols`` in [start, end]."""
+    """Load cached sentiment scores, joined back out to every (symbol,
+    created_at) a headline was tagged with, for ``symbols`` in
+    [start, end]. One score can produce multiple rows here (one per
+    tagged symbol in the requested universe) -- that fan-out happens at
+    load time, not at scoring time."""
     query = text(
         """
-        SELECT s.news_id, s.symbol, s.score, h.created_at FROM headline_sentiment_scores s
-        JOIN news_headlines h ON h.news_id = s.news_id AND h.symbol = s.symbol
-        WHERE s.symbol = ANY(:symbols) AND h.created_at >= :start AND h.created_at <= :end
+        SELECT h.news_id, h.symbol, s.score, h.created_at FROM news_headlines h
+        JOIN headline_sentiment_scores s ON s.news_id = h.news_id
+        WHERE h.symbol = ANY(:symbols) AND h.created_at >= :start AND h.created_at <= :end
         ORDER BY h.created_at
         """
     )
@@ -315,3 +322,19 @@ def load_sentiment_scores(symbols: List[str], start: str, end: str) -> pd.DataFr
     if not df.empty:
         df["created_at"] = pd.to_datetime(df["created_at"])
     return df
+
+
+def score_unique_headlines(
+    news_df: pd.DataFrame, llm_call: LiteLlmCall | None = None
+) -> pd.DataFrame:
+    """Score every UNIQUE headline (deduped by news_id) exactly once,
+    regardless of how many symbols it's tagged with in ``news_df``."""
+    if news_df.empty:
+        return pd.DataFrame(columns=["news_id", "score"])
+    unique = news_df.drop_duplicates(subset="news_id")
+    return pd.DataFrame(
+        {
+            "news_id": unique["news_id"].tolist(),
+            "score": [score_headline(h, llm_call=llm_call) for h in unique["headline"]],
+        }
+    )
