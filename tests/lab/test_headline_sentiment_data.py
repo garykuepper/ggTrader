@@ -118,6 +118,35 @@ class TestParseSentimentResponse:
         assert isinstance(result, float)
 
 
+class TestLoadLitellmKey:
+    def test_prefers_environment_variable_when_set(self, monkeypatch):
+        from ggTrader.lab.headline_sentiment_data import _load_litellm_key
+
+        monkeypatch.setenv("LITELLM_MASTER_KEY", "env-key")
+        assert _load_litellm_key() == "env-key"
+
+    def test_falls_back_to_the_litellm_project_env_file(self, monkeypatch, tmp_path):
+        """Regression: ggTrader has no LITELLM_MASTER_KEY of its own -- the
+        first real backfill smoke test silently scored every headline as
+        neutral because os.environ['LITELLM_MASTER_KEY'] raised a KeyError
+        that score_headline's fail-safe swallowed without surfacing it."""
+        import ggTrader.lab.headline_sentiment_data as mod
+
+        monkeypatch.delenv("LITELLM_MASTER_KEY", raising=False)
+        env_file = tmp_path / "litellm.env"
+        env_file.write_text("SOME_OTHER_VAR=x\nLITELLM_MASTER_KEY=file-key\n")
+        monkeypatch.setattr(mod, "_LITELLM_ENV_PATH", str(env_file))
+        assert mod._load_litellm_key() == "file-key"
+
+    def test_raises_a_clear_error_when_key_is_nowhere_to_be_found(self, monkeypatch, tmp_path):
+        import ggTrader.lab.headline_sentiment_data as mod
+
+        monkeypatch.delenv("LITELLM_MASTER_KEY", raising=False)
+        monkeypatch.setattr(mod, "_LITELLM_ENV_PATH", str(tmp_path / "does_not_exist.env"))
+        with pytest.raises(RuntimeError, match="LITELLM_MASTER_KEY"):
+            mod._load_litellm_key()
+
+
 class TestScoreHeadline:
     def test_calls_llm_and_parses_result(self):
         calls = []

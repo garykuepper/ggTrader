@@ -154,16 +154,50 @@ def parse_sentiment_response(response: str) -> float:
         return 0.0
 
 
+#: ggTrader has no LiteLLM env of its own -- the master key lives in the
+#: separate litellm docker project's .env (same host, same user, per
+#: AGENTS.md's project layout). Same cross-project read pattern as
+#: scripts/check_opencode_quota.py.
+_LITELLM_ENV_PATH = "/home/flynn/docker/litellm/.env"
+
+
+def _load_litellm_key() -> str:
+    key = os.environ.get("LITELLM_MASTER_KEY")
+    if key:
+        return key
+    import pathlib
+
+    env_path = pathlib.Path(_LITELLM_ENV_PATH)
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            line = line.strip()
+            if line.startswith("LITELLM_MASTER_KEY="):
+                return line.split("=", 1)[1].strip().strip('"')
+    raise RuntimeError(
+        f"LITELLM_MASTER_KEY not found in environment or {_LITELLM_ENV_PATH} -- "
+        "cannot score headlines without it."
+    )
+
+
 def _default_llm_call(prompt: str) -> str:
     import requests
 
     resp = requests.post(
         "http://localhost:4000/v1/chat/completions",
-        headers={"Authorization": f"Bearer {os.environ['LITELLM_MASTER_KEY']}"},
+        headers={"Authorization": f"Bearer {_load_litellm_key()}"},
         json={
             "model": "deepseek-flash",
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 5,
+            # deepseek-flash is a reasoning model -- it spends tokens on
+            # hidden chain-of-thought (surfaced separately as
+            # `reasoning_content`) before emitting the final answer in
+            # `content`. A tight max_tokens (5, tried first) cut it off
+            # mid-thought every time, leaving `content` empty and silently
+            # scoring every headline neutral via score_headline's fail-safe
+            # -- confirmed by inspecting the raw response directly. ~70-80
+            # tokens is enough for this model to finish reasoning and reply
+            # with just "-1"/"0"/"1"; 300 leaves comfortable headroom.
+            "max_tokens": 300,
             "temperature": 0.0,
         },
         timeout=30,
