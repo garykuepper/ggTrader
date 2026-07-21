@@ -461,6 +461,23 @@ benefits any future sparse-event strategy in this lab. Full report:
   combo. Full report: `docs/research/2026-07-20-commodity-trend-nogo.md`.
   Next up: candidate A5 (Treasury term-structure factors, ETF-
   approximation version).
+* **July 20, 2026**: Built and tested candidate A5 (Treasury term-
+  structure factors, ETF-approximation version) — **REJECTED**. New
+  `TreasuryCurveStrategy`: a curve steepener/flattener regime signal using
+  real FRED constant-maturity Treasury yields (`DGS2`/`DGS10`, reusing
+  `fred_data.py`), one-hot rotating across SHY/IEF/TLT. Standalone WFO
+  Sharpe 0.19 looked routinely weak, but per A1's lesson the decisive test
+  compared the dynamic strategy against static duration baselines on the
+  same OOS window: **static 100% SHY beats it on every metric** (Sharpe
+  0.90 vs 0.19, CAGR 1.5% vs 0.8%, MaxDD -5.7% vs -8.2%) — the "dynamic
+  loses to static" pattern from A1, now confirmed twice. Full report:
+  `docs/research/2026-07-20-treasury-curve-nogo.md`. This closes only the
+  3-ETF approximation — the paper's actual 4-factor model needs
+  instruments (cash Treasuries/STRIPS/futures) this project doesn't have,
+  and remains untested. Four candidates now tested from the cross-asset
+  register (A1/A7/A3/A5), all REJECTED. Next up: candidate A8
+  (headline/LLM sentiment), pending a point-in-time data feasibility
+  check.
 
 ---
 

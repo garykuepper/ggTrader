@@ -222,35 +222,44 @@ untested) if commodity exposure is revisited — A4 (short-term basis
 reversal) is **not** ETF-approximable per the register's own note (needs
 futures data this project doesn't have).
 
+**A5 (Treasury term-structure factors, ETF-approximation) was built and
+tested — REJECTED (2026-07-20)**. Built `TreasuryCurveStrategy` (FRED
+10y-2y curve-slope regime signal, one-hot rotation across SHY/IEF/TLT).
+Standalone WFO Sharpe 0.19 looked routinely weak, but per A1's lesson the
+decisive test compared it against static duration baselines: **static
+100% SHY beats the dynamic strategy on every metric** (Sharpe 0.90 vs
+0.19, CAGR 1.5% vs 0.8%, MaxDD -5.7% vs -8.2%) — the same "dynamic loses
+to static" pattern as A1, now confirmed twice. Full report:
+`docs/research/2026-07-20-treasury-curve-nogo.md`. This closes the
+approximation only — the paper's actual 4-factor model (needs cash
+Treasuries/STRIPS/futures) remains untested and out of reach at this
+project's current data-access tier.
+
 **Effort-ordered next-up, per the register's own "home-lab / mostly-ETF
 workflow" ranking** (this project's actual setup):
-1. **A5 — Treasury term-structure factors, static/ETF-approximation
-   version only. Now next up.** Free (TLT/IEF/SHY). Must be explicitly
-   labeled an approximation, not a replication — the underlying paper
-   (now upgraded to "accepted at Review of Finance") specifies 4 factors,
-   a 3-ETF version only captures 3.
-2. **A8 — Headline/LLM sentiment on small/mid-cap equities.** Needs
-   credible point-in-time headline data — do not proceed on a look-ahead-
-   biased feed. Authors themselves warn of a crowding/decay effect as LLM
-   use spreads.
-3. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
+1. **A8 — Headline/LLM sentiment on small/mid-cap equities. Now next
+   up.** Needs credible point-in-time headline data — do not proceed on
+   a look-ahead-biased feed. Authors themselves warn of a crowding/decay
+   effect as LLM use spreads. Check feasibility (a real point-in-time
+   headline source) before building anything, same discipline as #2/#7/
+   #4/#14 in the original batch.
+2. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
    overlay, not a standalone short — the underlying papers show stress
    raises *two-sided* jump risk, not a reliably negative one.
 
-Pick ONE (A5 is the natural next pick), copy its entry from
+Pick ONE (A8 is the natural next pick), copy its entry from
 `WEB_RESEARCH_CANDIDATES.md` into
 `docs/research/prompts/local-implementation-prompt-TEMPLATE.md` — **also
 apply the register's "Minimum validation standard" 7-point checklist**
-(frozen rule, point-in-time data, full costs, nested OOS, multiple-testing
-correction, stress-period behavior, shadow portfolio) on top of this
-project's usual WFO/NDH/DSR gate. Three candidates in, standing lessons:
-**identify the actual correct benchmark for the paper's specific claim
-before running the WFO, not after** (A1's SPY-vs-static lesson), **watch
-for all-zero/all-flat results as a signal something is structurally
-broken, not just "no edge"** (A7's timestamp-matching bug), and **for
-sparse/event-driven candidates specifically, run the event-study
+on top of this project's usual WFO/NDH/DSR gate. Four candidates in
+(A1/A7/A3/A5, all REJECTED), standing lessons: **identify the actual
+correct benchmark for the paper's specific claim before running the WFO,
+not after** — this has now caught two "dynamic loses to static" cases
+(A1, A5) that a naive SPY-only comparison would have mischaracterized as
+routine underperformance rather than the more precise finding that
+timing subtracts value; **watch for all-zero/all-flat results as a
+signal something is structurally broken** (A7's timestamp-matching bug);
+and **for sparse/event-driven candidates, run the event-study
 supplementary test** (`src/ggTrader/lab/event_study.py`) alongside the
-WFO — it distinguishes "no real effect" from "real effect, eaten by
-costs" far more precisely than fold-level Sharpe alone. Also still open,
-lower priority: retry #8's Google Trends backfill once the rate-limit
-has likely cleared.)
+WFO. Also still open, lower priority: retry #8's Google Trends backfill
+once the rate-limit has likely cleared.)

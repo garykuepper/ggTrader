@@ -28,6 +28,7 @@ UNIVERSE_CHOICES = (
     "fx_hedge",
     "fomc_treasury",
     "commodity_trend",
+    "treasury_curve",
 )
 
 

@@ -730,10 +730,19 @@ stage:** Literature only.
 
 ---
 
-### A5. Treasury term-structure factors
+### A5. Treasury term-structure factors — RESOLVED, NO-GO (2026-07-20)
 
 *(Prior draft: item 6, Tier 1. Citation status upgraded; important
 implementation caveat added.)*
+
+**Built and tested (ETF-approximation version) — clean NO-GO.** Curve
+steepener/flattener regime signal (FRED 10y-2y slope z-score) rotating
+one-hot across SHY/IEF/TLT. Standalone WFO Sharpe 0.19 looked routinely
+weak, but the decisive test (per A1's lesson) compared it against static
+duration baselines: **static 100% SHY beats the dynamic strategy on every
+metric** (Sharpe 0.90 vs 0.19, CAGR 1.5% vs 0.8%, MaxDD -5.7% vs -8.2%) —
+the same "dynamic loses to static" pattern as A1. Full report:
+`docs/research/2026-07-20-treasury-curve-nogo.md`.
 
 **Mechanism.** Curve-factor positioning (steepener/flattener, relative
 value across duration buckets, roll-down) using investable, non-
@@ -765,10 +774,10 @@ signals, not price-only timing.
 **Rule correspondence:** Direct for the full model; **mechanism only**
 for a 3-ETF approximation. **Implementation class:** Professional for the
 full model; Retail for the explicitly-labeled approximation. **Validation
-stage:** Literature only. **Label any ETF-only version as an exploratory
-approximation, not a replication.**
+stage:** Walk-forward OOS (approximation rejected; full model untested).
 
-**Status: untriaged.**
+**Status: resolved, NO-GO (approximation only). See
+`docs/research/2026-07-20-treasury-curve-nogo.md`.**
 
 ---
 
@@ -1377,9 +1386,12 @@ stronger source or a tightly-scoped falsification test.**
 3. ~~Commodity trend (A3)~~ — **built and tested, REJECTED 2026-07-20**:
    OOS Sharpe 0.13 vs SPY 0.74, MaxDD -37.0% (worse than SPY), regime halt
    active. See `docs/research/2026-07-20-commodity-trend-nogo.md`.
-4. **Simplified Treasury curve relative value (A5), clearly labeled an
-   approximation — now next up.**
-5. LLM headline drift (A8), only with credible point-in-time data
+4. ~~Simplified Treasury curve relative value (A5)~~ — **built and
+   tested, REJECTED 2026-07-20**: dynamic curve-regime timing loses to
+   static 100% SHY on every metric (Sharpe 0.90 vs 0.19). See
+   `docs/research/2026-07-20-treasury-curve-nogo.md`.
+5. **LLM headline drift (A8), only with credible point-in-time data —
+   now next up.**
 6. Stablecoin stress as a risk overlay (B1)
 7. FOMC country-ETF residual-continuation test (B2)
 

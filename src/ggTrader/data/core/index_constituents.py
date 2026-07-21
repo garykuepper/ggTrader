@@ -166,6 +166,11 @@ _SNAPSHOT_REGISTRY: Dict[str, str] = {
     # deliberately excluded from the cross-sectional universe itself --
     # they'd dilute the ranking signal, not add a distinct commodity.
     "commodity_trend": "commodity_trend_tickers_snapshot_2026-07-20.txt",
+    # Treasury duration-bucket ETFs for treasury_curve (candidate A5):
+    # SHY (1-3yr), IEF (7-10yr), TLT (20yr+) -- the register's own named
+    # example for an ETF-approximation of Filipovic/Pelger/Ye's 4-factor
+    # term-structure model.
+    "treasury_curve": "treasury_curve_tickers_snapshot_2026-07-20.txt",
 }
 
 

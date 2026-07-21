@@ -48,6 +48,7 @@ from .signals import (
     VolumeBBReversionSignal,
     WfoTournamentSignal,
 )
+from .treasury_curve import TreasuryCurveStrategy
 
 STRATEGY_REGISTRY: dict[str, Any] = {
     "ema_cross": EmaCrossSignal,
@@ -78,6 +79,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "fx_hedge_overlay": FxHedgeOverlayStrategy,
     "fomc_drift": FomcDriftStrategy,
     "commodity_trend": CommodityTrendStrategy,
+    "treasury_curve": TreasuryCurveStrategy,
     "leveraged_rotation_sp500": LeveragedRotationSp500,
     "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
     "leveraged_rotation_russell2000": LeveragedRotationRussell2000,
@@ -109,6 +111,7 @@ __all__ = [
     "FxHedgeOverlayStrategy",
     "FomcDriftStrategy",
     "CommodityTrendStrategy",
+    "TreasuryCurveStrategy",
     "LeveragedRotationSp500",
     "LeveragedRotationNasdaq100",
     "LeveragedRotationRussell2000",
