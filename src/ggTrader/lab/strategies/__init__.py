@@ -10,6 +10,7 @@ from .ensemble_ic import EnsembleICSignal
 from .ensemble_kelly import EnsembleKellySignal
 from .fomc_drift import FomcDriftStrategy
 from .fx_hedge_overlay import FxHedgeOverlayStrategy
+from .headline_sentiment import HeadlineSentimentStrategy
 from .idio_vol import IdioVolStrategy
 from .index_deletion import IndexDeletionFadeStrategy
 from .insider_cluster import InsiderClusterBuyStrategy
@@ -77,6 +78,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "short_interest": ShortInterestStrategy,
     "short_volume_ratio": ShortVolumeRatioStrategy,
     "fx_hedge_overlay": FxHedgeOverlayStrategy,
+    "headline_sentiment": HeadlineSentimentStrategy,
     "fomc_drift": FomcDriftStrategy,
     "commodity_trend": CommodityTrendStrategy,
     "treasury_curve": TreasuryCurveStrategy,
@@ -109,6 +111,7 @@ __all__ = [
     "ShortInterestStrategy",
     "ShortVolumeRatioStrategy",
     "FxHedgeOverlayStrategy",
+    "HeadlineSentimentStrategy",
     "FomcDriftStrategy",
     "CommodityTrendStrategy",
     "TreasuryCurveStrategy",
