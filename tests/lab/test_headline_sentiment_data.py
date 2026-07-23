@@ -166,6 +166,16 @@ class TestScoreHeadline:
         score = score_headline("Some headline", llm_call=failing_llm_call)
         assert score == 0.0
 
+    def test_none_response_defaults_to_neutral_not_a_crash(self):
+        # A reasoning model can exhaust its token budget on hidden chain-of-
+        # thought and return HTTP 200 with `content: null` -- no exception,
+        # so this must be handled as a fail-safe path, not rely on try/except.
+        def none_returning_llm_call(prompt: str) -> str:
+            return None
+
+        score = score_headline("Some headline", llm_call=none_returning_llm_call)
+        assert score == 0.0
+
 
 class TestScoreUniqueHeadlines:
     def test_scores_each_unique_headline_exactly_once(self):

@@ -215,6 +215,11 @@ def score_headline(headline: str, llm_call: LiteLlmCall | None = None) -> float:
         response = call(_SENTIMENT_PROMPT.format(headline=headline))
     except Exception:  # noqa: BLE001 -- fail-safe scoring, see docstring
         return 0.0
+    if not response:
+        # A reasoning model can return HTTP 200 with `content: null` when it
+        # exhausts its token budget on hidden chain-of-thought -- no
+        # exception is raised, so this must be checked explicitly.
+        return 0.0
     return parse_sentiment_response(response)
 
 
