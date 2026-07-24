@@ -243,6 +243,49 @@ class TestAvailableAsOf:
         assert out["created_at"].dt.tz is None
 
 
+class TestLoadSentimentScores:
+    def test_handles_rows_spanning_a_dst_transition(self, monkeypatch):
+        # ggtrader_db's session timezone is America/Los_Angeles, so
+        # timestamptz rows come back as tz-aware datetime.datetime objects
+        # whose UTC offset differs across a DST boundary (-08:00 vs -07:00).
+        # pd.to_datetime() on a plain Series of such mixed-offset objects
+        # raises ValueError unless utc=True is passed explicitly -- this
+        # reproduces that against a real WFO date range crossing March/Nov.
+        import datetime as dt
+
+        from ggTrader.lab import headline_sentiment_data as mod
+
+        pst = dt.timezone(dt.timedelta(hours=-8))
+        pdt = dt.timezone(dt.timedelta(hours=-7))
+        rows = [
+            (1, "AAPL", 1.0, dt.datetime(2024, 1, 15, 9, 0, tzinfo=pst)),
+            (2, "AAPL", -1.0, dt.datetime(2024, 7, 15, 9, 0, tzinfo=pdt)),
+        ]
+
+        class FakeResult:
+            def fetchall(self):
+                return rows
+
+        class FakeConn:
+            def execute(self, query, params):
+                return FakeResult()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        class FakeEngine:
+            def begin(self):
+                return FakeConn()
+
+        monkeypatch.setattr(mod, "get_engine", lambda: FakeEngine())
+
+        result = mod.load_sentiment_scores(["AAPL"], "2024-01-01", "2024-12-31")
+        assert len(result) == 2
+
+
 @pytest.mark.integration
 def test_cache_news_and_scores_roundtrip():
     from sqlalchemy import text

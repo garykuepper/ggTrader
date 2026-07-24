@@ -310,7 +310,11 @@ def load_news(symbols: List[str], start: str, end: str) -> pd.DataFrame:
         rows = conn.execute(query, {"symbols": symbols, "start": start, "end": end}).fetchall()
     df = pd.DataFrame(rows, columns=["news_id", "symbol", "headline", "created_at"])
     if not df.empty:
-        df["created_at"] = pd.to_datetime(df["created_at"])
+        # created_at rows can carry different UTC offsets across a DST
+        # boundary (the DB session timezone is America/Los_Angeles) --
+        # pd.to_datetime() rejects mixed-offset tz-aware datetime.datetime
+        # objects unless utc=True is passed explicitly.
+        df["created_at"] = pd.to_datetime(df["created_at"], utc=True)
     return df
 
 
@@ -359,7 +363,11 @@ def load_sentiment_scores(symbols: List[str], start: str, end: str) -> pd.DataFr
         rows = conn.execute(query, {"symbols": symbols, "start": start, "end": end}).fetchall()
     df = pd.DataFrame(rows, columns=["news_id", "symbol", "score", "created_at"])
     if not df.empty:
-        df["created_at"] = pd.to_datetime(df["created_at"])
+        # created_at rows can carry different UTC offsets across a DST
+        # boundary (the DB session timezone is America/Los_Angeles) --
+        # pd.to_datetime() rejects mixed-offset tz-aware datetime.datetime
+        # objects unless utc=True is passed explicitly.
+        df["created_at"] = pd.to_datetime(df["created_at"], utc=True)
     return df
 
 
