@@ -1,8 +1,40 @@
-# Headline/LLM Sentiment on Small/Mid-Cap Equities (Candidate A8): NO-GO
+# Headline/LLM Sentiment on Small/Mid-Cap Equities (Candidate A8): NO-GO (PROVISIONAL)
 
 **Classification:** Internal Quantitative Research & Engineering Strategy
 **Date:** 2026-07-24
+**Amended:** 2026-07-25 — verdict downgraded to **provisional**
 **Audience:** Principal Engineering Team & Quantitative Research Collaborators
+
+> **⚠️ AMENDMENT (2026-07-25) — this verdict is provisional, not settled.**
+> The implementation audit (`docs/research/2026-07-25-strategy-implementation-audit.md`)
+> found three independent reasons this test is underpowered, none of them a
+> code defect:
+>
+> 1. **3 folds.** Every other verdict in the research record rests on 20–54
+>    folds. One of A8's three gate-failed, leaving two usable observations.
+> 2. **Unrepresentative sample.** The alphabetically-first-50 midcap400 pilot
+>    is ~2× overweight Industrials (30% vs 17% in a random baseline from the
+>    rest of the universe) and underweight Consumer Cyclical (10% vs 15%).
+>    This is the check §6 below called "the one cheap thing worth verifying" —
+>    now done, and it does show a skew.
+> 3. **7–8 positions.** Only 50 of ~400 midcap400 names had sentiment
+>    coverage, so the top-quintile bucket resolved to ~7 stocks (vs 92-99 for
+>    comparable candidates). That concentration mechanically explains both the
+>    fold-to-fold swing (0.27 / 1.44 / -0.38) and the NDH variance-gate
+>    failure, without needing a signal-quality explanation.
+>
+> **What still holds:** the direction. Benchmark choice does not rescue it —
+> over its own OOS window midcaps performed comparably to SPY (MDY Sharpe
+> 1.39 / CAGR 22.9%; IJH 1.41 / 23.3%; SPY 1.61 / 21.6%), so A8's 0.25 / 4.8%
+> underperforms its own universe just as badly.
+>
+> **Also note:** the SPY benchmark figure of 1.14 quoted below is understated
+> by ~29% by the data bug in §2.0 of the audit (true value ≈ 1.61). Both
+> strategy and benchmark are deflated by the same factor, so the comparison
+> direction is unaffected.
+>
+> **Treat as: unfavourable direction, low confidence.** Not a structural
+> refutation of the mechanism.
 
 ## 1. Executive Summary & Core Engine Audit
 

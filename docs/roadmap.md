@@ -523,6 +523,38 @@ benefits any future sparse-event strategy in this lab. Full report:
   into B3's open-ended design work; next session should either resolve
   B3's NAV-data question or check B4 (crypto volatility-premium regime
   indicator) fresh.
+* **July 25, 2026 (implementation audit — no code changes)**: Audited all 17
+  registered strategies to separate "genuinely failing" from "failed by our
+  own bugs," per an explicit ask. Full report:
+  `docs/research/2026-07-25-strategy-implementation-audit.md`. **Headline
+  finding — a severe data-integrity bug:** `SPY` is the only yfinance symbol
+  with bars outside the 16:00/17:00 close convention (826 rows at 04:00/05:00
+  from 2022-12-27). Since `lab/cli.py:152` and `lab/blend.py:86` load
+  `universe + ["SPY"]` into one frame, the union index carries **two rows per
+  trading day from 2023** (462-504/yr vs the correct ~250), which understates
+  every equity Sharpe covering 2023+ by **~29%** (measured: AAPL buy-and-hold
+  0.848 contaminated vs 1.187 clean; CAGR/MaxDD unaffected). Corroborated by
+  A8's cited SPY 1.14 vs a true 1.61 — ratio 0.708 ≈ 1/√2. Rankings survive
+  (the benchmark deflates identically) but absolute values and DSR gate
+  outcomes do not. **`pairs_stat_arb`'s NO-GO is invalidated for 2023+** —
+  the same bug made its coverage guard reject every pair, so it selected
+  nothing for ~a third of its window; needs a re-run. Also found: a ~2-day
+  `transaction_date`-vs-`filing_date` lookahead in `insider_cluster` (inflates
+  results, so its NO-GO stands), a display-only bug making the `OOS` column
+  constant `0.00` in every WFO table ever printed, and `commodity_trend`
+  reaching a wrong conclusion about its vol filter by benchmarking against SPY
+  instead of commodities (NO-GO survives on Sharpe 0.13 vs DBC 0.24, but the
+  filter *did* cut drawdown: -37.0% vs -59.9%). `headline_sentiment` (A8)
+  downgraded to **provisional** (3 folds vs 20-54 elsewhere; ~2×
+  Industrials-skewed sample; 7-8 stock portfolio). Verified sound: the harness
+  produces GO for the deployed baseline (positive control), survivorship
+  handling (universe contains SIVB/FRC/TWTR; 1.7% missing, mostly renames),
+  point-in-time discipline and next-bar entry across all strategies,
+  `ensemble_ic`'s leak guard, and costs (optimistic, so rejections are
+  conservative). `retail_attention` confirmed correctly labeled PAUSED (its
+  Google Trends table has 0 rows). On-deck feasibility consolidated: A4/A6/A9/
+  B2 infeasible, B3 blocked, A2 thin (~3 usable pairs), B1/B4 data-feasible
+  but gated on crypto trading being dormant.
 
 ---
 

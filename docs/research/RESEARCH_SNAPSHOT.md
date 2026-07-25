@@ -210,6 +210,37 @@ verdict — more durable than the roster above:
 
 ## 5. Known documentation gaps
 
+- ⚠️ **Every equity Sharpe figure in this snapshot and in every report
+  covering 2023 or later is understated by ~29%.** `SPY` is the only
+  yfinance symbol carrying bars outside the 16:00/17:00 close convention
+  (826 rows at 04:00/05:00 from 2022-12-27 on). Because `lab/cli.py:152` and
+  `lab/blend.py:86` load `universe + ["SPY"]` into one frame, the union index
+  gets two rows per trading day from 2023 (462-504 rows/yr vs the correct
+  ~250), deflating Sharpe by ~1/√2. CAGR and MaxDD are unaffected. Rankings
+  are unaffected (the benchmark deflates identically), but absolute values
+  and DSR gate outcomes are. See
+  `docs/research/2026-07-25-strategy-implementation-audit.md` §2.0. **Fix
+  before the next backtest.**
+- ⚠️ `pairs_stat_arb`'s NO-GO is **invalid for 2023 onward** — the same bug
+  made its correlation-coverage guard reject every pair, so it selected
+  nothing for roughly the last third of its window. Needs a re-run (audit
+  §2.6).
+- ⚠️ `insider_cluster_buy` keys off `transaction_date` rather than
+  `filing_date`, a median 2-day lookahead. Direction of bias inflates its
+  results, so its NO-GO stands — but the code should be corrected (audit
+  §2.1B).
+- ⚠️ The per-fold `OOS` column in every WFO table ever printed is a constant
+  `0.00` — `composite_score` min-max normalizes a single-element list.
+  Display-only; no verdict affected (audit §2.1A).
+- ⚠️ `headline_sentiment` (A8) is downgraded to **provisional**: 3 folds
+  (vs 20-54 elsewhere), a ~2× Industrials-skewed 50-name sample, and a
+  7-8 stock portfolio. Direction unfavourable and benchmark-robust, but
+  confidence is low (audit §2.5).
+- `commodity_trend`'s report benchmarks a commodity strategy against SPY and
+  concludes its vol filter failed on drawdown. Against its own asset class
+  the filter **worked** (-37.0% vs DBC -59.9% / GSG -76.9%). The NO-GO
+  survives on Sharpe (0.13 vs DBC 0.24) but the stated reasoning is wrong
+  (audit §2.3).
 - ~~`docs/roadmap.md` §6 "Project Timeline" stops at July 6~~ — **fixed
   2026-07-16**, and further extended through 2026-07-19 this run (nine
   candidate closures + four infeasibility findings, July 17-19).
