@@ -895,7 +895,7 @@ established production anomaly.
 
 ---
 
-### A8. Headline/LLM sentiment on small/mid-cap equities
+### A8. Headline/LLM sentiment on small/mid-cap equities — RESOLVED, NO-GO (2026-07-24)
 
 *(Prior draft: item 12, Tier 3, "High" confidence. Publication claim
 corrected; author-acknowledged decay risk added.)*
@@ -931,8 +931,12 @@ correspondence:** Direct, with an author-acknowledged decay risk.
 **Implementation class:** Professional (point-in-time data is the hard
 part). **Validation stage:** Literature only.
 
-**Status: untriaged — only with credible point-in-time data; do not
-proceed on a look-ahead-biased headline feed.**
+**Status: RESOLVED, NO-GO.** Built and tested — genuine point-in-time
+data confirmed feasible (Alpaca `/news`, 0-day publish lag by design), a
+50-symbol/2-year midcap400 pilot backfilled and scored (7,975 headlines,
+real score variance), but WFO OOS Sharpe 0.25 vs SPY 1.14, aggregate WFE
+0.02 (target ≥ 0.50) — the in-sample edge does not survive out of sample.
+Full report: `docs/research/2026-07-24-headline-sentiment-nogo.md`.
 
 ---
 

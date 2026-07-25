@@ -478,6 +478,26 @@ benefits any future sparse-event strategy in this lab. Full report:
   register (A1/A7/A3/A5), all REJECTED. Next up: candidate A8
   (headline/LLM sentiment), pending a point-in-time data feasibility
   check.
+* **July 24, 2026**: Built and tested candidate A8 (headline/LLM
+  sentiment on small/mid-cap equities) — **REJECTED**. New
+  `HeadlineSentimentStrategy` + `headline_sentiment_data.py`: LLM-scored
+  (`deepseek-flash` via local LiteLLM) sentiment on Alpaca `/news`
+  headlines, point-in-time correct (0-day publish lag by design), a
+  50-symbol/2-year midcap400 pilot (7,975 unique headlines scored, real
+  score variance). WFO (3 folds, rolling 12mo/3mo): OOS Sharpe 0.25 vs
+  SPY 1.14, CAGR 4.8% vs 22.9%, aggregate WFE 0.02 (target ≥ 0.50) — the
+  in-sample edge (train Sharpe ~0.80-1.01) essentially evaporates OOS,
+  and one fold fails the NDH gate outright on parameter instability. Not
+  an infrastructure failure — three real bugs (reasoning-model token
+  truncation, a `None`-response crash, a DST timezone bug in
+  `pd.to_datetime`) were found and fixed via TDD along the way, and the
+  sentiment pipeline itself scores correctly. Full report:
+  `docs/research/2026-07-24-headline-sentiment-nogo.md`. Five candidates
+  now tested from the cross-asset register (A1/A7/A3/A5/A8), all
+  REJECTED, closing the register's home-lab priority queue. Next up per
+  the register's ordering: candidate B1 (stablecoin stress signal) — a
+  risk-overlay/leverage-reduction trigger, not a standalone alpha sleeve,
+  a different shape of candidate than everything tested so far.
 
 ---
 
