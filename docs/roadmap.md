@@ -498,6 +498,31 @@ benefits any future sparse-event strategy in this lab. Full report:
   the register's ordering: candidate B1 (stablecoin stress signal) — a
   risk-overlay/leverage-reduction trigger, not a standalone alpha sleeve,
   a different shape of candidate than everything tested so far.
+* **July 24, 2026 (feasibility-only pass, B1/B2/B3, no builds)**: Checked
+  the next three B-series candidates for feasibility before committing
+  build time; each hit a real gap, none started. **B1 (stablecoin
+  stress):** data is actually excellent and already in the DB (`BTC-USD`
+  + `USDT-USD` at 1-minute granularity, Kraken spot, no new integration
+  needed) but (a) minute bars are stale (stop 2025-12-31) and (b) crypto
+  trading itself is dormant (`kraken_ledger` last entry 2026-06-06, no
+  active cron) — B1's design is a risk overlay on live crypto exposure,
+  and there's currently no live crypto exposure to overlay. **B2 (FOMC
+  country-ETF price discovery):** blocked by a project-wide gap, not a
+  missing backfill — every non-crypto symbol in the DB (1,415 of them) is
+  daily-bar-only (yfinance); the mechanism needs the ETF's first 15-30
+  minute reaction to an FOMC announcement, which daily bars structurally
+  cannot capture, and free intraday-equity sources don't have the history
+  for a multi-year backtest. **B3 (bond ETF stale-NAV dislocations):**
+  partially feasible (Treasury yields already on hand from A5, credit-
+  spread FRED series and `HYG`/`JNK`/`LQD` prices are easy adds) but the
+  actual signal input — historical NAV/premium-discount data — has no
+  confirmed free source yet, and the register's own recommended redesign
+  (a fair-value-residual estimate from bond trades + Treasury + credit-
+  index moves, not the raw discount) is a meaningfully heavier build than
+  any candidate tested so far. Paused here by request rather than pushing
+  into B3's open-ended design work; next session should either resolve
+  B3's NAV-data question or check B4 (crypto volatility-premium regime
+  indicator) fresh.
 
 ---
 
