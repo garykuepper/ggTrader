@@ -346,33 +346,54 @@ the next candidate is tested.
 
 ## 5. Operational Roadmap: Recommended First Action
 
-**Fix the SPY duplicate-timestamp contamination (§2.0) before running another
-backtest.** Nothing else in this list matters as much. Three parts, in order:
+> **STATUS 2026-07-25: all three bugs are fixed** (commit `1b9b7f5`). This
+> section records what was done and what remains. 792 tests pass.
 
-1. **Clean the data.** Delete or re-normalize the 826 anomalous SPY rows
-   (`venue='yfinance'`, `interval='1d'`, time-of-day ∉ {16:00, 17:00}), and
-   decide whether SPY's 782 `kraken_spot` rows belong in the table at all.
-2. **Stop the re-contamination at the source.** Find the second ingest path
-   (most likely the live/paper trader fetching SPY as its benchmark) and make
-   its timestamp normalization match the research loader's, so the write
-   upserts rather than inserting a parallel row.
-3. **Add a guard.** `load_ohlcv` should assert one row per symbol per bar —
-   a cheap `index.duplicated()` check would have caught this on day one and
-   would catch the next occurrence of the same class of bug.
+**1. SPY contamination (§2.0) — FIXED.** `lab.data.collapse_daily_duplicates`
+now keeps only the timestamp convention with real cross-sectional coverage and
+drops the sparse minority. Verified end-to-end: AAPL buy-and-hold 2023-01→
+2026-06 goes **0.848 → 1.187** Sharpe, exactly matching a clean load;
+rows/year **462/504/500 → 250/252/250**; zero duplicate dates.
 
-**Then re-run `pairs_stat_arb`'s WFO** (§2.6). It is the one verdict this audit
-invalidates: it selected nothing at all from 2023 onward, so roughly a third of
-its window was never really tested.
+*Two things changed from this report's original recommendation, both after
+looking at the data:*
 
-**Then fix the two lesser bugs** — neither requires re-running a verdict:
+- **The 826 DB rows were deliberately left in place.** 184 of them are the
+  *only* row for their date, so the blanket delete recommended above would
+  have lost data. The read-path fix handles them losslessly.
+- **A date-merge would have been wrong.** The two conventions are offset by
+  one session — the canonical rows label each bar with the *previous*
+  calendar day (2023 shows AAPL with **zero Friday bars and 45 Sunday
+  bars**), while SPY's stray rows use the true session date. Merging by date
+  would have aligned SPY's Friday close against every other symbol's
+  Thursday close. Dropping the minority convention is correct because SPY's
+  sessions are all present in the canonical rows anyway.
 
-4. **`oos_score`** — either compute the OOS composite against a meaningful
-   reference set, or drop the column and print `oos_sharpe` instead (which is
-   what readers assume it already shows). Lowest-risk fix: change the renderer
-   at `wfo.py:949` to use `r['oos_sharpe']`.
-5. **`insider_cluster`** — switch the event date from `transaction_date` to
-   `filing_date` (already stored, `form4_data.py:62`), mirroring
-   `congress_trades.py:93-97`. Its NO-GO will not change direction.
+**Not fixed at the source.** The ingest path that writes the stray rows was
+not changed: `data/live/cached_yfinance_loader.py` is live-trader runtime
+code and is hook-protected, so the fix was scoped to the research boundary.
+The DB will keep accumulating stray SPY rows; the research path is now immune
+to them, but this should be closed properly while the trader is stopped.
+
+**2. `insider_cluster` lookahead (§2.1B) — FIXED.** Clustering still uses
+`transaction_date` (the burst of buying is the signal), but events now fire on
+the latest `filing_date` among the cluster's members, mirroring
+`congress_trades`. Falls back to the SEC two-business-day deadline when
+`filing_date` is null, and never lets a late filing surface a cluster before
+its trade.
+
+**3. WFO `OOS` column (§2.1A) — FIXED.** Now renders the fold's OOS Sharpe,
+with the adjacent column switched to IS Sharpe so the WFE beside it
+(= OOS/IS) is verifiable by eye. Header relabelled `IS_SR`/`OOS_SR`.
+
+### Still outstanding
+
+**Re-run `pairs_stat_arb`'s WFO** (§2.6) — the one verdict this audit
+invalidates. It selected nothing at all from 2023 onward, so roughly a third
+of its window was never really tested. The fix should restore it; the verdict
+may or may not survive.
+
+**Close the ingest path** (above) from a shell with the live trader stopped.
 
 **Do not** spend LLM budget on an A8 full-universe retest yet. The cheap
 version of that decision is already made below.

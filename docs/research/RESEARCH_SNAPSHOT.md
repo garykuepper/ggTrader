@@ -219,19 +219,25 @@ verdict — more durable than the roster above:
   ~250), deflating Sharpe by ~1/√2. CAGR and MaxDD are unaffected. Rankings
   are unaffected (the benchmark deflates identically), but absolute values
   and DSR gate outcomes are. See
-  `docs/research/2026-07-25-strategy-implementation-audit.md` §2.0. **Fix
-  before the next backtest.**
+  `docs/research/2026-07-25-strategy-implementation-audit.md` §2.0.
+  **✅ FIXED 2026-07-25** (`1b9b7f5`) via `lab.data.collapse_daily_duplicates`
+  — AAPL buy-and-hold verified 0.848 → 1.187, rows/year back to ~250. Every
+  number in this snapshot predating that commit is still the deflated one and
+  should be re-measured before being quoted as absolute. The stray-row ingest
+  path is *not* yet fixed (it lives in hook-protected live-trader code), so
+  the DB will keep accumulating them — the research path is simply immune now.
 - ⚠️ `pairs_stat_arb`'s NO-GO is **invalid for 2023 onward** — the same bug
   made its correlation-coverage guard reject every pair, so it selected
   nothing for roughly the last third of its window. Needs a re-run (audit
   §2.6).
-- ⚠️ `insider_cluster_buy` keys off `transaction_date` rather than
-  `filing_date`, a median 2-day lookahead. Direction of bias inflates its
-  results, so its NO-GO stands — but the code should be corrected (audit
-  §2.1B).
-- ⚠️ The per-fold `OOS` column in every WFO table ever printed is a constant
-  `0.00` — `composite_score` min-max normalizes a single-element list.
-  Display-only; no verdict affected (audit §2.1A).
+- ✅ `insider_cluster_buy` keyed off `transaction_date` rather than
+  `filing_date`, a median 2-day lookahead — **FIXED 2026-07-25** (`1b9b7f5`).
+  Bias inflated its results, so its NO-GO stands (audit §2.1B).
+- ✅ The per-fold `OOS` column in every WFO table printed before 2026-07-25
+  is a constant `0.00` — `composite_score` min-max normalizes a single-element
+  list. Display-only, no verdict affected. **FIXED** (`1b9b7f5`): the column
+  now shows OOS Sharpe, and the one beside it IS Sharpe, so WFE is verifiable
+  by eye (audit §2.1A).
 - ⚠️ `headline_sentiment` (A8) is downgraded to **provisional**: 3 folds
   (vs 20-54 elsewhere), a ~2× Industrials-skewed 50-name sample, and a
   7-8 stock portfolio. Direction unfavourable and benchmark-robust, but
