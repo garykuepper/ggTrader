@@ -1048,3 +1048,86 @@ def test_cli_wfo_accepts_weight_strategy():
     args = parser.parse_args(["--strategy", "xs_momentum", "--wfo"])
     assert args.strategy == "xs_momentum"
     assert args.wfo is True
+
+
+class TestWfoTableOosColumn:
+    """The per-fold OOS column must report the fold's actual out-of-sample
+    Sharpe.
+
+    Regression test for audit 2026-07-25 §2.1A: the column was rendered
+    from `oos_score`, which is `composite_score(test_metrics)[0]` where
+    `test_metrics` always holds exactly one combo (`winner_grid =
+    [deploy_params]`). `composite_score` min-max normalizes within the
+    list it is given, and `_min_max_normalize` returns [0.0] when
+    min == max -- so the column was a hardcoded 0.00 in every WFO table
+    ever printed, regardless of performance.
+    """
+
+    @staticmethod
+    def _fold(oos_sharpe, oos_score=0.0):
+        return {
+            "fold_num": 1,
+            "train_start": pd.Timestamp("2024-01-01"),
+            "train_end": pd.Timestamp("2025-01-01"),
+            "test_start": pd.Timestamp("2025-01-01"),
+            "test_end": pd.Timestamp("2025-04-01"),
+            "winner_combo": "demo__x1",
+            "winner_params": {"x": 1},
+            "train_score": 0.80,
+            "oos_score": oos_score,
+            "gates_passed": True,
+            "wfe": 0.5,
+            "is_sharpe": 1.0,
+            "oos_sharpe": oos_sharpe,
+            "halted": False,
+            "used_anchor": False,
+        }
+
+    def _render(self, oos_sharpe):
+        from ggTrader.lab.wfo import format_wfo_table
+
+        return format_wfo_table(
+            [self._fold(oos_sharpe)],
+            {"sharpe": 0.5, "cagr_pct": 5.0, "max_drawdown_pct": -10.0},
+            {"sharpe": 1.0, "cagr_pct": 10.0, "max_drawdown_pct": -8.0},
+            {"combo": "demo__x1", "params": {"x": 1}, "train_metrics": {}, "stability": 1.0},
+            "demo",
+            1,
+            1,
+        )
+
+    def test_positive_oos_sharpe_is_shown_not_zero(self):
+        out = self._render(1.44)
+        assert "1.44" in out, f"fold OOS Sharpe missing from table:\n{out}"
+
+    def test_negative_oos_sharpe_is_shown(self):
+        out = self._render(-0.38)
+        assert "-0.38" in out, f"negative fold OOS Sharpe missing:\n{out}"
+
+    def test_distinct_oos_values_render_differently(self):
+        """Two folds with very different OOS results must not print the
+        same number -- the exact symptom of the constant-0.00 bug."""
+        assert self._render(1.44) != self._render(-0.38)
+
+    def test_train_and_oos_columns_are_both_sharpe_so_wfe_is_verifiable(self):
+        """WFE is OOS Sharpe / IS Sharpe, so the two columns either side of
+        it must be those same Sharpes -- otherwise the row cannot be
+        checked by eye and mixes units (composite score vs Sharpe)."""
+        from ggTrader.lab.wfo import format_wfo_table
+
+        fold = self._fold(0.50)
+        fold["is_sharpe"] = 2.00
+        fold["train_score"] = 0.80  # composite score -- must NOT be shown
+        fold["wfe"] = 0.25
+        out = format_wfo_table(
+            [fold],
+            {"sharpe": 0.5, "cagr_pct": 5.0, "max_drawdown_pct": -10.0},
+            {"sharpe": 1.0, "cagr_pct": 10.0, "max_drawdown_pct": -8.0},
+            {"combo": "demo__x1", "params": {"x": 1}, "train_metrics": {}, "stability": 1.0},
+            "demo",
+            1,
+            1,
+        )
+        row = [ln for ln in out.splitlines() if ln.startswith("1  ")][0]
+        assert "2.00" in row, f"train Sharpe missing from row: {row!r}"
+        assert "0.80" not in row, f"composite score leaked into row: {row!r}"

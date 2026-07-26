@@ -30,6 +30,16 @@ def cluster_events(
     within a trailing cluster_window_days window. One event per cluster --
     firing resets the window so a subsequent purchase inside the same
     already-triggered cluster doesn't re-fire the signal.
+
+    Clustering is measured on ``transaction_date`` (a burst of insiders
+    buying close together is the economic signal), but the returned
+    ``event_date`` is the LATEST ``filing_date`` among the cluster's
+    members -- the moment the cluster actually became visible to the
+    public. Keying the event off the trade date instead gave a median
+    2-day lookahead (p95 5 days) across the 783,982 stored Form 4 rows;
+    see `docs/research/2026-07-25-strategy-implementation-audit.md` §2.1B.
+    The sibling ``congress_trades`` strategy already applies the same
+    filing-date discipline.
     """
     empty = pd.DataFrame(columns=["symbol", "event_date"])
     if transactions.empty:
@@ -41,6 +51,15 @@ def cluster_events(
     if df.empty:
         return empty
     df["transaction_date"] = pd.to_datetime(df["transaction_date"])
+    # filing_date is nullable in the DB; fall back to the SEC's two-business-day
+    # filing deadline, which is also the measured median lag.
+    if "filing_date" in df.columns:
+        filed = pd.to_datetime(df["filing_date"], errors="coerce")
+    else:
+        filed = pd.Series(pd.NaT, index=df.index)
+    df["known_date"] = filed.fillna(df["transaction_date"] + pd.Timedelta(days=2))
+    # A late filing must never make a cluster visible *before* its trade.
+    df["known_date"] = df[["known_date", "transaction_date"]].max(axis=1)
 
     events: List[dict] = []
     for symbol, g in df.sort_values("transaction_date").groupby("symbol"):
@@ -48,11 +67,12 @@ def cluster_events(
         for _, row in g.iterrows():
             date = row["transaction_date"]
             insider = row["insider_cik"]
-            window = [(d, i) for d, i in window if (date - d).days <= cluster_window_days]
-            window.append((date, insider))
-            distinct = {i for _, i in window}
+            window = [(d, i, k) for d, i, k in window if (date - d).days <= cluster_window_days]
+            window.append((date, insider, row["known_date"]))
+            distinct = {i for _, i, _ in window}
             if len(distinct) >= min_insiders:
-                events.append({"symbol": symbol, "event_date": date})
+                # Tradeable only once every member of the cluster is public.
+                events.append({"symbol": symbol, "event_date": max(k for _, _, k in window)})
                 window = []  # cluster consumed -- next purchase starts a fresh one
     return pd.DataFrame(events) if events else empty
 

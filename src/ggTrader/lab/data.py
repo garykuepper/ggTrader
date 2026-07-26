@@ -184,6 +184,56 @@ def fetch_stock_ohlcv(
     return df
 
 
+def collapse_daily_duplicates(wide: pd.DataFrame) -> pd.DataFrame:
+    """Keep only the dominant timestamp convention in a daily OHLCV frame.
+
+    The `ohlcv` table holds daily bars under two mutually-inconsistent
+    timezone conventions, and mixing them corrupts the index:
+
+    * **Canonical** (all ~1,410 equity symbols): 16:00/17:00, and the bar
+      is labelled with the *previous* calendar day -- 2023 shows AAPL with
+      zero Friday bars and 45 Sunday bars, i.e. a uniform -1 day shift.
+      Internally consistent, so backtests align correctly against it.
+    * **yfinance-native** (`SPY` only, 826 rows from 2022-12-27): 04:00/
+      05:00, labelled with the true session date.
+
+    Because the research harness loads ``universe + ["SPY"]`` into one
+    frame (`lab/cli.py`, `lab/blend.py`), the pivot's union index gained a
+    second row per trading day from 2023 on -- every non-SPY symbol NaN on
+    the duplicate -- which deflated every equity Sharpe covering 2023+ by
+    ~1/sqrt(2) (measured: AAPL buy-and-hold 0.848 vs 1.187 clean; CAGR and
+    MaxDD unaffected, as they read endpoints and the drawdown path rather
+    than per-row statistics). See
+    `docs/research/2026-07-25-strategy-implementation-audit.md` §2.0.
+
+    The two conventions are offset by one session, so they cannot be
+    merged by date -- that would align SPY's Friday close against every
+    other symbol's Thursday close. Instead keep the modal time-of-day and
+    drop the minority convention: SPY's sessions are all present in the
+    canonical rows anyway, just labelled the same way as everything else.
+
+    The equivalent fix is deliberately not made in the shared yfinance
+    loader -- that module is live-trader runtime code.
+    """
+    if wide.empty:
+        return wide
+    idx = pd.DatetimeIndex(wide.index)
+    tods = pd.Index(idx.strftime("%H:%M"))
+    if tods.nunique() <= 1:
+        return wide
+    if not pd.Series(idx.normalize()).duplicated().any():
+        return wide
+    # Identify the convention by cross-sectional coverage rather than row
+    # count: rows written by the stray ingest path carry data for that one
+    # symbol only, so they are near-empty across columns, while canonical
+    # rows are populated for the whole universe. Coverage also survives
+    # DST, which legitimately splits the canonical convention across two
+    # times-of-day (16:00 and 17:00).
+    coverage = wide.notna().mean(axis=1).groupby(tods).mean()
+    keep = set(coverage[coverage >= coverage.max() * 0.5].index)
+    return wide[tods.isin(keep)]
+
+
 def load_ohlcv(
     symbols: List[str],
     start: str,
@@ -191,7 +241,7 @@ def load_ohlcv(
     use_negative_cache: bool = False,
 ) -> pd.DataFrame:
     """DB-first daily OHLCV as a (symbol, field) MultiIndex frame."""
-    return fetch_stock_ohlcv(
+    wide = fetch_stock_ohlcv(
         symbols,
         start=start,
         end=end,
@@ -199,6 +249,7 @@ def load_ohlcv(
         use_db_cache=True,
         use_negative_cache=use_negative_cache,
     )
+    return collapse_daily_duplicates(wide)
 
 
 def equity_universe_between(

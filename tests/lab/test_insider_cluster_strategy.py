@@ -5,22 +5,62 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
+
 from ggTrader.lab.strategies.insider_cluster import (
     InsiderClusterBuyStrategy,
     cluster_events,
 )
-
 from ggTrader.lab.strategy import LabConfig
 
 
-def _tx(symbol, insider_cik, date, code="P", is_10b5_1=False):
+def _tx(symbol, insider_cik, date, code="P", is_10b5_1=False, filing_date=None):
+    """A Form 4 row. ``filing_date`` defaults to the SEC's 2-business-day
+    deadline after the trade, which is also the measured median lag across
+    the 783,982 stored rows (p95 = 5 days)."""
+    tx_date = pd.Timestamp(date)
     return {
         "symbol": symbol,
         "insider_cik": insider_cik,
-        "transaction_date": pd.Timestamp(date),
+        "transaction_date": tx_date,
         "transaction_code": code,
         "is_10b5_1_plan": is_10b5_1,
+        "filing_date": pd.Timestamp(filing_date) if filing_date else tx_date + pd.Timedelta(days=2),
     }
+
+
+class TestPointInTimeAvailability:
+    """A Form 4 cluster is tradeable when the filing becomes public, not
+    when the insider traded. Using ``transaction_date`` as the event date
+    gave a median 2-day lookahead (audit 2026-07-25 §2.1B); the sibling
+    ``congress_trades`` strategy already keys off ``filing_date``."""
+
+    def test_event_date_is_the_filing_date_not_the_transaction_date(self):
+        txs = pd.DataFrame(
+            [
+                _tx("AAPL", 1, "2020-01-01", filing_date="2020-01-08"),
+                _tx("AAPL", 2, "2020-01-02", filing_date="2020-01-08"),
+                _tx("AAPL", 3, "2020-01-03", filing_date="2020-01-08"),
+            ]
+        )
+        events = cluster_events(txs, cluster_window_days=30, min_insiders=3)
+        assert len(events) == 1
+        assert events.iloc[0]["event_date"] == pd.Timestamp("2020-01-08"), (
+            "event must fire when the last filing became public, not on the insider's trade date"
+        )
+
+    def test_cluster_completes_on_the_latest_filing_of_its_members(self):
+        """Three insiders traded within days of each other but the third
+        filed late -- the cluster is not knowable until that filing."""
+        txs = pd.DataFrame(
+            [
+                _tx("AAPL", 1, "2020-01-01", filing_date="2020-01-03"),
+                _tx("AAPL", 2, "2020-01-02", filing_date="2020-01-04"),
+                _tx("AAPL", 3, "2020-01-03", filing_date="2020-02-20"),
+            ]
+        )
+        events = cluster_events(txs, cluster_window_days=90, min_insiders=3)
+        assert len(events) == 1
+        assert events.iloc[0]["event_date"] == pd.Timestamp("2020-02-20")
 
 
 class TestClusterEvents:
@@ -35,7 +75,10 @@ class TestClusterEvents:
         events = cluster_events(txs, cluster_window_days=14, min_insiders=3)
         assert len(events) == 1
         assert events.iloc[0]["symbol"] == "AAPL"
-        assert events.iloc[0]["event_date"] == pd.Timestamp("2020-01-10")
+        # The cluster completes on the last insider's trade (2020-01-10) but
+        # only becomes public when that Form 4 is filed -- here the default
+        # two-business-day deadline. See TestPointInTimeAvailability.
+        assert events.iloc[0]["event_date"] == pd.Timestamp("2020-01-12")
 
     def test_two_distinct_insiders_is_not_a_cluster(self):
         txs = pd.DataFrame([_tx("AAPL", 1, "2020-01-01"), _tx("AAPL", 2, "2020-01-05")])

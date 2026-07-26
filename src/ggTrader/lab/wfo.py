@@ -929,7 +929,7 @@ def format_wfo_table(
         f" | rolling {TRAIN_MONTHS}mo/{TEST_MONTHS}mo",
         "",
         f"{'Fold':<6}{'Train Window':<20}{'Test Window':<20}"
-        f"{'Winner':<26}{'Train':>6}{'OOS':>6}  {'Gate':<4} {'WFE':>5}",
+        f"{'Winner':<26}{'IS_SR':>6}{'OOS_SR':>6}  {'Gate':<4} {'WFE':>5}",
         "─" * 96,
     ]
     for r in fold_results:
@@ -944,9 +944,21 @@ def format_wfo_table(
         wfe_str = f"{r['wfe']:.2f}" if r.get("wfe") is not None else " n/a"
         halt_str = " [H]" if r.get("halted") else ""
         anchor_str = " [A]" if r.get("used_anchor") else ""
+        # Report the fold's actual OOS Sharpe. The old `oos_score` field is
+        # `composite_score(test_metrics)[0]` over a single-combo list, and
+        # min-max normalizing one element always yields 0.0 -- so this
+        # column printed a constant 0.00 in every table ever rendered.
+        # See docs/research/2026-07-25-strategy-implementation-audit.md §2.1A.
+        # Both columns are Sharpe so the adjacent WFE (= OOS/IS Sharpe) can
+        # be verified by eye; `train_score` is a composite rank on a
+        # different scale and would silently mix units.
+        oos_val = r.get("oos_sharpe", float("nan"))
+        is_val = r.get("is_sharpe", float("nan"))
+        oos_cell = f"{oos_val:>6.2f}" if oos_val == oos_val else f"{'n/a':>6}"
+        is_cell = f"{is_val:>6.2f}" if is_val == is_val else f"{'n/a':>6}"
         lines.append(
             f"{r['fold_num']:<6}{ts} → {te:<13}{os_} → {oe:<13}"
-            f"{short:<26}{r['train_score']:>6.2f}{r['oos_score']:>6.2f}"
+            f"{short:<26}{is_cell}{oos_cell}"
             f"  {gate_str:<4} {wfe_str:>5}{halt_str}{anchor_str}"
         )
 
