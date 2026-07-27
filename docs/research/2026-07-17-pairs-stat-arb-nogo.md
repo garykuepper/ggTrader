@@ -1,8 +1,18 @@
 # Market-Neutral Pairs / Stat-Arb Mean Reversion: NO-GO
 
 **Classification:** Internal Quantitative Research & Engineering Strategy
-**Date:** 2026-07-17
+**Date:** 2026-07-17 (re-run and confirmed 2026-07-26)
 **Audience:** Principal Engineering Team & Quantitative Research Collaborators
+
+> **STATUS 2026-07-26 — re-run complete, NO-GO CONFIRMED, candidate CLOSED.**
+> The 2026-07-25 audit (§2.6) invalidated this verdict for 2023 onward: SPY
+> index contamination made the correlation-coverage guard reject every pair,
+> so the strategy was believed to have selected nothing for roughly the last
+> third of its window. The contamination is now fixed (`1b9b7f5`) and the full
+> 42-fold WFO has been re-run on corrected data. **Every headline number came
+> back unchanged and the verdict stands.** See §7 for the re-run, including one
+> anomaly in the comparison that is deliberately left open rather than
+> explained away.
 
 ## 1. Executive Summary & Core Engine Audit
 
@@ -52,7 +62,8 @@ Aggregate WFE **-0.16** (target ≥ 0.50 — not just missed, negative, meaning
 OOS performance is *worse* than train performance predicts, the signature of
 overfitting rather than a real but modest edge). The regime-circuit-breaker
 halt was active for the large majority of the 42-fold history (`[H]` flag on
-28 of 42 folds) — like the rejected breadth-driven leveraged rotation, this
+32 of 42 folds — this report originally said 28; recounted from both run logs
+2026-07-26) — like the rejected breadth-driven leveraged rotation, this
 strategy spent most of its backtest trading defensive anchor params, not its
 own selected signal. The WFO's final "recommended live" combo
 (`entry_z2.5_exit_z0.5_max_pairs20_min_hold_months2`) was selected as train
@@ -82,7 +93,7 @@ reversion — REJECTED.** OOS Sharpe -0.42 vs SPY 0.88, CAGR -2.6% vs 15.2%,
 MaxDD -28.2% vs SPY's own -33.7% (worse risk-adjusted despite a nominally
 shallower drawdown — the strategy loses money slowly rather than tracking
 the market). Aggregate WFE -0.16 (below the 0.50 floor and negative, not
-just low). Regime halt active 28/42 folds; live-recommended params selected
+just low). Regime halt active 32/42 folds; live-recommended params selected
 in only 1/42 folds (unstable, noise-driven selection). Market-neutrality
 design goal was achieved (OOS correlation to SPY 0.092, beta 0.030) — the
 long/short mechanics work correctly; the entry/exit signal itself (same-
@@ -140,7 +151,7 @@ this is a real engineering investment and should only be undertaken with a
 specific decision to keep investigating pairs/stat-arb, not as a reflexive
 next step.
 
-### Parked Direction: Beta-hedged, faster-cadence pairs construction
+### Parked Direction: Beta-hedged, faster-cadence pairs construction (§7 note)
 If the monthly-cadence hypothesis above is confirmed worth pursuing, the
 redesign should also drop two other `v1` simplifications flagged in the
 implementation's own docstring at the same time (retest once, not
@@ -152,3 +163,102 @@ have made the negative result worse — but would matter before any future
 GO). Gate: only pick this up after the cadence question above is answered;
 building a beta-hedge on top of a cadence mismatch would confound which fix
 actually helped.
+
+## 7. Re-run on Corrected Data (2026-07-26) — Verdict Confirmed
+
+The 2026-07-25 implementation audit invalidated this report's verdict for the
+2023+ portion of its window (audit §2.6). This section records the re-run that
+resolves it.
+
+### 7.1 The contamination mechanism is real, and measured
+
+`pairwise_correlations` requires `len(sub) >= lookback * 0.8` jointly-valid
+rows after `dropna()` (`pairs_stat_arb.py:55-56`). Once SPY's stray
+`04:00`/`05:00` rows inject a NaN row for every real row, no pair can reach 80%
+coverage of a 126-row window. Measured directly on the frame the WFO actually
+builds (`cli.py` path, `eval_start` 2015-01, 764-symbol SP500 + SPY, contaminated
+vs `collapse_daily_duplicates`-corrected, memo cache cleared between arms):
+
+| Rebalance date | Qualifying pairs (contaminated) | Qualifying pairs (corrected) |
+|---|---|---|
+| 2022-11-30 | 2,753 | 2,753 |
+| 2023-04-28 | **0** | 1,104 |
+| 2023-09-29 | **0** | 552 |
+| 2024-06-28 | **0** | 371 |
+| 2025-06-30 | **0** | 1,980 |
+
+The cliff to exactly zero lands precisely at the 2022-12-27 boundary where the
+stray rows begin, and the corrected counts decline smoothly — the genuine
+post-2022 correlation breakdown the audit predicted. Confirmed separately that
+the real `cli.py` load did carry the damage: 4,199 raw rows across only 3,557
+unique dates (642 duplicate-date rows, four times-of-day: 04:00/05:00/16:00/
+17:00), collapsing to 3,373 clean rows.
+
+**Correction to the audit's supporting evidence.** The audit's A/B probe
+reported that a no-SPY frame *also* returned 0 qualifying pairs, which would
+have contradicted the SPY explanation. That line was an artifact:
+`_cached_qualifying_pairs` keys on `(asof, corr_lookback, corr_min, eligible)`
+and never on the DataFrame (`pairs_stat_arb.py:106`), so the second arm
+returned the first arm's cached value instead of a second measurement. The
+table above clears the cache between arms. The audit's conclusion was right;
+one of its measurements was not.
+
+### 7.2 Re-run result: unchanged
+
+Full 42-fold WFO, 54 combos, SP500, rolling 12mo train / 3mo test, on corrected
+data:
+
+| Metric | Original (2026-07-17) | Re-run (2026-07-26) |
+|---|---|---|
+| OOS Sharpe | -0.42 | **-0.42** |
+| OOS CAGR | -2.6% | **-2.6%** |
+| OOS MaxDD | -28.2% | **-28.2%** |
+| SPY baseline Sharpe | 0.88 | 0.88 |
+| Aggregate WFE | -0.16 | **-0.16** |
+| Gate pass rate | 13/42 | 13/42 |
+| Regime halt active | 32/42 | 32/42 |
+| Winner param stability | 1/42 folds | 1/42 folds |
+
+Train-side metrics did move as the Sharpe-deflation fix predicts (train Sharpe
+0.56 → 0.62, train CAGR 3.7% → 4.1%), and the fold-16 train winner changed —
+so the re-run demonstrably executed corrected code (the WFO table also now
+renders the fixed `IS_SR`/`OOS_SR` columns).
+
+**The NO-GO stands on every count**: negative OOS Sharpe and CAGR against SPY's
+0.88/15.2%, negative WFE, halt active on 32 of 42 folds, and live-recommended
+params selected in 1 of 42 folds. Nothing in the corrected data rescues the
+strategy.
+
+### 7.3 Open anomaly — not explained, deliberately not explained away
+
+The OOS aggregate is **bit-identical** across the two runs on three separate
+statistics, and the per-fold `n/a` WFE pattern in the 2023+ folds matches
+exactly (folds 29/31/36/37/39/40/41/42 `n/a` in both; folds 30/32/33/34/35/38
+carrying real values of -1.42, 2.24→2.25, -2.79→-2.80, 1.29, 0.04, -2.33).
+
+That is difficult to reconcile with §7.1. If the pre-fix run had genuinely
+traded a flat book for the last third of its window, those folds should have
+produced *no* OOS return stream and every one of them should read `n/a` — and
+the stitched OOS curve, and therefore the aggregate, should have moved when
+they started trading. Two hypotheses were checked and rejected:
+
+- **Halt path bypassing the strategy.** It does not; on a halt or gate failure
+  the harness sets `deploy_params = anchor.params` and still runs the strategy
+  (`wfo.py:695-700`), so a pairless book stays flat regardless.
+- **SPY joined the frame after 2026-07-17.** It did not — `universe + ["SPY"]`
+  has been in `cli.py` since `81300e6` (2026-06-15), before the original run.
+
+A third possibility not yet tested: the stray SPY rows may have been *backfilled*
+into the DB between 2026-07-17 and the 2026-07-25 audit, in which case the
+original run was executed against a then-clean frame and was never contaminated
+at all — which would explain the identical aggregate exactly. This is checkable
+from row-insertion timestamps and is the leading candidate.
+
+**Why this does not gate the verdict:** both readings lead to the same place.
+Either the original run was clean (and -0.42 was always a valid measurement),
+or it was contaminated (and the corrected re-run independently reproduces
+-0.42). The strategy is rejected under both. The anomaly matters for confidence
+in the *audit's* blast-radius claim — how many other reports were actually
+affected by §2.0 — not for this candidate, and it is carried forward as an open
+item in the audit document rather than resolved here.
+

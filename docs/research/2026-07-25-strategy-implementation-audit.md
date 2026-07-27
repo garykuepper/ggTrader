@@ -285,11 +285,22 @@ silently skipped and `corrs.get(p, -1.0)` returns the -1.0 default. Hence the
 cliff to exactly zero, precisely at the 2022-12-27 boundary where SPY's
 duplicate rows begin.
 
-Ruled out along the way: the memo cache is an unbounded plain dict with a
-correct key and no eviction (`pairs_stat_arb.py:106`); there is no equity data
-gap (symbol counts *rise* through 2023); and the `00:00` bucket appearing in
-`ohlcv` from 2023-01 is **crypto** (`kraken_spot`/`binanceus_spot`), which
-never enters equity frames.
+Ruled out along the way: there is no equity data gap (symbol counts *rise*
+through 2023); and the `00:00` bucket appearing in `ohlcv` from 2023-01 is
+**crypto** (`kraken_spot`/`binanceus_spot`), which never enters equity frames.
+
+> **Correction 2026-07-26.** This section originally also cleared the memo
+> cache as "an unbounded plain dict with a correct key and no eviction
+> (`pairs_stat_arb.py:106`)". The key is `(asof, corr_lookback, corr_min,
+> eligible)` and does **not** include the DataFrame — so the A/B probe run
+> here, which called the contaminated arm and then the clean arm at the same
+> `asof` with the same eligible set, had its second arm served from cache.
+> The clean arm's reported "0 qualifying pairs" was an echo of the
+> contaminated arm, not an independent measurement, and it would have
+> falsified the SPY explanation had it been real. Re-measured with the cache
+> cleared between arms, the contrast is unambiguous and the conclusion below
+> holds: 0 pairs contaminated vs 1,104 (2023-04) / 552 (2023-09) / 371
+> (2024-06) / 1,980 (2025-06) corrected.
 
 **Verdict impact: this one genuinely is invalid for the post-2022 portion.**
 Unlike the strategies in §2.0 whose *selection* was unaffected,
@@ -299,6 +310,12 @@ third of its 42-fold window was tested as a flat book. The reported OOS Sharpe
 2022. The NO-GO may well be correct, but it has not actually been tested on
 2023-2026 and should be **re-run after the §2.0 fix** before being treated as
 settled.
+
+> **RESOLVED 2026-07-26 — re-run complete, NO-GO confirmed, candidate closed.**
+> Corrected 42-fold WFO returned OOS Sharpe -0.42, CAGR -2.6%, MaxDD -28.2%,
+> WFE -0.16 — identical to the original. Note that this identity is itself
+> unexplained given the flat-book claim above, and is carried as an open item
+> in §5. See `2026-07-17-pairs-stat-arb-nogo.md` §7.
 
 ## 3. On-Deck Candidate Feasibility
 
@@ -328,11 +345,12 @@ data this project does not have and cannot cheaply get.
 | **Direction sound, strengthened by a bug** — lookahead inflated it | `insider_cluster_buy` (§2.1B) |
 | **Direction sound, reasoning flawed** — right call, wrong benchmark logic | `commodity_trend` (§2.3) |
 | **Provisional** — underpowered, should not be treated as settled | `headline_sentiment` (§2.5) |
-| **INVALID for 2023+** — selected nothing; must be re-run | `pairs_stat_arb` (§2.6) |
+| ~~**INVALID for 2023+**~~ → **re-run 2026-07-26, NO-GO confirmed, closed** — every headline figure returned unchanged | `pairs_stat_arb` (§2.6, §5) |
 | **Correctly unresolved** — no data, properly labeled PAUSED | `retail_attention` (§2.4) |
 
 **One verdict is invalidated** (`pairs_stat_arb`, untested on ~a third of its
-window), one downgraded to provisional (`headline_sentiment`), one has flawed
+window — *since re-run on 2026-07-26 and confirmed unchanged; closed*), one
+downgraded to provisional (`headline_sentiment`), one has flawed
 supporting reasoning (`commodity_trend`), and **every equity Sharpe figure
 covering 2023+ is ~29% too low** — which changes no ranking, since the
 benchmark is deflated identically, but does invalidate any absolute-threshold
@@ -388,10 +406,29 @@ with the adjacent column switched to IS Sharpe so the WFE beside it
 
 ### Still outstanding
 
-**Re-run `pairs_stat_arb`'s WFO** (§2.6) — the one verdict this audit
-invalidates. It selected nothing at all from 2023 onward, so roughly a third
-of its window was never really tested. The fix should restore it; the verdict
-may or may not survive.
+~~**Re-run `pairs_stat_arb`'s WFO** (§2.6)~~ — **DONE 2026-07-26. The verdict
+survived.** Full 42-fold WFO on corrected data returned OOS Sharpe **-0.42**,
+CAGR **-2.6%**, MaxDD **-28.2%**, WFE **-0.16**, gates 13/42, halt 32/42,
+winner stability 1/42 — every headline figure unchanged from 2026-07-17. The
+contamination mechanism itself was confirmed by direct measurement on the real
+WFO frame (0 qualifying pairs contaminated vs 1,104 / 552 / 371 / 1,980
+corrected at four post-2022 rebalance dates). Candidate **closed**. See
+`2026-07-17-pairs-stat-arb-nogo.md` §7.
+
+**Reconcile why the re-run's aggregate is bit-identical** (new, opened
+2026-07-26). If the pre-fix run really had traded a flat book for the last
+third of its window, the corrected re-run's stitched OOS curve should have
+moved — instead all three aggregate statistics and the per-fold `n/a` WFE
+pattern match the original exactly. Ruled out: the halt path bypassing the
+strategy (`wfo.py:695-700` still runs it with anchor params), and SPY having
+joined the frame after 2026-07-17 (`81300e6`, 2026-06-15, predates it).
+**Leading hypothesis: the 826 stray SPY rows were backfilled into the DB
+between 2026-07-17 and this audit**, meaning the original run executed against
+a then-clean frame. Checkable from row-insertion timestamps. This does not
+affect the pairs verdict — which is reproduced under both readings — but it
+directly sizes §2.0's blast radius: if the strays are recent, reports written
+before the backfill were never contaminated and their Sharpes need no
+re-measurement.
 
 **Close the ingest path** (above) from a shell with the live trader stopped.
 

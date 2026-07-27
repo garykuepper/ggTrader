@@ -62,7 +62,7 @@ evidence: see §4's new root-cause cluster below.
 | Multi-universe equity diversification (no leverage realism) | ❌ NO-GO (superseded) | Sharpe 1.05 < 1.12 core | SP500+MidCap+Nasdaq blend at naive 1x-per-sleeve | superseded by the leverage-realistic 3-sleeve blend above |
 | `leveraged_rotation_sp500/nasdaq100/russell2000` | ❌ NO-GO, all 3 universes | Sharpe -0.14 to -0.37 vs SPY 0.65-0.77, MaxDD -80% to -89%, regime halt 22-23/26 folds | breadth-driven 2x/3x leveraged long/inverse/cash rotation | `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` |
 | `leveraged_trend_sp500/nasdaq100/russell2000` | ❌ NO-GO, all 3 universes | Sharpe 0.40-0.62, underperforms own buy-and-hold (0.48-0.90) and SPY | long-only trend filter (SMA) + vol-target overlay on 2x/3x ETF | `docs/research/2026-07-16-leveraged-trend-following-nogo.md` |
-| `pairs_stat_arb` | ❌ NO-GO | below-threshold standalone Sharpe; first market-neutral construction | long/short dollar-neutral pairs, spread z-score reversion | `docs/research/2026-07-17-pairs-stat-arb-nogo.md` |
+| `pairs_stat_arb` | ❌ NO-GO (re-confirmed 2026-07-26 on corrected data) | OOS Sharpe -0.42 vs SPY 0.88, WFE -0.16, stability 1/42; first market-neutral construction | long/short dollar-neutral pairs, spread z-score reversion | `docs/research/2026-07-17-pairs-stat-arb-nogo.md` §7 |
 | `max_effect` | ❌ NO-GO | Sharpe 0.39-0.45 vs SPY 0.76-0.88; blend correlation 0.692 (highest seen) | avoid highest trailing-max-return (lottery-demand) quintile | `docs/research/2026-07-17-max-effect-nogo.md` |
 | `short_interest` | ❌ NO-GO | Sharpe 0.27 vs SPY 0.61, WFE 0.11, regime halt 80% | avoid/short high-FINRA-short-interest quintile | `docs/research/2026-07-17-short-interest-nogo.md` |
 | `pead` | ❌ NO-GO — 1st eval-window-drift confirmation | standalone 0.93→0.58 (matched window); blend 1.14→1.06 | long top-earnings-surprise quintile | `docs/research/2026-07-17-pead-nogo.md` |
@@ -226,10 +226,22 @@ verdict — more durable than the roster above:
   should be re-measured before being quoted as absolute. The stray-row ingest
   path is *not* yet fixed (it lives in hook-protected live-trader code), so
   the DB will keep accumulating them — the research path is simply immune now.
-- ⚠️ `pairs_stat_arb`'s NO-GO is **invalid for 2023 onward** — the same bug
+- ✅ `pairs_stat_arb`'s NO-GO was **invalid for 2023 onward** — the same bug
   made its correlation-coverage guard reject every pair, so it selected
-  nothing for roughly the last third of its window. Needs a re-run (audit
-  §2.6).
+  nothing for roughly the last third of its window (audit §2.6).
+  **RE-RUN 2026-07-26: verdict CONFIRMED, candidate closed.** Corrected
+  42-fold WFO returned OOS Sharpe -0.42 / CAGR -2.6% / MaxDD -28.2% / WFE
+  -0.16 / gates 13/42 / halt 32/42 / stability 1/42 — every headline number
+  unchanged. Contamination mechanism verified directly (0 qualifying pairs
+  contaminated vs 1,104/552/371/1,980 corrected).
+- ⚠️ **Open (2026-07-26):** the pairs re-run's aggregate is *bit-identical* to
+  the pre-fix run, which contradicts the flat-book claim above — a third of
+  the window going from untraded to traded should have moved the stitched OOS
+  curve. Halt-path bypass and a late SPY join are both ruled out. Leading
+  hypothesis: the 826 stray SPY rows were **backfilled after 2026-07-17**, so
+  the original run was never contaminated. Worth checking from row-insertion
+  timestamps, because it sizes how much of the §2.0 blast radius is real —
+  if the strays are recent, pre-backfill reports need no re-measurement.
 - ✅ `insider_cluster_buy` keyed off `transaction_date` rather than
   `filing_date`, a median 2-day lookahead — **FIXED 2026-07-25** (`1b9b7f5`).
   Bias inflated its results, so its NO-GO stands (audit §2.1B).
