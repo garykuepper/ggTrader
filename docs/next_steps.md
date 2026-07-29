@@ -235,31 +235,45 @@ approximation only — the paper's actual 4-factor model (needs cash
 Treasuries/STRIPS/futures) remains untested and out of reach at this
 project's current data-access tier.
 
-**Effort-ordered next-up, per the register's own "home-lab / mostly-ETF
-workflow" ranking** (this project's actual setup):
-1. **A8 — Headline/LLM sentiment on small/mid-cap equities. Now next
-   up.** Needs credible point-in-time headline data — do not proceed on
-   a look-ahead-biased feed. Authors themselves warn of a crowding/decay
-   effect as LLM use spreads. Check feasibility (a real point-in-time
-   headline source) before building anything, same discipline as #2/#7/
-   #4/#14 in the original batch.
-2. **B1 — Stablecoin stress signal.** Scope as a risk/leverage-reduction
-   overlay, not a standalone short — the underlying papers show stress
-   raises *two-sided* jump risk, not a reliably negative one.
+**A8 (headline/LLM sentiment) was built, tested, and CLOSED NO-GO
+(2026-07-24)** — provisional-confidence rejection per
+`docs/research/2026-07-24-headline-sentiment-nogo.md` (only 3 usable
+folds vs. 20-54 elsewhere, direction unfavorable). This closes the first
+14-candidate + 25-candidate web-research batches: **all A-series and
+first-round B-series items are now resolved or explicitly paused** — see
+`docs/roadmap.md`'s 2026-07-24 entry for the B1/B2/B3 feasibility triage
+(B1 stablecoin-stress: data exists but crypto trading is dormant, no
+exposure to overlay; B2 FOMC country-ETF reaction: blocked project-wide,
+every non-crypto symbol is daily-bar-only; B3 bond-ETF NAV dislocation:
+no free NAV/premium-discount source found). None of B1-B3 started.
 
-Pick ONE (A8 is the natural next pick), copy its entry from
-`WEB_RESEARCH_CANDIDATES.md` into
-`docs/research/prompts/local-implementation-prompt-TEMPLATE.md` — **also
-apply the register's "Minimum validation standard" 7-point checklist**
-on top of this project's usual WFO/NDH/DSR gate. Four candidates in
-(A1/A7/A3/A5, all REJECTED), standing lessons: **identify the actual
-correct benchmark for the paper's specific claim before running the WFO,
-not after** — this has now caught two "dynamic loses to static" cases
-(A1, A5) that a naive SPY-only comparison would have mischaracterized as
-routine underperformance rather than the more precise finding that
-timing subtracts value; **watch for all-zero/all-flat results as a
-signal something is structurally broken** (A7's timestamp-matching bug);
-and **for sparse/event-driven candidates, run the event-study
-supplementary test** (`src/ggTrader/lab/event_study.py`) alongside the
-WFO. Also still open, lower priority: retry #8's Google Trends backfill
-once the rate-limit has likely cleared.)
+**pairs_stat_arb was re-run on corrected data and re-confirmed NO-GO
+(2026-07-26)**, closing the book on that candidate — see
+`docs/research/2026-07-17-pairs-stat-arb-nogo.md` §7. Also: a severe
+SPY-timestamp data bug (deflating every equity Sharpe ~29% since 2023)
+and two smaller bugs were found and fixed 2026-07-25 — see
+`RESEARCH_SNAPSHOT.md` §5 for what's now settled vs. still open there.
+
+**Queued next (2026-07-28): Rank 1 cross-asset trend sleeve
+(TLT/GLD/DBC).** A new external research deliverable,
+`docs/quant_strategy_research_report.md` (12 ranked candidates across FX,
+Treasuries, commodities, intl equities, crypto), converges independently
+with `RESEARCH_SNAPSHOT.md` §6 on the same pick: a long-only trend/
+momentum overlay on liquid non-leveraged ETFs (TLT for duration, GLD/DBC
+for commodities) as a 4th blend sleeve. Rationale for the pick: nine
+consecutive equity-cross-sectional diversification sleeves have failed
+(eval-window-drift or high correlation to core, see `RESEARCH_SNAPSHOT.md`
+§4) — both sources agree the next lever needs to be a genuinely different
+asset class, not another equity sort. Cheapest, most-corroborated
+candidate available: free daily OHLCV only, reuses existing `ggt lab
+--blend` infrastructure, and the already-tested `leveraged_trend_*`
+strategies prove the trend-filter mechanism works in this codebase (their
+NO-GO was leveraged-ETF decay specifically, not the trend logic — TLT/GLD/
+DBC are unleveraged). **Not yet built** — next session should copy this
+candidate into `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`
+and run it through the standard WFO/NDH/DSR gate, same discipline as every
+prior candidate. The report's #2 (intl DM equity rotation) and #3
+(re-test `xs_momentum`/`dual_momentum` on the current lab stack, a
+zero-new-data-cost gap-closer per `RESEARCH_SNAPSHOT.md` §5) are the
+next-best picks if #1 doesn't pan out. Also still open, lower priority:
+retry #8's Google Trends backfill once the rate-limit has likely cleared.
