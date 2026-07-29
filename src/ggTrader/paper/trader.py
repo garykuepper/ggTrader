@@ -9,6 +9,7 @@ from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.notifier import TelegramNotifier
 from ggTrader.paper.persist import (
     clear_pending_order,
+    get_earliest_snapshot,
     get_latest_snapshot,
     get_pending_orders,
     init_paper_schema,
@@ -333,12 +334,22 @@ class PaperTrader:
 
         daily_pnl = new_value - day_start
 
+        # Cumulative P&L breakdown
+        unrealized_pnl = sum(
+            p.get("unrealized_pl", 0.0) for p in updated_positions.values()
+        )
+        starting_capital = get_earliest_snapshot()
+        total_pnl = (new_value - starting_capital) if starting_capital else None
+
         weight_str = ", ".join(f"{u}={w:.0%}" for u, w in weights.items())
         risk_line = (
             f"Positions: {len(updated_positions)}/{self._risk.cfg.max_positions} | "
             f"Scale: {scale:.2f}x | Weights: {weight_str}"
         )
-        self._notifier.daily_summary(new_value, daily_pnl, updated_positions)
+        self._notifier.daily_summary(
+            new_value, daily_pnl, updated_positions,
+            total_pnl=total_pnl, unrealized_pnl=unrealized_pnl,
+        )
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
 
         try:

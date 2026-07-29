@@ -57,7 +57,8 @@ class TelegramNotifier:
         return self.send(msg)
 
     def daily_summary(
-        self, portfolio_value: float, daily_pnl: float, positions: dict[str, dict]
+        self, portfolio_value: float, daily_pnl: float, positions: dict[str, dict],
+        total_pnl: float | None = None, unrealized_pnl: float | None = None,
     ) -> bool:
         arrow = "🟢" if daily_pnl >= 0 else "🔴"
         day_start = portfolio_value - daily_pnl
@@ -66,8 +67,18 @@ class TelegramNotifier:
             "<b>📈 Paper Portfolio Summary</b>",
             f"Value: <b>${portfolio_value:,.2f}</b>",
             f"Daily P&L: {arrow} ${daily_pnl:+,.2f} ({pnl_pct:+.2f}%)",
-            f"Positions: {len(positions)}",
         ]
+        if total_pnl is not None and unrealized_pnl is not None:
+            realized_pnl = total_pnl - unrealized_pnl
+            total_pct = (total_pnl / day_start * 100) if day_start > 0 else 0.0
+            rlz_arrow = "+" if realized_pnl >= 0 else ""
+            unrlz_arrow = "+" if unrealized_pnl >= 0 else ""
+            lines.append(
+                f"Total P&L: ${total_pnl:+,.2f} ({total_pct:+.2f}%) — "
+                f"realized: ${rlz_arrow}{realized_pnl:,.2f}, "
+                f"unrealized: ${unrlz_arrow}{unrealized_pnl:,.2f}"
+            )
+        lines.append(f"Positions: {len(positions)}")
         if positions:
             lines.append("")
             ranked = sorted(

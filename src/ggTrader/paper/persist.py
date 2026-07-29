@@ -126,6 +126,15 @@ def get_latest_snapshot() -> float | None:
     return float(row[0]) if row else None
 
 
+def get_earliest_snapshot() -> float | None:
+    """Return the oldest snapshot's portfolio_value (starting capital), or None."""
+    with _get_engine().connect() as conn:
+        row = conn.execute(
+            text("SELECT portfolio_value FROM paper_snapshots ORDER BY run_date ASC LIMIT 1")
+        ).first()
+    return float(row[0]) if row else None
+
+
 def log_snapshot(run_date: str, portfolio_value: float, cash: float, positions: dict) -> None:
     with _get_engine().connect() as conn:
         conn.execute(
