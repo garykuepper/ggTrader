@@ -22,7 +22,7 @@ cd "${PROJECT_DIR}"
 
 echo "[$(date)] Starting paper trading run..." >> "${LOG_FILE}"
 
-docker compose run --rm ggtrader_live python -u ggt.py paper \
+docker compose run --rm ggtrader_live python -u ggt.py paper --live \
     >> "${LOG_FILE}" 2>&1
 
 echo "[$(date)] paper_trade.sh complete" >> "${LOG_FILE}"
