@@ -27,6 +27,43 @@ def eligible_symbols(data: pd.DataFrame, eligible: List[str], min_history_bars: 
     return [s for s in eligible if s in have and len(data[s]["close"].dropna()) >= min_history_bars]
 
 
+def eligibility_mask(
+    plans: "dict[pd.Timestamp, list]", symbols: List[str], index: pd.DatetimeIndex
+) -> pd.DataFrame:
+    """PIT eligibility mask, keyed off the per-rebalance-date ``plans`` dict.
+
+    ``select()`` is already PIT-correct per rebalance date -- it only returns
+    symbols eligible (present in data with enough history / index membership)
+    as of that ``asof``. But most ``to_targets()`` implementations union every
+    symbol that ever appeared in *any* plan and generate signals for it across
+    the *entire* bar index, so a symbol added to the index in 2024 (and thus
+    absent from every plan before then) still gets entries computed back to
+    the start of history. This mask fixes that: a symbol is eligible on a bar
+    only from the first rebalance date it was selected onward (forward-filled
+    to the next rebalance date), and never before the first rebalance date at
+    all -- there is no eligibility signal prior to the first ``select()`` call.
+
+    Returns a boolean (index x symbols) DataFrame. AND this into ``entries``
+    (not necessarily ``exits`` -- masking exits risks stranding an
+    already-open position that lost eligibility after entry).
+    """
+    if not plans or not symbols:
+        return pd.DataFrame(False, index=index, columns=symbols)
+    dates = sorted(plans.keys())
+    records = {d: {s["symbol"]: True for s in plans[d]} for d in dates}
+    elig_at_date = pd.DataFrame.from_dict(records, orient="index")
+    # reindex(..., fill_value=...) only fills columns that didn't exist yet;
+    # a column that exists but has NaN in some rows (a symbol selected at
+    # a later plan date but not an earlier one) is untouched by fill_value,
+    # so NaN must be handled explicitly via .where (avoids the fillna/ffill
+    # object-dtype downcast FutureWarning too).
+    elig_at_date = elig_at_date.reindex(columns=symbols)
+    elig_at_date = elig_at_date.where(elig_at_date.notna(), False).astype(bool)
+    elig_at_date = elig_at_date.sort_index()
+    full = elig_at_date.reindex(index, method="ffill")
+    return full.where(full.notna(), False).astype(bool)
+
+
 def bb_signals(close: pd.DataFrame, period: int, std: float) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Vectorized Bollinger Band entry/exit signals."""
     sma = close.rolling(window=period, min_periods=period).mean()

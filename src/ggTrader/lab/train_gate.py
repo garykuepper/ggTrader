@@ -5,6 +5,20 @@ trains a LightGBM classifier with TimeSeriesSplit, and saves the model.
 
 Usage:
     docker compose run --rm ggtrader_live python -m ggTrader.lab.train_gate
+
+⚠️  FALSIFIED / DISABLED -- DO NOT REVIVE WITHOUT RE-VALIDATING.
+The P(up) gate trained here was falsified 2026-06-28 (return-based ablation):
+it is *anti-predictive* for reversion entries -- it keeps the weak ~0.56%
+entries and blocks the strong ~1.09% entries. A redesigned EV-regressor
+variant was also tried and was worse. It is disabled by default in live
+trading behind `ML_GATE_ENABLED` (see `src/ggTrader/paper/feature_gate.py`)
+and the WFO harness does not use it either. See:
+  docs research memory "ML gate FALSIFIED 2026-06-28" and
+  "ML gate disabled 2026-06-27".
+This module is kept only so the training pipeline itself stays correct
+(no membership survivorship, no train/test leakage) in case someone
+re-opens the investigation -- that re-opening must redo the return-based
+ablation before any model trained here is wired back into live trading.
 """
 
 from __future__ import annotations
@@ -30,6 +44,10 @@ META_PATH = MODEL_DIR / "ensemble_gate_meta.json"
 TRAIN_START = "2019-01-01"
 FORWARD_DAYS = 5
 N_SPLITS = 5
+#: Rows dropped from the start of each TimeSeriesSplit test fold, so training
+#: features/labels (which look FORWARD_DAYS ahead) never overlap the test
+#: fold's own lookback/lookahead window. Purge >= FORWARD_DAYS to be safe.
+PURGE_GAP = 5
 
 LGB_PARAMS = {
     "n_estimators": 200,
@@ -116,11 +134,18 @@ def train() -> None:
 
     # 1. Fetch data
     print(f"\n[1/6] Fetching SP500 OHLCV from {TRAIN_START}...")
-    from ggTrader.data.core.index_constituents import normalize_yf_ticker, sp500_members_asof
+    from ggTrader.lab.data import equity_universe_between
 
-    today = pd.Timestamp.now(tz="UTC").normalize()
-    members = sp500_members_asof(today)
-    symbols = sorted({normalize_yf_ticker(t) for t in members})
+    # Union of members over the whole training span, not `sp500_members_asof
+    # (now)` -- filtering to today's membership before fetching would drop
+    # every company that has since left the index, i.e. all its 2019+
+    # samples never enter the training set at all (survivorship bias in the
+    # dataset, not just in a downstream filter). See item 9 / RESEARCH_SNAPSHOT.md
+    # for the same fix applied to leveraged_rotation_research.py.
+    train_end = pd.Timestamp.now(tz="UTC").normalize()
+    symbols = equity_universe_between(
+        pd.Timestamp(TRAIN_START, tz="UTC"), train_end, universe="sp500"
+    )
     ohlcv = fetch_stock_ohlcv(symbols, start=TRAIN_START)
     print(
         f"    Loaded {len(ohlcv.columns.get_level_values(0).unique())} symbols, {len(ohlcv)} bars"
@@ -157,7 +182,10 @@ def train() -> None:
     X = df[FEATURE_NAMES].values
     y = df["label"].values
 
-    tscv = TimeSeriesSplit(n_splits=N_SPLITS)
+    # gap=PURGE_GAP purges rows immediately after each train fold's end from
+    # the corresponding test fold, so a training sample's forward-looking
+    # 5-day label can never overlap the test fold's own feature window.
+    tscv = TimeSeriesSplit(n_splits=N_SPLITS, gap=PURGE_GAP)
     fold_metrics: list[dict] = []
 
     for fold_i, (train_idx, test_idx) in enumerate(tscv.split(X)):

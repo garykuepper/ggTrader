@@ -266,14 +266,32 @@ def equity_universe_between(
 def rebalance_dates(
     index: pd.DatetimeIndex, eval_start: pd.Timestamp, eval_end: pd.Timestamp
 ) -> List[pd.Timestamp]:
-    """Last trading day of each month in [eval_start, eval_end), excluding the final
-    month (selecting there would leave no forward period to trade)."""
+    """Rebalance/decision dates: window start, then the last trading day of
+    each subsequent month in [eval_start, eval_end), excluding the final
+    month (selecting there would leave no forward period to trade).
+
+    Previously this returned *only* month-ends, so a weight-strategy window
+    had no decision at all until the first month-end -- up to ~1 month spent
+    in pure cash at the start of every fold (item 12,
+    docs/research/2026-08-18-wfo-anchor-leakage-fix.md). Prepending the
+    window's first trading day gives a decision immediately at (or right
+    after) window start while keeping full causality: like every other
+    rebalance date, its target takes effect on the first bar *after* it, and
+    the strategy's own `select()` only sees data up to and including it
+    (``data.loc[:asof]`` / ``data.index < d`` depending on the strategy --
+    see allocation.py's convention). Skipped if the window is a single bar
+    (no forward period to trade) or already equals the first month-end.
+    """
     idx = index[(index >= eval_start) & (index <= eval_end)]
     if len(idx) == 0:
         return []
     series = pd.Series(idx, index=idx)
     month_ends = series.groupby(idx.tz_convert(None).to_period("M")).max().tolist()
-    return month_ends[:-1]
+    dates = month_ends[:-1]
+    first_bar = idx[0]
+    if first_bar != idx[-1] and (not dates or dates[0] != first_bar):
+        dates = [first_bar] + dates
+    return dates
 
 
 def eligible_at(

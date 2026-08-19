@@ -10,6 +10,7 @@ import pandas as pd
 from ggTrader.lab.strategies.indicators import (
     bb_signals,
     bb_strength,
+    eligibility_mask,
     eligible_symbols,
     ema_signals,
     ema_strength,
@@ -149,8 +150,20 @@ class EnsembleSignal:
             syms = apply_sector_constraints(syms, max_sec)
         return [{"symbol": s, "weight": 0.0} for s in syms]
 
-    def _generate_signals(self, close: pd.DataFrame, volume: pd.DataFrame) -> SignalTargets:
-        """Run the active sub-signals, sum entry/exit votes, threshold at min_agree."""
+    def _generate_signals(
+        self,
+        close: pd.DataFrame,
+        volume: pd.DataFrame,
+        entry_mask: pd.DataFrame | None = None,
+    ) -> SignalTargets:
+        """Run the active sub-signals, sum entry/exit votes, threshold at min_agree.
+
+        ``entry_mask``, when given, is ANDed into entries *before* the
+        time-stop is computed, so a td_stop-forced exit is timed off a real
+        (PIT-eligible) entry rather than one that gets masked away downstream
+        -- see ``eligibility_mask``. Exits are intentionally left unmasked so
+        an already-open position can still close normally.
+        """
         ent: Dict[str, pd.DataFrame] = {}
         ext: Dict[str, pd.DataFrame] = {}
         if "bb" in self.voters:
@@ -183,6 +196,8 @@ class EnsembleSignal:
         exit_votes = sum(df.astype(int) for df in ext.values())
 
         entries = (entry_votes >= self.min_agree).astype(bool)
+        if entry_mask is not None:
+            entries = entries & entry_mask
         if self.exits_enabled:
             # RSI exit fires independently when RSI is an active voter.
             independent_exit = ext["rsi"] if "rsi" in ext else False
@@ -209,7 +224,11 @@ class EnsembleSignal:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
         close = extract_close(data, symbols)
         volume = extract_volume(data, symbols)
-        return self._generate_signals(close, volume)
+        # PIT eligibility: a symbol shouldn't trade before it was actually
+        # eligible (e.g. an index addition years into the sample). See
+        # `eligibility_mask` docstring.
+        mask = eligibility_mask(plans, symbols, data.index)
+        return self._generate_signals(close, volume, entry_mask=mask)
 
     def sweep_signals(
         self,
@@ -346,9 +365,17 @@ class EnsembleConvictionSignal:
         ]
 
     def _generate_signals_with_sizes(
-        self, close: pd.DataFrame, volume: pd.DataFrame
+        self,
+        close: pd.DataFrame,
+        volume: pd.DataFrame,
+        entry_mask: pd.DataFrame | None = None,
     ) -> SignalTargets:
-        """Entry/exit via majority vote + conviction-weighted sizes."""
+        """Entry/exit via majority vote + conviction-weighted sizes.
+
+        ``entry_mask`` is ANDed into entries before conviction sizing is
+        computed -- see ``EnsembleSignal._generate_signals`` and
+        ``eligibility_mask``.
+        """
         ent: Dict[str, pd.DataFrame] = {}
         ext: Dict[str, pd.DataFrame] = {}
         strengths: Dict[str, pd.DataFrame] = {}
@@ -399,6 +426,8 @@ class EnsembleConvictionSignal:
         exit_votes = sum(df.astype(int) for df in ext.values())
 
         entries = (entry_votes >= self.min_agree).astype(bool)
+        if entry_mask is not None:
+            entries = entries & entry_mask
         independent_exit = ext["rsi"] if "rsi" in ext else False
         exits = independent_exit | (exit_votes >= self.min_agree_exit)
 
@@ -415,7 +444,8 @@ class EnsembleConvictionSignal:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
         close = extract_close(data, symbols)
         volume = extract_volume(data, symbols)
-        return self._generate_signals_with_sizes(close, volume)
+        mask = eligibility_mask(plans, symbols, data.index)
+        return self._generate_signals_with_sizes(close, volume, entry_mask=mask)
 
     def sweep_signals(
         self,

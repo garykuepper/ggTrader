@@ -10,6 +10,7 @@ import pandas as pd
 
 from ggTrader.lab.strategies.indicators import (
     bb_signals,
+    eligibility_mask,
     eligible_symbols,
     ema_signals,
     extract_close,
@@ -117,6 +118,9 @@ class EmaCrossSignal:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
         close = extract_close(data, symbols)
         entries, exits = ema_signals(close, self.ema_fast, self.ema_slow)
+        # PIT eligibility: don't trade a symbol before it was actually
+        # selected (e.g. an index addition years into the sample).
+        entries = entries & eligibility_mask(plans, symbols, data.index)
         return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(
@@ -307,6 +311,7 @@ class BollingerReversionSignal:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
         close = extract_close(data, symbols)
         entries, exits = bb_signals(close, self.bb_period, self.bb_std)
+        entries = entries & eligibility_mask(plans, symbols, data.index)
         return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(
@@ -378,6 +383,7 @@ class RsiReversionSignal:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
         close = extract_close(data, symbols)
         entries, exits = rsi_signals(close, self.rsi_period, self.rsi_oversold, self.rsi_exit)
+        entries = entries & eligibility_mask(plans, symbols, data.index)
         return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(
@@ -454,6 +460,7 @@ class OvernightGapReversionSignal:
         entries, exits = overnight_gap_signals(
             close, open_, self.gap_lookback, self.gap_z_entry, self.gap_z_exit
         )
+        entries = entries & eligibility_mask(plans, symbols, data.index)
         return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(
@@ -522,6 +529,7 @@ class MACDDivergenceSignal:
         entries, exits = macd_signals(
             close, self.macd_fast, self.macd_slow, self.macd_signal, self.divergence_window
         )
+        entries = entries & eligibility_mask(plans, symbols, data.index)
         return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(
@@ -589,6 +597,7 @@ class VolumeBBReversionSignal:
         entries, exits = volume_bb_signals(
             close, volume, self.bb_period, self.bb_std, self.vol_period, self.vol_mult
         )
+        entries = entries & eligibility_mask(plans, symbols, data.index)
         return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(
@@ -665,6 +674,7 @@ class MultiTimeframeReversionSignal:
             self.daily_bb_period,
             self.daily_bb_std,
         )
+        entries = entries & eligibility_mask(plans, symbols, data.index)
         return SignalTargets(entries=entries, exits=exits)
 
     def sweep_signals(

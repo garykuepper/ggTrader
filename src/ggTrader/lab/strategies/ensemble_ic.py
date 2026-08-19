@@ -11,6 +11,7 @@ from ggTrader.lab.strategies.ic_weights import ic_weight_schedule
 from ggTrader.lab.strategies.indicators import (
     bb_raw,
     bb_signals,
+    eligibility_mask,
     eligible_symbols,
     ema_raw,
     ema_signals,
@@ -144,7 +145,12 @@ class EnsembleICSignal:
         timed = entries.shift(self.td_stop, fill_value=False).astype(bool)
         return (exits.astype(bool) | timed).astype(bool)
 
-    def _generate_signals(self, close: pd.DataFrame, volume: pd.DataFrame) -> SignalTargets:
+    def _generate_signals(
+        self,
+        close: pd.DataFrame,
+        volume: pd.DataFrame,
+        entry_mask: pd.DataFrame | None = None,
+    ) -> SignalTargets:
         ent, ext, raw = self._entries_exits_raw(close, volume)
 
         weights = ic_weight_schedule(
@@ -158,6 +164,8 @@ class EnsembleICSignal:
         # weighted_score[d, s] = sum_j w_j[d] * ent_j[d, s]; rows of w sum to 1.
         score = sum(ent[j].astype(float).mul(weights[j], axis=0) for j in ent)
         entries = (score >= self.consensus_threshold - _SCORE_EPS).astype(bool)
+        if entry_mask is not None:
+            entries = entries & entry_mask
 
         exit_votes = sum(df.astype(int) for df in ext.values())
         if self.exits_enabled:
@@ -172,7 +180,8 @@ class EnsembleICSignal:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
         close = extract_close(data, symbols)
         volume = extract_volume(data, symbols)
-        return self._generate_signals(close, volume)
+        mask = eligibility_mask(plans, symbols, data.index)
+        return self._generate_signals(close, volume, entry_mask=mask)
 
     def sweep_signals(
         self, combos: list[dict], symbols: list[str], data: pd.DataFrame

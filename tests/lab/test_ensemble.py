@@ -48,6 +48,40 @@ def test_ensemble_no_entry_when_fewer_than_min_agree():
     assert targets.entries.sum().sum() <= targets.entries.shape[0] * len(symbols) * 0.01
 
 
+def test_ensemble_no_entries_before_symbol_eligibility_start():
+    """PIT eligibility: a symbol added to the plan pool mid-sample must not
+    trade before the rebalance date it first appears in `plans`.
+
+    Regression test for the item-11 PIT-eligibility-masking fix
+    (docs/research/2026-08-18-wfo-anchor-leakage-fix.md, ensemble.py to_targets).
+    """
+    cfg = LabConfig(min_history_bars=20)
+    strat = EnsembleSignal(cfg, min_agree=1)
+    ohlcv = _ohlcv(n=300, n_syms=2)
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    assert symbols == ["S0", "S1"]
+
+    late_start = ohlcv.index[200]
+    plans = {
+        # S0 eligible from the start of the plan sequence.
+        ohlcv.index[30]: [{"symbol": "S0", "weight": 0.0}],
+        # S1 only enters the eligible pool at bar 200 (e.g. a late index add).
+        late_start: [{"symbol": "S0", "weight": 0.0}, {"symbol": "S1", "weight": 0.0}],
+    }
+    targets = strat.to_targets(plans, ohlcv)
+
+    # S1 must have zero entries strictly before its first eligible date.
+    pre_period = targets.entries.loc[: ohlcv.index[199], "S1"]
+    assert not pre_period.any(), "S1 traded before it was eligible"
+    # Sanity: S1 does get to trade once eligible (min_agree=1 on a long
+    # random-walk sample should produce at least one entry post-eligibility).
+    post_period = targets.entries.loc[late_start:, "S1"]
+    assert post_period.any(), "S1 never traded even after becoming eligible"
+    # S0, eligible from bar 30, should also have pre-200 entries -- proves
+    # the mask isn't just blanking everything before bar 200.
+    assert targets.entries.loc[ohlcv.index[30] : ohlcv.index[199], "S0"].any()
+
+
 def test_ensemble_enters_when_all_agree():
     """With min_agree=1, any single signal triggers entry."""
     cfg = LabConfig(min_history_bars=50)
@@ -196,6 +230,7 @@ def test_three_voter_matches_manual_bb_rsi_ema():
     """voters=(bb,rsi,ema) must equal a hand-computed 3-voter vote."""
     from ggTrader.lab.strategies.indicators import (
         bb_signals,
+        eligibility_mask,
         ema_signals,
         extract_close,
         rsi_signals,
@@ -215,7 +250,10 @@ def test_three_voter_matches_manual_bb_rsi_ema():
     ema_ent, ema_ext = ema_signals(close, strat.ema_fast, strat.ema_slow)
     entry_votes = bb_ent.astype(int) + rsi_ent.astype(int) + ema_ent.astype(int)
     exit_votes = bb_ext.astype(int) + rsi_ext.astype(int) + ema_ext.astype(int)
-    exp_entries = (entry_votes >= 2).astype(bool)
+    # PIT eligibility: the plan's single asof (bar 100) means entries before
+    # that bar are masked out -- see eligibility_mask.
+    mask = eligibility_mask(plans, symbols, ohlcv.index)
+    exp_entries = (entry_votes >= 2).astype(bool) & mask
     exp_exits = rsi_ext | (exit_votes >= 2)
 
     pd.testing.assert_frame_equal(got.entries, exp_entries)
@@ -354,7 +392,11 @@ def test_exit_controls_threaded_through_sweep_signals():
     swept = strat.sweep_signals([combo], symbols, ohlcv)
     key = combo_name("ensemble", combo)
 
+    # sweep_signals has no per-date PIT eligibility concept (no `plans` dict);
+    # to_targets does, and masks entries to bars on/after the plan's asof
+    # date (see eligibility_mask). Use index[0] here so the mask covers the
+    # whole window and this test compares exit-control wiring, not masking.
     direct = EnsembleSignal(cfg, min_agree=1, td_stop=5, exits_enabled=False).to_targets(
-        {ohlcv.index[50]: [{"symbol": s, "weight": 0.0} for s in symbols]}, ohlcv
+        {ohlcv.index[0]: [{"symbol": s, "weight": 0.0} for s in symbols]}, ohlcv
     )
     pd.testing.assert_frame_equal(swept[key].exits, direct.exits)

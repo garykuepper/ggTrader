@@ -145,8 +145,13 @@ def test_ema_cross_sweep_signals_matches_single_run():
     cfg = LabConfig(min_history_bars=100)
     fast, slow = 10, 50
     strat = EmaCrossSignal(cfg, ema_fast=fast, ema_slow=slow)
+    # sweep_signals has no per-date PIT eligibility concept (no `plans` dict);
+    # to_targets masks entries to bars on/after the plan's asof date (see
+    # eligibility_mask). Use index[0] so the mask covers the whole window
+    # and this test compares vectorized-vs-single-combo signal generation,
+    # not masking.
     plans = {
-        ohlcv.index[200]: [
+        ohlcv.index[0]: [
             {"symbol": "A", "weight": 0.0, "ema_fast": fast, "ema_slow": slow},
             {"symbol": "B", "weight": 0.0, "ema_fast": fast, "ema_slow": slow},
         ]

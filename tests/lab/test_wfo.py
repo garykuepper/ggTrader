@@ -327,9 +327,13 @@ def test_sweep_fold_weights_no_rebalance_dates_returns_empty():
     ohlcv = _ohlcv(symbols, 50)
     cfg = LabConfig(top_n=1, min_history_bars=5)
     base_config = {"START_CASH": 10000.0, "FEES": 0.0, "SLIPPAGE": 0.0, "FREQ": "1d"}
-    # A window with no full month inside it produces no rebalance dates.
+    # A single-bar window has no forward period to trade into, so it still
+    # produces zero rebalance dates (item 12 fix: a *multi*-bar window now
+    # gets a decision at window start instead of waiting for month-end --
+    # see test_rebalance_dates_window_start_gets_a_decision below -- but a
+    # single-bar window genuinely has nothing to rebalance into).
     window_start = ohlcv.index[0]
-    window_end = ohlcv.index[1]
+    window_end = ohlcv.index[0]
     grid = [{"top_n": 1}]
 
     results, all_eq = _sweep_fold_weights(
@@ -345,6 +349,35 @@ def test_sweep_fold_weights_no_rebalance_dates_returns_empty():
     )
     assert results == []
     assert all_eq == {}
+
+
+def test_sweep_fold_weights_window_start_gets_a_decision():
+    """A multi-bar window that spans less than a full month must still get a
+    decision at window start -- not sit in cash until the next month-end
+    (item 12, docs/research/2026-08-18-wfo-anchor-leakage-fix.md)."""
+    from ggTrader.lab.wfo import _sweep_fold_weights
+
+    symbols = ["X", "Y"]
+    ohlcv = _ohlcv(symbols, 50)
+    cfg = LabConfig(top_n=1, min_history_bars=5)
+    base_config = {"START_CASH": 10000.0, "FEES": 0.0, "SLIPPAGE": 0.0, "FREQ": "1d"}
+    window_start = ohlcv.index[0]
+    window_end = ohlcv.index[5]
+    grid = [{"top_n": 1}]
+
+    results, all_eq = _sweep_fold_weights(
+        "tinyweight",
+        _TinyWeight,
+        cfg,
+        ohlcv,
+        window_start,
+        window_end,
+        base_config,
+        grid,
+        _tiny_weight_universe_fn,
+    )
+    assert results != []
+    assert all_eq != {}
 
 
 def test_generate_folds_count_and_boundaries():
@@ -968,6 +1001,66 @@ def test_run_wfo_anchor_fallback_on_gate_failure():
     assert len(anchor_lines) >= 1
     for line in anchor_lines:
         assert "FAIL" in line
+
+
+def test_run_wfo_anchor_fit_per_fold_no_future_data(monkeypatch):
+    """Anchor set must be recomputed per fold on data up to that fold's
+    train_end only -- never on the full sample. Regression test for the
+    anchor-leakage bug (docs/research/2026-08-18-wfo-anchor-leakage-fix.md).
+    """
+    import ggTrader.lab.wfo as wfo_mod
+
+    symbols = ["X", "Y"]
+    n = 252 * 7
+    ohlcv = _ohlcv(symbols, n)
+    spy_close = ohlcv["X"]["close"].copy()
+    cfg = LabConfig(top_n=10, lookback=20, skip=5, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+        "SIGNAL_POSITION_SIZE": 0.5,
+    }
+    eval_start = ohlcv.index[0]
+    eval_end = ohlcv.index[-1]
+    grid = [{"param_a": 1}, {"param_a": 2}]
+
+    seen_max_index = []
+    real_compute_anchor_set = wfo_mod.compute_anchor_set
+
+    def _spy_compute_anchor_set(strategy_name, strategy_cls, cfg_, ohlcv_slice, *args, **kwargs):
+        seen_max_index.append(ohlcv_slice.index.max())
+        return real_compute_anchor_set(
+            strategy_name, strategy_cls, cfg_, ohlcv_slice, *args, **kwargs
+        )
+
+    monkeypatch.setattr(wfo_mod, "compute_anchor_set", _spy_compute_anchor_set)
+
+    folds = wfo_mod.generate_folds(pd.Timestamp(eval_start), pd.Timestamp(eval_end))
+    assert len(folds) >= 2, "need >= 2 folds for this test to be meaningful"
+
+    run_wfo(
+        "tiny",
+        _TinySignal,
+        cfg,
+        ohlcv,
+        spy_close,
+        str(eval_start.date()),
+        str(eval_end.date()),
+        "test",
+        base_config,
+        grid,
+    )
+
+    assert len(seen_max_index) == len(folds)
+    for fold, max_idx in zip(folds, seen_max_index):
+        # The slice handed to compute_anchor_set must never extend past this
+        # fold's train_end -- that's the no-lookahead guarantee.
+        assert max_idx <= fold.train_end
+    # And folds must actually differ in cutoff (expanding window), proving
+    # the anchor isn't just being fit on the same full-sample slice every time.
+    assert len(set(seen_max_index)) > 1
 
 
 def test_run_wfo_returns_wforesult_namedtuple():

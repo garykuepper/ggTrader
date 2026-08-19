@@ -21,8 +21,39 @@ def test_rebalance_dates_are_month_ends_excluding_last():
     dates = rebalance_dates(
         idx, pd.Timestamp("2021-01-31", tz="UTC"), pd.Timestamp("2021-06-30", tz="UTC")
     )
-    assert [d.strftime("%Y-%m") for d in dates] == ["2021-02", "2021-03", "2021-04", "2021-05"]
+    # First entry is the window's first trading day itself (2021-02-01, a
+    # Monday) -- item 12 fix: a decision must exist at/immediately after
+    # window start, not just at the first month-end, or the fold starts in
+    # pure cash for up to a month. See
+    # docs/research/2026-08-18-wfo-anchor-leakage-fix.md.
+    assert dates[0] == pd.Timestamp("2021-02-01", tz="UTC")
+    assert [d.strftime("%Y-%m") for d in dates] == [
+        "2021-02",
+        "2021-02",
+        "2021-03",
+        "2021-04",
+        "2021-05",
+    ]
     assert all(d.tz is not None for d in dates)
+
+
+def test_rebalance_dates_window_start_not_duplicated_when_already_month_end():
+    """If the window's first trading day IS already the first month-end
+    (e.g. eval_start falls on the last trading day of its month), the
+    window-start decision must not be duplicated."""
+    idx = pd.date_range("2021-01-01", "2021-04-30", freq="B", tz="UTC")
+    jan_end = idx[idx.tz_convert(None).to_period("M") == "2021-01"][-1]
+    dates = rebalance_dates(idx, jan_end, pd.Timestamp("2021-04-30", tz="UTC"))
+    assert dates[0] == jan_end
+    assert dates.count(jan_end) == 1
+
+
+def test_rebalance_dates_single_bar_window_has_no_forward_period():
+    """A window that is a single trading day has nothing to trade forward
+    into, so it must still produce zero rebalance dates."""
+    idx = pd.date_range("2021-01-01", "2021-01-10", freq="B", tz="UTC")
+    single = idx[3]
+    assert rebalance_dates(idx, single, single) == []
 
 
 def test_rebalance_dates_empty_when_no_overlap():

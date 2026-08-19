@@ -2,6 +2,75 @@
 
 ## 2026-08-18
 
+### Fix: lab/WFO research-validity pass (Phase B of the review plan)
+
+Five research-correctness bugs in the lab/WFO stack, all in `src/ggTrader/lab/`
+unless noted. None touch `src/ggTrader/paper/` (Phase A, separate).
+
+- **WFO anchor-set leakage**: `run_wfo` (`wfo.py`) used to fit the defensive
+  "anchor" fallback combo once, on the **full** eval-span `ohlcv`, then reuse
+  it inside every fold that failed gates or traded while halted — a fold's
+  reported "OOS" number could come from a combo chosen with knowledge of
+  price action years past that fold's own test window. Fixed: the anchor is
+  now recomputed every fold on `ohlcv.loc[:fold.train_end]` only (expanding
+  window, no caching across folds — inputs differ every fold, correctness
+  over speed per the review plan). New regression test asserts the exact
+  data slice passed to `compute_anchor_set` per fold
+  (`tests/lab/test_wfo.py::test_run_wfo_anchor_fit_per_fold_no_future_data`).
+  Mechanism-level A/B confirms the leak is real (full-sample and fold-1-only
+  anchor fits pick different combos) but bounded in practice — see
+  `docs/research/2026-08-18-wfo-anchor-leakage-fix.md` for the full
+  before/after and the still-open full-18-fold re-run.
+- **`leveraged_rotation_research.py` universe survivorship regression**:
+  commit `18a4cc2` (2026-07-16) replaced the union-over-span universe
+  (`equity_universe_between`) with `universe_members_asof(universe,
+  pd.Timestamp.now())`, describing it as a "point-in-time correct" fix — that
+  was backwards. Applying *today's* index membership to a 2019+ backtest
+  drops every company that has since left the index (survivorship bias) and
+  makes the run non-reproducible (`now()` moves). Reverted to
+  `equity_universe_between(es, ee)`. The NO-GO verdict for leveraged
+  rotation is unaffected (an ablation already showed this variable wasn't
+  the operative one — see the corrected
+  `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` and
+  `RESEARCH_SNAPSHOT.md`). Test reworked to assert the span args
+  (`tests/scripts/test_leveraged_rotation_research.py`).
+- **ML gate training leaks** (`train_gate.py`, already falsified/disabled
+  2026-06-28, kept correct only in case of future revival): switched
+  SP500 membership from `sp500_members_asof(now())` (same survivorship
+  issue as above) to `equity_universe_between`; added a 5-row purge gap
+  (`TimeSeriesSplit(gap=PURGE_GAP)`) between train/test folds so the 5-day
+  forward label can't leak across the fold boundary; added a prominent
+  module-docstring warning that the gate is falsified and must not be
+  revived without redoing the return-based ablation.
+- **PIT eligibility masking for signal strategies**: `to_targets()` in
+  `strategies/ensemble.py` and every strategy in `strategies/signals.py`
+  generated entries across the *entire* bar index for the union of every
+  symbol ever selected at any rebalance date — a symbol added to the index
+  years into the sample still traded from day one. Added
+  `eligibility_mask()` (`strategies/indicators.py`), keyed off the
+  per-rebalance-date `plans` dict, and AND it into `entries` (not `exits`,
+  to avoid stranding an already-open position). Threaded through
+  `ensemble.py`, `ensemble_conviction` (same file), `ensemble_ic.py`,
+  `ensemble_kelly.py`, and all of `signals.py`'s per-indicator strategies.
+  For `EnsembleSignal`/`EnsembleConvictionSignal`, the mask is applied
+  *before* the td_stop-forced-exit computation so a timed exit is anchored
+  to a real (eligible) entry. New regression test with a symbol whose
+  eligibility starts mid-sample
+  (`tests/lab/test_ensemble.py::test_ensemble_no_entries_before_symbol_eligibility_start`).
+  `harness.leak_check` (select()-level, unaffected by this change) still
+  passes.
+- **Weight-strategy folds started ~1 month in cash**: `rebalance_dates()`
+  (`data.py`) returned only month-end trading days, excluding the final
+  month — so a weight-strategy fold had no decision at all until the first
+  month-end, leaving the fold's opening weeks untraded. Now prepends the
+  window's own first trading day (skipped only for a single-bar window with
+  no forward period to trade, or if it already coincides with the first
+  month-end) — full causality preserved, same as every other rebalance
+  date: its target takes effect on the first bar strictly after it. Tests
+  updated/added in `tests/lab/test_data.py` and `tests/lab/test_wfo.py`.
+
+675 lab tests pass (849 full suite). Ruff clean on touched files.
+
 ### Fix: unadjusted-split guard for paper trading P&L
 
 - **Found**: MNST did a 2-for-1 split on 2026-08-11. Alpaca's paper-trading

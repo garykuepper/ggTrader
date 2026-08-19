@@ -12,7 +12,12 @@ import pandas as pd
 
 from ggTrader.lab.kelly import kelly_sizes
 from ggTrader.lab.strategies.ensemble import DEFAULT_VOTERS, EnsembleSignal, _validate_voters
-from ggTrader.lab.strategies.indicators import eligible_symbols, extract_close, extract_volume
+from ggTrader.lab.strategies.indicators import (
+    eligibility_mask,
+    eligible_symbols,
+    extract_close,
+    extract_volume,
+)
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
 
@@ -115,9 +120,12 @@ class EnsembleKellySignal:
         ]
 
     def _generate_signals_with_sizes(
-        self, close: pd.DataFrame, volume: pd.DataFrame
+        self,
+        close: pd.DataFrame,
+        volume: pd.DataFrame,
+        entry_mask: pd.DataFrame | None = None,
     ) -> SignalTargets:
-        base_targets = self._base_ensemble()._generate_signals(close, volume)
+        base_targets = self._base_ensemble()._generate_signals(close, volume, entry_mask=entry_mask)
         sizes = kelly_sizes(
             base_targets.entries,
             base_targets.exits,
@@ -133,7 +141,8 @@ class EnsembleKellySignal:
         symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
         close = extract_close(data, symbols)
         volume = extract_volume(data, symbols)
-        return self._generate_signals_with_sizes(close, volume)
+        mask = eligibility_mask(plans, symbols, data.index)
+        return self._generate_signals_with_sizes(close, volume, entry_mask=mask)
 
     def sweep_signals(
         self, combos: list[dict], symbols: list[str], data: pd.DataFrame

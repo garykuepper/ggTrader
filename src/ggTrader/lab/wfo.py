@@ -601,25 +601,30 @@ def run_wfo(
     fold_winners: List[Dict[str, Any]] = []
     wfo_state = WfoState()
 
-    anchor = compute_anchor_set(
-        strategy_name,
-        strategy_cls,
-        cfg,
-        ohlcv,
-        base_config,
-        grid,
-        universe_fn=universe_fn,
-    )
-    print(
-        f"  Anchor set: {anchor.combo}"
-        f" (MaxDD {anchor.max_drawdown_pct:.1f}%, CAGR {anchor.cagr_pct:.1f}%)",
-        flush=True,
-    )
+    anchor: AnchorSet | None = None
 
     for i, fold in enumerate(folds):
+        # Anchor set must be fit only on data available as of this fold's
+        # train_end (expanding window) -- fitting it on the full sample and
+        # reusing it as an OOS fallback would leak future data into every
+        # fold that fails its gates or trades while halted. Each fold's
+        # train_end differs (expanding by TEST_MONTHS), so the input slice
+        # is never identical across folds and there is no safe way to cache
+        # this across folds; recompute every fold. Correctness over speed.
+        anchor = compute_anchor_set(
+            strategy_name,
+            strategy_cls,
+            cfg,
+            ohlcv.loc[: fold.train_end],
+            base_config,
+            grid,
+            universe_fn=universe_fn,
+        )
         print(
             f"  Fold {i + 1}/{len(folds)}: train {fold.train_start.date()}→{fold.train_end.date()}"
-            f" | test {fold.test_start.date()}→{fold.test_end.date()}",
+            f" | test {fold.test_start.date()}→{fold.test_end.date()}"
+            f" | anchor {anchor.combo} (MaxDD {anchor.max_drawdown_pct:.1f}%,"
+            f" CAGR {anchor.cagr_pct:.1f}%)",
             end="",
             flush=True,
         )

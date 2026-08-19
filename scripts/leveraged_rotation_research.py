@@ -7,8 +7,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from ggTrader.lab.data import STOCK_BASE_CONFIG, load_ohlcv, normalize_yf_ticker
-from ggTrader.data.core.index_constituents import universe_members_asof
+from ggTrader.lab.data import STOCK_BASE_CONFIG, equity_universe_between, load_ohlcv
 from ggTrader.lab.strategies.leveraged_rotation import (
     LeveragedRotationNasdaq100,
     LeveragedRotationRussell2000,
@@ -44,8 +43,7 @@ def run_universe(universe: str, eval_start: str, eval_end: str, cfg: LabConfig) 
     warmup_days = int(max(cfg.lookback, cfg.min_history_bars) * 1.6) + 60
     data_start = str((es - pd.Timedelta(days=warmup_days)).date())
 
-    now = pd.Timestamp.now(tz="UTC")
-    members = [normalize_yf_ticker(m) for m in universe_members_asof(universe, now)]
+    members = equity_universe_between(es, ee, universe=universe)
     etf_tickers = sorted(set(cls.PAIR_3X) | set(cls.PAIR_2X))
     all_symbols = sorted(set(members) | set(etf_tickers) | {"SPY"})
     ohlcv = load_ohlcv(all_symbols, data_start, eval_end, use_negative_cache=True)

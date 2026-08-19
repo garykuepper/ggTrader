@@ -23,21 +23,36 @@ retracted here.
 This report is the first honest measurement, run today. The orchestration script
 (`scripts/leveraged_rotation_research.py`) had an uncommitted, unrun fix on disk at
 session start that (a) switched universe membership from `equity_universe_between`
-(all tickers that existed *anywhere* in the eval span — survivorship-biased) to
-`universe_members_asof` (point-in-time correct membership), and (b) shortened the
-eval window from 2010-06-30 to 2019-01-01. Running it produced a clean **NO-GO across
-all three universes**: every sleeve underperforms SPY by a wide margin with
-drawdowns of -80% to -89%, and the regime halt is active for nearly every fold,
-meaning the WFO harness itself judged the strategy too unstable to trade its own
-selected parameters live.
+(all tickers that existed *anywhere* in the eval span) to `universe_members_asof`
+called with `pd.Timestamp.now()`, and (b) shortened the eval window from 2010-06-30
+to 2019-01-01. Running it produced a clean **NO-GO across all three universes**:
+every sleeve underperforms SPY by a wide margin with drawdowns of -80% to -89%, and
+the regime halt is active for nearly every fold, meaning the WFO harness itself
+judged the strategy too unstable to trade its own selected parameters live.
+
+**2026-08-18 correction:** the (a) change above was described here as a
+"point-in-time correct membership" fix. That was backwards. Calling
+`universe_members_asof(universe, pd.Timestamp.now())` applies *today's* index
+membership uniformly across the entire 2019→present backtest — it's survivorship
+bias in the classic sense (any company that left the index between the point it
+traded and today is silently excluded from the whole span), and it makes the run
+non-reproducible (the member set changes every time the script is re-run, since
+`now()` moves). `equity_universe_between(es, ee)` — the union of everything that was
+a member *anywhere* in `[es, ee]` — is the less-biased of the two and is not
+point-in-time exact either, but doesn't retroactively strip out real historical
+members. The universe call has been reverted to `equity_universe_between(es, ee)`
+(`scripts/leveraged_rotation_research.py`, see the fix commit and
+`tests/scripts/test_leveraged_rotation_research.py`). The ablation below already
+showed this variable wasn't the operative one for the NO-GO verdict, so **the
+NO-GO stands** — this correction only fixes the mischaracterization of which
+membership function is more correct, not the result.
 
 A follow-up ablation (SP500 sleeve only, isolating the two changes) shows the
-**eval-window shortening drove the headline number, not the survivorship-bias fix**:
-swapping only the universe-membership function (833 survivorship-biased members vs.
-503 point-in-time-correct members) produced byte-identical results, while swapping
-only the eval window changed Sharpe from -0.56 (2010+) to -0.24 (2019+). Both windows
-are decisively NO-GO; the survivorship-bias fix, while methodologically correct and
-worth keeping, was not the operative variable here.
+**eval-window shortening drove the headline number, not the universe-membership
+function**: swapping only the universe-membership function (833 members via
+`equity_universe_between` vs. 503 members via `universe_members_asof(..., now())`)
+produced byte-identical results, while swapping only the eval window changed Sharpe
+from -0.56 (2010+) to -0.24 (2019+). Both windows are decisively NO-GO.
 
 This closes the leveraged/inverse rotation arc. It joins the equity-diversification
 book (SP500/MidCap/Nasdaq blend, closed 2026-06-27) and crypto-carry (closed
@@ -48,10 +63,10 @@ CAGR 16.3%, DD -11%) remains the only validated, deployed configuration.
 
 | System Configuration | OOS Sharpe | CAGR | Max Drawdown | Gate Pass Rate | Sizing |
 |---|---|---|---|---|---|
-| **Leveraged rotation — SP500** (2019+, PIT universe) | -0.24 | -14.5% | -80.8% | 3/26 folds | anchor fallback (regime halt) |
-| **Leveraged rotation — Nasdaq100** (2019+, PIT universe) | -0.37 | -23.7% | -88.5% | 3/26 folds | anchor fallback (regime halt) |
-| **Leveraged rotation — Russell2000** (2019+, PIT universe) | -0.14 | -15.3% | -84.2% | 4/26 folds | anchor fallback (regime halt) |
-| **Leveraged rotation — SP500** (2010+, PIT or survivorship universe — identical) | -0.56 | -22.6% | -98.6% | n/a | anchor fallback (regime halt) |
+| **Leveraged rotation — SP500** (2019+, span-union universe) | -0.24 | -14.5% | -80.8% | 3/26 folds | anchor fallback (regime halt) |
+| **Leveraged rotation — Nasdaq100** (2019+, span-union universe) | -0.37 | -23.7% | -88.5% | 3/26 folds | anchor fallback (regime halt) |
+| **Leveraged rotation — Russell2000** (2019+, span-union universe) | -0.14 | -15.3% | -84.2% | 4/26 folds | anchor fallback (regime halt) |
+| **Leveraged rotation — SP500** (2010+, span-union or today's-membership universe — identical) | -0.56 | -22.6% | -98.6% | n/a | anchor fallback (regime halt) |
 | **SPY benchmark** | 0.65–0.77 | 14.1–15.3% | -33.7% | N/A | Buy-and-hold |
 | *For reference — live SP500 core (different strategy, deployed)* | *1.12* | *16.3%* | *-11%* | *16/17 folds* | *3% flat* |
 
@@ -71,9 +86,12 @@ OOS Sharpe -0.24 (SP500) / -0.37 (Nasdaq100) / -0.14 (Russell2000) vs. SPY 0.65-
 MaxDD -80.8% to -88.5% vs. SPY -33.7%; regime halt active on 22-23 of 26 folds in
 every universe (strategy trades its defensive anchor set, not its selected
 parameters, almost the entire backtest). Confirmed via ablation that this holds
-under both the 2010+ and 2019+ eval windows and is independent of the
-survivorship-bias universe-membership fix (identical results with 833 vs. 503
-members). The core mechanism — using cross-sectional signal breadth as a timing
+under both the 2010+ and 2019+ eval windows and is independent of which universe
+membership function is used (identical results with 833 span-union members vs.
+503 today's-membership members — see the 2026-08-18 correction in §1: the
+`universe_members_asof(..., now())` variant is the survivorship-biased one and
+has been reverted, but it was never the operative variable for this verdict).
+The core mechanism — using cross-sectional signal breadth as a timing
 input for 2x/3x leveraged directional bets — does not survive contact with real
 leveraged-ETF decay and whipsaw.
 

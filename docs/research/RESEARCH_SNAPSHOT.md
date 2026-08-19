@@ -98,11 +98,21 @@ verdict — more durable than the roster above:
   Multi-universe equity blending only became a real GO (1.14 Sharpe) once
   capped at a realistic 1.0x leverage via inverse-vol/target-vol weighting —
   the earlier, more naively-leveraged version was weaker evidence.
-- **Point-in-time universe membership matters.** `equity_universe_between`
-  (span-union, survivorship-biased) vs. `universe_members_asof` (point-in-time
-  correct) — using the wrong one silently inflates backtest results. Always
-  use the point-in-time version for anything claiming to time entries/exits
-  around index membership.
+- **Universe membership function matters, and calling `universe_members_asof`
+  with `pd.Timestamp.now()` is the survivorship-biased choice, not the fix.**
+  A 2026-07-16 change in `leveraged_rotation_research.py` swapped
+  `equity_universe_between(es, ee)` (union of members over the eval span) for
+  `universe_members_asof(universe, pd.Timestamp.now())`, describing it as a
+  "point-in-time correct" fix — that was backwards and was corrected
+  2026-08-18 (`docs/research/2026-08-18-wfo-anchor-leakage-fix.md`). Applying
+  *today's* index membership uniformly to a multi-year historical backtest
+  drops every company that has since left the index, and makes the run
+  non-reproducible since the member set changes with wall-clock time.
+  `equity_universe_between` (span-union) is the less-biased default for lab
+  research; true per-date point-in-time membership (a different function,
+  keyed by each decision date) is the only way to remove this bias entirely
+  and should be used when an idea specifically depends on entry/exit timing
+  around index additions/removals.
 - **Always benchmark timing/rotation ideas against naive buy-and-hold of the
   same instrument, not just SPY.** This is what flipped the leveraged-trend
   arc's read from "looks promising" (low drawdown!) to NO-GO (loses to
