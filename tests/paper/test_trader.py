@@ -32,17 +32,6 @@ def _stub_pending_order_db():
 
 
 @pytest.fixture(autouse=True)
-def _stub_split_check():
-    """Default to "no splits detected" so existing tests don't hit the
-    network via yfinance. Individual tests override to exercise the
-    unadjusted-split path."""
-    with patch("ggTrader.paper.trader.get_latest_snapshot_positions", return_value={}):
-        with patch("ggTrader.paper.trader.get_latest_snapshot_run_date", return_value=None):
-            with patch("ggTrader.paper.trader.get_recent_splits", return_value=({}, False)):
-                yield
-
-
-@pytest.fixture(autouse=True)
 def _stub_risk_state_db():
     """Keep persisted-peak reads/writes off the real DB by default.
     Individual tests override to exercise cross-run drawdown halts."""
@@ -85,6 +74,7 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
         "buying_power": cash * 2,
     }
     broker.get_positions.return_value = positions or {}
+    broker.get_split_corrections.return_value = {}
     broker.submit_buy.return_value = "buy-order-1"
     broker.submit_sell.return_value = "sell-order-1"
     broker.get_clock.return_value = {"is_open": True}
@@ -136,6 +126,27 @@ class TestSellExits:
         broker.submit_sell.assert_not_called()
         assert result["sells"] == []
 
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sell_submits_brokers_uncorrected_qty_not_split_adjusted(self, mock_signals, *_):
+        # Broker holds 20.80410098 shares (never doubled for MNST's 2-for-1
+        # split) -- that is what can actually be sold. A sell for the
+        # split-adjusted 41.6 shares would be rejected by the broker.
+        mock_signals.return_value = _blend(buys=[], sells=["MNST"], as_of="2026-06-19")
+        mnst_qty = 20.80410098
+        trader, broker, _ = _make_trader(
+            positions={
+                "MNST": {
+                    "qty": mnst_qty,
+                    "market_value": mnst_qty * 47.77,
+                    "unrealized_pl": mnst_qty * 47.77 - 1887.11,
+                    "cost_basis": 1887.11,
+                }
+            }
+        )
+        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        trader.run()
+        broker.submit_sell.assert_called_once_with("MNST", mnst_qty)
+
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
@@ -166,6 +177,34 @@ class TestBuyEntries:
         result = trader.run()
         broker.submit_buy.assert_not_called()
         assert result["buys"] == []
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_concentration_check_uses_split_corrected_market_value(self, mock_signals, *_):
+        # MSFT is a new buy candidate; MNST is an existing, split-flagged
+        # holding. The concentration check's `positions` argument must carry
+        # MNST's corrected (doubled) market_value -- true economic exposure
+        # -- not the broker's uncorrected figure.
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of="2026-06-19")
+        mnst_qty = 20.80410098
+        mnst_broker_market_value = mnst_qty * 47.77
+        trader, broker, _ = _make_trader(
+            positions={
+                "MNST": {
+                    "qty": mnst_qty,
+                    "market_value": mnst_broker_market_value,
+                    "unrealized_pl": mnst_broker_market_value - 1887.11,
+                    "cost_basis": 1887.11,
+                }
+            }
+        )
+        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        trader._risk.check_concentration = MagicMock(return_value=False)
+        trader.run()
+        call_args = trader._risk.check_concentration.call_args
+        positions_arg = call_args[0][1]
+        assert positions_arg["MNST"]["market_value"] == pytest.approx(
+            mnst_broker_market_value * 2.0, abs=0.01
+        )
 
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
@@ -447,60 +486,75 @@ class TestDailyPnl:
         pnl_arg = notifier.daily_summary.call_args[0][1]
         assert pnl_arg == 0.0
 
-    @patch("ggTrader.paper.trader.get_recent_splits")
-    @patch("ggTrader.paper.trader.get_latest_snapshot_run_date")
-    @patch("ggTrader.paper.trader.get_latest_snapshot_positions")
     @patch("ggTrader.paper.trader.generate_blended_signals")
-    def test_flagged_split_symbol_marks_whole_summary_suspect_with_phantom_estimate(
-        self,
-        mock_signals,
-        mock_prev_positions,
-        mock_prev_run_date,
-        mock_splits,
-        _schema,
-        _trade,
-        _snap,
-        mock_prev,
+    def test_unapplied_split_corrects_the_daily_summary(
+        self, mock_signals, _schema, _trade, _snap, mock_prev
     ):
-        # MNST split 2-for-1 but the broker's qty (20.804) never doubled --
-        # its reported unrealized_pl is bogus. Rather than excluding it from
-        # the aggregate (which used to just shift the corruption into the
-        # derived "realized" line), the whole summary is now marked suspect
-        # with an estimated phantom amount, and the aggregate is computed
-        # over all positions so total - unrealized stays internally
-        # consistent.
+        # Real MNST numbers from the 2026-08-19 incident: broker qty
+        # (20.80410098) never doubled for the 2-for-1 split, so the broker's
+        # own unrealized_pl (-893.30) is phantom -- the true corrected
+        # position is a +100.51 gain. The broker-native corrector (mocked
+        # here via AlpacaBroker.get_split_corrections) reports the factor;
+        # the trader must apply it to positions/P&L before reporting, not
+        # hide the position's P&L.
         mock_prev.return_value = 99000.0
-        mock_prev_positions.return_value = {"MNST": {"qty": 20.804}}
-        mock_prev_run_date.return_value = "2026-06-18"
-        mock_splits.return_value = ({"MNST": [(date(2026, 6, 19), 2.0)]}, False)
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, _, notifier = _make_trader(
+        mnst_qty = 20.80410098
+        mnst_cost_basis = 1887.11
+        mnst_broker_market_value = mnst_qty * 47.77  # 993.81..., broker's bogus (pre-split) value
+        mnst_broker_pl = mnst_broker_market_value - mnst_cost_basis  # -893.30...
+        trader, broker, notifier = _make_trader(
             portfolio_value=100000.0,
             positions={
-                "MNST": {"qty": 20.804, "market_value": 986.84, "unrealized_pl": -900.27},
-                "VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22},
+                "MNST": {
+                    "qty": mnst_qty,
+                    "market_value": mnst_broker_market_value,
+                    "unrealized_pl": mnst_broker_pl,
+                    "unrealized_plpc": mnst_broker_pl / mnst_cost_basis,
+                    "cost_basis": mnst_cost_basis,
+                    "current_price": 47.77,
+                },
+                "VZ": {
+                    "qty": 77.05,
+                    "market_value": 3743.85,
+                    "unrealized_pl": 365.22,
+                    "cost_basis": 3378.63,
+                },
             },
         )
+        broker.get_split_corrections.return_value = {"MNST": 2.0}
         trader.run()
+
         kwargs = notifier.daily_summary.call_args[1]
-        assert kwargs["unrealized_pnl"] == -900.27 + 365.22
-        assert kwargs["flagged_splits"] == ["MNST"]
-        assert kwargs["phantom_estimate"] == -900.27
+        mnst_true_pl = mnst_broker_market_value * 2.0 - mnst_cost_basis  # +100.51...
+        assert kwargs["unrealized_pnl"] == pytest.approx(mnst_true_pl + 365.22, abs=0.01)
+        assert kwargs["split_corrections"] == {"MNST": 2.0}
+        assert kwargs["booked_equity"] == 100000.0
+        # portfolio_value (first positional arg) is the split-adjusted total.
+        corrected_value = notifier.daily_summary.call_args[0][0]
+        assert corrected_value == pytest.approx(
+            100000.0 + (mnst_broker_market_value * 2.0 - mnst_broker_market_value), abs=0.01
+        )
+        # The corrected position's own P&L is shown as a real number.
+        reported_positions = notifier.daily_summary.call_args[0][2]
+        assert reported_positions["MNST"]["unrealized_pl"] == pytest.approx(mnst_true_pl, abs=0.01)
 
     @patch("ggTrader.paper.trader.generate_blended_signals")
-    def test_no_flagged_splits_zero_phantom_estimate(
+    def test_no_split_corrections_reports_broker_values_unchanged(
         self, mock_signals, _schema, _trade, _snap, mock_prev
     ):
         mock_prev.return_value = 99000.0
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, _, notifier = _make_trader(
+        trader, broker, notifier = _make_trader(
             portfolio_value=100000.0,
             positions={"VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22}},
         )
+        broker.get_split_corrections.return_value = {}
         trader.run()
         kwargs = notifier.daily_summary.call_args[1]
-        assert kwargs["flagged_splits"] == []
-        assert kwargs["phantom_estimate"] == 0.0
+        assert kwargs["split_corrections"] == {}
+        assert kwargs["booked_equity"] is None
+        assert kwargs["unrealized_pnl"] == 365.22
 
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)

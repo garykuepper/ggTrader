@@ -63,21 +63,36 @@ class TelegramNotifier:
         positions: dict[str, dict],
         total_pnl: float | None = None,
         unrealized_pnl: float | None = None,
-        flagged_splits: list[str] | None = None,
-        phantom_estimate: float = 0.0,
+        split_corrections: dict[str, float] | None = None,
+        booked_equity: float | None = None,
         errors: list[str] | None = None,
     ) -> bool:
+        """`portfolio_value`/`positions`/`total_pnl`/`unrealized_pnl` are all
+        expected to already be split-corrected by the caller (see
+        `split_check.apply_corrections_to_positions`) -- this only adds a
+        note calling out which symbols were corrected and, when the broker's
+        own (uncorrected) equity figure is supplied via `booked_equity`, both
+        numbers side by side so a reader can see exactly what changed and
+        why. Unlike the old "exclude flagged from unrealized" behavior, no
+        position's P&L is ever hidden -- the corrected figures are real
+        numbers to show, not an unknown to hide.
+        """
         arrow = "🟢" if daily_pnl >= 0 else "🔴"
         day_start = portfolio_value - daily_pnl
         pnl_pct = (daily_pnl / day_start * 100) if day_start > 0 else 0.0
         lines = ["<b>📈 Paper Portfolio Summary</b>"]
-        if flagged_splits:
-            symbols = ", ".join(flagged_splits)
+        if split_corrections:
+            corr_str = ", ".join(f"{sym} {factor:g}x" for sym, factor in split_corrections.items())
             lines.append(
-                f"<b>⚠️ SUSPECT DATA:</b> {symbols} — broker split not reflected; "
-                f"ALL P&L figures below may be off by an estimated "
-                f"${phantom_estimate:,.2f}"
+                f"<b>⚠️ Split correction applied:</b> {corr_str} — the broker "
+                f"never applied this split to the account; figures below are "
+                f"split-adjusted."
             )
+            if booked_equity is not None:
+                lines.append(
+                    f"Booked equity (broker, uncorrected): ${booked_equity:,.2f} | "
+                    f"Split-adjusted equity: ${portfolio_value:,.2f}"
+                )
         lines += [
             f"Value: <b>${portfolio_value:,.2f}</b>",
             f"Daily P&L: {arrow} ${daily_pnl:+,.2f} ({pnl_pct:+.2f}%)",
@@ -92,7 +107,6 @@ class TelegramNotifier:
                 f"realized: ${rlz_arrow}{realized_pnl:,.2f}, "
                 f"unrealized: ${unrlz_arrow}{unrealized_pnl:,.2f}"
             )
-        flagged = set(flagged_splits or [])
         lines.append(f"Positions: {len(positions)}")
         if positions:
             lines.append("")
@@ -103,12 +117,6 @@ class TelegramNotifier:
                 qty = info.get("qty", 0.0)
                 price = info.get("current_price", 0.0)
                 qty_str = f"{qty:.0f}" if float(qty).is_integer() else f"{qty:.4f}"
-                if sym in flagged:
-                    lines.append(
-                        f"  {sym}: {qty_str} @ ${price:.2f} — "
-                        f"⚠️ split not reflected by broker, P&L unavailable"
-                    )
-                    continue
                 pl = info.get("unrealized_pl", 0.0)
                 plpc = info.get("unrealized_plpc", 0.0) * 100
                 pl_arrow = "+" if pl >= 0 else ""

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -89,6 +90,7 @@ class TestGetPositions:
         mock_pos.unrealized_pl = "50.00"
         mock_pos.unrealized_plpc = "0.0345"
         mock_pos.change_today = "0.012"
+        mock_pos.cost_basis = "1450.00"
         broker._client.get_all_positions.return_value = [mock_pos]
         result = broker.get_positions()
         assert result == {
@@ -100,6 +102,7 @@ class TestGetPositions:
                 "unrealized_pl": 50.0,
                 "unrealized_plpc": 0.0345,
                 "change_today": 0.012,
+                "cost_basis": 1450.0,
             }
         }
 
@@ -144,3 +147,91 @@ class TestGetClock:
             "next_open": "2026-06-22T09:30:00-04:00",
             "next_close": "2026-06-22T16:00:00-04:00",
         }
+
+
+def _forward_split_action(symbol="MNST", old_rate=1.0, new_rate=2.0, ex_date=date(2026, 8, 11)):
+    action = MagicMock()
+    action.symbol = symbol
+    action.old_rate = old_rate
+    action.new_rate = new_rate
+    action.ex_date = ex_date
+    return action
+
+
+class TestGetSplitCorrections:
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_unapplied_forward_split_is_flagged(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {
+            "forward_splits": [_forward_split_action()],
+        }
+        broker._client.get.return_value = []  # no matching SPLIT activity
+
+        result = broker.get_split_corrections(["MNST"], since=date(2026, 8, 1))
+
+        assert result == {"MNST": 2.0}
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_split_with_matching_activity_not_flagged(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {
+            "forward_splits": [_forward_split_action()],
+        }
+        broker._client.get.return_value = [{"symbol": "MNST", "date": "2026-08-11"}]
+
+        result = broker.get_split_corrections(["MNST"], since=date(2026, 8, 1))
+
+        assert result == {}
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_reverse_split_factor_below_one(self, mock_ca_cls):
+        broker = _make_broker()
+        action = _forward_split_action(symbol="XYZ", old_rate=10.0, new_rate=1.0)
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {
+            "reverse_splits": [action],
+        }
+        broker._client.get.return_value = []
+
+        result = broker.get_split_corrections(["XYZ"], since=date(2026, 8, 1))
+
+        assert result == {"XYZ": 0.1}
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_no_known_splits_returns_empty(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {}
+
+        result = broker.get_split_corrections(["VZ"], since=date(2026, 8, 1))
+
+        assert result == {}
+        # No account SPLIT activity is unnecessary when nothing is corp-flagged.
+        broker._client.get.assert_not_called()
+
+    def test_empty_symbol_list_returns_empty_without_api_call(self):
+        broker = _make_broker()
+
+        result = broker.get_split_corrections([], since=date(2026, 8, 1))
+
+        assert result == {}
+        broker._client.get.assert_not_called()
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_corporate_actions_api_failure_fails_soft(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.side_effect = Exception("API down")
+
+        result = broker.get_split_corrections(["MNST"], since=date(2026, 8, 1))
+
+        assert result == {}
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_activities_api_failure_fails_soft(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {
+            "forward_splits": [_forward_split_action()],
+        }
+        broker._client.get.side_effect = Exception("API down")
+
+        result = broker.get_split_corrections(["MNST"], since=date(2026, 8, 1))
+
+        assert result == {}

@@ -122,22 +122,42 @@ class TestDailySummary:
         assert body.index("MSFT") < body.index("GOOG") < body.index("AAPL")
 
     @patch("ggTrader.paper.notifier.requests.post")
-    def test_daily_summary_flags_unadjusted_split_instead_of_pl(self, mock_post):
+    def test_daily_summary_shows_split_correction_note(self, mock_post):
         mock_post.return_value = MagicMock(status_code=200)
         n = _make_notifier()
+        # MNST's split-corrected figures -- broker qty never doubled, so the
+        # corrected market_value/unrealized_pl (computed by the caller) are
+        # passed in already-corrected, and shown as real numbers, not hidden.
         positions = {
             "MNST": {
-                "qty": 20.804,
-                "unrealized_pl": -900.27,
-                "unrealized_plpc": -0.477,
-                "current_price": 47.43,
+                "qty": 20.80410098,
+                "unrealized_pl": 100.51,
+                "unrealized_plpc": 0.0533,
+                "current_price": 47.77,
             },
         }
-        n.daily_summary(102000.0, 500.0, positions, flagged_splits=["MNST"])
+        result = n.daily_summary(
+            102000.0,
+            500.0,
+            positions,
+            split_corrections={"MNST": 2.0},
+            booked_equity=101006.19,
+        )
+        assert result is True
         body = mock_post.call_args[1]["json"]["text"]
-        assert "split not reflected by broker" in body
-        assert "-900.27" not in body
-        assert "-47.7" not in body
+        assert "MNST" in body
+        assert "2" in body  # correction factor called out
+        assert "101,006.19" in body or "101006.19" in body  # booked equity
+        assert "102,000" in body or "102000" in body  # split-adjusted equity
+        assert "100.51" in body  # true corrected P&L is shown, not hidden
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_no_split_note_when_no_corrections(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        n.daily_summary(102000.0, 500.0, {"AAPL": {"qty": 10.0, "unrealized_pl": 50.0}})
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "split" not in body.lower()
 
     @patch("ggTrader.paper.notifier.requests.post")
     def test_daily_summary_includes_errors_section(self, mock_post):
@@ -155,33 +175,3 @@ class TestDailySummary:
         n.daily_summary(102000.0, 500.0, {})
         body = mock_post.call_args[1]["json"]["text"]
         assert "Errors" not in body
-
-    @patch("ggTrader.paper.notifier.requests.post")
-    def test_daily_summary_suspect_banner_covers_all_pnl_lines_when_flagged(self, mock_post):
-        mock_post.return_value = MagicMock(status_code=200)
-        n = _make_notifier()
-        positions = {
-            "MNST": {
-                "qty": 20.804,
-                "unrealized_pl": -900.27,
-                "unrealized_plpc": -0.477,
-                "current_price": 47.43,
-            },
-        }
-        n.daily_summary(
-            102000.0, 500.0, positions, flagged_splits=["MNST"], phantom_estimate=-900.27
-        )
-        body = mock_post.call_args[1]["json"]["text"]
-        assert "SUSPECT DATA" in body
-        assert "MNST" in body
-        assert "900.27" in body
-        assert body.index("SUSPECT DATA") < body.index("Value:")
-        assert body.index("SUSPECT DATA") < body.index("Daily P&L:")
-
-    @patch("ggTrader.paper.notifier.requests.post")
-    def test_daily_summary_no_banner_when_no_flagged_splits(self, mock_post):
-        mock_post.return_value = MagicMock(status_code=200)
-        n = _make_notifier()
-        n.daily_summary(102000.0, 500.0, {"AAPL": {"qty": 10.0, "unrealized_pl": 50.0}})
-        body = mock_post.call_args[1]["json"]["text"]
-        assert "SUSPECT DATA" not in body

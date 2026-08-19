@@ -1,234 +1,171 @@
-"""Tests for detecting stock-split events the paper broker failed to apply.
+"""Tests for computing corrections for stock splits the broker never applied.
 
 Context: Alpaca's paper-trading environment can mark a position to the
-post-split market price without adjusting the position's own qty/avg_entry
-(observed on MNST's 2026-08-11 2-for-1 split). That silently corrupts any
-downstream unrealized P&L math built from the broker's position fields.
+post-split market price while leaving its qty/avg_entry at the pre-split
+values (observed on MNST's 2026-08-11 2-for-1 split: broker qty stayed at
+20.80410098, cost_basis $1,887.11, avg_entry $90.708558, but current_price
+was already the post-split $47.77). Alpaca's own corporate-actions feed
+proves the split happened; its account-activities feed proves it was never
+booked against the account. Cross-referencing the two is the detector.
 """
 
 from __future__ import annotations
 
 from datetime import date
-from unittest.mock import MagicMock, patch
 
-import pandas as pd
+import pytest
 
 from ggTrader.paper.split_check import (
-    find_unadjusted_split_symbols,
-    get_recent_splits,
-    is_split_unadjusted,
+    apply_corrections_to_positions,
+    compute_split_corrections,
+    corrected_market_value,
+    corrected_unrealized_pl,
 )
 
-
-class TestIsSplitUnadjusted:
-    def test_flags_unchanged_qty_after_split(self):
-        # Broker never multiplied qty by the 2-for-1 ratio -> unadjusted.
-        assert is_split_unadjusted(qty_before=20.8, qty_after=20.8, split_ratio=2.0) is True
-
-    def test_does_not_flag_correctly_adjusted_qty(self):
-        # Broker doubled qty for the 2-for-1 split -> correctly adjusted.
-        assert is_split_unadjusted(qty_before=20.8, qty_after=41.6, split_ratio=2.0) is False
-
-    def test_tolerates_small_float_drift(self):
-        assert is_split_unadjusted(qty_before=20.804, qty_after=41.60799, split_ratio=2.0) is False
-
-    def test_reverse_split_flags_unchanged_qty(self):
-        # 1-for-10 reverse split (ratio 0.1); broker left qty unchanged.
-        assert is_split_unadjusted(qty_before=100.0, qty_after=100.0, split_ratio=0.1) is True
-
-    def test_reverse_split_does_not_flag_correctly_adjusted_qty(self):
-        assert is_split_unadjusted(qty_before=100.0, qty_after=10.0, split_ratio=0.1) is False
+# Real MNST numbers from the 2026-08-19 incident report.
+_MNST_QTY = 20.80410098
+_MNST_COST_BASIS = 1887.11
+_MNST_POST_SPLIT_PRICE = 47.77
+_MNST_BROKER_MARKET_VALUE = _MNST_QTY * _MNST_POST_SPLIT_PRICE  # 993.81..., broker's bogus value
+_MNST_FACTOR = 2.0
+_MNST_TRUE_SHARES = _MNST_QTY * _MNST_FACTOR  # 41.60820196
+_MNST_TRUE_MARKET_VALUE = _MNST_TRUE_SHARES * _MNST_POST_SPLIT_PRICE  # 1987.62...
+_MNST_TRUE_UNREALIZED_PL = _MNST_TRUE_MARKET_VALUE - _MNST_COST_BASIS  # +100.51...
 
 
-class TestFindUnadjustedSplitSymbols:
-    def test_flags_symbol_with_unadjusted_split_in_window(self):
-        prev_positions = {"MNST": {"qty": 20.804}, "VZ": {"qty": 77.05}}
-        curr_positions = {"MNST": {"qty": 20.804}, "VZ": {"qty": 77.05}}
-        splits = {"MNST": [(date(2026, 8, 11), 2.0)]}
+class TestComputeSplitCorrections:
+    def test_unapplied_forward_split_is_flagged(self):
+        corp_splits = {"MNST": [(date(2026, 8, 11), 2.0)]}
+        applied_symbols: set[str] = set()  # no matching SPLIT activity booked
 
-        result = find_unadjusted_split_symbols(
-            prev_positions,
-            curr_positions,
-            splits,
-            prev_snapshot_date=date(2026, 8, 10),
-            today=date(2026, 8, 12),
+        result = compute_split_corrections(corp_splits, applied_symbols)
+
+        assert result == {"MNST": 2.0}
+
+    def test_split_with_matching_activity_not_flagged(self):
+        # The common case: the broker DID book the split correctly. This is
+        # exactly what the old qty-delta heuristic falsely re-flagged for up
+        # to 14 days after a correct adjustment -- must not happen here.
+        corp_splits = {"MNST": [(date(2026, 8, 11), 2.0)]}
+        applied_symbols = {"MNST"}
+
+        result = compute_split_corrections(corp_splits, applied_symbols)
+
+        assert result == {}
+
+    def test_reverse_split_factor_below_one(self):
+        corp_splits = {"XYZ": [(date(2026, 8, 11), 0.1)]}  # 1-for-10 reverse
+
+        result = compute_split_corrections(corp_splits, set())
+
+        assert result == {"XYZ": 0.1}
+
+    def test_multiple_splits_in_window_multiply(self):
+        corp_splits = {"ABC": [(date(2026, 8, 1), 2.0), (date(2026, 8, 15), 3.0)]}
+
+        result = compute_split_corrections(corp_splits, set())
+
+        assert result == {"ABC": 6.0}
+
+    def test_symbol_with_no_split_events_is_not_flagged(self):
+        result = compute_split_corrections({"VZ": []}, set())
+
+        assert result == {}
+
+    def test_unrelated_held_symbol_without_a_split_is_absent(self):
+        corp_splits = {"MNST": [(date(2026, 8, 11), 2.0)]}
+
+        result = compute_split_corrections(corp_splits, set())
+
+        assert "VZ" not in result
+
+    def test_mix_of_applied_and_unapplied_symbols(self):
+        corp_splits = {
+            "MNST": [(date(2026, 8, 11), 2.0)],
+            "XYZ": [(date(2026, 8, 11), 0.1)],
+        }
+        applied_symbols = {"XYZ"}  # only XYZ's split was booked correctly
+
+        result = compute_split_corrections(corp_splits, applied_symbols)
+
+        assert result == {"MNST": 2.0}
+
+
+class TestCorrectedMarketValue:
+    def test_scales_market_value_by_factor(self):
+        assert corrected_market_value(_MNST_BROKER_MARKET_VALUE, _MNST_FACTOR) == (
+            _MNST_TRUE_MARKET_VALUE
         )
 
-        assert result == ["MNST"]
+    def test_matches_real_mnst_true_market_value(self):
+        result = corrected_market_value(_MNST_BROKER_MARKET_VALUE, _MNST_FACTOR)
+        assert result == pytest.approx(1987.62, abs=0.01)
 
-    def test_ignores_symbols_with_no_split(self):
-        prev_positions = {"VZ": {"qty": 77.05}}
-        curr_positions = {"VZ": {"qty": 77.05}}
-        splits: dict[str, list] = {}
 
-        result = find_unadjusted_split_symbols(
-            prev_positions,
-            curr_positions,
-            splits,
-            prev_snapshot_date=date(2026, 8, 10),
-            today=date(2026, 8, 12),
+class TestCorrectedUnrealizedPl:
+    def test_matches_real_mnst_true_unrealized_pl(self):
+        # Broker reported roughly -$893.30 (-47.3%); the true position is
+        # actually up about +$100.51 (+5.3%) once the split is corrected.
+        result = corrected_unrealized_pl(_MNST_BROKER_MARKET_VALUE, _MNST_FACTOR, _MNST_COST_BASIS)
+        assert result == pytest.approx(100.51, abs=0.01)
+        assert result > 0  # true position is a gain, not the phantom loss
+
+    def test_broker_reported_loss_was_phantom(self):
+        broker_reported_pl = _MNST_BROKER_MARKET_VALUE - _MNST_COST_BASIS
+        assert broker_reported_pl == pytest.approx(-893.30, abs=0.01)
+
+        corrected = corrected_unrealized_pl(
+            _MNST_BROKER_MARKET_VALUE, _MNST_FACTOR, _MNST_COST_BASIS
         )
+        assert corrected != pytest.approx(broker_reported_pl, abs=1.0)
 
-        assert result == []
 
-    def test_ignores_symbol_no_longer_held(self):
-        # Position was closed since the split -> nothing to flag, no stale
-        # unrealized P&L can leak into the report.
-        prev_positions = {"MNST": {"qty": 20.804}}
-        curr_positions: dict[str, dict] = {}
-        splits = {"MNST": [(date(2026, 8, 11), 2.0)]}
+class TestApplyCorrectionsToPositions:
+    def test_corrects_flagged_symbol_using_real_mnst_numbers(self):
+        positions = {
+            "MNST": {
+                "qty": _MNST_QTY,  # broker's uncorrected qty -- must NOT change
+                "market_value": _MNST_BROKER_MARKET_VALUE,
+                "unrealized_pl": _MNST_BROKER_MARKET_VALUE - _MNST_COST_BASIS,
+                "unrealized_plpc": (_MNST_BROKER_MARKET_VALUE - _MNST_COST_BASIS)
+                / _MNST_COST_BASIS,
+                "cost_basis": _MNST_COST_BASIS,
+                "current_price": _MNST_POST_SPLIT_PRICE,
+            },
+        }
 
-        result = find_unadjusted_split_symbols(
-            prev_positions,
-            curr_positions,
-            splits,
-            prev_snapshot_date=date(2026, 8, 10),
-            today=date(2026, 8, 12),
+        result = apply_corrections_to_positions(positions, {"MNST": _MNST_FACTOR})
+
+        mnst = result["MNST"]
+        assert mnst["market_value"] == pytest.approx(_MNST_TRUE_MARKET_VALUE, abs=0.01)
+        assert mnst["unrealized_pl"] == pytest.approx(_MNST_TRUE_UNREALIZED_PL, abs=0.01)
+        assert mnst["unrealized_plpc"] == pytest.approx(
+            _MNST_TRUE_UNREALIZED_PL / _MNST_COST_BASIS, abs=1e-6
         )
+        # Broker qty is left untouched -- it's what can actually be sold.
+        assert mnst["qty"] == _MNST_QTY
 
-        assert result == []
+    def test_leaves_unflagged_position_unchanged(self):
+        positions = {"VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22}}
 
-    def test_ignores_symbol_not_held_before_split(self):
-        # No prior qty on record -> nothing to compare against, skip rather
-        # than risk a false positive.
-        prev_positions: dict[str, dict] = {}
-        curr_positions = {"MNST": {"qty": 20.804}}
-        splits = {"MNST": [(date(2026, 8, 11), 2.0)]}
+        result = apply_corrections_to_positions(positions, {})
 
-        result = find_unadjusted_split_symbols(
-            prev_positions,
-            curr_positions,
-            splits,
-            prev_snapshot_date=date(2026, 8, 10),
-            today=date(2026, 8, 12),
-        )
+        assert result == positions
+        assert result is not positions  # defensive copy, not the same dict
 
-        assert result == []
+    def test_only_touches_flagged_symbols_in_mixed_book(self):
+        positions = {
+            "MNST": {
+                "qty": _MNST_QTY,
+                "market_value": _MNST_BROKER_MARKET_VALUE,
+                "unrealized_pl": -893.30,
+                "unrealized_plpc": -0.4733,
+                "cost_basis": _MNST_COST_BASIS,
+            },
+            "VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22},
+        }
 
-    def test_first_day_after_split_flags_unadjusted_broker(self):
-        # The real MNST case: prev snapshot predates the ex-date, today is
-        # on/after it, and the broker never touched qty.
-        prev_positions = {"MNST": {"qty": 20.804}}
-        curr_positions = {"MNST": {"qty": 20.804}}
-        splits = {"MNST": [(date(2026, 8, 11), 2.0)]}
+        result = apply_corrections_to_positions(positions, {"MNST": _MNST_FACTOR})
 
-        result = find_unadjusted_split_symbols(
-            prev_positions,
-            curr_positions,
-            splits,
-            prev_snapshot_date=date(2026, 8, 10),
-            today=date(2026, 8, 11),
-        )
-
-        assert result == ["MNST"]
-
-    def test_day_two_after_correctly_adjusted_split_not_reflagged(self):
-        # Regression test: on day 1 (run_date == ex_date) the broker already
-        # doubled qty correctly. On day 2, prev_snapshot_date has rolled
-        # past the ex-date, so the split no longer applies to this window's
-        # comparison and the (now-stable) qty must NOT be re-flagged.
-        prev_positions = {"MNST": {"qty": 41.608}}  # already-adjusted qty from day 1
-        curr_positions = {"MNST": {"qty": 41.608}}  # unchanged on day 2 -- correct
-        splits = {"MNST": [(date(2026, 8, 11), 2.0)]}
-
-        result = find_unadjusted_split_symbols(
-            prev_positions,
-            curr_positions,
-            splits,
-            prev_snapshot_date=date(2026, 8, 11),
-            today=date(2026, 8, 12),
-        )
-
-        assert result == []
-
-    def test_reverse_split_flags_unadjusted_symbol(self):
-        prev_positions = {"XYZ": {"qty": 100.0}}
-        curr_positions = {"XYZ": {"qty": 100.0}}  # never reduced for 1-for-10 reverse split
-        splits = {"XYZ": [(date(2026, 8, 11), 0.1)]}
-
-        result = find_unadjusted_split_symbols(
-            prev_positions,
-            curr_positions,
-            splits,
-            prev_snapshot_date=date(2026, 8, 10),
-            today=date(2026, 8, 11),
-        )
-
-        assert result == ["XYZ"]
-
-    def test_reverse_split_does_not_flag_correctly_adjusted_symbol(self):
-        prev_positions = {"XYZ": {"qty": 100.0}}
-        curr_positions = {"XYZ": {"qty": 10.0}}  # correctly reduced
-        splits = {"XYZ": [(date(2026, 8, 11), 0.1)]}
-
-        result = find_unadjusted_split_symbols(
-            prev_positions,
-            curr_positions,
-            splits,
-            prev_snapshot_date=date(2026, 8, 10),
-            today=date(2026, 8, 11),
-        )
-
-        assert result == []
-
-
-def _hist_with_split(ex_date: str, factor: float) -> pd.DataFrame:
-    idx = pd.DatetimeIndex([pd.Timestamp(ex_date)])
-    return pd.DataFrame({"Stock Splits": [factor]}, index=idx)
-
-
-def _hist_no_splits() -> pd.DataFrame:
-    idx = pd.DatetimeIndex([pd.Timestamp("2026-08-05")])
-    return pd.DataFrame({"Stock Splits": [0.0]}, index=idx)
-
-
-class TestGetRecentSplits:
-    @patch("ggTrader.paper.split_check.yf.Ticker")
-    def test_returns_ex_dates_for_symbol_with_split(self, mock_ticker):
-        mock_ticker.return_value.history.return_value = _hist_with_split("2026-08-11", 2.0)
-
-        splits, all_failed = get_recent_splits(["MNST"], "2026-08-01")
-
-        assert splits == {"MNST": [(date(2026, 8, 11), 2.0)]}
-        assert all_failed is False
-
-    @patch("ggTrader.paper.split_check.yf.Ticker")
-    def test_omits_symbol_with_no_splits(self, mock_ticker):
-        mock_ticker.return_value.history.return_value = _hist_no_splits()
-
-        splits, all_failed = get_recent_splits(["VZ"], "2026-08-01")
-
-        assert splits == {}
-        assert all_failed is False
-
-    def test_empty_symbol_list_returns_empty_not_all_failed(self):
-        splits, all_failed = get_recent_splits([], "2026-08-01")
-
-        assert splits == {}
-        assert all_failed is False
-
-    @patch("ggTrader.paper.split_check.yf.Ticker")
-    def test_single_symbol_failure_is_not_all_failed_when_others_succeed(self, mock_ticker):
-        good = MagicMock()
-        good.history.return_value = _hist_no_splits()
-        bad = MagicMock()
-        bad.history.side_effect = Exception("network error")
-
-        def _ticker(symbol):
-            return bad if symbol == "BAD" else good
-
-        mock_ticker.side_effect = _ticker
-
-        splits, all_failed = get_recent_splits(["GOOD", "BAD"], "2026-08-01")
-
-        assert splits == {}
-        assert all_failed is False
-
-    @patch("ggTrader.paper.split_check.yf.Ticker")
-    def test_all_symbols_failing_reports_all_failed(self, mock_ticker):
-        mock_ticker.return_value.history.side_effect = Exception("network error")
-
-        splits, all_failed = get_recent_splits(["A", "B", "C"], "2026-08-01")
-
-        assert splits == {}
-        assert all_failed is True
+        assert result["VZ"] == positions["VZ"]
+        assert result["MNST"]["unrealized_pl"] == pytest.approx(_MNST_TRUE_UNREALIZED_PL, abs=0.01)

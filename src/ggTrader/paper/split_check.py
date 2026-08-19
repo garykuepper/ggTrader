@@ -1,123 +1,96 @@
-"""Detect stock splits the paper broker failed to reflect in a position's qty.
+"""Compute corrections for stock splits the broker failed to apply to the account.
 
 Alpaca's paper-trading environment has been observed marking a position to
 the post-split market price while leaving its qty and avg_entry_price at the
 pre-split values (seen on MNST's 2026-08-11 2-for-1 split). Left unhandled,
-that silently halves reported market_value/unrealized_pl for the position and
-corrupts any aggregate P&L built from it — this module flags it instead.
+that silently corrupts reported market_value/unrealized_pl for the position
+and any aggregate P&L built from it.
+
+Alpaca's own API already has authoritative split data and can prove whether
+a known split was actually applied to *this* account:
+
+- Corporate actions (`AlpacaBroker.get_split_corrections`'s corp-actions
+  query) tell us a split happened for a symbol, broker-wide.
+- Account SPLIT activities tell us whether *this account* ever booked it.
+
+A held symbol with a corp-action split and no matching account SPLIT
+activity is unapplied -- that cross-reference is what this module computes
+from (near-zero false positives, unlike inferring it from qty deltas, which
+also can't distinguish "broker didn't apply it" from "position was trimmed").
 """
 
 from __future__ import annotations
 
-import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 
-import yfinance as yf
 
-_log = logging.getLogger(__name__)
+def compute_split_corrections(
+    corp_splits: dict[str, list[tuple[date, float]]],
+    applied_symbols: set[str],
+) -> dict[str, float]:
+    """Return `{symbol: correction_factor}` for symbols with an unapplied split.
 
-_QTY_TOLERANCE = 0.01  # relative tolerance for float drift, not trading noise
-_DEFAULT_TIMEOUT = 8.0
-_MAX_WORKERS = 5
+    `corp_splits` maps symbol -> list of `(ex_date, factor)` events reported
+    by the broker's corporate-actions feed (already filtered to the lookback
+    window and to currently-held symbols by the caller), where `factor` is
+    `new_rate / old_rate` (2.0 for a 2-for-1 forward split, 0.1 for a
+    1-for-10 reverse split). `applied_symbols` is the set of symbols with a
+    matching account SPLIT activity in the same window -- for those, the
+    broker already corrected the account, so they are never flagged. This is
+    the common case, and deliberately not re-flagged: a qty-delta heuristic
+    used to falsely re-flag a correctly-adjusted split for days afterward.
 
-
-def is_split_unadjusted(qty_before: float, qty_after: float, split_ratio: float) -> bool:
-    """True if `qty_after` was not multiplied by `split_ratio` from `qty_before`."""
-    expected = qty_before * split_ratio
-    if expected == 0:
-        return False
-    return abs(qty_after - expected) / expected > _QTY_TOLERANCE
-
-
-def find_unadjusted_split_symbols(
-    prev_positions: dict[str, dict],
-    curr_positions: dict[str, dict],
-    splits: dict[str, list[tuple[date, float]]],
-    prev_snapshot_date: date,
-    today: date,
-) -> list[str]:
-    """Return symbols whose broker-reported qty didn't reflect a known split.
-
-    `prev_positions`/`curr_positions` are broker position dicts (as returned
-    by `AlpacaBroker.get_positions()`) from before and after the split.
-    `splits` maps symbol -> list of (ex_date, factor) events discovered in
-    the lookback window (see `get_recent_splits`). A split event only
-    applies to this run's gate window when its ex-date falls strictly after
-    `prev_snapshot_date` and on/before `today` — this is what prevents a
-    correctly-adjusted split from being falsely re-flagged on every run for
-    the rest of the lookback window (the day after a correct adjustment,
-    `prev_snapshot_date` has already rolled past the ex-date, so the event no
-    longer applies and the symbol is compared with an implicit 1.0 ratio,
-    i.e. skipped as "no split in this window").
-
-    A symbol not held on both sides of the split is skipped — there's
-    nothing to compare, and guessing would risk a false positive.
+    Multiple splits for the same symbol in the window multiply together.
     """
-    flagged = []
-    for symbol, events in splits.items():
-        if symbol not in prev_positions or symbol not in curr_positions:
+    corrections: dict[str, float] = {}
+    for symbol, events in corp_splits.items():
+        if symbol in applied_symbols or not events:
             continue
-        ratio = 1.0
-        for ex_date, factor in events:
-            if prev_snapshot_date < ex_date <= today:
-                ratio *= factor
-        if ratio == 1.0:
-            continue  # no applicable split event in this run's gate window
-        qty_before = prev_positions[symbol].get("qty", 0.0)
-        qty_after = curr_positions[symbol].get("qty", 0.0)
-        if is_split_unadjusted(qty_before, qty_after, ratio):
-            flagged.append(symbol)
-    return flagged
+        factor = 1.0
+        for _ex_date, ratio in events:
+            factor *= ratio
+        if factor != 1.0:
+            corrections[symbol] = factor
+    return corrections
 
 
-def _fetch_one(symbol: str, since: str) -> list[tuple[date, float]]:
-    """Fetch split events for one symbol. Raises on failure (caller handles)."""
-    hist = yf.Ticker(symbol).history(start=since)
-    events = hist.loc[hist["Stock Splits"] != 0, "Stock Splits"]
-    return [(ts.date(), float(factor)) for ts, factor in events.items()]
+def corrected_market_value(market_value: float, factor: float) -> float:
+    """True market_value once `factor` (new_rate/old_rate) is applied."""
+    return market_value * factor
 
 
-def get_recent_splits(
-    symbols: list[str], since: str, timeout: float = _DEFAULT_TIMEOUT
-) -> tuple[dict[str, list[tuple[date, float]]], bool]:
-    """Fetch split events (ex-date, ratio) for `symbols` since `since`.
+def corrected_unrealized_pl(market_value: float, factor: float, cost_basis: float) -> float:
+    """True unrealized P&L: corrected market_value minus (unaffected) cost_basis."""
+    return corrected_market_value(market_value, factor) - cost_basis
 
-    `since` is an ISO date string (e.g. "2026-08-01"). Symbols with no split
-    in the window are omitted from the returned dict. Lookups run in a small
-    thread pool with an overall `timeout` budget so one hung/slow symbol
-    can't stall the run; a symbol whose lookup errors or doesn't complete in
-    time is logged and skipped rather than raised.
 
-    Returns `(splits_by_symbol, all_failed)`. `all_failed` is True only when
-    `symbols` is non-empty and every symbol's lookup failed/timed out — the
-    caller should treat that as "split check unavailable" rather than
-    silently reporting "no splits found", since the two are indistinguishable
-    from an empty dict alone.
+def apply_corrections_to_positions(
+    positions: dict[str, dict], corrections: dict[str, float]
+) -> dict[str, dict]:
+    """Return a copy of `positions` with market_value/unrealized_pl/unrealized_plpc
+    corrected for symbols with a known `corrections` factor.
+
+    `qty` is deliberately left untouched -- it is what the broker will
+    actually let you transact (see `AlpacaBroker.submit_sell`), and must
+    stay the broker's real, uncorrected number. `cost_basis` is also left
+    as-is: a split changes share count and price, not the dollars originally
+    paid in, so it is split-invariant. Symbols with no correction factor are
+    passed through unchanged (though still copied, not aliased).
     """
-    splits: dict[str, list[tuple[date, float]]] = {}
-    if not symbols:
-        return splits, False
-
-    failures = 0
-    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, len(symbols))) as pool:
-        futures = {pool.submit(_fetch_one, sym, since): sym for sym in symbols}
-        try:
-            for fut in as_completed(futures, timeout=timeout):
-                symbol = futures[fut]
-                try:
-                    events = fut.result()
-                except Exception as exc:
-                    _log.warning("Could not check %s for splits (non-fatal): %s", symbol, exc)
-                    failures += 1
-                    continue
-                if events:
-                    splits[symbol] = events
-        except TimeoutError:
-            not_done = [futures[f] for f in futures if not f.done()]
-            for symbol in not_done:
-                _log.warning("Split check for %s timed out (non-fatal)", symbol)
-                failures += 1
-
-    all_failed = failures == len(symbols)
-    return splits, all_failed
+    result: dict[str, dict] = {}
+    for symbol, info in positions.items():
+        factor = corrections.get(symbol)
+        if factor is None:
+            result[symbol] = info
+            continue
+        cost_basis = info.get("cost_basis", 0.0)
+        market_value = info.get("market_value", 0.0)
+        new_pl = corrected_unrealized_pl(market_value, factor, cost_basis)
+        new_plpc = (new_pl / cost_basis) if cost_basis else info.get("unrealized_plpc", 0.0)
+        result[symbol] = {
+            **info,
+            "market_value": corrected_market_value(market_value, factor),
+            "unrealized_pl": new_pl,
+            "unrealized_plpc": new_plpc,
+        }
+    return result

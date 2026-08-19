@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
+import logging
 import os
+from datetime import date
 
+from alpaca.data.enums import CorporateActionsType
+from alpaca.data.historical.corporate_actions import CorporateActionsClient
+from alpaca.data.requests import CorporateActionsRequest
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
 
+from ggTrader.paper.split_check import compute_split_corrections
 from ggTrader.utils.config import _load_env
+
+_log = logging.getLogger(__name__)
 
 
 class AlpacaBroker:
@@ -20,6 +28,8 @@ class AlpacaBroker:
         secret = os.environ.get("APCA_API_SECRET_KEY")
         if not key or not secret:
             raise ValueError("APCA_API_KEY_ID and APCA_API_SECRET_KEY must be set in .env")
+        self._key = key
+        self._secret = secret
         self._client = TradingClient(key, secret, paper=True)
 
     def get_account(self) -> dict:
@@ -42,6 +52,7 @@ class AlpacaBroker:
                 "unrealized_pl": float(p.unrealized_pl),
                 "unrealized_plpc": float(p.unrealized_plpc),
                 "change_today": float(p.change_today),
+                "cost_basis": float(p.cost_basis),
             }
             for p in positions
         }
@@ -88,3 +99,55 @@ class AlpacaBroker:
             "next_open": str(clock.next_open),
             "next_close": str(clock.next_close),
         }
+
+    def _get_corporate_action_splits(
+        self, symbols: list[str], since: date
+    ) -> dict[str, list[tuple[date, float]]]:
+        """Query Alpaca's corporate-actions feed for forward/reverse splits.
+
+        Returns `{symbol: [(ex_date, factor), ...]}` where `factor` is
+        `new_rate / old_rate`. Raises on failure -- the caller
+        (`get_split_corrections`) is the fail-soft boundary.
+        """
+        client = CorporateActionsClient(self._key, self._secret)
+        req = CorporateActionsRequest(
+            symbols=symbols,
+            types=[CorporateActionsType.FORWARD_SPLIT, CorporateActionsType.REVERSE_SPLIT],
+            start=since,
+        )
+        result = client.get_corporate_actions(req)
+        data = result.data
+        splits: dict[str, list[tuple[date, float]]] = {}
+        for key in ("forward_splits", "reverse_splits"):
+            for action in data.get(key, []):
+                factor = float(action.new_rate) / float(action.old_rate)
+                splits.setdefault(action.symbol, []).append((action.ex_date, factor))
+        return splits
+
+    def _get_split_activity_symbols(self, since: date) -> set[str]:
+        """Symbols with a SPLIT activity already booked against this account
+        on/after `since`. Raises on failure -- see `_get_corporate_action_splits`."""
+        activities = self._client.get("/account/activities/SPLIT", {"after": since.isoformat()})
+        return {a["symbol"] for a in activities if a.get("symbol")}
+
+    def get_split_corrections(self, symbols: list[str], since: date) -> dict[str, float]:
+        """Cross-reference the broker's corporate-actions feed against this
+        account's own SPLIT activities to find splits the broker knows about
+        for `symbols` but never applied to this account.
+
+        Returns `{symbol: correction_factor}` (see
+        `split_check.compute_split_corrections`). Fails soft: any API error
+        is logged as a warning and this returns `{}` ("no corrections
+        known") rather than raising -- this must never abort a trading run.
+        """
+        if not symbols:
+            return {}
+        try:
+            corp_splits = self._get_corporate_action_splits(symbols, since)
+            if not corp_splits:
+                return {}
+            applied_symbols = self._get_split_activity_symbols(since)
+            return compute_split_corrections(corp_splits, applied_symbols)
+        except Exception as exc:
+            _log.warning("Split correction check failed (non-fatal): %s", exc)
+            return {}

@@ -14,8 +14,6 @@ from ggTrader.paper.persist import (
     clear_pending_order,
     get_earliest_snapshot,
     get_latest_snapshot,
-    get_latest_snapshot_positions,
-    get_latest_snapshot_run_date,
     get_peak_value,
     get_pending_orders,
     init_paper_schema,
@@ -27,13 +25,14 @@ from ggTrader.paper.persist import (
 )
 from ggTrader.paper.risk import RiskConfig, RiskGuard
 from ggTrader.paper.signal_runner import generate_blended_signals
-from ggTrader.paper.split_check import find_unadjusted_split_symbols, get_recent_splits
+from ggTrader.paper.split_check import apply_corrections_to_positions
 
 _log = logging.getLogger(__name__)
 
-# How far back to check held symbols for split events the broker may not have
-# applied to their qty/avg_entry (see split_check.py). Daily runs only need a
-# window wide enough to survive a missed run or two.
+# How far back to check held symbols for split events the broker's own
+# corporate-actions feed may know about but the account never applied (see
+# split_check.py / AlpacaBroker.get_split_corrections). Daily runs only need
+# a window wide enough to survive a missed run or two.
 _SPLIT_LOOKBACK_DAYS = 14
 
 # A pending order still open this many days after submission gets a one-time
@@ -248,6 +247,21 @@ class PaperTrader:
         positions = self._broker.get_positions()
         portfolio_value = account["portfolio_value"]
 
+        # Cross-reference the broker's own corporate-actions feed against
+        # this account's SPLIT activities for currently-held symbols to find
+        # splits the broker knows about but never applied to the account
+        # (see AlpacaBroker.get_split_corrections / split_check.py). Fails
+        # soft internally -- an API error here yields {} ("no corrections
+        # known"), never an exception.
+        split_since = today_et - timedelta(days=_SPLIT_LOOKBACK_DAYS)
+        split_corrections = self._broker.get_split_corrections(list(positions), split_since)
+        if split_corrections:
+            _log.warning("Unapplied broker split corrections: %s", split_corrections)
+        # Concentration checks (below, in the buy loop) must see true
+        # economic exposure -- the corrected market_value -- not the
+        # broker's uncorrected figure for a split-flagged holding.
+        corrected_positions = apply_corrections_to_positions(positions, split_corrections)
+
         # Seed the risk guard's peak from what was persisted by a prior
         # process (each cron run constructs a fresh PaperTrader, so without
         # this the halt below always compares against a same-run peak and
@@ -347,7 +361,10 @@ class PaperTrader:
                     _log.info("Sleeve %s slot cap reached, skipping %s", universe, symbol)
                     break
                 if self._risk.check_concentration(
-                    symbol, positions, portfolio_value, prospective_notional=sleeve_notional
+                    symbol,
+                    corrected_positions,
+                    portfolio_value,
+                    prospective_notional=sleeve_notional,
                 ):
                     _log.info("Concentration limit for %s, skipping", symbol)
                     continue
@@ -462,63 +479,36 @@ class PaperTrader:
             self._notifier.send(f"<b>❌ {len(errors)} order(s) failed:</b>\n" + "\n".join(errors))
 
         new_account = self._broker.get_account()
-        new_value = new_account["portfolio_value"]
+        new_value = new_account["portfolio_value"]  # broker's own ("booked") figure, uncorrected
         updated_positions = self._broker.get_positions()
 
-        daily_pnl = new_value - day_start
-
-        # Detect positions where the broker never applied a stock split's qty
-        # adjustment (observed on MNST's 2026-08-11 2-for-1 split in Alpaca's
-        # paper environment) — its unrealized_pl is bogus and would otherwise
-        # silently corrupt the aggregate below.
-        prev_positions = get_latest_snapshot_positions() or {}
-        prev_snapshot_date: date | None = None
-        try:
-            prev_run_date_raw = get_latest_snapshot_run_date()
-            if prev_run_date_raw:
-                prev_snapshot_date = date.fromisoformat(str(prev_run_date_raw)[:10])
-        except Exception as exc:
-            _log.warning("Could not parse previous snapshot date (non-fatal): %s", exc)
-
-        flagged_splits: list[str] = []
-        splits_unavailable = False
-        if prev_positions and prev_snapshot_date is not None:
-            since = today_et - timedelta(days=_SPLIT_LOOKBACK_DAYS)
-            try:
-                splits, all_failed = get_recent_splits(list(updated_positions), since.isoformat())
-            except Exception as exc:
-                _log.warning("Split check failed (non-fatal): %s", exc)
-                splits, all_failed = {}, False
-            if all_failed:
-                splits_unavailable = True
-                _log.warning("Split check unavailable: all symbol lookups failed")
-            else:
-                flagged_splits = find_unadjusted_split_symbols(
-                    prev_positions,
-                    updated_positions,
-                    splits,
-                    prev_snapshot_date=prev_snapshot_date,
-                    today=today_et,
-                )
-        if flagged_splits:
-            _log.warning("Unadjusted broker split detected: %s", flagged_splits)
-
-        # Estimated phantom P&L contributed by flagged symbols -- the
-        # broker's own (bogus) unrealized_pl for each is the most defensible
-        # available number without recovering the true post-split cost basis.
-        phantom_estimate = sum(
-            updated_positions.get(sym, {}).get("unrealized_pl", 0.0) for sym in flagged_splits
+        # Re-apply the same split_corrections computed at the top of this
+        # run (the correction factor doesn't change intra-run) to the
+        # post-trade position snapshot, so every downstream reporting number
+        # -- unrealized P&L, daily/total P&L, and the persisted snapshot --
+        # reflects true economic value rather than the broker's uncorrected
+        # figures. NOTE: `updated_positions` (uncorrected) is what must be
+        # used for anything that actually transacts against the broker (see
+        # submit_sell above, which already ran against the broker's real
+        # qty) -- never replace that with the corrected numbers below.
+        corrected_updated_positions = apply_corrections_to_positions(
+            updated_positions, split_corrections
         )
+        correction_delta = sum(
+            corrected_updated_positions[sym]["market_value"]
+            - updated_positions[sym]["market_value"]
+            for sym in split_corrections
+            if sym in updated_positions
+        )
+        corrected_value = new_value + correction_delta
 
-        # Cumulative P&L breakdown. When any symbol is split-flagged, the
-        # whole summary (daily/total/realized/unrealized) is suspect by
-        # roughly phantom_estimate -- see notifier.daily_summary's banner --
-        # so these aggregates are computed over ALL positions rather than
-        # silently excluding the flagged one (which used to just shift the
-        # corruption into the derived "realized" line).
-        unrealized_pnl = sum(p.get("unrealized_pl", 0.0) for p in updated_positions.values())
+        daily_pnl = corrected_value - day_start
+
+        unrealized_pnl = sum(
+            p.get("unrealized_pl", 0.0) for p in corrected_updated_positions.values()
+        )
         starting_capital = get_earliest_snapshot()
-        total_pnl = (new_value - starting_capital) if starting_capital else None
+        total_pnl = (corrected_value - starting_capital) if starting_capital else None
 
         weight_str = ", ".join(f"{u}={w:.0%}" for u, w in weights.items())
         risk_line = (
@@ -526,28 +516,23 @@ class PaperTrader:
             f"Scale: {scale:.2f}x | Weights: {weight_str}"
         )
         self._notifier.daily_summary(
-            new_value,
+            corrected_value,
             daily_pnl,
-            updated_positions,
+            corrected_updated_positions,
             total_pnl=total_pnl,
             unrealized_pnl=unrealized_pnl,
-            flagged_splits=flagged_splits,
-            phantom_estimate=phantom_estimate,
+            split_corrections=split_corrections,
+            booked_equity=new_value if split_corrections else None,
             errors=errors,
         )
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
-        if splits_unavailable:
-            self._notifier.send(
-                "<b>⚠️ Split check unavailable:</b> all symbol lookups failed this run; "
-                "unable to confirm P&L is unaffected by an unreflected split."
-            )
 
         try:
             log_snapshot(
                 signals["as_of"],
-                new_value,
+                corrected_value,
                 new_account["cash"],
-                updated_positions,
+                corrected_updated_positions,
             )
         except Exception as exc:
             _log.warning("DB snapshot failed (non-fatal): %s", exc)

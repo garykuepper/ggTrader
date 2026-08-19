@@ -1,5 +1,49 @@
 # Changelog
 
+## 2026-08-19
+
+### fix(paper): broker-native stock-split correction, replacing the yfinance heuristic
+
+Live account audit found Alpaca's paper environment never applied MNST's
+2026-08-11 2-for-1 split to the account: qty stayed at 20.80410098 (cost
+basis $1,887.11) while `current_price` was already marked to the post-split
+$47.77, reporting market_value $993.81 and unrealized_pl **-$893.30
+(-47.3%)** — the true corrected position is 41.60820196 shares worth
+$1,987.62, **+$100.51 (+5.3%)**, understating account equity by ~$994.
+
+Replaced `src/ggTrader/paper/split_check.py`'s yfinance qty-delta heuristic
+(serial per-symbol network calls, an ex-date/snapshot-window guess, unable
+to tell "broker didn't apply it" from "position was trimmed") with a
+broker-native detector: cross-reference Alpaca's own corporate-actions feed
+(`GET /v1beta1/corporate-actions`, via `alpaca.data.historical.corporate_actions.CorporateActionsClient`)
+against the account's own SPLIT activities (`GET /v2/account/activities/SPLIT`)
+for currently-held symbols. A split known to the broker with no matching
+account activity is unapplied; correction factor = `new_rate/old_rate`
+(handles reverse splits and multiple in-window splits by multiplying).
+`AlpacaBroker.get_split_corrections()` fails soft on any API error (logs a
+warning, returns `{}` — "no corrections known" — never raises).
+
+`PaperTrader.run()` now applies corrections to **reporting only**: corrected
+market_value/unrealized_pl flow into the concentration check, unrealized
+P&L, daily/total P&L, and the persisted snapshot (so the historical
+performance series isn't permanently corrupted by a broker bug). Trading
+still submits the broker's actual, uncorrected qty — a sell for the
+split-adjusted share count would be rejected. The daily Telegram summary
+(`notifier.daily_summary`) replaces the old "exclude flagged position from
+unrealized P&L" behavior (`flagged_splits`/`phantom_estimate`, which just
+hid P&L and shifted the corruption into the derived realized line) with a
+`split_corrections`/`booked_equity` note showing booked vs. split-adjusted
+equity and the per-symbol factor, with every position's P&L shown as a real
+number.
+
+New tests: unapplied forward split detected; split WITH a matching account
+activity NOT flagged (the common case — this is what caused false positives
+in the old heuristic); reverse split (factor < 1); multiple splits in a
+window multiply; API failure fails soft; corrected P&L math against the real
+MNST numbers above; sell path still submits the broker's uncorrected qty.
+871 → 875 tests (net +4 after deleting the yfinance-oriented suite and
+adding the broker-native one).
+
 ## 2026-08-18
 
 ### Perf: lab/data hot-path fixes (Phase C of the review plan)
