@@ -44,6 +44,14 @@ _STALE_PENDING_DAYS = 5
 
 _ET = ZoneInfo("America/New_York")
 
+# Signals are built from the most recent *completed* daily bar, so on a healthy
+# run `as_of` is the prior trading session, not today -- requiring today's date
+# would block every single run. This cap exists only to catch a genuinely stale
+# feed (e.g. a yfinance outage serving week-old bars). Four calendar days covers
+# the worst normal case: a Friday close still being the latest completed bar on
+# a Tuesday run after a Monday holiday.
+_MAX_SIGNAL_AGE_DAYS = 4
+
 
 def _today_et() -> date:
     """Current calendar date in the exchange's timezone (America/New_York)."""
@@ -204,14 +212,20 @@ class PaperTrader:
             "as_of": next(iter(blend["sleeves"].values()))["as_of"],
         }
 
-        # Freshness gate: only trade on today's bars. A stale as_of (e.g. a
-        # yfinance outage serving yesterday's close) becomes a no-trade alert
-        # instead of silently trading on old data.
+        # Freshness gate: refuse to trade on data that is stale beyond the
+        # normal one-completed-session lag (see _MAX_SIGNAL_AGE_DAYS).
         today_et = _today_et()
-        if signals["as_of"] != today_et.isoformat():
+        try:
+            as_of_date = date.fromisoformat(signals["as_of"])
+        except (TypeError, ValueError):
+            as_of_date = None
+        age_days = None if as_of_date is None else (today_et - as_of_date).days
+        if age_days is None or age_days > _MAX_SIGNAL_AGE_DAYS:
             self._notifier.send(
-                f"<b>⚠️ Stale signal data:</b> as_of={signals['as_of']} != today "
-                f"({today_et.isoformat()}); no trades submitted this run."
+                f"<b>⚠️ Stale signal data:</b> as_of={signals['as_of']} is "
+                f"{'unparseable' if age_days is None else f'{age_days}d old'} "
+                f"(today {today_et.isoformat()}, max {_MAX_SIGNAL_AGE_DAYS}d); "
+                f"no trades submitted this run."
             )
             return {"buys": [], "sells": [], "errors": []}
 

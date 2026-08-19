@@ -750,6 +750,44 @@ class TestMarketGates:
         result = trader.run()
         assert "MSFT" in result["buys"]
 
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_prior_session_as_of_trades_normally(self, mock_signals, *_):
+        """The normal case in production: signals come from the most recent
+        COMPLETED daily bar, so as_of is the prior trading session, never
+        today. Requiring as_of == today froze every live run (caught only
+        after deploy, because the other tests all pinned as_of to today).
+        4 days covers a Friday bar still being latest on a post-holiday
+        Tuesday run.
+        """
+        for age_days in (1, 3, 4):
+            as_of = (date.fromisoformat(_TEST_TODAY) - timedelta(days=age_days)).isoformat()
+            mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=as_of)
+            trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+            result = trader.run()
+            assert "MSFT" in result["buys"], f"blocked at age {age_days}d"
+            assert not any(
+                "Stale signal data" in c.args[0] for c in notifier.send.call_args_list
+            ), f"stale alert at age {age_days}d"
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_as_of_beyond_max_age_blocks_trading(self, mock_signals, *_):
+        as_of = (date.fromisoformat(_TEST_TODAY) - timedelta(days=5)).isoformat()
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=as_of)
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        result = trader.run()
+        broker.submit_buy.assert_not_called()
+        assert result == {"buys": [], "sells": [], "errors": []}
+        assert any("Stale signal data" in c.args[0] for c in notifier.send.call_args_list)
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_unparseable_as_of_blocks_trading(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of="not-a-date")
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        result = trader.run()
+        broker.submit_buy.assert_not_called()
+        assert result == {"buys": [], "sells": [], "errors": []}
+        assert any("unparseable" in c.args[0] for c in notifier.send.call_args_list)
+
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
