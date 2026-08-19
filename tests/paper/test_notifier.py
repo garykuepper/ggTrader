@@ -120,3 +120,68 @@ class TestDailySummary:
         n.daily_summary(102000.0, 500.0, positions)
         body = mock_post.call_args[1]["json"]["text"]
         assert body.index("MSFT") < body.index("GOOG") < body.index("AAPL")
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_flags_unadjusted_split_instead_of_pl(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        positions = {
+            "MNST": {
+                "qty": 20.804,
+                "unrealized_pl": -900.27,
+                "unrealized_plpc": -0.477,
+                "current_price": 47.43,
+            },
+        }
+        n.daily_summary(102000.0, 500.0, positions, flagged_splits=["MNST"])
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "split not reflected by broker" in body
+        assert "-900.27" not in body
+        assert "-47.7" not in body
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_includes_errors_section(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        n.daily_summary(102000.0, 500.0, {}, errors=["BUY MSFT: insufficient buying power"])
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "Errors" in body
+        assert "BUY MSFT: insufficient buying power" in body
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_omits_errors_section_when_empty(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        n.daily_summary(102000.0, 500.0, {})
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "Errors" not in body
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_suspect_banner_covers_all_pnl_lines_when_flagged(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        positions = {
+            "MNST": {
+                "qty": 20.804,
+                "unrealized_pl": -900.27,
+                "unrealized_plpc": -0.477,
+                "current_price": 47.43,
+            },
+        }
+        n.daily_summary(
+            102000.0, 500.0, positions, flagged_splits=["MNST"], phantom_estimate=-900.27
+        )
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "SUSPECT DATA" in body
+        assert "MNST" in body
+        assert "900.27" in body
+        assert body.index("SUSPECT DATA") < body.index("Value:")
+        assert body.index("SUSPECT DATA") < body.index("Daily P&L:")
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_no_banner_when_no_flagged_splits(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        n.daily_summary(102000.0, 500.0, {"AAPL": {"qty": 10.0, "unrealized_pl": 50.0}})
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "SUSPECT DATA" not in body

@@ -1,5 +1,101 @@
 # Changelog
 
+## 2026-08-18
+
+### Fix: unadjusted-split guard for paper trading P&L
+
+- **Found**: MNST did a 2-for-1 split on 2026-08-11. Alpaca's paper-trading
+  environment marked the position to the new post-split market price but never
+  adjusted its qty/avg_entry_price, making the Telegram daily summary report an
+  ~$900 phantom unrealized loss (-47.7%) on a position that was actually
+  roughly flat. No stop-loss logic exists in the paper trader (sells are
+  purely strategy-signal-driven), so nothing mis-fired on it — the corruption
+  was confined to the reported numbers. Confirmed via yfinance split history
+  that MNST was the only affected symbol among the 30 held positions.
+- **Added** `src/ggTrader/paper/split_check.py`: detects symbols where a known
+  split's qty adjustment wasn't applied by diffing the broker's position qty
+  across the split window (`find_unadjusted_split_symbols`), backed by
+  `get_recent_splits()` (yfinance lookup, non-fatal on failure).
+- **Added** `get_latest_snapshot_positions()` to `persist.py` so `trader.py`
+  has a prior-day qty to diff against.
+- **Changed** `trader.py`: flagged symbols are excluded from the aggregate
+  `unrealized_pnl` sent to the daily summary. `notifier.py`'s `daily_summary`
+  gains a `flagged_splits` param and renders those positions with a
+  "⚠️ split not reflected by broker, P&L unavailable" line instead of the
+  bogus dollar/percent figures. (Superseded below — see "whole-summary
+  suspect flag".)
+- **Manually corrected** the live paper account: closed the stale MNST
+  position (pre-split qty/cost-basis) so the strategy re-enters cleanly at
+  correct split-adjusted pricing on its next signal.
+
+### Fix: paper-trading correctness pass (Phase A of the review plan)
+
+Follow-up review of the split-check work above surfaced four live-trading
+correctness bugs (P0) and three alerting/robustness gaps (P1), all fixed
+together since several touch the same lines:
+
+- **Split-check false positives for ~13 days after a correctly-handled
+  split**: `get_recent_splits()` now returns each split's ex-date, and
+  `find_unadjusted_split_symbols()` only applies a ratio when the prior
+  snapshot's date is strictly before the ex-date and today is on/after it.
+  Previously the check compared yesterday's qty against today's expecting
+  `qty * ratio` for the full 14-day lookback window regardless of whether
+  the split had already been correctly applied, false-flagging every day
+  after day 1. Added regression coverage for the day-2-correctly-adjusted
+  case, reverse splits (ratio < 1), and an all-fetches-failed case.
+- **Max-drawdown halt was dead code**: each cron run built a fresh
+  `PaperTrader`/`RiskGuard`, so `_peak_value` never survived between runs
+  and `check_drawdown_halt` always saw 0% drawdown. Peak equity is now
+  persisted in a new `paper_risk_state` table (`get_peak_value`/
+  `save_peak_value`, mirrors `paper_rebalance_state`'s single-row pattern),
+  seeded into `RiskGuard` at the start of `run()`, and the halt check now
+  runs *before* `update_peak()` so a real drawdown against the persisted
+  peak is actually measured. Verified with a two-run in-test scenario
+  (persisted peak 120k, current value 100k → halts).
+- **No duplicate/short-risk orders for symbols with an open pending order**:
+  `_reconcile_pending_orders()` now returns the set of symbols still
+  non-terminal after reconciliation, and the buy/sell loops skip any symbol
+  in that set instead of relying solely on `symbol in positions`.
+- **No market-open or data-freshness gate**: `run()` now calls
+  `broker.get_clock()` at the top and exits cleanly (with a Telegram note)
+  if the market is closed, failing open (assumes open, logs a warning) if
+  the clock check itself errors — cron has no calendar awareness, so a
+  holiday/half-day used to submit DAY orders into a closed market. Separately,
+  orders are only submitted when `signals["as_of"]` matches today's date in
+  `America/New_York`; a stale as_of (e.g. a yfinance outage serving
+  yesterday's close) now sends a "stale signal data, no trades" alert
+  instead of trading on old bars.
+- **Order errors surfaced to Telegram**: the `errors` list collected during
+  buy/sell submission was previously only logged. `daily_summary()` now
+  renders an "❌ Errors" section, and a distinct "N order(s) failed" alert
+  fires immediately after submission. Pending orders still open after
+  `_STALE_PENDING_DAYS` (5) get a one-time "stale pending order" alert via a
+  new `flagged_stale` column on `paper_pending_orders` — reconciliation
+  keeps quietly retrying past that point, only the repeated alert is capped.
+- **Whole-summary suspect flag instead of a silent exclusion**: excluding a
+  flagged symbol from `unrealized_pnl` (the original fix above) just shifted
+  the same phantom amount into the derived `realized_pnl = total - unrealized`
+  line unlabeled, and `daily_pnl` was never guarded at all. `unrealized_pnl`
+  is now computed over *all* positions (so `total - unrealized` stays
+  internally consistent), and when any symbol is split-flagged the whole
+  message gets a "⚠️ SUSPECT DATA" banner above every P&L line, naming the
+  symbol(s) and an estimated phantom amount (the flagged symbol's own
+  broker-reported `unrealized_pl` — the most defensible number available
+  without recovering the true post-split cost basis).
+- **`get_recent_splits()` robustness**: per-symbol yfinance calls now run in
+  a small thread pool with an overall timeout instead of serially with none;
+  the function returns `(splits, all_failed)` so a run where every symbol's
+  lookup failed is distinguishable from "no splits found" and gets its own
+  "split check unavailable" Telegram note. The `date.fromisoformat(as_of)`
+  parse used for the split-window comparison is now guarded by try/except
+  (a malformed `as_of` degrades to "splits unavailable" rather than raising).
+- Tests: `tests/paper/test_split_check.py` (18 cases), `test_trader.py`
+  (+15 cases across pending-order dedup, market/freshness gates, persisted
+  drawdown, stale-pending alerting, order-error alerting), `test_paper_persist.py`
+  (+7 cases for the new peak/staleness/run-date helpers), `test_notifier.py`
+  (+4 cases for the errors section and suspect banner). Full paper suite:
+  143 passed.
+
 ## 2026-06-26
 
 ### Fix: stability-aware live-param recommendation

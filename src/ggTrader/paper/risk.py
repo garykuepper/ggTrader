@@ -23,6 +23,10 @@ class RiskGuard:
         self.cfg = cfg or RiskConfig()
         self._peak_value: float | None = None
 
+    @property
+    def peak_value(self) -> float | None:
+        return self._peak_value
+
     def update_peak(self, portfolio_value: float) -> None:
         if self._peak_value is None or portfolio_value > self._peak_value:
             self._peak_value = portfolio_value
@@ -60,7 +64,11 @@ class RiskGuard:
         return round(portfolio_value * self.cfg.position_pct, 2)
 
     def check_concentration(
-        self, symbol: str, positions: dict[str, dict], portfolio_value: float, prospective_notional: float = 0.0
+        self,
+        symbol: str,
+        positions: dict[str, dict],
+        portfolio_value: float,
+        prospective_notional: float = 0.0,
     ) -> bool:
         """Returns True if adding to this symbol would exceed concentration limit."""
         current_value = positions.get(symbol, {}).get("market_value", 0.0)

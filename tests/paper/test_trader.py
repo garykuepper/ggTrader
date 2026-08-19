@@ -2,9 +2,22 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+# Fixed "today" every test's signals["as_of"] defaults to, so the Item-4
+# freshness gate (as_of must equal today in ET) doesn't need to be
+# individually stubbed per test. Tests that deliberately exercise staleness
+# override as_of to something else.
+_TEST_TODAY = "2026-06-19"
+
+
+@pytest.fixture(autouse=True)
+def _stub_today_et():
+    with patch("ggTrader.paper.trader._today_et", return_value=date.fromisoformat(_TEST_TODAY)):
+        yield
 
 
 @pytest.fixture(autouse=True)
@@ -14,10 +27,31 @@ def _stub_pending_order_db():
     with patch("ggTrader.paper.trader.get_pending_orders", return_value=[]):
         with patch("ggTrader.paper.trader.log_pending_order"):
             with patch("ggTrader.paper.trader.clear_pending_order"):
+                with patch("ggTrader.paper.trader.mark_pending_order_stale"):
+                    yield
+
+
+@pytest.fixture(autouse=True)
+def _stub_split_check():
+    """Default to "no splits detected" so existing tests don't hit the
+    network via yfinance. Individual tests override to exercise the
+    unadjusted-split path."""
+    with patch("ggTrader.paper.trader.get_latest_snapshot_positions", return_value={}):
+        with patch("ggTrader.paper.trader.get_latest_snapshot_run_date", return_value=None):
+            with patch("ggTrader.paper.trader.get_recent_splits", return_value=({}, False)):
                 yield
 
 
-def _blend(buys, sells, as_of, universe="sp500"):
+@pytest.fixture(autouse=True)
+def _stub_risk_state_db():
+    """Keep persisted-peak reads/writes off the real DB by default.
+    Individual tests override to exercise cross-run drawdown halts."""
+    with patch("ggTrader.paper.trader.get_peak_value", return_value=None):
+        with patch("ggTrader.paper.trader.save_peak_value"):
+            yield
+
+
+def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500"):
     """Wrap a flat buys/sells list into generate_blended_signals()'s shape,
     with full weight+scale on one sleeve -- reproduces today's flat-3%
     single-universe behavior exactly (see Task 6's collapse-to-flat test)."""
@@ -299,7 +333,7 @@ class TestReconciliation:
     def test_filled_pending_order_booked_and_cleared(
         self, mock_signals, mock_get_pending, mock_log_trade, mock_clear, *_
     ):
-        mock_signals.return_value = _blend(buys=[], sells=[], as_of="2026-06-22")
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
         mock_get_pending.return_value = [
             {
                 "order_id": "buy-order-99",
@@ -332,7 +366,7 @@ class TestReconciliation:
     def test_canceled_pending_order_dropped_without_booking(
         self, mock_signals, mock_get_pending, mock_log_trade, mock_clear, *_
     ):
-        mock_signals.return_value = _blend(buys=[], sells=[], as_of="2026-06-22")
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
         mock_get_pending.return_value = [
             {
                 "order_id": "buy-order-99",
@@ -364,7 +398,7 @@ class TestReconciliation:
     def test_still_working_pending_order_left_alone(
         self, mock_signals, mock_get_pending, mock_log_trade, mock_clear, *_
     ):
-        mock_signals.return_value = _blend(buys=[], sells=[], as_of="2026-06-22")
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
         mock_get_pending.return_value = [
             {
                 "order_id": "buy-order-99",
@@ -413,6 +447,61 @@ class TestDailyPnl:
         pnl_arg = notifier.daily_summary.call_args[0][1]
         assert pnl_arg == 0.0
 
+    @patch("ggTrader.paper.trader.get_recent_splits")
+    @patch("ggTrader.paper.trader.get_latest_snapshot_run_date")
+    @patch("ggTrader.paper.trader.get_latest_snapshot_positions")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_flagged_split_symbol_marks_whole_summary_suspect_with_phantom_estimate(
+        self,
+        mock_signals,
+        mock_prev_positions,
+        mock_prev_run_date,
+        mock_splits,
+        _schema,
+        _trade,
+        _snap,
+        mock_prev,
+    ):
+        # MNST split 2-for-1 but the broker's qty (20.804) never doubled --
+        # its reported unrealized_pl is bogus. Rather than excluding it from
+        # the aggregate (which used to just shift the corruption into the
+        # derived "realized" line), the whole summary is now marked suspect
+        # with an estimated phantom amount, and the aggregate is computed
+        # over all positions so total - unrealized stays internally
+        # consistent.
+        mock_prev.return_value = 99000.0
+        mock_prev_positions.return_value = {"MNST": {"qty": 20.804}}
+        mock_prev_run_date.return_value = "2026-06-18"
+        mock_splits.return_value = ({"MNST": [(date(2026, 6, 19), 2.0)]}, False)
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, _, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={
+                "MNST": {"qty": 20.804, "market_value": 986.84, "unrealized_pl": -900.27},
+                "VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22},
+            },
+        )
+        trader.run()
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["unrealized_pnl"] == -900.27 + 365.22
+        assert kwargs["flagged_splits"] == ["MNST"]
+        assert kwargs["phantom_estimate"] == -900.27
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_no_flagged_splits_zero_phantom_estimate(
+        self, mock_signals, _schema, _trade, _snap, mock_prev
+    ):
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, _, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={"VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22}},
+        )
+        trader.run()
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["flagged_splits"] == []
+        assert kwargs["phantom_estimate"] == 0.0
+
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
@@ -425,7 +514,7 @@ class TestDryRun:
         reported but no real order is submitted."""
         from ggTrader.paper.trader import PaperTrader
 
-        mock_signals.return_value = _blend(buys=["AAPL"], sells=[], as_of="2026-07-13")
+        mock_signals.return_value = _blend(buys=["AAPL"], sells=[], as_of=_TEST_TODAY)
 
         broker = MagicMock()
         broker.get_account.return_value = {
@@ -503,3 +592,340 @@ class TestRunPaperTrading:
         run_paper_trading(dry_run=False)
 
         assert mock_trader_cls.call_args.kwargs["dry_run"] is False
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestPendingOrderDedup:
+    """A symbol with an already-open (non-terminal) pending order must not
+    get a second buy/sell submitted against it this run."""
+
+    @patch("ggTrader.paper.trader.get_pending_orders")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_skips_buy_when_symbol_has_pending_order(self, mock_signals, mock_get_pending, *_):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        mock_get_pending.return_value = [
+            {
+                "order_id": "buy-order-99",
+                "run_date": "2026-06-18",
+                "side": "BUY",
+                "symbol": "MSFT",
+                "notional": 3300.0,
+                "created_at": datetime.now(timezone.utc),
+                "flagged_stale": False,
+            }
+        ]
+        trader, broker, _ = _make_trader(portfolio_value=100000.0)
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "accepted",
+        }
+        result = trader.run()
+        broker.submit_buy.assert_not_called()
+        assert "MSFT" not in result["buys"]
+
+    @patch("ggTrader.paper.trader.get_pending_orders")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_skips_sell_when_symbol_has_pending_order(self, mock_signals, mock_get_pending, *_):
+        mock_signals.return_value = _blend(buys=[], sells=["AAPL"])
+        mock_get_pending.return_value = [
+            {
+                "order_id": "sell-order-99",
+                "run_date": "2026-06-18",
+                "side": "SELL",
+                "symbol": "AAPL",
+                "notional": 1500.0,
+                "created_at": datetime.now(timezone.utc),
+                "flagged_stale": False,
+            }
+        ]
+        trader, broker, _ = _make_trader(
+            portfolio_value=100000.0,
+            positions={
+                "AAPL": {
+                    "qty": 10.0,
+                    "market_value": 1500.0,
+                    "avg_entry": 145.0,
+                    "unrealized_pl": 50.0,
+                }
+            },
+        )
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "AAPL",
+            "side": "sell",
+            "qty": None,
+            "notional": 1500.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "accepted",
+        }
+        result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert "AAPL" not in result["sells"]
+
+    @patch("ggTrader.paper.trader.clear_pending_order")
+    @patch("ggTrader.paper.trader.get_pending_orders")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_terminal_pending_order_does_not_block_new_order(
+        self, mock_signals, mock_get_pending, mock_clear, *_
+    ):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        mock_get_pending.return_value = [
+            {
+                "order_id": "buy-order-99",
+                "run_date": "2026-06-18",
+                "side": "BUY",
+                "symbol": "MSFT",
+                "notional": 3300.0,
+                "created_at": datetime.now(timezone.utc),
+                "flagged_stale": False,
+            }
+        ]
+        trader, broker, _ = _make_trader(portfolio_value=100000.0)
+        # Reconciliation resolves the old order (filled) -- it is terminal,
+        # so MSFT is no longer "pending" and a fresh signal may proceed.
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": 22.0,
+            "notional": 3300.0,
+            "filled_qty": 22.0,
+            "filled_avg_price": 150.0,
+            "status": "filled",
+        }
+        result = trader.run()
+        broker.submit_buy.assert_called_once_with("MSFT", 3300.0)
+        assert "MSFT" in result["buys"]
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestMarketGates:
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_market_closed_skips_run_entirely(self, mock_signals, *_):
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        broker.get_clock.return_value = {"is_open": False}
+        result = trader.run()
+        mock_signals.assert_not_called()
+        broker.submit_buy.assert_not_called()
+        broker.submit_sell.assert_not_called()
+        notifier.daily_summary.assert_not_called()
+        assert result == {"buys": [], "sells": [], "errors": []}
+        assert any("Market closed" in c.args[0] for c in notifier.send.call_args_list)
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_market_open_get_clock_failure_fails_open(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader(portfolio_value=100000.0)
+        broker.get_clock.side_effect = Exception("API down")
+        result = trader.run()
+        assert "MSFT" in result["buys"]
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_stale_as_of_skips_trading(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of="2020-01-01")
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        result = trader.run()
+        broker.submit_buy.assert_not_called()
+        broker.submit_sell.assert_not_called()
+        assert result == {"buys": [], "sells": [], "errors": []}
+        assert any("Stale signal data" in c.args[0] for c in notifier.send.call_args_list)
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_fresh_as_of_trades_normally(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=_TEST_TODAY)
+        trader, broker, _ = _make_trader(portfolio_value=100000.0)
+        result = trader.run()
+        assert "MSFT" in result["buys"]
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestPersistedDrawdown:
+    """The max-drawdown halt is dead code unless the peak survives across
+    process restarts (each cron run constructs a fresh PaperTrader)."""
+
+    @patch("ggTrader.paper.trader.get_peak_value")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_halt_fires_using_persisted_peak_across_two_runs(self, mock_signals, mock_get_peak, *_):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        mock_get_peak.return_value = 120000.0  # peak persisted from a prior run
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)  # -16.7% drawdown
+        result = trader.run()
+        broker.submit_buy.assert_not_called()
+        broker.submit_sell.assert_not_called()
+        assert result["errors"] and "drawdown" in result["errors"][0].lower()
+        assert any("HALTED" in c.args[0] for c in notifier.send.call_args_list)
+
+    @patch("ggTrader.paper.trader.save_peak_value")
+    @patch("ggTrader.paper.trader.get_peak_value")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_peak_persisted_after_new_high(self, mock_signals, mock_get_peak, mock_save_peak, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        mock_get_peak.return_value = 90000.0
+        trader, _, _ = _make_trader(portfolio_value=100000.0)
+        trader.run()
+        mock_save_peak.assert_called_once_with(100000.0)
+
+    @patch("ggTrader.paper.trader.save_peak_value")
+    @patch("ggTrader.paper.trader.get_peak_value")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_peak_not_regressed_when_persisted_peak_higher(
+        self, mock_signals, mock_get_peak, mock_save_peak, *_
+    ):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        mock_get_peak.return_value = 120000.0
+        # 110000 is an 8.3% drawdown from 120000 -- below the 15% halt
+        # threshold, so trading continues, but the peak must stay at 120000.
+        trader, _, _ = _make_trader(portfolio_value=110000.0)
+        trader.run()
+        mock_save_peak.assert_called_once_with(120000.0)
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestStalePendingOrders:
+    @patch("ggTrader.paper.trader.mark_pending_order_stale")
+    @patch("ggTrader.paper.trader.get_pending_orders")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_stale_pending_order_flagged_once(
+        self, mock_signals, mock_get_pending, mock_mark_stale, *_
+    ):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        old_created = datetime.now(timezone.utc) - timedelta(days=6)
+        mock_get_pending.return_value = [
+            {
+                "order_id": "buy-order-99",
+                "run_date": "2026-06-01",
+                "side": "BUY",
+                "symbol": "MSFT",
+                "notional": 3300.0,
+                "created_at": old_created,
+                "flagged_stale": False,
+            }
+        ]
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "accepted",
+        }
+        trader.run()
+        mock_mark_stale.assert_called_once_with("buy-order-99")
+        assert any("Stale pending order" in c.args[0] for c in notifier.send.call_args_list)
+
+    @patch("ggTrader.paper.trader.mark_pending_order_stale")
+    @patch("ggTrader.paper.trader.get_pending_orders")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_already_flagged_stale_order_not_re_alerted(
+        self, mock_signals, mock_get_pending, mock_mark_stale, *_
+    ):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        old_created = datetime.now(timezone.utc) - timedelta(days=6)
+        mock_get_pending.return_value = [
+            {
+                "order_id": "buy-order-99",
+                "run_date": "2026-06-01",
+                "side": "BUY",
+                "symbol": "MSFT",
+                "notional": 3300.0,
+                "created_at": old_created,
+                "flagged_stale": True,
+            }
+        ]
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "accepted",
+        }
+        trader.run()
+        mock_mark_stale.assert_not_called()
+        assert not any("Stale pending order" in c.args[0] for c in notifier.send.call_args_list)
+
+    @patch("ggTrader.paper.trader.mark_pending_order_stale")
+    @patch("ggTrader.paper.trader.get_pending_orders")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_fresh_pending_order_not_flagged(
+        self, mock_signals, mock_get_pending, mock_mark_stale, *_
+    ):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        recent_created = datetime.now(timezone.utc) - timedelta(hours=2)
+        mock_get_pending.return_value = [
+            {
+                "order_id": "buy-order-99",
+                "run_date": "2026-06-19",
+                "side": "BUY",
+                "symbol": "MSFT",
+                "notional": 3300.0,
+                "created_at": recent_created,
+                "flagged_stale": False,
+            }
+        ]
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "accepted",
+        }
+        trader.run()
+        mock_mark_stale.assert_not_called()
+        assert not any("Stale pending order" in c.args[0] for c in notifier.send.call_args_list)
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestOrderErrorAlerting:
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_order_failure_sends_distinct_alert(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        broker.submit_buy.side_effect = Exception("insufficient buying power")
+        trader.run()
+        assert any(
+            "failed" in c.args[0].lower() and "MSFT" in c.args[0]
+            for c in notifier.send.call_args_list
+        )
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_errors_passed_through_to_daily_summary(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        broker.submit_buy.side_effect = Exception("insufficient buying power")
+        trader.run()
+        kwargs = notifier.daily_summary.call_args[1]
+        assert len(kwargs["errors"]) == 1
+        assert "MSFT" in kwargs["errors"][0]

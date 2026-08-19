@@ -57,14 +57,28 @@ class TelegramNotifier:
         return self.send(msg)
 
     def daily_summary(
-        self, portfolio_value: float, daily_pnl: float, positions: dict[str, dict],
-        total_pnl: float | None = None, unrealized_pnl: float | None = None,
+        self,
+        portfolio_value: float,
+        daily_pnl: float,
+        positions: dict[str, dict],
+        total_pnl: float | None = None,
+        unrealized_pnl: float | None = None,
+        flagged_splits: list[str] | None = None,
+        phantom_estimate: float = 0.0,
+        errors: list[str] | None = None,
     ) -> bool:
         arrow = "🟢" if daily_pnl >= 0 else "🔴"
         day_start = portfolio_value - daily_pnl
         pnl_pct = (daily_pnl / day_start * 100) if day_start > 0 else 0.0
-        lines = [
-            "<b>📈 Paper Portfolio Summary</b>",
+        lines = ["<b>📈 Paper Portfolio Summary</b>"]
+        if flagged_splits:
+            symbols = ", ".join(flagged_splits)
+            lines.append(
+                f"<b>⚠️ SUSPECT DATA:</b> {symbols} — broker split not reflected; "
+                f"ALL P&L figures below may be off by an estimated "
+                f"${phantom_estimate:,.2f}"
+            )
+        lines += [
             f"Value: <b>${portfolio_value:,.2f}</b>",
             f"Daily P&L: {arrow} ${daily_pnl:+,.2f} ({pnl_pct:+.2f}%)",
         ]
@@ -78,6 +92,7 @@ class TelegramNotifier:
                 f"realized: ${rlz_arrow}{realized_pnl:,.2f}, "
                 f"unrealized: ${unrlz_arrow}{unrealized_pnl:,.2f}"
             )
+        flagged = set(flagged_splits or [])
         lines.append(f"Positions: {len(positions)}")
         if positions:
             lines.append("")
@@ -85,15 +100,25 @@ class TelegramNotifier:
                 positions.items(), key=lambda kv: kv[1].get("unrealized_plpc", 0.0), reverse=True
             )
             for sym, info in ranked:
-                pl = info.get("unrealized_pl", 0.0)
-                plpc = info.get("unrealized_plpc", 0.0) * 100
-                tod = info.get("change_today", 0.0) * 100
-                pl_arrow = "+" if pl >= 0 else ""
                 qty = info.get("qty", 0.0)
                 price = info.get("current_price", 0.0)
                 qty_str = f"{qty:.0f}" if float(qty).is_integer() else f"{qty:.4f}"
+                if sym in flagged:
+                    lines.append(
+                        f"  {sym}: {qty_str} @ ${price:.2f} — "
+                        f"⚠️ split not reflected by broker, P&L unavailable"
+                    )
+                    continue
+                pl = info.get("unrealized_pl", 0.0)
+                plpc = info.get("unrealized_plpc", 0.0) * 100
+                pl_arrow = "+" if pl >= 0 else ""
                 lines.append(
                     f"  {sym}: {qty_str} @ ${price:.2f} — "
                     f"${pl_arrow}{pl:,.2f} ({pl_arrow}{plpc:.2f}%)"
                 )
+        if errors:
+            lines.append("")
+            lines.append(f"<b>❌ Errors ({len(errors)})</b>")
+            for err in errors:
+                lines.append(f"  {err}")
         return self.send("\n".join(lines))

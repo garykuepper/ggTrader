@@ -31,14 +31,23 @@ CREATE TABLE IF NOT EXISTS paper_pending_orders (
     side TEXT NOT NULL,
     symbol TEXT NOT NULL,
     notional DOUBLE PRECISION NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    flagged_stale BOOLEAN NOT NULL DEFAULT FALSE
 );
+ALTER TABLE paper_pending_orders
+    ADD COLUMN IF NOT EXISTS flagged_stale BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE TABLE IF NOT EXISTS paper_rebalance_state (
     id INTEGER PRIMARY KEY DEFAULT 1,
     rebalance_date DATE NOT NULL,
     weights JSONB NOT NULL,
     scale DOUBLE PRECISION NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT single_row CHECK (id = 1)
+);
+CREATE TABLE IF NOT EXISTS paper_risk_state (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    peak_value DOUBLE PRECISION NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT single_row CHECK (id = 1)
 );
 """
@@ -100,7 +109,7 @@ def get_pending_orders() -> list[dict]:
     with _get_engine().connect() as conn:
         rows = conn.execute(
             text(
-                "SELECT order_id, run_date, side, symbol, notional "
+                "SELECT order_id, run_date, side, symbol, notional, created_at, flagged_stale "
                 "FROM paper_pending_orders ORDER BY created_at"
             )
         ).mappings()
@@ -112,6 +121,19 @@ def clear_pending_order(order_id: str) -> None:
     with _get_engine().connect() as conn:
         conn.execute(
             text("DELETE FROM paper_pending_orders WHERE order_id = :order_id"),
+            {"order_id": order_id},
+        )
+        conn.commit()
+
+
+def mark_pending_order_stale(order_id: str) -> None:
+    """Flag a pending order as having already triggered a staleness alert.
+
+    The row is left in place (reconciliation keeps polling it) -- this only
+    stops the notifier from re-alerting on it every run."""
+    with _get_engine().connect() as conn:
+        conn.execute(
+            text("UPDATE paper_pending_orders SET flagged_stale = TRUE WHERE order_id = :order_id"),
             {"order_id": order_id},
         )
         conn.commit()
@@ -152,6 +174,58 @@ def log_snapshot(run_date: str, portfolio_value: float, cash: float, positions: 
                 "cash": cash,
                 "pos": json.dumps(positions),
             },
+        )
+        conn.commit()
+
+
+def get_latest_snapshot_positions() -> dict | None:
+    """Return the most recent snapshot's positions dict, or None if none exist.
+
+    Used to detect broker-side data gaps (e.g. a stock split whose qty
+    adjustment the paper broker never applied) by diffing against the
+    positions returned by the live broker on the next run.
+    """
+    with _get_engine().connect() as conn:
+        row = conn.execute(
+            text("SELECT positions FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
+        ).first()
+    if row is None:
+        return None
+    positions = row[0]
+    return positions if isinstance(positions, dict) else json.loads(positions)
+
+
+def get_latest_snapshot_run_date() -> str | None:
+    """Return the most recent snapshot's run_date (ISO string), or None if none exist.
+
+    Paired with `get_latest_snapshot_positions()` so the split-check gate can
+    tell whether a known split's ex-date falls between the prior snapshot and
+    today (see `split_check.find_unadjusted_split_symbols`).
+    """
+    with _get_engine().connect() as conn:
+        row = conn.execute(
+            text("SELECT run_date FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
+        ).first()
+    return str(row[0]) if row else None
+
+
+def get_peak_value() -> float | None:
+    """Return the persisted portfolio peak (for drawdown tracking), or None."""
+    with _get_engine().connect() as conn:
+        row = conn.execute(text("SELECT peak_value FROM paper_risk_state WHERE id = 1")).first()
+    return float(row[0]) if row else None
+
+
+def save_peak_value(peak_value: float) -> None:
+    """Upsert the single current peak-value row (id=1)."""
+    with _get_engine().connect() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO paper_risk_state (id, peak_value) VALUES (1, :peak) "
+                "ON CONFLICT (id) DO UPDATE SET "
+                "peak_value = EXCLUDED.peak_value, updated_at = now()"
+            ),
+            {"peak": peak_value},
         )
         conn.commit()
 
