@@ -236,6 +236,33 @@ individual sleeve slot-cap choice for blend-level risk (§3 Q1) — that's a
 structural property of `combine_sleeves`, not dependent on which combo any
 sleeve happens to be running, and would hold under the full WFO too.
 
+### Addendum: gated-WFO follow-up scheduled (2026-08-19)
+
+`scripts/position_sizing_wfo.py` implements §5's recommended next step,
+reusing `run_blend`/`run_wfo` (and `position_sizing_regimes.py`'s
+admission-filter kernel, unmodified) unchanged rather than reproducing them
+-- Regime F is injected by swapping the `ggTrader.lab.simulate.simulate_signals`
+module attribute inside each config's own worker process. Given the
+2026-08-18 anchor report's ~15 min/fold-per-sleeve measurement and a
+4-hour wall-clock budget, this first pass is deliberately reduced, not the
+full validated construction: **one sleeve (sp500) instead of the 3-sleeve
+blend, 6 of the validated 17 folds** (most recent 30 months,
+2023-10-30 → 2026-04-30), and **3 configs** (Regime P re-baseline, Regime F
+cap=16, Regime F cap=30 -- cap=8/12/20/25 dropped). The full 48-combo grid
+per fold is kept unreduced so gate behavior (NDH/DSR) stays faithful. The
+three configs run as separate processes (`n_jobs=3`, one core free) so
+wall-clock is ~max(per-config time), not the sum. Scheduled to launch at
+13:15 PT 2026-08-19 (30 min after the 12:45 PT paper-trade cron, so it
+doesn't contend for CPU with the live fill) via
+`scripts/run_position_sizing_wfo_scheduled.sh`; results land in
+`docs/research/_position_sizing_wfo_results.json` and a Telegram summary on
+completion or failure. Because this reduced construction uses one sleeve
+and 6 folds, its Regime P number is **not** a replacement for the full
+3-sleeve/17-fold 1.14/-5.39% headline -- it is a first, honest, anchor-fixed
+read at the sizing-mechanism question under real gating, sized to fit this
+task's compute budget. A full 3-sleeve/17-fold re-run remains the
+still-open, more expensive next step if this reduced pass looks decision-relevant.
+
 ### Parked Direction: cap sweep resolution finer than 8/12/16/20/25/30
 
 The blend-level Sharpe curve over the tested caps (0.46/0.48/0.57/0.56/
