@@ -86,42 +86,49 @@ def _build_dataset(ohlcv: pd.DataFrame, entries: pd.DataFrame) -> pd.DataFrame:
         lo = ohlcv[s].get("low")
         low_frames[s] = lo.dropna() if lo is not None and not lo.empty else None
 
-    for bar_date in entries.index:
-        for symbol in sym_cols:
-            if not entries.loc[bar_date, symbol]:
-                continue
-            if symbol not in close_frames:
-                continue
+    # Only visit (date, symbol) pairs where entries is actually True, instead
+    # of a per-cell .loc lookup over every date x symbol combination (the
+    # vast majority of which are False). np.nonzero on a 2D array returns
+    # indices in row-major (date-major) order, matching the original nested
+    # loop's iteration order exactly.
+    entries_arr = entries.to_numpy()
+    sym_cols_arr = np.asarray(sym_cols)
+    row_idx, col_idx = np.nonzero(entries_arr)
+    for row, col in zip(row_idx, col_idx):
+        bar_date = entries.index[row]
+        symbol = sym_cols_arr[col]
+        if symbol not in close_frames:
+            continue
 
-            close = close_frames[symbol]
-            volume = volume_frames[symbol]
+        close = close_frames[symbol]
+        volume = volume_frames[symbol]
 
-            if bar_date not in close.index:
-                continue
-            bar_idx = close.index.get_loc(bar_date)
-            if bar_idx < 20:
-                continue
+        if bar_date not in close.index:
+            continue
+        bar_idx = close.index.get_loc(bar_date)
+        if bar_idx < 20:
+            continue
 
-            # 5-day forward return label
-            future_idx = bar_idx + FORWARD_DAYS
-            if future_idx >= len(close):
-                continue
-            fwd_ret = close.iloc[future_idx] / close.iloc[bar_idx] - 1.0
-            label = 1 if fwd_ret > 0 else 0
+        # 5-day forward return label
+        future_idx = bar_idx + FORWARD_DAYS
+        if future_idx >= len(close):
+            continue
+        fwd_ret = close.iloc[future_idx] / close.iloc[bar_idx] - 1.0
+        label = 1 if fwd_ret > 0 else 0
 
-            high = high_frames.get(symbol)
-            low = low_frames.get(symbol)
-            feats = extract_features(
-                close.iloc[: bar_idx + 1],
-                volume.iloc[: bar_idx + 1],
-                bar_date,
-                high=high.iloc[: bar_idx + 1] if high is not None else None,
-                low=low.iloc[: bar_idx + 1] if low is not None else None,
-            )
-            feats["label"] = label
-            feats["date"] = bar_date
-            feats["symbol"] = symbol
-            records.append(feats)
+        high = high_frames.get(symbol)
+        low = low_frames.get(symbol)
+        feats = extract_features(
+            close.iloc[: bar_idx + 1],
+            volume.iloc[: bar_idx + 1],
+            bar_date,
+            high=high.iloc[: bar_idx + 1] if high is not None else None,
+            low=low.iloc[: bar_idx + 1] if low is not None else None,
+        )
+        feats["label"] = label
+        feats["date"] = bar_date
+        feats["symbol"] = symbol
+        records.append(feats)
 
     return pd.DataFrame(records)
 

@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 import pandas as pd
 import psycopg2
 from psycopg2.extras import execute_values
@@ -90,6 +91,77 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             for sym, lo, hi in rows
         }
 
+    # ------------------------------------------------------------------
+    # Per-symbol inception tracking
+    # ------------------------------------------------------------------
+    #
+    # A symbol whose true first bar postdates a fixed historical
+    # ``start_date`` by more than 7 days (recent IPOs, 2020+ index
+    # additions, leveraged ETFs vs. a 2010 data_start) would otherwise
+    # trip the "first > start_date + 7d" full-refetch trigger on EVERY
+    # run forever, since the cached first bar never moves closer to
+    # start_date no matter how many times it's fetched. We record the
+    # earliest bar a full fetch has ever actually returned for a symbol;
+    # once that recorded inception matches what's currently cached, a
+    # start-date gap is known-genuine (the listing/data really starts
+    # there) rather than a sign the cache is missing fetchable history,
+    # and the full refetch is skipped. If the cached first bar ever
+    # regresses (e.g. table wiped and partially repopulated), the
+    # mismatch against the recorded inception forces a full refetch again.
+
+    _INCEPTION_SCHEMA = """
+        CREATE TABLE IF NOT EXISTS symbol_inception (
+            symbol      text        NOT NULL,
+            interval    text        NOT NULL,
+            venue       text        NOT NULL,
+            first_date  timestamptz NOT NULL,
+            recorded_at timestamptz NOT NULL DEFAULT now(),
+            PRIMARY KEY (symbol, interval, venue)
+        );
+    """
+
+    def _ensure_inception_schema(self) -> None:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(self._INCEPTION_SCHEMA)
+            conn.commit()
+
+    def _get_known_inceptions(self, symbols: List[str], interval: str) -> Dict[str, pd.Timestamp]:
+        try:
+            self._ensure_inception_schema()
+            query = """
+                SELECT symbol, first_date FROM symbol_inception
+                WHERE symbol = ANY(%s) AND interval = %s AND venue = %s;
+            """
+            with self._connect() as conn, conn.cursor() as cur:
+                cur.execute(query, (list(symbols), interval, STOCK_VENUE))
+                rows = cur.fetchall()
+            return {sym: pd.Timestamp(dt, tz="UTC") for sym, dt in rows}
+        except Exception as e:
+            self.logger.error(f"Inception lookup failed ({e}); treating as unknown")
+            return {}
+
+    def _record_inceptions(self, inceptions: Dict[str, pd.Timestamp], interval: str) -> None:
+        if not inceptions:
+            return
+        try:
+            self._ensure_inception_schema()
+            query = """
+                INSERT INTO symbol_inception (symbol, interval, venue, first_date)
+                VALUES %s
+                ON CONFLICT (symbol, interval, venue) DO UPDATE SET
+                    first_date = EXCLUDED.first_date,
+                    recorded_at = now();
+            """
+            records = [
+                (sym, interval, STOCK_VENUE, ts.to_pydatetime())
+                for sym, ts in inceptions.items()
+            ]
+            with self._connect() as conn, conn.cursor() as cur:
+                execute_values(cur, query, records)
+                conn.commit()
+        except Exception as e:
+            self.logger.error(f"Failed to record symbol inception ({e})")
+
     def _db_fetch(
         self,
         symbols: List[str],
@@ -126,29 +198,44 @@ class CachedYFinanceLoader(YFinanceDataLoader):
         return wide
 
     def _cache_to_db(self, df: pd.DataFrame, interval: str) -> None:
-        """Persist a yfinance OHLCV frame (PK includes venue)."""
+        """Persist a yfinance OHLCV frame (PK includes venue).
+
+        Vectorized per-symbol: builds each symbol's row block from numpy
+        arrays (to_numpy over the [open, high, low, close, volume] columns)
+        instead of iterrows()'s per-cell Series construction, then extends
+        the shared ``records`` list via zip(). NaN handling is identical to
+        the row-by-row version: a row is dropped entirely if close or the
+        timestamp is NaN/NaT; any other NaN OHLCV field becomes SQL NULL.
+        """
         if df.empty:
             return
         records = []
         for symbol in df.columns.get_level_values(0).unique():
-            symbol_data = df[symbol]
-            for ts, row in symbol_data.iterrows():
-                if pd.isna(row.get("close")) or pd.isna(ts):
-                    continue
-                records.append(
-                    (
-                        ts.to_pydatetime(),
-                        symbol,
-                        interval,
-                        STOCK_VENUE,
-                        float(row["open"]) if not pd.isna(row["open"]) else None,
-                        float(row["high"]) if not pd.isna(row["high"]) else None,
-                        float(row["low"]) if not pd.isna(row["low"]) else None,
-                        float(row["close"]),
-                        float(row["volume"]) if not pd.isna(row["volume"]) else None,
-                        0,
-                    )
+            sub = df[symbol].reindex(columns=["open", "high", "low", "close", "volume"])
+            valid = sub["close"].notna().to_numpy() & ~sub.index.isna()
+            if not valid.any():
+                continue
+            sub = sub.loc[valid]
+            n = len(sub)
+            ts_list = sub.index.to_pydatetime().tolist()
+            arr = sub.to_numpy(dtype=float)
+            obj = arr.astype(object)
+            obj[np.isnan(arr)] = None
+            open_c, high_c, low_c, close_c, vol_c = obj.T
+            records.extend(
+                zip(
+                    ts_list,
+                    [symbol] * n,
+                    [interval] * n,
+                    [STOCK_VENUE] * n,
+                    open_c.tolist(),
+                    high_c.tolist(),
+                    low_c.tolist(),
+                    close_c.tolist(),
+                    vol_c.tolist(),
+                    [0] * n,
                 )
+            )
         if not records:
             return
         query = """
@@ -192,8 +279,12 @@ class CachedYFinanceLoader(YFinanceDataLoader):
     ) -> pd.DataFrame:
         """DB-first fetch with per-symbol freshness.
 
-        full-range fetch: symbols with no cache, or whose cached history starts
-        more than ~5 trading days after the requested start.
+        full-range fetch: symbols with no cache; or whose cached history
+        starts more than ~5 trading days after the requested start AND
+        whose cached first bar does not match a previously-recorded
+        confirmed inception (see the "Per-symbol inception tracking" note
+        above) -- avoids re-fetching a stable, known-late-listing symbol
+        (e.g. a 2021 IPO vs. a 2010 data_start) on every single run.
         incremental fetch: cached symbols whose last bar is older than
         1.5x the interval relative to ``end_date`` (or now).
         """
@@ -207,6 +298,16 @@ class CachedYFinanceLoader(YFinanceDataLoader):
         except Exception as e:
             self.logger.error(f"DB coverage query failed ({e}); fetching all from yfinance")
 
+        # Only symbols with a real start-date gap need the inception lookup.
+        gap_candidates = [
+            sym
+            for sym, (first, _last) in coverage.items()
+            if start_date is not None and first > start_date + pd.Timedelta(days=7)
+        ]
+        known_inceptions = (
+            self._get_known_inceptions(gap_candidates, interval) if gap_candidates else {}
+        )
+
         full_fetch: List[str] = []
         incr_fetch: List[str] = []
         incr_start: Optional[pd.Timestamp] = None
@@ -217,8 +318,14 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                 continue
             first, last = cov
             if start_date is not None and first > start_date + pd.Timedelta(days=7):
-                full_fetch.append(sym)
-                continue
+                known = known_inceptions.get(sym)
+                if known is None or known != first:
+                    full_fetch.append(sym)
+                    continue
+                # Confirmed known inception: the cached first bar matches a
+                # prior full fetch's earliest returned bar, so this is a
+                # genuine listing-start gap, not missing fetchable history.
+                # Fall through to the (unaffected) end-freshness check below.
             # End freshness: don't demand bars newer than the data can be
             # (e.g. end_date in the future or on a weekend).
             target = min(effective_end, now_utc)
@@ -233,6 +340,19 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             if not live.empty:
                 self._cache_to_db(live, interval)
                 fetched_frames.append(live)
+                if start_date is not None:
+                    live_syms = set(live.columns.get_level_values(0).unique())
+                    new_inceptions: Dict[str, pd.Timestamp] = {}
+                    for sym in full_fetch:
+                        if sym not in live_syms:
+                            continue
+                        sym_close = live[sym]["close"].dropna()
+                        if sym_close.empty:
+                            continue
+                        sym_first = sym_close.index.min()
+                        if sym_first > start_date + pd.Timedelta(days=7):
+                            new_inceptions[sym] = sym_first
+                    self._record_inceptions(new_inceptions, interval)
         if incr_fetch:
             self.logger.info(
                 f"Incremental yfinance fetch for {len(incr_fetch)} symbols from {incr_start}"

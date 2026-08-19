@@ -102,7 +102,11 @@ def pair_signal(z: pd.Series, entry_z: float, exit_z: float) -> pd.Series:
 #: every one of them -- without this cache, the full sector-pair correlation
 #: scan (potentially ~1000 pairs) gets redundantly recomputed once per
 #: combo, dozens of times per fold. Mirrors leveraged_rotation.py's
-#: _breadth_cache and leveraged_trend.py's _underlying_cache.
+#: _breadth_cache and leveraged_trend.py's _underlying_cache -- also a
+#: process-local dict, so under joblib's per-combo worker parallelism each
+#: worker still pays for its own first miss per (asof, corr_lookback,
+#: corr_min, eligible); only redundant recompute *within* a worker process
+#: is eliminated.
 _pair_candidate_cache: dict[tuple, list[tuple[tuple[str, str], float]]] = {}
 
 

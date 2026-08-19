@@ -207,13 +207,51 @@ class WfoTournamentSignal:
         return result[: self.cfg.top_n] if self.cfg.top_n else result
 
     def to_targets(self, plans: Dict[pd.Timestamp, Plan], data: pd.DataFrame) -> SignalTargets:
-        """Piecewise signals: each period uses the params selected at its rebalance date."""
+        """Piecewise signals: each period uses the params selected at its rebalance date.
+
+        Signals for a given (symbol, ema_fast, ema_slow) triple are computed
+        at most once across the whole call (memoized in ``pair_cache``,
+        keyed by (ema_fast, ema_slow)) instead of once per (rebalance
+        period x symbol) -- the same pair commonly wins several consecutive
+        tournaments, and every symbol within one rebalance's plan always
+        shares that rebalance's single winning combo (select() applies one
+        tournament result to every selected symbol), so grouping by pair
+        turns the old per-symbol single-column ema_signals call into one
+        batched multi-column call per newly-seen pair. Output-identical to
+        the old per-symbol-dropna call: ema_signals' ewm(adjust=False) holds
+        the prior value on a NaN row (no update), which is mathematically
+        the same as dropping NaN rows first and reindexing back -- verified
+        by the old-vs-new equivalence test.
+        """
         all_symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
         entries = pd.DataFrame(False, index=data.index, columns=all_symbols)
         exits = pd.DataFrame(False, index=data.index, columns=all_symbols)
 
         sorted_dates = sorted(plans.keys())
         have = set(data.columns.get_level_values(0).unique())
+
+        # (ema_fast, ema_slow) -> (entries_df, exits_df) accumulated lazily;
+        # each is a (time x symbol) frame over every symbol seen so far
+        # under that pair, computed with one vectorized ema_signals call.
+        pair_cache: dict[tuple[int, int], tuple[pd.DataFrame, pd.DataFrame]] = {}
+
+        def _signals_for_pair(fast: int, slow: int, symbols: list[str]) -> tuple:
+            key = (fast, slow)
+            cached = pair_cache.get(key)
+            if cached is None:
+                close_multi = extract_close(data, symbols)
+                ent, ext = ema_signals(close_multi, fast, slow)
+                pair_cache[key] = (ent, ext)
+                return ent, ext
+            cached_ent, cached_ext = cached
+            missing = [s for s in symbols if s not in cached_ent.columns]
+            if missing:
+                close_missing = extract_close(data, missing)
+                ent_m, ext_m = ema_signals(close_missing, fast, slow)
+                cached_ent = pd.concat([cached_ent, ent_m], axis=1)
+                cached_ext = pd.concat([cached_ext, ext_m], axis=1)
+                pair_cache[key] = (cached_ent, cached_ext)
+            return pair_cache[key]
 
         for i, asof in enumerate(sorted_dates):
             next_asof = sorted_dates[i + 1] if i + 1 < len(sorted_dates) else data.index[-1]
@@ -231,20 +269,24 @@ class WfoTournamentSignal:
                     if sym in exits.columns and len(period_index) > 0:
                         exits.loc[period_index[0], sym] = True
 
-            # Generate signals for active symbols using this period's params
+            # Generate signals for active symbols using this period's
+            # params, grouped by (ema_fast, ema_slow) so each pair's
+            # ema_signals call covers every symbol using it at once.
+            by_pair: Dict[tuple[int, int], list[str]] = {}
             for sel in plans[asof]:
                 sym = sel["symbol"]
                 if sym not in have:
                     continue
-                close_sym = data[sym]["close"].dropna().to_frame(sym)
-                sym_ent, sym_ext = ema_signals(
-                    close_sym, int(sel.get("ema_fast", 20)), int(sel.get("ema_slow", 50))
+                pair = (int(sel.get("ema_fast", 20)), int(sel.get("ema_slow", 50)))
+                by_pair.setdefault(pair, []).append(sym)
+
+            for (fast, slow), syms in by_pair.items():
+                pair_ent, pair_ext = _signals_for_pair(fast, slow, syms)
+                entries.loc[period_index, syms] = (
+                    pair_ent[syms].reindex(period_index).fillna(False).to_numpy()
                 )
-                entries.loc[period_index, sym] = (
-                    sym_ent[sym].reindex(period_index).fillna(False).to_numpy()
-                )
-                exits.loc[period_index, sym] = (
-                    sym_ext[sym].reindex(period_index).fillna(False).to_numpy()
+                exits.loc[period_index, syms] = (
+                    pair_ext[syms].reindex(period_index).fillna(False).to_numpy()
                 )
 
         return SignalTargets(entries=entries.astype(bool), exits=exits.astype(bool))

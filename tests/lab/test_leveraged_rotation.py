@@ -254,6 +254,29 @@ class TestLeveragedRotationBaseToTargets:
 
         assert mock_to_targets.call_count == 1
 
+    def test_breadth_cache_key_includes_cfg_min_history_bars(self):
+        """Phase C item 15 regression: the cache key must include the cfg
+        fields EnsembleSignal reads (min_history_bars/max_stocks/
+        max_sector_count), not just the data window + breadth symbols.
+        Before the fix, two combos differing only in min_history_bars would
+        collide on the same key and the second would silently reuse the
+        first's cached breadth series even if EnsembleSignal ever came to
+        depend on it."""
+        from ggTrader.lab.strategies.leveraged_rotation import _cached_breadth
+        from ggTrader.lab.strategy import LabConfig
+
+        stocks = [f"S{i}" for i in range(20)]
+        returns = _daily_returns(stocks, n=300, seed=11)
+        ohlcv = _ohlcv_from_returns(returns)
+
+        b1 = _cached_breadth(LabConfig(min_history_bars=60), ohlcv, stocks)
+        b2 = _cached_breadth(LabConfig(min_history_bars=200), ohlcv, stocks)
+
+        from ggTrader.lab.strategies.leveraged_rotation import _breadth_cache
+
+        assert len(_breadth_cache) == 2, "different cfg.min_history_bars must not collide"
+        assert isinstance(b1, pd.Series) and isinstance(b2, pd.Series)
+
 
 class TestPerUniverseSubclasses:
     def test_sp500_pairs(self):

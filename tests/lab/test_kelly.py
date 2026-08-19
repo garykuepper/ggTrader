@@ -225,3 +225,66 @@ class TestKellySizesCausality:
             min_trades=3,
         )
         assert sizes_long.at[idx[20], "A"] == pytest.approx(sizes_short.at[idx[20], "A"])
+
+
+def _reference_kelly_sizes(
+    entries, exits, close, *, kelly_multiplier, base_size, max_size, min_trades=10
+):
+    """Mirrors the pre-vectorization nested for-col/for-t loop with scalar
+    kelly_fraction_asof calls and sizes.at[] writes -- Phase C item 16."""
+    trades = extract_trades(entries, exits, close)
+    f_star = expanding_kelly_fraction(trades, min_trades=min_trades)
+
+    sizes = pd.DataFrame(np.nan, index=entries.index, columns=entries.columns)
+    for col in entries.columns:
+        entry_times = entries.index[entries[col].to_numpy()]
+        for t in entry_times:
+            f = kelly_fraction_asof(f_star, t)
+            if np.isnan(f) or f <= 0:
+                size = base_size
+            else:
+                size = min(kelly_multiplier * f, max_size)
+            sizes.at[t, col] = size
+    return sizes
+
+
+class TestKellySizesEquivalence:
+    def test_matches_reference_scalar_loop_multi_symbol(self):
+        rng = np.random.default_rng(4)
+        n = 200
+        symbols = ["A", "B", "C", "D"]
+        idx = _idx(n)
+        entries = pd.DataFrame(False, index=idx, columns=symbols)
+        exits = pd.DataFrame(False, index=idx, columns=symbols)
+        close = pd.DataFrame(100.0, index=idx, columns=symbols)
+
+        for col in symbols:
+            price = 100.0
+            prices = []
+            in_pos = False
+            for i in range(n):
+                if not in_pos and rng.random() < 0.08:
+                    entries.iloc[i, entries.columns.get_loc(col)] = True
+                    in_pos = True
+                elif in_pos and rng.random() < 0.3:
+                    exits.iloc[i, exits.columns.get_loc(col)] = True
+                    in_pos = False
+                price *= 1.0 + rng.normal(0.0, 0.02)
+                prices.append(price)
+            close[col] = prices
+
+        kwargs = dict(kelly_multiplier=0.5, base_size=0.03, max_size=0.08, min_trades=5)
+        vectorized = kelly_sizes(entries, exits, close, **kwargs)
+        reference = _reference_kelly_sizes(entries, exits, close, **kwargs)
+
+        pd.testing.assert_frame_equal(vectorized, reference)
+
+    def test_empty_entries_all_symbols(self):
+        idx = _idx(10)
+        entries = pd.DataFrame(False, index=idx, columns=["A", "B"])
+        exits = pd.DataFrame(False, index=idx, columns=["A", "B"])
+        close = pd.DataFrame(100.0, index=idx, columns=["A", "B"])
+        sizes = kelly_sizes(
+            entries, exits, close, kelly_multiplier=0.5, base_size=0.03, max_size=0.05
+        )
+        assert sizes.isna().all().all()

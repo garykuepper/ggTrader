@@ -512,6 +512,87 @@ def test_sweep_end_to_end_weight_strategy_threads_combo_kwargs(monkeypatch):
     assert by_multiplier[1] != pytest.approx(by_multiplier[-1])
 
 
+class _CfgEchoWeight:
+    """Records the max_sector_count it was constructed with, per combo --
+    Phase C item 17 regression: run_sweep's weight branch must propagate
+    cfg.max_sector_count into each combo's LabConfig the same way wfo.py's
+    _run_one_weight_combo does, not silently drop it to LabConfig's default
+    (None)."""
+
+    name = "cfgecho"
+    target_kind = "weights"
+    seen_max_sector_counts: list = []
+
+    def __init__(self, cfg, multiplier=1):
+        self.cfg = cfg
+        self.multiplier = multiplier
+        _CfgEchoWeight.seen_max_sector_counts.append(cfg.max_sector_count)
+
+    @classmethod
+    def sweep_params(cls) -> dict:
+        return {"multiplier": [1, -1]}
+
+    def select(self, asof, data, eligible):
+        chosen = sorted(eligible)[: self.cfg.top_n]
+        if not chosen:
+            return []
+        w = 1.0 / len(chosen)
+        return [{"symbol": s, "weight": w} for s in chosen]
+
+    def to_targets(self, plans, data):
+        symbols = sorted({s["symbol"] for plan in plans.values() for s in plan})
+        targets = pd.DataFrame(np.nan, index=data.index, columns=symbols)
+        for asof in sorted(plans):
+            forward = data.index[data.index > asof]
+            if len(forward) == 0:
+                continue
+            bar = forward[0]
+            targets.loc[bar, symbols] = 0.0
+            for sel in plans[asof]:
+                targets.loc[bar, sel["symbol"]] = float(sel["weight"])
+        return targets
+
+
+def test_sweep_end_to_end_weight_strategy_propagates_max_sector_count(monkeypatch):
+    """Phase C item 17: sweep.py's per-combo LabConfig must carry
+    max_sector_count through, matching wfo.py's _run_one_weight_combo."""
+    from ggTrader.lab.data import STOCK_BASE_CONFIG
+    from ggTrader.lab.persist import init_schema
+    from ggTrader.lab.sweep import build_grid, run_sweep
+
+    def _fake_eligible_at(asof, past, cfg, universe="sp500"):
+        return sorted(past.columns.get_level_values(0).unique()), {}
+
+    monkeypatch.setattr("ggTrader.lab.data.eligible_at", _fake_eligible_at)
+
+    init_schema()
+    symbols = ["A", "B", "C"]
+    ohlcv = _ohlcv(symbols, n=600)
+    spy_close = pd.Series(100.0 * 1.0004 ** np.arange(len(ohlcv.index)), index=ohlcv.index)
+
+    grid = build_grid(_CfgEchoWeight)
+    cfg = LabConfig(top_n=1, min_history_bars=10, max_sector_count=2)
+
+    _CfgEchoWeight.seen_max_sector_counts = []
+    run_sweep(
+        "cfgecho",
+        _CfgEchoWeight,
+        cfg,
+        ohlcv,
+        spy_close,
+        eval_start=str(ohlcv.index[200].date()),
+        eval_end=str(ohlcv.index[-1].date()),
+        market="test",
+        base_config=dict(STOCK_BASE_CONFIG),
+        grid=grid,
+    )
+
+    assert _CfgEchoWeight.seen_max_sector_counts, "no combo was constructed"
+    assert all(v == 2 for v in _CfgEchoWeight.seen_max_sector_counts), (
+        f"max_sector_count not propagated to every combo: {_CfgEchoWeight.seen_max_sector_counts}"
+    )
+
+
 def test_split_params_separates_signal_and_stop():
     from ggTrader.lab.sweep import split_params
 

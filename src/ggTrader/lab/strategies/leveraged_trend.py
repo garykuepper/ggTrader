@@ -19,10 +19,19 @@ from ggTrader.lab.strategies.leveraged_rotation import rotate_positions
 from ggTrader.lab.strategy import LabConfig, Plan, SignalTargets
 
 #: Memoizes the underlying index's close series, keyed by (ticker, start,
-#: end). WFO builds a fresh strategy instance per grid combo and calls
+#: end) -- already a complete key: those three values fully determine the
+#: series returned, so (unlike leveraged_rotation.py's _breadth_cache before
+#: its cfg-key fix) there is no wrong-answer risk here, only a performance
+#: one. WFO builds a fresh strategy instance per grid combo and calls
 #: sweep_signals/to_targets on the same data window for every one of them --
 #: without this cache, load_ohlcv would be redundantly called once per combo,
-#: mirroring the _breadth_cache rationale in leveraged_rotation.py.
+#: mirroring the _breadth_cache rationale in leveraged_rotation.py. Like that
+#: cache and pairs_stat_arb.py's _pair_candidate_cache, this dict is
+#: process-local: under joblib's per-combo worker parallelism each worker
+#: still pays for its own first miss per (ticker, start, end) -- only
+#: redundant recompute *within* a worker process is eliminated, not across
+#: workers. load_ohlcv itself is DB-cache-backed (not a raw yfinance call),
+#: so a cross-worker miss costs a DB round trip, not a network fetch.
 _underlying_cache: dict[tuple, pd.Series] = {}
 
 

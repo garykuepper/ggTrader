@@ -64,19 +64,32 @@ def rotate_positions(
 
 
 #: Memoizes the EnsembleSignal breadth pass, keyed by a content-derived
-#: fingerprint of the data window and breadth-universe symbol set. Breadth
-#: doesn't depend on the strategy's own swept params (upper_threshold/
-#: lower_threshold/min_hold_months/leverage_tier), but the WFO harness
-#: constructs a fresh strategy instance per combo and calls to_targets() on
-#: the same data window for every one of them -- without this cache, the
-#: full vectorized EnsembleSignal pass over the whole breadth universe (up
-#: to ~500+ stocks) gets redundantly recomputed once per combo, dozens of
-#: times per fold.
+#: fingerprint of the data window, breadth-universe symbol set, AND the
+#: cfg fields EnsembleSignal reads (min_history_bars, max_stocks,
+#: max_sector_count). Breadth doesn't depend on the strategy's own swept
+#: params (upper_threshold/lower_threshold/min_hold_months/leverage_tier),
+#: but the WFO harness constructs a fresh strategy instance per combo and
+#: calls to_targets() on the same data window for every one of them --
+#: without this cache, the full vectorized EnsembleSignal pass over the
+#: whole breadth universe (up to ~500+ stocks) gets redundantly recomputed
+#: once per combo, dozens of times per fold. The cfg fields are included
+#: defensively: today EnsembleSignal.to_targets()/_generate_signals() never
+#: reads them (only its own voter kwargs, always constructed with defaults
+#: here), so they're currently invariant across combos on the same window
+#: and this widening changes no cache-hit behavior -- but a cache keyed
+#: only on the data window would have silently served a stale answer for a
+#: different cfg the moment that stopped being true (e.g. min_history_bars
+#: ever swept per-combo). Runs in a joblib worker process, like
+#: leveraged_trend.py's _underlying_cache and pairs_stat_arb.py's
+#: _pair_candidate_cache: the cache is process-local, so each worker still
+#: pays for one miss per (window, cfg) it sees -- only redundant recompute
+#: *within* a worker process is eliminated.
 _breadth_cache: dict[tuple, pd.Series] = {}
 
 
 def _cached_breadth(cfg: LabConfig, data: pd.DataFrame, breadth_symbols: list[str]) -> pd.Series:
-    key = (data.index[0], data.index[-1], len(data.index), tuple(breadth_symbols))
+    cfg_key = (cfg.min_history_bars, cfg.max_stocks, cfg.max_sector_count)
+    key = (data.index[0], data.index[-1], len(data.index), tuple(breadth_symbols), cfg_key)
     if key not in _breadth_cache:
         ensemble = EnsembleSignal(cfg)
         placeholder = [{"symbol": s, "weight": 0.0} for s in breadth_symbols]

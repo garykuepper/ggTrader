@@ -260,6 +260,7 @@ def run_sweep(
                 skip=int(merged.get("skip", cfg.skip)),
                 min_history_bars=cfg.min_history_bars,
                 max_stocks=cfg.max_stocks,
+                max_sector_count=cfg.max_sector_count,
             )
             extra_kwargs = {k: v for k, v in combo_params.items() if k not in LAB_CONFIG_COMBO_KEYS}
             strat = strategy_cls(combo_cfg, **extra_kwargs)

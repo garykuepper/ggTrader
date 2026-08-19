@@ -143,18 +143,36 @@ def kelly_sizes(
     pooled expanding Kelly fraction as of that entry's time. Falls back to
     `base_size` whenever there isn't yet a positive measurable edge (fewer
     than `min_trades` closed trades, or f* <= 0).
+
+    Vectorized: all of a column's entry times are looked up against the
+    shared `f_star` index in one `searchsorted` call (batching what
+    `kelly_fraction_asof` does per scalar timestamp -- "strictly before
+    asof" is `side="left"`, position 0 -> NaN, same as the scalar version),
+    then the per-entry size formula runs as one masked numpy expression
+    instead of a Python-level branch per entry.
     """
     trades = extract_trades(entries, exits, close)
     f_star = expanding_kelly_fraction(trades, min_trades=min_trades)
 
     sizes = pd.DataFrame(np.nan, index=entries.index, columns=entries.columns)
+    if f_star.empty:
+        f_vals = np.array([])
+        f_index = pd.DatetimeIndex([])
+    else:
+        f_vals = f_star.to_numpy()
+        f_index = f_star.index
+
     for col in entries.columns:
         entry_times = entries.index[entries[col].to_numpy()]
-        for t in entry_times:
-            f = kelly_fraction_asof(f_star, t)
-            if np.isnan(f) or f <= 0:
-                size = base_size
-            else:
-                size = min(kelly_multiplier * f, max_size)
-            sizes.at[t, col] = size
+        if len(entry_times) == 0:
+            continue
+        if len(f_index) == 0:
+            f = np.full(len(entry_times), np.nan)
+        else:
+            pos = f_index.searchsorted(entry_times, side="left")
+            f = np.where(pos > 0, f_vals[np.clip(pos - 1, 0, None)], np.nan)
+
+        has_edge = ~np.isnan(f) & (f > 0)
+        size = np.where(has_edge, np.minimum(kelly_multiplier * f, max_size), base_size)
+        sizes.loc[entry_times, col] = size
     return sizes

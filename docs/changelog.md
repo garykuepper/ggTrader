@@ -2,6 +2,83 @@
 
 ## 2026-08-18
 
+### Perf: lab/data hot-path fixes (Phase C of the review plan)
+
+Five code-performance fixes (items 13-17 of the review plan), all
+output-identical to prior behavior (verified against the pre-fix code on the
+same real-DB sweep, plus new equivalence tests comparing vectorized vs.
+reference-loop implementations). None touch `src/ggTrader/paper/` (Phase A)
+or WFO's research-validity behavior (Phase B).
+
+- **Redundant full-refetch for late-inception symbols**
+  (`data/live/cached_yfinance_loader.py`): the `first > start_date + 7d`
+  full-refetch trigger could never be satisfied for a symbol whose true
+  first bar genuinely postdates a fixed historical `start_date` (recent
+  IPO, 2020+ index addition, leveraged ETF vs. a 2010 data_start) — it
+  re-fetched that symbol from the network on **every single run, forever**.
+  Fixed by recording a per-symbol confirmed inception (new
+  `symbol_inception` table, lazily created) after the first full fetch;
+  subsequent runs skip the full refetch once the cached first bar matches
+  the recorded inception, but still refetch if the cache regresses away
+  from it (never suppresses a refetch for data that might genuinely be
+  missing). Measured: 30/30 late-inception symbols refetched on the first
+  run, 0/30 on runs 2 and 3 (100% of those network calls avoided per
+  subsequent run). New tests: `tests/data/test_cached_yfinance_loader.py`.
+- **`_cache_to_db` row-by-row `iterrows()`** (same file): replaced with a
+  vectorized per-symbol build (`to_numpy()` + list comprehension over
+  arrays) before `execute_values`, producing byte-identical rows (same NaN
+  → `None` handling, same dropped-row-on-NaN-close rule). Measured: 25.5x
+  faster on a synthetic 500-symbol x 750-day frame (375k rows,
+  17.0s → 0.67s), records verified identical.
+- **Module-level joblib-worker caches**: `leveraged_rotation.py`'s
+  `_breadth_cache` key omitted `cfg` entirely — currently harmless (today's
+  callers hold `cfg` invariant across combos on a window) but a latent
+  wrong-answer risk if that ever stopped being true. Widened the key to
+  include `(min_history_bars, max_stocks, max_sector_count)`, the cfg
+  fields `EnsembleSignal` reads; new regression test
+  (`test_breadth_cache_key_includes_cfg_min_history_bars`) pins that
+  different `min_history_bars` no longer collide. `leveraged_trend.py`'s
+  `_underlying_cache` and `pairs_stat_arb.py`'s `_pair_candidate_cache`
+  were already correctly keyed (verified) — documented their per-worker
+  (process-local dict) miss cost instead of changing behavior.
+- **Scalar-loop hotspots** vectorized, each with an old-vs-new equivalence
+  test:
+  - `train_gate.py::_build_dataset` (falsified/disabled gate-training
+    pipeline, kept correctness-preserving): nested per-date-per-symbol
+    `.loc` truthiness check over `entries` replaced with `np.nonzero` on
+    `entries.to_numpy()`. Measured on an 1200-day x 700-symbol grid (~840k
+    cells, matching the plan's "~850k lookups"): 7.11s → 0.004s (~1930x).
+  - `signals.py::WfoTournamentSignal.to_targets`: per-(rebalance period x
+    symbol) single-column `ema_signals` calls replaced with calls grouped
+    by (ema_fast, ema_slow) and memoized across rebalance periods (every
+    symbol in one period's plan already shares that period's single
+    tournament-winning pair, and the same pair often wins several
+    consecutive tournaments). Verified output-identical to the old
+    per-symbol-dropna calls (ewm(adjust=False) holding the prior value on
+    a NaN row is mathematically the same as dropping NaN rows and
+    reindexing back). Measured on 100 symbols x ~6 years x 20 rebalances
+    with a repeated winning combo: 5.17s → 0.18s (28.6x).
+  - `kelly.py::kelly_sizes`: nested for-col/for-t loop with scalar
+    `kelly_fraction_asof` calls and `sizes.at[]` writes replaced with one
+    batched `searchsorted` per symbol plus a vectorized masked-numpy size
+    formula. Measured on 150 symbols x ~6 years (~9.7k entries):
+    0.58s → 0.17s (3.4x).
+- **`sweep.py` / `wfo.py` weight-combo `LabConfig` disagreement**: the
+  weight-strategy branch in `run_sweep` built each combo's `LabConfig`
+  without `max_sector_count` (always fell back to `LabConfig`'s own
+  default) while `wfo.py`'s equivalent `_run_one_weight_combo` correctly
+  forwarded it — `--sweep` and `--wfo` silently disagreed on GICS sector
+  constraints for the same `cfg`. Fixed by passing `max_sector_count`
+  through in `sweep.py` too. New regression test
+  (`test_sweep_end_to_end_weight_strategy_propagates_max_sector_count`)
+  asserts every combo's constructed `LabConfig` carries it.
+
+Verification: full suite 868 passed (was 849; +19 new tests), ruff clean on
+all touched files, and a real-DB `wfo_tournament` sweep (2023-01-01 to
+2023-06-01, 503 SP500 symbols, 4 `is_fraction` combos) produced byte-identical
+Sharpe/CAGR/MaxDD/Sortino/TotRet before and after this change (compared via
+`git stash`).
+
 ### Fix: lab/WFO research-validity pass (Phase B of the review plan)
 
 Five research-correctness bugs in the lab/WFO stack, all in `src/ggTrader/lab/`
