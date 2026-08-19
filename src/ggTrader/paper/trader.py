@@ -309,10 +309,7 @@ class PaperTrader:
         for symbol, universe in all_buys:
             buys_by_sleeve.setdefault(universe, []).append(symbol)
 
-        slots_available = self._risk.max_new_positions(
-            len(positions) - len(executed_sells), weights
-        )
-        total_position_cap = sum(slot_caps.values())
+        slots_available = self._risk.max_new_positions(len(positions) - len(executed_sells))
         buys_attempted = 0
         for universe, syms in buys_by_sleeve.items():
             sleeve_notional = self._risk.sleeve_position_notional(
@@ -328,7 +325,7 @@ class PaperTrader:
                 if buys_attempted >= slots_available:
                     _log.info(
                         "Max positions reached (%d), skipping %s",
-                        total_position_cap,
+                        self._risk.cfg.max_positions,
                         symbol,
                     )
                     break
@@ -510,9 +507,8 @@ class PaperTrader:
         total_pnl = (new_value - starting_capital) if starting_capital else None
 
         weight_str = ", ".join(f"{u}={w:.0%}" for u, w in weights.items())
-        total_position_cap = sum(self._risk.sleeve_slot_caps(weights).values())
         risk_line = (
-            f"Positions: {len(updated_positions)}/{total_position_cap} | "
+            f"Positions: {len(updated_positions)}/{self._risk.cfg.max_positions} | "
             f"Scale: {scale:.2f}x | Weights: {weight_str}"
         )
         self._notifier.daily_summary(

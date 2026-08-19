@@ -7,17 +7,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class RiskConfig:
-    """Position sizing and risk parameters.
-
-    max_positions is a PER-SLEEVE slot budget, not a global cap. Each sleeve
-    with positive weight may hold up to max_positions concurrent positions
-    (see sleeve_slot_caps) -- independent of that sleeve's weight, since
-    sleeve_position_notional() already scales position size by weight.
-    Defaults to floor(1/position_pct) = 30, the count a sleeve needs to fully
-    deploy its own allocated capital at position_pct sizing. The global cap
-    across all sleeves is max_positions * n_positive_sleeves -- see
-    max_new_positions.
-    """
+    """Position sizing and risk parameters."""
 
     max_positions: int = 30
     position_pct: float = 0.033
@@ -65,16 +55,9 @@ class RiskGuard:
             )
         return False, ""
 
-    def max_new_positions(self, current_count: int, weights: dict[str, float]) -> int:
-        """How many new positions can be opened, across all sleeves.
-
-        The global cap is the sum of the per-sleeve slot budgets (see
-        sleeve_slot_caps) -- max_positions * n_positive_sleeves -- not a flat
-        max_positions. weights must be the same mapping passed to
-        sleeve_slot_caps so the two stay consistent within one call.
-        """
-        total_cap = sum(self.sleeve_slot_caps(weights).values())
-        return max(0, total_cap - current_count)
+    def max_new_positions(self, current_count: int) -> int:
+        """How many new positions can be opened."""
+        return max(0, self.cfg.max_positions - current_count)
 
     def position_notional(self, portfolio_value: float) -> float:
         """Dollar amount for a single new position."""
@@ -93,27 +76,34 @@ class RiskGuard:
         return (total_prospective_value / portfolio_value) >= self.cfg.max_concentration_pct
 
     def sleeve_slot_caps(self, weights: dict[str, float]) -> dict[str, int]:
-        """Every positive-weight sleeve gets the SAME slot budget.
+        """Per-sleeve share of max_positions, proportional to weight.
 
-        Each sleeve with weight_i > 0 gets max_positions slots -- NOT
-        floor(weight_i * max_positions). The number of concurrent positions a
-        sleeve needs to fully deploy its allocated capital is ~1/position_pct,
-        independent of its weight: a low-weight sleeve holds proportionally
-        smaller positions (sleeve_position_notional already scales dollar
-        size by weight * scale), not fewer of them. Applying weight a second
-        time here -- the historical bug -- squared its effect on max
-        deployable exposure: cap_i * notional_i ~ weight_i**2 instead of
-        weight_i, so full deployment topped out at
-        scale * position_pct * sum(weight_i**2) of portfolio (~26% with the
-        live sp500/midcap400/nasdaq100 weights) instead of the intended
-        scale * sum(weight_i) (~75-99%). Zero-weight sleeves get 0 slots.
+        floor(weight_i * max_positions), minimum 1 slot for any sleeve with
+        weight_i > 0, with leftover slots trimmed one at a time from whichever
+        sleeve currently holds the largest cap until the total no longer
+        exceeds max_positions.
 
-        Invariant: sum(caps.values()) == max_positions * n_positive_sleeves.
-        That sum IS the global position cap this system uses -- see
-        max_new_positions -- there is no separate, smaller global cap to also
-        respect here, unlike the old proportional scheme.
+        Invariant: sum(caps.values()) <= max_positions, always. When the
+        number of positive-weight sleeves is <= max_positions, every such
+        sleeve keeps its guaranteed >= 1 slot (the loop drains larger sleeves
+        first, so it never needs to touch a sleeve already down to 1 in that
+        case). When there are literally more positive-weight sleeves than
+        max_positions, giving every one of them a slot is impossible by
+        pigeonhole -- this system only ever calls this with 3 sleeves, so
+        that's not expected in practice, but rather than silently exceeding
+        max_positions, the loop degrades sensibly by also trimming sleeves
+        down to 0 once every sleeve is tied at 1, until the hard cap holds.
         """
-        return {label: (self.cfg.max_positions if w > 0 else 0) for label, w in weights.items()}
+        raw = {
+            label: (max(1, int(w * self.cfg.max_positions)) if w > 0 else 0)
+            for label, w in weights.items()
+        }
+        total = sum(raw.values())
+        while total > self.cfg.max_positions and any(cap > 0 for cap in raw.values()):
+            top = max(raw, key=lambda k: raw[k])
+            raw[top] -= 1
+            total -= 1
+        return raw
 
     def sleeve_position_notional(
         self,
