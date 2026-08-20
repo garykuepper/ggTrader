@@ -75,6 +75,16 @@ def run_blend(
 ) -> BlendResult:
     """Run each (strategy, universe) sleeve through the gated WFO, blend the OOS
     curves (inverse-vol -> target-vol), persist as a lab run, return BlendResult.
+
+    NOTE: max_leverage's default (2.0) is the *research/idealized* value, not
+    the deployable one -- the live production overlay
+    (src/ggTrader/paper/overlay.py) runs at max_leverage=1.0. Callers that
+    intend to compare against or reproduce the live/validated blend headline
+    MUST pass max_leverage=1.0 explicitly; do not rely on this default. This
+    exact mismatch silently produced an invalid run on 2026-08-18 (see
+    scripts/position_sizing_wfo.py and docs/roadmap.md:115 for the prior
+    2026-07-13 occurrence). The default itself is left at 2.0 on purpose --
+    other (research-mode) callers depend on the unconstrained comparison.
     """
     es = pd.Timestamp(eval_start, tz="UTC")
     ee = pd.Timestamp(eval_end, tz="UTC")

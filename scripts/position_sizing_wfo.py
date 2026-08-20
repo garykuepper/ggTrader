@@ -70,6 +70,20 @@ SLEEVE_UNIVERSE = "sp500"
 SLEEVE_STRATEGY = "ensemble"
 POSITION_PCT = 0.033  # matches live RiskGuard.position_pct (risk.py)
 
+# Production overlay params (src/ggTrader/paper/overlay.py,
+# docs/research/RESEARCH_SNAPSHOT.md:21-29). Passed EXPLICITLY to every
+# run_blend() call below -- do NOT rely on run_blend's own defaults, which
+# are research-only (target_vol=0.068, window=60, but max_leverage=2.0, see
+# ggTrader.lab.blend.run_blend). That 2.0 default silently doubled the
+# effective leverage in a 2026-08-18 run of this script (docs/roadmap.md:115
+# records this exact trap being hit once before, 2026-07-13). The default
+# stays 2.0 because other callers (the idealized/research-mode blend
+# comparisons) intentionally want the unconstrained number -- it's this
+# script specifically that must always pin the deployable 1.0x cap.
+PRODUCTION_TARGET_VOL = 0.068
+PRODUCTION_BLEND_WINDOW = 60
+PRODUCTION_MAX_LEVERAGE = 1.0
+
 #: (name, regime, slot_cap) -- slot_cap only used for regime_f.
 CONFIGS: tuple[tuple[str, str, int | None], ...] = (
     ("regime_p", "regime_p", None),
@@ -199,6 +213,9 @@ def run_one_config(
             eval_end,
             market="stock",
             base_config=base_config,
+            target_vol=PRODUCTION_TARGET_VOL,
+            window=PRODUCTION_BLEND_WINDOW,
+            max_leverage=PRODUCTION_MAX_LEVERAGE,
         )
         stats = curve_stats(blend_result.blended_equity)
         result.update(
@@ -211,6 +228,11 @@ def run_one_config(
             table=blend_result.table,
             run_id=blend_result.run_id,
             elapsed_sec=time.time() - t0,
+            overlay_params={
+                "target_vol": PRODUCTION_TARGET_VOL,
+                "window": PRODUCTION_BLEND_WINDOW,
+                "max_leverage": PRODUCTION_MAX_LEVERAGE,
+            },
         )
     except Exception as exc:  # noqa: BLE001 -- surfaced in JSON + Telegram, not swallowed
         result.update(
@@ -368,6 +390,17 @@ def run_full(eval_start: str, eval_end: str, n_jobs: int, out_path: str) -> None
         "n_folds_requested": n_folds_requested,
         "elapsed_sec": time.time() - t0,
         "n_jobs": n_jobs,
+        # Effective overlay params actually passed to every run_blend() call
+        # this run (see PRODUCTION_* constants above) -- recorded here so a
+        # future reader never has to infer them from run_blend's own
+        # (different) defaults. This is the fix for the 2026-08-18 bug where
+        # the script silently inherited run_blend's max_leverage=2.0 default
+        # instead of production's 1.0.
+        "overlay_params": {
+            "target_vol": PRODUCTION_TARGET_VOL,
+            "window": PRODUCTION_BLEND_WINDOW,
+            "max_leverage": PRODUCTION_MAX_LEVERAGE,
+        },
     }
 
     out = {"meta": meta, "results": results}
