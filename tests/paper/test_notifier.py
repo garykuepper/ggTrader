@@ -175,3 +175,44 @@ class TestDailySummary:
         n.daily_summary(102000.0, 500.0, {})
         body = mock_post.call_args[1]["json"]["text"]
         assert "Errors" not in body
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_shows_dividend_accrual_note(self, mock_post):
+        from datetime import date
+
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        result = n.daily_summary(
+            102000.0,
+            500.0,
+            {"VZ": {"qty": 77.05, "unrealized_pl": 365.22}},
+            dividend_total=51.82,
+            new_dividend_accruals=[
+                {"symbol": "VZ", "ex_date": date(2026, 6, 1), "rate": 0.6725, "amount": 51.82}
+            ],
+        )
+        assert result is True
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "Dividend accrual" in body
+        assert "51.82" in body
+        assert "not real cash" in body.lower()
+        assert "VZ" in body
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_no_dividend_note_when_zero(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        n.daily_summary(102000.0, 500.0, {}, dividend_total=0.0)
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "dividend" not in body.lower()
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_daily_summary_dividend_total_shown_without_new_accruals_this_run(self, mock_post):
+        # Cumulative total persists across runs even on a day nothing new
+        # accrues.
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        n.daily_summary(102000.0, 500.0, {}, dividend_total=51.82, new_dividend_accruals=[])
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "51.82" in body
+        assert "New this run" not in body

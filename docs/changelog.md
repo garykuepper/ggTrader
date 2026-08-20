@@ -2,6 +2,81 @@
 
 ## 2026-08-19
 
+### fix(paper): accrue dividends the Alpaca PAPER account never credits
+
+Verified: the account's entire non-trade activity log since 2026-05-01
+contains only FEE entries (REG/TAF/CAT) — `/v2/account/activities/DIV`
+returns `[]` — while Alpaca's own corporate-actions feed lists 21+ cash
+dividends on held symbols since 2026-05-15 that were never credited. An
+earlier audit found the backtest is total-return on both sides
+(`yfinance_loader.py`'s `auto_adjust=True`, `tiingo_loader.py`'s
+`adjClose`→`close` rename), so both the strategy curve and the SPY
+benchmark implicitly reinvest dividends while live paper-trades price-return
+with zero dividend cash — understating live by an estimated 1-2%/yr given
+the ensemble persistently selects high-yield names (VZ ~6%, AEE/AEP/CMS/
+DTE/NI/CNP utilities, AVB).
+
+Mirrors the split-check design (`split_check.py` / `get_split_corrections`):
+new `src/ggTrader/paper/dividend_check.py` cross-references Alpaca's
+corporate-actions feed (`CASH_DIVIDEND` type) against the account's own DIV
+activities to find dividends the broker knows about but never credited.
+`AlpacaBroker.get_dividend_corrections()` adds the same fail-soft contract
+(`{"corp_dividends": {}, "credited_keys": set()}` on any API error), but
+unlike the split check, `since` is coerced via `dividend_check.normalize_since`
+**before** the try/except boundary — a caller passing the wrong type raises
+loudly instead of being silently swallowed into a "nothing known" result
+indistinguishable from a real empty response (the landmine identified in
+`get_split_corrections`, which is typed `since: date` and fails soft on a
+`str`).
+
+A dividend is a cash event tied to a specific date — the correct accrual is
+`rate × qty_held_on_ex_date`, not today's qty, since a position sold later
+still earned it. `qty_held_at_ex_date()` establishes this from what's
+already persisted (`paper_snapshots` history via new `persist.get_snapshot_history()`),
+using the most recent snapshot at or before the ex-date; where no snapshot
+shows the position held (never held, sold before, or bought after the
+ex-date), the dividend is skipped and logged rather than guessed. New table
+`paper_dividend_accruals` persists each credited event keyed on
+`(symbol, ex_date)` (`log_dividend_accrual`/`get_accrued_dividend_keys`/
+`get_total_dividend_accrual`), so backfill re-runs are idempotent and a sold
+position still gets credit.
+
+`PaperTrader._accrue_dividends()` runs every cycle (backfilling from
+2026-05-15 is cheap and self-limiting via the idempotency key), adds the
+cumulative accrual into reported equity/total P&L (never into buying power,
+position sizing, or the broker's real cash), and `notifier.daily_summary`
+surfaces it as a clearly-labeled correction ("not real cash — the account
+balance will still differ from Alpaca's"), listing any events newly
+credited that run.
+
+Real-container verification against the live broker (`docker exec
+ggtrader_live python -u -c "..."`, `AlpacaBroker.get_dividend_corrections`):
+22 dividend events found across 21 symbols since 2026-05-15, `credited_keys`
+empty (confirms zero broker-side crediting). Cross-referenced against
+`paper_snapshots` history (which only goes back to 2026-06-23), 3 events
+were attributable — MPWR $5.05, PNR $14.50, VZ $54.51, **$74.06 total** —
+and persisted; the other 19 were skipped `not_held_on_ex_date` because no
+snapshot exists far enough back to prove the position was held on those
+earlier ex-dates (correctly conservative — this is the "skip and log rather
+than guess" behavior working as designed, not a bug). A second pass over
+the same window produced zero new accruals and an unchanged cumulative
+total, confirming idempotency. Also verified the type-coercion landmine
+explicitly: `since="2026-05-15"` (str) is accepted and normalized;
+`since=20260515` (int) raises `TypeError` immediately rather than returning
+an empty-looking result.
+
+New tests (43): `test_dividend_check.py` (pure functions — normalize_since
+incl. the wrong-type-raises case, qty_held_at_ex_date incl. bought-after-
+ex-date and closed-before-ex-date, compute_dividend_accruals incl. already-
+credited-by-broker and already-accrued idempotency); `test_alpaca_broker.py`
+(`get_dividend_corrections` incl. API-failure fail-soft and the wrong-type
+landmine); `test_paper_persist.py` (schema, snapshot history, accrual
+CRUD); `test_trader.py` (`TestDividendAccrual` — held dividend accrued and
+added to reported equity, already-credited-by-broker not re-accrued,
+bought-after-ex-date not accrued, API failure fails soft, no-accrual leaves
+equity unchanged); `test_notifier.py` (accrual note shown/omitted). Full
+suite: 918 passed (up from 875). Ruff clean on touched files.
+
 ### fix(paper): broker-native stock-split correction, replacing the yfinance heuristic
 
 Live account audit found Alpaca's paper environment never applied MNST's

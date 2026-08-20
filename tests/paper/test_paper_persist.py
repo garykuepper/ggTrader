@@ -218,6 +218,140 @@ class TestPendingOrderStaleness:
 
 
 @patch("ggTrader.paper.persist._get_engine")
+class TestInitSchemaIncludesDividendAccruals:
+    def test_creates_dividend_accrual_table(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+
+        from ggTrader.paper.persist import init_paper_schema
+
+        init_paper_schema()
+
+        executed_sql = " ".join(str(call[0][0]) for call in mock_conn.execute.call_args_list)
+        assert "paper_dividend_accruals" in executed_sql
+
+
+@patch("ggTrader.paper.persist._get_engine")
+class TestGetSnapshotHistory:
+    def test_returns_ascending_run_date_positions_pairs(self, mock_engine):
+        from datetime import date
+
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = [
+            (date(2026, 5, 20), {"VZ": {"qty": 50.0}}),
+            (date(2026, 6, 1), {"VZ": {"qty": 77.05}}),
+        ]
+
+        from ggTrader.paper.persist import get_snapshot_history
+
+        result = get_snapshot_history()
+
+        assert result == [
+            (date(2026, 5, 20), {"VZ": {"qty": 50.0}}),
+            (date(2026, 6, 1), {"VZ": {"qty": 77.05}}),
+        ]
+
+    def test_parses_json_string_positions(self, mock_engine):
+        from datetime import date
+
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = [
+            (date(2026, 5, 20), '{"VZ": {"qty": 50.0}}'),
+        ]
+
+        from ggTrader.paper.persist import get_snapshot_history
+
+        result = get_snapshot_history()
+
+        assert result == [(date(2026, 5, 20), {"VZ": {"qty": 50.0}})]
+
+    def test_empty_history(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = []
+
+        from ggTrader.paper.persist import get_snapshot_history
+
+        assert get_snapshot_history() == []
+
+
+@patch("ggTrader.paper.persist._get_engine")
+class TestDividendAccruals:
+    def test_log_dividend_accrual_inserts_row(self, mock_engine):
+        from datetime import date
+
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+
+        from ggTrader.paper.persist import log_dividend_accrual
+
+        log_dividend_accrual("VZ", date(2026, 8, 1), 0.6725, 77.05, 51.82)
+
+        mock_conn.execute.assert_called_once()
+        sql_str = str(mock_conn.execute.call_args[0][0])
+        assert "paper_dividend_accruals" in sql_str
+        assert "DO NOTHING" in sql_str
+        params = mock_conn.execute.call_args[0][1]
+        assert params["symbol"] == "VZ"
+        assert params["ex_date"] == date(2026, 8, 1)
+        assert params["amount"] == 51.82
+
+    def test_get_accrued_dividend_keys_returns_set_of_pairs(self, mock_engine):
+        from datetime import date
+
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = [
+            ("VZ", date(2026, 8, 1)),
+            ("AEE", date(2026, 7, 1)),
+        ]
+
+        from ggTrader.paper.persist import get_accrued_dividend_keys
+
+        result = get_accrued_dividend_keys()
+
+        assert result == {("VZ", date(2026, 8, 1)), ("AEE", date(2026, 7, 1))}
+
+    def test_get_accrued_dividend_keys_empty(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = []
+
+        from ggTrader.paper.persist import get_accrued_dividend_keys
+
+        assert get_accrued_dividend_keys() == set()
+
+    def test_get_total_dividend_accrual_returns_sum(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.first.return_value = (151.37,)
+
+        from ggTrader.paper.persist import get_total_dividend_accrual
+
+        assert get_total_dividend_accrual() == 151.37
+
+    def test_get_total_dividend_accrual_zero_when_no_rows(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.first.return_value = (0,)
+
+        from ggTrader.paper.persist import get_total_dividend_accrual
+
+        assert get_total_dividend_accrual() == 0.0
+
+
+@patch("ggTrader.paper.persist._get_engine")
 class TestGetLatestSnapshotRunDate:
     def test_returns_run_date_when_snapshot_exists(self, mock_engine):
         mock_conn = MagicMock()

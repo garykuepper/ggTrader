@@ -9,14 +9,19 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from ggTrader.paper.alpaca_broker import AlpacaBroker
+from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.notifier import TelegramNotifier
 from ggTrader.paper.persist import (
     clear_pending_order,
+    get_accrued_dividend_keys,
     get_earliest_snapshot,
     get_latest_snapshot,
     get_peak_value,
     get_pending_orders,
+    get_snapshot_history,
+    get_total_dividend_accrual,
     init_paper_schema,
+    log_dividend_accrual,
     log_pending_order,
     log_snapshot,
     log_trade,
@@ -158,6 +163,100 @@ class PaperTrader:
                 _log.warning("Reconcile: clear_pending_order(%s) failed: %s", oid, exc)
         return still_pending
 
+    def _accrue_dividends(self, positions: dict[str, dict]) -> dict:
+        """Credit cash dividends Alpaca's corporate-actions feed knows about
+        but this account's own DIV activity log never booked (see
+        dividend_check.py's module docstring for the incident). Reporting
+        only -- never touches buying power, position sizing, or cash; see
+        `AlpacaBroker.get_dividend_corrections` and `log_dividend_accrual`.
+
+        Backfills from `DIVIDEND_BACKFILL_START` every run (idempotent via
+        `paper_dividend_accruals`'s `(symbol, ex_date)` primary key, so
+        re-checking the same window is always safe and cheap) rather than a
+        rolling lookback, so a dividend missed weeks ago still gets caught.
+
+        Fails soft at every step -- any error degrades to "nothing new
+        accrued this run" (the already-persisted cumulative total is still
+        returned where available) and never aborts the run.
+
+        Returns `{"total": cumulative_$, "new_accruals": [...], "skipped": [...]}`.
+        """
+        result: dict = {"total": 0.0, "new_accruals": [], "skipped": []}
+        try:
+            result["total"] = get_total_dividend_accrual()
+        except Exception as exc:
+            _log.warning("Could not load dividend accrual total (non-fatal): %s", exc)
+            return result
+
+        try:
+            snapshot_history = get_snapshot_history()
+        except Exception as exc:
+            _log.warning(
+                "Could not load snapshot history for dividend accrual (non-fatal): %s", exc
+            )
+            return result
+
+        # Symbols the account has ever held (not just today's), since a
+        # dividend can be owed on a position that was later sold.
+        all_symbols = set(positions) | {s for _, pos in snapshot_history for s in pos}
+        if not all_symbols:
+            return result
+
+        div_data = self._broker.get_dividend_corrections(
+            sorted(all_symbols), DIVIDEND_BACKFILL_START
+        )
+        corp_dividends = div_data.get("corp_dividends", {})
+        if not corp_dividends:
+            return result
+
+        try:
+            already_accrued_keys = get_accrued_dividend_keys()
+        except Exception as exc:
+            _log.warning("Could not load accrued dividend keys (non-fatal): %s", exc)
+            return result
+
+        accruals, skipped = compute_dividend_accruals(
+            corp_dividends,
+            div_data.get("credited_keys", set()),
+            already_accrued_keys,
+            snapshot_history,
+        )
+
+        for acc in accruals:
+            try:
+                log_dividend_accrual(
+                    acc["symbol"], acc["ex_date"], acc["rate"], acc["qty"], acc["amount"]
+                )
+            except Exception as exc:
+                _log.warning(
+                    "Could not persist dividend accrual for %s/%s (non-fatal): %s",
+                    acc["symbol"],
+                    acc["ex_date"],
+                    exc,
+                )
+
+        if accruals:
+            _log.info(
+                "Accrued %d dividend(s) totaling $%.2f: %s",
+                len(accruals),
+                sum(a["amount"] for a in accruals),
+                [(a["symbol"], str(a["ex_date"])) for a in accruals],
+            )
+        if skipped:
+            _log.info(
+                "Skipped %d dividend event(s), not attributed: %s",
+                len(skipped),
+                [(s["symbol"], str(s["ex_date"]), s["reason"]) for s in skipped],
+            )
+
+        try:
+            result["total"] = get_total_dividend_accrual()
+        except Exception as exc:
+            _log.warning("Could not reload dividend accrual total (non-fatal): %s", exc)
+        result["new_accruals"] = accruals
+        result["skipped"] = skipped
+        return result
+
     def run(self) -> dict:
         try:
             init_paper_schema()
@@ -261,6 +360,12 @@ class PaperTrader:
         # economic exposure -- the corrected market_value -- not the
         # broker's uncorrected figure for a split-flagged holding.
         corrected_positions = apply_corrections_to_positions(positions, split_corrections)
+
+        # Cross-reference the broker's corporate-actions feed against this
+        # account's DIV activities to credit (as a reporting-only accrual --
+        # see dividend_check.py) cash dividends the broker never paid out.
+        # Fails soft internally, same convention as the split check above.
+        dividend_info = self._accrue_dividends(positions)
 
         # Seed the risk guard's peak from what was persisted by a prior
         # process (each cron run constructs a fresh PaperTrader, so without
@@ -500,7 +605,12 @@ class PaperTrader:
             for sym in split_corrections
             if sym in updated_positions
         )
-        corrected_value = new_value + correction_delta
+        # dividend_info["total"] is the cumulative (all-time) accrual, a
+        # reporting-only correction for cash the broker never credited (see
+        # dividend_check.py) -- it is NOT part of new_value/new_account["cash"]
+        # and never will be, so it must be added back here for every equity
+        # figure reported downstream.
+        corrected_value = new_value + correction_delta + dividend_info["total"]
 
         daily_pnl = corrected_value - day_start
 
@@ -523,6 +633,8 @@ class PaperTrader:
             unrealized_pnl=unrealized_pnl,
             split_corrections=split_corrections,
             booked_equity=new_value if split_corrections else None,
+            dividend_total=dividend_info["total"],
+            new_dividend_accruals=dividend_info["new_accruals"],
             errors=errors,
         )
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")

@@ -40,6 +40,17 @@ def _stub_risk_state_db():
             yield
 
 
+@pytest.fixture(autouse=True)
+def _stub_dividend_db():
+    """Keep dividend accrual reads/writes off the real DB by default.
+    Individual tests override these patches to exercise accrual."""
+    with patch("ggTrader.paper.trader.get_total_dividend_accrual", return_value=0.0):
+        with patch("ggTrader.paper.trader.get_snapshot_history", return_value=[]):
+            with patch("ggTrader.paper.trader.get_accrued_dividend_keys", return_value=set()):
+                with patch("ggTrader.paper.trader.log_dividend_accrual"):
+                    yield
+
+
 def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500"):
     """Wrap a flat buys/sells list into generate_blended_signals()'s shape,
     with full weight+scale on one sleeve -- reproduces today's flat-3%
@@ -75,6 +86,7 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     }
     broker.get_positions.return_value = positions or {}
     broker.get_split_corrections.return_value = {}
+    broker.get_dividend_corrections.return_value = {"corp_dividends": {}, "credited_keys": set()}
     broker.submit_buy.return_value = "buy-order-1"
     broker.submit_sell.return_value = "sell-order-1"
     broker.get_clock.return_value = {"is_open": True}
@@ -555,6 +567,144 @@ class TestDailyPnl:
         assert kwargs["split_corrections"] == {}
         assert kwargs["booked_equity"] is None
         assert kwargs["unrealized_pnl"] == 365.22
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestDividendAccrual:
+    """Alpaca's PAPER account credits zero dividends (verified 2026-08-18:
+    /v2/account/activities/DIV returns [] while the corporate-actions feed
+    lists real cash dividends on held symbols). These tests exercise the
+    trader-level wiring of the accrual correction: dividend_check.py's pure
+    functions are tested independently in test_dividend_check.py.
+    """
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_held_dividend_is_accrued_and_added_to_reported_equity(
+        self, mock_signals, _schema, _trade, _snap, mock_prev
+    ):
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={"VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22}},
+        )
+        broker.get_dividend_corrections.return_value = {
+            "corp_dividends": {"VZ": [(date(2026, 6, 1), 0.6725)]},
+            "credited_keys": set(),
+        }
+        with patch(
+            "ggTrader.paper.trader.get_snapshot_history",
+            return_value=[(date(2026, 5, 20), {"VZ": {"qty": 77.05}})],
+        ):
+            with patch(
+                "ggTrader.paper.trader.get_total_dividend_accrual",
+                side_effect=[0.0, 77.05 * 0.6725],
+            ):
+                with patch("ggTrader.paper.trader.log_dividend_accrual") as mock_log:
+                    trader.run()
+
+        mock_log.assert_called_once_with(
+            "VZ", date(2026, 6, 1), 0.6725, 77.05, pytest.approx(51.82, abs=0.01)
+        )
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["dividend_total"] == pytest.approx(51.82, abs=0.01)
+        assert len(kwargs["new_dividend_accruals"]) == 1
+        # Reported equity (first positional arg) includes the accrual.
+        corrected_value = notifier.daily_summary.call_args[0][0]
+        assert corrected_value == pytest.approx(100000.0 + 51.82, abs=0.01)
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_dividend_already_credited_by_broker_is_not_accrued(
+        self, mock_signals, _schema, _trade, _snap, mock_prev
+    ):
+        # The case that would double-count if Alpaca's paper environment
+        # ever starts crediting dividends correctly.
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={"VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22}},
+        )
+        broker.get_dividend_corrections.return_value = {
+            "corp_dividends": {"VZ": [(date(2026, 6, 1), 0.6725)]},
+            "credited_keys": {("VZ", date(2026, 6, 1))},
+        }
+        with patch(
+            "ggTrader.paper.trader.get_snapshot_history",
+            return_value=[(date(2026, 5, 20), {"VZ": {"qty": 77.05}})],
+        ):
+            with patch("ggTrader.paper.trader.log_dividend_accrual") as mock_log:
+                trader.run()
+
+        mock_log.assert_not_called()
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["dividend_total"] == 0.0
+        assert kwargs["new_dividend_accruals"] == []
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_symbol_bought_after_ex_date_is_not_accrued(
+        self, mock_signals, _schema, _trade, _snap, mock_prev
+    ):
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={"VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22}},
+        )
+        broker.get_dividend_corrections.return_value = {
+            "corp_dividends": {"VZ": [(date(2026, 6, 1), 0.6725)]},
+            "credited_keys": set(),
+        }
+        with patch(
+            "ggTrader.paper.trader.get_snapshot_history",
+            # Only bought (first appears in a snapshot) after the ex-date.
+            return_value=[(date(2026, 6, 15), {"VZ": {"qty": 77.05}})],
+        ):
+            with patch("ggTrader.paper.trader.log_dividend_accrual") as mock_log:
+                trader.run()
+
+        mock_log.assert_not_called()
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["dividend_total"] == 0.0
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_dividend_api_failure_fails_soft(self, mock_signals, _schema, _trade, _snap, mock_prev):
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={"VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22}},
+        )
+        broker.get_dividend_corrections.side_effect = Exception("API down")
+
+        # Must not raise -- the broker call itself failing soft is the
+        # broker's job, but _accrue_dividends must also tolerate the
+        # underlying persistence calls failing.
+        with patch("ggTrader.paper.trader.get_snapshot_history", side_effect=Exception("DB down")):
+            result = trader.run()
+
+        assert result["errors"] == []
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["dividend_total"] == 0.0
+        assert kwargs["new_dividend_accruals"] == []
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_no_dividend_accrual_leaves_equity_unchanged(
+        self, mock_signals, _schema, _trade, _snap, mock_prev
+    ):
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        broker.get_dividend_corrections.return_value = {
+            "corp_dividends": {},
+            "credited_keys": set(),
+        }
+        trader.run()
+        corrected_value = notifier.daily_summary.call_args[0][0]
+        assert corrected_value == pytest.approx(100000.0, abs=0.01)
 
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)

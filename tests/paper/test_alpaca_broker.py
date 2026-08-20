@@ -235,3 +235,100 @@ class TestGetSplitCorrections:
         result = broker.get_split_corrections(["MNST"], since=date(2026, 8, 1))
 
         assert result == {}
+
+
+def _cash_dividend_action(symbol="VZ", rate=0.6725, ex_date=date(2026, 8, 1)):
+    action = MagicMock()
+    action.symbol = symbol
+    action.rate = rate
+    action.ex_date = ex_date
+    return action
+
+
+class TestGetDividendCorrections:
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_known_dividend_returned_with_no_credited_activity(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {
+            "cash_dividends": [_cash_dividend_action()],
+        }
+        broker._client.get.return_value = []  # no matching DIV activity
+
+        result = broker.get_dividend_corrections(["VZ"], since=date(2026, 5, 15))
+
+        assert result == {
+            "corp_dividends": {"VZ": [(date(2026, 8, 1), 0.6725)]},
+            "credited_keys": set(),
+        }
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_credited_dividend_activity_is_reported(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {
+            "cash_dividends": [_cash_dividend_action()],
+        }
+        broker._client.get.return_value = [{"symbol": "VZ", "date": "2026-08-01"}]
+
+        result = broker.get_dividend_corrections(["VZ"], since=date(2026, 5, 15))
+
+        assert result["credited_keys"] == {("VZ", date(2026, 8, 1))}
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_no_known_dividends_returns_empty_without_activity_call(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {}
+
+        result = broker.get_dividend_corrections(["VZ"], since=date(2026, 5, 15))
+
+        assert result == {"corp_dividends": {}, "credited_keys": set()}
+        broker._client.get.assert_not_called()
+
+    def test_empty_symbol_list_returns_empty_without_api_call(self):
+        broker = _make_broker()
+
+        result = broker.get_dividend_corrections([], since=date(2026, 5, 15))
+
+        assert result == {"corp_dividends": {}, "credited_keys": set()}
+        broker._client.get.assert_not_called()
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_corporate_actions_api_failure_fails_soft(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.side_effect = Exception("API down")
+
+        result = broker.get_dividend_corrections(["VZ"], since=date(2026, 5, 15))
+
+        assert result == {"corp_dividends": {}, "credited_keys": set()}
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_activities_api_failure_fails_soft(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {
+            "cash_dividends": [_cash_dividend_action()],
+        }
+        broker._client.get.side_effect = Exception("API down")
+
+        result = broker.get_dividend_corrections(["VZ"], since=date(2026, 5, 15))
+
+        assert result == {"corp_dividends": {}, "credited_keys": set()}
+
+    def test_since_accepts_iso_date_string(self):
+        # normalize_since coerces a str -- exercised end-to-end here via the
+        # empty-symbols short circuit, since a real API call isn't needed to
+        # prove the string didn't get silently treated as "no data since".
+        broker = _make_broker()
+
+        result = broker.get_dividend_corrections([], since="2026-05-15")
+
+        assert result == {"corp_dividends": {}, "credited_keys": set()}
+
+    def test_since_wrong_type_raises_loudly_not_silently_empty(self):
+        # The split-check landmine this must NOT reproduce: passing the wrong
+        # type for `since` must raise, not be swallowed by the fail-soft
+        # except into a `{}`-shaped result indistinguishable from "no
+        # corrections known". normalize_since() runs before the try/except,
+        # so this raises TypeError even with no API interaction at all.
+        broker = _make_broker()
+
+        with pytest.raises(TypeError):
+            broker.get_dividend_corrections(["VZ"], since=12345)

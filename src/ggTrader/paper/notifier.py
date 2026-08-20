@@ -65,17 +65,27 @@ class TelegramNotifier:
         unrealized_pnl: float | None = None,
         split_corrections: dict[str, float] | None = None,
         booked_equity: float | None = None,
+        dividend_total: float | None = None,
+        new_dividend_accruals: list[dict] | None = None,
         errors: list[str] | None = None,
     ) -> bool:
         """`portfolio_value`/`positions`/`total_pnl`/`unrealized_pnl` are all
-        expected to already be split-corrected by the caller (see
-        `split_check.apply_corrections_to_positions`) -- this only adds a
-        note calling out which symbols were corrected and, when the broker's
-        own (uncorrected) equity figure is supplied via `booked_equity`, both
+        expected to already be split-corrected AND dividend-accrual-adjusted
+        by the caller (see `split_check.apply_corrections_to_positions` and
+        `trader.PaperTrader._accrue_dividends`) -- this only adds a note
+        calling out which symbols were corrected and, when the broker's own
+        (uncorrected) equity figure is supplied via `booked_equity`, both
         numbers side by side so a reader can see exactly what changed and
         why. Unlike the old "exclude flagged from unrealized" behavior, no
         position's P&L is ever hidden -- the corrected figures are real
         numbers to show, not an unknown to hide.
+
+        `dividend_total` is the cumulative dividend accrual (an all-time
+        reporting correction, not real cash -- see `dividend_check.py`);
+        `new_dividend_accruals` lists any events newly credited *this run*
+        (each `{symbol, ex_date, rate, qty, amount}`), so a reader can see
+        exactly what changed and why it's not reflected in Alpaca's own
+        balance.
         """
         arrow = "🟢" if daily_pnl >= 0 else "🔴"
         day_start = portfolio_value - daily_pnl
@@ -93,6 +103,19 @@ class TelegramNotifier:
                     f"Booked equity (broker, uncorrected): ${booked_equity:,.2f} | "
                     f"Split-adjusted equity: ${portfolio_value:,.2f}"
                 )
+        if dividend_total:
+            lines.append(
+                f"<b>💵 Dividend accrual:</b> ${dividend_total:,.2f} cumulative — "
+                f"Alpaca's paper account never credits dividends; this is a "
+                f"reporting correction, not real cash (account balance will "
+                f"still differ from Alpaca's)."
+            )
+            if new_dividend_accruals:
+                new_str = ", ".join(
+                    f"{a['symbol']} ${a['amount']:.2f} (ex {a['ex_date']})"
+                    for a in new_dividend_accruals
+                )
+                lines.append(f"New this run: {new_str}")
         lines += [
             f"Value: <b>${portfolio_value:,.2f}</b>",
             f"Daily P&L: {arrow} ${daily_pnl:+,.2f} ({pnl_pct:+.2f}%)",

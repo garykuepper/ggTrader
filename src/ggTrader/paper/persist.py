@@ -50,6 +50,15 @@ CREATE TABLE IF NOT EXISTS paper_risk_state (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT single_row CHECK (id = 1)
 );
+CREATE TABLE IF NOT EXISTS paper_dividend_accruals (
+    symbol TEXT NOT NULL,
+    ex_date DATE NOT NULL,
+    rate DOUBLE PRECISION NOT NULL,
+    qty DOUBLE PRECISION NOT NULL,
+    amount DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (symbol, ex_date)
+);
 """
 
 
@@ -244,6 +253,66 @@ def get_rebalance_state() -> dict | None:
         "weights": weights if isinstance(weights, dict) else json.loads(weights),
         "scale": float(scale),
     }
+
+
+def get_snapshot_history() -> list[tuple]:
+    """Return all persisted snapshots as `[(run_date, positions_dict), ...]`
+    ascending by `run_date`.
+
+    Used by dividend accrual (see `dividend_check.qty_held_at_ex_date`) to
+    establish, from what's already persisted, whether -- and how much of --
+    a symbol was held as of a given ex-dividend date. `run_date` comes back
+    as a real `datetime.date` (the column type), not a string.
+    """
+    with _get_engine().connect() as conn:
+        rows = conn.execute(
+            text("SELECT run_date, positions FROM paper_snapshots ORDER BY run_date ASC")
+        ).all()
+    result = []
+    for run_date, positions in rows:
+        pos = positions if isinstance(positions, dict) else json.loads(positions)
+        result.append((run_date, pos))
+    return result
+
+
+def get_accrued_dividend_keys() -> set[tuple]:
+    """Return `{(symbol, ex_date), ...}` already recorded in
+    `paper_dividend_accruals` -- the idempotency guard so a re-run never
+    double-credits the same dividend event."""
+    with _get_engine().connect() as conn:
+        rows = conn.execute(text("SELECT symbol, ex_date FROM paper_dividend_accruals")).all()
+    return {(symbol, ex_date) for symbol, ex_date in rows}
+
+
+def log_dividend_accrual(symbol: str, ex_date, rate: float, qty: float, amount: float) -> None:
+    """Persist one dividend accrual. Idempotent on `(symbol, ex_date)` --
+    a conflicting insert is a no-op, never a double-credit."""
+    with _get_engine().connect() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO paper_dividend_accruals (symbol, ex_date, rate, qty, amount) "
+                "VALUES (:symbol, :ex_date, :rate, :qty, :amount) "
+                "ON CONFLICT (symbol, ex_date) DO NOTHING"
+            ),
+            {
+                "symbol": symbol,
+                "ex_date": ex_date,
+                "rate": rate,
+                "qty": qty,
+                "amount": amount,
+            },
+        )
+        conn.commit()
+
+
+def get_total_dividend_accrual() -> float:
+    """Cumulative dollar total of all persisted dividend accruals -- a
+    reporting-only correction, not real cash (see `dividend_check.py`)."""
+    with _get_engine().connect() as conn:
+        row = conn.execute(
+            text("SELECT COALESCE(SUM(amount), 0) FROM paper_dividend_accruals")
+        ).first()
+    return float(row[0]) if row else 0.0
 
 
 def save_rebalance_state(rebalance_date: str, weights: dict[str, float], scale: float) -> None:
