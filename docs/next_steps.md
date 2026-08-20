@@ -28,10 +28,66 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 ---
 
-(Empty — as of July 17, the leverage-realistic 3-sleeve blend (Sharpe 1.14 /
-MaxDD −5.39%, July 13 GO) remains wired into the live `PaperTrader` —
-deployed, not just researched, and reconfirmed exactly (Sharpe 1.14, MaxDD
--5.39%) via fresh blend runs this session — no tooling drift. Since the
+## ACTIVE STEP (2026-08-19) — decide whether to revert live from the 3-sleeve blend to the SP500 core
+
+**The July 17 note that stood here — "reconfirmed exactly (Sharpe 1.14,
+MaxDD -5.39%) via fresh blend runs — no tooling drift" — is SUPERSEDED.**
+A pinned-window 17-fold re-run on 2026-08-19
+(`docs/research/2026-08-19-anchor-fix-reproduction.md`, driver
+`scripts/anchor_fix_reproduction_wfo.py`, raw
+`docs/research/_anchor_fix_reproduction_results.json`) reproduces neither
+cited headline:
+
+| Config | Sharpe | CAGR | MaxDD | Gates |
+|---|---|---|---|---|
+| SP500 core — cited | 1.12 | 16.3% | -11.0% | 16/17 |
+| **SP500 core — measured** | **0.97** | **7.8%** | -7.6% | **12/17** |
+| 3-sleeve blend @lev 1.0 — cited | 1.14 | 9.93% | -5.39% | — |
+| **3-sleeve blend @lev 1.0 — measured (LIVE CONFIG)** | **0.68** | **4.76%** | -6.70% | — |
+| SPY — same window | 0.78 | 13.0% | -22.1% | — |
+
+**The decision to make:** the deployed blend measures **0.68, below SPY's
+0.78**, and below its own SP500 core sleeve (0.97) while barely improving
+drawdown (-6.70% vs -7.6%). On this evidence the blend overlay is
+*subtracting* value. This is not new — the 2026-06-27 diversification work
+independently found the 3-way blend at 1.05 vs the core's 1.12 and
+concluded "deploy SP500 core, diversification arc closed"; the
+leverage-realistic variant was then adopted anyway on a 1.14 that is now
+unreproducible. **Two independent measurements, two months apart, both say
+the blend is worse than the core.**
+
+**Resolve these two before flipping live config — do not revert on this
+run alone:**
+1. **Regime split.** One window, and a bull tape (SPY 13.0% CAGR). A
+   low-vol defensive book is *supposed* to lag here. Measure core vs blend
+   vs SPY separately in up/down/high-vol regimes. If the blend earns its
+   keep only in drawdowns, that is an allocation question, not a revert.
+2. **Live ≠ either number.** `paper/overlay.py:68` and
+   `paper/signal_runner.py:41-43` instantiate `EnsembleSignal` at **fixed
+   defaults**, not WFO-selected combos, so neither row describes the
+   trading account. Either wire WFO combo selection into live, or measure
+   the fixed-default configuration directly and use *that* as the bar.
+
+**Standing process fix (adopt now, cheap):** `ggt.py lab`'s `--eval-end`
+defaults to "now" and drifts, which is why the window behind 1.12/1.14 is
+unrecoverable — SPY itself scores 0.58 in the cited runs vs 0.78 here, and
+SPY's returns cannot change, which proves the windows differ. **Pin
+`--eval-start`/`--eval-end` explicitly on every run whose number will be
+cited.** `scripts/position_sizing_wfo.py` now pins the production overlay
+params (`target_vol=0.068, window=60, max_leverage=1.0`) and records them
+into its results JSON; do the same for any new driver. Related trap, hit
+twice: `run_blend`'s `max_leverage` default is **2.0**, not production's
+1.0 (`src/ggTrader/lab/blend.py`, now commented).
+
+Live trading continues unchanged in the meantime (Flynn's call, 2026-08-19)
+— the account keeps collecting honest data, and the accounting corrections
+for the broker's unapplied splits and uncredited dividends are deployed.
+
+---
+
+## Historical context (pre-2026-08-19)
+
+Since the
 July 16 leveraged-ETF closures, ten research arcs have closed NO-GO:
 market-neutral pairs/stat-arb (July 17, first of `RESEARCH_SNAPSHOT.md`
 §6's 4 internal candidates), the MAX-effect quintile filter (July 17,
