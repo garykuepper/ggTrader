@@ -125,7 +125,16 @@ Do not settle that decision until this is fixed.
      the shift.
   3. The 2026-08-19 "SPY duplicate rows" investigation.
 
-### Status: writer fixed and data migrated (2026-08-20) — DONE
+### Status: writer fixed, data migrated, **and deployed** — DONE
+
+> **Deployed 2026-08-21 11:33 PDT.** The migration on 08-20 left the *live
+> container* still running the pre-fix image (built 08-19 18:49). `src/` is
+> not bind-mounted, so it would have re-poisoned the freshly-migrated table
+> on that day's 12:45 cron run. Pushed `ef4e15f`, rebuilt via CI, pulled and
+> recreated the container, and confirmed the fix is present in the running
+> image. **Standing lesson: a data migration is not finished until the code
+> that writes that data is deployed.** The `daily-trader-check` skill now
+> compares image-created against the last `src/` commit for exactly this.
 
 1. **Writer fixed.** `_cache_to_db` now strips the tz
    (`idx.tz_convert("UTC").tz_localize(None)`) so Postgres has no offset to
