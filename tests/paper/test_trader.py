@@ -21,6 +21,28 @@ def _stub_today_et():
 
 
 @pytest.fixture(autouse=True)
+def _stub_write_path_db():
+    """Keep the schema/snapshot/trade write path off the real DB.
+
+    These five were the only persist functions `trader.py` imports that no
+    autouse fixture stubbed. Locally that went unnoticed: `utils/config.py`
+    `_load_env()` reads the `.env` FILE from the project root, so a developer
+    machine always resolves a connection string and the tests look hermetic.
+    On a clean checkout with no `.env` -- i.e. CI -- 42 of them died in
+    `get_db_connection_string()` before reaching any assertion.
+
+    Tests that need to assert on these still patch them individually; a
+    test-level `@patch` applies inside this fixture and wins.
+    """
+    with patch("ggTrader.paper.trader.init_paper_schema"):
+        with patch("ggTrader.paper.trader.log_trade"):
+            with patch("ggTrader.paper.trader.log_snapshot"):
+                with patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None):
+                    with patch("ggTrader.paper.trader.get_earliest_snapshot", return_value=None):
+                        yield
+
+
+@pytest.fixture(autouse=True)
 def _stub_pending_order_db():
     """Keep the pending-order reconciliation off the real DB by default.
     Individual tests override these patches to exercise reconciliation."""

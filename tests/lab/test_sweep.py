@@ -462,6 +462,7 @@ class _TinyWeightKwarg:
         return targets
 
 
+@pytest.mark.integration  # writes and reads back real lab_* tables; needs a live DB
 def test_sweep_end_to_end_weight_strategy_threads_combo_kwargs(monkeypatch):
     """Regression: run_sweep's weight branch must forward non-LabConfig combo
     kwargs (e.g. IdioVolStrategy's reg_window/quintile) to the strategy
@@ -553,6 +554,7 @@ class _CfgEchoWeight:
         return targets
 
 
+@pytest.mark.integration  # writes and reads back real lab_* tables; needs a live DB
 def test_sweep_end_to_end_weight_strategy_propagates_max_sector_count(monkeypatch):
     """Phase C item 17: sweep.py's per-combo LabConfig must carry
     max_sector_count through, matching wfo.py's _run_one_weight_combo."""
