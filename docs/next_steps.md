@@ -28,6 +28,158 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 ---
 
+## ACTIVE STEP (2026-08-20) — ROOT CAUSE FOUND: every equity bar in `ohlcv` is stamped one calendar day early
+
+**Priority: this outranks everything else in this file.** It is the root
+cause behind at least three symptoms already "fixed" locally, and it
+silently changes what date every piece of research thinks it is looking at.
+
+### The finding
+
+Every `venue='yfinance'`, `interval='1d'` row — **1,412 symbols, ~5.68M
+rows, the entire equity store** — is stored one calendar day earlier than
+the bar it actually contains.
+
+Proof, day-of-week census over the whole table:
+
+| Stamped weekday | Rows |
+|---|---|
+| Sun | 1,065,046 |
+| Mon | 1,167,553 |
+| Tue | 1,165,640 |
+| Wed | 1,143,689 |
+| Thu | 1,137,513 |
+| **Fri** | **168** |
+
+A daily US equity series cannot have 1.07M Sunday bars and 168 Friday bars.
+The series runs Sun–Thu because it is Mon–Fri shifted back one day. (Those
+168 Fridays are SPY's, from a second writer — see below.)
+
+Ground-truth spot check, AAPL (DB vs. yfinance):
+
+| DB timestamp | DB open/close/volume | Bar's true date |
+|---|---|---|
+| 2026-07-29 17:00 | 332.81 / 333.14 / 74,817,800 | **2026-07-30** |
+| 2026-07-30 17:00 | 304.55 / 308.64 / 132,489,100 | **2026-07-31** |
+| 2026-08-02 17:00 *(a Sunday)* | 309.31 / 303.16 / 75,052,000 | **2026-08-03** |
+| 2026-08-03 17:00 | 302.47 / 309.11 / 68,001,000 | **2026-08-04** |
+
+Exact OHLCV matches, uniformly one day early. AAPL's -8% earnings day
+(actually 07-31, close 308.64) is filed under 07-30.
+
+### Mechanism (single line)
+
+`CachedYFinanceLoader._cache_to_db` builds `ts_list =
+sub.index.to_pydatetime().tolist()` from a **tz-aware UTC** index and
+inserts it into `ohlcv.timestamp`, which is `timestamp WITHOUT time zone`.
+Postgres rebases the offset-carrying literal into the **session timezone**
+— this box is `America/Los_Angeles` — so `2026-08-03 00:00:00+00:00` lands
+as `2026-08-02 17:00:00`. The fetch path itself is correct (verified: it
+returns `2026-08-03 00:00:00+00:00` with Aug-3's true OHLCV); only the
+write is wrong.
+
+The two stamp families are the same bug under DST: **17:00** = UTC-7 (PDT),
+**16:00** = UTC-8 (PST). Both are "midnight UTC minus the Pacific offset".
+
+Fix the writer by storing naive UTC:
+`sub.index.tz_convert("UTC").tz_localize(None).to_pydatetime()`.
+
+### Why SPY is the one symbol that looks broken
+
+SPY additionally carries **826 correctly-dated rows** at 04:00/05:00
+(midnight ET expressed in UTC, Mon–Fri) from a second, benchmark-only
+writer active 2022-12-27 → 2026-06-08. SPY is therefore the only symbol
+with **mixed alignment**: 642 calendar days hold two rows carrying
+*different bars*, and 184 days exist only in the correct family.
+
+That is why SPY alone shows duplicate days, and why its measured Sharpe is
+unstable and deflated — 0.72 as-loaded vs **0.93** after collapsing to one
+bar/day (2021-2026); 1.00 vs **1.46** (2023-2026). A ~29% benchmark
+deflation, matching what the 2026-08-19 session observed.
+
+**This is very likely the real explanation for "SPY scores 0.58 in the
+cited runs vs 0.78 here"** — the blend-vs-core decision above rests on a
+benchmark that changes value depending on which rows the window catches.
+Do not settle that decision until this is fixed.
+
+### Blast radius — read carefully, it is not uniform
+
+- **Pure price-series backtests: returns are NOT invalidated.** The shift
+  is uniform across all symbols, so bar-to-bar returns are unchanged. Only
+  the labels are wrong.
+- **SPY-benchmarked comparisons ARE invalidated** — SPY is internally
+  inconsistent (above). Every "vs SPY" verdict in this repo is suspect.
+- **Every join against a real-world calendar date is off by one, in the
+  lookahead direction** — the bar labeled D holds D+1's outcome. This hits
+  FOMC dates, earnings, Form 4 filings, congress PTRs, index add/delete,
+  dividend ex-dates, short-volume. Event-study candidates were rejected on
+  numbers computed against a shifted tape.
+- **Already-patched symptoms that trace here** (all treated the symptom,
+  not the cause):
+  1. `fomc_drift` — "bars carry 16:00 while FOMC dates are midnight" was
+     patched by matching on *calendar date*, but the calendar date is
+     itself shifted, so that strategy tested the wrong day. **Its NO-GO is
+     not trustworthy.**
+  2. `9f69107 fix(paper): freshness gate froze all trading` — the gate saw
+     a newest bar labeled a day stale and halted. Loosening the gate hid
+     the shift.
+  3. The 2026-08-19 "SPY duplicate rows" investigation.
+
+### Status: writer fixed and data migrated (2026-08-20) — DONE
+
+1. **Writer fixed.** `_cache_to_db` now strips the tz
+   (`idx.tz_convert("UTC").tz_localize(None)`) so Postgres has no offset to
+   rebase.
+2. **Regression tests added** (`tests/data/test_cached_yfinance_loader.py`):
+   4 unit tests plus an `@pytest.mark.integration` real-DB round-trip.
+   Confirmed they fail on the old code with the exact production symptom
+   (`['2026-08-02','2026-08-03',...]` — Sun–Thu) and pass on the new.
+3. **Migrated.** `DELETE 5,678,783` / `INSERT 5,678,783`, zero
+   conflict-drops, in one transaction. Needed
+   `SET timescaledb.max_tuples_decompressed_per_dml_transaction = 0`
+   (compressed chunks). Backups kept: table
+   `ohlcv_yf_preshift_backup_20260820` (5,679,609 rows) and
+   `backups/ohlcv_yf_preshift_20260820.sql.gz` (206MB).
+4. **SPY reconciled.** After the shift all 826 stray days had a
+   correctly-dated counterpart (`stray_only_days = 0`), so the stale-vintage
+   strays were dropped with zero coverage loss.
+
+Verification: weekday census is now Mon 1,065,200 / Tue 1,167,570 /
+Wed 1,165,638 / Thu 1,143,684 / Fri 1,137,517 — **zero weekend bars**
+(Monday lowest, as it should be with Monday holidays). Duplicate days
+across all 1,412 symbols: **0**. Every spot-checked bar now matches
+yfinance exactly (AAPL's -8% earnings day sits on 07-31, not 07-30). A
+fresh live fetch round-trips to the correct date. 922 tests pass; ruff
+clean on both touched files.
+
+**Benchmark, corrected:** SPY 2021-2026 Sharpe **0.914** (CAGR 15.06%,
+1,340 bars, 0 dups), 2023-2026 **1.433**. Was 0.72/1.00 when read through
+the duplicated tape.
+
+### Still open, in priority order
+
+1. **Re-measure the blend-vs-core decision below against the corrected
+   benchmark.** Every cited SPY number in this repo (0.58, 0.74, 0.77,
+   0.78) came off the shifted/duplicated tape and none of them match
+   0.914. The deployed blend's 0.68 and the core's 0.97 both need re-running
+   before that decision means anything.
+2. **`fomc_drift`'s NO-GO is not trustworthy.** `fomc_drift.py:130-134`
+   matched on calendar date to work around the non-midnight stamps — but
+   the calendar date was itself shifted, so "the day before the
+   announcement" selected the announcement day. That workaround is now
+   inert and the logic is correct; re-run if the candidate is worth the
+   cost.
+3. **Other event-date candidates** (earnings/PEAD, Form 4 insider,
+   congress PTR, index add/delete, short-volume) were all rejected on
+   numbers computed against a one-day-lookahead tape. Their verdicts are
+   suspect for the same reason — note this in any report that cites them.
+4. **`9f69107`'s freshness-gate tolerance** was widened to absorb an
+   apparent one-session lag that was partly this bug. It still allows lag,
+   so nothing is broken, but `as_of` now advances a day — worth a look on
+   the next live run.
+
+---
+
 ## ACTIVE STEP (2026-08-19) — decide whether to revert live from the 3-sleeve blend to the SP500 core
 
 **The July 17 note that stood here — "reconfirmed exactly (Sharpe 1.14,
@@ -82,6 +234,77 @@ twice: `run_blend`'s `max_leverage` default is **2.0**, not production's
 Live trading continues unchanged in the meantime (Flynn's call, 2026-08-19)
 — the account keeps collecting honest data, and the accounting corrections
 for the broker's unapplied splits and uncredited dividends are deployed.
+
+---
+
+## RESOLVED / WITHDRAWN (2026-08-20) — the "split/dividend double-apply" bug report was itself wrong
+
+**A previous session queued an ACTIVE STEP here demanding the split and
+dividend corrections be ripped out as a double-apply bug. That report was
+based on a false premise and has been withdrawn. Do not implement it — the
+deployed correction code is correct, and removing it would introduce the
+very error the report described.**
+
+The report asserted MNST's position was "textbook post-split: qty 20.8041
+(2x pre-split), avg_entry $90.71 (1/2 of $181.42)". MNST never traded at
+$181. Re-verified 2026-08-20 against four independent sources:
+
+| Evidence | Finding |
+|---|---|
+| Alpaca corp-actions feed | MNST forward split, 2-for-1, ex-date 2026-08-11 (confirmed real) |
+| yfinance daily bars | close $90.36 on 08-07 -> $45.53 on 08-11; `Stock Splits = 2` on 08-11 |
+| `paper_trades` | only two MNST buys, both 2026-08-06, $749.04 + $1138.07 = **$1,887.11** = today's `cost_basis` exactly |
+| `paper_snapshots` qty across the ex-date | 08-10 = 20.8041, 08-11 = 20.8041, 08-12 = 20.8041 — **unchanged**, with no trades after 08-06 |
+
+So the position was opened at 20.8041 shares x $90.71 = $1,887.11
+**pre-split**, and the broker left `qty` and `avg_entry_price` at those
+pre-split values while its price feed moved to the post-split $47.43.
+`market_value` = 20.8041 x $47.43 = $986.67 is therefore **half the true
+economic value**. The correct book is qty 41.608, market_value ~$1,973.5,
+unrealized **+$86 (+4.6%)** — which is what the reporting script produces.
+The broker's raw -$900 (-47.7%) is the artifact, not the corrected figure.
+
+The report's reasoning inverted this because it read the *current* qty as
+already-doubled without checking what the qty had been before the ex-date.
+The snapshot history settles it: nothing about the position changed on
+2026-08-11.
+
+**The dividend accrual is also not "fabricated."** The three accrued events
+(MPWR 06-30 $5.05, VZ 07-10 $54.51, PNR 07-24 $14.50 = $74.06) are real
+corporate actions on positions genuinely held on their ex-dates. Confirmed
+that Alpaca paper never credits them: `paper_snapshots.cash` is *flat across
+every non-trade day* (63,291.91 on 08-17/18/19; 66,267.89 across 07-15 to
+07-29), and `/v2/account/activities/DIV` returns `[]`. The accrual is a
+reporting-only adjustment, is labeled as such in the Telegram summary
+alongside the broker's uncorrected figure, and never touches cash or
+buying power.
+
+**Equity truth (opposite of the withdrawn report):** the broker figure
+*understates* the account. Reported ~$104,921 (08-19) = broker $103,857
++ $987 unapplied MNST split + $74 dividend accrual.
+
+### The one real defect this audit did surface (still open)
+
+`AlpacaBroker._get_split_activity_symbols` reads
+`/v2/account/activities/SPLIT` to decide whether a split was *already*
+applied — and that endpoint returns `[]` on this paper account even for
+MNST's real split. The guard is therefore a **no-op in paper**: it has
+never once suppressed a correction, and its protective behavior is
+completely untested. If Alpaca ever does apply a split correctly, today's
+code would double it — the exact failure the withdrawn report imagined it
+had found.
+
+Harden it with evidence that actually exists in paper: compare `qty` in
+`paper_snapshots` immediately before vs. after the ex-date, cross-checked
+against `paper_trades` to rule out a trim. qty roughly x factor => applied,
+suppress. qty unchanged => unapplied, correct it. Keep the activities feed
+as a secondary signal, not the primary one.
+
+**Standing lesson (cross-agent):** this bug report was written from a
+single point-in-time position snapshot. A split is a *change*, and it
+cannot be diagnosed without the before-state. Any future corporate-action
+claim must cite `paper_snapshots` across the ex-date plus `paper_trades`,
+not just today's position.
 
 ---
 

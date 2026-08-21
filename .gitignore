@@ -58,3 +58,6 @@ scripts/mcp_cache.json
 
 # Subagent-driven-development scratch (progress ledgers, not project artifacts)
 .superpowers/
+
+# Local DB dumps (e.g. pre-migration ohlcv backups) — large, never tracked
+backups/

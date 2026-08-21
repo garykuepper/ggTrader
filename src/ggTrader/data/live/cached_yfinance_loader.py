@@ -87,8 +87,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             cur.execute(query, (list(symbols), interval, STOCK_VENUE))
             rows = cur.fetchall()
         return {
-            sym: (pd.Timestamp(lo, tz="UTC"), pd.Timestamp(hi, tz="UTC"))
-            for sym, lo, hi in rows
+            sym: (pd.Timestamp(lo, tz="UTC"), pd.Timestamp(hi, tz="UTC")) for sym, lo, hi in rows
         }
 
     # ------------------------------------------------------------------
@@ -153,8 +152,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                     recorded_at = now();
             """
             records = [
-                (sym, interval, STOCK_VENUE, ts.to_pydatetime())
-                for sym, ts in inceptions.items()
+                (sym, interval, STOCK_VENUE, ts.to_pydatetime()) for sym, ts in inceptions.items()
             ]
             with self._connect() as conn, conn.cursor() as cur:
                 execute_values(cur, query, records)
@@ -191,9 +189,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
         wide = flat.pivot(
             index="timestamp", columns="symbol", values=["open", "high", "low", "close", "volume"]
         )
-        wide.columns = pd.MultiIndex.from_tuples(
-            [(sym, metric) for metric, sym in wide.columns]
-        )
+        wide.columns = pd.MultiIndex.from_tuples([(sym, metric) for metric, sym in wide.columns])
         wide.sort_index(axis=1, inplace=True)
         return wide
 
@@ -217,7 +213,17 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                 continue
             sub = sub.loc[valid]
             n = len(sub)
-            ts_list = sub.index.to_pydatetime().tolist()
+            # ``ohlcv.timestamp`` is `timestamp WITHOUT time zone`. Handing
+            # psycopg2 a tz-AWARE datetime lets Postgres rebase the offset
+            # into the session timezone on the way in -- on this box
+            # (America/Los_Angeles) that turned 2026-08-03 00:00+00:00 into
+            # 2026-08-02 17:00, stamping every equity bar one calendar day
+            # EARLY (the whole store ran Sun-Thu: 1.07M Sunday bars against
+            # 168 Friday ones). Strip the tz so what we hand psycopg2 is
+            # already naive UTC and Postgres has nothing to rebase.
+            idx = sub.index
+            idx = idx.tz_convert("UTC").tz_localize(None) if idx.tz is not None else idx
+            ts_list = idx.to_pydatetime().tolist()
             arr = sub.to_numpy(dtype=float)
             obj = arr.astype(object)
             obj[np.isnan(arr)] = None

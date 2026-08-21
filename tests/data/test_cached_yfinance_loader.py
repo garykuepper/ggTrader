@@ -15,6 +15,7 @@ per test.
 from __future__ import annotations
 
 from contextlib import ExitStack
+from datetime import date
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -275,3 +276,88 @@ class TestInceptionTracking:
 
         mock_known.assert_not_called()
         mock_live.assert_not_called()
+
+
+class TestCacheToDbTimestampNaiveUtc:
+    """Regression: bars must reach the DB as naive UTC on their true date.
+
+    ``ohlcv.timestamp`` is `timestamp WITHOUT time zone`. Handing psycopg2 a
+    tz-aware datetime let Postgres rebase the offset into the session
+    timezone (``America/Los_Angeles`` on this host), storing
+    ``2026-08-03 00:00+00:00`` as ``2026-08-02 17:00`` -- every equity bar
+    one calendar day EARLY. The whole 5.68M-row store ran Sun-Thu (1.07M
+    Sunday bars vs 168 Friday ones) before this was caught on 2026-08-20.
+    """
+
+    def _timestamps(self, df: pd.DataFrame) -> list:
+        return [r[0] for r in TestCacheToDbVectorized()._captured_records(df)]
+
+    def test_tz_aware_index_is_stripped_to_naive(self):
+        ts = self._timestamps(_wide("AAPL", ["2026-08-03"], [303.16]))
+        assert ts[0].tzinfo is None, "tz-aware datetime lets Postgres shift the date"
+
+    def test_calendar_date_is_preserved(self):
+        """The bar for Mon 2026-08-03 must not land on Sun 2026-08-02."""
+        ts = self._timestamps(_wide("AAPL", ["2026-08-03"], [303.16]))
+        assert ts[0].date() == date(2026, 8, 3)
+        assert ts[0].hour == 0
+
+    def test_no_weekend_stamps_for_a_trading_week(self):
+        """A Mon-Fri week must stay Mon-Fri, not slide back to Sun-Thu."""
+        week = ["2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07"]
+        ts = self._timestamps(_wide("AAPL", week, [1.0] * 5))
+        assert [t.date().isoformat() for t in ts] == week
+        assert not [t for t in ts if t.weekday() >= 5]
+
+    def test_naive_index_passes_through_unchanged(self):
+        """A tz-naive index is already naive UTC -- don't touch it."""
+        df = _wide("AAPL", ["2026-08-03"], [303.16])
+        df.index = df.index.tz_localize(None)
+        ts = self._timestamps(df)
+        assert ts[0].tzinfo is None
+        assert ts[0].date() == date(2026, 8, 3)
+
+
+@pytest.mark.integration
+class TestCacheToDbRoundTripDate:
+    """The test that would have caught the day-shift: a real DB round-trip.
+
+    The unit tests above can only assert what Python hands psycopg2. The
+    corruption happened *inside* Postgres (tz-aware literal rebased into the
+    session timezone on insert into a naive column), so only a real
+    write-then-read proves the calendar date survives. Uses a throwaway
+    symbol and cleans up after itself.
+    """
+
+    SYMBOL = "__TZ_ROUNDTRIP__"
+
+    def test_written_bar_reads_back_on_the_same_calendar_date(self):
+        import psycopg2
+
+        from ggTrader.data.live.cached_yfinance_loader import STOCK_VENUE
+        from ggTrader.utils.config import get_db_connection_string
+
+        dsn = get_db_connection_string().replace("postgresql+psycopg2://", "postgresql://")
+        week = ["2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07"]
+        df = _wide(self.SYMBOL, week, [100.0] * 5)
+
+        loader = object.__new__(CachedYFinanceLoader)
+        loader.connection_string = dsn
+        import logging
+
+        loader.logger = logging.getLogger("tz_roundtrip")
+
+        try:
+            loader._cache_to_db(df, "1d")
+            with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+                cur.execute(
+                    "SELECT timestamp FROM ohlcv WHERE symbol=%s AND interval='1d' "
+                    "AND venue=%s ORDER BY timestamp",
+                    (self.SYMBOL, STOCK_VENUE),
+                )
+                got = [r[0].date().isoformat() for r in cur.fetchall()]
+            assert got == week, f"calendar dates shifted on the DB round-trip: {got}"
+        finally:
+            with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+                cur.execute("DELETE FROM ohlcv WHERE symbol=%s", (self.SYMBOL,))
+                conn.commit()
