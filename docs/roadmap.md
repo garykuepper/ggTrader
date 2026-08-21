@@ -2,9 +2,40 @@
 
 This document outlines the goals, ongoing work, and research direction for ggTrader. 
 
+- For the current worklist (1–2 steps deep), see [Next Steps](next_steps.md) — **start there**.
+- For the roster of every strategy tried and its verdict, see [Research Snapshot](research/RESEARCH_SNAPSHOT.md).
 - For a history of project changes, see the [Changelog](changelog.md).
-- For a full engineering overview, see the [Project Snapshot (June 2026)](project_snapshot_2026-06-23.md).
+- For a full engineering overview, see the [Project Snapshot (June 2026)](project_snapshot_2026-06-23.md) — point-in-time, June 23.
 - For how the codebase works, see the [Architecture Guide](architecture.md).
+
+---
+
+> ### ⚠️ Read before citing any performance number in this file
+>
+> On **2026-08-20** a bug was found that had stamped **every equity bar in
+> `ohlcv` one calendar day early** (5.68M rows, 1,412 symbols) — a tz-aware
+> write into a `timestamp WITHOUT time zone` column, rebased by Postgres into
+> the box's local timezone. It has been fixed and the table migrated
+> (commit `ef4e15f`).
+>
+> Consequences for what is written below:
+>
+> 1. **Every SPY baseline in this document is wrong.** SPY additionally
+>    carried duplicate rows from a second writer, deflating it. The figures
+>    quoted here (0.58, 0.74, 0.77, 0.78) came off that tape; the corrected
+>    benchmark is **Sharpe 0.914** (2021-2026) / 1.433 (2023-2026). Every
+>    "beats SPY" / "loses to SPY" verdict below rests on the wrong bar.
+> 2. **Bar-to-bar returns were NOT affected** — the shift was uniform, so
+>    pure price-series strategy results remain directionally usable. Only
+>    the date labels, and therefore anything joined to a calendar, were wrong.
+> 3. **Event-date studies are the exception and are genuinely suspect** —
+>    the bar labeled D held D+1's outcome, i.e. a one-day lookahead. This
+>    hits `fomc_drift`, PEAD/earnings, Form 4 insider, congress PTR, index
+>    add/delete, and short-volume. Their NO-GO verdicts are **not
+>    trustworthy** and should be re-run before being cited as closed.
+>
+> Nothing below has been re-measured yet except the anchor-fix reproduction.
+> See `docs/next_steps.md` for the queue.
 
 ---
 
@@ -41,7 +72,7 @@ This table shows the current status of the main project components.
 | **Next Steps** | 🔵 Next | Monitor virtual trading for 5–10 days → fund a live $1,000 account → go live. Start research on blending S&P 500 and MidCap 400 stocks. |
 | **Kelly-Criterion Sizing** | ❌ Rejected | Sizing trades by a pooled, causal Kelly fraction (instead of flat 3%) was tested July 6 in honest walk-forward across 3 multipliers × 17 SP500 folds. OOS Sharpe 0.98 fell short of the 1.12 baseline, drawdown widened to -17.0% (vs -11%), and no multiplier won a majority of folds (best was 7/17). Position sizing is now closed as a lever; remaining directions are weighted voting (already closed) and genuinely orthogonal ones (new asset class). |
 | **Future Research** | 🧪 Research | Eight distinct equity-side hypotheses now tested and rejected in honest walk-forward on this daily-bar SP500 universe (ML gate, exit rules, weighted voting, Kelly sizing, cross/dual momentum, overnight-gap reversion, idiosyncratic volatility). This isn't bad luck — it's evidence the daily-bar equity research book is close to exhausted for this system. New equity-family variants (sector-neutral reversion, calendar effects) need a stronger prior before funding more research time. The parked crypto-carry sleeve remains the clearest structurally-different lever (gated on >$10k capital + funding-data backfill). |
-| **3-Sleeve Blend (leverage-realistic)** | 🟢 Live | July 13: capped at 1.0x leverage (what the live account can actually use), the SP500+MidCap400+Nasdaq100 blend hits Sharpe 1.14 / MaxDD −5.39% vs. the SP500-core's own matched-window number of Sharpe 0.97 / MaxDD −11.0% — a full 0.17 Sharpe gain and roughly half the drawdown, for a CAGR cost of 9.93% vs 13.4%. (The often-cited "1.12" baseline turned out to be from a different eval window, not this one.) July 14: wired into the live `PaperTrader` (sleeve-aware sizing, margin pre-flight check, `--live` flag) — this blend, not the single-sleeve core, is now the deployed config. See §3. |
+| **3-Sleeve Blend (leverage-realistic)** | 🟢 Live, ⚠️ **claim superseded** | July 13: capped at 1.0x leverage, the SP500+MidCap400+Nasdaq100 blend was measured at Sharpe 1.14 / MaxDD −5.39% vs. an SP500-core of 0.97 / −11.0%, and on that basis was wired into the live `PaperTrader` July 14 (sleeve-aware sizing, margin pre-flight, `--live`). **Neither headline reproduces.** A pinned-window 17-fold re-run on 2026-08-19 measures the blend at **Sharpe 0.68** — below SPY's 0.78 *and* below its own SP500 core sleeve (0.97) — while barely improving drawdown (−6.70% vs −7.6%). The 2026-06-27 diversification work independently reached the same conclusion (blend 1.05 < core 1.12). Two measurements two months apart both say the overlay subtracts value. The blend is **still the deployed config**; the revert decision is open and queued in `docs/next_steps.md`. See `docs/research/2026-08-19-anchor-fix-reproduction.md`. |
 | **Leveraged/Inverse ETF Rotation & Trend Following** | ❌ Rejected | July 16: two independent attempts to time 2x/3x leveraged ETFs (UPRO/TQQQ/TNA and inverse pairs) both closed NO-GO. Breadth-driven long/inverse/cash rotation: Sharpe −0.14 to −0.37 vs SPY, drawdowns −80% to −89%, defensive-halt active almost every fold. A simpler long-only trend filter + volatility-targeting overlay was structurally healthier (no persistent halt) but still lost to just buying and holding the same ETF in every universe tested. See §3 and `docs/research/2026-07-16-leveraged-index-rotation-nogo.md` / `docs/research/2026-07-16-leveraged-trend-following-nogo.md`. |
 
 > **Status Legend:** ✅ Done · 🟢 Live · 🔵 Next · 🧪 Research · ❌ Rejected · ⏸ Deferred
@@ -54,7 +85,7 @@ Our primary objective is to build a **flexible multi-strategy research lab** tha
 
 **Current Thesis (June 2026):** Combining multiple trading indicators (Bollinger Bands, RSI, EMA, MACD, and Volume Bollinger Bands) works because their failures are independent. When one indicator is wrong, the others usually don't vote, preventing bad trades. We closed our performance gap against the S&P 500 index not by trying to find a "magic" new signal, but by **adjusting our trade sizes** to 3% so our money doesn't sit idle in cash. This is the core lesson: our edge comes from **trade sizing and the structure of the ensemble itself, not from second-guessing individual trades** — both entry-side machine-learning filtering and exit-rule changes (take-profit / time-stop) were tested exhaustively in honest walk-forward and **rejected** (June 28). The current RSI-based exit and flat 3% sizing are, as far as we can measure, already the right choices. The nearest goal is going live with this validated config. Weighted voting was the final equity lever and was **tested & rejected (June 28)** — IC-weighting the voters lowered risk-adjusted return (Sharpe 1.01 < 1.12), closing the equity selection book. **State of the research program (July 7):** two more independently-motivated hypotheses — overnight-gap reversion (a session-structure anomaly) and cross-sectional idiosyncratic volatility (a genuinely different, defensive-premium risk factor, not another price-derivative signal) — were built, gated, and honestly WFO'd; both closed NO-GO against the 1.12 baseline. That brings the count to eight distinct equity-side hypotheses tested and rejected. The consistent shape across all eight — plausible economic premise, correctly caught by the NDH/DSR gates once tested at full scale, not a bug in the gates — is itself the finding: **daily-bar, large-cap equity research is close to arbitraged out for this system.** Further equity-family proposals (sector-neutral reversion, calendar effects) should clear a higher bar before consuming research time; the two directions with a genuinely different premise are a new asset class (the parked delta-neutral crypto-carry sleeve, gated on >$10k capital + a funding-data backfill) and, if its own correlation-vs-core study supports it, idio_vol as a blended diversification sleeve rather than a standalone strategy.
 
-**State of the research program (July 16):** the leverage-realistic 3-sleeve blend (§below) was wired into live paper trading, and two independent attempts to find a genuinely orthogonal lever in **leveraged/inverse ETFs** — a new instrument class, not another equity signal — were built, gated, and honestly WFO'd against all three universes; both closed NO-GO (see the Glance table above). That brings the count to ten distinct hypotheses tested and rejected across two asset-class attempts. Going forward, `docs/research/RESEARCH_SNAPSHOT.md` and `docs/research/prompts/edge-research-agent-prompt.md` are the living, auto-regenerated (via the `research-snapshot` skill) source of truth for the full roster and ranked next-edge candidates — check there first rather than relying on this section, which is hand-maintained and can drift between updates.
+**State of the research program (July 16):** the leverage-realistic 3-sleeve blend (§below) was wired into live paper trading, and two independent attempts to find a genuinely orthogonal lever in **leveraged/inverse ETFs** — a new instrument class, not another equity signal — were built, gated, and honestly WFO'd against all three universes; both closed NO-GO (see the Glance table above). That brings the count to ten distinct hypotheses tested and rejected across two asset-class attempts. Going forward, `docs/research/RESEARCH_SNAPSHOT.md` (the auto-regenerated roster, via the `research-snapshot` skill) and `docs/research/WEB_RESEARCH_CANDIDATES.md` (the accumulating backlog of untried ideas) are the living source of truth for the full roster and ranked next-edge candidates — check there first rather than relying on this section, which is hand-maintained and can drift between updates. The two research prompt templates live at `docs/research/prompts/web-strategy-research-prompt.md` and `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`.
 
 ---
 
@@ -115,6 +146,14 @@ These are open research paths that are not bound to a specific deadline, ordered
 **Leverage-realistic 3-sleeve blend verdict (July 13, 🟢 GO — supersedes the June-27 and July-8 blend numbers).** Both prior blend figures were not directly comparable: June 27's "gate-honest 1.05" came from `multi_sleeve_research.py`/`portfolio_blend.py`, retired June 29 when `blend.py` replaced them; July 8's "idealized 1.03" came from the current tool but at its `--max-leverage 2.0` default — leverage the live paper account, which trades unlevered flat-3% cash sizing, cannot actually take. Re-ran the identical 3-sleeve mix (`ensemble@sp500,ensemble@midcap400,ensemble@nasdaq100`, same `--eval-start 2021-01-31 --eval-end 2026-04-30` window) at `--max-leverage 1.0`, and pulled the persisted leverage diagnostics for both: **2.0x-cap run:** Sharpe 1.03, CAGR 13.89%, MaxDD −10.59%, avg realized leverage **1.63x** (most days actually levered up near the cap). **1.0x-cap (deployable) run:** Sharpe **1.14**, CAGR 9.93%, MaxDD **−5.39%**, avg leverage 0.97x (essentially unlevered, as expected).
 
 The blend's own SP500 sleeve inside this run scored Sharpe 0.97 (CAGR 13.41%, MaxDD −11.01%), short of the commonly-cited "1.12" headline baseline — first suspected as a universe-construction mismatch (`eligible_at()` vs `equity_universe_between()`), but that theory was checked and **retracted**: `ensemble` is a `target_kind="signals"` strategy, and `_sweep_fold_dispatch` (`wfo.py:378`) only routes through `universe_fn`/`eligible_at()` for `target_kind="weights"` strategies — the blend's SP500 sleeve uses the exact same static-universe mechanism as the standalone path. Re-running the standalone `--wfo` baseline under the identical window (`--eval-start 2021-01-31 --eval-end 2026-04-30`) reproduced the blend sleeve number almost exactly (Sharpe 0.97, CAGR 13.4%, MaxDD −11.0%) — confirming there's no methodology divergence between the two code paths. **The actual explanation is simpler: the "1.12" headline figure was measured on a different eval window** (the CLI's `--eval-end` defaults to "now," which drifts every time it's re-run without an explicit end date) — not the window this blend study uses. It is not the correct comparator here.
+
+> ⚠️ **SUPERSEDED 2026-08-19.** The 1.14 figure below does not reproduce. A
+> pinned-window 17-fold re-run measures the blend at **Sharpe 0.68** and the
+> core at **0.97**, i.e. the blend is *worse* than its own core sleeve and
+> worse than SPY. The "negligible drift" audit recorded at the end of this
+> entry was itself wrong — the drift was not negligible, and the tape it was
+> measured on was day-shifted besides. Read the rest of this entry as
+> history. See `docs/research/2026-08-19-anchor-fix-reproduction.md`.
 
 **The valid, single-window comparison is therefore:** SP500-core alone (this window) Sharpe **0.97** / CAGR 13.4% / MaxDD −11.0%, vs. the leverage-realistic 3-sleeve blend Sharpe **1.14** / CAGR 9.93% / MaxDD **−5.39%**. On a matched window, the blend beats the core by a full 0.17 Sharpe and roughly halves the drawdown, for a smaller (not larger) CAGR concession than the mismatched-window comparison implied. **Verdict: GO — reopen the diversification arc**, contra June 27's closure (which predates both the leverage fix and the retired-tool ambiguity). This is now a live-capital decision: wired into `PaperTrader` July 14 (sleeve-aware sizing via `RiskGuard.sleeve_slot_caps`/`sleeve_position_notional`, a margin pre-flight check enforcing the unlevered assumption, `--live` CLI flag) — it is the deployed config, not just a research number. *Side finding, resolved July 13:* the "1.12" figure is used as a fixed reference point across several other roadmap entries (Kelly sizing, IC-weighted voting, exit-rule sweep); an audit confirmed those all used `--eval-end="now"` within ~10 days of each other and of the 1.12 baseline's own run — negligible drift (Sharpe moves ~0.15 over a 2.5-month window shift), no re-runs needed.
 
@@ -202,7 +241,7 @@ This table tracks the technical foundation that supports our research and tradin
 * **June 28, 2026**: Ran a gate-objective bake-off to decide the best way forward on the ML filter. Falsified entry-level ML/feature gating three ways (anti-predictive classifier; even-worse EV regressor; volatility filter is a 2020 artifact). Verified the gate is *not* live on the paper trader (disabled by default, no env enables it). Then built and ran the exit-rule sweep (take-profit + time-stop, 31 combos × 17 SP500 folds) — also rejected: the walk-forward recommends the unmodified RSI exit, exit params fit noise, and the no-indicator-exit replacement drew down −39.7%. Fixed a latent walk-forward bug (crash on any "off"/None sweep axis) found en route. Then built `ensemble_ic` (Spearman-IC-weighted voting, leak-safe, 291 tests, reviewed clean) and ran it as the final equity-book experiment — also rejected: OOS Sharpe 1.01 < 1.12 baseline, drawdown −17.3% vs −11%, winning weights chosen in only 3/17 folds (noise). Net: entry-filtering, exit-tuning, and weighted-voting levers are all now closed — the **equity selection book is closed**; next research turns to a new asset class (parked crypto-carry sleeve, gated on >$10k capital + funding-data backfill).
 * **June 29, 2026**: Infrastructure, not research — made it easy to *try combinations* of strategies. (1) Collapsed the triplicated strategy registry to one source of truth (`STRATEGY_REGISTRY`); adding a strategy is now one line. (2) Promoted the portfolio-of-sleeves blend from throwaway research scripts into a first-class, persisted `ggt lab --blend "<strategy>@<universe>,..."` command (validated inverse-vol/target-vol overlay; retired `multi_sleeve_research.py` + `portfolio_blend.py`). This is the tooling the parked crypto-carry sleeve will use to blend with the equity book — equity-only diversification stays a closed NO-GO. 305 lab tests green.
 * **July 6, 2026**: Ran the last untested equity-side lever — Kelly-criterion position sizing. Built `ensemble_kelly` (pooled, causal, expanding-window Kelly fraction sized off the strategy's own closed-trade history, falling back to the flat-3% baseline whenever there's no measurable edge yet, hard-capped at the live risk guard's 5% ceiling; 24 new tests, TDD, no look-ahead — the causal property was independently verified end-to-end). WFO'd 3 multipliers (0.25/0.5/1.0) × 17 SP500 folds — **rejected**: OOS Sharpe 0.98 < 1.12 baseline, drawdown widened to −17.0% vs −11%, and no multiplier won a majority of folds (best was 7/17, a fold-count fluke on the same order as `ensemble_ic`'s 3/17). Net: **position sizing is now closed** alongside entry-filtering, exit-tuning, and weighted-voting — every lever on the deployed equity book has been tried and rejected in honest walk-forward. The only remaining research direction is a genuinely orthogonal one: the parked crypto-carry sleeve (gated on >$10k capital + funding-data backfill).
-* **July 13, 2026**: Resolved the leverage-realism ambiguity in the 3-sleeve blend arc — re-ran the SP500+MidCap400+Nasdaq100 blend at a deployable `--max-leverage 1.0` instead of the earlier research default of 2.0x. Result: Sharpe **1.14**, MaxDD **−5.39%**, a full 0.17 Sharpe gain and roughly half the drawdown of the SP500 core alone on the same matched window. Also closed the "1.12 baseline" eval-window-drift question raised June 27 — audited and confirmed negligible (~10 days apart across all the levers that cite it). **Verdict: GO**, reopening the diversification arc closed June 27.
+* **July 13, 2026** *(⚠️ superseded 2026-08-19 — the 1.14 does not reproduce; re-measured at 0.68, see §2026-08-19 below)*: Resolved the leverage-realism ambiguity in the 3-sleeve blend arc — re-ran the SP500+MidCap400+Nasdaq100 blend at a deployable `--max-leverage 1.0` instead of the earlier research default of 2.0x. Result: Sharpe **1.14**, MaxDD **−5.39%**, a full 0.17 Sharpe gain and roughly half the drawdown of the SP500 core alone on the same matched window. Also closed the "1.12 baseline" eval-window-drift question raised June 27 — audited and confirmed negligible (~10 days apart across all the levers that cite it). **Verdict: GO**, reopening the diversification arc closed June 27.
 * **July 14, 2026**: Wired the leverage-realistic blend into the live `PaperTrader` — sleeve-aware position sizing (`RiskGuard.sleeve_slot_caps`/`sleeve_position_notional`), a margin pre-flight check enforcing the unlevered assumption before any real order, and a `--live` CLI flag. This blend, not the single-sleeve core, is now the deployed live-paper configuration. Also began building the first attempt at a genuinely new instrument class: `leveraged_rotation.py`, a breadth-driven 2x/3x leveraged-ETF long/inverse/cash rotation strategy across SP500/Nasdaq100/Russell2000 (not yet WFO-validated at this point — see July 16).
 * **July 16, 2026**: Ran the first honest WFO of the leveraged-ETF rotation strategy across all three universes — **rejected**: OOS Sharpe −0.14 to −0.37 vs SPY, MaxDD −80% to −89%, defensive-halt active on 22–23 of 26 folds everywhere. Built and tested a second, simpler design — `leveraged_trend.py`, a long-only SMA trend filter with a volatility-targeting overlay — as a genuinely different mechanism, not a re-sweep of the rejected one. Structurally much healthier (no persistent halt) and cut drawdown sharply, but **also rejected**: loses to naive buy-and-hold of the same ETF in every universe tested. Closes the leveraged-ETF instrument-class attempt, two mechanisms tried. Built the `research-snapshot` skill (regenerates `docs/research/RESEARCH_SNAPSHOT.md` and a self-contained edge-research agent prompt from source of truth) specifically to stop roadmap/next-steps drift like the one this update fixes; seeded 4 ranked candidates for the next research push (market-neutral pairs/stat-arb, post-earnings-announcement drift, options-derived signals, and revisiting the parked crypto-carry gate).
 * **July 17, 2026**: Built and WFO-tested Rank 1 of those 4 candidates — `pairs_stat_arb.py`, same-sector correlation-filtered spread mean reversion, the lab's first market-neutral (long+short) construction. **Rejected**: OOS Sharpe −0.42 vs SPY 0.88, aggregate WFE −0.16 (overfitting signature, not a modest edge), regime-halt active 28/42 folds, live-recommended params stable in only 1/42 folds. Market-neutrality itself was achieved (OOS correlation to SPY 0.092, beta 0.030) — the long/short mechanics work, the entry/exit signal doesn't carry an edge at this monthly cadence. Flagged an untested, decisive follow-up rather than closing the mechanism class outright: the `weights`-strategy harness only supports monthly rebalancing, while pairs/stat-arb conventionally needs daily/weekly monitoring — a real infrastructure change, not queued speculatively. Also merged a 14-candidate externally-sourced strategy backlog into `docs/research/WEB_RESEARCH_CANDIDATES.md` (first web-discovery-pipeline run) and parallelized the WFO harness's per-combo grid sweep across CPU cores (`wfo.py`'s `_sweep_fold_weights`, via `joblib.Parallel` — combos are independent, so this is a safe win on the 4-core research box; verified no test regressions, 552 passing). Full report: `docs/research/2026-07-17-pairs-stat-arb-nogo.md`. Same day,
@@ -555,6 +594,53 @@ benefits any future sparse-event strategy in this lab. Full report:
   Google Trends table has 0 rows). On-deck feasibility consolidated: A4/A6/A9/
   B2 infeasible, B3 blocked, A2 thin (~3 usable pairs), B1/B4 data-feasible
   but gated on crypto trading being dormant.
+
+### 2026-08-18 — Paper-trading correctness sweep
+
+Full review of the paper trader and lab surfaced 30 issues; Phases A–C
+landed as three merged commits. Fixes: split-check now keys on ex-date,
+the drawdown-halt peak is persisted rather than recomputed per run, order
+dedup, market-hours gating, error alerting, and a **WFO anchor leak** where
+the training anchor was shared across folds instead of set per fold
+(`2eafab1`). Also vectorized several hot paths and corrected cache
+behaviour (`67eed89`). Diagnosed a 2-week window (7/15–7/29) where the
+cron was silently running in dry-run mode, masking all trades.
+
+### 2026-08-19 — The baseline does not reproduce
+
+Fixed a sleeve-weight double-count driving allocation skew, plus a
+freshness-gate regression. Corrected two live accounting bugs: an MNST
+stock split booked as a −$893 phantom loss (now broker-native), and
+dividends the Alpaca paper account never credits (now accrued).
+
+Then re-ran the 17-fold SP500 WFO with a **pinned** eval window and the
+anchor fix. The cited baseline did not reproduce: **Sharpe 0.97 vs the
+claimed 1.12**, CAGR 7.8% vs 16.3% (roughly 2× overstated), gates 12/17 vs
+16/17. The 3-sleeve blend measured **0.68**. The original window is
+unrecoverable because `--eval-end` defaulted to "now" and drifted — which
+is now a standing rule: pin the window on any run you will cite.
+
+### 2026-08-20 — Root cause: the entire equity tape was one day early
+
+The SPY "duplicate rows" thread bottomed out in a single writer bug.
+`CachedYFinanceLoader._cache_to_db` passed a **tz-aware UTC** index into
+`ohlcv.timestamp`, a `timestamp WITHOUT time zone` column; Postgres rebased
+it into the session timezone (America/Los_Angeles), landing midnight UTC on
+the previous day at 17:00. **All 5.68M equity bars across 1,412 symbols**
+were stamped one calendar day early — the store ran Sun–Thu, with 1.07M
+Sunday bars against 168 Friday ones.
+
+Writer fixed and the table migrated in place (5,678,783 rows, zero
+conflict-drops); SPY's 826 stray rows dropped with zero coverage loss.
+Corrected benchmark: **SPY Sharpe 0.914** (2021-2026) vs 0.72 as previously
+read. See the banner at the top of this file for what it invalidates.
+
+### 2026-08-21 — Housekeeping
+
+Deployed the timestamp fix to the live container (it had been running
+pre-fix code, which would have re-poisoned the migrated table on the next
+cron run). Audited and corrected the documentation set against the actual
+code — see the changelog for detail.
 
 ---
 
