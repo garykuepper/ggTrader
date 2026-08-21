@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import time
 from datetime import date, datetime, timedelta, timezone
-
 from zoneinfo import ZoneInfo
 
 from ggTrader.paper.alpaca_broker import AlpacaBroker

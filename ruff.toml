@@ -1,6 +1,6 @@
 # Ruff configuration for ggTrader
 line-length = 100
-target-version = "py38"
+target-version = "py311"
 
 [lint]
 # Enable Pyflakes (F) and Pycodestyle (E, W) codes by default.

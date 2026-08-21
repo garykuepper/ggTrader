@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "ggTrader"
 version = "0.1.0"
 description = "A sleek algorithmic trading bot"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 dependencies = [
     "ccxt",
     "defusedxml",
@@ -57,7 +57,7 @@ include = ["ggTrader*"]
 
 [tool.black]
 line-length = 100
-target-version = ['py38']
+target-version = ['py311']
 include = '\.pyi?$'
 extend-exclude = '/(\.git|\.venv|archive)/'
 
