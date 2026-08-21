@@ -1,4 +1,12 @@
-"""CLI: write per-venue availability snapshots (Layer 1 of the universe pipeline).
+"""BROKEN -- ImportError on load; this script does not run.
+
+It imports ``ggTrader.data.core.venue_listings``, deleted in 82931a4
+("remove legacy trading/backtesting code"). ``data/core/`` now holds only
+base_loader, constants, index_constituents, stock_constants. It belongs to
+the crypto venue-registry pipeline, parked by choice (see docs/roadmap.md).
+Reviving it means restoring venue_listings.py; otherwise delete this file.
+
+CLI: write per-venue availability snapshots (Layer 1 of the universe pipeline).
 
     python scripts/update_venue_listings.py --venue all
     python scripts/update_venue_listings.py --venue binanceus

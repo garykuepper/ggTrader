@@ -1,4 +1,12 @@
-"""Script to generate the top traded USD pairs on Kraken using live CCXT data."""
+"""BROKEN -- ImportError on load; this script does not run.
+
+It imports ``ggTrader.data.core.venue_listings``, deleted in 82931a4
+("remove legacy trading/backtesting code"). ``data/core/`` now holds only
+base_loader, constants, index_constituents, stock_constants. It belongs to
+the crypto venue-registry pipeline, parked by choice (see docs/roadmap.md).
+Reviving it means restoring venue_listings.py; otherwise delete this file.
+
+Script to generate the top traded USD pairs on Kraken using live CCXT data."""
 
 import argparse
 import json

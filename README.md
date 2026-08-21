@@ -31,10 +31,19 @@ Strategies are split into two kinds:
 
 | Strategy Name | Type | Description |
 |------|------|-------------|
+| `ensemble` | Signal | **The deployed strategy.** Combines five indicators (Bollinger Bands, RSI, EMA cross, MACD divergence, volume-confirmed BB) and only trades when enough of them agree. This is what runs the live paper account. |
+| `ensemble_conviction` | Signal | As above, but sizes each position by how many indicators agreed. |
+| `bb_reversion` | Signal | Buys when price falls below a lower Bollinger Band and sells when it returns to the middle. |
+| `rsi_reversion` | Signal | Buys when RSI signals oversold, sells on recovery. |
 | `wfo_tournament` | Signal | Automatically finds the best moving average parameters by running a mini-competition on past data. |
 | `ema_cross` | Signal | A classic strategy that buys when a fast moving average crosses above a slow moving average, and sells when it crosses below. |
 | `xs_momentum` | Weight | Ranks stocks by their past 12-month returns and holds the top performers. |
 | `dual_momentum` | Weight | Ranks stocks by momentum, but moves the entire portfolio to safe cash if the overall market is falling. |
+
+The registry holds **36** strategies in total — the rest are closed NO-GO
+research kept for reproducibility. See
+[CLI Reference](docs/cli_reference.md) for the full list and
+[Research Snapshot](docs/research/RESEARCH_SNAPSHOT.md) for each verdict.
 
 ---
 
@@ -79,10 +88,20 @@ src/ggTrader/
 │   ├── simulate.py   # Runs the vectorbt backtesting math
 │   ├── strategy.py   # Strategy interfaces and blueprints
 │   └── strategies/   # Code for individual trading strategies
+├── paper/            # Live Paper Trading (runs on cron against Alpaca)
+│   ├── trader.py     # Orchestrates one trading cycle
+│   ├── alpaca_broker.py  # Broker API wrapper (paper account)
+│   ├── signal_runner.py  # Generates today's ensemble signals
+│   ├── overlay.py    # Multi-sleeve blending and vol targeting
+│   ├── risk.py       # Position caps, drawdown halt, margin pre-flight
+│   ├── persist.py    # Writes paper_trades / paper_snapshots
+│   └── ...           # notifier, feature_gate, split_check, dividend_check
 ├── data/             # Data Loaders (Yahoo Finance, database loaders)
 ├── utils/            # Shared utilities (database connections, config)
-└── cli/              # Main CLI entry subcommands (ggt lab | ingest | db)
+└── cli/              # Main CLI entry subcommands (ggt lab | paper | db | ingest*)
 ```
+
+\* `ggt ingest` is a non-functional stub — see [CLI Reference §3](docs/cli_reference.md).
 
 | Additional Files | Description |
 |---|---|
@@ -95,13 +114,21 @@ src/ggTrader/
 ## Documentation
 
 For a deeper dive, check out our detailed guides:
+- [**Next Steps**](docs/next_steps.md) — The current worklist. Start here if you are picking up work.
+- [**Roadmap**](docs/roadmap.md) — Goals, strategy status table, and project history.
+- [**Research Snapshot**](docs/research/RESEARCH_SNAPSHOT.md) — Every strategy tried and its verdict.
 - [**Installation Guide**](docs/installation.md) — How to set up Python, TimescaleDB, and Docker.
 - [**CLI Reference**](docs/cli_reference.md) — A breakdown of all commands, flags, and parameters.
 - [**Architecture Guide**](docs/architecture.md) — How the codebase is built, how data flows, and how the simulation works.
 - [**Changelog**](docs/changelog.md) — A record of updates made to the project.
+- [**Agent Guidelines**](agents.md) — The single source of truth for AI assistants working in this repo.
 
 ---
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT.
+
+> **Note:** this repository does not currently contain a `LICENSE` file — the
+> link that used to be here dangled. The MIT declaration above is the only
+> statement of license. Add a `LICENSE` file to make it enforceable.

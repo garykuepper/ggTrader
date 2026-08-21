@@ -10,7 +10,7 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 |---|---|
 | `ggt lab` | Run trading simulations (backtests) to see how strategies would have performed in the past. |
 | `ggt paper` | Run virtual trading (paper trading) using real-time data and fake money. |
-| `ggt ingest` | Download historical prices from crypto exchange APIs and save them to the database. |
+| `ggt ingest` | ⚠️ **Non-functional stub — does nothing.** See §3. |
 | `ggt db` | Run diagnostics, clean up, or manage the database. |
 
 ---
@@ -56,6 +56,39 @@ Strategies are divided into two types:
 | `ensemble_conviction` | **Conviction Voting:** Same as the ensemble strategy, but it sizes positions based on how many indicators agreed. It invests more money when the vote is unanimous. |
 | `conviction_bb` | **Band-Distance Sizing:** A Bollinger Band strategy that invests larger amounts of money the further the price plunges below the lower band (buying heavier when prices get cheaper). |
 
+#### Research strategies — closed, kept for reproducibility
+
+`STRATEGY_REGISTRY` holds **36** entries; the 12 above are the maintained
+core. The remaining 24 are research candidates that were built, walk-forward
+tested, and **closed NO-GO**. They still run, but none beat the deployed
+config and they are not maintained. Check
+`docs/research/RESEARCH_SNAPSHOT.md` for each verdict before spending a run
+on one — and note the caveat there about event-date studies having been
+measured on a day-shifted tape.
+
+| Group | Strategies |
+|---|---|
+| Ensemble variants | `ensemble_ic`, `ensemble_kelly` |
+| Alternative equity signals | `idio_vol`, `overnight_gap`, `max_effect`, `pairs_stat_arb` |
+| Leveraged-ETF rotation | `leveraged_rotation_sp500`, `leveraged_rotation_nasdaq100`, `leveraged_rotation_russell2000` |
+| Leveraged-ETF trend | `leveraged_trend_sp500`, `leveraged_trend_nasdaq100`, `leveraged_trend_russell2000` |
+| Event-driven ⚠️ | `pead`, `fomc_drift`, `index_deletion_fade`, `insider_cluster_buy`, `congress_trades` |
+| Positioning / flow | `short_interest`, `short_volume_ratio`, `retail_attention` |
+| Cross-asset overlays | `fx_hedge_overlay`, `treasury_curve`, `commodity_trend` |
+| Sentiment | `headline_sentiment` |
+
+⚠️ The event-driven group joins bars to real-world calendar dates and was
+therefore hit by the one-day-early timestamp bug fixed in `ef4e15f`. Their
+NO-GO verdicts are **not trustworthy** and need re-running before being
+cited as closed.
+
+To get the authoritative list at any time, read the registry rather than
+this table:
+
+```bash
+python -c "from ggTrader.lab.strategies import STRATEGY_REGISTRY as R; print(len(R)); print('\n'.join(sorted(R)))"
+```
+
 ---
 
 ### Optional Arguments:
@@ -63,9 +96,9 @@ Strategies are divided into two types:
 | Flag | Default | Description (Plain English) |
 |---|---|---|
 | `--market` | `equity` | Choose `equity` for stocks or `crypto` for cryptocurrencies. |
-| `--universe` | `sp500` | The stock list to trade: `sp500` (S&P 500), `nasdaq100` (Nasdaq-100), or `russell2000` (Russell 2000). |
+| `--universe` | `sp500` | The stock list to trade. Eight choices (`lab/cli.py:23-32`): `sp500`, `nasdaq100`, `russell2000`, `midcap400` (all four are real equity universes; `midcap400` is a **live production sleeve**), plus four narrow instrument baskets used only by their matching research strategies — `fx_hedge`, `fomc_treasury`, `commodity_trend`, `treasury_curve`. |
 | `--eval-start` | `2021-01-31` | The starting date for the test simulation (YYYY-MM-DD). |
-| `--eval-end` | Today's date | The ending date for the test simulation (YYYY-MM-DD). |
+| `--eval-end` | Today's date | The ending date for the test simulation (YYYY-MM-DD). ⚠️ **Always set this explicitly on any run whose number you will quote.** The default is "now", so it moves between runs and two results become silently incomparable. This is how the once-headline 1.12/1.14 Sharpe figures became unreproducible — their window is gone. The tell is SPY's own Sharpe changing between runs, which cannot happen if the window is fixed. |
 | `--top-n` | 50 | Limit the simulation to the top N most active/liquid stocks or coins. |
 | `--lookback` | 252 | How many trading days of history the strategy looks back at to calculate momentum (252 days ≈ 1 calendar year). |
 | `--skip` | 21 | How often the strategy updates its portfolio holdings (21 trading days ≈ 1 calendar month). |
@@ -86,7 +119,7 @@ If you don't specify any of these flags, the lab runs a single simulation using 
 When running a `--blend` optimization, you can customize the portfolio combination overlay using:
 - `--target-vol`: The annualized target volatility for the blended portfolio (default: `0.068` or 6.8%).
 - `--blend-window`: The lookback window in days for computing sleeve covariance and returns volatility (default: `60` days).
-- `--max-leverage`: Capping the portfolio leverage scale (default: `2.0` or 200%).
+- `--max-leverage`: Capping the portfolio leverage scale (default: `2.0` or 200%). ⚠️ **Production runs at `1.0`.** The default is deliberately left at 2.0 for unconstrained research comparisons, so a blend number computed at the default overstates what the live account can actually achieve. Pass `--max-leverage 1.0` for anything meant to describe the deployed config. This has caused an invalid run twice (2026-07-13 and 2026-08-18); see the comment at `src/ggTrader/lab/blend.py:84-87`.
 
 #### Customizing your Sweep range
 If you are running a `--sweep`, you can override the default parameter settings using the `--sweep-param` flag.
@@ -132,19 +165,35 @@ ggt lab --strategy xs_momentum --max-sector-count 2
 
 ### Understanding the Simulation Output
 
-When a simulation finishes, the results are stored in the database:
-- **`lab_runs` table**: Stores one row for every simulation you run. It includes the strategy name, parameters, when it was run, and total metrics like average return, Sharpe ratio (risk-adjusted return), and maximum drawdown (worst peak-to-trough loss).
-- **`lab_periods` table**: Stores how the strategy performed during each individual period/month of the simulation, allowing you to see month-by-month results.
+When a simulation finishes, results are written to **seven** tables, all
+created by `src/ggTrader/lab/persist.py`:
+
+| Table | What it holds |
+|---|---|
+| `lab_runs` | One row per simulation — strategy, market, eval window, params, status. |
+| `lab_summary` | The headline metrics per run (Sharpe, drawdown, etc.) plus the benchmark's, and gate diagnostics. |
+| `lab_returns` | The daily return series for the run. |
+| `lab_equity` | The daily equity curve, alongside the benchmark's. |
+| `lab_plans` | The actual holdings plan at each rebalance date, with eligibility counts and coverage. |
+| `lab_sweeps` / `lab_sweep_combos` | Parameter-sweep runs and the per-combination results. |
+
+> **Note:** earlier versions of this document (and of `agents.md`) referred to
+> a `lab_periods` table holding per-fold metrics. **No such table exists or
+> ever has.** Per-fold detail lives in `lab_returns` / `lab_equity`, and
+> per-run metrics in `lab_summary`.
 
 You can inspect these tables using SQL:
 
 ```sql
--- View the 10 most recent simulation runs
-SELECT run_id, strategy, config, created_at, mean_return, sharpe
-FROM lab_runs ORDER BY created_at DESC LIMIT 10;
+-- View the 10 most recent simulation runs with their headline metrics
+SELECT r.run_id, r.strategy, r.eval_start, r.eval_end, r.created_at, s.metrics
+FROM lab_runs r
+LEFT JOIN lab_summary s USING (run_id)
+ORDER BY r.created_at DESC LIMIT 10;
 
--- See the month-by-month details for a specific run
-SELECT * FROM lab_periods WHERE run_id = '<run_id>' ORDER BY fold_start;
+-- Pull the equity curve for a specific run
+SELECT date, strategy_equity, benchmark_equity
+FROM lab_equity WHERE run_id = '<run_id>' ORDER BY date;
 ```
 
 ---
@@ -167,7 +216,24 @@ ggt paper
 
 ---
 
-## 3. ggt ingest (Downloading Data)
+## 3. ggt ingest (Downloading Data) — ⚠️ NON-FUNCTIONAL
+
+> **This command does not work and never completes any ingestion.**
+> `src/ggTrader/cli/cmd_ingest.py:26-31` hardcodes a two-symbol crypto list
+> with the actual `ingestor.sync_symbol_ohlcv(sym)` call **commented out**,
+> then prints `Ingestion complete.` It reports success having written
+> nothing — which is worse than failing, so do not trust its output.
+>
+> **How data actually gets loaded:** equity OHLCV is fetched on demand and
+> cached to TimescaleDB by `CachedYFinanceLoader`
+> (`src/ggTrader/data/live/cached_yfinance_loader.py`), transparently, when
+> a lab or paper run asks for symbols it does not already have. There is
+> nothing to run by hand. Crypto ingestion is parked along with the rest of
+> the crypto arc.
+>
+> The documentation below describes the *intended* interface, kept for
+> whenever the command is either implemented or removed.
+
 
 Downloads historical candlestick price data (OHLCV: Open, High, Low, Close, Volume) from cryptocurrency exchanges and stores them in your local database so your simulations can run offline.
 
