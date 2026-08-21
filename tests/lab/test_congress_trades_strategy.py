@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-from ggTrader.lab.strategies.congress_trades import CongressTradeMirrorStrategy
 
+from ggTrader.lab.strategies.congress_trades import CongressTradeMirrorStrategy
 from ggTrader.lab.strategy import LabConfig
 
 

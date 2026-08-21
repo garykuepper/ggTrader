@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-from ggTrader.lab.strategies.index_deletion import IndexDeletionFadeStrategy, deletion_events
 
+from ggTrader.lab.strategies.index_deletion import IndexDeletionFadeStrategy, deletion_events
 from ggTrader.lab.strategy import LabConfig
 
 

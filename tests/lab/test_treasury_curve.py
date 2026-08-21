@@ -8,13 +8,13 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
+
 from ggTrader.lab.strategies.treasury_curve import (
     TREASURY_CURVE_UNIVERSE,
     TreasuryCurveStrategy,
     curve_regime_weights,
     curve_slope_zscore,
 )
-
 from ggTrader.lab.strategy import LabConfig
 
 

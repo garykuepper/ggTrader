@@ -3,7 +3,8 @@
 import numpy as np
 import pandas as pd
 
-from ggTrader.lab.strategies.idio_vol import idiosyncratic_variance
+from ggTrader.lab.strategies.idio_vol import IdioVolStrategy, idiosyncratic_variance
+from ggTrader.lab.strategy import LabConfig
 
 
 def _idx(n, start="2020-01-01"):
@@ -67,10 +68,6 @@ def _ohlcv_from_returns(returns: pd.DataFrame) -> pd.DataFrame:
     out = pd.concat(frames, axis=1)
     out.columns = out.columns.set_names(["symbol", "field"])
     return out
-
-
-from ggTrader.lab.strategies.idio_vol import IdioVolStrategy
-from ggTrader.lab.strategy import LabConfig
 
 
 class TestIdioVolStrategy:

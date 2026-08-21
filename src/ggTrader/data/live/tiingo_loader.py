@@ -33,9 +33,7 @@ MIN_REQUEST_INTERVAL = 3600.0 / REQUESTS_PER_HOUR  # 72s between requests
 def _get_api_key() -> str:
     key = os.environ.get("TIINGO_API_KEY", "")
     if not key:
-        raise ValueError(
-            "TIINGO_API_KEY not set. Get a free key at https://www.tiingo.com"
-        )
+        raise ValueError("TIINGO_API_KEY not set. Get a free key at https://www.tiingo.com")
     return key
 
 
@@ -80,8 +78,7 @@ class TiingoDataLoader(BaseDataLoader):
         end_str = end_date.strftime("%Y-%m-%d") if end_date else None
 
         self.logger.info(
-            f"Fetching {len(symbols)} stocks from Tiingo"
-            f" ({tiingo_freq}): {start_str} -> {end_str}"
+            f"Fetching {len(symbols)} stocks from Tiingo ({tiingo_freq}): {start_str} -> {end_str}"
         )
 
         frames: list[pd.DataFrame] = []
@@ -98,8 +95,7 @@ class TiingoDataLoader(BaseDataLoader):
 
         if failed:
             self.logger.warning(
-                f"Tiingo: {len(failed)} symbols returned no data "
-                f"(first 10: {failed[:10]})"
+                f"Tiingo: {len(failed)} symbols returned no data (first 10: {failed[:10]})"
             )
 
         if not frames:

@@ -13,14 +13,14 @@ import json
 import os
 
 import ccxt
-
-from ggTrader.data.core.constants import STABLE_BASES, SYMBOL_MAPPING
 from ggTrader.data.core.venue_listings import (
     DEFAULT_LISTINGS_DIR,
     SUPPORTED_VENUES,
     filter_to_listed,
     load_venue_listing_symbols,
 )
+
+from ggTrader.data.core.constants import STABLE_BASES, SYMBOL_MAPPING
 
 SYMBOL_TO_NAME = {
     "AAVE": "Aave",

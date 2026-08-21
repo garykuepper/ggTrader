@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
+
 from ggTrader.lab.fomc_calendar import (
     parse_historical_page,
     parse_main_calendar_page,

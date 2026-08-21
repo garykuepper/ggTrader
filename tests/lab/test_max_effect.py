@@ -3,8 +3,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-from ggTrader.lab.strategies.max_effect import MaxEffectStrategy, trailing_max_return
 
+from ggTrader.lab.strategies.max_effect import MaxEffectStrategy, trailing_max_return
 from ggTrader.lab.strategy import LabConfig
 
 

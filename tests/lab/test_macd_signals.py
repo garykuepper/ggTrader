@@ -35,8 +35,8 @@ class TestMACDSignals:
     def test_entries_are_boolean(self):
         close = _close(200)
         entries, exits = macd_signals(close, 12, 26, 9, 20)
-        assert entries.dtypes.apply(lambda d: d == bool).all()
-        assert exits.dtypes.apply(lambda d: d == bool).all()
+        assert entries.dtypes.apply(lambda d: d == "bool").all()
+        assert exits.dtypes.apply(lambda d: d == "bool").all()
 
     def test_no_entries_during_warmup(self):
         close = _close(200)

@@ -71,8 +71,8 @@ class TestVolumeBBSignals:
     def test_entries_are_boolean(self):
         close, vol = _close_and_volume(200)
         entries, exits = volume_bb_signals(close, vol, 20, 2.0, 20, 1.5)
-        assert entries.dtypes.apply(lambda d: d == bool).all()
-        assert exits.dtypes.apply(lambda d: d == bool).all()
+        assert entries.dtypes.apply(lambda d: d == "bool").all()
+        assert exits.dtypes.apply(lambda d: d == "bool").all()
 
     def test_higher_vol_mult_fewer_entries(self):
         """Stricter volume filter -> fewer entries."""

@@ -7,6 +7,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
+
 from ggTrader.lab.strategies.fx_hedge_overlay import (
     FX_HEDGE_PAIRS,
     FxHedgeOverlayStrategy,
@@ -15,7 +16,6 @@ from ggTrader.lab.strategies.fx_hedge_overlay import (
     trend_signal,
     unhedged_weight,
 )
-
 from ggTrader.lab.strategy import LabConfig
 
 

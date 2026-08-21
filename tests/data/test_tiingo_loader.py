@@ -8,8 +8,10 @@ import pytest
 
 @pytest.fixture()
 def loader():
-    with patch.dict("os.environ", {"TIINGO_API_KEY": "test-key-123"}), \
-         patch("ggTrader.data.live.tiingo_loader.MIN_REQUEST_INTERVAL", 0.0):
+    with (
+        patch.dict("os.environ", {"TIINGO_API_KEY": "test-key-123"}),
+        patch("ggTrader.data.live.tiingo_loader.MIN_REQUEST_INTERVAL", 0.0),
+    ):
         from ggTrader.data.live.tiingo_loader import TiingoDataLoader
 
         yield TiingoDataLoader()

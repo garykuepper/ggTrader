@@ -52,8 +52,7 @@ class YFinanceDataLoader(BaseDataLoader):
         end = (end_ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
 
         self.logger.info(
-            f"Fetching {len(symbols)} stocks from yfinance"
-            f" ({yf_interval}): {start} -> {end}"
+            f"Fetching {len(symbols)} stocks from yfinance ({yf_interval}): {start} -> {end}"
         )
 
         try:

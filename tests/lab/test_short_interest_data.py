@@ -135,7 +135,8 @@ class TestAvailableAsOf:
         )
         asof = pd.Timestamp("2026-06-20")  # 19 days after 06-01, only 5 after 06-15
         out = available_as_of(df, asof, lag_days=PUBLISH_LAG_DAYS)
-        # 06-01 settlement (+15 lag = 06-16) has been published by 06-20; 06-15 (+15 = 06-30) has not.
+        # 06-01 settlement (+15 lag = 06-16) has been published by 06-20;
+        # 06-15 (+15 = 06-30) has not.
         assert list(out["settlement_date"].dt.strftime("%Y-%m-%d")) == ["2026-06-01"]
 
     def test_includes_row_exactly_at_the_lag_boundary(self):

@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-from ggTrader.lab.strategies.short_volume_ratio import ShortVolumeRatioStrategy
 
+from ggTrader.lab.strategies.short_volume_ratio import ShortVolumeRatioStrategy
 from ggTrader.lab.strategy import LabConfig
 
 
@@ -110,7 +110,6 @@ class TestSelect:
         )
         plan = strat.select(asof, ohlcv, symbols)
         assert plan
-        total_weight = sum(p["weight"] for p in plan) - sum(p["weight"] for p in plan)
         for p in plan:
             assert p["weight"] > 0
 

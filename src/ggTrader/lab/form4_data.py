@@ -14,13 +14,16 @@ from __future__ import annotations
 
 import json
 import urllib.request
-from typing import Callable, Iterable, List
+from typing import TYPE_CHECKING, Callable, Iterable, List
 
 import pandas as pd
 from defusedxml import ElementTree as ET
 from sqlalchemy import text
 
 from ggTrader.lab.persist import get_engine
+
+if TYPE_CHECKING:  # annotation-only; defusedxml returns stdlib Element instances
+    from xml.etree.ElementTree import Element
 
 COMPANY_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"

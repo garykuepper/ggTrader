@@ -14,6 +14,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
+
 from ggTrader.lab.event_study import (
     event_study_test,
     in_position_mask,

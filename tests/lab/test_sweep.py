@@ -135,8 +135,8 @@ def test_ema_cross_sweep_signals_returns_all_combos():
     for key, st in result.items():
         assert isinstance(st, SignalTargets)
         assert set(st.entries.columns) == {"A", "B"}
-        assert (st.entries.dtypes == bool).all()
-        assert (st.exits.dtypes == bool).all()
+        assert (st.entries.dtypes == "bool").all()
+        assert (st.exits.dtypes == "bool").all()
 
 
 def test_ema_cross_sweep_signals_matches_single_run():
@@ -315,7 +315,7 @@ def test_format_results_table_sorted_by_sharpe():
     )
     lines = table.strip().split("\n")
     # First data row (after header lines) should be the higher-sharpe combo
-    data_lines = [l for l in lines if l.strip().startswith(("1", "2"))]
+    data_lines = [ln for ln in lines if ln.strip().startswith(("1", "2"))]
     assert "b" in data_lines[0]
     assert "a" in data_lines[1]
 

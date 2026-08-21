@@ -7,13 +7,13 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
+
 from ggTrader.lab.strategies.commodity_trend import (
     COMMODITY_TREND_UNIVERSE,
     CommodityTrendStrategy,
     cross_sectional_momentum_scores,
     regime_vol_zscore,
 )
-
 from ggTrader.lab.strategy import LabConfig
 
 

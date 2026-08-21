@@ -41,7 +41,6 @@ def main() -> None:
     cfg = LabConfig(min_history_bars=400)
     eval_start, eval_end = "2016-01-01", str(pd.Timestamp.now().date())
     es = pd.Timestamp(eval_start, tz="UTC")
-    ee = pd.Timestamp(eval_end, tz="UTC")
     warmup_days = int(cfg.min_history_bars * 1.6) + 60
     data_start = str((es - pd.Timedelta(days=warmup_days)).date())
 
