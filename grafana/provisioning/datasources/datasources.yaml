@@ -1,0 +1,18 @@
+apiVersion: 1
+
+# The credential is injected from the environment (see the grafana service in
+# docker-compose.yaml) rather than committed here. Override by setting
+# GGTRADER_DB_USER / GGTRADER_DB_PASSWORD in .env; both default to the local
+# dev value so a fresh clone works without configuration.
+datasources:
+  - name: ggTraderDB
+    type: postgres
+    uid: ggTraderDB
+    url: host.docker.internal:5433
+    database: ggtrader
+    user: $GGTRADER_DB_USER
+    jsonData:
+      sslmode: 'disable'
+      postgresVersion: 1600
+    secureJsonData:
+      password: $GGTRADER_DB_PASSWORD

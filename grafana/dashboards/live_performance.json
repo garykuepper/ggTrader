@@ -1,0 +1,240 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Portfolio Value",
+      "type": "timeseries",
+      "datasource": {
+        "type": "postgres",
+        "uid": "ggTraderDB"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "ggTraderDB"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT run_date AS \"time\", portfolio_value AS \"Portfolio\", cash AS \"Cash\" FROM paper_snapshots ORDER BY run_date ASC",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {},
+      "description": "Total account value and uninvested cash, one point per trading run."
+    },
+    {
+      "id": 2,
+      "title": "Latest Value",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "ggTraderDB"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "ggTraderDB"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT portfolio_value FROM paper_snapshots ORDER BY run_date DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "title": "Cash Idle %",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "ggTraderDB"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "ggTraderDB"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 100.0 * cash / NULLIF(portfolio_value, 0) AS \"idle_pct\" FROM paper_snapshots ORDER BY run_date DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {},
+      "description": "Share of the account sitting in cash. Persistently high idle cash has been a recurring finding -- the strategy under-deploys."
+    },
+    {
+      "id": 4,
+      "title": "Open Positions",
+      "type": "timeseries",
+      "datasource": {
+        "type": "postgres",
+        "uid": "ggTraderDB"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "ggTraderDB"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT run_date AS \"time\", (SELECT count(*) FROM jsonb_object_keys(positions)) AS \"Positions\" FROM paper_snapshots ORDER BY run_date ASC",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {},
+      "description": "positions is a JSONB object keyed by symbol, so this counts keys."
+    },
+    {
+      "id": 5,
+      "title": "Daily Change",
+      "type": "timeseries",
+      "datasource": {
+        "type": "postgres",
+        "uid": "ggTraderDB"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "ggTraderDB"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT run_date AS \"time\", portfolio_value - lag(portfolio_value) OVER (ORDER BY run_date) AS \"Change\" FROM paper_snapshots ORDER BY run_date ASC",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {},
+      "description": "Run-over-run change. paper_trades records submitted orders and has no realized-PnL column, so per-trade PnL cannot be shown honestly."
+    },
+    {
+      "id": 6,
+      "title": "Recent Orders",
+      "type": "table",
+      "datasource": {
+        "type": "postgres",
+        "uid": "ggTraderDB"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "ggTraderDB"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT created_at AS \"Time\", run_date AS \"Run\", side AS \"Side\", symbol AS \"Symbol\", amount AS \"Amount\", order_id AS \"Order ID\" FROM paper_trades ORDER BY created_at DESC LIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {},
+      "description": "Orders SUBMITTED by the trader, not closed round-trips."
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": [
+    "ggtrader",
+    "paper-trading"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "ggTrader Paper Trading",
+  "uid": "ggtrader_live",
+  "version": 1,
+  "weekStart": ""
+}

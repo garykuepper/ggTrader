@@ -31,8 +31,12 @@ services:
     ports:
       - "3002:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
+      # Consumed by grafana/provisioning/datasources/datasources.yaml so the
+      # DB credential is not committed. Falls back to the local dev default.
+      - GGTRADER_DB_USER=${GGTRADER_DB_USER:-ggtrader}
+      - GGTRADER_DB_PASSWORD=${GGTRADER_DB_PASSWORD:-ggtrader}
     volumes:
       - ggtrader_grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -41,5 +45,6 @@ services:
       - "host.docker.internal:host-gateway"
 
 volumes:
-  ggtrader_pgdata:
+  # NB: no postgres volume here -- the database is the separately-managed
+  # ggtrader_db container, reached via host.docker.internal:5433.
   ggtrader_grafana_data:

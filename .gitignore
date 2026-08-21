@@ -38,7 +38,8 @@ scratch/
 # --- ggTrader Data & Logs ---
 logs/
 *.log
-grafana/
+# grafana/ IS tracked: provisioning + dashboards are project assets, and the
+# DB credential is injected from the environment rather than stored in them.
 data/raw/
 data/parquet/
 data/backups/
