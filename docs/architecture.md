@@ -1,6 +1,6 @@
 # Architecture Guide
 
-This guide explains how the ggTrader codebase is structured and how its components work together. For commands and usage see the [CLI Reference](cli_reference.md); for developer-specific guidelines, see [Developer Guidelines](../agents.md).
+This guide explains how the ggTrader codebase is structured and how its components work together. For commands and usage see the [CLI Reference](cli_reference.md); for developer-specific guidelines, see [Developer Guidelines](../AGENTS.md).
 
 ---
 

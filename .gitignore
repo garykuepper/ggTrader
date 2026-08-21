@@ -1,15 +1,21 @@
 # --- IDE & System ---
 .idea/
 .vscode/
-.cursor/
-.cursorrules
 .cache/
 .fsspec-cache/
-.agent/
-.claude/
 .hermes/
 .kilo/
 .opencode/
+
+# Claude Code: track the shared project assets (skills, hooks, project
+# settings) so they survive a re-clone and are the same for everyone; keep
+# machine-local overrides and scratch worktrees out.
+.claude/*
+!.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
+.claude/settings.local.json
+.claude/worktrees/
 .venv/
 __pycache__/
 *.py[cod]

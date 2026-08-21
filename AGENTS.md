@@ -88,23 +88,47 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
    * **Module Docstrings**: One-line summary of the file's purpose at the top.
    * **Function/Class Docstrings**: Brief summary of purpose (Google Style).
    * **Inline Comments**: Explain *WHY*, not *WHAT*. Avoid obvious comments.
-4. **Single Source of Truth**: Core logic must live in `src/`. Do not duplicate definitions across files.
-5. **Scripts**: Utility scripts in `scripts/` should have a `main()` entry point and `argparse` for inputs.
-6. **Symbol Normalization**: Use the `SYMBOL_MAPPING` table in `data/core/constants.py` to convert exchange-specific prefixed symbols (e.g., `XBT`, `XETH`) to standard tickers (`BTC`, `ETH`).
-9. **Path Safety**: Always use `os.path.join` or `pathlib.Path` for file paths. Resolve project root dynamically.
-10. **Error Handling**: Data loading functions must raise descriptive exceptions (e.g., `ValueError`, `FileNotFoundError`) on failure. Avoid returning `None` from functions expected to return iterables (handle empty data by returning empty structures).
-11. **Vectorization First**: Avoid iterating over rows in DataFrames for signal calculation. Use `vectorbt`, `numpy`, or `pandas` vectorized operations. All strategy signals must be fully vectorized arrays (dates × symbols) before being passed to `vectorbt.Portfolio`.
+4. **Linting is a gate, not a suggestion**: code must pass `ruff check .` and `ruff format .`. Unused imports, unused variables, and lines over 100 characters must be resolved before merging — `ruff check --fix` handles most of it. This is enforced automatically by the `PostToolUse` hook in `.claude/hooks/ruff-fix.sh`, and config lives in `ruff.toml` (`line-length = 100`, rules `E`/`F`/`W`/`I`).
+5. **Single Source of Truth**: Core logic must live in `src/`. Do not duplicate definitions across files.
+6. **Module structure**: constants at module level (top), not buried inside functions; execution logic behind an `if __name__ == "__main__":` guard.
+7. **Scripts**: Utility scripts in `scripts/` should have a `main()` entry point and `argparse` for inputs, and every script must handle `--help` gracefully.
+8. **Resilient, resumable scripts**: long-running work (backfills, ingestion, WFO drivers) must log and continue on recoverable errors rather than crashing, and must checkpoint for resumability if it can run longer than ~5 minutes. Several drivers in `scripts/` run for 30-60 minutes; losing an hour to an unhandled exception at minute 55 is the failure this prevents.
+9. **Imports**: absolute, rooted at `src` (`from ggTrader.<package> import ...`) for cross-package access; relative imports (`from .module import X`) only inside a package's `__init__.py`. Avoid circular imports by keeping `utils` free of domain logic.
+10. **Dependency discipline**: record new libraries in `pyproject.toml` as you add them. Never `pip install` something the project then depends on without recording it.
+11. **Symbol Normalization**: Use the `SYMBOL_MAPPING` table in `data/core/constants.py` to convert exchange-specific prefixed symbols (e.g., `XBT`, `XETH`) to standard tickers (`BTC`, `ETH`).
+12. **Path Safety**: Always use `os.path.join` or `pathlib.Path` for file paths. Resolve project root dynamically.
+13. **Error Handling**: Data loading functions must raise descriptive exceptions (e.g., `ValueError`, `FileNotFoundError`) on failure. Avoid returning `None` from functions expected to return iterables (handle empty data by returning empty structures).
+14. **Vectorization First**: Avoid iterating over rows in DataFrames for signal calculation. Use `vectorbt`, `numpy`, or `pandas` vectorized operations. All strategy signals must be fully vectorized arrays (dates × symbols) before being passed to `vectorbt.Portfolio`.
 
-### Jupyter Notebook Standards
-1. **Imports from `src`**: Notebooks must import core logic and indicators from `src`. Do not define complex strategy classes inline. Notebooks are for orchestration, analysis, and visualization only.
-2. **Path Setup**: Always include the standard `sys.path` setup block at the top to resolve project root.
-3. **Sequential Execution**: Notebooks must run top-to-bottom without errors.
+### SQL conventions on the `ohlcv` table
+
+Symbols are stored as `ASSET-QUOTE` (e.g. `BTC-USD`). Split them with
+PostgreSQL/TimescaleDB functions rather than string slicing in Python:
+
+* **Asset**: `split_part(symbol, '-', 1)`
+* **Quote**: `split_part(symbol, '-', 2)`
+* **Cross-asset ranking**: prefer notional volume (`volume * close`) over raw
+  `volume`, so a $3 stock and a $600 stock are comparable.
+
+Also note `ohlcv.timestamp` is `timestamp WITHOUT time zone` holding **naive
+UTC**. Never write a tz-aware datetime into it — Postgres will rebase the
+offset into the session timezone and silently shift every bar. This caused a
+whole-tape corruption; see `data/live/cached_yfinance_loader.py:215-226`.
+
+### Never delete
+
+`data/` and any database configuration are off-limits to automated cleanup.
+Generated artifacts under `results/` and stray logs are fair game once
+confirmed unreferenced — but check for inbound references from tracked docs
+first, since several research reports cite log files by name.
 
 ---
 
 ## 5. Documentation Standards
 
 * **Single Source of Truth**: Core architectural changes (e.g., database transitions, new CLI commands) must be reflected across all documentation in `docs/` and `README.md`.
+* **Where docs live**: supplemental documentation belongs in `docs/`, linked with relative paths so it resolves both on disk and on GitHub. Point-in-time documents (snapshots, one-off reports) go to `docs/archive/` once superseded.
+* **Periodic review**: after any major refactor, audit the docs and purge references to deleted modules, archived scripts, and removed commands. This is not optional housekeeping — stale instructions actively mislead. The 2026-08-21 audit found `AGENTS.md` itself asserting a `lab_periods` table that has never existed and denying the existence of the live trading path, and four separate competing ruleset files naming symbols deleted months earlier.
 * **Changelog**: Add an entry to `docs/changelog.md` whenever strategies, data sources, or lab infrastructure changes. Include what changed, why, and research results if available.
 * **CLI Reference**: Keep `docs/cli_reference.md` synchronized with actual `ggt` commands and flags. Document `ggt lab`, `ggt db`, and `ggt paper` subcommands.
 * **Architecture Guide**: Maintain `docs/architecture.md` as the authority on lab structure, data flow, and module responsibilities.

@@ -143,7 +143,7 @@ The container is pre-configured to reach the database running on your host machi
 
 - [CLI Reference](cli_reference.md) — How to use all the different command-line flags.
 - [Architecture Guide](architecture.md) — How the system works under the hood.
-- [Developer Guidelines](../agents.md) — Coding standards for modifying the project.
+- [Developer Guidelines](../AGENTS.md) — Coding standards for modifying the project.
 
 ---
 

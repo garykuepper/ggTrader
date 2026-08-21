@@ -177,7 +177,7 @@ created by `src/ggTrader/lab/persist.py`:
 | `lab_plans` | The actual holdings plan at each rebalance date, with eligibility counts and coverage. |
 | `lab_sweeps` / `lab_sweep_combos` | Parameter-sweep runs and the per-combination results. |
 
-> **Note:** earlier versions of this document (and of `agents.md`) referred to
+> **Note:** earlier versions of this document (and of `AGENTS.md`) referred to
 > a `lab_periods` table holding per-fold metrics. **No such table exists or
 > ever has.** Per-fold detail lives in `lab_returns` / `lab_equity`, and
 > per-run metrics in `lab_summary`.
@@ -305,6 +305,6 @@ Results are saved as a JSON file in the `results/` folder.
 
 ---
 
-*See the [Architecture Guide](architecture.md) for how these components fit together, and [Developer Guidelines](../agents.md) for coding standards.*
+*See the [Architecture Guide](architecture.md) for how these components fit together, and [Developer Guidelines](../AGENTS.md) for coding standards.*
 
 *Back to [README.md](../README.md).*

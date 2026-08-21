@@ -121,7 +121,7 @@ For a deeper dive, check out our detailed guides:
 - [**CLI Reference**](docs/cli_reference.md) — A breakdown of all commands, flags, and parameters.
 - [**Architecture Guide**](docs/architecture.md) — How the codebase is built, how data flows, and how the simulation works.
 - [**Changelog**](docs/changelog.md) — A record of updates made to the project.
-- [**Agent Guidelines**](agents.md) — The single source of truth for AI assistants working in this repo.
+- [**Agent Guidelines**](AGENTS.md) — The single source of truth for AI assistants working in this repo.
 
 ---
 
