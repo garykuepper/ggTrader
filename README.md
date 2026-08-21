@@ -127,8 +127,4 @@ For a deeper dive, check out our detailed guides:
 
 ## License
 
-MIT.
-
-> **Note:** this repository does not currently contain a `LICENSE` file — the
-> link that used to be here dangled. The MIT declaration above is the only
-> statement of license. Add a `LICENSE` file to make it enforceable.
+MIT. See [LICENSE](LICENSE).

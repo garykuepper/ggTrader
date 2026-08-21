@@ -1,5 +1,83 @@
 # Changelog
 
+## 2026-08-21
+
+### Housekeeping: deployed the tape fix, then reconciled the docs with the code
+
+**Deployed the timestamp fix to live.** The 08-20 migration corrected the
+`ohlcv` table but left the `ggtrader_live` container running the pre-fix
+image (built 08-19 18:49). `src/` is not bind-mounted, so it would have
+written day-early rows straight back into the migrated table on that day's
+12:45 cron run. Pushed, rebuilt via CI, pulled, recreated at 11:33 PT.
+*Standing lesson: a data migration is not finished until the code that writes
+that data is deployed.*
+
+**Corrected `AGENTS.md` against the actual code.** It had gone 66 commits
+without a substantive edit and had drifted into false claims: a `lab_periods`
+table that has never existed (named four times), "three commands" when there
+are four, and "live trading has been removed" while `src/ggTrader/paper/` had
+been trading a live Alpaca paper account for two months.
+
+**Consolidated every agent ruleset into one file.** Renamed
+`agents.md` → `AGENTS.md` (the lowercase name is likely why opencode/kilo
+never loaded it) and removed eleven competing, untracked rule files
+(`.cursorrules`, `.agent/rules/*`, `.cursor/rules/*`) that instructed agents
+to use symbols deleted months earlier. `CLAUDE.md` remains a thin pointer.
+
+**Flagged the superseded research numbers** in `roadmap.md` and
+`RESEARCH_SNAPSHOT.md`, which still presented the blend's 1.14 Sharpe and the
+core's 1.12 as current three days after both were re-measured at 0.68 and
+0.97.
+
+**Resynced the reference docs**: `cli_reference.md` (12 of 36 strategies, 3
+of 8 universes, the same `lab_periods` fiction), `README.md` (omitted
+`ensemble`, the deployed strategy), and `.env.example` (listed 11 keys
+nothing reads, omitted 6 that are required).
+
+**Fixed `daily-trader-check`**, which read the retired crypto tables and so
+reported a healthy trader as idle, and **fixed the Grafana dashboard**, which
+queried `equity_curves`/`trades` (0 rows) and had rendered empty for months.
+Both now read `paper_snapshots`/`paper_trades`.
+
+**Infrastructure**: added a CI test/lint gate (there was none) and cleared
+the 28 ruff errors that absence had allowed to accumulate; declared and
+pinned `ruff` (never a declared dependency despite running on every edit);
+dropped `black` (configured but invoked by nothing); corrected
+`requires-python` from a false `>=3.8` to `>=3.11`; started tracking
+`.claude/` skills, hooks and settings; added the missing `LICENSE`.
+
+## 2026-08-20
+
+### Root cause: the entire equity tape was stamped one day early
+
+`CachedYFinanceLoader._cache_to_db` passed a **tz-aware UTC** index into
+`ohlcv.timestamp`, a `timestamp WITHOUT time zone` column. Postgres rebased
+the offset into the session timezone (America/Los_Angeles), landing midnight
+UTC on the previous day at 17:00. **All 5.68M equity bars across 1,412
+symbols were one calendar day early** — the store ran Sun–Thu, with 1,065,046
+Sunday bars against 168 Friday ones.
+
+Writer fixed (strip the tz before insert) and the table migrated in place:
+`DELETE`/`INSERT` of 5,678,783 rows, zero conflict-drops, one transaction.
+SPY's 826 stray rows — from a second, correctly-dated benchmark writer, which
+is why SPY alone showed duplicate days — were dropped with zero coverage loss.
+
+What it invalidates is **not uniform**, and the distinction matters:
+
+- **Bar-to-bar returns survive.** The shift was uniform across all symbols,
+  so pure price-series backtest results remain directionally usable.
+- **Every SPY baseline does not.** SPY was additionally duplicated, deflating
+  it. Corrected: **Sharpe 0.914** (2021-2026) / 1.433 (2023-2026), versus
+  0.72 / 1.00 as previously read.
+- **Event-date studies carried a genuine one-day lookahead** — the bar
+  labeled D held D+1's outcome. This hits `fomc_drift`, PEAD, Form 4 insider,
+  congress PTR, index add/delete and short-volume; their NO-GO verdicts are
+  not trustworthy.
+
+It also explains three symptoms previously patched at the surface: the
+`fomc_drift` calendar-date workaround, the freshness gate halting on an
+apparently-stale newest bar, and the SPY duplicate-row investigation.
+
 ## 2026-08-19
 
 ### fix(paper): accrue dividends the Alpaca PAPER account never credits
@@ -360,6 +438,40 @@ together since several touch the same lines:
   (+7 cases for the new peak/staleness/run-date helpers), `test_notifier.py`
   (+4 cases for the errors section and suspect banner). Full paper suite:
   143 passed.
+
+## 2026-06-27 → 2026-08-17
+
+### Summary section — not reconstructed per commit
+
+This period covers **170 commits** and was never written up as it happened.
+Rather than fabricate day-by-day entries after the fact, this is a thematic
+summary; `git log --since=2026-06-27 --until=2026-08-18` has the detail.
+
+**The July research program.** The bulk of the period. Roughly sixteen
+strategy candidates were built, gated, walk-forward tested and **closed
+NO-GO**, each with a report under `docs/research/`: leveraged index rotation
+and trend following, index-deletion fade, max-effect, pairs stat-arb, PEAD,
+short interest, congress trades, insider cluster buys, short-volume ratio,
+commodity trend, FOMC drift, FX-hedge overlay, treasury curve, and headline
+sentiment. Supporting data pipelines were built for several (Form 4 backfill,
+FINRA short volume, House PTR, FRED, an FOMC calendar and an event-study
+harness). The consistent shape — plausible premise, correctly caught by the
+NDH/DSR gates at full scale — became the finding itself: daily-bar large-cap
+equity research is close to arbitraged out for this system.
+
+**The 3-sleeve blend went live** (July 13-14), wired into `PaperTrader` with
+sleeve-aware sizing, a margin pre-flight check and the `--live` flag, on a
+measured Sharpe of 1.14. *That number was later found not to reproduce — see
+the 2026-08-19 entry.*
+
+**Registry unification and the blend CLI** — a single `STRATEGY_REGISTRY`
+source replacing three duplicated copies, and `ggt lab --blend`.
+
+**Notable fixes**: Kelly position sizing closed NO-GO; a pairs-cache bug that
+ignored the passed DataFrame and poisoned A/B probes; a filing-lag and a
+SPY-dedup bug in the research harness; WFO parallelized with joblib; and
+(July 29) the cron wrapper flipped to `--live`, ending a two-week window in
+which the scheduled run had been silently dry-running and masking all trades.
 
 ## 2026-06-26
 
