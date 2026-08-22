@@ -1370,6 +1370,25 @@ class TestCashSweepEnabled:
 
     @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
     @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_position_ignored_by_concentration_check(self, mock_signals, *_):
+        """The concentration check must not see the sweep position: a large
+        held SPY sweep stake (20% of portfolio, far over the concentration
+        cap) must not block SPY itself as a strategy buy candidate -- the
+        sweep exposure is cash-in-waiting, not a strategy bet."""
+        mock_signals.return_value = _blend(buys=["SPY"], sells=[])
+        # 50 shares x $400 = $20,000 = 20% of the $100k portfolio; counted,
+        # this trips any sane max_concentration_pct and the buy is skipped.
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position(qty=50.0, price=400.0)},
+            portfolio_value=100_000.0,
+            cash=50_000.0,
+        )
+        result = trader.run()
+        broker.submit_buy.assert_any_call("SPY", 3300.0)
+        assert "SPY" in result["buys"]
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
     def test_sells_sweep_position_before_submitting_strategy_buy(self, mock_signals, *_):
         """Ordering: when cash on hand can't cover the day's strategy buys
         plus the reserve, the sweep sell must be submitted before the

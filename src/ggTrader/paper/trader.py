@@ -440,8 +440,12 @@ class PaperTrader:
             _log.warning("Unapplied broker split corrections: %s", split_corrections)
         # Concentration checks (below, in the buy loop) must see true
         # economic exposure -- the corrected market_value -- not the
-        # broker's uncorrected figure for a split-flagged holding.
-        corrected_positions = apply_corrections_to_positions(positions, split_corrections)
+        # broker's uncorrected figure for a split-flagged holding. Built from
+        # `strategy_positions`, not raw `positions`: the sweep ETF position is
+        # invisible to all strategy signal/slot logic, and that includes the
+        # concentration check (its exposure is cash-in-waiting, not a
+        # strategy bet).
+        corrected_positions = apply_corrections_to_positions(strategy_positions, split_corrections)
 
         # Cross-reference the broker's corporate-actions feed against this
         # account's DIV activities to credit (as a reporting-only accrual --
