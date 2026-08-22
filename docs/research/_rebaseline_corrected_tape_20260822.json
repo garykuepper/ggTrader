@@ -1,0 +1,230 @@
+{
+  "meta": {
+    "eval_start": "2021-01-31",
+    "eval_end": "2026-04-30",
+    "n_folds": 17,
+    "total_elapsed_sec": 3034.9687819480896,
+    "anchor_fix_commit": "2eafab1"
+  },
+  "core": {
+    "name": "sp500_core_17fold",
+    "eval_start": "2021-01-31",
+    "eval_end": "2026-04-30",
+    "ok": true,
+    "sharpe": 0.9914068173550777,
+    "cagr_pct": 7.995903166370266,
+    "max_drawdown_pct": -7.651579143426456,
+    "spy_sharpe": 0.7792168856067855,
+    "n_folds": 17,
+    "n_gate_pass": 12,
+    "gate_pass_str": "12/17",
+    "fold_rows": [
+      {
+        "fold_num": 1,
+        "test_start": "2022-01-31",
+        "test_end": "2022-04-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 0.4398141391037176,
+        "oos_sharpe": 1.1444837948184832
+      },
+      {
+        "fold_num": 2,
+        "test_start": "2022-04-30",
+        "test_end": "2022-07-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 0.614903261633781,
+        "oos_sharpe": 0.9947099509291762
+      },
+      {
+        "fold_num": 3,
+        "test_start": "2022-07-30",
+        "test_end": "2022-10-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 0.4839470020961686,
+        "oos_sharpe": 0.5078859288838022
+      },
+      {
+        "fold_num": 4,
+        "test_start": "2022-10-30",
+        "test_end": "2023-01-30",
+        "ndh_passed": false,
+        "dsr_passed": true,
+        "gates_passed": false,
+        "used_anchor": true,
+        "wfe": 2.1034379084084347,
+        "oos_sharpe": 1.968681188769259
+      },
+      {
+        "fold_num": 5,
+        "test_start": "2023-01-30",
+        "test_end": "2023-04-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 1.0954513001163213,
+        "oos_sharpe": 1.0108773320607802
+      },
+      {
+        "fold_num": 6,
+        "test_start": "2023-04-30",
+        "test_end": "2023-07-30",
+        "ndh_passed": false,
+        "dsr_passed": true,
+        "gates_passed": false,
+        "used_anchor": true,
+        "wfe": 1.5763238107216804,
+        "oos_sharpe": 1.3725524951699628
+      },
+      {
+        "fold_num": 7,
+        "test_start": "2023-07-30",
+        "test_end": "2023-10-30",
+        "ndh_passed": false,
+        "dsr_passed": true,
+        "gates_passed": false,
+        "used_anchor": true,
+        "wfe": -1.643200254419727,
+        "oos_sharpe": -2.9794885356194807
+      },
+      {
+        "fold_num": 8,
+        "test_start": "2023-10-30",
+        "test_end": "2024-01-30",
+        "ndh_passed": false,
+        "dsr_passed": true,
+        "gates_passed": false,
+        "used_anchor": true,
+        "wfe": 2.525726108892162,
+        "oos_sharpe": 5.496826619208587
+      },
+      {
+        "fold_num": 9,
+        "test_start": "2024-01-30",
+        "test_end": "2024-04-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": -0.40852127487612155,
+        "oos_sharpe": -0.7353215181075632
+      },
+      {
+        "fold_num": 10,
+        "test_start": "2024-04-30",
+        "test_end": "2024-07-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 2.187784234439754,
+        "oos_sharpe": 2.2791967977769017
+      },
+      {
+        "fold_num": 11,
+        "test_start": "2024-07-30",
+        "test_end": "2024-10-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 0.07404194473762114,
+        "oos_sharpe": 0.1503486998957993
+      },
+      {
+        "fold_num": 12,
+        "test_start": "2024-10-30",
+        "test_end": "2025-01-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 0.19692573554642923,
+        "oos_sharpe": 0.5324315194073493
+      },
+      {
+        "fold_num": 13,
+        "test_start": "2025-01-30",
+        "test_end": "2025-04-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 0.16712260751230762,
+        "oos_sharpe": 0.3014380061618416
+      },
+      {
+        "fold_num": 14,
+        "test_start": "2025-04-30",
+        "test_end": "2025-07-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 3.344779074321253,
+        "oos_sharpe": 2.0882395877646722
+      },
+      {
+        "fold_num": 15,
+        "test_start": "2025-07-30",
+        "test_end": "2025-10-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 4.29908827901887,
+        "oos_sharpe": 1.9883126858441453
+      },
+      {
+        "fold_num": 16,
+        "test_start": "2025-10-30",
+        "test_end": "2026-01-30",
+        "ndh_passed": false,
+        "dsr_passed": true,
+        "gates_passed": false,
+        "used_anchor": true,
+        "wfe": 1.413729726915874,
+        "oos_sharpe": 1.4019771041571012
+      },
+      {
+        "fold_num": 17,
+        "test_start": "2026-01-30",
+        "test_end": "2026-04-30",
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": false,
+        "wfe": 1.7078945019009235,
+        "oos_sharpe": 2.212662802908451
+      }
+    ],
+    "table": "WFO: ensemble | 48 combos x 17 folds | rolling 12mo/3mo\n\nFold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1     2021-01 \u2192 2022-01      2022-01 \u2192 2022-04      bb_period20_bb_std2.5...    2.60  1.14  PASS  0.44\n2     2021-04 \u2192 2022-04      2022-04 \u2192 2022-07      bb_period20_bb_std2.5...    1.62  0.99  PASS  0.61\n3     2021-07 \u2192 2022-07      2022-07 \u2192 2022-10      bb_period20_bb_std2.5...    1.05  0.51  PASS  0.48\n4     2021-10 \u2192 2022-10      2022-10 \u2192 2023-01      bb_period20_bb_std2.5...    0.94  1.97  FAIL  2.10 [A]\n5     2022-01 \u2192 2023-01      2023-01 \u2192 2023-04      bb_period20_bb_std2.0...    0.92  1.01  PASS  1.10\n6     2022-04 \u2192 2023-04      2023-04 \u2192 2023-07      bb_period20_bb_std2.5...    0.87  1.37  FAIL  1.58 [A]\n7     2022-07 \u2192 2023-07      2023-07 \u2192 2023-10      bb_period20_bb_std2.5...    1.81 -2.98  FAIL -1.64 [A]\n8     2022-10 \u2192 2023-10      2023-10 \u2192 2024-01      bb_period20_bb_std2.5...    2.18  5.50  FAIL  2.53 [A]\n9     2023-01 \u2192 2024-01      2024-01 \u2192 2024-04      bb_period20_bb_std2.5...    1.80 -0.74  PASS -0.41\n10    2023-04 \u2192 2024-04      2024-04 \u2192 2024-07      bb_period20_bb_std2.0...    1.04  2.28  PASS  2.19\n11    2023-07 \u2192 2024-07      2024-07 \u2192 2024-10      bb_period20_bb_std2.5...    2.03  0.15  PASS  0.07\n12    2023-10 \u2192 2024-10      2024-10 \u2192 2025-01      bb_period20_bb_std2.5...    2.70  0.53  PASS  0.20\n13    2024-01 \u2192 2025-01      2025-01 \u2192 2025-04      bb_period20_bb_std2.5...    1.80  0.30  PASS  0.17\n14    2024-04 \u2192 2025-04      2025-04 \u2192 2025-07      bb_period20_bb_std2.5...    0.62  2.09  PASS  3.34\n15    2024-07 \u2192 2025-07      2025-07 \u2192 2025-10      bb_period20_bb_std2.5...    0.46  1.99  PASS  4.30\n16    2024-10 \u2192 2025-10      2025-10 \u2192 2026-01      bb_period20_bb_std2.0...    0.99  1.40  FAIL  1.41 [A]\n17    2025-01 \u2192 2026-01      2026-01 \u2192 2026-04      bb_period20_bb_std2.0...    1.30  2.21  PASS  1.71\n\nOOS Aggregate: Sharpe 0.99 | CAGR 8.0% | MaxDD -7.7%\nSPY baseline:  Sharpe 0.78 | CAGR 13.0% | MaxDD -22.1%\nAggregate WFE: 1.19 (target >= 0.50)\n\n\u2500\u2500 Recommended Live Params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTrain window: 2025-04 \u2192 2026-04\nWinner:       ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14\nTrain Sharpe: 1.43 | CAGR 5.8% | MaxDD -2.6%\nStability:    selected in 6/17 folds\n\n\u2500\u2500 Anchor Set (Defensive Fallback) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCombo:    ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14\nMaxDD:    -37.1% | CAGR 4.9% | Sharpe 0.39",
+    "elapsed_sec": 1075.538458108902
+  },
+  "blend": {
+    "name": "3sleeve_blend_lev1.0",
+    "eval_start": "2021-01-31",
+    "eval_end": "2026-04-30",
+    "ok": true,
+    "sharpe": 0.686415865578953,
+    "cagr_pct": 4.77656869474139,
+    "max_drawdown_pct": -6.695126300289012,
+    "table": "| Strategy | CAGR | Sharpe | Sortino | Vol | Max DD |\n| :--- | :---: | :---: | :---: | :---: | :---: |\n| ensemble@sp500 | 7.98% | 0.99 | 1.39 | 8.13% | -7.65% |\n| ensemble@midcap400 | 8.52% | 0.85 | 1.14 | 10.29% | -11.51% |\n| ensemble@nasdaq100 | 3.25% | 0.48 | 0.56 | 7.21% | -8.60% |\n| Inverse-vol + target-vol blend | 4.78% | 0.69 | 0.89 | 7.20% | -6.70% |\n| SPY | 12.79% | 0.77 | 1.06 | 17.72% | -22.09% |",
+    "run_id": "blend:ensemble@sp500,ensemble@midcap400,ensemble@nasdaq100_12d9a0a7",
+    "elapsed_sec": 1958.5332036018372,
+    "overlay_params": {
+      "target_vol": 0.068,
+      "window": 60,
+      "max_leverage": 1.0
+    }
+  }
+}

@@ -28,7 +28,52 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 ---
 
-## ACTIVE STEP (2026-08-20) — ROOT CAUSE FOUND: every equity bar in `ohlcv` is stamped one calendar day early
+## ACTIVE STEP (2026-08-22) — one-change-a-week rollout: sweep → core revert → catastrophe stop
+
+The 2026-08-22 review-execution branch (merged `8e38d72`, deployed to the
+live container same day) landed the operations hardening: paper-table
+day-shift fix + live migration, feature-flagged idle-cash sweep,
+feature-flagged catastrophe stop, snapshot-primary split guard, `ggt
+ingest` hard-fail, and the corrected-tape re-baseline. See
+`docs/changelog.md` 2026-08-22 for the full list.
+
+**The re-baseline settles the blend question.** Pinned 17-fold WFO
+(2021-01-31 → 2026-04-30) on the corrected tape
+(`docs/research/_rebaseline_corrected_tape_20260822.json`):
+SP500 core **Sharpe 0.99 / CAGR 8.0% / MaxDD -7.7%**; 3-sleeve blend @
+lev 1.0 (live config) **0.69 / 4.8%**; SPY window-matched **0.78**. That is
+the *third* independent core-beats-blend result (June: 1.05 vs 1.12;
+August pre-correction: 0.68 vs 0.97) — and the blend trails SPY. The
+2026-08-19 step's two blockers are answered well enough to act: the
+regime-split question is moot when the overlay loses in *all* conditions
+measured so far, and live-vs-backtest config drift argues *for* the
+simpler core, not against reverting.
+
+Rollout sequence (one change per week so attribution stays clean —
+standing lesson, do not bundle):
+
+1. **DONE 2026-08-22: `CASH_SWEEP_ENABLED=true` in live `.env`, container
+   recreated, verified armed** (SPY, 5% reserve, $500 min clip). Idle cash
+   (~60% of the account, the whole reason paper trails SPY: +2.51% vs
+   ~+4.4% over 6/23–8/20) now earns index return. First swept run:
+   Mon 2026-08-24 12:45 PT — expect one ~$58K SPY buy tagged
+   `reason='cash_sweep'`, cash dropping to ~5% reserve. Watch a week.
+2. **Week of 2026-08-31: revert live from the 3-sleeve blend to the SP500
+   core** (evidence above; this closes the 2026-08-19 ACTIVE STEP below).
+3. **Week after: consider `CATASTROPHE_STOP_ENABLED=true`** (-25% floor;
+   nothing in the current book would trigger — NXPI sits at -19%).
+4. **Research, once live config settles:** re-run `ensemble_ic` (1.01) and
+   `ensemble_kelly` (0.98) against the real 0.99 baseline — both were
+   rejected only against the phantom 1.12, so their NO-GOs are void on
+   their stated grounds (drawdown/fold-instability may still kill them).
+   Then the queued TLT/GLD/DBC cross-asset sleeve. Event-date NO-GOs stay
+   closed (they failed *with* a one-day lookahead advantage); `fomc_drift`
+   is the only one whose workaround tested the outright wrong day —
+   re-run only if curiosity is worth the compute.
+
+---
+
+## RESOLVED (2026-08-20/22) — every equity bar in `ohlcv` was stamped one calendar day early
 
 **Priority: this outranks everything else in this file.** It is the root
 cause behind at least three symptoms already "fixed" locally, and it
@@ -189,7 +234,12 @@ the duplicated tape.
 
 ---
 
-## ACTIVE STEP (2026-08-19) — decide whether to revert live from the 3-sleeve blend to the SP500 core
+## SUPERSEDED (2026-08-22, decision made — see the top ACTIVE STEP) — (2026-08-19) decide whether to revert live from the 3-sleeve blend to the SP500 core
+
+> **Resolution 2026-08-22:** the corrected-tape re-baseline (core 0.99 /
+> blend 0.69 / SPY 0.78) is the third independent core-beats-blend result;
+> revert is queued for the week of 2026-08-31 in the rollout above. Kept
+> below for the reasoning record.
 
 **The July 17 note that stood here — "reconfirmed exactly (Sharpe 1.14,
 MaxDD -5.39%) via fresh blend runs — no tooling drift" — is SUPERSEDED.**

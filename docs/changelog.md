@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-08-22 (later)
+
+### Cash sweep ENABLED on the live paper account; rollout plan queued
+
+`CASH_SWEEP_ENABLED=true` added to the live `.env` and the container
+recreated the same afternoon the feature merged; verified armed inside the
+running image (SPY, 5% reserve, $500 min clip). First swept run is Monday
+2026-08-24 12:45 PT — expect a single ~$58K SPY buy tagged
+`reason='cash_sweep'`. Follow-on sequence (one change per week, see
+`docs/next_steps.md`): revert live from the 3-sleeve blend to the SP500
+core the week of 2026-08-31 — the corrected-tape re-baseline (core Sharpe
+0.99 / blend 0.69 / SPY 0.78, pinned 2021-01-31→2026-04-30,
+`docs/research/_rebaseline_corrected_tape_20260822.json`) is the third
+independent core-beats-blend result — then consider enabling the
+catastrophe stop.
+
 ## 2026-08-22
 
 ### Paper trader: date-stamping fix, feature-flagged cash sweep and catastrophe stop, split-detection rework
