@@ -16,8 +16,10 @@ CREATE TABLE IF NOT EXISTS paper_trades (
     symbol TEXT NOT NULL,
     amount DOUBLE PRECISION NOT NULL,
     order_id TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    reason TEXT
 );
+ALTER TABLE paper_trades ADD COLUMN IF NOT EXISTS reason TEXT;
 CREATE TABLE IF NOT EXISTS paper_snapshots (
     run_date DATE PRIMARY KEY,
     portfolio_value DOUBLE PRECISION NOT NULL,
@@ -32,10 +34,12 @@ CREATE TABLE IF NOT EXISTS paper_pending_orders (
     symbol TEXT NOT NULL,
     notional DOUBLE PRECISION NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    flagged_stale BOOLEAN NOT NULL DEFAULT FALSE
+    flagged_stale BOOLEAN NOT NULL DEFAULT FALSE,
+    reason TEXT
 );
 ALTER TABLE paper_pending_orders
     ADD COLUMN IF NOT EXISTS flagged_stale BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE paper_pending_orders ADD COLUMN IF NOT EXISTS reason TEXT;
 CREATE TABLE IF NOT EXISTS paper_rebalance_state (
     id INTEGER PRIMARY KEY DEFAULT 1,
     rebalance_date DATE NOT NULL,
@@ -71,12 +75,23 @@ def init_paper_schema() -> None:
         conn.commit()
 
 
-def log_trade(run_date: str, side: str, symbol: str, amount: float, order_id: str) -> None:
+def log_trade(
+    run_date: str,
+    side: str,
+    symbol: str,
+    amount: float,
+    order_id: str,
+    reason: str | None = None,
+) -> None:
+    """`reason` tags why the trade happened (e.g. "cash_sweep" for a sweep
+    order -- see `cash_sweep.SWEEP_TRADE_REASON`); NULL/omitted means an
+    ordinary strategy trade, preserving the historical meaning of this
+    ledger for every caller that doesn't pass it."""
     with _get_engine().connect() as conn:
         conn.execute(
             text(
-                "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id) "
-                "VALUES (:run_date, :side, :symbol, :amount, :order_id)"
+                "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) "
+                "VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)"
             ),
             {
                 "run_date": run_date,
@@ -84,22 +99,32 @@ def log_trade(run_date: str, side: str, symbol: str, amount: float, order_id: st
                 "symbol": symbol,
                 "amount": amount,
                 "order_id": order_id,
+                "reason": reason,
             },
         )
         conn.commit()
 
 
 def log_pending_order(
-    run_date: str, side: str, symbol: str, notional: float, order_id: str
+    run_date: str,
+    side: str,
+    symbol: str,
+    notional: float,
+    order_id: str,
+    reason: str | None = None,
 ) -> None:
     """Record an order that was submitted but had not filled by run end, so the
-    next run can reconcile its final status. Idempotent on order_id."""
+    next run can reconcile its final status. Idempotent on order_id.
+
+    `reason` mirrors `log_trade`'s tag (e.g. "cash_sweep"), NULL for an
+    ordinary strategy order.
+    """
     with _get_engine().connect() as conn:
         conn.execute(
             text(
                 "INSERT INTO paper_pending_orders "
-                "(order_id, run_date, side, symbol, notional) "
-                "VALUES (:order_id, :run_date, :side, :symbol, :notional) "
+                "(order_id, run_date, side, symbol, notional, reason) "
+                "VALUES (:order_id, :run_date, :side, :symbol, :notional, :reason) "
                 "ON CONFLICT (order_id) DO NOTHING"
             ),
             {
@@ -108,6 +133,7 @@ def log_pending_order(
                 "side": side,
                 "symbol": symbol,
                 "notional": notional,
+                "reason": reason,
             },
         )
         conn.commit()
@@ -118,7 +144,8 @@ def get_pending_orders() -> list[dict]:
     with _get_engine().connect() as conn:
         rows = conn.execute(
             text(
-                "SELECT order_id, run_date, side, symbol, notional, created_at, flagged_stale "
+                "SELECT order_id, run_date, side, symbol, notional, created_at, "
+                "flagged_stale, reason "
                 "FROM paper_pending_orders ORDER BY created_at"
             )
         ).mappings()

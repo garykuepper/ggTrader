@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
@@ -506,7 +507,9 @@ class TestReconciliation:
         }
         trader.run()
         # Booked at the real fill value, under the original order date.
-        mock_log_trade.assert_called_once_with("2026-06-19", "BUY", "MSFT", 3300.0, "buy-order-99")
+        mock_log_trade.assert_called_once_with(
+            "2026-06-19", "BUY", "MSFT", 3300.0, "buy-order-99", None
+        )
         mock_clear.assert_called_once_with("buy-order-99")
 
     @patch("ggTrader.paper.trader.clear_pending_order")
@@ -1270,3 +1273,153 @@ class TestOrderErrorAlerting:
         kwargs = notifier.daily_summary.call_args[1]
         assert len(kwargs["errors"]) == 1
         assert "MSFT" in kwargs["errors"][0]
+
+
+def _spy_position(qty=50.0, price=400.0):
+    return {
+        "qty": qty,
+        "market_value": qty * price,
+        "current_price": price,
+        "avg_entry": price,
+        "unrealized_pl": 0.0,
+        "unrealized_plpc": 0.0,
+        "change_today": 0.0,
+        "cost_basis": qty * price,
+    }
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestCashSweepFlagOff:
+    """The sweep must be a strict no-op when CASH_SWEEP_ENABLED is unset."""
+
+    @patch.dict("os.environ", {}, clear=False)
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_disabled_by_default_no_sweep_sizing_called(self, mock_signals, *_):
+        os.environ.pop("CASH_SWEEP_ENABLED", None)
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position()}, portfolio_value=100_000.0, cash=1_000.0
+        )
+        with patch("ggTrader.paper.trader.cash_sweep.compute_sweep_buy") as mock_buy:
+            with patch(
+                "ggTrader.paper.trader.cash_sweep.compute_sweep_sell_for_funding"
+            ) as mock_sell:
+                trader.run()
+        mock_buy.assert_not_called()
+        mock_sell.assert_not_called()
+        # Only the strategy's own MSFT buy is submitted -- no SPY order.
+        broker.submit_buy.assert_called_once_with("MSFT", 3300.0)
+        broker.submit_sell.assert_not_called()
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_flag_off_sweep_symbol_counts_like_any_other_position(self, mock_signals, *_):
+        """Zero behavior change: with the flag off, a held SPY position
+        consumes a slot exactly like any other holding did before this
+        feature existed."""
+        from ggTrader.paper.risk import RiskConfig, RiskGuard
+
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position()}, portfolio_value=100_000.0
+        )
+        trader._risk = RiskGuard(RiskConfig(max_positions=1))
+        trader.run()
+        broker.submit_buy.assert_not_called()
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestCashSweepEnabled:
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_symbol_excluded_from_slot_cap(self, mock_signals, *_):
+        """With the flag on, a held SPY (sweep) position must not count
+        against RiskGuard's max_positions -- the strategy buy must still go
+        through even with max_positions=1 and SPY already 'held'."""
+        from ggTrader.paper.risk import RiskConfig, RiskGuard
+
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position()}, portfolio_value=100_000.0, cash=50_000.0
+        )
+        trader._risk = RiskGuard(RiskConfig(max_positions=1))
+        result = trader.run()
+        broker.submit_buy.assert_any_call("MSFT", 3300.0)
+        assert "MSFT" in result["buys"]
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_symbol_not_sellable_by_strategy_exit_signal(self, mock_signals, *_):
+        """Even if a strategy sleeve's exit signals happened to name the
+        sweep symbol, it must never be sold as a strategy exit -- it's not a
+        strategy position."""
+        mock_signals.return_value = _blend(buys=[], sells=["SPY"])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position()}, portfolio_value=100_000.0, cash=50_000.0
+        )
+        result = trader.run()
+        # No strategy SELL of the sweep symbol; the pre-buy funding check may
+        # still submit its own sweep SELL, so assert on the strategy-exit
+        # bookkeeping instead of "submit_sell never called".
+        assert "SPY" not in result["sells"]
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sells_sweep_position_before_submitting_strategy_buy(self, mock_signals, *_):
+        """Ordering: when cash on hand can't cover the day's strategy buys
+        plus the reserve, the sweep sell must be submitted before the
+        strategy buy (see cash_sweep.py's module docstring / trader.py's
+        wiring comment for the same-run market-sell assumption)."""
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        # cash 1000 is far short of the 3300 buy + 5000 reserve (5% of 100k);
+        # the 20000-notional SPY holding must be sold down to cover it.
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position(qty=50.0, price=400.0)},
+            portfolio_value=100_000.0,
+            cash=1_000.0,
+        )
+        trader.run()
+
+        order_calls = [c for c in broker.method_calls if c[0] in ("submit_sell", "submit_buy")]
+        assert [c[0] for c in order_calls] == ["submit_sell", "submit_buy"]
+        sell_call, buy_call = order_calls
+        assert sell_call.args[0] == "SPY"
+        assert buy_call.args[0] == "MSFT"
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_buy_deploys_leftover_cash_after_strategy_orders(self, mock_signals, *_):
+        """After strategy orders, leftover cash above the reserve gets swept
+        into the sweep ETF as a BUY."""
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(positions={}, portfolio_value=100_000.0, cash=50_000.0)
+        # Post-trade account (fetched fresh for the sweep-buy sizing, and
+        # again afterward for the run's own snapshot) reflects the same
+        # unchanged cash since there were no strategy orders this run.
+        broker.get_account.return_value = {
+            "cash": 50_000.0,
+            "portfolio_value": 100_000.0,
+            "buying_power": 100_000.0,
+        }
+        trader.run()
+        # reserve = 5% * 100000 = 5000; sweep buy = 50000 - 5000 = 45000
+        broker.submit_buy.assert_called_once_with("SPY", 45_000.0)
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_buy_skipped_below_min_clip(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(positions={}, portfolio_value=100_000.0, cash=5_100.0)
+        broker.get_account.return_value = {
+            "cash": 5_100.0,
+            "portfolio_value": 100_000.0,
+            "buying_power": 100_000.0,
+        }
+        trader.run()
+        # reserve 5000, target 100 < default min_clip 500 -> no sweep buy
+        broker.submit_buy.assert_not_called()

@@ -7,6 +7,7 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+from ggTrader.paper import cash_sweep
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.notifier import TelegramNotifier
@@ -156,7 +157,7 @@ class PaperTrader:
 
             if filled:
                 amount = filled_qty * filled_price
-                log_trade(po["run_date"], po["side"], po["symbol"], amount, oid)
+                log_trade(po["run_date"], po["side"], po["symbol"], amount, oid, po.get("reason"))
                 self._notifier.trade_alert(
                     po["side"],
                     po["symbol"],
@@ -171,6 +172,63 @@ class PaperTrader:
             except Exception as exc:
                 _log.warning("Reconcile: clear_pending_order(%s) failed: %s", oid, exc)
         return still_pending
+
+    def _poll_orders(
+        self, orders: list[tuple[str, str, str, float, str | None]]
+    ) -> dict[str, dict]:
+        """Poll submitted orders until they reach a terminal status (or a
+        wait budget expires), returning `{order_id: order_info}`.
+
+        Shared by the main per-run order batch (strategy sells/buys, plus a
+        cash-sweep sell if one was submitted) and the trailing cash-sweep buy,
+        which is sized from the account's real post-trade cash and so must be
+        submitted and polled separately, after the main batch resolves.
+        """
+        filled_orders: dict[str, dict] = {}
+        if not orders:
+            return filled_orders
+
+        start_time = time.time()
+        is_open = True
+        try:
+            is_open = self._broker.get_clock()["is_open"]
+        except Exception:
+            pass
+
+        max_wait = 15.0 if is_open else 2.0
+        remaining = {item[0]: item for item in orders}
+
+        while remaining and (time.time() - start_time) < max_wait:
+            for oid in list(remaining.keys()):
+                try:
+                    order_info = self._broker.get_order(oid)
+                    status = order_info["status"]
+                    # A partial fill is NOT terminal: keep polling so it can
+                    # complete (or time out) rather than booking the partial.
+                    if status in ("filled", "canceled", "rejected", "expired"):
+                        filled_orders[oid] = order_info
+                        remaining.pop(oid)
+                except Exception as e:
+                    _log.warning("Error polling order %s: %s", oid, e)
+            if remaining:
+                time.sleep(1.0)
+
+        # Query final statuses for remaining orders
+        for oid, item in remaining.items():
+            try:
+                filled_orders[oid] = self._broker.get_order(oid)
+            except Exception:
+                filled_orders[oid] = {
+                    "id": oid,
+                    "symbol": item[2],
+                    "side": item[1],
+                    "qty": None,
+                    "notional": item[3] if item[1] == "BUY" else None,
+                    "filled_qty": 0.0,
+                    "filled_avg_price": 0.0,
+                    "status": "pending",
+                }
+        return filled_orders
 
     def _accrue_dividends(self, positions: dict[str, dict]) -> dict:
         """Credit cash dividends Alpaca's corporate-actions feed knows about
@@ -355,6 +413,21 @@ class PaperTrader:
         positions = self._broker.get_positions()
         portfolio_value = account["portfolio_value"]
 
+        # Cash sweep (feature-flagged, default OFF -- see cash_sweep.py). The
+        # sweep ETF position (if any) must be invisible to the strategy: not a
+        # strategy position, not counted against RiskGuard slot caps, and not
+        # sellable by strategy exit signals. `strategy_positions` is what all
+        # downstream slot/count/sell logic uses instead of the raw `positions`
+        # from the broker; when the flag is off this is just `positions`
+        # unchanged, so behavior is identical to before this feature existed.
+        sweep_on = cash_sweep.sweep_enabled()
+        sweep_sym = cash_sweep.sweep_symbol() if sweep_on else None
+        strategy_positions = (
+            {sym: pos for sym, pos in positions.items() if sym != sweep_sym}
+            if sweep_on
+            else positions
+        )
+
         # Cross-reference the broker's own corporate-actions feed against
         # this account's SPLIT activities for currently-held symbols to find
         # splits the broker knows about but never applied to the account
@@ -419,16 +492,95 @@ class PaperTrader:
         executed_sells: list[str] = []
         executed_buys: list[str] = []
         errors: list[str] = []
-        pending_orders: list[tuple[str, str, str, float]] = []
+        # 5th element is the ledger `reason` tag: None for an ordinary
+        # strategy order, cash_sweep.SWEEP_TRADE_REASON for a sweep order.
+        pending_orders: list[tuple[str, str, str, float, str | None]] = []
+
+        # Buys — respect global + per-sleeve position limits. Computed here
+        # (before the sells loop) rather than just before the buy loop below,
+        # because the cash-sweep funding check needs the same sleeve notional
+        # sizing to estimate how much cash the day's strategy buys could
+        # consume. Each position is sized as a fixed fraction of its own
+        # sleeve's allocated capital (weight * scale * portfolio_value),
+        # independent of how many signals fire that day within the sleeve —
+        # sleeve_slot_caps governs sleeve concurrency, sleeve_position_notional
+        # governs per-trade size.
+        slot_caps = self._risk.sleeve_slot_caps(weights)
+        sleeve_open_count = {u: 0 for u in weights}
+        buys_by_sleeve: dict[str, list[str]] = {}
+        for symbol, universe in all_buys:
+            buys_by_sleeve.setdefault(universe, []).append(symbol)
+        sleeve_notional_by_universe = {
+            universe: self._risk.sleeve_position_notional(
+                portfolio_value, weights.get(universe, 0.0), scale
+            )
+            for universe in buys_by_sleeve
+        }
+
+        if sweep_on:
+            # Sell the sweep position down FIRST (before strategy sells/buys
+            # execute) if the day's anticipated strategy buys would need more
+            # cash than is currently on hand. `prospective_buy_notional` is a
+            # deliberate upper-bound estimate (see
+            # cash_sweep.estimate_prospective_buy_notional) computed BEFORE
+            # the sells loop runs, so it conservatively assumes the slots that
+            # today's sells will free are already free.
+            anticipated_sells = [
+                s for s in signals["sells"] if s in strategy_positions and s not in pending_symbols
+            ]
+            slots_estimate = self._risk.max_new_positions(
+                len(strategy_positions) - len(anticipated_sells)
+            )
+            prospective_buy_notional = cash_sweep.estimate_prospective_buy_notional(
+                buys_by_sleeve, sleeve_notional_by_universe, slot_caps, slots_estimate
+            )
+            sweep_position = positions.get(sweep_sym)
+            sweep_position_value = sweep_position["market_value"] if sweep_position else 0.0
+            sell_action = cash_sweep.compute_sweep_sell_for_funding(
+                cash_available=account["cash"],
+                portfolio_value=portfolio_value,
+                prospective_buy_notional=prospective_buy_notional,
+                current_sweep_position_value=sweep_position_value,
+                reserve_pct=cash_sweep.reserve_pct(),
+            )
+            if sell_action.side == "sell" and sweep_position:
+                sweep_price = sweep_position["current_price"]
+                sell_qty = round(sell_action.notional / sweep_price, 4) if sweep_price > 0 else 0.0
+                if sell_qty > 0:
+                    if self._dry_run:
+                        self._notifier.send(
+                            f"<b>🔍 DRY RUN sweep sell:</b> {sweep_sym} "
+                            f"(${sell_action.notional:.0f}, funding strategy buys)"
+                        )
+                    else:
+                        try:
+                            # Alpaca paper credits a market sell's proceeds to
+                            # cash immediately (no T+1/T+2 settlement lag), so
+                            # it's safe to treat this cash as available to the
+                            # strategy buys submitted later in this same run.
+                            # A same-run sell -> buy sequence would NOT be
+                            # safe on a broker with real settlement delay.
+                            oid = self._broker.submit_sell(sweep_sym, sell_qty)
+                            pending_orders.append(
+                                (
+                                    oid,
+                                    "SELL",
+                                    sweep_sym,
+                                    sell_action.notional,
+                                    cash_sweep.SWEEP_TRADE_REASON,
+                                )
+                            )
+                        except Exception as exc:
+                            errors.append(f"SWEEP SELL {sweep_sym}: {exc}")
 
         # Sells first — free up position slots
         for symbol in signals["sells"]:
-            if symbol not in positions:
+            if symbol not in strategy_positions:
                 continue
             if symbol in pending_symbols:
                 _log.info("Skipping SELL %s: order already pending", symbol)
                 continue
-            qty = positions[symbol]["qty"]
+            qty = strategy_positions[symbol]["qty"]
             if self._dry_run:
                 executed_sells.append(symbol)
                 self._notifier.send(f"<b>🔍 DRY RUN sell:</b> {symbol} (qty {qty})")
@@ -436,30 +588,21 @@ class PaperTrader:
             try:
                 oid = self._broker.submit_sell(symbol, qty)
                 executed_sells.append(symbol)
-                pending_orders.append((oid, "SELL", symbol, positions[symbol]["market_value"]))
+                pending_orders.append(
+                    (oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None)
+                )
             except Exception as exc:
                 errors.append(f"SELL {symbol}: {exc}")
 
-        # Buys — respect global + per-sleeve position limits. Each position is
-        # sized as a fixed fraction of its own sleeve's allocated capital
-        # (weight * scale * portfolio_value), independent of how many signals
-        # fire that day within the sleeve — sleeve_slot_caps governs sleeve
-        # concurrency, sleeve_position_notional governs per-trade size.
-        slot_caps = self._risk.sleeve_slot_caps(weights)
-        sleeve_open_count = {u: 0 for u in weights}
-        buys_by_sleeve: dict[str, list[str]] = {}
-        for symbol, universe in all_buys:
-            buys_by_sleeve.setdefault(universe, []).append(symbol)
-
-        slots_available = self._risk.max_new_positions(len(positions) - len(executed_sells))
+        slots_available = self._risk.max_new_positions(
+            len(strategy_positions) - len(executed_sells)
+        )
         buys_attempted = 0
         for universe, syms in buys_by_sleeve.items():
-            sleeve_notional = self._risk.sleeve_position_notional(
-                portfolio_value, weights.get(universe, 0.0), scale
-            )
+            sleeve_notional = sleeve_notional_by_universe[universe]
             sleeve_cap = slot_caps.get(universe, 0)
             for symbol in syms:
-                if symbol in positions:
+                if symbol in strategy_positions:
                     continue
                 if symbol in pending_symbols:
                     _log.info("Skipping BUY %s: order already pending", symbol)
@@ -496,60 +639,55 @@ class PaperTrader:
                     executed_buys.append(symbol)
                     buys_attempted += 1
                     sleeve_open_count[universe] += 1
-                    pending_orders.append((oid, "BUY", symbol, sleeve_notional))
+                    pending_orders.append((oid, "BUY", symbol, sleeve_notional, None))
                 except Exception as exc:
                     errors.append(f"BUY {symbol}: {exc}")
 
         # Poll submitted orders until they fill (or timeout)
-        filled_orders: dict[str, dict] = {}
-        if pending_orders:
-            start_time = time.time()
-            is_open = True
+        filled_orders: dict[str, dict] = self._poll_orders(pending_orders)
+
+        if sweep_on:
+            # Sweep BUY: deploy whatever cash is left over after the strategy's
+            # own orders for the day, using the account's REAL post-trade cash
+            # (not an estimate) now that strategy sells/buys above have been
+            # submitted and polled to a terminal status.
             try:
-                is_open = self._broker.get_clock()["is_open"]
-            except Exception:
-                pass
-
-            max_wait = 15.0 if is_open else 2.0
-            remaining = {item[0]: item for item in pending_orders}
-
-            while remaining and (time.time() - start_time) < max_wait:
-                for oid in list(remaining.keys()):
+                mid_account = self._broker.get_account()
+                buy_action = cash_sweep.compute_sweep_buy(
+                    cash_after_strategy_orders=mid_account["cash"],
+                    portfolio_value=mid_account["portfolio_value"],
+                    reserve_pct=cash_sweep.reserve_pct(),
+                    min_clip=cash_sweep.min_clip_usd(),
+                )
+            except Exception as exc:
+                _log.warning("Cash sweep buy sizing failed (non-fatal): %s", exc)
+                buy_action = cash_sweep.SweepAction(None, 0.0)
+            if buy_action.side == "buy":
+                if self._dry_run:
+                    self._notifier.send(
+                        f"<b>🔍 DRY RUN sweep buy:</b> {sweep_sym} (${buy_action.notional:.0f})"
+                    )
+                else:
                     try:
-                        order_info = self._broker.get_order(oid)
-                        status = order_info["status"]
-                        # A partial fill is NOT terminal: keep polling so it can
-                        # complete (or time out) rather than booking the partial.
-                        if status in ("filled", "canceled", "rejected", "expired"):
-                            filled_orders[oid] = order_info
-                            remaining.pop(oid)
-                    except Exception as e:
-                        _log.warning("Error polling order %s: %s", oid, e)
-                if remaining:
-                    time.sleep(1.0)
-
-            # Query final statuses for remaining orders
-            for oid, item in remaining.items():
-                try:
-                    filled_orders[oid] = self._broker.get_order(oid)
-                except Exception:
-                    filled_orders[oid] = {
-                        "id": oid,
-                        "symbol": item[2],
-                        "side": item[1],
-                        "qty": None,
-                        "notional": item[3] if item[1] == "BUY" else None,
-                        "filled_qty": 0.0,
-                        "filled_avg_price": 0.0,
-                        "status": "pending",
-                    }
+                        oid = self._broker.submit_buy(sweep_sym, buy_action.notional)
+                        sweep_buy_order = (
+                            oid,
+                            "BUY",
+                            sweep_sym,
+                            buy_action.notional,
+                            cash_sweep.SWEEP_TRADE_REASON,
+                        )
+                        filled_orders.update(self._poll_orders([sweep_buy_order]))
+                        pending_orders.append(sweep_buy_order)
+                    except Exception as exc:
+                        errors.append(f"SWEEP BUY {sweep_sym}: {exc}")
 
         # Alert on every submitted order, but only book the trade ledger at a
         # real executed value — never the intended notional. Orders still
         # working at run end (queued after the close, or a partial fill not yet
         # complete) are persisted so the next run reconciles their final fill;
         # terminally-failed orders are simply dropped.
-        for oid, side, symbol, amount in pending_orders:
+        for oid, side, symbol, amount, reason in pending_orders:
             info = filled_orders.get(oid, {})
             status = info.get("status", "pending")
             filled_qty = info.get("filled_qty") or 0.0
@@ -575,7 +713,7 @@ class PaperTrader:
                     # from, which trails by one session and was the vector for the
                     # OHLCV day-shift bug -- see _today_et() and
                     # scripts/migrate_paper_dates_20260822.py).
-                    log_trade(today_et.isoformat(), side, symbol, trade_amount, oid)
+                    log_trade(today_et.isoformat(), side, symbol, trade_amount, oid, reason)
                 else:
                     _log.info(
                         "Order %s (%s %s) terminal unfilled (status=%s); no ledger entry",
@@ -587,7 +725,7 @@ class PaperTrader:
             else:
                 # accepted / new / pending / partially_filled — settle next run.
                 # Same run_date reasoning as log_trade above.
-                log_pending_order(today_et.isoformat(), side, symbol, amount, oid)
+                log_pending_order(today_et.isoformat(), side, symbol, amount, oid, reason)
                 _log.info(
                     "Order %s (%s %s) still working (status=%s); queued for reconciliation",
                     oid,
