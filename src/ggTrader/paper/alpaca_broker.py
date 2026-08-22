@@ -131,27 +131,50 @@ class AlpacaBroker:
         activities = self._client.get("/account/activities/SPLIT", {"after": since.isoformat()})
         return {a["symbol"] for a in activities if a.get("symbol")}
 
+    def get_split_evidence(
+        self, symbols: list[str], since: date
+    ) -> dict[str, dict[str, list[tuple[date, float]]] | set[str]]:
+        """Return the raw ingredients behind a split-correction decision for
+        `symbols`: the broker's corporate-actions feed (`corp_splits`) and,
+        as a secondary signal only, this account's own SPLIT activities
+        (`activity_applied`) -- see `split_check`'s module docstring for why
+        `paper_snapshots` history, not this activities feed, is the primary
+        evidence for whether a split was actually applied to this account.
+
+        Returns `{"corp_splits": {symbol: [(ex_date, factor), ...]},
+        "activity_applied": {symbol, ...}}`. Fails soft: any API error is
+        logged as a warning and both come back empty rather than raising --
+        this must never abort a trading run.
+        """
+        empty: dict[str, dict | set] = {"corp_splits": {}, "activity_applied": set()}
+        if not symbols:
+            return empty
+        try:
+            corp_splits = self._get_corporate_action_splits(symbols, since)
+            if not corp_splits:
+                return empty
+            activity_applied = self._get_split_activity_symbols(since)
+            return {"corp_splits": corp_splits, "activity_applied": activity_applied}
+        except Exception as exc:
+            _log.warning("Split evidence check failed (non-fatal): %s", exc)
+            return empty
+
     def get_split_corrections(self, symbols: list[str], since: date) -> dict[str, float]:
         """Cross-reference the broker's corporate-actions feed against this
         account's own SPLIT activities to find splits the broker knows about
         for `symbols` but never applied to this account.
 
         Returns `{symbol: correction_factor}` (see
-        `split_check.compute_split_corrections`). Fails soft: any API error
-        is logged as a warning and this returns `{}` ("no corrections
-        known") rather than raising -- this must never abort a trading run.
+        `split_check.compute_split_corrections`). Built on `get_split_evidence`,
+        so it shares its fail-soft behavior: any API error returns `{}` ("no
+        corrections known") rather than raising -- this must never abort a
+        trading run. Kept as the activities-feed-only view for callers that
+        don't need snapshot-based evidence; `PaperTrader` combines this with
+        `split_check.find_split_applied_symbols` instead of relying on this
+        method alone (see its docstring and module docstring for why).
         """
-        if not symbols:
-            return {}
-        try:
-            corp_splits = self._get_corporate_action_splits(symbols, since)
-            if not corp_splits:
-                return {}
-            applied_symbols = self._get_split_activity_symbols(since)
-            return compute_split_corrections(corp_splits, applied_symbols)
-        except Exception as exc:
-            _log.warning("Split correction check failed (non-fatal): %s", exc)
-            return {}
+        evidence = self.get_split_evidence(symbols, since)
+        return compute_split_corrections(evidence["corp_splits"], evidence["activity_applied"])
 
     def _get_corporate_action_dividends(
         self, symbols: list[str], since: date

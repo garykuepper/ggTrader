@@ -302,6 +302,23 @@ def get_snapshot_history() -> list[tuple]:
     return result
 
 
+def get_trade_history_dates(symbol: str) -> list:
+    """Return every persisted `paper_trades.run_date` for `symbol`, ascending.
+
+    Used by `split_check.find_split_applied_symbols` to rule out a plain
+    buy/sell explaining a qty change across a split's ex-date, so a trim or
+    exit is never mistaken for the broker silently applying a split. Dates
+    come back as real `datetime.date` objects (the column type), matching
+    `get_snapshot_history`'s convention.
+    """
+    with _get_engine().connect() as conn:
+        rows = conn.execute(
+            text("SELECT run_date FROM paper_trades WHERE symbol = :symbol ORDER BY run_date ASC"),
+            {"symbol": symbol},
+        ).all()
+    return [run_date for (run_date,) in rows]
+
+
 def get_accrued_dividend_keys() -> set[tuple]:
     """Return `{(symbol, ex_date), ...}` already recorded in
     `paper_dividend_accruals` -- the idempotency guard so a re-run never

@@ -74,6 +74,17 @@ def _stub_dividend_db():
                     yield
 
 
+@pytest.fixture(autouse=True)
+def _stub_split_trade_db():
+    """Keep the split-check's paper_trades lookup off the real DB by
+    default. `get_snapshot_history` (also read by `_compute_split_corrections`)
+    is already stubbed to `[]` by `_stub_dividend_db` above, so with both
+    stubbed the default is "no snapshot evidence" -- individual split tests
+    override one or both to exercise the applied/unapplied/traded paths."""
+    with patch("ggTrader.paper.trader.get_trade_history_dates", return_value=[]):
+        yield
+
+
 def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500"):
     """Wrap a flat buys/sells list into generate_blended_signals()'s shape,
     with full weight+scale on one sleeve -- reproduces today's flat-3%
@@ -109,6 +120,7 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     }
     broker.get_positions.return_value = positions or {}
     broker.get_split_corrections.return_value = {}
+    broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
     broker.get_dividend_corrections.return_value = {"corp_dividends": {}, "credited_keys": set()}
     broker.submit_buy.return_value = "buy-order-1"
     broker.submit_sell.return_value = "sell-order-1"
@@ -178,7 +190,10 @@ class TestSellExits:
                 }
             }
         )
-        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": set(),
+        }
         trader.run()
         broker.submit_sell.assert_called_once_with("MNST", mnst_qty)
 
@@ -232,7 +247,10 @@ class TestBuyEntries:
                 }
             }
         )
-        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": set(),
+        }
         trader._risk.check_concentration = MagicMock(return_value=False)
         trader.run()
         call_args = trader._risk.check_concentration.call_args
@@ -636,7 +654,10 @@ class TestDailyPnl:
                 },
             },
         )
-        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": set(),
+        }
         trader.run()
 
         kwargs = notifier.daily_summary.call_args[1]
@@ -669,6 +690,101 @@ class TestDailyPnl:
         assert kwargs["split_corrections"] == {}
         assert kwargs["booked_equity"] is None
         assert kwargs["unrealized_pnl"] == 365.22
+
+    @patch("ggTrader.paper.trader.get_trade_history_dates")
+    @patch("ggTrader.paper.trader.get_snapshot_history")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_snapshot_confirmed_split_suppresses_the_correction(
+        self, mock_signals, mock_snap_hist, mock_trades, _schema, _trade, _snap, mock_prev
+    ):
+        # Primary evidence (paper_snapshots qty doubling across the ex-date,
+        # no trade to explain it another way) confirms the broker DID apply
+        # MNST's split -- unlike the never-exercised activities-feed guard,
+        # this must actually suppress the correction rather than double it.
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        mnst_qty = 41.60820196  # already split-adjusted -- broker applied it
+        trader, broker, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={
+                "MNST": {
+                    "qty": mnst_qty,
+                    "market_value": mnst_qty * 47.77,
+                    "unrealized_pl": mnst_qty * 47.77 - 1887.11,
+                    "cost_basis": 1887.11,
+                    "current_price": 47.77,
+                },
+            },
+        )
+        # ex-date/snapshots deliberately fall before `_TEST_TODAY`
+        # (2026-06-19) -- `find_split_applied_symbols` only considers a
+        # split whose ex-date has already passed "today".
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 6, 1), 2.0)]},
+            "activity_applied": set(),
+        }
+        mock_snap_hist.return_value = [
+            (date(2026, 5, 28), {"MNST": {"qty": 20.80410098}}),
+            (date(2026, 6, 3), {"MNST": {"qty": mnst_qty}}),
+        ]
+        mock_trades.return_value = []
+
+        trader.run()
+
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["split_corrections"] == {}
+        reported_positions = notifier.daily_summary.call_args[0][2]
+        # Untouched -- the broker's own (already-correct) numbers stand.
+        assert reported_positions["MNST"]["qty"] == mnst_qty
+
+    @patch("ggTrader.paper.trader.get_trade_history_dates")
+    @patch("ggTrader.paper.trader.get_snapshot_history")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_missing_snapshot_evidence_falls_back_to_correcting(
+        self, mock_signals, mock_snap_hist, mock_trades, _schema, _trade, _snap, mock_prev, caplog
+    ):
+        # No paper_snapshots history at all to compare across the ex-date
+        # (e.g. a fresh account, or history that doesn't reach far enough
+        # back) -- with no evidence either way, this must fall back to the
+        # pre-hardening default of correcting the position, not silently
+        # assume the split was applied.
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        mnst_qty = 20.80410098
+        mnst_cost_basis = 1887.11
+        mnst_broker_market_value = mnst_qty * 47.77
+        trader, broker, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={
+                "MNST": {
+                    "qty": mnst_qty,
+                    "market_value": mnst_broker_market_value,
+                    "unrealized_pl": mnst_broker_market_value - mnst_cost_basis,
+                    "cost_basis": mnst_cost_basis,
+                    "current_price": 47.77,
+                },
+            },
+        )
+        # ex-date deliberately before `_TEST_TODAY` (2026-06-19), same as
+        # the suppression test above, so this actually reaches
+        # `find_split_applied_symbols`'s "no snapshot evidence" branch
+        # instead of being filtered out as a not-yet-happened split.
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 6, 1), 2.0)]},
+            "activity_applied": set(),
+        }
+        mock_snap_hist.return_value = []  # no history to bracket the ex-date
+        mock_trades.return_value = []
+
+        with caplog.at_level("WARNING", logger="ggTrader.paper.trader"):
+            trader.run()
+
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["split_corrections"] == {"MNST": 2.0}
+        assert any(
+            "No snapshot evidence" in record.getMessage() and "MNST" in record.getMessage()
+            for record in caplog.records
+        )
 
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
@@ -1614,7 +1730,10 @@ class TestCatastropheStopEnabled:
             },
             portfolio_value=100_000.0,
         )
-        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": set(),
+        }
         result = trader.run()
         broker.submit_sell.assert_not_called()
         assert result["sells"] == []

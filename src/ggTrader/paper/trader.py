@@ -20,6 +20,7 @@ from ggTrader.paper.persist import (
     get_pending_orders,
     get_snapshot_history,
     get_total_dividend_accrual,
+    get_trade_history_dates,
     init_paper_schema,
     log_dividend_accrual,
     log_pending_order,
@@ -30,7 +31,11 @@ from ggTrader.paper.persist import (
 )
 from ggTrader.paper.risk import RiskConfig, RiskGuard
 from ggTrader.paper.signal_runner import generate_blended_signals
-from ggTrader.paper.split_check import apply_corrections_to_positions
+from ggTrader.paper.split_check import (
+    apply_corrections_to_positions,
+    compute_split_corrections,
+    find_split_applied_symbols,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -230,6 +235,60 @@ class PaperTrader:
                 }
         return filled_orders
 
+    def _compute_split_corrections(
+        self, positions: dict[str, dict], split_since: date, today: date
+    ) -> dict[str, float]:
+        """Determine unapplied-split corrections for currently held
+        `positions`, using `paper_snapshots`/`paper_trades` history as the
+        primary evidence and the account's own SPLIT activities as a
+        secondary, fallback signal -- see `split_check.py`'s module
+        docstring for why the activities feed alone is no longer trusted
+        (it is a no-op on this paper account, so a real applied split would
+        otherwise be double-corrected).
+
+        Returns `{symbol: correction_factor}`, same shape as
+        `AlpacaBroker.get_split_corrections` (see
+        `split_check.apply_corrections_to_positions`). Fails soft at every
+        step -- any error degrades to the broker's corporate-actions +
+        activities view alone, never aborts the run.
+        """
+        evidence = self._broker.get_split_evidence(list(positions), split_since)
+        corp_splits = evidence.get("corp_splits", {})
+        activity_applied = evidence.get("activity_applied", set())
+        if not corp_splits:
+            return {}
+
+        try:
+            snapshot_history = get_snapshot_history()
+        except Exception as exc:
+            _log.warning("Could not load snapshot history for split check (non-fatal): %s", exc)
+            snapshot_history = []
+
+        trade_dates_by_symbol: dict[str, list] = {}
+        for symbol in corp_splits:
+            try:
+                trade_dates_by_symbol[symbol] = get_trade_history_dates(symbol)
+            except Exception as exc:
+                _log.warning(
+                    "Could not load trade history for %s split check (non-fatal): %s",
+                    symbol,
+                    exc,
+                )
+                trade_dates_by_symbol[symbol] = []
+
+        snapshot_applied, unresolved = find_split_applied_symbols(
+            corp_splits, snapshot_history, trade_dates_by_symbol, today
+        )
+        if unresolved:
+            _log.warning(
+                "No snapshot evidence to confirm split status for %s -- falling back to "
+                "the activities feed / correcting by default",
+                sorted(unresolved),
+            )
+
+        applied_symbols = snapshot_applied | set(activity_applied)
+        return compute_split_corrections(corp_splits, applied_symbols)
+
     def _accrue_dividends(self, positions: dict[str, dict]) -> dict:
         """Credit cash dividends Alpaca's corporate-actions feed knows about
         but this account's own DIV activity log never booked (see
@@ -428,14 +487,15 @@ class PaperTrader:
             else positions
         )
 
-        # Cross-reference the broker's own corporate-actions feed against
-        # this account's SPLIT activities for currently-held symbols to find
-        # splits the broker knows about but never applied to the account
-        # (see AlpacaBroker.get_split_corrections / split_check.py). Fails
-        # soft internally -- an API error here yields {} ("no corrections
-        # known"), never an exception.
+        # Determine unapplied-split corrections for currently-held symbols.
+        # Primary evidence is paper_snapshots/paper_trades history (see
+        # _compute_split_corrections and split_check.py's module docstring);
+        # the broker's own SPLIT activities feed is kept only as a secondary
+        # signal, since it is a no-op on this paper account. Fails soft
+        # internally -- an API or DB error here degrades toward {} ("no
+        # corrections known"), never an exception.
         split_since = today_et - timedelta(days=_SPLIT_LOOKBACK_DAYS)
-        split_corrections = self._broker.get_split_corrections(list(positions), split_since)
+        split_corrections = self._compute_split_corrections(positions, split_since, today_et)
         if split_corrections:
             _log.warning("Unapplied broker split corrections: %s", split_corrections)
         # Concentration checks (below, in the buy loop) must see true
