@@ -398,6 +398,83 @@ class TestFillLogging:
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
 @patch("ggTrader.paper.trader.init_paper_schema")
+class TestRunDateIsSessionDateNotAsOf:
+    """Regression coverage for the paper-tables day-shift (2026-08-22).
+
+    `paper_trades.run_date` / `paper_snapshots.run_date` must record the ET
+    calendar date of THIS run, not `signals["as_of"]` (the date of the last
+    completed bar the signal was computed from -- which trails by one
+    session by design, and which compounded with the now-fixed OHLCV
+    day-shift bug to land run_date a session-plus-a-day early: a Sun-Thu
+    weekday census with zero Fridays). These tests pin `_today_et` directly
+    (bypassing the module's own `_stub_today_et` autouse fixture, which is
+    itself just a patch on `_today_et`) so a run "near midnight UTC" is
+    exercised without any dependency on the real wall clock.
+    """
+
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_log_trade_stamps_today_et_not_as_of(self, mock_signals, mock_log_trade, *_):
+        # Tuesday 2026-06-23, run fires at 19:45 UTC (12:45 PT) -- same
+        # calendar day in UTC/ET/PT, so no wall-clock ambiguity here. The
+        # signal's as_of is the PRIOR session (Monday), which is the normal,
+        # by-design lag -- not itself a bug -- but must never be what gets
+        # persisted as the trade date.
+        tuesday = date(2026, 6, 23)
+        monday = date(2026, 6, 22)
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=monday.isoformat())
+        with patch("ggTrader.paper.trader._today_et", return_value=tuesday):
+            trader, _broker, _notifier = _make_trader(portfolio_value=100000.0)
+            trader.run()
+        mock_log_trade.assert_called_once()
+        logged_run_date = mock_log_trade.call_args[0][0]
+        assert logged_run_date == tuesday.isoformat()
+        assert logged_run_date != monday.isoformat()
+
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_log_pending_order_stamps_today_et_not_as_of(self, mock_signals, _log_trade, *_):
+        tuesday = date(2026, 6, 23)
+        monday = date(2026, 6, 22)
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=monday.isoformat())
+        trader, broker, _notifier = _make_trader(portfolio_value=100000.0)
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "accepted",
+        }
+        with patch("ggTrader.paper.trader._today_et", return_value=tuesday):
+            with patch("ggTrader.paper.trader.log_pending_order") as mock_pending:
+                trader.run()
+        mock_pending.assert_called_once()
+        logged_run_date = mock_pending.call_args[0][0]
+        assert logged_run_date == tuesday.isoformat()
+        assert logged_run_date != monday.isoformat()
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_log_snapshot_stamps_today_et_not_as_of(
+        self, mock_signals, _mock_schema, mock_log_snapshot, *_
+    ):
+        tuesday = date(2026, 6, 23)
+        monday = date(2026, 6, 22)
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of=monday.isoformat())
+        with patch("ggTrader.paper.trader._today_et", return_value=tuesday):
+            trader, _broker, _notifier = _make_trader(portfolio_value=100000.0)
+            trader.run()
+        mock_log_snapshot.assert_called_once()
+        logged_run_date = mock_log_snapshot.call_args[0][0]
+        assert logged_run_date == tuesday.isoformat()
+        assert logged_run_date != monday.isoformat()
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.init_paper_schema")
 class TestReconciliation:
     @patch("ggTrader.paper.trader.clear_pending_order")
     @patch("ggTrader.paper.trader.log_trade")

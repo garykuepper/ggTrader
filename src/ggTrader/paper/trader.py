@@ -53,6 +53,16 @@ _ET = ZoneInfo("America/New_York")
 # feed (e.g. a yfinance outage serving week-old bars). Four calendar days covers
 # the worst normal case: a Friday close still being the latest completed bar on
 # a Tuesday run after a Monday holiday.
+#
+# NOTE: `as_of` is used ONLY for this staleness check. `paper_trades.run_date` /
+# `paper_snapshots.run_date` are stamped from `_today_et()` -- the ET calendar
+# date of the run itself -- not from `as_of`. Persisting `as_of` conflated "the
+# date the input data is dated" with "the date this run/order/snapshot
+# happened", and compounded with the (now-fixed) OHLCV day-shift bug
+# (cached_yfinance_loader.py) to land `run_date` a full session-plus-a-day
+# early -- the weekday census of `paper_snapshots.run_date` was Sun-Thu with
+# zero Fridays. See scripts/migrate_paper_dates_20260822.py for the historical
+# row fix.
 _MAX_SIGNAL_AGE_DAYS = 4
 
 
@@ -559,7 +569,13 @@ class PaperTrader:
             )
             if terminal:
                 if filled:
-                    log_trade(signals["as_of"], side, symbol, trade_amount, oid)
+                    # run_date is the ET calendar date of THIS run (the session the
+                    # order was actually placed/filled in), not signals["as_of"]
+                    # (the date of the last completed bar the signal was computed
+                    # from, which trails by one session and was the vector for the
+                    # OHLCV day-shift bug -- see _today_et() and
+                    # scripts/migrate_paper_dates_20260822.py).
+                    log_trade(today_et.isoformat(), side, symbol, trade_amount, oid)
                 else:
                     _log.info(
                         "Order %s (%s %s) terminal unfilled (status=%s); no ledger entry",
@@ -569,8 +585,9 @@ class PaperTrader:
                         status,
                     )
             else:
-                # accepted / new / pending / partially_filled — settle next run
-                log_pending_order(signals["as_of"], side, symbol, amount, oid)
+                # accepted / new / pending / partially_filled — settle next run.
+                # Same run_date reasoning as log_trade above.
+                log_pending_order(today_et.isoformat(), side, symbol, amount, oid)
                 _log.info(
                     "Order %s (%s %s) still working (status=%s); queued for reconciliation",
                     oid,
@@ -639,8 +656,11 @@ class PaperTrader:
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
 
         try:
+            # Same run_date reasoning as log_trade / log_pending_order above:
+            # stamp the actual ET session date of this run, not the lagged
+            # signals["as_of"] date.
             log_snapshot(
-                signals["as_of"],
+                today_et.isoformat(),
                 corrected_value,
                 new_account["cash"],
                 corrected_updated_positions,
