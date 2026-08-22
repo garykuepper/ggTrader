@@ -7,7 +7,7 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from ggTrader.paper import cash_sweep
+from ggTrader.paper import cash_sweep, catastrophe_stop
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.notifier import TelegramNotifier
@@ -499,6 +499,62 @@ class PaperTrader:
         # 5th element is the ledger `reason` tag: None for an ordinary
         # strategy order, cash_sweep.SWEEP_TRADE_REASON for a sweep order.
         pending_orders: list[tuple[str, str, str, float, str | None]] = []
+
+        # Catastrophe stop (feature-flagged, default OFF -- see
+        # catastrophe_stop.py). A position the strategy's own RSI exit never
+        # fires on can otherwise decay indefinitely (see the module
+        # docstring for the NXPI incident); this is a risk backstop,
+        # evaluated BEFORE any strategy buy/sell signal below, so a stop-out
+        # frees its slot/cash the same run. Reads `corrected_positions`
+        # (split-corrected via cost_basis, built from `strategy_positions`
+        # above -- the sweep ETF position is never in it), so an unapplied
+        # broker split can't fake a phantom loss and the sweep symbol can
+        # never be stopped out. Stopped symbols are removed from
+        # `strategy_positions` immediately after, so the sells loop below
+        # sees them as no longer held and never submits a second, coincident
+        # strategy-exit sell for the same symbol.
+        if catastrophe_stop.catastrophe_stop_enabled():
+            threshold = catastrophe_stop.catastrophe_stop_pct()
+            stopped_symbols: list[str] = []
+            for symbol in catastrophe_stop.find_catastrophe_stops(corrected_positions, threshold):
+                if symbol in pending_symbols:
+                    _log.info("Skipping catastrophe stop %s: order already pending", symbol)
+                    continue
+                qty = strategy_positions[symbol]["qty"]
+                pct = catastrophe_stop.unrealized_pct(corrected_positions[symbol])
+                if self._dry_run:
+                    stopped_symbols.append(symbol)
+                    executed_sells.append(symbol)
+                    self._notifier.send(
+                        f"<b>🛑 DRY RUN catastrophe stop:</b> {symbol} (qty {qty}, "
+                        f"unrealized {pct:.1%} breached {threshold:.1%} floor)"
+                    )
+                    continue
+                try:
+                    oid = self._broker.submit_sell(symbol, qty)
+                    stopped_symbols.append(symbol)
+                    executed_sells.append(symbol)
+                    pending_orders.append(
+                        (
+                            oid,
+                            "SELL",
+                            symbol,
+                            strategy_positions[symbol]["market_value"],
+                            catastrophe_stop.CATASTROPHE_STOP_REASON,
+                        )
+                    )
+                    self._notifier.send(
+                        f"<b>🛑 Catastrophe stop:</b> {symbol} unrealized {pct:.1%} "
+                        f"breached {threshold:.1%} floor — selling qty {qty}."
+                    )
+                except Exception as exc:
+                    errors.append(f"CATASTROPHE STOP {symbol}: {exc}")
+            if stopped_symbols:
+                strategy_positions = {
+                    sym: pos
+                    for sym, pos in strategy_positions.items()
+                    if sym not in stopped_symbols
+                }
 
         # Buys — respect global + per-sleeve position limits. Computed here
         # (before the sells loop) rather than just before the buy loop below,

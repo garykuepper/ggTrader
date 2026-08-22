@@ -1442,3 +1442,158 @@ class TestCashSweepEnabled:
         trader.run()
         # reserve 5000, target 100 < default min_clip 500 -> no sweep buy
         broker.submit_buy.assert_not_called()
+
+
+def _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.30):
+    """A position whose unrealized loss (from `cost_basis`, split-invariant)
+    is exactly `loss_pct` -- e.g. -0.30 for -30%."""
+    unrealized_pl = cost_basis * loss_pct
+    market_value = cost_basis + unrealized_pl
+    price = market_value / qty if qty else 0.0
+    return {
+        "qty": qty,
+        "market_value": market_value,
+        "current_price": price,
+        "avg_entry": cost_basis / qty if qty else 0.0,
+        "unrealized_pl": unrealized_pl,
+        "unrealized_plpc": loss_pct,
+        "change_today": 0.0,
+        "cost_basis": cost_basis,
+    }
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestCatastropheStopFlagOff:
+    """The stop must be a strict no-op when CATASTROPHE_STOP_ENABLED is unset
+    -- zero behavior change for a live-money production path."""
+
+    @patch.dict("os.environ", {}, clear=False)
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_disabled_by_default_no_stop_sell(self, mock_signals, *_):
+        os.environ.pop("CATASTROPHE_STOP_ENABLED", None)
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(loss_pct=-0.50)}, portfolio_value=100_000.0
+        )
+        result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert result["sells"] == []
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestCatastropheStopEnabled:
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_fires_at_exactly_threshold_sells_full_position(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.25)},
+            portfolio_value=100_000.0,
+        )
+        result = trader.run()
+        broker.submit_sell.assert_called_once_with("NXPI", 100.0)
+        assert "NXPI" in result["sells"]
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_does_not_fire_one_point_above_threshold(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.24)},
+            portfolio_value=100_000.0,
+        )
+        result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert result["sells"] == []
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_stopped_symbol_not_also_sold_by_coincident_strategy_exit(self, mock_signals, *_):
+        # NXPI both breaches the catastrophe floor AND has a strategy exit
+        # signal this run -- it must be sold exactly once, by the stop.
+        mock_signals.return_value = _blend(buys=[], sells=["NXPI"])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.40)},
+            portfolio_value=100_000.0,
+        )
+        result = trader.run()
+        broker.submit_sell.assert_called_once_with("NXPI", 100.0)
+        assert result["sells"].count("NXPI") == 1
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true", "CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_symbol_excluded_even_at_a_deep_loss(self, mock_signals, *_):
+        # The sweep ETF position (SPY) must never be catastrophe-stopped --
+        # it is cash-in-waiting, not a strategy bet, and trader.py builds
+        # corrected_positions (what the stop check reads) from
+        # strategy_positions, which already excludes it.
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _losing_position(qty=50.0, cost_basis=20000.0, loss_pct=-0.90)},
+            portfolio_value=100_000.0,
+            cash=50_000.0,  # generous cash: no sweep buy/sell action this run either
+        )
+        result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert result["sells"] == []
+
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_reason_tagged_catastrophe_stop(self, mock_signals, mock_log_trade, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.40)},
+            portfolio_value=100_000.0,
+        )
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "NXPI",
+            "side": "sell",
+            "qty": 100.0,
+            "notional": None,
+            "filled_qty": 100.0,
+            "filled_avg_price": 60.0,
+            "status": "filled",
+        }
+        trader.run()
+        mock_log_trade.assert_called_once()
+        reason_arg = mock_log_trade.call_args[0][5]
+        assert reason_arg == "catastrophe_stop"
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_split_adjusted_cost_basis_no_phantom_trigger(self, mock_signals, *_):
+        # MNST-shaped fixture: broker qty pre-split (never doubled for the
+        # 2-for-1 split), current_price/market_value post-split -- the
+        # broker's own uncorrected unrealized_pl looks like a huge loss, but
+        # the trader corrects it (via split_check.apply_corrections_to_positions,
+        # using cost_basis) before the catastrophe check ever sees it, so no
+        # phantom stop-out fires.
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        mnst_qty = 20.80410098
+        mnst_cost_basis = 1887.11
+        mnst_broker_market_value = mnst_qty * 47.77  # 993.81..., bogus pre-correction value
+        trader, broker, _ = _make_trader(
+            positions={
+                "MNST": {
+                    "qty": mnst_qty,
+                    "market_value": mnst_broker_market_value,
+                    "unrealized_pl": mnst_broker_market_value - mnst_cost_basis,  # -893.30...
+                    "unrealized_plpc": (mnst_broker_market_value - mnst_cost_basis)
+                    / mnst_cost_basis,
+                    "cost_basis": mnst_cost_basis,
+                    "current_price": 47.77,
+                }
+            },
+            portfolio_value=100_000.0,
+        )
+        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert result["sells"] == []
