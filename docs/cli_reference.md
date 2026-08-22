@@ -10,7 +10,7 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 |---|---|
 | `ggt lab` | Run trading simulations (backtests) to see how strategies would have performed in the past. |
 | `ggt paper` | Run virtual trading (paper trading) using real-time data and fake money. |
-| `ggt ingest` | ⚠️ **Non-functional stub — does nothing.** See §3. |
+| `ggt ingest` | ⚠️ **Parked — refuses to run, exits non-zero.** See §3. |
 | `ggt db` | Run diagnostics, clean up, or manage the database. |
 
 ---
@@ -216,20 +216,23 @@ ggt paper
 
 ---
 
-## 3. ggt ingest (Downloading Data) — ⚠️ NON-FUNCTIONAL
+## 3. ggt ingest (Downloading Data) — ⚠️ PARKED, REFUSES TO RUN
 
-> **This command does not work and never completes any ingestion.**
-> `src/ggTrader/cli/cmd_ingest.py:26-31` hardcodes a two-symbol crypto list
-> with the actual `ingestor.sync_symbol_ohlcv(sym)` call **commented out**,
-> then prints `Ingestion complete.` It reports success having written
-> nothing — which is worse than failing, so do not trust its output.
+> **As of 2026-08-22 this command deliberately does nothing and exits
+> non-zero.** It used to be worse: `src/ggTrader/cli/cmd_ingest.py:26-31`
+> hardcoded a two-symbol crypto list with the actual
+> `ingestor.sync_symbol_ohlcv(sym)` call **commented out**, then printed
+> `Ingestion complete.` — reporting success having written nothing. Rather
+> than continue lying about success, it now prints a parked message to
+> stderr and exits `1`.
 >
 > **How data actually gets loaded:** equity OHLCV is fetched on demand and
 > cached to TimescaleDB by `CachedYFinanceLoader`
 > (`src/ggTrader/data/live/cached_yfinance_loader.py`), transparently, when
 > a lab or paper run asks for symbols it does not already have. There is
 > nothing to run by hand. Crypto ingestion is parked along with the rest of
-> the crypto arc.
+> the crypto arc; `postgres_ingestor.py` is kept in place (unused by the CLI)
+> in case crypto ingestion is revived.
 >
 > The documentation below describes the *intended* interface, kept for
 > whenever the command is either implemented or removed.
@@ -244,7 +247,7 @@ ggt ingest [options]
 ### Options:
 - `--days`: How many days of past history to download. Defaults to 1 day.
 
-### Examples:
+### Examples (all currently refuse to run — see the warning above):
 ```bash
 ggt ingest              # Download the most recent 1 day of data
 ggt ingest --days 180   # Download the last 6 months of data

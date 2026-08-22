@@ -1,36 +1,30 @@
 import argparse
-from datetime import datetime
+import sys
 
-from ggTrader.data.historical.postgres_ingestor import PostgresIngestor
-from ggTrader.utils.config import get_db_connection_string
+PARKED_MESSAGE = (
+    "ggt ingest is parked and does not run: crypto ingestion was shelved along with the rest "
+    "of the crypto execution arc. Equity data loads on demand via CachedYFinanceLoader "
+    "(src/ggTrader/data/live/cached_yfinance_loader.py) -- there is nothing to run by hand. "
+    "See docs/cli_reference.md Section 3 for details."
+)
 
 
 def register_ingest_parser(subparsers: argparse._SubParsersAction):
     """Registers the 'ingest' subcommand."""
-    parser = subparsers.add_parser("ingest", help="Sync Kraken OHLCV data to local TimescaleDB")
-    # Add help message/flags as needed from manage_data.py
+    parser = subparsers.add_parser(
+        "ingest", help="[PARKED, non-functional] historical crypto OHLCV ingestion"
+    )
     parser.add_argument(
         "--days", type=int, default=30, help="Number of days to ingest (default: 30)"
     )
 
 
-def run_ingest(args: argparse.Namespace):
-    """Refactored logic for data ingestion into ggt CLI."""
-    print(f"\n[{datetime.now()}] Data Ingestion Initiated...")
+def run_ingest(args: argparse.Namespace) -> None:
+    """Refuse to run: ingest is a parked, non-functional stub.
 
-    try:
-        connection_string = get_db_connection_string()
-        PostgresIngestor(connection_string)
-
-        # Pull symbols list if needed or use dynamic universe
-        # For simplicity, if no symbols, ingest BTC as test
-        symbols = ["BTC-USD", "ETH-USD"]  # Example
-
-        for sym in symbols:
-            print(f"  > Syncing {sym}...")
-            # ingestor.sync_symbol_ohlcv(sym) # Logic inside ingestor
-
-        print("Ingestion complete.")
-
-    except Exception as e:
-        print(f"Error during ingestion: {e}")
+    This command never actually synced data -- it printed "Ingestion complete."
+    while the real sync call was commented out. Rather than continue to lie
+    about success, it now fails loudly and exits non-zero.
+    """
+    print(PARKED_MESSAGE, file=sys.stderr)
+    sys.exit(1)
