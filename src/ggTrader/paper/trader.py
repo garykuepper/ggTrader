@@ -513,9 +513,11 @@ class PaperTrader:
         # `strategy_positions` immediately after, so the sells loop below
         # sees them as no longer held and never submits a second, coincident
         # strategy-exit sell for the same symbol.
+        # Hoisted out of the flag check: the buy loop below consults this set
+        # so a just-stopped symbol can never be re-bought in the same run.
+        stopped_symbols: set[str] = set()
         if catastrophe_stop.catastrophe_stop_enabled():
             threshold = catastrophe_stop.catastrophe_stop_pct()
-            stopped_symbols: list[str] = []
             for symbol in catastrophe_stop.find_catastrophe_stops(corrected_positions, threshold):
                 if symbol in pending_symbols:
                     _log.info("Skipping catastrophe stop %s: order already pending", symbol)
@@ -523,7 +525,7 @@ class PaperTrader:
                 qty = strategy_positions[symbol]["qty"]
                 pct = catastrophe_stop.unrealized_pct(corrected_positions[symbol])
                 if self._dry_run:
-                    stopped_symbols.append(symbol)
+                    stopped_symbols.add(symbol)
                     executed_sells.append(symbol)
                     self._notifier.send(
                         f"<b>🛑 DRY RUN catastrophe stop:</b> {symbol} (qty {qty}, "
@@ -532,7 +534,7 @@ class PaperTrader:
                     continue
                 try:
                     oid = self._broker.submit_sell(symbol, qty)
-                    stopped_symbols.append(symbol)
+                    stopped_symbols.add(symbol)
                     executed_sells.append(symbol)
                     pending_orders.append(
                         (
@@ -663,6 +665,13 @@ class PaperTrader:
             sleeve_cap = slot_caps.get(universe, 0)
             for symbol in syms:
                 if symbol in strategy_positions:
+                    continue
+                # A symbol the catastrophe stop just sold is gone from
+                # `strategy_positions`, so the held-check above can't see it —
+                # without this guard a coincident buy signal would re-open the
+                # position the backstop just closed, in the same run.
+                if symbol in stopped_symbols:
+                    _log.info("Skipping BUY %s: catastrophe-stopped this run", symbol)
                     continue
                 if symbol in pending_symbols:
                     _log.info("Skipping BUY %s: order already pending", symbol)

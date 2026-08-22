@@ -1525,6 +1525,27 @@ class TestCatastropheStopEnabled:
         broker.submit_sell.assert_called_once_with("NXPI", 100.0)
         assert result["sells"].count("NXPI") == 1
 
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_stopped_symbol_not_rebought_by_coincident_buy_signal(self, mock_signals, *_):
+        # NXPI breaches the catastrophe floor AND appears in this run's buy
+        # signals. Removing it from strategy_positions (the double-sell fix)
+        # also blinds the buy loop's held-check to it, so without an explicit
+        # guard the backstop's sell would be immediately re-opened same-run.
+        # The position is deliberately small (1.4% of portfolio) so the
+        # concentration cap cannot incidentally block the re-buy — only the
+        # stopped_symbols guard prevents it.
+        mock_signals.return_value = _blend(buys=["NXPI"], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=20.0, cost_basis=2000.0, loss_pct=-0.30)},
+            portfolio_value=100_000.0,
+        )
+        result = trader.run()
+        broker.submit_sell.assert_called_once_with("NXPI", 20.0)
+        broker.submit_buy.assert_not_called()
+        assert "NXPI" in result["sells"]
+        assert "NXPI" not in result["buys"]
+
     @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true", "CASH_SWEEP_ENABLED": "true"})
     @patch("ggTrader.paper.trader.generate_blended_signals")
     def test_sweep_symbol_excluded_even_at_a_deep_loss(self, mock_signals, *_):
