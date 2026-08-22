@@ -20,6 +20,7 @@ from ggTrader.paper.split_check import (
     compute_split_corrections,
     corrected_market_value,
     corrected_unrealized_pl,
+    find_split_applied_symbols,
 )
 
 # Real MNST numbers from the 2026-08-19 incident report.
@@ -169,3 +170,191 @@ class TestApplyCorrectionsToPositions:
 
         assert result["VZ"] == positions["VZ"]
         assert result["MNST"]["unrealized_pl"] == pytest.approx(_MNST_TRUE_UNREALIZED_PL, abs=0.01)
+
+
+class TestFindSplitAppliedSymbols:
+    """Snapshot-history-based evidence for whether a broker-known split was
+    actually applied to this account -- the hardening this module's
+    docstring describes, replacing the never-exercised activities-feed
+    guard (see docs/next_steps.md, "The one real defect this audit did
+    surface")."""
+
+    _EX_DATE = date(2026, 8, 11)
+    _TODAY = date(2026, 8, 22)
+    _CORP_SPLITS = {"MNST": [(_EX_DATE, 2.0)]}
+
+    def test_qty_doubling_across_ex_date_is_applied(self):
+        # Broker correctly booked the split: qty on the books doubles
+        # between the last pre-ex-date snapshot and the first post-ex-date
+        # one, with no trade in between to explain it another way.
+        snapshot_history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.80410098}}),
+            (date(2026, 8, 12), {"MNST": {"qty": 41.60820196}}),
+        ]
+
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, snapshot_history, {}, self._TODAY
+        )
+
+        assert applied == {"MNST"}
+        assert unresolved == set()
+
+    def test_flat_qty_mnst_shaped_fixture_is_unapplied(self):
+        # The real, observed MNST incident shape: qty never moved across
+        # the ex-date, so the split was never applied and must still be
+        # corrected.
+        snapshot_history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.80410098}}),
+            (date(2026, 8, 12), {"MNST": {"qty": 20.80410098}}),
+        ]
+
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, snapshot_history, {}, self._TODAY
+        )
+
+        assert applied == set()
+        assert unresolved == set()
+
+    def test_trade_across_ex_date_is_not_mistaken_for_a_split(self):
+        # qty happens to double, but a trade in the same window fully
+        # explains it (e.g. a same-size buy) -- must not be inferred as a
+        # confirmed split application from the qty ratio alone.
+        snapshot_history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.80410098}}),
+            (date(2026, 8, 12), {"MNST": {"qty": 41.60820196}}),
+        ]
+        trade_dates_by_symbol = {"MNST": [date(2026, 8, 10)]}
+
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, snapshot_history, trade_dates_by_symbol, self._TODAY
+        )
+
+        assert applied == set()
+        assert unresolved == set()
+
+    def test_trade_outside_window_does_not_suppress_a_real_split(self):
+        # A trade exists for the symbol, but well before the pre-ex-date
+        # snapshot -- it must not disqualify a genuine split confirmation.
+        snapshot_history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.80410098}}),
+            (date(2026, 8, 12), {"MNST": {"qty": 41.60820196}}),
+        ]
+        trade_dates_by_symbol = {"MNST": [date(2026, 7, 1)]}
+
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, snapshot_history, trade_dates_by_symbol, self._TODAY
+        )
+
+        assert applied == {"MNST"}
+
+    def test_missing_snapshot_before_ex_date_is_unresolved(self):
+        # No snapshot exists before the ex-date (e.g. history starts after
+        # it, or the position was only bought after) -- there is no
+        # before/after evidence to compare, so this must fall back to the
+        # caller's default behavior (correct + log a warning), not guess.
+        snapshot_history = [
+            (date(2026, 8, 12), {"MNST": {"qty": 41.60820196}}),
+        ]
+
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, snapshot_history, {}, self._TODAY
+        )
+
+        assert applied == set()
+        assert unresolved == {"MNST"}
+
+    def test_missing_snapshot_after_ex_date_is_unresolved(self):
+        # No snapshot exists on/after the ex-date yet (e.g. the split just
+        # happened and tomorrow's run hasn't logged a snapshot past it).
+        snapshot_history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.80410098}}),
+        ]
+
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, snapshot_history, {}, self._TODAY
+        )
+
+        assert applied == set()
+        assert unresolved == {"MNST"}
+
+    def test_no_snapshot_history_at_all_is_unresolved(self):
+        applied, unresolved = find_split_applied_symbols(self._CORP_SPLITS, [], {}, self._TODAY)
+
+        assert applied == set()
+        assert unresolved == {"MNST"}
+
+    def test_symbol_not_held_before_ex_date_is_unresolved(self):
+        # A snapshot exists before the ex-date, but the symbol wasn't held
+        # then (e.g. bought later) -- no qty to compare, still unresolved
+        # rather than a false "applied".
+        snapshot_history = [
+            (date(2026, 8, 8), {"VZ": {"qty": 77.05}}),
+            (date(2026, 8, 12), {"MNST": {"qty": 41.60820196}}),
+        ]
+
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, snapshot_history, {}, self._TODAY
+        )
+
+        assert applied == set()
+        assert unresolved == {"MNST"}
+
+    def test_future_ex_date_split_is_ignored(self):
+        # The split hasn't happened yet as of `today` -- nothing to
+        # confirm either way.
+        future_splits = {"MNST": [(date(2026, 9, 1), 2.0)]}
+        snapshot_history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.80410098}}),
+            (date(2026, 8, 12), {"MNST": {"qty": 20.80410098}}),
+        ]
+
+        applied, unresolved = find_split_applied_symbols(
+            future_splits, snapshot_history, {}, self._TODAY
+        )
+
+        assert applied == set()
+        assert unresolved == set()
+
+    def test_qty_within_tolerance_of_factor_is_applied(self):
+        # Fractional-share rounding: qty jumps to 4.9% shy of an exact
+        # double, still within the 5% tolerance.
+        snapshot_history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.0}}),
+            (date(2026, 8, 12), {"MNST": {"qty": 38.02}}),  # ratio 1.901, factor 2.0
+        ]
+
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, snapshot_history, {}, self._TODAY
+        )
+
+        assert applied == {"MNST"}
+
+    def test_qty_outside_tolerance_of_factor_is_not_applied(self):
+        snapshot_history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.0}}),
+            (date(2026, 8, 12), {"MNST": {"qty": 30.0}}),  # ratio 1.5, nowhere near 2.0
+        ]
+
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, snapshot_history, {}, self._TODAY
+        )
+
+        assert applied == set()
+        assert unresolved == set()
+
+    def test_multiple_symbols_resolved_independently(self):
+        corp_splits = {
+            "MNST": [(self._EX_DATE, 2.0)],
+            "XYZ": [(self._EX_DATE, 0.1)],
+        }
+        snapshot_history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.80410098}, "XYZ": {"qty": 100.0}}),
+            (date(2026, 8, 12), {"MNST": {"qty": 41.60820196}, "XYZ": {"qty": 100.0}}),
+        ]
+
+        applied, unresolved = find_split_applied_symbols(
+            corp_splits, snapshot_history, {}, self._TODAY
+        )
+
+        assert applied == {"MNST"}
+        assert unresolved == set()

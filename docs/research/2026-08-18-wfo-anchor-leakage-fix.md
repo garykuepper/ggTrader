@@ -4,6 +4,20 @@
 **Date:** 2026-08-18
 **Audience:** Principal Engineering Team & Quantitative Research Collaborators
 
+> ⚠️ **SUPERSEDED 2026-08-19/20.** Every citation below of Sharpe **1.12**
+> (SP500 core), **1.14** (3-sleeve blend), or an **SPY 0.58–0.65** benchmark
+> predates two later fixes: the 2026-08-19 pinned-window reproduction (which
+> found the "1.12" baseline was actually **0.97**, and the blend **0.68**,
+> once `--eval-end` drift was pinned) and the 2026-08-20 day-shift fix (every
+> equity bar had been stamped one calendar day early, which also deflated
+> SPY via duplicate rows). A 2026-08-22 re-run on the corrected, day-shift-
+> fixed tape, same pinned window, measures core **0.99**, blend **0.69**,
+> SPY **0.914** (2021–2026 headline) / **0.78** (pinned 2021-01-31→2026-04-30
+> window). None of this changes this report's own conclusion — the anchor
+> leak is real and fixed, and is a separate bug from the ones above — but do
+> not cite the 1.12/1.14/0.58–0.65 figures below as current. See
+> `docs/research/2026-08-19-anchor-fix-reproduction.md`.
+
 ## 1. Executive Summary & Core Engine Audit
 
 `run_wfo` (`src/ggTrader/lab/wfo.py`) walks a strategy through rolling

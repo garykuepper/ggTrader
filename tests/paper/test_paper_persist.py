@@ -372,3 +372,50 @@ class TestGetLatestSnapshotRunDate:
         from ggTrader.paper.persist import get_latest_snapshot_run_date
 
         assert get_latest_snapshot_run_date() is None
+
+
+@patch("ggTrader.paper.persist._get_engine")
+class TestGetTradeHistoryDates:
+    """Feeds `split_check.find_split_applied_symbols` its evidence for
+    ruling out a plain trade explaining a qty change across a split's
+    ex-date."""
+
+    def test_returns_ascending_dates_for_symbol(self, mock_engine):
+        from datetime import date
+
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = [
+            (date(2026, 8, 5),),
+            (date(2026, 8, 20),),
+        ]
+
+        from ggTrader.paper.persist import get_trade_history_dates
+
+        result = get_trade_history_dates("MNST")
+
+        assert result == [date(2026, 8, 5), date(2026, 8, 20)]
+
+    def test_empty_history(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = []
+
+        from ggTrader.paper.persist import get_trade_history_dates
+
+        assert get_trade_history_dates("MNST") == []
+
+    def test_filters_by_symbol(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = []
+
+        from ggTrader.paper.persist import get_trade_history_dates
+
+        get_trade_history_dates("MNST")
+
+        params = mock_conn.execute.call_args[0][1]
+        assert params == {"symbol": "MNST"}

@@ -237,6 +237,55 @@ class TestGetSplitCorrections:
         assert result == {}
 
 
+class TestGetSplitEvidence:
+    """Raw ingredients (`corp_splits`, `activity_applied`) that
+    `PaperTrader` combines with `paper_snapshots` history -- the primary
+    evidence -- rather than trusting the activities feed alone (see
+    `split_check.py`'s module docstring)."""
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_returns_corp_splits_and_activity_applied(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {
+            "forward_splits": [_forward_split_action()],
+        }
+        broker._client.get.return_value = [{"symbol": "MNST", "date": "2026-08-11"}]
+
+        result = broker.get_split_evidence(["MNST"], since=date(2026, 8, 1))
+
+        assert result == {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": {"MNST"},
+        }
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_no_known_splits_returns_empty_without_activities_call(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.return_value.data = {}
+
+        result = broker.get_split_evidence(["VZ"], since=date(2026, 8, 1))
+
+        assert result == {"corp_splits": {}, "activity_applied": set()}
+        broker._client.get.assert_not_called()
+
+    def test_empty_symbol_list_returns_empty_without_api_call(self):
+        broker = _make_broker()
+
+        result = broker.get_split_evidence([], since=date(2026, 8, 1))
+
+        assert result == {"corp_splits": {}, "activity_applied": set()}
+        broker._client.get.assert_not_called()
+
+    @patch("ggTrader.paper.alpaca_broker.CorporateActionsClient")
+    def test_api_failure_fails_soft(self, mock_ca_cls):
+        broker = _make_broker()
+        mock_ca_cls.return_value.get_corporate_actions.side_effect = Exception("API down")
+
+        result = broker.get_split_evidence(["MNST"], since=date(2026, 8, 1))
+
+        assert result == {"corp_splits": {}, "activity_applied": set()}
+
+
 def _cash_dividend_action(symbol="VZ", rate=0.6725, ex_date=date(2026, 8, 1)):
     action = MagicMock()
     action.symbol = symbol

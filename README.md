@@ -9,7 +9,7 @@ Welcome to ggTrader! This is a research platform (or "lab") designed to help you
 
 It simulates how a trading strategy would have performed in the past using **Walk-Forward Optimization**—a realistic testing method where strategy parameters are tuned on past data and evaluated on subsequent "unseen" data on a rolling basis.
 
-The platform supports both US equities (stocks like the S&P 500 via Yahoo Finance) and cryptocurrencies (loaded from a local database).
+The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) for both research and live paper trading. Crypto is research-only: historical OHLCV loads from a local TimescaleDB, but there is no supported live-trading path for it — the crypto execution engines were removed, and `ggt ingest` (crypto data ingestion) is parked (see below).
 
 ---
 
@@ -101,7 +101,7 @@ src/ggTrader/
 └── cli/              # Main CLI entry subcommands (ggt lab | paper | db | ingest*)
 ```
 
-\* `ggt ingest` is a non-functional stub — see [CLI Reference §3](docs/cli_reference.md).
+\* `ggt ingest` is parked and refuses to run (exits non-zero) — see [CLI Reference §3](docs/cli_reference.md).
 
 | Additional Files | Description |
 |---|---|

@@ -7,6 +7,7 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+from ggTrader.paper import cash_sweep, catastrophe_stop
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.notifier import TelegramNotifier
@@ -19,6 +20,7 @@ from ggTrader.paper.persist import (
     get_pending_orders,
     get_snapshot_history,
     get_total_dividend_accrual,
+    get_trade_history_dates,
     init_paper_schema,
     log_dividend_accrual,
     log_pending_order,
@@ -29,7 +31,11 @@ from ggTrader.paper.persist import (
 )
 from ggTrader.paper.risk import RiskConfig, RiskGuard
 from ggTrader.paper.signal_runner import generate_blended_signals
-from ggTrader.paper.split_check import apply_corrections_to_positions
+from ggTrader.paper.split_check import (
+    apply_corrections_to_positions,
+    compute_split_corrections,
+    find_split_applied_symbols,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -53,6 +59,16 @@ _ET = ZoneInfo("America/New_York")
 # feed (e.g. a yfinance outage serving week-old bars). Four calendar days covers
 # the worst normal case: a Friday close still being the latest completed bar on
 # a Tuesday run after a Monday holiday.
+#
+# NOTE: `as_of` is used ONLY for this staleness check. `paper_trades.run_date` /
+# `paper_snapshots.run_date` are stamped from `_today_et()` -- the ET calendar
+# date of the run itself -- not from `as_of`. Persisting `as_of` conflated "the
+# date the input data is dated" with "the date this run/order/snapshot
+# happened", and compounded with the (now-fixed) OHLCV day-shift bug
+# (cached_yfinance_loader.py) to land `run_date` a full session-plus-a-day
+# early -- the weekday census of `paper_snapshots.run_date` was Sun-Thu with
+# zero Fridays. See scripts/migrate_paper_dates_20260822.py for the historical
+# row fix.
 _MAX_SIGNAL_AGE_DAYS = 4
 
 
@@ -146,7 +162,7 @@ class PaperTrader:
 
             if filled:
                 amount = filled_qty * filled_price
-                log_trade(po["run_date"], po["side"], po["symbol"], amount, oid)
+                log_trade(po["run_date"], po["side"], po["symbol"], amount, oid, po.get("reason"))
                 self._notifier.trade_alert(
                     po["side"],
                     po["symbol"],
@@ -161,6 +177,117 @@ class PaperTrader:
             except Exception as exc:
                 _log.warning("Reconcile: clear_pending_order(%s) failed: %s", oid, exc)
         return still_pending
+
+    def _poll_orders(
+        self, orders: list[tuple[str, str, str, float, str | None]]
+    ) -> dict[str, dict]:
+        """Poll submitted orders until they reach a terminal status (or a
+        wait budget expires), returning `{order_id: order_info}`.
+
+        Shared by the main per-run order batch (strategy sells/buys, plus a
+        cash-sweep sell if one was submitted) and the trailing cash-sweep buy,
+        which is sized from the account's real post-trade cash and so must be
+        submitted and polled separately, after the main batch resolves.
+        """
+        filled_orders: dict[str, dict] = {}
+        if not orders:
+            return filled_orders
+
+        start_time = time.time()
+        is_open = True
+        try:
+            is_open = self._broker.get_clock()["is_open"]
+        except Exception:
+            pass
+
+        max_wait = 15.0 if is_open else 2.0
+        remaining = {item[0]: item for item in orders}
+
+        while remaining and (time.time() - start_time) < max_wait:
+            for oid in list(remaining.keys()):
+                try:
+                    order_info = self._broker.get_order(oid)
+                    status = order_info["status"]
+                    # A partial fill is NOT terminal: keep polling so it can
+                    # complete (or time out) rather than booking the partial.
+                    if status in ("filled", "canceled", "rejected", "expired"):
+                        filled_orders[oid] = order_info
+                        remaining.pop(oid)
+                except Exception as e:
+                    _log.warning("Error polling order %s: %s", oid, e)
+            if remaining:
+                time.sleep(1.0)
+
+        # Query final statuses for remaining orders
+        for oid, item in remaining.items():
+            try:
+                filled_orders[oid] = self._broker.get_order(oid)
+            except Exception:
+                filled_orders[oid] = {
+                    "id": oid,
+                    "symbol": item[2],
+                    "side": item[1],
+                    "qty": None,
+                    "notional": item[3] if item[1] == "BUY" else None,
+                    "filled_qty": 0.0,
+                    "filled_avg_price": 0.0,
+                    "status": "pending",
+                }
+        return filled_orders
+
+    def _compute_split_corrections(
+        self, positions: dict[str, dict], split_since: date, today: date
+    ) -> dict[str, float]:
+        """Determine unapplied-split corrections for currently held
+        `positions`, using `paper_snapshots`/`paper_trades` history as the
+        primary evidence and the account's own SPLIT activities as a
+        secondary, fallback signal -- see `split_check.py`'s module
+        docstring for why the activities feed alone is no longer trusted
+        (it is a no-op on this paper account, so a real applied split would
+        otherwise be double-corrected).
+
+        Returns `{symbol: correction_factor}`, same shape as
+        `AlpacaBroker.get_split_corrections` (see
+        `split_check.apply_corrections_to_positions`). Fails soft at every
+        step -- any error degrades to the broker's corporate-actions +
+        activities view alone, never aborts the run.
+        """
+        evidence = self._broker.get_split_evidence(list(positions), split_since)
+        corp_splits = evidence.get("corp_splits", {})
+        activity_applied = evidence.get("activity_applied", set())
+        if not corp_splits:
+            return {}
+
+        try:
+            snapshot_history = get_snapshot_history()
+        except Exception as exc:
+            _log.warning("Could not load snapshot history for split check (non-fatal): %s", exc)
+            snapshot_history = []
+
+        trade_dates_by_symbol: dict[str, list] = {}
+        for symbol in corp_splits:
+            try:
+                trade_dates_by_symbol[symbol] = get_trade_history_dates(symbol)
+            except Exception as exc:
+                _log.warning(
+                    "Could not load trade history for %s split check (non-fatal): %s",
+                    symbol,
+                    exc,
+                )
+                trade_dates_by_symbol[symbol] = []
+
+        snapshot_applied, unresolved = find_split_applied_symbols(
+            corp_splits, snapshot_history, trade_dates_by_symbol, today
+        )
+        if unresolved:
+            _log.warning(
+                "No snapshot evidence to confirm split status for %s -- falling back to "
+                "the activities feed / correcting by default",
+                sorted(unresolved),
+            )
+
+        applied_symbols = snapshot_applied | set(activity_applied)
+        return compute_split_corrections(corp_splits, applied_symbols)
 
     def _accrue_dividends(self, positions: dict[str, dict]) -> dict:
         """Credit cash dividends Alpaca's corporate-actions feed knows about
@@ -345,20 +472,40 @@ class PaperTrader:
         positions = self._broker.get_positions()
         portfolio_value = account["portfolio_value"]
 
-        # Cross-reference the broker's own corporate-actions feed against
-        # this account's SPLIT activities for currently-held symbols to find
-        # splits the broker knows about but never applied to the account
-        # (see AlpacaBroker.get_split_corrections / split_check.py). Fails
-        # soft internally -- an API error here yields {} ("no corrections
-        # known"), never an exception.
+        # Cash sweep (feature-flagged, default OFF -- see cash_sweep.py). The
+        # sweep ETF position (if any) must be invisible to the strategy: not a
+        # strategy position, not counted against RiskGuard slot caps, and not
+        # sellable by strategy exit signals. `strategy_positions` is what all
+        # downstream slot/count/sell logic uses instead of the raw `positions`
+        # from the broker; when the flag is off this is just `positions`
+        # unchanged, so behavior is identical to before this feature existed.
+        sweep_on = cash_sweep.sweep_enabled()
+        sweep_sym = cash_sweep.sweep_symbol() if sweep_on else None
+        strategy_positions = (
+            {sym: pos for sym, pos in positions.items() if sym != sweep_sym}
+            if sweep_on
+            else positions
+        )
+
+        # Determine unapplied-split corrections for currently-held symbols.
+        # Primary evidence is paper_snapshots/paper_trades history (see
+        # _compute_split_corrections and split_check.py's module docstring);
+        # the broker's own SPLIT activities feed is kept only as a secondary
+        # signal, since it is a no-op on this paper account. Fails soft
+        # internally -- an API or DB error here degrades toward {} ("no
+        # corrections known"), never an exception.
         split_since = today_et - timedelta(days=_SPLIT_LOOKBACK_DAYS)
-        split_corrections = self._broker.get_split_corrections(list(positions), split_since)
+        split_corrections = self._compute_split_corrections(positions, split_since, today_et)
         if split_corrections:
             _log.warning("Unapplied broker split corrections: %s", split_corrections)
         # Concentration checks (below, in the buy loop) must see true
         # economic exposure -- the corrected market_value -- not the
-        # broker's uncorrected figure for a split-flagged holding.
-        corrected_positions = apply_corrections_to_positions(positions, split_corrections)
+        # broker's uncorrected figure for a split-flagged holding. Built from
+        # `strategy_positions`, not raw `positions`: the sweep ETF position is
+        # invisible to all strategy signal/slot logic, and that includes the
+        # concentration check (its exposure is cash-in-waiting, not a
+        # strategy bet).
+        corrected_positions = apply_corrections_to_positions(strategy_positions, split_corrections)
 
         # Cross-reference the broker's corporate-actions feed against this
         # account's DIV activities to credit (as a reporting-only accrual --
@@ -409,47 +556,192 @@ class PaperTrader:
         executed_sells: list[str] = []
         executed_buys: list[str] = []
         errors: list[str] = []
-        pending_orders: list[tuple[str, str, str, float]] = []
+        # 5th element is the ledger `reason` tag: None for an ordinary
+        # strategy order, cash_sweep.SWEEP_TRADE_REASON for a sweep order.
+        pending_orders: list[tuple[str, str, str, float, str | None]] = []
 
-        # Sells first — free up position slots
-        for symbol in signals["sells"]:
-            if symbol not in positions:
-                continue
-            if symbol in pending_symbols:
-                _log.info("Skipping SELL %s: order already pending", symbol)
-                continue
-            qty = positions[symbol]["qty"]
-            if self._dry_run:
-                executed_sells.append(symbol)
-                self._notifier.send(f"<b>🔍 DRY RUN sell:</b> {symbol} (qty {qty})")
-                continue
-            try:
-                oid = self._broker.submit_sell(symbol, qty)
-                executed_sells.append(symbol)
-                pending_orders.append((oid, "SELL", symbol, positions[symbol]["market_value"]))
-            except Exception as exc:
-                errors.append(f"SELL {symbol}: {exc}")
+        # Catastrophe stop (feature-flagged, default OFF -- see
+        # catastrophe_stop.py). A position the strategy's own RSI exit never
+        # fires on can otherwise decay indefinitely (see the module
+        # docstring for the NXPI incident); this is a risk backstop,
+        # evaluated BEFORE any strategy buy/sell signal below, so a stop-out
+        # frees its slot/cash the same run. Reads `corrected_positions`
+        # (split-corrected via cost_basis, built from `strategy_positions`
+        # above -- the sweep ETF position is never in it), so an unapplied
+        # broker split can't fake a phantom loss and the sweep symbol can
+        # never be stopped out. Stopped symbols are removed from
+        # `strategy_positions` immediately after, so the sells loop below
+        # sees them as no longer held and never submits a second, coincident
+        # strategy-exit sell for the same symbol.
+        # Hoisted out of the flag check: the buy loop below consults this set
+        # so a just-stopped symbol can never be re-bought in the same run.
+        stopped_symbols: set[str] = set()
+        if catastrophe_stop.catastrophe_stop_enabled():
+            threshold = catastrophe_stop.catastrophe_stop_pct()
+            for symbol in catastrophe_stop.find_catastrophe_stops(corrected_positions, threshold):
+                if symbol in pending_symbols:
+                    _log.info("Skipping catastrophe stop %s: order already pending", symbol)
+                    continue
+                qty = strategy_positions[symbol]["qty"]
+                pct = catastrophe_stop.unrealized_pct(corrected_positions[symbol])
+                if self._dry_run:
+                    stopped_symbols.add(symbol)
+                    executed_sells.append(symbol)
+                    self._notifier.send(
+                        f"<b>🛑 DRY RUN catastrophe stop:</b> {symbol} (qty {qty}, "
+                        f"unrealized {pct:.1%} breached {threshold:.1%} floor)"
+                    )
+                    continue
+                try:
+                    oid = self._broker.submit_sell(symbol, qty)
+                    stopped_symbols.add(symbol)
+                    executed_sells.append(symbol)
+                    pending_orders.append(
+                        (
+                            oid,
+                            "SELL",
+                            symbol,
+                            strategy_positions[symbol]["market_value"],
+                            catastrophe_stop.CATASTROPHE_STOP_REASON,
+                        )
+                    )
+                    self._notifier.send(
+                        f"<b>🛑 Catastrophe stop:</b> {symbol} unrealized {pct:.1%} "
+                        f"breached {threshold:.1%} floor — selling qty {qty}."
+                    )
+                except Exception as exc:
+                    errors.append(f"CATASTROPHE STOP {symbol}: {exc}")
+            if stopped_symbols:
+                strategy_positions = {
+                    sym: pos
+                    for sym, pos in strategy_positions.items()
+                    if sym not in stopped_symbols
+                }
 
-        # Buys — respect global + per-sleeve position limits. Each position is
-        # sized as a fixed fraction of its own sleeve's allocated capital
-        # (weight * scale * portfolio_value), independent of how many signals
-        # fire that day within the sleeve — sleeve_slot_caps governs sleeve
-        # concurrency, sleeve_position_notional governs per-trade size.
+        # Buys — respect global + per-sleeve position limits. Computed here
+        # (before the sells loop) rather than just before the buy loop below,
+        # because the cash-sweep funding check needs the same sleeve notional
+        # sizing to estimate how much cash the day's strategy buys could
+        # consume. Each position is sized as a fixed fraction of its own
+        # sleeve's allocated capital (weight * scale * portfolio_value),
+        # independent of how many signals fire that day within the sleeve —
+        # sleeve_slot_caps governs sleeve concurrency, sleeve_position_notional
+        # governs per-trade size.
         slot_caps = self._risk.sleeve_slot_caps(weights)
         sleeve_open_count = {u: 0 for u in weights}
         buys_by_sleeve: dict[str, list[str]] = {}
         for symbol, universe in all_buys:
             buys_by_sleeve.setdefault(universe, []).append(symbol)
-
-        slots_available = self._risk.max_new_positions(len(positions) - len(executed_sells))
-        buys_attempted = 0
-        for universe, syms in buys_by_sleeve.items():
-            sleeve_notional = self._risk.sleeve_position_notional(
+        sleeve_notional_by_universe = {
+            universe: self._risk.sleeve_position_notional(
                 portfolio_value, weights.get(universe, 0.0), scale
             )
+            for universe in buys_by_sleeve
+        }
+
+        if sweep_on:
+            # Sell the sweep position down FIRST (before strategy sells/buys
+            # execute) if the day's anticipated strategy buys would need more
+            # cash than is currently on hand. `prospective_buy_notional` is a
+            # deliberate upper-bound estimate (see
+            # cash_sweep.estimate_prospective_buy_notional) computed BEFORE
+            # the sells loop runs, so it conservatively assumes the slots that
+            # today's sells will free are already free.
+            anticipated_sells = [
+                s for s in signals["sells"] if s in strategy_positions and s not in pending_symbols
+            ]
+            slots_estimate = self._risk.max_new_positions(
+                len(strategy_positions) - len(anticipated_sells)
+            )
+            prospective_buy_notional = cash_sweep.estimate_prospective_buy_notional(
+                buys_by_sleeve, sleeve_notional_by_universe, slot_caps, slots_estimate
+            )
+            sweep_position = positions.get(sweep_sym)
+            sweep_position_value = sweep_position["market_value"] if sweep_position else 0.0
+            sell_action = cash_sweep.compute_sweep_sell_for_funding(
+                cash_available=account["cash"],
+                portfolio_value=portfolio_value,
+                prospective_buy_notional=prospective_buy_notional,
+                current_sweep_position_value=sweep_position_value,
+                reserve_pct=cash_sweep.reserve_pct(),
+            )
+            if sell_action.side == "sell" and sweep_position:
+                sweep_price = sweep_position["current_price"]
+                sell_qty = round(sell_action.notional / sweep_price, 4) if sweep_price > 0 else 0.0
+                if sell_qty > 0:
+                    if self._dry_run:
+                        self._notifier.send(
+                            f"<b>🔍 DRY RUN sweep sell:</b> {sweep_sym} "
+                            f"(${sell_action.notional:.0f}, funding strategy buys)"
+                        )
+                    else:
+                        try:
+                            # Alpaca paper credits a market sell's proceeds to
+                            # cash immediately (no T+1/T+2 settlement lag), so
+                            # it's safe to treat this cash as available to the
+                            # strategy buys submitted later in this same run.
+                            # A same-run sell -> buy sequence would NOT be
+                            # safe on a broker with real settlement delay.
+                            oid = self._broker.submit_sell(sweep_sym, sell_qty)
+                            pending_orders.append(
+                                (
+                                    oid,
+                                    "SELL",
+                                    sweep_sym,
+                                    sell_action.notional,
+                                    cash_sweep.SWEEP_TRADE_REASON,
+                                )
+                            )
+                        except Exception as exc:
+                            errors.append(f"SWEEP SELL {sweep_sym}: {exc}")
+
+        # Sells first — free up position slots. `regular_sell_count` (not
+        # `executed_sells`) is what feeds the slots_available math below: a
+        # catastrophe stop already shrank `strategy_positions` by removing
+        # its symbol (see the block above), so that freed slot is already
+        # reflected there. `executed_sells` also records catastrophe-stop
+        # sells (for the return value / reporting), so subtracting its full
+        # length here would count every stop's freed slot twice -- once via
+        # the shrunken `strategy_positions`, again via `executed_sells` --
+        # letting the buy loop open one extra position per stop and breach
+        # `max_positions`.
+        regular_sell_count = 0
+        for symbol in signals["sells"]:
+            if symbol not in strategy_positions:
+                continue
+            if symbol in pending_symbols:
+                _log.info("Skipping SELL %s: order already pending", symbol)
+                continue
+            qty = strategy_positions[symbol]["qty"]
+            if self._dry_run:
+                executed_sells.append(symbol)
+                regular_sell_count += 1
+                self._notifier.send(f"<b>🔍 DRY RUN sell:</b> {symbol} (qty {qty})")
+                continue
+            try:
+                oid = self._broker.submit_sell(symbol, qty)
+                executed_sells.append(symbol)
+                regular_sell_count += 1
+                pending_orders.append(
+                    (oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None)
+                )
+            except Exception as exc:
+                errors.append(f"SELL {symbol}: {exc}")
+
+        slots_available = self._risk.max_new_positions(len(strategy_positions) - regular_sell_count)
+        buys_attempted = 0
+        for universe, syms in buys_by_sleeve.items():
+            sleeve_notional = sleeve_notional_by_universe[universe]
             sleeve_cap = slot_caps.get(universe, 0)
             for symbol in syms:
-                if symbol in positions:
+                if symbol in strategy_positions:
+                    continue
+                # A symbol the catastrophe stop just sold is gone from
+                # `strategy_positions`, so the held-check above can't see it —
+                # without this guard a coincident buy signal would re-open the
+                # position the backstop just closed, in the same run.
+                if symbol in stopped_symbols:
+                    _log.info("Skipping BUY %s: catastrophe-stopped this run", symbol)
                     continue
                 if symbol in pending_symbols:
                     _log.info("Skipping BUY %s: order already pending", symbol)
@@ -486,60 +778,55 @@ class PaperTrader:
                     executed_buys.append(symbol)
                     buys_attempted += 1
                     sleeve_open_count[universe] += 1
-                    pending_orders.append((oid, "BUY", symbol, sleeve_notional))
+                    pending_orders.append((oid, "BUY", symbol, sleeve_notional, None))
                 except Exception as exc:
                     errors.append(f"BUY {symbol}: {exc}")
 
         # Poll submitted orders until they fill (or timeout)
-        filled_orders: dict[str, dict] = {}
-        if pending_orders:
-            start_time = time.time()
-            is_open = True
+        filled_orders: dict[str, dict] = self._poll_orders(pending_orders)
+
+        if sweep_on:
+            # Sweep BUY: deploy whatever cash is left over after the strategy's
+            # own orders for the day, using the account's REAL post-trade cash
+            # (not an estimate) now that strategy sells/buys above have been
+            # submitted and polled to a terminal status.
             try:
-                is_open = self._broker.get_clock()["is_open"]
-            except Exception:
-                pass
-
-            max_wait = 15.0 if is_open else 2.0
-            remaining = {item[0]: item for item in pending_orders}
-
-            while remaining and (time.time() - start_time) < max_wait:
-                for oid in list(remaining.keys()):
+                mid_account = self._broker.get_account()
+                buy_action = cash_sweep.compute_sweep_buy(
+                    cash_after_strategy_orders=mid_account["cash"],
+                    portfolio_value=mid_account["portfolio_value"],
+                    reserve_pct=cash_sweep.reserve_pct(),
+                    min_clip=cash_sweep.min_clip_usd(),
+                )
+            except Exception as exc:
+                _log.warning("Cash sweep buy sizing failed (non-fatal): %s", exc)
+                buy_action = cash_sweep.SweepAction(None, 0.0)
+            if buy_action.side == "buy":
+                if self._dry_run:
+                    self._notifier.send(
+                        f"<b>🔍 DRY RUN sweep buy:</b> {sweep_sym} (${buy_action.notional:.0f})"
+                    )
+                else:
                     try:
-                        order_info = self._broker.get_order(oid)
-                        status = order_info["status"]
-                        # A partial fill is NOT terminal: keep polling so it can
-                        # complete (or time out) rather than booking the partial.
-                        if status in ("filled", "canceled", "rejected", "expired"):
-                            filled_orders[oid] = order_info
-                            remaining.pop(oid)
-                    except Exception as e:
-                        _log.warning("Error polling order %s: %s", oid, e)
-                if remaining:
-                    time.sleep(1.0)
-
-            # Query final statuses for remaining orders
-            for oid, item in remaining.items():
-                try:
-                    filled_orders[oid] = self._broker.get_order(oid)
-                except Exception:
-                    filled_orders[oid] = {
-                        "id": oid,
-                        "symbol": item[2],
-                        "side": item[1],
-                        "qty": None,
-                        "notional": item[3] if item[1] == "BUY" else None,
-                        "filled_qty": 0.0,
-                        "filled_avg_price": 0.0,
-                        "status": "pending",
-                    }
+                        oid = self._broker.submit_buy(sweep_sym, buy_action.notional)
+                        sweep_buy_order = (
+                            oid,
+                            "BUY",
+                            sweep_sym,
+                            buy_action.notional,
+                            cash_sweep.SWEEP_TRADE_REASON,
+                        )
+                        filled_orders.update(self._poll_orders([sweep_buy_order]))
+                        pending_orders.append(sweep_buy_order)
+                    except Exception as exc:
+                        errors.append(f"SWEEP BUY {sweep_sym}: {exc}")
 
         # Alert on every submitted order, but only book the trade ledger at a
         # real executed value — never the intended notional. Orders still
         # working at run end (queued after the close, or a partial fill not yet
         # complete) are persisted so the next run reconciles their final fill;
         # terminally-failed orders are simply dropped.
-        for oid, side, symbol, amount in pending_orders:
+        for oid, side, symbol, amount, reason in pending_orders:
             info = filled_orders.get(oid, {})
             status = info.get("status", "pending")
             filled_qty = info.get("filled_qty") or 0.0
@@ -559,7 +846,13 @@ class PaperTrader:
             )
             if terminal:
                 if filled:
-                    log_trade(signals["as_of"], side, symbol, trade_amount, oid)
+                    # run_date is the ET calendar date of THIS run (the session the
+                    # order was actually placed/filled in), not signals["as_of"]
+                    # (the date of the last completed bar the signal was computed
+                    # from, which trails by one session and was the vector for the
+                    # OHLCV day-shift bug -- see _today_et() and
+                    # scripts/migrate_paper_dates_20260822.py).
+                    log_trade(today_et.isoformat(), side, symbol, trade_amount, oid, reason)
                 else:
                     _log.info(
                         "Order %s (%s %s) terminal unfilled (status=%s); no ledger entry",
@@ -569,8 +862,9 @@ class PaperTrader:
                         status,
                     )
             else:
-                # accepted / new / pending / partially_filled — settle next run
-                log_pending_order(signals["as_of"], side, symbol, amount, oid)
+                # accepted / new / pending / partially_filled — settle next run.
+                # Same run_date reasoning as log_trade above.
+                log_pending_order(today_et.isoformat(), side, symbol, amount, oid, reason)
                 _log.info(
                     "Order %s (%s %s) still working (status=%s); queued for reconciliation",
                     oid,
@@ -639,8 +933,11 @@ class PaperTrader:
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
 
         try:
+            # Same run_date reasoning as log_trade / log_pending_order above:
+            # stamp the actual ET session date of this run, not the lagged
+            # signals["as_of"] date.
             log_snapshot(
-                signals["as_of"],
+                today_et.isoformat(),
                 corrected_value,
                 new_account["cash"],
                 corrected_updated_positions,

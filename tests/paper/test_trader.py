@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
@@ -73,6 +74,17 @@ def _stub_dividend_db():
                     yield
 
 
+@pytest.fixture(autouse=True)
+def _stub_split_trade_db():
+    """Keep the split-check's paper_trades lookup off the real DB by
+    default. `get_snapshot_history` (also read by `_compute_split_corrections`)
+    is already stubbed to `[]` by `_stub_dividend_db` above, so with both
+    stubbed the default is "no snapshot evidence" -- individual split tests
+    override one or both to exercise the applied/unapplied/traded paths."""
+    with patch("ggTrader.paper.trader.get_trade_history_dates", return_value=[]):
+        yield
+
+
 def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500"):
     """Wrap a flat buys/sells list into generate_blended_signals()'s shape,
     with full weight+scale on one sleeve -- reproduces today's flat-3%
@@ -108,6 +120,7 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     }
     broker.get_positions.return_value = positions or {}
     broker.get_split_corrections.return_value = {}
+    broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
     broker.get_dividend_corrections.return_value = {"corp_dividends": {}, "credited_keys": set()}
     broker.submit_buy.return_value = "buy-order-1"
     broker.submit_sell.return_value = "sell-order-1"
@@ -177,7 +190,10 @@ class TestSellExits:
                 }
             }
         )
-        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": set(),
+        }
         trader.run()
         broker.submit_sell.assert_called_once_with("MNST", mnst_qty)
 
@@ -231,7 +247,10 @@ class TestBuyEntries:
                 }
             }
         )
-        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": set(),
+        }
         trader._risk.check_concentration = MagicMock(return_value=False)
         trader.run()
         call_args = trader._risk.check_concentration.call_args
@@ -398,6 +417,83 @@ class TestFillLogging:
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
 @patch("ggTrader.paper.trader.init_paper_schema")
+class TestRunDateIsSessionDateNotAsOf:
+    """Regression coverage for the paper-tables day-shift (2026-08-22).
+
+    `paper_trades.run_date` / `paper_snapshots.run_date` must record the ET
+    calendar date of THIS run, not `signals["as_of"]` (the date of the last
+    completed bar the signal was computed from -- which trails by one
+    session by design, and which compounded with the now-fixed OHLCV
+    day-shift bug to land run_date a session-plus-a-day early: a Sun-Thu
+    weekday census with zero Fridays). These tests pin `_today_et` directly
+    (bypassing the module's own `_stub_today_et` autouse fixture, which is
+    itself just a patch on `_today_et`) so a run "near midnight UTC" is
+    exercised without any dependency on the real wall clock.
+    """
+
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_log_trade_stamps_today_et_not_as_of(self, mock_signals, mock_log_trade, *_):
+        # Tuesday 2026-06-23, run fires at 19:45 UTC (12:45 PT) -- same
+        # calendar day in UTC/ET/PT, so no wall-clock ambiguity here. The
+        # signal's as_of is the PRIOR session (Monday), which is the normal,
+        # by-design lag -- not itself a bug -- but must never be what gets
+        # persisted as the trade date.
+        tuesday = date(2026, 6, 23)
+        monday = date(2026, 6, 22)
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=monday.isoformat())
+        with patch("ggTrader.paper.trader._today_et", return_value=tuesday):
+            trader, _broker, _notifier = _make_trader(portfolio_value=100000.0)
+            trader.run()
+        mock_log_trade.assert_called_once()
+        logged_run_date = mock_log_trade.call_args[0][0]
+        assert logged_run_date == tuesday.isoformat()
+        assert logged_run_date != monday.isoformat()
+
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_log_pending_order_stamps_today_et_not_as_of(self, mock_signals, _log_trade, *_):
+        tuesday = date(2026, 6, 23)
+        monday = date(2026, 6, 22)
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=monday.isoformat())
+        trader, broker, _notifier = _make_trader(portfolio_value=100000.0)
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "MSFT",
+            "side": "buy",
+            "qty": None,
+            "notional": 3300.0,
+            "filled_qty": 0.0,
+            "filled_avg_price": 0.0,
+            "status": "accepted",
+        }
+        with patch("ggTrader.paper.trader._today_et", return_value=tuesday):
+            with patch("ggTrader.paper.trader.log_pending_order") as mock_pending:
+                trader.run()
+        mock_pending.assert_called_once()
+        logged_run_date = mock_pending.call_args[0][0]
+        assert logged_run_date == tuesday.isoformat()
+        assert logged_run_date != monday.isoformat()
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_log_snapshot_stamps_today_et_not_as_of(
+        self, mock_signals, _mock_schema, mock_log_snapshot, *_
+    ):
+        tuesday = date(2026, 6, 23)
+        monday = date(2026, 6, 22)
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of=monday.isoformat())
+        with patch("ggTrader.paper.trader._today_et", return_value=tuesday):
+            trader, _broker, _notifier = _make_trader(portfolio_value=100000.0)
+            trader.run()
+        mock_log_snapshot.assert_called_once()
+        logged_run_date = mock_log_snapshot.call_args[0][0]
+        assert logged_run_date == tuesday.isoformat()
+        assert logged_run_date != monday.isoformat()
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.init_paper_schema")
 class TestReconciliation:
     @patch("ggTrader.paper.trader.clear_pending_order")
     @patch("ggTrader.paper.trader.log_trade")
@@ -429,7 +525,9 @@ class TestReconciliation:
         }
         trader.run()
         # Booked at the real fill value, under the original order date.
-        mock_log_trade.assert_called_once_with("2026-06-19", "BUY", "MSFT", 3300.0, "buy-order-99")
+        mock_log_trade.assert_called_once_with(
+            "2026-06-19", "BUY", "MSFT", 3300.0, "buy-order-99", None
+        )
         mock_clear.assert_called_once_with("buy-order-99")
 
     @patch("ggTrader.paper.trader.clear_pending_order")
@@ -556,7 +654,10 @@ class TestDailyPnl:
                 },
             },
         )
-        broker.get_split_corrections.return_value = {"MNST": 2.0}
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": set(),
+        }
         trader.run()
 
         kwargs = notifier.daily_summary.call_args[1]
@@ -589,6 +690,101 @@ class TestDailyPnl:
         assert kwargs["split_corrections"] == {}
         assert kwargs["booked_equity"] is None
         assert kwargs["unrealized_pnl"] == 365.22
+
+    @patch("ggTrader.paper.trader.get_trade_history_dates")
+    @patch("ggTrader.paper.trader.get_snapshot_history")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_snapshot_confirmed_split_suppresses_the_correction(
+        self, mock_signals, mock_snap_hist, mock_trades, _schema, _trade, _snap, mock_prev
+    ):
+        # Primary evidence (paper_snapshots qty doubling across the ex-date,
+        # no trade to explain it another way) confirms the broker DID apply
+        # MNST's split -- unlike the never-exercised activities-feed guard,
+        # this must actually suppress the correction rather than double it.
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        mnst_qty = 41.60820196  # already split-adjusted -- broker applied it
+        trader, broker, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={
+                "MNST": {
+                    "qty": mnst_qty,
+                    "market_value": mnst_qty * 47.77,
+                    "unrealized_pl": mnst_qty * 47.77 - 1887.11,
+                    "cost_basis": 1887.11,
+                    "current_price": 47.77,
+                },
+            },
+        )
+        # ex-date/snapshots deliberately fall before `_TEST_TODAY`
+        # (2026-06-19) -- `find_split_applied_symbols` only considers a
+        # split whose ex-date has already passed "today".
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 6, 1), 2.0)]},
+            "activity_applied": set(),
+        }
+        mock_snap_hist.return_value = [
+            (date(2026, 5, 28), {"MNST": {"qty": 20.80410098}}),
+            (date(2026, 6, 3), {"MNST": {"qty": mnst_qty}}),
+        ]
+        mock_trades.return_value = []
+
+        trader.run()
+
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["split_corrections"] == {}
+        reported_positions = notifier.daily_summary.call_args[0][2]
+        # Untouched -- the broker's own (already-correct) numbers stand.
+        assert reported_positions["MNST"]["qty"] == mnst_qty
+
+    @patch("ggTrader.paper.trader.get_trade_history_dates")
+    @patch("ggTrader.paper.trader.get_snapshot_history")
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_missing_snapshot_evidence_falls_back_to_correcting(
+        self, mock_signals, mock_snap_hist, mock_trades, _schema, _trade, _snap, mock_prev, caplog
+    ):
+        # No paper_snapshots history at all to compare across the ex-date
+        # (e.g. a fresh account, or history that doesn't reach far enough
+        # back) -- with no evidence either way, this must fall back to the
+        # pre-hardening default of correcting the position, not silently
+        # assume the split was applied.
+        mock_prev.return_value = 99000.0
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        mnst_qty = 20.80410098
+        mnst_cost_basis = 1887.11
+        mnst_broker_market_value = mnst_qty * 47.77
+        trader, broker, notifier = _make_trader(
+            portfolio_value=100000.0,
+            positions={
+                "MNST": {
+                    "qty": mnst_qty,
+                    "market_value": mnst_broker_market_value,
+                    "unrealized_pl": mnst_broker_market_value - mnst_cost_basis,
+                    "cost_basis": mnst_cost_basis,
+                    "current_price": 47.77,
+                },
+            },
+        )
+        # ex-date deliberately before `_TEST_TODAY` (2026-06-19), same as
+        # the suppression test above, so this actually reaches
+        # `find_split_applied_symbols`'s "no snapshot evidence" branch
+        # instead of being filtered out as a not-yet-happened split.
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 6, 1), 2.0)]},
+            "activity_applied": set(),
+        }
+        mock_snap_hist.return_value = []  # no history to bracket the ex-date
+        mock_trades.return_value = []
+
+        with caplog.at_level("WARNING", logger="ggTrader.paper.trader"):
+            trader.run()
+
+        kwargs = notifier.daily_summary.call_args[1]
+        assert kwargs["split_corrections"] == {"MNST": 2.0}
+        assert any(
+            "No snapshot evidence" in record.getMessage() and "MNST" in record.getMessage()
+            for record in caplog.records
+        )
 
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
@@ -1193,3 +1389,372 @@ class TestOrderErrorAlerting:
         kwargs = notifier.daily_summary.call_args[1]
         assert len(kwargs["errors"]) == 1
         assert "MSFT" in kwargs["errors"][0]
+
+
+def _spy_position(qty=50.0, price=400.0):
+    return {
+        "qty": qty,
+        "market_value": qty * price,
+        "current_price": price,
+        "avg_entry": price,
+        "unrealized_pl": 0.0,
+        "unrealized_plpc": 0.0,
+        "change_today": 0.0,
+        "cost_basis": qty * price,
+    }
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestCashSweepFlagOff:
+    """The sweep must be a strict no-op when CASH_SWEEP_ENABLED is unset."""
+
+    @patch.dict("os.environ", {}, clear=False)
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_disabled_by_default_no_sweep_sizing_called(self, mock_signals, *_):
+        os.environ.pop("CASH_SWEEP_ENABLED", None)
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position()}, portfolio_value=100_000.0, cash=1_000.0
+        )
+        with patch("ggTrader.paper.trader.cash_sweep.compute_sweep_buy") as mock_buy:
+            with patch(
+                "ggTrader.paper.trader.cash_sweep.compute_sweep_sell_for_funding"
+            ) as mock_sell:
+                trader.run()
+        mock_buy.assert_not_called()
+        mock_sell.assert_not_called()
+        # Only the strategy's own MSFT buy is submitted -- no SPY order.
+        broker.submit_buy.assert_called_once_with("MSFT", 3300.0)
+        broker.submit_sell.assert_not_called()
+
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_flag_off_sweep_symbol_counts_like_any_other_position(self, mock_signals, *_):
+        """Zero behavior change: with the flag off, a held SPY position
+        consumes a slot exactly like any other holding did before this
+        feature existed."""
+        from ggTrader.paper.risk import RiskConfig, RiskGuard
+
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position()}, portfolio_value=100_000.0
+        )
+        trader._risk = RiskGuard(RiskConfig(max_positions=1))
+        trader.run()
+        broker.submit_buy.assert_not_called()
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestCashSweepEnabled:
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_symbol_excluded_from_slot_cap(self, mock_signals, *_):
+        """With the flag on, a held SPY (sweep) position must not count
+        against RiskGuard's max_positions -- the strategy buy must still go
+        through even with max_positions=1 and SPY already 'held'."""
+        from ggTrader.paper.risk import RiskConfig, RiskGuard
+
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position()}, portfolio_value=100_000.0, cash=50_000.0
+        )
+        trader._risk = RiskGuard(RiskConfig(max_positions=1))
+        result = trader.run()
+        broker.submit_buy.assert_any_call("MSFT", 3300.0)
+        assert "MSFT" in result["buys"]
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_symbol_not_sellable_by_strategy_exit_signal(self, mock_signals, *_):
+        """Even if a strategy sleeve's exit signals happened to name the
+        sweep symbol, it must never be sold as a strategy exit -- it's not a
+        strategy position."""
+        mock_signals.return_value = _blend(buys=[], sells=["SPY"])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position()}, portfolio_value=100_000.0, cash=50_000.0
+        )
+        result = trader.run()
+        # No strategy SELL of the sweep symbol; the pre-buy funding check may
+        # still submit its own sweep SELL, so assert on the strategy-exit
+        # bookkeeping instead of "submit_sell never called".
+        assert "SPY" not in result["sells"]
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_position_ignored_by_concentration_check(self, mock_signals, *_):
+        """The concentration check must not see the sweep position: a large
+        held SPY sweep stake (20% of portfolio, far over the concentration
+        cap) must not block SPY itself as a strategy buy candidate -- the
+        sweep exposure is cash-in-waiting, not a strategy bet."""
+        mock_signals.return_value = _blend(buys=["SPY"], sells=[])
+        # 50 shares x $400 = $20,000 = 20% of the $100k portfolio; counted,
+        # this trips any sane max_concentration_pct and the buy is skipped.
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position(qty=50.0, price=400.0)},
+            portfolio_value=100_000.0,
+            cash=50_000.0,
+        )
+        result = trader.run()
+        broker.submit_buy.assert_any_call("SPY", 3300.0)
+        assert "SPY" in result["buys"]
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sells_sweep_position_before_submitting_strategy_buy(self, mock_signals, *_):
+        """Ordering: when cash on hand can't cover the day's strategy buys
+        plus the reserve, the sweep sell must be submitted before the
+        strategy buy (see cash_sweep.py's module docstring / trader.py's
+        wiring comment for the same-run market-sell assumption)."""
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        # cash 1000 is far short of the 3300 buy + 5000 reserve (5% of 100k);
+        # the 20000-notional SPY holding must be sold down to cover it.
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position(qty=50.0, price=400.0)},
+            portfolio_value=100_000.0,
+            cash=1_000.0,
+        )
+        trader.run()
+
+        order_calls = [c for c in broker.method_calls if c[0] in ("submit_sell", "submit_buy")]
+        assert [c[0] for c in order_calls] == ["submit_sell", "submit_buy"]
+        sell_call, buy_call = order_calls
+        assert sell_call.args[0] == "SPY"
+        assert buy_call.args[0] == "MSFT"
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_buy_deploys_leftover_cash_after_strategy_orders(self, mock_signals, *_):
+        """After strategy orders, leftover cash above the reserve gets swept
+        into the sweep ETF as a BUY."""
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(positions={}, portfolio_value=100_000.0, cash=50_000.0)
+        # Post-trade account (fetched fresh for the sweep-buy sizing, and
+        # again afterward for the run's own snapshot) reflects the same
+        # unchanged cash since there were no strategy orders this run.
+        broker.get_account.return_value = {
+            "cash": 50_000.0,
+            "portfolio_value": 100_000.0,
+            "buying_power": 100_000.0,
+        }
+        trader.run()
+        # reserve = 5% * 100000 = 5000; sweep buy = 50000 - 5000 = 45000
+        broker.submit_buy.assert_called_once_with("SPY", 45_000.0)
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_buy_skipped_below_min_clip(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(positions={}, portfolio_value=100_000.0, cash=5_100.0)
+        broker.get_account.return_value = {
+            "cash": 5_100.0,
+            "portfolio_value": 100_000.0,
+            "buying_power": 100_000.0,
+        }
+        trader.run()
+        # reserve 5000, target 100 < default min_clip 500 -> no sweep buy
+        broker.submit_buy.assert_not_called()
+
+
+def _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.30):
+    """A position whose unrealized loss (from `cost_basis`, split-invariant)
+    is exactly `loss_pct` -- e.g. -0.30 for -30%."""
+    unrealized_pl = cost_basis * loss_pct
+    market_value = cost_basis + unrealized_pl
+    price = market_value / qty if qty else 0.0
+    return {
+        "qty": qty,
+        "market_value": market_value,
+        "current_price": price,
+        "avg_entry": cost_basis / qty if qty else 0.0,
+        "unrealized_pl": unrealized_pl,
+        "unrealized_plpc": loss_pct,
+        "change_today": 0.0,
+        "cost_basis": cost_basis,
+    }
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestCatastropheStopFlagOff:
+    """The stop must be a strict no-op when CATASTROPHE_STOP_ENABLED is unset
+    -- zero behavior change for a live-money production path."""
+
+    @patch.dict("os.environ", {}, clear=False)
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_disabled_by_default_no_stop_sell(self, mock_signals, *_):
+        os.environ.pop("CATASTROPHE_STOP_ENABLED", None)
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(loss_pct=-0.50)}, portfolio_value=100_000.0
+        )
+        result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert result["sells"] == []
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.init_paper_schema")
+class TestCatastropheStopEnabled:
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_fires_at_exactly_threshold_sells_full_position(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.25)},
+            portfolio_value=100_000.0,
+        )
+        result = trader.run()
+        broker.submit_sell.assert_called_once_with("NXPI", 100.0)
+        assert "NXPI" in result["sells"]
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_does_not_fire_one_point_above_threshold(self, mock_signals, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.24)},
+            portfolio_value=100_000.0,
+        )
+        result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert result["sells"] == []
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_stopped_symbol_not_also_sold_by_coincident_strategy_exit(self, mock_signals, *_):
+        # NXPI both breaches the catastrophe floor AND has a strategy exit
+        # signal this run -- it must be sold exactly once, by the stop.
+        mock_signals.return_value = _blend(buys=[], sells=["NXPI"])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.40)},
+            portfolio_value=100_000.0,
+        )
+        result = trader.run()
+        broker.submit_sell.assert_called_once_with("NXPI", 100.0)
+        assert result["sells"].count("NXPI") == 1
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_stopped_symbol_not_rebought_by_coincident_buy_signal(self, mock_signals, *_):
+        # NXPI breaches the catastrophe floor AND appears in this run's buy
+        # signals. Removing it from strategy_positions (the double-sell fix)
+        # also blinds the buy loop's held-check to it, so without an explicit
+        # guard the backstop's sell would be immediately re-opened same-run.
+        # The position is deliberately small (1.4% of portfolio) so the
+        # concentration cap cannot incidentally block the re-buy — only the
+        # stopped_symbols guard prevents it.
+        mock_signals.return_value = _blend(buys=["NXPI"], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=20.0, cost_basis=2000.0, loss_pct=-0.30)},
+            portfolio_value=100_000.0,
+        )
+        result = trader.run()
+        broker.submit_sell.assert_called_once_with("NXPI", 20.0)
+        broker.submit_buy.assert_not_called()
+        assert "NXPI" in result["sells"]
+        assert "NXPI" not in result["buys"]
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true", "CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_sweep_symbol_excluded_even_at_a_deep_loss(self, mock_signals, *_):
+        # The sweep ETF position (SPY) must never be catastrophe-stopped --
+        # it is cash-in-waiting, not a strategy bet, and trader.py builds
+        # corrected_positions (what the stop check reads) from
+        # strategy_positions, which already excludes it.
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _losing_position(qty=50.0, cost_basis=20000.0, loss_pct=-0.90)},
+            portfolio_value=100_000.0,
+            cash=50_000.0,  # generous cash: no sweep buy/sell action this run either
+        )
+        result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert result["sells"] == []
+
+    @patch("ggTrader.paper.trader.log_trade")
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_reason_tagged_catastrophe_stop(self, mock_signals, mock_log_trade, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.40)},
+            portfolio_value=100_000.0,
+        )
+        broker.get_order.side_effect = lambda oid: {
+            "id": oid,
+            "symbol": "NXPI",
+            "side": "sell",
+            "qty": 100.0,
+            "notional": None,
+            "filled_qty": 100.0,
+            "filled_avg_price": 60.0,
+            "status": "filled",
+        }
+        trader.run()
+        mock_log_trade.assert_called_once()
+        reason_arg = mock_log_trade.call_args[0][5]
+        assert reason_arg == "catastrophe_stop"
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_slot_math_counts_stop_exactly_once_at_position_cap(self, mock_signals, *_):
+        # Account sits exactly at max_positions=30: 29 ordinary holdings plus
+        # NXPI, which this run's catastrophe stop closes out. That frees
+        # exactly ONE slot. `strategy_positions` already reflects the stop
+        # (NXPI removed) -- if `executed_sells` (which also records the stop)
+        # is then subtracted a second time in the slots_available formula,
+        # the trader thinks TWO slots are free and lets both buy candidates
+        # through, breaching the cap. Filler positions carry no cost_basis so
+        # `unrealized_pct` returns None for them and they never enter the
+        # catastrophe-stop check themselves.
+        positions = {
+            f"FILLER{i}": {"qty": 1.0, "market_value": 100.0, "cost_basis": 0.0} for i in range(29)
+        }
+        positions["NXPI"] = _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.30)
+        mock_signals.return_value = _blend(buys=["MSFT", "GOOGL"], sells=[])
+        trader, broker, _ = _make_trader(positions=positions, portfolio_value=100_000.0)
+        trader.run()
+        assert broker.submit_buy.call_count == 1
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_split_adjusted_cost_basis_no_phantom_trigger(self, mock_signals, *_):
+        # MNST-shaped fixture: broker qty pre-split (never doubled for the
+        # 2-for-1 split), current_price/market_value post-split -- the
+        # broker's own uncorrected unrealized_pl looks like a huge loss, but
+        # the trader corrects it (via split_check.apply_corrections_to_positions,
+        # using cost_basis) before the catastrophe check ever sees it, so no
+        # phantom stop-out fires.
+        mock_signals.return_value = _blend(buys=[], sells=[])
+        mnst_qty = 20.80410098
+        mnst_cost_basis = 1887.11
+        mnst_broker_market_value = mnst_qty * 47.77  # 993.81..., bogus pre-correction value
+        trader, broker, _ = _make_trader(
+            positions={
+                "MNST": {
+                    "qty": mnst_qty,
+                    "market_value": mnst_broker_market_value,
+                    "unrealized_pl": mnst_broker_market_value - mnst_cost_basis,  # -893.30...
+                    "unrealized_plpc": (mnst_broker_market_value - mnst_cost_basis)
+                    / mnst_cost_basis,
+                    "cost_basis": mnst_cost_basis,
+                    "current_price": 47.77,
+                }
+            },
+            portfolio_value=100_000.0,
+        )
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": set(),
+        }
+        result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert result["sells"] == []
