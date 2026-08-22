@@ -695,7 +695,17 @@ class PaperTrader:
                         except Exception as exc:
                             errors.append(f"SWEEP SELL {sweep_sym}: {exc}")
 
-        # Sells first — free up position slots
+        # Sells first — free up position slots. `regular_sell_count` (not
+        # `executed_sells`) is what feeds the slots_available math below: a
+        # catastrophe stop already shrank `strategy_positions` by removing
+        # its symbol (see the block above), so that freed slot is already
+        # reflected there. `executed_sells` also records catastrophe-stop
+        # sells (for the return value / reporting), so subtracting its full
+        # length here would count every stop's freed slot twice -- once via
+        # the shrunken `strategy_positions`, again via `executed_sells` --
+        # letting the buy loop open one extra position per stop and breach
+        # `max_positions`.
+        regular_sell_count = 0
         for symbol in signals["sells"]:
             if symbol not in strategy_positions:
                 continue
@@ -705,20 +715,20 @@ class PaperTrader:
             qty = strategy_positions[symbol]["qty"]
             if self._dry_run:
                 executed_sells.append(symbol)
+                regular_sell_count += 1
                 self._notifier.send(f"<b>🔍 DRY RUN sell:</b> {symbol} (qty {qty})")
                 continue
             try:
                 oid = self._broker.submit_sell(symbol, qty)
                 executed_sells.append(symbol)
+                regular_sell_count += 1
                 pending_orders.append(
                     (oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None)
                 )
             except Exception as exc:
                 errors.append(f"SELL {symbol}: {exc}")
 
-        slots_available = self._risk.max_new_positions(
-            len(strategy_positions) - len(executed_sells)
-        )
+        slots_available = self._risk.max_new_positions(len(strategy_positions) - regular_sell_count)
         buys_attempted = 0
         for universe, syms in buys_by_sleeve.items():
             sleeve_notional = sleeve_notional_by_universe[universe]

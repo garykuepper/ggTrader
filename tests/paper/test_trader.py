@@ -1705,6 +1705,27 @@ class TestCatastropheStopEnabled:
 
     @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
     @patch("ggTrader.paper.trader.generate_blended_signals")
+    def test_slot_math_counts_stop_exactly_once_at_position_cap(self, mock_signals, *_):
+        # Account sits exactly at max_positions=30: 29 ordinary holdings plus
+        # NXPI, which this run's catastrophe stop closes out. That frees
+        # exactly ONE slot. `strategy_positions` already reflects the stop
+        # (NXPI removed) -- if `executed_sells` (which also records the stop)
+        # is then subtracted a second time in the slots_available formula,
+        # the trader thinks TWO slots are free and lets both buy candidates
+        # through, breaching the cap. Filler positions carry no cost_basis so
+        # `unrealized_pct` returns None for them and they never enter the
+        # catastrophe-stop check themselves.
+        positions = {
+            f"FILLER{i}": {"qty": 1.0, "market_value": 100.0, "cost_basis": 0.0} for i in range(29)
+        }
+        positions["NXPI"] = _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.30)
+        mock_signals.return_value = _blend(buys=["MSFT", "GOOGL"], sells=[])
+        trader, broker, _ = _make_trader(positions=positions, portfolio_value=100_000.0)
+        trader.run()
+        assert broker.submit_buy.call_count == 1
+
+    @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_blended_signals")
     def test_split_adjusted_cost_basis_no_phantom_trigger(self, mock_signals, *_):
         # MNST-shaped fixture: broker qty pre-split (never doubled for the
         # 2-for-1 split), current_price/market_value post-split -- the
