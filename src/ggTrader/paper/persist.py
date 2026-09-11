@@ -399,6 +399,27 @@ def get_open_split_corrections() -> dict[str, float]:
     return {symbol: float(factor) for symbol, factor in rows}
 
 
+def get_open_split_states() -> dict[str, dict]:
+    """Return `{symbol: {"factor": float, "ex_date": date}}` for every
+    persisted split-correction row -- a richer sibling of
+    `get_open_split_corrections()` that also surfaces the stored `ex_date`.
+
+    `get_open_split_corrections()` is kept unchanged (its existing
+    factor-only contract is already relied on); this getter exists so a
+    persisted correction can be re-verified against snapshot evidence using
+    its *own* ex_date even once the broker's live corporate-actions feed
+    stops mentioning it (the feed only reports events inside its own
+    rolling lookback window -- see `trader._compute_split_corrections`).
+    `ex_date` comes back as a real `datetime.date` (the column type), same
+    convention as `get_snapshot_history`.
+    """
+    with _get_engine().connect() as conn:
+        rows = conn.execute(text("SELECT symbol, factor, ex_date FROM paper_split_state")).all()
+    return {
+        symbol: {"factor": float(factor), "ex_date": ex_date} for symbol, factor, ex_date in rows
+    }
+
+
 def save_split_correction(symbol: str, ex_date: str, factor: float) -> None:
     """Upsert a detected-unapplied split for `symbol`. Idempotent -- calling
     again for the same symbol just refreshes `factor`/`updated_at`."""

@@ -17,7 +17,7 @@ from ggTrader.paper.persist import (
     get_accrued_dividend_keys,
     get_earliest_snapshot,
     get_latest_snapshot,
-    get_open_split_corrections,
+    get_open_split_states,
     get_peak_value,
     get_pending_orders,
     get_snapshot_history,
@@ -249,13 +249,24 @@ class PaperTrader:
         (it is a no-op on this paper account, so a real applied split would
         otherwise be double-corrected).
 
-        Merges in `paper_split_state` (see `persist.get_open_split_corrections`)
+        Merges in `paper_split_state` (see `persist.get_open_split_states`)
         so a split detected on a prior run keeps being corrected even once
         its ex_date falls outside `split_since` -- the rolling lookback
         window only bounds *new* detection from the broker's feed, not how
         long an already-known correction is honored (the MNST incident:
         `_SPLIT_LOOKBACK_DAYS` expired 2026-08-25 while still held, see
-        `docs/next_steps.md`). Persisted state is cleared once snapshot
+        `docs/next_steps.md`).
+
+        A persisted, currently-held symbol keeps being re-verified against
+        snapshot evidence on every run even once the broker's live feed
+        stops mentioning it (its ex_date ages out of the feed's own
+        lookback window): a synthetic `corp_splits`-shaped entry is built
+        from the persisted `(ex_date, factor)` and merged into the set
+        `find_split_applied_symbols` checks. Without this, a persisted
+        correction could never be confirmed applied or cleared once the
+        broker feed moved on -- if Alpaca ever did belatedly apply the
+        split, the correction would double-count it forever (see this
+        review's Finding 1). Persisted state is cleared once snapshot
         evidence confirms the broker applied the split, or the position is
         no longer held.
 
@@ -268,14 +279,14 @@ class PaperTrader:
         held_symbols = set(positions)
 
         try:
-            persisted = get_open_split_corrections()
+            persisted_states = get_open_split_states()
         except Exception as exc:
             _log.warning("Could not load persisted split state (non-fatal): %s", exc)
-            persisted = {}
+            persisted_states = {}
 
         # A symbol no longer held has nothing left to correct -- drop its
         # persisted row so the table doesn't grow unboundedly.
-        for symbol in list(persisted):
+        for symbol in list(persisted_states):
             if symbol not in held_symbols:
                 try:
                     clear_split_correction(symbol)
@@ -283,11 +294,19 @@ class PaperTrader:
                     _log.warning(
                         "Could not clear stale split state for %s (non-fatal): %s", symbol, exc
                     )
-                persisted.pop(symbol)
+                persisted_states.pop(symbol)
+
+        persisted = {symbol: info["factor"] for symbol, info in persisted_states.items()}
 
         evidence = self._broker.get_split_evidence(list(positions), split_since)
-        corp_splits = evidence.get("corp_splits", {})
+        corp_splits = dict(evidence.get("corp_splits", {}))
         activity_applied = evidence.get("activity_applied", set())
+
+        # Re-verify every persisted, still-held symbol every run, even ones
+        # the broker's live feed no longer reports -- see the docstring.
+        for symbol, info in persisted_states.items():
+            if symbol not in corp_splits:
+                corp_splits[symbol] = [(info["ex_date"], info["factor"])]
 
         if not corp_splits:
             return persisted

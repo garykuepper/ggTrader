@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from unittest.mock import MagicMock, patch
 
 
@@ -456,6 +457,34 @@ class TestSplitState:
         from ggTrader.paper.persist import get_open_split_corrections
 
         assert get_open_split_corrections() == {}
+
+    def test_get_open_split_states_returns_factor_and_ex_date(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = [
+            ("MNST", 2.0, date(2026, 8, 11)),
+            ("XYZ", 0.5, date(2026, 7, 1)),
+        ]
+
+        from ggTrader.paper.persist import get_open_split_states
+
+        result = get_open_split_states()
+
+        assert result == {
+            "MNST": {"factor": 2.0, "ex_date": date(2026, 8, 11)},
+            "XYZ": {"factor": 0.5, "ex_date": date(2026, 7, 1)},
+        }
+
+    def test_get_open_split_states_empty_when_no_rows(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = []
+
+        from ggTrader.paper.persist import get_open_split_states
+
+        assert get_open_split_states() == {}
 
     def test_save_split_correction_upserts(self, mock_engine):
         mock_conn = MagicMock()

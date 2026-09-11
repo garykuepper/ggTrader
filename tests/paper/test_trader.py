@@ -86,23 +86,25 @@ def _stub_split_trade_db():
 
 
 def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500"):
-    """Wrap a flat buys/sells list into generate_core_signals()'s shape,
-    with full weight+scale on one sleeve -- reproduces today's flat-3%
-    single-universe behavior exactly (see Task 6's collapse-to-flat test)."""
-    all_universes = ("sp500", "midcap400", "nasdaq100")
-    sleeves = {
-        u: {
-            "buys": buys if u == universe else [],
-            "sells": sells if u == universe else [],
-            "as_of": as_of,
-            "universe_size": 100 if u == universe else 0,
-            "gate": {},
-        }
-        for u in all_universes
-    }
+    """Wrap a flat buys/sells list into `generate_core_signals()`'s actual
+    shape: exactly one sleeve, `weights={universe: 1.0}`, `scale=1.0` -- no
+    zero-weight sibling sleeves, matching production's standalone-core
+    return value verbatim (see `signal_runner.generate_core_signals`, and
+    Finding 2 of the 2026-09-11 remediation review: every call site here
+    already only ever used the default `universe="sp500"`, so this single
+    -sleeve shape covers every existing test with no site-level changes
+    needed while also closing the "real shape has zero coverage" gap)."""
     return {
-        "sleeves": sleeves,
-        "weights": {u: (1.0 if u == universe else 0.0) for u in all_universes},
+        "sleeves": {
+            universe: {
+                "buys": buys,
+                "sells": sells,
+                "as_of": as_of,
+                "universe_size": 100,
+                "gate": {},
+            }
+        },
+        "weights": {universe: 1.0},
         "scale": 1.0,
         "rebalanced_today": False,
         "fallback_used": False,
@@ -207,6 +209,33 @@ class TestBuyEntries:
     def test_buys_new_positions(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of="2026-06-19")
         trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        result = trader.run()
+        broker.submit_buy.assert_called_once_with("MSFT", 3300.0)  # 0.033 * 100000
+        assert "MSFT" in result["buys"]
+
+    @patch("ggTrader.paper.trader.generate_core_signals")
+    def test_buys_new_positions_from_literal_generate_core_signals_shape(self, mock_signals, *_):
+        """Finding 2 (2026-09-11 remediation review): `_blend()` mirrors
+        `generate_core_signals()`'s real single-sleeve return, but this test
+        feeds `run()` that exact literal dict -- not the helper -- so the
+        real production shape (one `sp500` sleeve, `weights={"sp500": 1.0}`,
+        `scale=1.0`) has direct, unmistakable end-to-end coverage."""
+        mock_signals.return_value = {
+            "sleeves": {
+                "sp500": {
+                    "buys": ["MSFT"],
+                    "sells": [],
+                    "as_of": "2026-06-19",
+                    "universe_size": 100,
+                    "gate": {},
+                }
+            },
+            "weights": {"sp500": 1.0},
+            "scale": 1.0,
+            "rebalanced_today": False,
+            "fallback_used": False,
+        }
+        trader, broker, _ = _make_trader(portfolio_value=100000.0)
         result = trader.run()
         broker.submit_buy.assert_called_once_with("MSFT", 3300.0)  # 0.033 * 100000
         assert "MSFT" in result["buys"]
@@ -797,14 +826,51 @@ class TestDailyPnl:
         positions = {"MNST": {"qty": 20.8041, "cost_basis": 1887.11, "market_value": 986.67}}
 
         with patch(
-            "ggTrader.paper.trader.get_open_split_corrections",
-            return_value={"MNST": 2.0},
+            "ggTrader.paper.trader.get_open_split_states",
+            return_value={"MNST": {"factor": 2.0, "ex_date": date(2026, 8, 11)}},
         ):
             result = trader._compute_split_corrections(
                 positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
             )
 
         assert result == {"MNST": 2.0}
+
+    def test_persisted_split_still_reverified_once_broker_feed_forgets_it(
+        self, _schema, _trade, _snap, mock_prev
+    ):
+        """A persisted correction outside the broker feed's own lookback
+        window (`corp_splits` comes back empty, Finding 1) is still checked
+        against snapshot evidence using its *persisted* ex_date/factor, and
+        cleared once that evidence confirms the broker applied it -- so a
+        belated broker-side apply can no longer double-count forever."""
+        trader, broker, _ = _make_trader()
+        broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
+        mnst_qty = 41.6082  # already split-adjusted -- broker belatedly applied it
+        positions = {
+            "MNST": {"qty": mnst_qty, "cost_basis": 1887.11, "market_value": mnst_qty * 47.77}
+        }
+
+        with (
+            patch(
+                "ggTrader.paper.trader.get_open_split_states",
+                return_value={"MNST": {"factor": 2.0, "ex_date": date(2026, 6, 1)}},
+            ),
+            patch(
+                "ggTrader.paper.trader.get_snapshot_history",
+                return_value=[
+                    (date(2026, 5, 28), {"MNST": {"qty": 20.8041}}),
+                    (date(2026, 6, 3), {"MNST": {"qty": mnst_qty}}),
+                ],
+            ),
+            patch("ggTrader.paper.trader.get_trade_history_dates", return_value=[]),
+            patch("ggTrader.paper.trader.clear_split_correction") as mock_clear,
+        ):
+            result = trader._compute_split_corrections(
+                positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
+            )
+
+        mock_clear.assert_called_once_with("MNST")
+        assert result == {}
 
     def test_split_correction_clears_persisted_state_once_applied(
         self, _schema, _trade, _snap, mock_prev
@@ -820,8 +886,8 @@ class TestDailyPnl:
 
         with (
             patch(
-                "ggTrader.paper.trader.get_open_split_corrections",
-                return_value={"MNST": 2.0},
+                "ggTrader.paper.trader.get_open_split_states",
+                return_value={"MNST": {"factor": 2.0, "ex_date": date(2026, 8, 11)}},
             ),
             patch("ggTrader.paper.trader.get_snapshot_history", return_value=[]),
             patch("ggTrader.paper.trader.get_trade_history_dates", return_value=[]),
@@ -849,8 +915,8 @@ class TestDailyPnl:
 
         with (
             patch(
-                "ggTrader.paper.trader.get_open_split_corrections",
-                return_value={"MNST": 2.0},
+                "ggTrader.paper.trader.get_open_split_states",
+                return_value={"MNST": {"factor": 2.0, "ex_date": date(2026, 8, 11)}},
             ),
             patch("ggTrader.paper.trader.clear_split_correction") as mock_clear,
         ):
