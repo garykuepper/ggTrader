@@ -17,8 +17,11 @@ responsible for calling the broker and persisting the resulting trades.
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
+
+_log = logging.getLogger(__name__)
 
 #: Reason tag written to `paper_trades.reason` / `paper_pending_orders.reason`
 #: for sweep-originated orders, so they can be distinguished from strategy
@@ -96,6 +99,14 @@ def compute_sweep_buy(
     every session. Once triggered, still sweeps down to the `reserve_pct`
     floor, same target as before this change.
     """
+    if buy_trigger_pct <= reserve_pct:
+        _log.warning(
+            "cash_sweep buy_trigger_pct (%.4f) <= reserve_pct (%.4f) -- the hysteresis "
+            "dead-band is empty or inverted, so a sweep buy can never fire. Check "
+            "SWEEP_BUY_TRIGGER_PCT / SWEEP_CASH_RESERVE_PCT.",
+            buy_trigger_pct,
+            reserve_pct,
+        )
     if portfolio_value <= 0:
         return SweepAction(None, 0.0)
     trigger = buy_trigger_pct * portfolio_value

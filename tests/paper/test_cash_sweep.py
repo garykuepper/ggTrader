@@ -117,6 +117,48 @@ class TestComputeSweepBuy:
     def test_buy_trigger_pct_env_var_override(self):
         assert buy_trigger_pct() == 0.10
 
+    def test_inverted_thresholds_log_a_warning(self, caplog):
+        """Finding 5 (2026-09-11 remediation review): if an operator sets
+        `SWEEP_CASH_RESERVE_PCT` above `SWEEP_BUY_TRIGGER_PCT`, the
+        dead-band silently inverts (no buy ever fires) -- must be visible
+        in logs, not a silent misconfiguration."""
+        with caplog.at_level("WARNING", logger="ggTrader.paper.cash_sweep"):
+            compute_sweep_buy(
+                cash_after_strategy_orders=9_000.0,
+                portfolio_value=100_000.0,
+                reserve_pct=0.10,
+                min_clip=500.0,
+                buy_trigger_pct=0.05,
+            )
+        assert any(
+            "buy_trigger_pct" in record.getMessage() and "reserve_pct" in record.getMessage()
+            for record in caplog.records
+        )
+
+    def test_equal_thresholds_also_log_a_warning(self, caplog):
+        """The dead-band is empty (not just inverted) when the two
+        thresholds are equal -- also worth flagging."""
+        with caplog.at_level("WARNING", logger="ggTrader.paper.cash_sweep"):
+            compute_sweep_buy(
+                cash_after_strategy_orders=9_000.0,
+                portfolio_value=100_000.0,
+                reserve_pct=0.08,
+                min_clip=500.0,
+                buy_trigger_pct=0.08,
+            )
+        assert any("buy_trigger_pct" in record.getMessage() for record in caplog.records)
+
+    def test_normal_thresholds_log_no_warning(self, caplog):
+        with caplog.at_level("WARNING", logger="ggTrader.paper.cash_sweep"):
+            compute_sweep_buy(
+                cash_after_strategy_orders=9_000.0,
+                portfolio_value=100_000.0,
+                reserve_pct=0.05,
+                min_clip=500.0,
+                buy_trigger_pct=0.08,
+            )
+        assert caplog.records == []
+
 
 class TestComputeSweepSellForFunding:
     def test_no_shortfall_no_sell(self):
