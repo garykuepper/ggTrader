@@ -28,12 +28,31 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 ---
 
-## ACTIVE STEP (2026-09-10, superseding the 2026-08-22 sequence below) — fix MNST split state → catastrophe stop → core revert → sweep hysteresis
+## ACTIVE STEP (2026-09-11 update) — fix MNST split state → catastrophe stop → core revert → sweep hysteresis: CODE-COMPLETE ON BRANCH, NOT YET DEPLOYED
+
+**Status as of this run (2026-09-11): all four items below (split-state
+persistence + re-verification, the catastrophe-stop changelog note, the
+core revert, and cash-sweep hysteresis) are implemented on the
+`worktree-paper-trading-remediation` branch**
+(`docs/superpowers/plans/2026-09-11-paper-trading-remediation.md`) **and
+have passed review, including a final whole-branch fix pass. The branch is
+NOT yet merged to `main` and NOT yet deployed** — the live container is
+still running the image built from pre-remediation code (still the
+3-sleeve blend, still the 14-day rolling split-state lookback,
+`CATASTROPHE_STOP_ENABLED` still unset). Deploying requires: merge to
+`main` → CI builds `ghcr.io/garykuepper/ggtrader:latest` (~2.5 min) →
+`docker compose pull && docker compose up -d` on the live container. Do not
+skip this step when picking this file back up — treat "code-complete" and
+"live" as distinct until that deploy has actually happened and been
+verified (see `daily-trader-check`).
+
+**Below is the original 2026-09-10 sequencing rationale**, kept for the
+reasoning record now that the work it describes is done on-branch:
 
 **The 2026-08-22 rollout stalled: only step 1 (sweep) executed.** The week-
-of-08-31 core revert never happened — confirmed 2026-09-11, `trader.py`
-still calls `generate_blended_signals()`, three weeks past the planned date
-— and the 2026-09-09 ops review
+of-08-31 core revert never happened — confirmed 2026-09-11 (before this
+session's work), `trader.py` still called `generate_blended_signals()`,
+three weeks past the planned date — and the 2026-09-09 ops review
 (`docs/research/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md`)
 plus the 2026-09-10 full-repo audit
 (`docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
@@ -67,31 +86,39 @@ Revised sequence (still one change at a time so attribution stays clean):
 1. **DONE 2026-08-22: `CASH_SWEEP_ENABLED=true`.** SPY, 5% reserve, $500
    min clip. Idle cash (~60% of the account) now earns index return. Cash
    sweep churn is real but low-priority (see step 4).
-2. **NEXT — fix MNST split-state persistence, then restate NAV.** Replace
-   the 14-day rolling lookback with durable per-symbol state (e.g. a
-   `paper_split_state` table, or "correct until the broker applies it or
-   the position closes" semantics) so a known-unapplied split doesn't
-   silently expire while still held. Restate the 2026-08-26→09-08 snapshot
-   history once fixed; verify MNST reads its true -4.8% unrealized. Small
-   code change + one-off data fix + the standard ~2.5 min CI→pull→recreate
-   loop. This is the acceptance test for step 3.
-3. **Then: `CATASTROPHE_STOP_ENABLED=true`.** -25% floor. Only safe to arm
-   once step 2 is verified — post-fix, the book's worst true position is
-   PNR at -8.1%, so this is genuinely inert at arm time, matching the
-   original rollout note's intent.
-4. **Then: revert live from the 3-sleeve blend to the SP500 core**
-   (evidence above; this closes the 2026-08-19 ACTIVE STEP further below).
-   No hard dependency on steps 2-3 — it was simply overdue on its own
-   merits and is sequenced here because it's next in the queue, not because
-   it's blocked. If it's more urgent than the split-state fix, it's fine to
-   swap the order; just don't arm the catastrophe stop before step 2 either
-   way.
-5. **Then: add hysteresis to the cash sweep.** 15 sweep trades / $82.4K
-   notional across 12 sessions oscillating around the 5% reserve (pure
-   spread friction, ~zero expected return). Dead-band: buy only when cash
-   > 8% of PV, sell only when cash < 2%. Cuts round-trips ~70% at
-   equivalent exposure.
-6. **Research, once live config settles:** re-run `ensemble_ic` (1.01) and
+2. **DONE ON BRANCH 2026-09-11, NOT DEPLOYED — fix MNST split-state
+   persistence and re-verification.** Replaced the 14-day rolling lookback
+   with a durable `paper_split_state` table ("correct until the broker
+   applies it or the position closes" semantics), then hardened it in this
+   session's fix pass so a persisted, still-held correction keeps being
+   re-verified against snapshot evidence even once its ex_date ages out of
+   the broker feed's own lookback window (`get_open_split_states()` in
+   `persist.py`, wired into `trader._compute_split_corrections`) — without
+   this, a belated broker-side split apply could have double-corrected
+   forever. One-off NAV restatement for 2026-08-26→09-08 is still pending
+   the actual deploy (can't verify against a live table from a worktree).
+   This is the acceptance gate for step 3.
+3. **DONE ON BRANCH 2026-09-11, NOT ARMED — `CATASTROPHE_STOP_ENABLED`
+   changelog note recorded** (commit `c118310`), gated explicitly on step
+   2 landing live first. Still **unset** in the live environment — do not
+   flip it until step 2's deploy is verified (post-fix, the book's worst
+   true position is PNR at -8.1%, so this should be inert at arm time, but
+   that has not been confirmed against live data yet).
+4. **DONE ON BRANCH 2026-09-11, NOT DEPLOYED — revert live from the
+   3-sleeve blend to the SP500 core** (evidence above; this closes the
+   2026-08-19 ACTIVE STEP further below). `trader.py` now calls
+   `generate_core_signals()`. The live container is still serving the
+   pre-revert image until this branch is merged and deployed.
+5. **DONE ON BRANCH 2026-09-11, NOT DEPLOYED — hysteresis added to the
+   cash sweep.** 15 sweep trades / $82.4K notional across 12 sessions
+   oscillating around the 5% reserve (pure spread friction, ~zero expected
+   return) prompted a dead-band: buy only fires once cash exceeds 8% of
+   portfolio value (`SWEEP_BUY_TRIGGER_PCT`, sweeps back down to the 5%
+   reserve once triggered). A coherence warning was added this session
+   (`cash_sweep.compute_sweep_buy`) so a misconfigured trigger-below-reserve
+   setup logs instead of silently going inert.
+6. **Once steps 2-5 are merged and deployed and verified live**, then
+   research work can resume: re-run `ensemble_ic` (1.01) and
    `ensemble_kelly` (0.98) against the real 0.99 baseline — both were
    rejected only against the phantom 1.12, so their NO-GOs are void on
    their stated grounds (drawdown/fold-instability may still kill

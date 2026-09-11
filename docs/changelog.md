@@ -2,6 +2,33 @@
 
 ## 2026-09-11
 
+### Persistent split-state tracking, re-verified against snapshot evidence indefinitely
+
+Replaced the 14-day rolling `_SPLIT_LOOKBACK_DAYS` window as the sole memory
+for an unapplied broker split with a durable `paper_split_state` table
+(`699203a`, `72ac60c`): a detected-unapplied split now stays corrected for as
+long as the position is held, not just for 14 days after its ex-date — this
+is the MNST fix (see the catastrophe-stop entry below for the incident this
+closes). A final whole-branch review found that the persisted correction had
+no re-verification/expiry path: once the broker's live corporate-actions feed
+stopped mentioning a symbol (its ex_date aged out of the feed's own lookback
+window), the persisted correction could never be confirmed applied or
+cleared, so a belated broker-side split apply would have double-corrected the
+position forever. Fixed this session: `persist.get_open_split_states()`
+(alongside, not replacing, the existing `get_open_split_corrections()`)
+surfaces each persisted correction's own `ex_date`, and
+`trader._compute_split_corrections` now builds a synthetic corporate-action
+entry from any persisted, currently-held symbol the broker feed no longer
+reports, merging it back into the same `find_split_applied_symbols` check
+used for live feed data — so persisted state keeps getting re-verified against
+`paper_snapshots` history every run, indefinitely, and is cleared the moment
+that evidence confirms the broker applied it.
+
+**Status: code-complete on `worktree-paper-trading-remediation`, not yet
+deployed to the live container.** The one-off NAV restatement for
+2026-08-26→09-08 still needs the deploy to land before it can be run against
+live data (see the ACTIVE STEP in `docs/next_steps.md`).
+
 ### Catastrophe stop ready to enable, gated on persistent split-state fix verification
 
 `CATASTROPHE_STOP_ENABLED=true` is now ready to flip on the live paper
@@ -30,6 +57,47 @@ well above the -25% catastrophe threshold, confirming the floor will be inert.
 Once verified, the sequence continues: core revert (§2 of
 `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`),
 sweep hysteresis, then research phase.
+
+### Reverted live trading config from the 3-sleeve blend back to the standalone SP500 core
+
+`src/ggTrader/paper/trader.py` now calls `generate_core_signals()`
+(`d4b6934`) instead of `generate_blended_signals()`. This executes the
+week-of-2026-08-31 decision that stalled for three weeks: the corrected-tape
+pinned-window re-baseline
+(`docs/research/_rebaseline_corrected_tape_20260822.json`) is the third
+independent measurement showing the leverage-realistic 3-sleeve blend
+(SP500+MidCap400+Nasdaq100) underperforming the standalone SP500 core (OOS
+Sharpe 0.69 vs 0.99, both below/around window-matched SPY's 0.78) — see
+`docs/research/RESEARCH_SNAPSHOT.md` §1 and §5. `generate_blended_signals()`
+and its WFO/research infrastructure (`ggt lab --blend`) are kept, not
+deleted, for any future diversification-sleeve candidate that actually
+clears the bar.
+
+**Status: code-complete on `worktree-paper-trading-remediation`, not yet
+deployed.** The live container is still serving the pre-revert image
+(3-sleeve blend) until this branch merges to `main`, CI rebuilds
+`ghcr.io/garykuepper/ggtrader:latest`, and the container is pulled and
+recreated. Do not describe the revert as live until that deploy is
+confirmed.
+
+### Cash-sweep buy hysteresis: dead-band between the reserve floor and the buy trigger
+
+Added a hysteresis dead-band to `cash_sweep.compute_sweep_buy` (`9ceb01e`):
+a sweep buy now only fires once idle cash exceeds `SWEEP_BUY_TRIGGER_PCT`
+(default 8%) of portfolio value, not merely `SWEEP_CASH_RESERVE_PCT`'s 5%
+floor — once triggered, it still sweeps down to the 5% reserve, same target
+as before. This closes the daily-churn issue the 2026-09-09 ops review found:
+15 sweep trades / $82.4K notional across 12 sessions oscillating right
+around the 5% reserve, pure spread friction with ~zero expected return. This
+session's fix pass also added a `_log.warning` in `compute_sweep_buy` for
+the case where an operator sets `SWEEP_CASH_RESERVE_PCT` at or above
+`SWEEP_BUY_TRIGGER_PCT` — that misconfiguration silently empties or inverts
+the dead-band (no buy ever fires) with no prior visibility in logs.
+
+**Status: code-complete on `worktree-paper-trading-remediation`, not yet
+deployed** — same caveat as the core revert above; `CASH_SWEEP_ENABLED` is
+already `true` live (see the 2026-08-22 entry below), but the hysteresis
+logic itself ships with this branch's deploy, not before.
 
 ## 2026-08-22 (later)
 

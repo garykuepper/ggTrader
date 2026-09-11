@@ -36,23 +36,28 @@ quoted again: `--eval-end` defaulted to "now" and drifted between runs, and
 SPY's own re-measured Sharpe on the same nominal window changed between
 citations, which is the tell (`docs/research/2026-08-19-anchor-fix-reproduction.md`).
 
-**Layered on top, and still the live `PaperTrader` configuration as of this
-run** (`src/ggTrader/paper/trader.py:412` calls `generate_blended_signals()`;
-confirmed in the running code, not just docs): the leverage-realistic
-3-sleeve blend (SP500 + MidCap400 + Nasdaq100, inverse-vol/target-vol
-weighted, `target_vol=0.068`, `window=60`, `max_leverage=1.0`):
+**Layered on top:** the leverage-realistic 3-sleeve blend (SP500 + MidCap400
++ Nasdaq100, inverse-vol/target-vol weighted, `target_vol=0.068`,
+`window=60`, `max_leverage=1.0`) was the live `PaperTrader` configuration
+through 2026-09-10:
 
 - **OOS Sharpe 0.69 | CAGR 4.78% | MaxDD -6.70%** — *below* the standalone
   core (0.99/8.0%) and *below* window-matched SPY (0.78/12.79%), barely
   improving drawdown (-6.70% vs -7.65%)
   (`docs/research/_rebaseline_corrected_tape_20260822.json`)
 
-**The blend is currently subtracting risk-adjusted value relative to the
-core**, confirmed independently three separate times, two months apart
-(2026-06-27: 1.05 vs 1.12 core; 2026-08-19 pre-rebaseline: 0.68 vs 0.97;
-2026-08-22 corrected: 0.69 vs 0.99). A revert to the standalone core has
-been queued since 2026-08-22 (`docs/next_steps.md` "week of 2026-08-31")
-but **has not been executed as of this run** — see §5.
+**The blend was subtracting risk-adjusted value relative to the core**,
+confirmed independently three separate times, two months apart (2026-06-27:
+1.05 vs 1.12 core; 2026-08-19 pre-rebaseline: 0.68 vs 0.97; 2026-08-22
+corrected: 0.69 vs 0.99). A revert to the standalone core was queued since
+2026-08-22 (`docs/next_steps.md` "week of 2026-08-31") and **is now
+code-complete** on the `worktree-paper-trading-remediation` branch
+(`docs/superpowers/plans/2026-09-11-paper-trading-remediation.md`,
+2026-09-11): `src/ggTrader/paper/trader.py` calls `generate_core_signals()`
+(the standalone SP500 core), not `generate_blended_signals()`. **This has
+NOT yet reached the live container** — the branch is unmerged and
+undeployed as of this run; the live account was still running the blend as
+of 2026-09-10. See §5.
 
 Any new lever should be measured against **both** of these numbers and
 against SPY on a *pinned* window — beating SPY alone is not sufficient, and
@@ -63,7 +68,7 @@ an unpinned window is not a citable result.
 | Lever | Verdict | Key metric | Mechanism (1 line) | Source |
 |---|---|---|---|---|
 | `ensemble` (5-voter core) | ✅ GO, live | Sharpe 0.99 vs SPY 0.78 (corrected baseline) | bb+rsi+ema+macd+vbb majority-vote entries, flat 3.3% sizing | `docs/research/_rebaseline_corrected_tape_20260822.json` |
-| 3-sleeve leverage-realistic blend | ⚠️ Underperforms core, still live | Sharpe 0.69 < core 0.99 < SPY 0.78 | inverse-vol/target-vol weighted SP500+MidCap400+Nasdaq100, 1.0x cap | `docs/research/_rebaseline_corrected_tape_20260822.json`; revert queued, not yet executed (§5) |
+| 3-sleeve leverage-realistic blend | ⚠️ Underperforms core; revert code-complete on branch, not yet deployed | Sharpe 0.69 < core 0.99 < SPY 0.78 | inverse-vol/target-vol weighted SP500+MidCap400+Nasdaq100, 1.0x cap | `docs/research/_rebaseline_corrected_tape_20260822.json`; revert implemented in `worktree-paper-trading-remediation` (§5), pending merge/deploy |
 | `bb_reversion`, `rsi_reversion`, `ema_cross` | ✅ GO, in default ensemble | — | base voters | `docs/roadmap.md` §5 |
 | `macd_divergence` | ✅ GO, shipped | — | voter addition, part of default ensemble | `docs/roadmap.md` |
 | `volume_bb_reversion` | ✅ GO, shipped, in default ensemble | — | volume-confirmed BB reversion | `docs/roadmap.md` |
@@ -239,16 +244,22 @@ more durable than the roster above:
 
 ## 5. Known documentation gaps
 
-- ⚠️ **The core-revert decision (§1) is queued but not executed, and the
-  queued date has passed.** `docs/next_steps.md`'s ACTIVE STEP calls for
-  reverting live from the 3-sleeve blend to the standalone SP500 core "week
-  of 2026-08-31." As of this run (2026-09-11), `src/ggTrader/paper/trader.py`
-  still calls `generate_blended_signals()` — the live account is still
-  running the underperforming blend, three weeks past the planned revert.
+- ⚠️ **The core-revert decision (§1) is code-complete on a branch, but NOT
+  yet deployed to the live container.** `docs/next_steps.md`'s ACTIVE STEP
+  originally called for reverting live from the 3-sleeve blend to the
+  standalone SP500 core "week of 2026-08-31," three weeks past that date
+  before this session started. As of this run (2026-09-11), the revert
+  (along with the MNST split-accounting fix it was sequenced behind, a
+  catastrophe-stop changelog note, and cash-sweep buy hysteresis) has landed
+  on `worktree-paper-trading-remediation`
+  (`docs/superpowers/plans/2026-09-11-paper-trading-remediation.md`):
+  `src/ggTrader/paper/trader.py` now calls `generate_core_signals()`. The
+  branch is unmerged, and the live container is still running the image
+  built from the pre-revert blend code — deploy (merge → rebuild →
+  `docker compose pull && up -d`) has not happened. Do not describe the
+  revert as "live" until that deploy step is confirmed.
   See `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
-  §7 for the fuller remediation sequence (it reorders the revert *behind* an
-  MNST split-accounting fix — a live-ops landmine, out of this file's scope,
-  but material to when the revert should actually land).
+  §7 for the fuller remediation sequence this branch implements.
 - ⚠️ **11 weeks of live paper-trading data (2026-06-23→2026-09-08) is not
   independent evidence for or against the core-vs-blend decision.** The
   live account (still on the blend) returned +2.03% split-fair vs. SPY
