@@ -8,7 +8,7 @@ anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
 Regenerate the "context" section below from `docs/research/RESEARCH_SNAPSHOT.md`
-whenever it's materially out of date — last synced 2026-07-19.
+whenever it's materially out of date — last synced 2026-09-11.
 
 ---
 
@@ -43,11 +43,16 @@ raw return.
 **Currently deployed and working:** a majority-vote ensemble of five
 technical indicators (Bollinger Bands, RSI, EMA crossover, MACD divergence,
 Volume-confirmed Bollinger Bands) on individual S&P 500 stocks, flat ~3%
-position sizing per trade — achieves roughly Sharpe 1.1 vs. the index's
-~0.6-0.8. On top of that, a blended portfolio across three large-cap/mid-cap
-U.S. equity indices (S&P 500, MidCap 400, Nasdaq-100), volatility-weighted
-and capped at 1x leverage, pushes that to roughly Sharpe 1.1-1.2 with
-meaningfully lower drawdown.
+position sizing per trade — a rigorously re-measured, pinned-window
+walk-forward test puts this at roughly Sharpe ~1.0 vs. the index's ~0.8 on
+the same window. A blended portfolio layered on top across three
+large-cap/mid-cap U.S. equity indices (S&P 500, MidCap 400, Nasdaq-100),
+volatility-weighted and capped at 1x leverage, is the account actually
+trading live today, but on the same rigorous re-measurement it now trails
+the simpler single-index version (roughly Sharpe ~0.7) — a reminder that an
+early promising diversification result can evaporate under a more careful
+re-test, so treat any number this scout is given (including from other
+projects) as provisional until it's been through that kind of scrutiny.
 
 **Already tried and rejected — don't propose close variants of these
 without a genuinely different mechanism:**

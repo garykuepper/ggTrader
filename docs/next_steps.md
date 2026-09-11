@@ -28,48 +28,88 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 ---
 
-## ACTIVE STEP (2026-08-22) — one-change-a-week rollout: sweep → core revert → catastrophe stop
+## ACTIVE STEP (2026-09-10, superseding the 2026-08-22 sequence below) — fix MNST split state → catastrophe stop → core revert → sweep hysteresis
 
-The 2026-08-22 review-execution branch (merged `8e38d72`, deployed to the
-live container same day) landed the operations hardening: paper-table
-day-shift fix + live migration, feature-flagged idle-cash sweep,
-feature-flagged catastrophe stop, snapshot-primary split guard, `ggt
-ingest` hard-fail, and the corrected-tape re-baseline. See
-`docs/changelog.md` 2026-08-22 for the full list.
+**The 2026-08-22 rollout stalled: only step 1 (sweep) executed.** The week-
+of-08-31 core revert never happened — confirmed 2026-09-11, `trader.py`
+still calls `generate_blended_signals()`, three weeks past the planned date
+— and the 2026-09-09 ops review
+(`docs/research/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md`)
+plus the 2026-09-10 full-repo audit
+(`docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
+§7) found a live-data-integrity blocker that the original sequence didn't
+know about and that must go **first**, ahead of the revert:
 
-**The re-baseline settles the blend question.** Pinned 17-fold WFO
-(2021-01-31 → 2026-04-30) on the corrected tape
-(`docs/research/_rebaseline_corrected_tape_20260822.json`):
-SP500 core **Sharpe 0.99 / CAGR 8.0% / MaxDD -7.7%**; 3-sleeve blend @
-lev 1.0 (live config) **0.69 / 4.8%**; SPY window-matched **0.78**. That is
-the *third* independent core-beats-blend result (June: 1.05 vs 1.12;
-August pre-correction: 0.68 vs 0.97) — and the blend trails SPY. The
-2026-08-19 step's two blockers are answered well enough to act: the
-regime-split question is moot when the overlay loses in *all* conditions
-measured so far, and live-vs-backtest config drift argues *for* the
-simpler core, not against reverting.
+**`_SPLIT_LOOKBACK_DAYS = 14` (`trader.py:46`) has expired while MNST is
+still held.** MNST's broker-side quantity was never doubled for its
+2026-08-11 2-for-1 split (Alpaca paper never applied it), and the display-
+side correction that papered over this stopped applying on 2026-08-25. As
+of the 09-09 review, MNST displays a **fictitious -52% unrealized loss**
+(true economic loss is -4.8%; cost basis is split-invariant). Two
+consequences: NAV has been understated ~0.87% since 8/26, and — critically
+— **arming `CATASTROPHE_STOP_ENABLED` right now would force-sell MNST on
+that fictitious loss.** The old "nothing in the book would trigger" note
+below is stale as of today's book.
 
-Rollout sequence (one change per week so attribution stays clean —
-standing lesson, do not bundle):
+**The re-baseline still settles the blend question independently of the
+above** — pinned 17-fold WFO (2021-01-31 → 2026-04-30) on the corrected
+tape (`docs/research/_rebaseline_corrected_tape_20260822.json`): SP500
+core **Sharpe 0.99 / CAGR 8.0% / MaxDD -7.7%**; 3-sleeve blend @ lev 1.0
+(live config) **0.69 / 4.8%**; SPY window-matched **0.78**. Third
+independent core-beats-blend result (June: 1.05 vs 1.12; August
+pre-correction: 0.68 vs 0.97) — the blend trails SPY too. 11 weeks of live
+data (2026-06-23→2026-09-08, +2.03% split-fair vs SPY +4.49%) is
+*consistent* with this but is not independent evidence either way — its
+Sharpe SE is ±2.21, indistinguishable from zero.
 
-1. **DONE 2026-08-22: `CASH_SWEEP_ENABLED=true` in live `.env`, container
-   recreated, verified armed** (SPY, 5% reserve, $500 min clip). Idle cash
-   (~60% of the account, the whole reason paper trails SPY: +2.51% vs
-   ~+4.4% over 6/23–8/20) now earns index return. First swept run:
-   Mon 2026-08-24 12:45 PT — expect one ~$58K SPY buy tagged
-   `reason='cash_sweep'`, cash dropping to ~5% reserve. Watch a week.
-2. **Week of 2026-08-31: revert live from the 3-sleeve blend to the SP500
-   core** (evidence above; this closes the 2026-08-19 ACTIVE STEP below).
-3. **Week after: consider `CATASTROPHE_STOP_ENABLED=true`** (-25% floor;
-   nothing in the current book would trigger — NXPI sits at -19%).
-4. **Research, once live config settles:** re-run `ensemble_ic` (1.01) and
+Revised sequence (still one change at a time so attribution stays clean):
+
+1. **DONE 2026-08-22: `CASH_SWEEP_ENABLED=true`.** SPY, 5% reserve, $500
+   min clip. Idle cash (~60% of the account) now earns index return. Cash
+   sweep churn is real but low-priority (see step 4).
+2. **NEXT — fix MNST split-state persistence, then restate NAV.** Replace
+   the 14-day rolling lookback with durable per-symbol state (e.g. a
+   `paper_split_state` table, or "correct until the broker applies it or
+   the position closes" semantics) so a known-unapplied split doesn't
+   silently expire while still held. Restate the 2026-08-26→09-08 snapshot
+   history once fixed; verify MNST reads its true -4.8% unrealized. Small
+   code change + one-off data fix + the standard ~2.5 min CI→pull→recreate
+   loop. This is the acceptance test for step 3.
+3. **Then: `CATASTROPHE_STOP_ENABLED=true`.** -25% floor. Only safe to arm
+   once step 2 is verified — post-fix, the book's worst true position is
+   PNR at -8.1%, so this is genuinely inert at arm time, matching the
+   original rollout note's intent.
+4. **Then: revert live from the 3-sleeve blend to the SP500 core**
+   (evidence above; this closes the 2026-08-19 ACTIVE STEP further below).
+   No hard dependency on steps 2-3 — it was simply overdue on its own
+   merits and is sequenced here because it's next in the queue, not because
+   it's blocked. If it's more urgent than the split-state fix, it's fine to
+   swap the order; just don't arm the catastrophe stop before step 2 either
+   way.
+5. **Then: add hysteresis to the cash sweep.** 15 sweep trades / $82.4K
+   notional across 12 sessions oscillating around the 5% reserve (pure
+   spread friction, ~zero expected return). Dead-band: buy only when cash
+   > 8% of PV, sell only when cash < 2%. Cuts round-trips ~70% at
+   equivalent exposure.
+6. **Research, once live config settles:** re-run `ensemble_ic` (1.01) and
    `ensemble_kelly` (0.98) against the real 0.99 baseline — both were
    rejected only against the phantom 1.12, so their NO-GOs are void on
-   their stated grounds (drawdown/fold-instability may still kill them).
-   Then the queued TLT/GLD/DBC cross-asset sleeve. Event-date NO-GOs stay
-   closed (they failed *with* a one-day lookahead advantage); `fomc_drift`
-   is the only one whose workaround tested the outright wrong day —
-   re-run only if curiosity is worth the compute.
+   their stated grounds (drawdown/fold-instability may still kill
+   `ensemble_ic`). Then the queued TLT/GLD/DBC cross-asset sleeve, then
+   `xs_momentum`/`dual_momentum` on the current lab stack (zero-cost gap
+   closer, never re-tested post-rewrite). Event-date NO-GOs stay closed
+   (they failed *with* a one-day lookahead advantage, see
+   `docs/research/RESEARCH_SNAPSHOT.md` §4); `fomc_drift` is the only one
+   whose workaround tested the outright wrong day — re-run if the compute
+   is worth it. Full ranked list: `RESEARCH_SNAPSHOT.md` §6.
+
+**Also flagged, not yet a queued step:** the 09-09 review found a real
+alerting gap (`scripts/daily_pnl_report.sh` invokes a deleted CLI
+subcommand and has been disabled since 2026-05-06) — a crash before the
+Telegram notifier's first call currently pages nobody, which is how the
+7/29-30 leverage-guard halt went unnoticed for a day. Worth a small
+SQL-plus-notifier fix and a cron-level "alert on nonzero exit" wrapper
+whenever there's a free cycle; not urgent enough to displace 1-5 above.
 
 ---
 
