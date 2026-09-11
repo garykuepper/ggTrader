@@ -158,7 +158,7 @@ def parse_sentiment_response(response: str) -> float:
 #: separate litellm docker project's .env (same host, same user, per
 #: AGENTS.md's project layout). Same cross-project read pattern as
 #: scripts/check_opencode_quota.py.
-_LITELLM_ENV_PATH = "/home/flynn/docker/litellm/.env"
+_LITELLM_ENV_PATH = "/home/flynn/ai-stack/litellm/.env"
 
 
 def _load_litellm_key() -> str:
