@@ -786,6 +786,81 @@ class TestDailyPnl:
             for record in caplog.records
         )
 
+    def test_split_correction_persists_past_lookback_window(
+        self, _schema, _trade, _snap, mock_prev
+    ):
+        """A split whose ex_date is now outside the broker-feed lookback
+        window (corp_splits comes back empty) must still be corrected if it
+        was previously detected and persisted -- the MNST bug."""
+        trader, broker, _ = _make_trader()
+        broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
+        positions = {"MNST": {"qty": 20.8041, "cost_basis": 1887.11, "market_value": 986.67}}
+
+        with patch(
+            "ggTrader.paper.trader.get_open_split_corrections",
+            return_value={"MNST": 2.0},
+        ):
+            result = trader._compute_split_corrections(
+                positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
+            )
+
+        assert result == {"MNST": 2.0}
+
+    def test_split_correction_clears_persisted_state_once_applied(
+        self, _schema, _trade, _snap, mock_prev
+    ):
+        """Once snapshot history confirms the broker applied the split (qty
+        jumped ~factor), persisted state for that symbol is cleared."""
+        trader, broker, _ = _make_trader()
+        broker.get_split_evidence.return_value = {
+            "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
+            "activity_applied": set(),
+        }
+        positions = {"MNST": {"qty": 41.6082, "cost_basis": 1887.11, "market_value": 1973.5}}
+
+        with (
+            patch(
+                "ggTrader.paper.trader.get_open_split_corrections",
+                return_value={"MNST": 2.0},
+            ),
+            patch("ggTrader.paper.trader.get_snapshot_history", return_value=[]),
+            patch("ggTrader.paper.trader.get_trade_history_dates", return_value=[]),
+            patch(
+                "ggTrader.paper.trader.find_split_applied_symbols",
+                return_value=({"MNST"}, set()),
+            ) as mock_find,
+            patch("ggTrader.paper.trader.clear_split_correction") as mock_clear,
+        ):
+            result = trader._compute_split_corrections(
+                positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
+            )
+
+        assert mock_find.called
+        mock_clear.assert_called_once_with("MNST")
+        assert result == {}
+
+    def test_split_correction_drops_persisted_state_for_closed_position(
+        self, _schema, _trade, _snap, mock_prev
+    ):
+        """A symbol no longer held has nothing left to correct; its persisted
+        row is cleaned up."""
+        trader, broker, _ = _make_trader()
+        broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
+
+        with (
+            patch(
+                "ggTrader.paper.trader.get_open_split_corrections",
+                return_value={"MNST": 2.0},
+            ),
+            patch("ggTrader.paper.trader.clear_split_correction") as mock_clear,
+        ):
+            result = trader._compute_split_corrections(
+                {}, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
+            )
+
+        mock_clear.assert_called_once_with("MNST")
+        assert result == {}
+
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
 @patch("ggTrader.paper.trader.log_snapshot")
