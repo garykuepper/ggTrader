@@ -33,7 +33,7 @@ from ggTrader.paper.persist import (
     save_split_correction,
 )
 from ggTrader.paper.risk import RiskConfig, RiskGuard
-from ggTrader.paper.signal_runner import generate_blended_signals
+from ggTrader.paper.signal_runner import generate_core_signals
 from ggTrader.paper.split_check import (
     apply_corrections_to_positions,
     compute_split_corrections,
@@ -463,7 +463,7 @@ class PaperTrader:
             return {"buys": [], "sells": [], "errors": []}
 
         try:
-            blend = generate_blended_signals()
+            blend = generate_core_signals()
         except Exception as exc:
             self._notifier.send(f"Paper trading failed: signal generation error\n{exc}")
             raise

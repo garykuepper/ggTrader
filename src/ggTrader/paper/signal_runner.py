@@ -118,3 +118,27 @@ def generate_blended_signals() -> dict:
         "rebalanced_today": rebalanced_today,
         "fallback_used": fallback_used,
     }
+
+
+def generate_core_signals() -> dict:
+    """Generate today's signals for the standalone SP500 core strategy,
+    wrapped in the same shape `generate_blended_signals()` returns so
+    `trader.py`'s sleeve-iteration/buy-sizing logic needs no changes.
+
+    Deployed 2026-09 in place of the 3-sleeve blend: the corrected-tape
+    pinned-window re-baseline
+    (`docs/research/_rebaseline_corrected_tape_20260822.json`) shows the
+    blend underperforming this standalone core (Sharpe 0.69 vs 0.99, third
+    independent confirmation) -- see `docs/next_steps.md`. Kept alongside
+    `generate_blended_signals` (not deleted) since the blend's WFO/research
+    infrastructure (`ggt lab --blend`) is still valid tooling for any future
+    diversification-sleeve candidate that actually clears the bar.
+    """
+    core_signals = generate_signals(universe="sp500")
+    return {
+        "sleeves": {"sp500": core_signals},
+        "weights": {"sp500": 1.0},
+        "scale": 1.0,
+        "rebalanced_today": False,
+        "fallback_used": False,
+    }

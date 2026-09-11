@@ -229,3 +229,26 @@ class TestGenerateBlendedSignals:
             generate_blended_signals()
 
         mock_save.assert_not_called()
+
+
+class TestGenerateCoreSignals:
+    @patch("ggTrader.paper.signal_runner.generate_signals")
+    def test_wraps_sp500_signals_in_blend_shape(self, mock_generate):
+        mock_generate.return_value = {
+            "buys": ["AAPL", "MSFT"],
+            "sells": ["TSLA"],
+            "as_of": "2026-09-10",
+            "universe_size": 503,
+            "gate": {"gate_enabled": False},
+        }
+
+        from ggTrader.paper.signal_runner import generate_core_signals
+
+        result = generate_core_signals()
+
+        mock_generate.assert_called_once_with(universe="sp500")
+        assert result["sleeves"] == {"sp500": mock_generate.return_value}
+        assert result["weights"] == {"sp500": 1.0}
+        assert result["scale"] == 1.0
+        assert result["rebalanced_today"] is False
+        assert result["fallback_used"] is False
