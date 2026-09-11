@@ -419,3 +419,72 @@ class TestGetTradeHistoryDates:
 
         params = mock_conn.execute.call_args[0][1]
         assert params == {"symbol": "MNST"}
+
+
+@patch("ggTrader.paper.persist._get_engine")
+class TestSplitState:
+    def test_creates_split_state_table(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+
+        from ggTrader.paper.persist import init_paper_schema
+
+        init_paper_schema()
+
+        executed_sql = " ".join(str(call[0][0]) for call in mock_conn.execute.call_args_list)
+        assert "paper_split_state" in executed_sql
+
+    def test_get_open_split_corrections_returns_persisted_rows(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = [("MNST", 2.0), ("XYZ", 0.5)]
+
+        from ggTrader.paper.persist import get_open_split_corrections
+
+        result = get_open_split_corrections()
+
+        assert result == {"MNST": 2.0, "XYZ": 0.5}
+
+    def test_get_open_split_corrections_empty_when_no_rows(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.all.return_value = []
+
+        from ggTrader.paper.persist import get_open_split_corrections
+
+        assert get_open_split_corrections() == {}
+
+    def test_save_split_correction_upserts(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+
+        from ggTrader.paper.persist import save_split_correction
+
+        save_split_correction("MNST", "2026-08-11", 2.0)
+
+        mock_conn.execute.assert_called_once()
+        sql_str = str(mock_conn.execute.call_args[0][0])
+        assert "INSERT INTO paper_split_state" in sql_str
+        assert "ON CONFLICT (symbol)" in sql_str
+        params = mock_conn.execute.call_args[0][1]
+        assert params == {"symbol": "MNST", "ex_date": "2026-08-11", "factor": 2.0}
+        mock_conn.commit.assert_called_once()
+
+    def test_clear_split_correction_deletes_row(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+
+        from ggTrader.paper.persist import clear_split_correction
+
+        clear_split_correction("MNST")
+
+        mock_conn.execute.assert_called_once()
+        sql_str = str(mock_conn.execute.call_args[0][0])
+        assert "DELETE FROM paper_split_state" in sql_str
+        assert mock_conn.execute.call_args[0][1] == {"symbol": "MNST"}
+        mock_conn.commit.assert_called_once()

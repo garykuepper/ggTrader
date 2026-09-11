@@ -63,6 +63,13 @@ CREATE TABLE IF NOT EXISTS paper_dividend_accruals (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (symbol, ex_date)
 );
+CREATE TABLE IF NOT EXISTS paper_split_state (
+    symbol TEXT PRIMARY KEY,
+    ex_date DATE NOT NULL,
+    factor DOUBLE PRECISION NOT NULL,
+    first_detected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 """
 
 
@@ -372,5 +379,50 @@ def save_rebalance_state(rebalance_date: str, weights: dict[str, float], scale: 
                 "scale = EXCLUDED.scale"
             ),
             {"rd": rebalance_date, "w": json.dumps(weights), "s": scale},
+        )
+        conn.commit()
+
+
+def get_open_split_corrections() -> dict[str, float]:
+    """Return `{symbol: factor}` for every split this account has detected
+    as broker-unapplied and not yet confirmed applied.
+
+    Persists past `trader._SPLIT_LOOKBACK_DAYS` (the rolling window used to
+    detect *new* splits from the broker's corporate-actions feed) so a
+    long-held unapplied split keeps being corrected instead of the
+    correction silently expiring while the position is still held -- the
+    MNST incident, unapplied since 2026-08-11, correction expired
+    2026-08-25 while still held. See `split_check.py`'s module docstring.
+    """
+    with _get_engine().connect() as conn:
+        rows = conn.execute(text("SELECT symbol, factor FROM paper_split_state")).all()
+    return {symbol: float(factor) for symbol, factor in rows}
+
+
+def save_split_correction(symbol: str, ex_date: str, factor: float) -> None:
+    """Upsert a detected-unapplied split for `symbol`. Idempotent -- calling
+    again for the same symbol just refreshes `factor`/`updated_at`."""
+    with _get_engine().connect() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO paper_split_state (symbol, ex_date, factor) "
+                "VALUES (:symbol, :ex_date, :factor) "
+                "ON CONFLICT (symbol) DO UPDATE SET "
+                "factor = EXCLUDED.factor, updated_at = now()"
+            ),
+            {"symbol": symbol, "ex_date": ex_date, "factor": factor},
+        )
+        conn.commit()
+
+
+def clear_split_correction(symbol: str) -> None:
+    """Remove a symbol's persisted split-correction state. Call once the
+    broker's own snapshot history confirms the split was actually applied
+    (qty jumped by ~factor) or the position is fully closed -- see
+    `trader._compute_split_corrections`."""
+    with _get_engine().connect() as conn:
+        conn.execute(
+            text("DELETE FROM paper_split_state WHERE symbol = :symbol"),
+            {"symbol": symbol},
         )
         conn.commit()
