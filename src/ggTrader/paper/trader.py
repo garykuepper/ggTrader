@@ -851,6 +851,7 @@ class PaperTrader:
                     portfolio_value=mid_account["portfolio_value"],
                     reserve_pct=cash_sweep.reserve_pct(),
                     min_clip=cash_sweep.min_clip_usd(),
+                    buy_trigger_pct=cash_sweep.buy_trigger_pct(),
                 )
             except Exception as exc:
                 _log.warning("Cash sweep buy sizing failed (non-fatal): %s", exc)
