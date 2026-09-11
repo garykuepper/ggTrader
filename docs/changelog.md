@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-09-11
+
+### Catastrophe stop ready to enable, gated on persistent split-state fix verification
+
+`CATASTROPHE_STOP_ENABLED=true` is now ready to flip on the live paper
+account — the feature-flag infrastructure has been in place since 2026-08-22
+(`15262aa`, `5e0fe05`), and the corrected-tape re-baseline
+(`docs/research/_rebaseline_corrected_tape_20260822.json`) established that a
+-25% floor (`CATASTROPHE_STOP_PCT`, the default config) would be genuinely
+inert at arm time. However, enablement is blocked on **verification of Task 2's
+persistent split-state fix** (`72ac60c: persist unapplied-split corrections past
+the lookback window`), which must deploy and verify live first.
+
+**Why:** MNST (Monster Beverage) was held through its 2026-08-11 2-for-1 split,
+which Alpaca paper never applied. The original 14-day lookback
+(`_SPLIT_LOOKBACK_DAYS = 14` in `trader.py:46`) expired on 2026-08-25 while the
+position was still open, causing MNST to display at a fictitious -52% unrealized
+loss (true economic loss is -4.8%). Enabling `CATASTROPHE_STOP_ENABLED=true` in
+this state would force-sell MNST on that phantom loss — a false catastrophe.
+
+**Acceptance test:** Once `72ac60c` deploys to the live image via the standard
+CI→pull→recreate cycle and the next 12:45 PT paper run executes, verify that
+MNST's unrealized loss reads its true ~-4.8% in both `paper_snapshots` and the
+Telegram NAV summary. The corrected book's worst true position is PNR at roughly
+-8.1% per the 2026-09-09 ops review
+(`docs/research/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md`),
+well above the -25% catastrophe threshold, confirming the floor will be inert.
+Once verified, the sequence continues: core revert (§2 of
+`docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`),
+sweep hysteresis, then research phase.
+
 ## 2026-08-22 (later)
 
 ### Cash sweep ENABLED on the live paper account; rollout plan queued
