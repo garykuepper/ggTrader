@@ -1,4 +1,12 @@
-# Changelog
+## 2026-09-16
+
+- **Ops alerting:** `scripts/paper_trade.sh` now traps any nonzero exit and
+  sends a Telegram alert with the log tail (closes the 7/29–7/30 silent-halt
+  gap). `scripts/daily_pnl_report.sh` rewritten against `paper_snapshots` /
+  `paper_trades` and rescheduled 06:00 Tue–Sat; it had been broken since
+  2026-05-06.
+
+
 
 ## 2026-09-11
 
