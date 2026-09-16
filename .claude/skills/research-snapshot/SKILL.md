@@ -108,7 +108,7 @@ brief to make sense). Regenerate everything EXCEPT the "Candidate Strategy"
 placeholder section at the top (that's filled in per-use, not by this
 skill — leave it as the placeholder block):
 1. Role/mission framing (senior quant researcher, honest-OOS-or-nothing,
-   mirrors `agents.md`'s "Role" section) + instruction to benchmark against
+   mirrors `AGENTS.md`'s "Role" section) + instruction to benchmark against
    both SPY and the current baseline, and against buy-and-hold for any
    timing/rotation idea.
 2. Condensed "don't re-propose" list, pulled from the snapshot's §4.
