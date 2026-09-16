@@ -277,29 +277,52 @@ class TestGenerateCoreSignals:
 
 
 class TestRefreshBenchmarkTape:
-    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
-    def test_fetches_all_benchmark_symbols_with_db_cache(self, mock_fetch):
+    @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
+    @patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader")
+    def test_refetches_trailing_window_and_upserts(self, mock_plain_cls, mock_cached_cls):
         from ggTrader.paper.signal_runner import BENCHMARK_SYMBOLS, refresh_benchmark_tape
 
-        mock_fetch.return_value = _mock_ohlcv(list(BENCHMARK_SYMBOLS), n_days=30)
+        frame = _mock_ohlcv(list(BENCHMARK_SYMBOLS), n_days=30)
+        mock_plain_cls.return_value.fetch_ohlcv.return_value = frame
 
         got = refresh_benchmark_tape(lookback_days=30)
 
-        args, kwargs = mock_fetch.call_args
+        args, kwargs = mock_plain_cls.return_value.fetch_ohlcv.call_args
         assert sorted(args[0]) == sorted(BENCHMARK_SYMBOLS)
-        assert kwargs.get("use_db_cache", True) is True
+        assert args[1] == "1d"
+        assert (kwargs["end_date"] - kwargs["start_date"]).days == 30
+        mock_cached_cls.return_value._cache_to_db.assert_called_once_with(frame, "1d")
         assert sorted(got) == sorted(BENCHMARK_SYMBOLS)
 
-    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv", side_effect=RuntimeError("yf down"))
-    def test_never_raises(self, mock_fetch):
+    @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
+    @patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader")
+    def test_never_raises_on_fetch_error(self, mock_plain_cls, mock_cached_cls):
         from ggTrader.paper.signal_runner import refresh_benchmark_tape
+
+        mock_plain_cls.return_value.fetch_ohlcv.side_effect = RuntimeError("yf down")
+
+        assert refresh_benchmark_tape() == []
+        mock_cached_cls.return_value._cache_to_db.assert_not_called()
+
+    @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
+    @patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader")
+    def test_never_raises_on_db_write_error(self, mock_plain_cls, mock_cached_cls):
+        from ggTrader.paper.signal_runner import refresh_benchmark_tape
+
+        mock_plain_cls.return_value.fetch_ohlcv.return_value = _mock_ohlcv(
+            ["SPY", "TLT"], n_days=30
+        )
+        mock_cached_cls.return_value._cache_to_db.side_effect = RuntimeError("db down")
 
         assert refresh_benchmark_tape() == []
 
-    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
-    def test_reports_only_symbols_that_returned_data(self, mock_fetch):
+    @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
+    @patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader")
+    def test_reports_only_symbols_that_returned_data(self, mock_plain_cls, mock_cached_cls):
         from ggTrader.paper.signal_runner import refresh_benchmark_tape
 
-        mock_fetch.return_value = _mock_ohlcv(["SPY", "TLT"], n_days=30)
+        mock_plain_cls.return_value.fetch_ohlcv.return_value = _mock_ohlcv(
+            ["SPY", "TLT"], n_days=30
+        )
 
         assert sorted(refresh_benchmark_tape()) == ["SPY", "TLT"]

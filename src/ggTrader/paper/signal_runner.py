@@ -28,27 +28,31 @@ BENCHMARK_SYMBOLS: tuple[str, ...] = ("SPY", "TLT", "GLD", "DBC", "IEF")
 
 
 def refresh_benchmark_tape(lookback_days: int = 30) -> list[str]:
-    """Touch the benchmark/ETF tape so the DB cache stays current.
+    """Re-fetch the trailing window of the benchmark/ETF tape and upsert it.
 
-    `fetch_stock_ohlcv(use_db_cache=True)` incrementally fetches and
-    persists any symbol whose last cached bar is stale, so a daily call
-    over a short window is enough. Never raises: this is a side job of the
-    live run and must not block trading. Returns the symbols that came
-    back with data (empty on any failure).
+    Deliberately bypasses `CachedYFinanceLoader.fetch_ohlcv`'s freshness
+    check: this runs at 12:45 PT while the session is open, so the newest
+    bar written is always partial, and the freshness check would judge it
+    current the next day and never refetch it. Overwriting the trailing
+    window every run (the writer upserts on timestamp/symbol) means only
+    the current day's bar is ever partial. Never raises: this is a side job
+    of the live run and must not block trading. Returns the symbols that
+    came back with data (empty on any failure).
     """
     today = pd.Timestamp.now(tz="UTC").normalize()
     start = today - pd.Timedelta(days=lookback_days)
     try:
-        df = fetch_stock_ohlcv(
-            list(BENCHMARK_SYMBOLS),
-            start=str(start.date()),
-            end=str(today.date()),
-            use_db_cache=True,
+        from ggTrader.data.live.cached_yfinance_loader import CachedYFinanceLoader
+        from ggTrader.data.live.yfinance_loader import YFinanceDataLoader
+
+        df = YFinanceDataLoader().fetch_ohlcv(
+            list(BENCHMARK_SYMBOLS), "1d", start_date=start, end_date=today
         )
+        if df.empty:
+            return []
+        CachedYFinanceLoader()._cache_to_db(df, "1d")
     except Exception as exc:
         _log.warning("benchmark tape refresh failed (non-fatal): %s", exc)
-        return []
-    if df.empty:
         return []
     return sorted(df.columns.get_level_values(0).unique().tolist())
 

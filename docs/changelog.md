@@ -10,7 +10,9 @@
 - **Benchmark tape keepalive:** the paper run now refreshes SPY/TLT/GLD/DBC/IEF
   daily via `refresh_benchmark_tape()` (`paper/signal_runner.py`). SPY had
   no bars after 2026-08-21 and the macro ETFs none after 2026-07-20, which
-  made every "vs SPY" lab run uncitable. One-off backfill run the same day.
+  made every "vs SPY" lab run uncitable. The refresh re-fetches the trailing
+  30 days unconditionally so the partial bar written mid-session is overwritten
+  the next day. One-off backfill run the same day.
 
 ## 2026-09-11
 
