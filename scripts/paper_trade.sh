@@ -27,10 +27,11 @@ cd "${PROJECT_DIR}"
 # net: nonzero exit => Telegram with the tail of today's log.
 alert_on_failure() {
     local rc=$?
+    set +e
     if [ "${rc}" -ne 0 ]; then
         local tail_text
-        tail_text=$(tail -n 20 "${LOG_FILE}" 2>/dev/null | sed 's/[`*_\[]/ /g')
-        set -a; . "${PROJECT_DIR}/.env"; set +a
+        tail_text=$(tail -n 20 "${LOG_FILE}" 2>/dev/null | sed 's/[`*_\[]/ /g' || true)
+        { set -a; . "${PROJECT_DIR}/.env"; set +a; } 2>/dev/null || true
         python3 - "${rc}" "${tail_text}" <<'PY'
 import sys
 sys.path.insert(0, "/home/flynn/scripts")
@@ -40,6 +41,7 @@ token, chat_id = load_telegram_credentials()
 send_telegram(f"🚨 ggTrader paper_trade.sh FAILED (exit {rc})\n\n{tail}", token, chat_id)
 PY
     fi
+    exit "${rc}"
 }
 trap alert_on_failure EXIT
 
