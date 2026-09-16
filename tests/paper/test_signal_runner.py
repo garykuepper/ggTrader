@@ -252,3 +252,54 @@ class TestGenerateCoreSignals:
         assert result["scale"] == 1.0
         assert result["rebalanced_today"] is False
         assert result["fallback_used"] is False
+
+    @patch("ggTrader.paper.signal_runner.generate_signals")
+    def test_core_weights_restore_full_slot_size(self, mock_generate):
+        """weights=1.0, scale=1.0 must give sleeve_position_notional ==
+        position_notional (3.3% of PV), i.e. no blend-overlay shrink."""
+        from ggTrader.paper.signal_runner import generate_core_signals
+
+        mock_generate.return_value = {
+            "buys": [],
+            "sells": [],
+            "as_of": "2026-09-16",
+            "universe_size": 503,
+            "gate": {"gate_enabled": False},
+        }
+        core = generate_core_signals()
+        from ggTrader.paper.risk import RiskConfig, RiskGuard
+
+        guard = RiskGuard(RiskConfig())
+        pv = 102_000.0
+        sleeve = guard.sleeve_position_notional(pv, core["weights"]["sp500"], core["scale"])
+        assert sleeve == guard.position_notional(pv)
+        assert sleeve == pytest.approx(pv * 0.033, abs=0.01)
+
+
+class TestRefreshBenchmarkTape:
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_fetches_all_benchmark_symbols_with_db_cache(self, mock_fetch):
+        from ggTrader.paper.signal_runner import BENCHMARK_SYMBOLS, refresh_benchmark_tape
+
+        mock_fetch.return_value = _mock_ohlcv(list(BENCHMARK_SYMBOLS), n_days=30)
+
+        got = refresh_benchmark_tape(lookback_days=30)
+
+        args, kwargs = mock_fetch.call_args
+        assert sorted(args[0]) == sorted(BENCHMARK_SYMBOLS)
+        assert kwargs.get("use_db_cache", True) is True
+        assert sorted(got) == sorted(BENCHMARK_SYMBOLS)
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv", side_effect=RuntimeError("yf down"))
+    def test_never_raises(self, mock_fetch):
+        from ggTrader.paper.signal_runner import refresh_benchmark_tape
+
+        assert refresh_benchmark_tape() == []
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_reports_only_symbols_that_returned_data(self, mock_fetch):
+        from ggTrader.paper.signal_runner import refresh_benchmark_tape
+
+        mock_fetch.return_value = _mock_ohlcv(["SPY", "TLT"], n_days=30)
+
+        assert sorted(refresh_benchmark_tape()) == ["SPY", "TLT"]

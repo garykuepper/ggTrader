@@ -204,6 +204,35 @@ class TestSellExits:
 @patch("ggTrader.paper.trader.log_snapshot")
 @patch("ggTrader.paper.trader.log_trade")
 @patch("ggTrader.paper.trader.init_paper_schema")
+class TestBenchmarkTapeKeepalive:
+    @patch("ggTrader.paper.trader.refresh_benchmark_tape", return_value=[])
+    @patch("ggTrader.paper.trader.generate_core_signals")
+    def test_refresh_returning_nothing_does_not_abort_run(self, mock_signals, mock_refresh, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of="2026-06-19")
+        trader, broker, _notifier = _make_trader(positions={})
+
+        result = trader.run()
+
+        mock_refresh.assert_called_once()
+        assert result["errors"] == []
+        broker.submit_buy.assert_not_called()
+
+    @patch("ggTrader.paper.trader.refresh_benchmark_tape", return_value=["SPY", "TLT"])
+    @patch("ggTrader.paper.trader.generate_core_signals")
+    def test_refresh_is_called_after_signals(self, mock_signals, mock_refresh, *_):
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of="2026-06-19")
+        trader, _broker, _notifier = _make_trader(positions={})
+
+        trader.run()
+
+        assert mock_signals.call_count == 1
+        mock_refresh.assert_called_once_with()
+
+
+@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
+@patch("ggTrader.paper.trader.log_snapshot")
+@patch("ggTrader.paper.trader.log_trade")
+@patch("ggTrader.paper.trader.init_paper_schema")
 class TestBuyEntries:
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_buys_new_positions(self, mock_signals, *_):

@@ -33,7 +33,7 @@ from ggTrader.paper.persist import (
     save_split_correction,
 )
 from ggTrader.paper.risk import RiskConfig, RiskGuard
-from ggTrader.paper.signal_runner import generate_core_signals
+from ggTrader.paper.signal_runner import generate_core_signals, refresh_benchmark_tape
 from ggTrader.paper.split_check import (
     apply_corrections_to_positions,
     compute_split_corrections,
@@ -486,6 +486,12 @@ class PaperTrader:
         except Exception as exc:
             self._notifier.send(f"Paper trading failed: signal generation error\n{exc}")
             raise
+
+        # Side job: keep SPY and the macro ETFs' tape current for the lab.
+        # Wrapped inside the function; a failure here logs and moves on.
+        refreshed = refresh_benchmark_tape()
+        if not refreshed:
+            _log.warning("benchmark tape refresh returned no symbols")
 
         if blend["fallback_used"]:
             self._notifier.send(

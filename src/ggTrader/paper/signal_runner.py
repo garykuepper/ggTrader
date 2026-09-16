@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
@@ -15,6 +17,40 @@ from ggTrader.paper.overlay import (
     should_rebalance,
 )
 from ggTrader.paper.persist import get_rebalance_state, save_rebalance_state
+
+_log = logging.getLogger(__name__)
+
+#: Symbols no sleeve trades but the lab benchmarks against or builds
+#: sleeves from. Nothing else on the box fetches them daily, so the
+#: paper run keeps their tape alive (SPY's went dead 2026-08-21 when the
+#: old benchmark-only writer was retired; TLT/GLD/DBC stalled 2026-07-20).
+BENCHMARK_SYMBOLS: tuple[str, ...] = ("SPY", "TLT", "GLD", "DBC", "IEF")
+
+
+def refresh_benchmark_tape(lookback_days: int = 30) -> list[str]:
+    """Touch the benchmark/ETF tape so the DB cache stays current.
+
+    `fetch_stock_ohlcv(use_db_cache=True)` incrementally fetches and
+    persists any symbol whose last cached bar is stale, so a daily call
+    over a short window is enough. Never raises: this is a side job of the
+    live run and must not block trading. Returns the symbols that came
+    back with data (empty on any failure).
+    """
+    today = pd.Timestamp.now(tz="UTC").normalize()
+    start = today - pd.Timedelta(days=lookback_days)
+    try:
+        df = fetch_stock_ohlcv(
+            list(BENCHMARK_SYMBOLS),
+            start=str(start.date()),
+            end=str(today.date()),
+            use_db_cache=True,
+        )
+    except Exception as exc:
+        _log.warning("benchmark tape refresh failed (non-fatal): %s", exc)
+        return []
+    if df.empty:
+        return []
+    return sorted(df.columns.get_level_values(0).unique().tolist())
 
 
 def generate_signals(universe: str = "sp500", lookback_days: int = 120) -> dict:

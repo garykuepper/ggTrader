@@ -7,6 +7,10 @@
   gap). `scripts/daily_pnl_report.sh` rewritten against `paper_snapshots` /
   `paper_trades` and rescheduled 06:00 Tue–Sat; it had been broken since
   2026-05-06.
+- **Benchmark tape keepalive:** the paper run now refreshes SPY/TLT/GLD/DBC/IEF
+  daily via `refresh_benchmark_tape()` (`paper/signal_runner.py`). SPY had
+  no bars after 2026-08-21 and the macro ETFs none after 2026-07-20, which
+  made every "vs SPY" lab run uncitable. One-off backfill run the same day.
 
 ## 2026-09-11
 
