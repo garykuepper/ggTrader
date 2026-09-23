@@ -29,8 +29,11 @@ alert_on_failure() {
     local rc=$?
     set +e
     if [ "${rc}" -ne 0 ]; then
-        local tail_text
-        tail_text=$(tail -n 20 "${LOG_FILE}" 2>/dev/null | sed 's/[`*_\[]/ /g' || true)
+        local tail_text err_line
+        # Lead with the exception line: a raw tail can be all library noise
+        # (2026-09-23: 20 lines of plotly help text, the ValueError above them).
+        err_line=$(grep -E '^[A-Za-z_.]*(Error|Exception)(:|$)' "${LOG_FILE}" 2>/dev/null | tail -n 1)
+        tail_text=$( { [ -n "${err_line}" ] && printf '%s\n...\n' "${err_line}"; tail -n 8 "${LOG_FILE}"; } 2>/dev/null | sed 's/[`*_\[]/ /g' || true)
         { set -a; . "${PROJECT_DIR}/.env"; set +a; } 2>/dev/null || true
         python3 - "${rc}" "${tail_text}" <<'PY'
 import sys
