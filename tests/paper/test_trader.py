@@ -80,8 +80,24 @@ def _stub_split_trade_db():
     default. `get_snapshot_history` (also read by `_compute_split_corrections`)
     is already stubbed to `[]` by `_stub_dividend_db` above, so with both
     stubbed the default is "no snapshot evidence" -- individual split tests
-    override one or both to exercise the applied/unapplied/traded paths."""
+    override one or both to exercise the applied/unapplied/traded paths.
+
+    `get_open_split_states` must be stubbed too: unstubbed, every run()-level
+    test queried the production DB, and the connection pool's `time.time()`
+    calls consumed `_clock_after`'s ticks so `_poll_orders` spun forever."""
     with patch("ggTrader.paper.trader.get_trade_history_dates", return_value=[]):
+        with patch("ggTrader.paper.trader.get_open_split_states", return_value={}):
+            yield
+
+
+@pytest.fixture(autouse=True)
+def _stub_benchmark_tape():
+    """Keep the benchmark/ETF tape keepalive off yfinance and the real DB by
+    default. It is a side job of `run()`, so every run()-level test would
+    otherwise download five symbols and upsert them. The two tests in
+    `TestBenchmarkTapeKeepalive` patch it explicitly; a test-level patch
+    applies inside this fixture and wins."""
+    with patch("ggTrader.paper.trader.refresh_benchmark_tape", return_value=[]):
         yield
 
 
@@ -205,9 +221,12 @@ class TestSellExits:
 @patch("ggTrader.paper.trader.log_trade")
 @patch("ggTrader.paper.trader.init_paper_schema")
 class TestBenchmarkTapeKeepalive:
+    @patch("ggTrader.paper.cash_sweep.sweep_enabled", return_value=False)
     @patch("ggTrader.paper.trader.refresh_benchmark_tape", return_value=[])
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_refresh_returning_nothing_does_not_abort_run(self, mock_signals, mock_refresh, *_):
+    def test_refresh_returning_nothing_does_not_abort_run(
+        self, mock_signals, mock_refresh, _sweep_off, *_
+    ):
         mock_signals.return_value = _blend(buys=[], sells=[], as_of="2026-06-19")
         trader, broker, _notifier = _make_trader(positions={})
 
@@ -215,11 +234,12 @@ class TestBenchmarkTapeKeepalive:
 
         mock_refresh.assert_called_once()
         assert result["errors"] == []
-        broker.submit_buy.assert_not_called()
+        assert result["buys"] == []
 
+    @patch("ggTrader.paper.cash_sweep.sweep_enabled", return_value=False)
     @patch("ggTrader.paper.trader.refresh_benchmark_tape", return_value=["SPY", "TLT"])
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_refresh_is_called_after_signals(self, mock_signals, mock_refresh, *_):
+    def test_refresh_is_called_after_signals(self, mock_signals, mock_refresh, _sweep_off, *_):
         mock_signals.return_value = _blend(buys=[], sells=[], as_of="2026-06-19")
         trader, _broker, _notifier = _make_trader(positions={})
 
