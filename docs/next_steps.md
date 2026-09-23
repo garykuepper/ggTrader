@@ -67,16 +67,15 @@ container recreated and checked):
 4. **Minor, open:** `paper_risk_state.peak_value` ($104,518) is below the
    restated high ($105,591, 2026-08-26), so drawdown reads ~1% shallow.
    Harmless against the halt threshold; decide whether to reset it.
-5. **Research — blocked on a harness fix first (2026-09-23):** the
-   ensemble_ic/kelly re-run came back invalid, and it exposed that the
-   signal-strategy WFO path uses no point-in-time S&P 500 membership:
-   14.1% of core entries fire on non-member days (lookahead on future
-   additions, plus delisted names like SIVB, whose garbage bar alone
-   produced Kelly's "38% CAGR"). Next research step: mask entries by
-   constituents history in `sweep_signal_group`, with a regression test,
-   then re-baseline the core. The 0.99 is unverified on this point until
-   then. See `docs/research/2026-09-23-ic-kelly-rebaseline-invalid.md`.
-   Research runs natively and does not interact with live steps 1–3.
+5. **Research (2026-09-23) — the core does NOT beat SPY under point-in-time
+   membership.** Fix `c9d1abe` + PIT re-baseline: core Sharpe **0.59 /
+   CAGR 3.1% / MaxDD -5.3%** vs SPY 0.78 / 13.0% / -22.1% (was 0.99 / 8.0%
+   pre-fix). `ensemble_ic` (0.41) and `ensemble_kelly` (0.50) closed NO-GO.
+   See `docs/research/2026-09-23-pit-rebaseline-core-nogo.md`.
+   **Owner decision pending:** the stock-picking sleeve is a low-drawdown
+   diversifier, not an index-beater — decide whether to shrink it in favor
+   of SPY (paper, so no capital at risk meanwhile). Then: re-screen
+   near-miss signal NO-GOs against SPY under PIT; TLT/GLD/DBC sleeve.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)

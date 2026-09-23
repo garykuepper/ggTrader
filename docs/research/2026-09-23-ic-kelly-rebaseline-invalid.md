@@ -4,6 +4,9 @@
 **Date:** 2026-09-23
 **Audience:** ggTrader research
 
+> **Superseded 2026-09-23:** the PIT fix landed (`c9d1abe`) and the re-run
+> is in `2026-09-23-pit-rebaseline-core-nogo.md` (core 0.59 < SPY 0.78).
+
 ## 1. Executive Summary & Core Engine Audit
 
 `ensemble_ic` (Sharpe 1.01) and `ensemble_kelly` (0.98) were originally

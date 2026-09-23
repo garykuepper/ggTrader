@@ -2,6 +2,12 @@
 
 ## 2026-09-23
 
+- **PIT membership fix (`c9d1abe`) and re-baseline: core loses to SPY.**
+  Signal sweeps now mask entries by daily S&P 500 membership. Pinned
+  17-fold WFO: core Sharpe 0.59 / CAGR 3.1% / MaxDD -5.3%, against SPY
+  0.78 / 13.0% / -22.1%. The prior 0.99 / 8.0% was inflated by trading
+  non-members. `ensemble_ic` (0.41) and `ensemble_kelly` (0.50) are closed
+  NO-GO. See `docs/research/2026-09-23-pit-rebaseline-core-nogo.md`.
 - **ensemble_ic / ensemble_kelly re-baseline: invalid, not closed.** Both
   fail the pre-registered bar (Sharpe 0.61 / 0.60 vs control 0.99), but the
   numbers are contaminated. A garbage SIVB post-failure bar ($0.0013 →
