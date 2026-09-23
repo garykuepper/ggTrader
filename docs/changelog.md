@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-23
+
+- **ensemble_ic / ensemble_kelly re-baseline: invalid, not closed.** Both
+  fail the pre-registered bar (Sharpe 0.61 / 0.60 vs control 0.99), but the
+  numbers are contaminated. A garbage SIVB post-failure bar ($0.0013 →
+  $0.11) contributes +170.8% to Kelly's equity in a single day. Root
+  cause: the signal WFO sweep path applies no point-in-time index
+  membership, and 14.1% of core entries fall on non-member days. See
+  `docs/research/2026-09-23-ic-kelly-rebaseline-invalid.md`. New driver
+  `scripts/ic_kelly_rebaseline_wfo.py`. `run_core` now takes `strategy=`
+  and records each fold's winner.
+
 ## 2026-09-22
 
 - **Deployed the paper-trading remediation branch** (merge `8d9d3ef`): live

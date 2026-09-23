@@ -67,12 +67,16 @@ container recreated and checked):
 4. **Minor, open:** `paper_risk_state.peak_value` ($104,518) is below the
    restated high ($105,591, 2026-08-26), so drawdown reads ~1% shallow.
    Harmless against the halt threshold; decide whether to reset it.
-5. **Research resumes once 1–3 are verified:** re-run `ensemble_ic` /
-   `ensemble_kelly` against the corrected 0.99 baseline, then the
-   TLT/GLD/DBC sleeve (its data is now refreshed daily). Note the baseline
-   core beats SPY on Sharpe (0.99 vs 0.78) but **not** on CAGR (8.0% vs
-   13.0%) over 2021-01-31 → 2026-04-30.
-
+5. **Research — blocked on a harness fix first (2026-09-23):** the
+   ensemble_ic/kelly re-run came back invalid, and it exposed that the
+   signal-strategy WFO path uses no point-in-time S&P 500 membership:
+   14.1% of core entries fire on non-member days (lookahead on future
+   additions, plus delisted names like SIVB, whose garbage bar alone
+   produced Kelly's "38% CAGR"). Next research step: mask entries by
+   constituents history in `sweep_signal_group`, with a regression test,
+   then re-baseline the core. The 0.99 is unverified on this point until
+   then. See `docs/research/2026-09-23-ic-kelly-rebaseline-invalid.md`.
+   Research runs natively and does not interact with live steps 1–3.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)

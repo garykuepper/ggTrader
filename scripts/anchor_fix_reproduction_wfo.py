@@ -82,6 +82,7 @@ def _fold_rows(fold_results: list[dict]) -> list[dict]:
                 "dsr_passed": bool(r["dsr_passed"]),
                 "gates_passed": bool(r["gates_passed"]),
                 "used_anchor": bool(r["used_anchor"]),
+                "winner_combo": r["winner_combo"],
                 "wfe": r["wfe"],
                 "oos_sharpe": r["oos_sharpe"],
             }
@@ -89,8 +90,9 @@ def _fold_rows(fold_results: list[dict]) -> list[dict]:
     return rows
 
 
-def run_core(eval_start: str, eval_end: str) -> dict:
-    """Standalone SP500-core ensemble WFO -- the direct 1.12 comparator."""
+def run_core(eval_start: str, eval_end: str, strategy: str = CORE_STRATEGY) -> dict:
+    """Standalone SP500-core WFO -- the direct 1.12 comparator. `strategy`
+    lets other drivers run a registry variant through the identical setup."""
     from ggTrader.lab.data import (
         STOCK_BASE_CONFIG,
         eligible_at,
@@ -104,7 +106,11 @@ def run_core(eval_start: str, eval_end: str) -> dict:
     from ggTrader.lab.wfo import run_wfo
 
     t0 = time.time()
-    result: dict = {"name": "sp500_core_17fold", "eval_start": eval_start, "eval_end": eval_end}
+    result: dict = {
+        "name": "sp500_core_17fold" if strategy == CORE_STRATEGY else f"sp500_{strategy}_17fold",
+        "eval_start": eval_start,
+        "eval_end": eval_end,
+    }
     try:
         cfg = LabConfig()
         es = pd.Timestamp(eval_start, tz="UTC")
@@ -119,12 +125,12 @@ def run_core(eval_start: str, eval_end: str) -> dict:
         sym_cols = [s for s in ohlcv.columns.get_level_values(0).unique() if s != "SPY"]
         ohlcv = ohlcv[sym_cols]
 
-        strategy_cls = STRATEGY_REGISTRY[CORE_STRATEGY]
+        strategy_cls = STRATEGY_REGISTRY[strategy]
         grid = build_grid(strategy_cls)
-        print(f"WFO: {CORE_STRATEGY} | {len(grid)} param combos", flush=True)
+        print(f"WFO: {strategy} | {len(grid)} param combos", flush=True)
 
         wfo_result = run_wfo(
-            CORE_STRATEGY,
+            strategy,
             strategy_cls,
             cfg,
             ohlcv,
