@@ -13,9 +13,11 @@ from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_divid
 from ggTrader.paper.notifier import TelegramNotifier
 from ggTrader.paper.persist import (
     clear_pending_order,
+    clear_split_correction,
     get_accrued_dividend_keys,
     get_earliest_snapshot,
     get_latest_snapshot,
+    get_open_split_states,
     get_peak_value,
     get_pending_orders,
     get_snapshot_history,
@@ -28,9 +30,10 @@ from ggTrader.paper.persist import (
     log_trade,
     mark_pending_order_stale,
     save_peak_value,
+    save_split_correction,
 )
 from ggTrader.paper.risk import RiskConfig, RiskGuard
-from ggTrader.paper.signal_runner import generate_blended_signals
+from ggTrader.paper.signal_runner import generate_core_signals, refresh_benchmark_tape
 from ggTrader.paper.split_check import (
     apply_corrections_to_positions,
     compute_split_corrections,
@@ -246,17 +249,67 @@ class PaperTrader:
         (it is a no-op on this paper account, so a real applied split would
         otherwise be double-corrected).
 
+        Merges in `paper_split_state` (see `persist.get_open_split_states`)
+        so a split detected on a prior run keeps being corrected even once
+        its ex_date falls outside `split_since` -- the rolling lookback
+        window only bounds *new* detection from the broker's feed, not how
+        long an already-known correction is honored (the MNST incident:
+        `_SPLIT_LOOKBACK_DAYS` expired 2026-08-25 while still held, see
+        `docs/next_steps.md`).
+
+        A persisted, currently-held symbol keeps being re-verified against
+        snapshot evidence on every run even once the broker's live feed
+        stops mentioning it (its ex_date ages out of the feed's own
+        lookback window): a synthetic `corp_splits`-shaped entry is built
+        from the persisted `(ex_date, factor)` and merged into the set
+        `find_split_applied_symbols` checks. Without this, a persisted
+        correction could never be confirmed applied or cleared once the
+        broker feed moved on -- if Alpaca ever did belatedly apply the
+        split, the correction would double-count it forever (see this
+        review's Finding 1). Persisted state is cleared once snapshot
+        evidence confirms the broker applied the split, or the position is
+        no longer held.
+
         Returns `{symbol: correction_factor}`, same shape as
         `AlpacaBroker.get_split_corrections` (see
         `split_check.apply_corrections_to_positions`). Fails soft at every
-        step -- any error degrades to the broker's corporate-actions +
+        step -- any error degrades toward the broker's corporate-actions +
         activities view alone, never aborts the run.
         """
+        held_symbols = set(positions)
+
+        try:
+            persisted_states = get_open_split_states()
+        except Exception as exc:
+            _log.warning("Could not load persisted split state (non-fatal): %s", exc)
+            persisted_states = {}
+
+        # A symbol no longer held has nothing left to correct -- drop its
+        # persisted row so the table doesn't grow unboundedly.
+        for symbol in list(persisted_states):
+            if symbol not in held_symbols:
+                try:
+                    clear_split_correction(symbol)
+                except Exception as exc:
+                    _log.warning(
+                        "Could not clear stale split state for %s (non-fatal): %s", symbol, exc
+                    )
+                persisted_states.pop(symbol)
+
+        persisted = {symbol: info["factor"] for symbol, info in persisted_states.items()}
+
         evidence = self._broker.get_split_evidence(list(positions), split_since)
-        corp_splits = evidence.get("corp_splits", {})
+        corp_splits = dict(evidence.get("corp_splits", {}))
         activity_applied = evidence.get("activity_applied", set())
+
+        # Re-verify every persisted, still-held symbol every run, even ones
+        # the broker's live feed no longer reports -- see the docstring.
+        for symbol, info in persisted_states.items():
+            if symbol not in corp_splits:
+                corp_splits[symbol] = [(info["ex_date"], info["factor"])]
+
         if not corp_splits:
-            return {}
+            return persisted
 
         try:
             snapshot_history = get_snapshot_history()
@@ -287,7 +340,27 @@ class PaperTrader:
             )
 
         applied_symbols = snapshot_applied | set(activity_applied)
-        return compute_split_corrections(corp_splits, applied_symbols)
+        for symbol in applied_symbols:
+            if symbol in persisted:
+                try:
+                    clear_split_correction(symbol)
+                except Exception as exc:
+                    _log.warning(
+                        "Could not clear confirmed-applied split state for %s (non-fatal): %s",
+                        symbol,
+                        exc,
+                    )
+                persisted.pop(symbol, None)
+
+        new_corrections = compute_split_corrections(corp_splits, applied_symbols)
+        for symbol, factor in new_corrections.items():
+            ex_date = min(ex for ex, _ in corp_splits[symbol])
+            try:
+                save_split_correction(symbol, str(ex_date), factor)
+            except Exception as exc:
+                _log.warning("Could not persist split state for %s (non-fatal): %s", symbol, exc)
+
+        return {**persisted, **new_corrections}
 
     def _accrue_dividends(self, positions: dict[str, dict]) -> dict:
         """Credit cash dividends Alpaca's corporate-actions feed knows about
@@ -409,10 +482,16 @@ class PaperTrader:
             return {"buys": [], "sells": [], "errors": []}
 
         try:
-            blend = generate_blended_signals()
+            blend = generate_core_signals()
         except Exception as exc:
             self._notifier.send(f"Paper trading failed: signal generation error\n{exc}")
             raise
+
+        # Side job: keep SPY and the macro ETFs' tape current for the lab.
+        # Wrapped inside the function; a failure here logs and moves on.
+        refreshed = refresh_benchmark_tape()
+        if not refreshed:
+            _log.warning("benchmark tape refresh returned no symbols")
 
         if blend["fallback_used"]:
             self._notifier.send(
@@ -797,6 +876,7 @@ class PaperTrader:
                     portfolio_value=mid_account["portfolio_value"],
                     reserve_pct=cash_sweep.reserve_pct(),
                     min_clip=cash_sweep.min_clip_usd(),
+                    buy_trigger_pct=cash_sweep.buy_trigger_pct(),
                 )
             except Exception as exc:
                 _log.warning("Cash sweep buy sizing failed (non-fatal): %s", exc)

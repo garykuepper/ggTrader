@@ -229,3 +229,100 @@ class TestGenerateBlendedSignals:
             generate_blended_signals()
 
         mock_save.assert_not_called()
+
+
+class TestGenerateCoreSignals:
+    @patch("ggTrader.paper.signal_runner.generate_signals")
+    def test_wraps_sp500_signals_in_blend_shape(self, mock_generate):
+        mock_generate.return_value = {
+            "buys": ["AAPL", "MSFT"],
+            "sells": ["TSLA"],
+            "as_of": "2026-09-10",
+            "universe_size": 503,
+            "gate": {"gate_enabled": False},
+        }
+
+        from ggTrader.paper.signal_runner import generate_core_signals
+
+        result = generate_core_signals()
+
+        mock_generate.assert_called_once_with(universe="sp500")
+        assert result["sleeves"] == {"sp500": mock_generate.return_value}
+        assert result["weights"] == {"sp500": 1.0}
+        assert result["scale"] == 1.0
+        assert result["rebalanced_today"] is False
+        assert result["fallback_used"] is False
+
+    @patch("ggTrader.paper.signal_runner.generate_signals")
+    def test_core_weights_restore_full_slot_size(self, mock_generate):
+        """weights=1.0, scale=1.0 must give sleeve_position_notional ==
+        position_notional (3.3% of PV), i.e. no blend-overlay shrink."""
+        from ggTrader.paper.signal_runner import generate_core_signals
+
+        mock_generate.return_value = {
+            "buys": [],
+            "sells": [],
+            "as_of": "2026-09-16",
+            "universe_size": 503,
+            "gate": {"gate_enabled": False},
+        }
+        core = generate_core_signals()
+        from ggTrader.paper.risk import RiskConfig, RiskGuard
+
+        guard = RiskGuard(RiskConfig())
+        pv = 102_000.0
+        sleeve = guard.sleeve_position_notional(pv, core["weights"]["sp500"], core["scale"])
+        assert sleeve == guard.position_notional(pv)
+        assert sleeve == pytest.approx(pv * 0.033, abs=0.01)
+
+
+class TestRefreshBenchmarkTape:
+    @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
+    @patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader")
+    def test_refetches_trailing_window_and_upserts(self, mock_plain_cls, mock_cached_cls):
+        from ggTrader.paper.signal_runner import BENCHMARK_SYMBOLS, refresh_benchmark_tape
+
+        frame = _mock_ohlcv(list(BENCHMARK_SYMBOLS), n_days=30)
+        mock_plain_cls.return_value.fetch_ohlcv.return_value = frame
+
+        got = refresh_benchmark_tape(lookback_days=30)
+
+        args, kwargs = mock_plain_cls.return_value.fetch_ohlcv.call_args
+        assert sorted(args[0]) == sorted(BENCHMARK_SYMBOLS)
+        assert args[1] == "1d"
+        assert (kwargs["end_date"] - kwargs["start_date"]).days == 30
+        mock_cached_cls.return_value._cache_to_db.assert_called_once_with(frame, "1d")
+        assert sorted(got) == sorted(BENCHMARK_SYMBOLS)
+
+    @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
+    @patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader")
+    def test_never_raises_on_fetch_error(self, mock_plain_cls, mock_cached_cls):
+        from ggTrader.paper.signal_runner import refresh_benchmark_tape
+
+        mock_plain_cls.return_value.fetch_ohlcv.side_effect = RuntimeError("yf down")
+
+        assert refresh_benchmark_tape() == []
+        mock_cached_cls.return_value._cache_to_db.assert_not_called()
+
+    @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
+    @patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader")
+    def test_never_raises_on_db_write_error(self, mock_plain_cls, mock_cached_cls):
+        from ggTrader.paper.signal_runner import refresh_benchmark_tape
+
+        mock_plain_cls.return_value.fetch_ohlcv.return_value = _mock_ohlcv(
+            ["SPY", "TLT"], n_days=30
+        )
+        mock_cached_cls.return_value._cache_to_db.side_effect = RuntimeError("db down")
+
+        assert refresh_benchmark_tape() == []
+
+    @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
+    @patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader")
+    def test_reports_only_symbols_that_returned_data(self, mock_plain_cls, mock_cached_cls):
+        from ggTrader.paper.signal_runner import refresh_benchmark_tape
+
+        mock_plain_cls.return_value.fetch_ohlcv.return_value = _mock_ohlcv(
+            ["SPY", "TLT"], n_days=30
+        )
+
+        assert sorted(refresh_benchmark_tape()) == ["SPY", "TLT"]

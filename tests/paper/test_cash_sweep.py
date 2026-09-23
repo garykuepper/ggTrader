@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from ggTrader.paper import cash_sweep
+from ggTrader.paper.cash_sweep import (
+    DEFAULT_BUY_TRIGGER_PCT,
+    buy_trigger_pct,
+    compute_sweep_buy,
+)
 
 
 class TestEnvConfig:
@@ -77,6 +84,80 @@ class TestComputeSweepBuy:
         )
         assert action.side is None
         assert action.notional == 0.0
+
+    def test_buy_skipped_when_cash_above_reserve_but_below_trigger(self):
+        """A small daily surplus just above the 5% reserve (but below the 8%
+        trigger) must not fire a sweep buy -- this is the daily-churn bug."""
+        action = compute_sweep_buy(
+            cash_after_strategy_orders=6_500.0,  # 6.5% of 100k: > 5% reserve, < 8% trigger
+            portfolio_value=100_000.0,
+            reserve_pct=0.05,
+            min_clip=500.0,
+            buy_trigger_pct=0.08,
+        )
+        assert action.side is None
+
+    def test_buy_fires_once_cash_exceeds_trigger_and_targets_reserve(self):
+        """Once cash clears the 8% trigger, the buy still sweeps down to the
+        5% reserve floor, same target math as before."""
+        action = compute_sweep_buy(
+            cash_after_strategy_orders=9_000.0,  # 9% of 100k: > 8% trigger
+            portfolio_value=100_000.0,
+            reserve_pct=0.05,
+            min_clip=500.0,
+            buy_trigger_pct=0.08,
+        )
+        assert action.side == "buy"
+        assert action.notional == 4_000.0  # sweeps 9,000 down to the 5,000 reserve
+
+    def test_buy_trigger_pct_env_var_default(self):
+        assert buy_trigger_pct() == DEFAULT_BUY_TRIGGER_PCT
+
+    @patch.dict("os.environ", {"SWEEP_BUY_TRIGGER_PCT": "0.10"})
+    def test_buy_trigger_pct_env_var_override(self):
+        assert buy_trigger_pct() == 0.10
+
+    def test_inverted_thresholds_log_a_warning(self, caplog):
+        """Finding 5 (2026-09-11 remediation review): if an operator sets
+        `SWEEP_CASH_RESERVE_PCT` above `SWEEP_BUY_TRIGGER_PCT`, the
+        dead-band silently inverts (no buy ever fires) -- must be visible
+        in logs, not a silent misconfiguration."""
+        with caplog.at_level("WARNING", logger="ggTrader.paper.cash_sweep"):
+            compute_sweep_buy(
+                cash_after_strategy_orders=9_000.0,
+                portfolio_value=100_000.0,
+                reserve_pct=0.10,
+                min_clip=500.0,
+                buy_trigger_pct=0.05,
+            )
+        assert any(
+            "buy_trigger_pct" in record.getMessage() and "reserve_pct" in record.getMessage()
+            for record in caplog.records
+        )
+
+    def test_equal_thresholds_also_log_a_warning(self, caplog):
+        """The dead-band is empty (not just inverted) when the two
+        thresholds are equal -- also worth flagging."""
+        with caplog.at_level("WARNING", logger="ggTrader.paper.cash_sweep"):
+            compute_sweep_buy(
+                cash_after_strategy_orders=9_000.0,
+                portfolio_value=100_000.0,
+                reserve_pct=0.08,
+                min_clip=500.0,
+                buy_trigger_pct=0.08,
+            )
+        assert any("buy_trigger_pct" in record.getMessage() for record in caplog.records)
+
+    def test_normal_thresholds_log_no_warning(self, caplog):
+        with caplog.at_level("WARNING", logger="ggTrader.paper.cash_sweep"):
+            compute_sweep_buy(
+                cash_after_strategy_orders=9_000.0,
+                portfolio_value=100_000.0,
+                reserve_pct=0.05,
+                min_clip=500.0,
+                buy_trigger_pct=0.08,
+            )
+        assert caplog.records == []
 
 
 class TestComputeSweepSellForFunding:

@@ -17,8 +17,11 @@ responsible for calling the broker and persisting the resulting trades.
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
+
+_log = logging.getLogger(__name__)
 
 #: Reason tag written to `paper_trades.reason` / `paper_pending_orders.reason`
 #: for sweep-originated orders, so they can be distinguished from strategy
@@ -30,10 +33,12 @@ _ENABLED_ENV_VAR = "CASH_SWEEP_ENABLED"
 _SYMBOL_ENV_VAR = "SWEEP_SYMBOL"
 _RESERVE_PCT_ENV_VAR = "SWEEP_CASH_RESERVE_PCT"
 _MIN_CLIP_ENV_VAR = "SWEEP_MIN_CLIP_USD"
+_BUY_TRIGGER_ENV_VAR = "SWEEP_BUY_TRIGGER_PCT"
 
 DEFAULT_SWEEP_SYMBOL = "SPY"
 DEFAULT_RESERVE_PCT = 0.05
 DEFAULT_MIN_CLIP_USD = 500.0
+DEFAULT_BUY_TRIGGER_PCT = 0.08
 
 
 def sweep_enabled() -> bool:
@@ -59,6 +64,17 @@ def min_clip_usd() -> float:
     return float(raw) if raw else DEFAULT_MIN_CLIP_USD
 
 
+def buy_trigger_pct() -> float:
+    """Fraction of portfolio value cash must exceed before a sweep buy
+    fires -- a hysteresis dead-band above `reserve_pct()`'s 5% target, so a
+    small daily surplus doesn't round-trip a buy every session (observed:
+    15 sweep trades / $82.4K notional across 12 sessions,
+    ~$5.5K/day churning against the reserve -- see
+    docs/research/artifacts-2026-09-09-perf-review/). Default 8%."""
+    raw = os.environ.get(_BUY_TRIGGER_ENV_VAR, "").strip()
+    return float(raw) if raw else DEFAULT_BUY_TRIGGER_PCT
+
+
 @dataclass(frozen=True)
 class SweepAction:
     """A sizing decision: `side` is "buy", "sell", or None (no action)."""
@@ -72,13 +88,29 @@ def compute_sweep_buy(
     portfolio_value: float,
     reserve_pct: float = DEFAULT_RESERVE_PCT,
     min_clip: float = DEFAULT_MIN_CLIP_USD,
+    buy_trigger_pct: float = DEFAULT_BUY_TRIGGER_PCT,
 ) -> SweepAction:
     """Size a sweep BUY from cash left over after the day's strategy orders.
 
-    `sweep_target = max(0, cash_after_strategy_orders - reserve)` where
-    `reserve = reserve_pct * portfolio_value`. Below `min_clip`, no trade.
+    Hysteresis dead-band: only triggers once `cash_after_strategy_orders`
+    exceeds `buy_trigger_pct` of portfolio value (default 8%), not merely
+    the `reserve_pct` floor (default 5%) -- prevents a daily few-hundred-
+    dollar surplus just above the reserve from round-tripping a sweep buy
+    every session. Once triggered, still sweeps down to the `reserve_pct`
+    floor, same target as before this change.
     """
+    if buy_trigger_pct <= reserve_pct:
+        _log.warning(
+            "cash_sweep buy_trigger_pct (%.4f) <= reserve_pct (%.4f) -- the hysteresis "
+            "dead-band is empty or inverted, so a sweep buy can never fire. Check "
+            "SWEEP_BUY_TRIGGER_PCT / SWEEP_CASH_RESERVE_PCT.",
+            buy_trigger_pct,
+            reserve_pct,
+        )
     if portfolio_value <= 0:
+        return SweepAction(None, 0.0)
+    trigger = buy_trigger_pct * portfolio_value
+    if cash_after_strategy_orders <= trigger:
         return SweepAction(None, 0.0)
     reserve = reserve_pct * portfolio_value
     sweep_target = max(0.0, cash_after_strategy_orders - reserve)
