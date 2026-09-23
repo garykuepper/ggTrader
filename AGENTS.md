@@ -74,9 +74,10 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
 
 * **Running the test suite**:
   * Always run tests via `scripts/run_tests.sh` (takes any pytest args), never a bare `pytest`. It wraps the run in a transient cgroup with `MemoryMax=8G` and swap disabled.
-  * This is not optional hygiene. The suite's memory grows monotonically with test count instead of plateauing: a full `pytest tests/` run hit ~10 GB on 2026-09-16, exhausted 31 GB of RAM *and* the 8 GB swap file, and wedged the whole Encom host for minutes at a time — five separate times in one day — until the OOM killer landed. Swap-file thrashing, not the allocation itself, is what made the box unreachable over SSH and Telegram.
-  * A `137` exit means the run hit the cap. Raise it deliberately with `GGT_TEST_MEM_MAX=12G`, or fix the leak — do not silently remove the cap.
-  * The underlying leak is still open. Treat a rising floor across runs as a regression worth chasing.
+  * This is not optional hygiene. On 2026-09-16 a full `pytest tests/` run hit ~10 GB, exhausted 31 GB of RAM *and* the 8 GB swap file, and wedged the whole Encom host for minutes at a time — five separate times in one day. Swap-file thrashing, not the allocation itself, is what made the box unreachable over SSH and Telegram.
+  * **Likely root cause (2026-09-22): not a leak but an infinite loop.** `main` shows no growth; the branch built that day reproduces the blowup. An unstubbed DB read in `run()`-level paper tests let the connection pool's `time.time()` calls consume a mocked clock, so `_poll_orders` spun forever while allocating. Fixed in `6a052fa`; the full suite now peaks at ~650 MB in ~75 s.
+  * A `137` exit means the run hit the cap — almost certainly a hang, not a big suite. Look for a test that touches a real DB, network, or clock before raising `GGT_TEST_MEM_MAX`. Do not remove the cap.
+  * Tests must never read the real `.env`: `tests/conftest.py` makes `load_dotenv` a no-op, so live flags (e.g. `CASH_SWEEP_ENABLED`) can't leak in. Any new `trader.py` persist import needs a stub in `tests/paper/test_trader.py`'s autouse fixtures.
 
 ---
 

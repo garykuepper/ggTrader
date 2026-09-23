@@ -28,7 +28,55 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 ---
 
-## ACTIVE STEP (2026-09-11 update) — fix MNST split state → catastrophe stop → core revert → sweep hysteresis: CODE-COMPLETE ON BRANCH, NOT YET DEPLOYED
+## ACTIVE STEP (2026-09-22) — verify the core-revert deploy, then one change per week
+
+**Deployed 2026-09-22 ~23:00 PT** (merge `8d9d3ef`, image
+`ghcr.io/garykuepper/ggtrader:latest` built 2026-09-23 05:59 UTC, live
+container recreated and checked):
+
+- **Core revert** — live calls `generate_core_signals()` (SP500 core only).
+  The only change that affects what gets traded in this deploy.
+- **Persistent split state** — `paper_split_state` holds MNST (2:1, ex
+  2026-08-11); the 14-day lookback had expired, so live had stopped
+  correcting it on 08-26.
+- **Failure trap** in `scripts/paper_trade.sh` (Telegram on nonzero exit)
+  and the **benchmark/ETF tape keepalive** (SPY/TLT/GLD/DBC/IEF).
+- **Held back:** sweep buy dead-band — `.env` sets
+  `SWEEP_BUY_TRIGGER_PCT=0.05` (= reserve, i.e. pre-dead-band behavior; logs
+  one expected "dead-band is empty" warning per run).
+  `CATASTROPHE_STOP_ENABLED` still unset.
+- **One-off data fix:** MNST restated in `paper_snapshots` for 2026-08-11 →
+  2026-09-22 (market value, P&L, *and* `portfolio_value`); backup in
+  `paper_snapshots_backup_20260922`. Restated NAV 2026-09-22: $104,037
+  (broker figure $103,112).
+
+**Next, in order (one per 12:45 PT verification cycle):**
+
+1. **2026-09-23 run — verify the revert** per
+   `docs/superpowers/plans/2026-09-16-ops-track-and-tape-restore.md` Task 1
+   Step 5: log shows `Weights: sp500=100%`; strategy BUYs ≈ 3.3% of PV and
+   SP500-only; MNST corrected in the snapshot; SPY/TLT/GLD/DBC/IEF `ohlcv`
+   rows dated 2026-09-22; no failure page.
+2. **Week of 2026-09-28 — enable the dead-band:** delete the
+   `SWEEP_BUY_TRIGGER_PCT` line (default 0.08). Verify per plan Task 3.
+   Expect the daily SPY sell/buy round-trip (every session since 08-25) to
+   stop.
+3. **Week after — catastrophe stop:** re-check the book first. On
+   2026-09-22, HGV (-23.6%) and KNF (-23.1%) sat just inside the -25% floor;
+   MNST is no longer a false trigger now that split state is persistent.
+4. **Minor, open:** `paper_risk_state.peak_value` ($104,518) is below the
+   restated high ($105,591, 2026-08-26), so drawdown reads ~1% shallow.
+   Harmless against the halt threshold; decide whether to reset it.
+5. **Research resumes once 1–3 are verified:** re-run `ensemble_ic` /
+   `ensemble_kelly` against the corrected 0.99 baseline, then the
+   TLT/GLD/DBC sleeve (its data is now refreshed daily). Note the baseline
+   core beats SPY on Sharpe (0.99 vs 0.78) but **not** on CAGR (8.0% vs
+   13.0%) over 2021-01-31 → 2026-04-30.
+
+---
+
+## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)
+ — fix MNST split state → catastrophe stop → core revert → sweep hysteresis: CODE-COMPLETE ON BRANCH, NOT YET DEPLOYED
 
 **Status as of this run (2026-09-11): all four items below (split-state
 persistence + re-verification, the catastrophe-stop changelog note, the

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-22
+
+- **Deployed the paper-trading remediation branch** (merge `8d9d3ef`): live
+  now trades the standalone SP500 core instead of the 3-sleeve blend
+  (corrected-tape WFO 2021-01-31 → 2026-04-30: core Sharpe 0.99 / CAGR 8.0%,
+  blend 0.69 / 4.8%, SPY 0.78 / 13.0%). Persistent split state, failure trap
+  and tape keepalive went out with it. Sweep dead-band held back via
+  `SWEEP_BUY_TRIGGER_PCT=0.05` so the revert deploys alone.
+- **MNST snapshot restatement:** 2026-08-11 → 2026-09-22 `paper_snapshots`
+  rows restated for the unapplied 2:1 split (market value, P&L and
+  `portfolio_value`, +~$950/day); backup `paper_snapshots_backup_20260922`.
+  `scripts/one_off/restate_mnst_snapshots_20260911.py` widened accordingly.
+- **Test isolation fix** (`6a052fa`): paper tests hung in `_poll_orders`
+  (unstubbed `get_open_split_states` hit the real DB and drained a mocked
+  clock) and inherited live flags from `.env`. Full suite now 1021 passed,
+  ~650 MB peak — likely the real cause of the 2026-09-16 host wedges.
+- **Daily PnL cron actually scheduled** (06:00 Tue–Sat). The 2026-09-16
+  entry below claimed it was; the crontab had no such line until today.
+
 ## 2026-09-16
 
 - **Ops alerting:** `scripts/paper_trade.sh` now traps any nonzero exit and
