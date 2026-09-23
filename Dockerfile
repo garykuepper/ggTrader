@@ -20,6 +20,10 @@ COPY . .
 # Install the package and dependencies
 RUN pip install --no-cache-dir -e ".[test]"
 
+# Fail the build, not the 12:45 live run, if a dependency breaks the trader's
+# import chain (2026-09-23: unpinned plotly 7 broke `import vectorbt`).
+RUN python -c "import ggTrader.paper.trader"
+
 # Create the data directory for persistence
 RUN mkdir -p /app/data
 
