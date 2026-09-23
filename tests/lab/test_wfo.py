@@ -1224,3 +1224,105 @@ class TestWfoTableOosColumn:
         row = [ln for ln in out.splitlines() if ln.startswith("1  ")][0]
         assert "2.00" in row, f"train Sharpe missing from row: {row!r}"
         assert "0.80" not in row, f"composite score leaked into row: {row!r}"
+
+
+# ── Point-in-time universe membership in the signal sweep path ────────
+
+
+class _AlwaysBuyY:
+    """Signal strategy that only ever wants to buy Y (bar 2 onward)."""
+
+    name = "buyy"
+    target_kind = "signals"
+
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+    def sweep_signals(self, combos, symbols, data):
+        from ggTrader.lab.sweep import combo_name
+
+        close = pd.concat({s: data[s]["close"] for s in symbols}, axis=1)
+        entries = pd.DataFrame(False, index=close.index, columns=close.columns)
+        entries.iloc[2:, list(close.columns).index("Y")] = True
+        exits = pd.DataFrame(False, index=close.index, columns=close.columns)
+        return {combo_name(self.name, c): SignalTargets(entries, exits) for c in combos}
+
+
+def test_sweep_signal_group_entry_mask_blocks_entries_keeps_exits_and_sizes(monkeypatch):
+    from ggTrader.lab import simulate, sweep
+
+    idx = pd.date_range("2024-01-01", periods=4, freq="B", tz="UTC")
+    entries = pd.DataFrame(True, index=idx, columns=["X", "Y"])
+    exits = pd.DataFrame(True, index=idx, columns=["X", "Y"])
+    sizes = pd.DataFrame(0.05, index=idx, columns=["X", "Y"])
+
+    class _Strat:
+        def sweep_signals(self, combos, symbols, data):
+            return {sweep.combo_name("s", c): SignalTargets(entries, exits, sizes) for c in combos}
+
+    seen = {}
+
+    def _fake_sim(targets, prices, cfg, ohlcv=None):
+        seen.update(targets)
+        return None, {k: pd.Series(1.0, index=idx) for k in targets}, {}
+
+    monkeypatch.setattr(simulate, "simulate_signals", _fake_sim)
+    mask = pd.DataFrame(
+        {"X": [True, True, False, False], "Y": [False, True, True, True]}, index=idx
+    )
+    sweep.sweep_signal_group(
+        "s", _Strat(), (), [{"p": 1}], ["X", "Y"], None, None, {}, entry_mask=mask
+    )
+    (got,) = seen.values()
+    pd.testing.assert_frame_equal(got.entries, mask)
+    pd.testing.assert_frame_equal(got.exits, exits)
+    pd.testing.assert_frame_equal(got.sizes, sizes)
+
+
+def test_pit_entry_mask_is_daily_and_point_in_time():
+    from ggTrader.lab.sweep import pit_entry_mask
+
+    ohlcv = _ohlcv(["X", "Y"], 10)
+    cutoff = ohlcv.index[5]
+    calls = []
+
+    def universe_fn(asof, past):
+        calls.append(past.index[-1] == asof)  # never sees data after asof
+        return ["X", "Y"] if asof < cutoff else ["X"]
+
+    mask = pit_entry_mask(ohlcv, universe_fn)
+    assert mask["X"].all()
+    assert mask["Y"].iloc[:5].all() and not mask["Y"].iloc[5:].any()
+    assert calls and all(calls)
+    assert pit_entry_mask(ohlcv, None) is None
+
+
+def test_run_wfo_signal_entries_respect_universe_fn():
+    """A symbol universe_fn never admits must never be entered -- in train,
+    test, anchor or live-param sweeps. Before 2026-09-23 the signal path
+    dropped universe_fn and traded every symbol in the loaded window."""
+    ohlcv = _ohlcv(["X", "Y"], 252 * 3)
+    cfg = LabConfig(top_n=10, lookback=20, skip=5, min_history_bars=10)
+    base_config = {
+        "START_CASH": 10000.0,
+        "FEES": 0.0,
+        "SLIPPAGE": 0.0,
+        "FREQ": "1d",
+        "SIGNAL_POSITION_SIZE": 0.5,
+    }
+    args = (
+        "buyy",
+        _AlwaysBuyY,
+        cfg,
+        ohlcv,
+        ohlcv["X"]["close"],
+        str(ohlcv.index[0].date()),
+        str(ohlcv.index[-1].date()),
+        "test",
+        base_config,
+        [{"param_a": 1}],
+    )
+    unmasked = run_wfo(*args, universe_fn=lambda asof, past: ["X", "Y"])
+    masked = run_wfo(*args, universe_fn=lambda asof, past: ["X"])
+    assert unmasked.oos_equity.nunique() > 1  # Y trades when admitted
+    assert masked.oos_equity.nunique() == 1  # and never when excluded

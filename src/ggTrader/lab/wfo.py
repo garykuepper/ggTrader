@@ -13,7 +13,7 @@ from joblib import Parallel, delayed
 from ggTrader.lab.gates import dsr_check, ndh_check
 from ggTrader.lab.metrics import curve_stats
 from ggTrader.lab.strategy import LabConfig
-from ggTrader.lab.sweep import build_combo_lookup, combo_name
+from ggTrader.lab.sweep import build_combo_lookup, combo_name, pit_entry_mask
 
 UniverseFn = Callable[[pd.Timestamp, pd.DataFrame], List[str]]
 
@@ -242,6 +242,7 @@ def _sweep_fold(
     window_end: pd.Timestamp,
     base_config: Dict[str, Any],
     grid: List[Dict[str, Any]],
+    entry_mask: pd.DataFrame | None = None,
 ) -> tuple[List[Dict[str, Any]], Dict[str, pd.Series]]:
     """Run all combos on a single time window and return per-combo metrics.
 
@@ -272,6 +273,7 @@ def _sweep_fold(
             ohlcv_window,
             prices,
             base_config,
+            entry_mask=entry_mask,
         )
         all_eq.update(eq_dict)
         all_diags.update(diag_dict)
@@ -407,8 +409,14 @@ def _sweep_fold_dispatch(
     base_config: Dict[str, Any],
     grid: List[Dict[str, Any]],
     universe_fn: "UniverseFn | None",
+    entry_mask: pd.DataFrame | None = None,
 ) -> tuple[List[Dict[str, Any]], Dict[str, pd.Series]]:
-    """Route to the signal or weight fold-sweep path by strategy target_kind."""
+    """Route to the signal or weight fold-sweep path by strategy target_kind.
+
+    Signal sweeps are PIT-masked by ``entry_mask``; pass one precomputed over
+    the full data (as `run_wfo` does) -- building it here from ``universe_fn``
+    costs one universe call per bar.
+    """
     if getattr(strat_instance, "target_kind", "signals") == "weights":
         if universe_fn is None:
             raise ValueError(
@@ -426,8 +434,17 @@ def _sweep_fold_dispatch(
             grid,
             universe_fn,
         )
+    if entry_mask is None:
+        entry_mask = pit_entry_mask(ohlcv, universe_fn)
     return _sweep_fold(
-        strategy_name, strat_instance, ohlcv, window_start, window_end, base_config, grid
+        strategy_name,
+        strat_instance,
+        ohlcv,
+        window_start,
+        window_end,
+        base_config,
+        grid,
+        entry_mask,
     )
 
 
@@ -440,6 +457,7 @@ def compute_anchor_set(
     grid: List[Dict[str, Any]],
     risk_free_rate: float = 4.0,
     universe_fn: "UniverseFn | None" = None,
+    entry_mask: pd.DataFrame | None = None,
 ) -> AnchorSet:
     """Derive the anchor set: minimize max drawdown subject to CAGR > risk-free.
 
@@ -462,6 +480,7 @@ def compute_anchor_set(
         base_config,
         grid,
         universe_fn,
+        entry_mask,
     )
     if not metrics_list:
         return AnchorSet(
@@ -594,6 +613,13 @@ def run_wfo(
         )
 
     strat_instance = strategy_cls(cfg)
+    # Point-in-time membership for signal entries, computed once: the mask at
+    # day d depends only on data <= d, so every fold's slice is identical.
+    entry_mask = None
+    if getattr(strat_instance, "target_kind", "signals") == "signals":
+        if universe_fn is None:
+            print(f"  WARNING: {strategy_name} has no universe_fn; entries are NOT PIT-masked")
+        entry_mask = pit_entry_mask(ohlcv, universe_fn)
     start_cash = float(base_config["START_CASH"])
     fold_results: List[Dict[str, Any]] = []
     oos_curves: List[pd.Series] = []
@@ -619,6 +645,7 @@ def run_wfo(
             base_config,
             grid,
             universe_fn=universe_fn,
+            entry_mask=entry_mask,
         )
         print(
             f"  Fold {i + 1}/{len(folds)}: train {fold.train_start.date()}→{fold.train_end.date()}"
@@ -640,6 +667,7 @@ def run_wfo(
             base_config,
             grid,
             universe_fn,
+            entry_mask,
         )
         if not train_metrics:
             continue
@@ -717,6 +745,7 @@ def run_wfo(
             base_config,
             winner_grid,
             universe_fn,
+            entry_mask,
         )
         oos_score = 0.0
         if test_metrics:
@@ -812,6 +841,7 @@ def run_wfo(
         grid,
         fold_winners,
         universe_fn=universe_fn,
+        entry_mask=entry_mask,
     )
 
     table = format_wfo_table(
@@ -872,6 +902,7 @@ def select_live_params(
     grid: List[Dict[str, Any]],
     fold_winners: List[Dict[str, Any]],
     universe_fn: "UniverseFn | None" = None,
+    entry_mask: pd.DataFrame | None = None,
 ) -> Dict[str, Any]:
     """Train on the most recent TRAIN_MONTHS window and pick the durable winner.
 
@@ -893,6 +924,7 @@ def select_live_params(
         base_config,
         grid,
         universe_fn,
+        entry_mask,
     )
     if not train_metrics:
         return {"combo": "none", "params": {}, "train_metrics": {}, "stability": 0}

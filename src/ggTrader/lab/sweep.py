@@ -98,6 +98,35 @@ def group_by_stop_config(
     return groups
 
 
+def pit_entry_mask(ohlcv: "pd.DataFrame", universe_fn: Any) -> "pd.DataFrame | None":
+    """Daily point-in-time eligibility: True where ``universe_fn(day, data<=day)``
+    admits the symbol. None when there is no ``universe_fn`` (caller keeps the
+    unmasked legacy behavior).
+
+    `sweep_signals` generates entries for every symbol loaded for the whole
+    window -- the union of index members over years -- so without this a
+    backtest buys stocks before they joined the index (lookahead) and after
+    they left (e.g. SIVB's post-failure garbage bars). Daily, not per
+    rebalance: a monthly mask would keep a mid-month deletion tradable until
+    month-end.
+    """
+    if universe_fn is None:
+        return None
+    import pandas as pd  # noqa: F811
+
+    symbols = sorted(ohlcv.columns.get_level_values(0).unique())
+    # ponytail: one universe_fn call per bar (~0.2s each for sp500, ~5 min per
+    # 6-year run); compute once per run and slice, or key off constituent
+    # change dates if it ever matters.
+    rows = {d: set(universe_fn(d, ohlcv.loc[:d])) for d in ohlcv.index}
+    return pd.DataFrame(
+        [[s in rows[d] for s in symbols] for d in ohlcv.index],
+        index=ohlcv.index,
+        columns=symbols,
+        dtype=bool,
+    )
+
+
 def sweep_signal_group(
     strategy_name: str,
     strat_instance: Any,
@@ -107,9 +136,12 @@ def sweep_signal_group(
     ohlcv: Any,
     prices: Any,
     base_config: Dict[str, Any],
+    entry_mask: "pd.DataFrame | None" = None,
 ) -> tuple[Dict[str, Any], Dict[str, Dict[str, Any]]]:
     """Run signal generation + simulation for one stop-config group.
 
+    ``entry_mask`` (see `pit_entry_mask`) is ANDed into every combo's entries.
+    Exits are left alone so a position opened while eligible can still close.
     Returns (eq_dict, diags_dict) mapping combo keys to equity Series and diagnostics.
     """
     from ggTrader.lab.simulate import simulate_signals
@@ -125,6 +157,16 @@ def sweep_signal_group(
             seen.add(k)
             unique_signal.append(sc)
     targets = strat_instance.sweep_signals(unique_signal, symbols, ohlcv)
+    if entry_mask is not None:
+        targets = {
+            k: t._replace(
+                entries=t.entries
+                & entry_mask.reindex(
+                    index=t.entries.index, columns=t.entries.columns, fill_value=False
+                )
+            )
+            for k, t in targets.items()
+        }
     group_targets: Dict[str, SignalTargets] = {}
     for combo in group_combos:
         signal_p, _ = split_params(combo)
@@ -230,6 +272,9 @@ def run_sweep(
     spy_stats = curve_stats(start_cash * (spy_eval / spy_eval.iloc[0]))
 
     if hasattr(strat_instance, "sweep_signals"):
+        entry_mask = pit_entry_mask(
+            ohlcv, lambda asof, past: eligible_at(asof, past, cfg, universe=universe)[0]
+        )
         for stop_key, group_combos in group_by_stop_config(grid).items():
             eq_dict, diag_dict = sweep_signal_group(
                 strategy_name,
@@ -240,6 +285,7 @@ def run_sweep(
                 ohlcv,
                 prices,
                 base_config,
+                entry_mask=entry_mask,
             )
             all_eq.update(eq_dict)
             all_diags.update(diag_dict)
