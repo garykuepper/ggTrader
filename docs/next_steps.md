@@ -52,7 +52,12 @@ container recreated and checked):
 
 **Next, in order (one per 12:45 PT verification cycle):**
 
-1. **2026-09-23 run — verify the revert** per
+1. **2026-09-23 run CRASHED (no orders, no snapshot):** the 09-22 deploy
+   image resolved unpinned deps to plotly 7 / vectorbt 1.0, and
+   `import vectorbt` failed. Fixed in `833125e` (pins + a build-time import
+   check), redeployed 2026-09-23 15:12 PT, and the image was verified to
+   import the trader and generate core signals. **So the first core run is
+   2026-09-24** — verify the revert then per
    `docs/superpowers/plans/2026-09-16-ops-track-and-tape-restore.md` Task 1
    Step 5: log shows `Weights: sp500=100%`; strategy BUYs ≈ 3.3% of PV and
    SP500-only; MNST corrected in the snapshot; SPY/TLT/GLD/DBC/IEF `ohlcv`

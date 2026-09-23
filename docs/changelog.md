@@ -2,6 +2,13 @@
 
 ## 2026-09-23
 
+- **Live run crashed at 12:45 PT; fixed and redeployed.** The 09-22 image
+  resolved unpinned `plotly` to 7.1.0 (it removed `scattermapbox`, which
+  vectorbt 0.28 references at import time) and `vectorbt` to 1.0.0. The
+  run placed no orders and wrote no snapshot. `833125e` pins
+  `plotly>=6.6,<7` and `vectorbt>=0.28.5,<0.29` and adds
+  `RUN python -c "import ggTrader.paper.trader"` to the Dockerfile, so a
+  broken dependency now fails CI instead of the live run.
 - **PIT membership fix (`c9d1abe`) and re-baseline: core loses to SPY.**
   Signal sweeps now mask entries by daily S&P 500 membership. Pinned
   17-fold WFO: core Sharpe 0.59 / CAGR 3.1% / MaxDD -5.3%, against SPY
