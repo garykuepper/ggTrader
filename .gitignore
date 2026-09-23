@@ -68,3 +68,4 @@ scripts/mcp_cache.json
 
 # Local DB dumps (e.g. pre-migration ohlcv backups) — large, never tracked
 backups/
+.mcp-ggtrader.json
