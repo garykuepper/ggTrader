@@ -1,0 +1,32 @@
+
+=== PINNED 2021-02-01..2026-04-30 (daily returns, cash earns 0, 1bp/side cost on switches) ===
+  buy&hold SPY              CAGR  15.1%  Sharpe  0.91  MaxDD  -24.5%
+  buy&hold IEF              CAGR  -1.6%  Sharpe -0.17  MaxDD  -21.4%
+  buy&hold TLT              CAGR  -7.5%  Sharpe -0.41  MaxDD  -43.7%
+  month-end last3 IEF       CAGR   2.6%  Sharpe  0.96  MaxDD   -2.2%  exposure 14%
+  pre-FOMC day-1 IEF        CAGR  -0.1%  Sharpe -0.08  MaxDD   -2.1%  exposure 3.1%  events 41
+  month-end last3 TLT       CAGR   3.3%  Sharpe  0.62  MaxDD   -4.7%  exposure 14%
+  pre-FOMC day-1 TLT        CAGR   0.4%  Sharpe  0.18  MaxDD   -3.8%  exposure 3.1%  events 41
+  ToM [-1,+3] SPY else cash      CAGR   1.6%  Sharpe  0.25  MaxDD  -10.0%  exposure 19%
+      SPY mean bp/day in-window   4.3  out   6.6
+  ToM [-4,+4] SPY else cash      CAGR   2.1%  Sharpe  0.26  MaxDD  -20.7%  exposure 38%
+      SPY mean bp/day in-window   3.0  out   8.1
+  rebal tilt SPY->IEF       CAGR  15.8%  Sharpe  0.97  MaxDD  -21.8%
+  vol-managed SPY (1/var)   CAGR  10.2%  Sharpe  1.02  MaxDD  -10.1%  avg exposure 72%
+  vol-managed SPY (1/vol)   CAGR  12.1%  Sharpe  1.02  MaxDD  -14.9%  avg exposure 82%
+
+=== LONG 2011-03-01..2026-04-30 (daily returns, cash earns 0, 1bp/side cost on switches) ===
+  buy&hold SPY              CAGR  13.8%  Sharpe  0.84  MaxDD  -33.7%
+  buy&hold IEF              CAGR   2.3%  Sharpe  0.38  MaxDD  -23.9%
+  buy&hold TLT              CAGR   2.3%  Sharpe  0.23  MaxDD  -48.4%
+  month-end last3 IEF       CAGR   2.5%  Sharpe  1.08  MaxDD   -2.6%  exposure 14%
+  pre-FOMC day-1 IEF        CAGR   0.3%  Sharpe  0.25  MaxDD   -2.2%  exposure 3.1%  events 120
+  month-end last3 TLT       CAGR   4.1%  Sharpe  0.81  MaxDD   -7.8%  exposure 14%
+  pre-FOMC day-1 TLT        CAGR   0.9%  Sharpe  0.39  MaxDD   -3.8%  exposure 3.1%  events 120
+  ToM [-1,+3] SPY else cash      CAGR   1.8%  Sharpe  0.28  MaxDD  -13.9%  exposure 19%
+      SPY mean bp/day in-window   4.7  out   5.9
+  ToM [-4,+4] SPY else cash      CAGR   6.9%  Sharpe  0.70  MaxDD  -20.7%  exposure 38%
+      SPY mean bp/day in-window   7.8  out   4.4
+  rebal tilt SPY->IEF       CAGR  14.7%  Sharpe  0.91  MaxDD  -33.7%
+  vol-managed SPY (1/var)   CAGR   9.3%  Sharpe  0.94  MaxDD  -13.8%  avg exposure 77%
+  vol-managed SPY (1/vol)   CAGR  11.0%  Sharpe  0.95  MaxDD  -15.9%  avg exposure 85%

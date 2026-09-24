@@ -654,6 +654,20 @@ futures; close adaptation for ETF proxies. **Implementation class:**
 Professional (futures) / Retail (ETF approximation). **Validation stage:**
 Literature only.
 
+**Additional sources (batch 2026-09-23).** Two independent reports in the
+2026-09-23 batch re-proposed this mechanism. They add Gorton, Hayashi &
+Rouwenhorst, *"The Fundamentals of Commodity Futures Returns,"* *Review of
+Finance* 17(1), 35–105 (2013), which links backwardation to low inventories
+(Theory of Storage), and Basu & Miffre, *"Capturing the Risk Premium of
+Commodity Futures: The Role of Hedging Pressure,"* *Journal of Banking &
+Finance* 37(7), 2652–2664 (2013). Both are verified real, with correct
+metadata. One report proposed simply holding a curve-optimized fund
+(USCI/PDBC). That is buying a product, not a rule, so use USCI as the
+**benchmark** any carry rule has to beat. The paper's carry signal needs
+second-month futures prices, which have no free history (yfinance serves
+only live contracts), so an ETF build has to use a trailing roll-yield
+proxy (ETF return minus front-month `=F` return).
+
 **Status: untriaged.**
 
 ---
@@ -891,6 +905,22 @@ institution — SAIF/Shanghai Jiao Tong). **Rule correspondence:** Direct.
 Literature only — recent result, not yet broadly independently replicated
 outside its own paper. Treat as a **replication candidate**, not an
 established production anomaly.
+
+**Additional source (batch 2026-09-23).** Re-proposed with Sebastian
+Hillenbrand, *"The Fed and the Secular Decline in Interest Rates,"* *Review
+of Financial Studies* 38(4), 981–1013 (2025), verified. It shows the
+three-day FOMC window captures the secular decline in Treasury yields,
+which is peer-reviewed support for the mechanism. Pan & Peng metadata
+correction: SSRN **4764451**. The day-before 10-year yield drop is 0.79 bp
+(t = -2.39) in the June 2026 draft, but 0.68–0.71 bp in the February 2025
+draft, so cite the draft date alongside the number. **Quick sanity check,
+not a WFO result** (`artifacts-2026-09-23-web-batch/`): holding TLT only
+on the trading day before each scheduled FOMC announcement gave Sharpe
+0.18 over 2021-02 → 2026-04 (41 events) and 0.39 over 2011-03 → 2026-04
+(120 events). IEF came out at -0.08 and 0.25. This is the corrected day
+-1 that the 2026-07-20 run missed, and it is still weak. The queued
+`fomc_drift` retest is likely to confirm the NO-GO rather than overturn
+it.
 
 **Status: resolved, NO-GO. See `docs/research/2026-07-20-fomc-drift-nogo.md`.**
 
@@ -1470,3 +1500,484 @@ The defensible path:
 > **paper → mechanism → exact rule → replication → shadow portfolio → capital**
 
 not collapsing those stages into a single word like "validated."
+
+---
+
+## 2026-09-23 batch — Treasury calendar flows, SPY sizing overlays, crypto exposure control
+
+Source: three web-research reports run from the prompt synced 2026-09-23
+(first run after the PIT re-baseline, where the bar became *beat SPY, or
+improve SPY + sleeve*). Report 1 is a Gemini "Cross-Asset Market Anomalies"
+scout (8 candidates). Report 2 is "Treasury Calendar Flows, Rebalancing
+Front-Running, Crypto Trend, and Risk Overlays" (11). Report 3 is
+"External Research Only" (9). A fourth attachment was a byte-identical
+copy of report 1. **28 candidates were pasted. After merging duplicates
+across reports, 22 are added below; 3 were folded into existing work and
+2 were rejected on intake.**
+
+**Citation checks.** All 30 cited primary sources were searched, and **every
+one exists; none is fabricated.** Numbers verified against the authors'
+PDFs: Hartley & Schwarz, Wang & Zhao, Pan & Peng, Harvey–Mazzoleni–Melone,
+Cederburg et al., Kurov et al., Liu & Tsyvinski, Apte, Onishchenko, Krohn &
+Vala, and Parfenovich. Corrections applied inline: the Pan & Peng SSRN id,
+Stamos's pages and a claim that goes beyond his abstract, and the
+Parfenovich SSRN ids. **Not verified**, because SSRN and ScienceDirect
+blocked the full text: the Batista da Silva & Fernandes Sharpe/Sortino
+figures (A15), and Kayacetin's 0.45%/month US alpha (A14; the 8-day window
+definition was confirmed).
+
+**Quick sanity checks, not WFO results.** Simple timing rules on one
+instrument were checked with plain pandas on adjusted daily closes, cash
+earning 0 and 1 bp per side. Script and output:
+`docs/research/artifacts-2026-09-23-web-batch/`. These Sharpes use raw
+daily returns without a risk-free rate, which puts SPY at 0.91 on the
+pinned window. **Compare them with each other, not with the snapshot's
+0.78.**
+
+| Rule | Pinned 2021-02 → 2026-04 | Long 2011-03 → 2026-04 |
+|---|---|---|
+| SPY buy-and-hold | Sharpe 0.91, CAGR 15.1%, MaxDD -24.5% | 0.84, 13.8%, -33.7% |
+| IEF buy-and-hold | -0.17, -1.6%, -21.4% | 0.38, 2.3%, -23.9% |
+| A10 IEF last 3 days of month only (14% invested) | **0.96, +2.6%, -2.2%** | **1.08, +2.5%, -2.6%** |
+| A10 TLT last 3 days of month only | 0.62, +3.3%, -4.7% | 0.81, +4.1%, -7.8% |
+| A12 rebalancing tilt (SPY → IEF in last 4 days after an equity-led month) | 0.97, 15.8%, -21.8% | 0.91, 14.7%, -33.7% |
+| A14 SPY turn-of-month 8-day window, else cash | 0.26, 2.1%, -20.7% (in-window days *worse*: 3.0 vs 8.1 bp/day) | 0.70, 6.9%, -20.7% |
+| B5 SPY scaled by inverse 21-day variance, capped 1.0x | **1.02, 10.2%, -10.1%** (72% avg exposure) | **0.94, 9.3%, -13.8%** |
+| A7 (existing) TLT on the day before FOMC | 0.18 (41 events) | 0.39 (120 events) |
+
+**Folded into existing work (no new entry):**
+- *Commodity roll-yield carry*, proposed by two reports → **A2**. The new
+  sources were added there, and USCI was noted as the benchmark.
+- *Pre-FOMC long Treasury* → **A7**. The Hillenbrand (RFS 2025) source and
+  the day -1 sanity check were added there.
+- *Global Equities Dual Momentum (SPY/VEU/AGG/BIL), Antonacci 2014*: same
+  mechanism as `dual_momentum`, which is already queued as
+  `RESEARCH_SNAPSHOT.md` §6 Tier 1 #2. Use Antonacci's exact decision tree
+  as that retest's frozen reference rule. It is supported by Moskowitz,
+  Ooi & Pedersen (JFE 2012), verified.
+
+**Rejected on intake:**
+- *Sovereign duration timing via term spread and real yields* (Ilmanen, JF
+  1995, a real paper). Same mechanism as **A5 Treasury term-structure
+  factors**, closed NO-GO: static SHY beat the curve-slope rotation, 0.90 vs
+  0.19 Sharpe (`docs/research/2026-07-20-treasury-curve-nogo.md`). A
+  stronger citation doesn't change a measured result.
+- *Equity pre-FOMC drift / FOMC even-week cycle* (Cieslak, Morse &
+  Vissing-Jorgensen, JF 74(5), 2201–2248, 2019). Refuted out of sample by
+  the report's own sources: Kurov, Wolfe & Gilbert, FRL 40 (2021), 101781,
+  where the drift "essentially disappeared after 2015", and Uppal, where it
+  was gone by 2004. The report listed it only to prevent re-proposal.
+
+**Scope note on the four crypto entries (A15, A16, B9, B10).** Crypto
+trading is parked by the owner's choice. These only matter if a spot-BTC
+sleeve is opened on Alpaca. They are kept as `untriaged`, not queued.
+
+# A. Active strategy replication queue
+
+### A10. Month-end Treasury duration sleeve (IEF/TLT, last 3 trading days)
+
+**Mechanism.** Buy IEF (or TLT) at the close about 4 trading days before
+month-end and sell at the close on the last trading day. Hold cash
+otherwise. The source tested this timing on cash Treasuries financed at
+repo, so the ETF version is a close adaptation.
+**Source(s).** Jonathan Hartley & Krista Schwarz, *"Predictable End-of-Month
+Treasury Returns,"* SSRN 3440417 (Nov 2019), sample 1990–2018. Verified:
+Sharpe "around 1"; about 20 bp/month excess at the 10-year maturity; 0.25%
+per month over the last 3 days. Practitioner corroboration: Allocate
+Smartly (Oct 2019), which found the TLT effect had moved one day earlier
+after 2014 (unaudited). NY Fed Liberty Street (Sept 2024) documents
+month-end Treasury volume about 46% higher since 2020, which supports the
+flow story but is not a return test.
+**Why it's plausible.** Bond indexes extend their duration at month-end,
+so index-tracking insurers and funds, and balanced funds rebalancing, buy
+duration on predictable dates. Return skew is slightly positive, which
+argues against a crash-premium explanation.
+**Data requirements.** Free. IEF/TLT adjusted closes are already in `ohlcv`
+from 2010, and a trading calendar is all else it needs. Enter and exit at
+the close, which fits the 12:45 PT pre-close run.
+**How it differs from what's already been tried.** Calendar-flow timing of
+duration, not slope/regime timing (A5, closed) or an equity signal. The
+nearest closed arc is A7 (pre-FOMC Treasury, weak even on the right day).
+**Evidence status:** Working paper. **Rule correspondence:** Close
+adaptation (cash Treasuries → ETFs; the paper finds the best risk/reward at
+2–5 years, so IEF is probably a better proxy than TLT). **Implementation
+class:** Retail. **Validation stage:** Literature only; the quick sanity
+check was positive on both windows (see the table above).
+
+**Status: untriaged — top of this batch.**
+
+### A11. Pre-Treasury-Refunding-Announcement long TLT
+
+**Mechanism.** Four times a year, hold TLT from the close two trading days
+before the Quarterly Refunding Announcement (TRA) to the close of the day
+before it. Hold cash otherwise.
+**Source(s).** Chen Wang & Kevin Zhao, *"Pre-Refunding Announcement Gains in
+U.S. Treasurys,"* SSRN 4764295 (first posted Mar 2024; draft Jul 2025), 129
+TRAs from 1991 to 2023. Verified: 30-year bonds earn 24.3 bp on pre-TRA
+days vs 1.9 bp on other days; 10-year 12.6 bp vs 1.8 bp; "annualized Sharpe
+ratio exceeding four". That Sharpe comes from about 4 days a year in the
+market, so it is not comparable with always-invested strategies. Won the
+Quantpedia Awards 2024 (1st place).
+**Why it's plausible.** A premium for holding duration into the
+resolution of supply uncertainty; Treasury implied volatility falls on
+pre-TRA days. The effect is reported to have grown as debt/GDP rose.
+**Data requirements.** Free, but the historical TRA dates have to be
+hand-built from Treasury's website (about 130 events, about 20 in the
+pinned window). The small sample is the main statistical risk.
+**How it differs from what's already been tried.** A fiscal-event duration
+trade. The nearest closed arc is A7 (FOMC); the paper reports the two
+interact (pre-TRA gains are stronger right after an FOMC meeting).
+**Evidence status:** Working paper. **Rule correspondence:** Direct (ETF
+substitution only). **Implementation class:** Retail. **Validation
+stage:** Literature only (not sanity-checked; needs the date list).
+
+**Status: untriaged.** Test it together with A10 as one "Treasury event
+calendar" sleeve funded from idle cash.
+
+### A12. Month-end equity-vs-bond rebalancing-flow tilt (SPY ↔ IEF)
+
+**Mechanism.** If stocks have outperformed bonds month-to-date, 60/40
+rebalancers must sell equities and buy bonds near month-end, and the
+reverse after equity losses. Tilt toward the asset the rebalancers will buy
+in the last days of the month. The paper's tested rule is a **long-short
+futures** trade; a long-only SPY↔IEF switch is an untested close
+adaptation.
+**Source(s).** Campbell R. Harvey, Michele G. Mazzoleni & Alessandro Melone,
+*"The Unintended Consequences of Rebalancing,"* NBER WP 33554 (Mar 2025,
+revised Jan 2026) / SSRN 5122748. Revise-and-resubmit at the *Journal of
+Finance*, confirmed on Melone's faculty page. Verified, Table 6: 10.20% a
+year excess return, 9.17% volatility, Sharpe 1.11 (Sept 1997–Mar 2023),
+paying off most in high-VIX periods.
+**Why it's plausible.** Trillions in calendar-driven rebalancing with
+limited arbitrage capital; the payoff is largest in stress, which is when
+an equity-heavy book needs it.
+**Data requirements.** Free: SPY and IEF closes, both in `ohlcv`.
+**How it differs from what's already been tried.** A cross-asset flow
+imbalance, not a stock-level signal. It overlaps A10 mechanically (both buy
+bonds at month-end after equity rallies), so test them together.
+**Evidence status:** Working paper (R&R). **Rule correspondence:** Close
+adaptation. **Implementation class:** Retail approximation. **Validation
+stage:** Literature only. The sanity check showed a mild improvement over
+SPY (0.97 vs 0.91 pinned, 0.91 vs 0.84 long) with drawdown unchanged.
+
+**Status: untriaged.**
+
+### A13. Factor momentum across smart-beta ETFs
+
+**Mechanism.** Rotate monthly among factor ETFs (QUAL, VLUE, MTUM, USMV,
+SIZE), holding the top-ranked by trailing 1–12-month return.
+**Source(s).** Sina Ehsani & Juhani Linnainmaa, *"Factor Momentum and the
+Momentum Factor,"* *Journal of Finance* 77(3), 1877–1919 (2022), verified:
+"factor momentum explains all forms of individual stock momentum." The
+paper uses long-short stock-level factors; long-only factor ETFs carry
+the market beta as well.
+**Why it's plausible.** Factor returns are autocorrelated because they
+track persistent macro and institutional rotation states.
+**Data requirements.** Free, but **not in the DB yet**. The ETFs start
+2011–2013, which is enough for the pinned window.
+**How it differs from what's already been tried.** Ranks factor portfolios,
+not stocks, so it is not the `xs_momentum` single-stock sort. It stays
+100% U.S. large-cap equity, though, so it will correlate heavily with SPY,
+which is the §4 correlation-cap failure pattern.
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Close
+adaptation. **Implementation class:** Retail. **Validation stage:**
+Literature only.
+
+**Status: untriaged.**
+
+### A14. Turn-of-month equity/T-bill rotation (institutional rebalancing)
+
+**Mechanism.** Hold SPY during the paper's 8-trading-day turn-of-month
+window (last 4 + first 4) and T-bills otherwise.
+**Source(s).** Nuri Volkan Kayacetin, *"Infrequent Rebalancing, Risk Deferral,
+and Equity Returns at the Turn of the Month,"* *Journal of International
+Financial Markets, Institutions & Money* 109, 102309 (June 2026); SSRN
+7201062. Verified: 30 countries from 1994 to 2023, about 10 bp a day
+in-window vs about 0 otherwise. The paper also finds the effect was
+arbitraged away for about a decade after publication before returning.
+**Not verified:** the report's "0.45%/month US alpha". Mechanism antecedent:
+Etula et al., "Dash for Cash," RFS 33(1) 2020 (see parked D).
+**Why it's plausible.** Payroll, pension and retirement flows cluster at
+month boundaries.
+**Data requirements.** Free.
+**How it differs from what's already been tried.** An index-level calendar
+rule, not a stock signal. It is related to the Lakonishok–Smidt
+turn-of-month effect.
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Direct.
+**Implementation class:** Retail. **Validation stage:** Literature only.
+**The sanity check failed on the pinned window**: in-window SPY days
+averaged 3.0 bp against 8.1 bp outside. It was positive only on the long
+window (0.70 Sharpe, still below SPY's 0.84).
+
+**Status: untriaged — recommend not queuing; it fails the window that
+matters.**
+
+### A15. Bitcoin upside-vs-downside semivolatility timing *(crypto — see scope note)*
+
+**Mechanism.** Scale spot-BTC exposure using separate upside and downside
+realized semivariance, cutting on downside volatility but not on explosive
+upside volatility. A 1.0x-capped version is claimed to be in the paper.
+**Source(s).** Daniel Batista da Silva & Marcelo Fernandes, *"Upside Risk and
+Return Timing in Bitcoin,"* SSRN 7226305 (Aug 2026); R&R at *Economics
+Letters* per the author page. Exists. **The report's figures (Sharpe
+0.740 → 0.811, Sortino 1.256 → 1.704, 100%-cap spec) are unverified.** The
+abstract says only "substantially stronger risk-adjusted performance".
+**Why it's plausible.** Crypto's positive jumps carry favorable information,
+so symmetric vol targeting de-risks too much.
+**Data requirements.** Free daily BTC; crypto OHLCV is already in the DB.
+**How it differs from what's already been tried.** Asymmetric exposure
+sizing in a different asset class, not an entry gate.
+**Evidence status:** Working paper (R&R). **Rule correspondence:** Direct
+(if the capped spec is confirmed). **Implementation class:** Retail.
+**Validation stage:** Literature only.
+
+**Status: untriaged.** Pull the PDF to confirm the numbers before any build.
+
+### A16. Bitcoin time-series momentum *(crypto — see scope note)*
+
+**Mechanism.** Hold spot BTC when its trailing 1–4-week return is positive,
+cash otherwise. Freeze a single lookback; don't sweep it.
+**Source(s).** Yukun Liu & Aleh Tsyvinski, *"Risks and Returns of
+Cryptocurrency,"* *Review of Financial Studies* 34(6), 2689–2727 (2021),
+verified against NBER WP 24877. **Correction to the report:** the 1–4-week
+momentum result holds for Bitcoin. For Ethereum it is significant only at 1
+day, and for Ripple only at 1–5 days, so treat it as a BTC-only rule.
+Practitioner: Grayscale's 50-day MA study (an issuer with a commercial
+interest).
+**Why it's plausible.** No cash-flow anchor, slow diffusion of adoption news
+and herding. The main value is sidestepping 80–90% drawdowns.
+**Data requirements.** Free, already in the DB.
+**How it differs from what's already been tried.** Time-series trend in a
+different asset class. The nearest closed arcs are `leveraged_trend_*`
+(which failed on leveraged-ETF decay, not the trend logic) and the equity
+momentum sorts.
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Close
+adaptation. **Implementation class:** Retail. **Validation stage:**
+Literature only.
+
+**Status: untriaged.**
+
+### A17. ENSO-conditioned soft-commodity allocation
+
+**Mechanism.** Use NOAA ENSO (Niño 3.4) state together with price features
+to forecast coffee, cocoa, sugar, cotton and orange-juice futures, via a
+ridge model.
+**Source(s).** Mohit Apte, *"ENSO Signals and Out-of-Sample Predictability in
+Soft Commodity Futures,"* SSRN 6789516 (2026). Verified: cost-adjusted OOS
+Sharpe 1.05; ENSO adds about 0.10 Sharpe to a price-only model; climate
+alone is negligible; includes a frozen 2023–2026 holdout. Mechanism
+support: Ubilava (AJAE) on ENSO and wheat prices.
+**Why it's plausible.** ENSO is an exogenous, slowly evolving, public
+physical driver of crop supply.
+**Data requirements.** **Feasibility risk.** The paper used ICE futures from
+Datastream/WRDS. The retail ETN proxies for coffee, cocoa and cotton were
+largely delisted, leaving CANE (sugar), CORN, SOYB and WEAT, all already in
+`ohlcv`. Most of the reported edge comes from price features, not climate.
+**How it differs from what's already been tried.** It is not the parked
+harvest/planting seasonality idea (off-topic citation). The predictor is a
+measured climate state.
+**Evidence status:** Working paper. **Rule correspondence:** Close
+adaptation. **Implementation class:** Professional (retail only as an
+approximation). **Validation stage:** Literature only.
+
+**Status: untriaged — low; the ETF proxies don't cover most of the studied
+contracts.**
+
+# B. Risk and exposure overlays
+
+### B5. Volatility-managed SPY holding (inverse realized variance, capped 1.0x)
+
+**Mechanism.** Scale the SPY holding by min(1, c / σ²), where σ² is trailing
+21–63-day realized variance and c is fixed in advance. The remainder sits in
+T-bills. This sizes the index core itself; it is not an entry gate.
+**Source(s).** Alan Moreira & Tyler Muir, *"Volatility-Managed Portfolios,"*
+*Journal of Finance* 72(4), 1611–1644 (2017), verified. **Counter-evidence
+(verified):** Cederburg, O'Doherty, Wang & Yan, *"On the Performance of
+Volatility-Managed Portfolios,"* *JFE* 138(1), 95–117 (2020): across 103
+strategies, real-time versions "generally earn lower certainty equivalent
+returns and Sharpe ratios" than unmanaged portfolios. The market factor is
+the exception that tends to survive (Barroso & Detzel, as summarized by
+DeMiguel et al.). Proposed by two reports (merged here).
+**Why it's plausible.** Volatility clusters but expected returns don't rise
+in proportion, so risk-adjusted return is worst right after volatility
+spikes.
+**Data requirements.** Free, SPY only.
+**How it differs from what's already been tried.** The VIX *level* entry
+gate was rejected; vol-aware *sizing* was the part that worked. This
+applies sizing to the SPY core, which is now the benchmark. The 1.0x cap
+removes the paper's upside-leverage half.
+**Evidence status:** Peer-reviewed (mixed). **Rule correspondence:** Close
+adaptation (capped). **Implementation class:** Retail. **Validation
+stage:** Literature only. **Sanity check**, with c set to the expanding
+median of past variance (no lookahead): Sharpe 1.02 vs 0.91 and MaxDD
+-10.1% vs -24.5% on the pinned window, at the cost of CAGR (10.2% vs 15.1%).
+The long window moved the same way. This is directly relevant to the
+owner's open "how much in SPY" decision.
+
+**Status: untriaged — shortlist.**
+
+### B6. VIX/VIX3M term-structure sizing of the index holding
+
+**Mechanism.** Reduce SPY size when the VIX curve inverts (VIX/VIX3M above
+about 0.95) and restore it quickly when it normalizes. Per the report's own
+evidence, **do not use it as an exit or short signal**: backwardation has
+predicted *positive* subsequent S&P returns (a contrarian result, per
+Macrosynergy's 2018 summary).
+**Source(s).** David P. Simon & Jim Campasano, *"The VIX Futures Basis:
+Evidence and Trading Strategies,"* *Journal of Derivatives* 21(3), 54–69
+(2014), verified. It supports the basis as a VIX-futures risk premium, not
+SPY timing. The thresholds are practitioner-sourced (Six Figure Investing).
+**Why it's plausible.** Curve inversion marks forced deleveraging.
+**Data requirements.** Free: ^VIX and ^VIX3M daily (VXV history starts
+2007-12).
+**How it differs from what's already been tried.** It sizes on the curve
+*slope*; the rejected gate blocked on the VIX *level*. It is still close to
+that rejected family, and the literature's direction argues against
+cutting risk on inversion.
+**Evidence status:** Peer-reviewed (mechanism) / Practitioner (rule).
+**Rule correspondence:** Mechanism only. **Implementation class:** Retail.
+**Validation stage:** Literature only.
+
+**Status: untriaged — low; B5 covers the same need with better evidence.**
+
+### B7. Excess Bond Premium (EBP) intermediary-risk overlay
+
+**Mechanism.** Cut SPY exposure when the EBP (the credit spread net of
+expected default) widens sharply, a sign of dealer balance-sheet strain.
+**Source(s).** Simon Gilchrist & Egon Zakrajšek, *"Credit Spreads and
+Business Cycle Fluctuations,"* *AER* 102(4), 1692–1720 (2012), verified;
+Favara et al., FEDS Notes (2016).
+**Why it's plausible.** Credit-supply shocks lead downturns and forced
+deleveraging.
+**Data requirements.** **Data wall: not point-in-time.** The Fed publishes a
+monthly CSV and states "the entire history of the EBP may revise each
+month." A backtest on today's file has lookahead. An honest test needs
+archived monthly vintages, which are not known to exist publicly, or at
+least a lag plus an explicit caveat.
+**How it differs from what's already been tried.** A credit-market driver
+entirely outside equity prices.
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Mechanism
+only. **Implementation class:** Retail. **Validation stage:** Literature
+only.
+
+**Status: untriaged — blocked on point-in-time data.**
+
+### B8. Stock–bond correlation-regime duration overlay
+
+**Mechanism.** When the stock/Treasury correlation is positive (as in 2022),
+move the defensive sleeve from duration to T-bills; allow duration ballast
+when the correlation is clearly negative.
+**Source(s).** Steve Laipply & Ananth Madhavan, *"Can Bonds Still Diversify
+Multi-Asset Portfolios? Income versus Duration in Distinct Correlation
+Regimes,"* *Journal of Portfolio Management* 52(5), 77–95 (2026), verified
+(DOI 10.3905/jpm.2026.1.813). Also McMillan (2026) on G7 stock–bond
+correlation. Neither tests this exact switching rule.
+**Why it's plausible.** Long bonds hedge growth shocks but not inflation or
+rate shocks.
+**Data requirements.** Free: SPY, IEF/TLT, SHY/BIL.
+**How it differs from what's already been tried.** It conditions on
+*correlation*, not curve slope (A5, closed) or an HMM (parked). It only
+matters once a duration sleeve exists (A10/A11, or snapshot Tier 1 #1).
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Close
+adaptation. **Implementation class:** Retail. **Validation stage:**
+Literature only.
+
+**Status: untriaged.**
+
+### B9. Bitcoin/equity shared-risk budget *(crypto — see scope note)*
+
+**Mechanism.** When BTC's rolling equity beta is high, treat BTC and SPY as
+one risk bucket instead of giving diversification credit.
+**Source(s).** Alejandro H. Drexler, Andre Guettler & Angela Sun, *"Crypto Is
+Coming of Age: The Case of Bitcoin's Rising Beta,"* Chicago Fed WP 2026-16
+(Aug 2026), verified. Equity beta rises and becomes significant around
+2020.
+**Why it's plausible / How it differs.** It addresses false
+diversification directly. It is a risk control, not alpha.
+**Data requirements.** Free.
+**Evidence status:** Working paper. **Rule correspondence:** Mechanism
+only. **Implementation class:** Retail. **Validation stage:** Literature
+only.
+
+**Status: untriaged — only relevant if a BTC sleeve exists.**
+
+### B10. Extreme-greed Bitcoin de-risking *(crypto — see scope note)*
+
+**Mechanism.** Reduce an existing BTC long after the Fear & Greed index hits
+"Extreme Greed". The paper studies *shorting* spot-BTC ETFs; long
+reduction is an untested adaptation.
+**Source(s).** Olena Onishchenko, *"Betting Against Bitcoin: Evidence from
+Spot Bitcoin ETFs,"* *Journal of Behavioral and Experimental Finance* 50,
+101191 (2026), verified: 0.24% 5-day abnormal return (12.10% annualized,
+gross, before borrow costs). Short sample, since spot ETFs only launched
+in Jan 2024. The report itself cites contradicting 2026 Fear & Greed
+evidence.
+**Data requirements.** Free (alternative.me index).
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Close
+adaptation. **Implementation class:** Retail. **Validation stage:**
+Literature only.
+
+**Status: untriaged — low.**
+
+# C. Portfolio-construction and research methods
+
+### C3. Hierarchical Risk Parity (HRP) allocation across sleeves
+
+López de Prado, *"Building Diversified Portfolios that Outperform Out of
+Sample,"* *Journal of Portfolio Management* 42(4), 59–69 (2016), verified.
+Correlation-distance clustering, then recursive bisection by cluster
+variance, with no matrix inversion. It forecasts no returns, so it only
+becomes useful once there are **several genuinely different sleeves**. It
+would sit alongside the lab's existing inverse-vol blend overlay
+(`lab/blend.py`), not replace a signal. **Status: untriaged — method; defer
+until there is more than one non-equity sleeve.**
+
+### C4. Post-publication, exposure-adjusted harness for calendar sleeves
+
+A method: judge calendar/event sleeves (A10–A12, A14) on their contribution
+to **total-account** Sharpe and drawdown, and on performance **after each
+paper's sample end**. Freeze the rule before looking at the holdout, and
+report return per day invested. Motivated by verified decay evidence
+(Kurov et al. 2021; Uppal; Cederburg et al. 2020; the Allocate Smartly
+month-end shift). This turns the lab's "matched window" lesson into a
+standing gate. **Status: untriaged — adopt as the success criteria in any
+A10–A12 brief.**
+
+### C5. Simple-first correlation-forecast benchmark
+
+Michael Stamos, *"Forecasting Stock–Bond Correlation,"* *Journal of Portfolio
+Management* 51(5), 134–142 (2025), verified (DOI 10.3905/jpm.2025.1.677).
+**Correction:** the abstract offers "a parsimonious way" to forecast
+correlation. The report's stronger claim, that parsimonious forecasts
+perform *best*, is unverified. Rule: any regime or correlation model (e.g.
+B8, or the parked Treasury HMM) must beat a rolling/EWMA correlation
+forecast out of sample. This is consistent with §4's "complexity loses".
+**Status: untriaged — method; apply to B8.**
+
+# D. Parked hypotheses — cheap falsification only
+
+- **Weekend crypto returns → Monday equity return.** Mourey, Shahrour &
+  Șoiman, *Finance Research Letters* 86, 108661 (2025), verified. The
+  effect is **asymmetric**: only negative weekend returns predict Monday
+  declines, and it strengthened after the May 2022 LUNA collapse. The
+  information is absorbed at Monday's open, which this account's
+  pre-close daily decision cannot capture. **Parked.**
+- **Treasury auction-cycle timing.** Lou, Yan & Zhang, *RFS* 26(8),
+  1891–1912 (2013), verified. The tested trade is a duration-hedged short
+  2-year before auctions, which is not reproducible long-only and
+  unlevered. **Parked.**
+- **Dash-for-cash turn-of-month in international ETFs (EFA/VEA).** Etula,
+  Rinne, Suominen & Vaittinen, *RFS* 33(1), 75–111 (2020), verified. It
+  supports the mechanism only, and it overlaps A14, which failed its
+  sanity check. **Parked.**
+- **Auction-conditioned macro-announcement FX premium.** Krohn & Vala, SSRN
+  5207418 (2025), verified: about 8 bp FX appreciation vs USD when a macro
+  release follows a Treasury auction. It needs spot FX and intraday
+  timing, and this account has neither. **Parked — effectively
+  infeasible.**
+- **GDELT Bitcoin media-pressure allocation (BMPI).** Parfenovich, SSRN
+  6652421 (strategy) / 6626064 / 6542901, verified: Sharpe 2.27 vs 1.38 and
+  MaxDD -16.6% vs -32.6% OOS over Dec 2022–Jan 2026. It is single-author,
+  its strategy label ("V9") suggests many specifications were tried, the
+  permutation test gives p = 0.029, and it layers regime, vol and drawdown
+  controls, the complexity pattern §4 warns against. **Parked.**
