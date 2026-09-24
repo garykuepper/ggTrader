@@ -920,7 +920,10 @@ on the trading day before each scheduled FOMC announcement gave Sharpe
 (120 events). IEF came out at -0.08 and 0.25. This is the corrected day
 -1 that the 2026-07-20 run missed, and it is still weak. The queued
 `fomc_drift` retest is likely to confirm the NO-GO rather than overturn
-it.
+it. **Sizing caveat on the original report:** the signals path sized each
+entry at `SIGNAL_POSITION_SIZE` = 3% of cash, so its "0.45% total return,
+essentially flat" is mostly a sizing artifact. Its Sharpe (0.10) is the
+number to compare. Set the size to 1.0 in the retest.
 
 **Status: resolved, NO-GO. See `docs/research/2026-07-20-fomc-drift-nogo.md`.**
 
@@ -1604,7 +1607,7 @@ adaptation (cash Treasuries → ETFs; the paper finds the best risk/reward at
 class:** Retail. **Validation stage:** Literature only; the quick sanity
 check was positive on both windows (see the table above).
 
-**Status: untriaged — top of this batch.**
+**Status: queued (2026-09-24)** — brief: `docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md`.
 
 ### A11. Pre-Treasury-Refunding-Announcement long TLT
 

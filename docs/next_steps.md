@@ -81,6 +81,13 @@ container recreated and checked):
    diversifier, not an index-beater — decide whether to shrink it in favor
    of SPY (paper, so no capital at risk meanwhile). Then: re-screen
    near-miss signal NO-GOs against SPY under PIT; TLT/GLD/DBC sleeve.
+6. **Research (queued 2026-09-24) — month-end Treasury sleeve (backlog A10).**
+   Hold IEF only over the last 3 trading days of each month (Hartley &
+   Schwarz 2019). Run it in a fresh session from the brief
+   `docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md`, whose
+   pass bar is fixed in advance. The pandas sanity check was positive
+   (Sharpe 0.96 on 2021–26), but it is not a WFO result. Research only;
+   no live change.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)
