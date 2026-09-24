@@ -1607,7 +1607,7 @@ adaptation (cash Treasuries → ETFs; the paper finds the best risk/reward at
 class:** Retail. **Validation stage:** Literature only; the quick sanity
 check was positive on both windows (see the table above).
 
-**Status: queued (2026-09-24)** — brief: `docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md`.
+**Status: CLOSED NO-GO (2026-09-24)** — `docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md`. Standalone premium held OOS (frozen IEF rule Sharpe 0.96 at 1 bp), but the SPY-funded overlay added nothing (0.909 vs 0.896, worse MaxDD) and the WFO halted with winner stability 5/17.
 
 ### A11. Pre-Treasury-Refunding-Announcement long TLT
 

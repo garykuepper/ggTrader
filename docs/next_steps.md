@@ -81,13 +81,14 @@ container recreated and checked):
    diversifier, not an index-beater — decide whether to shrink it in favor
    of SPY (paper, so no capital at risk meanwhile). Then: re-screen
    near-miss signal NO-GOs against SPY under PIT; TLT/GLD/DBC sleeve.
-6. **Research (queued 2026-09-24) — month-end Treasury sleeve (backlog A10).**
-   Hold IEF only over the last 3 trading days of each month (Hartley &
-   Schwarz 2019). Run it in a fresh session from the brief
-   `docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md`, whose
-   pass bar is fixed in advance. The pandas sanity check was positive
-   (Sharpe 0.96 on 2021–26), but it is not a WFO result. Research only;
-   no live change.
+6. **Research (closed 2026-09-24) — month-end Treasury sleeve (A10): NO-GO.**
+   The frozen IEF last-3-days rule works standalone (Sharpe 0.96 at 1 bp,
+   0.78 at 3 bp, every year 2021–25 positive, and positive post-publication).
+   But funding it from SPY adds nothing, because SPY earns as much on the
+   same days (overlay 0.909 vs SPY 0.896, MaxDD worse). The 12-combo WFO
+   halted and its top winner held only 5/17 folds. See
+   `docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md`. Parked: a
+   T-bill-funded version, which needs an owner allocation decision first.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)

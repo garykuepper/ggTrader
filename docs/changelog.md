@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-24
+
+- **A10 month-end Treasury sleeve: NO-GO.** New signals strategy
+  `month_end_treasury` (long IEF/TLT/EDV over the last N trading days of
+  each month; sweep `days_before_end` {2..5} × `duration_rank`) and driver
+  `scripts/month_end_treasury_wfo.py`. The frozen IEF last-3-days rule
+  scored Sharpe 0.96 on 2021-01-31 → 2026-04-30 at 1 bp per side. It failed
+  the pre-registered bar anyway. As a 20%-of-SPY overlay it scored 0.909 vs
+  SPY's 0.896 with a worse MaxDD, because SPY earns as much on those same
+  days. The WFO passed gates in 13/17 folds but halted, and its top winner
+  held only 5/17 folds. Report:
+  `docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md`. Harness
+  note: the anchor fallback's CAGR > 4% filter forces low-exposure sleeves
+  onto their highest-drawdown combo.
+
 ## 2026-09-23
 
 - **Live run crashed at 12:45 PT; fixed and redeployed.** The 09-22 image

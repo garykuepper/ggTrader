@@ -26,6 +26,7 @@ from .leveraged_trend import (
 )
 from .max_effect import MaxEffectStrategy
 from .momentum import CrossSectionalMomentum, DualMomentum
+from .month_end_treasury import MonthEndTreasuryStrategy
 from .pairs_stat_arb import PairsStatArb
 from .pead import PeadStrategy
 from .registry import (
@@ -80,6 +81,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "fx_hedge_overlay": FxHedgeOverlayStrategy,
     "headline_sentiment": HeadlineSentimentStrategy,
     "fomc_drift": FomcDriftStrategy,
+    "month_end_treasury": MonthEndTreasuryStrategy,
     "commodity_trend": CommodityTrendStrategy,
     "treasury_curve": TreasuryCurveStrategy,
     "leveraged_rotation_sp500": LeveragedRotationSp500,
@@ -113,6 +115,7 @@ __all__ = [
     "FxHedgeOverlayStrategy",
     "HeadlineSentimentStrategy",
     "FomcDriftStrategy",
+    "MonthEndTreasuryStrategy",
     "CommodityTrendStrategy",
     "TreasuryCurveStrategy",
     "LeveragedRotationSp500",
