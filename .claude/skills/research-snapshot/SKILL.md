@@ -128,7 +128,8 @@ explicit "don't write code / don't assume repo access"). Regenerate:
    names like `ensemble_ic` unless useful as a label) — external readers
    don't have this repo's context.
 3. Constraints (retail/home-lab feasible, free-or-cheap data, execution
-   realism).
+   realism — keep the concrete account limits: instruments the broker
+   offers, no leverage, one daily decision before the close).
 Do NOT add fixed strategy recommendations to this file — its whole point is
 that the *external* agent generates recommendations; seeding it with ideas
 defeats the purpose. Its "required output format" section is stable and
@@ -175,5 +176,5 @@ if first run) and summarize in a few lines: what changed since the last
 version — new arcs closed, baseline numbers moved, recommendations
 added/dropped/re-ranked. Don't dump full file contents into chat; the user
 can read the files. Explicitly do not mention `WEB_RESEARCH_CANDIDATES.md`
-as "regenerated" — if the user wants that updated, that's a separate,
-manual merge-from-pasted-results action, not part of this skill's run.
+as "regenerated" — merging pasted research results into it is the
+`research-prompts` skill's job, not part of this skill's run.

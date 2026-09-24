@@ -11,7 +11,8 @@ file when they're resolved (see Status below).
 1. Run `docs/research/prompts/web-strategy-research-prompt.md` in a
    web-research tool (Google Gemini or Claude's web-UI research feature).
 2. Paste the results back into this session.
-3. Ask to "merge these into the web research candidates" — I'll dedupe
+3. Ask to "merge these into the web research candidates" (the
+   `research-prompts` skill runs this step) — I'll dedupe
    against existing entries (by mechanism, not just name) and append
    genuinely new ones below, each with a status.
 4. When a candidate is picked to actually build, copy its entry into

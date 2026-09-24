@@ -8,7 +8,7 @@ anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
 Regenerate the "context" section below from `docs/research/RESEARCH_SNAPSHOT.md`
-whenever it's materially out of date — last synced 2026-09-11.
+whenever it's materially out of date — last synced 2026-09-23.
 
 ---
 
@@ -40,26 +40,32 @@ gates before deploying anything, and only deploys strategies that beat a
 buy-and-hold S&P 500 benchmark on a risk-adjusted (Sharpe) basis, not just
 raw return.
 
-**Currently deployed and working:** a majority-vote ensemble of five
-technical indicators (Bollinger Bands, RSI, EMA crossover, MACD divergence,
-Volume-confirmed Bollinger Bands) on individual S&P 500 stocks, flat ~3%
-position sizing per trade — a rigorously re-measured, pinned-window
-walk-forward test puts this at roughly Sharpe ~1.0 vs. the index's ~0.8 on
-the same window. A blended portfolio layered on top across three
-large-cap/mid-cap U.S. equity indices (S&P 500, MidCap 400, Nasdaq-100),
-volatility-weighted and capped at 1x leverage, is the account actually
-trading live today, but on the same rigorous re-measurement it now trails
-the simpler single-index version (roughly Sharpe ~0.7) — a reminder that an
-early promising diversification result can evaporate under a more careful
-re-test, so treat any number this scout is given (including from other
-projects) as provisional until it's been through that kind of scrutiny.
+**Currently deployed — and the honest bar:** a majority-vote ensemble of
+five technical indicators (Bollinger Bands, RSI, EMA crossover, MACD
+divergence, volume-confirmed Bollinger Bands) buying individual S&P 500
+stocks on short-term mean-reversion, flat ~3% position sizing per trade.
+Earlier tests showed it beating the index, but a stricter re-test that only
+lets it trade stocks on days they were actually in the S&P 500 (earlier
+tests had accidentally allowed trading stocks before they joined or after
+they left) cut it to roughly **Sharpe ~0.6 and ~3% a year versus the
+index's ~0.8 Sharpe and ~13% a year** over 2021–2026. Its one real virtue is
+shallow drawdowns (about -5% versus the index's -22%). **So nothing in this
+system currently beats simply holding the S&P 500.** The most useful ideas
+now either beat the index on their own after costs, or combine with an
+index holding to improve its risk-adjusted return or cut its drawdowns. A
+blend of this strategy across three U.S. equity indices was also tried live
+and dropped after it trailed the single-index version. Treat any number
+this scout is given (including from other projects) as provisional until
+it's been through that kind of scrutiny — this system's own headline
+number has been revised down more than once.
 
 **Already tried and rejected — don't propose close variants of these
 without a genuinely different mechanism:**
 - A machine-learning classifier gating which technical-indicator signals to
   trade (proved anti-predictive/worthless across several redesigns).
 - Weighting the ensemble's votes by each indicator's historical predictive
-  skill, instead of equal-weighting (hurt risk-adjusted return).
+  skill, instead of equal-weighting (hurt risk-adjusted return; re-tested
+  under the stricter membership rules and still worse).
 - Position-sizing by the Kelly criterion or by per-trade "conviction"
   strength, instead of a flat size (both underperformed flat sizing).
 - Take-profit / time-based exit rules layered on or replacing the current
@@ -115,8 +121,9 @@ without a genuinely different mechanism:**
   harvest with no crypto-specific academic backing; stablecoin CeFi/DeFi
   yield arbitrage sourced only from industry reports; a crypto token-
   unlock event-driven short with no empirical crypto study; a G10
-  currency three-factor model whose primary citation could not be located
-  anywhere (likely fabricated); an ETH/BTC ratio mean-reversion idea with
+  currency carry-momentum-value portfolio whose cited paper turned out to
+  be real but to support a different factor model (dollar + carry +
+  business-cycle), not that rule; an ETH/BTC ratio mean-reversion idea with
   only practitioner-blog sourcing; a commodity harvest/planting
   seasonality signal whose only located citation turned out to study an
   unrelated topic; and an energy pre-holiday seasonal trade that its own
@@ -125,7 +132,8 @@ without a genuinely different mechanism:**
   report" or "a practitioner blog post" to be worth including.
 
 The throughline in most of these failures: technical, price-action-only
-signals on this specific universe are close to fully arbitraged, adding
+signals on this specific universe are close to fully arbitraged (and the
+one that seemed to work owed its edge to a survivorship error), adding
 model complexity on top of a simple ensemble has consistently made things
 worse, and even genuinely different *signal categories* (fundamental,
 event-driven, behavioral) have failed to diversify the portfolio as long as
@@ -154,6 +162,12 @@ equities, however different the underlying data source.
 - **Execution realism**: this is a single retail-sized account, not a fund
   — avoid strategies that only work at institutional scale/capacity, or
   that require latency/infrastructure a retail trader can't get.
+  Concretely, the account trades through a retail broker that offers U.S.
+  stocks, ETFs, listed options and spot crypto — **no futures, no spot
+  FX** — without leverage (1.0x), and makes **one decision per day on
+  daily bars, shortly before the U.S. close**. If an idea needs futures,
+  FX forwards, leverage or intraday trading, say which ETF proxy could
+  stand in and how closely it tracks the studied effect.
 - Favor ideas with genuine, articulable economic or structural rationale
   (why should this anomaly exist and persist) over pure pattern-mining.
 
