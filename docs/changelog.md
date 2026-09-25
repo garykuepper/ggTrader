@@ -2,6 +2,15 @@
 
 ## 2026-09-24
 
+- **Core + SPY sweep blend: KEEP at backtested size.** New driver
+  `scripts/core_spy_blend.py` re-runs the pinned PIT core WFO, records each
+  OOS fold's cash share, and scores the live construction (core plus idle
+  cash above the 5% reserve in SPY). Result: Sharpe 0.80 / MaxDD -20.7%, vs
+  SPY 0.78 / -22.1%, which passes the pre-registered KEEP rule narrowly. The
+  backtest holds ~8% in stocks against ~32% live, so the live size is
+  unvalidated. Report: `docs/research/2026-09-24-core-spy-blend-keep.md`.
+- **Ops: catastrophe stop armed** (`CATASTROPHE_STOP_ENABLED=true`, -25%,
+  `.env` only; no code change).
 - **A10 month-end Treasury sleeve: NO-GO.** New signals strategy
   `month_end_treasury` (long IEF/TLT/EDV over the last N trading days of
   each month; sweep `days_before_end` {2..5} × `duration_rank`) and driver

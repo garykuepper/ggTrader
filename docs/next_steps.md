@@ -66,7 +66,10 @@ container recreated and checked):
    `SWEEP_BUY_TRIGGER_PCT` line (default 0.08). Verify per plan Task 3.
    Expect the daily SPY sell/buy round-trip (every session since 08-25) to
    stop.
-3. **Week after — catastrophe stop:** re-check the book first. On
+3. **DONE 2026-09-24 (early, owner-approved) — catastrophe stop armed:**
+   `CATASTROPHE_STOP_ENABLED=true` in `.env` (-25%). KNF (-26.9%) is
+   expected to be force-sold on the 2026-09-25 run; verify. Original note:
+   re-check the book first. On
    2026-09-22, HGV (-23.6%) and KNF (-23.1%) sat just inside the -25% floor;
    MNST is no longer a false trigger now that split state is persistent.
 4. **Minor, open:** `paper_risk_state.peak_value` ($104,518) is below the
@@ -89,6 +92,20 @@ container recreated and checked):
    halted and its top winner held only 5/17 folds. See
    `docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md`. Parked: a
    T-bill-funded version, which needs an owner allocation decision first.
+7. **Research (2026-09-24) — core + SPY sweep blend: KEEP, but live size is
+   untested.** Answers item 5 at *backtested* exposure. Core + idle cash swept
+   into SPY scores Sharpe 0.80 / MaxDD -20.7% vs SPY 0.78 / -22.1%, a
+   noise-sized margin. The backtest holds only ~8% in stocks (about 3
+   positions); live holds ~32% (31 positions). **Next:** explain that gap. The
+   sizing rules do differ (backtest: 3% of remaining cash; live: 3.3% of
+   portfolio), but that can't produce a 4x gap. Compare live `paper_trades`
+   entry and hold counts against backtest fold trades. Then re-run
+   `scripts/core_spy_blend.py` at live exposure. See
+   `docs/research/2026-09-24-core-spy-blend-keep.md`.
+8. **Ops, awaiting approval — S&P 500 constituents snapshot is stale**
+   (2026-06-02): SATS was renamed ECHO on 2026-06-24, and our tape has SATS
+   bars only through 2026-07-17. The fix, `download_sp500_history()`, changes
+   the live universe, so it needs an explicit ask.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)
