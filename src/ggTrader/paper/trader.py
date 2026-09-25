@@ -807,6 +807,14 @@ class PaperTrader:
             except Exception as exc:
                 errors.append(f"SELL {symbol}: {exc}")
 
+        # Wait for every sell submitted so far (catastrophe stop, sweep funding,
+        # strategy exits) to fill before buying: Alpaca credits proceeds only on
+        # fill, and on 2026-09-25 buys sent while the funding sell was still
+        # working were rejected for insufficient buying power (6 of 8).
+        filled_orders: dict[str, dict] = self._poll_orders(
+            [o for o in pending_orders if o[1] == "SELL"]
+        )
+
         slots_available = self._risk.max_new_positions(len(strategy_positions) - regular_sell_count)
         buys_attempted = 0
         for universe, syms in buys_by_sleeve.items():
@@ -861,8 +869,10 @@ class PaperTrader:
                 except Exception as exc:
                     errors.append(f"BUY {symbol}: {exc}")
 
-        # Poll submitted orders until they fill (or timeout)
-        filled_orders: dict[str, dict] = self._poll_orders(pending_orders)
+        # Poll the remaining (buy) orders until they fill (or timeout)
+        filled_orders.update(
+            self._poll_orders([o for o in pending_orders if o[0] not in filled_orders])
+        )
 
         if sweep_on:
             # Sweep BUY: deploy whatever cash is left over after the strategy's

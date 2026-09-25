@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-25
+
+- **Paper trader waits for sells to fill before buying.** In the 09-25 run
+  6 of 8 buys were rejected for insufficient buying power. They were
+  submitted while the SPY cash-sweep funding sell was still working, and
+  Alpaca credits sell proceeds only on fill. `trader.py` now polls every
+  pending sell (catastrophe stop, sweep funding, strategy exits) to a
+  terminal status before the buy loop. The same run was also the first
+  catastrophe-stop fire: KNF, -26.9%.
+
 ## 2026-09-24
 
 - **Core + SPY sweep blend: KEEP at backtested size.** New driver

@@ -1718,6 +1718,29 @@ class TestCashSweepEnabled:
 
     @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
     @patch("ggTrader.paper.trader.generate_core_signals")
+    def test_waits_for_sweep_sell_fill_before_strategy_buy(self, mock_signals, *_):
+        """Alpaca credits sell proceeds only on fill. On 2026-09-25 buys sent
+        while the funding sell was still working were rejected for
+        insufficient buying power (6 of 8), so the sell must be polled to a
+        terminal status before any buy goes out."""
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader(
+            positions={"SPY": _spy_position(qty=50.0, price=400.0)},
+            portfolio_value=100_000.0,
+            cash=1_000.0,
+        )
+        trader.run()
+
+        names = [c[0] for c in broker.method_calls]
+        first_poll = next(
+            i
+            for i, c in enumerate(broker.method_calls)
+            if c[0] == "get_order" and c.args[0] == "sell-order-1"
+        )
+        assert first_poll < names.index("submit_buy")
+
+    @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
+    @patch("ggTrader.paper.trader.generate_core_signals")
     def test_sweep_buy_deploys_leftover_cash_after_strategy_orders(self, mock_signals, *_):
         """After strategy orders, leftover cash above the reserve gets swept
         into the sweep ETF as a BUY."""
