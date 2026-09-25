@@ -8,7 +8,7 @@ anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
 Regenerate the "context" section below from `docs/research/RESEARCH_SNAPSHOT.md`
-whenever it's materially out of date — last synced 2026-09-23.
+whenever it's materially out of date — last synced 2026-09-25.
 
 ---
 
@@ -52,9 +52,16 @@ index's ~0.8 Sharpe and ~13% a year** over 2021–2026. Its one real virtue is
 shallow drawdowns (about -5% versus the index's -22%). **So nothing in this
 system currently beats simply holding the S&P 500.** The most useful ideas
 now either beat the index on their own after costs, or combine with an
-index holding to improve its risk-adjusted return or cut its drawdowns. A
-blend of this strategy across three U.S. equity indices was also tried live
-and dropped after it trailed the single-index version. Treat any number
+index holding to improve its risk-adjusted return or cut its drawdowns. The
+account actually holds that stock-picking sleeve **plus the S&P 500 index
+itself**, because idle cash is swept into an S&P 500 ETF. Measured that way,
+the combined book roughly **ties** the index (Sharpe ~0.80 vs ~0.78) and has
+slightly shallower drawdowns. So in practice the account is mostly an index
+holding. **Any new idea is effectively funded by selling some of that index
+holding, so it has to earn more than the index would have on the same
+days.** A blend of the stock-picking strategy across three U.S. equity
+indices was also tried live and dropped after it trailed the single-index
+version. Treat any number
 this scout is given (including from other projects) as provisional until
 it's been through that kind of scrutiny — this system's own headline
 number has been revised down more than once.
@@ -99,6 +106,16 @@ without a genuinely different mechanism:**
   different asset class, geography, or holding-period horizon is a much
   higher-value direction than another characteristic/event-driven sort on
   the same stocks.**
+- Holding intermediate Treasuries (e.g. a 7–10 year Treasury ETF) only over
+  the last few trading days of each month, a published month-end Treasury
+  premium. The effect was genuinely there out of sample. But funding it by
+  selling the index holding added nothing, because the stock index earns at
+  least as much over the same turn-of-month days. Variations on month-end
+  duration timing, or a month-end stock-to-bond rebalancing tilt, are
+  covered by this result. **General lesson: a calendar or flow premium in
+  one asset may simply overlap with a premium the index already collects on
+  the same days.** Say which days your idea is invested, and why the index
+  wouldn't already earn the same thing then.
 - Four other ideas were investigated and found to require data we can't
   access affordably: analyst-estimate-revision momentum, a firm-
   characteristics rebalancing-flow signal keyed to an academic database
