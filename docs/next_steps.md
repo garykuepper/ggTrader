@@ -106,6 +106,12 @@ container recreated and checked):
    (2026-06-02): SATS was renamed ECHO on 2026-06-24, and our tape has SATS
    bars only through 2026-07-17. The fix, `download_sp500_history()`, changes
    the live universe, so it needs an explicit ask.
+9. **Deployed 2026-09-28 — missed-exit catch-up + `MAX_POSITIONS=3`.** Verify
+   the 2026-09-29 run: sells AEE/HAS/HON/MNST/PNR/VZ (log line "Catching up
+   missed exits"), no strategy buys (30 held > 3 slots), proceeds swept to
+   SPY. **Open follow-up:** H/HGV/WLK/WWD are non-S&P-500 MidCap leftovers
+   with no exit path except the catastrophe stop -- decide whether to feed
+   held non-members into signal generation for exits only, or liquidate.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)

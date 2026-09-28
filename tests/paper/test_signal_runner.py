@@ -68,6 +68,24 @@ class TestGenerateSignals:
 
     @patch("ggTrader.paper.signal_runner.universe_members_asof")
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_last_exit_covers_every_bar_not_just_the_last(self, mock_fetch, mock_members):
+        symbols = [f"SYM{i}" for i in range(20)]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols, n_days=120)
+
+        from ggTrader.paper.signal_runner import generate_signals
+
+        result = generate_signals(lookback_days=120)
+
+        last_exit = result["last_exit"]
+        # A random walk over 120 bars crosses RSI 50 for most names, almost
+        # all of them before the final bar -- the ones live used to miss.
+        assert len(last_exit) > len(result["sells"])
+        assert all(d <= result["as_of"] for d in last_exit.values())
+        assert all(last_exit[s] == result["as_of"] for s in result["sells"])
+
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
     def test_empty_data_returns_no_signals(self, mock_fetch, mock_members):
         mock_members.return_value = ["AAPL"]
         empty = pd.DataFrame(

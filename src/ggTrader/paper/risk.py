@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
+
+#: Env override for `RiskConfig.max_positions`. Live sets 3 (x 3.3% ~= 10% of
+#: the book in stocks), the exposure the core + SPY blend was validated at.
+_MAX_POSITIONS_ENV_VAR = "MAX_POSITIONS"
 
 
 @dataclass(frozen=True)
@@ -14,6 +19,12 @@ class RiskConfig:
     max_concentration_pct: float = 0.05
     daily_loss_pct: float = 0.03
     max_drawdown_pct: float = 0.15
+
+
+def config_from_env() -> RiskConfig:
+    """`RiskConfig` defaults, with `max_positions` overridable via env."""
+    raw = os.environ.get(_MAX_POSITIONS_ENV_VAR, "").strip()
+    return RiskConfig(max_positions=int(raw)) if raw else RiskConfig()
 
 
 class RiskGuard:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 
 from sqlalchemy import text
 
@@ -324,6 +325,21 @@ def get_trade_history_dates(symbol: str) -> list:
             {"symbol": symbol},
         ).all()
     return [run_date for (run_date,) in rows]
+
+
+def get_last_buy_dates() -> dict[str, date]:
+    """Return `{symbol: most recent BUY run_date}` across `paper_trades`.
+
+    The trader treats this as each held position's entry date when catching
+    up exit signals that fired on a bar after entry but not on today's bar.
+    """
+    with _get_engine().connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT symbol, max(run_date) FROM paper_trades WHERE side = 'BUY' GROUP BY symbol"
+            )
+        ).all()
+    return {symbol: run_date for symbol, run_date in rows}
 
 
 def get_accrued_dividend_keys() -> set[tuple]:

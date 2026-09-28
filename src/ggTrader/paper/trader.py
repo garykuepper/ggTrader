@@ -16,6 +16,7 @@ from ggTrader.paper.persist import (
     clear_split_correction,
     get_accrued_dividend_keys,
     get_earliest_snapshot,
+    get_last_buy_dates,
     get_latest_snapshot,
     get_open_split_states,
     get_peak_value,
@@ -32,7 +33,7 @@ from ggTrader.paper.persist import (
     save_peak_value,
     save_split_correction,
 )
-from ggTrader.paper.risk import RiskConfig, RiskGuard
+from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
 from ggTrader.paper.signal_runner import generate_core_signals, refresh_benchmark_tape
 from ggTrader.paper.split_check import (
     apply_corrections_to_positions,
@@ -80,6 +81,11 @@ def _today_et() -> date:
     return datetime.now(_ET).date()
 
 
+def _as_date(value) -> date:
+    """`paper_trades.run_date` as a `date` (drivers may return a datetime)."""
+    return value.date() if isinstance(value, datetime) else value
+
+
 class PaperTrader:
     """Orchestrates daily paper trading: generate signals, execute, notify."""
 
@@ -92,8 +98,36 @@ class PaperTrader:
     ) -> None:
         self._broker = broker
         self._notifier = notifier
-        self._risk = RiskGuard(risk_cfg)
+        self._risk = RiskGuard(risk_cfg or config_from_env())
         self._dry_run = dry_run
+
+    def _missed_exits(
+        self, positions: dict, last_exit: dict[str, str], already: set[str]
+    ) -> list[str]:
+        """Held symbols whose most recent exit bar falls after their entry.
+
+        Exits are crossover events and `signals["sells"]` sees only today's
+        partial bar, so a cross completing after the 12:45 PT run, or on a
+        day the run was skipped, was never acted on -- 6 of 26 names were
+        still held on 2026-09-28 past a close-based RSI exit. The backtest
+        closes on the first exit bar after entry; this restores that. An
+        exit on the entry bar itself doesn't count (vbt won't exit the bar
+        it entered). A symbol with no BUY record, or a lookup failure, falls
+        back to last-bar-only behavior.
+        """
+        candidates = [s for s in positions if s in last_exit and s not in already]
+        if not candidates:
+            return []
+        try:
+            entries = get_last_buy_dates()
+        except Exception as exc:
+            _log.warning("last-buy lookup failed, skipping exit catch-up: %s", exc)
+            return []
+        return sorted(
+            s
+            for s in candidates
+            if s in entries and date.fromisoformat(last_exit[s]) > _as_date(entries[s])
+        )
 
     def _flag_if_stale(self, pending_order: dict, now: datetime) -> None:
         """Send a one-time "stale pending order" alert once an order has been
@@ -502,11 +536,13 @@ class PaperTrader:
         weights, scale = blend["weights"], blend["scale"]
         all_buys: list[tuple[str, str]] = []  # (symbol, sleeve)
         all_sells: list[str] = []
+        last_exit: dict[str, str] = {}
         gate_infos: dict[str, dict] = {}
         for universe, sleeve_signals in blend["sleeves"].items():
             for sym in sleeve_signals["buys"]:
                 all_buys.append((sym, universe))
             all_sells.extend(sleeve_signals["sells"])
+            last_exit.update(sleeve_signals.get("last_exit", {}))
             gate_infos[universe] = sleeve_signals.get("gate", {})
 
         signals = {
@@ -585,6 +621,13 @@ class PaperTrader:
         # concentration check (its exposure is cash-in-waiting, not a
         # strategy bet).
         corrected_positions = apply_corrections_to_positions(strategy_positions, split_corrections)
+
+        # Catch up exits the last-bar check missed (see _missed_exits). Added
+        # here, before the sweep's anticipated_sells, so freed slots count.
+        missed = self._missed_exits(strategy_positions, last_exit, set(signals["sells"]))
+        if missed:
+            _log.info("Catching up missed exits: %s", missed)
+            signals["sells"] = sorted(set(signals["sells"]) | set(missed))
 
         # Cross-reference the broker's corporate-actions feed against this
         # account's DIV activities to credit (as a reporting-only accrual --

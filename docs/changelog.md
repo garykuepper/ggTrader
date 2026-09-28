@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-09-28
+
+- **Paper trader catches up missed exits.** Exits are crossover events, and
+  live checked only today's partial bar at 12:45 PT, so a cross completing
+  after the run, or on a skipped day (09-23 crash), was never acted on. The
+  backtest closes on the first exit bar after entry. `generate_signals` now
+  also returns each symbol's most recent exit bar (`last_exit`), and
+  `trader.py` sells any held name whose last exit falls after its latest
+  BUY (`persist.get_last_buy_dates`). First run is expected to sell AEE,
+  HAS, HON, MNST, PNR and VZ. This is the main driver of live's ~30
+  positions vs the backtest's ~3.
+- **Stock sleeve capped at ~10%.** New `MAX_POSITIONS` env override
+  (`risk.config_from_env`); `.env` sets 3 (x 3.3% of PV). No forced sells;
+  new buys stop until the book shrinks below 3.
+- **Known gap:** H, HGV, WLK and WWD are MidCap-sleeve leftovers from the
+  retired blend, not S&P 500 members, so the SP500-only core computes no
+  exit for them. Only the catastrophe stop can close them today.
+
 ## 2026-09-25
 
 - **Paper trader waits for sells to fill before buying.** In the 09-25 run

@@ -101,7 +101,15 @@ def _stub_benchmark_tape():
         yield
 
 
-def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500"):
+@pytest.fixture(autouse=True)
+def _stub_last_buy_dates():
+    """Keep the missed-exit catch-up's paper_trades lookup off the real DB.
+    Default `{}` means "no entry dates known", which disables the catch-up."""
+    with patch("ggTrader.paper.trader.get_last_buy_dates", return_value={}):
+        yield
+
+
+def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500", last_exit=None):
     """Wrap a flat buys/sells list into `generate_core_signals()`'s actual
     shape: exactly one sleeve, `weights={universe: 1.0}`, `scale=1.0` -- no
     zero-weight sibling sleeves, matching production's standalone-core
@@ -118,6 +126,7 @@ def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500"):
                 "as_of": as_of,
                 "universe_size": 100,
                 "gate": {},
+                "last_exit": last_exit or {},
             }
         },
         "weights": {universe: 1.0},
@@ -214,6 +223,75 @@ class TestSellExits:
         }
         trader.run()
         broker.submit_sell.assert_called_once_with("MNST", mnst_qty)
+
+
+_AAPL_POS = {
+    "AAPL": {"qty": 10.0, "market_value": 1500.0, "avg_entry": 145.0, "unrealized_pl": 50.0}
+}
+
+
+@patch("ggTrader.paper.trader.generate_core_signals")
+class TestMissedExitCatchUp:
+    """Live checks exits on one partial bar, so a crossover that lands after
+    the 12:45 PT run (or on a skipped day) was lost forever. A held name
+    whose most recent exit bar is after its entry must be sold, matching
+    the backtest's every-bar exit semantics."""
+
+    def _run(self, mock_signals, last_exit, buy_dates):
+        mock_signals.return_value = _blend(buys=[], sells=[], last_exit=last_exit)
+        trader, broker, _ = _make_trader(positions=dict(_AAPL_POS))
+        with patch("ggTrader.paper.trader.get_last_buy_dates", return_value=buy_dates):
+            result = trader.run()
+        return result, broker
+
+    def test_sells_when_exit_fired_after_entry(self, mock_signals):
+        result, broker = self._run(mock_signals, {"AAPL": "2026-06-10"}, {"AAPL": date(2026, 6, 5)})
+        broker.submit_sell.assert_called_once_with("AAPL", 10.0)
+        assert "AAPL" in result["sells"]
+
+    def test_keeps_when_exit_predates_entry(self, mock_signals):
+        _, broker = self._run(mock_signals, {"AAPL": "2026-06-03"}, {"AAPL": date(2026, 6, 5)})
+        broker.submit_sell.assert_not_called()
+
+    def test_keeps_when_exit_on_entry_day(self, mock_signals):
+        _, broker = self._run(mock_signals, {"AAPL": "2026-06-05"}, {"AAPL": date(2026, 6, 5)})
+        broker.submit_sell.assert_not_called()
+
+    def test_keeps_when_no_buy_record(self, mock_signals):
+        _, broker = self._run(mock_signals, {"AAPL": "2026-06-10"}, {})
+        broker.submit_sell.assert_not_called()
+
+    def test_buy_date_lookup_failure_degrades_to_last_bar_only(self, mock_signals):
+        mock_signals.return_value = _blend(buys=[], sells=[], last_exit={"AAPL": "2026-06-10"})
+        trader, broker, _ = _make_trader(positions=dict(_AAPL_POS))
+        with patch("ggTrader.paper.trader.get_last_buy_dates", side_effect=RuntimeError("db")):
+            trader.run()
+        broker.submit_sell.assert_not_called()
+
+
+class TestMaxPositionsEnv:
+    def test_default_is_30(self):
+        from ggTrader.paper.trader import PaperTrader
+
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("MAX_POSITIONS", None)
+            trader = PaperTrader(MagicMock(), MagicMock())
+        assert trader._risk.cfg.max_positions == 30
+
+    def test_env_override(self):
+        from ggTrader.paper.trader import PaperTrader
+
+        with patch.dict(os.environ, {"MAX_POSITIONS": "3"}):
+            trader = PaperTrader(MagicMock(), MagicMock())
+        assert trader._risk.cfg.max_positions == 3
+
+    def test_explicit_risk_cfg_wins(self):
+        from ggTrader.paper.risk import RiskConfig
+        from ggTrader.paper.trader import PaperTrader
+
+        with patch.dict(os.environ, {"MAX_POSITIONS": "3"}):
+            trader = PaperTrader(MagicMock(), MagicMock(), risk_cfg=RiskConfig(max_positions=7))
+        assert trader._risk.cfg.max_positions == 7
 
 
 @patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)

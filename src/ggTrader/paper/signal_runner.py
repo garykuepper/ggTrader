@@ -94,6 +94,12 @@ def generate_signals(universe: str = "sp500", lookback_days: int = 120) -> dict:
 
     buys = sorted(last_entries[last_entries].index.tolist())
     sells = sorted(last_exits[last_exits].index.tolist())
+    # Exits are crossover events, and `sells` sees only the last (intraday)
+    # bar, so a cross completing after the run or on a skipped day is lost.
+    # The trader compares these dates with entry dates to catch those up.
+    exits = targets.exits
+    latest = exits.iloc[::-1].idxmax()[exits.any()]
+    last_exit = {sym: str(ts.date()) for sym, ts in latest.items()}
 
     # ML feature gate — filter low-confidence buy signals
     gate_info: dict = {}
@@ -118,6 +124,7 @@ def generate_signals(universe: str = "sp500", lookback_days: int = 120) -> dict:
         "as_of": str(last_bar.date()),
         "universe_size": len(sym_cols),
         "gate": gate_info,
+        "last_exit": last_exit,
     }
 
 
