@@ -25,6 +25,12 @@ decided at the month-end close and applied on the next bar.
 it eligible for a paper-trading shadow and nothing more. The trend arm adds
 nothing over static.**
 
+**Holdout update (2026-09-28): the pre-registered 2007-06 → 2011-02 holdout
+PASSED all three checks, so the GO is *not* withdrawn.** It is weak evidence,
+as pre-declared. The book beat SPY in the regime most favourable to the
+sleeve, but only by a small margin (Sharpe 0.17 vs 0.08, MaxDD −46.3% vs
+−55.2%), and it still lost 29.9% in 2008. See §2 "Holdout".
+
 - **Static passes all five criteria.** On the pinned window its Sharpe is 0.973
   vs SPY's 0.896, and on 2016–2026 it is 0.967 vs 0.872. MaxDD is −21.3% vs
   −24.5% and −28.4% vs −33.7%. In 2022 it lost 15.8% against SPY's 18.6%. The
@@ -109,6 +115,45 @@ by the driver `scripts/cross_asset_sleeve_wfo.py`.
   | 2025 | 18.8% | 17.7% |
   | 2026 YTD | 7.6% | 5.7% |
 
+### Holdout: 2007-06-01 → 2011-02-28 (unseen data, pre-registered)
+
+- **Pre-registration:** `docs/research/briefs/2026-09-28-cross-asset-sleeve-holdout.md`.
+- **Raw results:** `docs/research/_cross_asset_sleeve_holdout_results.json`.
+- **Run with:** `scripts/cross_asset_sleeve_wfo.py --holdout`.
+- **Rule:** the static rule with DBC in place of PDBC.
+- **Prices:** yfinance `auto_adjust`, fetched at run time, because `ohlcv`
+  has no TLT/GLD/BIL/DBC rows this early.
+- **Tape check:** over the 2011-03 → 2026-04 overlap, TLT and GLD daily
+  returns match `ohlcv` exactly (max diff 2e-6). SPY differs on 1 of 3,814
+  days (2013-12-03, 26 bp), which is outside this window.
+
+| 2007-06 → 2011-02 | Sharpe | CAGR | MaxDD | Check |
+|---|---|---|---|---|
+| **Static 80/20 (TLT/GLD/DBC), 1 bp** | **0.172** | 1.3% | **−46.3%** | H1 ✓, H2 ✓ |
+| Static 80/20, 3 bp | 0.172 | 1.3% | −46.3% | H3 ✓ |
+| **SPY buy-and-hold** | 0.078 | −1.7% | −55.2% | bar |
+| TLT / GLD / DBC buy-and-hold | 0.46 / 0.96 / 0.32 | 6.3% / 21.5% / 5.1% | −26.6% / −29.4% / −60.3% | |
+| Reported: drop TLT / GLD / DBC | 0.188 / 0.130 / 0.199 | 1.6% / 0.4% / 2.0% | −47.5% / −47.2% / −44.0% | |
+
+**Calendar years, static vs SPY:**
+
+| Year | Static | SPY |
+|---|---|---|
+| 2007 (Jun–Dec) | +0.7% | −3.7% |
+| 2008 | **−29.9%** | −36.8% |
+| 2009 | +22.4% | +26.4% |
+| 2010 | +15.8% | +15.1% |
+| 2011 (Jan–Feb) | +5.1% | +5.9% |
+
+**Reading, as pre-declared: a weak pass.**
+- **What it shows:** the rule didn't break out of sample. It beat SPY on
+  both Sharpe and MaxDD, even with any single leg removed.
+- **Why the margin is small:** even here, with TLT and gold rallying through
+  2008, the sleeve only took 7 points off SPY's 2008 loss and 9 points off
+  its MaxDD. DBC (−60% MaxDD) fell with equities, and gold is what held the
+  sleeve up.
+- **What it doesn't show:** that the 2021–26 edge will persist.
+
 ### Pre-registered pass bar
 
 | Criterion | Result | Pass |
@@ -191,7 +236,10 @@ static book with DBC from 2011-03 on (0.89 vs SPY 0.84). So 2011–2015 is
 **How to weight it.** That span is dominated by 2008, when Treasuries and
 gold rallied. That is the regime most likely to flatter the sleeve. A pass
 is weak evidence; a fail would count heavily against it and withdraws the
-GO. Effort: S (a driver flag plus a DBC backfill).
+GO.
+
+**Done 2026-09-28: PASSED (weak).** Sharpe 0.17 vs SPY 0.08, MaxDD −46.3% vs
+−55.2%, unchanged at 3 bp. See §2 "Holdout".
 
 ## 4. Completed & Closed Research Arcs (Do NOT Re-Propose)
 
@@ -221,8 +269,8 @@ is small, and on the pinned window it is inside bootstrap noise. It is also
 gold-concentrated, and it came from windows the sanity check had already
 seen.
 
-- **Before real money:** run Rank 2's pre-registered 2007-06 → 2011-02
-  holdout.
+- **Holdout done:** the pre-registered 2007-06 → 2011-02 holdout passed
+  (weak evidence), so the shadow continues unchanged.
 - **Hold the legs fixed.** The shadow runs TLT/GLD/PDBC exactly as
   pre-registered. Dropping TLT scored 1.07, but TLT's −7.5%/yr is the 2022
   rate shock, not a property of the leg; cutting it now would be fitting to
@@ -270,8 +318,9 @@ Three things argue against pure hindsight:
   though, this is one of dozens of sleeve ideas tried (`RESEARCH_SNAPSHOT.md`
   §2), so the expected maximum Sharpe from noise alone is not trivial.
 
-**Resolution:** run the pre-registered 2007–2011 holdout, where only a
-failure is decisive. Then run the ~3-month shadow, and deploy or close.
+**Resolution:** the pre-registered 2007–2011 holdout passed. A failure there
+would have been decisive; a pass is only weak support. What remains is the
+~3-month shadow, after which the book is deployed or closed.
 
 ### Parked Direction: Live rebalance-to-target sleeve
 

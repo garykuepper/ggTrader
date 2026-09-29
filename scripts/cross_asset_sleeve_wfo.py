@@ -318,12 +318,95 @@ def verdict(out: dict) -> dict:
     }
 
 
+HOLDOUT_OUT = REPO_ROOT / "docs/research/_cross_asset_sleeve_holdout_results.json"
+HOLDOUT_WINDOW = ("2007-06-01", "2011-02-28")
+HOLDOUT_LEGS = ("TLT", "GLD", "DBC")
+
+
+def run_holdout(out_path: Path) -> dict:
+    """Pre-registered unseen-data holdout (briefs/2026-09-28-cross-asset-sleeve-holdout.md).
+
+    TLT/GLD/BIL/DBC have no 2007-2011 rows in ``ohlcv``, so prices come straight
+    from yfinance (auto_adjust, same basis as the DB tape) rather than
+    backfilling the live-shared table. The 2011-03 -> 2026-04 overlap is
+    checked against ``ohlcv`` first.
+    """
+    import yfinance as yf
+
+    syms = ["SPY", *HOLDOUT_LEGS, "BIL"]
+    raw = yf.download(syms, start="2007-05-01", end=DATA_END, auto_adjust=True, progress=False)
+    yclose = raw["Close"][syms]
+    yclose.index = pd.DatetimeIndex(yclose.index).tz_localize("UTC")
+
+    db = extract_close(
+        load_ohlcv(["SPY", "TLT", "GLD"], "2011-03-01", DATA_END), ["SPY", "TLT", "GLD"]
+    )
+    db.index = db.index.tz_convert("UTC").normalize()
+    ov = db.pct_change().join(yclose.pct_change(), rsuffix="_yf", how="inner").dropna()
+    overlap_check = {
+        s: {"n_days": len(ov), "max_abs_daily_diff": float((ov[s] - ov[s + "_yf"]).abs().max())}
+        for s in ["SPY", "TLT", "GLD"]
+    }
+
+    s, e = HOLDOUT_WINDOW
+    c = yclose.loc[pd.Timestamp(s, tz="UTC") : pd.Timestamp(e, tz="UTC")]
+    if c.isna().any().any():
+        raise ValueError(f"holdout tape has NaNs: {c.isna().sum().to_dict()}")
+    ohlcv = pd.concat({sym: yclose[[sym]].set_axis(["close"], axis=1) for sym in syms}, axis=1)
+    ohlcv = ohlcv.loc[pd.Timestamp("2007-05-30", tz="UTC") :]  # BIL inception
+
+    res: dict = {
+        "window": {"start": str(c.index[0].date()), "end": str(c.index[-1].date())},
+        "prices": "yfinance auto_adjust, fetched at run time (not ohlcv)",
+        "overlap_check_vs_ohlcv": overlap_check,
+    }
+    for bp in COSTS_BP:
+        book = book_curve(ohlcv, s, e, bp, trend=False, legs=HOLDOUT_LEGS)
+        res[f"{bp}bp"] = {"static": book["stats"] | {"n_trades": book["n_trades"]}}
+    res["bh"] = {sym: buy_hold(c[sym]) for sym in syms}
+    res["reported_loo_1bp"] = {
+        f"drop_{d}": book_curve(
+            ohlcv, s, e, 1, trend=False, legs=[x for x in HOLDOUT_LEGS if x != d]
+        )["stats"]
+        for d in HOLDOUT_LEGS
+    }
+    spy = res["bh"]["SPY"]
+    beats = {
+        bp: (
+            res[f"{bp}bp"]["static"]["sharpe"] > spy["sharpe"],
+            res[f"{bp}bp"]["static"]["max_drawdown_pct"] >= spy["max_drawdown_pct"],
+        )
+        for bp in COSTS_BP
+    }
+    checks = {
+        "1_sharpe_gt_spy": beats[1][0],
+        "2_maxdd_no_worse": beats[1][1],
+        "3_c1_c2_at_3bp": all(beats[3]),
+    }
+    res["verdict"] = {
+        "checks": checks,
+        "pass": all(checks.values()),
+        "reading": "pass = weak evidence (2008 flatters the sleeve); fail withdraws the GO",
+    }
+    out_path.write_text(json.dumps(res, indent=2, default=str))
+    return res
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--force", action="store_true", help="re-run recorded sections")
     ap.add_argument("--skip-wfo", action="store_true", help="frozen-rule sections only")
+    ap.add_argument(
+        "--holdout",
+        action="store_true",
+        help=f"run only the pre-registered 2007-06 -> 2011-02 holdout (writes {HOLDOUT_OUT.name})",
+    )
     args = ap.parse_args()
+    if args.holdout:
+        res = run_holdout(HOLDOUT_OUT)
+        print(json.dumps({k: res[k] for k in ["window", "verdict"]}, indent=2))
+        return
 
     out = json.loads(args.out.read_text()) if args.out.exists() and not args.force else {}
     out["meta"] = {
