@@ -28,6 +28,37 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 
 ---
 
+## REAL-MONEY PLAN AND DECISION RULES (written 2026-09-28, before any shadow data)
+
+Reviewed by an independent second read (Fable, 2026-09-28). Owner goal: real
+money in ~3 months.
+
+- **Default allocation:** SPY, or SPY + the 80/20 sleeve if its rules below
+  pass, starting at **10% of intended capital**. **No stock picks.** The
+  sleeve has no positive evidence: core 0.59 vs SPY 0.78 (PIT backtest), and
+  live −3.9 pts vs SPY since 06-24.
+- **Account type: OPEN, owner to decide first.** An IRA removes wash-sale and
+  collectibles-tax problems. If taxable, pick the gold fund with tax in mind
+  and re-check the sleeve after tax. PDBC is already the no-K-1 fund.
+- **Months 0–3: parity rules, not P&L rules.** Three months can't resolve
+  the edges involved (a 2-pt gap is <1σ of quarterly tracking error), so the
+  shadow and the live book are judged only on whether they behave as
+  tested:
+  - live holds ≤ `MAX_POSITIONS` stock names, with no missed exits and no
+    orphan or untradable holdings;
+  - the shadow book's weights and rebalances match the rule;
+  - any parity incident resets the clock.
+- **Month 12: P&L rules.**
+  - A stock sleeve is funded at ≤10% only; retire it if it trails SPY over
+    12 months by more than 1σ of its own tracking error.
+  - The 80/20 sleeve stays only if its 12-month Sharpe on a T-bill-excess
+    basis is ≥ SPY's, with drawdown no worse.
+- **Freeze:** once the live book is brought to the tested setup (the
+  one-deploy item below), no config changes for the 3-month window unless a
+  parity incident forces one.
+- **Compare like with like:** on the same out-of-sample span (2022-01 →
+  2026-04), static 80/20 0.87, core + sweep 0.80, SPY 0.78.
+
 ## ACTIVE STEP (2026-09-22) — verify the core-revert deploy, then one change per week
 
 **Deployed 2026-09-22 ~23:00 PT** (merge `8d9d3ef`, image
