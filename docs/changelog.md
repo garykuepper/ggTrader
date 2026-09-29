@@ -2,6 +2,16 @@
 
 ## 2026-09-28
 
+- **New lab strategy `cross_asset_sleeve`** (weights): 80% SPY + 20%
+  TLT/GLD/PDBC, month-end rebalance, optional slow-trend switch to BIL.
+  Universe snapshot `cross_asset_sleeve`; driver
+  `scripts/cross_asset_sleeve_wfo.py`; PDBC/BIL/IAU backfilled into `ohlcv`.
+  Result: the static arm passes the pre-registered bar (Sharpe 0.97 vs SPY
+  0.90 pinned, 0.97 vs 0.87 over 2016–26, MaxDD better on both), but the
+  edge is a volatility cut (CAGR below SPY), sits inside bootstrap noise on
+  the pinned window, and leans on gold. The trend arm adds nothing over
+  static. The GO makes it eligible for a paper-trading shadow; there is no
+  live change. See `docs/research/2026-09-28-cross-asset-sleeve.md`.
 - **Paper trader catches up missed exits.** Exits are crossover events, and
   live checked only today's partial bar at 12:45 PT, so a cross completing
   after the run, or on a skipped day (09-23 crash), was never acted on. The

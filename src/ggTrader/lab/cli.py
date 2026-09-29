@@ -29,6 +29,7 @@ UNIVERSE_CHOICES = (
     "fomc_treasury",
     "commodity_trend",
     "treasury_curve",
+    "cross_asset_sleeve",
 )
 
 

@@ -5,6 +5,7 @@ from typing import Any
 from .commodity_trend import CommodityTrendStrategy
 from .congress_trades import CongressTradeMirrorStrategy
 from .conviction import ConvictionBBSignal
+from .cross_asset_sleeve import CrossAssetSleeveStrategy
 from .ensemble import EnsembleConvictionSignal, EnsembleSignal
 from .ensemble_ic import EnsembleICSignal
 from .ensemble_kelly import EnsembleKellySignal
@@ -83,6 +84,7 @@ STRATEGY_REGISTRY: dict[str, Any] = {
     "fomc_drift": FomcDriftStrategy,
     "month_end_treasury": MonthEndTreasuryStrategy,
     "commodity_trend": CommodityTrendStrategy,
+    "cross_asset_sleeve": CrossAssetSleeveStrategy,
     "treasury_curve": TreasuryCurveStrategy,
     "leveraged_rotation_sp500": LeveragedRotationSp500,
     "leveraged_rotation_nasdaq100": LeveragedRotationNasdaq100,
@@ -117,6 +119,7 @@ __all__ = [
     "FomcDriftStrategy",
     "MonthEndTreasuryStrategy",
     "CommodityTrendStrategy",
+    "CrossAssetSleeveStrategy",
     "TreasuryCurveStrategy",
     "LeveragedRotationSp500",
     "LeveragedRotationNasdaq100",

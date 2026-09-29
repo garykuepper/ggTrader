@@ -171,6 +171,9 @@ _SNAPSHOT_REGISTRY: Dict[str, str] = {
     # example for an ETF-approximation of Filipovic/Pelger/Ye's 4-factor
     # term-structure model.
     "treasury_curve": "treasury_curve_tickers_snapshot_2026-07-20.txt",
+    # SPY core + TLT/GLD/PDBC sleeve + BIL off-asset for cross_asset_sleeve
+    # (RESEARCH_SNAPSHOT §6 Tier 1 #1). PDBC, not DBC: DBC issues a K-1.
+    "cross_asset_sleeve": "cross_asset_sleeve_tickers_snapshot_2026-09-28.txt",
 }
 
 

@@ -2146,7 +2146,7 @@ notional, so every leg has to be tradable **and fractionable**.
   - Hurst, Ooi & Pedersen, *"A Century of Evidence on Trend-Following Investing,"* *JPM* 44(1), 15–29 (2017), SSRN 2993026.
   - Kurth, Eisler, Rej & Bouchaud, arXiv 2607.01550 (Jul 2026), verified against Table 1. Fast trend (EWM-5-20) fell from Sharpe 0.84 to 0.12 after 2009; slow trend (EWM-50-200) went from 0.70 to 0.40, both ±~0.25. "Trend has effectively vanished for IDX and FXR, while YLD and CMD show no appreciable degradation."
   - Use a single pre-registered slow lookback, and see the sanity check above.
-  - **Status: queued (2026-09-28)** → `docs/research/briefs/2026-09-28-cross-asset-sleeve.md`.
+  - **Status: tested 2026-09-28 — static arm GO (shadow only), trend arm adds nothing** → `docs/research/2026-09-28-cross-asset-sleeve.md`. Move to the snapshot roster on the next `research-snapshot` run.
 - *Global Equity Dual Momentum (SPY/VEU/AGG/BIL)* → §6 **Tier 1 #2**, already folded on 2026-09-23. Nothing new.
 
 **Rejected on intake:**

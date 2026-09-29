@@ -118,15 +118,17 @@ container recreated and checked):
    the 09-29 open, logged in `paper_trades` with
    `reason='manual_orphan_liquidation'` (amounts = 09-28 close estimates).
    Verify all four filled.
-10. **Research (queued 2026-09-28) — SPY + 20% cross-asset sleeve.** Run
-    `docs/research/briefs/2026-09-28-cross-asset-sleeve.md` (snapshot §6
-    Tier 1 #1): 80% SPY + 20% TLT/GLD/PDBC, static vs 12-month trend-timed,
-    with BIL as the off-asset. The pass bar is pre-registered in the brief.
-    A quick sanity check says the gain is diversification, not trend (static
-    1.01 ≈ trend 1.00 vs SPY 0.91, raw Sharpe). The trend arm must beat
-    *static*, not just SPY. All instruments are Alpaca-tradable and
-    fractionable; PDBC replaces DBC to avoid K-1s. Owner goal: real money
-    in ~3 months.
+10. **Research done 2026-09-28 — SPY + 20% cross-asset sleeve: static GO
+    (shadow only), trend adds nothing.** Report:
+    `docs/research/2026-09-28-cross-asset-sleeve.md`. Static 80/20
+    (TLT/GLD/PDBC) passes all 5 pre-registered criteria: Sharpe 0.97 vs SPY
+    0.90 pinned and 0.97 vs 0.87 over 2016–26, with better MaxDD. But CAGR is
+    ~1 pt *below* SPY, the pinned Sharpe gap is inside bootstrap noise
+    (90% CI −0.02..+0.18), and without GLD it ties SPY. Trend arm: +0.007
+    Sharpe over static, and the WFO halted in folds 2–8. Next, 1–2 steps:
+    (a) pre-2016 holdout with DBC for PDBC (the only unseen data);
+    (b) a shadow ledger of the static book for ~3 months. A live
+    rebalance-to-weights sleeve is a separate, explicit ask.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)
