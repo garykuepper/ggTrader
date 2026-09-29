@@ -146,6 +146,7 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
         "buying_power": cash * 2,
     }
     broker.get_positions.return_value = positions or {}
+    broker.get_untradable.return_value = set()
     broker.get_split_corrections.return_value = {}
     broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
     broker.get_dividend_corrections.return_value = {"corp_dividends": {}, "credited_keys": set()}
@@ -267,6 +268,36 @@ class TestMissedExitCatchUp:
         with patch("ggTrader.paper.trader.get_last_buy_dates", side_effect=RuntimeError("db")):
             trader.run()
         broker.submit_sell.assert_not_called()
+
+
+@patch("ggTrader.paper.trader.generate_core_signals")
+class TestUntradableHoldings:
+    """AVB merged into EQR and Alpaca marks it tradable=false; a sell is
+    rejected every run and the frozen position ate a slot."""
+
+    def test_untradable_position_is_not_sold_and_frees_its_slot(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=["AVB"])
+        positions = {
+            "AVB": {"qty": 4.05, "market_value": 745.0, "avg_entry": 184.0, "unrealized_pl": 0.0}
+        }
+        trader, broker, notifier = _make_trader(positions=positions)
+        broker.get_untradable.return_value = {"AVB"}
+        with patch.dict(os.environ, {"MAX_POSITIONS": "1"}):
+            from ggTrader.paper.risk import config_from_env
+
+            trader._risk.cfg = config_from_env()
+            trader.run()
+        sold = [c.args[0] for c in broker.submit_sell.call_args_list]
+        assert "AVB" not in sold
+        broker.submit_buy.assert_called()  # frozen AVB no longer fills the only slot
+        assert any("AVB" in str(c) for c in notifier.send.call_args_list)
+
+    def test_untradable_lookup_failure_changes_nothing(self, mock_signals):
+        mock_signals.return_value = _blend(buys=[], sells=["AAPL"])
+        trader, broker, _ = _make_trader(positions=dict(_AAPL_POS))
+        broker.get_untradable.side_effect = RuntimeError("api down")
+        trader.run()
+        broker.submit_sell.assert_called_once_with("AAPL", 10.0)
 
 
 class TestMaxPositionsEnv:

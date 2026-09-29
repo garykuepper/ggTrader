@@ -190,7 +190,19 @@ container recreated and checked):
     history, and add a daily-move sanity check (>40%, clustered by date).
     MRNA, MLI, STI and ADCT also show large jumps
     (`docs/research/2026-09-28-live-indicator-warmup.md`).
-13. **Deploy after item 12 — `lookback_days=365` + inception-cache fix.**
+13. **CODE BUILT 2026-09-28 night (365d lookback, tz-safe inception cache,
+    untradable-holding exclusion; 1047 tests), NOT DEPLOYED.** Deploy order,
+    after the 09-29 12:45 run is verified via `ggtrader-deploy`:
+    (1) verify 09-29: 4 MidCap + 15 legacy sells filled at the open, and 6
+    catch-up sells at 12:45;
+    (2) repair the tape: re-fetch APH and MNST full history (AVB excluded),
+    and check MRNA;
+    (3) delete `SWEEP_BUY_TRIGGER_PCT` from `.env` (dead-band 8%);
+    (4) run the deploy skill's real-data check and get the predicted 09-30
+    trades approved;
+    (5) pull and restart, then run the in-container checks;
+    (6) freeze config for the 3-month parity window.
+    Original item:
     Both are verified by a second read: 365 days gives 0 entry/exit
     mismatches vs 4.0%/3.4% at 120, and the `_get_known_inceptions`
     ValueError reproduces. Make the fix tz-safe for naive values too. Ship

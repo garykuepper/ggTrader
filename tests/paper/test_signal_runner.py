@@ -344,3 +344,14 @@ class TestRefreshBenchmarkTape:
         )
 
         assert sorted(refresh_benchmark_tape()) == ["SPY", "TLT"]
+
+
+def test_default_lookback_covers_indicator_warmup():
+    """365 calendar days (~252 bars) gives 0 entry/exit mismatches vs the
+    long-history backtest; 120 days mismatched 4.0% / 3.4%
+    (docs/research/2026-09-28-live-indicator-warmup.md)."""
+    import inspect
+
+    from ggTrader.paper.signal_runner import generate_signals
+
+    assert inspect.signature(generate_signals).parameters["lookback_days"].default >= 365

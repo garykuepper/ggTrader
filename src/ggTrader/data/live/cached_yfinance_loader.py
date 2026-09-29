@@ -33,6 +33,12 @@ def _default_connection_string() -> str:
     return get_db_connection_string()
 
 
+def _as_utc(value) -> pd.Timestamp:
+    """A DB timestamp as tz-aware UTC, whether the driver returned it naive or aware."""
+    ts = pd.Timestamp(value)
+    return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+
+
 class CachedYFinanceLoader(YFinanceDataLoader):
     """Stock data loader with TimescaleDB caching. All yfinance fetches are persisted."""
 
@@ -134,7 +140,10 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             with self._connect() as conn, conn.cursor() as cur:
                 cur.execute(query, (list(symbols), interval, STOCK_VENUE))
                 rows = cur.fetchall()
-            return {sym: pd.Timestamp(dt, tz="UTC") for sym, dt in rows}
+            # first_date is timestamptz, so psycopg returns tz-aware values;
+            # pd.Timestamp(aware, tz=...) raises, which silently disabled this
+            # cache and re-fetched every young listing in full on every run.
+            return {sym: _as_utc(dt) for sym, dt in rows}
         except Exception as e:
             self.logger.error(f"Inception lookup failed ({e}); treating as unknown")
             return {}

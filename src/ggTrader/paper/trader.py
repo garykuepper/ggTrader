@@ -602,6 +602,23 @@ class PaperTrader:
             else positions
         )
 
+        # Holdings the broker won't trade (merger/delisting, e.g. AVB -> EQR)
+        # can't be sold, so they must not take a slot or draw a rejected sell
+        # every run. Fails soft: on a lookup error nothing is excluded.
+        try:
+            frozen = self._broker.get_untradable(sorted(strategy_positions))
+        except Exception as exc:
+            _log.warning("untradable lookup failed, treating all as tradable: %s", exc)
+            frozen = set()
+        if frozen:
+            _log.warning("Untradable holdings excluded from strategy: %s", sorted(frozen))
+            self._notifier.send(
+                "<b>⚠️ Untradable holdings:</b> "
+                f"{', '.join(sorted(frozen))} (broker tradable=false; excluded from "
+                "slots and sells — resolve manually)"
+            )
+            strategy_positions = {s: p for s, p in strategy_positions.items() if s not in frozen}
+
         # Determine unapplied-split corrections for currently-held symbols.
         # Primary evidence is paper_snapshots/paper_trades history (see
         # _compute_split_corrections and split_check.py's module docstring);

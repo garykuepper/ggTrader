@@ -58,6 +58,14 @@ class AlpacaBroker:
             for p in positions
         }
 
+    def get_untradable(self, symbols: list[str]) -> set[str]:
+        """Symbols the broker currently marks `tradable: false`.
+
+        A merger or delisting can leave a paper position un-exitable (AVB,
+        merged into EQR 2026-08-17, is `inactive` and never converted).
+        """
+        return {s for s in symbols if not self._client.get_asset(s).tradable}
+
     def submit_buy(self, symbol: str, notional: float) -> str:
         req = MarketOrderRequest(
             symbol=symbol,

@@ -57,8 +57,13 @@ def refresh_benchmark_tape(lookback_days: int = 30) -> list[str]:
     return sorted(df.columns.get_level_values(0).unique().tolist())
 
 
-def generate_signals(universe: str = "sp500", lookback_days: int = 120) -> dict:
+def generate_signals(universe: str = "sp500", lookback_days: int = 365) -> dict:
     """Fetch recent data for a PIT universe and return today's ensemble signals.
+
+    ``lookback_days=365`` (~252 bars) lets EMA-50/MACD/RSI seeds wash out, so
+    signals match the backtest's long-history indicators (0 mismatches over
+    125 sessions vs 4.0% of entries / 3.4% of exits at 120 days;
+    docs/research/2026-09-28-live-indicator-warmup.md).
 
     Returns dict with keys: buys (list[str]), sells (list[str]),
     as_of (str date), universe_size (int).

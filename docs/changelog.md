@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-29 (built 2026-09-28 night, deploy after the 09-29 run is verified)
+
+- **Live signal lookback 120 → 365 days.** ~252 bars lets EMA/MACD/RSI seeds
+  wash out: 0 entry/exit mismatches vs the long-history backtest, against
+  4.0% / 3.4% at 120 days (`docs/research/2026-09-28-live-indicator-warmup.md`).
+- **Inception cache actually read.** `_get_known_inceptions` raised on the
+  tz-aware `timestamptz` values and silently returned `{}`, so young
+  listings were fully re-fetched on every run. Now tz-safe (aware or naive).
+- **Untradable holdings excluded.** `AlpacaBroker.get_untradable` plus the
+  trader: positions the broker marks `tradable: false` (AVB after its EQR
+  merger) take no slot, get no sell attempts, and raise one alert per run.
+- **Ops, done 2026-09-28 night:** 15 legacy (pre-09-22 blend-era) positions
+  queued for sale at the 09-29 open (`reason='manual_legacy_liquidation'`,
+  ~$10.4k); `peak_value` corrected $104,518 → $105,591 (the restated 08-26
+  high). Keeps AIZ/ALL/BALL/GL (core-revert era), about 8% of NAV.
+
 ## 2026-09-28
 
 - **New lab strategy `cross_asset_sleeve`** (weights): 80% SPY + 20%

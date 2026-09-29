@@ -361,3 +361,31 @@ class TestCacheToDbRoundTripDate:
             with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
                 cur.execute("DELETE FROM ohlcv WHERE symbol=%s", (self.SYMBOL,))
                 conn.commit()
+
+
+class TestKnownInceptions:
+    """`symbol_inception.first_date` is timestamptz, so psycopg returns aware
+    datetimes; `pd.Timestamp(aware, tz="UTC")` raised and the lookup silently
+    returned {} (docs/research/2026-09-28-live-indicator-warmup.md §4.B)."""
+
+    def _lookup(self, rows):
+        import datetime as dt  # noqa: F401  (rows built by callers)
+
+        loader = _loader()
+        cur = MagicMock()
+        cur.fetchall.return_value = rows
+        conn = MagicMock()
+        conn.cursor.return_value.__enter__.return_value = cur
+        with patch.object(loader, "_ensure_inception_schema"):
+            with patch.object(loader, "_connect") as mock_connect:
+                mock_connect.return_value.__enter__.return_value = conn
+                return loader._get_known_inceptions(["A", "B"], "1d")
+
+    def test_tz_aware_and_naive_rows_both_parse_to_utc(self):
+        import datetime as dt
+
+        aware = dt.datetime(2020, 1, 2, tzinfo=dt.timezone(dt.timedelta(hours=-7)))
+        naive = dt.datetime(2021, 3, 4)
+        out = self._lookup([("A", aware), ("B", naive)])
+        assert out["A"] == pd.Timestamp("2020-01-02 07:00", tz="UTC")
+        assert out["B"] == pd.Timestamp("2021-03-04", tz="UTC")
