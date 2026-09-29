@@ -1,0 +1,803 @@
+{
+  "meta": {
+    "eval_days": 125,
+    "eval_span": [
+      "2026-03-30",
+      "2026-09-25"
+    ],
+    "reference": "indicators over full history from 2016-01-01",
+    "universe": "S&P 500 members as of each day (PIT), symbols present in ohlcv",
+    "n_symbols_loaded": 507,
+    "live_min_history_bars": 60,
+    "ensemble": "EnsembleSignal defaults (5 voters, min_agree 2, RSI exit independent)"
+  },
+  "by_lookback": {
+    "120": {
+      "median_bars": 83.0,
+      "entries": {
+        "ref": 1026,
+        "live": 1026,
+        "both": 1005,
+        "missed": 21,
+        "spurious": 21,
+        "mismatch_pct_of_union": 4.011461318051576,
+        "recall_pct": 97.953216374269
+      },
+      "exits": {
+        "ref": 5881,
+        "live": 5872,
+        "both": 5775,
+        "missed": 106,
+        "spurious": 97,
+        "mismatch_pct_of_union": 3.395784543325527,
+        "recall_pct": 98.19758544465228
+      },
+      "last_exit_date": {
+        "compared": 62773,
+        "differ": 4392,
+        "differ_pct": 6.996638682235993
+      },
+      "voters": {
+        "bb": {
+          "entries": {
+            "ref": 1458,
+            "live": 1458,
+            "both": 1458,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "rsi": {
+          "entries": {
+            "ref": 596,
+            "live": 597,
+            "both": 566,
+            "missed": 30,
+            "spurious": 31,
+            "mismatch_pct_of_union": 9.728867623604465,
+            "recall_pct": 94.96644295302013
+          },
+          "exits": {
+            "ref": 3846,
+            "live": 3844,
+            "both": 3735,
+            "missed": 111,
+            "spurious": 109,
+            "mismatch_pct_of_union": 5.562579013906448,
+            "recall_pct": 97.11388455538221
+          }
+        },
+        "ema": {
+          "entries": {
+            "ref": 640,
+            "live": 656,
+            "both": 232,
+            "missed": 408,
+            "spurious": 424,
+            "mismatch_pct_of_union": 78.19548872180451,
+            "recall_pct": 36.25
+          },
+          "exits": {
+            "ref": 633,
+            "live": 662,
+            "both": 260,
+            "missed": 373,
+            "spurious": 402,
+            "mismatch_pct_of_union": 74.8792270531401,
+            "recall_pct": 41.07424960505529
+          }
+        },
+        "macd": {
+          "entries": {
+            "ref": 3772,
+            "live": 3778,
+            "both": 3765,
+            "missed": 7,
+            "spurious": 13,
+            "mismatch_pct_of_union": 0.5284015852047557,
+            "recall_pct": 99.81442205726405
+          },
+          "exits": {
+            "ref": 2592,
+            "live": 2586,
+            "both": 2525,
+            "missed": 67,
+            "spurious": 61,
+            "mismatch_pct_of_union": 4.824726724462872,
+            "recall_pct": 97.41512345679013
+          }
+        },
+        "vbb": {
+          "entries": {
+            "ref": 243,
+            "live": 243,
+            "both": 243,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        }
+      },
+      "elapsed_s": 57.7
+    },
+    "180": {
+      "median_bars": 124.0,
+      "entries": {
+        "ref": 1026,
+        "live": 1028,
+        "both": 1026,
+        "missed": 0,
+        "spurious": 2,
+        "mismatch_pct_of_union": 0.19455252918287938,
+        "recall_pct": 100.0
+      },
+      "exits": {
+        "ref": 5881,
+        "live": 5883,
+        "both": 5864,
+        "missed": 17,
+        "spurious": 19,
+        "mismatch_pct_of_union": 0.6101694915254238,
+        "recall_pct": 99.71093351470839
+      },
+      "last_exit_date": {
+        "compared": 62820,
+        "differ": 488,
+        "differ_pct": 0.7768226679401464
+      },
+      "voters": {
+        "bb": {
+          "entries": {
+            "ref": 1458,
+            "live": 1458,
+            "both": 1458,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "rsi": {
+          "entries": {
+            "ref": 596,
+            "live": 599,
+            "both": 596,
+            "missed": 0,
+            "spurious": 3,
+            "mismatch_pct_of_union": 0.5008347245409015,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3846,
+            "live": 3846,
+            "both": 3838,
+            "missed": 8,
+            "spurious": 8,
+            "mismatch_pct_of_union": 0.4151530877010898,
+            "recall_pct": 99.79199167966719
+          }
+        },
+        "ema": {
+          "entries": {
+            "ref": 640,
+            "live": 645,
+            "both": 529,
+            "missed": 111,
+            "spurious": 116,
+            "mismatch_pct_of_union": 30.026455026455025,
+            "recall_pct": 82.65625
+          },
+          "exits": {
+            "ref": 633,
+            "live": 638,
+            "both": 511,
+            "missed": 122,
+            "spurious": 127,
+            "mismatch_pct_of_union": 32.76315789473684,
+            "recall_pct": 80.72669826224329
+          }
+        },
+        "macd": {
+          "entries": {
+            "ref": 3772,
+            "live": 3772,
+            "both": 3772,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 2592,
+            "live": 2587,
+            "both": 2587,
+            "missed": 5,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.19290123456790123,
+            "recall_pct": 99.8070987654321
+          }
+        },
+        "vbb": {
+          "entries": {
+            "ref": 243,
+            "live": 243,
+            "both": 243,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        }
+      },
+      "elapsed_s": 65.6
+    },
+    "250": {
+      "median_bars": 172.0,
+      "entries": {
+        "ref": 1026,
+        "live": 1026,
+        "both": 1026,
+        "missed": 0,
+        "spurious": 0,
+        "mismatch_pct_of_union": 0.0,
+        "recall_pct": 100.0
+      },
+      "exits": {
+        "ref": 5881,
+        "live": 5878,
+        "both": 5877,
+        "missed": 4,
+        "spurious": 1,
+        "mismatch_pct_of_union": 0.08500510030601836,
+        "recall_pct": 99.93198435640197
+      },
+      "last_exit_date": {
+        "compared": 62820,
+        "differ": 65,
+        "differ_pct": 0.1034702324100605
+      },
+      "voters": {
+        "bb": {
+          "entries": {
+            "ref": 1458,
+            "live": 1458,
+            "both": 1458,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "rsi": {
+          "entries": {
+            "ref": 596,
+            "live": 596,
+            "both": 596,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3846,
+            "live": 3845,
+            "both": 3845,
+            "missed": 1,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.026001040041601663,
+            "recall_pct": 99.9739989599584
+          }
+        },
+        "ema": {
+          "entries": {
+            "ref": 640,
+            "live": 640,
+            "both": 627,
+            "missed": 13,
+            "spurious": 13,
+            "mismatch_pct_of_union": 3.9816232771822357,
+            "recall_pct": 97.96875
+          },
+          "exits": {
+            "ref": 633,
+            "live": 631,
+            "both": 619,
+            "missed": 14,
+            "spurious": 12,
+            "mismatch_pct_of_union": 4.0310077519379846,
+            "recall_pct": 97.78830963665087
+          }
+        },
+        "macd": {
+          "entries": {
+            "ref": 3772,
+            "live": 3772,
+            "both": 3772,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 2592,
+            "live": 2592,
+            "both": 2592,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "vbb": {
+          "entries": {
+            "ref": 243,
+            "live": 243,
+            "both": 243,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        }
+      },
+      "elapsed_s": 62.3
+    },
+    "365": {
+      "median_bars": 252.0,
+      "entries": {
+        "ref": 1026,
+        "live": 1026,
+        "both": 1026,
+        "missed": 0,
+        "spurious": 0,
+        "mismatch_pct_of_union": 0.0,
+        "recall_pct": 100.0
+      },
+      "exits": {
+        "ref": 5881,
+        "live": 5881,
+        "both": 5881,
+        "missed": 0,
+        "spurious": 0,
+        "mismatch_pct_of_union": 0.0,
+        "recall_pct": 100.0
+      },
+      "last_exit_date": {
+        "compared": 62820,
+        "differ": 0,
+        "differ_pct": 0.0
+      },
+      "voters": {
+        "bb": {
+          "entries": {
+            "ref": 1458,
+            "live": 1458,
+            "both": 1458,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "rsi": {
+          "entries": {
+            "ref": 596,
+            "live": 596,
+            "both": 596,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3846,
+            "live": 3846,
+            "both": 3846,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "ema": {
+          "entries": {
+            "ref": 640,
+            "live": 639,
+            "both": 639,
+            "missed": 1,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.15625,
+            "recall_pct": 99.84375
+          },
+          "exits": {
+            "ref": 633,
+            "live": 632,
+            "both": 632,
+            "missed": 1,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.1579778830963665,
+            "recall_pct": 99.84202211690364
+          }
+        },
+        "macd": {
+          "entries": {
+            "ref": 3772,
+            "live": 3772,
+            "both": 3772,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 2592,
+            "live": 2592,
+            "both": 2592,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "vbb": {
+          "entries": {
+            "ref": 243,
+            "live": 243,
+            "both": 243,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        }
+      },
+      "elapsed_s": 64.4
+    },
+    "500": {
+      "median_bars": 343.0,
+      "entries": {
+        "ref": 1026,
+        "live": 1026,
+        "both": 1026,
+        "missed": 0,
+        "spurious": 0,
+        "mismatch_pct_of_union": 0.0,
+        "recall_pct": 100.0
+      },
+      "exits": {
+        "ref": 5881,
+        "live": 5881,
+        "both": 5881,
+        "missed": 0,
+        "spurious": 0,
+        "mismatch_pct_of_union": 0.0,
+        "recall_pct": 100.0
+      },
+      "last_exit_date": {
+        "compared": 62820,
+        "differ": 0,
+        "differ_pct": 0.0
+      },
+      "voters": {
+        "bb": {
+          "entries": {
+            "ref": 1458,
+            "live": 1458,
+            "both": 1458,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "rsi": {
+          "entries": {
+            "ref": 596,
+            "live": 596,
+            "both": 596,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3846,
+            "live": 3846,
+            "both": 3846,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "ema": {
+          "entries": {
+            "ref": 640,
+            "live": 640,
+            "both": 640,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 633,
+            "live": 633,
+            "both": 633,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "macd": {
+          "entries": {
+            "ref": 3772,
+            "live": 3772,
+            "both": 3772,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 2592,
+            "live": 2592,
+            "both": 2592,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "vbb": {
+          "entries": {
+            "ref": 243,
+            "live": 243,
+            "both": 243,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        }
+      },
+      "elapsed_s": 68.8
+    },
+    "730": {
+      "median_bars": 502.0,
+      "entries": {
+        "ref": 1026,
+        "live": 1026,
+        "both": 1026,
+        "missed": 0,
+        "spurious": 0,
+        "mismatch_pct_of_union": 0.0,
+        "recall_pct": 100.0
+      },
+      "exits": {
+        "ref": 5881,
+        "live": 5881,
+        "both": 5881,
+        "missed": 0,
+        "spurious": 0,
+        "mismatch_pct_of_union": 0.0,
+        "recall_pct": 100.0
+      },
+      "last_exit_date": {
+        "compared": 62820,
+        "differ": 0,
+        "differ_pct": 0.0
+      },
+      "voters": {
+        "bb": {
+          "entries": {
+            "ref": 1458,
+            "live": 1458,
+            "both": 1458,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "rsi": {
+          "entries": {
+            "ref": 596,
+            "live": 596,
+            "both": 596,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3846,
+            "live": 3846,
+            "both": 3846,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "ema": {
+          "entries": {
+            "ref": 640,
+            "live": 640,
+            "both": 640,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 633,
+            "live": 633,
+            "both": 633,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "macd": {
+          "entries": {
+            "ref": 3772,
+            "live": 3772,
+            "both": 3772,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 2592,
+            "live": 2592,
+            "both": 2592,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        },
+        "vbb": {
+          "entries": {
+            "ref": 243,
+            "live": 243,
+            "both": 243,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          },
+          "exits": {
+            "ref": 3972,
+            "live": 3972,
+            "both": 3972,
+            "missed": 0,
+            "spurious": 0,
+            "mismatch_pct_of_union": 0.0,
+            "recall_pct": 100.0
+          }
+        }
+      },
+      "elapsed_s": 75.8
+    }
+  },
+  "avb_2026_08_14": {
+    "ref_rsi_prev_and_day": [
+      16.38,
+      76.65
+    ],
+    "live120_rsi_prev_and_day": [
+      16.58,
+      76.67
+    ],
+    "ref_rsi_exit": true,
+    "live120_rsi_exit": true,
+    "live120_bars": 84
+  }
+}
