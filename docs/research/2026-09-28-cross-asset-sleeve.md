@@ -176,16 +176,22 @@ data, which this study doesn't have (§6).
 - **Primary risk:** gold's 2024–26 run reverses. Without GLD, the pinned edge
   is 0.013 Sharpe.
 
-### Rank 2: Pre-2016 holdout with DBC as the commodity leg
+### Rank 2: Unseen-data holdout, 2007-06 → 2011-02 (pre-registered)
 
-**Mechanism.** Re-run the frozen static rule on 2007–2015 with DBC in place
-of PDBC (the two tracked identically where they overlap in the 2026-09-28
-sanity check) and BIL from 2007. That period has not been seen by any
-check.
+**Mechanism.** Re-run the frozen static rule with DBC in place of PDBC (the
+two tracked identically where they overlap in the 2026-09-28 sanity check).
+The rule and pass bar are frozen in
+`docs/research/briefs/2026-09-28-cross-asset-sleeve-holdout.md`.
 
-**Why.** This is the only untouched out-of-sample data available (§6), and
-it includes 2008 and the 2013 taper. Effort: S; it is a flag on the driver
-plus a DBC backfill. It is reported, not a new selection.
+**Why this window only.** The 2026-09-28 sanity check already scored the
+static book with DBC from 2011-03 on (0.89 vs SPY 0.84). So 2011–2015 is
+*not* unseen, and the truly unseen data is BIL's inception (2007-05) through
+2011-02, about 3.75 years.
+
+**How to weight it.** That span is dominated by 2008, when Treasuries and
+gold rallied. That is the regime most likely to flatter the sleeve. A pass
+is weak evidence; a fail would count heavily against it and withdraws the
+GO. Effort: S (a driver flag plus a DBC backfill).
 
 ## 4. Completed & Closed Research Arcs (Do NOT Re-Propose)
 
@@ -215,7 +221,19 @@ is small, and on the pinned window it is inside bootstrap noise. It is also
 gold-concentrated, and it came from windows the sanity check had already
 seen.
 
-- **Before real money:** run Rank 2's pre-2016 holdout.
+- **Before real money:** run Rank 2's pre-registered 2007-06 → 2011-02
+  holdout.
+- **Hold the legs fixed.** The shadow runs TLT/GLD/PDBC exactly as
+  pre-registered. Dropping TLT scored 1.07, but TLT's −7.5%/yr is the 2022
+  rate shock, not a property of the leg; cutting it now would be fitting to
+  the window. The live risk runs the other way: GLD (1.05) and PDBC (0.92)
+  both had unusually strong 2021–26 runs, and the edge mostly leaves with
+  gold if it mean-reverts.
+- **After-tax check before real money.** The book trades about 1 pt/yr of
+  CAGR for a smaller drawdown. In a taxable account some of that edge is
+  lost: gold ETFs are taxed as collectibles (up to 28%), and monthly
+  rebalancing realizes gains. Either re-run the comparison on after-tax
+  returns or hold the book in an IRA, where this doesn't apply.
 - **Deciding real money:** the explicit comparison is shadow vs SPY vs
   `core + SPY sweep` over the shadow period.
 - **Live notes (owner decision, not done here):**
@@ -243,16 +261,17 @@ Three things argue against pure hindsight:
 - The C4 pre-screen passes by a wide margin on both windows.
 
 **What the evidence can't answer:**
-- **No untouched holdout.** The 2026-09-28 sanity check had already looked at
-  both windows before this brief was frozen, so "OOS" here means "frozen
-  rule", not "unseen data". Rank 2 addresses this.
+- **No untouched holdout.** The 2026-09-28 sanity check had already scored
+  2011-03 → 2026-04 (with DBC), covering both of this study's windows, before
+  this brief was frozen. So "OOS" here means "frozen rule", not "unseen data".
+  Only 2007-06 → 2011-02 is unseen (Rank 2), and it favours the sleeve.
 - **Multiple testing is light.** The pre-registered family is small: 2 arms,
   plus 3 lookbacks for the trend arm only. Across the research program,
   though, this is one of dozens of sleeve ideas tried (`RESEARCH_SNAPSHOT.md`
   §2), so the expected maximum Sharpe from noise alone is not trivial.
 
-**Resolution:** one decisive experiment, the shadow plus the pre-2016
-holdout, then deploy or close.
+**Resolution:** run the pre-registered 2007–2011 holdout, where only a
+failure is decisive. Then run the ~3-month shadow, and deploy or close.
 
 ### Parked Direction: Live rebalance-to-target sleeve
 

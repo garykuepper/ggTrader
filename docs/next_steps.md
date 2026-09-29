@@ -126,9 +126,14 @@ container recreated and checked):
     ~1 pt *below* SPY, the pinned Sharpe gap is inside bootstrap noise
     (90% CI −0.02..+0.18), and without GLD it ties SPY. Trend arm: +0.007
     Sharpe over static, and the WFO halted in folds 2–8. Next, 1–2 steps:
-    (a) pre-2016 holdout with DBC for PDBC (the only unseen data);
-    (b) a shadow ledger of the static book for ~3 months. A live
-    rebalance-to-weights sleeve is a separate, explicit ask.
+    (a) the pre-registered 2007-06 → 2011-02 holdout with DBC for PDBC
+    (`briefs/2026-09-28-cross-asset-sleeve-holdout.md`). 2011-03+ was already
+    seen by the sanity check, and 2008 flatters the sleeve, so only a fail
+    is decisive.
+    (b) a ~3-month shadow of the static book, holding TLT/GLD/PDBC fixed.
+    A live rebalance-to-weights sleeve is a separate, explicit ask. Before
+    real money, compare after-tax returns (gold is taxed as a collectible,
+    and rebalancing realizes gains) or hold the book in an IRA.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)
