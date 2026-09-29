@@ -109,9 +109,11 @@ container recreated and checked):
 9. **Deployed 2026-09-28 — missed-exit catch-up + `MAX_POSITIONS=3`.** Verify
    the 2026-09-29 run: sells AEE/HAS/HON/MNST/PNR/VZ (log line "Catching up
    missed exits"), no strategy buys (30 held > 3 slots), proceeds swept to
-   SPY. **Open follow-up:** H/HGV/WLK/WWD are non-S&P-500 MidCap leftovers
-   with no exit path except the catastrophe stop -- decide whether to feed
-   held non-members into signal generation for exits only, or liquidate.
+   SPY. H/HGV/WLK/WWD (non-S&P-500 MidCap leftovers, no exit path) were
+   liquidated by owner decision 2026-09-28: manual market sells queued for
+   the 09-29 open, logged in `paper_trades` with
+   `reason='manual_orphan_liquidation'` (amounts = 09-28 close estimates).
+   Verify all four filled.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)
