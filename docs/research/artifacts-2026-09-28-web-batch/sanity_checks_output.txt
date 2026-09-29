@@ -1,0 +1,33 @@
+
+=== PINNED 2021-02-01..2026-04-30 ===
+  SPY buy&hold                   CAGR   15.1%  Sharpe  0.91  MaxDD  -24.5%
+  TLT/GLD/DBC equal-wt B&H       CAGR    9.9%  Sharpe  0.87  MaxDD  -20.8%
+  TSMOM sleeve (12m, long/flat)  CAGR    7.5%  Sharpe  0.84  MaxDD  -16.9%  avg exposure 56%
+  80% SPY + 20% TSMOM sleeve     CAGR   13.8%  Sharpe  1.00  MaxDD  -19.8%
+  80% SPY + 20% sleeve B&H       CAGR   14.4%  Sharpe  1.01  MaxDD  -21.1%
+  corr(sleeve, SPY) daily        0.15
+  rebal threshold tilt SPY->IEF  CAGR   15.6%  Sharpe  0.94  MaxDD  -23.0%  days in IEF 0.8%
+  UUP buy&hold                   CAGR    5.1%  Sharpe  0.73  MaxDD  -10.4%
+  UDN buy&hold                   CAGR   -0.4%  Sharpe -0.02  MaxDD  -22.7%
+
+=== LONG 2011-03-01..2026-04-30 ===
+  SPY buy&hold                   CAGR   13.8%  Sharpe  0.84  MaxDD  -33.7%
+  TLT/GLD/DBC equal-wt B&H       CAGR    4.6%  Sharpe  0.49  MaxDD  -33.5%
+  TSMOM sleeve (12m, long/flat)  CAGR    3.7%  Sharpe  0.51  MaxDD  -18.0%  avg exposure 54%
+  80% SPY + 20% TSMOM sleeve     CAGR   12.1%  Sharpe  0.90  MaxDD  -27.0%
+  80% SPY + 20% sleeve B&H       CAGR   12.2%  Sharpe  0.89  MaxDD  -28.5%
+  corr(sleeve, SPY) daily        -0.05
+  rebal threshold tilt SPY->IEF  CAGR   14.7%  Sharpe  0.89  MaxDD  -33.7%  days in IEF 1.0%
+  UUP buy&hold                   CAGR    2.6%  Sharpe  0.40  MaxDD  -14.2%
+  UDN buy&hold                   CAGR   -1.6%  Sharpe -0.19  MaxDD  -40.8%
+
+=== 2022 only ===
+  SPY buy&hold                   CAGR  -18.2%  Sharpe -0.71  MaxDD  -24.5%
+  TLT/GLD/DBC equal-wt B&H       CAGR   -5.5%  Sharpe -0.32  MaxDD  -20.8%
+  TSMOM sleeve (12m, long/flat)  CAGR   -0.7%  Sharpe -0.01  MaxDD  -13.3%  avg exposure 46%
+  80% SPY + 20% TSMOM sleeve     CAGR  -14.5%  Sharpe -0.70  MaxDD  -19.8%
+  80% SPY + 20% sleeve B&H       CAGR  -15.4%  Sharpe -0.73  MaxDD  -21.1%
+  corr(sleeve, SPY) daily        0.10
+  rebal threshold tilt SPY->IEF  CAGR  -15.7%  Sharpe -0.58  MaxDD  -23.0%  days in IEF 0.8%
+  UUP buy&hold                   CAGR    9.5%  Sharpe  1.03  MaxDD   -8.7%
+  UDN buy&hold                   CAGR   -8.0%  Sharpe -0.80  MaxDD  -17.6%

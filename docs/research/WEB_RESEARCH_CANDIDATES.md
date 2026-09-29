@@ -668,6 +668,13 @@ second-month futures prices, which have no free history (yfinance serves
 only live contracts), so an ETF build has to use a trailing roll-yield
 proxy (ETF return minus front-month `=F` return).
 
+**Additional source (batch 2026-09-28).** Re-proposed as "dynamic
+commodity roll-yield timing" (Gemini scout, parked by the report itself).
+It adds Irwin, Sanders & Yan, *"The Cost of Rolling Commodity Index
+Futures,"* *Applied Economic Perspectives and Policy* 44(2), 856–878 (2022),
+on ETF roll drag (not re-verified this batch). Nothing changes the data
+constraint above.
+
 **Status: untriaged.**
 
 ---
@@ -1663,6 +1670,21 @@ adaptation. **Implementation class:** Retail approximation. **Validation
 stage:** Literature only. The sanity check showed a mild improvement over
 SPY (0.97 vs 0.91 pinned, 0.91 vs 0.84 long) with drawdown unchanged.
 
+**Additional source (batch 2026-09-28).** Re-proposed by the ChatGPT
+report as its top pick. It adds the paper's **daily Threshold signal**,
+which is a different rule from the month-end tilt above. Verified against
+the NBER PDF (w33554): "a one-standard-deviation increase in the Threshold
+(Calendar) signal leads to a decrease in equity returns of approximately
+16 bps (17 bps) and an increase in bond returns of about 4 bps (2 bps)
+over the next trading day," reverting "almost entirely within two weeks."
+**Correction to the report:** the tested signal averages Threshold signals
+over bands δ = 0%–2.5% in 0.1% steps (eq. 2), not a single 2 pp trigger.
+Predictive power peaks near 2 pp. **Sanity check** (a single 2 pp band,
+hold IEF instead of SPY the next day; `artifacts-2026-09-28-web-batch/`):
+Sharpe 0.94 vs SPY 0.91 on the pinned window and 0.89 vs 0.84 on the long
+one. It fires on only ~1% of days, so the effect is too small to judge
+without the averaged signal.
+
 **Status: untriaged.**
 
 ### A13. Factor momentum across smart-beta ETFs
@@ -1758,6 +1780,21 @@ momentum sorts.
 adaptation. **Implementation class:** Retail. **Validation stage:**
 Literature only.
 
+**Additional sources (batch 2026-09-28).** Re-proposed as "crypto TSMOM
+long/flat". Han, Kang & Ryu, SSRN 4675565 (Dec 2023, since retitled
+*"Momentum in the Cryptocurrency Market: A Comprehensive Analysis under
+Realistic Assumptions"*). The abstract is verified: long-only market
+TSMOM with a 28-day lookback and 5-day hold gives Sharpe 1.51 vs 0.84 for
+the market, net of realistic costs. Cross-sectional momentum is "almost
+non-existent." The report's quote on the short side losing money is
+**unverified** (full text blocked). The 28/5 cell is the best of a grid,
+so freeze a neighbourhood and deflate. A companion sizing source: Grobys,
+Kolari, Sandretto, Shahzad & Äijö, *"Cryptocurrency momentum has (not) its
+moments,"* *Financial Markets and Portfolio Management* 39(4), 443–476
+(2025), verified: volatility management mitigates crypto momentum crashes.
+The paper is about cross-sectional momentum, so applying it to this rule
+is an extrapolation.
+
 **Status: untriaged.**
 
 ### A17. ENSO-conditioned soft-commodity allocation
@@ -1816,6 +1853,18 @@ median of past variance (no lookahead): Sharpe 1.02 vs 0.91 and MaxDD
 -10.1% vs -24.5% on the pinned window, at the cost of CAGR (10.2% vs 15.1%).
 The long window moved the same way. This is directly relevant to the
 owner's open "how much in SPY" decision.
+
+**Additional sources (batch 2026-09-28).** Proposed again by two
+reports. Harvey, Hoyle, Korgaonkar, Rattray, Sargaison & Van Hemert, *"The
+Impact of Volatility Targeting,"* *Journal of Portfolio Management* 45(1),
+14–33 (2018), verified: Sharpe gains "only for 'risk assets', such as
+equity and credit," while tail reduction holds across all asset classes.
+Alankar, Maymin, Maymin, Scholes & Zhang, arXiv 2603.03213 (2026),
+verified. **The report quoted this one selectively.** Vol-managed SPX
+Sharpe is 0.407 vs 0.335 over 2000–Jan 2026, "most of it in the 2000-2004
+dot-com decline." From 2003 onward the gain compresses to **0.017** (0.488
+vs 0.471). That fits the Cederburg result. Expect the capped version to
+cut drawdown, not raise Sharpe.
 
 **Status: untriaged — shortlist.**
 
@@ -1944,7 +1993,10 @@ report return per day invested. Motivated by verified decay evidence
 (Kurov et al. 2021; Uppal; Cederburg et al. 2020; the Allocate Smartly
 month-end shift). This turns the lab's "matched window" lesson into a
 standing gate. **Status: untriaged — adopt as the success criteria in any
-A10–A12 brief.**
+A10–A12 brief.** *Addition (batch 2026-09-28):* a cheap pre-screen
+before any WFO. A small SPY-funded sleeve raises book Sharpe only if its
+Sharpe exceeds ρ(sleeve, SPY) × SPY's Sharpe. This is the standard
+mean-variance condition; the report cited no source.
 
 ### C5. Simple-first correlation-forecast benchmark
 
@@ -1968,7 +2020,13 @@ forecast out of sample. This is consistent with §4's "complexity loses".
 - **Treasury auction-cycle timing.** Lou, Yan & Zhang, *RFS* 26(8),
   1891–1912 (2013), verified. The tested trade is a duration-hedged short
   2-year before auctions, which is not reproducible long-only and
-  unlevered. **Parked.**
+  unlevered. **Parked.** *Decay evidence (batch 2026-09-28), verified:* Fleming,
+  Liu & Nguyen, NY Fed Staff Report 1188 (Mar 2026, rev. Jul 2026), Online
+  Appendix Table A2. The LYZ-style effect over 2015–2024 is insignificant
+  at 2y/3y/7y/10y/30y (2y 1.525 bp, 10y 1.174 bp) and significant only at
+  5y (2.621 bp). "Auction-driven price pressure has moderated
+  substantially in the post-2014 period," as dealer share fell from ~70% to
+  ~17%. This strengthens the park.
 - **Dash-for-cash turn-of-month in international ETFs (EFA/VEA).** Etula,
   Rinne, Suominen & Vaittinen, *RFS* 33(1), 75–111 (2020), verified. It
   supports the mechanism only, and it overlaps A14, which failed its
@@ -1984,3 +2042,376 @@ forecast out of sample. This is consistent with §4's "complexity loses".
   its strategy label ("V9") suggests many specifications were tried, the
   permutation test gives p = 0.029, and it layers regime, vol and drawdown
   controls, the complexity pattern §4 warns against. **Parked.**
+
+---
+
+## 2026-09-28 batch — Commodity positioning, the dollar factor, credit-stress sizing, crypto trend
+
+Source: three web-research reports run from the prompt synced 2026-09-25,
+two days after the live-exit-parity finding. None was steered by a focus
+section. Report 1 is ChatGPT deep research (8 candidates). Report 2 is a
+Gemini "Quantitative Strategy Research Scout" (8). Report 3 is a literature
+scan titled "New Trading-Strategy Candidates for a Retail Lab That Can't
+Yet Beat SPY" (13, including 3 method notes). **29 were pasted. 9 are added
+as full entries and 5 as parked bullets. 11 were folded or merged into
+existing, internal or new entries, and 4 were rejected on intake.**
+
+**Citation checks.** 23 new sources and data claims were checked, and
+**every cited paper exists; none is fabricated.** Sources verified in
+earlier batches were not re-run. Not re-checked this batch:
+Hurst–Ooi–Pedersen, Gertler–Lown and Irwin–Sanders–Yan. Numbers confirmed
+against full text or abstracts:
+- Harvey–Mazzoleni–Melone (threshold signal)
+- Kurth et al. (Table 1)
+- Jones–Matsui–Knottenbelt (Table VI)
+- Alankar et al.
+- Fleming–Liu–Nguyen (Appendix A2)
+- Lustig–Roussanov–Verdelhan
+- Hollstein et al.
+- Saunders et al.
+- Filipović–Pelger–Ye
+- Gomez Cram–Kung–Lustig
+- Albuquerque et al.
+- Rapach–Strauss–Zhou
+- Boons–Porras Prado
+- Harvey et al. 2018
+- Grobys et al.
+- Liu–Tsyvinski–Wu
+- the CFTC COT history
+
+**Corrections:**
+- **Three data claims are false.**
+  - CME and CFTC do *not* publish free historical futures settlements. CME sells them through DataMine, so basis-momentum hits a data wall.
+  - FRED truncated the ICE BofA high-yield OAS to 3 years in April 2026, and ALFRED vintages were truncated too. Nothing is cached in `fred_series`.
+  - ANFCI is revised back to 1971 every week. Point-in-time vintages exist only from 2011-05-25.
+- **Wrong counts:** the Halloween-paper counts (63/65 positive, 36 significant) match no version of the paper.
+- **Selective quote:** the arXiv vol-managed SPX figure omits that the gain is 0.017 Sharpe after 2003.
+- **Signal mis-specified:** the rebalancing report describes a single 2 pp trigger, but the paper averages bands from 0% to 2.5%.
+
+**Unverified:** Han–Kang–Ryu's claim that the short side loses money (full text blocked), and the Bitcoin MVRV sources (parked, not checked).
+
+**Quick sanity checks, not WFO results.** Script and output are in
+`docs/research/artifacts-2026-09-28-web-batch/`. They use yfinance adjusted
+closes, 1 bp per side, cash at 0, and raw daily Sharpe (SPY scores 0.91 on
+the pinned window), so compare rows with each other only.
+
+| Rule | Pinned 2021-02 → 2026-04 | Long 2011-03 → 2026-04 | 2022 |
+|---|---|---|---|
+| SPY buy-and-hold | Sharpe 0.91, MaxDD -24.5% | 0.84, -33.7% | -0.71, -24.5% |
+| TLT/GLD/DBC 12-month long/flat trend sleeve, standalone | 0.84, -16.9% | 0.51, -18.0% | -0.01, -13.3% |
+| **80% SPY + 20% trend sleeve** | **1.00, -19.8%** | **0.90, -27.0%** | -0.70, -19.8% |
+| **80% SPY + 20% TLT/GLD/DBC buy-and-hold** | **1.01, -21.1%** | **0.89, -28.5%** | -0.73, -21.1% |
+| Rebalancing threshold tilt (A12 variant) | 0.94, -23.0% | 0.89, -33.7% | -0.58, -23.0% |
+| UUP / UDN buy-and-hold (dollar context) | 0.73 / -0.02 | 0.40 / -0.19 | 1.03 / -0.80 |
+
+**The trend sleeve row is the main result of this batch.** A 20%
+TLT/GLD/DBC sleeve funded from SPY lifts book Sharpe (1.00 vs 0.91 pinned,
+0.90 vs 0.84 long) and cuts drawdown. However, **holding the same three ETFs
+statically does just as well** (1.01 / 0.89). On this evidence the gain comes
+from diversification (correlation to SPY is 0.15 pinned, -0.05 long), not
+from trend timing. Timing only helped drawdown modestly. This reshapes
+`RESEARCH_SNAPSHOT.md` §6 Tier 1 #1: the brief must use static 80/20 as its
+benchmark, not just SPY.
+
+**Alpaca tradability (checked 2026-09-28 via the Alpaca asset API).** Any
+build must trade through the live Alpaca path, which buys by dollar
+notional, so every leg has to be tradable **and fractionable**.
+- **Tradable and fractionable:** TLT, IEF, GLD, IAU, DBC, PDBC, UUP, UDN,
+  USDU, SGOV, BIL.
+- **DBC, UUP and UDN carry Alpaca's `ptp_with_exception` flag.** They are
+  publicly traded partnerships that issue K-1s. UDN is also hard to borrow,
+  which doesn't matter for a long position.
+- **Use the no-K-1 equivalents for anything headed to real money:**
+  - PDBC for DBC. It gave identical sanity-check results, Sharpe 1.01 static
+    / 1.00 trend pinned, and 0.96 / 0.93 over 2016–2026.
+  - USDU for UUP. It is long-dollar only; there is no no-K-1 short-dollar
+    fund, so A21 on Alpaca becomes "USDU or T-bills".
+  - SGOV or BIL for the T-bill leg.
+- **Gold ETFs (GLD, IAU) are taxed as collectibles** (up to 28% on long-term
+  gains) in a taxable account.
+- **The live trader has no rebalance-to-target-weights path for a standing
+  sleeve.** It does signal buys plus the SPY cash sweep. The blend-era
+  rebalance state (`save_rebalance_state`) is the nearest existing code.
+
+**Folded into existing work (no new entry):**
+- *Institutional rebalancing front-run* (report 1's top pick) → **A12**, with the verified daily-threshold signal added there.
+- *Commodity roll-yield timing* → **A2**.
+- *Crypto TSMOM long/flat* and *crypto sleeve volatility cap* → **A16**.
+- *Vol-scaled SPY holding* (two reports) → **B5**, with the corrected arXiv figure.
+- *Treasury auction cycle* → the parked auction-cycle bullet, plus the NY Fed decay evidence.
+- *Correlation-adjusted incremental-Sharpe hurdle* → **C4**.
+- *High-yield credit-spread gating* (report 2) → merged into new **B12**
+  with report 1's ANFCI scaler.
+- *Slow multi-asset trend on Treasury/commodity/gold ETFs* → `RESEARCH_SNAPSHOT.md` §6 **Tier 1 #1** (internal). Its sources are recorded here because §6 is regenerated by the `research-snapshot` skill:
+  - Hurst, Ooi & Pedersen, *"A Century of Evidence on Trend-Following Investing,"* *JPM* 44(1), 15–29 (2017), SSRN 2993026.
+  - Kurth, Eisler, Rej & Bouchaud, arXiv 2607.01550 (Jul 2026), verified against Table 1. Fast trend (EWM-5-20) fell from Sharpe 0.84 to 0.12 after 2009; slow trend (EWM-50-200) went from 0.70 to 0.40, both ±~0.25. "Trend has effectively vanished for IDX and FXR, while YLD and CMD show no appreciable degradation."
+  - Use a single pre-registered slow lookback, and see the sanity check above.
+  - **Status: queued (2026-09-28)** → `docs/research/briefs/2026-09-28-cross-asset-sleeve.md`.
+- *Global Equity Dual Momentum (SPY/VEU/AGG/BIL)* → §6 **Tier 1 #2**, already folded on 2026-09-23. Nothing new.
+
+**Rejected on intake:**
+- *FOMC even-week equity cycle*: already rejected 2026-09-23 (decayed after 2004/2016; Kurov et al. 2021).
+- *FOMC-window Treasury duration* (Hillenbrand, RFS 2025): same mechanism as **A7** pre-FOMC Treasury drift, whose retest is `RESEARCH_SNAPSHOT.md` §6 Tier 2 #3. Hillenbrand was folded into A7 on 2026-09-23. Use the report's ±1-day window as A7's variant.
+- *Hierarchical Risk Parity*: duplicate of **C3**; deferred until there are several non-equity sleeves.
+- *Deflated Sharpe Ratio*: already in the lab's gate stack (snapshot §3, "NDH/DSR/gate discipline"). The useful residue is to count trials across the whole research program, not just within a sweep. Record that when the snapshot's methods section is next regenerated.
+
+**Scope note on crypto entries (A22, B11, parked MVRV).** Same as
+2026-09-23: crypto is parked by the owner. These matter only if a spot-BTC
+sleeve is opened.
+
+# A. Active strategy replication queue
+
+### A18. Commodity hedging-pressure rotation (CFTC Commitments of Traders)
+
+**Mechanism.** Once a week, rank commodities with a liquid, unlevered US
+ETF proxy by producer/merchant net-short hedging pressure. Use the CFTC
+Disaggregated COT report and timestamp it by its **Friday release**, not the
+Tuesday position date. Hold the top cohort as a sleeve funded from SPY,
+with the rest in SPY. The paper tests a **long-short futures** factor, so a
+long-only ETF selection is a close adaptation.
+**Source(s).** Basu & Miffre, *"Capturing the Risk Premium of Commodity
+Futures: The Role of Hedging Pressure,"* *Journal of Banking & Finance*
+37(7), 2652–2664 (2013), verified (also cited under A2 as mechanism support).
+Recent corroboration: Dossani, Kang & Pan, *"Hedging Pressure, Variance
+Risk Premia, and Expected Futures Returns in the Commodity Market."* This
+is **conference slides only** (J.P. Morgan Center for Commodities
+symposium, Aug 2025, data Jan 1992–Apr 2024; "more robust after 2009"), and
+its main specification needs options-implied variance, so don't cite it as
+a publication or import that half.
+**Why it's plausible.** Producers pay speculators to take price risk, an
+insurance premium that doesn't depend on equity-market inefficiency.
+**Data requirements.** Free and verified. The CFTC Disaggregated COT history
+starts 2006-06-13, but only in the combined 2006–2016 zip; per-year files
+begin 2010. ETF prices are also needed: DBC is in `ohlcv` only from
+2026-05, so the single-commodity ETFs need a backfill. **Main risk:** ETF
+roll schedules and tenors differ from the futures in the paper.
+**How it differs from what's already been tried.** It uses positioning
+data, not price. The nearest closed arc is `commodity_trend` (A3, NO-GO:
+12-1 price momentum on the same kind of ETF universe). It is distinct from
+A2 carry, though both rest on the same hedging-pressure economics.
+Benchmark against A3's result, USCI, and static DBC.
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Close
+adaptation. **Implementation class:** Retail (approximate ETF proxy).
+**Validation stage:** Literature only.
+
+**Status: untriaged — shortlist.**
+
+### A19. Emerging-market country equity-premium forecast combination
+
+**Mechanism.** Monthly, forecast the excess return of a fixed set of
+liquid single-country EM ETFs by averaging simple predictor forecasts, with
+no optimized weights. Hold those whose forecast clears SPY's forecast.
+**Source(s).** Hollstein, Prokopczuk, Tharann & Wese Simen, *"Predicting the
+Equity Premium around the Globe: Comprehensive Evidence from a Large
+Sample,"* *International Journal of Forecasting* 41(1), 2025, verified
+(SSRN 3567622; pages 208–228 not confirmed). "81 countries over a period of
+up to 145 years … more predictable in emerging and frontier markets …
+forecast combinations perform very well out of sample." **The sample ends
+around 2015**, and the paper predicts local-currency index premia, not
+US-listed ETF returns.
+**Why it's plausible.** Predictability rises as market efficiency falls,
+which is the opposite regime to the S&P 500, where every selection idea
+failed.
+**Data requirements.** ETF prices are free. **The feasibility risk is
+point-in-time macro vintages** for the predictors. Use only predictors whose
+release timing can be reconstructed cheaply; revised data leaks.
+**How it differs from what's already been tried.** It is a different
+geography at the country level. The nearest closed arc is the
+international-rotation idea dropped from §6 on 2026-09-23.
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Close
+adaptation. **Implementation class:** Retail. **Validation stage:**
+Literature only.
+
+**Status: untriaged — low; the sample ends before the regime that matters.**
+
+### A20. Commodity basis-momentum rotation
+
+**Mechanism.** Rank commodities by basis-momentum, the trailing 12-month
+return of the first-nearby contract minus that of the second-nearby, and
+hold the top-ranked ETFs.
+**Source(s).** Boons & Porras Prado, *"Basis-Momentum,"* *Journal of Finance*
+74(1), 239–279 (2019), verified. It "strongly outperforms benchmark
+characteristics in predicting commodity spot and term premiums." The
+abstract explicitly rejects a hedging-pressure explanation, so don't
+bundle this with A18.
+**Why it's plausible.** Constrained speculative capacity along the curve.
+**Data requirements.** **Data wall, verified.** The report said front- and
+second-month settlements are free from CME and CFTC. They are not. CME's
+FAQ says historical end-of-day data "can be purchased from the CME DataMine
+page," and the CFTC publishes positions, not prices. A2 found the same
+wall: yfinance serves live contracts only. An ETF-only version can't
+compute the signal.
+**How it differs from what's already been tried.** It is curve-dynamics
+momentum, distinct from A2 carry, A4 basis reversal (which hits the same
+wall), and A3 price trend.
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Close
+adaptation. **Implementation class:** Professional (data).
+**Validation stage:** Literature only.
+
+**Status: untriaged — blocked on paid futures-curve history.**
+
+### A21. Dollar carry timing via UUP/UDN
+
+**Mechanism.** Monthly, compute the average short-rate differential of the
+USDX currencies over the US, a covered-interest-parity proxy for the
+average forward discount. If it is positive, hold UDN (short USD);
+otherwise hold UUP (long USD), or cash as the conservative variant.
+**Source(s).** Lustig, Roussanov & Verdelhan, *"Countercyclical Currency Risk
+Premia,"* *JFE* 111(3), 527–553 (2014), verified. The dollar carry trade
+"delivers large excess returns, uncorrelated with the returns on well-known
+carry trade strategies"; the average forward discount and US industrial
+production growth "forecast up to 25% of the dollar return variation at the
+one-year horizon." The paper uses forwards on a developed basket. USDX is
+euro-heavy, with six currencies.
+**Why it's plausible.** It compensates for shorting the dollar in bad times.
+The long-USD state could hedge an equity book: UUP made Sharpe 1.03 in
+2022, when SPY lost 18% (sanity table). That hedge must be measured, not
+assumed. **On Alpaca** (see batch note): UDN is a K-1 partnership and hard to
+borrow, and the no-K-1 USDU is long-dollar only. The deployable form is
+therefore "USDU when US rates are higher, else T-bills (SGOV/BIL)". That
+keeps the hedge state and drops the short-dollar leg.
+**Data requirements.** Mostly free. `fred_series` already holds euro-area
+and Japan short rates (`IRSTCI01EZM156N`, `IRSTCI01JPM156N`) and `TB3MS`;
+GBP/CAD/SEK/CHF rates still need adding. UUP/UDN prices start in 2007 and
+are not in `ohlcv`. **Risks:**
+- UDN is small and shrinking (report cites $113M AUM, Jun 2026, unverified).
+- Both are commodity pools that issue K-1 tax forms, which matters for a real-money account.
+- The ETF history covers only about two long rate regimes.
+**How it differs from what's already been tried.** It is a single
+time-series dollar bet. The nearest closed arc is `fx_hedge_overlay` (A1,
+NO-GO: dynamic carry+value+trend hedge ratio on EWJ/EZU), which was a
+hedge-ratio rule, not a dollar-factor position.
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Close
+adaptation. **Implementation class:** Retail (ETF proxy). **Validation
+stage:** Literature only.
+
+**Status: untriaged — shortlist.**
+
+### A22. Cross-sectional crypto momentum *(crypto — see scope note)*
+
+**Mechanism.** Hold the top 3–5 of the 20 most liquid spot coins by 1–4-week
+return, gated by BTC above its 50-day average.
+**Source(s).** Liu, Tsyvinski & Wu, *"Common Risk Factors in
+Cryptocurrency,"* *JF* 77(2), 1133–1177 (2022), verified: market, size and
+momentum factors price the crypto cross-section. **Counter-evidence,
+verified:** Han, Kang & Ryu (see A16) find cross-sectional crypto momentum
+"almost non-existent" under realistic costs, unlike time-series momentum.
+**Data requirements.** Free, but survivorship-prone. Coin lists need
+point-in-time liquidity membership, and Alpaca's crypto list is narrow.
+**How it differs from what's already been tried.** It is a cross-sectional
+sort in a new asset class. The pre-lab crypto per-coin technical work
+(2026-05/06) found no deployable edge after fees.
+**Evidence status:** Peer-reviewed (factor); contradicted under costs.
+**Rule correspondence:** Close adaptation. **Implementation class:**
+Retail. **Validation stage:** Literature only.
+
+**Status: untriaged — low; A16 dominates it on the same evidence.**
+
+# B. Risk and exposure overlays
+
+### B11. Stablecoin-liquidity crypto risk scaler *(crypto — see scope note)*
+
+**Mechanism.** Forecast next-period BTC/ETH volatility from stablecoin
+volume and upside volatility, and map it monotonically into 0–1× spot
+exposure. **The paper's version leverages up to 2×** (exposure × (1 +
+tanh z)); the capped rule is untested.
+**Source(s).** Jones, Matsui & Knottenbelt, *"Stablecoins as Dry Powder: A
+Copula-Based Risk Analysis of Cryptocurrency Markets,"* arXiv 2603.23480
+(Mar 2026), also an IEEE conference paper, verified. Stablecoin upside
+volatility gives a 9.48% MSE reduction. At a 20% vol target the strategy
+returned 46.6% with Sortino 2.77 and MaxDD -12.9%, vs 40.8% / 1.96 /
+-15.8% for the benchmark. **Caveats the report omitted:**
+- Universe: 4 coins + 3 stablecoins.
+- Data 2020–2024, with a **single out-of-sample year (2024, bullish)**.
+- Buy-and-hold made 89%.
+- The downside-volatility causality "failed to generalise out-of-sample".
+**Data requirements.** Free daily OHLCV, but stablecoin "volume" differs
+by venue, so freeze one source.
+**How it differs from what's already been tried.** B1 uses depeg *events*;
+this uses stablecoin *volume* as a volatility forecaster.
+**Evidence status:** Working paper / conference. **Rule correspondence:**
+Close adaptation. **Implementation class:** Retail. **Validation stage:**
+Literature only.
+
+**Status: untriaged — low; one OOS year.**
+
+### B12. Credit/financial-conditions exposure scaler (ANFCI or HY OAS)
+
+**Mechanism.** Weekly, reduce SPY exposure gradually, not binary, when
+financial conditions are both tight and tightening, and restore it as they
+ease. Two reports proposed this with different indicators, merged here:
+the Chicago Fed **ANFCI** (report 1), or the ICE BofA **high-yield OAS**
+against its moving average (report 2). Both are mechanism-only rules.
+**Source(s).** Verified:
+- Saunders, Spina, Steffen & Streitz, *"Corporate Loan Spreads and Economic Activity,"* *RFS* 38(2), 507–546 (2025): loan spreads over 1999–2023 "significantly enhance the prediction of macroeconomic outcomes," driven by supply-side frictions.
+- Gilchrist & Zakrajšek, *AER* (2012), already under B7.
+- Gertler & Lown, *JME* 46(2) (2000), cited by report 2, not re-verified.
+**Why it's plausible.** Credit and intermediary stress is closer to the
+mechanism of crashes than the VIX level (the rejected gate).
+**Data requirements.** **This is the crux; both routes were checked.**
+- **HY OAS: data wall.** FRED truncated `BAMLH0A0HYM2` to 3 years in April 2026 ("will only include 3 years of observations"; data now starts 2023-09-29). ALFRED vintages are truncated too, and nothing is cached locally. Full history now means ICE directly.
+- **ANFCI: feasible, from 2011 only.** It is revised back to 1971 every week (e.g. the 2008-10-03 value was 4.63 in the 2011 vintage and 3.11 today). ALFRED keeps weekly vintages from **2011-05-25**, so a true point-in-time test is possible from mid-2011. Earlier history leaks hindsight, which is the same wall that blocked B7's EBP.
+**How it differs from what's already been tried.** B7's mechanism with an
+indicator that has a point-in-time route. It sizes continuously rather than
+gating. It overlaps B5, so test it as an increment over B5, not over raw
+SPY.
+**Evidence status:** Peer-reviewed (mechanism). **Rule correspondence:**
+Mechanism only. **Implementation class:** Retail. **Validation stage:**
+Literature only.
+
+**Status: untriaged.**
+
+# C. Portfolio-construction and research methods
+
+### C6. Treasury complexity-factor diagnostic
+
+Filipović, Pelger & Ye, *"Shrinking the Term Structure,"* *Review of
+Finance*, online 2026-08-21 (doi 10.1093/rof/rfag033), verified: "The
+fourth factor … substantially reduces pricing errors and pays off during
+recessions." As a method: when a Treasury sleeve appears to diversify SPY,
+check whether the benefit is plain level/slope exposure or this
+recession-paying fourth factor. Faithful factor replication needs the full
+Treasury cross-section. **Status: untriaged — method; relevant only once a
+duration sleeve is being built.**
+
+### C7. Slow-signal, large-tick prior for any trend or timing idea
+
+Kurth, Eisler, Rej & Bouchaud, arXiv 2607.01550 (2026), verified. After
+2008, trend P&L "collapsed on small-tick contracts across all signal
+horizons" and stayed intact on large-tick ones; fast signals were hit
+hardest. As a screening rule: reject fast (days-to-weeks) trend or timing
+signals on equity indices and currencies unless the evidence is
+exceptional, and prefer slow signals. This is a structural explanation for
+§4's fast-technical-ensemble failures. **Status: untriaged — method; apply
+in the brief for §6 Tier 1 #1.**
+
+# D. Parked hypotheses — cheap falsification only
+
+- **CBO deficit-score duration shock.** Gomez Cram, Kung & Lustig, *"Can
+  Treasury Markets Add and Subtract?"*, NBER WP 33604 (2025), verified:
+  yields rise on deficit-increasing bills. A 1 pp deficit/GDP shock is 0.75
+  bp one-time, or 6.75 bp if persistent. The effect is small, and most of it
+  likely prices intraday, before this account's pre-close decision.
+  Building the event database is labour-intensive. **Parked.**
+- **Sovereign-auction dealer-capacity reversal.** Albuquerque,
+  Cardoso-Costa & Faias, *RFS* 37(10), 3149–3187 (2024), verified. The
+  signal is primary-dealer *bid-level* elasticity, which isn't public, and
+  the sample is Portuguese auctions (per the verifier's background
+  knowledge; not in the abstract). Combined with the decay evidence on the
+  auction-cycle bullet above, **parked — effectively infeasible.**
+- **Sell-in-May / Halloween rotation.** Zhang & Jacobsen, *JIMF* 110,
+  102268 (2021), verified exists: winter returns about 4% higher across
+  62,962 observations. **The report's market counts (63 of 65 positive, 36
+  significant) match no version of the paper.** The SSRN version reports
+  58 of 65 positive and 34 significant. The pinned window holds about five
+  summers, so it can't adjudicate. **Parked.**
+- **Lagged US return → developed-international ETF tilt.** Rapach, Strauss
+  & Zhou, *JF* 68(4), 1633–1662 (2013), verified: lagged US returns predict
+  non-US index returns. US-listed ETFs already absorb same-day US news, and
+  the monthly version risks collapsing into plain momentum. Levy &
+  Lieberman (ResearchGate only) is unverified. **Parked.**
+- **Bitcoin MVRV valuation timing** *(crypto)*. Proposed by report 2 as
+  parked itself. Its sources were not checked (Mahmudova et al.,
+  *Information* 2022; arXiv 2512.07886; arXiv 2607.26188). The report's own
+  evidence is that static thresholds decayed across halving epochs.
+  **Parked.**

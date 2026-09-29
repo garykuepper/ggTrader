@@ -96,7 +96,11 @@ container recreated and checked):
    untested.** Answers item 5 at *backtested* exposure. Core + idle cash swept
    into SPY scores Sharpe 0.80 / MaxDD -20.7% vs SPY 0.78 / -22.1%, a
    noise-sized margin. The backtest holds only ~8% in stocks (about 3
-   positions); live holds ~32% (31 positions). **Next:** explain that gap. The
+   positions); live holds ~32% (31 positions). **Explained 2026-09-28:**
+   live missed crossover exits (fixed `fe5c4a7`, item 9), and
+   `MAX_POSITIONS=3` now caps live near the backtested ~10%. Re-run
+   `scripts/core_spy_blend.py` at live exposure once the book settles.
+   *Original note:* explain that gap. The
    sizing rules do differ (backtest: 3% of remaining cash; live: 3.3% of
    portfolio), but that can't produce a 4x gap. Compare live `paper_trades`
    entry and hold counts against backtest fold trades. Then re-run
@@ -114,6 +118,15 @@ container recreated and checked):
    the 09-29 open, logged in `paper_trades` with
    `reason='manual_orphan_liquidation'` (amounts = 09-28 close estimates).
    Verify all four filled.
+10. **Research (queued 2026-09-28) — SPY + 20% cross-asset sleeve.** Run
+    `docs/research/briefs/2026-09-28-cross-asset-sleeve.md` (snapshot §6
+    Tier 1 #1): 80% SPY + 20% TLT/GLD/PDBC, static vs 12-month trend-timed,
+    with BIL as the off-asset. The pass bar is pre-registered in the brief.
+    A quick sanity check says the gain is diversification, not trend (static
+    1.01 ≈ trend 1.00 vs SPY 0.91, raw Sharpe). The trend arm must beat
+    *static*, not just SPY. All instruments are Alpaca-tradable and
+    fractionable; PDBC replaces DBC to avoid K-1s. Owner goal: real money
+    in ~3 months.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)
