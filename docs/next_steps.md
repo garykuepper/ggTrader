@@ -134,6 +134,37 @@ container recreated and checked):
     A live rebalance-to-weights sleeve is a separate, explicit ask. Before
     real money, compare after-tax returns (gold is taxed as a collectible,
     and rebalancing realizes gains) or hold the book in an IRA.
+    (c) Second reads (2026-09-28, `research-report-review` skill tests): with
+    cash earning the T-bill rate, "any leg removed" fails for GLD (0.688) and
+    PDBC (0.701) vs SPY 0.711. An 80% SPY / 20% BIL book cuts drawdown as
+    much as the sleeve, and 80/20 SPY/GLD beats the three-leg book. It's an
+    allocation choice, not a validated edge; don't switch legs on this.
+11. **Ops, open (2026-09-28) — AVB is frozen at the broker.** AVB merged into
+    EQR on 08-17. Alpaca lists it `inactive` and `tradable: false`, and the
+    paper account never converted the 4.05 shares (~$745, priced at a frozen
+    $184.06). No order can close it. Consequences: it counts against the
+    3-slot cap, and any strategy or catch-up sell attempt will be rejected
+    each run (the round-2 deploy test predicted the 365-day window would try
+    to sell it). Decide whether the trader should skip `tradable: false`
+    assets, or just accept the log noise until Alpaca converts it.
+12. **Data, blocking item 13 — tape split-adjustment flaw.** In `ohlcv`,
+    AVB, APH and MNST all break on **07-20**, the edge of a refresh window,
+    not on their corporate actions. MNST's real split was 08-11 (the broker
+    filled at ~$90 on 08-07) but the tape halves it from 07-20. The cache
+    appends split-adjusted yfinance bars without re-adjusting older rows,
+    so the reversion strategy sees fake −50% crashes and buys them (MNST was
+    bought 08-07 and AVB 08-10, inside those windows; causation unverified).
+    The lab is affected too. Next: list every symbol whose stored history
+    crosses a split or merger with mixed adjustment, re-download their full
+    history, and add a daily-move sanity check (>40%, clustered by date).
+    MRNA, MLI, STI and ADCT also show large jumps
+    (`docs/research/2026-09-28-live-indicator-warmup.md`).
+13. **Deploy after item 12 — `lookback_days=365` + inception-cache fix.**
+    Both are verified by a second read: 365 days gives 0 entry/exit
+    mismatches vs 4.0%/3.4% at 120, and the `_get_known_inceptions`
+    ValueError reproduces. Make the fix tz-safe for naive values too. Ship
+    through the `ggtrader-deploy` skill, with a dry-run sell list approved
+    first.
 ---
 
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)
