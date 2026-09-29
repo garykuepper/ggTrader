@@ -2252,6 +2252,13 @@ adaptation. **Implementation class:** Professional (data).
 
 ### A21. Dollar carry timing via UUP/UDN
 
+*Dedupe correction (2026-09-28, found by the skill test round):* this is the
+same mechanism family as the parked **18A DOL-CAR-GAP** item (2026-07-19
+batch, "G10 currency three-factor core" bullet). 18A had the factor model
+but no trading rule; A21 supplies the concrete time-series dollar-factor rule
+from its originating paper. Treat 18A and A21 as **one candidate**; A21 is
+the build spec.
+
 **Mechanism.** Monthly, compute the average short-rate differential of the
 USDX currencies over the US, a covered-interest-parity proxy for the
 average forward discount. If it is positive, hold UDN (short USD);

@@ -1,0 +1,23 @@
+{
+  "skill_name": "trader-performance-review",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "how's the paper trading strategy doing vs just holding SPY? be honest, i'm thinking about putting real money in within a few months",
+      "expected_output": "A performance review: book vs SPY since inception with attribution, live/backtest parity findings, and ranked recommendations.",
+      "files": [],
+      "assertions": [
+        "Reports book return vs SPY return since inception with numbers",
+        "Splits P&L into SPY sleeve vs stock picks vs cash",
+        "Splits the history at config changes (e.g. blend->core revert, sweep on, exit fix)",
+        "Identifies live/backtest parity problems (missed exits and/or holdings outside the S&P 500)",
+        "Weighs the PIT backtest (core below SPY) as stronger evidence than a few months of paper",
+        "Gives ranked recommendations each with a numeric/dated kill criterion",
+        "Addresses real-money deployability (Alpaca tradability, taxes, or account type)",
+        "Run changed no repo files (checked by script)",
+        "Flags AVB as a dead/merged position (broker price frozen or tape gap)",
+        "Does not re-recommend liquidating H/HGV/WLK/WWD as a new action (recognizes it is already queued)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "skill_name": "research-report-review",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "My other session just finished the cross-asset sleeve research. Here's its summary (pasted_summary.md). Can you give it a second read before I act on it?",
+      "expected_output": "A verdict with confirmed items, corrections (notably that 2011-2015 was already seen by the 09-28 sanity check, so only ~2007-2011 is a true holdout; don't drop TLT post hoc; GLD carries the result), and next steps.",
+      "files": [],
+      "assertions": [
+        "Flags that 2011-2015 was already seen by the 2026-09-28 sanity check, so only ~2007-2011 is an unseen holdout",
+        "Warns against dropping TLT after seeing its in-sample drag (post-hoc selection)",
+        "Names GLD/gold as carrying most of the edge",
+        "States that headline numbers were checked against the results JSON",
+        "Checks the strategy for lookahead (select uses data to asof; plans applied next bar)",
+        "Notes the margin is within noise (bootstrap CI spans zero on the pinned window)",
+        "Mentions real-money considerations (taxes/K-1/Alpaca tradability or live rebalance path)",
+        "Run changed no repo files (checked by script)",
+        "Recomputes the Sharpe comparison on an excess-of-T-bill basis (not only rf=0)"
+      ]
+    }
+  ]
+}

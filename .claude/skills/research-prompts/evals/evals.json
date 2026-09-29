@@ -1,0 +1,23 @@
+{
+  "skill_name": "research-prompts",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Here's another strategy research report from one of my LLMs (report3.md). Merge it into the candidates backlog.",
+      "expected_output": "A new dated batch appended to the backlog with dedupe against existing entries, verified citations/data claims, a sanity check, Alpaca tradability notes and a ranked shortlist.",
+      "files": [],
+      "assertions": [
+        "Appends one new dated batch at the end without altering earlier batches (checked by script)",
+        "Continues the existing ID scheme (e.g. A18+/B11+/C6+) instead of restarting numbering",
+        "Folds crypto TSMOM into existing A16 rather than adding a duplicate entry",
+        "Folds vol-scaled SPY into existing B5 rather than a new entry",
+        "Rejects or folds the FOMC even-week idea as already rejected (2026-09-23 batch)",
+        "Checks Alpaca tradability and flags K-1 funds (UUP/UDN are publicly traded partnerships)",
+        "Sanity check compares the trend sleeve against the same instruments held statically",
+        "Verifies at least one data-availability claim (not just paper citations)",
+        "Ends with a ranked shortlist in triage.md",
+        "Links dollar carry to the existing parked 18A dollar/carry/business-cycle item instead of adding a duplicate entry"
+      ]
+    }
+  ]
+}

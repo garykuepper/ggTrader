@@ -1,0 +1,24 @@
+{
+  "skill_name": "ggtrader-deploy",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I want to change the live trader's signal lookback from 120 to 260 days in src/ggTrader/paper/signal_runner.py (generate_signals lookback_days default) so indicator warm-up matches the backtest. The code change is done and tests pass locally. Get this live before tomorrow's run.",
+      "expected_output": "PLAN ONLY: a precise ordered list of commands/checks to take this change to the live trader, including pre-flight checks, build wait, container restart, in-container verification, next-run prediction and rollback.",
+      "files": [],
+      "assertions": [
+        "Plan checks the time against the 12:45 PT cron and avoids deploying in the run window",
+        "Plan runs tests via scripts/run_tests.sh, not bare pytest",
+        "Plan includes a real-data check of the new lookback that sends no Telegram (does not use `ggt paper` dry run as the check)",
+        "Plan stages only the change's files (warns against git add -A / sweeping unrelated edits like AGENTS.md)",
+        "Plan waits for the docker-build GitHub workflow to succeed for this commit before pulling",
+        "Plan records the current image ID before pulling so rollback is possible",
+        "Plan verifies inside the container (docker compose run ... python -c import) including vectorbt import",
+        "Plan predicts how the next 12:45 run's signals may change because of the longer warm-up",
+        "Plan gives a concrete rollback procedure",
+        "Run changed no repo files and did not restart ggtrader_live (checked by script)",
+        "Rollback covers pulling a per-commit image tag if the old image is gone"
+      ]
+    }
+  ]
+}

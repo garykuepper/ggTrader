@@ -78,6 +78,15 @@ headers record each). Treat every claim as unverified until checked.
 - every `###` heading in `WEB_RESEARCH_CANDIDATES.md` and its status
 - the "don't re-propose" list in the web prompt
 
+Headings are not enough. Older batches park and split ideas inside
+bullets — e.g. a lettered **18A** (dollar + carry + business-cycle) lives in
+a bullet of the 2026-07-19 batch's deprioritized list, with no heading. On
+2026-09-28 a merge added "dollar carry" as a new A21 and missed it. Before
+adding any entry, **full-text search the whole backlog** (and the snapshot)
+for the mechanism's key terms, cited authors and instruments, e.g.
+`grep -niE "dollar|carry|UUP|Lustig" docs/research/WEB_RESEARCH_CANDIDATES.md`,
+and read every hit's context.
+
 **2. Classify each pasted candidate by mechanism, not name.** "Earnings
 surprise momentum in small caps" is PEAD; "buy when insiders buy" is the
 closed insider-cluster arc. For each, one of:
@@ -89,13 +98,28 @@ closed insider-cluster arc. For each, one of:
 | **Hits a known data wall** | Add, but mark the feasibility risk up front — point-in-time analyst estimates, options-chain history, CRSP/permno panels, and long crypto funding history have each come back paid-only (snapshot §4). |
 | **Genuinely new** | Add as a full entry. |
 
-**3. Spot-check citations.** Use web search on each new entry's primary
-source: does it exist, is the venue/year right, and does the headline
-number match? Before calling a citation fabricated, search the title, the
-authors' pages and SSRN/NBER/arXiv — a first-pass miss has been wrong
-before. Record what you checked; don't claim a check you didn't run. If
-there are many candidates, check the ones heading for Group A first and
-say which ones went unchecked.
+**3. Spot-check citations — and data claims.** Use web search on each new
+entry's primary source: does it exist, is the venue/year right, and does the
+headline number match? Before calling a citation fabricated, search the
+title, the authors' pages and SSRN/NBER/arXiv — a first-pass miss has been
+wrong before. Record what you checked; don't claim a check you didn't run. If
+there are many candidates, check the ones heading for Group A first and say
+which ones went unchecked.
+
+Check **data-availability claims** as hard as citations — in the 2026-09-28
+batch every citation was real but three data claims were false: "free"
+futures settlement history (CME sells it), a FRED series FRED had truncated
+to 3 years (ALFRED vintages too), and a macro index revised back to 1971
+every week (point-in-time vintages only from 2011). For any series a rule
+depends on, ask: is the *history* free, how deep, and is it point-in-time
+(ALFRED vintages) or revised? Check `fred_series` / `ohlcv` for what is
+already cached before calling something unavailable.
+
+With more than ~8 sources, split them across 2–3 parallel background agents
+(each: verify existence, metadata, the exact quoted number; quote the
+supporting text; list URLs checked; write no files). Continue with the
+dedupe and sanity checks while they run, and fold their results in as they
+land.
 
 **4. Write the batch.** Append one new section to the end of
 `WEB_RESEARCH_CANDIDATES.md` — never rewrite or reorder earlier batches;
@@ -130,10 +154,29 @@ why, judged against today's bar in `RESEARCH_SNAPSHOT.md` §1 — as of
 2026-09-23 that is *beat SPY, or improve SPY + sleeve*, not beat the core.
 Weigh: rule correspondence, retail implementability, free point-in-time
 data, and distance from the §4 failure patterns. Note any overlap with the
-snapshot's §6 internal candidates. For a simple timing rule on one
-instrument, a few lines of pandas on the pinned window can rule it out
-cheaply — fine to do, as long as you label it a sanity check, not a WFO
-result.
+snapshot's §6 internal candidates.
+
+**Quick sanity checks.** For a simple timing or sleeve rule, a few lines of
+pandas on the pinned window can rule it out cheaply — label it a sanity
+check, not a WFO result. Save the script and its output to
+`docs/research/artifacts-<date>-web-batch/` (argparse + `main()`; yfinance
+direct is fine for symbols not in `ohlcv`). Two comparisons matter most:
+- **Fund any sleeve from SPY** and compare the book, not the sleeve alone —
+  the live account has no idle cash.
+- **For any timing rule, also run the same instruments held statically.**
+  On 2026-09-28 a trend-timed TLT/GLD/DBC sleeve looked like a win until the
+  static version matched it: the gain was diversification, not timing. Any
+  brief that follows must then use the static version as the timing rule's
+  bar.
+
+**Alpaca tradability.** The owner is heading for real money through the
+existing Alpaca path, which buys by dollar notional. For every instrument in
+the shortlist, check `mcp__alpaca__get_asset`: `tradable` and `fractionable`
+must be true; the attribute `ptp_with_exception` marks a publicly traded
+partnership that issues a K-1 (DBC, UUP, UDN, most commodity pools).
+Prefer no-K-1 equivalents — PDBC for DBC, USDU for long-dollar, SGOV/BIL for
+T-bills — and note tax traps for a taxable account (gold ETFs are taxed as
+collectibles). Record the result in the batch header.
 
 ## Mode C — Fill the implementation brief for a chosen candidate
 
@@ -150,6 +193,19 @@ template itself untouched — `research-snapshot` expects its placeholder.
 
 **3. Pre-fill what the implementer would otherwise rediscover**, as bullets
 under "Known feasibility notes":
+- **which windows are already seen**: list every window an earlier sanity
+  check or report ran this rule (or a near-variant) on. Those can't serve as
+  a holdout; name the truly unseen span, even if it is short
+- instruments that pass the Alpaca tradability check (no K-1s), and a
+  T-bill ETF (BIL) as the "off"/cash leg — lab cash earns 0%, which
+  understates any sleeve that sits in cash
+- for timing rules, the **static** version of the same instruments as a
+  benchmark the rule must beat (not just SPY), plus a leave-one-leg-out
+  diagnostic so one leg's run can't carry the verdict
+- for any SPY-funded sleeve, **SPY de-risked to the same equity share with
+  the rest in T-bills** as a pre-registered benchmark, and a Sharpe computed
+  on returns in excess of T-bills alongside the lab's 0%-cash Sharpe. Without
+  them, "lower drawdown" can't be told apart from "held less stock"
 - `target_kind`: weights or signals, and the matching simulate path
 - universe: an index (needs the PIT `universe_fn`) or an ETF list (no
   membership issue)
