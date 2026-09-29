@@ -37,9 +37,22 @@ money in ~3 months.
   pass, starting at **10% of intended capital**. **No stock picks.** The
   sleeve has no positive evidence: core 0.59 vs SPY 0.78 (PIT backtest), and
   live −3.9 pts vs SPY since 06-24.
-- **Account type: OPEN, owner to decide first.** An IRA removes wash-sale and
-  collectibles-tax problems. If taxable, pick the gold fund with tax in mind
-  and re-check the sleeve after tax. PDBC is already the no-K-1 fund.
+- **Account type: DECIDED 2026-09-28 — taxable only, no IRA.** Consequences:
+  - The real-money default is **SPY buy-and-hold** (long-term rates, taxes
+    deferred until sale).
+  - **No stock-picking sleeve with real money:** days-to-weeks holds are all
+    short-term gains, and re-entries create wash sales.
+  - The 80/20 sleeve is funded only if it beats SPY **after tax**. Model it
+    with short- vs long-term gains, gold ETFs at the 28% collectibles rate,
+    and drift-band rebalancing (not monthly) to limit realized gains. On the
+    current evidence (~0.05 Sharpe edge, ~1 pt CAGR below SPY) it is
+    unlikely to pass; plan on plain SPY.
+  - The live trader's **cash sweep must not churn SPY with real money**:
+    daily sell/rebuy means wash sales. The dead-band is a prerequisite, and
+    sweep sells should be reviewed for lot and tax effects before any real
+    deploy.
+  - The paper system continues as research; nothing active goes to real
+    money unless it clears an after-tax bar.
 - **Months 0–3: parity rules, not P&L rules.** Three months can't resolve
   the edges involved (a 2-pt gap is <1σ of quarterly tracking error), so the
   shadow and the live book are judged only on whether they behave as
