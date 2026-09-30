@@ -2422,3 +2422,365 @@ in the brief for §6 Tier 1 #1.**
   *Information* 2022; arXiv 2512.07886; arXiv 2607.26188). The report's own
   evidence is that static thresholds decayed across halving epochs.
   **Parked.**
+
+## 2026-09-30 batch — Leveraged S&P 500 ETF rules (SSO/UPRO) for a taxable account
+
+Source: three web-research reports run from the prompt synced 2026-09-25
+with a `## Focus for this run` section restricting scope to rules for
+holding, sizing or timing SSO/UPRO in a **taxable** account
+(`/media/thesix/documents/ggTrader/research-prompts/2026-09-30-leveraged-spy-research-prompt.md`).
+Report 1 (ChatGPT deep research) treated the prompt as the document under
+review and returned a methodological critique plus 8 candidates. Report 2
+(Claude) returned 9 candidates and the best-structured evidence. Report 3
+(Gemini) returned 8 candidates with **precise backtest statistics that have
+no locatable source** (see citation checks). **25 candidates pasted; after
+merging duplicates across reports, 4 new entries added, 2 appended to
+existing entries (B5, B6), 1 parked bullet, and 6 rejected on intake.**
+
+**All three reports agree on the headline, and it is the honest one:** no
+published timing rule for SSO/UPRO has evidence that it beats buy-and-hold
+SPY after tax, and none has shown it beats *static* fractional leverage
+(SPY+SSO at ~1.3–1.5x) in the real-ETF era. Static fractional leverage is
+the after-tax benchmark any leveraged rule must clear, and it is a bet on
+the equity premium, not an edge — it will not beat SPY on Sharpe.
+
+**Citation checks.** 31 primary sources across the three reports were
+searched (three parallel verifiers); **every one exists; none is
+fabricated.** Verified to the digit against the authors' PDFs: Gayed &
+Bilello Tables 7/8/9 (CMT Dow Award PDF), Cederburg et al. (53/50 and
+0.42/0.46), Bianchi & Goldberg (SSO −11.09% / UPRO −28.24% over 2022–23,
+covariance term −2.24/−5.64 pts/yr), Bongaerts–Kang–van Dijk FAJ 76(4),
+Brown's 0.0658/0.0125 condition, Ayres & Nalebuff 90%/19%, SetupAlpha's
+SPY/TQQQ figures, Arthur Hill's 200-day cross counts, ProShares inception
+dates, expense ratios and the SSO 497K after-tax table (19.75% / 17.04% /
+index 13.09%, 10y to 2024-12-31). **Corrections applied inline:** (1) the
+"above the 200-day: +14.1% at 14.7% vol; below: −2.3% at 26.5% vol" line
+quoted by two reports is misattributed — the volatilities are the paper's
+**Russell 2000** figures and the S&P return split is not in its text; (2)
+van Staden–Forsyth–Li "Smart leverage?" is an arXiv preprint (2412.05431),
+not a Feb-2026 *Quantitative Finance* article, and the "de-risk after gains"
+finding belongs to arXiv 2506.19200; (3) Simon & Campasano (2014) is a
+VIX-*futures* carry paper and does not support a VIX/VIX3M equity-timing
+gate; (4) Barroso & Detzel is *JFE* 140(3), 744–767 (**2021**); the
+"doubles / halves Sharpe by sentiment" magnitudes are **unverified**
+(abstract confirms direction only); (5) Harvey et al. cover **60** assets,
+pp. 14–33; (6) Smirnov's 1.17x is Thorp's 1926–84 estimate as quoted,
+2.40x (1996–2024) is Smirnov's own. **Unsourced and treated as invented:**
+report 3's performance profiles ("1970–2025 CAGR 14.8%, Sharpe 0.81, 2.8
+round trips"; "post-1950 Sharpe 0.72, 4.4 switches, 57-day hold";
+"2006–2025 VIX/VIX3M CAGR 16.2%") appear nowhere — not in QuantConnect,
+CXO, quant-investing or proactiveadvisor — and the VIX/VIX3M "2006" start
+predates any free VIX3M history. Its stress-panel drawdowns carry no
+source either. Nothing from report 3's numbers is carried into an entry.
+
+**Data checks.** SSO real history from 2006-06-19, UPRO from 2009-06-23
+(both verified; `ohlcv` has SSO from 2008-07 and UPRO from 2009-06, both
+stale at 2026-07-16 — refresh before use). Free **VIX3M** history: FRED
+`VXVCLS` from **2007-12-04**; Cboe's own CSV only from 2009-09-18. Anything
+before 2006 (2000–02 in particular) is **synthetic** and must be labelled
+so, with financing (T-bill + spread) and the expense ratio declared.
+Expense ratios SSO 0.87% net / UPRO 0.89%, **fee waiver expired
+2026-09-30** — recheck. SSO distributes capital gains "at least annually"
+(497K), so even buy-and-hold is not fully deferred.
+
+**Alpaca tradability (checked 2026-09-30).** SSO, UPRO, BIL, SGOV: all
+`tradable: true`, `fractionable: true`, no `ptp_*` (K-1) attribute. The
+1.0x-margin account is fine; leverage comes from the ETF.
+
+**Tax framing (from the reports, verified where marked).** Long-term is
+*more than* one year, not "12 months" (IRS Pub 550, verified). Whether
+SPY/SSO/UPRO are "substantially identical" for wash-sale purposes is
+**unsettled** — model both ways, don't hard-code. Report 2's break-even:
+a rule that realizes all gains short-term needs about **+2 pts (24%/15%
+brackets) to +4.4 pts (top bracket) of pre-tax CAGR over SPY** just to tie
+SPY after tax, and ~+10 pts to tie static SSO. Illustrative, but it sets
+the scale. SPY buy-and-hold is itself taxed on dividends (~1.5%/yr at
+qualified rates); the benchmark must be an *after-tax* SPY wealth path.
+
+**Quick sanity check, not a WFO result.**
+`docs/research/artifacts-2026-09-30-web-batch/leveraged_spy_sanity.py`
+(output `.json` beside it): real SSO, dividend-adjusted, 2006-07-01 →
+2026-09-29, signal on close t, trade at close t+1, pre-tax, static mixes
+daily-rebalanced (idealized):
+
+| Arm | CAGR | Sharpe | MaxDD | Switches/yr |
+|---|---|---|---|---|
+| SPY | 11.3% | 0.65 | −55.2% | — |
+| Static 70/30 SPY/SSO (~1.3x) | 13.0% | 0.62 | −66.9% | 0 |
+| Static 50/50 SPY/SSO (~1.5x) | 14.0% | 0.60 | −73.2% | 0 |
+| Static SSO (2x) | 15.6% | 0.57 | −84.7% | 0 |
+| 200d SMA daily, whole book SSO/BIL | 13.9% | 0.68 | −39.0% | 5.6 |
+| 200d SMA daily, sleeve only: 50 SPY + 50 (SSO↔SPY) | 14.1% | 0.68 | −59.5% | 5.6 |
+| 10-mo SMA ±2% month-end, sleeve only: 60 SPY + 40 (SSO↔SPY) | 13.5% | 0.65 | −57.9% | 0.9 |
+
+By era (CAGR): 2006-07..2012 SPY 3.9% vs static 50/50 **2.2%**, 200d
+sleeve 3.6%, 10m sleeve 4.8%; 2013..2019 14.6% vs 20.6% / 19.6% / 18.0%;
+2020..2026-09 15.4% vs 19.4% / 19.1% / 17.8%. **Read:** pre-tax, leverage
+adds 2–3 pts CAGR over SPY in bull eras and *loses* to SPY across the
+2006–2012 stretch; the daily 200-day rules tie static 1.5x on return with
+lower drawdown but switch 5.6×/yr, so essentially all of their gain is
+short-term and the +2.6 pt pre-tax margin over SPY sits inside the
+after-tax break-even band. Only the ~1-switch/yr monthly sleeve and the
+static mixes keep deferral. None of this is a verdict; it says the static
+and slow-sleeve arms are the only ones worth a brief.
+
+**Rejected on intake:**
+- **Whole-book 200-day LRS (SSO ↔ T-bills, daily)** — the exact
+  mechanism of the closed `leveraged_trend_*` arc
+  (`docs/research/2026-07-16-leveraged-trend-following-nogo.md`: SMA gate
+  to cash + vol overlay on 2x/3x, lost to own buy-and-hold and SPY on
+  2019–2026). Report 2 itself labels it "not new." Its verified evidence
+  table is kept under A24 as the literature anchor.
+- **"Dual trend + realized-vol filter" (report 3 #3)** — SMA gate plus a
+  realized-vol step-down is literally the closed arc's design; the only
+  change (step to SPY before cash) is A24's off-state. Folded into A24.
+- **Continuous inverse-variance leverage (report 3 #4)** — same mechanism
+  as **B5**; folded there.
+- **RSI(2) / short-hold reversion on UPRO** — 30–60 trades/yr, every gain
+  short-term, wash sales routine; report 2 calls it an after-tax NO-GO by
+  construction, and C7's slow-signal prior applies. Sourcing is a trading
+  book only.
+- **VIX-futures roll-yield harvesting via VXX/SVIX (report 3 #8)** — out
+  of this run's focus, ETN/ETP tail risk (Feb 2018), and the report's own
+  data flag (needs futures term-structure history).
+- **Holding-period-aware exit delay (report 2 D3)** — a tax-lot policy,
+  not a strategy; folded into C8.
+
+### A23. Static fractional leverage: SPY + SSO at ~1.3–1.5x with band rebalancing
+
+**Mechanism.** Hold SPY and SSO in a fixed ratio (70/30 ≈ 1.3x, 50/50 ≈
+1.5x daily exposure) with no timing. Rebalance only when SSO's weight
+leaves a wide band (e.g. 40–60% for the 50/50 book), restoring with new
+cash first and otherwise selling the highest-basis, long-term lots. The
+"trim after gains" rule of Forsyth–van Staden–Li is the same policy read
+from the other side: de-risk the leveraged leg once it has run. **This is
+an allocation, not an alpha source**, and every report ranks it #1 for a
+taxable account precisely because it keeps SPY's deferral.
+**Source(s).** Hayden Brown, *"Long-Term Returns Estimation of Leveraged
+Indexes and ETFs,"* arXiv 2301.03186, published *Financial Markets and
+Portfolio Management* 38(2) (2024), verified: 2x beats the index long-run
+if annual log-return ≥ 0.0658 and daily log-return s.d. ≤ 0.0125 — S&P
+history sits right at that edge. Murray & Sammon, *"The Costs and Benefits
+of Leveraged ETFs,"* SSRN 7133021 (Aug 2026), verified via abstract: long
+broad-index LETFs generated >$100B investor gains, >$40B relative to the
+underlying, "due to modest structural headwinds and rising markets."
+Forsyth, van Staden & Li, arXiv 2506.19200 (2025), verified: LETFs are
+"a valuable tool for investors employing dynamic strategies" that
+"systematically de-risk the portfolio once gains are observed," while
+"confirming their well-documented unsuitability for passive or static
+approaches" — note the tension: the paper supports the *band/trim* rule,
+not un-managed buy-and-hold. Ayres & Nalebuff, NBER WP 14094 (2008; JPM
+2013 as "Diversification Across Time"), verified: 2:1 when young → 90%
+higher expected retirement wealth than life-cycle funds, 19% over 100%
+stocks. Tal Miller, arXiv 2103.10157 (2021), verified: tax-aware LETF
+simulation where a 10% band "does not trigger a rebalance for years"
+(Israeli tax regime, not US). Cooper, SSRN 1664823 (2010), verified.
+Bianchi & Goldberg, arXiv 2604.27287 (2026), verified — the
+counter-evidence: over 2022–23 the S&P was flat (+0.076%) while SSO lost
+11.09% and UPRO 28.24%; two-thirds is variance drag, one-third a negative
+covariance between realized-leverage deviations and index returns that a
+"multiply the index by 2" simulation misses (−2.24 pts/yr SSO, −5.64
+UPRO). Kelly context: Smirnov & Dapporto, SSRN 5341539 / 5288640
+(2025), verified — Thorp's 1926–84 optimum 1.17x vs their 1996–2024
+estimate 2.40x; longer rebalance intervals and fat tails lower it. The
+house 1.5–1.7x prior is therefore a *hypothesis*, not a constant.
+**Why it's plausible.** Captures most of the leverage premium, stays below
+the drag-dominated zone, and realizes almost nothing until liquidation.
+Sanity check above: +2.7 pts CAGR over SPY pre-tax at 1.5x on 2006–2026,
+but −1.7 pts across 2006–2012 and MaxDD −73% vs −55%.
+**Data requirements.** Free. Real SSO from 2006-06; synthetic before,
+labelled, with financing and fees. `ohlcv` SSO/UPRO need a refresh.
+**How it differs from what's already been tried.** Every closed
+leveraged-ETF arc *timed* leverage (breadth rotation, SMA gate). This
+holds it. The lab has never run a static leveraged benchmark, which is
+why the closed arcs could only compare against "own buy-and-hold" of the
+2x/3x ETF, never against a fractional mix.
+**Evidence status:** Peer-reviewed (Brown FMPM; Ayres–Nalebuff JPM) /
+Working paper. **Rule correspondence:** Direct for the leverage math and
+band rule; no source tests *this* SPY/SSO mix after US tax.
+**Implementation class:** Retail (Alpaca: SSO tradable, fractionable).
+**Validation stage:** Literature only + sanity check.
+**Pass bar to pre-register (from the reports, adopted):** after-tax
+terminal wealth above after-tax SPY by ≥1 pt/yr with the lot-level engine
+of C8; MaxDD acknowledged as ≥1.3× SPY's; Sharpe will be *below* SPY —
+this candidate is an owner risk-appetite decision, not a lab GO/NO-GO.
+
+**Status: queued (2026-09-30) — brief at `docs/research/briefs/2026-09-30-static-fractional-leverage.md`; A24 rides along as a second-priority rider.**
+
+### A24. Core-satellite slow trend on the leverage sleeve only (off-state = SPY, not cash)
+
+**Mechanism.** Permanent SPY core (e.g. 60%) never sold. A leverage
+sleeve (40%) is in SSO when SPY's **month-end** close is ≥2% above its
+10-month SMA and back in **SPY** (not T-bills) when ≥2% below; hold state
+in between. On-state exposure ≈1.4x, off-state 1.0x. A false exit costs
+only the leverage premium, not the equity premium; the buffer and monthly
+cadence cut switches to ~1/yr (sanity check: 0.94). Optional C8 tax-lot
+delay. **No source tests this sleeve rule on SSO; it is an adaptation.**
+**Source(s).** Gayed & Bilello, *"Leverage for the Long Run,"* SSRN
+2741701, 2016 CMT Charles H. Dow Award — **practitioner, not
+peer-reviewed** — Table 8 (Oct 1928–Oct 2015, synthetic, 1% leverage
+fee, ~5 trades/yr) verified: S&P 9.1% / −86.2%; LRS 1.25x 12.5% /
+−59.0%; 2x 19.1% / −78.7%; 3x 26.8% / −92.2%; constant 2x 13.7% / −98.8%.
+Table 9 bear markets verified: 2000–02 −18.4/−31.0/−45.8%, 2007–09
+−13.4/−21.3/−31.1% (1.25x/2x/3x LRS) — synthetic, not ETF history. CXO
+Advisory (2016-04-01), verified: 1% leverage cost and zero switching
+friction overstate results; sample start just before 1929 flatters SMA
+rules. Zakamulin, SSRN 2743119, *Int. Review of Finance* 18(2) (2018),
+verified: without look-ahead, MA timing is "at best … only marginally
+better" than buy-and-hold and statistically indistinguishable. Faber,
+*J. Wealth Management* (2007), 10-month SMA month-end rule, verified
+venue. SetupAlpha (2026-05-31), verified: a 200-day filter with costs cut
+TQQQ's drawdown −81.6% → −57.2% but ending wealth $3.96M → $1.12M; "sells
+after the decline, buys back after the strongest part of the recovery."
+Arthur Hill (StockCharts 2022-08-19), verified: SPY crossed its 200-day
+ten times Jan–Apr 2022, >150 times since 2000.
+**Why it's plausible.** Volatility clusters and is roughly double below
+the long SMA; drag scales with L(L−1)σ²; a slow gate keeps leverage out
+of the worst-vol states while the core stays invested. C7's slow-signal
+prior favours the monthly form over the daily one.
+**Data requirements.** Free; same as A23 plus the tax-lot engine.
+**How it differs from what's already been tried.** The closed
+`leveraged_trend_*` arc gated the *whole* book to cash on a daily SMA
+with a vol overlay and lost to own buy-and-hold on 2019–2026. This times
+only the *leverage increment* (1.4x → 1.0x), monthly, buffered, and its
+bar is **static A23 of the same instruments**, not SPY. The 2026-09-28
+result (a 200-day switch added nothing over the static 80/20 cross-asset
+book) is the direct warning: on the sanity check the monthly sleeve gave
+up 0.5 pt CAGR to static 50/50 for a 15-pt shallower drawdown — that is
+"held less leverage," not timing skill, until a same-average-exposure
+static comparator says otherwise.
+**Evidence status:** Practitioner (rule) / Peer-reviewed counter-evidence
+(Zakamulin). **Rule correspondence:** Close adaptation. **Implementation
+class:** Retail. **Validation stage:** Literature only + sanity check.
+**Pre-registered comparators if briefed:** A23 at the same *average*
+exposure; static 60/40 SPY/SSO; SPY de-risked to the same average equity
+share with BIL; after-tax SPY. Freeze the 10-month/±2% parameters before
+touching data; test 2007–2012 as the holdout; report switches/yr and the
+share of gains realized short-term.
+
+**Status: untriaged — low-medium; only worth a brief bolted onto A23's.**
+
+### B13. Drawdown-controlled de-leveraging (Grossman–Zhou / CPPI-style) of the leverage sleeve
+
+**Mechanism.** Scale the SSO sleeve to a cushion above a floor set at
+(1−α) of the book's high-water mark (α ≈ 20%), so leverage falls
+mechanically as drawdown deepens and returns as new highs are made. It
+conditions on the *portfolio's own* path, not a market indicator.
+**Source(s).** Grossman & Zhou, *"Optimal Investment Strategies for
+Controlling Drawdowns,"* *Mathematical Finance* 3(3), 241–276 (1993),
+verified: optimal risky allocation proportional to surplus over the
+floor. Chekhlov, Uryasev & Zabarankin, *IJTAF* 8(1) (2005), exists.
+**Why it's plausible.** It is the only overlay here with a survival
+guarantee rather than a forecast, and Forsyth et al. (A23) find the
+winning LETF strategies are exactly the ones that de-risk after gains.
+**Data requirements.** Free; portfolio equity only.
+**How it differs from what's already been tried.** Nothing closed
+conditions on own-drawdown; the live trader's 15% drawdown *halt* is a
+stop, not a sizing rule. Known failure: "cash lock" after a fast crash
+(2020) — the cushion is gone at the bottom, so the sleeve misses the
+V-recovery, and every de-lever step is a short-term realization.
+**Evidence status:** Peer-reviewed (mechanism). **Rule correspondence:**
+Mechanism only. **Implementation class:** Retail. **Validation stage:**
+Literature only.
+
+**Status: untriaged — low; cheap frozen-rule test only, after A23.**
+
+### C8. Realistic LETF simulation and after-tax accounting standard (method)
+
+Adopted from report 1's "simulation contract" and report 2's C2; applies
+to any brief from this batch.
+- **No same-close look-ahead.** A decision "just before the close" cannot
+  use that day's completed close for the SMA/vol/VIX signal *and* execute
+  at it. Signals from t−1 with MOC at t, or a documented ~15:50 ET
+  snapshot with matching prices. (The live trader's 12:45 PT run already
+  uses an intraday last bar; say so in any report.)
+- **Real ETF vs synthetic.** SSO from 2006-06, UPRO from 2009-06; before
+  that a labelled synthetic series with financing at T-bill + 0.5–1.0%,
+  the expense ratio, and daily reset. Report the Bianchi–Goldberg
+  covariance gap between synthetic and real ETF over the overlap.
+- **Benchmark ladder before any timing test:** after-tax SPY; static
+  1.25x / 1.5x (A23); static SSO; SPY de-risked with BIL to the same
+  average equity share. A timing rule's bar is the static book with the
+  same average exposure.
+- **Tax-lot engine:** per lot acquisition date, basis, ST/LT (more than
+  one year = LT), distributions (SSO pays capital gains at least annually
+  — verified 497K), wash-sale as a *sensitivity* (SPY/SSO/UPRO
+  "substantially identical" is unsettled), tax paid on schedule, terminal
+  liquidation at LT rates; report terminal after-tax wealth *and*
+  after-tax Sharpe. Rates as parameters (report 2 used 37%+3.8% ST /
+  20%+3.8% LT).
+- **Decomposition per rule:** net = gross timing benefit − fund/financing
+  differential − trading cost − incremental tax drag − off-state
+  opportunity cost.
+- **Stress panel, not one statistic:** 2000–02 (synthetic), 2008 (real
+  SSO), 2011, 2015–16, 2020, 2022 — drawdown, switches, realized ST gains,
+  time to recover, static-comparator outcome in each.
+- **Freeze parameters** from the literature before opening data; test
+  the neighbourhood (150/200/250-day, ±1/2/3% buffer) for plateau vs
+  spike, never to pick the best.
+Sources: Sialm & Zhang, NBER WP 21060 (2015), verified; IRS Pub 550
+(verified: one year or less = short-term); Avellaneda & Zhang, *SIAM J.
+Fin. Math* 1(1) (2010), verified, for the path-dependence identity; FINRA
+Regulatory Notice 09-31 (2009), verified.
+
+**Status: untriaged — method; required for any brief from A23/A24/B13.**
+
+#### Appended to existing entries this batch
+
+**B5 (vol-managed SPY) — additional sources (batch 2026-09-30).** Proposed
+again by all three reports, now framed as *conditional* de-leveraging of
+the SSO sleeve (1.5x → 1.0x) rather than SPY → cash. Bongaerts, Kang & van
+Dijk, *"Conditional Volatility Targeting,"* *Financial Analysts Journal*
+76(4), 54–71 (2020), DOI 10.1080/0015198X.2020.1790853, verified:
+conventional vol targeting "fails to consistently improve performance in
+global equity markets and can lead to markedly greater drawdowns," while
+adjusting "only in the extremes" gives higher Sharpe, lower drawdown, low
+turnover. Barroso & Detzel, *JFE* 140(3), 744–767 (2021), verified
+(abstract): the managed *market* portfolio is the one factor whose gains
+survive transaction costs, but "only … when sentiment is high" — the
+"doubles / halves" magnitudes quoted by report 1 are unverified.
+Bessembinder, *"Returns to Constant Leverage Strategies: General
+Principles and Application to Levered Single-Stock ETFs,"* SSRN 5369417
+(2025, rev. 2026), verified: constant-leverage underperformance in high
+vol is "not due to volatility per se, but because high volatility periods
+are characterized by both lower average stock returns and return
+reversals." DeMiguel, Martín-Utrera & Uppal, *JF* 79(6) (2024), verified —
+the strong modern result is *multifactor*, not single-market. Harvey et
+al. cover **60** assets (not ">60"). A sleeve version of B5 would be an
+overlay on A23 and must beat A23 static; expect drawdown reduction, not
+Sharpe gain (see the 2026-09-28 Alankar et al. note above).
+
+**B6 (VIX/VIX3M) — additional notes (batch 2026-09-30).** Proposed again by
+two reports as a full SSO ↔ BIL gate. **Do not upgrade.** Simon &
+Campasano (2014) is a VIX-futures carry paper and does not support an
+equity gate (re-verified). Report 3's "2006–2025, CAGR 16.2%, Sharpe 0.72,
+9.6 round trips" is unsourced and the window predates free VIX3M data
+(FRED `VXVCLS` starts 2007-12-04). Reports 2 and 3 agree on the failure
+mode: 2022's grind barely inverted the curve, so the gate stayed levered
+through a −50%+ SSO drawdown, while 2020's fast inversion whipsawed it.
+~10 switches/yr makes it the worst tax profile of the batch. Only a cheap
+frozen-rule test (ratio >1.0 → sleeve to SPY; <0.95 → back) on 2009–2026
+against A23, then drop it.
+
+#### Parked this batch — cheap falsification only
+
+- **Autocorrelation / variance-ratio leverage regime.** Hsieh, Chang &
+  Chen, *"Compounding Effects in Leveraged ETFs: Beyond the Volatility
+  Drag Paradigm,"* arXiv 2504.20116 (2025), verified: LETF compounding
+  beats the target multiple under positive autocorrelation and lags under
+  mean reversion; Bessembinder (above) ties rebalancing cost to variance
+  ratios. It targets the right quantity (serial dependence) rather than a
+  price-vs-SMA proxy, but variance-ratio estimates are noisy and no rule is
+  tested. One frozen lookback (1-month/1-week VR over 126 days), monthly,
+  vs A23. **Parked.**
+
+**Triage.** Against today's bar (*beat SPY, or improve SPY + sleeve*, after
+tax): **(1) A23** is the only item likely to clear after-tax wealth vs SPY,
+and it does so by taking more equity risk, not by skill — the lab cannot
+"validate" it, the owner has to decide the drawdown appetite. **(2) A24**
+is the one timing idea worth a brief, and only bolted onto A23's, with the
+static same-exposure comparator pre-registered; the internal
+`leveraged_trend_*` NO-GO and Zakamulin are the priors against it. **(3)
+B5-sleeve / B13** are cheap overlays to try on top of A23 after it exists.
+Everything else in this batch is closed or parked. C8 is required before
+any of it runs.

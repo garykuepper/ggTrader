@@ -228,6 +228,19 @@ container recreated and checked):
     first.
 ---
 
+14. **Research, queued 2026-09-30 — static fractional leverage (A23), after
+    tax.** Owner asked "what's most likely to work, I can handle some
+    risk." Answer from the 2026-09-30 web batch and sanity check: static
+    70/30 SPY/SSO (~1.3x), no timing, band-rebalanced — an allocation, not
+    an edge (+1.7 pt CAGR over SPY pre-tax on 2006–2026, MaxDD −67% vs −55%,
+    trailed SPY across 2006–2012, Sharpe slightly below SPY). Brief:
+    `docs/research/briefs/2026-09-30-static-fractional-leverage.md`. It
+    needs the lot-level after-tax engine (backlog C8), a synthetic
+    1993–2006 holdout labelled as such, and the pre-registered bar (≥ +1
+    pt/yr after-tax CAGR vs after-tax SPY on 2006–2026, not below SPY on the
+    holdout). Optional rider: A24 monthly sleeve switch vs same-exposure
+    static. Research only; live stays frozen (item 13).
+
 ## SUPERSEDED (2026-09-11 update, deployed 2026-09-22 — see ACTIVE STEP above)
  — fix MNST split state → catastrophe stop → core revert → sweep hysteresis: CODE-COMPLETE ON BRANCH, NOT YET DEPLOYED
 
