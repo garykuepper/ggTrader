@@ -228,7 +228,17 @@ container recreated and checked):
     first.
 ---
 
-14. **Research, queued 2026-09-30 — static fractional leverage (A23), after
+14. **Research DONE 2026-09-30 — static fractional leverage (A23): GO for
+    owner decision; A24 sleeve rider NO-GO.** Report
+    `docs/research/2026-09-30-static-fractional-leverage.md`. 70/30 SPY/SSO,
+    band 22–38%, month-end: after-tax 12.00% vs SPY 10.40% (+1.6 pt/yr, real
+    SSO 2006–2026), +0.6 pt on synthetic 1993–2006; MaxDD −66% vs −55%; 995 vs
+    884 days to recover 2008; behind SPY in 24% of rolling 10y windows (worst
+    −3.3 pt/yr). **Owner decides** the drawdown appetite and writes an exit rule
+    (date-based, never drawdown-based) before any money moves. Before real
+    money: one-afternoon funding-cost check at ~4% bills (report §3 Rank 2).
+    Live implementation waits for the parity window (item 13). Original
+    queue note: static fractional leverage (A23), after
     tax.** Owner asked "what's most likely to work, I can handle some
     risk." Answer from the 2026-09-30 web batch and sanity check: static
     70/30 SPY/SSO (~1.3x), no timing, band-rebalanced — an allocation, not

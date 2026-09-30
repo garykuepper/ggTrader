@@ -2605,7 +2605,7 @@ terminal wealth above after-tax SPY by ≥1 pt/yr with the lot-level engine
 of C8; MaxDD acknowledged as ≥1.3× SPY's; Sharpe will be *below* SPY —
 this candidate is an owner risk-appetite decision, not a lab GO/NO-GO.
 
-**Status: queued (2026-09-30) — brief at `docs/research/briefs/2026-09-30-static-fractional-leverage.md`; A24 rides along as a second-priority rider.**
+**Status: RESOLVED 2026-09-30 — GO for owner decision (`docs/research/2026-09-30-static-fractional-leverage.md`): 70/30 SPY/SSO after-tax CAGR 12.00% vs SPY 10.40% (+1.6 pt, 24/15; +1.55 at 40.8/23.8) on real SSO 2006–2026, +0.6 pt on the synthetic 1993–2006 holdout; MaxDD −66% vs −55%; Sharpe 0.61 < 0.64; behind SPY in 24% of rolling 10y windows. An allocation, not an edge.**
 
 ### A24. Core-satellite slow trend on the leverage sleeve only (off-state = SPY, not cash)
 
@@ -2658,7 +2658,7 @@ share with BIL; after-tax SPY. Freeze the 10-month/±2% parameters before
 touching data; test 2007–2012 as the holdout; report switches/yr and the
 share of gains realized short-term.
 
-**Status: untriaged — low-medium; only worth a brief bolted onto A23's.**
+**Status: RESOLVED 2026-09-30 — NO-GO as a return improvement (same report): after tax 11.73% vs static 1.3x 12.00% on real SSO 2006–2026 (10.80% vs 11.33% top bracket), $87k ST gains realized vs <$1k, 2020 recovery 195 vs 110 days; drawdown −58% vs −66% is the only gain. Any sleeve-timing re-proposal must beat the static 1.3x after-tax numbers.**
 
 ### B13. Drawdown-controlled de-leveraging (Grossman–Zhou / CPPI-style) of the leverage sleeve
 

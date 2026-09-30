@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-30
+
+- **Research: static fractional leverage (A23) — GO for owner decision;
+  A24 sleeve trend rider — NO-GO.** New driver
+  `scripts/static_leverage_aftertax.py` (lot-level tax engine, band
+  rebalancing, synthetic SSO 1993–2006 calibrated on the real overlap, A24
+  rider); raw results `docs/research/_static_leverage_aftertax_results.json`;
+  report `docs/research/2026-09-30-static-fractional-leverage.md`. 70/30
+  SPY/SSO beats SPY by +1.6 pt/yr after tax on 2006–2026 at the cost of −66%
+  vs −55% drawdown; Sharpe below SPY. No live change.
+- **Research intake: leveraged S&P ETF web batch** (`WEB_RESEARCH_CANDIDATES.md`
+  2026-09-30 batch): A23/A24/B13/C8 added, 31 sources verified, Gemini
+  backtest figures unsourced and excluded. `ohlcv` SSO/UPRO re-fetched in
+  full; FRED `DTB3` cached.
+
 ## 2026-09-29 (built 2026-09-28 night, deployed 2026-09-29 ~17:15 PT)
 
 - **Deployed** image `31fcff28` (built from `291e6dd`); rollback image
