@@ -17,7 +17,11 @@ Sharpe gate — the pre-registered bar (brief, written before the run) was
 SPY on a labelled synthetic 1993–2006 holdout.** Sharpe below SPY was declared
 expected and not a fail.
 
-**Result: the 70/30 SPY/SSO book (~1.3x) clears both bars.** On 20.3 years of real
+**Result: the 70/30 SPY/SSO book (~1.3x) clears both bars on the historical
+window — but the §3 Rank 2 funding-cost check, run the same day, shows the
+margin falling to +0.80 pt/yr at today's ~4% bills, below the +1.0 bar.** The
+GO is therefore conditional on funding costs, not unconditional (see the
+funding-cost paragraph at the end of §2). On 20.3 years of real
 SSO it earned **12.00% after tax vs SPY's 10.40%** at a 24%/15% bracket (+1.60
 pt/yr; +1.55 pt at 40.8%/23.8%), turning $100k into **$992k vs $741k** (+34%
 terminal wealth). On the synthetic 1993–2006 holdout it earned 9.53% vs 8.89%
@@ -108,6 +112,24 @@ $7k disallowed over 33 years) because they almost never sell at a loss. It
 costs A24 0.05–0.16 pt/yr (~$80k disallowed on the main window from
 SSO→SPY→SSO round trips).
 
+**Funding-cost sensitivity (run 2026-09-30, `--rf-offset`, applied as a daily
+drag on real SSO since it finances ~1x NAV; raw JSON
+`_static_leverage_aftertax_rf_plus0.015.json` / `_rf_plus0.025.json`).** The
+main window's T-bills averaged 1.64%; bills are ~4.1% today. Holding
+everything else at history:
+
+| Bills vs sample avg | 70/30 after-tax CAGR 24/15 | margin vs SPY (10.40%) | top bracket margin |
+|---|---|---|---|
+| as history (+0.0) | 12.00% | **+1.60 pt** | +1.55 pt |
+| +1.5 pt (~3.1% bills) | 11.53% | **+1.13 pt** | +1.10 pt |
+| +2.5 pt (~4.1% bills, today) | 11.20% | **+0.80 pt** | +0.79 pt |
+
+At today's funding cost the 1.3x book is **below the pre-registered +1.0 pt
+bar**, with the same −66% drawdown. 1.25x is worse still (+0.70 pt). The
+edge is real but thin, and it is a function of the bill rate: roughly
+0.3 pt of after-tax margin per 1 pt of bills on a 30% SSO slice. This is
+the number that should drive the decision, not the historical +1.6.
+
 **Band vs daily rebalancing:** the ±8pp band beat idealized daily rebalancing by
 0.47 pt pre-tax and 0.25–0.44 pt after tax (momentum drift plus far fewer
 taxable sells). Banding is the right policy, and it is not a tuning knob here:
@@ -138,14 +160,14 @@ loss into a permanent one plus a tax bill.
 +0.6 pt on a synthetic 1993–2006. Effort: none in the lab. Risk: a 2000–2012
 style decade during which leverage costs money and returns nothing.
 
-### Rank 2: Funding-cost regime check (S, one afternoon)
+### Rank 2: Funding-cost regime check — DONE 2026-09-30 (see §2 table)
 
 **Mechanism.** The 1.2 pt/yr beta shortfall was measured with T-bills averaging
 1.64% over 2006–2026. At today's ~4.1% bills the financing leg of SSO costs
 roughly 2.5 pt/yr more than the sample average on the 2x leg (≈0.75 pt on the
 30% slice). Re-run the main window with `--spread` and a rate shift to see
-whether the +1.6 pt margin survives a decade of 4–5% bills. **Unvalidated:**
-expected margin at current rates ≈ +0.8–1.0 pt/yr, i.e. right at the bar.
+whether the +1.6 pt margin survives a decade of 4–5% bills. **Measured:** +0.80 pt/yr at +2.5 pt bills (today), +1.13 at +1.5 pt — the
+prior guess of +0.8–1.0 was right, and it lands *below* the bar today.
 **Why it differs from rejected work:** nothing closed looks at LETF financing
 cost regimes. **Effort:** S — the driver already takes `--spread`; add a
 rate-offset flag.

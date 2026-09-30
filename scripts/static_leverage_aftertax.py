@@ -43,7 +43,7 @@ STRESS = {
 
 
 # ----------------------------------------------------------------------------- data
-def load_prices(spread: float) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+def load_prices(spread: float, rf_offset: float = 0.0) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Unadjusted closes + per-share distributions for SPY/SSO/BIL, with synthetic SSO pre-2006.
 
     Returns (close, dist, calib). Synthetic SSO has zero distributions (all return in price),
@@ -60,7 +60,8 @@ def load_prices(spread: float) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
 
     rf = load_fred_series("DTB3", "1990-01-01", "2030-01-01")
     rf = rf.set_index(pd.to_datetime(rf["date"]))["value"].astype(float) / 100.0
-    rf = rf.reindex(close.index, method="ffill").fillna(method="bfill") / 252.0
+    rf = rf.reindex(close.index, method="ffill").bfill()
+    rf = (rf + rf_offset) / 252.0  # rf_offset: funding-regime sensitivity (annual, added)
     # SPY total return (price + distribution)
     r_spy = (close["SPY"] + dist["SPY"]) / close["SPY"].shift(1) - 1
     synth = 2.0 * r_spy - (rf + spread / 252.0) - SSO_ER / 252.0
@@ -84,6 +85,11 @@ def load_prices(spread: float) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     synth_px = synth_px * first_real / synth_px[pre].iloc[-1] / (1 + synth[~pre].iloc[0])
     sso = close["SSO"].copy()
     sso[pre] = synth_px[pre]
+    if rf_offset:
+        # funding-regime sensitivity on the REAL series too: SSO finances ~1x NAV, so a
+        # higher bill rate is ~1:1 extra drag on the 2x fund. Applied as a daily haircut.
+        drag = pd.Series(1.0 - rf_offset / 252.0, index=close.index).where(~pre, 1.0).cumprod()
+        sso = sso * drag / drag[~pre].iloc[0]
     close["SSO"] = sso
     dist.loc[pre, "SSO"] = 0.0
     # cash leg: BIL where it exists, else accrue T-bill in a synthetic "BIL"
@@ -354,9 +360,13 @@ def main() -> None:
     p.add_argument("--main-start", default="2006-06-21")
     p.add_argument("--end", default="2026-09-29")
     p.add_argument("--holdout", nargs=2, default=["1993-02-01", "2006-06-20"])
+    p.add_argument("--rf-offset", type=float, default=0.0, help="add to T-bill rate (annual)")
+    p.add_argument("--main-only", action="store_true", help="skip holdout/stitched windows")
+    p.add_argument("--arms", default="", help="comma list of arm names to run (default all)")
+    p.add_argument("--out", default=str(OUT_JSON))
     a = p.parse_args()
 
-    close, dist, calib = load_prices(a.spread)
+    close, dist, calib = load_prices(a.spread, a.rf_offset)
     close, dist = close.loc[: a.end], dist.loc[: a.end]
     print("synthetic calibration:", calib)
 
@@ -376,6 +386,11 @@ def main() -> None:
         "holdout_synthetic": tuple(a.holdout),
         "full_1993_2026_stitched": (a.holdout[0], a.end),
     }
+    if a.arms:
+        keep = [x.strip() for x in a.arms.split(",")]
+        arms = {k: v for k, v in arms.items() if k in keep}
+    if a.main_only:
+        windows = {"main_real_sso": windows["main_real_sso"]}
     results: dict = {
         "calibration": calib,
         "brackets": BRACKETS,
@@ -413,6 +428,10 @@ def main() -> None:
         "1.3x": round(rf_ann + 1.3 * (spy - rf_ann), 4),
         "1.5x": round(rf_ann + 1.5 * (spy - rf_ann), 4),
     }
+    if not navs_full:
+        Path(a.out).write_text(json.dumps(results, indent=2, default=str))
+        print("wrote", a.out)
+        return
     results["stress_panel_pretax"] = stress(navs_full)
     results["recovery_days"] = {
         arm: {
@@ -433,13 +452,13 @@ def main() -> None:
             "share_10y_windows_behind_spy": round(float((rel < 0).mean()), 3),
         }
     results["rolling_10y_pretax_vs_spy"] = roll
-    OUT_JSON.write_text(json.dumps(results, indent=2, default=str))
+    Path(a.out).write_text(json.dumps(results, indent=2, default=str))
     print("\nstress (pre-tax, full stitched):")
     print(pd.DataFrame(results["stress_panel_pretax"]).to_string(index=False))
     print("\nrolling 10y vs SPY:", json.dumps(roll, indent=1))
     print("recovery days:", results["recovery_days"])
     print("beta-matched:", results["beta_matched_pretax_cagr"])
-    print("wrote", OUT_JSON)
+    print("wrote", a.out)
 
 
 if __name__ == "__main__":

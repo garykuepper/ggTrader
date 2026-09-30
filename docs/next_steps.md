@@ -53,6 +53,15 @@ money in ~3 months.
     deploy.
   - The paper system continues as research; nothing active goes to real
     money unless it clears an after-tax bar.
+- **Leverage (A23, 2026-09-30): under decision.** 70/30 SPY/SSO beat SPY
+  by +1.6 pt/yr after tax on 2006–2026, but only +0.8 pt at today's ~4%
+  bills (below the pre-registered +1.0 bar), for −66% vs −55% drawdowns
+  and a 1-in-4 chance of a decade behind SPY
+  (`docs/research/2026-09-30-static-fractional-leverage.md`). If adopted:
+  1.3x, band 22–38%, month-end check, exit rule **date-based or never,
+  never drawdown-based**, written here before any money moves. If
+  declined: plain SPY stands. Either way no live change before the parity
+  window ends.
 - **Months 0–3: parity rules, not P&L rules.** Three months can't resolve
   the edges involved (a 2-pt gap is <1σ of quarterly tracking error), so the
   shadow and the live book are judged only on whether they behave as
@@ -237,9 +246,13 @@ container recreated and checked):
     −3.3 pt/yr). **Owner decides** the drawdown appetite and writes an exit rule
     (date-based, never drawdown-based) before any money moves. Before real
     money: one-afternoon funding-cost check at ~4% bills (report §3 Rank 2).
-    Live implementation waits for the parity window (item 13). Original
-    queue note: static fractional leverage (A23), after
-    tax.** Owner asked "what's most likely to work, I can handle some
+    Live implementation waits for the parity window (item 13).
+    **Funding-cost check DONE 2026-09-30:** at today's ~4.1% bills the
+    after-tax margin is **+0.80 pt/yr (below the +1.0 bar)**; +1.13 at ~3.1%
+    bills. Owner said "go with the recommendation" (1.3x) *before* this
+    number landed — **decision re-opened; awaiting owner** (see REAL-MONEY
+    PLAN bullet). Original queue note: static fractional leverage (A23),
+    after tax.** Owner asked "what's most likely to work, I can handle some
     risk." Answer from the 2026-09-30 web batch and sanity check: static
     70/30 SPY/SSO (~1.3x), no timing, band-rebalanced — an allocation, not
     an edge (+1.7 pt CAGR over SPY pre-tax on 2006–2026, MaxDD −67% vs −55%,

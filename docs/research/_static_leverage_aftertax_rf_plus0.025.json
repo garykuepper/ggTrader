@@ -1,0 +1,243 @@
+{
+  "calibration": {
+    "overlap": [
+      "2006-06-22",
+      "2026-09-30"
+    ],
+    "residual_ann_mean": 0.02353,
+    "residual_ann_vol": 0.03647,
+    "corr_real_synth": 0.99561,
+    "spread_used": 0.0075,
+    "haircut_applied_pre2006_ann": 0.0
+  },
+  "brackets": {
+    "24/15": [
+      0.24,
+      0.15
+    ],
+    "40.8/23.8": [
+      0.408,
+      0.238
+    ]
+  },
+  "cost_bps_per_side": 1.0,
+  "windows": {
+    "main_real_sso": {
+      "SPY buy-and-hold": {
+        "24/15": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.111,
+          "pre_tax_sharpe": 0.641,
+          "pre_tax_vol": 0.1935,
+          "max_dd": -0.5534,
+          "after_tax_terminal": 741053.0,
+          "after_tax_cagr": 0.104,
+          "taxes_paid_total": 113199.0,
+          "realized_st": 676.0,
+          "realized_lt": 661975.0,
+          "wash_disallowed": 0.0
+        },
+        "24/15 wash": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.111,
+          "pre_tax_sharpe": 0.641,
+          "pre_tax_vol": 0.1935,
+          "max_dd": -0.5534,
+          "after_tax_terminal": 740687.0,
+          "after_tax_cagr": 0.104,
+          "taxes_paid_total": 113134.0,
+          "realized_st": 676.0,
+          "realized_lt": 661593.0,
+          "wash_disallowed": 452.0
+        },
+        "40.8/23.8": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.1093,
+          "pre_tax_sharpe": 0.633,
+          "pre_tax_vol": 0.1935,
+          "max_dd": -0.5542,
+          "after_tax_terminal": 661221.0,
+          "after_tax_cagr": 0.0978,
+          "taxes_paid_total": 175437.0,
+          "realized_st": 660.0,
+          "realized_lt": 646183.0,
+          "wash_disallowed": 0.0
+        },
+        "40.8/23.8 wash": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.1093,
+          "pre_tax_sharpe": 0.633,
+          "pre_tax_vol": 0.1935,
+          "max_dd": -0.5542,
+          "after_tax_terminal": 660522.0,
+          "after_tax_cagr": 0.0978,
+          "taxes_paid_total": 175218.0,
+          "realized_st": 659.0,
+          "realized_lt": 645369.0,
+          "wash_disallowed": 680.0
+        }
+      },
+      "static 1.25x (75/25) band 8pp": {
+        "24/15": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.118,
+          "pre_tax_sharpe": 0.588,
+          "pre_tax_vol": 0.2377,
+          "max_dd": -0.6477,
+          "after_tax_terminal": 841454.0,
+          "after_tax_cagr": 0.111,
+          "taxes_paid_total": 130942.0,
+          "realized_st": 916.0,
+          "realized_lt": 785232.0,
+          "wash_disallowed": 0.0
+        },
+        "24/15 wash": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.1179,
+          "pre_tax_sharpe": 0.588,
+          "pre_tax_vol": 0.2377,
+          "max_dd": -0.6477,
+          "after_tax_terminal": 841318.0,
+          "after_tax_cagr": 0.111,
+          "taxes_paid_total": 130918.0,
+          "realized_st": 916.0,
+          "realized_lt": 785086.0,
+          "wash_disallowed": 231.0
+        },
+        "40.8/23.8": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.1161,
+          "pre_tax_sharpe": 0.581,
+          "pre_tax_vol": 0.238,
+          "max_dd": -0.6489,
+          "after_tax_terminal": 748846.0,
+          "after_tax_cagr": 0.1046,
+          "taxes_paid_total": 202857.0,
+          "realized_st": 893.0,
+          "realized_lt": 766341.0,
+          "wash_disallowed": 0.0
+        },
+        "40.8/23.8 wash": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.1161,
+          "pre_tax_sharpe": 0.581,
+          "pre_tax_vol": 0.238,
+          "max_dd": -0.6489,
+          "after_tax_terminal": 748601.0,
+          "after_tax_cagr": 0.1046,
+          "taxes_paid_total": 202781.0,
+          "realized_st": 893.0,
+          "realized_lt": 766048.0,
+          "wash_disallowed": 331.0
+        }
+      },
+      "static 1.3x (70/30) band 8pp": {
+        "24/15": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.1191,
+          "pre_tax_sharpe": 0.579,
+          "pre_tax_vol": 0.2473,
+          "max_dd": -0.6649,
+          "after_tax_terminal": 857465.0,
+          "after_tax_cagr": 0.112,
+          "taxes_paid_total": 133773.0,
+          "realized_st": 972.0,
+          "realized_lt": 805518.0,
+          "wash_disallowed": 0.0
+        },
+        "24/15 wash": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.1191,
+          "pre_tax_sharpe": 0.579,
+          "pre_tax_vol": 0.2473,
+          "max_dd": -0.6649,
+          "after_tax_terminal": 857317.0,
+          "after_tax_cagr": 0.112,
+          "taxes_paid_total": 133747.0,
+          "realized_st": 972.0,
+          "realized_lt": 805359.0,
+          "wash_disallowed": 255.0
+        },
+        "40.8/23.8": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.1174,
+          "pre_tax_sharpe": 0.573,
+          "pre_tax_vol": 0.2476,
+          "max_dd": -0.6662,
+          "after_tax_terminal": 763644.0,
+          "after_tax_cagr": 0.1057,
+          "taxes_paid_total": 207492.0,
+          "realized_st": 950.0,
+          "realized_lt": 787092.0,
+          "wash_disallowed": 0.0
+        },
+        "40.8/23.8 wash": {
+          "window": [
+            "2006-06-21",
+            "2026-09-29"
+          ],
+          "years": 20.24,
+          "pre_tax_cagr": 0.1174,
+          "pre_tax_sharpe": 0.573,
+          "pre_tax_vol": 0.2476,
+          "max_dd": -0.6662,
+          "after_tax_terminal": 763373.0,
+          "after_tax_cagr": 0.1056,
+          "taxes_paid_total": 207407.0,
+          "realized_st": 949.0,
+          "realized_lt": 786767.0,
+          "wash_disallowed": 380.0
+        }
+      }
+    }
+  },
+  "beta_matched_pretax_cagr": {
+    "rf_ann": 0.0414,
+    "1.3x": 0.1319,
+    "1.5x": 0.1458
+  }
+}

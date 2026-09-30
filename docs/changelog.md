@@ -9,7 +9,9 @@
   rider); raw results `docs/research/_static_leverage_aftertax_results.json`;
   report `docs/research/2026-09-30-static-fractional-leverage.md`. 70/30
   SPY/SSO beats SPY by +1.6 pt/yr after tax on 2006–2026 at the cost of −66%
-  vs −55% drawdown; Sharpe below SPY. No live change.
+  vs −55% drawdown; Sharpe below SPY. No live change. **Funding-cost check**
+  (same day, `--rf-offset`): margin +0.80 pt at today's ~4% bills, below the
+  +1.0 bar — GO is conditional; owner decision re-opened.
 - **Research intake: leveraged S&P ETF web batch** (`WEB_RESEARCH_CANDIDATES.md`
   2026-09-30 batch): A23/A24/B13/C8 added, 31 sources verified, Gemini
   backtest figures unsourced and excluded. `ohlcv` SSO/UPRO re-fetched in
