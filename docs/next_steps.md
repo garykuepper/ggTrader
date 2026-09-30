@@ -203,7 +203,12 @@ container recreated and checked):
     history, and add a daily-move sanity check (>40%, clustered by date).
     MRNA, MLI, STI and ADCT also show large jumps
     (`docs/research/2026-09-28-live-indicator-warmup.md`).
-13. **CODE BUILT 2026-09-28 night (365d lookback, tz-safe inception cache,
+13. **DEPLOYED 2026-09-29 ~17:15 PT (steps 1-5 done; config now FROZEN for
+    the 3-month parity window, through ~2026-12-29).** Verify the 09-30
+    12:45 run: one AVB untradable alert, no stock buys (4 held vs cap 3),
+    no sweep buy, and no rejected AVB sell. Any sell of AIZ/ALL/BALL/GL must
+    trace to a 09-30 exit signal. Original text:
+    **CODE BUILT 2026-09-28 night (365d lookback, tz-safe inception cache,
     untradable-holding exclusion; 1047 tests), NOT DEPLOYED.** Deploy order,
     after the 09-29 12:45 run is verified via `ggtrader-deploy`:
     (1) verify 09-29: 4 MidCap + 15 legacy sells filled at the open, and 6

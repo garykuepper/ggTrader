@@ -1,6 +1,17 @@
 # Changelog
 
-## 2026-09-29 (built 2026-09-28 night, deploy after the 09-29 run is verified)
+## 2026-09-29 (built 2026-09-28 night, deployed 2026-09-29 ~17:15 PT)
+
+- **Deployed** image `31fcff28` (built from `291e6dd`); rollback image
+  `10e1e073`. Next run (09-30) predicted: AVB excluded (one alert), no stock
+  buys (AIZ/ALL/BALL/GL fill 4 slots vs cap 3), no sells signalled as of
+  09-28, no sweep buy (cash 5% < new 8% trigger).
+- **Tape repair:** APH and MNST full history re-fetched; every bar before
+  07-20 had been 2x too high (mixed split adjustment). MRNA's +177% on 08-19
+  is real (Alpaca adjusted bars, ~30x volume), left as-is. Backup in
+  `results/tape_repair_20260929/`.
+- **`.env`:** `SWEEP_BUY_TRIGGER_PCT` removed, so the 8% dead-band default
+  applies.
 
 - **Live signal lookback 120 → 365 days.** ~252 bars lets EMA/MACD/RSI seeds
   wash out: 0 entry/exit mismatches vs the long-history backtest, against
