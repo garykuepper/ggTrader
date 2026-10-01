@@ -3,6 +3,7 @@
 **Classification:** Internal Quantitative Research & Engineering Strategy
 **Date:** 2026-09-30
 **Audience:** Owner (real-money allocation decision) & Quantitative Research Collaborators
+**Owner decision (2026-09-30 21:04 PT): ADOPT 1.3x**, with the funding-cost result known; terms in `docs/next_steps.md` REAL-MONEY PLAN.
 **Brief:** `docs/research/briefs/2026-09-30-static-fractional-leverage.md` (backlog A23, batch 2026-09-30)
 **Driver / raw results:** `scripts/static_leverage_aftertax.py` → `docs/research/_static_leverage_aftertax_results.json`
 

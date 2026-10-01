@@ -33,10 +33,11 @@ for a single, already-scoped next step, not a list of ideas to pick from.
 Reviewed by an independent second read (Fable, 2026-09-28). Owner goal: real
 money in ~3 months.
 
-- **Default allocation:** SPY, or SPY + the 80/20 sleeve if its rules below
-  pass, starting at **10% of intended capital**. **No stock picks.** The
-  sleeve has no positive evidence: core 0.59 vs SPY 0.78 (PIT backtest), and
-  live −3.9 pts vs SPY since 06-24.
+- **Default allocation (superseded 2026-09-30, see Leverage bullet):** was
+  SPY, or SPY + the 80/20 sleeve if its rules below pass, starting at **10%
+  of intended capital**. **No stock picks.** The sleeve has no positive
+  evidence: core 0.59 vs SPY 0.78 (PIT backtest), and live −3.9 pts vs SPY
+  since 06-24.
 - **Account type: DECIDED 2026-09-28 — taxable only, no IRA.** Consequences:
   - The real-money default is **SPY buy-and-hold** (long-term rates, taxes
     deferred until sale).
@@ -53,15 +54,39 @@ money in ~3 months.
     deploy.
   - The paper system continues as research; nothing active goes to real
     money unless it clears an after-tax bar.
-- **Leverage (A23, 2026-09-30): under decision.** 70/30 SPY/SSO beat SPY
-  by +1.6 pt/yr after tax on 2006–2026, but only +0.8 pt at today's ~4%
-  bills (below the pre-registered +1.0 bar), for −66% vs −55% drawdowns
-  and a 1-in-4 chance of a decade behind SPY
-  (`docs/research/2026-09-30-static-fractional-leverage.md`). If adopted:
-  1.3x, band 22–38%, month-end check, exit rule **date-based or never,
-  never drawdown-based**, written here before any money moves. If
-  declined: plain SPY stands. Either way no live change before the parity
-  window ends.
+- **Leverage (A23) — DECIDED 2026-09-30 by owner: ADOPT 1.3x.** Owner chose
+  70/30 SPY/SSO with full knowledge that the after-tax margin over SPY is
+  +1.6 pt/yr on 2006–2026 history but **+0.8 pt/yr at today's ~4% bills,
+  below the pre-registered +1.0 bar**, for −66% vs −55% drawdowns and a
+  1-in-4 chance of a decade behind SPY
+  (`docs/research/2026-09-30-static-fractional-leverage.md`). This is an
+  allocation decision, not a lab GO; the lab's Sharpe-vs-SPY gate fails
+  (0.61 vs 0.64). Terms, fixed now so they are not renegotiated at a low:
+  - **Book:** 70% SPY / 30% SSO of the real-money equity allocation.
+    Rebalance only when SSO's weight leaves **22–38%**, checked at
+    month-end, traded the next session; restore with new cash first,
+    otherwise sell highest-basis long-term lots. No timing overlay of any
+    kind (A24 and the 200-day rule are closed).
+  - **Exit rule — date-based, never drawdown-based.** Reviewed once a year
+    on **30 September** (first: 2027-09-30). The only permitted actions at
+    review are hold, rebalance to band, or step down to 100% SPY *effective
+    at that review*. No intra-year exits; a drawdown of any size is not a
+    trigger. Rationale: selling leverage at the trough is the one way this
+    loses to SPY permanently, and it also realizes the tax bill.
+  - **Rate clause (owner-accepted risk, not a trigger):** at ~4% bills the
+    expected edge is ~+0.8 pt/yr; it rises ~0.3 pt per 1 pt fall in bills.
+    Logged for the annual review, not acted on in between.
+  - **Fund risk:** SSO fee waiver expired 2026-09-30; a fee increase above
+    ~1.0% or a fund closure is reviewed at the next annual date, or
+    immediately if the fund announces closure (switch to the closest 2x
+    S&P fund, same band).
+  - **Implementation:** not before the parity window ends (~2026-12-29).
+    Then a two-symbol cash sweep (70/30 with the band) through the
+    `ggtrader-deploy` skill, replacing the single-symbol SPY sweep; the
+    frozen stock sleeve is untouched by this decision. Real money enters
+    at the plan's **10% of intended capital** first, like everything else.
+- **Default allocation, updated 2026-09-30:** 70/30 SPY/SSO as above (was
+  plain SPY). **No stock picks** with real money remains in force.
 - **Months 0–3: parity rules, not P&L rules.** Three months can't resolve
   the edges involved (a 2-pt gap is <1σ of quarterly tracking error), so the
   shadow and the live book are judged only on whether they behave as
@@ -250,8 +275,8 @@ container recreated and checked):
     **Funding-cost check DONE 2026-09-30:** at today's ~4.1% bills the
     after-tax margin is **+0.80 pt/yr (below the +1.0 bar)**; +1.13 at ~3.1%
     bills. Owner said "go with the recommendation" (1.3x) *before* this
-    number landed — **decision re-opened; awaiting owner** (see REAL-MONEY
-    PLAN bullet). Original queue note: static fractional leverage (A23),
+    number landed — **owner re-decided 2026-09-30 21:04 PT: ADOPT 1.3x anyway**
+    (terms in the REAL-MONEY PLAN bullet). Original queue note: static fractional leverage (A23),
     after tax.** Owner asked "what's most likely to work, I can handle some
     risk." Answer from the 2026-09-30 web batch and sanity check: static
     70/30 SPY/SSO (~1.3x), no timing, band-rebalanced — an allocation, not
