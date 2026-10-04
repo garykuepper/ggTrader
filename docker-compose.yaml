@@ -24,7 +24,11 @@ services:
     #   docker compose run --rm ggtrader_live python -u ggt.py paper
     command: sleep infinity
 
+  # Archived 2026-10-04: unused (Beszel is the dashboard). The "archived" profile
+  # keeps it out of plain `docker compose up`; data volume kept. To run again:
+  # `docker compose --profile archived up -d grafana`.
   grafana:
+    profiles: ["archived"]
     image: grafana/grafana-oss:10.4.0
     container_name: ggtrader_grafana
     restart: unless-stopped
