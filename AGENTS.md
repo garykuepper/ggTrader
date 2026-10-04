@@ -95,7 +95,7 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
    * **Module Docstrings**: One-line summary of the file's purpose at the top.
    * **Function/Class Docstrings**: Brief summary of purpose (Google Style).
    * **Inline Comments**: Explain *WHY*, not *WHAT*. Avoid obvious comments.
-4. **Linting is a gate, not a suggestion**: code must pass `ruff check .` and `ruff format .`. Unused imports, unused variables, and lines over 100 characters must be resolved before merging — `ruff check --fix` handles most of it. This is enforced automatically by the `PostToolUse` hook in `.claude/hooks/ruff-fix.sh`, and config lives in `ruff.toml` (`line-length = 100`, rules `E`/`F`/`W`/`I`).
+4. **Linting is a gate, not a suggestion**: code must pass `ruff check .` and `ruff format .`. Unused imports, unused variables, and lines over 100 characters must be resolved before merging — `ruff check --fix` handles most of it. This is enforced by the `PostToolUse` hook in `.claude/hooks/ruff-fix.sh` (Edit/Write only) and by the git pre-commit hook in `.githooks/pre-commit`, which catches files written via shell (enable once per clone: `git config core.hooksPath .githooks`); config lives in `ruff.toml` (`line-length = 100`, rules `E`/`F`/`W`/`I`).
 5. **Single Source of Truth**: Core logic must live in `src/`. Do not duplicate definitions across files.
 6. **Module structure**: constants at module level (top), not buried inside functions; execution logic behind an `if __name__ == "__main__":` guard.
 7. **Scripts**: Utility scripts in `scripts/` should have a `main()` entry point and `argparse` for inputs, and every script must handle `--help` gracefully.
