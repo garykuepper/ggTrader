@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import NamedTuple
 
 import numpy as np
@@ -131,13 +132,14 @@ _EULER_MASCHERONI = 0.5772156649015329
 
 
 def _sr_standard_error(sr: float, n_obs: int, skew: float, kurtosis_excess: float) -> float:
-    """Standard error of the Sharpe Ratio estimate (Bailey & López de Prado 2014).
+    """Per-period standard error of the Sharpe Ratio estimate (Bailey & López de Prado 2014).
 
-    σ̂(SR) = sqrt( (1 - γ₃·SR + (γ₄-1)/4 · SR²) / (T-1) )
+    ``sr`` must be a per-period (non-annualized) Sharpe ratio.
+    σ̂(SR) = sqrt( (1 - γ₃·SR + (γ₄-1)/4 · SR²) / (T-1) ), where γ₄ = kurtosis_excess + 3.
     """
     if n_obs <= 1:
         return float("inf")
-    numerator = 1.0 - skew * sr + (kurtosis_excess - 1.0) / 4.0 * sr**2
+    numerator = 1.0 - skew * sr + (kurtosis_excess + 2.0) / 4.0 * sr**2
     numerator = max(numerator, 1e-12)
     return float(np.sqrt(numerator / (n_obs - 1)))
 
@@ -149,8 +151,10 @@ def psr(
     skew: float,
     kurtosis_excess: float,
 ) -> float:
-    """Probabilistic Sharpe Ratio: P(true SR > benchmark_sr).
+    """Per-period Probabilistic Sharpe Ratio: P(true SR > benchmark_sr).
 
+    Both ``observed_sr`` and ``benchmark_sr`` are per-period (non-annualized)
+    Sharpe ratios.
     PSR(SR*) = Φ( (SR_obs - SR*) / σ̂(SR_obs) )
     """
     se = _sr_standard_error(observed_sr, n_obs, skew, kurtosis_excess)
@@ -166,8 +170,9 @@ def expected_max_sr(
     skew: float,
     kurtosis_excess: float,
 ) -> float:
-    """Expected maximum Sharpe across N independent trials.
+    """Per-period expected maximum Sharpe across N independent trials.
 
+    Returns a per-period (non-annualized) Sharpe threshold.
     E[max(SR)] ≈ σ̂(SR) · ( (1-γ)·Φ⁻¹(1-1/N) + γ·Φ⁻¹(1-1/(N·e)) )
 
     where γ is the Euler-Mascheroni constant and σ̂(SR) is evaluated at SR=0
@@ -183,22 +188,28 @@ def expected_max_sr(
 
 
 def dsr_check(
-    observed_sr: float,
+    observed_sr_annual: float,
     n_obs: int,
     n_trials: int,
     skew: float,
     kurtosis_excess: float,
     threshold: float = 0.80,
+    periods_per_year: int = 252,
 ) -> DsrResult:
     """Deflated Sharpe Ratio: PSR evaluated against E[max(SR)] as the benchmark.
 
+    Takes an annualized Sharpe (as returned by ``metrics.curve_stats``),
+    converts to per-period via ``sqrt(periods_per_year)``, and reports
+    ``DsrResult.expected_max_sr`` annualized.
     Passes if DSR >= threshold (default 0.80, per spec Section 6).
     """
+    scale = math.sqrt(periods_per_year)
+    sr = observed_sr_annual / scale
     e_max = expected_max_sr(n_trials, n_obs, skew, kurtosis_excess)
-    dsr_value = psr(observed_sr, e_max, n_obs, skew, kurtosis_excess)
+    dsr_value = psr(sr, e_max, n_obs, skew, kurtosis_excess)
     return DsrResult(
         passed=dsr_value >= threshold,
         dsr_value=dsr_value,
-        expected_max_sr=e_max,
+        expected_max_sr=e_max * scale,
         threshold=threshold,
     )

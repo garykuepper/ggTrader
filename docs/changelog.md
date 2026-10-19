@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-19
+
+- **Lab DSR correction:** the gate compared annualized Sharpe against per-day
+  thresholds and used the wrong kurtosis term, so it passed almost everything.
+  An annual Sharpe of 1.0 over 252 days with 48 trials scored 1.0 instead of
+  about 0.10. Sharpe is now converted to per-period units for the calculation;
+  the reported expected maximum remains annualized. Every past "x/17 gates"
+  count reflects the density gate only. Corrected walk-forward folds will
+  fall back to the anchor much more often. No live code or config changed.
+
 ## 2026-09-30
 
 - **Research: static fractional leverage (A23) — GO for owner decision;
