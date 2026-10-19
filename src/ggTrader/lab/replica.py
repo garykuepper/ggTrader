@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable, NamedTuple
 
 import numpy as np
 import pandas as pd
 
+from ggTrader.lab.data import rebalance_dates
+from ggTrader.lab.strategies.ensemble import EnsembleSignal, extract_close
+from ggTrader.lab.strategy import LabConfig
 from ggTrader.paper.cash_sweep import (
     DEFAULT_BUY_TRIGGER_PCT,
     DEFAULT_MIN_CLIP_USD,
@@ -51,6 +55,42 @@ class ReplicaResult:
     exposure: pd.DataFrame
     halted_days: int
     truncated_days: int
+
+
+class SignalPanel(NamedTuple):
+    """Aligned stock closes, production signals and the separate sweep tape."""
+
+    close: pd.DataFrame
+    entries: pd.DataFrame
+    exits: pd.DataFrame
+    spy_close: pd.Series
+
+
+def build_signal_panel(
+    ohlcv: pd.DataFrame,
+    eval_start: pd.Timestamp,
+    eval_end: pd.Timestamp,
+    eligible_fn: Callable[[pd.Timestamp, pd.DataFrame], list[str]],
+    sweep_symbol: str = "SPY",
+) -> SignalPanel:
+    """Build default ensemble signals with monthly point-in-time entry eligibility."""
+    symbols = sorted(set(ohlcv.columns.get_level_values(0)) - {sweep_symbol})
+    if not symbols or sweep_symbol not in ohlcv.columns.get_level_values(0):
+        raise ValueError("Signal panel requires stock data and the sweep symbol")
+    stocks = ohlcv[symbols]
+    strategy = EnsembleSignal(LabConfig(min_history_bars=60))
+    plans = {
+        d: strategy.select(d, stocks, eligible_fn(d, stocks.loc[:d]))
+        for d in rebalance_dates(stocks.index, eval_start, eval_end)
+    }
+    if not any(plans.values()):
+        raise ValueError("No stocks are eligible in the signal-panel evaluation window")
+    targets = strategy.to_targets(plans, stocks)
+    # Retain never-eligible names as all-False columns for an auditable membership mask.
+    entries = targets.entries.reindex(columns=symbols, fill_value=False)
+    exits = targets.exits.reindex(columns=symbols, fill_value=False)
+    close = extract_close(stocks, symbols).reindex(index=entries.index, columns=entries.columns)
+    return SignalPanel(close, entries, exits, ohlcv[sweep_symbol]["close"].reindex(close.index))
 
 
 def run_replica(

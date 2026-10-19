@@ -174,3 +174,52 @@ def test_cash_interest_starts_on_first_decision_bar():
     cfg = ReplicaConfig(start_cash=1000.0, min_clip_usd=100_000.0)
     res = run_replica(*panel, cfg, cash_rate_daily=rates)
     np.testing.assert_allclose(res.equity, 1000.0 * 1.001 ** np.arange(5))
+
+
+def test_build_signal_panel_masks_non_members():
+    from ggTrader.lab.replica import build_signal_panel
+
+    index = pd.bdate_range("2024-01-01", periods=304, tz="UTC")
+    rng = np.random.default_rng(7)
+    path = np.r_[
+        100 * np.cumprod(1 + rng.normal(0.0, 0.001, 300)), np.array([95.0, 90.0, 85.0, 82.0])
+    ]
+    frames = {}
+    for symbol in ["AAA", "BBB", "SPY"]:
+        price = np.full(len(index), 100.0) if symbol == "SPY" else path
+        frames[symbol] = pd.DataFrame(
+            {"open": price, "high": price, "low": price, "close": price, "volume": 1000.0},
+            index=index,
+        )
+    panel = build_signal_panel(
+        pd.concat(frames, axis=1), index[250], index[-1], lambda asof, past: ["AAA"]
+    )
+    assert panel.entries["AAA"].any()
+    assert not panel.entries["BBB"].any()
+
+
+def test_parity_checker_explains_catchup_and_rejects_exit_before_buy():
+    from ggTrader.lab.replica import SignalPanel
+    from scripts.replica_parity_check import explain_orders
+
+    index = pd.bdate_range("2024-01-01", periods=6, tz="UTC")
+    close = pd.DataFrame(10.0, index=index, columns=["AAA", "BBB"])
+    entries = pd.DataFrame(False, index=index, columns=close.columns)
+    entries.loc[index[0], "AAA"] = True
+    exits = entries & False
+    exits.loc[index[2], "AAA"] = True
+    exits.loc[index[0], "BBB"] = True
+    panel = SignalPanel(close, entries, exits, pd.Series(100.0, index=index))
+    orders = pd.DataFrame(
+        [
+            dict(id=1, run_date=index[1].date(), symbol="AAA", side="BUY", reason="signal"),
+            dict(id=2, run_date=index[4].date(), symbol="AAA", side="SELL", reason="signal"),
+            dict(id=3, run_date=index[4].date(), symbol="BBB", side="SELL", reason="signal"),
+            dict(id=4, run_date=index[4].date(), symbol="SPY", side="BUY", reason="cash_sweep"),
+        ]
+    )
+    result = explain_orders(orders, panel, {"BBB": index[1]})
+    assert [row["explained"] for row in result["orders"]] == [True, True, False]
+    assert result["orders"][1]["explanation"] == "catch-up exit"
+    assert result["strategy_orders"] == 3
+    assert result["stop_flags"] == ["unexplained_orders"]
