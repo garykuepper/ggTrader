@@ -264,3 +264,37 @@ report touches live code.
 - **Financing-aware ratio** (lower the SSO share when bills are above ~4%) —
   a timing rule in disguise; park unless Rank 2 shows the margin dies at
   current rates.
+
+
+## 7. Addendum: Distribution-Tax Bounds (2026-10-19)
+
+**Context & Registered Scenario:**
+As registered in Task 9 of the production replica audit plan (`docs/superpowers/plans/2026-10-19-production-replica-audit.md`), this study measures the sensitivity of the static 70/30 SPY/SSO after-tax margin to fund distribution tax character under elevated financing costs. The evaluation window is unchanged at **2006-06-21 → 2026-09-29** (20.24 years, real SSO). The historical +2.5 percentage point funding offset (`--rf-offset 0.025`, modeling ~4.1% bills versus the 1.64% sample historical average) is a pre-registered scenario to reflect current financing costs, not a new live measurement of current market bill rates.
+
+**Baseline Reproduction:**
+The driver (`scripts/static_leverage_aftertax.py`) with default all-long-term (`lt`) distribution taxation reproduces the committed main-performance numbers in `docs/research/_static_leverage_aftertax_results.json` exactly: 12.00% after-tax CAGR for 70/30 versus 10.40% for SPY buy-and-hold at the primary 24%/15% bracket.
+
+**Raw Artifacts & Exact Keys:**
+
+- Baseline (+2.5 pp bills, default all-LT distributions): `docs/research/_static_leverage_aftertax_rf_plus0.025.json`
+- Distribution bounds (+2.5 pp bills, all-ordinary distributions): `docs/research/_static_leverage_aftertax_dist_bounds.json`
+  - Generated via: `scripts/static_leverage_aftertax.py --main-only --rf-offset 0.025 --sso-dist-tax st --bil-dist-tax st --out docs/research/_static_leverage_aftertax_dist_bounds.json`
+  - The artifact records this model assumption in top-level key `dist_tax: {"SSO": "st", "BIL": "st"}`.
+- Evaluated under key `windows.main_real_sso["static 1.3x (70/30) band 8pp"]` versus `windows.main_real_sso["SPY buy-and-hold"]`.
+
+**Quantitative Results:**
+
+| Bracket / Variant | SPY After-Tax CAGR | 70/30 All-LT Dist CAGR (`_rf_plus0.025`) | All-LT Margin | 70/30 All-Ordinary Dist CAGR (`dist_bounds`) | All-Ordinary Margin |
+|---|---|---|---|---|---|
+| **24% / 15% (Primary)** | 10.40% (`.1040`) | 11.20% (`.1120`) | **+0.80 pp/yr** | 11.17% (`.1117`) | **+0.77 pp/yr** |
+| 24% / 15% (Wash-sale) | 10.40% (`.1040`) | 11.20% (`.1120`) | +0.80 pp/yr | 11.16% (`.1116`) | +0.76 pp/yr |
+| **40.8% / 23.8% (Top)** | 9.78% (`.0978`) | 10.57% (`.1057`) | **+0.79 pp/yr** | 10.50% (`.1050`) | **+0.72 pp/yr** |
+| 40.8% / 23.8% (Wash-sale) | 9.78% (`.0978`) | 10.56% (`.1056`) | +0.78 pp/yr | 10.49% (`.1049`) | +0.71 pp/yr |
+
+**Interpretation & Methodological Bounds:**
+1. **SSO is the sole driver here:** The static 70/30 book holds only SPY and SSO (no BIL), so changing BIL distribution treatment to `"st"` does not drive this particular arm. The margin reduction stems entirely from treating SSO distributions as ordinary income rather than long-term capital gains.
+2. **Model bounding endpoints:** All-long-term (`lt`) and all-ordinary (`st`) treatments bracket the assumed long-term-versus-ordinary distribution mix in this model. Actual annual fund tax character was not reconstructed or verified; these endpoints are not a determination of the owner's tax treatment.
+3. **Primary margin remains below the bar:** At the primary 24%/15% bracket, the after-tax margin is now slightly lower at **+0.77 pp/yr** (versus +0.80 pp/yr under all-LT). Both figures remain below the pre-registered **+1.0 pp/yr** hurdle bar.
+
+**Owner Allocation Terms Unchanged:**
+This bound serves as pre-entry information for the owner. The owner's 2026-09-30 allocation decision (70% SPY / 30% SSO, ±8pp drift band rebalanced at month-end, date-based annual review on September 30, no drawdown-based exits) and exit terms remain completely **UNCHANGED**. No trigger, parameter change, or deployment decision is authorized or queued.

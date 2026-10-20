@@ -76,6 +76,7 @@ money in ~3 months.
   - **Rate clause (owner-accepted risk, not a trigger):** at ~4% bills the
     expected edge is ~+0.8 pt/yr; it rises ~0.3 pt per 1 pt fall in bills.
     Logged for the annual review, not acted on in between.
+    Distribution-tax bounds (+0.77 pt/yr ordinary vs +0.80 pt/yr LT at 24/15, +2.5 pt bills; `docs/research/_static_leverage_aftertax_dist_bounds.json`): pre-entry information for the owner; terms unchanged.
   - **Fund risk:** SSO fee waiver expired 2026-09-30; a fee increase above
     ~1.0% or a fund closure is reviewed at the next annual date, or
     immediately if the fund announces closure (switch to the closest 2x
