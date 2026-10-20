@@ -90,7 +90,9 @@ def _fold_rows(fold_results: list[dict]) -> list[dict]:
     return rows
 
 
-def run_core(eval_start: str, eval_end: str, strategy: str = CORE_STRATEGY) -> dict:
+def run_core(
+    eval_start: str, eval_end: str, strategy: str = CORE_STRATEGY, return_equity: bool = False
+) -> dict:
     """Standalone SP500-core WFO -- the direct 1.12 comparator. `strategy`
     lets other drivers run a registry variant through the identical setup."""
     from ggTrader.lab.data import (
@@ -164,6 +166,9 @@ def run_core(eval_start: str, eval_end: str, strategy: str = CORE_STRATEGY) -> d
             table=wfo_result.table,
             elapsed_sec=time.time() - t0,
         )
+        if return_equity:
+            result["oos_equity"] = wfo_result.oos_equity
+            result["spy_close"] = spy_close
     except Exception as exc:  # noqa: BLE001 -- surfaced in JSON + Telegram, not swallowed
         result.update(
             ok=False,

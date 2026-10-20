@@ -1,0 +1,1695 @@
+{
+  "fomc_drift": {
+    "strategy": "fomc_drift",
+    "eval_start": "2012-01-01",
+    "eval_end": "2026-04-30",
+    "verdict": "NO-GO stands",
+    "passes_bar": false,
+    "primary_pair": "entry_1_hold_0",
+    "primary_event_study": {
+      "entry_offset_days": 1,
+      "hold_days": 0,
+      "gross": {
+        "n_event": 339,
+        "n_nonevent": 10461,
+        "mean_event_return": 0.0017728940580538852,
+        "mean_nonevent_return": 5.088362329000046e-06,
+        "mean_diff": 0.0017678056957248852,
+        "t_stat": 3.618973169952236,
+        "p_value": 0.000337834927626062,
+        "significant": true
+      },
+      "net": {
+        "n_event": 339,
+        "n_nonevent": 10461,
+        "mean_event_return": 0.0007728940580538844,
+        "mean_nonevent_return": 5.088362329000046e-06,
+        "mean_diff": 0.0007678056957248844,
+        "t_stat": 1.5718176603257743,
+        "p_value": 0.11686598821668726,
+        "significant": false
+      }
+    },
+    "context_pairs": {
+      "entry_1_hold_1": {
+        "entry_offset_days": 1,
+        "hold_days": 1,
+        "gross": {
+          "n_event": 675,
+          "n_nonevent": 10125,
+          "mean_event_return": 0.0006936697173541953,
+          "mean_nonevent_return": 1.8371692324923936e-05,
+          "mean_diff": 0.0006752980250292714,
+          "t_stat": 1.6904404096372792,
+          "p_value": 0.09135961566500961,
+          "significant": false
+        },
+        "net": {
+          "n_event": 675,
+          "n_nonevent": 10125,
+          "mean_event_return": 0.0001914474951319726,
+          "mean_nonevent_return": 1.8371692324923936e-05,
+          "mean_diff": 0.00017307580280704867,
+          "t_stat": 0.43494172515171803,
+          "p_value": 0.6637298534352761,
+          "significant": false
+        }
+      },
+      "entry_1_hold_2": {
+        "entry_offset_days": 1,
+        "hold_days": 2,
+        "gross": {
+          "n_event": 1011,
+          "n_nonevent": 9789,
+          "mean_event_return": 0.0009068070924003437,
+          "mean_nonevent_return": -2.6820055819063328e-05,
+          "mean_diff": 0.000933627148219407,
+          "t_stat": 2.835300994661391,
+          "p_value": 0.004655891019045002,
+          "significant": true
+        },
+        "net": {
+          "n_event": 1011,
+          "n_nonevent": 9789,
+          "mean_event_return": 0.0005714955197000467,
+          "mean_nonevent_return": -2.6820055819063328e-05,
+          "mean_diff": 0.00059831557551911,
+          "t_stat": 1.8199812021354014,
+          "p_value": 0.0690133600622599,
+          "significant": false
+        }
+      },
+      "entry_2_hold_0": {
+        "entry_offset_days": 2,
+        "hold_days": 0,
+        "gross": {
+          "n_event": 678,
+          "n_nonevent": 10122,
+          "mean_event_return": 0.0012154732579113283,
+          "mean_nonevent_return": -1.6780322550873714e-05,
+          "mean_diff": 0.001232253580462202,
+          "t_stat": 3.751161161675936,
+          "p_value": 0.00018877016808149612,
+          "significant": true
+        },
+        "net": {
+          "n_event": 678,
+          "n_nonevent": 10122,
+          "mean_event_return": 0.0007154732579113277,
+          "mean_nonevent_return": -1.6780322550873714e-05,
+          "mean_diff": 0.0007322535804622014,
+          "t_stat": 2.2168708000273236,
+          "p_value": 0.026913997768113422,
+          "significant": true
+        }
+      },
+      "entry_2_hold_1": {
+        "entry_offset_days": 2,
+        "hold_days": 1,
+        "gross": {
+          "n_event": 1014,
+          "n_nonevent": 9786,
+          "mean_event_return": 0.0006817621719898376,
+          "mean_nonevent_return": -3.787696545448455e-06,
+          "mean_diff": 0.000685549868535286,
+          "t_stat": 2.2339313816744104,
+          "p_value": 0.025667278947974593,
+          "significant": true
+        },
+        "net": {
+          "n_event": 1014,
+          "n_nonevent": 9786,
+          "mean_event_return": 0.00034744264536261827,
+          "mean_nonevent_return": -3.787696545448455e-06,
+          "mean_diff": 0.0003512303419080667,
+          "t_stat": 1.143091070240493,
+          "p_value": 0.2532239780643097,
+          "significant": false
+        }
+      },
+      "entry_2_hold_2": {
+        "entry_offset_days": 2,
+        "hold_days": 2,
+        "gross": {
+          "n_event": 1350,
+          "n_nonevent": 9450,
+          "mean_event_return": 0.0008443420397039711,
+          "mean_nonevent_return": -5.1388498369991986e-05,
+          "mean_diff": 0.0008957305380739631,
+          "t_stat": 3.262598878839947,
+          "p_value": 0.0011254775853513969,
+          "significant": true
+        },
+        "net": {
+          "n_event": 1350,
+          "n_nonevent": 9450,
+          "mean_event_return": 0.0005932309285928597,
+          "mean_nonevent_return": -5.1388498369991986e-05,
+          "mean_diff": 0.0006446194269628516,
+          "t_stat": 2.344709897814187,
+          "p_value": 0.019154582422486365,
+          "significant": true
+        }
+      }
+    },
+    "wfo": {
+      "aggregate_wfe": 0.24448855601353642,
+      "wfe_target": 0.5,
+      "n_folds": 53,
+      "n_gate_pass": 11,
+      "dsr_gate_passes": 12,
+      "fold_winners": [
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days1",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days1",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days1",
+        "fomc_drift__entry_offset_days1_hold_days1",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days1",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days0",
+        "fomc_drift__entry_offset_days1_hold_days1",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days1_hold_days2",
+        "fomc_drift__entry_offset_days2_hold_days0",
+        "fomc_drift__entry_offset_days2_hold_days0"
+      ],
+      "oos_metrics": {
+        "total_return_pct": 2.082262408020341,
+        "cagr_pct": 0.15574163742917424,
+        "sharpe": 0.6194175304494913,
+        "sortino": 0.3186312608593284,
+        "ann_vol_pct": 0.2522208101319385,
+        "max_drawdown_pct": -0.4260165624449863
+      },
+      "fold_rows": [
+        {
+          "fold_num": 1,
+          "train_start": "2012-01-01",
+          "train_end": "2013-01-01",
+          "test_start": "2013-01-01",
+          "test_end": "2013-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": -2.524889463610802,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 2,
+          "train_start": "2012-04-01",
+          "train_end": "2013-04-01",
+          "test_start": "2013-04-01",
+          "test_end": "2013-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days1",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 1
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": -0.47394463663155606,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 3,
+          "train_start": "2012-07-01",
+          "train_end": "2013-07-01",
+          "test_start": "2013-07-01",
+          "test_end": "2013-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": 2.3568295335110676,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 4,
+          "train_start": "2012-10-01",
+          "train_end": "2013-10-01",
+          "test_start": "2013-10-01",
+          "test_end": "2014-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": -3.1560645543141446,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 5,
+          "train_start": "2013-01-01",
+          "train_end": "2014-01-01",
+          "test_start": "2014-01-01",
+          "test_end": "2014-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": -0.3634350396954655,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 6,
+          "train_start": "2013-04-01",
+          "train_end": "2014-04-01",
+          "test_start": "2014-04-01",
+          "test_end": "2014-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 3.699201666229282,
+          "oos_sharpe": 2.389264679736027,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 7,
+          "train_start": "2013-07-01",
+          "train_end": "2014-07-01",
+          "test_start": "2014-07-01",
+          "test_end": "2014-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -3.0707585223159857,
+          "oos_sharpe": -2.6421197962926017,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 8,
+          "train_start": "2013-10-01",
+          "train_end": "2014-10-01",
+          "test_start": "2014-10-01",
+          "test_end": "2015-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -3.6240871752649064,
+          "oos_sharpe": -2.1953561243412567,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 9,
+          "train_start": "2014-01-01",
+          "train_end": "2015-01-01",
+          "test_start": "2015-01-01",
+          "test_end": "2015-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": 3.4158831694502925,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 10,
+          "train_start": "2014-04-01",
+          "train_end": "2015-04-01",
+          "test_start": "2015-04-01",
+          "test_end": "2015-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -2.471619430989259,
+          "oos_sharpe": -2.542584624625119,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 11,
+          "train_start": "2014-07-01",
+          "train_end": "2015-07-01",
+          "test_start": "2015-07-01",
+          "test_end": "2015-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": -0.3899122020445818,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 12,
+          "train_start": "2014-10-01",
+          "train_end": "2015-10-01",
+          "test_start": "2015-10-01",
+          "test_end": "2016-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -6.617115552382453,
+          "oos_sharpe": -3.007557073773845,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 13,
+          "train_start": "2015-01-01",
+          "train_end": "2016-01-01",
+          "test_start": "2016-01-01",
+          "test_end": "2016-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 1.5865008744985607,
+          "oos_sharpe": 1.313831782426492,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 14,
+          "train_start": "2015-04-01",
+          "train_end": "2016-04-01",
+          "test_start": "2016-04-01",
+          "test_end": "2016-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": 1.1505889556816207,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 15,
+          "train_start": "2015-07-01",
+          "train_end": "2016-07-01",
+          "test_start": "2016-07-01",
+          "test_end": "2016-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days1",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 1
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 2.4157570339339958,
+          "oos_sharpe": 3.3630358431069243,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 16,
+          "train_start": "2015-10-01",
+          "train_end": "2016-10-01",
+          "test_start": "2016-10-01",
+          "test_end": "2017-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -0.36468623223414154,
+          "oos_sharpe": -0.745127758936654,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 17,
+          "train_start": "2016-01-01",
+          "train_end": "2017-01-01",
+          "test_start": "2017-01-01",
+          "test_end": "2017-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": 1.0025276283145503,
+          "oos_sharpe": 2.183329054044926,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 18,
+          "train_start": "2016-04-01",
+          "train_end": "2017-04-01",
+          "test_start": "2017-04-01",
+          "test_end": "2017-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 1.33274896367342,
+          "oos_sharpe": 2.5201337639128423,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 19,
+          "train_start": "2016-07-01",
+          "train_end": "2017-07-01",
+          "test_start": "2017-07-01",
+          "test_end": "2017-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -1.189724678083669,
+          "oos_sharpe": -2.301564896096702,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 20,
+          "train_start": "2016-10-01",
+          "train_end": "2017-10-01",
+          "test_start": "2017-10-01",
+          "test_end": "2018-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 3.9768221502165395,
+          "oos_sharpe": 2.2478282131560587,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 21,
+          "train_start": "2017-01-01",
+          "train_end": "2018-01-01",
+          "test_start": "2018-01-01",
+          "test_end": "2018-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -0.6807376620455746,
+          "oos_sharpe": -1.1123148854969958,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 22,
+          "train_start": "2017-04-01",
+          "train_end": "2018-04-01",
+          "test_start": "2018-04-01",
+          "test_end": "2018-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -2.0385871929180652,
+          "oos_sharpe": -3.3838869613676015,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 23,
+          "train_start": "2017-07-01",
+          "train_end": "2018-07-01",
+          "test_start": "2018-07-01",
+          "test_end": "2018-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 0.23066009080137492,
+          "oos_sharpe": 0.2586730783046875,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 24,
+          "train_start": "2017-10-01",
+          "train_end": "2018-10-01",
+          "test_start": "2018-10-01",
+          "test_end": "2019-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days1",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 1
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 2.300892867676469,
+          "oos_sharpe": 2.5523340389631697,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 25,
+          "train_start": "2018-01-01",
+          "train_end": "2019-01-01",
+          "test_start": "2019-01-01",
+          "test_end": "2019-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days1",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 1
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 2.357996959825736,
+          "oos_sharpe": 2.010345758067331,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 26,
+          "train_start": "2018-04-01",
+          "train_end": "2019-04-01",
+          "test_start": "2019-04-01",
+          "test_end": "2019-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": 1.6046132644197704,
+          "oos_sharpe": 3.541800373207574,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 27,
+          "train_start": "2018-07-01",
+          "train_end": "2019-07-01",
+          "test_start": "2019-07-01",
+          "test_end": "2019-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days1",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 1
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": 1.6558570699983266,
+          "oos_sharpe": 3.5069090712349107,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 28,
+          "train_start": "2018-10-01",
+          "train_end": "2019-10-01",
+          "test_start": "2019-10-01",
+          "test_end": "2020-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": 0.9640427488119699,
+          "oos_sharpe": 2.65671427857206,
+          "used_anchor": false
+        },
+        {
+          "fold_num": 29,
+          "train_start": "2019-01-01",
+          "train_end": "2020-01-01",
+          "test_start": "2020-01-01",
+          "test_end": "2020-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": 0.06495444328871651,
+          "oos_sharpe": 0.1802625300407598,
+          "used_anchor": false
+        },
+        {
+          "fold_num": 30,
+          "train_start": "2019-04-01",
+          "train_end": "2020-04-01",
+          "test_start": "2020-04-01",
+          "test_end": "2020-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": 0.5132309657070545,
+          "oos_sharpe": 1.0821951040611035,
+          "used_anchor": false
+        },
+        {
+          "fold_num": 31,
+          "train_start": "2019-07-01",
+          "train_end": "2020-07-01",
+          "test_start": "2020-07-01",
+          "test_end": "2020-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": 0.272446373416728,
+          "oos_sharpe": 0.6989162395982197,
+          "used_anchor": false
+        },
+        {
+          "fold_num": 32,
+          "train_start": "2019-10-01",
+          "train_end": "2020-10-01",
+          "test_start": "2020-10-01",
+          "test_end": "2021-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 0.8845087433113182,
+          "oos_sharpe": 1.4608857223428655,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 33,
+          "train_start": "2020-01-01",
+          "train_end": "2021-01-01",
+          "test_start": "2021-01-01",
+          "test_end": "2021-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -1.9834350722644676,
+          "oos_sharpe": -2.675063499226264,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 34,
+          "train_start": "2020-04-01",
+          "train_end": "2021-04-01",
+          "test_start": "2021-04-01",
+          "test_end": "2021-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -2.8737924648902107,
+          "oos_sharpe": -2.879734745934657,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 35,
+          "train_start": "2020-07-01",
+          "train_end": "2021-07-01",
+          "test_start": "2021-07-01",
+          "test_end": "2021-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": 2.2637055267523825,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 36,
+          "train_start": "2020-10-01",
+          "train_end": "2021-10-01",
+          "test_start": "2021-10-01",
+          "test_end": "2022-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": -2.6148239752710016,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 37,
+          "train_start": "2021-01-01",
+          "train_end": "2022-01-01",
+          "test_start": "2022-01-01",
+          "test_end": "2022-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": -1.2654295046575792,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 38,
+          "train_start": "2021-04-01",
+          "train_end": "2022-04-01",
+          "test_start": "2022-04-01",
+          "test_end": "2022-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 2.2105172211519095,
+          "oos_sharpe": 1.2436495879463543,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 39,
+          "train_start": "2021-07-01",
+          "train_end": "2022-07-01",
+          "test_start": "2022-07-01",
+          "test_end": "2022-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": -0.03827389188748539,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 40,
+          "train_start": "2021-10-01",
+          "train_end": "2022-10-01",
+          "test_start": "2022-10-01",
+          "test_end": "2023-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": 2.6531192689270684,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 41,
+          "train_start": "2022-01-01",
+          "train_end": "2023-01-01",
+          "test_start": "2023-01-01",
+          "test_end": "2023-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 2.52482919480825,
+          "oos_sharpe": 2.1612073540853816,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 42,
+          "train_start": "2022-04-01",
+          "train_end": "2023-04-01",
+          "test_start": "2023-04-01",
+          "test_end": "2023-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 1.0765162599957474,
+          "oos_sharpe": 1.9233363365554386,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 43,
+          "train_start": "2022-07-01",
+          "train_end": "2023-07-01",
+          "test_start": "2023-07-01",
+          "test_end": "2023-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -1.1633573471542344,
+          "oos_sharpe": -2.033967208880865,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 44,
+          "train_start": "2022-10-01",
+          "train_end": "2023-10-01",
+          "test_start": "2023-10-01",
+          "test_end": "2024-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": true,
+          "gates_passed": false,
+          "wfe": 1.441947009536036,
+          "oos_sharpe": 2.6523162619911402,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 45,
+          "train_start": "2023-01-01",
+          "train_end": "2024-01-01",
+          "test_start": "2024-01-01",
+          "test_end": "2024-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": 1.3627578225898587,
+          "oos_sharpe": 3.0268986340748225,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 46,
+          "train_start": "2023-04-01",
+          "train_end": "2024-04-01",
+          "test_start": "2024-04-01",
+          "test_end": "2024-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": 1.0103893351273994,
+          "oos_sharpe": 1.95240182236238,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 47,
+          "train_start": "2023-07-01",
+          "train_end": "2024-07-01",
+          "test_start": "2024-07-01",
+          "test_end": "2024-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 0
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": -0.17452721617741684,
+          "oos_sharpe": -0.3429464979651349,
+          "used_anchor": false
+        },
+        {
+          "fold_num": 48,
+          "train_start": "2023-10-01",
+          "train_end": "2024-10-01",
+          "test_start": "2024-10-01",
+          "test_end": "2025-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days1",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 1
+          },
+          "ndh_passed": true,
+          "dsr_passed": true,
+          "gates_passed": true,
+          "wfe": -0.11079645836497785,
+          "oos_sharpe": -0.30386052683907944,
+          "used_anchor": false
+        },
+        {
+          "fold_num": 49,
+          "train_start": "2024-01-01",
+          "train_end": "2025-01-01",
+          "test_start": "2025-01-01",
+          "test_end": "2025-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 0.2731718242933338,
+          "oos_sharpe": 0.426440734026694,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 50,
+          "train_start": "2024-04-01",
+          "train_end": "2025-04-01",
+          "test_start": "2025-04-01",
+          "test_end": "2025-07-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": true,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": 2.173954431895396,
+          "oos_sharpe": 3.0249271737596297,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 51,
+          "train_start": "2024-07-01",
+          "train_end": "2025-07-01",
+          "test_start": "2025-07-01",
+          "test_end": "2025-10-01",
+          "winner_combo": "fomc_drift__entry_offset_days1_hold_days2",
+          "winner_params": {
+            "entry_offset_days": 1,
+            "hold_days": 2
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": 0.9093638625220106,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 52,
+          "train_start": "2024-10-01",
+          "train_end": "2025-10-01",
+          "test_start": "2025-10-01",
+          "test_end": "2026-01-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": null,
+          "oos_sharpe": -0.9233992658553736,
+          "used_anchor": true
+        },
+        {
+          "fold_num": 53,
+          "train_start": "2025-01-01",
+          "train_end": "2026-01-01",
+          "test_start": "2026-01-01",
+          "test_end": "2026-04-01",
+          "winner_combo": "fomc_drift__entry_offset_days2_hold_days0",
+          "winner_params": {
+            "entry_offset_days": 2,
+            "hold_days": 0
+          },
+          "ndh_passed": false,
+          "dsr_passed": false,
+          "gates_passed": false,
+          "wfe": -1.2830548099219956,
+          "oos_sharpe": -1.1663862030940988,
+          "used_anchor": true
+        }
+      ],
+      "table": "WFO: fomc_drift | 6 combos x 53 folds | rolling 12mo/3mo\n\nFold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1     2012-01 \u2192 2013-01      2013-01 \u2192 2013-04      entry_offset_days1_ho...   -1.18 -2.52  FAIL   n/a [A]\n2     2012-04 \u2192 2013-04      2013-04 \u2192 2013-07      entry_offset_days1_ho...   -1.53 -0.47  FAIL   n/a [H] [A]\n3     2012-07 \u2192 2013-07      2013-07 \u2192 2013-10      entry_offset_days2_ho...   -1.55  2.36  FAIL   n/a [H] [A]\n4     2012-10 \u2192 2013-10      2013-10 \u2192 2014-01      entry_offset_days2_ho...   -0.25 -3.16  FAIL   n/a [H] [A]\n5     2013-01 \u2192 2014-01      2014-01 \u2192 2014-04      entry_offset_days2_ho...    0.02 -0.36  FAIL   n/a [H] [A]\n6     2013-04 \u2192 2014-04      2014-04 \u2192 2014-07      entry_offset_days2_ho...    0.65  2.39  FAIL  3.70 [H] [A]\n7     2013-07 \u2192 2014-07      2014-07 \u2192 2014-10      entry_offset_days2_ho...    0.86 -2.64  FAIL -3.07 [H] [A]\n8     2013-10 \u2192 2014-10      2014-10 \u2192 2015-01      entry_offset_days2_ho...    0.61 -2.20  FAIL -3.62 [H] [A]\n9     2014-01 \u2192 2015-01      2015-01 \u2192 2015-04      entry_offset_days2_ho...    0.35  3.42  FAIL   n/a [H] [A]\n10    2014-04 \u2192 2015-04      2015-04 \u2192 2015-07      entry_offset_days2_ho...    1.03 -2.54  FAIL -2.47 [H] [A]\n11    2014-07 \u2192 2015-07      2015-07 \u2192 2015-10      entry_offset_days2_ho...    0.22 -0.39  FAIL   n/a [H] [A]\n12    2014-10 \u2192 2015-10      2015-10 \u2192 2016-01      entry_offset_days1_ho...    0.45 -3.01  FAIL -6.62 [H] [A]\n13    2015-01 \u2192 2016-01      2016-01 \u2192 2016-04      entry_offset_days1_ho...    0.83  1.31  FAIL  1.59 [H] [A]\n14    2015-04 \u2192 2016-04      2016-04 \u2192 2016-07      entry_offset_days1_ho...    0.37  1.15  FAIL   n/a [H] [A]\n15    2015-07 \u2192 2016-07      2016-07 \u2192 2016-10      entry_offset_days1_ho...    1.39  3.36  FAIL  2.42 [H] [A]\n16    2015-10 \u2192 2016-10      2016-10 \u2192 2017-01      entry_offset_days1_ho...    2.04 -0.75  FAIL -0.36 [H] [A]\n17    2016-01 \u2192 2017-01      2017-01 \u2192 2017-04      entry_offset_days2_ho...    2.18  2.18  PASS  1.00 [H] [A]\n18    2016-04 \u2192 2017-04      2017-04 \u2192 2017-07      entry_offset_days2_ho...    1.89  2.52  FAIL  1.33 [H] [A]\n19    2016-07 \u2192 2017-07      2017-07 \u2192 2017-10      entry_offset_days2_ho...    1.93 -2.30  FAIL -1.19 [H] [A]\n20    2016-10 \u2192 2017-10      2017-10 \u2192 2018-01      entry_offset_days2_ho...    0.57  2.25  FAIL  3.98 [H] [A]\n21    2017-01 \u2192 2018-01      2018-01 \u2192 2018-04      entry_offset_days1_ho...    1.63 -1.11  FAIL -0.68 [H] [A]\n22    2017-04 \u2192 2018-04      2018-04 \u2192 2018-07      entry_offset_days1_ho...    1.66 -3.38  FAIL -2.04 [H] [A]\n23    2017-07 \u2192 2018-07      2018-07 \u2192 2018-10      entry_offset_days1_ho...    1.12  0.26  FAIL  0.23 [H] [A]\n24    2017-10 \u2192 2018-10      2018-10 \u2192 2019-01      entry_offset_days1_ho...    1.11  2.55  FAIL  2.30 [H] [A]\n25    2018-01 \u2192 2019-01      2019-01 \u2192 2019-04      entry_offset_days1_ho...    0.85  2.01  FAIL  2.36 [H] [A]\n26    2018-04 \u2192 2019-04      2019-04 \u2192 2019-07      entry_offset_days2_ho...    2.21  3.54  PASS  1.60 [H] [A]\n27    2018-07 \u2192 2019-07      2019-07 \u2192 2019-10      entry_offset_days2_ho...    2.12  3.51  PASS  1.66 [A]\n28    2018-10 \u2192 2019-10      2019-10 \u2192 2020-01      entry_offset_days2_ho...    2.76  2.66  PASS  0.96\n29    2019-01 \u2192 2020-01      2020-01 \u2192 2020-04      entry_offset_days2_ho...    2.78  0.18  PASS  0.06\n30    2019-04 \u2192 2020-04      2020-04 \u2192 2020-07      entry_offset_days1_ho...    2.11  1.08  PASS  0.51\n31    2019-07 \u2192 2020-07      2020-07 \u2192 2020-10      entry_offset_days2_ho...    2.57  0.70  PASS  0.27\n32    2019-10 \u2192 2020-10      2020-10 \u2192 2021-01      entry_offset_days2_ho...    1.65  1.46  FAIL  0.88 [A]\n33    2020-01 \u2192 2021-01      2021-01 \u2192 2021-04      entry_offset_days2_ho...    1.35 -2.68  FAIL -1.98 [H] [A]\n34    2020-04 \u2192 2021-04      2021-04 \u2192 2021-07      entry_offset_days2_ho...    1.00 -2.88  FAIL -2.87 [H] [A]\n35    2020-07 \u2192 2021-07      2021-07 \u2192 2021-10      entry_offset_days2_ho...   -0.42  2.26  FAIL   n/a [H] [A]\n36    2020-10 \u2192 2021-10      2021-10 \u2192 2022-01      entry_offset_days2_ho...    0.11 -2.61  FAIL   n/a [H] [A]\n37    2021-01 \u2192 2022-01      2022-01 \u2192 2022-04      entry_offset_days1_ho...   -0.19 -1.27  FAIL   n/a [H] [A]\n38    2021-04 \u2192 2022-04      2022-04 \u2192 2022-07      entry_offset_days2_ho...    0.56  1.24  FAIL  2.21 [H] [A]\n39    2021-07 \u2192 2022-07      2022-07 \u2192 2022-10      entry_offset_days1_ho...    0.03 -0.04  FAIL   n/a [H] [A]\n40    2021-10 \u2192 2022-10      2022-10 \u2192 2023-01      entry_offset_days1_ho...    0.30  2.65  FAIL   n/a [H] [A]\n41    2022-01 \u2192 2023-01      2023-01 \u2192 2023-04      entry_offset_days1_ho...    0.86  2.16  FAIL  2.52 [H] [A]\n42    2022-04 \u2192 2023-04      2023-04 \u2192 2023-07      entry_offset_days1_ho...    1.79  1.92  FAIL  1.08 [H] [A]\n43    2022-07 \u2192 2023-07      2023-07 \u2192 2023-10      entry_offset_days1_ho...    1.75 -2.03  FAIL -1.16 [H] [A]\n44    2022-10 \u2192 2023-10      2023-10 \u2192 2024-01      entry_offset_days1_ho...    1.84  2.65  FAIL  1.44 [H] [A]\n45    2023-01 \u2192 2024-01      2024-01 \u2192 2024-04      entry_offset_days1_ho...    2.22  3.03  PASS  1.36 [H] [A]\n46    2023-04 \u2192 2024-04      2024-04 \u2192 2024-07      entry_offset_days1_ho...    1.93  1.95  PASS  1.01 [A]\n47    2023-07 \u2192 2024-07      2024-07 \u2192 2024-10      entry_offset_days1_ho...    1.97 -0.34  PASS -0.17\n48    2023-10 \u2192 2024-10      2024-10 \u2192 2025-01      entry_offset_days1_ho...    2.74 -0.30  PASS -0.11 [H]\n49    2024-01 \u2192 2025-01      2025-01 \u2192 2025-04      entry_offset_days1_ho...    1.56  0.43  FAIL  0.27 [H] [A]\n50    2024-04 \u2192 2025-04      2025-04 \u2192 2025-07      entry_offset_days1_ho...    1.39  3.02  FAIL  2.17 [H] [A]\n51    2024-07 \u2192 2025-07      2025-07 \u2192 2025-10      entry_offset_days1_ho...    0.34  0.91  FAIL   n/a [H] [A]\n52    2024-10 \u2192 2025-10      2025-10 \u2192 2026-01      entry_offset_days2_ho...    0.10 -0.92  FAIL   n/a [H] [A]\n53    2025-01 \u2192 2026-01      2026-01 \u2192 2026-04      entry_offset_days2_ho...    0.91 -1.17  FAIL -1.28 [H] [A]\n\nOOS Aggregate: Sharpe 0.62 | CAGR 0.2% | MaxDD -0.4%\nSPY baseline:  Sharpe 0.86 | CAGR 13.9% | MaxDD -33.7%\nAggregate WFE: 0.24 (target >= 0.50)\n!! REGIME HALT ACTIVE -- trading on anchor params\n\n\u2500\u2500 Recommended Live Params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTrain window: 2025-04 \u2192 2026-04\nWinner:       fomc_drift__entry_offset_days2_hold_days0\nTrain Sharpe: 0.37 | CAGR 0.1% | MaxDD -0.2%\nStability:    selected in 13/53 folds\n\n\u2500\u2500 Anchor Set (Defensive Fallback) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCombo:    fomc_drift__entry_offset_days2_hold_days0\nMaxDD:    -0.6% | CAGR 0.1% | Sharpe 0.47"
+    },
+    "elapsed_sec": 44.36992907524109,
+    "ok": true
+  },
+  "xs_momentum": {
+    "strategy": "xs_momentum",
+    "eval_start": "2021-01-31",
+    "eval_end": "2026-04-30",
+    "verdict": "NO-GO stands",
+    "passes_pretax_bar": false,
+    "excess_stats": {
+      "n_obs": 1064,
+      "t_stat": 0.7605539810474198,
+      "ann_excess_pct": 4.485647974822341,
+      "tracking_error_pct": 12.44202900133148,
+      "information_ratio": 0.36052383211309913,
+      "cagr_diff_pp": 4.367394388771185,
+      "t_bar": 3.0,
+      "cagr_bar_pp": 1.0,
+      "nw_lags": 5
+    },
+    "oos_metrics": {
+      "sharpe": 0.8656726188207102,
+      "cagr_pct": 17.326074124982682,
+      "max_drawdown_pct": -21.956033973650946,
+      "spy_sharpe": 0.7792168856067855
+    },
+    "fold_winners": [
+      "xs_momentum__lookback252_skip21_top_n50",
+      "xs_momentum__lookback252_skip0_top_n10",
+      "xs_momentum__lookback252_skip0_top_n20",
+      "xs_momentum__lookback252_skip0_top_n20",
+      "xs_momentum__lookback126_skip21_top_n10",
+      "xs_momentum__lookback126_skip21_top_n10",
+      "xs_momentum__lookback126_skip21_top_n10",
+      "xs_momentum__lookback126_skip21_top_n50",
+      "xs_momentum__lookback252_skip21_top_n10",
+      "xs_momentum__lookback252_skip21_top_n10",
+      "xs_momentum__lookback252_skip0_top_n50",
+      "xs_momentum__lookback252_skip0_top_n50",
+      "xs_momentum__lookback252_skip0_top_n50",
+      "xs_momentum__lookback252_skip0_top_n20",
+      "xs_momentum__lookback252_skip0_top_n20",
+      "xs_momentum__lookback252_skip0_top_n50",
+      "xs_momentum__lookback126_skip0_top_n10"
+    ],
+    "dsr_gate_passes": 0,
+    "n_gate_pass": 0,
+    "n_folds": 17,
+    "gate_pass_str": "0/17",
+    "fold_rows": [
+      {
+        "fold_num": 1,
+        "test_start": "2022-01-31",
+        "test_end": "2022-04-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip21_top_n50",
+        "wfe": -1.8218637086550118,
+        "oos_sharpe": -0.8011277229814932
+      },
+      {
+        "fold_num": 2,
+        "test_start": "2022-04-30",
+        "test_end": "2022-07-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip0_top_n10",
+        "wfe": -1.170621621489871,
+        "oos_sharpe": -0.4947438501050668
+      },
+      {
+        "fold_num": 3,
+        "test_start": "2022-07-30",
+        "test_end": "2022-10-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip0_top_n20",
+        "wfe": 2.529092627554256,
+        "oos_sharpe": 1.52182883808151
+      },
+      {
+        "fold_num": 4,
+        "test_start": "2022-10-30",
+        "test_end": "2023-01-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip0_top_n20",
+        "wfe": -1.0497949227477301,
+        "oos_sharpe": -0.5988405613311745
+      },
+      {
+        "fold_num": 5,
+        "test_start": "2023-01-30",
+        "test_end": "2023-04-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback126_skip21_top_n10",
+        "wfe": -0.3447469221017794,
+        "oos_sharpe": -0.2876866131991375
+      },
+      {
+        "fold_num": 6,
+        "test_start": "2023-04-30",
+        "test_end": "2023-07-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback126_skip21_top_n10",
+        "wfe": 2.7220923016951994,
+        "oos_sharpe": 1.9878574029875493
+      },
+      {
+        "fold_num": 7,
+        "test_start": "2023-07-30",
+        "test_end": "2023-10-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback126_skip21_top_n10",
+        "wfe": -1.5776078709526258,
+        "oos_sharpe": -3.094412738984266
+      },
+      {
+        "fold_num": 8,
+        "test_start": "2023-10-30",
+        "test_end": "2024-01-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback126_skip21_top_n50",
+        "wfe": 13.867670992594224,
+        "oos_sharpe": 5.752928695947708
+      },
+      {
+        "fold_num": 9,
+        "test_start": "2024-01-30",
+        "test_end": "2024-04-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip21_top_n10",
+        "wfe": 1.2119975742520728,
+        "oos_sharpe": 1.6735081328023944
+      },
+      {
+        "fold_num": 10,
+        "test_start": "2024-04-30",
+        "test_end": "2024-07-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip21_top_n10",
+        "wfe": 0.5540393927422429,
+        "oos_sharpe": 0.882721981139397
+      },
+      {
+        "fold_num": 11,
+        "test_start": "2024-07-30",
+        "test_end": "2024-10-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip0_top_n50",
+        "wfe": 1.4659820055423878,
+        "oos_sharpe": 1.6919588749619965
+      },
+      {
+        "fold_num": 12,
+        "test_start": "2024-10-30",
+        "test_end": "2025-01-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip0_top_n50",
+        "wfe": 1.231023789410393,
+        "oos_sharpe": 2.890173994840665
+      },
+      {
+        "fold_num": 13,
+        "test_start": "2025-01-30",
+        "test_end": "2025-04-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip0_top_n50",
+        "wfe": -0.6301617929654298,
+        "oos_sharpe": -1.103098961678181
+      },
+      {
+        "fold_num": 14,
+        "test_start": "2025-04-30",
+        "test_end": "2025-07-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip0_top_n20",
+        "wfe": 5.524592896954854,
+        "oos_sharpe": 4.378698523438677
+      },
+      {
+        "fold_num": 15,
+        "test_start": "2025-07-30",
+        "test_end": "2025-10-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip0_top_n20",
+        "wfe": 1.5061444819616499,
+        "oos_sharpe": 1.884229035198751
+      },
+      {
+        "fold_num": 16,
+        "test_start": "2025-10-30",
+        "test_end": "2026-01-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback252_skip0_top_n50",
+        "wfe": 1.224617139717069,
+        "oos_sharpe": 1.4514453853079057
+      },
+      {
+        "fold_num": 17,
+        "test_start": "2026-01-30",
+        "test_end": "2026-04-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "xs_momentum__lookback126_skip0_top_n10",
+        "wfe": 1.5047568753301708,
+        "oos_sharpe": 1.826055665629986
+      }
+    ],
+    "elapsed_sec": 2229.656235933304,
+    "ok": true
+  },
+  "dual_momentum": {
+    "strategy": "dual_momentum",
+    "eval_start": "2021-01-31",
+    "eval_end": "2026-04-30",
+    "verdict": "NO-GO stands",
+    "passes_pretax_bar": false,
+    "excess_stats": {
+      "n_obs": 1064,
+      "t_stat": 0.7605539810474198,
+      "ann_excess_pct": 4.485647974822341,
+      "tracking_error_pct": 12.44202900133148,
+      "information_ratio": 0.36052383211309913,
+      "cagr_diff_pp": 4.367394388771185,
+      "t_bar": 3.0,
+      "cagr_bar_pp": 1.0,
+      "nw_lags": 5
+    },
+    "oos_metrics": {
+      "sharpe": 0.8656726188207102,
+      "cagr_pct": 17.326074124982682,
+      "max_drawdown_pct": -21.956033973650946,
+      "spy_sharpe": 0.7792168856067855
+    },
+    "fold_winners": [
+      "dual_momentum__lookback252_skip21_top_n50",
+      "dual_momentum__lookback252_skip0_top_n10",
+      "dual_momentum__lookback252_skip0_top_n20",
+      "dual_momentum__lookback252_skip0_top_n20",
+      "dual_momentum__lookback126_skip21_top_n10",
+      "dual_momentum__lookback126_skip21_top_n10",
+      "dual_momentum__lookback126_skip21_top_n10",
+      "dual_momentum__lookback126_skip21_top_n50",
+      "dual_momentum__lookback252_skip21_top_n10",
+      "dual_momentum__lookback252_skip21_top_n10",
+      "dual_momentum__lookback252_skip0_top_n50",
+      "dual_momentum__lookback252_skip0_top_n50",
+      "dual_momentum__lookback252_skip0_top_n50",
+      "dual_momentum__lookback252_skip0_top_n20",
+      "dual_momentum__lookback252_skip0_top_n20",
+      "dual_momentum__lookback252_skip0_top_n50",
+      "dual_momentum__lookback126_skip0_top_n10"
+    ],
+    "dsr_gate_passes": 0,
+    "n_gate_pass": 0,
+    "n_folds": 17,
+    "gate_pass_str": "0/17",
+    "fold_rows": [
+      {
+        "fold_num": 1,
+        "test_start": "2022-01-31",
+        "test_end": "2022-04-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip21_top_n50",
+        "wfe": -1.8218637086550118,
+        "oos_sharpe": -0.8011277229814932
+      },
+      {
+        "fold_num": 2,
+        "test_start": "2022-04-30",
+        "test_end": "2022-07-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip0_top_n10",
+        "wfe": -1.170621621489871,
+        "oos_sharpe": -0.4947438501050668
+      },
+      {
+        "fold_num": 3,
+        "test_start": "2022-07-30",
+        "test_end": "2022-10-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip0_top_n20",
+        "wfe": 2.529092627554256,
+        "oos_sharpe": 1.52182883808151
+      },
+      {
+        "fold_num": 4,
+        "test_start": "2022-10-30",
+        "test_end": "2023-01-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip0_top_n20",
+        "wfe": -1.0497949227477301,
+        "oos_sharpe": -0.5988405613311745
+      },
+      {
+        "fold_num": 5,
+        "test_start": "2023-01-30",
+        "test_end": "2023-04-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback126_skip21_top_n10",
+        "wfe": -0.3447469221017794,
+        "oos_sharpe": -0.2876866131991375
+      },
+      {
+        "fold_num": 6,
+        "test_start": "2023-04-30",
+        "test_end": "2023-07-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback126_skip21_top_n10",
+        "wfe": 2.7220923016951994,
+        "oos_sharpe": 1.9878574029875493
+      },
+      {
+        "fold_num": 7,
+        "test_start": "2023-07-30",
+        "test_end": "2023-10-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback126_skip21_top_n10",
+        "wfe": -1.5776078709526258,
+        "oos_sharpe": -3.094412738984266
+      },
+      {
+        "fold_num": 8,
+        "test_start": "2023-10-30",
+        "test_end": "2024-01-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback126_skip21_top_n50",
+        "wfe": 13.867670992594224,
+        "oos_sharpe": 5.752928695947708
+      },
+      {
+        "fold_num": 9,
+        "test_start": "2024-01-30",
+        "test_end": "2024-04-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip21_top_n10",
+        "wfe": 1.2119975742520728,
+        "oos_sharpe": 1.6735081328023944
+      },
+      {
+        "fold_num": 10,
+        "test_start": "2024-04-30",
+        "test_end": "2024-07-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip21_top_n10",
+        "wfe": 0.5540393927422429,
+        "oos_sharpe": 0.882721981139397
+      },
+      {
+        "fold_num": 11,
+        "test_start": "2024-07-30",
+        "test_end": "2024-10-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip0_top_n50",
+        "wfe": 1.4659820055423878,
+        "oos_sharpe": 1.6919588749619965
+      },
+      {
+        "fold_num": 12,
+        "test_start": "2024-10-30",
+        "test_end": "2025-01-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip0_top_n50",
+        "wfe": 1.231023789410393,
+        "oos_sharpe": 2.890173994840665
+      },
+      {
+        "fold_num": 13,
+        "test_start": "2025-01-30",
+        "test_end": "2025-04-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip0_top_n50",
+        "wfe": -0.6301617929654298,
+        "oos_sharpe": -1.103098961678181
+      },
+      {
+        "fold_num": 14,
+        "test_start": "2025-04-30",
+        "test_end": "2025-07-30",
+        "ndh_passed": false,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip0_top_n20",
+        "wfe": 5.524592896954854,
+        "oos_sharpe": 4.378698523438677
+      },
+      {
+        "fold_num": 15,
+        "test_start": "2025-07-30",
+        "test_end": "2025-10-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip0_top_n20",
+        "wfe": 1.5061444819616499,
+        "oos_sharpe": 1.884229035198751
+      },
+      {
+        "fold_num": 16,
+        "test_start": "2025-10-30",
+        "test_end": "2026-01-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback252_skip0_top_n50",
+        "wfe": 1.224617139717069,
+        "oos_sharpe": 1.4514453853079057
+      },
+      {
+        "fold_num": 17,
+        "test_start": "2026-01-30",
+        "test_end": "2026-04-30",
+        "ndh_passed": true,
+        "dsr_passed": false,
+        "gates_passed": false,
+        "used_anchor": true,
+        "winner_combo": "dual_momentum__lookback126_skip0_top_n10",
+        "wfe": 1.5047568753301708,
+        "oos_sharpe": 1.826055665629986
+      }
+    ],
+    "elapsed_sec": 1877.4051356315613,
+    "ok": true
+  }
+}
