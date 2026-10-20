@@ -2,6 +2,18 @@
 
 ## 2026-10-19
 
+- **Research: production-rule daily-bar audit — NO-GO.** New event-loop replica
+  and Newey-West excess-return helpers reproduce the specified sizing, risk,
+  prior-bar signals and SPY sweep rules. Primary CAGR 14.19% versus SPY 14.83%,
+  excess −0.64 pt/year and t −0.69; all sensitivities fail. The holdout is
+  INCONCLUSIVE after a tainted-trade stop, while exact historical live parity
+  remains UNVERIFIED. Owner-approved amendments preserve those failures and
+  permit negative closure on the primary result. Corrected momentum and FOMC
+  reruns remain NO-GO; A23 distribution-tax sensitivity is separate owner
+  information. See `research/2026-10-19-production-replica-audit-nogo.md`, its raw
+  JSON/curves and the regenerated snapshot. No live code, configuration or
+  deployment changed.
+
 - **Lab event-study timing correction:** close-to-close event samples now exclude
   the entry session's return, which was earned before buying, and include the
   exit session's return. The registered FOMC semantics test exposed this error;

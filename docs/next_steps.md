@@ -6,6 +6,23 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
+## Current research decision (2026-10-19)
+
+1. **Owner decision at the freeze lift (~2026-12-29): recommend retiring the
+   stock-picking sleeve.** The approved historical daily-bar model is NO-GO:
+   CAGR 14.19% versus SPY 14.83%, excess −0.64 pt/year, Newey-West t −0.69.
+   The older holdout remains INCONCLUSIVE; exact historical live replication
+   remains UNVERIFIED. Keep production frozen. Any later live action is a
+   separate owner decision. The paper alternative is the SPY sweep alone, or
+   the separate shadow only if it passes its own forward rule; the owner's
+   real-money A23 allocation and exit terms are unchanged. See the
+   [audit report](research/2026-10-19-production-replica-audit-nogo.md) and
+   [approved closure](research/briefs/2026-10-19-production-replica-closure-amendment.md).
+2. **Review the A23 distribution-tax bounds before entry**, as information for
+   the existing owner decision. No new stock, momentum, FOMC or voter retest is
+   queued. Earlier research/deployment notes below are historical; their old
+   KEEP and outstanding-rerun statements are superseded by the audit.
+
 ## Where new strategy ideas come from (2-stage pipeline)
 
 1. **Discovery (external, no repo access)** — run

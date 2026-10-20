@@ -279,3 +279,16 @@ future readers can look up exactly what window produced a given run_id even
 if the CLI invocation itself wasn't recorded verbatim. Not implemented here
 — flagged as a low-effort, high-value follow-up, not urgent enough to block
 this report.
+
+
+## Correction (2026-10-19)
+
+The 1.14 blend run was pinned to the reproduction's window. Eval-end drift
+therefore does not explain its 1.14 to 0.68 drop. The
+[2026-08-18 harness fixes](2026-08-18-wfo-anchor-leakage-fix.md), including
+expanding-window anchor selection, are the relevant explanation to investigate;
+this causal attribution is **inferred**, not an isolated controlled measurement
+of each fix. Data vintage and other simultaneous changes must not be assigned
+invented contributions. The body above is preserved as the original record.
+The [production-rule audit](2026-10-19-production-replica-audit-nogo.md) also
+supersedes old gate-pass counts as DSR evidence after the statistical unit fix.
