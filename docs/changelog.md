@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-10-19
+
+- **Research: production-rule daily-bar audit — NO-GO.** New event-loop replica
+  and Newey-West excess-return helpers reproduce the specified sizing, risk,
+  prior-bar signals and SPY sweep rules. Primary CAGR 14.19% versus SPY 14.83%,
+  excess −0.64 pt/year and t −0.69; all sensitivities fail. The holdout is
+  INCONCLUSIVE after a tainted-trade stop, while exact historical live parity
+  remains UNVERIFIED. Owner-approved amendments preserve those failures and
+  permit negative closure on the primary result. Corrected momentum and FOMC
+  reruns remain NO-GO; A23 distribution-tax sensitivity is separate owner
+  information. See `research/2026-10-19-production-replica-audit-nogo.md`, its raw
+  JSON/curves and the regenerated snapshot. No live code, configuration or
+  deployment changed.
+
+- **Lab event-study timing correction:** close-to-close event samples now exclude
+  the entry session's return, which was earned before buying, and include the
+  exit session's return. The registered FOMC semantics test exposed this error;
+  a non-flat price regression also checks sample counts and means. Prior event
+  statistics require recomputation. The owner authorized the correction in
+  `research/briefs/2026-10-19-production-replica-fomc-timing-amendment.md`;
+  no live code or configuration changed.
+
+- **Lab DSR correction:** the gate compared annualized Sharpe against per-day
+  thresholds and used the wrong kurtosis term, so it passed almost everything.
+  An annual Sharpe of 1.0 over 252 days with 48 trials scored 1.0 instead of
+  about 0.10. Sharpe is now converted to per-period units for the calculation;
+  the reported expected maximum remains annualized. Every past "x/17 gates"
+  count reflects the density gate only. Corrected walk-forward folds will
+  fall back to the anchor much more often. No live code or config changed.
+
 ## 2026-09-30
 
 - **Research: static fractional leverage (A23) — GO for owner decision;

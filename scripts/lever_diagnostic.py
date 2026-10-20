@@ -237,7 +237,7 @@ def _regime_breakdown(
         if len(eq_is) > 10:
             n_obs, skew_val, kurt_val = _compute_dsr_inputs(eq_is)
             dsr_result = dsr_check(
-                observed_sr=winner.get("sharpe", 0.0),
+                observed_sr_annual=winner.get("sharpe", 0.0),
                 n_obs=n_obs,
                 n_trials=len(grid),
                 skew=skew_val,

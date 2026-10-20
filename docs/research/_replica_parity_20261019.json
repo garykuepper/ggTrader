@@ -1,0 +1,7638 @@
+{
+  "orders": [
+    {
+      "id": 155,
+      "date": "2026-09-29",
+      "symbol": "H",
+      "side": "SELL",
+      "reason": "manual_orphan_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-07-30 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no prior signal bar or symbol absent from the panel"
+    },
+    {
+      "id": 156,
+      "date": "2026-09-29",
+      "symbol": "HGV",
+      "side": "SELL",
+      "reason": "manual_orphan_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-07-30 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no prior signal bar or symbol absent from the panel"
+    },
+    {
+      "id": 157,
+      "date": "2026-09-29",
+      "symbol": "WLK",
+      "side": "SELL",
+      "reason": "manual_orphan_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-07-30 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no prior signal bar or symbol absent from the panel"
+    },
+    {
+      "id": 158,
+      "date": "2026-09-29",
+      "symbol": "WWD",
+      "side": "SELL",
+      "reason": "manual_orphan_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-07-30 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no prior signal bar or symbol absent from the panel"
+    },
+    {
+      "id": 159,
+      "date": "2026-09-29",
+      "symbol": "ACGL",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-09-09 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 160,
+      "date": "2026-09-29",
+      "symbol": "BA",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-09-18 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 161,
+      "date": "2026-09-29",
+      "symbol": "BAX",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-09-09 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 162,
+      "date": "2026-09-29",
+      "symbol": "CARR",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-26 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 163,
+      "date": "2026-09-29",
+      "symbol": "CMI",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-31 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 164,
+      "date": "2026-09-29",
+      "symbol": "CMS",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-10 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 165,
+      "date": "2026-09-29",
+      "symbol": "CPB",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-09-04 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 166,
+      "date": "2026-09-29",
+      "symbol": "CPT",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-28 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 167,
+      "date": "2026-09-29",
+      "symbol": "ESS",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-09-03 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 168,
+      "date": "2026-09-29",
+      "symbol": "EXC",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-24 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 169,
+      "date": "2026-09-29",
+      "symbol": "FDXF",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-25 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 170,
+      "date": "2026-09-29",
+      "symbol": "HRL",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-28 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 171,
+      "date": "2026-09-29",
+      "symbol": "NKE",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-17 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 172,
+      "date": "2026-09-29",
+      "symbol": "TSN",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-09-04 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 173,
+      "date": "2026-09-29",
+      "symbol": "WM",
+      "side": "SELL",
+      "reason": "manual_legacy_liquidation",
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-27 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 174,
+      "date": "2026-09-29",
+      "symbol": "AEE",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-07-30 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 175,
+      "date": "2026-09-29",
+      "symbol": "HAS",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-07-06 00:00:00+00:00",
+      "explained": true,
+      "explanation": "catch-up exit"
+    },
+    {
+      "id": 176,
+      "date": "2026-09-29",
+      "symbol": "HON",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-09-03 00:00:00+00:00",
+      "explained": true,
+      "explanation": "catch-up exit"
+    },
+    {
+      "id": 177,
+      "date": "2026-09-29",
+      "symbol": "MNST",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-08-07 00:00:00+00:00",
+      "explained": true,
+      "explanation": "catch-up exit"
+    },
+    {
+      "id": 178,
+      "date": "2026-09-29",
+      "symbol": "PNR",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-07-15 00:00:00+00:00",
+      "explained": true,
+      "explanation": "catch-up exit"
+    },
+    {
+      "id": 179,
+      "date": "2026-09-29",
+      "symbol": "VZ",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "last_live_buy": "2026-06-29 00:00:00+00:00",
+      "explained": true,
+      "explanation": "catch-up exit"
+    },
+    {
+      "id": 185,
+      "date": "2026-10-09",
+      "symbol": "AIZ",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-10-08 00:00:00+00:00",
+      "last_live_buy": "2026-09-22 00:00:00+00:00",
+      "explained": true,
+      "explanation": "last-bar exit"
+    },
+    {
+      "id": 187,
+      "date": "2026-10-12",
+      "symbol": "BALL",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-10-09 00:00:00+00:00",
+      "last_live_buy": "2026-09-25 00:00:00+00:00",
+      "explained": true,
+      "explanation": "last-bar exit"
+    },
+    {
+      "id": 188,
+      "date": "2026-10-12",
+      "symbol": "BLDR",
+      "side": "BUY",
+      "reason": null,
+      "signal_bar": "2026-10-09 00:00:00+00:00",
+      "last_live_buy": "None",
+      "explained": true,
+      "explanation": "entry signal"
+    },
+    {
+      "id": 191,
+      "date": "2026-10-13",
+      "symbol": "ALL",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-10-12 00:00:00+00:00",
+      "last_live_buy": "2026-09-22 00:00:00+00:00",
+      "explained": false,
+      "explanation": "no exit since last live buy"
+    },
+    {
+      "id": 192,
+      "date": "2026-10-13",
+      "symbol": "ALB",
+      "side": "BUY",
+      "reason": null,
+      "signal_bar": "2026-10-12 00:00:00+00:00",
+      "last_live_buy": "2026-07-15 00:00:00+00:00",
+      "explained": true,
+      "explanation": "entry signal"
+    },
+    {
+      "id": 194,
+      "date": "2026-10-15",
+      "symbol": "GL",
+      "side": "SELL",
+      "reason": null,
+      "signal_bar": "2026-10-14 00:00:00+00:00",
+      "last_live_buy": "2026-09-25 00:00:00+00:00",
+      "explained": true,
+      "explanation": "last-bar exit"
+    },
+    {
+      "id": 195,
+      "date": "2026-10-15",
+      "symbol": "ARES",
+      "side": "BUY",
+      "reason": null,
+      "signal_bar": "2026-10-14 00:00:00+00:00",
+      "last_live_buy": "None",
+      "explained": false,
+      "explanation": "no entry signal"
+    }
+  ],
+  "strategy_orders": 32,
+  "explained_orders": 10,
+  "explained_pct": 31.25,
+  "daily": {
+    "2026-09-29": {
+      "signal_bar": "2026-09-28 00:00:00+00:00",
+      "entry_candidates": 21,
+      "live_buys": 0
+    },
+    "2026-10-09": {
+      "signal_bar": "2026-10-08 00:00:00+00:00",
+      "entry_candidates": 3,
+      "live_buys": 0
+    },
+    "2026-10-12": {
+      "signal_bar": "2026-10-09 00:00:00+00:00",
+      "entry_candidates": 8,
+      "live_buys": 1
+    },
+    "2026-10-13": {
+      "signal_bar": "2026-10-12 00:00:00+00:00",
+      "entry_candidates": 7,
+      "live_buys": 1
+    },
+    "2026-10-15": {
+      "signal_bar": "2026-10-14 00:00:00+00:00",
+      "entry_candidates": 16,
+      "live_buys": 1
+    }
+  },
+  "notes": [
+    "Investigation authorized by owner after parity stop. Original explained flags and 31.25% signal-match score are retained.",
+    "19 manual liquidations are documented operations, not missing indicator signals; none were removed from the registered denominator.",
+    "AEE reproduces with the pre-deployment 120-day lookback; September 29 log reports 83 bars.",
+    "ALL and ARES remain unverified against the exact historical signal inputs. Partial-bar sensitivity is a plausible mechanism, not accepted parity evidence.",
+    "The audit remains stopped. No studies, live operations or brief changes were performed."
+  ],
+  "stop_flags": [
+    "unexplained_orders"
+  ],
+  "since": "2026-09-29",
+  "through": "2026-10-19",
+  "distinct_reasons": [
+    "cash_sweep",
+    "catastrophe_stop",
+    "manual_legacy_liquidation",
+    "manual_orphan_liquidation",
+    null
+  ],
+  "universe_size": 503,
+  "panel_first_bar": "2025-05-19 00:00:00+00:00",
+  "panel_last_bar": "2026-10-16 00:00:00+00:00",
+  "investigation": {
+    "recorded_at": "2026-10-19 23:14:56.333332+00:00",
+    "findings": {
+      "manual_liquidations": {
+        "status": "documented owner-directed operations, outside indicator rules",
+        "count": 19,
+        "reason_counts": {
+          "manual_orphan_liquidation": 4,
+          "manual_legacy_liquidation": 15
+        },
+        "sources": [
+          "docs/changelog.md:52 (15 owner-directed legacy liquidations)",
+          "docs/next_steps.md:191 (four owner-directed orphan liquidations)",
+          "docs/next_steps.md:248 (run verification)"
+        ]
+      },
+      "AEE": {
+        "order_id": 174,
+        "status": "reproduced legacy-lookback catch-up exit",
+        "cause": "September 29 run loaded 83 bars (120-day lookback). On that window AEE has an August 18 exit after its July 30 BUY. At 365/500 days its latest exit is July 28, before the BUY. The longer-lookback image was deployed after the September 29 run.",
+        "evidence_status": "run log plus current-tape replays and documented deployment timing",
+        "sources": [
+          "/home/flynn/logs/paper_trade_20260929.log:9",
+          "/home/flynn/logs/paper_trade_20260929.log:14",
+          "docs/changelog.md:30 (September 29 deployment at about 17:15 PT)",
+          "docs/next_steps.md:240 (freeze deployment)",
+          "docs/next_steps.md:192 (expected AEE catch-up sale)"
+        ]
+      },
+      "ALL": {
+        "order_id": 191,
+        "status": "plausible mutable/partial-bar effect; exact historical input unverified",
+        "cause": "Current October 12 close gives no exit. Substituting the actual October 12 broker snapshot mark produces the exit. Same-day October 13 data also gives an exit. The run log does not preserve as_of or indicator input bars, so these alternatives cannot be distinguished.",
+        "snapshot_date": "2026-10-12",
+        "broker_snapshot_mark": 232.96,
+        "diagnostic_exit_at_broker_mark": true,
+        "caveat": "Broker snapshot price is not proof of the yfinance signal price."
+      },
+      "ARES": {
+        "order_id": 195,
+        "status": "unresolved exact input; partial-bar effect is plausible",
+        "cause": "No entry on October 14 or 15 using current 120/365/500-day tape. A 101-point scan of the final close within each session high-low range reproduces an entry at lower intraday prices.",
+        "caveat": "Scanned prices are hypothetical. No archived yfinance bar from the decision time was found in the inspected paper logs or tables; this does not explain the order to the registered standard."
+      },
+      "loader": {
+        "status": "confirmed code path, historical occurrence for these orders not proven",
+        "mechanism": "YFinanceDataLoader includes end_date plus one day and labels daily bars at midnight. CachedYFinanceLoader refetches only when the latest bar is older than 1.5 intervals, so a previous partial bar can be reused the next day and later overwritten. fetch_stock_ohlcv retains timestamps <= today midnight, which can include the current session.",
+        "sources": [
+          "src/ggTrader/data/live/yfinance_loader.py:52",
+          "src/ggTrader/data/live/yfinance_loader.py:89",
+          "src/ggTrader/data/live/cached_yfinance_loader.py:347",
+          "src/ggTrader/data/live/cached_yfinance_loader.py:375",
+          "src/ggTrader/lab/data.py:171"
+        ]
+      }
+    },
+    "live_logs": {
+      "20260929": {
+        "path": "/home/flynn/logs/paper_trade_20260929.log",
+        "lines": [
+          {
+            "line": 9,
+            "text": "  [data] 83 rows x 503 symbols (1d)"
+          },
+          {
+            "line": 13,
+            "text": "  Buys:   []"
+          },
+          {
+            "line": 14,
+            "text": "  Sells:  ['AEE', 'HAS', 'HON', 'MNST', 'PNR', 'VZ']"
+          }
+        ]
+      },
+      "20261013": {
+        "path": "/home/flynn/logs/paper_trade_20261013.log",
+        "lines": [
+          {
+            "line": 10,
+            "text": "  [data] 251 rows x 503 symbols (1d)"
+          },
+          {
+            "line": 13,
+            "text": "  Buys:   ['ALB']"
+          },
+          {
+            "line": 14,
+            "text": "  Sells:  ['ALL']"
+          }
+        ]
+      },
+      "20261015": {
+        "path": "/home/flynn/logs/paper_trade_20261015.log",
+        "lines": [
+          {
+            "line": 10,
+            "text": "  [data] 251 rows x 503 symbols (1d)"
+          },
+          {
+            "line": 13,
+            "text": "  Buys:   ['ARES']"
+          },
+          {
+            "line": 14,
+            "text": "  Sells:  ['GL']"
+          }
+        ]
+      }
+    },
+    "order_history": [
+      {
+        "id": 42,
+        "run_date": "2026-07-30",
+        "side": "BUY",
+        "symbol": "AEE",
+        "amount": 901.74999996442,
+        "reason": null,
+        "created_at": "2026-07-31 12:45:07.736951-07:00"
+      },
+      {
+        "id": 147,
+        "run_date": "2026-09-22",
+        "side": "BUY",
+        "symbol": "ALL",
+        "amount": 724.2700003833081,
+        "reason": null,
+        "created_at": "2026-09-22 12:46:10.938957-07:00"
+      },
+      {
+        "id": 174,
+        "run_date": "2026-09-29",
+        "side": "SELL",
+        "symbol": "AEE",
+        "amount": 833.35395785992,
+        "reason": null,
+        "created_at": "2026-09-29 12:45:36.410405-07:00"
+      },
+      {
+        "id": 191,
+        "run_date": "2026-10-13",
+        "side": "SELL",
+        "symbol": "ALL",
+        "amount": 746.61478036281,
+        "reason": null,
+        "created_at": "2026-10-13 12:45:48.712714-07:00"
+      },
+      {
+        "id": 195,
+        "run_date": "2026-10-15",
+        "side": "BUY",
+        "symbol": "ARES",
+        "amount": 3394.2299998887,
+        "reason": null,
+        "created_at": "2026-10-15 12:45:45.295130-07:00"
+      }
+    ],
+    "replays": [
+      {
+        "symbol": "AEE",
+        "run_date": "2026-09-29",
+        "lookback_days": 120,
+        "include_same_day": false,
+        "last_bar": "2026-09-28 00:00:00+00:00",
+        "n_bars": 83,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-08-18 00:00:00+00:00"
+      },
+      {
+        "symbol": "AEE",
+        "run_date": "2026-09-29",
+        "lookback_days": 120,
+        "include_same_day": true,
+        "last_bar": "2026-09-29 00:00:00+00:00",
+        "n_bars": 84,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-08-18 00:00:00+00:00"
+      },
+      {
+        "symbol": "AEE",
+        "run_date": "2026-09-29",
+        "lookback_days": 365,
+        "include_same_day": false,
+        "last_bar": "2026-09-28 00:00:00+00:00",
+        "n_bars": 251,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-07-28 00:00:00+00:00"
+      },
+      {
+        "symbol": "AEE",
+        "run_date": "2026-09-29",
+        "lookback_days": 365,
+        "include_same_day": true,
+        "last_bar": "2026-09-29 00:00:00+00:00",
+        "n_bars": 252,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-07-28 00:00:00+00:00"
+      },
+      {
+        "symbol": "AEE",
+        "run_date": "2026-09-29",
+        "lookback_days": 500,
+        "include_same_day": false,
+        "last_bar": "2026-09-28 00:00:00+00:00",
+        "n_bars": 342,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-07-28 00:00:00+00:00"
+      },
+      {
+        "symbol": "AEE",
+        "run_date": "2026-09-29",
+        "lookback_days": 500,
+        "include_same_day": true,
+        "last_bar": "2026-09-29 00:00:00+00:00",
+        "n_bars": 343,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-07-28 00:00:00+00:00"
+      },
+      {
+        "symbol": "ALL",
+        "run_date": "2026-10-13",
+        "lookback_days": 120,
+        "include_same_day": false,
+        "last_bar": "2026-10-12 00:00:00+00:00",
+        "n_bars": 83,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-09-14 00:00:00+00:00"
+      },
+      {
+        "symbol": "ALL",
+        "run_date": "2026-10-13",
+        "lookback_days": 120,
+        "include_same_day": true,
+        "last_bar": "2026-10-13 00:00:00+00:00",
+        "n_bars": 84,
+        "entry": false,
+        "exit": true,
+        "last_exit": "2026-10-13 00:00:00+00:00"
+      },
+      {
+        "symbol": "ALL",
+        "run_date": "2026-10-13",
+        "lookback_days": 365,
+        "include_same_day": false,
+        "last_bar": "2026-10-12 00:00:00+00:00",
+        "n_bars": 251,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-09-14 00:00:00+00:00"
+      },
+      {
+        "symbol": "ALL",
+        "run_date": "2026-10-13",
+        "lookback_days": 365,
+        "include_same_day": true,
+        "last_bar": "2026-10-13 00:00:00+00:00",
+        "n_bars": 252,
+        "entry": false,
+        "exit": true,
+        "last_exit": "2026-10-13 00:00:00+00:00"
+      },
+      {
+        "symbol": "ALL",
+        "run_date": "2026-10-13",
+        "lookback_days": 500,
+        "include_same_day": false,
+        "last_bar": "2026-10-12 00:00:00+00:00",
+        "n_bars": 343,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-09-14 00:00:00+00:00"
+      },
+      {
+        "symbol": "ALL",
+        "run_date": "2026-10-13",
+        "lookback_days": 500,
+        "include_same_day": true,
+        "last_bar": "2026-10-13 00:00:00+00:00",
+        "n_bars": 344,
+        "entry": false,
+        "exit": true,
+        "last_exit": "2026-10-13 00:00:00+00:00"
+      },
+      {
+        "symbol": "ARES",
+        "run_date": "2026-10-15",
+        "lookback_days": 120,
+        "include_same_day": false,
+        "last_bar": "2026-10-14 00:00:00+00:00",
+        "n_bars": 83,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-07-23 00:00:00+00:00"
+      },
+      {
+        "symbol": "ARES",
+        "run_date": "2026-10-15",
+        "lookback_days": 120,
+        "include_same_day": true,
+        "last_bar": "2026-10-15 00:00:00+00:00",
+        "n_bars": 84,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-07-23 00:00:00+00:00"
+      },
+      {
+        "symbol": "ARES",
+        "run_date": "2026-10-15",
+        "lookback_days": 365,
+        "include_same_day": false,
+        "last_bar": "2026-10-14 00:00:00+00:00",
+        "n_bars": 251,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-09-03 00:00:00+00:00"
+      },
+      {
+        "symbol": "ARES",
+        "run_date": "2026-10-15",
+        "lookback_days": 365,
+        "include_same_day": true,
+        "last_bar": "2026-10-15 00:00:00+00:00",
+        "n_bars": 252,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-09-03 00:00:00+00:00"
+      },
+      {
+        "symbol": "ARES",
+        "run_date": "2026-10-15",
+        "lookback_days": 500,
+        "include_same_day": false,
+        "last_bar": "2026-10-14 00:00:00+00:00",
+        "n_bars": 345,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-09-03 00:00:00+00:00"
+      },
+      {
+        "symbol": "ARES",
+        "run_date": "2026-10-15",
+        "lookback_days": 500,
+        "include_same_day": true,
+        "last_bar": "2026-10-15 00:00:00+00:00",
+        "n_bars": 346,
+        "entry": false,
+        "exit": false,
+        "last_exit": "2026-09-03 00:00:00+00:00"
+      }
+    ],
+    "hypothetical_close_scans": [
+      {
+        "symbol": "ALL",
+        "run_date": "2026-10-13",
+        "include_same_day": false,
+        "tested_bar": "2026-10-12 00:00:00+00:00",
+        "cached_close": 232.60000610351562,
+        "low": 231.91000366210938,
+        "high": 233.57000732421875,
+        "scan_points": 101,
+        "signal_price_range": [
+          232.78980560302733,
+          233.57000732421875
+        ],
+        "evidence_status": "hypothetical prices, not the archived live input"
+      },
+      {
+        "symbol": "ALL",
+        "run_date": "2026-10-13",
+        "include_same_day": true,
+        "tested_bar": "2026-10-13 00:00:00+00:00",
+        "cached_close": 236.39999389648438,
+        "low": 232.66000366210938,
+        "high": 237.1699981689453,
+        "scan_points": 101,
+        "signal_price_range": [
+          232.66000366210938,
+          237.1699981689453
+        ],
+        "evidence_status": "hypothetical prices, not the archived live input"
+      },
+      {
+        "symbol": "ARES",
+        "run_date": "2026-10-15",
+        "include_same_day": false,
+        "tested_bar": "2026-10-14 00:00:00+00:00",
+        "cached_close": 112.48999786376953,
+        "low": 111.13999938964844,
+        "high": 115.26000213623047,
+        "scan_points": 101,
+        "signal_price_range": [
+          111.13999938964844,
+          112.12880004882813
+        ],
+        "evidence_status": "hypothetical prices, not the archived live input"
+      },
+      {
+        "symbol": "ARES",
+        "run_date": "2026-10-15",
+        "include_same_day": true,
+        "tested_bar": "2026-10-15 00:00:00+00:00",
+        "cached_close": 114.02999877929688,
+        "low": 110.30000305175781,
+        "high": 114.23999786376953,
+        "scan_points": 101,
+        "signal_price_range": [
+          110.30000305175781,
+          112.15180061340332
+        ],
+        "evidence_status": "hypothetical prices, not the archived live input"
+      }
+    ],
+    "raw_tape_query": "SELECT timestamp, symbol, open, high, low, close, volume FROM ohlcv WHERE symbol IN ('AEE','ALL','ARES') AND venue='yfinance' AND interval='1d' AND timestamp >= '2025-01-01' ORDER BY timestamp",
+    "input_close_volume": {
+      "AEE": {
+        "columns": [
+          "date",
+          "close",
+          "volume"
+        ],
+        "rows": [
+          [
+            "2025-01-02 00:00:00+00:00",
+            85.2698974609375,
+            927200.0
+          ],
+          [
+            "2025-01-03 00:00:00+00:00",
+            85.13575744628906,
+            1059400.0
+          ],
+          [
+            "2025-01-06 00:00:00+00:00",
+            83.23851776123047,
+            1045800.0
+          ],
+          [
+            "2025-01-07 00:00:00+00:00",
+            84.282958984375,
+            1294100.0
+          ],
+          [
+            "2025-01-08 00:00:00+00:00",
+            85.50944519042969,
+            1476600.0
+          ],
+          [
+            "2025-01-10 00:00:00+00:00",
+            84.35961151123047,
+            1095600.0
+          ],
+          [
+            "2025-01-13 00:00:00+00:00",
+            85.09741973876953,
+            955700.0
+          ],
+          [
+            "2025-01-14 00:00:00+00:00",
+            85.66277313232422,
+            1174600.0
+          ],
+          [
+            "2025-01-15 00:00:00+00:00",
+            87.31086730957031,
+            1304900.0
+          ],
+          [
+            "2025-01-16 00:00:00+00:00",
+            89.93631744384766,
+            1142500.0
+          ],
+          [
+            "2025-01-17 00:00:00+00:00",
+            90.23335266113281,
+            1351300.0
+          ],
+          [
+            "2025-01-21 00:00:00+00:00",
+            92.21682739257812,
+            1506200.0
+          ],
+          [
+            "2025-01-22 00:00:00+00:00",
+            89.44763946533203,
+            1158200.0
+          ],
+          [
+            "2025-01-23 00:00:00+00:00",
+            89.40931701660156,
+            1138400.0
+          ],
+          [
+            "2025-01-24 00:00:00+00:00",
+            90.18545532226562,
+            743600.0
+          ],
+          [
+            "2025-01-27 00:00:00+00:00",
+            90.19503784179688,
+            2453600.0
+          ],
+          [
+            "2025-01-28 00:00:00+00:00",
+            89.32307434082031,
+            1137400.0
+          ],
+          [
+            "2025-01-29 00:00:00+00:00",
+            88.91104888916016,
+            912800.0
+          ],
+          [
+            "2025-01-30 00:00:00+00:00",
+            90.17584991455078,
+            790500.0
+          ],
+          [
+            "2025-01-31 00:00:00+00:00",
+            90.2621078491211,
+            1686900.0
+          ],
+          [
+            "2025-02-03 00:00:00+00:00",
+            91.99644470214844,
+            1725100.0
+          ],
+          [
+            "2025-02-04 00:00:00+00:00",
+            91.49817657470703,
+            2100100.0
+          ],
+          [
+            "2025-02-05 00:00:00+00:00",
+            92.58094024658203,
+            1793500.0
+          ],
+          [
+            "2025-02-06 00:00:00+00:00",
+            92.70551300048828,
+            1745400.0
+          ],
+          [
+            "2025-02-07 00:00:00+00:00",
+            93.03129577636719,
+            1586500.0
+          ],
+          [
+            "2025-02-10 00:00:00+00:00",
+            93.1366958618164,
+            1989100.0
+          ],
+          [
+            "2025-02-11 00:00:00+00:00",
+            94.07572174072266,
+            2005000.0
+          ],
+          [
+            "2025-02-12 00:00:00+00:00",
+            93.1941909790039,
+            2103900.0
+          ],
+          [
+            "2025-02-13 00:00:00+00:00",
+            94.1619644165039,
+            2629000.0
+          ],
+          [
+            "2025-02-14 00:00:00+00:00",
+            93.97032928466797,
+            3561300.0
+          ],
+          [
+            "2025-02-18 00:00:00+00:00",
+            94.22904205322266,
+            2043700.0
+          ],
+          [
+            "2025-02-19 00:00:00+00:00",
+            93.80743408203125,
+            2114800.0
+          ],
+          [
+            "2025-02-20 00:00:00+00:00",
+            93.14627838134766,
+            2594300.0
+          ],
+          [
+            "2025-02-21 00:00:00+00:00",
+            94.42068481445312,
+            4117900.0
+          ],
+          [
+            "2025-02-24 00:00:00+00:00",
+            94.7081298828125,
+            2143000.0
+          ],
+          [
+            "2025-02-25 00:00:00+00:00",
+            95.25431060791016,
+            1602600.0
+          ],
+          [
+            "2025-02-26 00:00:00+00:00",
+            95.17765808105469,
+            1131800.0
+          ],
+          [
+            "2025-02-27 00:00:00+00:00",
+            95.31179809570312,
+            1374700.0
+          ],
+          [
+            "2025-02-28 00:00:00+00:00",
+            97.31443786621094,
+            1852400.0
+          ],
+          [
+            "2025-03-03 00:00:00+00:00",
+            99.33622741699219,
+            2261400.0
+          ],
+          [
+            "2025-03-04 00:00:00+00:00",
+            95.81965637207031,
+            2791400.0
+          ],
+          [
+            "2025-03-05 00:00:00+00:00",
+            94.60273742675781,
+            1543200.0
+          ],
+          [
+            "2025-03-06 00:00:00+00:00",
+            93.0792007446289,
+            1600100.0
+          ],
+          [
+            "2025-03-07 00:00:00+00:00",
+            94.46857452392578,
+            2539300.0
+          ],
+          [
+            "2025-03-10 00:00:00+00:00",
+            95.10099792480469,
+            2308400.0
+          ],
+          [
+            "2025-03-11 00:00:00+00:00",
+            94.45437622070312,
+            2232700.0
+          ],
+          [
+            "2025-03-12 00:00:00+00:00",
+            94.04903411865234,
+            2037800.0
+          ],
+          [
+            "2025-03-13 00:00:00+00:00",
+            94.5412368774414,
+            1491900.0
+          ],
+          [
+            "2025-03-14 00:00:00+00:00",
+            95.66075897216797,
+            1827700.0
+          ],
+          [
+            "2025-03-17 00:00:00+00:00",
+            97.21456909179688,
+            2861900.0
+          ],
+          [
+            "2025-03-18 00:00:00+00:00",
+            96.36527252197266,
+            1358900.0
+          ],
+          [
+            "2025-03-19 00:00:00+00:00",
+            96.56794738769531,
+            2172800.0
+          ],
+          [
+            "2025-03-20 00:00:00+00:00",
+            96.48108673095703,
+            2262700.0
+          ],
+          [
+            "2025-03-21 00:00:00+00:00",
+            95.45809173583984,
+            3577200.0
+          ],
+          [
+            "2025-03-24 00:00:00+00:00",
+            95.361572265625,
+            1146700.0
+          ],
+          [
+            "2025-03-25 00:00:00+00:00",
+            93.78845977783203,
+            1395200.0
+          ],
+          [
+            "2025-03-26 00:00:00+00:00",
+            95.42913055419922,
+            1334700.0
+          ],
+          [
+            "2025-03-27 00:00:00+00:00",
+            95.18785858154297,
+            1761800.0
+          ],
+          [
+            "2025-03-28 00:00:00+00:00",
+            96.22051239013672,
+            1797800.0
+          ],
+          [
+            "2025-03-31 00:00:00+00:00",
+            96.89608764648438,
+            3045300.0
+          ],
+          [
+            "2025-04-01 00:00:00+00:00",
+            97.15665435791016,
+            1853400.0
+          ],
+          [
+            "2025-04-02 00:00:00+00:00",
+            97.32071685791016,
+            1916600.0
+          ],
+          [
+            "2025-04-03 00:00:00+00:00",
+            98.13140869140625,
+            3775500.0
+          ],
+          [
+            "2025-04-04 00:00:00+00:00",
+            92.44696807861328,
+            3099100.0
+          ],
+          [
+            "2025-04-07 00:00:00+00:00",
+            91.04756927490234,
+            2606300.0
+          ],
+          [
+            "2025-04-08 00:00:00+00:00",
+            90.94141387939453,
+            2441000.0
+          ],
+          [
+            "2025-04-09 00:00:00+00:00",
+            92.98741912841797,
+            2418400.0
+          ],
+          [
+            "2025-04-10 00:00:00+00:00",
+            93.34451293945312,
+            2098100.0
+          ],
+          [
+            "2025-04-11 00:00:00+00:00",
+            94.1262435913086,
+            1321300.0
+          ],
+          [
+            "2025-04-14 00:00:00+00:00",
+            95.55459594726562,
+            1881000.0
+          ],
+          [
+            "2025-04-15 00:00:00+00:00",
+            95.57389068603516,
+            1668600.0
+          ],
+          [
+            "2025-04-16 00:00:00+00:00",
+            94.57984161376953,
+            1231600.0
+          ],
+          [
+            "2025-04-17 00:00:00+00:00",
+            95.20716094970703,
+            1747600.0
+          ],
+          [
+            "2025-04-21 00:00:00+00:00",
+            93.11289978027344,
+            1248000.0
+          ],
+          [
+            "2025-04-22 00:00:00+00:00",
+            95.68970489501953,
+            2168700.0
+          ],
+          [
+            "2025-04-23 00:00:00+00:00",
+            95.18785858154297,
+            1055000.0
+          ],
+          [
+            "2025-04-24 00:00:00+00:00",
+            95.46773529052734,
+            847400.0
+          ],
+          [
+            "2025-04-25 00:00:00+00:00",
+            94.8500747680664,
+            1489300.0
+          ],
+          [
+            "2025-04-28 00:00:00+00:00",
+            95.43878173828125,
+            1203200.0
+          ],
+          [
+            "2025-04-29 00:00:00+00:00",
+            95.74761962890625,
+            980000.0
+          ],
+          [
+            "2025-04-30 00:00:00+00:00",
+            95.77656555175781,
+            1755300.0
+          ],
+          [
+            "2025-05-01 00:00:00+00:00",
+            94.66669464111328,
+            1537800.0
+          ],
+          [
+            "2025-05-02 00:00:00+00:00",
+            96.00818634033203,
+            2663900.0
+          ],
+          [
+            "2025-05-05 00:00:00+00:00",
+            96.07575225830078,
+            1633200.0
+          ],
+          [
+            "2025-05-06 00:00:00+00:00",
+            95.9888916015625,
+            1130000.0
+          ],
+          [
+            "2025-05-07 00:00:00+00:00",
+            96.06609344482422,
+            1105200.0
+          ],
+          [
+            "2025-05-08 00:00:00+00:00",
+            94.27100372314453,
+            2349600.0
+          ],
+          [
+            "2025-05-09 00:00:00+00:00",
+            94.00078582763672,
+            1295300.0
+          ],
+          [
+            "2025-05-12 00:00:00+00:00",
+            92.08988189697266,
+            1314400.0
+          ],
+          [
+            "2025-05-13 00:00:00+00:00",
+            91.02826690673828,
+            3421900.0
+          ],
+          [
+            "2025-05-14 00:00:00+00:00",
+            91.69419860839844,
+            2659100.0
+          ],
+          [
+            "2025-05-15 00:00:00+00:00",
+            93.44102478027344,
+            1659500.0
+          ],
+          [
+            "2025-05-16 00:00:00+00:00",
+            94.5991439819336,
+            1254600.0
+          ],
+          [
+            "2025-05-19 00:00:00+00:00",
+            95.5159912109375,
+            1751000.0
+          ],
+          [
+            "2025-05-20 00:00:00+00:00",
+            95.13959503173828,
+            1236000.0
+          ],
+          [
+            "2025-05-21 00:00:00+00:00",
+            93.13219451904297,
+            1928900.0
+          ],
+          [
+            "2025-05-22 00:00:00+00:00",
+            92.07058715820312,
+            1861300.0
+          ],
+          [
+            "2025-05-23 00:00:00+00:00",
+            92.93917846679688,
+            1451900.0
+          ],
+          [
+            "2025-05-27 00:00:00+00:00",
+            93.31555938720703,
+            993600.0
+          ],
+          [
+            "2025-05-28 00:00:00+00:00",
+            91.99337005615234,
+            1106900.0
+          ],
+          [
+            "2025-05-29 00:00:00+00:00",
+            92.81370544433594,
+            1042000.0
+          ],
+          [
+            "2025-05-30 00:00:00+00:00",
+            93.49893188476562,
+            2370600.0
+          ],
+          [
+            "2025-06-02 00:00:00+00:00",
+            93.7594985961914,
+            1279200.0
+          ],
+          [
+            "2025-06-03 00:00:00+00:00",
+            93.92357635498047,
+            1887200.0
+          ],
+          [
+            "2025-06-04 00:00:00+00:00",
+            93.13219451904297,
+            2089200.0
+          ],
+          [
+            "2025-06-05 00:00:00+00:00",
+            92.66893768310547,
+            2293800.0
+          ],
+          [
+            "2025-06-06 00:00:00+00:00",
+            92.68824768066406,
+            1458000.0
+          ],
+          [
+            "2025-06-09 00:00:00+00:00",
+            92.58207702636719,
+            2344400.0
+          ],
+          [
+            "2025-06-10 00:00:00+00:00",
+            92.99044036865234,
+            1732400.0
+          ],
+          [
+            "2025-06-11 00:00:00+00:00",
+            93.19462585449219,
+            1512800.0
+          ],
+          [
+            "2025-06-12 00:00:00+00:00",
+            94.47806549072266,
+            2001800.0
+          ],
+          [
+            "2025-06-13 00:00:00+00:00",
+            93.04878234863281,
+            1350000.0
+          ],
+          [
+            "2025-06-16 00:00:00+00:00",
+            92.18343353271484,
+            1203600.0
+          ],
+          [
+            "2025-06-17 00:00:00+00:00",
+            91.7653579711914,
+            1409100.0
+          ],
+          [
+            "2025-06-18 00:00:00+00:00",
+            91.80424499511719,
+            1749300.0
+          ],
+          [
+            "2025-06-20 00:00:00+00:00",
+            92.06675720214844,
+            2508000.0
+          ],
+          [
+            "2025-06-23 00:00:00+00:00",
+            93.35020446777344,
+            1432100.0
+          ],
+          [
+            "2025-06-24 00:00:00+00:00",
+            93.70022583007812,
+            1692900.0
+          ],
+          [
+            "2025-06-25 00:00:00+00:00",
+            92.46540069580078,
+            2029000.0
+          ],
+          [
+            "2025-06-26 00:00:00+00:00",
+            92.7376480102539,
+            1663000.0
+          ],
+          [
+            "2025-06-27 00:00:00+00:00",
+            92.6695785522461,
+            2259900.0
+          ],
+          [
+            "2025-06-30 00:00:00+00:00",
+            93.3793716430664,
+            2377200.0
+          ],
+          [
+            "2025-07-01 00:00:00+00:00",
+            93.71966552734375,
+            1618900.0
+          ],
+          [
+            "2025-07-02 00:00:00+00:00",
+            92.83488464355469,
+            1569600.0
+          ],
+          [
+            "2025-07-03 00:00:00+00:00",
+            93.35991668701172,
+            637600.0
+          ],
+          [
+            "2025-07-07 00:00:00+00:00",
+            93.27240753173828,
+            1468400.0
+          ],
+          [
+            "2025-07-08 00:00:00+00:00",
+            92.36817932128906,
+            1686300.0
+          ],
+          [
+            "2025-07-09 00:00:00+00:00",
+            92.56262969970703,
+            2150600.0
+          ],
+          [
+            "2025-07-10 00:00:00+00:00",
+            93.62244415283203,
+            1785800.0
+          ],
+          [
+            "2025-07-11 00:00:00+00:00",
+            93.53492736816406,
+            1155800.0
+          ],
+          [
+            "2025-07-14 00:00:00+00:00",
+            93.83634948730469,
+            1549600.0
+          ],
+          [
+            "2025-07-15 00:00:00+00:00",
+            93.09739685058594,
+            1552800.0
+          ],
+          [
+            "2025-07-16 00:00:00+00:00",
+            94.16692352294922,
+            1995400.0
+          ],
+          [
+            "2025-07-17 00:00:00+00:00",
+            94.58501434326172,
+            1327000.0
+          ],
+          [
+            "2025-07-18 00:00:00+00:00",
+            95.96566772460938,
+            1383400.0
+          ],
+          [
+            "2025-07-21 00:00:00+00:00",
+            96.55876922607422,
+            1249400.0
+          ],
+          [
+            "2025-07-22 00:00:00+00:00",
+            98.1241683959961,
+            1319000.0
+          ],
+          [
+            "2025-07-23 00:00:00+00:00",
+            97.1518783569336,
+            1277900.0
+          ],
+          [
+            "2025-07-24 00:00:00+00:00",
+            97.2685546875,
+            1031600.0
+          ],
+          [
+            "2025-07-25 00:00:00+00:00",
+            97.3268814086914,
+            1059000.0
+          ],
+          [
+            "2025-07-28 00:00:00+00:00",
+            95.59619903564453,
+            1965100.0
+          ],
+          [
+            "2025-07-29 00:00:00+00:00",
+            97.05464935302734,
+            1326600.0
+          ],
+          [
+            "2025-07-30 00:00:00+00:00",
+            97.07408905029297,
+            2117400.0
+          ],
+          [
+            "2025-07-31 00:00:00+00:00",
+            98.3283462524414,
+            2002100.0
+          ],
+          [
+            "2025-08-01 00:00:00+00:00",
+            99.28121185302734,
+            2179000.0
+          ],
+          [
+            "2025-08-04 00:00:00+00:00",
+            100.39935302734375,
+            1126200.0
+          ],
+          [
+            "2025-08-05 00:00:00+00:00",
+            99.1839828491211,
+            1623600.0
+          ],
+          [
+            "2025-08-06 00:00:00+00:00",
+            98.8047866821289,
+            1492300.0
+          ],
+          [
+            "2025-08-07 00:00:00+00:00",
+            99.48538970947266,
+            1310300.0
+          ],
+          [
+            "2025-08-08 00:00:00+00:00",
+            98.5811538696289,
+            1006100.0
+          ],
+          [
+            "2025-08-11 00:00:00+00:00",
+            98.55198669433594,
+            1555100.0
+          ],
+          [
+            "2025-08-12 00:00:00+00:00",
+            98.39640808105469,
+            1310700.0
+          ],
+          [
+            "2025-08-13 00:00:00+00:00",
+            99.38815307617188,
+            967500.0
+          ],
+          [
+            "2025-08-14 00:00:00+00:00",
+            98.62004852294922,
+            1463000.0
+          ],
+          [
+            "2025-08-15 00:00:00+00:00",
+            97.77413940429688,
+            1905600.0
+          ],
+          [
+            "2025-08-18 00:00:00+00:00",
+            97.18104553222656,
+            1518200.0
+          ],
+          [
+            "2025-08-19 00:00:00+00:00",
+            99.03813171386719,
+            1885900.0
+          ],
+          [
+            "2025-08-20 00:00:00+00:00",
+            99.16453552246094,
+            1570300.0
+          ],
+          [
+            "2025-08-21 00:00:00+00:00",
+            98.6881103515625,
+            1125600.0
+          ],
+          [
+            "2025-08-22 00:00:00+00:00",
+            99.12564086914062,
+            1196000.0
+          ],
+          [
+            "2025-08-25 00:00:00+00:00",
+            97.93944549560547,
+            1562300.0
+          ],
+          [
+            "2025-08-26 00:00:00+00:00",
+            98.04638671875,
+            1296700.0
+          ],
+          [
+            "2025-08-27 00:00:00+00:00",
+            98.11445617675781,
+            1143400.0
+          ],
+          [
+            "2025-08-28 00:00:00+00:00",
+            96.97686767578125,
+            1488000.0
+          ],
+          [
+            "2025-08-29 00:00:00+00:00",
+            97.01575469970703,
+            985900.0
+          ],
+          [
+            "2025-09-02 00:00:00+00:00",
+            96.95741271972656,
+            1639800.0
+          ],
+          [
+            "2025-09-03 00:00:00+00:00",
+            97.1518783569336,
+            979100.0
+          ],
+          [
+            "2025-09-04 00:00:00+00:00",
+            98.08527374267578,
+            1663500.0
+          ],
+          [
+            "2025-09-05 00:00:00+00:00",
+            97.84219360351562,
+            1481600.0
+          ],
+          [
+            "2025-09-08 00:00:00+00:00",
+            97.21993255615234,
+            1920000.0
+          ],
+          [
+            "2025-09-09 00:00:00+00:00",
+            97.14159393310547,
+            1999500.0
+          ],
+          [
+            "2025-09-10 00:00:00+00:00",
+            97.229736328125,
+            1336800.0
+          ],
+          [
+            "2025-09-11 00:00:00+00:00",
+            98.22855377197266,
+            999300.0
+          ],
+          [
+            "2025-09-12 00:00:00+00:00",
+            98.6986083984375,
+            917300.0
+          ],
+          [
+            "2025-09-15 00:00:00+00:00",
+            98.38524627685547,
+            1150500.0
+          ],
+          [
+            "2025-09-16 00:00:00+00:00",
+            96.51487731933594,
+            964900.0
+          ],
+          [
+            "2025-09-17 00:00:00+00:00",
+            96.91636657714844,
+            1053600.0
+          ],
+          [
+            "2025-09-18 00:00:00+00:00",
+            96.61280822753906,
+            1520300.0
+          ],
+          [
+            "2025-09-19 00:00:00+00:00",
+            97.07304382324219,
+            2010000.0
+          ],
+          [
+            "2025-09-22 00:00:00+00:00",
+            97.03387451171875,
+            1578000.0
+          ],
+          [
+            "2025-09-23 00:00:00+00:00",
+            98.81612396240234,
+            1194000.0
+          ],
+          [
+            "2025-09-24 00:00:00+00:00",
+            98.75736236572266,
+            1759700.0
+          ],
+          [
+            "2025-09-25 00:00:00+00:00",
+            98.68881225585938,
+            1120200.0
+          ],
+          [
+            "2025-09-26 00:00:00+00:00",
+            99.9814224243164,
+            1075200.0
+          ],
+          [
+            "2025-09-29 00:00:00+00:00",
+            101.40133666992188,
+            1791700.0
+          ],
+          [
+            "2025-09-30 00:00:00+00:00",
+            102.21410369873047,
+            1497100.0
+          ],
+          [
+            "2025-10-01 00:00:00+00:00",
+            101.28382873535156,
+            2007700.0
+          ],
+          [
+            "2025-10-02 00:00:00+00:00",
+            100.7844009399414,
+            1945400.0
+          ],
+          [
+            "2025-10-03 00:00:00+00:00",
+            101.58738708496094,
+            2127000.0
+          ],
+          [
+            "2025-10-06 00:00:00+00:00",
+            102.7037353515625,
+            2061100.0
+          ],
+          [
+            "2025-10-07 00:00:00+00:00",
+            102.43933868408203,
+            2213000.0
+          ],
+          [
+            "2025-10-08 00:00:00+00:00",
+            101.5482177734375,
+            2062900.0
+          ],
+          [
+            "2025-10-09 00:00:00+00:00",
+            100.86275482177734,
+            2165500.0
+          ],
+          [
+            "2025-10-10 00:00:00+00:00",
+            101.51883697509766,
+            2098500.0
+          ],
+          [
+            "2025-10-13 00:00:00+00:00",
+            101.41112518310547,
+            1622300.0
+          ],
+          [
+            "2025-10-14 00:00:00+00:00",
+            102.06723022460938,
+            1652200.0
+          ],
+          [
+            "2025-10-15 00:00:00+00:00",
+            103.2031478881836,
+            2351500.0
+          ],
+          [
+            "2025-10-16 00:00:00+00:00",
+            103.02688598632812,
+            2089200.0
+          ],
+          [
+            "2025-10-17 00:00:00+00:00",
+            103.33045196533203,
+            1225200.0
+          ],
+          [
+            "2025-10-20 00:00:00+00:00",
+            103.49693298339844,
+            2217000.0
+          ],
+          [
+            "2025-10-21 00:00:00+00:00",
+            102.74291229248047,
+            890100.0
+          ],
+          [
+            "2025-10-22 00:00:00+00:00",
+            103.193359375,
+            1314300.0
+          ],
+          [
+            "2025-10-23 00:00:00+00:00",
+            102.16514587402344,
+            1805500.0
+          ],
+          [
+            "2025-10-24 00:00:00+00:00",
+            102.11619567871094,
+            811900.0
+          ],
+          [
+            "2025-10-27 00:00:00+00:00",
+            102.63518524169922,
+            980500.0
+          ],
+          [
+            "2025-10-28 00:00:00+00:00",
+            101.17610931396484,
+            1399100.0
+          ],
+          [
+            "2025-10-29 00:00:00+00:00",
+            100.15768432617188,
+            1222200.0
+          ],
+          [
+            "2025-10-30 00:00:00+00:00",
+            100.59835052490234,
+            1453800.0
+          ],
+          [
+            "2025-10-31 00:00:00+00:00",
+            99.903076171875,
+            1590800.0
+          ],
+          [
+            "2025-11-03 00:00:00+00:00",
+            99.43305206298828,
+            1475800.0
+          ],
+          [
+            "2025-11-04 00:00:00+00:00",
+            99.79537200927734,
+            1365700.0
+          ],
+          [
+            "2025-11-05 00:00:00+00:00",
+            99.17843627929688,
+            1785300.0
+          ],
+          [
+            "2025-11-06 00:00:00+00:00",
+            99.8932876586914,
+            2862000.0
+          ],
+          [
+            "2025-11-07 00:00:00+00:00",
+            102.47850799560547,
+            2283400.0
+          ],
+          [
+            "2025-11-10 00:00:00+00:00",
+            102.17494201660156,
+            1492700.0
+          ],
+          [
+            "2025-11-11 00:00:00+00:00",
+            103.00730895996094,
+            1269400.0
+          ],
+          [
+            "2025-11-12 00:00:00+00:00",
+            103.52630615234375,
+            1327400.0
+          ],
+          [
+            "2025-11-13 00:00:00+00:00",
+            102.59600830078125,
+            1898600.0
+          ],
+          [
+            "2025-11-14 00:00:00+00:00",
+            102.84082794189453,
+            1588100.0
+          ],
+          [
+            "2025-11-17 00:00:00+00:00",
+            103.1835708618164,
+            2060800.0
+          ],
+          [
+            "2025-11-18 00:00:00+00:00",
+            102.72332763671875,
+            1950400.0
+          ],
+          [
+            "2025-11-19 00:00:00+00:00",
+            100.85295104980469,
+            1755000.0
+          ],
+          [
+            "2025-11-20 00:00:00+00:00",
+            101.31320190429688,
+            1221100.0
+          ],
+          [
+            "2025-11-21 00:00:00+00:00",
+            102.36100006103516,
+            1874600.0
+          ],
+          [
+            "2025-11-24 00:00:00+00:00",
+            102.61560821533203,
+            1818300.0
+          ],
+          [
+            "2025-11-25 00:00:00+00:00",
+            102.74291229248047,
+            1441500.0
+          ],
+          [
+            "2025-11-26 00:00:00+00:00",
+            103.82007598876953,
+            1135300.0
+          ],
+          [
+            "2025-11-28 00:00:00+00:00",
+            104.14323425292969,
+            516800.0
+          ],
+          [
+            "2025-12-01 00:00:00+00:00",
+            100.86275482177734,
+            1510500.0
+          ],
+          [
+            "2025-12-02 00:00:00+00:00",
+            99.4036636352539,
+            1793100.0
+          ],
+          [
+            "2025-12-03 00:00:00+00:00",
+            99.364501953125,
+            2410100.0
+          ],
+          [
+            "2025-12-04 00:00:00+00:00",
+            98.75736236572266,
+            2771800.0
+          ],
+          [
+            "2025-12-05 00:00:00+00:00",
+            97.78790283203125,
+            2221700.0
+          ],
+          [
+            "2025-12-08 00:00:00+00:00",
+            97.25910949707031,
+            2327800.0
+          ],
+          [
+            "2025-12-09 00:00:00+00:00",
+            96.99280548095703,
+            1430000.0
+          ],
+          [
+            "2025-12-10 00:00:00+00:00",
+            96.43061828613281,
+            986700.0
+          ],
+          [
+            "2025-12-11 00:00:00+00:00",
+            95.91773986816406,
+            1544400.0
+          ],
+          [
+            "2025-12-12 00:00:00+00:00",
+            95.93746185302734,
+            2198900.0
+          ],
+          [
+            "2025-12-15 00:00:00+00:00",
+            97.51554870605469,
+            2740900.0
+          ],
+          [
+            "2025-12-16 00:00:00+00:00",
+            96.64759826660156,
+            2971100.0
+          ],
+          [
+            "2025-12-17 00:00:00+00:00",
+            97.18020629882812,
+            3425500.0
+          ],
+          [
+            "2025-12-18 00:00:00+00:00",
+            97.84101867675781,
+            2810400.0
+          ],
+          [
+            "2025-12-19 00:00:00+00:00",
+            97.13089752197266,
+            4461800.0
+          ],
+          [
+            "2025-12-22 00:00:00+00:00",
+            98.09746551513672,
+            2043100.0
+          ],
+          [
+            "2025-12-23 00:00:00+00:00",
+            97.98896789550781,
+            1474000.0
+          ],
+          [
+            "2025-12-24 00:00:00+00:00",
+            98.47225189208984,
+            477900.0
+          ],
+          [
+            "2025-12-26 00:00:00+00:00",
+            98.44267272949219,
+            644600.0
+          ],
+          [
+            "2025-12-29 00:00:00+00:00",
+            98.88651275634766,
+            923800.0
+          ],
+          [
+            "2025-12-30 00:00:00+00:00",
+            99.35992431640625,
+            1114300.0
+          ],
+          [
+            "2025-12-31 00:00:00+00:00",
+            98.49198150634766,
+            936800.0
+          ],
+          [
+            "2026-01-02 00:00:00+00:00",
+            99.47828674316406,
+            1322500.0
+          ],
+          [
+            "2026-01-05 00:00:00+00:00",
+            98.23554229736328,
+            1703500.0
+          ],
+          [
+            "2026-01-06 00:00:00+00:00",
+            99.2317123413086,
+            2538700.0
+          ],
+          [
+            "2026-01-07 00:00:00+00:00",
+            97.71280670166016,
+            1445700.0
+          ],
+          [
+            "2026-01-08 00:00:00+00:00",
+            98.1763687133789,
+            1340100.0
+          ],
+          [
+            "2026-01-09 00:00:00+00:00",
+            98.54129791259766,
+            1451100.0
+          ],
+          [
+            "2026-01-12 00:00:00+00:00",
+            98.82732391357422,
+            1379400.0
+          ],
+          [
+            "2026-01-13 00:00:00+00:00",
+            100.04047393798828,
+            1419900.0
+          ],
+          [
+            "2026-01-14 00:00:00+00:00",
+            101.13526916503906,
+            1212300.0
+          ],
+          [
+            "2026-01-15 00:00:00+00:00",
+            101.82567596435547,
+            1083700.0
+          ],
+          [
+            "2026-01-16 00:00:00+00:00",
+            102.57526397705078,
+            1874900.0
+          ],
+          [
+            "2026-01-20 00:00:00+00:00",
+            102.30896759033203,
+            1609900.0
+          ],
+          [
+            "2026-01-21 00:00:00+00:00",
+            102.70348358154297,
+            1422700.0
+          ],
+          [
+            "2026-01-22 00:00:00+00:00",
+            101.49034118652344,
+            1500200.0
+          ],
+          [
+            "2026-01-23 00:00:00+00:00",
+            100.91828155517578,
+            1195200.0
+          ],
+          [
+            "2026-01-26 00:00:00+00:00",
+            101.8355484008789,
+            1350100.0
+          ],
+          [
+            "2026-01-27 00:00:00+00:00",
+            102.53582000732422,
+            1249500.0
+          ],
+          [
+            "2026-01-28 00:00:00+00:00",
+            102.16102600097656,
+            1087200.0
+          ],
+          [
+            "2026-01-29 00:00:00+00:00",
+            102.34841918945312,
+            1199900.0
+          ],
+          [
+            "2026-01-30 00:00:00+00:00",
+            101.8651351928711,
+            1865700.0
+          ],
+          [
+            "2026-02-02 00:00:00+00:00",
+            100.99718475341797,
+            1610900.0
+          ],
+          [
+            "2026-02-03 00:00:00+00:00",
+            102.58512878417969,
+            2182900.0
+          ],
+          [
+            "2026-02-04 00:00:00+00:00",
+            103.31499481201172,
+            2097100.0
+          ],
+          [
+            "2026-02-05 00:00:00+00:00",
+            103.3741683959961,
+            1667300.0
+          ],
+          [
+            "2026-02-06 00:00:00+00:00",
+            103.65032958984375,
+            1871100.0
+          ],
+          [
+            "2026-02-09 00:00:00+00:00",
+            102.83171081542969,
+            2888500.0
+          ],
+          [
+            "2026-02-10 00:00:00+00:00",
+            104.33087921142578,
+            2574200.0
+          ],
+          [
+            "2026-02-11 00:00:00+00:00",
+            104.56759643554688,
+            2385200.0
+          ],
+          [
+            "2026-02-12 00:00:00+00:00",
+            107.84210968017578,
+            3044700.0
+          ],
+          [
+            "2026-02-13 00:00:00+00:00",
+            109.44978332519531,
+            3059900.0
+          ],
+          [
+            "2026-02-17 00:00:00+00:00",
+            109.02568054199219,
+            1435900.0
+          ],
+          [
+            "2026-02-18 00:00:00+00:00",
+            106.82622528076172,
+            1848100.0
+          ],
+          [
+            "2026-02-19 00:00:00+00:00",
+            108.29581451416016,
+            1526400.0
+          ],
+          [
+            "2026-02-20 00:00:00+00:00",
+            108.54238891601562,
+            2071300.0
+          ],
+          [
+            "2026-02-23 00:00:00+00:00",
+            109.6371841430664,
+            2957500.0
+          ],
+          [
+            "2026-02-24 00:00:00+00:00",
+            109.74567413330078,
+            1690200.0
+          ],
+          [
+            "2026-02-25 00:00:00+00:00",
+            109.9133529663086,
+            1688600.0
+          ],
+          [
+            "2026-02-26 00:00:00+00:00",
+            110.4952621459961,
+            1713600.0
+          ],
+          [
+            "2026-02-27 00:00:00+00:00",
+            111.72814178466797,
+            1748600.0
+          ],
+          [
+            "2026-03-02 00:00:00+00:00",
+            111.35334777832031,
+            1985100.0
+          ],
+          [
+            "2026-03-03 00:00:00+00:00",
+            110.455810546875,
+            2078300.0
+          ],
+          [
+            "2026-03-04 00:00:00+00:00",
+            111.77745056152344,
+            2114800.0
+          ],
+          [
+            "2026-03-05 00:00:00+00:00",
+            109.88375854492188,
+            1496500.0
+          ],
+          [
+            "2026-03-06 00:00:00+00:00",
+            109.99224853515625,
+            1860500.0
+          ],
+          [
+            "2026-03-09 00:00:00+00:00",
+            109.6371841430664,
+            1697100.0
+          ],
+          [
+            "2026-03-10 00:00:00+00:00",
+            109.61731719970703,
+            1969700.0
+          ],
+          [
+            "2026-03-11 00:00:00+00:00",
+            108.5845947265625,
+            1253000.0
+          ],
+          [
+            "2026-03-12 00:00:00+00:00",
+            109.23004913330078,
+            1922900.0
+          ],
+          [
+            "2026-03-13 00:00:00+00:00",
+            111.25576782226562,
+            1525000.0
+          ],
+          [
+            "2026-03-16 00:00:00+00:00",
+            112.07003021240234,
+            1577400.0
+          ],
+          [
+            "2026-03-17 00:00:00+00:00",
+            111.44444274902344,
+            1419400.0
+          ],
+          [
+            "2026-03-18 00:00:00+00:00",
+            109.97480010986328,
+            1504200.0
+          ],
+          [
+            "2026-03-19 00:00:00+00:00",
+            108.79312896728516,
+            1973900.0
+          ],
+          [
+            "2026-03-20 00:00:00+00:00",
+            105.317626953125,
+            3376100.0
+          ],
+          [
+            "2026-03-23 00:00:00+00:00",
+            106.15174865722656,
+            1465600.0
+          ],
+          [
+            "2026-03-24 00:00:00+00:00",
+            106.93621826171875,
+            1463600.0
+          ],
+          [
+            "2026-03-25 00:00:00+00:00",
+            107.04544830322266,
+            986100.0
+          ],
+          [
+            "2026-03-26 00:00:00+00:00",
+            107.81005859375,
+            1110000.0
+          ],
+          [
+            "2026-03-27 00:00:00+00:00",
+            107.9590072631836,
+            1483600.0
+          ],
+          [
+            "2026-03-30 00:00:00+00:00",
+            108.91229248046875,
+            1737500.0
+          ],
+          [
+            "2026-03-31 00:00:00+00:00",
+            109.15060424804688,
+            1537200.0
+          ],
+          [
+            "2026-04-01 00:00:00+00:00",
+            110.01451873779297,
+            1696500.0
+          ],
+          [
+            "2026-04-02 00:00:00+00:00",
+            110.8982925415039,
+            1034200.0
+          ],
+          [
+            "2026-04-06 00:00:00+00:00",
+            110.65997314453125,
+            1830000.0
+          ],
+          [
+            "2026-04-07 00:00:00+00:00",
+            110.55074310302734,
+            1841000.0
+          ],
+          [
+            "2026-04-08 00:00:00+00:00",
+            112.07003021240234,
+            1779900.0
+          ],
+          [
+            "2026-04-09 00:00:00+00:00",
+            113.51981353759766,
+            1652700.0
+          ],
+          [
+            "2026-04-10 00:00:00+00:00",
+            112.65589904785156,
+            1164200.0
+          ],
+          [
+            "2026-04-13 00:00:00+00:00",
+            110.99758911132812,
+            1672300.0
+          ],
+          [
+            "2026-04-14 00:00:00+00:00",
+            111.07703399658203,
+            1011900.0
+          ],
+          [
+            "2026-04-15 00:00:00+00:00",
+            109.9648666381836,
+            1281400.0
+          ],
+          [
+            "2026-04-16 00:00:00+00:00",
+            111.49408721923828,
+            1628100.0
+          ],
+          [
+            "2026-04-17 00:00:00+00:00",
+            111.92108154296875,
+            1739600.0
+          ],
+          [
+            "2026-04-20 00:00:00+00:00",
+            110.49115753173828,
+            1711800.0
+          ],
+          [
+            "2026-04-21 00:00:00+00:00",
+            109.1903305053711,
+            1733700.0
+          ],
+          [
+            "2026-04-22 00:00:00+00:00",
+            108.4753646850586,
+            2049600.0
+          ],
+          [
+            "2026-04-23 00:00:00+00:00",
+            111.26570129394531,
+            1324600.0
+          ],
+          [
+            "2026-04-24 00:00:00+00:00",
+            110.34220886230469,
+            1268000.0
+          ],
+          [
+            "2026-04-27 00:00:00+00:00",
+            111.1266860961914,
+            1738400.0
+          ],
+          [
+            "2026-04-28 00:00:00+00:00",
+            111.4146499633789,
+            1374100.0
+          ],
+          [
+            "2026-04-29 00:00:00+00:00",
+            110.51102447509766,
+            1421400.0
+          ],
+          [
+            "2026-04-30 00:00:00+00:00",
+            112.85449981689453,
+            1954600.0
+          ],
+          [
+            "2026-05-01 00:00:00+00:00",
+            112.76512908935547,
+            2068600.0
+          ],
+          [
+            "2026-05-04 00:00:00+00:00",
+            111.60331726074219,
+            1789800.0
+          ],
+          [
+            "2026-05-05 00:00:00+00:00",
+            110.85856628417969,
+            1403400.0
+          ],
+          [
+            "2026-05-06 00:00:00+00:00",
+            108.82291412353516,
+            2599300.0
+          ],
+          [
+            "2026-05-07 00:00:00+00:00",
+            108.00865173339844,
+            1494900.0
+          ],
+          [
+            "2026-05-08 00:00:00+00:00",
+            108.30655670166016,
+            1754900.0
+          ],
+          [
+            "2026-05-11 00:00:00+00:00",
+            109.2201156616211,
+            1621000.0
+          ],
+          [
+            "2026-05-12 00:00:00+00:00",
+            108.72361755371094,
+            2038300.0
+          ],
+          [
+            "2026-05-13 00:00:00+00:00",
+            108.326416015625,
+            1647100.0
+          ],
+          [
+            "2026-05-14 00:00:00+00:00",
+            108.83284759521484,
+            1641900.0
+          ],
+          [
+            "2026-05-15 00:00:00+00:00",
+            105.61553192138672,
+            2487000.0
+          ],
+          [
+            "2026-05-18 00:00:00+00:00",
+            106.62838745117188,
+            1881500.0
+          ],
+          [
+            "2026-05-19 00:00:00+00:00",
+            108.23704528808594,
+            1880200.0
+          ],
+          [
+            "2026-05-20 00:00:00+00:00",
+            107.9292221069336,
+            2204300.0
+          ],
+          [
+            "2026-05-21 00:00:00+00:00",
+            109.0711669921875,
+            1944500.0
+          ],
+          [
+            "2026-05-22 00:00:00+00:00",
+            110.51102447509766,
+            1816600.0
+          ],
+          [
+            "2026-05-26 00:00:00+00:00",
+            110.25283813476562,
+            1119100.0
+          ],
+          [
+            "2026-05-27 00:00:00+00:00",
+            110.34220886230469,
+            1485600.0
+          ],
+          [
+            "2026-05-28 00:00:00+00:00",
+            108.16754150390625,
+            1612700.0
+          ],
+          [
+            "2026-05-29 00:00:00+00:00",
+            107.2142562866211,
+            3903200.0
+          ],
+          [
+            "2026-06-01 00:00:00+00:00",
+            104.35441589355469,
+            1589900.0
+          ],
+          [
+            "2026-06-02 00:00:00+00:00",
+            106.03258514404297,
+            1867100.0
+          ],
+          [
+            "2026-06-03 00:00:00+00:00",
+            105.48644256591797,
+            1990900.0
+          ],
+          [
+            "2026-06-04 00:00:00+00:00",
+            106.24111938476562,
+            1301400.0
+          ],
+          [
+            "2026-06-05 00:00:00+00:00",
+            108.50515747070312,
+            2020100.0
+          ],
+          [
+            "2026-06-08 00:00:00+00:00",
+            106.4000015258789,
+            1374200.0
+          ],
+          [
+            "2026-06-09 00:00:00+00:00",
+            107.98999786376953,
+            1328600.0
+          ],
+          [
+            "2026-06-10 00:00:00+00:00",
+            108.7699966430664,
+            1309700.0
+          ],
+          [
+            "2026-06-11 00:00:00+00:00",
+            108.25,
+            1424700.0
+          ],
+          [
+            "2026-06-12 00:00:00+00:00",
+            109.0,
+            1331500.0
+          ],
+          [
+            "2026-06-15 00:00:00+00:00",
+            109.56999969482422,
+            1470000.0
+          ],
+          [
+            "2026-06-16 00:00:00+00:00",
+            110.4800033569336,
+            1638300.0
+          ],
+          [
+            "2026-06-17 00:00:00+00:00",
+            108.91999816894531,
+            1664400.0
+          ],
+          [
+            "2026-06-18 00:00:00+00:00",
+            108.66999816894531,
+            2403600.0
+          ],
+          [
+            "2026-06-22 00:00:00+00:00",
+            109.69999694824219,
+            2024000.0
+          ],
+          [
+            "2026-06-23 00:00:00+00:00",
+            111.69999694824219,
+            2019600.0
+          ],
+          [
+            "2026-06-24 00:00:00+00:00",
+            113.31999969482422,
+            1755400.0
+          ],
+          [
+            "2026-06-25 00:00:00+00:00",
+            114.52999877929688,
+            2000200.0
+          ],
+          [
+            "2026-06-26 00:00:00+00:00",
+            118.31999969482422,
+            4219300.0
+          ],
+          [
+            "2026-06-29 00:00:00+00:00",
+            114.58999633789062,
+            3731100.0
+          ],
+          [
+            "2026-06-30 00:00:00+00:00",
+            113.04000091552734,
+            1826400.0
+          ],
+          [
+            "2026-07-01 00:00:00+00:00",
+            112.19000244140625,
+            3000200.0
+          ],
+          [
+            "2026-07-02 00:00:00+00:00",
+            115.0199966430664,
+            1335600.0
+          ],
+          [
+            "2026-07-06 00:00:00+00:00",
+            112.98999786376953,
+            1638800.0
+          ],
+          [
+            "2026-07-07 00:00:00+00:00",
+            114.43000030517578,
+            1401300.0
+          ],
+          [
+            "2026-07-08 00:00:00+00:00",
+            113.19000244140625,
+            1380900.0
+          ],
+          [
+            "2026-07-09 00:00:00+00:00",
+            111.7699966430664,
+            1468800.0
+          ],
+          [
+            "2026-07-10 00:00:00+00:00",
+            112.94000244140625,
+            1173900.0
+          ],
+          [
+            "2026-07-13 00:00:00+00:00",
+            113.43000030517578,
+            1268500.0
+          ],
+          [
+            "2026-07-14 00:00:00+00:00",
+            112.94999694824219,
+            1706700.0
+          ],
+          [
+            "2026-07-15 00:00:00+00:00",
+            111.37999725341797,
+            1715000.0
+          ],
+          [
+            "2026-07-16 00:00:00+00:00",
+            113.0999984741211,
+            1185700.0
+          ],
+          [
+            "2026-07-17 00:00:00+00:00",
+            111.55000305175781,
+            2018200.0
+          ],
+          [
+            "2026-07-20 00:00:00+00:00",
+            109.64217376708984,
+            1516300.0
+          ],
+          [
+            "2026-07-21 00:00:00+00:00",
+            109.16555786132812,
+            1568100.0
+          ],
+          [
+            "2026-07-22 00:00:00+00:00",
+            111.22097778320312,
+            950700.0
+          ],
+          [
+            "2026-07-23 00:00:00+00:00",
+            112.47209167480469,
+            886700.0
+          ],
+          [
+            "2026-07-24 00:00:00+00:00",
+            112.97850036621094,
+            1090700.0
+          ],
+          [
+            "2026-07-27 00:00:00+00:00",
+            111.32026672363281,
+            1141900.0
+          ],
+          [
+            "2026-07-28 00:00:00+00:00",
+            111.71745300292969,
+            1192000.0
+          ],
+          [
+            "2026-07-29 00:00:00+00:00",
+            109.19534301757812,
+            1118500.0
+          ],
+          [
+            "2026-07-30 00:00:00+00:00",
+            107.98394012451172,
+            1967000.0
+          ],
+          [
+            "2026-07-31 00:00:00+00:00",
+            108.83788299560547,
+            2758600.0
+          ],
+          [
+            "2026-08-03 00:00:00+00:00",
+            108.72865295410156,
+            2292200.0
+          ],
+          [
+            "2026-08-04 00:00:00+00:00",
+            108.66908264160156,
+            1698400.0
+          ],
+          [
+            "2026-08-05 00:00:00+00:00",
+            108.18252563476562,
+            1664300.0
+          ],
+          [
+            "2026-08-06 00:00:00+00:00",
+            107.50731658935547,
+            1912600.0
+          ],
+          [
+            "2026-08-07 00:00:00+00:00",
+            108.07330322265625,
+            1366800.0
+          ],
+          [
+            "2026-08-10 00:00:00+00:00",
+            106.24626159667969,
+            1876600.0
+          ],
+          [
+            "2026-08-11 00:00:00+00:00",
+            107.06048583984375,
+            1039000.0
+          ],
+          [
+            "2026-08-12 00:00:00+00:00",
+            108.0534439086914,
+            1506000.0
+          ],
+          [
+            "2026-08-13 00:00:00+00:00",
+            108.35133361816406,
+            2363300.0
+          ],
+          [
+            "2026-08-14 00:00:00+00:00",
+            108.96696472167969,
+            1002800.0
+          ],
+          [
+            "2026-08-17 00:00:00+00:00",
+            108.69886779785156,
+            959800.0
+          ],
+          [
+            "2026-08-18 00:00:00+00:00",
+            108.89745330810547,
+            1339300.0
+          ],
+          [
+            "2026-08-19 00:00:00+00:00",
+            108.51020050048828,
+            1384300.0
+          ],
+          [
+            "2026-08-20 00:00:00+00:00",
+            108.0236587524414,
+            1731300.0
+          ],
+          [
+            "2026-08-21 00:00:00+00:00",
+            105.38239288330078,
+            1587100.0
+          ],
+          [
+            "2026-08-24 00:00:00+00:00",
+            106.40514373779297,
+            1265300.0
+          ],
+          [
+            "2026-08-25 00:00:00+00:00",
+            106.07746124267578,
+            948200.0
+          ],
+          [
+            "2026-08-26 00:00:00+00:00",
+            106.99098205566406,
+            957000.0
+          ],
+          [
+            "2026-08-27 00:00:00+00:00",
+            105.9980239868164,
+            1104900.0
+          ],
+          [
+            "2026-08-28 00:00:00+00:00",
+            105.37246704101562,
+            1094600.0
+          ],
+          [
+            "2026-08-31 00:00:00+00:00",
+            105.26323699951172,
+            1253300.0
+          ],
+          [
+            "2026-09-01 00:00:00+00:00",
+            105.3426742553711,
+            1237500.0
+          ],
+          [
+            "2026-09-02 00:00:00+00:00",
+            105.14408111572266,
+            1203100.0
+          ],
+          [
+            "2026-09-03 00:00:00+00:00",
+            105.6604232788086,
+            1692700.0
+          ],
+          [
+            "2026-09-04 00:00:00+00:00",
+            105.72000122070312,
+            1666200.0
+          ],
+          [
+            "2026-09-08 00:00:00+00:00",
+            106.7300033569336,
+            1659800.0
+          ],
+          [
+            "2026-09-09 00:00:00+00:00",
+            106.25,
+            1605900.0
+          ],
+          [
+            "2026-09-10 00:00:00+00:00",
+            104.94999694824219,
+            1447900.0
+          ],
+          [
+            "2026-09-11 00:00:00+00:00",
+            104.9000015258789,
+            888400.0
+          ],
+          [
+            "2026-09-14 00:00:00+00:00",
+            103.97000122070312,
+            2364500.0
+          ],
+          [
+            "2026-09-15 00:00:00+00:00",
+            103.0199966430664,
+            1239400.0
+          ],
+          [
+            "2026-09-16 00:00:00+00:00",
+            103.04000091552734,
+            1080900.0
+          ],
+          [
+            "2026-09-17 00:00:00+00:00",
+            103.9000015258789,
+            1736800.0
+          ],
+          [
+            "2026-09-18 00:00:00+00:00",
+            102.2300033569336,
+            2843200.0
+          ],
+          [
+            "2026-09-21 00:00:00+00:00",
+            101.83000183105469,
+            1852600.0
+          ],
+          [
+            "2026-09-22 00:00:00+00:00",
+            101.66000366210938,
+            1669200.0
+          ],
+          [
+            "2026-09-23 00:00:00+00:00",
+            99.73999786376953,
+            1398700.0
+          ],
+          [
+            "2026-09-24 00:00:00+00:00",
+            99.19999694824219,
+            2330600.0
+          ],
+          [
+            "2026-09-25 00:00:00+00:00",
+            99.38999938964844,
+            2427000.0
+          ],
+          [
+            "2026-09-28 00:00:00+00:00",
+            99.38999938964844,
+            2392200.0
+          ],
+          [
+            "2026-09-29 00:00:00+00:00",
+            100.25,
+            2868600.0
+          ],
+          [
+            "2026-09-30 00:00:00+00:00",
+            99.37999725341797,
+            2292500.0
+          ],
+          [
+            "2026-10-01 00:00:00+00:00",
+            99.63999938964844,
+            2296400.0
+          ],
+          [
+            "2026-10-02 00:00:00+00:00",
+            99.94000244140625,
+            2406700.0
+          ],
+          [
+            "2026-10-05 00:00:00+00:00",
+            99.69999694824219,
+            2467100.0
+          ],
+          [
+            "2026-10-06 00:00:00+00:00",
+            101.68000030517578,
+            2734000.0
+          ],
+          [
+            "2026-10-07 00:00:00+00:00",
+            101.31999969482422,
+            3493300.0
+          ],
+          [
+            "2026-10-08 00:00:00+00:00",
+            101.83999633789062,
+            2769100.0
+          ],
+          [
+            "2026-10-09 00:00:00+00:00",
+            102.19000244140625,
+            1482500.0
+          ],
+          [
+            "2026-10-12 00:00:00+00:00",
+            103.23999786376953,
+            1226700.0
+          ],
+          [
+            "2026-10-13 00:00:00+00:00",
+            104.31999969482422,
+            1523800.0
+          ],
+          [
+            "2026-10-14 00:00:00+00:00",
+            104.58000183105469,
+            1369900.0
+          ],
+          [
+            "2026-10-15 00:00:00+00:00",
+            103.76000213623047,
+            1395300.0
+          ],
+          [
+            "2026-10-16 00:00:00+00:00",
+            106.08000183105469,
+            1942600.0
+          ],
+          [
+            "2026-10-19 00:00:00+00:00",
+            103.83999633789062,
+            926956.0
+          ]
+        ]
+      },
+      "ALL": {
+        "columns": [
+          "date",
+          "close",
+          "volume"
+        ],
+        "rows": [
+          [
+            "2025-01-02 00:00:00+00:00",
+            186.32550048828125,
+            1721900.0
+          ],
+          [
+            "2025-01-03 00:00:00+00:00",
+            185.8401641845703,
+            1431600.0
+          ],
+          [
+            "2025-01-06 00:00:00+00:00",
+            180.46249389648438,
+            2622900.0
+          ],
+          [
+            "2025-01-07 00:00:00+00:00",
+            180.58868408203125,
+            2265500.0
+          ],
+          [
+            "2025-01-08 00:00:00+00:00",
+            186.17990112304688,
+            2401700.0
+          ],
+          [
+            "2025-01-10 00:00:00+00:00",
+            175.68666076660156,
+            4642100.0
+          ],
+          [
+            "2025-01-13 00:00:00+00:00",
+            177.19122314453125,
+            2381500.0
+          ],
+          [
+            "2025-01-14 00:00:00+00:00",
+            181.33612060546875,
+            1554500.0
+          ],
+          [
+            "2025-01-15 00:00:00+00:00",
+            182.52035522460938,
+            1672300.0
+          ],
+          [
+            "2025-01-16 00:00:00+00:00",
+            185.5004119873047,
+            1502000.0
+          ],
+          [
+            "2025-01-17 00:00:00+00:00",
+            183.3648681640625,
+            1519000.0
+          ],
+          [
+            "2025-01-21 00:00:00+00:00",
+            184.18997192382812,
+            1609200.0
+          ],
+          [
+            "2025-01-22 00:00:00+00:00",
+            179.8218231201172,
+            1856800.0
+          ],
+          [
+            "2025-01-23 00:00:00+00:00",
+            179.24911499023438,
+            2241700.0
+          ],
+          [
+            "2025-01-24 00:00:00+00:00",
+            180.6177978515625,
+            1215500.0
+          ],
+          [
+            "2025-01-27 00:00:00+00:00",
+            187.52915954589844,
+            1518700.0
+          ],
+          [
+            "2025-01-28 00:00:00+00:00",
+            185.36453247070312,
+            875600.0
+          ],
+          [
+            "2025-01-29 00:00:00+00:00",
+            185.21890258789062,
+            724800.0
+          ],
+          [
+            "2025-01-30 00:00:00+00:00",
+            188.15042114257812,
+            879600.0
+          ],
+          [
+            "2025-01-31 00:00:00+00:00",
+            186.69436645507812,
+            1619400.0
+          ],
+          [
+            "2025-02-03 00:00:00+00:00",
+            186.35462951660156,
+            1223700.0
+          ],
+          [
+            "2025-02-04 00:00:00+00:00",
+            185.2771453857422,
+            1109100.0
+          ],
+          [
+            "2025-02-05 00:00:00+00:00",
+            187.3544464111328,
+            1288600.0
+          ],
+          [
+            "2025-02-06 00:00:00+00:00",
+            186.25753784179688,
+            2641200.0
+          ],
+          [
+            "2025-02-07 00:00:00+00:00",
+            184.66561889648438,
+            1928100.0
+          ],
+          [
+            "2025-02-10 00:00:00+00:00",
+            181.1128692626953,
+            1544200.0
+          ],
+          [
+            "2025-02-11 00:00:00+00:00",
+            183.8793487548828,
+            1374600.0
+          ],
+          [
+            "2025-02-12 00:00:00+00:00",
+            183.7822723388672,
+            2641300.0
+          ],
+          [
+            "2025-02-13 00:00:00+00:00",
+            187.12149047851562,
+            1889100.0
+          ],
+          [
+            "2025-02-14 00:00:00+00:00",
+            182.13209533691406,
+            3917900.0
+          ],
+          [
+            "2025-02-18 00:00:00+00:00",
+            183.4134063720703,
+            3622000.0
+          ],
+          [
+            "2025-02-19 00:00:00+00:00",
+            185.9857635498047,
+            1142800.0
+          ],
+          [
+            "2025-02-20 00:00:00+00:00",
+            183.6366729736328,
+            1382200.0
+          ],
+          [
+            "2025-02-21 00:00:00+00:00",
+            180.2198028564453,
+            1428000.0
+          ],
+          [
+            "2025-02-24 00:00:00+00:00",
+            183.21926879882812,
+            2009400.0
+          ],
+          [
+            "2025-02-25 00:00:00+00:00",
+            184.89859008789062,
+            912200.0
+          ],
+          [
+            "2025-02-26 00:00:00+00:00",
+            182.90863037109375,
+            1269200.0
+          ],
+          [
+            "2025-02-27 00:00:00+00:00",
+            189.34437561035156,
+            1397600.0
+          ],
+          [
+            "2025-02-28 00:00:00+00:00",
+            193.3145294189453,
+            3365900.0
+          ],
+          [
+            "2025-03-03 00:00:00+00:00",
+            196.13926696777344,
+            1775200.0
+          ],
+          [
+            "2025-03-04 00:00:00+00:00",
+            193.1980438232422,
+            2513400.0
+          ],
+          [
+            "2025-03-05 00:00:00+00:00",
+            193.7125244140625,
+            1598200.0
+          ],
+          [
+            "2025-03-06 00:00:00+00:00",
+            191.64492797851562,
+            1460100.0
+          ],
+          [
+            "2025-03-07 00:00:00+00:00",
+            194.8482208251953,
+            1957900.0
+          ],
+          [
+            "2025-03-10 00:00:00+00:00",
+            193.8824462890625,
+            2711800.0
+          ],
+          [
+            "2025-03-11 00:00:00+00:00",
+            196.6530303955078,
+            3412600.0
+          ],
+          [
+            "2025-03-12 00:00:00+00:00",
+            193.40438842773438,
+            2688800.0
+          ],
+          [
+            "2025-03-13 00:00:00+00:00",
+            197.06275939941406,
+            1674200.0
+          ],
+          [
+            "2025-03-14 00:00:00+00:00",
+            202.41856384277344,
+            2546000.0
+          ],
+          [
+            "2025-03-17 00:00:00+00:00",
+            204.96478271484375,
+            3318900.0
+          ],
+          [
+            "2025-03-18 00:00:00+00:00",
+            200.3211212158203,
+            1894300.0
+          ],
+          [
+            "2025-03-19 00:00:00+00:00",
+            199.8625946044922,
+            1787800.0
+          ],
+          [
+            "2025-03-20 00:00:00+00:00",
+            205.04281616210938,
+            2542700.0
+          ],
+          [
+            "2025-03-21 00:00:00+00:00",
+            201.4235076904297,
+            2888200.0
+          ],
+          [
+            "2025-03-24 00:00:00+00:00",
+            202.23321533203125,
+            1240800.0
+          ],
+          [
+            "2025-03-25 00:00:00+00:00",
+            203.03317260742188,
+            1064600.0
+          ],
+          [
+            "2025-03-26 00:00:00+00:00",
+            204.16481018066406,
+            1086700.0
+          ],
+          [
+            "2025-03-27 00:00:00+00:00",
+            204.17457580566406,
+            1827500.0
+          ],
+          [
+            "2025-03-28 00:00:00+00:00",
+            201.40399169921875,
+            2113400.0
+          ],
+          [
+            "2025-03-31 00:00:00+00:00",
+            202.00885009765625,
+            1926300.0
+          ],
+          [
+            "2025-04-01 00:00:00+00:00",
+            202.42831420898438,
+            1583600.0
+          ],
+          [
+            "2025-04-02 00:00:00+00:00",
+            200.4088897705078,
+            1674700.0
+          ],
+          [
+            "2025-04-03 00:00:00+00:00",
+            200.30162048339844,
+            2010700.0
+          ],
+          [
+            "2025-04-04 00:00:00+00:00",
+            182.00990295410156,
+            3352200.0
+          ],
+          [
+            "2025-04-07 00:00:00+00:00",
+            176.11752319335938,
+            4062000.0
+          ],
+          [
+            "2025-04-08 00:00:00+00:00",
+            178.98565673828125,
+            3087000.0
+          ],
+          [
+            "2025-04-09 00:00:00+00:00",
+            188.28273010253906,
+            2844000.0
+          ],
+          [
+            "2025-04-10 00:00:00+00:00",
+            186.1267547607422,
+            1895500.0
+          ],
+          [
+            "2025-04-11 00:00:00+00:00",
+            187.84371948242188,
+            1876900.0
+          ],
+          [
+            "2025-04-14 00:00:00+00:00",
+            190.7216339111328,
+            1631900.0
+          ],
+          [
+            "2025-04-15 00:00:00+00:00",
+            189.78509521484375,
+            1691600.0
+          ],
+          [
+            "2025-04-16 00:00:00+00:00",
+            189.492431640625,
+            1596100.0
+          ],
+          [
+            "2025-04-17 00:00:00+00:00",
+            189.90216064453125,
+            1905800.0
+          ],
+          [
+            "2025-04-21 00:00:00+00:00",
+            182.38059997558594,
+            1296100.0
+          ],
+          [
+            "2025-04-22 00:00:00+00:00",
+            189.16073608398438,
+            1499300.0
+          ],
+          [
+            "2025-04-23 00:00:00+00:00",
+            189.97042846679688,
+            1137700.0
+          ],
+          [
+            "2025-04-24 00:00:00+00:00",
+            190.0972442626953,
+            914300.0
+          ],
+          [
+            "2025-04-25 00:00:00+00:00",
+            188.19493103027344,
+            1156100.0
+          ],
+          [
+            "2025-04-28 00:00:00+00:00",
+            190.63381958007812,
+            1504100.0
+          ],
+          [
+            "2025-04-29 00:00:00+00:00",
+            193.93121337890625,
+            1462300.0
+          ],
+          [
+            "2025-04-30 00:00:00+00:00",
+            193.54098510742188,
+            2307700.0
+          ],
+          [
+            "2025-05-01 00:00:00+00:00",
+            192.41909790039062,
+            2985100.0
+          ],
+          [
+            "2025-05-02 00:00:00+00:00",
+            194.42872619628906,
+            1508500.0
+          ],
+          [
+            "2025-05-05 00:00:00+00:00",
+            195.3555145263672,
+            1292700.0
+          ],
+          [
+            "2025-05-06 00:00:00+00:00",
+            197.1212921142578,
+            1119900.0
+          ],
+          [
+            "2025-05-07 00:00:00+00:00",
+            199.0821533203125,
+            1170000.0
+          ],
+          [
+            "2025-05-08 00:00:00+00:00",
+            197.6676025390625,
+            1185900.0
+          ],
+          [
+            "2025-05-09 00:00:00+00:00",
+            197.68710327148438,
+            707200.0
+          ],
+          [
+            "2025-05-12 00:00:00+00:00",
+            197.54078674316406,
+            1331600.0
+          ],
+          [
+            "2025-05-13 00:00:00+00:00",
+            197.6090850830078,
+            1077500.0
+          ],
+          [
+            "2025-05-14 00:00:00+00:00",
+            195.68722534179688,
+            1458800.0
+          ],
+          [
+            "2025-05-15 00:00:00+00:00",
+            200.25283813476562,
+            1126000.0
+          ],
+          [
+            "2025-05-16 00:00:00+00:00",
+            203.9501953125,
+            1111000.0
+          ],
+          [
+            "2025-05-19 00:00:00+00:00",
+            204.8184356689453,
+            1029900.0
+          ],
+          [
+            "2025-05-20 00:00:00+00:00",
+            203.03317260742188,
+            1058600.0
+          ],
+          [
+            "2025-05-21 00:00:00+00:00",
+            200.29185485839844,
+            1516000.0
+          ],
+          [
+            "2025-05-22 00:00:00+00:00",
+            197.57003784179688,
+            1180000.0
+          ],
+          [
+            "2025-05-23 00:00:00+00:00",
+            198.2724609375,
+            821300.0
+          ],
+          [
+            "2025-05-27 00:00:00+00:00",
+            202.18443298339844,
+            1095400.0
+          ],
+          [
+            "2025-05-28 00:00:00+00:00",
+            199.921142578125,
+            931100.0
+          ],
+          [
+            "2025-05-29 00:00:00+00:00",
+            201.7064208984375,
+            839000.0
+          ],
+          [
+            "2025-05-30 00:00:00+00:00",
+            204.74038696289062,
+            2491900.0
+          ],
+          [
+            "2025-06-02 00:00:00+00:00",
+            207.44268798828125,
+            1567800.0
+          ],
+          [
+            "2025-06-03 00:00:00+00:00",
+            206.09642028808594,
+            1263500.0
+          ],
+          [
+            "2025-06-04 00:00:00+00:00",
+            201.7356719970703,
+            1346600.0
+          ],
+          [
+            "2025-06-05 00:00:00+00:00",
+            201.59910583496094,
+            1000000.0
+          ],
+          [
+            "2025-06-06 00:00:00+00:00",
+            202.97463989257812,
+            1174000.0
+          ],
+          [
+            "2025-06-09 00:00:00+00:00",
+            196.80874633789062,
+            2427000.0
+          ],
+          [
+            "2025-06-10 00:00:00+00:00",
+            192.52496337890625,
+            1303100.0
+          ],
+          [
+            "2025-06-11 00:00:00+00:00",
+            192.3092803955078,
+            1904000.0
+          ],
+          [
+            "2025-06-12 00:00:00+00:00",
+            196.3675994873047,
+            1088900.0
+          ],
+          [
+            "2025-06-13 00:00:00+00:00",
+            194.9952392578125,
+            1330200.0
+          ],
+          [
+            "2025-06-16 00:00:00+00:00",
+            195.671630859375,
+            1199800.0
+          ],
+          [
+            "2025-06-17 00:00:00+00:00",
+            194.27964782714844,
+            1060800.0
+          ],
+          [
+            "2025-06-18 00:00:00+00:00",
+            191.80935668945312,
+            3093600.0
+          ],
+          [
+            "2025-06-20 00:00:00+00:00",
+            191.47605895996094,
+            3101500.0
+          ],
+          [
+            "2025-06-23 00:00:00+00:00",
+            194.41688537597656,
+            1448000.0
+          ],
+          [
+            "2025-06-24 00:00:00+00:00",
+            192.18186950683594,
+            1771600.0
+          ],
+          [
+            "2025-06-25 00:00:00+00:00",
+            187.17269897460938,
+            2291400.0
+          ],
+          [
+            "2025-06-26 00:00:00+00:00",
+            190.31935119628906,
+            1611600.0
+          ],
+          [
+            "2025-06-27 00:00:00+00:00",
+            191.8975830078125,
+            3249500.0
+          ],
+          [
+            "2025-06-30 00:00:00+00:00",
+            197.3380889892578,
+            2385800.0
+          ],
+          [
+            "2025-07-01 00:00:00+00:00",
+            196.19117736816406,
+            1533500.0
+          ],
+          [
+            "2025-07-02 00:00:00+00:00",
+            190.84869384765625,
+            1516100.0
+          ],
+          [
+            "2025-07-03 00:00:00+00:00",
+            194.09336853027344,
+            963000.0
+          ],
+          [
+            "2025-07-07 00:00:00+00:00",
+            190.70166015625,
+            1597800.0
+          ],
+          [
+            "2025-07-08 00:00:00+00:00",
+            189.5841522216797,
+            2182200.0
+          ],
+          [
+            "2025-07-09 00:00:00+00:00",
+            190.26051330566406,
+            1018300.0
+          ],
+          [
+            "2025-07-10 00:00:00+00:00",
+            190.83889770507812,
+            1379200.0
+          ],
+          [
+            "2025-07-11 00:00:00+00:00",
+            189.51553344726562,
+            1049200.0
+          ],
+          [
+            "2025-07-14 00:00:00+00:00",
+            192.3289031982422,
+            1287100.0
+          ],
+          [
+            "2025-07-15 00:00:00+00:00",
+            188.63327026367188,
+            1964400.0
+          ],
+          [
+            "2025-07-16 00:00:00+00:00",
+            191.76034545898438,
+            1448200.0
+          ],
+          [
+            "2025-07-17 00:00:00+00:00",
+            189.21165466308594,
+            2082100.0
+          ],
+          [
+            "2025-07-18 00:00:00+00:00",
+            190.250732421875,
+            1617500.0
+          ],
+          [
+            "2025-07-21 00:00:00+00:00",
+            189.11361694335938,
+            1211400.0
+          ],
+          [
+            "2025-07-22 00:00:00+00:00",
+            193.53463745117188,
+            1413500.0
+          ],
+          [
+            "2025-07-23 00:00:00+00:00",
+            193.71107482910156,
+            1742600.0
+          ],
+          [
+            "2025-07-24 00:00:00+00:00",
+            190.11351013183594,
+            1601000.0
+          ],
+          [
+            "2025-07-25 00:00:00+00:00",
+            191.83877563476562,
+            1370900.0
+          ],
+          [
+            "2025-07-28 00:00:00+00:00",
+            188.21177673339844,
+            1583600.0
+          ],
+          [
+            "2025-07-29 00:00:00+00:00",
+            190.07427978515625,
+            1419200.0
+          ],
+          [
+            "2025-07-30 00:00:00+00:00",
+            188.4862518310547,
+            1892000.0
+          ],
+          [
+            "2025-07-31 00:00:00+00:00",
+            199.23980712890625,
+            4538200.0
+          ],
+          [
+            "2025-08-01 00:00:00+00:00",
+            195.82847595214844,
+            2041500.0
+          ],
+          [
+            "2025-08-04 00:00:00+00:00",
+            199.02415466308594,
+            1531300.0
+          ],
+          [
+            "2025-08-05 00:00:00+00:00",
+            201.4944305419922,
+            1785600.0
+          ],
+          [
+            "2025-08-06 00:00:00+00:00",
+            204.8861541748047,
+            1422200.0
+          ],
+          [
+            "2025-08-07 00:00:00+00:00",
+            200.9552764892578,
+            1213300.0
+          ],
+          [
+            "2025-08-08 00:00:00+00:00",
+            202.71974182128906,
+            1189400.0
+          ],
+          [
+            "2025-08-11 00:00:00+00:00",
+            202.42568969726562,
+            843800.0
+          ],
+          [
+            "2025-08-12 00:00:00+00:00",
+            202.68055725097656,
+            1246100.0
+          ],
+          [
+            "2025-08-13 00:00:00+00:00",
+            204.69009399414062,
+            975500.0
+          ],
+          [
+            "2025-08-14 00:00:00+00:00",
+            204.582275390625,
+            879300.0
+          ],
+          [
+            "2025-08-15 00:00:00+00:00",
+            202.7001495361328,
+            1049500.0
+          ],
+          [
+            "2025-08-18 00:00:00+00:00",
+            203.0040283203125,
+            922000.0
+          ],
+          [
+            "2025-08-19 00:00:00+00:00",
+            206.22914123535156,
+            1324500.0
+          ],
+          [
+            "2025-08-20 00:00:00+00:00",
+            209.4051971435547,
+            1720000.0
+          ],
+          [
+            "2025-08-21 00:00:00+00:00",
+            202.47470092773438,
+            1991800.0
+          ],
+          [
+            "2025-08-22 00:00:00+00:00",
+            201.46502685546875,
+            1278600.0
+          ],
+          [
+            "2025-08-25 00:00:00+00:00",
+            198.0928955078125,
+            1068800.0
+          ],
+          [
+            "2025-08-26 00:00:00+00:00",
+            199.17117309570312,
+            1498100.0
+          ],
+          [
+            "2025-08-27 00:00:00+00:00",
+            199.78872680664062,
+            859500.0
+          ],
+          [
+            "2025-08-28 00:00:00+00:00",
+            199.73973083496094,
+            1016000.0
+          ],
+          [
+            "2025-08-29 00:00:00+00:00",
+            200.41946411132812,
+            993200.0
+          ],
+          [
+            "2025-09-02 00:00:00+00:00",
+            200.31109619140625,
+            1100100.0
+          ],
+          [
+            "2025-09-03 00:00:00+00:00",
+            201.52279663085938,
+            1057800.0
+          ],
+          [
+            "2025-09-04 00:00:00+00:00",
+            205.22677612304688,
+            1213900.0
+          ],
+          [
+            "2025-09-05 00:00:00+00:00",
+            198.52806091308594,
+            1405000.0
+          ],
+          [
+            "2025-09-08 00:00:00+00:00",
+            197.32623291015625,
+            1536600.0
+          ],
+          [
+            "2025-09-09 00:00:00+00:00",
+            197.13905334472656,
+            1541100.0
+          ],
+          [
+            "2025-09-10 00:00:00+00:00",
+            197.0504150390625,
+            1176100.0
+          ],
+          [
+            "2025-09-11 00:00:00+00:00",
+            199.4540557861328,
+            1293000.0
+          ],
+          [
+            "2025-09-12 00:00:00+00:00",
+            197.40504455566406,
+            1136400.0
+          ],
+          [
+            "2025-09-15 00:00:00+00:00",
+            193.95718383789062,
+            1542400.0
+          ],
+          [
+            "2025-09-16 00:00:00+00:00",
+            193.3759765625,
+            1489200.0
+          ],
+          [
+            "2025-09-17 00:00:00+00:00",
+            194.3118133544922,
+            1628100.0
+          ],
+          [
+            "2025-09-18 00:00:00+00:00",
+            202.61622619628906,
+            2215700.0
+          ],
+          [
+            "2025-09-19 00:00:00+00:00",
+            202.9708709716797,
+            3162100.0
+          ],
+          [
+            "2025-09-22 00:00:00+00:00",
+            203.38462829589844,
+            1821900.0
+          ],
+          [
+            "2025-09-23 00:00:00+00:00",
+            204.6356964111328,
+            1241500.0
+          ],
+          [
+            "2025-09-24 00:00:00+00:00",
+            206.29067993164062,
+            967900.0
+          ],
+          [
+            "2025-09-25 00:00:00+00:00",
+            206.694580078125,
+            1227000.0
+          ],
+          [
+            "2025-09-26 00:00:00+00:00",
+            209.59075927734375,
+            1156600.0
+          ],
+          [
+            "2025-09-29 00:00:00+00:00",
+            208.13282775878906,
+            1146000.0
+          ],
+          [
+            "2025-09-30 00:00:00+00:00",
+            211.45263671875,
+            1563500.0
+          ],
+          [
+            "2025-10-01 00:00:00+00:00",
+            207.541748046875,
+            1622600.0
+          ],
+          [
+            "2025-10-02 00:00:00+00:00",
+            206.88174438476562,
+            1369400.0
+          ],
+          [
+            "2025-10-03 00:00:00+00:00",
+            207.67967224121094,
+            962400.0
+          ],
+          [
+            "2025-10-06 00:00:00+00:00",
+            205.71932983398438,
+            1102100.0
+          ],
+          [
+            "2025-10-07 00:00:00+00:00",
+            208.63522338867188,
+            1277000.0
+          ],
+          [
+            "2025-10-08 00:00:00+00:00",
+            209.18690490722656,
+            952500.0
+          ],
+          [
+            "2025-10-09 00:00:00+00:00",
+            205.87693786621094,
+            1103600.0
+          ],
+          [
+            "2025-10-10 00:00:00+00:00",
+            202.6063995361328,
+            990000.0
+          ],
+          [
+            "2025-10-13 00:00:00+00:00",
+            202.5768280029297,
+            773500.0
+          ],
+          [
+            "2025-10-14 00:00:00+00:00",
+            206.39903259277344,
+            994800.0
+          ],
+          [
+            "2025-10-15 00:00:00+00:00",
+            197.43460083007812,
+            2509100.0
+          ],
+          [
+            "2025-10-16 00:00:00+00:00",
+            191.9771270751953,
+            2560900.0
+          ],
+          [
+            "2025-10-17 00:00:00+00:00",
+            192.95237731933594,
+            1081900.0
+          ],
+          [
+            "2025-10-20 00:00:00+00:00",
+            190.90335083007812,
+            1139700.0
+          ],
+          [
+            "2025-10-21 00:00:00+00:00",
+            190.85409545898438,
+            1241000.0
+          ],
+          [
+            "2025-10-22 00:00:00+00:00",
+            191.88844299316406,
+            1549500.0
+          ],
+          [
+            "2025-10-23 00:00:00+00:00",
+            191.56338500976562,
+            965800.0
+          ],
+          [
+            "2025-10-24 00:00:00+00:00",
+            190.31228637695312,
+            1125700.0
+          ],
+          [
+            "2025-10-27 00:00:00+00:00",
+            190.3221435546875,
+            1128800.0
+          ],
+          [
+            "2025-10-28 00:00:00+00:00",
+            188.00714111328125,
+            942200.0
+          ],
+          [
+            "2025-10-29 00:00:00+00:00",
+            187.1697998046875,
+            1302200.0
+          ],
+          [
+            "2025-10-30 00:00:00+00:00",
+            189.0218048095703,
+            1127200.0
+          ],
+          [
+            "2025-10-31 00:00:00+00:00",
+            188.6671600341797,
+            1425900.0
+          ],
+          [
+            "2025-11-03 00:00:00+00:00",
+            188.40118408203125,
+            1706800.0
+          ],
+          [
+            "2025-11-04 00:00:00+00:00",
+            192.3514404296875,
+            1565500.0
+          ],
+          [
+            "2025-11-05 00:00:00+00:00",
+            191.84906005859375,
+            1381000.0
+          ],
+          [
+            "2025-11-06 00:00:00+00:00",
+            195.06048583984375,
+            1697500.0
+          ],
+          [
+            "2025-11-07 00:00:00+00:00",
+            199.2767333984375,
+            1360100.0
+          ],
+          [
+            "2025-11-10 00:00:00+00:00",
+            200.8529052734375,
+            1133700.0
+          ],
+          [
+            "2025-11-11 00:00:00+00:00",
+            204.27122497558594,
+            921000.0
+          ],
+          [
+            "2025-11-12 00:00:00+00:00",
+            206.0936737060547,
+            961500.0
+          ],
+          [
+            "2025-11-13 00:00:00+00:00",
+            208.01463317871094,
+            1669700.0
+          ],
+          [
+            "2025-11-14 00:00:00+00:00",
+            211.1078643798828,
+            2489700.0
+          ],
+          [
+            "2025-11-17 00:00:00+00:00",
+            206.0936737060547,
+            1738700.0
+          ],
+          [
+            "2025-11-18 00:00:00+00:00",
+            206.83250427246094,
+            1507800.0
+          ],
+          [
+            "2025-11-19 00:00:00+00:00",
+            206.8029327392578,
+            1749900.0
+          ],
+          [
+            "2025-11-20 00:00:00+00:00",
+            208.58596801757812,
+            1772200.0
+          ],
+          [
+            "2025-11-21 00:00:00+00:00",
+            211.12754821777344,
+            1633400.0
+          ],
+          [
+            "2025-11-24 00:00:00+00:00",
+            209.20657348632812,
+            2505100.0
+          ],
+          [
+            "2025-11-25 00:00:00+00:00",
+            209.48240661621094,
+            1732800.0
+          ],
+          [
+            "2025-11-26 00:00:00+00:00",
+            210.6842498779297,
+            1373500.0
+          ],
+          [
+            "2025-11-28 00:00:00+00:00",
+            209.80751037597656,
+            623300.0
+          ],
+          [
+            "2025-12-01 00:00:00+00:00",
+            207.84779357910156,
+            1696900.0
+          ],
+          [
+            "2025-12-02 00:00:00+00:00",
+            206.76898193359375,
+            2089900.0
+          ],
+          [
+            "2025-12-03 00:00:00+00:00",
+            206.48194885253906,
+            1825900.0
+          ],
+          [
+            "2025-12-04 00:00:00+00:00",
+            204.2550048828125,
+            1470000.0
+          ],
+          [
+            "2025-12-05 00:00:00+00:00",
+            200.19703674316406,
+            1575400.0
+          ],
+          [
+            "2025-12-08 00:00:00+00:00",
+            198.81137084960938,
+            2049900.0
+          ],
+          [
+            "2025-12-09 00:00:00+00:00",
+            198.98953247070312,
+            1023500.0
+          ],
+          [
+            "2025-12-10 00:00:00+00:00",
+            199.1280975341797,
+            1565200.0
+          ],
+          [
+            "2025-12-11 00:00:00+00:00",
+            204.70040893554688,
+            1318100.0
+          ],
+          [
+            "2025-12-12 00:00:00+00:00",
+            205.05670166015625,
+            1443000.0
+          ],
+          [
+            "2025-12-15 00:00:00+00:00",
+            209.76791381835938,
+            1532500.0
+          ],
+          [
+            "2025-12-16 00:00:00+00:00",
+            207.36282348632812,
+            1709400.0
+          ],
+          [
+            "2025-12-17 00:00:00+00:00",
+            206.93724060058594,
+            1919600.0
+          ],
+          [
+            "2025-12-18 00:00:00+00:00",
+            202.8297576904297,
+            2542100.0
+          ],
+          [
+            "2025-12-19 00:00:00+00:00",
+            202.8990478515625,
+            4280600.0
+          ],
+          [
+            "2025-12-22 00:00:00+00:00",
+            206.1454315185547,
+            1453600.0
+          ],
+          [
+            "2025-12-23 00:00:00+00:00",
+            207.4024200439453,
+            1297000.0
+          ],
+          [
+            "2025-12-24 00:00:00+00:00",
+            206.9075469970703,
+            411400.0
+          ],
+          [
+            "2025-12-26 00:00:00+00:00",
+            205.67034912109375,
+            521100.0
+          ],
+          [
+            "2025-12-29 00:00:00+00:00",
+            206.5215301513672,
+            830800.0
+          ],
+          [
+            "2025-12-30 00:00:00+00:00",
+            206.95703125,
+            632200.0
+          ],
+          [
+            "2025-12-31 00:00:00+00:00",
+            206.01675415039062,
+            817400.0
+          ],
+          [
+            "2026-01-02 00:00:00+00:00",
+            201.73114013671875,
+            1482900.0
+          ],
+          [
+            "2026-01-05 00:00:00+00:00",
+            203.4632110595703,
+            1516400.0
+          ],
+          [
+            "2026-01-06 00:00:00+00:00",
+            205.78912353515625,
+            1623400.0
+          ],
+          [
+            "2026-01-07 00:00:00+00:00",
+            205.14578247070312,
+            1287500.0
+          ],
+          [
+            "2026-01-08 00:00:00+00:00",
+            208.9365234375,
+            1640100.0
+          ],
+          [
+            "2026-01-09 00:00:00+00:00",
+            210.03515625,
+            1891000.0
+          ],
+          [
+            "2026-01-12 00:00:00+00:00",
+            206.5215301513672,
+            3476200.0
+          ],
+          [
+            "2026-01-13 00:00:00+00:00",
+            195.62435913085938,
+            4468000.0
+          ],
+          [
+            "2026-01-14 00:00:00+00:00",
+            194.01107788085938,
+            3071100.0
+          ],
+          [
+            "2026-01-15 00:00:00+00:00",
+            193.46670532226562,
+            1709400.0
+          ],
+          [
+            "2026-01-16 00:00:00+00:00",
+            190.3094024658203,
+            2401300.0
+          ],
+          [
+            "2026-01-20 00:00:00+00:00",
+            191.56639099121094,
+            1786000.0
+          ],
+          [
+            "2026-01-21 00:00:00+00:00",
+            191.67527770996094,
+            1986900.0
+          ],
+          [
+            "2026-01-22 00:00:00+00:00",
+            193.27865600585938,
+            1572200.0
+          ],
+          [
+            "2026-01-23 00:00:00+00:00",
+            191.6653594970703,
+            1460600.0
+          ],
+          [
+            "2026-01-26 00:00:00+00:00",
+            194.01107788085938,
+            1058300.0
+          ],
+          [
+            "2026-01-27 00:00:00+00:00",
+            192.7738800048828,
+            1233100.0
+          ],
+          [
+            "2026-01-28 00:00:00+00:00",
+            195.3076629638672,
+            1151500.0
+          ],
+          [
+            "2026-01-29 00:00:00+00:00",
+            196.35678100585938,
+            1490200.0
+          ],
+          [
+            "2026-01-30 00:00:00+00:00",
+            196.9506378173828,
+            1199000.0
+          ],
+          [
+            "2026-02-02 00:00:00+00:00",
+            198.70249938964844,
+            1462400.0
+          ],
+          [
+            "2026-02-03 00:00:00+00:00",
+            199.7021484375,
+            1234600.0
+          ],
+          [
+            "2026-02-04 00:00:00+00:00",
+            204.997314453125,
+            2430900.0
+          ],
+          [
+            "2026-02-05 00:00:00+00:00",
+            212.984619140625,
+            3404700.0
+          ],
+          [
+            "2026-02-06 00:00:00+00:00",
+            205.42291259765625,
+            2325300.0
+          ],
+          [
+            "2026-02-09 00:00:00+00:00",
+            197.8909149169922,
+            2159000.0
+          ],
+          [
+            "2026-02-10 00:00:00+00:00",
+            199.08848571777344,
+            2184800.0
+          ],
+          [
+            "2026-02-11 00:00:00+00:00",
+            202.63180541992188,
+            1718600.0
+          ],
+          [
+            "2026-02-12 00:00:00+00:00",
+            204.44305419921875,
+            1715100.0
+          ],
+          [
+            "2026-02-13 00:00:00+00:00",
+            205.38331604003906,
+            1591700.0
+          ],
+          [
+            "2026-02-17 00:00:00+00:00",
+            210.14402770996094,
+            2381500.0
+          ],
+          [
+            "2026-02-18 00:00:00+00:00",
+            207.28363037109375,
+            2234900.0
+          ],
+          [
+            "2026-02-19 00:00:00+00:00",
+            201.1372833251953,
+            1754800.0
+          ],
+          [
+            "2026-02-20 00:00:00+00:00",
+            204.2550048828125,
+            1226200.0
+          ],
+          [
+            "2026-02-23 00:00:00+00:00",
+            204.04714965820312,
+            1692400.0
+          ],
+          [
+            "2026-02-24 00:00:00+00:00",
+            207.66966247558594,
+            1385900.0
+          ],
+          [
+            "2026-02-25 00:00:00+00:00",
+            207.18466186523438,
+            1407800.0
+          ],
+          [
+            "2026-02-26 00:00:00+00:00",
+            210.5795135498047,
+            1265700.0
+          ],
+          [
+            "2026-02-27 00:00:00+00:00",
+            212.3214874267578,
+            2318500.0
+          ],
+          [
+            "2026-03-02 00:00:00+00:00",
+            211.64503479003906,
+            1437200.0
+          ],
+          [
+            "2026-03-03 00:00:00+00:00",
+            212.49058532714844,
+            1545500.0
+          ],
+          [
+            "2026-03-04 00:00:00+00:00",
+            213.05760192871094,
+            1232900.0
+          ],
+          [
+            "2026-03-05 00:00:00+00:00",
+            210.51101684570312,
+            1537800.0
+          ],
+          [
+            "2026-03-06 00:00:00+00:00",
+            211.2073516845703,
+            950300.0
+          ],
+          [
+            "2026-03-09 00:00:00+00:00",
+            206.6016082763672,
+            1407700.0
+          ],
+          [
+            "2026-03-10 00:00:00+00:00",
+            206.41261291503906,
+            1099800.0
+          ],
+          [
+            "2026-03-11 00:00:00+00:00",
+            204.5126190185547,
+            1401400.0
+          ],
+          [
+            "2026-03-12 00:00:00+00:00",
+            203.95555114746094,
+            1387400.0
+          ],
+          [
+            "2026-03-13 00:00:00+00:00",
+            205.08956909179688,
+            950400.0
+          ],
+          [
+            "2026-03-16 00:00:00+00:00",
+            206.72097778320312,
+            1416200.0
+          ],
+          [
+            "2026-03-17 00:00:00+00:00",
+            206.18382263183594,
+            1369400.0
+          ],
+          [
+            "2026-03-18 00:00:00+00:00",
+            203.3089599609375,
+            1352700.0
+          ],
+          [
+            "2026-03-19 00:00:00+00:00",
+            203.00059509277344,
+            1443000.0
+          ],
+          [
+            "2026-03-20 00:00:00+00:00",
+            204.54244995117188,
+            3378900.0
+          ],
+          [
+            "2026-03-23 00:00:00+00:00",
+            206.67123413085938,
+            1352400.0
+          ],
+          [
+            "2026-03-24 00:00:00+00:00",
+            206.22360229492188,
+            1298100.0
+          ],
+          [
+            "2026-03-25 00:00:00+00:00",
+            203.63723754882812,
+            1507700.0
+          ],
+          [
+            "2026-03-26 00:00:00+00:00",
+            206.0743865966797,
+            972100.0
+          ],
+          [
+            "2026-03-27 00:00:00+00:00",
+            201.64772033691406,
+            1288300.0
+          ],
+          [
+            "2026-03-30 00:00:00+00:00",
+            206.18382263183594,
+            1128100.0
+          ],
+          [
+            "2026-03-31 00:00:00+00:00",
+            206.25344848632812,
+            1442400.0
+          ],
+          [
+            "2026-04-01 00:00:00+00:00",
+            203.03042602539062,
+            1659900.0
+          ],
+          [
+            "2026-04-02 00:00:00+00:00",
+            205.945068359375,
+            1383100.0
+          ],
+          [
+            "2026-04-06 00:00:00+00:00",
+            207.26809692382812,
+            798700.0
+          ],
+          [
+            "2026-04-07 00:00:00+00:00",
+            209.42672729492188,
+            1384200.0
+          ],
+          [
+            "2026-04-08 00:00:00+00:00",
+            210.9586639404297,
+            1150700.0
+          ],
+          [
+            "2026-04-09 00:00:00+00:00",
+            213.3958282470703,
+            1060600.0
+          ],
+          [
+            "2026-04-10 00:00:00+00:00",
+            209.8843231201172,
+            1017300.0
+          ],
+          [
+            "2026-04-13 00:00:00+00:00",
+            213.96282958984375,
+            1017000.0
+          ],
+          [
+            "2026-04-14 00:00:00+00:00",
+            213.75393676757812,
+            1563500.0
+          ],
+          [
+            "2026-04-15 00:00:00+00:00",
+            217.0863800048828,
+            1215700.0
+          ],
+          [
+            "2026-04-16 00:00:00+00:00",
+            212.7492218017578,
+            1553100.0
+          ],
+          [
+            "2026-04-17 00:00:00+00:00",
+            215.02723693847656,
+            1233600.0
+          ],
+          [
+            "2026-04-20 00:00:00+00:00",
+            214.0225067138672,
+            1281600.0
+          ],
+          [
+            "2026-04-21 00:00:00+00:00",
+            215.20628356933594,
+            1415400.0
+          ],
+          [
+            "2026-04-22 00:00:00+00:00",
+            213.03770446777344,
+            1166000.0
+          ],
+          [
+            "2026-04-23 00:00:00+00:00",
+            215.4251251220703,
+            926500.0
+          ],
+          [
+            "2026-04-24 00:00:00+00:00",
+            211.76441955566406,
+            1070700.0
+          ],
+          [
+            "2026-04-27 00:00:00+00:00",
+            213.07749938964844,
+            1424700.0
+          ],
+          [
+            "2026-04-28 00:00:00+00:00",
+            215.26596069335938,
+            1210400.0
+          ],
+          [
+            "2026-04-29 00:00:00+00:00",
+            211.21730041503906,
+            1374400.0
+          ],
+          [
+            "2026-04-30 00:00:00+00:00",
+            216.1214599609375,
+            2235200.0
+          ],
+          [
+            "2026-05-01 00:00:00+00:00",
+            215.45497131347656,
+            1486100.0
+          ],
+          [
+            "2026-05-04 00:00:00+00:00",
+            218.7177734375,
+            1757600.0
+          ],
+          [
+            "2026-05-05 00:00:00+00:00",
+            217.36489868164062,
+            1505800.0
+          ],
+          [
+            "2026-05-06 00:00:00+00:00",
+            216.7779998779297,
+            1760100.0
+          ],
+          [
+            "2026-05-07 00:00:00+00:00",
+            212.55027770996094,
+            2837500.0
+          ],
+          [
+            "2026-05-08 00:00:00+00:00",
+            212.03298950195312,
+            1482600.0
+          ],
+          [
+            "2026-05-11 00:00:00+00:00",
+            212.67959594726562,
+            1288500.0
+          ],
+          [
+            "2026-05-12 00:00:00+00:00",
+            214.34085083007812,
+            1639100.0
+          ],
+          [
+            "2026-05-13 00:00:00+00:00",
+            214.41046142578125,
+            1586400.0
+          ],
+          [
+            "2026-05-14 00:00:00+00:00",
+            215.31570434570312,
+            1695100.0
+          ],
+          [
+            "2026-05-15 00:00:00+00:00",
+            216.2308807373047,
+            1483300.0
+          ],
+          [
+            "2026-05-18 00:00:00+00:00",
+            220.05076599121094,
+            1741400.0
+          ],
+          [
+            "2026-05-19 00:00:00+00:00",
+            223.40310668945312,
+            3937600.0
+          ],
+          [
+            "2026-05-20 00:00:00+00:00",
+            220.8167266845703,
+            1220700.0
+          ],
+          [
+            "2026-05-21 00:00:00+00:00",
+            213.3162384033203,
+            2193000.0
+          ],
+          [
+            "2026-05-22 00:00:00+00:00",
+            215.4649200439453,
+            1247400.0
+          ],
+          [
+            "2026-05-26 00:00:00+00:00",
+            211.70474243164062,
+            1298700.0
+          ],
+          [
+            "2026-05-27 00:00:00+00:00",
+            207.7555389404297,
+            1226200.0
+          ],
+          [
+            "2026-05-28 00:00:00+00:00",
+            206.19375610351562,
+            1377900.0
+          ],
+          [
+            "2026-05-29 00:00:00+00:00",
+            205.00999450683594,
+            2863300.0
+          ],
+          [
+            "2026-06-01 00:00:00+00:00",
+            207.2100067138672,
+            1753200.0
+          ],
+          [
+            "2026-06-02 00:00:00+00:00",
+            210.4600067138672,
+            1941700.0
+          ],
+          [
+            "2026-06-03 00:00:00+00:00",
+            209.33999633789062,
+            1768000.0
+          ],
+          [
+            "2026-06-04 00:00:00+00:00",
+            210.83999633789062,
+            1417600.0
+          ],
+          [
+            "2026-06-05 00:00:00+00:00",
+            221.00999450683594,
+            1638200.0
+          ],
+          [
+            "2026-06-08 00:00:00+00:00",
+            215.02000427246094,
+            1524700.0
+          ],
+          [
+            "2026-06-09 00:00:00+00:00",
+            217.17999267578125,
+            1459400.0
+          ],
+          [
+            "2026-06-10 00:00:00+00:00",
+            223.33999633789062,
+            1735800.0
+          ],
+          [
+            "2026-06-11 00:00:00+00:00",
+            219.57000732421875,
+            1198400.0
+          ],
+          [
+            "2026-06-12 00:00:00+00:00",
+            221.6300048828125,
+            1023100.0
+          ],
+          [
+            "2026-06-15 00:00:00+00:00",
+            221.80999755859375,
+            1310400.0
+          ],
+          [
+            "2026-06-16 00:00:00+00:00",
+            223.08999633789062,
+            1161300.0
+          ],
+          [
+            "2026-06-17 00:00:00+00:00",
+            221.66000366210938,
+            1577200.0
+          ],
+          [
+            "2026-06-18 00:00:00+00:00",
+            221.1699981689453,
+            5024700.0
+          ],
+          [
+            "2026-06-22 00:00:00+00:00",
+            222.55999755859375,
+            2909500.0
+          ],
+          [
+            "2026-06-23 00:00:00+00:00",
+            231.5500030517578,
+            1810900.0
+          ],
+          [
+            "2026-06-24 00:00:00+00:00",
+            233.5399932861328,
+            2708000.0
+          ],
+          [
+            "2026-06-25 00:00:00+00:00",
+            231.60000610351562,
+            1576900.0
+          ],
+          [
+            "2026-06-26 00:00:00+00:00",
+            239.61000061035156,
+            2880100.0
+          ],
+          [
+            "2026-06-29 00:00:00+00:00",
+            241.3800048828125,
+            1498500.0
+          ],
+          [
+            "2026-06-30 00:00:00+00:00",
+            237.94000244140625,
+            2092700.0
+          ],
+          [
+            "2026-07-01 00:00:00+00:00",
+            243.1199951171875,
+            1670200.0
+          ],
+          [
+            "2026-07-02 00:00:00+00:00",
+            250.3300018310547,
+            1602500.0
+          ],
+          [
+            "2026-07-06 00:00:00+00:00",
+            248.3699951171875,
+            1516200.0
+          ],
+          [
+            "2026-07-07 00:00:00+00:00",
+            251.4600067138672,
+            2298400.0
+          ],
+          [
+            "2026-07-08 00:00:00+00:00",
+            251.1699981689453,
+            1642600.0
+          ],
+          [
+            "2026-07-09 00:00:00+00:00",
+            248.63999938964844,
+            1764000.0
+          ],
+          [
+            "2026-07-10 00:00:00+00:00",
+            251.61000061035156,
+            1041600.0
+          ],
+          [
+            "2026-07-13 00:00:00+00:00",
+            256.45001220703125,
+            1384900.0
+          ],
+          [
+            "2026-07-14 00:00:00+00:00",
+            250.35000610351562,
+            1455700.0
+          ],
+          [
+            "2026-07-15 00:00:00+00:00",
+            239.47999572753906,
+            3127800.0
+          ],
+          [
+            "2026-07-16 00:00:00+00:00",
+            241.86000061035156,
+            2027700.0
+          ],
+          [
+            "2026-07-17 00:00:00+00:00",
+            249.89999389648438,
+            1857400.0
+          ],
+          [
+            "2026-07-20 00:00:00+00:00",
+            252.6783905029297,
+            1313300.0
+          ],
+          [
+            "2026-07-21 00:00:00+00:00",
+            250.69664001464844,
+            1064500.0
+          ],
+          [
+            "2026-07-22 00:00:00+00:00",
+            250.78627014160156,
+            1292800.0
+          ],
+          [
+            "2026-07-23 00:00:00+00:00",
+            253.46511840820312,
+            1362700.0
+          ],
+          [
+            "2026-07-24 00:00:00+00:00",
+            258.89251708984375,
+            1070000.0
+          ],
+          [
+            "2026-07-27 00:00:00+00:00",
+            260.1871337890625,
+            1102900.0
+          ],
+          [
+            "2026-07-28 00:00:00+00:00",
+            271.2909240722656,
+            2460300.0
+          ],
+          [
+            "2026-07-29 00:00:00+00:00",
+            273.2527770996094,
+            1513100.0
+          ],
+          [
+            "2026-07-30 00:00:00+00:00",
+            264.2801208496094,
+            1694200.0
+          ],
+          [
+            "2026-07-31 00:00:00+00:00",
+            262.9854736328125,
+            1309700.0
+          ],
+          [
+            "2026-08-03 00:00:00+00:00",
+            261.5912780761719,
+            1302700.0
+          ],
+          [
+            "2026-08-04 00:00:00+00:00",
+            261.4718017578125,
+            1931600.0
+          ],
+          [
+            "2026-08-05 00:00:00+00:00",
+            263.4933776855469,
+            1433700.0
+          ],
+          [
+            "2026-08-06 00:00:00+00:00",
+            273.9697570800781,
+            1913300.0
+          ],
+          [
+            "2026-08-07 00:00:00+00:00",
+            265.8934020996094,
+            2751200.0
+          ],
+          [
+            "2026-08-10 00:00:00+00:00",
+            268.5523376464844,
+            1723000.0
+          ],
+          [
+            "2026-08-11 00:00:00+00:00",
+            261.1431579589844,
+            2859900.0
+          ],
+          [
+            "2026-08-12 00:00:00+00:00",
+            254.77963256835938,
+            2591100.0
+          ],
+          [
+            "2026-08-13 00:00:00+00:00",
+            259.4004211425781,
+            1423100.0
+          ],
+          [
+            "2026-08-14 00:00:00+00:00",
+            260.3265686035156,
+            1544100.0
+          ],
+          [
+            "2026-08-17 00:00:00+00:00",
+            257.0302734375,
+            1323700.0
+          ],
+          [
+            "2026-08-18 00:00:00+00:00",
+            260.067626953125,
+            1442000.0
+          ],
+          [
+            "2026-08-19 00:00:00+00:00",
+            258.6634826660156,
+            1210300.0
+          ],
+          [
+            "2026-08-20 00:00:00+00:00",
+            253.4850311279297,
+            1944100.0
+          ],
+          [
+            "2026-08-21 00:00:00+00:00",
+            252.77796936035156,
+            2393100.0
+          ],
+          [
+            "2026-08-24 00:00:00+00:00",
+            259.1116027832031,
+            1617000.0
+          ],
+          [
+            "2026-08-25 00:00:00+00:00",
+            256.55224609375,
+            969900.0
+          ],
+          [
+            "2026-08-26 00:00:00+00:00",
+            260.7248840332031,
+            1102100.0
+          ],
+          [
+            "2026-08-27 00:00:00+00:00",
+            256.55224609375,
+            1451900.0
+          ],
+          [
+            "2026-08-28 00:00:00+00:00",
+            259.4999694824219,
+            970800.0
+          ],
+          [
+            "2026-08-31 00:00:00+00:00",
+            257.79998779296875,
+            2182900.0
+          ],
+          [
+            "2026-09-01 00:00:00+00:00",
+            257.8699951171875,
+            1067500.0
+          ],
+          [
+            "2026-09-02 00:00:00+00:00",
+            259.3399963378906,
+            1085600.0
+          ],
+          [
+            "2026-09-03 00:00:00+00:00",
+            263.1099853515625,
+            1328600.0
+          ],
+          [
+            "2026-09-04 00:00:00+00:00",
+            259.57000732421875,
+            1267600.0
+          ],
+          [
+            "2026-09-08 00:00:00+00:00",
+            253.4600067138672,
+            1654200.0
+          ],
+          [
+            "2026-09-09 00:00:00+00:00",
+            253.5800018310547,
+            1642600.0
+          ],
+          [
+            "2026-09-10 00:00:00+00:00",
+            251.7899932861328,
+            2883300.0
+          ],
+          [
+            "2026-09-11 00:00:00+00:00",
+            253.7100067138672,
+            1336800.0
+          ],
+          [
+            "2026-09-14 00:00:00+00:00",
+            258.4800109863281,
+            1532100.0
+          ],
+          [
+            "2026-09-15 00:00:00+00:00",
+            257.2099914550781,
+            1255700.0
+          ],
+          [
+            "2026-09-16 00:00:00+00:00",
+            254.85000610351562,
+            1432100.0
+          ],
+          [
+            "2026-09-17 00:00:00+00:00",
+            252.2100067138672,
+            1482400.0
+          ],
+          [
+            "2026-09-18 00:00:00+00:00",
+            249.8300018310547,
+            3796100.0
+          ],
+          [
+            "2026-09-21 00:00:00+00:00",
+            242.86000061035156,
+            2354200.0
+          ],
+          [
+            "2026-09-22 00:00:00+00:00",
+            229.5,
+            5257100.0
+          ],
+          [
+            "2026-09-23 00:00:00+00:00",
+            225.66000366210938,
+            4131600.0
+          ],
+          [
+            "2026-09-24 00:00:00+00:00",
+            227.1699981689453,
+            2966500.0
+          ],
+          [
+            "2026-09-25 00:00:00+00:00",
+            227.60000610351562,
+            1716500.0
+          ],
+          [
+            "2026-09-28 00:00:00+00:00",
+            227.5500030517578,
+            1725200.0
+          ],
+          [
+            "2026-09-29 00:00:00+00:00",
+            225.4199981689453,
+            4096000.0
+          ],
+          [
+            "2026-09-30 00:00:00+00:00",
+            221.86000061035156,
+            3878900.0
+          ],
+          [
+            "2026-10-01 00:00:00+00:00",
+            224.41000366210938,
+            2944700.0
+          ],
+          [
+            "2026-10-02 00:00:00+00:00",
+            223.74000549316406,
+            1845300.0
+          ],
+          [
+            "2026-10-05 00:00:00+00:00",
+            224.7100067138672,
+            1978900.0
+          ],
+          [
+            "2026-10-06 00:00:00+00:00",
+            224.27000427246094,
+            1809400.0
+          ],
+          [
+            "2026-10-07 00:00:00+00:00",
+            223.9499969482422,
+            1663500.0
+          ],
+          [
+            "2026-10-08 00:00:00+00:00",
+            230.6300048828125,
+            1751800.0
+          ],
+          [
+            "2026-10-09 00:00:00+00:00",
+            229.42999267578125,
+            1580800.0
+          ],
+          [
+            "2026-10-12 00:00:00+00:00",
+            232.60000610351562,
+            1394000.0
+          ],
+          [
+            "2026-10-13 00:00:00+00:00",
+            236.39999389648438,
+            1564900.0
+          ],
+          [
+            "2026-10-14 00:00:00+00:00",
+            236.1699981689453,
+            1985200.0
+          ],
+          [
+            "2026-10-15 00:00:00+00:00",
+            239.60000610351562,
+            2061300.0
+          ],
+          [
+            "2026-10-16 00:00:00+00:00",
+            247.8800048828125,
+            3499900.0
+          ],
+          [
+            "2026-10-19 00:00:00+00:00",
+            246.3800048828125,
+            1128761.0
+          ]
+        ]
+      },
+      "ARES": {
+        "columns": [
+          "date",
+          "close",
+          "volume"
+        ],
+        "rows": [
+          [
+            "2025-01-02 00:00:00+00:00",
+            169.97264099121094,
+            624700.0
+          ],
+          [
+            "2025-01-03 00:00:00+00:00",
+            172.1396942138672,
+            1189700.0
+          ],
+          [
+            "2025-01-06 00:00:00+00:00",
+            171.36981201171875,
+            1326200.0
+          ],
+          [
+            "2025-01-07 00:00:00+00:00",
+            169.53541564941406,
+            1556800.0
+          ],
+          [
+            "2025-01-08 00:00:00+00:00",
+            173.27076721191406,
+            960900.0
+          ],
+          [
+            "2025-01-10 00:00:00+00:00",
+            166.37034606933594,
+            942800.0
+          ],
+          [
+            "2025-01-13 00:00:00+00:00",
+            166.79806518554688,
+            934400.0
+          ],
+          [
+            "2025-01-14 00:00:00+00:00",
+            170.2957763671875,
+            791100.0
+          ],
+          [
+            "2025-01-15 00:00:00+00:00",
+            175.36181640625,
+            786900.0
+          ],
+          [
+            "2025-01-16 00:00:00+00:00",
+            178.5933837890625,
+            971300.0
+          ],
+          [
+            "2025-01-17 00:00:00+00:00",
+            181.84402465820312,
+            721800.0
+          ],
+          [
+            "2025-01-21 00:00:00+00:00",
+            185.0756072998047,
+            984500.0
+          ],
+          [
+            "2025-01-22 00:00:00+00:00",
+            184.21066284179688,
+            1157200.0
+          ],
+          [
+            "2025-01-23 00:00:00+00:00",
+            186.1971435546875,
+            925500.0
+          ],
+          [
+            "2025-01-24 00:00:00+00:00",
+            187.5468292236328,
+            780300.0
+          ],
+          [
+            "2025-01-27 00:00:00+00:00",
+            180.5703887939453,
+            735300.0
+          ],
+          [
+            "2025-01-28 00:00:00+00:00",
+            184.01107788085938,
+            723000.0
+          ],
+          [
+            "2025-01-29 00:00:00+00:00",
+            183.83998107910156,
+            766200.0
+          ],
+          [
+            "2025-01-30 00:00:00+00:00",
+            188.26918029785156,
+            1247600.0
+          ],
+          [
+            "2025-01-31 00:00:00+00:00",
+            188.40225219726562,
+            1139700.0
+          ],
+          [
+            "2025-02-03 00:00:00+00:00",
+            186.78643798828125,
+            1095000.0
+          ],
+          [
+            "2025-02-04 00:00:00+00:00",
+            185.6839141845703,
+            1964600.0
+          ],
+          [
+            "2025-02-05 00:00:00+00:00",
+            180.2567138671875,
+            2501700.0
+          ],
+          [
+            "2025-02-06 00:00:00+00:00",
+            182.17665100097656,
+            1619600.0
+          ],
+          [
+            "2025-02-07 00:00:00+00:00",
+            180.91253662109375,
+            1163400.0
+          ],
+          [
+            "2025-02-10 00:00:00+00:00",
+            180.5703887939453,
+            790300.0
+          ],
+          [
+            "2025-02-11 00:00:00+00:00",
+            177.13916015625,
+            798800.0
+          ],
+          [
+            "2025-02-12 00:00:00+00:00",
+            173.75550842285156,
+            761300.0
+          ],
+          [
+            "2025-02-13 00:00:00+00:00",
+            175.2572479248047,
+            981200.0
+          ],
+          [
+            "2025-02-14 00:00:00+00:00",
+            176.9585723876953,
+            784900.0
+          ],
+          [
+            "2025-02-18 00:00:00+00:00",
+            178.3748016357422,
+            999000.0
+          ],
+          [
+            "2025-02-19 00:00:00+00:00",
+            177.49087524414062,
+            1331600.0
+          ],
+          [
+            "2025-02-20 00:00:00+00:00",
+            170.7900390625,
+            1383100.0
+          ],
+          [
+            "2025-02-21 00:00:00+00:00",
+            165.4674072265625,
+            1125400.0
+          ],
+          [
+            "2025-02-24 00:00:00+00:00",
+            160.5439910888672,
+            1866600.0
+          ],
+          [
+            "2025-02-25 00:00:00+00:00",
+            159.0707550048828,
+            1911600.0
+          ],
+          [
+            "2025-02-26 00:00:00+00:00",
+            160.6009979248047,
+            1076700.0
+          ],
+          [
+            "2025-02-27 00:00:00+00:00",
+            158.8426055908203,
+            1228500.0
+          ],
+          [
+            "2025-02-28 00:00:00+00:00",
+            162.47341918945312,
+            2118600.0
+          ],
+          [
+            "2025-03-03 00:00:00+00:00",
+            161.35186767578125,
+            2140200.0
+          ],
+          [
+            "2025-03-04 00:00:00+00:00",
+            153.0162353515625,
+            2907900.0
+          ],
+          [
+            "2025-03-05 00:00:00+00:00",
+            154.9266815185547,
+            1701400.0
+          ],
+          [
+            "2025-03-06 00:00:00+00:00",
+            145.77365112304688,
+            2113100.0
+          ],
+          [
+            "2025-03-07 00:00:00+00:00",
+            147.28489685058594,
+            3354100.0
+          ],
+          [
+            "2025-03-10 00:00:00+00:00",
+            134.24444580078125,
+            3161000.0
+          ],
+          [
+            "2025-03-11 00:00:00+00:00",
+            135.92677307128906,
+            2545500.0
+          ],
+          [
+            "2025-03-12 00:00:00+00:00",
+            138.7021484375,
+            1735400.0
+          ],
+          [
+            "2025-03-13 00:00:00+00:00",
+            133.2464599609375,
+            1894300.0
+          ],
+          [
+            "2025-03-14 00:00:00+00:00",
+            137.2099151611328,
+            1565800.0
+          ],
+          [
+            "2025-03-17 00:00:00+00:00",
+            140.91700744628906,
+            1481700.0
+          ],
+          [
+            "2025-03-18 00:00:00+00:00",
+            137.95709228515625,
+            1292300.0
+          ],
+          [
+            "2025-03-19 00:00:00+00:00",
+            141.3959503173828,
+            1638000.0
+          ],
+          [
+            "2025-03-20 00:00:00+00:00",
+            141.13731384277344,
+            992900.0
+          ],
+          [
+            "2025-03-21 00:00:00+00:00",
+            141.4917449951172,
+            1749400.0
+          ],
+          [
+            "2025-03-24 00:00:00+00:00",
+            147.27745056152344,
+            1724900.0
+          ],
+          [
+            "2025-03-25 00:00:00+00:00",
+            149.07833862304688,
+            3835800.0
+          ],
+          [
+            "2025-03-26 00:00:00+00:00",
+            146.82725524902344,
+            2110400.0
+          ],
+          [
+            "2025-03-27 00:00:00+00:00",
+            142.15267944335938,
+            1921800.0
+          ],
+          [
+            "2025-03-28 00:00:00+00:00",
+            138.80003356933594,
+            1654200.0
+          ],
+          [
+            "2025-03-31 00:00:00+00:00",
+            140.4380340576172,
+            2009700.0
+          ],
+          [
+            "2025-04-01 00:00:00+00:00",
+            143.14891052246094,
+            2170700.0
+          ],
+          [
+            "2025-04-02 00:00:00+00:00",
+            147.9958953857422,
+            2113600.0
+          ],
+          [
+            "2025-04-03 00:00:00+00:00",
+            125.09245300292969,
+            3035100.0
+          ],
+          [
+            "2025-04-04 00:00:00+00:00",
+            113.0707778930664,
+            7645200.0
+          ],
+          [
+            "2025-04-07 00:00:00+00:00",
+            119.4791488647461,
+            6475200.0
+          ],
+          [
+            "2025-04-08 00:00:00+00:00",
+            118.02312469482422,
+            4718900.0
+          ],
+          [
+            "2025-04-09 00:00:00+00:00",
+            136.3765411376953,
+            4616400.0
+          ],
+          [
+            "2025-04-10 00:00:00+00:00",
+            130.05438232421875,
+            3935100.0
+          ],
+          [
+            "2025-04-11 00:00:00+00:00",
+            131.94146728515625,
+            3184500.0
+          ],
+          [
+            "2025-04-14 00:00:00+00:00",
+            132.55450439453125,
+            2297800.0
+          ],
+          [
+            "2025-04-15 00:00:00+00:00",
+            135.37074279785156,
+            1683500.0
+          ],
+          [
+            "2025-04-16 00:00:00+00:00",
+            133.72314453125,
+            1783300.0
+          ],
+          [
+            "2025-04-17 00:00:00+00:00",
+            135.2941131591797,
+            1210000.0
+          ],
+          [
+            "2025-04-21 00:00:00+00:00",
+            131.30923461914062,
+            1532500.0
+          ],
+          [
+            "2025-04-22 00:00:00+00:00",
+            135.75389099121094,
+            1150300.0
+          ],
+          [
+            "2025-04-23 00:00:00+00:00",
+            139.80581665039062,
+            1523000.0
+          ],
+          [
+            "2025-04-24 00:00:00+00:00",
+            146.53028869628906,
+            1341600.0
+          ],
+          [
+            "2025-04-25 00:00:00+00:00",
+            147.40199279785156,
+            1290700.0
+          ],
+          [
+            "2025-04-28 00:00:00+00:00",
+            146.9230499267578,
+            1294700.0
+          ],
+          [
+            "2025-04-29 00:00:00+00:00",
+            146.3578643798828,
+            1146300.0
+          ],
+          [
+            "2025-04-30 00:00:00+00:00",
+            146.10882568359375,
+            1722200.0
+          ],
+          [
+            "2025-05-01 00:00:00+00:00",
+            145.8597869873047,
+            1075500.0
+          ],
+          [
+            "2025-05-02 00:00:00+00:00",
+            150.45770263671875,
+            1942700.0
+          ],
+          [
+            "2025-05-05 00:00:00+00:00",
+            153.9923553466797,
+            2157000.0
+          ],
+          [
+            "2025-05-06 00:00:00+00:00",
+            152.90992736816406,
+            1707600.0
+          ],
+          [
+            "2025-05-07 00:00:00+00:00",
+            155.2567901611328,
+            1478900.0
+          ],
+          [
+            "2025-05-08 00:00:00+00:00",
+            158.86810302734375,
+            1785300.0
+          ],
+          [
+            "2025-05-09 00:00:00+00:00",
+            158.00596618652344,
+            1659100.0
+          ],
+          [
+            "2025-05-12 00:00:00+00:00",
+            165.30519104003906,
+            1892500.0
+          ],
+          [
+            "2025-05-13 00:00:00+00:00",
+            165.23812866210938,
+            2291500.0
+          ],
+          [
+            "2025-05-14 00:00:00+00:00",
+            168.42794799804688,
+            1817900.0
+          ],
+          [
+            "2025-05-15 00:00:00+00:00",
+            161.5980987548828,
+            3115600.0
+          ],
+          [
+            "2025-05-16 00:00:00+00:00",
+            162.987060546875,
+            1702100.0
+          ],
+          [
+            "2025-05-19 00:00:00+00:00",
+            161.54063415527344,
+            940100.0
+          ],
+          [
+            "2025-05-20 00:00:00+00:00",
+            159.0404815673828,
+            1984100.0
+          ],
+          [
+            "2025-05-21 00:00:00+00:00",
+            152.2872772216797,
+            1561000.0
+          ],
+          [
+            "2025-05-22 00:00:00+00:00",
+            153.1494140625,
+            961000.0
+          ],
+          [
+            "2025-05-23 00:00:00+00:00",
+            153.54214477539062,
+            1008800.0
+          ],
+          [
+            "2025-05-27 00:00:00+00:00",
+            157.6707000732422,
+            1079400.0
+          ],
+          [
+            "2025-05-28 00:00:00+00:00",
+            157.0863800048828,
+            999900.0
+          ],
+          [
+            "2025-05-29 00:00:00+00:00",
+            157.95806884765625,
+            1112100.0
+          ],
+          [
+            "2025-05-30 00:00:00+00:00",
+            158.53280639648438,
+            3004200.0
+          ],
+          [
+            "2025-06-02 00:00:00+00:00",
+            159.76849365234375,
+            1318900.0
+          ],
+          [
+            "2025-06-03 00:00:00+00:00",
+            161.4352569580078,
+            1279900.0
+          ],
+          [
+            "2025-06-04 00:00:00+00:00",
+            161.89505004882812,
+            1364700.0
+          ],
+          [
+            "2025-06-05 00:00:00+00:00",
+            162.83380126953125,
+            1163900.0
+          ],
+          [
+            "2025-06-06 00:00:00+00:00",
+            166.56004333496094,
+            1865200.0
+          ],
+          [
+            "2025-06-09 00:00:00+00:00",
+            165.0465545654297,
+            2359300.0
+          ],
+          [
+            "2025-06-10 00:00:00+00:00",
+            161.483154296875,
+            1450100.0
+          ],
+          [
+            "2025-06-11 00:00:00+00:00",
+            161.6747283935547,
+            1415300.0
+          ],
+          [
+            "2025-06-12 00:00:00+00:00",
+            163.61927795410156,
+            2457000.0
+          ],
+          [
+            "2025-06-13 00:00:00+00:00",
+            159.54820251464844,
+            1143300.0
+          ],
+          [
+            "2025-06-16 00:00:00+00:00",
+            161.08155822753906,
+            750300.0
+          ],
+          [
+            "2025-06-17 00:00:00+00:00",
+            159.2974395751953,
+            1086900.0
+          ],
+          [
+            "2025-06-18 00:00:00+00:00",
+            161.38052368164062,
+            1497200.0
+          ],
+          [
+            "2025-06-20 00:00:00+00:00",
+            159.85678100585938,
+            2491600.0
+          ],
+          [
+            "2025-06-23 00:00:00+00:00",
+            159.46139526367188,
+            1119400.0
+          ],
+          [
+            "2025-06-24 00:00:00+00:00",
+            163.772216796875,
+            1099300.0
+          ],
+          [
+            "2025-06-25 00:00:00+00:00",
+            162.7885284423828,
+            1233300.0
+          ],
+          [
+            "2025-06-26 00:00:00+00:00",
+            165.0162811279297,
+            877700.0
+          ],
+          [
+            "2025-06-27 00:00:00+00:00",
+            167.01254272460938,
+            1591500.0
+          ],
+          [
+            "2025-06-30 00:00:00+00:00",
+            167.03182983398438,
+            1491700.0
+          ],
+          [
+            "2025-07-01 00:00:00+00:00",
+            168.50733947753906,
+            2485400.0
+          ],
+          [
+            "2025-07-02 00:00:00+00:00",
+            171.64158630371094,
+            2546300.0
+          ],
+          [
+            "2025-07-03 00:00:00+00:00",
+            171.622314453125,
+            684400.0
+          ],
+          [
+            "2025-07-07 00:00:00+00:00",
+            168.63270568847656,
+            1269700.0
+          ],
+          [
+            "2025-07-08 00:00:00+00:00",
+            168.8641815185547,
+            1033700.0
+          ],
+          [
+            "2025-07-09 00:00:00+00:00",
+            170.6675567626953,
+            927300.0
+          ],
+          [
+            "2025-07-10 00:00:00+00:00",
+            173.7150421142578,
+            980100.0
+          ],
+          [
+            "2025-07-11 00:00:00+00:00",
+            171.05332946777344,
+            713900.0
+          ],
+          [
+            "2025-07-14 00:00:00+00:00",
+            173.91757202148438,
+            1331600.0
+          ],
+          [
+            "2025-07-15 00:00:00+00:00",
+            168.27589416503906,
+            1090300.0
+          ],
+          [
+            "2025-07-16 00:00:00+00:00",
+            173.51251220703125,
+            1747000.0
+          ],
+          [
+            "2025-07-17 00:00:00+00:00",
+            176.64675903320312,
+            1868000.0
+          ],
+          [
+            "2025-07-18 00:00:00+00:00",
+            176.59854125976562,
+            2397900.0
+          ],
+          [
+            "2025-07-21 00:00:00+00:00",
+            172.51919555664062,
+            1653400.0
+          ],
+          [
+            "2025-07-22 00:00:00+00:00",
+            171.90199279785156,
+            1266400.0
+          ],
+          [
+            "2025-07-23 00:00:00+00:00",
+            174.13937377929688,
+            871800.0
+          ],
+          [
+            "2025-07-24 00:00:00+00:00",
+            175.84632873535156,
+            1222700.0
+          ],
+          [
+            "2025-07-25 00:00:00+00:00",
+            179.588134765625,
+            1320300.0
+          ],
+          [
+            "2025-07-28 00:00:00+00:00",
+            180.6875457763672,
+            1335400.0
+          ],
+          [
+            "2025-07-29 00:00:00+00:00",
+            181.2372589111328,
+            1243900.0
+          ],
+          [
+            "2025-07-30 00:00:00+00:00",
+            181.0443572998047,
+            951800.0
+          ],
+          [
+            "2025-07-31 00:00:00+00:00",
+            178.92271423339844,
+            1802800.0
+          ],
+          [
+            "2025-08-01 00:00:00+00:00",
+            176.31887817382812,
+            2193800.0
+          ],
+          [
+            "2025-08-04 00:00:00+00:00",
+            181.8351593017578,
+            1381600.0
+          ],
+          [
+            "2025-08-05 00:00:00+00:00",
+            181.2854766845703,
+            1602700.0
+          ],
+          [
+            "2025-08-06 00:00:00+00:00",
+            182.54879760742188,
+            1390600.0
+          ],
+          [
+            "2025-08-07 00:00:00+00:00",
+            180.29214477539062,
+            1240800.0
+          ],
+          [
+            "2025-08-08 00:00:00+00:00",
+            181.7194366455078,
+            952900.0
+          ],
+          [
+            "2025-08-11 00:00:00+00:00",
+            179.90640258789062,
+            751700.0
+          ],
+          [
+            "2025-08-12 00:00:00+00:00",
+            185.89524841308594,
+            1278900.0
+          ],
+          [
+            "2025-08-13 00:00:00+00:00",
+            184.1400604248047,
+            1194100.0
+          ],
+          [
+            "2025-08-14 00:00:00+00:00",
+            183.66751098632812,
+            885700.0
+          ],
+          [
+            "2025-08-15 00:00:00+00:00",
+            181.09259033203125,
+            928300.0
+          ],
+          [
+            "2025-08-18 00:00:00+00:00",
+            182.529541015625,
+            1388800.0
+          ],
+          [
+            "2025-08-19 00:00:00+00:00",
+            174.1586456298828,
+            2409200.0
+          ],
+          [
+            "2025-08-20 00:00:00+00:00",
+            172.55776977539062,
+            1709400.0
+          ],
+          [
+            "2025-08-21 00:00:00+00:00",
+            171.91162109375,
+            1041500.0
+          ],
+          [
+            "2025-08-22 00:00:00+00:00",
+            174.62156677246094,
+            1500300.0
+          ],
+          [
+            "2025-08-25 00:00:00+00:00",
+            171.78627014160156,
+            1564700.0
+          ],
+          [
+            "2025-08-26 00:00:00+00:00",
+            172.55776977539062,
+            1971500.0
+          ],
+          [
+            "2025-08-27 00:00:00+00:00",
+            173.1171112060547,
+            1556100.0
+          ],
+          [
+            "2025-08-28 00:00:00+00:00",
+            173.8500518798828,
+            1024300.0
+          ],
+          [
+            "2025-08-29 00:00:00+00:00",
+            172.81814575195312,
+            899200.0
+          ],
+          [
+            "2025-09-02 00:00:00+00:00",
+            173.37750244140625,
+            1430700.0
+          ],
+          [
+            "2025-09-03 00:00:00+00:00",
+            170.52291870117188,
+            1244000.0
+          ],
+          [
+            "2025-09-04 00:00:00+00:00",
+            173.63787841796875,
+            1171300.0
+          ],
+          [
+            "2025-09-05 00:00:00+00:00",
+            170.99546813964844,
+            1638800.0
+          ],
+          [
+            "2025-09-08 00:00:00+00:00",
+            169.9732208251953,
+            1731200.0
+          ],
+          [
+            "2025-09-09 00:00:00+00:00",
+            168.8352508544922,
+            979900.0
+          ],
+          [
+            "2025-09-10 00:00:00+00:00",
+            172.55776977539062,
+            1202700.0
+          ],
+          [
+            "2025-09-11 00:00:00+00:00",
+            178.1319122314453,
+            1412400.0
+          ],
+          [
+            "2025-09-12 00:00:00+00:00",
+            176.28028869628906,
+            837100.0
+          ],
+          [
+            "2025-09-15 00:00:00+00:00",
+            173.51251220703125,
+            1311900.0
+          ],
+          [
+            "2025-09-16 00:00:00+00:00",
+            173.328125,
+            1120300.0
+          ],
+          [
+            "2025-09-17 00:00:00+00:00",
+            173.599853515625,
+            1175500.0
+          ],
+          [
+            "2025-09-18 00:00:00+00:00",
+            177.9958953857422,
+            1365900.0
+          ],
+          [
+            "2025-09-19 00:00:00+00:00",
+            177.5883026123047,
+            2112000.0
+          ],
+          [
+            "2025-09-22 00:00:00+00:00",
+            176.60818481445312,
+            1053800.0
+          ],
+          [
+            "2025-09-23 00:00:00+00:00",
+            175.7930145263672,
+            1056400.0
+          ],
+          [
+            "2025-09-24 00:00:00+00:00",
+            163.25509643554688,
+            1889200.0
+          ],
+          [
+            "2025-09-25 00:00:00+00:00",
+            158.49029541015625,
+            2265500.0
+          ],
+          [
+            "2025-09-26 00:00:00+00:00",
+            158.22828674316406,
+            2619200.0
+          ],
+          [
+            "2025-09-29 00:00:00+00:00",
+            158.58734130859375,
+            1807600.0
+          ],
+          [
+            "2025-09-30 00:00:00+00:00",
+            155.16171264648438,
+            3514200.0
+          ],
+          [
+            "2025-10-01 00:00:00+00:00",
+            149.58175659179688,
+            2313200.0
+          ],
+          [
+            "2025-10-02 00:00:00+00:00",
+            146.15615844726562,
+            4022500.0
+          ],
+          [
+            "2025-10-03 00:00:00+00:00",
+            147.89321899414062,
+            4091700.0
+          ],
+          [
+            "2025-10-06 00:00:00+00:00",
+            145.66123962402344,
+            2077900.0
+          ],
+          [
+            "2025-10-07 00:00:00+00:00",
+            144.24440002441406,
+            2171300.0
+          ],
+          [
+            "2025-10-08 00:00:00+00:00",
+            145.37010192871094,
+            1927100.0
+          ],
+          [
+            "2025-10-09 00:00:00+00:00",
+            142.90521240234375,
+            1799300.0
+          ],
+          [
+            "2025-10-10 00:00:00+00:00",
+            136.71389770507812,
+            1997500.0
+          ],
+          [
+            "2025-10-13 00:00:00+00:00",
+            139.382568359375,
+            1790000.0
+          ],
+          [
+            "2025-10-14 00:00:00+00:00",
+            145.1566162109375,
+            3758400.0
+          ],
+          [
+            "2025-10-15 00:00:00+00:00",
+            146.6219482421875,
+            2795300.0
+          ],
+          [
+            "2025-10-16 00:00:00+00:00",
+            137.06324768066406,
+            2161000.0
+          ],
+          [
+            "2025-10-17 00:00:00+00:00",
+            137.6746063232422,
+            2644000.0
+          ],
+          [
+            "2025-10-20 00:00:00+00:00",
+            142.27442932128906,
+            1392300.0
+          ],
+          [
+            "2025-10-21 00:00:00+00:00",
+            145.6709442138672,
+            1844600.0
+          ],
+          [
+            "2025-10-22 00:00:00+00:00",
+            145.66123962402344,
+            1510400.0
+          ],
+          [
+            "2025-10-23 00:00:00+00:00",
+            144.04061889648438,
+            1668200.0
+          ],
+          [
+            "2025-10-24 00:00:00+00:00",
+            144.9237060546875,
+            1758400.0
+          ],
+          [
+            "2025-10-27 00:00:00+00:00",
+            146.5054931640625,
+            2031000.0
+          ],
+          [
+            "2025-10-28 00:00:00+00:00",
+            146.46669006347656,
+            1996200.0
+          ],
+          [
+            "2025-10-29 00:00:00+00:00",
+            146.06881713867188,
+            1954100.0
+          ],
+          [
+            "2025-10-30 00:00:00+00:00",
+            142.934326171875,
+            2639400.0
+          ],
+          [
+            "2025-10-31 00:00:00+00:00",
+            144.31234741210938,
+            3410400.0
+          ],
+          [
+            "2025-11-03 00:00:00+00:00",
+            150.90155029296875,
+            4049100.0
+          ],
+          [
+            "2025-11-04 00:00:00+00:00",
+            148.48516845703125,
+            1906800.0
+          ],
+          [
+            "2025-11-05 00:00:00+00:00",
+            148.71807861328125,
+            1530800.0
+          ],
+          [
+            "2025-11-06 00:00:00+00:00",
+            146.78692626953125,
+            1501500.0
+          ],
+          [
+            "2025-11-07 00:00:00+00:00",
+            149.32945251464844,
+            1235200.0
+          ],
+          [
+            "2025-11-10 00:00:00+00:00",
+            148.80540466308594,
+            1415100.0
+          ],
+          [
+            "2025-11-11 00:00:00+00:00",
+            149.31973266601562,
+            1758500.0
+          ],
+          [
+            "2025-11-12 00:00:00+00:00",
+            149.14508056640625,
+            1553800.0
+          ],
+          [
+            "2025-11-13 00:00:00+00:00",
+            144.07943725585938,
+            2070400.0
+          ],
+          [
+            "2025-11-14 00:00:00+00:00",
+            142.0706329345703,
+            1775900.0
+          ],
+          [
+            "2025-11-17 00:00:00+00:00",
+            137.85899353027344,
+            2345100.0
+          ],
+          [
+            "2025-11-18 00:00:00+00:00",
+            138.47036743164062,
+            2298200.0
+          ],
+          [
+            "2025-11-19 00:00:00+00:00",
+            140.87701416015625,
+            1393100.0
+          ],
+          [
+            "2025-11-20 00:00:00+00:00",
+            140.04246520996094,
+            1079100.0
+          ],
+          [
+            "2025-11-21 00:00:00+00:00",
+            143.07017517089844,
+            1424100.0
+          ],
+          [
+            "2025-11-24 00:00:00+00:00",
+            145.6709442138672,
+            1694200.0
+          ],
+          [
+            "2025-11-25 00:00:00+00:00",
+            148.3493194580078,
+            1384600.0
+          ],
+          [
+            "2025-11-26 00:00:00+00:00",
+            149.97964477539062,
+            1103400.0
+          ],
+          [
+            "2025-11-28 00:00:00+00:00",
+            152.2116241455078,
+            753300.0
+          ],
+          [
+            "2025-12-01 00:00:00+00:00",
+            154.79296875,
+            2114500.0
+          ],
+          [
+            "2025-12-02 00:00:00+00:00",
+            155.1908416748047,
+            1565800.0
+          ],
+          [
+            "2025-12-03 00:00:00+00:00",
+            157.25784301757812,
+            1715400.0
+          ],
+          [
+            "2025-12-04 00:00:00+00:00",
+            158.24769592285156,
+            1745100.0
+          ],
+          [
+            "2025-12-05 00:00:00+00:00",
+            160.56700134277344,
+            1349300.0
+          ],
+          [
+            "2025-12-08 00:00:00+00:00",
+            159.40248107910156,
+            2344100.0
+          ],
+          [
+            "2025-12-09 00:00:00+00:00",
+            170.98941040039062,
+            15485800.0
+          ],
+          [
+            "2025-12-10 00:00:00+00:00",
+            173.0078887939453,
+            47940600.0
+          ],
+          [
+            "2025-12-11 00:00:00+00:00",
+            171.63958740234375,
+            4140800.0
+          ],
+          [
+            "2025-12-12 00:00:00+00:00",
+            168.6409454345703,
+            3332300.0
+          ],
+          [
+            "2025-12-15 00:00:00+00:00",
+            167.573486328125,
+            2785100.0
+          ],
+          [
+            "2025-12-16 00:00:00+00:00",
+            168.47601318359375,
+            2884400.0
+          ],
+          [
+            "2025-12-17 00:00:00+00:00",
+            164.58860778808594,
+            3255900.0
+          ],
+          [
+            "2025-12-18 00:00:00+00:00",
+            162.7816619873047,
+            2757100.0
+          ],
+          [
+            "2025-12-19 00:00:00+00:00",
+            161.824462890625,
+            5186100.0
+          ],
+          [
+            "2025-12-22 00:00:00+00:00",
+            166.3271942138672,
+            1942200.0
+          ],
+          [
+            "2025-12-23 00:00:00+00:00",
+            164.8132781982422,
+            1502300.0
+          ],
+          [
+            "2025-12-24 00:00:00+00:00",
+            165.1258087158203,
+            644600.0
+          ],
+          [
+            "2025-12-26 00:00:00+00:00",
+            164.80348205566406,
+            765600.0
+          ],
+          [
+            "2025-12-29 00:00:00+00:00",
+            165.1160430908203,
+            1648100.0
+          ],
+          [
+            "2025-12-30 00:00:00+00:00",
+            159.4314727783203,
+            1852700.0
+          ],
+          [
+            "2025-12-31 00:00:00+00:00",
+            157.8687286376953,
+            1247300.0
+          ],
+          [
+            "2026-01-02 00:00:00+00:00",
+            162.4593505859375,
+            1310000.0
+          ],
+          [
+            "2026-01-05 00:00:00+00:00",
+            168.04623413085938,
+            1761500.0
+          ],
+          [
+            "2026-01-06 00:00:00+00:00",
+            171.90431213378906,
+            1641600.0
+          ],
+          [
+            "2026-01-07 00:00:00+00:00",
+            166.8253173828125,
+            1921700.0
+          ],
+          [
+            "2026-01-08 00:00:00+00:00",
+            171.66014099121094,
+            1746000.0
+          ],
+          [
+            "2026-01-09 00:00:00+00:00",
+            171.81640625,
+            1234700.0
+          ],
+          [
+            "2026-01-12 00:00:00+00:00",
+            170.23410034179688,
+            1321300.0
+          ],
+          [
+            "2026-01-13 00:00:00+00:00",
+            165.27232360839844,
+            2580300.0
+          ],
+          [
+            "2026-01-14 00:00:00+00:00",
+            165.96578979492188,
+            1968700.0
+          ],
+          [
+            "2026-01-15 00:00:00+00:00",
+            165.6239471435547,
+            1663900.0
+          ],
+          [
+            "2026-01-16 00:00:00+00:00",
+            165.7411651611328,
+            1504200.0
+          ],
+          [
+            "2026-01-20 00:00:00+00:00",
+            159.3631134033203,
+            1835700.0
+          ],
+          [
+            "2026-01-21 00:00:00+00:00",
+            158.56219482421875,
+            2469700.0
+          ],
+          [
+            "2026-01-22 00:00:00+00:00",
+            157.76129150390625,
+            1893200.0
+          ],
+          [
+            "2026-01-23 00:00:00+00:00",
+            152.26229858398438,
+            1836400.0
+          ],
+          [
+            "2026-01-26 00:00:00+00:00",
+            146.20657348632812,
+            3796900.0
+          ],
+          [
+            "2026-01-27 00:00:00+00:00",
+            145.90379333496094,
+            3832100.0
+          ],
+          [
+            "2026-01-28 00:00:00+00:00",
+            146.3140106201172,
+            1528200.0
+          ],
+          [
+            "2026-01-29 00:00:00+00:00",
+            148.1600341796875,
+            3197100.0
+          ],
+          [
+            "2026-01-30 00:00:00+00:00",
+            146.18704223632812,
+            2996900.0
+          ],
+          [
+            "2026-02-02 00:00:00+00:00",
+            143.06150817871094,
+            3816300.0
+          ],
+          [
+            "2026-02-03 00:00:00+00:00",
+            128.5375518798828,
+            8758100.0
+          ],
+          [
+            "2026-02-04 00:00:00+00:00",
+            134.02676391601562,
+            7951300.0
+          ],
+          [
+            "2026-02-05 00:00:00+00:00",
+            119.03397369384766,
+            10939100.0
+          ],
+          [
+            "2026-02-06 00:00:00+00:00",
+            127.42407989501953,
+            6751500.0
+          ],
+          [
+            "2026-02-09 00:00:00+00:00",
+            134.05606079101562,
+            3820900.0
+          ],
+          [
+            "2026-02-10 00:00:00+00:00",
+            133.8021240234375,
+            3680000.0
+          ],
+          [
+            "2026-02-11 00:00:00+00:00",
+            134.18304443359375,
+            3603700.0
+          ],
+          [
+            "2026-02-12 00:00:00+00:00",
+            130.82310485839844,
+            3680400.0
+          ],
+          [
+            "2026-02-13 00:00:00+00:00",
+            130.76449584960938,
+            2340300.0
+          ],
+          [
+            "2026-02-17 00:00:00+00:00",
+            127.375244140625,
+            3593500.0
+          ],
+          [
+            "2026-02-18 00:00:00+00:00",
+            130.85240173339844,
+            1930700.0
+          ],
+          [
+            "2026-02-19 00:00:00+00:00",
+            126.82827758789062,
+            5059700.0
+          ],
+          [
+            "2026-02-20 00:00:00+00:00",
+            120.29395294189453,
+            5807700.0
+          ],
+          [
+            "2026-02-23 00:00:00+00:00",
+            111.90384674072266,
+            7509900.0
+          ],
+          [
+            "2026-02-24 00:00:00+00:00",
+            114.43357849121094,
+            3853100.0
+          ],
+          [
+            "2026-02-25 00:00:00+00:00",
+            116.40657043457031,
+            4177600.0
+          ],
+          [
+            "2026-02-26 00:00:00+00:00",
+            115.33216857910156,
+            3808100.0
+          ],
+          [
+            "2026-02-27 00:00:00+00:00",
+            109.40342712402344,
+            6042500.0
+          ],
+          [
+            "2026-03-02 00:00:00+00:00",
+            110.72200775146484,
+            3317300.0
+          ],
+          [
+            "2026-03-03 00:00:00+00:00",
+            110.02852630615234,
+            3564900.0
+          ],
+          [
+            "2026-03-04 00:00:00+00:00",
+            113.50568389892578,
+            2949800.0
+          ],
+          [
+            "2026-03-05 00:00:00+00:00",
+            114.31636810302734,
+            2540700.0
+          ],
+          [
+            "2026-03-06 00:00:00+00:00",
+            107.44996643066406,
+            4737500.0
+          ],
+          [
+            "2026-03-09 00:00:00+00:00",
+            106.31696319580078,
+            3764200.0
+          ],
+          [
+            "2026-03-10 00:00:00+00:00",
+            106.15091705322266,
+            3688200.0
+          ],
+          [
+            "2026-03-11 00:00:00+00:00",
+            101.0523910522461,
+            5268700.0
+          ],
+          [
+            "2026-03-12 00:00:00+00:00",
+            94.25435638427734,
+            8985900.0
+          ],
+          [
+            "2026-03-13 00:00:00+00:00",
+            99.39195251464844,
+            5194900.0
+          ],
+          [
+            "2026-03-16 00:00:00+00:00",
+            98.1710433959961,
+            4379200.0
+          ],
+          [
+            "2026-03-17 00:00:00+00:00",
+            104.6161117553711,
+            5535300.0
+          ],
+          [
+            "2026-03-18 00:00:00+00:00",
+            104.91311645507812,
+            4215800.0
+          ],
+          [
+            "2026-03-19 00:00:00+00:00",
+            106.91297149658203,
+            3459400.0
+          ],
+          [
+            "2026-03-20 00:00:00+00:00",
+            104.81411743164062,
+            11591500.0
+          ],
+          [
+            "2026-03-23 00:00:00+00:00",
+            106.05165100097656,
+            3407900.0
+          ],
+          [
+            "2026-03-24 00:00:00+00:00",
+            104.982421875,
+            4051700.0
+          ],
+          [
+            "2026-03-25 00:00:00+00:00",
+            105.43783569335938,
+            2150100.0
+          ],
+          [
+            "2026-03-26 00:00:00+00:00",
+            106.84366607666016,
+            2295700.0
+          ],
+          [
+            "2026-03-27 00:00:00+00:00",
+            105.22002410888672,
+            3383400.0
+          ],
+          [
+            "2026-03-30 00:00:00+00:00",
+            106.58626556396484,
+            2534200.0
+          ],
+          [
+            "2026-03-31 00:00:00+00:00",
+            108.01190185546875,
+            2986800.0
+          ],
+          [
+            "2026-04-01 00:00:00+00:00",
+            104.74481964111328,
+            2938400.0
+          ],
+          [
+            "2026-04-02 00:00:00+00:00",
+            101.4084243774414,
+            5074300.0
+          ],
+          [
+            "2026-04-06 00:00:00+00:00",
+            101.80443572998047,
+            2171900.0
+          ],
+          [
+            "2026-04-07 00:00:00+00:00",
+            101.2203140258789,
+            3152800.0
+          ],
+          [
+            "2026-04-08 00:00:00+00:00",
+            103.78449249267578,
+            6225100.0
+          ],
+          [
+            "2026-04-09 00:00:00+00:00",
+            103.75479125976562,
+            2625100.0
+          ],
+          [
+            "2026-04-10 00:00:00+00:00",
+            99.45806884765625,
+            4432700.0
+          ],
+          [
+            "2026-04-13 00:00:00+00:00",
+            105.61603546142578,
+            3963700.0
+          ],
+          [
+            "2026-04-14 00:00:00+00:00",
+            111.48689270019531,
+            4081200.0
+          ],
+          [
+            "2026-04-15 00:00:00+00:00",
+            118.09037017822266,
+            5099000.0
+          ],
+          [
+            "2026-04-16 00:00:00+00:00",
+            115.0608901977539,
+            3718300.0
+          ],
+          [
+            "2026-04-17 00:00:00+00:00",
+            116.60533142089844,
+            4030700.0
+          ],
+          [
+            "2026-04-20 00:00:00+00:00",
+            117.58545684814453,
+            1853400.0
+          ],
+          [
+            "2026-04-21 00:00:00+00:00",
+            118.64478302001953,
+            2454500.0
+          ],
+          [
+            "2026-04-22 00:00:00+00:00",
+            119.84272003173828,
+            2200700.0
+          ],
+          [
+            "2026-04-23 00:00:00+00:00",
+            113.63525390625,
+            2997000.0
+          ],
+          [
+            "2026-04-24 00:00:00+00:00",
+            114.08076477050781,
+            1615500.0
+          ],
+          [
+            "2026-04-27 00:00:00+00:00",
+            111.0611801147461,
+            3118700.0
+          ],
+          [
+            "2026-04-28 00:00:00+00:00",
+            111.88290405273438,
+            2999000.0
+          ],
+          [
+            "2026-04-29 00:00:00+00:00",
+            109.75434875488281,
+            2434700.0
+          ],
+          [
+            "2026-04-30 00:00:00+00:00",
+            116.2291259765625,
+            4818400.0
+          ],
+          [
+            "2026-05-01 00:00:00+00:00",
+            117.81316375732422,
+            4531600.0
+          ],
+          [
+            "2026-05-04 00:00:00+00:00",
+            118.78339385986328,
+            3384200.0
+          ],
+          [
+            "2026-05-05 00:00:00+00:00",
+            121.7336654663086,
+            3435600.0
+          ],
+          [
+            "2026-05-06 00:00:00+00:00",
+            122.62469482421875,
+            3057200.0
+          ],
+          [
+            "2026-05-07 00:00:00+00:00",
+            121.9217758178711,
+            3267600.0
+          ],
+          [
+            "2026-05-08 00:00:00+00:00",
+            124.99085998535156,
+            4015300.0
+          ],
+          [
+            "2026-05-11 00:00:00+00:00",
+            123.36721801757812,
+            3767300.0
+          ],
+          [
+            "2026-05-12 00:00:00+00:00",
+            122.42668914794922,
+            2732400.0
+          ],
+          [
+            "2026-05-13 00:00:00+00:00",
+            121.95147705078125,
+            2765500.0
+          ],
+          [
+            "2026-05-14 00:00:00+00:00",
+            127.24811553955078,
+            2394500.0
+          ],
+          [
+            "2026-05-15 00:00:00+00:00",
+            122.17918395996094,
+            2895300.0
+          ],
+          [
+            "2026-05-18 00:00:00+00:00",
+            122.4662857055664,
+            1560900.0
+          ],
+          [
+            "2026-05-19 00:00:00+00:00",
+            119.9021224975586,
+            2065900.0
+          ],
+          [
+            "2026-05-20 00:00:00+00:00",
+            120.89215087890625,
+            1864600.0
+          ],
+          [
+            "2026-05-21 00:00:00+00:00",
+            122.7533950805664,
+            1558400.0
+          ],
+          [
+            "2026-05-22 00:00:00+00:00",
+            123.1692123413086,
+            1751000.0
+          ],
+          [
+            "2026-05-26 00:00:00+00:00",
+            124.03053283691406,
+            2133500.0
+          ],
+          [
+            "2026-05-27 00:00:00+00:00",
+            125.31756591796875,
+            2285200.0
+          ],
+          [
+            "2026-05-28 00:00:00+00:00",
+            124.74334716796875,
+            2318200.0
+          ],
+          [
+            "2026-05-29 00:00:00+00:00",
+            127.21841430664062,
+            4281200.0
+          ],
+          [
+            "2026-06-01 00:00:00+00:00",
+            127.4560317993164,
+            3193200.0
+          ],
+          [
+            "2026-06-02 00:00:00+00:00",
+            127.0006103515625,
+            3552700.0
+          ],
+          [
+            "2026-06-03 00:00:00+00:00",
+            121.87226867675781,
+            3704900.0
+          ],
+          [
+            "2026-06-04 00:00:00+00:00",
+            129.19847106933594,
+            2127100.0
+          ],
+          [
+            "2026-06-05 00:00:00+00:00",
+            124.39684295654297,
+            1850500.0
+          ],
+          [
+            "2026-06-08 00:00:00+00:00",
+            125.60467529296875,
+            1828800.0
+          ],
+          [
+            "2026-06-09 00:00:00+00:00",
+            129.307373046875,
+            2100700.0
+          ],
+          [
+            "2026-06-10 00:00:00+00:00",
+            127.03031158447266,
+            1592300.0
+          ],
+          [
+            "2026-06-11 00:00:00+00:00",
+            131.49534606933594,
+            1877100.0
+          ],
+          [
+            "2026-06-12 00:00:00+00:00",
+            133.55458068847656,
+            1500800.0
+          ],
+          [
+            "2026-06-15 00:00:00+00:00",
+            134.00999450683594,
+            2319700.0
+          ],
+          [
+            "2026-06-16 00:00:00+00:00",
+            134.97999572753906,
+            2306100.0
+          ],
+          [
+            "2026-06-17 00:00:00+00:00",
+            128.35000610351562,
+            2554500.0
+          ],
+          [
+            "2026-06-18 00:00:00+00:00",
+            129.33999633789062,
+            4523700.0
+          ],
+          [
+            "2026-06-22 00:00:00+00:00",
+            125.9000015258789,
+            2257900.0
+          ],
+          [
+            "2026-06-23 00:00:00+00:00",
+            120.77999877929688,
+            3486100.0
+          ],
+          [
+            "2026-06-24 00:00:00+00:00",
+            113.87000274658203,
+            3864400.0
+          ],
+          [
+            "2026-06-25 00:00:00+00:00",
+            112.47000122070312,
+            2515700.0
+          ],
+          [
+            "2026-06-26 00:00:00+00:00",
+            109.12999725341797,
+            4221000.0
+          ],
+          [
+            "2026-06-29 00:00:00+00:00",
+            107.5999984741211,
+            3261800.0
+          ],
+          [
+            "2026-06-30 00:00:00+00:00",
+            111.30999755859375,
+            3043600.0
+          ],
+          [
+            "2026-07-01 00:00:00+00:00",
+            113.62999725341797,
+            2432600.0
+          ],
+          [
+            "2026-07-02 00:00:00+00:00",
+            116.9000015258789,
+            1638600.0
+          ],
+          [
+            "2026-07-06 00:00:00+00:00",
+            121.83000183105469,
+            2109600.0
+          ],
+          [
+            "2026-07-07 00:00:00+00:00",
+            120.69999694824219,
+            1633100.0
+          ],
+          [
+            "2026-07-08 00:00:00+00:00",
+            118.0,
+            1664400.0
+          ],
+          [
+            "2026-07-09 00:00:00+00:00",
+            121.66000366210938,
+            1670700.0
+          ],
+          [
+            "2026-07-10 00:00:00+00:00",
+            121.80999755859375,
+            1087100.0
+          ],
+          [
+            "2026-07-13 00:00:00+00:00",
+            120.44999694824219,
+            2182500.0
+          ],
+          [
+            "2026-07-14 00:00:00+00:00",
+            120.30000305175781,
+            1671600.0
+          ],
+          [
+            "2026-07-15 00:00:00+00:00",
+            124.79000091552734,
+            2458900.0
+          ],
+          [
+            "2026-07-16 00:00:00+00:00",
+            125.43000030517578,
+            1195300.0
+          ],
+          [
+            "2026-07-17 00:00:00+00:00",
+            125.68000030517578,
+            1945800.0
+          ],
+          [
+            "2026-07-20 00:00:00+00:00",
+            120.00186920166016,
+            1953200.0
+          ],
+          [
+            "2026-07-21 00:00:00+00:00",
+            119.51699829101562,
+            1238300.0
+          ],
+          [
+            "2026-07-22 00:00:00+00:00",
+            118.31964874267578,
+            1307800.0
+          ],
+          [
+            "2026-07-23 00:00:00+00:00",
+            120.01177215576172,
+            2015800.0
+          ],
+          [
+            "2026-07-24 00:00:00+00:00",
+            125.18708038330078,
+            1818200.0
+          ],
+          [
+            "2026-07-27 00:00:00+00:00",
+            126.42401123046875,
+            3179300.0
+          ],
+          [
+            "2026-07-28 00:00:00+00:00",
+            126.56254577636719,
+            2619400.0
+          ],
+          [
+            "2026-07-29 00:00:00+00:00",
+            123.29705047607422,
+            2745200.0
+          ],
+          [
+            "2026-07-30 00:00:00+00:00",
+            122.82207489013672,
+            2937400.0
+          ],
+          [
+            "2026-07-31 00:00:00+00:00",
+            126.75055694580078,
+            4178600.0
+          ],
+          [
+            "2026-08-03 00:00:00+00:00",
+            137.1209716796875,
+            3538200.0
+          ],
+          [
+            "2026-08-04 00:00:00+00:00",
+            141.41558837890625,
+            3459900.0
+          ],
+          [
+            "2026-08-05 00:00:00+00:00",
+            138.3084259033203,
+            2449000.0
+          ],
+          [
+            "2026-08-06 00:00:00+00:00",
+            136.7251434326172,
+            1393800.0
+          ],
+          [
+            "2026-08-07 00:00:00+00:00",
+            135.41896057128906,
+            1402500.0
+          ],
+          [
+            "2026-08-10 00:00:00+00:00",
+            136.22048950195312,
+            1725800.0
+          ],
+          [
+            "2026-08-11 00:00:00+00:00",
+            141.61349487304688,
+            3383000.0
+          ],
+          [
+            "2026-08-12 00:00:00+00:00",
+            140.8614501953125,
+            2024300.0
+          ],
+          [
+            "2026-08-13 00:00:00+00:00",
+            147.88719177246094,
+            3195400.0
+          ],
+          [
+            "2026-08-14 00:00:00+00:00",
+            142.51397705078125,
+            2021300.0
+          ],
+          [
+            "2026-08-17 00:00:00+00:00",
+            139.86199951171875,
+            1672100.0
+          ],
+          [
+            "2026-08-18 00:00:00+00:00",
+            138.8427734375,
+            1475300.0
+          ],
+          [
+            "2026-08-19 00:00:00+00:00",
+            141.60360717773438,
+            2308300.0
+          ],
+          [
+            "2026-08-20 00:00:00+00:00",
+            138.76361083984375,
+            2169500.0
+          ],
+          [
+            "2026-08-21 00:00:00+00:00",
+            139.77294921875,
+            1422700.0
+          ],
+          [
+            "2026-08-24 00:00:00+00:00",
+            138.5458984375,
+            1573100.0
+          ],
+          [
+            "2026-08-25 00:00:00+00:00",
+            141.26715087890625,
+            2863100.0
+          ],
+          [
+            "2026-08-26 00:00:00+00:00",
+            140.49530029296875,
+            1686400.0
+          ],
+          [
+            "2026-08-27 00:00:00+00:00",
+            140.9208221435547,
+            1985100.0
+          ],
+          [
+            "2026-08-28 00:00:00+00:00",
+            141.03955078125,
+            1097000.0
+          ],
+          [
+            "2026-08-31 00:00:00+00:00",
+            141.67286682128906,
+            1873300.0
+          ],
+          [
+            "2026-09-01 00:00:00+00:00",
+            137.63552856445312,
+            1529400.0
+          ],
+          [
+            "2026-09-02 00:00:00+00:00",
+            136.61630249023438,
+            1534700.0
+          ],
+          [
+            "2026-09-03 00:00:00+00:00",
+            140.04013061523438,
+            3172900.0
+          ],
+          [
+            "2026-09-04 00:00:00+00:00",
+            138.68443298339844,
+            1013800.0
+          ],
+          [
+            "2026-09-08 00:00:00+00:00",
+            137.17044067382812,
+            1836000.0
+          ],
+          [
+            "2026-09-09 00:00:00+00:00",
+            132.9648895263672,
+            2301700.0
+          ],
+          [
+            "2026-09-10 00:00:00+00:00",
+            129.26400756835938,
+            2679800.0
+          ],
+          [
+            "2026-09-11 00:00:00+00:00",
+            130.263427734375,
+            1354400.0
+          ],
+          [
+            "2026-09-14 00:00:00+00:00",
+            130.1446990966797,
+            1740300.0
+          ],
+          [
+            "2026-09-15 00:00:00+00:00",
+            127.75,
+            1352300.0
+          ],
+          [
+            "2026-09-16 00:00:00+00:00",
+            124.20999908447266,
+            1803100.0
+          ],
+          [
+            "2026-09-17 00:00:00+00:00",
+            125.31999969482422,
+            1551500.0
+          ],
+          [
+            "2026-09-18 00:00:00+00:00",
+            123.80000305175781,
+            7911900.0
+          ],
+          [
+            "2026-09-21 00:00:00+00:00",
+            126.66999816894531,
+            1615300.0
+          ],
+          [
+            "2026-09-22 00:00:00+00:00",
+            124.72000122070312,
+            2370000.0
+          ],
+          [
+            "2026-09-23 00:00:00+00:00",
+            121.4800033569336,
+            1637400.0
+          ],
+          [
+            "2026-09-24 00:00:00+00:00",
+            120.11000061035156,
+            3149000.0
+          ],
+          [
+            "2026-09-25 00:00:00+00:00",
+            122.01000213623047,
+            1575600.0
+          ],
+          [
+            "2026-09-28 00:00:00+00:00",
+            118.33999633789062,
+            2455400.0
+          ],
+          [
+            "2026-09-29 00:00:00+00:00",
+            118.97000122070312,
+            2167600.0
+          ],
+          [
+            "2026-09-30 00:00:00+00:00",
+            116.16999816894531,
+            2079700.0
+          ],
+          [
+            "2026-10-01 00:00:00+00:00",
+            116.56999969482422,
+            2330000.0
+          ],
+          [
+            "2026-10-02 00:00:00+00:00",
+            117.55000305175781,
+            2594000.0
+          ],
+          [
+            "2026-10-05 00:00:00+00:00",
+            117.12999725341797,
+            1688600.0
+          ],
+          [
+            "2026-10-06 00:00:00+00:00",
+            117.73999786376953,
+            1972200.0
+          ],
+          [
+            "2026-10-07 00:00:00+00:00",
+            115.75,
+            1457800.0
+          ],
+          [
+            "2026-10-08 00:00:00+00:00",
+            116.26000213623047,
+            2742600.0
+          ],
+          [
+            "2026-10-09 00:00:00+00:00",
+            117.22000122070312,
+            1824200.0
+          ],
+          [
+            "2026-10-12 00:00:00+00:00",
+            118.1500015258789,
+            1404800.0
+          ],
+          [
+            "2026-10-13 00:00:00+00:00",
+            115.62000274658203,
+            2665700.0
+          ],
+          [
+            "2026-10-14 00:00:00+00:00",
+            112.48999786376953,
+            2533100.0
+          ],
+          [
+            "2026-10-15 00:00:00+00:00",
+            114.02999877929688,
+            3441400.0
+          ],
+          [
+            "2026-10-16 00:00:00+00:00",
+            112.2699966430664,
+            2471300.0
+          ],
+          [
+            "2026-10-19 00:00:00+00:00",
+            113.24500274658203,
+            1432454.0
+          ]
+        ]
+      }
+    },
+    "decision": "STOP remains: exact ALL/ARES inputs unverified; no change to pre-registered timing or order filter",
+    "backup_check": {
+      "checked_at": "2026-10-19 23:19:50.891024+00:00",
+      "sources_checked": [
+        "/home/flynn/borgmatic_config.yaml (selected non-secret keys)",
+        "/home/flynn/ggtraderdb/docker-compose.yaml (volume mapping only)",
+        "/home/flynn/ggTrader/backups",
+        "/home/flynn/backups",
+        "/home/flynn/.backups",
+        "/media/thesix/backups/disaster-recovery",
+        "/home/flynn/backup-tools/duplicati/config/Duplicati-server.sqlite (read-only source list)",
+        "/media/thesix/backups/duplicati",
+        "crontab backup job paths",
+        "pg_settings archive_mode and wal_level"
+      ],
+      "database_volume": "ggtrader_pgdata:/var/lib/postgresql/data",
+      "borg_excludes": [
+        "/var/lib/docker/volumes/*",
+        "/home/flynn/ggtraderdb/*"
+      ],
+      "borg_database_dump_hooks": false,
+      "local_sql_dump_found": {
+        "path": "backups/ohlcv_yf_preshift_20260820.sql.gz",
+        "predates_target_trades": true
+      },
+      "postgres_archive_mode": "off",
+      "postgres_wal_level": "replica",
+      "duplicati_configured_sources": 0,
+      "duplicati_backup_directory_entries": 0,
+      "conclusion": "No decision-time October database backup found in the inspected configured backup paths. No restoration attempted. This was a bounded search, not proof that no other archive exists."
+    }
+  }
+}

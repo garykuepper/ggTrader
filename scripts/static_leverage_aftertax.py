@@ -186,12 +186,19 @@ class Book:
         self.cash += raised
         return raised
 
-    def distributions(self, s: str, per_share: float, px: float, date: pd.Timestamp) -> None:
+    def distributions(
+        self, s: str, per_share: float, px: float, date: pd.Timestamp, taxed_as: str = "lt"
+    ) -> None:
+        if taxed_as not in ("lt", "st"):
+            raise ValueError(f"Invalid tax label: {taxed_as!r}")
         q = self.qty(s)
         if q <= 0 or per_share <= 0:
             return
         amt = q * per_share
-        self.year_lt += amt  # qualified dividends / LT cap-gain distributions at the LT rate
+        if taxed_as == "st":
+            self.year_st += amt
+        else:
+            self.year_lt += amt  # qualified dividends / LT cap-gain distributions at the LT rate
         self.cash += amt
         self.buy(s, amt, px, date)  # reinvest
 
@@ -245,7 +252,12 @@ def run(
     rebalance: str = "band",  # band | daily | never
     rider_a24: bool = False,
     initial: float = 100_000.0,
+    dist_tax: dict[str, str] | None = None,
 ) -> dict:
+    if dist_tax:
+        for s, treatment in dist_tax.items():
+            if treatment not in ("lt", "st"):
+                raise ValueError(f"Invalid tax label for {s}: {treatment!r}")
     idx = close.loc[start:end].index
     book = Book(st, lt, wash)
     px0 = close.loc[idx[0]]
@@ -267,7 +279,8 @@ def run(
             pending = None
         for s in ("SPY", "SSO", "BIL"):
             if dist.at[t, s] > 0:
-                book.distributions(s, dist.at[t, s], px[s], t)
+                taxed_as = (dist_tax or {}).get(s, "lt")
+                book.distributions(s, dist.at[t, s], px[s], t, taxed_as=taxed_as)
         if t.year != last_year:
             book.year_end()
             last_year = t.year
@@ -364,11 +377,25 @@ def main() -> None:
     p.add_argument("--main-only", action="store_true", help="skip holdout/stitched windows")
     p.add_argument("--arms", default="", help="comma list of arm names to run (default all)")
     p.add_argument("--out", default=str(OUT_JSON))
+    p.add_argument(
+        "--sso-dist-tax",
+        choices=["lt", "st"],
+        default="lt",
+        help="tax treatment of SSO distributions (lt or st, default lt)",
+    )
+    p.add_argument(
+        "--bil-dist-tax",
+        choices=["lt", "st"],
+        default="lt",
+        help="tax treatment of BIL distributions (lt or st, default lt)",
+    )
     a = p.parse_args()
 
     close, dist, calib = load_prices(a.spread, a.rf_offset)
     close, dist = close.loc[: a.end], dist.loc[: a.end]
     print("synthetic calibration:", calib)
+
+    dist_tax = {"SSO": a.sso_dist_tax, "BIL": a.bil_dist_tax}
 
     arms = {
         "SPY buy-and-hold": dict(w_sso=0.0, band=9.9, rebalance="never"),
@@ -395,6 +422,7 @@ def main() -> None:
         "calibration": calib,
         "brackets": BRACKETS,
         "cost_bps_per_side": COST_BPS,
+        "dist_tax": dist_tax,
         "windows": {},
     }
     navs_full: dict[str, pd.Series] = {}
@@ -404,7 +432,17 @@ def main() -> None:
             row = {}
             for bname, (st, lt) in BRACKETS.items():
                 for wash in (False, True):
-                    res = run(close, dist, s, e, st=st, lt=lt, wash=wash, **kw)
+                    res = run(
+                        close,
+                        dist,
+                        s,
+                        e,
+                        st=st,
+                        lt=lt,
+                        wash=wash,
+                        dist_tax=dist_tax,
+                        **kw,
+                    )
                     if wname == "full_1993_2026_stitched" and bname == "24/15" and not wash:
                         navs_full[arm] = res.pop("_nav")
                     else:

@@ -125,3 +125,15 @@ of the rule. Treat that point as **unvalidated**: it is well outside the
 tested range, and linear scaling breaks down there (on busy days it implies
 more than 100% invested). What it does suggest is that the live size could be
 the one that fails, which is why Rank 1 comes before any sizing decision.
+
+
+## Correction (2026-10-19)
+
+KEEP tested walk-forward-selected ensemble parameters and same-close fills,
+not the live fixed-default portfolio and its prior-completed-bar decision model.
+The [production-rule audit](2026-10-19-production-replica-audit-nogo.md)
+supersedes this KEEP inference for that specified daily-bar model: NO-GO on the
+primary return/significance bars. Exact historical live replication remains
+UNVERIFIED, and the stopped older holdout remains INCONCLUSIVE. No live change
+follows automatically. The body above is preserved as the original record;
+its old gate counts are not valid evidence of corrected DSR validation.
