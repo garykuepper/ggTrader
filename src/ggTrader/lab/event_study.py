@@ -50,6 +50,26 @@ def split_event_returns(returns: pd.DataFrame, mask: pd.DataFrame) -> tuple[pd.S
     return event_returns, nonevent_returns
 
 
+def split_event_returns_by_date(
+    returns: pd.DataFrame, mask: pd.DataFrame
+) -> tuple[pd.Series, pd.Series]:
+    """Cluster returns by date into (event, non-event) daily mean series.
+
+    - Event series: one value per date on which at least one symbol is in
+      position, equal to the mean return of the in-position symbols.
+    - Non-event series: one value per date on which no symbol is in position,
+      equal to the mean return of all symbols.
+    - NaN returns are dropped before averaging. Dates with no valid returns
+      are dropped.
+    """
+    mask = mask.reindex_like(returns).fillna(False).astype(bool)
+    has_event = mask.any(axis=1)
+
+    event_returns = returns.where(mask).mean(axis=1, skipna=True).dropna()
+    nonevent_returns = returns.loc[~has_event].mean(axis=1, skipna=True).dropna()
+    return event_returns, nonevent_returns
+
+
 class EventStudyResult(NamedTuple):
     n_event: int
     n_nonevent: int
