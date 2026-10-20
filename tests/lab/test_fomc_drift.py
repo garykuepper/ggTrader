@@ -6,7 +6,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from ggTrader.lab.strategies.fomc_drift import FOMC_TREASURY_UNIVERSE, FomcDriftStrategy
+from ggTrader.lab.event_study import in_position_mask, split_event_returns
+from ggTrader.lab.strategies.fomc_drift import (
+    FOMC_TREASURY_UNIVERSE,
+    FomcDriftStrategy,
+    _event_signals,
+)
 from ggTrader.lab.strategy import LabConfig, SignalTargets
 
 
@@ -155,3 +160,18 @@ class TestFomcDriftSelect:
         strat = FomcDriftStrategy(LabConfig(min_history_bars=1), _events_loader=lambda: [])
         plan = strat.select(data.index[-1], data, eligible=[])
         assert {s["symbol"] for s in plan} == set(FOMC_TREASURY_UNIVERSE)
+
+
+def test_event_signal_session_semantics():
+    idx = pd.bdate_range("2024-01-01", periods=10, tz="UTC") + pd.Timedelta("16:00:00")
+    event = idx[5].normalize()
+    signals = _event_signals(idx, ["TLT"], [event], entry_offset_days=1, hold_days=0)
+    assert bool(signals.entries.loc[idx[4], "TLT"])
+    assert bool(signals.exits.loc[idx[5], "TLT"])
+
+    close = pd.DataFrame({"TLT": [100.0] * 10}, index=idx)
+    returns = close.pct_change()
+    mask = in_position_mask(signals.entries, signals.exits)
+    event_returns, _ = split_event_returns(returns, mask)
+    # in_position_mask covers exactly the day-5 return
+    assert list(event_returns.index.get_level_values(0)) == [idx[5]]

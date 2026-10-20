@@ -2,6 +2,14 @@
 
 ## 2026-10-19
 
+- **Lab event-study timing correction:** close-to-close event samples now exclude
+  the entry session's return, which was earned before buying, and include the
+  exit session's return. The registered FOMC semantics test exposed this error;
+  a non-flat price regression also checks sample counts and means. Prior event
+  statistics require recomputation. The owner authorized the correction in
+  `research/briefs/2026-10-19-production-replica-fomc-timing-amendment.md`;
+  no live code or configuration changed.
+
 - **Lab DSR correction:** the gate compared annualized Sharpe against per-day
   thresholds and used the wrong kurtosis term, so it passed almost everything.
   An annual Sharpe of 1.0 over 252 days with 48 trials scored 1.0 instead of

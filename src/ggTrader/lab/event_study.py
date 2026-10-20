@@ -32,19 +32,12 @@ from scipy import stats
 
 
 def in_position_mask(entries: pd.DataFrame, exits: pd.DataFrame) -> pd.DataFrame:
-    """Bool (time x symbol): True from an entry bar through its matching
-    exit bar, inclusive. A diagnostic approximation of vbt's own fill
-    timing (not bit-perfect with next-bar execution mechanics) -- good
-    enough for "was a position notionally held on this bar," which is all
-    this supplementary test needs. Assumes well-formed, non-overlapping
-    entry/exit pairs per symbol, as every strategy in this lab produces.
+    """Mask close-to-close returns earned after entry through exit, inclusive.
+
+    Signals fill at the session close, so the entry session's return precedes
+    the purchase. Assumes well-formed, non-overlapping entry/exit pairs per symbol.
     """
-    # The exit bar itself still counts as held (inclusive) -- the position
-    # only actually closes starting the bar after the exit signal, so the
-    # closing decrement is shifted forward by one bar before accumulating.
-    exit_close = exits.astype(int).shift(1).fillna(0).astype(int)
-    signal = entries.astype(int) - exit_close
-    state = signal.cumsum()
+    state = (entries.astype(int) - exits.astype(int)).cumsum().shift(1, fill_value=0)
     return state.clip(lower=0, upper=1).astype(bool)
 
 

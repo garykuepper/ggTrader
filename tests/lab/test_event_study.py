@@ -32,16 +32,16 @@ class TestInPositionMask:
         entries.index = idx
         exits.index = idx
         mask = in_position_mask(entries, exits)
-        assert list(mask["A"]) == [False, False, False, True, True, True, True, True, True, True]
+        assert list(mask["A"]) == [False, False, False, False, True, True, True, True, True, True]
 
-    def test_entry_then_exit_holds_only_in_between_inclusive(self):
+    def test_entry_close_excluded_and_exit_close_included(self):
         idx = pd.RangeIndex(10)
         entries = pd.DataFrame({"A": [False] * 10}, index=idx)
         exits = pd.DataFrame({"A": [False] * 10}, index=idx)
         entries.loc[2, "A"] = True
         exits.loc[5, "A"] = True
         mask = in_position_mask(entries, exits)
-        expected = [False, False, True, True, True, True, False, False, False, False]
+        expected = [False, False, False, True, True, True, False, False, False, False]
         assert list(mask["A"]) == expected
 
     def test_two_non_overlapping_events(self):
@@ -53,7 +53,7 @@ class TestInPositionMask:
         entries.loc[6, "A"] = True
         exits.loc[7, "A"] = True
         mask = in_position_mask(entries, exits)
-        expected = [False, True, True, False, False, False, True, True, False, False]
+        expected = [False, False, True, False, False, False, False, True, False, False]
         assert list(mask["A"]) == expected
 
     def test_no_entries_never_in_position(self):
@@ -118,6 +118,20 @@ class TestEventStudyTest:
 
 
 class TestRunEventStudyFromSignals:
+    def test_excludes_price_jumps_before_entry_close(self):
+        close = pd.DataFrame({"A": [100.0, 200.0, 220.0, 220.0, 440.0, 528.0, 528.0]})
+        entries = pd.DataFrame(False, index=close.index, columns=close.columns)
+        exits = entries.copy()
+        entries.loc[[1, 4], "A"] = True
+        exits.loc[[2, 5], "A"] = True
+
+        result = run_event_study_from_signals(close, entries, exits)
+
+        assert result.n_event == 2
+        assert result.n_nonevent == 4
+        assert result.mean_event_return == pytest.approx(0.15)
+        assert result.mean_nonevent_return == pytest.approx(0.5)
+
     def test_end_to_end_matches_manual_split(self):
         idx = pd.RangeIndex(20)
         close = pd.DataFrame(
