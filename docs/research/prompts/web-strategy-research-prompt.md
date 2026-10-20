@@ -8,7 +8,7 @@ anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
 Regenerate the "context" section below from `docs/research/RESEARCH_SNAPSHOT.md`
-whenever it's materially out of date — last synced 2026-09-25.
+whenever it's materially out of date — last synced 2026-10-20.
 
 ---
 
@@ -40,31 +40,27 @@ gates before deploying anything, and only deploys strategies that beat a
 buy-and-hold S&P 500 benchmark on a risk-adjusted (Sharpe) basis, not just
 raw return.
 
-**Currently deployed — and the honest bar:** a majority-vote ensemble of
+**Currently deployed — and the honest bar:** A majority-vote ensemble of
 five technical indicators (Bollinger Bands, RSI, EMA crossover, MACD
 divergence, volume-confirmed Bollinger Bands) buying individual S&P 500
-stocks on short-term mean-reversion, flat ~3% position sizing per trade.
-Earlier tests showed it beating the index, but a stricter re-test that only
-lets it trade stocks on days they were actually in the S&P 500 (earlier
-tests had accidentally allowed trading stocks before they joined or after
-they left) cut it to roughly **Sharpe ~0.6 and ~3% a year versus the
-index's ~0.8 Sharpe and ~13% a year** over 2021–2026. Its one real virtue is
-shallow drawdowns (about -5% versus the index's -22%). **So nothing in this
-system currently beats simply holding the S&P 500.** The most useful ideas
-now either beat the index on their own after costs, or combine with an
-index holding to improve its risk-adjusted return or cut its drawdowns. The
-account actually holds that stock-picking sleeve **plus the S&P 500 index
-itself**, because idle cash is swept into an S&P 500 ETF. Measured that way,
-the combined book roughly **ties** the index (Sharpe ~0.80 vs ~0.78) and has
-slightly shallower drawdowns. So in practice the account is mostly an index
-holding. **Any new idea is effectively funded by selling some of that index
-holding, so it has to earn more than the index would have on the same
-days.** A blend of the stock-picking strategy across three U.S. equity
-indices was also tried live and dropped after it trailed the single-index
-version. Treat any number
-this scout is given (including from other projects) as provisional until
-it's been through that kind of scrutiny — this system's own headline
-number has been revised down more than once.
+stocks on short-term mean-reversion with idle cash swept into an S&P 500 ETF.
+Earlier backtests suggested an edge, but a strict 2026-10-19 production-replica
+audit on daily bars (`docs/research/2026-10-19-production-replica-audit-nogo.md`)
+found the deployed daily-bar model is **NO-GO**: CAGR 14.19% versus SPY 14.83%,
+excess −0.64 pt/year, Newey-West t = −0.69 (Sharpe 0.925 vs SPY 0.903,
+MaxDD −21.44% vs −24.50%). Earlier reports of the combined book beating or
+tying the index (including the historical KEEP claim of Sharpe 0.80 vs 0.78,
+which is now **void and superseded**) were based on selected backtest parameters
+rather than production rules. Live operations are frozen, and the recommendation
+for the year-end freeze lift is to retire the stock-picking sleeve entirely.
+**So nothing in this system currently beats simply holding the S&P 500.**
+The active research arc is an explicit, pre-registered momentum re-test
+(`docs/research/briefs/2026-10-20-momentum-retest.md`) testing whether a stock
+sleeve can beat SPY after tax on evidence that isn't luck. Any new idea is
+effectively funded by selling an S&P 500 index holding, so it must earn more
+than the index would have on the same days after all taxes and frictions.
+Treat any number this scout is given as provisional until it has passed that
+kind of scrutiny.
 
 **Already tried and rejected — don't propose close variants of these
 without a genuinely different mechanism:**
@@ -78,7 +74,23 @@ without a genuinely different mechanism:**
 - Take-profit / time-based exit rules layered on or replacing the current
   exit logic (worse than the existing rule-based exit).
 - Cross-sectional or absolute price momentum ranking on large-cap U.S.
-  equities (well-arbitraged, no edge found).
+  equities: on a 2026-10-19 replay, 12-1 momentum showed +4.37 pt/yr excess
+  CAGR over SPY but Newey-West t = 0.761 (failed significance). A dual-momentum
+  variant was identical because its filter never triggered. This is now under
+  an active, pre-registered re-test on ~100 years of Ken French data and
+  clean-window after-tax execution (`docs/research/briefs/2026-10-20-momentum-retest.md`);
+  do not propose casual momentum variants without addressing after-tax drag and
+  long-horizon significance.
+- Pre-FOMC drift on Treasuries (holding TLT/IEF/EDV ahead of announcements):
+  a day-clustered event study across 113 Federal Open Market Committee (FOMC)
+  meeting dates showed gross t = 2.258, but net t = 0.981 (fails statistical
+  significance after transaction costs; the earlier unclustered reference of
+  3.619 gross / 1.572 net counted each meeting day three times across the three
+  ETFs).
+- Re-testing multiple parameter combinations without correcting for selection
+  bias: under a 1-year training fold and 12-combo grid, the Deflated Sharpe
+  Ratio (DSR) gate requires an in-sample Sharpe of roughly 2.5 to pass, so
+  unadjusted backtest Sharpe improvements are easily noise.
 - A blunt volatility/VIX-level regime filter that blocks entries outright
   during "risky" markets (didn't help — vol-aware *position sizing*, by
   contrast, did help).

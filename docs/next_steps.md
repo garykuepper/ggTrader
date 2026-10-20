@@ -6,9 +6,23 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Current research decision (2026-10-19)
+## Current research decision (2026-10-20)
 
-1. **Owner decision at the freeze lift (~2026-12-29): recommend retiring the
+1. **Active research: pre-registered momentum re-test.** Pre-registered on
+   2026-10-20 to test whether a stock momentum sleeve can beat SPY after tax
+   in a taxable account on evidence that isn't luck:
+   [Momentum re-test brief](research/briefs/2026-10-20-momentum-retest.md).
+   Two-part standard: Part A tests momentum on ~100 years of Ken French data
+   (t ≥ 3 with 12 Newey-West lags, Holm family level p = 0.00135, and post-1994
+   excess CAGR ≥ +1.0 pt/yr); Part B tests the multi-stock after-tax sleeve on
+   clean 2021–2026 data.
+2. **Deflated Sharpe Ratio (DSR) gate power note.** With one-year training folds
+   and a 12-combo grid, the corrected DSR gate needs an in-sample Sharpe of
+   roughly 2.5 to pass, so walk-forward out-of-sample (OOS) results are mostly
+   per-fold anchor results. Gate rejections stand: low pass counts reflect low
+   statistical power, not proof that there is no edge (spec:
+   `docs/research/briefs/2026-10-20-momentum-retest.md`, §4, item 2).
+3. **Owner decision at the freeze lift (~2026-12-29): recommend retiring the
    stock-picking sleeve.** The approved historical daily-bar model is NO-GO:
    CAGR 14.19% versus SPY 14.83%, excess −0.64 pt/year, Newey-West t −0.69.
    The older holdout remains INCONCLUSIVE; exact historical live replication
@@ -18,10 +32,10 @@ any) — don't let this file accumulate a backlog.
    real-money A23 allocation and exit terms are unchanged. See the
    [audit report](research/2026-10-19-production-replica-audit-nogo.md) and
    [approved closure](research/briefs/2026-10-19-production-replica-closure-amendment.md).
-2. **Review the A23 distribution-tax bounds before entry**, as information for
-   the existing owner decision. No new stock, momentum, FOMC or voter retest is
-   queued. Earlier research/deployment notes below are historical; their old
-   KEEP and outstanding-rerun statements are superseded by the audit.
+4. **Review the A23 distribution-tax bounds before entry**, as information for
+   the existing owner decision. Earlier research/deployment notes below are
+   historical; their old KEEP and outstanding-rerun statements are superseded
+   by the audit.
 
 ## Where new strategy ideas come from (2-stage pipeline)
 
@@ -124,7 +138,26 @@ money in ~3 months.
 - **Compare like with like:** on the same out-of-sample span (2022-01 →
   2026-04), static 80/20 0.87, core + sweep 0.80, SPY 0.78.
 
-## ACTIVE STEP (2026-09-22) — verify the core-revert deploy, then one change per week
+## ACTIVE STEP (2026-10-20) — Pre-registered momentum re-test (Phase 0 in progress)
+
+Follow the approved plan and brief:
+[Momentum re-test brief](research/briefs/2026-10-20-momentum-retest.md).
+
+- **Phase 0: Record fixes (docs only)** — In progress. Record dual momentum
+  duplicate, DSR power limits, clustered FOMC t-statistic, and prompt template
+  updates.
+- **Phase 1: French data significance & post-publication bar** — Download
+  Ken French 6 Portfolios Formed on Size and Momentum (2x3) and Fama/French 3
+  Factors, commit raw files with SHA-256 checksums, test Big and Small HiPRIOR
+  excess over market with 12 Newey-West lags under Holm correction (p = 0.00135).
+- **Phase 2: Multi-stock lot-level tax engine** — Build after-tax book with
+  wash-sale tracking on clean S&P 500 tape.
+- **Phase 3: Clean-window after-tax test** — Run exact rules against SPY benchmark
+  (kill rule: after-tax excess CAGR ≥ +1.0 pt/yr).
+
+---
+
+### Previous operational sequence (2026-09-22 → 2026-09-30, now frozen)
 
 **Deployed 2026-09-22 ~23:00 PT** (merge `8d9d3ef`, image
 `ghcr.io/garykuepper/ggtrader:latest` built 2026-09-23 05:59 UTC, live

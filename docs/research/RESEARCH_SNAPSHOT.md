@@ -95,7 +95,7 @@ benchmarks. All pre-DSR-fix gate counts are void as DSR evidence.
 | `conviction_bb` | Shipped, no independent current GO | Conviction sizing; no dedicated modern validation | [Roadmap](../roadmap.md) |
 | `ensemble_conviction` | Soft NO-GO | Historical conviction/MTF lineage; not independently remeasured | commits `92fff49`, `b07b8c2` |
 | `xs_momentum` | Corrected-harness NO-GO | +4.367 pp/year excess CAGR but NW t 0.761; all folds use anchors, 0/17 corrected gate passes | [Audit](2026-10-19-production-replica-audit-nogo.md), `_audit_reruns_20261019.json` |
-| `dual_momentum` | Corrected-harness NO-GO | Same aggregate excess statistics; absolute filter does not establish an edge | [Audit](2026-10-19-production-replica-audit-nogo.md), `_audit_reruns_20261019.json` |
+| `dual_momentum` | Corrected-harness NO-GO | Identical to xs_momentum on 2026-10-19 replay (top_n 50 negative filter never removed a pick); not an independent test | [Audit](2026-10-19-production-replica-audit-nogo.md), [Retest brief §4](briefs/2026-10-20-momentum-retest.md) |
 | `idio_vol` | Historical NO-GO | Standalone 0.57 versus SPY 0.58; highly correlated blend | commit `1d9e493`; [MAX report](2026-07-17-max-effect-nogo.md) |
 | `index_deletion_fade` | Historical NO-GO, tape caveat | Original Sharpe 0.30, drawdown −68.7% | [Report](2026-07-17-index-deletion-fade-nogo.md) |
 | `insider_cluster_buy` | Historical NO-GO, timing caveats | Original matched-window Sharpe 0.39 versus SPY 0.58 | [Report](2026-07-19-insider-cluster-buy-nogo.md) |
@@ -107,7 +107,7 @@ benchmarks. All pre-DSR-fix gate counts are void as DSR evidence.
 | `short_volume_ratio` | Historical NO-GO, tape caveat | Original Sharpe 0.21 versus SPY 0.72; frequent halt | [Report](2026-07-19-short-volume-ratio-nogo.md) |
 | `fx_hedge_overlay` | Historical NO-GO | Dynamic 0.41 versus static hedged 0.73 Sharpe | [Report](2026-07-20-fx-hedge-overlay-nogo.md) |
 | `headline_sentiment` | Provisional NO-GO; underpowered | Three usable folds; history/sector limitations | [Report](2026-07-24-headline-sentiment-nogo.md) |
-| `fomc_drift` | Corrected-harness NO-GO | Net Welch t 1.572, WFE 0.244; primary pair only decides | [Audit](2026-10-19-production-replica-audit-nogo.md), `_audit_reruns_20261019.json` |
+| `fomc_drift` | Corrected-harness NO-GO | Day-clustered gross t 2.258, net t 0.981 over 113 dates (unclustered 3.619 / 1.572 counted days 3x); WFE 0.244 | [Audit](2026-10-19-production-replica-audit-nogo.md), [_fomc_clustered_event_study_20261020.json](_fomc_clustered_event_study_20261020.json) |
 | `month_end_treasury` | NO-GO as SPY-funded sleeve | Real standalone premium did not beat its funding leg | [Report](2026-09-24-month-end-treasury-sleeve-nogo.md) |
 | `commodity_trend` | Historical NO-GO | Sharpe 0.13; trails static commodity benchmarks | [Report](2026-07-20-commodity-trend-nogo.md) |
 | `cross_asset_sleeve` | Static shadow GO; trend not preferred | Diversification/gold exposure, not validated timing skill | [Report](2026-09-28-cross-asset-sleeve.md) |
@@ -139,10 +139,14 @@ benchmarks. All pre-DSR-fix gate counts are void as DSR evidence.
   costs, cash accrual and production sizing replace a selected-parameter proxy.
   Exact live input reconstruction remains a separate, unresolved question.
   [Replica audit](2026-10-19-production-replica-audit-nogo.md).
-- **Correct statistical units before trusting gates.** `09f9f40` corrects annual
-  versus daily Sharpe and the kurtosis term. Past gate counts cannot be cited as
-  DSR validation. New corrected counts are diagnostic, not a replacement for
-  economic/statistical bars. [Changelog](../changelog.md).
+- **Correct statistical units before trusting gates.** Commit `09f9f40` corrects
+  annual versus daily Sharpe and the kurtosis term in the Deflated Sharpe Ratio
+  (DSR). Past gate counts cannot be cited as DSR validation. With one-year training
+  folds and a 12-combo grid, the corrected gate needs an in-sample Sharpe of
+  roughly 2.5 to pass, so walk-forward out-of-sample (OOS) results are mostly
+  per-fold anchor results. Gate rejections stand; low pass counts reflect low
+  power, not proof of no edge. [Changelog](../changelog.md),
+  [Retest brief §4](briefs/2026-10-20-momentum-retest.md).
 - **Timing tests can falsify assumptions.** `7320c1d` fixes inclusion of returns
   earned before an entry close. The original failing test and owner-approved
   amendment remain documented. [Timing amendment](briefs/2026-10-19-production-replica-fomc-timing-amendment.md).
