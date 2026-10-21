@@ -1,6 +1,6 @@
 # Brief: event-timing and data-integrity audit for PEAD and insider cluster buying
 
-**Status:** DRAFT 2026-10-21, awaiting owner approval. Nothing has been computed. Execution is blocked until §8 is approved with the brief; the builder must not choose or revise these values after inspecting audit results.
+**Status:** pre-registered; approved by the owner 2026-10-21 (with its source-search manifest) before anything was computed. §8 is now fixed; changing any of it needs a new dated brief, and the builder must not choose or revise these values after inspecting audit results.
 
 **Terms used below:**
 - *PEAD (Post-Earnings-Announcement Drift)* means the tendency for a stock's price to continue drifting in the direction of an earnings surprise for weeks or months after the announcement.

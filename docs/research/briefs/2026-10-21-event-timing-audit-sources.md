@@ -1,6 +1,6 @@
 # Source-search manifest: event-timing audit
 
-**Status:** DRAFT 2026-10-21. It is approved together with
+**Status:** approved by the owner 2026-10-21 together with
 [the audit brief](2026-10-21-event-timing-audit.md) (§8 A10). It is fixed by the senior quant, and the
 builder may not add, omit or substitute routes.
 
