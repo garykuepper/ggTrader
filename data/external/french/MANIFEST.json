@@ -10,5 +10,23 @@
     "sha256": "593f4fbef03181bc0b22ff6292f217689dd1fb79355049ca905d95b262040a66",
     "bytes": 13065,
     "downloaded_utc": "2026-10-21T02:20:58.025288+00:00"
+  },
+  "6_Portfolios_2x3_CSV.zip": {
+    "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/6_Portfolios_2x3_CSV.zip",
+    "sha256": "82b66ccd6a4dff103eba51b60e1f2310eaa94bbebbb843550173b972c64cdbff",
+    "bytes": 149412,
+    "downloaded_utc": "2026-10-21T10:26:55.700975+00:00"
+  },
+  "6_Portfolios_ME_OP_2x3_CSV.zip": {
+    "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/6_Portfolios_ME_OP_2x3_CSV.zip",
+    "sha256": "5974ba70b4e23e46e58bdc821fb0c93caea86f46ca50523d0622e86d7f2eba5b",
+    "bytes": 105990,
+    "downloaded_utc": "2026-10-21T10:26:56.303657+00:00"
+  },
+  "6_Portfolios_ME_INV_2x3_CSV.zip": {
+    "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/6_Portfolios_ME_INV_2x3_CSV.zip",
+    "sha256": "a7c6c95fb7f90be438531d37a0d41aeb223c9c3e62d3ec457ce0d6ddd3f1cc6f",
+    "bytes": 105911,
+    "downloaded_utc": "2026-10-21T10:26:56.905554+00:00"
   }
 }
