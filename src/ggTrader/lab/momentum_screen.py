@@ -147,11 +147,11 @@ def worst_rolling_relative(winners: pd.Series, market: pd.Series, months: int = 
     }
 
 
-def _window(frame: pd.DataFrame) -> pd.DataFrame:
+def _window(frame: pd.DataFrame, window: tuple[str, str] = FULL) -> pd.DataFrame:
     """Require every registered month once and all required values finite."""
     frame = frame.copy()
     frame.index = pd.PeriodIndex(frame.index, freq="M")
-    expected = pd.period_range(*FULL, freq="M")
+    expected = pd.period_range(*window, freq="M")
     frame = frame.loc[(frame.index >= expected[0]) & (frame.index <= expected[-1])]
     if frame.index.has_duplicates:
         raise ValueError("Duplicate month in the registered screen window")

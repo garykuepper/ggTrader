@@ -17,6 +17,14 @@ PROJECT_ROOT = find_project_root()
 FRENCH_BASE_URL = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/"
 SIZE_MOM_FILE = "6_Portfolios_ME_Prior_12_2_CSV.zip"
 FACTORS_FILE = "F-F_Research_Data_Factors_CSV.zip"
+VALUE_FILE = "6_Portfolios_2x3_CSV.zip"
+PROFITABILITY_FILE = "6_Portfolios_ME_OP_2x3_CSV.zip"
+INVESTMENT_FILE = "6_Portfolios_ME_INV_2x3_CSV.zip"
+FACTOR_SCHEMAS = {
+    VALUE_FILE: ("BM", "HiBM"),
+    PROFITABILITY_FILE: ("OP", "HiOP"),
+    INVESTMENT_FILE: ("INV", "LoINV"),
+}
 FRENCH_DIR = PROJECT_ROOT / "data" / "external" / "french"
 VW_SECTION = "Average Value Weighted Returns -- Monthly"
 SIZE_MOM_COLUMNS = {
@@ -162,3 +170,20 @@ def load_market_total_return(dest: Path = FRENCH_DIR) -> pd.DataFrame:
     """Load market total return (Mkt-RF plus RF) and the risk-free return."""
     frame = parse_french_monthly(_read_frozen_csv(FACTORS_FILE, dest), None)
     return pd.DataFrame({"mkt": frame["Mkt-RF"] + frame["RF"], "rf": frame["RF"]})
+
+
+def load_size_factor_vw(filename: str, dest: Path = FRENCH_DIR) -> pd.DataFrame:
+    """Load the registered small/big factor legs after an exact six-column schema check."""
+    characteristic, leg = FACTOR_SCHEMAS[filename]
+    frame = parse_french_monthly(_read_frozen_csv(filename, dest), VW_SECTION)
+    expected = [
+        f"SMALL Lo{characteristic}",
+        f"ME1 {characteristic}2",
+        f"SMALL Hi{characteristic}",
+        f"BIG Lo{characteristic}",
+        f"ME2 {characteristic}2",
+        f"BIG Hi{characteristic}",
+    ]
+    if list(frame.columns) != expected:
+        raise ValueError(f"Unexpected French factor headers in {filename}: {list(frame.columns)}")
+    return frame[[f"SMALL {leg}", f"BIG {leg}"]].set_axis(["small", "big"], axis=1)

@@ -1,0 +1,512 @@
+{
+  "inputs": {
+    "common_window": {
+      "start": "1963-07",
+      "end": "2026-04",
+      "n_months": 754
+    },
+    "A2_window": {
+      "start": "1994-01",
+      "end": "2026-04",
+      "n_months": 388
+    },
+    "nw_lags": 12,
+    "holm_alpha": 0.00135,
+    "A2_bar_pp": 1.0
+  },
+  "hypotheses": {
+    "H1": {
+      "factor": "BIG HiOP",
+      "base_cost": 0.01,
+      "stress_cost": 0.02,
+      "A1": {
+        "t": 0.12935726962348812,
+        "p": 0.4485374787168277,
+        "holm_rank": 4,
+        "holm_threshold": 0.00135,
+        "pass_holm": false
+      },
+      "A2": {
+        "cagr_diff_pp": 0.8266746061754343,
+        "pass": false
+      },
+      "diagnostics": {
+        "subperiods": [
+          {
+            "start": "1963-07",
+            "end": "1993-12",
+            "n_months": 366,
+            "t": -0.7016157033439899,
+            "p": 0.7585405720911336,
+            "cagr_diff_pp": -0.6183401223192969
+          },
+          {
+            "start": "1994-01",
+            "end": "2012-12",
+            "n_months": 228,
+            "t": 0.5130833220539047,
+            "p": 0.3039465186835049,
+            "cagr_diff_pp": 0.8631754532107044
+          },
+          {
+            "start": "2013-01",
+            "end": "2026-04",
+            "n_months": 160,
+            "t": 0.7430960502382851,
+            "p": 0.22871176539139193,
+            "cagr_diff_pp": 0.7706726177036355
+          }
+        ],
+        "post_2013_cagr_diff_pp": 0.7706726177036355,
+        "stress": {
+          "annual_cost": 0.02,
+          "full_t": -1.787400738459545,
+          "full_p": 0.9630636288170701,
+          "post_cagr_diff_pp": -0.27600779661917374
+        },
+        "capm": {
+          "alpha_ann_pct": 1.3911231071681633,
+          "beta": 0.9548470070601306
+        },
+        "worst_12m": {
+          "start": "1999-03",
+          "end": "2000-02",
+          "relative_pct": -11.937051742328686
+        },
+        "relative_drawdown": {
+          "max_drawdown_pct": -31.54576638847294,
+          "peak": "1973-06",
+          "trough": "1984-01",
+          "recovery": null,
+          "recovery_months": null
+        }
+      },
+      "overall_pass": false
+    },
+    "H2": {
+      "factor": "BIG HiBM",
+      "base_cost": 0.01,
+      "stress_cost": 0.02,
+      "A1": {
+        "t": 1.0136033791453198,
+        "p": 0.15538602230922127,
+        "holm_rank": 2,
+        "holm_threshold": 0.00045000000000000004,
+        "pass_holm": false
+      },
+      "A2": {
+        "cagr_diff_pp": -0.6206997785744974,
+        "pass": false
+      },
+      "diagnostics": {
+        "subperiods": [
+          {
+            "start": "1963-07",
+            "end": "1993-12",
+            "n_months": 366,
+            "t": 1.9961075220125364,
+            "p": 0.02296111022789564,
+            "cagr_diff_pp": 2.760981743875229
+          },
+          {
+            "start": "1994-01",
+            "end": "2012-12",
+            "n_months": 228,
+            "t": 0.03486070741550339,
+            "p": 0.4860954062477188,
+            "cagr_diff_pp": -0.47210184572174796
+          },
+          {
+            "start": "2013-01",
+            "end": "2026-04",
+            "n_months": 160,
+            "t": 0.03611595908189632,
+            "p": 0.48559494856119073,
+            "cagr_diff_pp": -0.8443817013736699
+          }
+        ],
+        "post_2013_cagr_diff_pp": -0.8443817013736699,
+        "stress": {
+          "annual_cost": 0.02,
+          "full_t": 0.21276006461405073,
+          "full_p": 0.41575705717580125,
+          "post_cagr_diff_pp": -1.7110633573293275
+        },
+        "capm": {
+          "alpha_ann_pct": 2.404023510591717,
+          "beta": 0.9806971965046197
+        },
+        "worst_12m": {
+          "start": "2019-10",
+          "end": "2020-09",
+          "relative_pct": -28.078687152979708
+        },
+        "relative_drawdown": {
+          "max_drawdown_pct": -59.436101690053256,
+          "peak": "2008-09",
+          "trough": "2020-09",
+          "recovery": null,
+          "recovery_months": null
+        },
+        "history_1927": {
+          "start": "1927-01",
+          "end": "2026-04",
+          "n_months": 1192,
+          "t": 1.6939803806144091,
+          "p": 0.04513450562242351,
+          "cagr_diff_pp": 0.9588249984853927
+        }
+      },
+      "overall_pass": false
+    },
+    "H3": {
+      "factor": "BIG LoINV",
+      "base_cost": 0.01,
+      "stress_cost": 0.02,
+      "A1": {
+        "t": 0.6551383955287021,
+        "p": 0.2561893267079115,
+        "holm_rank": 3,
+        "holm_threshold": 0.000675,
+        "pass_holm": false
+      },
+      "A2": {
+        "cagr_diff_pp": -0.0007023839399239451,
+        "pass": false
+      },
+      "diagnostics": {
+        "subperiods": [
+          {
+            "start": "1963-07",
+            "end": "1993-12",
+            "n_months": 366,
+            "t": 1.16259594979885,
+            "p": 0.12249673741891903,
+            "cagr_diff_pp": 1.2917297655998832
+          },
+          {
+            "start": "1994-01",
+            "end": "2012-12",
+            "n_months": 228,
+            "t": 0.23905034068759784,
+            "p": 0.4055332739270239,
+            "cagr_diff_pp": 0.5939760497283411
+          },
+          {
+            "start": "2013-01",
+            "end": "2026-04",
+            "n_months": 160,
+            "t": -0.5478311106084891,
+            "p": 0.7080960626900097,
+            "cagr_diff_pp": -0.8937538255911315
+          }
+        ],
+        "post_2013_cagr_diff_pp": -0.8937538255911315,
+        "stress": {
+          "annual_cost": 0.02,
+          "full_t": -0.6200487626921427,
+          "full_p": 0.732387158184503,
+          "post_cagr_diff_pp": -1.095929365586243
+        },
+        "capm": {
+          "alpha_ann_pct": 2.1258240995431548,
+          "beta": 0.9146058392072379
+        },
+        "worst_12m": {
+          "start": "1999-03",
+          "end": "2000-02",
+          "relative_pct": -18.496155292766993
+        },
+        "relative_drawdown": {
+          "max_drawdown_pct": -28.39353958510674,
+          "peak": "1990-09",
+          "trough": "2000-02",
+          "recovery": "2001-08",
+          "recovery_months": 18
+        }
+      },
+      "overall_pass": false
+    },
+    "H4": {
+      "factor": "50% BIG HiBM + 50% BIG HiPRIOR",
+      "base_cost": 0.015,
+      "stress_cost": 0.03,
+      "A1": {
+        "t": 1.338846128355209,
+        "p": 0.09031038517392947,
+        "holm_rank": 1,
+        "holm_threshold": 0.0003375,
+        "pass_holm": false
+      },
+      "A2": {
+        "cagr_diff_pp": -0.5592144009695557,
+        "pass": false
+      },
+      "diagnostics": {
+        "subperiods": [
+          {
+            "start": "1963-07",
+            "end": "1993-12",
+            "n_months": 366,
+            "t": 3.0406989893152243,
+            "p": 0.0011801483400420219,
+            "cagr_diff_pp": 2.394142945097158
+          },
+          {
+            "start": "1994-01",
+            "end": "2012-12",
+            "n_months": 228,
+            "t": -0.034649148195146716,
+            "p": 0.5138202447927812,
+            "cagr_diff_pp": -0.13837045657840163
+          },
+          {
+            "start": "2013-01",
+            "end": "2026-04",
+            "n_months": 160,
+            "t": -0.5550329220625402,
+            "p": 0.7105639289470425,
+            "cagr_diff_pp": -1.1920198254656538
+          }
+        ],
+        "post_2013_cagr_diff_pp": -1.1920198254656538,
+        "stress": {
+          "annual_cost": 0.03,
+          "full_t": -0.9345833335558063,
+          "full_p": 0.8249984642949741,
+          "post_cagr_diff_pp": -2.191121053106132
+        },
+        "capm": {
+          "alpha_ann_pct": 2.4636105647798714,
+          "beta": 0.9888043702363991
+        },
+        "worst_12m": {
+          "start": "2008-08",
+          "end": "2009-07",
+          "relative_pct": -13.136052776528917
+        },
+        "relative_drawdown": {
+          "max_drawdown_pct": -41.468001499972495,
+          "peak": "2008-09",
+          "trough": "2020-09",
+          "recovery": null,
+          "recovery_months": null
+        },
+        "history_1927": {
+          "start": "1927-01",
+          "end": "2026-04",
+          "n_months": 1192,
+          "t": 2.5058209239750555,
+          "p": 0.006108373795684825,
+          "cagr_diff_pp": 1.2494751060763212
+        }
+      },
+      "overall_pass": false
+    }
+  },
+  "advancing_factor": null,
+  "next": "Factor screen closed NO-GO, no paid data. Propose the next research step.",
+  "small_cap_diagnostics": {
+    "SMALL HiOP": {
+      "base_cost": 0.03,
+      "t": 0.4707614263189243,
+      "p": 0.3189055567091202,
+      "cagr_diff_pp": -0.3425290198679237,
+      "post_cagr_diff_pp": -1.8942001997460711,
+      "subperiods": [
+        {
+          "start": "1963-07",
+          "end": "1993-12",
+          "n_months": 366,
+          "t": 1.072740670873424,
+          "p": 0.14169374344439123,
+          "cagr_diff_pp": 1.325259208080129
+        },
+        {
+          "start": "1994-01",
+          "end": "2012-12",
+          "n_months": 228,
+          "t": 0.6229300320932996,
+          "p": 0.26666525082998416,
+          "cagr_diff_pp": 1.3833235400130568
+        },
+        {
+          "start": "2013-01",
+          "end": "2026-04",
+          "n_months": 160,
+          "t": -1.4305132109921173,
+          "p": 0.9237151115545256,
+          "cagr_diff_pp": -6.67300957294268
+        }
+      ],
+      "post_2013_cagr_diff_pp": -6.67300957294268,
+      "stress": {
+        "annual_cost": 0.06,
+        "full_t": -1.375834339823289,
+        "full_p": 0.9155635363817323,
+        "post_cagr_diff_pp": -5.102078580614967
+      },
+      "capm": {
+        "alpha_ann_pct": 2.294449502960842,
+        "beta": 1.2051409751398001
+      },
+      "worst_12m": {
+        "start": "1972-07",
+        "end": "1973-06",
+        "relative_pct": -32.10529076195749
+      },
+      "relative_drawdown": {
+        "max_drawdown_pct": -63.19734435993563,
+        "peak": "2010-05",
+        "trough": "2025-11",
+        "recovery": null,
+        "recovery_months": null
+      }
+    },
+    "SMALL HiBM": {
+      "base_cost": 0.03,
+      "t": 0.8977193288907281,
+      "p": 0.18466760100264662,
+      "cagr_diff_pp": 0.8250435504304071,
+      "post_cagr_diff_pp": -1.9431659127406062,
+      "subperiods": [
+        {
+          "start": "1963-07",
+          "end": "1993-12",
+          "n_months": 366,
+          "t": 1.933272801498832,
+          "p": 0.02660130026408892,
+          "cagr_diff_pp": 3.8342116364900565
+        },
+        {
+          "start": "1994-01",
+          "end": "2012-12",
+          "n_months": 228,
+          "t": 0.48051893388595773,
+          "p": 0.31542922162411996,
+          "cagr_diff_pp": 1.0390905084980349
+        },
+        {
+          "start": "2013-01",
+          "end": "2026-04",
+          "n_months": 160,
+          "t": -1.2056347143435264,
+          "p": 0.886020816045462,
+          "cagr_diff_pp": -6.305499777023538
+        }
+      ],
+      "post_2013_cagr_diff_pp": -6.305499777023538,
+      "stress": {
+        "annual_cost": 0.06,
+        "full_t": -0.8272930668476348,
+        "full_p": 0.795964513750747,
+        "post_cagr_diff_pp": -5.149622762978531
+      },
+      "capm": {
+        "alpha_ann_pct": 4.034092187641091,
+        "beta": 1.0735465869005938
+      },
+      "worst_12m": {
+        "start": "2019-04",
+        "end": "2020-03",
+        "relative_pct": -32.00155864796395
+      },
+      "relative_drawdown": {
+        "max_drawdown_pct": -70.03253117576146,
+        "peak": "2006-03",
+        "trough": "2025-10",
+        "recovery": null,
+        "recovery_months": null
+      }
+    },
+    "SMALL LoINV": {
+      "base_cost": 0.03,
+      "t": 0.6413681770397405,
+      "p": 0.26064175176426846,
+      "cagr_diff_pp": -0.04866942745712366,
+      "post_cagr_diff_pp": -2.1128345472951615,
+      "subperiods": [
+        {
+          "start": "1963-07",
+          "end": "1993-12",
+          "n_months": 366,
+          "t": 1.276677189862213,
+          "p": 0.10085811885111662,
+          "cagr_diff_pp": 2.1806537872737146
+        },
+        {
+          "start": "1994-01",
+          "end": "2012-12",
+          "n_months": 228,
+          "t": 0.7493973693311246,
+          "p": 0.22680886803504413,
+          "cagr_diff_pp": 1.0675618577995316
+        },
+        {
+          "start": "2013-01",
+          "end": "2026-04",
+          "n_months": 160,
+          "t": -1.5400470150289594,
+          "p": 0.9382255531566863,
+          "cagr_diff_pp": -6.754938079826009
+        }
+      ],
+      "post_2013_cagr_diff_pp": -6.754938079826009,
+      "stress": {
+        "annual_cost": 0.06,
+        "full_t": -1.192844370344771,
+        "full_p": 0.8835348353576229,
+        "post_cagr_diff_pp": -5.315581598799547
+      },
+      "capm": {
+        "alpha_ann_pct": 2.8084560155438822,
+        "beta": 1.1730794187390663
+      },
+      "worst_12m": {
+        "start": "1998-04",
+        "end": "1999-03",
+        "relative_pct": -24.476916375890056
+      },
+      "relative_drawdown": {
+        "max_drawdown_pct": -71.53947493572113,
+        "peak": "1983-07",
+        "trough": "2025-07",
+        "recovery": null,
+        "recovery_months": null
+      }
+    }
+  },
+  "provenance": {
+    "6_Portfolios_ME_Prior_12_2_CSV.zip": {
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/6_Portfolios_ME_Prior_12_2_CSV.zip",
+      "sha256": "68d90a218235b2c14e67eb1b7b1acd2d9fcc6b626bc4c64e854e2788bcf44bf3",
+      "bytes": 127456,
+      "downloaded_utc": "2026-10-21T02:20:57.651124+00:00"
+    },
+    "F-F_Research_Data_Factors_CSV.zip": {
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_CSV.zip",
+      "sha256": "593f4fbef03181bc0b22ff6292f217689dd1fb79355049ca905d95b262040a66",
+      "bytes": 13065,
+      "downloaded_utc": "2026-10-21T02:20:58.025288+00:00"
+    },
+    "6_Portfolios_2x3_CSV.zip": {
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/6_Portfolios_2x3_CSV.zip",
+      "sha256": "82b66ccd6a4dff103eba51b60e1f2310eaa94bbebbb843550173b972c64cdbff",
+      "bytes": 149412,
+      "downloaded_utc": "2026-10-21T10:26:55.700975+00:00"
+    },
+    "6_Portfolios_ME_OP_2x3_CSV.zip": {
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/6_Portfolios_ME_OP_2x3_CSV.zip",
+      "sha256": "5974ba70b4e23e46e58bdc821fb0c93caea86f46ca50523d0622e86d7f2eba5b",
+      "bytes": 105990,
+      "downloaded_utc": "2026-10-21T10:26:56.303657+00:00"
+    },
+    "6_Portfolios_ME_INV_2x3_CSV.zip": {
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/6_Portfolios_ME_INV_2x3_CSV.zip",
+      "sha256": "a7c6c95fb7f90be438531d37a0d41aeb223c9c3e62d3ec457ce0d6ddd3f1cc6f",
+      "bytes": 105911,
+      "downloaded_utc": "2026-10-21T10:26:56.905554+00:00"
+    }
+  },
+  "brief": "docs/research/briefs/2026-10-20-factor-screen.md"
+}
