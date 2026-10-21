@@ -1,0 +1,51 @@
+{
+  "universe": "fomc_treasury",
+  "eval_start": "2012-01-01",
+  "eval_end": "2026-04-30",
+  "pair": "entry_1_hold_0",
+  "n_event_dates": 113,
+  "gross": {
+    "n_event": 113,
+    "n_nonevent": 3487,
+    "mean_event_return": 0.0017728940580538852,
+    "mean_nonevent_return": 5.088362329000081e-06,
+    "mean_diff": 0.0017678056957248852,
+    "t_stat": 2.2575656776133357,
+    "p_value": 0.02578458866528973,
+    "significant": true
+  },
+  "net": {
+    "n_event": 113,
+    "n_nonevent": 3487,
+    "mean_event_return": 0.0007728940580538847,
+    "mean_nonevent_return": 5.088362329000081e-06,
+    "mean_diff": 0.0007678056957248846,
+    "t_stat": 0.9805216658914329,
+    "p_value": 0.3288054681920058,
+    "significant": false
+  },
+  "unclustered_reference": {
+    "entry_offset_days": 1,
+    "hold_days": 0,
+    "gross": {
+      "n_event": 339,
+      "n_nonevent": 10461,
+      "mean_event_return": 0.0017728940580538852,
+      "mean_nonevent_return": 5.088362329000046e-06,
+      "mean_diff": 0.0017678056957248852,
+      "t_stat": 3.618973169952236,
+      "p_value": 0.000337834927626062,
+      "significant": true
+    },
+    "net": {
+      "n_event": 339,
+      "n_nonevent": 10461,
+      "mean_event_return": 0.0007728940580538844,
+      "mean_nonevent_return": 5.088362329000046e-06,
+      "mean_diff": 0.0007678056957248844,
+      "t_stat": 1.5718176603257743,
+      "p_value": 0.11686598821668726,
+      "significant": false
+    }
+  }
+}

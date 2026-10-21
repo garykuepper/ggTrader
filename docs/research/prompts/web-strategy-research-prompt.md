@@ -7,8 +7,8 @@ file access, no specific tools or plugins. Do not write code, backtest
 anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
-Regenerate the "context" section below from `docs/research/RESEARCH_SNAPSHOT.md`
-whenever it's materially out of date — last synced 2026-09-25.
+Refresh the context below from the current research record whenever it is
+materially out of date — last synced 2026-10-20.
 
 ---
 
@@ -40,31 +40,32 @@ gates before deploying anything, and only deploys strategies that beat a
 buy-and-hold S&P 500 benchmark on a risk-adjusted (Sharpe) basis, not just
 raw return.
 
-**Currently deployed — and the honest bar:** a majority-vote ensemble of
+**Currently deployed — and the honest bar:** A majority-vote ensemble of
 five technical indicators (Bollinger Bands, RSI, EMA crossover, MACD
 divergence, volume-confirmed Bollinger Bands) buying individual S&P 500
-stocks on short-term mean-reversion, flat ~3% position sizing per trade.
-Earlier tests showed it beating the index, but a stricter re-test that only
-lets it trade stocks on days they were actually in the S&P 500 (earlier
-tests had accidentally allowed trading stocks before they joined or after
-they left) cut it to roughly **Sharpe ~0.6 and ~3% a year versus the
-index's ~0.8 Sharpe and ~13% a year** over 2021–2026. Its one real virtue is
-shallow drawdowns (about -5% versus the index's -22%). **So nothing in this
-system currently beats simply holding the S&P 500.** The most useful ideas
-now either beat the index on their own after costs, or combine with an
-index holding to improve its risk-adjusted return or cut its drawdowns. The
-account actually holds that stock-picking sleeve **plus the S&P 500 index
-itself**, because idle cash is swept into an S&P 500 ETF. Measured that way,
-the combined book roughly **ties** the index (Sharpe ~0.80 vs ~0.78) and has
-slightly shallower drawdowns. So in practice the account is mostly an index
-holding. **Any new idea is effectively funded by selling some of that index
-holding, so it has to earn more than the index would have on the same
-days.** A blend of the stock-picking strategy across three U.S. equity
-indices was also tried live and dropped after it trailed the single-index
-version. Treat any number
-this scout is given (including from other projects) as provisional until
-it's been through that kind of scrutiny — this system's own headline
-number has been revised down more than once.
+stocks on short-term mean-reversion with idle cash swept into an S&P 500 ETF.
+Earlier backtests suggested an edge, but a strict 2026-10-19 production-replica
+audit on daily bars found the deployed daily-bar model is **NO-GO**: compound
+annual growth rate (CAGR) of 14.19% versus S&P 500 ETF (SPY) 14.83%, an excess
+of −0.64 percentage points per year, and an autocorrelation-adjusted t-statistic
+(Newey-West) of −0.69 showing no statistical edge (Sharpe ratio 0.925 versus
+SPY 0.903, maximum drawdown −21.44% versus −24.50%). Earlier reports of the
+combined book beating or tying the index (including the earlier historical
+claim of a 0.80 Sharpe ratio versus 0.78 for SPY, which is now **void and
+superseded**) were based on selected backtest parameters rather than production
+rules. Live operations are frozen, and the recommendation for the year-end
+freeze lift is to retire the stock-picking sleeve entirely. **So nothing in
+this system currently beats simply holding the S&P 500.** The completed
+century-long momentum screen using Ken French's academic portfolio data is
+**NO-GO** for both large and small companies. Both failed the Holm test, which
+adjusts significance for testing two groups, and the required post-publication
+return advantage (test A2). No paid data will be bought; Phases 2–5, including
+the after-tax replay, are cancelled. This was an idea-level screen against the
+academic market benchmark, not a new SPY-relative or after-tax result.
+Any new idea is effectively funded by selling an S&P 500 index holding,
+so it must earn more than the index would have on the same days after all taxes
+and frictions. Treat any number this scout is given as provisional until it has
+passed that kind of scrutiny.
 
 **Already tried and rejected — don't propose close variants of these
 without a genuinely different mechanism:**
@@ -78,7 +79,23 @@ without a genuinely different mechanism:**
 - Take-profit / time-based exit rules layered on or replacing the current
   exit logic (worse than the existing rule-based exit).
 - Cross-sectional or absolute price momentum ranking on large-cap U.S.
-  equities (well-arbitraged, no edge found).
+  equities: on a recent replay, 12-month momentum (buying past 12-to-2 month
+  winners) showed +4.37 percentage points per year excess compound annual growth
+  rate over SPY, but an autocorrelation-adjusted t-statistic (Newey-West) of
+  only 0.761 (falling far short of the statistical significance bar of t ≥ 3).
+  A dual-momentum variant was identical because its negative-momentum filter
+  never triggered. The completed century-long academic-data screen is **NO-GO**:
+  both company-size groups failed the Holm significance adjustment and the
+  post-publication return test (A2). Since 1994, net excess growth was only
+  +0.08 percentage points per year for large companies and +0.20 for small
+  companies, below the required +1.0. No paid data will be bought; Phases 2–5
+  are cancelled. No after-tax replay was run. Do not re-propose momentum variants.
+- Pre-FOMC drift on Treasuries (holding Treasury ETFs TLT, IEF, and EDV ahead of
+  announcements): a day-clustered event study across 113 Federal Open Market
+  Committee (FOMC) meeting dates showed gross t = 2.258, but net t = 0.981
+  (fails statistical significance after transaction costs; the earlier
+  unclustered reference of 3.619 gross / 1.572 net counted each meeting day
+  three times across the three ETFs).
 - A blunt volatility/VIX-level regime filter that blocks entries outright
   during "risky" markets (didn't help — vol-aware *position sizing*, by
   contrast, did help).

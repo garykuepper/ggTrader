@@ -1,0 +1,145 @@
+{
+  "groups": {
+    "big": {
+      "full_t": 3.0524342824851454,
+      "full_p": 0.001134967145766826,
+      "post_cagr_diff_pp": 0.08186280530820267,
+      "diag": [
+        {
+          "start": "1927-01",
+          "end": "1993-12",
+          "t": 3.555825410754506,
+          "p": 0.00018839712316638904,
+          "cagr_diff_pp": 3.1206213168414862
+        },
+        {
+          "start": "1994-01",
+          "end": "2012-12",
+          "t": 0.5432703714465859,
+          "p": 0.2934718304354811,
+          "cagr_diff_pp": 0.7837576198683402
+        },
+        {
+          "start": "2013-01",
+          "end": "2026-04",
+          "t": -0.5560489636557442,
+          "p": 0.7109113085480168,
+          "cagr_diff_pp": -0.9709888834764008
+        }
+      ],
+      "stress": {
+        "full_t": 1.5559706546483865,
+        "full_p": 0.05985753530691744,
+        "post_cagr_diff_pp": -1.014298669765981
+      },
+      "capm": {
+        "alpha_ann_pct": 3.371358728515852,
+        "beta": 0.9599558684992915
+      },
+      "size_matched": {
+        "t": 3.7248891981959815,
+        "p": 9.770051450339528e-05,
+        "cagr_diff_pp": 3.6637654208575827
+      },
+      "worst_12m": {
+        "start": "1932-06",
+        "end": "1933-05",
+        "relative_pct": -22.367594838664818
+      },
+      "rebound_2009": {
+        "net_pct": -11.954054673389114,
+        "gross_pct": -11.240368518039933
+      },
+      "relative_drawdown": {
+        "max_drawdown_pct": -31.68828516803497,
+        "peak": "2008-06",
+        "trough": "2025-08",
+        "recovery": null,
+        "recovery_months": null
+      }
+    },
+    "small": {
+      "full_t": 3.107964991876554,
+      "full_p": 0.0009419019067404914,
+      "post_cagr_diff_pp": 0.19755054092145535,
+      "diag": [
+        {
+          "start": "1927-01",
+          "end": "1993-12",
+          "t": 3.3767178121168473,
+          "p": 0.0003667813305103759,
+          "cagr_diff_pp": 4.771227797876852
+        },
+        {
+          "start": "1994-01",
+          "end": "2012-12",
+          "t": 1.1093027628488235,
+          "p": 0.13364979681270717,
+          "cagr_diff_pp": 2.6019494471819007
+        },
+        {
+          "start": "2013-01",
+          "end": "2026-04",
+          "t": -0.7659799767459505,
+          "p": 0.7781558917976479,
+          "cagr_diff_pp": -3.3417916636209104
+        }
+      ],
+      "stress": {
+        "full_t": 0.9297581066949616,
+        "full_p": 0.1762481707599216,
+        "post_cagr_diff_pp": -3.0669479515582756
+      },
+      "capm": {
+        "alpha_ann_pct": 5.735060645843164,
+        "beta": 1.1866358387691676
+      },
+      "size_matched": {
+        "t": 5.183886642849265,
+        "p": 1.0865452064167436e-07,
+        "cagr_diff_pp": 5.1354579593042935
+      },
+      "worst_12m": {
+        "start": "1937-03",
+        "end": "1938-02",
+        "relative_pct": -30.128742249230257
+      },
+      "rebound_2009": {
+        "net_pct": -10.155327071245901,
+        "gross_pct": -7.956654011248165
+      },
+      "relative_drawdown": {
+        "max_drawdown_pct": -56.84854165688008,
+        "peak": "2006-03",
+        "trough": "2025-07",
+        "recovery": null,
+        "recovery_months": null
+      }
+    }
+  },
+  "holm": {
+    "big": false,
+    "small": false
+  },
+  "pass": {
+    "big": false,
+    "small": false
+  },
+  "next": "Momentum is closed and reported as NO-GO. No paid data.",
+  "provenance": {
+    "6_Portfolios_ME_Prior_12_2_CSV.zip": {
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/6_Portfolios_ME_Prior_12_2_CSV.zip",
+      "sha256": "68d90a218235b2c14e67eb1b7b1acd2d9fcc6b626bc4c64e854e2788bcf44bf3",
+      "bytes": 127456,
+      "downloaded_utc": "2026-10-21T02:20:57.651124+00:00"
+    },
+    "F-F_Research_Data_Factors_CSV.zip": {
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_CSV.zip",
+      "sha256": "593f4fbef03181bc0b22ff6292f217689dd1fb79355049ca905d95b262040a66",
+      "bytes": 13065,
+      "downloaded_utc": "2026-10-21T02:20:58.025288+00:00"
+    }
+  },
+  "brief": "docs/research/briefs/2026-10-20-momentum-retest.md",
+  "runtime_sec": 0.07105940394103527
+}

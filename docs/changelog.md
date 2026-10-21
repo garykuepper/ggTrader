@@ -1,5 +1,56 @@
 # Changelog
 
+## 2026-10-20
+
+- **Research: momentum Phase 1 diagnostic corrections after final review.**
+  Added the March–December 2009 rebound (gross and base cost) and full-window
+  relative drawdown/recovery required by brief §10; definitions were specified
+  after the NO-GO result and are diagnostics only. Removed the mis-specified
+  optional CAPM alpha t-statistic; alpha and beta estimates remain unchanged.
+  Regenerated the artifact offline from frozen inputs and verified every gate,
+  subperiod and stress value unchanged. Both prompts and the snapshot now close
+  momentum consistently; no paid data, Phases 2–5 cancelled, production frozen.
+
+- **Research: momentum Phase 1 French screen — NO-GO.**
+  - Report: [Phase 1 gate decision](research/2026-10-20-momentum-french-screen-nogo.md).
+    Final artifact: `research/_momentum_french_screen_results.json`.
+    Big t 3.052434 / p 0.001134967 and Small t 3.107965 / p 0.000941902
+    (`groups.big.full_t`, `groups.big.full_p`, `groups.small.full_t`,
+    `groups.small.full_p`) each clear the standalone t bar, but Holm rejects
+    neither (`holm`). Post-1994 net compound annual growth rate differences
+    +0.08 / +0.20 percentage points per year also fail the +1.0 bar
+    (`groups.big.post_cagr_diff_pp`, `groups.small.post_cagr_diff_pp`).
+  - Disclosed the post-first-run size-matched diagnostic correction: removed
+    its cost haircut to match the brief; pass calculations are unchanged.
+    Cost extrapolation and tax reasoning are context only, not measured tax
+    results or a change to the registered costs.
+  - Both sizes fail (`pass`): momentum is closed, no paid data; Phase 2 is not
+    executed and Phases 2–5 are cancelled (`next`). A pass would have authorized
+    research only. Snapshot closes both momentum rows (the same portfolio);
+    next steps retain the freeze and the owner decision to retire stock picks
+    around 2026-12-29, leaving only the SPY sweep. Documentation only.
+
+- **Research: record fixes and momentum re-test pre-registration (Phase 0).**
+  - **Correction section appended:** `docs/research/2026-10-19-production-replica-audit-nogo.md`
+    updated with a dated correction section documenting the `dual_momentum` duplicate
+    finding (identical to `xs_momentum` on the 2026-10-19 replay; negative filter never
+    removed a pick; not an independent test), Deflated Sharpe Ratio (DSR) gate power
+    limits under 1-year folds and 12-combo grid (in-sample Sharpe ~2.5 required to pass),
+    and clustered Federal Open Market Committee (FOMC) event study statistics.
+  - **Clustered FOMC event study:** recorded day-clustered test across 113 FOMC meeting
+    dates (`docs/research/_fomc_clustered_event_study_20261020.json`), finding gross
+    t = 2.258 and net t = 0.981 (fails statistical significance after transaction costs;
+    the earlier unclustered reference of 3.619 gross / 1.572 net counted each meeting
+    day three times across TLT/IEF/EDV).
+  - **Research snapshot & prompt templates updated:** `docs/research/RESEARCH_SNAPSHOT.md`,
+    `docs/research/prompts/web-strategy-research-prompt.md`, and
+    `docs/research/prompts/local-implementation-prompt-TEMPLATE.md` synchronized.
+    Explicitly labeled historical KEEP 0.80 vs 0.78 and historical "gates 17/17" as void
+    and superseded by the 2026-10-19 production-replica audit NO-GO.
+  - **Next steps updated:** `docs/next_steps.md` updated with DSR power limits note and
+    made pre-registered momentum re-test the active research step linking to
+    `docs/research/briefs/2026-10-20-momentum-retest.md`.
+
 ## 2026-10-19
 
 - **Research: production-rule daily-bar audit — NO-GO.** New event-loop replica

@@ -20,6 +20,7 @@ from ggTrader.lab.event_study import (
     in_position_mask,
     run_event_study_from_signals,
     split_event_returns,
+    split_event_returns_by_date,
 )
 
 
@@ -84,6 +85,69 @@ class TestSplitEventReturns:
         event_ret, nonevent_ret = split_event_returns(returns, mask)
         assert len(event_ret) == 0
         assert len(nonevent_ret) == 3
+
+
+class TestSplitEventReturnsByDate:
+    def test_split_event_returns_by_date_counts_dates_not_symbol_days(self):
+        dates = pd.date_range("2026-01-01", periods=6, freq="D")
+        symbols = ["A", "B", "C"]
+        returns = pd.DataFrame(
+            [
+                [np.nan, np.nan, np.nan],
+                [0.010, 0.020, 0.030],
+                [0.040, 0.050, 0.060],
+                [-0.010, 0.000, 0.010],
+                [0.020, -0.010, 0.050],
+                [0.030, 0.010, -0.020],
+            ],
+            index=dates,
+            columns=symbols,
+        )
+        mask = pd.DataFrame(False, index=dates, columns=symbols)
+        mask.loc[dates[2], :] = True
+        mask.loc[dates[4], :] = True
+
+        event_ret, nonevent_ret = split_event_returns_by_date(returns, mask)
+
+        # Assert the event series has length 2 and each value equals that row's mean.
+        assert len(event_ret) == 2
+        assert list(event_ret.index) == [dates[2], dates[4]]
+        assert event_ret.loc[dates[2]] == pytest.approx(float(returns.loc[dates[2]].mean()))
+        assert event_ret.loc[dates[4]] == pytest.approx(float(returns.loc[dates[4]].mean()))
+
+        # Assert the non-event series has length 3, covering dates 1, 3 and 5; date 0 is NaN.
+        assert len(nonevent_ret) == 3
+        assert list(nonevent_ret.index) == [dates[1], dates[3], dates[5]]
+        assert nonevent_ret.loc[dates[1]] == pytest.approx(float(returns.loc[dates[1]].mean()))
+        assert nonevent_ret.loc[dates[3]] == pytest.approx(float(returns.loc[dates[3]].mean()))
+        assert nonevent_ret.loc[dates[5]] == pytest.approx(float(returns.loc[dates[5]].mean()))
+
+    def test_split_event_returns_by_date_partial_symbols_and_nans(self):
+        dates = pd.date_range("2026-01-01", periods=4, freq="D")
+        symbols = ["A", "B", "C"]
+        returns = pd.DataFrame(
+            [
+                [np.nan, np.nan, np.nan],
+                [0.01, np.nan, 0.03],  # non-event day with partial NaN
+                [0.04, 0.06, -0.05],  # event day with only A and B in position
+                [np.nan, 0.02, 0.05],  # event day with A and B in position, but A is NaN
+            ],
+            index=dates,
+            columns=symbols,
+        )
+        mask = pd.DataFrame(False, index=dates, columns=symbols)
+        mask.loc[dates[2], ["A", "B"]] = True
+        mask.loc[dates[3], ["A", "B"]] = True
+
+        event_ret, nonevent_ret = split_event_returns_by_date(returns, mask)
+
+        assert len(event_ret) == 2
+        assert event_ret.loc[dates[2]] == pytest.approx((0.04 + 0.06) / 2)
+        assert event_ret.loc[dates[3]] == pytest.approx(0.02)
+
+        assert len(nonevent_ret) == 1
+        assert list(nonevent_ret.index) == [dates[1]]
+        assert nonevent_ret.loc[dates[1]] == pytest.approx((0.01 + 0.03) / 2)
 
 
 class TestEventStudyTest:

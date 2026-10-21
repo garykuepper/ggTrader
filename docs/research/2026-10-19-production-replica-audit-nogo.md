@@ -248,3 +248,48 @@ preserves the unresolved evidence for future data-quality work.
 After-tax replay of the failed stock model, voter re-ablation and live fixes are
 parked. No real-money stock sleeve is supported by this audit. The A23 owner
 allocation and the separate cross-asset shadow retain their own rules.
+
+## Correction (2026-10-20)
+
+This dated addendum records corrections resulting from the pre-registered
+momentum re-test specification (`docs/research/briefs/2026-10-20-momentum-retest.md`,
+§4, items 1–4) and the Task 1 day-clustered event study. The historical report
+body above remains intact.
+
+1. **`dual_momentum` is identical to `xs_momentum` on this replay (§4, item 1).**
+   In the 2026-10-19 corrected-harness replay (`_audit_reruns_20261019.json`),
+   at `top_n = 50` its negative-momentum filter never removed a pick. Consequently,
+   `dual_momentum` produced returns and metrics identical to `xs_momentum`
+   (excess CAGR +4.367 percentage points/year over SPY, Newey-West t = 0.761).
+   It is not an independent test or separate confirmation of an edge.
+
+2. **Deflated Sharpe Ratio (DSR) gate power limits (§4, item 2).**
+   With one-year training folds and a 12-combo parameter grid, the corrected DSR
+   gate (`09f9f40`) requires an in-sample Sharpe ratio of roughly 2.5 to pass.
+   As a result, walk-forward out-of-sample (OOS) results predominantly reflect the
+   per-fold anchor fallback (17/17 folds used the anchor). The gate rejections
+   stand; the low pass counts reflect low statistical power of the test under
+   short training windows, not proof that there is no underlying edge.
+
+3. **Federal Open Market Committee (FOMC) day-clustered event study (§4, item 3).**
+   The unclustered statistics in §2 above (gross Welch t = 3.619, net Welch t = 1.572;
+   `fomc_drift.primary_event_study.{gross,net}.t_stat` in `_audit_reruns_20261019.json`)
+   counted each meeting day three times (`n_event` = 339) across the three-ETF
+   Treasury universe (TLT, IEF, EDV), ignoring cross-sectional correlation on
+   shared announcement dates.
+   Task 1 recomputed the event study with returns clustered by meeting date over
+   the registered window (2012-01-01 to 2026-04-30) for `pair: entry_1_hold_0`.
+   Source: `docs/research/_fomc_clustered_event_study_20261020.json`:
+   - `n_event_dates`: 113
+   - `gross.t_stat`: 2.258 (`gross.p_value` = 0.0258)
+   - `net.t_stat`: 0.981 (`net.p_value` = 0.3288; `significant` = false)
+   - `unclustered_reference`: gross t = 3.619, net t = 1.572 (`n_event` = 339)
+   The day-clustered net event t-statistic falls to 0.981, confirming that after
+   transaction costs and clustering by event date, the FOMC drift effect is not
+   statistically significant on this Treasury universe.
+
+4. **Prompt templates and momentum re-test (§4, item 4).**
+   Prompt templates have been regenerated following `.claude/skills/research-snapshot/SKILL.md`
+   to remove superseded claims (such as historical KEEP 0.80 vs 0.78, void "gates 17/17",
+   or 1.12 / 16.3%). Momentum is subject to a pre-registered two-part re-test
+   protocol detailed in `docs/research/briefs/2026-10-20-momentum-retest.md`.

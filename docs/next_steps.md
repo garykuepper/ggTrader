@@ -6,22 +6,39 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Current research decision (2026-10-19)
+## Current research decision (2026-10-20)
 
-1. **Owner decision at the freeze lift (~2026-12-29): recommend retiring the
+1. **Momentum re-test closed NO-GO.** Neither size passes the registered
+   French screen (`_momentum_french_screen_results.json`: `pass.big = false`,
+   `pass.small = false`). Holm rejects neither; post-publication net compound
+   annual growth rate (CAGR) differences are Big +0.08 and Small +0.20 percentage
+   points per year, below +1.0 (`groups.big.post_cagr_diff_pp`,
+   `groups.small.post_cagr_diff_pp`). No paid data and no further momentum work.
+   Phase 2 is not executed; Phases 2–5 are cancelled. The stock-trading path has
+   no validated candidate. See the
+   [Phase 1 report](research/2026-10-20-momentum-french-screen-nogo.md) and
+   [registered brief](research/briefs/2026-10-20-momentum-retest.md).
+2. **Deflated Sharpe Ratio (DSR) gate power note.** With one-year training folds
+   and a 12-combo grid, the corrected DSR gate needs an in-sample Sharpe of
+   roughly 2.5 to pass, so walk-forward out-of-sample (OOS) results are mostly
+   per-fold anchor results. Gate rejections stand: low pass counts reflect low
+   statistical power, not proof that there is no edge (spec:
+   `docs/research/briefs/2026-10-20-momentum-retest.md`, §4, item 2).
+3. **Owner decision at the freeze lift (~2026-12-29): recommend retiring the
    stock-picking sleeve.** The approved historical daily-bar model is NO-GO:
    CAGR 14.19% versus SPY 14.83%, excess −0.64 pt/year, Newey-West t −0.69.
    The older holdout remains INCONCLUSIVE; exact historical live replication
    remains UNVERIFIED. Keep production frozen. Any later live action is a
-   separate owner decision. The paper alternative is the SPY sweep alone, or
-   the separate shadow only if it passes its own forward rule; the owner's
-   real-money A23 allocation and exit terms are unchanged. See the
+   separate owner decision: retire the stock picks so only the SPDR S&P 500
+   exchange-traded fund (SPY) sweep remains in the stock-trading path. The
+   separate shadow retains its own forward rule; the owner's real-money A23
+   allocation and exit terms are unchanged. See the
    [audit report](research/2026-10-19-production-replica-audit-nogo.md) and
    [approved closure](research/briefs/2026-10-19-production-replica-closure-amendment.md).
-2. **Review the A23 distribution-tax bounds before entry**, as information for
-   the existing owner decision. No new stock, momentum, FOMC or voter retest is
-   queued. Earlier research/deployment notes below are historical; their old
-   KEEP and outstanding-rerun statements are superseded by the audit.
+4. **Review the A23 distribution-tax bounds before entry**, as information for
+   the existing owner decision. Earlier research/deployment notes below are
+   historical; their old KEEP and outstanding-rerun statements are superseded
+   by the audit.
 
 ## Where new strategy ideas come from (2-stage pipeline)
 
@@ -124,7 +141,25 @@ money in ~3 months.
 - **Compare like with like:** on the same out-of-sample span (2022-01 →
   2026-04), static 80/20 0.87, core + sweep 0.80, SPY 0.78.
 
-## ACTIVE STEP (2026-09-22) — verify the core-revert deploy, then one change per week
+## CLOSED (2026-10-20) — Momentum re-test NO-GO
+
+The [Phase 1 report](research/2026-10-20-momentum-french-screen-nogo.md) closes
+momentum under the [approved brief §5](research/briefs/2026-10-20-momentum-retest.md):
+neither size passes (`_momentum_french_screen_results.json`: `pass`, `next`).
+No paid data; Phase 2 is not executed and Phases 2–5 are cancelled. Do not build
+the momentum tax engine or start a replacement momentum trading path under
+this plan. Any future trading path requires separate owner authorization.
+
+The next owner decision remains retirement of stock picks at the freeze lift
+(about 2026-12-29), leaving only the SPY sweep. Production remains frozen until
+then. Per the 2026-10-20 triage, post-earnings announcement drift (PEAD) needs
+public earnings-timing repair, and insider/congressional trades need
+filing-availability repair; all remain parked at low priority. No new strategy
+is proposed.
+
+---
+
+### Previous operational sequence (2026-09-22 → 2026-09-30, now frozen)
 
 **Deployed 2026-09-22 ~23:00 PT** (merge `8d9d3ef`, image
 `ghcr.io/garykuepper/ggtrader:latest` built 2026-09-23 05:59 UTC, live
