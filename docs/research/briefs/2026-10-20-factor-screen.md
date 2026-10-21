@@ -1,6 +1,6 @@
 # Brief: classic long-only factor screen for a taxable trading sleeve
 
-**Status:** DRAFT 2026-10-20, awaiting owner approval. Nothing has been computed.
+**Status:** pre-registered; approved by the owner 2026-10-21 before anything was computed. Its numbers are now the bar; changing any of them needs a new dated brief.
 
 **Terms used below:**
 - *Factor* means a quantifiable firm characteristic (such as value, profitability, or investment rate) that academic research associates with systematic differences in expected stock returns.
