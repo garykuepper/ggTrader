@@ -34,11 +34,13 @@
 
 Monthly, value-weighted portfolios from the Ken French Data Library. All raw source archives must be frozen with download timestamp and SHA-256 checksums recorded in `data/external/french/MANIFEST.json` before any computation begins, identical to the momentum study protocol.
 
-- **Operating Profitability:** `6_Portfolios_ME_OP_2x3` → **BIG HiOP** (large-cap robust profitability).
-- **Book-to-Market:** `6_Portfolios_2x3` (size × book-to-market) → **BIG HiBM** (large-cap value).
-- **Investment:** `6_Portfolios_ME_INV_2x3` → **BIG LoINV** (large-cap conservative investment).
+- **Operating Profitability:** `6_Portfolios_ME_OP_2x3_CSV.zip` → **BIG HiOP** (large-cap robust profitability).
+- **Book-to-Market:** `6_Portfolios_2x3_CSV.zip` (size × book-to-market) → **BIG HiBM** (large-cap value).
+- **Investment:** `6_Portfolios_ME_INV_2x3_CSV.zip` → **BIG LoINV** (large-cap conservative investment).
 - **Prior Return (Momentum):** already-frozen `6_Portfolios_ME_Prior_12_2` → **BIG HiPRIOR** (large-cap winners, used only inside the combo hypothesis H4).
 - **Market Benchmark:** already-frozen `F-F_Research_Data_Factors` → Market total return = `Mkt-RF + RF`.
+- **Section and columns.** All three new files use the section `Average Value Weighted Returns -- Monthly` and the exact column labels `BIG HiOP`, `BIG HiBM`, `BIG LoINV` (and `SMALL HiOP`, `SMALL HiBM`, `SMALL LoINV`), checked against the live files on 2026-10-20 without computing any returns.
+- **Not the S&P 500.** French's "BIG" means above the NYSE median market cap, roughly 1,000+ stocks including mid-caps, not the ~500 S&P 500 names. Value here is pure book-to-market, which misses intangible capital. A pass shows the factor is real in broad large caps; it does not show an S&P 500 version will clear Part B.
 
 ## 4. Hypotheses: a family of FOUR (Big only)
 
@@ -62,7 +64,7 @@ where $c$ is the fixed annual cost haircut subtracted monthly before compounding
 - **H1–H3 (HiOP, HiBM, LoINV):**
   - **Base haircut:** $c = 1.0\%$/yr.
   - **Stress haircut:** $c = 2.0\%$/yr.
-- **H4 (Value + Momentum Combo):**
+- **H4 (Value + Momentum Combo):** R_combo,t = 0.5 · R_BIG HiBM,t + 0.5 · R_BIG HiPRIOR,t (gross, rebalanced every month), then the haircut below is subtracted once from the combo.
   - **Base haircut:** $c = 1.5\%$/yr.
   - **Stress haircut:** $c = 3.0\%$/yr.
   *(Higher haircut reflects the higher portfolio turnover inherent in the 12-2 momentum leg).*
@@ -85,26 +87,27 @@ where $c$ is the fixed annual cost haircut subtracted monthly before compounding
   - Evaluated over 1994-01 → 2026-04.
   - Portfolio CAGR net of base haircut minus market CAGR must be at least **+1.0 pt/yr** (+100 bps/yr).
 - **Pass Rule:** A factor passes Phase 1 if and only if it satisfies **both A1 and A2**.
+- **Taxable caution.** A2 is net of the cost haircut only, not tax. A factor clearing A2 by a thin margin (+1.0 to +1.5 pt/yr) is likely to fail Part B's after-tax bar; the report must say so if that happens.
 
 ## 7. Diagnostics
 
 Diagnostics are reported to characterize behavior, risk, and subperiod stability; they are never pass criteria and cannot override failed gates.
 
-- **Century-long history where data allow:** Value (BIG HiBM) and Combo (H4) evaluated back to 1927-01 over their full available data span.
-- **Subperiods:** 1963–1993, 1994–2012, and 2013–end (inclusive).
+- **Century-long history where data allow:** Value (BIG HiBM) and Combo (H4) evaluated over 1927-01 → 2026-04 (the momentum file starts 1927-01; raw value data starts 1926-07).
+- **Subperiods:** 1963-07 → 1993-12, 1994-01 → 2012-12, and 2013-01 → 2026-04.
 - **Post-2013 net CAGR difference:** Reported plainly for all candidates. Robust profitability and investment were formally published circa 2013–2015 (e.g., Novy-Marx 2013; Fama and French 2015). Therefore, the post-1994 window includes significant pre-publication / in-sample history for OP and INV; the post-2013 subperiod serves as their true out-of-sample modern check.
 - **Stress-cost evaluation:** Full-window NW $t$, $p$, and post-1994 net CAGR difference evaluated under the stress cost haircuts (2.0% for H1–H3; 3.0% for H4).
 - **CAPM regression:** Annualized arithmetic alpha and market beta only. No alpha $t$-statistic is reported: the momentum study removed its version as mis-specified, and a valid one is out of scope for a diagnostic. Following the momentum study correction, alpha is estimated by regressing gross portfolio excess returns over the risk-free rate on market excess returns over the risk-free rate ($R_{i,t} - R_{f,t} = \alpha + \beta (R_{m,t} - R_{f,t}) + \epsilon_t$).
 - **Worst 12-month relative return:** Compounded rolling 12-month winners-to-market wealth ratio $\prod (1 + R_{p}) / \prod (1 + R_{m}) - 1$.
 - **Relative drawdown and recovery:** Maximum peak-to-trough decline in net relative wealth $\prod (1 + R_p - c/12) / \prod (1 + R_m)$ from initial value 1.0, peak and trough dates, and calendar months to recovery (or null if unrecovered).
-- **Small-cap analogues:** SMALL HiOP, SMALL HiBM, and SMALL LoINV reported as diagnostics only, strictly outside the confirmatory Holm family, because we have no point-in-time small-cap universe or execution capability to trade them.
+- **Small-cap analogues:** SMALL HiOP, SMALL HiBM, and SMALL LoINV reported as diagnostics only, strictly outside the confirmatory Holm family, because we have no point-in-time small-cap universe or execution capability to trade them. They use a 3.0%/yr base and 6.0%/yr stress haircut, as in the momentum brief.
 
 ## 8. What happens next
 
 | Phase 1 Result | Next Step |
 |---|---|
 | None pass | Factor screen closed NO-GO, no paid data. Report the closure plainly and propose the next research step. |
-| One or more pass | Only the single passing factor with the smallest $p$-value advances to a separate Phase 2 brief (paid 2000–2020 survivorship-free data, exact S&P 500 rules, after-tax vs SPY ≥ +1.0 pt/yr = Part B). |
+| One or more pass | Only the single passing factor with the smallest $p$-value (tie: larger post-1994 net CAGR difference) advances to a separate Phase 2 brief (paid 2000–2020 survivorship-free data, exact S&P 500 rules, after-tax vs SPY ≥ +1.0 pt/yr = Part B). |
 
 **Authority:** Passing Phase 1 authorizes further research only. It is not an authorization for deployment or real capital.
 
@@ -133,4 +136,4 @@ Computation must stop immediately, and no verdict may be rendered, if any of the
 3. **Common 1963-07 window:** Restricting the primary statistical window to 1963-07 aligns all four factors to identical macro regimes, since OP and INV data begin in July 1963.
 4. **Combo uses existing frozen momentum file:** H4 combines the new Value series with the already-frozen, checksummed `6_Portfolios_ME_Prior_12_2` Big HiPRIOR series.
 5. **H4 cost haircut of 1.5% base / 3.0% stress:** Reflects the blended turnover of an annual/semi-annual value rebalance combined with a higher-turnover 12-2 momentum leg.
-6. **Only the strongest passer advances:** If multiple factors clear A1 and A2, only the factor with the lowest $p$-value advances to Phase 2 paid data testing, preventing multiple testing leakage in subsequent phases.
+6. **Only the strongest passer advances:** If multiple factors clear A1 and A2, only the factor with the lowest $p$-value (tie: larger post-1994 net CAGR difference) advances to Phase 2 paid data testing, preventing multiple testing leakage in subsequent phases.
