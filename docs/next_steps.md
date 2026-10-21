@@ -6,14 +6,27 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Current research decision (2026-10-20)
+## Current research decision (2026-10-21)
 
 **Owner correction:** Follow [the standing owner instructions](../AGENTS.md#owner-instructions-2026-10-20).
 Earlier retirement recommendations and retirement-account suggestions below
 are superseded, not pending decisions. Focus on research, strategy evidence,
 and paper-trading reliability; the account is taxable only.
 
-1. **Momentum re-test closed NO-GO.** Neither size passes the registered
+1. **Classic stock factor screen closed NO-GO.** None of the four primary
+   hypotheses (H1 BIG HiOP, H2 BIG HiBM, H3 BIG LoINV, H4 50/50 Value + Momentum
+   Combo) passes the registered French screen (`_factor_screen_results.json`:
+   all `overall_pass = false`, `advancing_factor = null`). All fail Holm A1
+   (best full-window Newey-West t 1.34 vs 3.40 hurdle); all fail economic A2
+   since 1994 (+0.83, -0.62, 0.00, -0.56 pt/yr vs +1.0 hurdle). Phase 2 is
+   cancelled; no paid data. Both classic long-history routes (momentum and factors)
+   are now closed under the two-part standard. **Proposed next research step
+   (needs separate owner authorization):** repairing public-availability timing
+   for post-earnings announcement drift (PEAD) and insider cluster buying, both
+   parked since 2026-10-20 triage. See the
+   [Factor screen report](research/2026-10-21-factor-screen-nogo.md) and
+   [registered brief](research/briefs/2026-10-20-factor-screen.md).
+2. **Momentum re-test closed NO-GO.** Neither size passes the registered
    French screen (`_momentum_french_screen_results.json`: `pass.big = false`,
    `pass.small = false`). Holm rejects neither; post-publication net compound
    annual growth rate (CAGR) differences are Big +0.08 and Small +0.20 percentage
@@ -23,13 +36,13 @@ and paper-trading reliability; the account is taxable only.
    no validated candidate. See the
    [Phase 1 report](research/2026-10-20-momentum-french-screen-nogo.md) and
    [registered brief](research/briefs/2026-10-20-momentum-retest.md).
-2. **Deflated Sharpe Ratio (DSR) gate power note.** With one-year training folds
+3. **Deflated Sharpe Ratio (DSR) gate power note.** With one-year training folds
    and a 12-combo grid, the corrected DSR gate needs an in-sample Sharpe of
    roughly 2.5 to pass, so walk-forward out-of-sample (OOS) results are mostly
    per-fold anchor results. Gate rejections stand: low pass counts reflect low
    statistical power, not proof that there is no edge (spec:
    `docs/research/briefs/2026-10-20-momentum-retest.md`, §4, item 2).
-3. **Continue frozen paper observation and assess reproducibility.**
+4. **Continue frozen paper observation and assess reproducibility.**
    The approved historical daily-bar model is NO-GO:
    CAGR 14.19% versus SPY 14.83%, excess −0.64 pt/year, Newey-West t −0.69.
    The older holdout remains INCONCLUSIVE; exact historical live replication
@@ -39,7 +52,7 @@ and paper-trading reliability; the account is taxable only.
    allocation and exit terms are unchanged. See the
    [audit report](research/2026-10-19-production-replica-audit-nogo.md) and
    [approved closure](research/briefs/2026-10-19-production-replica-closure-amendment.md).
-4. **Review the A23 distribution-tax bounds before entry**, as information for
+5. **Review the A23 distribution-tax bounds before entry**, as information for
    the existing owner decision. Earlier research/deployment notes below are
    historical; their old KEEP and outstanding-rerun statements are superseded
    by the audit.

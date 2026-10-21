@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-21
+
+- **Research: classic stock factor screen — Phase 1 NO-GO.** Closed the classic
+  four-factor screen on survivorship-free French library data without paid data.
+  Report: [Factor screen report](research/2026-10-21-factor-screen-nogo.md).
+  Final artifact: `research/_factor_screen_results.json`. All four primary large-cap
+  hypotheses fail statistical significance A1 under Holm step-down (best Newey-West
+  t 1.34 vs Holm threshold 0.0003375, t ~3.40; H1 HiOP t 0.13, H2 HiBM t 1.01,
+  H3 LoINV t 0.66, H4 Combo t 1.34). All fail post-1994 economic persistence A2
+  (H1 +0.83, H2 -0.62, H3 0.00, H4 -0.56 pt/yr vs +1.0 hurdle). Phase 2 is
+  cancelled (`advancing_factor = null`). Both classic long-history routes (momentum
+  and factors) are closed. Proposed next research step under separate owner
+  authorization: timing repair for PEAD and insider cluster buying.
+
 ## 2026-10-20
 
 - **Owner instruction correction:** Recorded the standing instruction in
