@@ -78,8 +78,11 @@ The historical claim of Sharpe 0.80 vs 0.78
 (`docs/research/2026-09-24-core-spy-blend-keep.md`) is **void and superseded**
 by the 2026-10-19 production-replica audit NO-GO.
 
-**Active research arc:**
-Pre-registered momentum re-test (`docs/research/briefs/2026-10-20-momentum-retest.md`).
+**Momentum research closed NO-GO (2026-10-20):**
+The century-long French screen failed both the Holm significance test (A1)
+and the post-publication return test (A2) for both company-size groups.
+No paid data will be bought; Phases 2–5 are cancelled, including the after-tax
+replay (`docs/research/2026-10-20-momentum-french-screen-nogo.md`).
 
 **How to judge a candidate.** A standalone strategy must beat SPY. A sleeve
 must improve SPY + sleeve over SPY alone **with the sleeve funded out of SPY**,
@@ -153,9 +156,11 @@ avoiding the exact instance:
 - **Cross-sectional momentum/tournament ranking on large-cap equities:**
   on a 2026-10-19 replay, 12-1 momentum showed +4.37 pt/yr excess CAGR but
   Newey-West t = 0.761 (failed significance). A dual-momentum variant was
-  identical because its filter never triggered. This is now under active,
-  pre-registered re-test on ~100 years of Ken French data and clean-window
-  after-tax execution (`docs/research/briefs/2026-10-20-momentum-retest.md`).
+  identical because its filter never triggered. The completed century-long
+  French screen is **NO-GO**: neither size passes Holm (A1), and post-1994
+  net excess CAGR of Big +0.08 / Small +0.20 pt/yr fails the +1.0 bar (A2).
+  No paid data will be bought; Phases 2–5, including the after-tax replay,
+  are cancelled (`docs/research/2026-10-20-momentum-french-screen-nogo.md`).
 
 - **Blunt regime gates on entries don't help** — VIX-level regime throttling
   rejected. (Different from vol-aware *sizing*, which is structurally sound

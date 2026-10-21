@@ -34,7 +34,6 @@
       },
       "capm": {
         "alpha_ann_pct": 3.371358728515852,
-        "alpha_t": 5.011953621867296,
         "beta": 0.9599558684992915
       },
       "size_matched": {
@@ -46,6 +45,17 @@
         "start": "1932-06",
         "end": "1933-05",
         "relative_pct": -22.367594838664818
+      },
+      "rebound_2009": {
+        "net_pct": -11.954054673389114,
+        "gross_pct": -11.240368518039933
+      },
+      "relative_drawdown": {
+        "max_drawdown_pct": -31.68828516803497,
+        "peak": "2008-06",
+        "trough": "2025-08",
+        "recovery": null,
+        "recovery_months": null
       }
     },
     "small": {
@@ -82,7 +92,6 @@
       },
       "capm": {
         "alpha_ann_pct": 5.735060645843164,
-        "alpha_t": 4.393472739730288,
         "beta": 1.1866358387691676
       },
       "size_matched": {
@@ -94,6 +103,17 @@
         "start": "1937-03",
         "end": "1938-02",
         "relative_pct": -30.128742249230257
+      },
+      "rebound_2009": {
+        "net_pct": -10.155327071245901,
+        "gross_pct": -7.956654011248165
+      },
+      "relative_drawdown": {
+        "max_drawdown_pct": -56.84854165688008,
+        "peak": "2006-03",
+        "trough": "2025-07",
+        "recovery": null,
+        "recovery_months": null
       }
     }
   },

@@ -81,14 +81,72 @@ def test_nw_t_and_one_sided_p() -> None:
     assert nw_t(pd.Series([0.0] * 24)) == 0
 
 
-def test_capm_retains_alpha_in_residual_mean() -> None:
-    """Regressing out beta must not remove alpha before computing its t."""
+def test_capm_reports_alpha_and_beta_only() -> None:
+    """Recover the intercept and exposure without a mis-specified alpha t-test."""
     market = pd.Series(np.tile([-0.02, 0.0, 0.02, 0.0], 30))
     noise = np.tile([0.001, -0.001, 0.001, -0.001], 30)
     result = capm(0.002 + 1.5 * market + noise, market)
-    assert result["alpha_ann_pct"] == pytest.approx(2.4)
-    assert result["beta"] == pytest.approx(1.5)
-    assert result["alpha_t"] > 3
+    assert result == pytest.approx({"alpha_ann_pct": 2.4, "beta": 1.5})
+
+
+def test_screen_rebound_2009_uses_march_through_december_and_base_cost() -> None:
+    """Exclude adjacent months and compound wealth ratios rather than return differences."""
+    sm, mk = _panels()
+    sm[:] = 0.0
+    mk["mkt"] = 0.0
+    sm.loc["2009-02", "big_hi"] = 0.9
+    sm.loc["2010-01", "big_hi"] = 0.9
+    sm.loc["2009-03", "big_hi"] = 0.2
+    mk.loc["2009-03", "mkt"] = 0.1
+    sm.loc["2009-12", "big_hi"] = -0.1
+    result = screen(sm, mk)["groups"]
+    assert result["big"]["rebound_2009"] == pytest.approx(
+        {
+            "gross_pct": (1.2 * 0.9 / 1.1 - 1) * 100,
+            "net_pct": ((1.2 - 0.01 / 12) * (1 - 0.01 / 12) ** 8 * (0.9 - 0.01 / 12) / 1.1 - 1)
+            * 100,
+        }
+    )
+    assert result["small"]["rebound_2009"] == pytest.approx(
+        {"gross_pct": (1 / 1.1 - 1) * 100, "net_pct": (0.9975**10 / 1.1 - 1) * 100}
+    )
+
+
+@pytest.mark.parametrize("recovers", [True, False])
+def test_screen_relative_drawdown_tracks_peak_trough_and_recovery(recovers: bool) -> None:
+    """Find a base-cost wealth-ratio drawdown and leave unrecovered durations null."""
+    sm, mk = _panels()
+    sm[:] = 0.01 / 12
+    mk["mkt"] = 0.0
+    # Big's net wealth is 1, 1.5, 1.5, 0.75, then 1.5 (or 0.75 forever).
+    sm.loc["1927-02", "big_hi"] += 0.5
+    sm.loc["1927-04", "big_hi"] += -0.4
+    mk.loc["1927-04", "mkt"] = 0.2
+    if recovers:
+        sm.loc["1927-05", "big_hi"] += 1.0
+    result = screen(sm, mk)["groups"]["big"]["relative_drawdown"]
+    assert result["max_drawdown_pct"] == pytest.approx(-50.0)
+    assert result["peak"] == "1927-03"
+    assert result["trough"] == "1927-04"
+    assert result["recovery"] == ("1927-05" if recovers else None)
+    assert result["recovery_months"] == (1 if recovers else None)
+
+
+def test_screen_relative_drawdown_includes_initial_wealth() -> None:
+    """A first-month relative loss must count from the initial wealth of one."""
+    sm, mk = _panels()
+    sm[:] = 0.01 / 12
+    mk["mkt"] = 0.0
+    mk.loc["1927-01", "mkt"] = 0.25
+    sm.loc["1927-02", "big_hi"] += 0.25
+    result = screen(sm, mk)["groups"]["big"]["relative_drawdown"]
+    assert result == {
+        "max_drawdown_pct": pytest.approx(-20.0),
+        "peak": "1926-12",
+        "trough": "1927-01",
+        "recovery": "1927-02",
+        "recovery_months": 1,
+    }
 
 
 def test_worst_rolling_relative_compounds_wealth_ratio() -> None:
@@ -193,6 +251,8 @@ def test_screen_decision_and_diagnostics(big: bool, small: bool, next_text: str)
             "capm",
             "size_matched",
             "worst_12m",
+            "rebound_2009",
+            "relative_drawdown",
         }
         assert len(result["groups"][group]["diag"]) == 3
     json.dumps(result, allow_nan=False)

@@ -58,8 +58,10 @@ risk-free return. Big HiPRIOR is an analogue for large-cap winners, not an S&P
 `provenance['6_Portfolios_ME_Prior_12_2_CSV.zip']` and
 `provenance['F-F_Research_Data_Factors_CSV.zip']`. The archives and
 [manifest](../../data/external/french/MANIFEST.json) were committed before the
-screen in `357acf0`; the final screen is `61ccf59`. Checksums and complete
+screen in `357acf0`; the initial screen is `61ccf59`. Checksums and complete
 registered monthly coverage were verified without downloading replacements.
+Final-review diagnostics were regenerated offline from those same bytes;
+the artifact retains its original `runtime_sec` as historical run metadata.
 
 ### Registered gates
 
@@ -102,13 +104,11 @@ identify a cause.
 The capital asset pricing model (CAPM) fits gross winners' returns less the
 risk-free return to market returns less the risk-free return over the full
 window. Alpha is the annualized arithmetic intercept; beta is market exposure.
-The alpha t below is the driver's Newey-West statistic for the beta-adjusted
-return mean. It is diagnostic, not the registered winners-minus-market test.
 
-| Group | Annual alpha | Alpha t | Beta |
-|---|---|---|---|
-| Big | 3.371359% (`groups.big.capm.alpha_ann_pct`) | 5.011954 (`groups.big.capm.alpha_t`) | 0.959956 (`groups.big.capm.beta`) |
-| Small | 5.735061% (`groups.small.capm.alpha_ann_pct`) | 4.393473 (`groups.small.capm.alpha_t`) | 1.186636 (`groups.small.capm.beta`) |
+| Group | Annual alpha | Beta |
+|---|---|---|
+| Big | 3.371359% (`groups.big.capm.alpha_ann_pct`) | 0.959956 (`groups.big.capm.beta`) |
+| Small | 5.735061% (`groups.small.capm.alpha_ann_pct`) | 1.186636 (`groups.small.capm.beta`) |
 
 The same-size comparator is the equal average of that size group's low,
 middle and high momentum portfolio returns; each constituent portfolio is
@@ -122,10 +122,16 @@ haircut.
 | Small | 5.183887 (`groups.small.size_matched.t`) | 0.000000109 (`groups.small.size_matched.p`) | +5.135458 pt/yr (`groups.small.size_matched.cagr_diff_pp`) |
 
 **Diagnostic correction after the first run:** the size-matched diagnostic's
-cost haircut was removed to match the brief's definition. The final JSON above
-contains that correction. It is diagnostic only; the base-cost A1 and A2
-calculations and pass logic are unchanged. These gross comparisons do not
-override either failed gate.
+cost haircut was removed to match the brief's definition. The final review
+also added the rebound and relative-drawdown diagnostics below to fulfill
+brief §10. Their exact definitions were specified after the NO-GO result;
+they were not pre-registered pass criteria. The optional `capm.alpha_t` was
+removed because it treated estimated beta as fixed and was not a valid CAPM
+intercept t-statistic. Alpha and beta point estimates are unchanged; no
+replacement alpha significance test was built. The final JSON contains these
+corrections. All original gate, subperiod and stress values reproduce exactly;
+the base-cost A1/A2 calculations, costs, windows and pass logic are unchanged.
+None of these diagnostic corrections overrides either failed gate.
 
 ### Worst rolling 12 months
 
@@ -137,6 +143,32 @@ net-cost drawdowns or portfolio maximum drawdowns.
 |---|---|---|---|
 | Big | 1932-06 (`groups.big.worst_12m.start`) | 1933-05 (`groups.big.worst_12m.end`) | −22.367595% (`groups.big.worst_12m.relative_pct`) |
 | Small | 1937-03 (`groups.small.worst_12m.start`) | 1938-02 (`groups.small.worst_12m.end`) | −30.128742% (`groups.small.worst_12m.relative_pct`) |
+
+### Rebound stress and relative drawdown
+
+The rebound window includes the ten monthly returns from **2009-03 through
+2009-12**. Relative return is compounded winners' wealth divided by compounded
+French market wealth, minus one: Π(1 + r_win − c/12) / Π(1 + r_mkt) − 1.
+Net uses the registered base annual haircut (Big 1%, Small 3%); gross uses zero.
+
+| Group | Rebound net relative return | Rebound gross relative return |
+|---|---|---|
+| Big | −11.954055% (`groups.big.rebound_2009.net_pct`) | −11.240369% (`groups.big.rebound_2009.gross_pct`) |
+| Small | −10.155327% (`groups.small.rebound_2009.net_pct`) | −7.956654% (`groups.small.rebound_2009.gross_pct`) |
+
+Full-window relative drawdown uses that same wealth ratio at base cost over
+**1927-01 through 2026-04**, initialized at one immediately before the first
+return. It measures the largest peak-to-trough decline in the ratio, not the
+portfolio's absolute drawdown. For tied peaks, use the last before the trough.
+Recovery is the first month after the trough that regains the prior peak;
+recovery months count elapsed calendar months from trough to recovery. Null
+means no recovery by April 2026. These are French-market-relative diagnostics,
+not SPY-relative diagnostics; neither series supplies a century of SPY returns.
+
+| Group | Maximum relative drawdown | Peak | Trough | Recovery | Recovery months |
+|---|---|---|---|---|---|
+| Big | −31.688285% (`groups.big.relative_drawdown.max_drawdown_pct`) | 2008-06 (`groups.big.relative_drawdown.peak`) | 2025-08 (`groups.big.relative_drawdown.trough`) | null (`groups.big.relative_drawdown.recovery`) | null (`groups.big.relative_drawdown.recovery_months`) |
+| Small | −56.848542% (`groups.small.relative_drawdown.max_drawdown_pct`) | 2006-03 (`groups.small.relative_drawdown.peak`) | 2025-07 (`groups.small.relative_drawdown.trough`) | null (`groups.small.relative_drawdown.recovery`) | null (`groups.small.relative_drawdown.recovery_months`) |
 
 ### Cost sensitivity: context, explicitly not a rescue
 
@@ -157,11 +189,10 @@ roughly **+1.2 pt/yr** since 1994. This uses only
 registered costs. Compounding makes the relation nonlinear, so this is a local
 linear extrapolation.
 
-**Reasoning, not a measured after-tax result:** even that gross margin cannot
-clear +1.0 pt/yr after realistic trading costs and short-term-gains tax in a
-taxable account. The registered base-cost result already leaves almost no
-margin, before tax. Aggregate monthly portfolios reveal neither turnover nor
-tax lots; no exact implementation tax drag was measured. This inference is
+**Reasoning, not a measured after-tax result:** the registered base-cost screen
+leaves almost no pre-tax margin and gives no evidence of the required
+after-tax advantage. Aggregate monthly portfolios reveal neither turnover nor
+tax lots; exact after-tax performance was not measured. This context is
 not an additional gate or a replacement for the cancelled tax replay. The
 verdict uses the registered costs, which are unchanged.
 
@@ -171,7 +202,7 @@ verdict uses the registered costs, which are unchanged.
 Do not tune the screen, build its tax engine, buy data, or advance its paper or
 real-money phases. No new strategy is proposed.
 
-Per the owner's 2026-10-20 triage, the following remain **parked, all low
+Per the 2026-10-20 research triage, the following remain **parked, all low
 priority**, with no validated payoff claim: post-earnings announcement drift
 (PEAD) needs public earnings-timing repair; insider trades and congressional
 trades need filing-availability repair. These are data prerequisites, not
@@ -204,8 +235,8 @@ claim and does not rehabilitate the stopped older-price holdout.
 The next owner decision is unchanged: at the freeze lift, about 2026-12-29,
 retire the stock picks so only the SPY sweep remains in the stock-trading path
 ([next steps](../next_steps.md), [brief §§1 and 8](briefs/2026-10-20-momentum-retest.md)).
-This is a future owner action. Production remains frozen; this task changes
-documentation only. The owner's separate A23 allocation is unchanged.
+This is a future owner action. Production remains frozen; this study changes
+research code and documentation only. The owner's separate A23 allocation is unchanged.
 
 ## 6. Contrarian Evaluation & Parked Research
 
@@ -225,8 +256,9 @@ claim and no new performance verdict. Their historical reports remain caveated:
 [insider](2026-07-19-insider-cluster-buy-nogo.md),
 [congressional](2026-07-19-congress-trades-nogo.md).
 
-The screen does not measure turnover, investor taxes, sector concentration,
-recovery time or our exact trading rules. It reports the worst rolling relative
-windows, not a dedicated rebound-event study. Published-research explanations,
+The screen does not measure turnover, investor taxes, sector concentration
+or our exact trading rules. It reports the worst rolling relative windows,
+the March–December 2009 rebound and full-window relative drawdown/recovery
+against the French market. Published-research explanations,
 including post-publication decay, remain **unverified**. None of these limits
 changes the failed registered gates or reopens momentum.

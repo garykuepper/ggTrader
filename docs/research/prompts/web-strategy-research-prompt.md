@@ -7,8 +7,8 @@ file access, no specific tools or plugins. Do not write code, backtest
 anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
-Regenerate the "context" section below from `docs/research/RESEARCH_SNAPSHOT.md`
-whenever it's materially out of date — last synced 2026-10-20.
+Refresh the context below from the current research record whenever it is
+materially out of date — last synced 2026-10-20.
 
 ---
 
@@ -55,11 +55,14 @@ claim of a 0.80 Sharpe ratio versus 0.78 for SPY, which is now **void and
 superseded**) were based on selected backtest parameters rather than production
 rules. Live operations are frozen, and the recommendation for the year-end
 freeze lift is to retire the stock-picking sleeve entirely. **So nothing in
-this system currently beats simply holding the S&P 500.** The active research
-arc is an explicit, pre-registered momentum re-test (evaluating ~100 years of
-academic data across company sizes and a multi-stock lot-level after-tax replay)
-testing whether a stock sleeve can beat SPY after tax on evidence that isn't
-luck. Any new idea is effectively funded by selling an S&P 500 index holding,
+this system currently beats simply holding the S&P 500.** The completed
+century-long momentum screen using Ken French's academic portfolio data is
+**NO-GO** for both large and small companies. Both failed the Holm test, which
+adjusts significance for testing two groups, and the required post-publication
+return advantage (test A2). No paid data will be bought; Phases 2–5, including
+the after-tax replay, are cancelled. This was an idea-level screen against the
+academic market benchmark, not a new SPY-relative or after-tax result.
+Any new idea is effectively funded by selling an S&P 500 index holding,
 so it must earn more than the index would have on the same days after all taxes
 and frictions. Treat any number this scout is given as provisional until it has
 passed that kind of scrutiny.
@@ -81,10 +84,12 @@ without a genuinely different mechanism:**
   rate over SPY, but an autocorrelation-adjusted t-statistic (Newey-West) of
   only 0.761 (falling far short of the statistical significance bar of t ≥ 3).
   A dual-momentum variant was identical because its negative-momentum filter
-  never triggered. This is now under an active, pre-registered re-test across
-  ~100 years of historical data and clean-window after-tax execution; do not
-  propose casual momentum variants without addressing after-tax drag and
-  long-horizon significance.
+  never triggered. The completed century-long academic-data screen is **NO-GO**:
+  both company-size groups failed the Holm significance adjustment and the
+  post-publication return test (A2). Since 1994, net excess growth was only
+  +0.08 percentage points per year for large companies and +0.20 for small
+  companies, below the required +1.0. No paid data will be bought; Phases 2–5
+  are cancelled. No after-tax replay was run. Do not re-propose momentum variants.
 - Pre-FOMC drift on Treasuries (holding Treasury ETFs TLT, IEF, and EDV ahead of
   announcements): a day-clustered event study across 113 Federal Open Market
   Committee (FOMC) meeting dates showed gross t = 2.258, but net t = 0.981

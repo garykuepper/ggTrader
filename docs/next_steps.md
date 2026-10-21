@@ -147,7 +147,8 @@ The [Phase 1 report](research/2026-10-20-momentum-french-screen-nogo.md) closes
 momentum under the [approved brief §5](research/briefs/2026-10-20-momentum-retest.md):
 neither size passes (`_momentum_french_screen_results.json`: `pass`, `next`).
 No paid data; Phase 2 is not executed and Phases 2–5 are cancelled. Do not build
-the momentum tax engine or start a replacement trading path.
+the momentum tax engine or start a replacement momentum trading path under
+this plan. Any future trading path requires separate owner authorization.
 
 The next owner decision remains retirement of stock picks at the freeze lift
 (about 2026-12-29), leaving only the SPY sweep. Production remains frozen until

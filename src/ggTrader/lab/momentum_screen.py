@@ -11,6 +11,7 @@ from ggTrader.lab.significance import newey_west_se
 FULL = ("1927-01", "2026-04")
 POST = ("1994-01", "2026-04")
 DIAG = [("1927-01", "1993-12"), ("1994-01", "2012-12"), ("2013-01", "2026-04")]
+REBOUND_2009 = ("2009-03", "2009-12")
 BASE_COST = {"big": 0.010, "small": 0.030}
 STRESS_COST = {"big": 0.020, "small": 0.060}
 NW_LAGS_MONTHLY = 12
@@ -81,20 +82,52 @@ def cagr_diff_pp(winners: pd.Series, market: pd.Series, annual_cost: float) -> f
     return float((annualized.left - annualized.right) * 100)
 
 
-def capm(win_ex_rf: pd.Series, mkt_ex_rf: pd.Series, lags: int = 12) -> dict:
-    """Fit OLS alpha/beta and NW-test the beta-adjusted return mean."""
+def capm(win_ex_rf: pd.Series, mkt_ex_rf: pd.Series) -> dict:
+    """Fit OLS annualized alpha and market beta without an intercept t-test."""
     frame = _aligned(win_ex_rf, mkt_ex_rf)
     design = np.column_stack([np.ones(len(frame)), frame.right.to_numpy()])
     coefficients, _, rank, _ = np.linalg.lstsq(design, frame.left.to_numpy(), rcond=None)
     if rank < 2:
         raise ValueError("CAPM requires a varying market excess return")
     alpha, beta = coefficients
-    # Keep the intercept in this residual mean; full OLS residuals have zero mean.
-    alpha_returns = frame.left - beta * frame.right
     return {
         "alpha_ann_pct": float(alpha * 12 * 100),
-        "alpha_t": nw_t(alpha_returns, lags),
         "beta": float(beta),
+    }
+
+
+def _relative_wealth(winners: pd.Series, market: pd.Series, annual_cost: float) -> pd.Series:
+    """Compound net winners' wealth divided by market wealth."""
+    net = _aligned(winners, market) - pd.Series({"left": annual_cost / 12, "right": 0.0})
+    gross = 1 + net
+    if (gross <= 0).any().any():
+        raise ValueError("Relative wealth requires returns greater than -100% after costs")
+    wealth = gross.cumprod()
+    return wealth.left / wealth.right
+
+
+def relative_drawdown(winners: pd.Series, market: pd.Series, annual_cost: float) -> dict:
+    """Find the worst relative drawdown and trough-to-recovery calendar months.
+
+    Include initial wealth of one before the first return. For tied peaks,
+    use the last peak before the trough; recovery is its first later regain.
+    """
+    wealth = _relative_wealth(winners, market, annual_cost)
+    initial = pd.Series([1.0], index=[wealth.index[0] - 1])
+    wealth = pd.concat([initial, wealth])
+    drawdown = wealth / wealth.cummax() - 1
+    trough = drawdown.idxmin()
+    prior = wealth.loc[:trough]
+    peak = prior[prior == prior.max()].index[-1]
+    later = wealth.loc[wealth.index > trough]
+    recovered = later[later >= wealth[peak]]
+    recovery = recovered.index[0] if not recovered.empty else None
+    return {
+        "max_drawdown_pct": float(drawdown[trough] * 100),
+        "peak": str(peak),
+        "trough": str(trough),
+        "recovery": str(recovery) if recovery is not None else None,
+        "recovery_months": recovery.ordinal - trough.ordinal if recovery is not None else None,
     }
 
 
@@ -141,7 +174,9 @@ def screen(sm: pd.DataFrame, mk: pd.DataFrame) -> dict:
     """Evaluate only the fixed significance and post-publication economic gates.
 
     Stress uses the registered stress haircut. CAPM, size-matched and crash
-    diagnostics describe gross winners' returns over FULL.
+    diagnostics describe gross winners' returns over FULL. Rebound and relative
+    drawdown definitions were added after the result to fulfill brief §10;
+    neither affects the registered gates.
     """
     columns = [f"{size}_{rank}" for size in ("small", "big") for rank in ("lo", "mid", "hi")]
     sm = _window(sm[columns])
@@ -153,6 +188,8 @@ def screen(sm: pd.DataFrame, mk: pd.DataFrame) -> dict:
         full = _stats(winners, mk.mkt, cost)
         stress = _stats(winners, mk.mkt, STRESS_COST[group])
         size_market = sm[[f"{group}_{rank}" for rank in ("lo", "mid", "hi")]].mean(axis=1)
+        rebound_winners = winners.loc[slice(*REBOUND_2009)]
+        rebound_market = mk.mkt.loc[slice(*REBOUND_2009)]
         groups[group] = {
             "full_t": full["t"],
             "full_p": full["p"],
@@ -177,6 +214,13 @@ def screen(sm: pd.DataFrame, mk: pd.DataFrame) -> dict:
             "capm": capm(winners - mk.rf, mk.mkt - mk.rf),
             "size_matched": _stats(winners, size_market, 0.0),
             "worst_12m": worst_rolling_relative(winners, mk.mkt),
+            "rebound_2009": {
+                label: float(
+                    (_relative_wealth(rebound_winners, rebound_market, haircut).iloc[-1] - 1) * 100
+                )
+                for label, haircut in (("net_pct", cost), ("gross_pct", 0.0))
+            },
+            "relative_drawdown": relative_drawdown(winners, mk.mkt, cost),
         }
     rejected = holm({group: values["full_p"] for group, values in groups.items()})
     passed = {

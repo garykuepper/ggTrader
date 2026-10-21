@@ -2,6 +2,15 @@
 
 ## 2026-10-20
 
+- **Research: momentum Phase 1 diagnostic corrections after final review.**
+  Added the March–December 2009 rebound (gross and base cost) and full-window
+  relative drawdown/recovery required by brief §10; definitions were specified
+  after the NO-GO result and are diagnostics only. Removed the mis-specified
+  optional CAPM alpha t-statistic; alpha and beta estimates remain unchanged.
+  Regenerated the artifact offline from frozen inputs and verified every gate,
+  subperiod and stress value unchanged. Both prompts and the snapshot now close
+  momentum consistently; no paid data, Phases 2–5 cancelled, production frozen.
+
 - **Research: momentum Phase 1 French screen — NO-GO.**
   - Report: [Phase 1 gate decision](research/2026-10-20-momentum-french-screen-nogo.md).
     Final artifact: `research/_momentum_french_screen_results.json`.
