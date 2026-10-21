@@ -8,18 +8,16 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-20)
 
-1. **Active research: pre-registered momentum re-test.** Pre-registered on
-   2026-10-20 to test whether a stock momentum sleeve can beat SPY after tax
-   in a taxable account on evidence that isn't luck:
-   [Momentum re-test brief](research/briefs/2026-10-20-momentum-retest.md).
-   Two-part standard: Part A tests momentum on ~100 years of Ken French data
-   (t ≥ 3 with 12 Newey-West lags, Holm family level p = 0.00135, and post-1994
-   excess compound annual growth rate [CAGR] ≥ +1.0 percentage points per year
-   [pt/yr]); Part B: our exact rules beat S&P 500 ETF (SPY) by ≥ +1.0 pt/yr
-   after tax on clean data not used to design them (Phase 3, paid 2000–2020
-   data). Phase 2 (tax engine, then the 2021-01-31 → 2026-04-30 replay vs SPY
-   and iShares MSCI USA Momentum Factor ETF [MTUM]; runs only if Big passes
-   Phase 1) can only rule momentum out.
+1. **Momentum re-test closed NO-GO.** Neither size passes the registered
+   French screen (`_momentum_french_screen_results.json`: `pass.big = false`,
+   `pass.small = false`). Holm rejects neither; post-publication net compound
+   annual growth rate (CAGR) differences are Big +0.08 and Small +0.20 percentage
+   points per year, below +1.0 (`groups.big.post_cagr_diff_pp`,
+   `groups.small.post_cagr_diff_pp`). No paid data and no further momentum work.
+   Phase 2 is not executed; Phases 2–5 are cancelled. The stock-trading path has
+   no validated candidate. See the
+   [Phase 1 report](research/2026-10-20-momentum-french-screen-nogo.md) and
+   [registered brief](research/briefs/2026-10-20-momentum-retest.md).
 2. **Deflated Sharpe Ratio (DSR) gate power note.** With one-year training folds
    and a 12-combo grid, the corrected DSR gate needs an in-sample Sharpe of
    roughly 2.5 to pass, so walk-forward out-of-sample (OOS) results are mostly
@@ -31,9 +29,10 @@ any) — don't let this file accumulate a backlog.
    CAGR 14.19% versus SPY 14.83%, excess −0.64 pt/year, Newey-West t −0.69.
    The older holdout remains INCONCLUSIVE; exact historical live replication
    remains UNVERIFIED. Keep production frozen. Any later live action is a
-   separate owner decision. The paper alternative is the SPY sweep alone, or
-   the separate shadow only if it passes its own forward rule; the owner's
-   real-money A23 allocation and exit terms are unchanged. See the
+   separate owner decision: retire the stock picks so only the SPDR S&P 500
+   exchange-traded fund (SPY) sweep remains in the stock-trading path. The
+   separate shadow retains its own forward rule; the owner's real-money A23
+   allocation and exit terms are unchanged. See the
    [audit report](research/2026-10-19-production-replica-audit-nogo.md) and
    [approved closure](research/briefs/2026-10-19-production-replica-closure-amendment.md).
 4. **Review the A23 distribution-tax bounds before entry**, as information for
@@ -142,40 +141,20 @@ money in ~3 months.
 - **Compare like with like:** on the same out-of-sample span (2022-01 →
   2026-04), static 80/20 0.87, core + sweep 0.80, SPY 0.78.
 
-## ACTIVE STEP (2026-10-20) — Pre-registered momentum re-test (Phase 0 in progress)
+## CLOSED (2026-10-20) — Momentum re-test NO-GO
 
-Follow the approved plan and brief:
-[Momentum re-test brief](research/briefs/2026-10-20-momentum-retest.md).
+The [Phase 1 report](research/2026-10-20-momentum-french-screen-nogo.md) closes
+momentum under the [approved brief §5](research/briefs/2026-10-20-momentum-retest.md):
+neither size passes (`_momentum_french_screen_results.json`: `pass`, `next`).
+No paid data; Phase 2 is not executed and Phases 2–5 are cancelled. Do not build
+the momentum tax engine or start a replacement trading path.
 
-- **Phase 0: Record fixes (docs only)** — In progress. Record dual momentum
-  duplicate, Deflated Sharpe Ratio (DSR) power limits, day-clustered Federal Open
-  Market Committee (FOMC) t-statistic, and prompt template updates.
-- **Phase 1: French screen (free data)** — Download Ken French 6 Portfolios
-  Formed on Size and Momentum (2x3) and Fama/French 3 Factors, commit raw files
-  with SHA-256 checksums, test Big and Small HiPRIOR excess over market with
-  12 Newey-West lags under Holm correction (p = 0.00135; post-1994 excess CAGR
-  ≥ +1.0 percentage points per year [pt/yr]). Only Big passing authorizes Phase 2.
-- **Phase 2: Kill-only replay (tax engine & 2021–2026 test)** — Runs only if Big
-  passes Phase 1. Build and unit-test multi-stock lot-level tax engine (Internal
-  Revenue Service [IRS] Pub 550 wash sales, highest-in first-out [HIFO]).
-  Fixed-rule replay (Rule T primary, Rule B diagnostic) on point-in-time S&P 500
-  (2021-01-31 → 2026-04-30) vs SPY and MTUM. Can only rule momentum out (kill if
-  Rule T after-tax CAGR minus SPY is < +1.0 pt/yr; recommend MTUM if T beats SPY
-  but trails MTUM); cannot prove momentum.
-- **Phase 3: Paid exact-rule replay (2000–2020 clean data)** — Buy commercial
-  point-in-time survivorship-free data only if Phase 1 passes and Phase 2 does
-  not kill. Run exact frozen rules under same tax engine over 2000-01-31 →
-  2020-12-31. Part B pass bar: Rule T after-tax CAGR beats SPY by ≥ +1.0 pt/yr
-  and does not trail MTUM (or S&P 600 ETF [IJR] for small caps). Required before
-  real money.
-- **Phase 4: Paper trading (mechanics only)** — Starts at parity freeze lift
-  (~2026-12-29) if Big passed Phase 1 and Phase 2 did not kill (does not wait
-  for Phase 3). Rule T on Alpaca paper account for 18 months; checks broker
-  parity, lots, basis, and halts; recorded, not judged.
-- **Phase 5: Real money pilot** — Only after Phase 3 passes and ≥ 6 months of
-  clean paper trading. Pilot of 5% of investable assets funded from SPY/VOO core
-  (never A23's SSO leg), capped at 10%, quarterly reviews, relative stop at 15%
-  behind SPY.
+The next owner decision remains retirement of stock picks at the freeze lift
+(about 2026-12-29), leaving only the SPY sweep. Production remains frozen until
+then. Per the 2026-10-20 triage, post-earnings announcement drift (PEAD) needs
+public earnings-timing repair, and insider/congressional trades need
+filing-availability repair; all remain parked at low priority. No new strategy
+is proposed.
 
 ---
 

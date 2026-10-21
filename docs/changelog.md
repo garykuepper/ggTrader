@@ -2,6 +2,25 @@
 
 ## 2026-10-20
 
+- **Research: momentum Phase 1 French screen — NO-GO.**
+  - Report: [Phase 1 gate decision](research/2026-10-20-momentum-french-screen-nogo.md).
+    Final artifact: `research/_momentum_french_screen_results.json`.
+    Big t 3.052434 / p 0.001134967 and Small t 3.107965 / p 0.000941902
+    (`groups.big.full_t`, `groups.big.full_p`, `groups.small.full_t`,
+    `groups.small.full_p`) each clear the standalone t bar, but Holm rejects
+    neither (`holm`). Post-1994 net compound annual growth rate differences
+    +0.08 / +0.20 percentage points per year also fail the +1.0 bar
+    (`groups.big.post_cagr_diff_pp`, `groups.small.post_cagr_diff_pp`).
+  - Disclosed the post-first-run size-matched diagnostic correction: removed
+    its cost haircut to match the brief; pass calculations are unchanged.
+    Cost extrapolation and tax reasoning are context only, not measured tax
+    results or a change to the registered costs.
+  - Both sizes fail (`pass`): momentum is closed, no paid data; Phase 2 is not
+    executed and Phases 2–5 are cancelled (`next`). A pass would have authorized
+    research only. Snapshot closes both momentum rows (the same portfolio);
+    next steps retain the freeze and the owner decision to retire stock picks
+    around 2026-12-29, leaving only the SPY sweep. Documentation only.
+
 - **Research: record fixes and momentum re-test pre-registration (Phase 0).**
   - **Correction section appended:** `docs/research/2026-10-19-production-replica-audit-nogo.md`
     updated with a dated correction section documenting the `dual_momentum` duplicate
