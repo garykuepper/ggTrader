@@ -311,3 +311,14 @@ Results are saved as a JSON file in the `results/` folder.
 *See the [Architecture Guide](architecture.md) for how these components fit together, and [Developer Guidelines](../AGENTS.md) for coding standards.*
 
 *Back to [README.md](../README.md).*
+
+## Event-timing audit research utility
+
+`.venv/bin/python scripts/event_timing_audit.py --help` describes the standalone
+read-only evidence audit. It defaults to offline operation; `--smoke` caps each
+stratum at two and writes partial JSON/Markdown under `/tmp`. `--evidence` and
+`--detector-flags` ingest checksummed evidence. `--resume` preserves budgets and
+frozen inputs. DB SELECTs and external collection require separate explicit
+`--read-db` / `--network` flags; `.env` is never loaded. Collection remains
+blocked pending code review and an authorized contact. See the
+[implementation handoff](research/event-timing-audit-implementation.md).

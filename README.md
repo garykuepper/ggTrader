@@ -128,3 +128,8 @@ For a deeper dive, check out our detailed guides:
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+The [event-timing audit utility](docs/research/event-timing-audit-implementation.md)
+provides offline evidence replay and guarded read-only collection for the
+registered PEAD/insider timing study. It computes no returns; full collection
+remains blocked pending code review and an authorized contact.

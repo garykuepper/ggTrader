@@ -297,3 +297,14 @@ The file [indicators.py](file:///home/flynn/ggTrader/src/ggTrader/lab/strategies
 ---
 
 *Back to [README.md](../README.md).*
+
+### Event-timing audit evidence path
+
+`lab/event_timing_audit.py` owns PIT denominator accounting, clocks, requirement
+matrices and reporting; `event_timing_sources.py` owns bounded immutable raw
+collection, and `event_timing_reconstruction.py` owns public-time Form 4 replay.
+The standalone script delegates to one CLI. This path uses explicit read-only
+SELECTs for metadata/bar existence, never schema loaders or execution code.
+Offline evidence and fixture tests precede collection/code review. Details and
+remaining input requirements are in the
+[implementation handoff](research/event-timing-audit-implementation.md).

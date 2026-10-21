@@ -2,6 +2,13 @@
 
 ## 2026-10-21
 
+- **Lab infrastructure: event-timing audit evidence rework.** Replaced assumed
+  coverage and stored-defect feasibility failures with PIT unit accounting,
+  raw Form 4 replay, registered sampling, provenance ingestion and guarded
+  read-only collection. Added durable budgets/cache validation and partial
+  JSON/Markdown reports. No full audit or feasibility result was produced.
+  See [implementation handoff](research/event-timing-audit-implementation.md).
+
 - **Research: classic stock factor screen — Phase 1 NO-GO.** Closed the classic
   four-factor screen on survivorship-free French library data without paid data.
   Report: [Factor screen report](research/2026-10-21-factor-screen-nogo.md).

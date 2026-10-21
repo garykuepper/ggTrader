@@ -16,15 +16,12 @@ from __future__ import annotations
 
 import datetime
 import hashlib
+from pathlib import Path
 
 import pandas as pd
 import pytest
 
 from ggTrader.lab.event_timing_audit import (
-    STATUS_FREE_VERIFIED,
-    STATUS_NO_VERIFIED_PATH,
-    STATUS_PAID_DOCUMENTED,
-    STATUS_UNRESOLVED,
     AnnualA6Coverage,
     AuditClock,
     QuarantineReason,
@@ -32,7 +29,6 @@ from ggTrader.lab.event_timing_audit import (
     check_transaction_quarantine,
     compute_deterministic_sample_hash,
     evaluate_eligible_window,
-    resolve_signal_status,
     sample_stratum,
 )
 
@@ -201,10 +197,7 @@ class TestQuarantineRules:
         assert res is None
 
     def test_earnings_quarantine(self):
-        assert (
-            check_earnings_quarantine("1988-05-01", self.run_date)
-            == QuarantineReason.TX_DATE_PRE_1990
-        )
+        assert check_earnings_quarantine("1988-05-01", self.run_date) is None
         assert (
             check_earnings_quarantine("2030-01-01", self.run_date) == QuarantineReason.FUTURE_DATED
         )
@@ -361,32 +354,1210 @@ class TestStatusOrderingAndEligibleWindow:
         assert win is None
         assert length == 0
 
-    def test_status_resolution_branches(self):
-        # Branch 1: has eligible window
-        assert resolve_signal_status(has_eligible_window=True) == STATUS_FREE_VERIFIED
 
-        # Branch 2: no eligible window, but paid path documented
-        assert (
-            resolve_signal_status(has_eligible_window=False, paid_path_documented=True)
-            == STATUS_PAID_DOCUMENTED
+def test_eligible_window_does_not_bridge_a_missing_year():
+    assert evaluate_eligible_window(dict.fromkeys([2010, 2011, 2013, 2014, 2015], True)) == (
+        None,
+        0,
+    )
+
+
+def test_eligible_window_rejects_partial_2026():
+    assert evaluate_eligible_window(dict.fromkeys(range(2022, 2027), True)) == (None, 0)
+
+
+def test_missing_filing_date_is_quarantined():
+    assert check_transaction_quarantine("2023-01-01", None, datetime.date(2026, 10, 21)) == (
+        QuarantineReason.UNPARSEABLE_OR_MISSING_DATE
+    )
+
+
+def test_membership_in_force_counts_unchanged_months(tmp_path):
+    from ggTrader.lab.event_timing_audit import build_universe_denominators
+
+    membership = tmp_path / "members.csv"
+    membership.write_text('date,tickers\n2000-01-01,"A,B"\n2025-03-15,"B,C"\n')
+    result = build_universe_denominators(membership, tmp_path / "absent")
+    assert result.insider_member_months_detail["2025-01"] == 2
+    assert result.insider_member_months_detail["2025-03"] == 3
+    assert result.pead_member_quarters_detail["2025Q1"] == 3
+    assert result.insider_member_months_detail["2025-04"] == 2
+
+
+def test_bad_checkpoint_fails_closed(tmp_path):
+    from ggTrader.lab.event_timing_audit import SecEdgarClient
+
+    (tmp_path / "checkpoint.json").write_text("broken")
+    with pytest.raises(ValueError, match="checkpoint"):
+        SecEdgarClient(cache_dir=tmp_path)
+
+
+def test_no_detector_evidence_does_not_mean_clean(tmp_path):
+    from ggTrader.lab.event_timing_audit import load_existing_artifact_flags
+
+    assert load_existing_artifact_flags(tmp_path / "absent") is None
+
+
+@pytest.fixture
+def raw_cache(tmp_path):
+    import json
+
+    from ggTrader.lab.event_timing_sources import CheckpointState, SecEdgarClient, asdict, digest
+
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "checkpoint.json").write_text(json.dumps(asdict(CheckpointState())))
+    (cache / "MANIFEST.json").write_text('{"files": []}')
+    client = SecEdgarClient(cache)
+
+    def add(raw, url="https://www.sec.gov/Archives/evidence.json"):
+        data = raw.encode() if isinstance(raw, str) else raw
+        name = digest(data) + ".raw"
+        (cache / name).write_bytes(data)
+        ref = {"url": url, "sha256": digest(data), "cache_file": name, "status_code": 200}
+        client.manifest["files"].append(ref)
+        (cache / "MANIFEST.json").write_text(json.dumps(client.manifest))
+        return ref
+
+    return cache, client, add
+
+
+def test_within_minute_uses_latest_same_field_and_acceptance_is_separate():
+    from ggTrader.lab.event_timing_audit import event_clock
+
+    event = event_clock(
+        {
+            "earnings_date": "2023-05-04",
+            "announcement_readings": ["2023-05-04T15:29:30-04:00", "2023-05-04T15:30:30-04:00"],
+            "acceptance": "2023-05-04T16:10:00-04:00",
+        },
+        "pead",
+        AuditClock(),
+        datetime.date(2026, 10, 21),
+    )
+    assert event["quarantine"] is None
+    assert str(event["announcement_time"]) == "2023-05-04 15:30:30-04:00"
+    assert event["availability"] == "2023-05-04T16:10:00-04:00"
+    assert event["tradeable_date"] == "2023-05-05"
+
+
+def test_conflicting_acceptance_quarantines_and_never_assigns_execution():
+    from ggTrader.lab.event_timing_audit import event_clock
+
+    event = event_clock(
+        {
+            "filing_date": "2023-05-04",
+            "acceptance": "2023-05-04T15:00:00-04:00",
+            "header_acceptance": "2023-05-04T15:02:00-04:00",
+        },
+        "insider_cluster",
+        AuditClock(),
+        datetime.date(2026, 10, 21),
+    )
+    assert event["quarantine"] == QuarantineReason.UNRESOLVED_TIMESTAMP_CONFLICT
+    assert event["tradeable_date"] is None
+
+
+def test_cached_bytes_require_matching_manifest(raw_cache):
+    cache, client, add = raw_cache
+    ref = add("immutable")
+    assert client.fetch_sec_url(ref["url"]) == "immutable"
+    (cache / ref["cache_file"]).write_text("partial")
+    with pytest.raises(ValueError, match="checksum"):
+        client.fetch_sec_url(ref["url"])
+    assert (cache / ref["cache_file"]).read_text() == "partial"
+
+
+def test_corrupt_manifest_and_missing_accounting_fail_closed(raw_cache):
+    cache, _, add = raw_cache
+    add("evidence")
+    (cache / "checkpoint.json").unlink()
+    from ggTrader.lab.event_timing_sources import SecEdgarClient
+
+    with pytest.raises(ValueError, match="checkpoint"):
+        SecEdgarClient(cache)
+    (cache / "checkpoint.json").write_text('{"sec_requests_total":0,"yf_requests_total":0}')
+    (cache / "MANIFEST.json").write_text("broken")
+    with pytest.raises(ValueError, match="MANIFEST"):
+        SecEdgarClient(cache)
+
+
+def test_retry_budget_is_persisted_before_each_attempt(raw_cache, monkeypatch):
+    import json
+    import urllib.error
+
+    from ggTrader.lab.event_timing_sources import SecEdgarClient
+
+    cache, _, _ = raw_cache
+    monkeypatch.setenv("SEC_CONTACT_EMAIL", "fixture@example.invalid")
+    client = SecEdgarClient(cache, offline=False)
+    monkeypatch.setattr("ggTrader.lab.event_timing_sources.time.sleep", lambda _: None)
+    calls = []
+
+    def fail(*args, **kwargs):
+        calls.append(json.loads((cache / "checkpoint.json").read_text())["sec_requests_total"])
+        raise urllib.error.URLError("fixture failure")
+
+    monkeypatch.setattr(client.opener, "open", fail)
+    assert client.fetch_sec_url("https://www.sec.gov/Archives/missing.xml") is None
+    assert calls == [1, 2, 3, 4]
+    resumed = SecEdgarClient(cache)
+    assert resumed.checkpoint.sec_requests_total == 4
+    assert len(resumed.checkpoint.request_log) == 4
+
+
+def test_first_403_stops_sec_and_yahoo(raw_cache, monkeypatch):
+    import urllib.error
+
+    from ggTrader.lab.event_timing_sources import SecEdgarClient
+
+    cache, _, _ = raw_cache
+    monkeypatch.setenv("SEC_CONTACT_EMAIL", "fixture@example.invalid")
+    client = SecEdgarClient(cache, offline=False)
+    monkeypatch.setattr("ggTrader.lab.event_timing_sources.time.sleep", lambda _: None)
+
+    def forbidden(*args, **kwargs):
+        raise urllib.error.HTTPError("https://www.sec.gov/a", 403, "fixture", {}, None)
+
+    monkeypatch.setattr(client.opener, "open", forbidden)
+    assert client.fetch_sec_url("https://www.sec.gov/a") is None
+    assert client.fetch("https://finance.yahoo.com/calendar/earnings?symbol=A", "yf") is None
+    assert client.checkpoint.sec_requests_total == 1
+    assert client.checkpoint.yf_requests_total == 0
+    assert SecEdgarClient(cache).checkpoint.stopped_due_to_rate_limit
+
+
+def test_runtime_budget_accumulates(raw_cache, monkeypatch):
+    import json
+
+    from ggTrader.lab.event_timing_sources import MAX_RUNTIME, SecEdgarClient
+
+    cache, _, _ = raw_cache
+    state = json.loads((cache / "checkpoint.json").read_text())
+    state["elapsed_seconds"] = MAX_RUNTIME
+    (cache / "checkpoint.json").write_text(json.dumps(state))
+    monkeypatch.setenv("SEC_CONTACT_EMAIL", "fixture@example.invalid")
+    client = SecEdgarClient(cache, offline=False)
+    assert not client.within_deadline()
+    assert client.fetch_sec_url("https://www.sec.gov/a") is None
+    assert client.checkpoint.sec_requests_total == 0
+
+
+def test_empty_inventory_rules_and_identity_gap():
+    from ggTrader.lab.event_timing_audit import resolve_unit, unit_inventory
+
+    unit = {
+        "symbol": "A",
+        "start": "2023-01-01",
+        "end": "2023-01-31",
+        "membership_intervals": [["2023-01-01", "2023-01-31"]],
+    }
+    mapping = {
+        "symbol": "A",
+        "valid_from": "2020-01-01",
+        "valid_to": "2024-01-01",
+        "cik": "1",
+        "security_id": "A-common",
+        "price_symbol": "A-USD",
+    }
+    assert resolve_unit(unit, [mapping])
+    evidence = {
+        "inventories": [
+            {
+                "cik": "1",
+                "start": "2015-01-01",
+                "end": "2026-10-21",
+                "complete": True,
+                "request_succeeded": True,
+                "filings": [],
+                "source_refs": [],
+            }
+        ],
+        "pead_fetches": [
+            {"symbol": "A", "request_succeeded": True, "records": [], "source_refs": []}
+        ],
+    }
+    assert unit_inventory(unit, [mapping], "insider_cluster", evidence)["retrieved"]
+    assert not unit_inventory(unit, [mapping], "pead", evidence)["retrieved"]
+    mapping["valid_to"] = "2023-01-15"
+    assert resolve_unit(unit, [mapping]) is None
+
+
+def test_unknown_detector_cannot_pass_unique_bar():
+    from ggTrader.lab.event_timing_audit import check_tape_integrity_batch
+
+    class CountDb:
+        def execute_select(self, sql, params):
+            assert "count(*)" in sql
+            return ["count"], [(1,)]
+
+    event = {
+        "event_id": "A:1",
+        "symbol": "A",
+        "tradeable_date": "2023-05-04",
+        "identity_resolved": True,
+        "price_symbol": "A-USD",
+    }
+    result = check_tape_integrity_batch(CountDb(), AuditClock(), [event], None)
+    assert result["A:1"]["bar_count"] == 1
+    assert result["A:1"]["predicate"] == "UNVERIFIED"
+
+
+@pytest.fixture
+def ownership_xml():
+    return """<ownershipDocument><issuer><issuerCik>1</issuerCik>
+    <issuerTradingSymbol>A</issuerTradingSymbol></issuer>
+    <reportingOwner><reportingOwnerId><rptOwnerCik>10</rptOwnerCik></reportingOwnerId></reportingOwner>
+    <reportingOwner><reportingOwnerId><rptOwnerCik>11</rptOwnerCik></reportingOwnerId></reportingOwner>
+    <aff10b5One><value>0</value></aff10b5One><nonDerivativeTable>
+    <nonDerivativeTransaction><securityTitle><value>Common A</value></securityTitle>
+    <transactionDate><value>2023-05-01</value></transactionDate>
+    <transactionCoding><transactionCode>P</transactionCode></transactionCoding>
+    <transactionAmounts><transactionShares><value>100</value></transactionShares></transactionAmounts></nonDerivativeTransaction>
+    <nonDerivativeTransaction><securityTitle><value>Common B</value></securityTitle>
+    <transactionDate><value>2023-05-01</value></transactionDate>
+    <transactionCoding><transactionCode>P</transactionCode></transactionCoding>
+    <transactionAmounts><transactionShares><value>100</value></transactionShares></transactionAmounts></nonDerivativeTransaction>
+    </nonDerivativeTable></ownershipDocument>"""
+
+
+def test_all_owners_plan_encodings_and_legitimate_lots(ownership_xml):
+    from ggTrader.lab.event_timing_reconstruction import reconcile_lots
+    from ggTrader.lab.event_timing_sources import parse_form4
+
+    filing = {"accession": "0000000001-23-000001", "filing_date": "2023-05-03", "form": "4/A"}
+    parsed = parse_form4(ownership_xml, filing)
+    assert [o["cik"] for o in parsed["owners"]] == ["10", "11"]
+    assert parsed["plan_state"] == "PRESENT-FALSE"
+    assert len(parsed["lots"]) == 2
+    assert len(reconcile_lots(parsed["lots"], [])["collisions"]) == 2
+    assert reconcile_lots(parsed["lots"], [])["predicate"] == "PASS"
+    assert (
+        parse_form4(ownership_xml.replace("<value>0</value>", "<value>1</value>"), filing)[
+            "plan_state"
+        ]
+        == "PRESENT-TRUE"
+    )
+    assert (
+        parse_form4(ownership_xml.replace("<aff10b5One><value>0</value></aff10b5One>", ""), filing)[
+            "plan_state"
+        ]
+        == "ABSENT"
+    )
+
+
+@pytest.fixture
+def cluster_lots():
+    return [
+        {
+            "lot_id": f"f{i}:0",
+            "accession": f"f{i}",
+            "form": "4",
+            "symbol": "A",
+            "transaction_date": f"2023-05-{day:02}",
+            "filing_date": "2023-05-15",
+            "transaction_code": "P",
+            "owners": [str(i)],
+            "plan_state": "PRESENT-FALSE",
+            "availability": f"2023-05-15T{10 + i:02}:00:00-04:00",
+            "quarantine": None,
+        }
+        for i, day in enumerate([1, 9, 14])
+    ]
+
+
+def test_reconstruction_uses_14_days_plan_exclusion_and_public_time(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+
+    clock = AuditClock()
+    events, issues = replay_clusters(cluster_lots, [], clock.normalize_to_ny("2023-05-31 16:00"))
+    assert len(events) == 1 and not issues
+    assert events[0]["owners"] == ["0", "1", "2"]
+    assert replay_clusters(cluster_lots, [], clock.normalize_to_ny("2023-05-15 11:00"))[0] == []
+    cluster_lots[0]["plan_state"] = "PRESENT-TRUE"
+    assert replay_clusters(cluster_lots, [], clock.normalize_to_ny("2023-05-31 16:00"))[0] == []
+
+
+def test_prefix_months_use_exchange_closes_include_april_and_unknown_inputs(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import evaluate_prefix_invariance
+
+    result = evaluate_prefix_invariance(cluster_lots, [], AuditClock(), {"2023-05": True})
+    assert len(result["decisions"]) == 136
+    assert result["decisions"][-1]["month"] == "2026-04"
+    assert result["decisions"][0]["decision"].startswith("2015-01-30T16:00")
+    assert next(r for r in result["decisions"] if r["month"] == "2023-05")["predicate"] == "PASS"
+    assert result["annual"][2023] == "UNVERIFIED"
+
+
+def test_unlinked_amendment_is_unknown_and_later_link_cannot_rewrite_past(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+
+    clock = AuditClock()
+    before = replay_clusters(cluster_lots, [], clock.normalize_to_ny("2023-05-31 16:00"))[0]
+    amendment = dict(
+        cluster_lots[0],
+        lot_id="amend:0",
+        accession="amend",
+        form="4/A",
+        availability="2023-06-01T10:00:00-04:00",
+    )
+    assert (
+        replay_clusters(cluster_lots + [amendment], [], clock.normalize_to_ny("2023-05-31 16:00"))[
+            0
+        ]
+        == before
+    )
+    assert any(
+        "linkage unresolved" in i
+        for i in replay_clusters(
+            cluster_lots + [amendment], [], clock.normalize_to_ny("2023-06-30 16:00")
+        )[1]
+    )
+    links = [{"accession": "amend", "replaces_lot_ids": ["f0:0"], "source_refs": ["fixture"]}]
+    assert (
+        replay_clusters(
+            cluster_lots + [amendment], links, clock.normalize_to_ny("2023-05-31 16:00")
+        )[0]
+        == before
+    )
+
+
+def test_zero_evidence_runner_never_measures_pass_and_keeps_smoke_output_partial(
+    tmp_path, monkeypatch
+):
+    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
+
+    membership = tmp_path / "members.csv"
+    membership.write_text("date,tickers\n2000-01-01,A\n")
+    monkeypatch.setattr(
+        "urllib.request.OpenerDirector.open", lambda *a, **k: pytest.fail("network called")
+    )
+    runner = EventTimingAuditRunner(
+        smoke=True,
+        output_file=tmp_path / "smoke.json",
+        cache_dir=tmp_path / "cache",
+        membership_file=membership,
+    )
+    report = runner.run()
+    for signal in ("pead", "insider_cluster"):
+        assert report[signal]["status"] == "UNRESOLVED"
+        assert {r["predicate"] for r in report[signal]["requirement_matrix"]} == {"UNVERIFIED"}
+    assert runner.output_file.with_suffix(".md").exists()
+    assert report["audit_meta"]["sec_requests_used"] == 0
+    assert not report["audit_meta"]["complete"]
+    assert all(len(s["selected_keys"]) <= 2 for s in report["samples"].values())
+    with pytest.raises(ValueError, match="/tmp"):
+        EventTimingAuditRunner(smoke=True, output_file=Path("docs/research/final.json"))
+
+
+def test_absent_plan_and_joint_owners_are_inventoried_without_new_filters(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+
+    cluster_lots[0]["plan_state"] = "ABSENT"
+    cluster_lots[0]["owners"] = ["0", "4"]
+    events, issues = replay_clusters(cluster_lots, [], AuditClock().normalize_to_ny("2023-05-31"))
+    assert events and not issues
+    assert "f0:0" in events[0]["absent_plan_lots"]
+    assert "4" in events[0]["owners"]
+
+
+def test_date_only_cluster_does_not_impute_observed_availability_or_double_buffer(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+
+    for lot in cluster_lots:
+        lot["availability"] = None
+        lot["decision_eligibility_time"] = "2023-05-16T16:00:00-04:00"
+        lot["tradeable_close"] = "2023-05-16T16:00:00-04:00"
+    events, issues = replay_clusters(
+        cluster_lots, [], AuditClock().normalize_to_ny("2023-05-16 16:00")
+    )
+    assert len(events) == 1 and not issues
+    assert events[0]["availability"] is None
+    assert events[0]["precision"] == "date_only"
+    assert events[0]["tradeable_close"] == "2023-05-16T16:00:00-04:00"
+
+
+def test_quarantined_inputs_cannot_form_clusters(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+
+    cluster_lots[0]["quarantine"] = QuarantineReason.TX_DATE_POST_FILING
+    assert replay_clusters(cluster_lots, [], AuditClock().normalize_to_ny("2023-05-31"))[0] == []
+
+
+def test_unknown_population_has_no_fabricated_event_denominator():
+    from ggTrader.lab.event_timing_audit import annual_accounting
+
+    unit = {
+        "year": 2023,
+        "resolved": False,
+        "retrieved": False,
+        "attempted": False,
+        "stored": False,
+        "missing_reason": "identity_unverified",
+    }
+    counts, predicate = annual_accounting(2023, [unit], [], False, False)
+    assert predicate == "UNVERIFIED"
+    assert counts["in_scope_events"] is None
+    assert counts["price_ratio"] is None
+    assert counts["observed_event_lower_bound"] == 0
+
+
+def test_censoring_depends_only_on_window_end_and_not_missing_bars():
+    from ggTrader.lab.event_timing_audit import holding_diagnostics
+
+    early = holding_diagnostics(
+        {"tradeable_date": "2023-05-04"}, "insider_cluster", AuditClock(), set()
+    )
+    assert not any(r["administrative_right_censored"] for r in early)
+    assert all(r["missing_observed_bars"] > 0 for r in early)
+    late = holding_diagnostics(
+        {"tradeable_date": "2026-04-30"}, "insider_cluster", AuditClock(), set()
+    )
+    assert all(r["administrative_right_censored"] for r in late)
+
+
+def test_db_rejects_writes_before_connecting_and_omits_dsn(monkeypatch):
+    import psycopg2
+
+    from ggTrader.lab.event_timing_audit import ReadOnlyDb
+
+    secret = "must-never-appear"
+    monkeypatch.setenv(
+        "POSTGRES_CONNECTION_STRING", f"host=localhost password={secret} dbname=fixture"
+    )
+    monkeypatch.setattr(
+        "ggTrader.lab.event_timing_audit.psycopg2.connect",
+        lambda *a, **k: (_ for _ in ()).throw(psycopg2.OperationalError(secret)),
+    )
+    db = ReadOnlyDb()
+    for sql in (
+        "DELETE FROM ohlcv",
+        "SELECT 1; DELETE FROM ohlcv",
+        "SELECT * INTO temp FROM ohlcv",
+    ):
+        with pytest.raises(ValueError, match="SELECT"):
+            db.execute_select(sql)
+    with pytest.raises(RuntimeError, match="unavailable") as error:
+        db.execute_select("SELECT count(*) FROM ohlcv")
+    assert secret not in str(error.value)
+    assert secret not in str(db.query_log)
+    assert not hasattr(db, "masked_conn_str")
+
+
+def test_yahoo_collection_uses_installed_calendar_schema_and_keeps_no_pit_claim(raw_cache):
+    from ggTrader.lab.event_timing_sources import collect_yahoo
+
+    _, client, add = raw_cache
+    html = """<table><thead><tr><th>Symbol</th><th>Company</th><th>Earnings Date</th>
+    <th>EPS Estimate</th><th>Reported EPS</th><th>Surprise (%)</th></tr></thead>
+    <tbody><tr><td>A</td><td>Fixture</td><td>May 04, 2023 at 4 PM EDT</td>
+    <td>1</td><td>2</td><td>100</td></tr></tbody></table>"""
+    add(html, "https://finance.yahoo.com/calendar/earnings?symbol=A&offset=0&size=100")
+    result = collect_yahoo(client, "A")
+    assert result["complete"] and result["request_succeeded"]
+    assert result["records"][0]["announcement_readings"] == ["2023-05-04T16:00:00-04:00"]
+    assert "consensus" not in result["records"][0]
+
+
+def test_sec_pagination_keeps_amendments_and_partial_inventory_is_not_complete(raw_cache):
+    import json
+
+    from ggTrader.lab.event_timing_sources import enumerate_sec
+
+    _, client, add = raw_cache
+    block = {
+        "accessionNumber": ["0000000001-23-000001"],
+        "form": ["4/A"],
+        "filingDate": ["2023-05-04"],
+        "primaryDocument": ["form4.xml"],
+        "acceptanceDateTime": ["2023-05-04T15:00:00-04:00"],
+    }
+    add(
+        json.dumps({"filings": {"recent": block, "files": [{"name": "CIK1-old.json"}]}}),
+        "https://data.sec.gov/submissions/CIK0000000001.json",
+    )
+    result = enumerate_sec(client, "1")
+    assert result["filings"][0]["form"] == "4/A"
+    assert result["request_succeeded"] and not result["complete"]
+    assert result["start"] == "2023-05-04"
+
+
+def test_status_requires_full_matrix_and_vendor_fields_cannot_repair_coverage(raw_cache):
+    from ggTrader.lab.event_timing_audit import resolve_signal_status
+
+    _, client, add = raw_cache
+    ref = add("Fixture documentation")
+    matrix = [
+        {"year": year, "requirement": requirement, "predicate": "PASS"}
+        for year in range(2020, 2025)
+        for requirement in ("coverage", "timestamp", "tape", "actual_eps", "consensus")
+    ]
+    assert resolve_signal_status("pead", matrix, [], client) == "FREE—VERIFIED"
+    for row in matrix:
+        if row["requirement"] in ("consensus", "coverage"):
+            row["predicate"] = "UNVERIFIED"
+    route = {
+        "route": "R1",
+        "source_refs": [ref],
+        "requirements": ["consensus"],
+        "history_start": "2010-01-01",
+        "history_end": "2025-12-31",
+        "includes_delisted_acquired": True,
+        "documentation": {
+            item: {
+                "assessment": "supports",
+                "citation_url": ref["url"],
+                "statement": "fixture",
+                "retrieved_date": "2026-10-21",
+            }
+            for item in ("fields", "history", "point_in_time", "access")
+        },
+    }
+    assert resolve_signal_status("pead", matrix, [route], client) == "UNRESOLVED"
+    for row in matrix:
+        if row["requirement"] == "coverage":
+            row["predicate"] = "PASS"
+    assert resolve_signal_status("pead", matrix, [route], client) == "UNRESOLVED"
+    excluded = []
+    for name in ("R2", "R3", "R4", "R5", "R6", "R7"):
+        exclusion = dict(route, route=name, all_permitted_representations_ruled_out=True)
+        exclusion["documentation"] = {
+            item: dict(value, assessment="contradicts" if item == "access" else "supports")
+            for item, value in route["documentation"].items()
+        }
+        excluded.append(exclusion)
+    assert (
+        resolve_signal_status("pead", matrix, [route, *excluded], client) == "PAID—DOCUMENTED PATH"
+    )
+    assert resolve_signal_status("pead", matrix, [route], client, smoke=True) == "UNRESOLVED"
+
+
+def test_r8_exact_timestamp_exclusion_does_not_exclude_date_only_representation(raw_cache):
+    from ggTrader.lab.event_timing_audit import assess_source_routes
+
+    _, client, add = raw_cache
+    ref = add("date-only fields")
+    record = {
+        "route": "R8",
+        "source_refs": [ref],
+        "documentation": {
+            item: {
+                "assessment": "contradicts" if item == "fields" else "supports",
+                "citation_url": ref["url"],
+                "retrieved_date": "2026-10-21",
+                "statement": "fixture",
+            }
+            for item in ("fields", "history", "point_in_time", "access")
+        },
+    }
+    result = assess_source_routes("insider_cluster", [], [record], client)
+    assert next(r for r in result["routes"] if r["route"] == "R8")["predicate"] == "UNVERIFIED"
+
+
+@pytest.fixture
+def reconstructed_runner(raw_cache, tmp_path, ownership_xml):
+    import json
+
+    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
+    from ggTrader.lab.event_timing_sources import parse_form4
+
+    cache, _, add = raw_cache
+    base = add("Fixture historical identity and complete inventory")
+    filings = []
+    inventory = []
+    for i in range(3):
+        accession = f"0000000001-23-{i + 1:06}"
+        item = {
+            "accession": accession,
+            "form": "4",
+            "filing_date": "2023-05-15",
+            "acceptance": f"2023-05-15T{10 + i}:00:00-04:00",
+            "primary_document": "form4.xml",
+        }
+        inventory.append(item)
+        xml = ownership_xml.replace(
+            "<reportingOwner><reportingOwnerId><rptOwnerCik>11</rptOwnerCik></reportingOwnerId></reportingOwner>",
+            "",
+        )
+        xml = xml.replace("<rptOwnerCik>10</rptOwnerCik>", f"<rptOwnerCik>{10 + i}</rptOwnerCik>")
+        ref = add(xml, f"https://www.sec.gov/Archives/{accession}.xml")
+        filings.append(
+            {
+                **item,
+                **parse_form4(xml, item),
+                "cik": "1",
+                "raw_complete": True,
+                "header_acceptance": item["acceptance"],
+                "source_refs": [ref],
+            }
+        )
+    evidence = {
+        "schema": "event-timing-evidence-v1",
+        "identities": [
+            {
+                "symbol": "A",
+                "cik": "1",
+                "security_id": "A-common",
+                "price_symbol": "A-USD",
+                "valid_from": "2000-01-01",
+                "valid_to": "2026-10-21",
+                "source_refs": [base],
+            }
+        ],
+        "inventories": [
+            {
+                "cik": "1",
+                "complete": True,
+                "request_succeeded": True,
+                "start": "2000-01-01",
+                "end": "2026-10-21",
+                "filings": inventory,
+                "source_refs": [base],
+            }
+        ],
+        "filings": filings,
+    }
+    source = tmp_path / "evidence.json"
+    source.write_text(json.dumps(evidence))
+    members = tmp_path / "members.csv"
+    members.write_text("date,tickers\n2000-01-01,A\n")
+    detector = tmp_path / "flags.json"
+    detector.write_text(
+        json.dumps(
+            {
+                "schema": "event-timing-detector-flags-v1",
+                "flags": [],
+                "screened": [
+                    {
+                        "symbol": "A-USD",
+                        "start": "2021-01-01",
+                        "end": "2026-04-30",
+                        "source_ref": base,
+                    }
+                ],
+            }
+        )
+    )
+
+    class MetadataDb:
+        query_log = []
+
+        def execute_select(self, sql, params=None):
+            self.query_log.append({"sql": sql, "params": list(params or ())})
+            assert "price_per_share" not in sql
+            assert " close" not in sql.lower()
+            if "count(*)" in sql:
+                return ["count"], [(1,)]
+            if "timestamp::date" in sql:
+                schedule = AuditClock().get_schedule(str(params[1]), str(params[2]))
+                return ["date"], [(d.date(),) for d in schedule.index]
+            if "FROM form4_transactions" in sql:
+                return [
+                    "symbol",
+                    "issuer_cik",
+                    "insider_cik",
+                    "accession_number",
+                    "transaction_date",
+                    "transaction_code",
+                    "shares",
+                    "acquired_disposed_code",
+                    "is_10b5_1_plan",
+                    "filing_date",
+                ], [
+                    (
+                        "A",
+                        1,
+                        10,
+                        inventory[0]["accession"],
+                        datetime.date(2023, 5, 1),
+                        "P",
+                        100,
+                        "A",
+                        False,
+                        datetime.date(2023, 5, 15),
+                    )
+                ]
+            assert "FROM earnings_surprise" in sql
+            return ["symbol", "earnings_date", "eps_estimate", "eps_reported", "surprise_pct"], []
+
+    return EventTimingAuditRunner(
+        cache_dir=cache,
+        evidence_file=source,
+        membership_file=members,
+        db=MetadataDb(),
+        detector_file=detector,
+        output_file=tmp_path / "replay.json",
+    )
+
+
+def test_fixture_runner_measures_clusters_not_sampled_filings_and_raw_collision_recovery(
+    reconstructed_runner,
+):
+    report = reconstructed_runner.run()
+    insider = report["insider_cluster"]
+    assert len([e for e in insider["events"] if e["in_scope"]]) == 1
+    assert insider["annual_coverage"][2023]["in_scope_events"] == 1
+    assert insider["annual_coverage"][2023]["denominator_units"] == 12
+    assert insider["annual_coverage"][2023]["priced_events"] == 1
+    rows = {r["requirement"]: r for r in insider["requirement_matrix"] if r["year"] == 2023}
+    assert rows["coverage"]["predicate"] == "PASS"
+    assert rows["collisions"]["predicate"] == "PASS"
+    assert rows["amendments"]["predicate"] == "PASS"
+    assert rows["prefix"]["predicate"] == "PASS"
+    assert rows["timestamp"]["predicate"] == "PASS"
+    assert rows["collisions"]["details"]["stored_diagnostics"][0]["collisions"]
+    assert insider["status"] == "UNRESOLVED"  # One exercised year is not a qualifying window.
+    assert len(report["samples"]["insider:2023"]["selected_keys"]) == 3
+    assert report["samples"]["insider:2023"]["shortfall"] == 22
+    assert report["phase2_build_requirements"]
+
+
+def test_runner_resume_reuses_checked_evidence_and_rejects_changed_membership(reconstructed_runner):
+    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
+
+    first = reconstructed_runner.run()
+    evidence_file = reconstructed_runner.output_file.parent / "evidence.json"
+    second_runner = EventTimingAuditRunner(
+        resume=True,
+        cache_dir=reconstructed_runner.cache_dir,
+        evidence_file=evidence_file,
+        membership_file=reconstructed_runner.membership_file,
+        output_file=reconstructed_runner.output_file.parent / "resume.json",
+    )
+    second = second_runner.run()
+    assert second["samples"] == first["samples"]
+    assert second["audit_meta"]["sec_requests_used"] == first["audit_meta"]["sec_requests_used"]
+    assert second["audit_meta"]["query_run_date"] == first["audit_meta"]["query_run_date"]
+    reconstructed_runner.membership_file.write_text('date,tickers\n2000-01-01,"A,B"\n')
+    with pytest.raises(ValueError, match="membership"):
+        EventTimingAuditRunner(
+            resume=True,
+            cache_dir=reconstructed_runner.cache_dir,
+            evidence_file=evidence_file,
+            membership_file=reconstructed_runner.membership_file,
         )
 
-        # Branch 3: all commercial ruled out
-        assert (
-            resolve_signal_status(
-                has_eligible_window=False,
-                paid_path_documented=False,
-                all_commercial_ruled_out=True,
-            )
-            == STATUS_NO_VERIFIED_PATH
-        )
 
-        # Branch 4: default fallback
-        assert (
-            resolve_signal_status(
-                has_eligible_window=False,
-                paid_path_documented=False,
-                all_commercial_ruled_out=False,
-            )
-            == STATUS_UNRESOLVED
+def test_pead_lineage_requires_snapshot_before_release_not_before_acceptance(reconstructed_runner):
+    runner = reconstructed_runner
+    ref = runner.evidence["identities"][0]["source_refs"][0]
+    provenance = {
+        "fiscal_period": "2023Q1",
+        "issuer_cik": "1",
+        "basis": "GAAP",
+        "currency": "USD",
+        "split_basis": "as_reported",
+        "source_refs": [ref],
+    }
+    event = {
+        "symbol": "A",
+        "earnings_date": "2023-05-04",
+        "fiscal_period": "2023Q1",
+        "issuer_cik": "1",
+        "announcement_readings": ["2023-05-04T15:00:00-04:00"],
+        "acceptance": "2023-05-04T16:00:00-04:00",
+        "release_matched_by_issuer_period": True,
+        "release_issuer_cik": "1",
+        "release_fiscal_period": "2023Q1",
+        "eps_reported": 2,
+        "eps_estimate": 1,
+        "surprise_pct": 100,
+        "source_refs": [ref],
+        "actual_eps": {**provenance, "value": 1},
+        "consensus": {**provenance, "value": 1, "snapshot_time": "2023-05-04T14:00:00-04:00"},
+    }
+    runner.evidence["pead_events"] = [event]
+    events, _ = runner.prepare_pead()
+    assert events[0]["consensus_predicate"] == "PASS"
+    assert events[0]["actual_eps_predicate"] == "PASS"
+    assert events[0]["stored_reported_eps_mismatch"]
+    event["actual_eps"]["currency"] = "EUR"
+    assert runner.prepare_pead()[0][0]["consensus_predicate"] == "UNVERIFIED"
+    event["actual_eps"]["currency"] = "USD"
+    event["actual_eps"]["issuer_cik"] = "2"
+    assert runner.prepare_pead()[0][0]["actual_eps_predicate"] == "UNVERIFIED"
+    event["actual_eps"]["issuer_cik"] = "1"
+    event["consensus"]["snapshot_time"] = "invalid"
+    assert runner.prepare_pead()[0][0]["consensus_predicate"] == "UNVERIFIED"
+    event["consensus"]["snapshot_time"] = "2023-05-04T15:30:00-04:00"
+    assert runner.prepare_pead()[0][0]["consensus_predicate"] == "FAIL"
+    event["consensus"]["snapshot_time"] = "2027-01-01T12:00:00-05:00"
+    future = runner.prepare_pead()[0][0]
+    assert future["quarantine"] == QuarantineReason.FUTURE_DATED
+    assert future["tradeable_date"] is None
+    event["consensus"]["snapshot_time"] = "2023-05-04T15:30:00-04:00"
+    event["earnings_date"] = None
+    quarantined = runner.prepare_pead()[0][0]
+    assert quarantined["quarantine"] == QuarantineReason.UNPARSEABLE_OR_MISSING_DATE
+    assert quarantined["tradeable_date"] is None
+
+
+def test_forward_session_query_failure_checkpoints_and_continues(reconstructed_runner, monkeypatch):
+    runner = reconstructed_runner
+    original = runner.db.execute_select
+
+    def fail_dates(sql, params=None):
+        if sql.startswith("SELECT timestamp::date"):
+            raise RuntimeError("fixture unavailable")
+        return original(sql, params)
+
+    monkeypatch.setattr(runner.db, "execute_select", fail_dates)
+    report = runner.run()
+    assert report["pending"]
+    assert runner.progress_file.exists()
+    assert (
+        report["insider_cluster"]["events"][0]["holding_diagnostics"][0]["missing_observed_bars"]
+        is None
+    )
+
+
+def test_reconciliation_sampler_deduplicates_canonical_keys():
+    selected, shortfall = sample_stratum(["A", "A", "B"], str, 3)
+    assert set(selected) == {"A", "B"}
+    assert len(selected) == 2 and shortfall == 1
+
+
+def test_raw_cache_rejects_symlink(raw_cache, tmp_path):
+    cache, client, add = raw_cache
+    ref = add("fixture")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("fixture")
+    (cache / ref["cache_file"]).unlink()
+    (cache / ref["cache_file"]).symlink_to(outside)
+    with pytest.raises(ValueError, match="checksum"):
+        client.reference(ref["url"])
+
+
+def test_interrupted_raw_write_preserves_uncommitted_bytes(tmp_path, monkeypatch):
+    from ggTrader.lab.event_timing_sources import atomic_bytes
+
+    def fail(*args):
+        raise OSError("fixture interruption")
+
+    monkeypatch.setattr("ggTrader.lab.event_timing_sources.os.replace", fail)
+    with pytest.raises(OSError):
+        atomic_bytes(tmp_path / "evidence.raw", b"raw-response", preserve_on_failure=True)
+    assert any(p.read_bytes() == b"raw-response" for p in tmp_path.iterdir())
+
+
+def test_cached_http_failure_is_not_successful_evidence(raw_cache):
+    from ggTrader.lab.event_timing_audit import evidence_supported
+
+    _, client, _ = raw_cache
+    client.store_response("https://www.sec.gov/Archives/failure", "sec", b"forbidden", 403)
+    ref = client.reference("https://www.sec.gov/Archives/failure")
+    assert not evidence_supported({"source_refs": [ref]}, client)
+    assert client.fetch_sec_url(ref["url"]) is None
+
+
+def test_sec_rate_spacing_and_successful_raw_response_cache(raw_cache, monkeypatch):
+    from ggTrader.lab.event_timing_sources import SecEdgarClient
+
+    cache, _, _ = raw_cache
+    monkeypatch.setenv("SEC_CONTACT_EMAIL", "fixture@example.invalid")
+    now = [100.0]
+    monkeypatch.setattr("ggTrader.lab.event_timing_sources.time.monotonic", lambda: now[0])
+    monkeypatch.setattr(
+        "ggTrader.lab.event_timing_sources.time.sleep",
+        lambda delay: now.__setitem__(0, now[0] + delay),
+    )
+    client = SecEdgarClient(cache, offline=False)
+    times = []
+
+    class Response:
+        status = 200
+        headers = {}
+
+        def __enter__(self):
+            times.append(now[0])
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self):
+            return b"{}"
+
+    monkeypatch.setattr(client.opener, "open", lambda *a, **k: Response())
+    for i in range(4):
+        assert client.fetch_sec_url(f"https://www.sec.gov/Archives/{i}.json") == "{}"
+    assert all(b - a >= 0.199999 for a, b in zip(times[:-1], times[1:]))
+    assert client.fetch_sec_url("https://www.sec.gov/Archives/0.json") == "{}"
+    assert client.checkpoint.sec_requests_total == 4
+
+
+def test_corrected_execution_prices_do_not_require_pit_versions(raw_cache):
+    from ggTrader.lab.event_timing_audit import assess_source_routes
+
+    _, client, add = raw_cache
+    ref = add("fixture public product documentation")
+    record = {
+        "route": "R7",
+        "source_refs": [ref],
+        "history_start": "2000-01-01",
+        "history_end": "2025-12-31",
+        "requirements": ["tape"],
+        "includes_delisted_acquired": True,
+        "documentation": {
+            item: {
+                "assessment": "supports",
+                "citation_url": ref["url"],
+                "statement": "fixture",
+                "retrieved_date": "2026-10-21",
+            }
+            for item in ("fields", "history", "access")
+        },
+    }
+    result = assess_source_routes("insider_cluster", [], [record], client)
+    route = next(r for r in result["routes"] if r["route"] == "R7")
+    assert route["predicate"] == "PASS"
+    assert min(route["years"]) == 2015
+
+
+def test_lag_and_real_monthly_load_boundary_counts_exclude_quarantine(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import filing_lags, load_boundaries
+
+    clock = AuditClock()
+    cluster_lots[0]["quarantine"] = QuarantineReason.TX_DATE_POST_FILING
+    assert filing_lags(cluster_lots, clock)["by_filing_year"][2023]["count"] == 2
+    cluster_lots[1]["transaction_date"] = "2022-01-01"
+    result = load_boundaries(cluster_lots, clock)
+    assert len(result) == 408
+    assert any(
+        "f1:0" in r["omitted_disclosure_lot_ids"]
+        for r in result
+        if r["decision"].startswith("2023-05")
+    )
+
+
+def test_identity_discovery_never_certifies_historical_ticker_map(raw_cache):
+    import json
+
+    from ggTrader.lab.event_timing_sources import collect_identity_candidates
+
+    _, client, add = raw_cache
+    add(
+        json.dumps({"0": {"ticker": "A", "cik_str": 1, "title": "Current name"}}),
+        "https://www.sec.gov/files/company_tickers.json",
+    )
+    result = collect_identity_candidates(client, ["A", "REMOVED"])
+    assert result["candidates"] == [{"symbol": "A", "cik": "1", "current_name": "Current name"}]
+    assert result["unresolved_symbols"] == ["REMOVED"]
+    assert not result["historical_identity_verified"]
+
+
+def test_release_collection_keeps_publisher_metadata_unconfirmed(raw_cache):
+    import json
+
+    from ggTrader.lab.event_timing_sources import collect_release_candidates, filing_urls
+
+    _, client, add = raw_cache
+    filing = {
+        "accession": "0000000001-23-000001",
+        "form": "8-K",
+        "primary_document": "report.htm",
+        "filing_date": "2023-05-04",
+        "acceptance": "2023-05-04T16:30:00-04:00",
+    }
+    document, header = filing_urls("1", filing)
+    base = document.rsplit("/", 1)[0]
+    add(json.dumps({"directory": {"item": [{"name": "ex99.htm"}]}}), base + "/index.json")
+    add('<a href="ex99.htm">Exhibit 99</a>', document)
+    add("<ACCEPTANCE-DATETIME>20230504163000", header)
+    add(
+        '<meta property="article:published_time" content="2023-05-04T15:00:00-04:00">'
+        '<meta name="fiscal-period-end" content="2023-03-31">',
+        base + "/ex99.htm",
+    )
+    result = collect_release_candidates(client, "1", filing)
+    assert result["complete"]
+    assert result["header_acceptance"] == "2023-05-04T16:30:00"
+    assert result["releases"][0]["fiscal_period"] == "2023-03-31"
+    assert not result["releases"][0].get("original_release_time_confirmed")
+
+
+def test_prefix_checker_detects_a_retrospective_rewrite(cluster_lots, monkeypatch):
+    import ggTrader.lab.event_timing_reconstruction as reconstruction
+
+    later = dict(
+        cluster_lots[0],
+        lot_id="future:0",
+        accession="future",
+        availability="2023-06-01T10:00:00-04:00",
+    )
+    original = reconstruction.replay_clusters
+
+    def broken_replay(lots, *args):
+        outputs, issues = original(lots, *args)
+        if outputs and any(r["lot_id"] == "future:0" for r in lots):
+            outputs[0] = dict(outputs[0], owners=["retrospectively-changed"])
+        return outputs, issues
+
+    monkeypatch.setattr(reconstruction, "replay_clusters", broken_replay)
+    result = reconstruction.evaluate_prefix_invariance(
+        cluster_lots + [later], [], AuditClock(), {"2023-05": True}
+    )
+    assert next(r for r in result["decisions"] if r["month"] == "2023-05")["predicate"] == "FAIL"
+
+
+def test_dst_gap_is_quarantined_instead_of_imputed():
+    from ggTrader.lab.event_timing_audit import event_clock
+
+    event = event_clock(
+        {"filing_date": "2023-03-12", "acceptance": "2023-03-12 02:30:00"},
+        "insider_cluster",
+        AuditClock(),
+        datetime.date(2026, 10, 21),
+    )
+    assert event["quarantine"] == QuarantineReason.UNPARSEABLE_OR_MISSING_DATE
+    assert event["availability"] is None and event["tradeable_date"] is None
+
+
+@pytest.mark.parametrize("empty_lots", [False, True])
+def test_later_unlinked_amendment_does_not_unverify_an_earlier_year(
+    reconstructed_runner, empty_lots
+):
+    runner = reconstructed_runner
+    original = runner.evidence["filings"][0]
+    amendment = dict(
+        original,
+        accession="0000000001-24-000099",
+        form="4/A",
+        filing_date="2024-05-15",
+        acceptance="2024-05-15T10:00:00-04:00",
+        header_acceptance="2024-05-15T10:00:00-04:00",
+    )
+    amendment["lots"] = [
+        dict(
+            original["lots"][0],
+            lot_id="0000000001-24-000099:0",
+            accession=amendment["accession"],
+            form="4/A",
+            filing_date="2024-05-15",
+            transaction_date="2024-05-01",
         )
+    ]
+    if empty_lots:
+        amendment["lots"] = []
+    runner.evidence["filings"].append(amendment)
+    runner.evidence["inventories"][0]["filings"].append(
+        {
+            key: amendment[key]
+            for key in ("accession", "form", "filing_date", "acceptance", "primary_document")
+        }
+    )
+    report = runner.run()
+    rows = report["insider_cluster"]["requirement_matrix"]
+    assert (
+        next(r for r in rows if r["year"] == 2023 and r["requirement"] == "prefix")["predicate"]
+        == "PASS"
+    )
+    assert (
+        next(r for r in rows if r["year"] == 2023 and r["requirement"] == "amendments")["predicate"]
+        == "PASS"
+    )
+    assert (
+        next(r for r in rows if r["year"] == 2024 and r["requirement"] == "amendments")["predicate"]
+        == "UNVERIFIED"
+    )
+
+
+def test_reconstruction_does_not_mix_reused_ticker_issuers(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+
+    for lot, cik in zip(cluster_lots, ("1", "2", "1")):
+        lot["issuer_cik"] = cik
+    events, _ = replay_clusters(cluster_lots, [], AuditClock().normalize_to_ny("2023-05-31"))
+    assert events == []
+
+
+def test_unfrozen_event_year_boundary_remains_explicit(reconstructed_runner):
+    from ggTrader.lab.event_timing_audit import build_universe_denominators, event_clock
+
+    runner = reconstructed_runner
+    runner.db = None
+    event = event_clock(
+        {"event_id": "A|2023Q4", "symbol": "A", "earnings_date": "2023-12-29"},
+        "pead",
+        runner.clock,
+        runner.query_run_date,
+    )
+    units = build_universe_denominators(runner.membership_file).units["pead"]
+    result = runner.attach_population("pead", [event], units)[0]
+    assert result["in_scope"]
+    assert result["scope_assignment"] != "known"
+    assert result["affected_years"] == [2023, 2024]
+
+
+def test_zero_lot_amendment_cancels_only_from_its_own_public_time(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import cluster_snapshot
+
+    clock = AuditClock()
+    action = {
+        "accession": "empty-amendment",
+        "replaces_lot_ids": ["f0:0"],
+        "source_refs": ["fixture"],
+        "availability": "2023-06-01T10:00:00-04:00",
+        "symbol": "A",
+    }
+    assert (
+        len(cluster_snapshot(cluster_lots, clock.normalize_to_ny("2023-05-31 16:00"), [action])[0])
+        == 1
+    )
+    assert (
+        cluster_snapshot(cluster_lots, clock.normalize_to_ny("2023-06-01 16:00"), [action])[0] == []
+    )
+
+
+def test_malformed_empty_ownership_document_is_not_a_verified_empty_inventory():
+    from ggTrader.lab.event_timing_sources import parse_form4
+
+    parsed = parse_form4(
+        "<ownershipDocument/>", {"accession": "f", "filing_date": "2023-05-01", "form": "4"}
+    )
+    assert parsed.get("schema_issues")
+
+
+def test_legacy_orphan_cache_cannot_reset_lost_request_accounting(tmp_path):
+    from ggTrader.lab.event_timing_sources import SecEdgarClient
+
+    (tmp_path / "sec_legacy_response.txt").write_text("unvalidated legacy response")
+    with pytest.raises(ValueError, match="checkpoint"):
+        SecEdgarClient(tmp_path)
+
+
+def test_malformed_cached_response_stays_unverified_and_preserved(raw_cache):
+    cache, client, add = raw_cache
+    ref = add(b"\xff", "https://www.sec.gov/Archives/bad-encoding")
+    assert client.fetch_sec_url(ref["url"]) is None
+    assert (cache / ref["cache_file"]).read_bytes() == b"\xff"
+
+
+def test_known_missingness_cause_is_not_counted_as_unexplained(reconstructed_runner, monkeypatch):
+    runner = reconstructed_runner
+    original = runner.db.execute_select
+    ref = runner.evidence["identities"][0]["source_refs"][0]
+    runner.evidence["coverage_causes"] = [
+        {
+            "symbol": "A",
+            "start": "2023-05-01",
+            "end": "2023-12-31",
+            "reason": "halt",
+            "source_refs": [ref],
+        }
+    ]
+
+    def no_bars(sql, params=None):
+        if "count(*)" in sql:
+            return ["count"], [(0,)]
+        if sql.startswith("SELECT timestamp::date"):
+            return ["date"], []
+        return original(sql, params)
+
+    monkeypatch.setattr(runner.db, "execute_select", no_bars)
+    report = runner.run()
+    annual = report["insider_cluster"]["annual_coverage"][2023]
+    assert annual["missing_events"] == 0
+    assert annual["price_ratio"] == 0
+    diagnostic = report["insider_cluster"]["events"][0]["holding_diagnostics"][0]
+    assert diagnostic["missing_by_cause"]["halt"] > 0
