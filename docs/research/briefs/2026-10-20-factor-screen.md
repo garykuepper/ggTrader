@@ -28,7 +28,7 @@
   - **Part A, the idea.** The factor must demonstrate statistical significance (NW t ≥ 3-level significance under family-wise control) on decades of independent, survivorship-free academic data.
   - **Part B, our version.** Our exact implementation must beat SPY by at least +1.0 pt/yr *after tax*, on clean point-in-time data not used to design the rules (evaluated in a subsequent phase).
 - **Why existing internal data cannot answer Part A.** Detecting an excess return edge over the market at a realistic information ratio (e.g., IR ≈ 0.35 to 0.40) at t ≥ 3 requires ~60 to 70 years of independent data. Our own clean point-in-time equity tape covers the S&P 500 from 2021 to 2026-04 only (~5 years). Evaluating multi-decade factor persistence is impossible on internal data alone.
-- **French data is independent and ready.** The Ken French Data Library provides over 60 years of free, value-weighted, survivorship-free US equity portfolio returns. The data downloading, verification, and screening harness already exists in the repo ([`src/ggTrader/lab/french_data.py`](file:///home/flynn/ggTrader/src/ggTrader/lab/french_data.py), [`src/ggTrader/lab/momentum_screen.py`](file:///home/flynn/ggTrader/src/ggTrader/lab/momentum_screen.py)).
+- **French data is independent and ready.** The Ken French Data Library provides over 60 years of free, value-weighted, survivorship-free US equity portfolio returns. The data downloading, verification, and screening harness already exists in the repo ([`src/ggTrader/lab/french_data.py`](../../../src/ggTrader/lab/french_data.py), [`src/ggTrader/lab/momentum_screen.py`](../../../src/ggTrader/lab/momentum_screen.py)).
 
 ## 3. Data (Ken French Data Library)
 
@@ -69,9 +69,9 @@ where $c$ is the fixed annual cost haircut subtracted monthly before compounding
 
 ## 6. Tests: significance (A1) and modern persistence (A2)
 
-- **Common Window:** 1963-07 → last month common to all files. Operating profitability (`6_Portfolios_ME_OP_2x3`) and investment (`6_Portfolios_ME_INV_2x3`) start in 1963-07, establishing a single common sample window across all four hypotheses.
+- **Common Window:** 1963-07 → 2026-04. The end month is fixed at 2026-04, the last month of the already-frozen momentum and factor files; newly frozen files are truncated to it. Operating profitability (`6_Portfolios_ME_OP_2x3`) and investment (`6_Portfolios_ME_INV_2x3`) start in 1963-07, establishing a single common sample window across all four hypotheses.
 - **Test A1 (Statistical Significance):**
-  - Evaluated over the full common window (1963-07 to common end month) at the base cost haircut.
+  - Evaluated over the full common window (1963-07 to 2026-04) at the base cost haircut.
   - Test statistic: mean monthly excess return $e_t$ divided by its Bartlett Newey-West standard error with 12 lags ($\text{NW } t$).
   - One-sided p-values: $p = \Phi(-t)$.
   - Multiple testing adjustment: Holm step-down procedure across the family of four hypotheses at an overall family-wise error rate of $\alpha = 0.00135$ (equivalent to a one-sided $t \ge 3.00$ for a single hypothesis).
@@ -82,7 +82,7 @@ where $c$ is the fixed annual cost haircut subtracted monthly before compounding
     4. Rank 4: $p \le 0.00135$ (approximate $t \approx 3.00$).
     *(All $t$-values marked as approximate normal critical equivalents).*
 - **Test A2 (Modern Post-Publication Persistence):**
-  - Evaluated over 1994-01 → same common end month.
+  - Evaluated over 1994-01 → 2026-04.
   - Portfolio CAGR net of base haircut minus market CAGR must be at least **+1.0 pt/yr** (+100 bps/yr).
 - **Pass Rule:** A factor passes Phase 1 if and only if it satisfies **both A1 and A2**.
 
@@ -94,7 +94,7 @@ Diagnostics are reported to characterize behavior, risk, and subperiod stability
 - **Subperiods:** 1963–1993, 1994–2012, and 2013–end (inclusive).
 - **Post-2013 net CAGR difference:** Reported plainly for all candidates. Robust profitability and investment were formally published circa 2013–2015 (e.g., Novy-Marx 2013; Fama and French 2015). Therefore, the post-1994 window includes significant pre-publication / in-sample history for OP and INV; the post-2013 subperiod serves as their true out-of-sample modern check.
 - **Stress-cost evaluation:** Full-window NW $t$, $p$, and post-1994 net CAGR difference evaluated under the stress cost haircuts (2.0% for H1–H3; 3.0% for H4).
-- **CAPM regression:** Annualized arithmetic alpha, alpha $t$-statistic, and market beta. Following the momentum study correction, alpha is estimated by regressing gross portfolio excess returns over the risk-free rate on market excess returns over the risk-free rate ($R_{i,t} - R_{f,t} = \alpha + \beta (R_{m,t} - R_{f,t}) + \epsilon_t$).
+- **CAPM regression:** Annualized arithmetic alpha and market beta only. No alpha $t$-statistic is reported: the momentum study removed its version as mis-specified, and a valid one is out of scope for a diagnostic. Following the momentum study correction, alpha is estimated by regressing gross portfolio excess returns over the risk-free rate on market excess returns over the risk-free rate ($R_{i,t} - R_{f,t} = \alpha + \beta (R_{m,t} - R_{f,t}) + \epsilon_t$).
 - **Worst 12-month relative return:** Compounded rolling 12-month winners-to-market wealth ratio $\prod (1 + R_{p}) / \prod (1 + R_{m}) - 1$.
 - **Relative drawdown and recovery:** Maximum peak-to-trough decline in net relative wealth $\prod (1 + R_p - c/12) / \prod (1 + R_m)$ from initial value 1.0, peak and trough dates, and calendar months to recovery (or null if unrecovered).
 - **Small-cap analogues:** SMALL HiOP, SMALL HiBM, and SMALL LoINV reported as diagnostics only, strictly outside the confirmatory Holm family, because we have no point-in-time small-cap universe or execution capability to trade them.
@@ -112,7 +112,7 @@ Diagnostics are reported to characterize behavior, risk, and subperiod stability
 
 Computation must stop immediately, and no verdict may be rendered, if any of the following occur:
 - SHA-256 checksum mismatch against `MANIFEST.json`.
-- Missing calendar months within the registered analysis window (1963-07 through common end month).
+- Missing calendar months within the registered analysis window (1963-07 through 2026-04).
 - File layout or header changes that fail strict schema parsing.
 - Hand-patching or manual data edits are strictly prohibited; any defect must be reported.
 
