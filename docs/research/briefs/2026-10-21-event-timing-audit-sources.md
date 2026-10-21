@@ -20,10 +20,10 @@ date) states all four:
 4. **Access:** licensable by an individual, non-academic subscriber, with a stated or quotable
    price.
 
-A route is a documented exclusion only if its documentation contradicts any of the four.
+A route is a documented exclusion only if its documentation contradicts any of the four. If
+the documentation is silent on any of them, the route is UNRESOLVED for that requirement.
 Point-in-time evidence (item 3) applies to signal inputs. Execution prices may be corrected
-without versioning, provided delisted securities are included (brief §8 A10). If the documentation is silent on any of them, the route is UNRESOLVED for
-that requirement.
+without versioning, provided delisted securities are included (brief §8 A10).
 
 ## Routes, in search order
 
