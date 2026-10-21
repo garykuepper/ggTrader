@@ -6,7 +6,7 @@ builder may not add, omit or substitute routes.
 
 Every route below is a **candidate to assess**, not a claim that it qualifies. Product names
 come from general knowledge and must be confirmed from the vendor's own public documentation;
-a name that can't be confirmed is recorded as an exclusion with the reason "not found".
+a name or document that can't be found is UNRESOLVED, not an exclusion. Only authoritative evidence that contradicts a requirement excludes a route.
 
 ## Required evidence per route
 
@@ -20,8 +20,9 @@ date) states all four:
 4. **Access:** licensable by an individual, non-academic subscriber, with a stated or quotable
    price.
 
-A route fails, and is recorded as a documented exclusion, if the documentation contradicts
-any of the four. If the documentation is silent on any of them, the route is UNRESOLVED for
+A route is a documented exclusion only if its documentation contradicts any of the four.
+Point-in-time evidence (item 3) applies to signal inputs. Execution prices may be corrected
+without versioning, provided delisted securities are included (brief §8 A10). If the documentation is silent on any of them, the route is UNRESOLVED for
 that requirement.
 
 ## Routes, in search order
@@ -38,7 +39,7 @@ that requirement.
 | R8 | Insider filings with acceptance times and all owners | Sharadar insider holdings (Nasdaq Data Link) |
 | R9 | Insider filings with acceptance times and all owners | SEC EDGAR itself (free; re-parse) |
 
-R9 is the free baseline, so if it passes, the insider signal needs no paid route.
+R9 is the free baseline. It resolves only its own documented filing requirements, not historical identity or prices. Statuses are assessed per signal, using only the relevant routes (brief §8 A10).
 
 ## Limits and completion
 
