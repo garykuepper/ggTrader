@@ -53,8 +53,10 @@ SPY 0.903, maximum drawdown −21.44% versus −24.50%). Earlier reports of the
 combined book beating or tying the index (including the earlier historical
 claim of a 0.80 Sharpe ratio versus 0.78 for SPY, which is now **void and
 superseded**) were based on selected backtest parameters rather than production
-rules. Live operations are frozen, and the recommendation for the year-end
-freeze lift is to retire the stock-picking sleeve entirely. **So nothing in
+rules. Live operations are frozen. Focus on research and strategy evidence;
+the owner explicitly asks that we stop recommending retirement decisions,
+including retiring the stock-picking sleeve, and retirement accounts. The
+account is taxable only. **So nothing in
 this system currently beats simply holding the S&P 500.** The completed
 century-long momentum screen using Ken French's academic portfolio data is
 **NO-GO** for both large and small companies. Both failed the Holm test, which

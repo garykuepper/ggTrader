@@ -2,6 +2,13 @@
 
 ## 2026-10-20
 
+- **Owner instruction correction:** Recorded the standing instruction in
+  `AGENTS.md` to stop recommending retirement decisions (including retiring the
+  stock-picking sleeve) and retirement accounts. The account is taxable only.
+  Removed pending retirement recommendations from the worklist and research
+  prompts; older recommendations are superseded. Research verdicts and the
+  production freeze remain unchanged.
+
 - **Research: momentum Phase 1 diagnostic corrections after final review.**
   Added the March–December 2009 rebound (gross and base cost) and full-window
   relative drawdown/recovery required by brief §10; definitions were specified

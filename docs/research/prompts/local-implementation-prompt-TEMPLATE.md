@@ -64,7 +64,10 @@ evaluated over the exact same span).
 CAGR 14.19% vs SPY 14.83%, excess −0.64 pt/yr, Newey-West t = −0.69
 (Sharpe 0.925 vs SPY 0.903, MaxDD −21.44% vs −24.50%;
 `docs/research/2026-10-19-production-replica-audit-nogo.md`). Live operations
-remain frozen; recommendation for freeze lift is to retire the stock-picking sleeve.
+remain frozen. Focus on research and paper-trading reliability. The owner has
+explicitly ruled out recommendations to retire the sleeve or use retirement
+accounts; the account is taxable only. See the standing owner instructions in
+`AGENTS.md`, which supersede older recommendations.
 
 **Historical standalone WFO core (pre-replica audit):**
 OOS Sharpe 0.59 | CAGR 3.1% | MaxDD -5.3%, void historical "gates 17/17"
@@ -101,8 +104,8 @@ avoiding the exact instance:
 - **Production-rule daily-bar replica NO-GO (2026-10-19).** The exact daily-bar
   replica with fixed defaults and cash sweep failed to beat SPY (14.19% vs
   14.83%, excess −0.64 pt/yr, NW t = −0.69; audit report
-  `docs/research/2026-10-19-production-replica-audit-nogo.md`). Recommendation
-  at freeze lift is to retire the stock-picking sleeve.
+  `docs/research/2026-10-19-production-replica-audit-nogo.md`). This finding
+  establishes no validated edge; it does not queue a retirement decision.
 
 - **Survivorship leakage made the reversion core look like it beat SPY.**
   Until 2026-09-23 every signal-strategy sweep traded stocks on days they

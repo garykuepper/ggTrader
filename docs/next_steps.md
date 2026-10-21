@@ -8,6 +8,11 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-20)
 
+**Owner correction:** Follow [the standing owner instructions](../AGENTS.md#owner-instructions-2026-10-20).
+Earlier retirement recommendations and retirement-account suggestions below
+are superseded, not pending decisions. Focus on research, strategy evidence,
+and paper-trading reliability; the account is taxable only.
+
 1. **Momentum re-test closed NO-GO.** Neither size passes the registered
    French screen (`_momentum_french_screen_results.json`: `pass.big = false`,
    `pass.small = false`). Holm rejects neither; post-publication net compound
@@ -24,13 +29,12 @@ any) — don't let this file accumulate a backlog.
    per-fold anchor results. Gate rejections stand: low pass counts reflect low
    statistical power, not proof that there is no edge (spec:
    `docs/research/briefs/2026-10-20-momentum-retest.md`, §4, item 2).
-3. **Owner decision at the freeze lift (~2026-12-29): recommend retiring the
-   stock-picking sleeve.** The approved historical daily-bar model is NO-GO:
+3. **Continue frozen paper observation and assess reproducibility.**
+   The approved historical daily-bar model is NO-GO:
    CAGR 14.19% versus SPY 14.83%, excess −0.64 pt/year, Newey-West t −0.69.
    The older holdout remains INCONCLUSIVE; exact historical live replication
-   remains UNVERIFIED. Keep production frozen. Any later live action is a
-   separate owner decision: retire the stock picks so only the SPDR S&P 500
-   exchange-traded fund (SPY) sweep remains in the stock-trading path. The
+   remains UNVERIFIED. Keep production frozen through the existing observation
+   window (about 2026-12-29). There is no pending retirement decision. The
    separate shadow retains its own forward rule; the owner's real-money A23
    allocation and exit terms are unchanged. See the
    [audit report](research/2026-10-19-production-replica-audit-nogo.md) and
@@ -131,8 +135,8 @@ money in ~3 months.
   - the shadow book's weights and rebalances match the rule;
   - any parity incident resets the clock.
 - **Month 12: P&L rules.**
-  - A stock sleeve is funded at ≤10% only; retire it if it trails SPY over
-    12 months by more than 1σ of its own tracking error.
+  - Historical stock-sleeve retirement advice is superseded by the
+    [standing owner instructions](../AGENTS.md#owner-instructions-2026-10-20).
   - The 80/20 sleeve stays only if its 12-month Sharpe on a T-bill-excess
     basis is ≥ SPY's, with drawdown no worse.
 - **Freeze:** once the live book is brought to the tested setup (the
@@ -150,9 +154,9 @@ No paid data; Phase 2 is not executed and Phases 2–5 are cancelled. Do not bui
 the momentum tax engine or start a replacement momentum trading path under
 this plan. Any future trading path requires separate owner authorization.
 
-The next owner decision remains retirement of stock picks at the freeze lift
-(about 2026-12-29), leaving only the SPY sweep. Production remains frozen until
-then. Per the 2026-10-20 triage, post-earnings announcement drift (PEAD) needs
+Production remains frozen through the existing observation window (about
+2026-12-29); this study does not queue a retirement decision. Per the
+2026-10-20 triage, post-earnings announcement drift (PEAD) needs
 public earnings-timing repair, and insider/congressional trades need
 filing-availability repair; all remain parked at low priority. No new strategy
 is proposed.
@@ -264,7 +268,7 @@ container recreated and checked):
     (b) a ~3-month shadow of the static book, holding TLT/GLD/PDBC fixed.
     A live rebalance-to-weights sleeve is a separate, explicit ask. Before
     real money, compare after-tax returns (gold is taxed as a collectible,
-    and rebalancing realizes gains) or hold the book in an IRA.
+    and rebalancing realizes gains) in the owner's taxable account.
     (c) Second reads (2026-09-28, `research-report-review` skill tests): with
     cash earning the T-bill rate, "any leg removed" fails for GLD (0.688) and
     PDBC (0.701) vs SPY 0.711. An 80% SPY / 20% BIL book cuts drawdown as
