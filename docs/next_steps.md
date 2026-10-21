@@ -14,8 +14,12 @@ any) — don't let this file accumulate a backlog.
    [Momentum re-test brief](research/briefs/2026-10-20-momentum-retest.md).
    Two-part standard: Part A tests momentum on ~100 years of Ken French data
    (t ≥ 3 with 12 Newey-West lags, Holm family level p = 0.00135, and post-1994
-   excess CAGR ≥ +1.0 pt/yr); Part B tests the multi-stock after-tax sleeve on
-   clean 2021–2026 data.
+   excess compound annual growth rate [CAGR] ≥ +1.0 percentage points per year
+   [pt/yr]); Part B: our exact rules beat S&P 500 ETF (SPY) by ≥ +1.0 pt/yr
+   after tax on clean data not used to design them (Phase 3, paid 2000–2020
+   data). Phase 2 (tax engine, then the 2021-01-31 → 2026-04-30 replay vs SPY
+   and iShares MSCI USA Momentum Factor ETF [MTUM]; runs only if Big passes
+   Phase 1) can only rule momentum out.
 2. **Deflated Sharpe Ratio (DSR) gate power note.** With one-year training folds
    and a 12-combo grid, the corrected DSR gate needs an in-sample Sharpe of
    roughly 2.5 to pass, so walk-forward out-of-sample (OOS) results are mostly
@@ -144,16 +148,34 @@ Follow the approved plan and brief:
 [Momentum re-test brief](research/briefs/2026-10-20-momentum-retest.md).
 
 - **Phase 0: Record fixes (docs only)** — In progress. Record dual momentum
-  duplicate, DSR power limits, clustered FOMC t-statistic, and prompt template
-  updates.
-- **Phase 1: French data significance & post-publication bar** — Download
-  Ken French 6 Portfolios Formed on Size and Momentum (2x3) and Fama/French 3
-  Factors, commit raw files with SHA-256 checksums, test Big and Small HiPRIOR
-  excess over market with 12 Newey-West lags under Holm correction (p = 0.00135).
-- **Phase 2: Multi-stock lot-level tax engine** — Build after-tax book with
-  wash-sale tracking on clean S&P 500 tape.
-- **Phase 3: Clean-window after-tax test** — Run exact rules against SPY benchmark
-  (kill rule: after-tax excess CAGR ≥ +1.0 pt/yr).
+  duplicate, Deflated Sharpe Ratio (DSR) power limits, day-clustered Federal Open
+  Market Committee (FOMC) t-statistic, and prompt template updates.
+- **Phase 1: French screen (free data)** — Download Ken French 6 Portfolios
+  Formed on Size and Momentum (2x3) and Fama/French 3 Factors, commit raw files
+  with SHA-256 checksums, test Big and Small HiPRIOR excess over market with
+  12 Newey-West lags under Holm correction (p = 0.00135; post-1994 excess CAGR
+  ≥ +1.0 percentage points per year [pt/yr]). Only Big passing authorizes Phase 2.
+- **Phase 2: Kill-only replay (tax engine & 2021–2026 test)** — Runs only if Big
+  passes Phase 1. Build and unit-test multi-stock lot-level tax engine (Internal
+  Revenue Service [IRS] Pub 550 wash sales, highest-in first-out [HIFO]).
+  Fixed-rule replay (Rule T primary, Rule B diagnostic) on point-in-time S&P 500
+  (2021-01-31 → 2026-04-30) vs SPY and MTUM. Can only rule momentum out (kill if
+  Rule T after-tax CAGR minus SPY is < +1.0 pt/yr; recommend MTUM if T beats SPY
+  but trails MTUM); cannot prove momentum.
+- **Phase 3: Paid exact-rule replay (2000–2020 clean data)** — Buy commercial
+  point-in-time survivorship-free data only if Phase 1 passes and Phase 2 does
+  not kill. Run exact frozen rules under same tax engine over 2000-01-31 →
+  2020-12-31. Part B pass bar: Rule T after-tax CAGR beats SPY by ≥ +1.0 pt/yr
+  and does not trail MTUM (or S&P 600 ETF [IJR] for small caps). Required before
+  real money.
+- **Phase 4: Paper trading (mechanics only)** — Starts at parity freeze lift
+  (~2026-12-29) if Big passed Phase 1 and Phase 2 did not kill (does not wait
+  for Phase 3). Rule T on Alpaca paper account for 18 months; checks broker
+  parity, lots, basis, and halts; recorded, not judged.
+- **Phase 5: Real money pilot** — Only after Phase 3 passes and ≥ 6 months of
+  clean paper trading. Pilot of 5% of investable assets funded from SPY/VOO core
+  (never A23's SSO leg), capped at 10%, quarterly reviews, relative stop at 15%
+  behind SPY.
 
 ---
 

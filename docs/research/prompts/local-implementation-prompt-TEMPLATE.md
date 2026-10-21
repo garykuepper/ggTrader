@@ -56,7 +56,9 @@ clear NO-GO before (see "lessons" below).
 
 **SPY buy-and-hold comparator: Sharpe 0.903 | CAGR 14.83% | MaxDD -24.50%**
 on the pinned window (2021-01-31 → 2026-04-30). (Earlier reports cited
-0.78 / 13.0% / -22.1% off shifted/unreconciled tape).
+0.78 / 13.0% / -22.1%; different benchmark Sharpes reflect different
+out-of-sample spans and data vintages; compare candidate runs against SPY
+evaluated over the exact same span).
 
 **Production-rule replica (2026-10-19 daily-bar audit): NO-GO.**
 CAGR 14.19% vs SPY 14.83%, excess −0.64 pt/yr, Newey-West t = −0.69
@@ -66,8 +68,9 @@ remain frozen; recommendation for freeze lift is to retire the stock-picking sle
 
 **Historical standalone WFO core (pre-replica audit):**
 OOS Sharpe 0.59 | CAGR 3.1% | MaxDD -5.3%, void historical "gates 17/17"
-(the DSR gate bug fix in `09f9f40` voided historical gate passes; with 1-yr
-folds and 12 combos, 0/17 passed under the corrected DSR gate;
+(the DSR gate bug fix in `09f9f40` voided historical gate passes; no
+corrected-gate count exists for the core; with one-year folds and a 12-setting
+grid, the corrected gate requires an in-sample Sharpe of roughly 2.5 to pass;
 `docs/research/2026-09-23-pit-rebaseline-core-nogo.md`).
 
 **Historical KEEP blend (core + SPY sweep):**

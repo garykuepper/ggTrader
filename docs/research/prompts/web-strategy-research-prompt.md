@@ -45,22 +45,24 @@ five technical indicators (Bollinger Bands, RSI, EMA crossover, MACD
 divergence, volume-confirmed Bollinger Bands) buying individual S&P 500
 stocks on short-term mean-reversion with idle cash swept into an S&P 500 ETF.
 Earlier backtests suggested an edge, but a strict 2026-10-19 production-replica
-audit on daily bars (`docs/research/2026-10-19-production-replica-audit-nogo.md`)
-found the deployed daily-bar model is **NO-GO**: CAGR 14.19% versus SPY 14.83%,
-excess −0.64 pt/year, Newey-West t = −0.69 (Sharpe 0.925 vs SPY 0.903,
-MaxDD −21.44% vs −24.50%). Earlier reports of the combined book beating or
-tying the index (including the historical KEEP claim of Sharpe 0.80 vs 0.78,
-which is now **void and superseded**) were based on selected backtest parameters
-rather than production rules. Live operations are frozen, and the recommendation
-for the year-end freeze lift is to retire the stock-picking sleeve entirely.
-**So nothing in this system currently beats simply holding the S&P 500.**
-The active research arc is an explicit, pre-registered momentum re-test
-(`docs/research/briefs/2026-10-20-momentum-retest.md`) testing whether a stock
-sleeve can beat SPY after tax on evidence that isn't luck. Any new idea is
-effectively funded by selling an S&P 500 index holding, so it must earn more
-than the index would have on the same days after all taxes and frictions.
-Treat any number this scout is given as provisional until it has passed that
-kind of scrutiny.
+audit on daily bars found the deployed daily-bar model is **NO-GO**: compound
+annual growth rate (CAGR) of 14.19% versus S&P 500 ETF (SPY) 14.83%, an excess
+of −0.64 percentage points per year, and an autocorrelation-adjusted t-statistic
+(Newey-West) of −0.69 showing no statistical edge (Sharpe ratio 0.925 versus
+SPY 0.903, maximum drawdown −21.44% versus −24.50%). Earlier reports of the
+combined book beating or tying the index (including the earlier historical
+claim of a 0.80 Sharpe ratio versus 0.78 for SPY, which is now **void and
+superseded**) were based on selected backtest parameters rather than production
+rules. Live operations are frozen, and the recommendation for the year-end
+freeze lift is to retire the stock-picking sleeve entirely. **So nothing in
+this system currently beats simply holding the S&P 500.** The active research
+arc is an explicit, pre-registered momentum re-test (evaluating ~100 years of
+academic data across company sizes and a multi-stock lot-level after-tax replay)
+testing whether a stock sleeve can beat SPY after tax on evidence that isn't
+luck. Any new idea is effectively funded by selling an S&P 500 index holding,
+so it must earn more than the index would have on the same days after all taxes
+and frictions. Treat any number this scout is given as provisional until it has
+passed that kind of scrutiny.
 
 **Already tried and rejected — don't propose close variants of these
 without a genuinely different mechanism:**
@@ -74,23 +76,21 @@ without a genuinely different mechanism:**
 - Take-profit / time-based exit rules layered on or replacing the current
   exit logic (worse than the existing rule-based exit).
 - Cross-sectional or absolute price momentum ranking on large-cap U.S.
-  equities: on a 2026-10-19 replay, 12-1 momentum showed +4.37 pt/yr excess
-  CAGR over SPY but Newey-West t = 0.761 (failed significance). A dual-momentum
-  variant was identical because its filter never triggered. This is now under
-  an active, pre-registered re-test on ~100 years of Ken French data and
-  clean-window after-tax execution (`docs/research/briefs/2026-10-20-momentum-retest.md`);
-  do not propose casual momentum variants without addressing after-tax drag and
+  equities: on a recent replay, 12-month momentum (buying past 12-to-2 month
+  winners) showed +4.37 percentage points per year excess compound annual growth
+  rate over SPY, but an autocorrelation-adjusted t-statistic (Newey-West) of
+  only 0.761 (falling far short of the statistical significance bar of t ≥ 3).
+  A dual-momentum variant was identical because its negative-momentum filter
+  never triggered. This is now under an active, pre-registered re-test across
+  ~100 years of historical data and clean-window after-tax execution; do not
+  propose casual momentum variants without addressing after-tax drag and
   long-horizon significance.
-- Pre-FOMC drift on Treasuries (holding TLT/IEF/EDV ahead of announcements):
-  a day-clustered event study across 113 Federal Open Market Committee (FOMC)
-  meeting dates showed gross t = 2.258, but net t = 0.981 (fails statistical
-  significance after transaction costs; the earlier unclustered reference of
-  3.619 gross / 1.572 net counted each meeting day three times across the three
-  ETFs).
-- Re-testing multiple parameter combinations without correcting for selection
-  bias: under a 1-year training fold and 12-combo grid, the Deflated Sharpe
-  Ratio (DSR) gate requires an in-sample Sharpe of roughly 2.5 to pass, so
-  unadjusted backtest Sharpe improvements are easily noise.
+- Pre-FOMC drift on Treasuries (holding Treasury ETFs TLT, IEF, and EDV ahead of
+  announcements): a day-clustered event study across 113 Federal Open Market
+  Committee (FOMC) meeting dates showed gross t = 2.258, but net t = 0.981
+  (fails statistical significance after transaction costs; the earlier
+  unclustered reference of 3.619 gross / 1.572 net counted each meeting day
+  three times across the three ETFs).
 - A blunt volatility/VIX-level regime filter that blocks entries outright
   during "risky" markets (didn't help — vol-aware *position sizing*, by
   contrast, did help).
