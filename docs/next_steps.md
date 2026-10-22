@@ -12,8 +12,9 @@ any) — don't let this file accumulate a backlog.
 [five-gap resolution plan](superpowers/plans/2026-10-22-event-evidence-resolution.md).
 Gemini Flash on agy owns the first offline evidence workbook across all five
 gaps. Flash has delivered draft Markdown/JSON workbooks; they are unreviewed
-and must not supply audit predicates or request authorization. Codex is reviewing
-source references, budget claims, proposed SQL and requirement statuses.
+and must not supply audit predicates or request authorization. Independent
+Codex review found 14 substantive corrections; Codex is rebuilding the two
+workbooks against raw evidence before a fresh scoped review.
 This supersedes piecemeal scheduling below, while preserving all prior findings.
 
 

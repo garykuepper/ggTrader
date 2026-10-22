@@ -981,3 +981,52 @@ The completed batch remains bounded; no new external request is included in
 this review. Inventory-rule disposition and any next acquisition must be concrete
 and reviewed; no annual/five-year gate or price-vendor link is passed by these
 observations. Both signals remain UNRESOLVED.
+
+## 2026-10-22 five-gap Flash workbook review — rejected draft
+
+The owner requested a consolidated plan and agy Flash delegation. The plan is
+[the five-gap resolution plan](../superpowers/plans/2026-10-22-event-evidence-resolution.md).
+Flash created the two uncommitted workbook files named there. Independent Codex
+review rejected them before acquisition or DB use. Fourteen corrections are
+required; the draft is not an accepted source for audit predicates or budgets:
+
+1. Separate original receipt conflicts, amended date-only compliance and unknown
+   dissemination; remove blanket timing PASS.
+2. Amendment `0001225208-18-004211` is filed 2018-02-26 with original-submission
+   date 2018-02-15; missing predecessor means linkage UNVERIFIED, not PASS.
+   Existing reconstruction excludes unresolved amendment lots.
+3. Correct mismatched URL/file/hash tuples for that amendment and
+   `0001628280-22-028934`; bind every reference through the actual manifest.
+4. Remove unsupported 0.5-hour vendor spend/1.5-hour remaining claims and invented
+   third-party-stop attribution; search accounting remains unreconciled.
+5. Replace non-executable/unpaired SQL proposals with event-security/date-paired,
+   zero-preserving, horizon/vendor-pinned metadata queries. Existing runtime count
+   query also omits venue; any code correction is a separate tested task.
+6. Separate insider member-months from PEAD member-quarters and their applicable
+   checks. Reviewer reproduced 68,806 insider units/761 symbols and 49,542 PEAD
+   units/1,013 symbols (including partial 2026 diagnostics). PIT file hash is
+   `b30739a3baba60de0f472404c5b653514e140ace8d4b89c3875d5bf1e184a472`.
+7. Supply missing owner/role/class/holding, duplicate, late/carry-in/boundary and
+   PEAD original-release/actual-EPS findings or exact missing inputs. Stored EPS
+   field is `eps_reported`. Population acquisition has not been costed.
+8. Reject a post-observation one-day descriptor tolerance as proof of completeness;
+   corroboration and disjoint pages do not establish absence of omitted filings.
+9. Correct three NOC annual accessions and raw locators; annual observations do
+   not PASS continuity, and accounting entries do not rule out broader errors.
+10. Remove uncited vendor properties, including previously rejected CRSP access
+    assertions; rebuild relevant four-item route evidence from retained sources.
+11. Cached checkbox absence does not prove XML-schema introduction history;
+    distinguish compliance date, sample absence and unknown plan participation.
+12. Collision example has 11 raw lots, groups of six and two (eight involved,
+    six potential excess rows), all S transactions. No DB loss or purchase-cluster
+    effect was measured; co-owner code support is not sample verification.
+13. Keep the two charter leads, correct the conditional Exhibit 4.8 target, and
+    name missing mapping/export/predecessor/vendor dependencies. No guessed runtime
+    or claimed fully executable consolidated acquisition.
+14. Bound artifact-absence/search/validation claims to actual checked paths and
+    methods; custom JSON labels do not imply formal audit-schema validation.
+
+Codex is correcting only the two workbook drafts against raw evidence. No runtime
+change, network request, DB query, protocol amendment, acquisition authorization
+or PASS follows from this review. Original reviewed 79-response evidence and both
+UNRESOLVED per-signal verdicts remain valid. Fresh review follows the corrections.
