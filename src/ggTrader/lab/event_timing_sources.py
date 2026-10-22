@@ -668,6 +668,9 @@ def embedded_form4(submission: str, filing: dict) -> str | None:
         metadata, separator, body = document.partition("<TEXT>")
         if not separator or body.count("<TEXT>") or body.count("</TEXT>") != 1:
             raise ValueError("Malformed submission TEXT boundaries")
+        text, _, trailing = body.partition("</TEXT>")
+        if trailing.strip():
+            raise ValueError("Unexpected content after submission TEXT")
         types = re.findall(r"(?m)^<TYPE>([^\r\n]*)", metadata)
         names = re.findall(r"(?m)^<FILENAME>([^\r\n]*)", metadata)
         if len(types) != 1 or len(names) != 1:
@@ -676,7 +679,7 @@ def embedded_form4(submission: str, filing: dict) -> str | None:
             types[0].strip() == filing["form"]
             and names[0].strip() == Path(filing["primary_document"]).name
         ):
-            matches.append(body.split("</TEXT>", 1)[0])
+            matches.append(text)
     if len(matches) > 1:
         raise ValueError("Ambiguous primary ownership DOCUMENT")
     if not matches:

@@ -31,6 +31,13 @@ feasibility. Both signals remain UNRESOLVED.
    gates remain unresolved. No full-universe run, return test or automatic
    clock/interval repair is queued.
 
+**Immediate offline implementation:** 23 cached full submissions reproduce the
+separate ownership XML parser outputs exactly, including Form 4/A. Reuse those
+bodies to avoid redundant XML requests, retaining strict document selection,
+source provenance and a primary-XML fallback. Add focused fixtures and obtain
+independent review before collection. This does not relax any audit predicate
+or authorize the 1,545 uncached full submissions observed for the two examples.
+
 ### Research context and standing decisions
 
 **Owner correction:** Follow [the standing owner instructions](../AGENTS.md#owner-instructions-2026-10-20).

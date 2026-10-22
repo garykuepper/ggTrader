@@ -764,6 +764,42 @@ annual qualification or end-to-end data feasibility. Northrop's historical-page
 discrepancy remains unresolved. Both signal paths remain UNRESOLVED. The one
 bounded request authorization is exhausted; further collection is not queued.
 
+## Offline acquisition footprint and full-submission equivalence — 2026-10-22
+
+The parent counted all observed Form 4/4-A index rows with filing dates from
+2015-01-01 through 2026-04-30. This is a filing inventory diagnostic, not a
+cluster-event population or execution-date filter. It omits required carry-in
+disclosures and does not establish dated identity or a qualifying window.
+
+- Northrop's cached pages contain 848 such rows (820 Form 4, 28 Form 4/A).
+  The interval inconsistency and unfetched older page still prevent the current
+  parser from certifying inventory completeness. Observed rows are retained as
+  a lower-bound diagnostic, not promoted to verified retrieval coverage.
+- Costco's cached complete parsed inventory contains 720 such rows (661 Form 4,
+  59 Form 4/A). Its inventory completeness alone does not pass other gates.
+- With separate XML/full-submission requests, 3,090 canonical document URLs
+  for these observed rows are not cached (1,674 Northrop, 1,416 Costco), before
+  retries. This describes two operational issuers, not an estimate of the
+  entire universe or permission to spend the remaining request budget.
+
+The parent then extracted the XML document from each of 23 cached complete
+XML/full-submission pairs, selecting exactly one matching TYPE and primary
+FILENAME. Existing `parse_form4()` results matched the separately downloaded
+XML exactly in all 23 cases, including Form 4/A. Hashes were verified and every
+cache file remained unchanged. Evidence:
+`/tmp/insider-full-submission-xml-equivalence.json` and
+`/tmp/insider-cached-inventory-acquisition-footprint.json`.
+
+This supports a minimal collector efficiency change: reuse already-cached
+primary XML if available; otherwise request the canonical full submission and
+extract the matching ownership XML there, with a separate primary-document
+request only as a validated fallback. Preserve source references and fail closed
+on ambiguous/wrong-identity content. API/header corroboration and all approved
+timing, quarantine and completeness rules remain unchanged. Code implementation,
+focused regression tests and independent review are the next offline work.
+No new collection is authorized; the known uncached full-submission count alone
+would still be 1,545 before retries and carry-in requirements.
+
 ## 2026-10-22 offline full-submission collector efficiency
 
 Implemented on `research/event-timing-audit`, starting from `5371bba`. Runtime

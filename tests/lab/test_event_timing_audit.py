@@ -938,6 +938,29 @@ def test_collect_filing_embedded_invalid_fails_closed(filing_submission, filing_
     assert calls == [full_url]
 
 
+def test_collect_filing_rejects_xml_after_text_close(
+    filing_submission, filing_transport, ownership_xml
+):
+    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+
+    filing, header, document = filing_submission
+    client, _, responses, calls = filing_transport
+    document_url, full_url = filing_urls("1", filing)
+    damaged = document.replace("</TEXT>\n", "")
+    damaged = damaged.replace("<XML>\n", "</TEXT>\n<XML>\n", 1)
+    damaged = damaged.replace("</ownershipDocument>", "</broken>")
+    responses.update({full_url: header + damaged, document_url: ownership_xml})
+
+    result = collect_filing(client, "1", filing)
+
+    assert not result["raw_complete"]
+    assert result.get("reason")
+    assert result["source_refs"] == [client.reference(full_url)]
+    assert client.referenced_bytes(result["source_refs"][0]) == responses[full_url].encode()
+    assert calls == [full_url]
+    assert client.checkpoint.sec_requests_total == 1
+
+
 @pytest.mark.parametrize("failed_source", ["header", "primary"])
 @pytest.mark.parametrize("status", [403, 429])
 def test_collect_filing_transport_stop_has_no_followup(
