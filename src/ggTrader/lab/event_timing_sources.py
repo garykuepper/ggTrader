@@ -61,6 +61,7 @@ def atomic_json(path: Path, data: Any) -> None:
 class CheckpointState:
     """Cumulative accounting; reservations are persisted before requests."""
 
+    schema: str = "event-timing-accounting-v2"
     sec_requests_total: int = 0
     yf_requests_total: int = 0
     completed_strata: list[str] = field(default_factory=list)
@@ -71,14 +72,12 @@ class CheckpointState:
 
 
 class SafeRedirect(urllib.request.HTTPRedirectHandler):
-    """Do not send declared contact information to unregistered hosts."""
+    """Refuse redirects: each HTTP request must have its own reservation."""
 
     def redirect_request(
         self, req: Any, fp: Any, code: int, msg: str, headers: Any, newurl: str
     ) -> Any:
-        if urllib.parse.urlsplit(newurl).hostname != urllib.parse.urlsplit(req.full_url).hostname:
-            raise ValueError("Cross-host redirect refused")
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
+        return None
 
 
 class SecEdgarClient:
@@ -104,9 +103,20 @@ class SecEdgarClient:
         try:
             if self.checkpoint_file.exists():
                 raw = json.loads(self.checkpoint_file.read_text())
-                if not all(k in raw for k in ("sec_requests_total", "yf_requests_total")):
-                    raise ValueError("Missing cumulative counters")
+                if set(raw) != set(asdict(CheckpointState())):
+                    raise ValueError("Incomplete accounting schema")
                 self.checkpoint = CheckpointState(**raw)
+                if (
+                    raw["schema"] != "event-timing-accounting-v2"
+                    or type(raw["stopped_due_to_rate_limit"]) is not bool
+                    or not isinstance(raw["request_log"], list)
+                    or not isinstance(raw["completed_strata"], list)
+                    or not all(isinstance(s, str) for s in raw["completed_strata"])
+                    or raw["stopped_reason"] is not None
+                    and not isinstance(raw["stopped_reason"], str)
+                    or raw["stopped_due_to_rate_limit"] != bool(raw["stopped_reason"])
+                ):
+                    raise ValueError("Invalid accounting fields")
                 for count in (
                     self.checkpoint.sec_requests_total,
                     self.checkpoint.yf_requests_total,
@@ -114,13 +124,32 @@ class SecEdgarClient:
                     if type(count) is not int or count < 0:
                         raise ValueError("Invalid request count")
                 if (
-                    not math.isfinite(self.checkpoint.elapsed_seconds)
+                    type(self.checkpoint.elapsed_seconds) not in (int, float)
+                    or not math.isfinite(self.checkpoint.elapsed_seconds)
                     or self.checkpoint.elapsed_seconds < 0
                 ):
                     raise ValueError("Invalid elapsed time")
+                for provider, count in (
+                    ("sec", raw["sec_requests_total"]),
+                    ("yf", raw["yf_requests_total"]),
+                ):
+                    if sum(r.get("provider") == provider for r in raw["request_log"]) != count:
+                        raise ValueError("Reservations do not reconcile with counters")
+                for reservation in raw["request_log"]:
+                    if (
+                        reservation.get("provider") not in ("sec", "yf")
+                        or not isinstance(reservation.get("url"), str)
+                        or type(reservation.get("attempt")) is not int
+                        or not 1 <= reservation["attempt"] <= 4
+                        or not isinstance(reservation.get("outcome"), str)
+                    ):
+                        raise ValueError("Invalid reservation")
+                if any(r["outcome"] in ("HTTP 403", "HTTP 429") for r in raw["request_log"]):
+                    if not raw["stopped_due_to_rate_limit"]:
+                        raise ValueError("Lost external stop")
             elif self.cache_dir.exists() and any(self.cache_dir.iterdir()):
                 raise ValueError("Missing checkpoint for pre-existing responses")
-        except (ValueError, TypeError, OSError) as exc:
+        except (ValueError, TypeError, AttributeError, OSError) as exc:
             raise ValueError(
                 "Invalid/missing checkpoint; preserve cache and recover accounting"
             ) from exc
@@ -129,11 +158,18 @@ class SecEdgarClient:
                 self.manifest = json.loads(self.manifest_file.read_text())
                 if not isinstance(self.manifest["files"], list):
                     raise ValueError("Invalid files list")
+                reserved_urls = {r["url"] for r in self.checkpoint.request_log}
                 for entry in self.manifest["files"]:
                     if not all(entry.get(k) for k in ("url", "cache_file", "sha256")):
                         raise ValueError("Incomplete manifest entry")
                     if Path(entry["cache_file"]).name != entry["cache_file"]:
                         raise ValueError("Unsafe cache path")
+                    if entry["url"] not in reserved_urls:
+                        raise ValueError("Manifest response has no durable request reservation")
+                    if entry.get("status_code") in (403, 429) and not (
+                        self.checkpoint.stopped_due_to_rate_limit
+                    ):
+                        raise ValueError("Manifest stop is absent from accounting")
             elif self.checkpoint.sec_requests_total or self.checkpoint.yf_requests_total:
                 raise ValueError("Missing manifest for used budgets")
         except (ValueError, KeyError, TypeError, OSError) as exc:
@@ -165,10 +201,12 @@ class SecEdgarClient:
 
     def reference(self, url: str) -> dict | None:
         """Return a manifest reference only for bytes that still match their checksum."""
-        entries = [e for e in self.manifest["files"] if e["url"] == url]
-        if not entries:
+        if getattr(self, "_manifest_size", -1) != len(self.manifest["files"]):
+            self._latest_entries = {e["url"]: e for e in self.manifest["files"]}
+            self._manifest_size = len(self.manifest["files"])
+        entry = self._latest_entries.get(url)
+        if entry is None:
             return None
-        entry = entries[-1]
         path = self.cache_dir / entry["cache_file"]
         if (
             path.is_symlink()
@@ -178,6 +216,17 @@ class SecEdgarClient:
         ):
             raise ValueError("Cached response missing or checksum mismatch; preserve evidence")
         return dict(entry)
+
+    def referenced_bytes(self, ref: dict) -> bytes:
+        """Read only the exact successful referenced response; never issue a request."""
+        actual = self.reference(ref["url"])
+        if not actual or actual["sha256"] != ref["sha256"] or actual["status_code"] != 200:
+            raise ValueError("Unsupported source reference")
+        raw = (self.cache_dir / actual["cache_file"]).read_bytes()
+        encoding = actual.get("content_encoding", "identity")
+        if encoding not in ("identity", "gzip"):
+            raise ValueError("Unsupported source encoding")
+        return gzip.decompress(raw) if encoding == "gzip" else raw
 
     def store_response(
         self, url: str, provider: str, raw: bytes, status: int, encoding: str = "identity"
@@ -344,23 +393,39 @@ def enumerate_sec(client: SecEdgarClient, cik: str) -> dict:
         return result
     try:
         data = json.loads(raw)
+        if str(int(data["cik"])) != str(int(cik)):
+            raise ValueError("Submissions issuer differs from requested issuer")
+        if not isinstance(data["filings"]["files"], list):
+            raise ValueError("Missing pagination inventory")
         result["filings"] = filing_rows(data["filings"]["recent"])
         result["source_refs"].append(client.reference(url))
         complete = True
+        page_names = set()
         for page in data["filings"].get("files", []):
             name = page["name"]
-            if not re.fullmatch(r"[A-Za-z0-9.-]+\.json", name):
+            if not re.fullmatch(r"[A-Za-z0-9.-]+\.json", name) or name in page_names:
                 raise ValueError("Unsafe SEC pagination name")
+            page_names.add(name)
+            first, last = pd.Timestamp(page["filingFrom"]), pd.Timestamp(page["filingTo"])
+            if pd.isna(first) or pd.isna(last) or first > last:
+                raise ValueError("Invalid historical page interval")
             page_url = f"https://data.sec.gov/submissions/{name}"
             older = client.fetch_sec_url(page_url)
             if older is None:
                 complete = False
                 continue
-            result["filings"].extend(filing_rows(json.loads(older)))
+            rows = filing_rows(json.loads(older))
+            if any(not page["filingFrom"] <= r["filing_date"] <= page["filingTo"] for r in rows):
+                raise ValueError("Historical page interval mismatch")
+            result["filings"].extend(rows)
             result["source_refs"].append(client.reference(page_url))
         by_key: dict = {}
         for row in result["filings"]:
             key = row["accession"]
+            if not re.fullmatch(r"\d{10}-\d{2}-\d{6}", key):
+                raise ValueError("Invalid inventory accession")
+            if pd.isna(pd.Timestamp(row["filing_date"])):
+                raise ValueError("Missing inventory filing date")
             if key in by_key and by_key[key] != row:
                 complete = False
                 result["reason"] = "conflicting inventory records"
@@ -372,10 +437,80 @@ def enumerate_sec(client: SecEdgarClient, cik: str) -> dict:
         result["request_succeeded"] = True
         dates = [row["filing_date"] for row in result["filings"] if row.get("filing_date")]
         result["start"] = min(dates) if dates else None
-        result["end"] = dt.date.today().isoformat()
-    except (ValueError, KeyError, TypeError, IndexError):
+        observed = [pd.Timestamp(ref["timestamp"]).date() for ref in result["source_refs"]]
+        result["end"] = min(observed).isoformat() if observed else None
+    except (ValueError, KeyError, TypeError, IndexError, AttributeError):
         result["reason"] = "unparseable SEC inventory"
     return result
+
+
+def reviewed_fields(record: dict, fields: list[str], client: SecEdgarClient, linkage: dict) -> bool:
+    """Validate field-specific review receipts against exact extracts and identity/period scope.
+
+    A receipt records a human interpretation, not a machine certificate of its truth.
+    Unreviewed annotations and reviews of a different value or scope cannot authorize facts.
+    """
+    try:
+        refs = {(r["url"], r["sha256"]) for r in record["source_refs"]}
+        for path in fields:
+            value: Any = record
+            for part in path.split("."):
+                value = value[part]
+            matches = [r for r in record.get("field_reviews", []) if r.get("field") == path]
+            if len(matches) != 1:
+                return False
+            review = matches[0]
+            ref = review["source_ref"]
+            if (
+                (ref["url"], ref["sha256"]) not in refs
+                or review["value"] != value
+                or type(review["value"]) is not type(value)
+                or review["linkage"] != linkage
+                or not linkage
+                or not isinstance(review["reviewer"], str)
+                or not review["reviewer"].strip()
+                or not isinstance(review["interpretation"], str)
+                or not review["interpretation"].strip()
+                or pd.isna(pd.Timestamp(review["reviewed_at"]))
+                or type(review["byte_start"]) is not int
+                or type(review["byte_end"]) is not int
+            ):
+                return False
+            raw = client.referenced_bytes(ref)
+            start, end = review["byte_start"], review["byte_end"]
+            if not 0 <= start < end <= len(raw) or not review["extract"].strip():
+                return False
+            if raw[start:end].decode("utf-8") != review["extract"]:
+                return False
+            # Interpretation cannot attach an unrelated quote to a different identity/period.
+            context = {k: v for k, v in linkage.items() if k not in ("route", "representation")}
+            if any(str(value) not in review["extract"] for value in context.values()):
+                return False
+            if type(value) in (str, int, float) and not path.endswith(".assessment"):
+                if str(value) not in review["extract"]:
+                    return False
+        return True
+    except (KeyError, ValueError, TypeError, AttributeError, OSError, UnicodeError):
+        return False
+
+
+class ReferencedSources:
+    """Replay parsers exclusively from a record's declared response set, without transport."""
+
+    def __init__(self, client: SecEdgarClient, refs: list[dict]) -> None:
+        self.client = client
+        self.refs = {r["url"]: r for r in refs}
+
+    def reference(self, url: str) -> dict | None:
+        return self.refs.get(url)
+
+    def fetch(self, url: str, provider: str = "sec") -> bytes | None:
+        ref = self.refs.get(url)
+        return self.client.referenced_bytes(ref) if ref else None
+
+    def fetch_sec_url(self, url: str) -> str | None:
+        raw = self.fetch(url)
+        return raw.decode("utf-8") if raw is not None else None
 
 
 def filing_urls(cik: str, filing: dict) -> tuple[str, str]:
@@ -486,6 +621,23 @@ def parse_form4(xml: str, filing: dict) -> dict:
     }
 
 
+def parse_filing_header(header: str, accession: str) -> dict:
+    """Read header dates only when its accession matches the requested filing."""
+    identity = re.search(r"(?:<ACCESSION-NUMBER>|ACCESSION NUMBER:\s*)(\d{10}-\d{2}-\d{6})", header)
+    if not identity or identity[1] != accession:
+        return {"reason": "header accession absent or mismatched"}
+    accepted = re.search(r"<ACCEPTANCE-DATETIME>(\d{14})", header)
+    filed = re.search(r"(?:<FILED-AS-OF-DATE>|FILED AS OF DATE:\s*)(\d{8})", header)
+    return {
+        "header_acceptance": dt.datetime.strptime(accepted[1], "%Y%m%d%H%M%S").isoformat()
+        if accepted
+        else None,
+        "header_filing_date": dt.datetime.strptime(filed[1], "%Y%m%d").date().isoformat()
+        if filed
+        else None,
+    }
+
+
 def collect_filing(client: SecEdgarClient, cik: str, filing: dict) -> dict:
     """Collect a Form 4 plus independent acceptance header for reconciliation."""
     result = dict(filing, cik=str(cik), raw_complete=False, source_refs=[])
@@ -495,17 +647,12 @@ def collect_filing(client: SecEdgarClient, cik: str, filing: dict) -> dict:
         if xml is not None:
             result.update(parse_form4(xml, filing))
             result["source_refs"].append(client.reference(document_url))
+            if str(result.get("issuer_cik", "")).lstrip("0") != str(cik).lstrip("0"):
+                result["schema_issues"].append("XML issuer differs from requested issuer")
             result["raw_complete"] = not result["schema_issues"]
         header = client.fetch_sec_url(header_url)
         if header is not None:
-            match = re.search(r"<ACCEPTANCE-DATETIME>(\d{14})", header)
-            result["header_acceptance"] = (
-                dt.datetime.strptime(match[1], "%Y%m%d%H%M%S").isoformat() if match else None
-            )
-            filed = re.search(r"(?:<FILED-AS-OF-DATE>|FILED AS OF DATE:\s*)(\d{8})", header)
-            result["header_filing_date"] = (
-                dt.datetime.strptime(filed[1], "%Y%m%d").date().isoformat() if filed else None
-            )
+            result.update(parse_filing_header(header, filing["accession"]))
             result["source_refs"].append(client.reference(header_url))
     except (ValueError, ET.ParseError, KeyError):
         result["reason"] = "invalid ownership/header evidence"
@@ -597,10 +744,7 @@ def collect_release_candidates(client: SecEdgarClient, cik: str, filing: dict) -
         result["source_refs"].append(client.reference(index_url))
         header = client.fetch_sec_url(header_url)
         if header is not None:
-            match = re.search(r"<ACCEPTANCE-DATETIME>(\d{14})", header)
-            result["header_acceptance"] = (
-                dt.datetime.strptime(match[1], "%Y%m%d%H%M%S").isoformat() if match else None
-            )
+            result.update(parse_filing_header(header, filing["accession"]))
             result["source_refs"].append(client.reference(header_url))
         primary = client.fetch_sec_url(document_url)
         if primary is None:

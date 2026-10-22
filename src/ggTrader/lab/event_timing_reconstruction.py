@@ -10,11 +10,13 @@ from typing import Any
 import pandas as pd
 
 
-def stored_key(lot: dict, owner: str) -> tuple:
+def stored_key(lot: dict, owner: str) -> tuple | None:
     """Match the actual stored PK, including transaction_code and shares."""
+    if not str(owner).isdigit() or not lot.get("accession"):
+        return None
     try:
         shares: Any = Decimal(str(lot.get("shares"))).normalize()
-    except InvalidOperation:
+    except (InvalidOperation, ValueError):
         shares = lot.get("shares")
     return (
         lot["accession"],
@@ -28,38 +30,55 @@ def stored_key(lot: dict, owner: str) -> tuple:
 def reconcile_lots(lots: list[dict], stored: list[dict]) -> dict:
     """Distinguish raw duplicates and distinct lots colliding under the stored key."""
     keys: dict[tuple, list[dict]] = {}
+    unassignable = []
     for lot in lots:
+        if not lot.get("raw_lot_sha256") or not lot.get("lot_id") or not lot.get("owners"):
+            unassignable.append({"lot": lot, "reason": "missing raw fingerprint/identity"})
         for owner in lot.get("owners", []):
-            if owner is not None:
-                keys.setdefault(stored_key(lot, owner), []).append(lot)
-    stored_keys = Counter(stored_key(r, str(r["insider_cik"])) for r in stored)
+            key = stored_key(lot, owner)
+            if key is None:
+                unassignable.append({"lot": lot, "owner": owner, "reason": "invalid owner/key"})
+            else:
+                keys.setdefault(key, []).append(lot)
+    stored_keys = Counter()
+    for row in stored:
+        key = stored_key(row, row.get("insider_cik"))
+        if key is None:
+            unassignable.append({"stored_row": row, "reason": "invalid stored owner/key"})
+        else:
+            stored_keys[key] += 1
     collisions = []
     exact_duplicates = []
     for key, group in keys.items():
-        fingerprints = Counter(lot["raw_lot_sha256"] for lot in group)
+        fingerprints = Counter(lot.get("raw_lot_sha256") for lot in group)
         if len(group) > 1:
             if len(fingerprints) == 1:
                 exact_duplicates.append(
-                    {"key": list(map(str, key)), "lot_ids": [r["lot_id"] for r in group]}
+                    {"key": list(map(str, key)), "lot_ids": [r.get("lot_id") for r in group]}
                 )
             else:
                 collisions.append(
-                    {"key": list(map(str, key)), "lot_ids": [r["lot_id"] for r in group]}
+                    {"key": list(map(str, key)), "lot_ids": [r.get("lot_id") for r in group]}
                 )
     missing = [
-        r["lot_id"]
-        for group in keys.values()
+        {"lot_id": r.get("lot_id"), "owner": key[1]}
+        for key, group in keys.items()
         for r in group
-        if stored_keys[stored_key(r, next(o for o in r["owners"] if o is not None))] == 0
+        if stored_keys[key] == 0 and r.get("lot_id")
     ]
     return {
         "raw_lots": len(lots),
         "stored_rows": len(stored),
         "collisions": collisions,
         "exact_duplicate_candidates": exact_duplicates,
-        "missing_stored_lots": sorted(set(missing)),
-        "raw_lot_ids": [r["lot_id"] for r in lots],
-        "predicate": "PASS" if all(lot.get("raw_lot_sha256") for lot in lots) else "UNVERIFIED",
+        "missing_stored_lots": sorted({r["lot_id"] for r in missing}),
+        "missing_stored_owner_lots": [
+            {"lot_id": lot_id, "owner": owner}
+            for lot_id, owner in sorted({(r["lot_id"], r["owner"]) for r in missing})
+        ],
+        "raw_lot_ids": [r.get("lot_id") for r in lots],
+        "unassignable_rows": unassignable,
+        "predicate": "UNVERIFIED" if unassignable else "PASS",
         "representation": "raw lots retained; stored losses are Phase 2 build requirements",
     }
 
@@ -71,7 +90,10 @@ def known_time(lot: dict) -> pd.Timestamp | None:
 
 
 def cluster_snapshot(
-    lots: list[dict], decision: pd.Timestamp, amendments: list[dict]
+    lots: list[dict],
+    decision: pd.Timestamp,
+    amendments: list[dict],
+    deadline: Callable[[], bool] | None = None,
 ) -> tuple[list[dict], list[str]]:
     """Reconstruct the 14-day, three-owner signal using only then-public source lots."""
     issues = []
@@ -109,13 +131,18 @@ def cluster_snapshot(
             active.pop(key)
     usable = []
     for row in active.values():
+        if deadline is not None and not deadline():
+            return [], issues + ["runtime budget exhausted"]
+        if row.get("reconstruction_issue"):
+            issues.append(f"invalid raw input: {row.get('lot_id', 'unassignable')}")
+            continue
         if row["transaction_code"] != "P" or row["plan_state"] == "PRESENT-TRUE":
             continue
         if row["plan_state"] not in ("PRESENT-FALSE", "ABSENT"):
             issues.append(f"non-plan status unknown: {row['lot_id']}")
             continue
         owners = row.get("owners", [])
-        if not owners or any(o is None for o in owners):
+        if not owners or any(not str(o).isdigit() for o in owners):
             issues.append(f"reporting owner missing: {row['lot_id']}")
             continue
         usable.append(row)
@@ -133,6 +160,8 @@ def cluster_snapshot(
             key=lambda r: (str(r["transaction_date"]), r["lot_id"]),
         )
         for row in rows:
+            if deadline is not None and not deadline():
+                return events, issues + ["runtime budget exhausted"]
             date = pd.Timestamp(row["transaction_date"])
             window = [r for r in window if (date - pd.Timestamp(r["transaction_date"])).days <= 14]
             window.append(row)
@@ -175,12 +204,16 @@ def replay_clusters(
     amendments: list[dict],
     decision: pd.Timestamp,
     deadline: Callable[[], bool] | None = None,
+    progress: dict | None = None,
+    save_progress: Callable[[], None] | None = None,
 ) -> tuple[list[dict], list[str]]:
     """Freeze emitted signals while replaying each security's disclosures in public-time order."""
     ledger: dict[str, dict] = {}
     issues = []
     by_symbol: dict[str, list[dict]] = {}
     for row in lots:
+        if deadline is not None and not deadline():
+            return [], ["runtime budget exhausted"]
         if (
             not row.get("quarantine")
             and known_time(row) is not None
@@ -195,6 +228,15 @@ def replay_clusters(
         ):
             by_symbol.setdefault(action["symbol"], [])
     for symbol, rows in sorted(by_symbol.items()):
+        saved = progress.get(symbol) if progress is not None else None
+        if saved is not None and saved.get("complete"):
+            ledger.update({e["event_id"]: e for e in saved["events"]})
+            issues.extend(saved["issues"])
+            continue
+        last_time = pd.Timestamp(saved["through"]) if saved and saved.get("through") else None
+        if saved is not None:
+            ledger.update({e["event_id"]: e for e in saved["events"]})
+            issues.extend(saved["issues"])
         visible = []
         ids = {r["lot_id"] for r in rows}
         accessions = {r["accession"] for r in rows}
@@ -215,7 +257,11 @@ def replay_clusters(
             if deadline is not None and not deadline():
                 return list(ledger.values()), sorted(set(issues + ["runtime budget exhausted"]))
             visible.extend(group)
-            snapshot, errors = cluster_snapshot(visible, time, actions)
+            if last_time is not None and time <= last_time:
+                continue
+            snapshot, errors = cluster_snapshot(visible, time, actions, deadline)
+            if "runtime budget exhausted" in errors:
+                return list(ledger.values()), sorted(set(issues + errors))
             issues.extend(errors)
             current = [a for a in actions if known_time(a) == time]
             closes = [r["tradeable_close"] for r in group + current if r.get("tradeable_close")]
@@ -243,6 +289,23 @@ def replay_clusters(
                     )
                     event["precision"] = "timestamp" if precise else "date_only"
                 ledger.setdefault(event["event_id"], event)
+            if progress is not None:
+                progress[symbol] = {
+                    "complete": False,
+                    "through": time.isoformat(),
+                    "events": [e for e in ledger.values() if e["symbol"] == symbol],
+                    "issues": list(issues),
+                }
+                if save_progress is not None:
+                    save_progress()
+        if progress is not None:
+            progress[symbol] = {
+                "complete": True,
+                "events": [e for e in ledger.values() if e["symbol"] == symbol],
+                "issues": list(issues),
+            }
+            if save_progress is not None:
+                save_progress()
     return sorted(ledger.values(), key=lambda e: (e["formed_at"], e["event_id"])), sorted(
         set(issues)
     )
@@ -254,6 +317,8 @@ def evaluate_prefix_invariance(
     clock: Any,
     complete_by_month: dict[str, bool],
     deadline: Callable[[], bool] | None = None,
+    progress: dict | None = None,
+    save_progress: Callable[[], None] | None = None,
 ) -> dict:
     """Compare full-history ledger with each independently truncated A9 information set."""
     decisions = []
@@ -266,14 +331,30 @@ def evaluate_prefix_invariance(
         ),
         default=clock.normalize_to_ny("2026-04-30 16:00"),
     )
-    full, full_issues = replay_clusters(lots, amendments, horizon, deadline)
+    if progress is None:
+        progress = {}
+    full, full_issues = replay_clusters(
+        lots, amendments, horizon, deadline, progress.setdefault("full", {}), save_progress
+    )
     for period in pd.period_range("2015-01", "2026-04", freq="M"):
-        schedule = clock.get_schedule(str(period.start_time.date()), str(period.end_time.date()))
-        decision = schedule.iloc[-1]["market_close"]
-        if not complete_by_month.get(str(period), False) or deadline is not None and not deadline():
+        saved = progress.get(str(period), {})
+        if saved.get("complete"):
+            row = saved["row"]
+            decisions.append(row)
+            annual.setdefault(period.year, []).append(row["predicate"])
+            continue
+        expired = deadline is not None and not deadline()
+        decision = (
+            None
+            if expired
+            else clock.get_schedule(
+                str(period.start_time.date()), str(period.end_time.date())
+            ).iloc[-1]["market_close"]
+        )
+        if not complete_by_month.get(str(period), False) or expired:
             row = {
                 "month": str(period),
-                "decision": decision.isoformat(),
+                "decision": decision.isoformat() if decision is not None else None,
                 "predicate": "UNVERIFIED",
                 "reason": "incomplete source inventory/raw inputs or runtime cap",
             }
@@ -285,8 +366,7 @@ def evaluate_prefix_invariance(
             ]
             prefix, issues = replay_clusters(truncated, prefix_actions, decision, deadline)
             equal = historical == prefix
-            unexercised = bool(truncated) and not historical
-            predicate = "FAIL" if not equal else "UNVERIFIED" if issues or unexercised else "PASS"
+            predicate = "FAIL" if not equal else "UNVERIFIED" if issues else "PASS"
             row = {
                 "month": str(period),
                 "decision": decision.isoformat(),
@@ -296,12 +376,14 @@ def evaluate_prefix_invariance(
                 "issues": issues,
                 "reason": "identical historical ledger"
                 if historical
-                else "nonempty inputs produced no cluster"
-                if unexercised
                 else "verified-empty prefix compared",
             }
         decisions.append(row)
         annual.setdefault(period.year, []).append(row["predicate"])
+        if deadline is None or deadline():
+            progress[str(period)] = {"complete": True, "row": row}
+            if save_progress is not None:
+                save_progress()
     return {
         "decisions": decisions,
         "full_history_issues": full_issues,
@@ -314,23 +396,41 @@ def evaluate_prefix_invariance(
     }
 
 
-def filing_lags(lots: list[dict], clock: Any) -> dict:
+def filing_lags(
+    lots: list[dict],
+    clock: Any,
+    deadline: Callable[[], bool] | None = None,
+    progress: dict | None = None,
+    save_progress: Callable[[], None] | None = None,
+) -> dict:
     """Count NYSE sessions after transaction through filing on quarantined-free raw lots."""
+    if deadline is not None and not deadline():
+        return {
+            "observation_unit": "raw transaction lot",
+            "by_filing_year": {},
+            "pending": "runtime budget exhausted",
+        }
     rows = [r for r in lots if not r.get("quarantine")]
     if not rows:
         return {"observation_unit": "raw transaction lot", "by_filing_year": {}}
     sessions = clock.get_schedule("1990-01-01", max(str(r["filing_date"]) for r in rows)).index
     result = {}
     for year in sorted({pd.Timestamp(r["filing_date"]).year for r in rows}):
+        if deadline is not None and not deadline():
+            return {
+                "observation_unit": "raw transaction lot",
+                "by_filing_year": result,
+                "pending": "runtime budget exhausted",
+            }
+        if progress is not None and str(year) in progress:
+            result[year] = progress[str(year)]
+            continue
         group = [r for r in rows if pd.Timestamp(r["filing_date"]).year == year]
         values = pd.Series(
-            [
-                int(
-                    sessions.searchsorted(pd.Timestamp(r["filing_date"]), side="right")
-                    - sessions.searchsorted(pd.Timestamp(r["transaction_date"]), side="right")
-                )
-                for r in group
-            ]
+            sessions.searchsorted(pd.DatetimeIndex([r["filing_date"] for r in group]), side="right")
+            - sessions.searchsorted(
+                pd.DatetimeIndex([r["transaction_date"] for r in group]), side="right"
+            )
         )
         result[year] = {
             "count": len(values),
@@ -340,14 +440,30 @@ def filing_lags(lots: list[dict], clock: Any) -> dict:
             "share_over_two_sessions": float((values > 2).mean()),
             "lot_ids": [r["lot_id"] for r in group],
         }
+        if progress is not None:
+            progress[str(year)] = result[year]
+            if save_progress is not None:
+                save_progress()
     return {"observation_unit": "raw transaction lot", "by_filing_year": result}
 
 
-def load_boundaries(lots: list[dict], clock: Any) -> list[dict]:
+def load_boundaries(
+    lots: list[dict],
+    clock: Any,
+    deadline: Callable[[], bool] | None = None,
+    progress: dict | None = None,
+    save_progress: Callable[[], None] | None = None,
+) -> list[dict]:
     """Inventory disclosures the existing transaction-date loader would omit at each A9 close."""
     result = []
     clean = [r for r in lots if not r.get("quarantine") and known_time(r) is not None]
     for period in pd.period_range("2015-01", "2026-04", freq="M"):
+        if deadline is not None and not deadline():
+            break
+        if progress is not None and str(period) in progress:
+            result.extend(progress[str(period)])
+            continue
+        start = len(result)
         decision = clock.get_schedule(
             str(period.start_time.date()), str(period.end_time.date())
         ).iloc[-1]["market_close"]
@@ -369,4 +485,8 @@ def load_boundaries(lots: list[dict], clock: Any) -> list[dict]:
                     "raw_public_time_inputs_retain_them": True,
                 }
             )
+        if progress is not None:
+            progress[str(period)] = result[start:]
+            if save_progress is not None:
+                save_progress()
     return result

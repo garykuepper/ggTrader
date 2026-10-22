@@ -321,4 +321,8 @@ stratum at two and writes partial JSON/Markdown under `/tmp`. `--evidence` and
 frozen inputs. DB SELECTs and external collection require separate explicit
 `--read-db` / `--network` flags; `.env` is never loaded. Collection remains
 blocked pending code review and an authorized contact. See the
-[implementation handoff](research/event-timing-audit-implementation.md).
+[implementation handoff](research/event-timing-audit-implementation.md). A completed bounded
+`--network` run can explicitly select `--output docs/research/_event_timing_audit.json`
+to publish the registered JSON/Markdown, including honest UNRESOLVED results.
+Smoke, offline and runtime-interrupted work remain partial. Byte references alone
+do not validate semantic facts; see the field-review contract in the handoff.

@@ -2,6 +2,15 @@
 
 ## 2026-10-21
 
+- **Lab infrastructure: event-timing audit targeted review fixes.** Added raw-fact
+  revalidation and field-specific semantic receipts, conservative insider timing,
+  cumulative population/prefix completeness, strict accounting/redirect refusal,
+  frozen observations and CPU checkpoints, owner/lot loss diagnostics, exact PEAD
+  reconciliation, cross-year uncertainty and honest unresolved final reports.
+  Fixed all 14 concrete rework findings with offline regressions; no real-data
+  feasibility conclusion or collection was produced. See the
+  [updated handoff](research/event-timing-audit-implementation.md).
+
 - **Lab infrastructure: event-timing audit evidence rework.** Replaced assumed
   coverage and stored-defect feasibility failures with PIT unit accounting,
   raw Form 4 replay, registered sampling, provenance ingestion and guarded
