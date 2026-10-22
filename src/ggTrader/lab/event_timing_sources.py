@@ -656,24 +656,81 @@ def parse_filing_header(header: str, accession: str, issuer_cik: str | None = No
     }
 
 
+def embedded_form4(submission: str, filing: dict) -> str | None:
+    """Select only a unique, well-framed primary ownership XML from a submission."""
+    documents = re.findall(r"<DOCUMENT>(.*?)</DOCUMENT>", submission, re.S)
+    if submission.count("<DOCUMENT>") != len(documents) or submission.count("</DOCUMENT>") != len(
+        documents
+    ):
+        raise ValueError("Malformed submission DOCUMENT boundaries")
+    matches = []
+    for document in documents:
+        metadata, separator, body = document.partition("<TEXT>")
+        if not separator or body.count("<TEXT>") or body.count("</TEXT>") != 1:
+            raise ValueError("Malformed submission TEXT boundaries")
+        types = re.findall(r"(?m)^<TYPE>([^\r\n]*)", metadata)
+        names = re.findall(r"(?m)^<FILENAME>([^\r\n]*)", metadata)
+        if len(types) != 1 or len(names) != 1:
+            raise ValueError("Ambiguous or missing DOCUMENT type/filename")
+        if (
+            types[0].strip() == filing["form"]
+            and names[0].strip() == Path(filing["primary_document"]).name
+        ):
+            matches.append(body.split("</TEXT>", 1)[0])
+    if len(matches) > 1:
+        raise ValueError("Ambiguous primary ownership DOCUMENT")
+    if not matches:
+        return None
+    body = matches[0]
+    xml = re.findall(r"<XML>(.*?)</XML>", body, re.S)
+    if not xml and "<XML>" not in body and "</XML>" not in body:
+        return None
+    if len(xml) != 1 or body.count("<XML>") != 1 or body.count("</XML>") != 1:
+        raise ValueError("Malformed or ambiguous primary XML boundaries")
+    return xml[0].strip()
+
+
 def collect_filing(client: SecEdgarClient, cik: str, filing: dict) -> dict:
-    """Collect a Form 4 plus independent acceptance header for reconciliation."""
+    """Reuse cached primary XML, otherwise obtain XML and header from one submission."""
     result = dict(filing, cik=str(cik), raw_complete=False, source_refs=[])
     try:
         document_url, header_url = filing_urls(cik, filing)
-        xml = client.fetch_sec_url(document_url)
+        primary_ref = client.reference(document_url)
+        primary_cached = primary_ref is not None and primary_ref.get("status_code") == 200
+        xml, header = None, None
+        if not primary_cached:
+            header = client.fetch_sec_url(header_url)
+            ref = client.reference(header_url)
+            if ref is not None:
+                result["source_refs"].append(ref)
+            if header is not None:
+                xml = embedded_form4(header, filing)
+                if xml is not None:
+                    checked = parse_filing_header(header, filing["accession"], issuer_cik=cik)
+                    result.update(checked)
+                    if checked.get("reason"):
+                        return result
+        if xml is None:
+            xml = client.fetch_sec_url(document_url)
+            ref = client.reference(document_url)
+            if ref is not None and ref not in result["source_refs"]:
+                result["source_refs"].append(ref)
         if xml is not None:
             result.update(parse_form4(xml, filing))
-            result["source_refs"].append(client.reference(document_url))
             if str(result.get("issuer_cik", "")).lstrip("0") != str(cik).lstrip("0"):
                 result["schema_issues"].append("XML issuer differs from requested issuer")
             result["raw_complete"] = not result["schema_issues"]
-        header = client.fetch_sec_url(header_url)
+        else:
+            result["reason"] = "ownership XML unavailable"
+        if primary_cached:
+            header = client.fetch_sec_url(header_url)
+            ref = client.reference(header_url)
+            if ref is not None:
+                result["source_refs"].append(ref)
         if header is not None:
             result.update(parse_filing_header(header, filing["accession"]))
-            result["source_refs"].append(client.reference(header_url))
-    except (ValueError, ET.ParseError, KeyError):
-        result["reason"] = "invalid ownership/header evidence"
+    except (ValueError, ET.ParseError, KeyError) as exc:
+        result["reason"] = f"invalid ownership/header evidence: {exc}"
     return result
 
 

@@ -763,3 +763,70 @@ raw inventories, amendment linkage, price-security mapping, detector coverage,
 annual qualification or end-to-end data feasibility. Northrop's historical-page
 discrepancy remains unresolved. Both signal paths remain UNRESOLVED. The one
 bounded request authorization is exhausted; further collection is not queued.
+
+## 2026-10-22 offline full-submission collector efficiency
+
+Implemented on `research/event-timing-audit`, starting from `5371bba`. Runtime
+changes are confined to `collect_filing()` and the small `embedded_form4()`
+document selector in `event_timing_sources.py`. No change to the approved
+protocol, `event_timing_audit.py`, parsers' timing interpretation, qualification
+gates, CLI, dependencies or production code was needed.
+
+Acquisition and provenance:
+
+- A successful checksummed canonical primary XML already in the client's
+  declared cache is reused first. Its parsed result and primary/full-response
+  reference ordering remain unchanged, even when a full response contains
+  different embedded ownership content.
+- Otherwise the canonical accession full submission is obtained first. Exactly
+  one DOCUMENT must match both the API form and primary filename basename.
+  Same-filename exhibits and same-type different files are ignored. Supported
+  embedded ownership XML is passed once through unchanged `parse_form4()`;
+  issuer identity and the full header's accession/issuer are checked. A valid
+  full response supplies both XML and header with one counted request and one
+  actual full-response reference, without inventing a primary XML download.
+- A header-only response, unrelated documents, or a correctly framed matching
+  document without an XML wrapper uses the canonical primary URL as fallback.
+  With successful uncached responses this costs two counted requests. Missing
+  or wrong header evidence cannot establish filing-date corroboration.
+- Duplicate matches/metadata/XML wrappers, malformed DOCUMENT/TEXT/XML framing,
+  invalid ownership XML, DTD/entities and wrong identities fail closed. Raw
+  response references survive parse failures; issuer failures retain schema
+  issues. Failed HTTP response references and original bytes are retained too.
+  There is no fallback to conceal an invalid matching embedded document.
+- All transport still uses the existing counted client. Fixture checks confirm
+  retry reservations, exhausted budgets and no HTTP attempt after the first
+  403/429. No refresh, alternate URL, redirect, budget reset or checksum repair
+  was added. `ReferencedSources` replays only declared responses, even when an
+  undeclared primary happens to exist elsewhere in the cache.
+
+Verification used pure fixtures with mocked HTTP I/O and the real transport,
+cache and accounting implementation. The initial test-first selection produced
+24 expected failures and four passing guard cases. An additional reference
+retention assertion exposed two failing fallback HTTP cases before their fix.
+Final targeted run: `scripts/run_tests.sh tests/lab/test_event_timing_audit.py
+-q -k 'test_collect_filing' --tb=short` — **32 passed, 153 deselected in 3.12 s**.
+After the final fixture adjustment, the complete focused run was
+`scripts/run_tests.sh tests/lab/test_event_timing_audit.py -q --tb=short` —
+**185 passed in 204.44 s**. Every existing test and fixture remained AST-identical;
+no previous fetch-order expectation or semantic assertion was weakened.
+
+The new cases cover both 4 and 4/A, canonical selection among unrelated bodies,
+single-request/no-double-download provenance, three fallback forms, unchanged
+cached-primary results, fourteen invalid-content cases, four HTTP stop cases,
+two retry cases, two budget boundaries and four raw replay/date-corroboration
+cases. Full-response-only raw revalidation and date-only execution pass with
+valid raw pairs; missing/wrong headers cannot corroborate. Observed availability
+stays null and dissemination stays UNVERIFIED. Ruff check and format-check pass
+on the two owned Python files; CLI `--help` exits 0 and `git diff --check` passes.
+No broader lab run was needed because no other runtime module changed.
+
+The parent's pending handoff and next-steps text is preserved and excluded from
+this implementation commit. No operational cache was replayed, modified or
+migrated; no external request, DB query, strategy/return/price computation,
+detector work or deployment occurred. The prior 23-pair equivalence and
+two-issuer acquisition counts remain diagnostics, not population forecasts.
+Historical identity continuity, Northrop's inventory discrepancy/missing page,
+amendment linkage, tape mapping/detector evidence and annual/five-year gates
+remain unresolved. Both real signal paths remain UNRESOLVED. Fresh independent
+review is pending, and no further collection is authorized by this change.

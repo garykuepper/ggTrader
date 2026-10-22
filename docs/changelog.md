@@ -2,6 +2,15 @@
 
 ## 2026-10-22
 
+- **Lab infrastructure: reuse full-submission ownership XML.** The event-timing
+  collector preserves cached primary XML; otherwise it selects the unique
+  canonical type/filename XML from the accession's full response before a
+  counted primary-document fallback. Actual response references and existing
+  timing/qualification gates are retained. Offline fixtures cover replay,
+  ambiguity, identity and transport failures; fresh independent review is
+  pending. No new collection or data-feasibility conclusion. See the
+  [collector handoff](research/event-timing-audit-implementation.md#2026-10-22-offline-full-submission-collector-efficiency).
+
 - **Lab infrastructure: approved insider filing-date convention, offline implementation.**
   Added a separate uniform `insider_filing_date_only` assessment using exact,
   checksummed same-issuer/accession API and header filing dates and the first

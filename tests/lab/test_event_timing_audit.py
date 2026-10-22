@@ -733,6 +733,319 @@ def test_all_owners_plan_encodings_and_legitimate_lots(ownership_xml):
 
 
 @pytest.fixture
+def filing_submission(ownership_xml):
+    """Canonical synthetic Form 4 envelope, with explicit accession and issuer."""
+    filing = {
+        "accession": "0000000001-23-000001",
+        "form": "4",
+        "filing_date": "2023-05-04",
+        "acceptance": "2023-05-04T19:00:00Z",
+        "primary_document": "xslF345X05/form4.xml",
+    }
+    header = (
+        "<SEC-HEADER>\nACCESSION NUMBER: 0000000001-23-000001\n"
+        "<ACCEPTANCE-DATETIME>20230504150000\n<FILED-AS-OF-DATE>20230504\n"
+        "ISSUER:\n\tCOMPANY DATA:\n\t\tCENTRAL INDEX KEY: 0000000001\n"
+        "</SEC-HEADER>\n"
+    )
+    document = (
+        "<DOCUMENT>\n<TYPE>4\n<SEQUENCE>1\n<FILENAME>form4.xml\n"
+        f"<TEXT>\n<XML>\n{ownership_xml}\n</XML>\n</TEXT>\n</DOCUMENT>\n"
+    )
+    return filing, header, document
+
+
+@pytest.fixture
+def filing_transport(raw_cache, monkeypatch):
+    """Replace only HTTP I/O; retain the real cache, budget and stop machinery."""
+    import io
+
+    _, client, add = raw_cache
+    client.offline = False
+    client.user_agent = "fixture fixture@example.invalid"
+    monkeypatch.setattr("ggTrader.lab.event_timing_sources.time.sleep", lambda _: None)
+    responses = {}
+    calls = []
+
+    def open_fixture(request, **kwargs):
+        url = request.full_url
+        calls.append(url)
+        assert url in responses, f"unexpected transport request: {url}"
+        body = responses[url]
+        if isinstance(body, Exception):
+            raise body
+        response = io.BytesIO(body.encode())
+        response.status = 200
+        response.headers = {}
+        return response
+
+    monkeypatch.setattr(client.opener, "open", open_fixture)
+    return client, add, responses, calls
+
+
+@pytest.mark.parametrize("form", ["4", "4/A"])
+def test_collect_filing_full_submission_only_once(
+    filing_submission, filing_transport, monkeypatch, form
+):
+    from ggTrader.lab import event_timing_sources as sources
+
+    filing, header, document = filing_submission
+    client, _, responses, calls = filing_transport
+    filing["form"] = form
+    document = document.replace("<TYPE>4\n", f"<TYPE>{form}\n")
+    # Neither a same-filename exhibit nor a same-type different file is the primary.
+    unrelated = document.replace(f"<TYPE>{form}\n", "<TYPE>EX-99\n")
+    unrelated += document.replace("<FILENAME>form4.xml", "<FILENAME>other.xml")
+    unrelated = unrelated.replace("<issuerCik>1</issuerCik>", "<issuerCik>2</issuerCik>")
+    document_url, full_url = sources.filing_urls("1", filing)
+    responses[full_url] = header + unrelated + document
+    parsed = []
+    original = sources.parse_form4
+
+    def parse_once(xml, item):
+        parsed.append(xml)
+        return original(xml, item)
+
+    monkeypatch.setattr(sources, "parse_form4", parse_once)
+    result = sources.collect_filing(client, "1", filing)
+    assert result["raw_complete"]
+    assert result["issuer_cik"] == "1"
+    assert len(result["lots"]) == 2
+    assert all(lot["form"] == form for lot in result["lots"])
+    assert result["header_filing_date"] == "2023-05-04"
+    assert result["header_acceptance"] == "2023-05-04T15:00:00"
+    assert len(parsed) == 1
+    assert calls == [full_url]
+    assert client.checkpoint.sec_requests_total == 1
+    assert result["source_refs"] == [client.reference(full_url)]
+    assert client.reference(document_url) is None
+    assert sources.collect_filing(client, "1", filing) == result
+    assert calls == [full_url]
+
+
+@pytest.mark.parametrize("content", ["header_only", "other_document", "no_xml"])
+def test_collect_filing_full_submission_fallback(
+    filing_submission, filing_transport, ownership_xml, content
+):
+    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+
+    filing, header, document = filing_submission
+    client, _, responses, calls = filing_transport
+    document_url, full_url = filing_urls("1", filing)
+    if content == "other_document":
+        header += document.replace("<FILENAME>form4.xml", "<FILENAME>other.xml")
+    elif content == "no_xml":
+        header += document.replace("<XML>", "").replace("</XML>", "")
+    responses.update({full_url: header, document_url: ownership_xml})
+    result = collect_filing(client, "1", filing)
+    assert result["raw_complete"]
+    assert result["header_filing_date"] == "2023-05-04"
+    assert len(result["lots"]) == 2
+    assert calls == [full_url, document_url]
+    assert client.checkpoint.sec_requests_total == 2
+    assert {r["url"] for r in result["source_refs"]} == {full_url, document_url}
+
+
+def test_collect_filing_cached_primary_preserves_results_and_refs(
+    filing_submission, filing_transport, ownership_xml
+):
+    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls, parse_form4
+
+    filing, header, document = filing_submission
+    client, add, responses, calls = filing_transport
+    document_url, full_url = filing_urls("1", filing)
+    primary = add(ownership_xml, document_url)
+    # The existing cached primary remains authoritative for raw reconstruction.
+    responses[full_url] = header + document.replace("<issuerCik>1", "<issuerCik>2")
+    expected = dict(
+        filing,
+        cik="1",
+        raw_complete=True,
+        source_refs=[primary],
+        **parse_form4(ownership_xml, filing),
+    )
+    result = collect_filing(client, "1", filing)
+    expected.update(
+        header_acceptance="2023-05-04T15:00:00",
+        header_filing_date="2023-05-04",
+        source_refs=[primary, client.reference(full_url)],
+    )
+    assert result == expected
+    assert calls == [full_url]
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "duplicate",
+        "wrong_issuer",
+        "wrong_accession",
+        "missing_accession",
+        "wrong_header_issuer",
+        "unclosed_document",
+        "nested_document",
+        "duplicate_filename",
+        "duplicate_type",
+        "unclosed_xml",
+        "duplicate_xml",
+        "invalid_xml",
+        "entity",
+        "doctype",
+    ],
+)
+def test_collect_filing_embedded_invalid_fails_closed(filing_submission, filing_transport, defect):
+    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+
+    filing, header, document = filing_submission
+    client, _, responses, calls = filing_transport
+    _, full_url = filing_urls("1", filing)
+    if defect == "duplicate":
+        document += document
+    elif defect == "wrong_issuer":
+        document = document.replace("<issuerCik>1</issuerCik>", "<issuerCik>2</issuerCik>")
+    elif defect == "wrong_accession":
+        header = header.replace(filing["accession"], "0000000001-23-999999")
+    elif defect == "missing_accession":
+        header = header.replace(filing["accession"], "")
+    elif defect == "wrong_header_issuer":
+        header = header.replace("CENTRAL INDEX KEY: 0000000001", "CENTRAL INDEX KEY: 0000000002")
+    elif defect == "unclosed_document":
+        document = document.replace("</DOCUMENT>", "")
+    elif defect == "nested_document":
+        document = "<DOCUMENT>\n" + document + "</DOCUMENT>\n"
+    elif defect == "duplicate_filename":
+        document = document.replace("<FILENAME>", "<FILENAME>other.xml\n<FILENAME>")
+    elif defect == "duplicate_type":
+        document = document.replace("<TYPE>", "<TYPE>EX-99\n<TYPE>")
+    elif defect == "unclosed_xml":
+        document = document.replace("</XML>", "")
+    elif defect == "duplicate_xml":
+        document = document.replace("</XML>", "</XML>\n<XML><ownershipDocument/></XML>")
+    elif defect == "invalid_xml":
+        document = document.replace("</ownershipDocument>", "</broken>")
+    elif defect == "entity":
+        document = document.replace("<ownershipDocument>", '<!ENTITY foo "bar"><ownershipDocument>')
+    elif defect == "doctype":
+        document = document.replace(
+            "<ownershipDocument>", "<!DOCTYPE ownershipDocument><ownershipDocument>"
+        )
+    responses[full_url] = header + document
+    result = collect_filing(client, "1", filing)
+    assert not result["raw_complete"]
+    assert result.get("reason") or result.get("schema_issues")
+    assert result["source_refs"] == [client.reference(full_url)]
+    assert client.referenced_bytes(result["source_refs"][0]) == responses[full_url].encode()
+    assert calls == [full_url]
+
+
+@pytest.mark.parametrize("failed_source", ["header", "primary"])
+@pytest.mark.parametrize("status", [403, 429])
+def test_collect_filing_transport_stop_has_no_followup(
+    filing_submission, filing_transport, failed_source, status
+):
+    import urllib.error
+
+    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+
+    filing, header, _ = filing_submission
+    client, _, responses, calls = filing_transport
+    primary, full_url = filing_urls("1", filing)
+    failed_url = full_url if failed_source == "header" else primary
+    responses[full_url] = header
+    responses[failed_url] = urllib.error.HTTPError(failed_url, status, "fixture stop", {}, None)
+    result = collect_filing(client, "1", filing)
+    assert not result["raw_complete"]
+    assert calls == ([full_url] if failed_source == "header" else [full_url, primary])
+    assert client.checkpoint.sec_requests_total == len(calls)
+    assert client.checkpoint.stopped_due_to_rate_limit
+    assert client.reference(failed_url)["status_code"] == status
+    assert failed_url in {ref["url"] for ref in result["source_refs"]}
+    assert result.get("reason")
+
+
+@pytest.mark.parametrize("failed_source", ["header", "primary"])
+def test_collect_filing_transport_failures_are_counted(
+    filing_submission, filing_transport, ownership_xml, failed_source
+):
+    import urllib.error
+
+    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+
+    filing, header, _ = filing_submission
+    client, _, responses, calls = filing_transport
+    primary, full_url = filing_urls("1", filing)
+    failed_url = full_url if failed_source == "header" else primary
+    responses.update({full_url: header, primary: ownership_xml})
+    responses[failed_url] = urllib.error.URLError("fixture failure")
+    result = collect_filing(client, "1", filing)
+    assert calls == (
+        [full_url] * 4 + [primary] if failed_source == "header" else [full_url] + [primary] * 4
+    )
+    assert client.checkpoint.sec_requests_total == 5
+    assert result["raw_complete"] == (failed_source == "header")
+    if failed_source == "header":
+        assert result.get("header_filing_date") is None
+
+
+@pytest.mark.parametrize("budget", [0, 1])
+def test_collect_filing_fallback_cannot_exceed_budget(filing_submission, filing_transport, budget):
+    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+
+    filing, header, _ = filing_submission
+    client, _, responses, calls = filing_transport
+    _, full_url = filing_urls("1", filing)
+    client.sec_budget_limit = budget
+    responses[full_url] = header
+    result = collect_filing(client, "1", filing)
+    assert not result["raw_complete"]
+    assert calls == [full_url] * budget
+    assert client.checkpoint.sec_requests_total == budget
+
+
+@pytest.mark.parametrize(
+    "defect", [None, "missing_header", "wrong_accession", "wrong_header_issuer"]
+)
+def test_collect_filing_full_only_raw_revalidation_and_date_corroboration(
+    amendment_runner, filing_submission, defect
+):
+    from ggTrader.lab.event_timing_audit import filing_date_corroboration, validate_evidence_record
+    from ggTrader.lab.event_timing_sources import ReferencedSources, collect_filing
+
+    runner = amendment_runner
+    filing = runner.evidence["filings"][0]
+    primary, header_ref = filing["source_refs"]
+    xml = runner.client.referenced_bytes(primary).decode()
+    header = runner.client.referenced_bytes(header_ref).decode()
+    if defect == "missing_header":
+        header = ""
+    elif defect == "wrong_accession":
+        header = header.replace(filing["accession"], "0000000001-23-999999")
+    elif defect == "wrong_header_issuer":
+        header = header.replace("CENTRAL INDEX KEY: 0000000001", "CENTRAL INDEX KEY: 0000000002")
+    document = filing_submission[2]
+    document = document[: document.index("<XML>")] + f"<XML>\n{xml}\n</XML>\n</TEXT>\n</DOCUMENT>\n"
+    ref = runner.fixture_add(header + "\n" + document, header_ref["url"])
+    # A primary exists globally but is not declared: replay must use only the full response.
+    inventories = runner.evidence["inventories"]
+    item = next(f for f in inventories[0]["filings"] if f["accession"] == filing["accession"])
+    record = collect_filing(ReferencedSources(runner.client, [ref]), "1", item)
+    assert record["source_refs"] == [ref]
+    rebuilt = validate_evidence_record("filings", record, runner.client, inventories)
+    corroboration = filing_date_corroboration(record, runner.client, inventories)
+    if defect is None:
+        assert record["raw_complete"] and rebuilt["raw_complete"]
+        assert len(rebuilt["lots"]) == 2
+        assert corroboration["predicate"] == "PASS"
+        event = amendment_clock(runner, record)
+        assert event["tradeable_date"] == "2023-05-16"
+        assert event["availability"] is None
+        assert event["dissemination_predicate"] == "UNVERIFIED"
+    else:
+        assert not record["raw_complete"]
+        assert corroboration["predicate"] != "PASS"
+
+
+@pytest.fixture
 def cluster_lots():
     return [
         {
