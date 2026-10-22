@@ -544,3 +544,114 @@ It supplies possible document leads, not an approved protocol correction.
   change needs an explicit, documented decision; it is not a routine retry.
   No verified free or paid path, qualifying window or performance conclusion
   follows from this documentary search.
+
+
+## 2026-10-22 approved filing-date amendment implementation
+
+**Status: offline implementation and synthetic verification; fresh independent
+code review pending.** Owner approval is recorded in the immutable
+[dated amendment](briefs/2026-10-22-event-timing-source-conflict-proposal.md).
+This section supersedes implementation-status claims for that amendment only.
+It is not a real-data assessment or full-run readiness decision. Parent owns
+fresh review; the implementer invoked no subagents.
+
+Implemented from `6e16e256119a20da094ca334bba9e0e6bcb89407` on
+`research/event-timing-audit`, with the approved amendment SHA-256
+`a8d1cee1f4c2226d7eda0f28bbbcfc156ae1d55d94a5a0fef9354917bef9297d`.
+The original brief and source manifest remain byte-for-byte unchanged.
+External requests remain paused after the recorded 403. No old smoke cache,
+checkpoint, result or global accounting was modified, resumed or migrated.
+
+### Amendment item mapping and interfaces
+
+1. **Uniform scope:** `prepare_insider(representation="insider_filing_date_only")`
+   traverses the same complete evidence list as the original preparation; it
+   never selects by receipt outcome, issuer, year or performance. Existing
+   filing frames, rejected inputs and cumulative readiness retain failed and
+   unknown populations. `evaluate_signal` reuses all A6/A7 gates and definitions;
+   cluster counts/dates are computed separately and need not match the original.
+2. **Raw corroboration:** `filing_date_corroboration` reparses the declared,
+   checksummed submissions inventory and canonical XML/header evidence via the
+   existing transport-free `ReferencedSources` parsers. No imported boolean
+   proves a date. Exact API/header filing-date equality, issuer and accession
+   are required; annotated dates must also match the raw fields. The optional
+   `parse_filing_header(..., issuer_cik=...)` check uses the header's ISSUER
+   section, bounded before document bodies. Missing/corrupt/unsupported evidence
+   stays UNVERIFIED; contradictory dates stay quarantined. Original header
+   parser callers retain their prior behavior.
+3. **Execution:** the amended `event_clock` calls the existing NYSE date-only
+   helper directly: first regular session close strictly after the corroborated
+   filing date, including weekends, holidays and early closes. No second buffer.
+   `precision="date_only"`, `availability=null`, `tradeable_date` and
+   `tradeable_close` remain separate; lots/amendments use the existing
+   `decision_eligibility_time` convention. Prefix reconstruction uses that same
+   eligibility time at all 136 registered NYSE month-end closes.
+4. **Conflict preservation:** amended filing clocks retain the untouched receipt
+   fields, `original_clock` and `acceptance_reconciliation` (including FAIL).
+   Only receipt-time conflict is bypassed for this representation; invalid or
+   future dates and every transaction-date quarantine remain enforced. Original
+   insider matrices, quarantines, raw lots and dispositions remain reported.
+5. **No certification:** new results expose `timing_pass_basis` as declared
+   date-only convention compliance and `dissemination_predicate="UNVERIFIED"`.
+   Reports state the same limitation. No observed public timestamp or bound is
+   invented; a later close is not a demonstrated dissemination bound.
+6. **Separate qualification:** top-level `insider_filing_date_only` contains its
+   own `requirement_matrix`, `annual_coverage`, `events`, `raw_reconstruction`,
+   `prefix`, diagnostics, `source_search`, `status` and eligible window. Original
+   `insider_cluster` retains its schema/content. Preparation, cluster replay,
+   prefix, lag/boundary diagnostics and event-observation progress use separate
+   representation keys; identity/member-month units remain shared. Missing clock
+   corroboration also blocks completeness for a zero-lot filing. Unknown event
+   totals remain null with observed lower bounds; no lots become event counts.
+7. **Ordering and PEAD:** A9 frames/keys/hash ordering/quotas, all identity,
+   inventory/count/interval, amendment/collision/load-boundary/tape checks,
+   cutoff and five-complete-year requirements remain in force. PEAD is unchanged.
+   There is no header precedence, offset repair, tolerance change or Northrop
+   interval relaxation.
+
+`audit_meta.approved_amendment` and progress `approved_amendment` record the
+amendment identity, path and SHA-256. Resume rejects changed/missing policy
+binding in addition to the existing input/code/HEAD/detector/protocol bindings.
+There is no automatic legacy registration, budget recovery or cache migration.
+No new CLI flag, strategy, dependency or parallel runner was introduced.
+
+### Verification and limitations
+
+Pre-change complete synthetic assessment SHA-256 values were captured before
+implementation and are asserted by `test_amendment_original_fixture_regression`:
+
+- Original insider: `b7514e570e98469a7dc12efb3e4b0d7abaebee5cf3f71d1b402899fec3abf042`.
+- PEAD: `a1a43816918377d254cefc2ee28947b487b73aa14b1b3546c854c44956a0469c`.
+
+These hash the entire sorted JSON assessments, not a selected count. Synthetic
+receipt-conflict tests separately retain the original quarantine and unmodified
+receipt fields beside the amended clock. No real-data conclusion follows.
+
+The first amendment selection reproduced 22 missing-feature failures, with seven
+existing/positive cases passing. After initial implementation, one expectation
+incorrectly required an overall UNRESOLVED disposition despite a qualifying,
+fully empty synthetic 2015–2022 census; it was corrected to assert the affected
+2023 population/matrix remains unknown and outside that window. A subsequent
+zero-lot regression failed on false population completeness before its fix.
+
+Final focused verification:
+`scripts/run_tests.sh tests/lab/test_event_timing_audit.py -q` — **153 passed
+in 220.13 s**, after strengthening the raw receipt-conflict and supported-bound
+positive fixtures. The preceding complete focused run also passed 153 tests
+in 226.39 s. All test invocations used the required 8 GB cgroup cap with swap
+disabled. Exactly one broader run, after all implementation/fixture fixes:
+`scripts/run_tests.sh tests/lab -q` — **945 passed, 29 integration tests
+deselected in 280.76 s**, with one existing `websockets.legacy` deprecation
+warning in the headline-news pagination test. No failing check remains.
+
+Ruff `check --no-cache` and `format --check --no-cache` passed on the three audit
+modules, focused tests and existing CLI wrapper (five files); the wrapper's
+`--help` exited 0 and `git diff --check` passed. A 101-character reconstruction
+docstring found in an intermediate lint run was shortened before these checks.
+
+Not exercised: external endpoints, real DB, old smoke replay, full-population
+runtime, real identity/source semantics, returns or price paths. Raw header
+formats without a supported issuer section remain UNVERIFIED. Per-filing raw
+corroboration reparses issuer inventories; complete-population cost is unmeasured.
+No collection restart, qualifying real window or independent code approval is
+claimed. Both real end-to-end signal paths remain UNRESOLVED.

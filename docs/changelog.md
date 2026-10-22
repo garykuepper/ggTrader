@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-22
+
+- **Lab infrastructure: approved insider filing-date convention, offline implementation.**
+  Added a separate uniform `insider_filing_date_only` assessment using exact,
+  checksummed same-issuer/accession API and header filing dates and the first
+  NYSE session close strictly after that date. Original receipt conflicts,
+  quarantines, assessments and PEAD remain separate. Shared population/replay
+  gates and policy-bound checkpoints are retained; timing PASS denotes convention
+  compliance, with dissemination UNVERIFIED. Synthetic verification and fresh
+  code review status are recorded in the
+  [implementation handoff](research/event-timing-audit-implementation.md#2026-10-22-approved-filing-date-amendment-implementation).
+  No external requests or real-data feasibility conclusion.
+
 ## 2026-10-21
 
 - **Lab infrastructure: four residual event-timing audit fixes.** Reconciled

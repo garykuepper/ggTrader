@@ -628,11 +628,22 @@ def parse_form4(xml: str, filing: dict) -> dict:
     }
 
 
-def parse_filing_header(header: str, accession: str) -> dict:
-    """Read header dates only when its accession matches the requested filing."""
+def parse_filing_header(header: str, accession: str, issuer_cik: str | None = None) -> dict:
+    """Read matching-accession header dates, optionally requiring the raw issuer section."""
+    if issuer_cik is not None:
+        header = header.split("</SEC-HEADER>", 1)[0].split("<DOCUMENT>", 1)[0]
     identity = re.search(r"(?:<ACCESSION-NUMBER>|ACCESSION NUMBER:\s*)(\d{10}-\d{2}-\d{6})", header)
     if not identity or identity[1] != accession:
         return {"reason": "header accession absent or mismatched"}
+    if issuer_cik is not None:
+        issuer = re.search(
+            r"(?:^|\n)ISSUER:\s*\n(.*?)(?=\n(?:REPORTING-OWNER|FILER|SUBJECT COMPANY):|\Z)",
+            header,
+            re.S,
+        )
+        ciks = re.findall(r"CENTRAL INDEX KEY:\s*(\d+)", issuer[1]) if issuer else []
+        if len(ciks) != 1 or int(ciks[0]) != int(issuer_cik):
+            return {"reason": "header issuer absent or mismatched"}
     accepted = re.search(r"<ACCEPTANCE-DATETIME>(\d{14})", header)
     filed = re.search(r"(?:<FILED-AS-OF-DATE>|FILED AS OF DATE:\s*)(\d{8})", header)
     return {

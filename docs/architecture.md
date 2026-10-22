@@ -303,6 +303,15 @@ The file [indicators.py](file:///home/flynn/ggTrader/src/ggTrader/lab/strategies
 `lab/event_timing_audit.py` owns PIT denominator accounting, clocks, requirement
 matrices and reporting; `event_timing_sources.py` owns bounded immutable raw
 collection, and `event_timing_reconstruction.py` owns public-time Form 4 replay.
+The approved 2026-10-22 amendment adds a separate `insider_filing_date_only`
+assessment through the same clock, population and replay functions, with separate
+preparation/replay/prefix/population progress and matrix/disposition output. Its
+raw API/header filing dates must match for the issuer/accession; execution is the
+first NYSE close strictly after that date, and observed availability stays null.
+Original insider output and PEAD retain their existing behavior. Timing PASS
+means declared convention compliance; dissemination remains UNVERIFIED. Progress
+and result metadata bind the amendment identity/hash alongside code/protocol
+bindings; legacy or changed-policy registrations cannot resume.
 The standalone script delegates to one CLI. This path uses explicit read-only
 SELECTs for metadata/bar existence, never schema loaders or execution code.
 Offline evidence and fixture tests precede collection/code review. Details and

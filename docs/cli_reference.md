@@ -320,9 +320,19 @@ stratum at two and writes partial JSON/Markdown under `/tmp`. `--evidence` and
 `--detector-flags` ingest checksummed evidence. `--resume` preserves budgets and
 frozen inputs. DB SELECTs and external collection require separate explicit
 `--read-db` / `--network` flags; `.env` is never loaded. Collection remains
-blocked pending code review and an authorized contact. See the
+paused after the recorded HTTP 403; the already-authorized contact does not
+clear that stop. The approved offline amendment still needs fresh code review.
+See the
 [implementation handoff](research/event-timing-audit-implementation.md). A completed bounded
 `--network` run can explicitly select `--output docs/research/_event_timing_audit.json`
 to publish the registered JSON/Markdown, including honest UNRESOLVED results.
 Smoke, offline and runtime-interrupted work remain partial. Byte references alone
 do not validate semantic facts; see the field-review contract in the handoff.
+
+Every new assessment also reports `insider_filing_date_only`, alongside the
+original `insider_cluster` and unchanged `pead`. No new CLI option is needed.
+Each has its own requirement matrix, annual coverage, reconstructed events and
+disposition. The new timing PASS is date-only convention compliance, with
+observed dissemination UNVERIFIED. Amendment identity/hash binds both progress
+and result metadata; old registrations or changed code/policy cannot resume.
+This does not authorize collection, a budget reset or cache migration.

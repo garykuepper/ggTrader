@@ -35,6 +35,7 @@ from ggTrader.lab.event_timing_sources import (
     digest,
     enumerate_sec,
     filing_urls,
+    parse_filing_header,
     reviewed_fields,
 )
 
@@ -45,6 +46,10 @@ RUSSELL_SNAPSHOT_FILE = ROOT / "data/universe/russell2000_tickers_snapshot_2026-
 CACHE_DIR = ROOT / "data/external/event_timing_audit"
 SOURCE_MANIFEST = ROOT / "docs/research/briefs/2026-10-21-event-timing-audit-sources.md"
 BRIEF = ROOT / "docs/research/briefs/2026-10-21-event-timing-audit.md"
+APPROVED_AMENDMENT = (
+    ROOT / "docs/research/briefs/2026-10-22-event-timing-source-conflict-proposal.md"
+)
+FILING_DATE_ONLY = "insider_filing_date_only"
 CUTOFF = datetime.date(2026, 4, 30)
 SMOKE_STRATUM_QUOTA = 2
 PRED_PASS = "PASS"
@@ -883,14 +888,79 @@ def unit_inventory(unit: dict, mappings: list[dict] | None, signal: str, evidenc
     return result
 
 
+def filing_date_corroboration(
+    record: dict, client: SecEdgarClient | None, inventories: list[dict]
+) -> dict:
+    """Reparse exact issuer/accession filing dates from checksummed declared sources."""
+    result = {"predicate": PRED_UNVERIFIED, "reason": "required raw date pair unavailable"}
+    if client is None:
+        return result
+    try:
+        cik = str(int(record["cik"]))
+        candidates = []
+        for inventory in inventories:
+            if str(int(inventory["cik"])) != cik:
+                continue
+            source = ReferencedSources(client, inventory["source_refs"])
+            rebuilt = enumerate_sec(source, cik)
+            candidates.extend(
+                (rebuilt, filing)
+                for filing in rebuilt["filings"]
+                if filing["accession"] == record["accession"]
+            )
+        if len(candidates) != 1:
+            return result
+        inventory, filing = candidates[0]
+        source = ReferencedSources(client, record["source_refs"])
+        raw = collect_filing(source, cik, filing)
+        if str(int(raw.get("issuer_cik", ""))) != cik:
+            return dict(result, reason="raw ownership issuer absent or mismatched")
+        _, header_url = filing_urls(cik, filing)
+        header = source.fetch_sec_url(header_url)
+        if header is None:
+            return result
+        checked = parse_filing_header(header, filing["accession"], issuer_cik=cik)
+        api_date, header_date = filing.get("filing_date"), checked.get("header_filing_date")
+        result.update(
+            api_filing_date=api_date,
+            header_filing_date=header_date,
+            cik=cik,
+            accession=filing["accession"],
+            source_refs=inventory["source_refs"] + raw["source_refs"],
+        )
+        if parse_date(api_date) is None or parse_date(header_date) is None:
+            return dict(result, reason=checked.get("reason", result["reason"]))
+        if (
+            api_date != header_date
+            or record.get("filing_date") != api_date
+            or record.get("header_filing_date") != header_date
+            or str(int(record.get("issuer_cik", ""))) != cik
+        ):
+            return dict(result, predicate=PRED_FAIL, reason="filing-date or identity conflict")
+        return dict(
+            result, predicate=PRED_PASS, reason="exact raw filing-date pair; convention only"
+        )
+    except (ValueError, KeyError, TypeError, OSError, UnicodeError):
+        return result
+
+
 def event_clock(
     record: dict,
     signal: str,
     clock: AuditClock,
     query_date: datetime.date,
     client: SecEdgarClient | None = None,
+    *,
+    representation: str | None = None,
+    inventories: list[dict] | None = None,
 ) -> dict:
     """Keep announcement, acceptance, availability and inferred execution separate."""
+    if (
+        representation not in (None, FILING_DATE_ONLY)
+        or representation
+        and signal != "insider_cluster"
+    ):
+        raise ValueError("Unsupported event timing representation")
     event = dict(record)
     date = record.get("earnings_date") if signal == "pead" else record.get("filing_date")
     quarantine = check_earnings_quarantine(date, query_date)
@@ -908,7 +978,7 @@ def event_clock(
     announcement = reconcile_times(record.get("announcement_readings", []), clock)
     acceptance = reconcile_times([record.get("acceptance"), record.get("header_acceptance")], clock)
     relevant = [announcement, acceptance] if signal == "pead" else [acceptance]
-    if any(r["predicate"] == PRED_FAIL for r in relevant):
+    if representation is None and any(r["predicate"] == PRED_FAIL for r in relevant):
         quarantine = QuarantineReason.UNRESOLVED_TIMESTAMP_CONFLICT
     for reading in record.get("announcement_readings", []) + [
         record.get("acceptance"),
@@ -930,6 +1000,30 @@ def event_clock(
         diagnostic_open=None,
         precision=None,
     )
+    if representation == FILING_DATE_ONLY:
+        corroboration = filing_date_corroboration(record, client, inventories or [])
+        event.update(
+            representation=representation,
+            original_clock=event_clock(record, signal, clock, query_date, client),
+            acceptance_reconciliation=acceptance["predicate"]
+            if record.get("acceptance") is not None and record.get("header_acceptance") is not None
+            else PRED_UNVERIFIED,
+            filing_date_corroboration=corroboration,
+            dissemination_predicate=PRED_UNVERIFIED,
+            timestamp_predicate=PRED_UNVERIFIED,
+            precision="date_only",
+        )
+        if corroboration["predicate"] == PRED_FAIL and quarantine is None:
+            event["quarantine"] = QuarantineReason.UNRESOLVED_TIMESTAMP_CONFLICT
+        if event["quarantine"] or corroboration["predicate"] != PRED_PASS:
+            return event
+        date, close, _ = clock.tradeable_close_for_date_only(corroboration["api_filing_date"])
+        event.update(
+            tradeable_date=str(date),
+            tradeable_close=close.isoformat(),
+            timestamp_predicate=PRED_PASS,
+        )
+        return event
     if quarantine:
         return event
     supported = [r["time"] for r in relevant if r["time"] is not None]
@@ -1458,6 +1552,13 @@ class EventTimingAuditRunner:
         self.code_sha256["index_constituents.py"] = compute_file_sha256(
             Path(load_sp500_history.__code__.co_filename)
         )
+        self.approved_amendment = {
+            "identity": "2026-10-22-event-timing-source-conflict-proposal",
+            "path": str(APPROVED_AMENDMENT.relative_to(ROOT))
+            if APPROVED_AMENDMENT.is_relative_to(ROOT)
+            else str(APPROVED_AMENDMENT),
+            "sha256": compute_file_sha256(APPROVED_AMENDMENT),
+        }
         self.code_revision = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             cwd=Path(__file__).parent,
@@ -1508,6 +1609,8 @@ class EventTimingAuditRunner:
                 or progress.get("source_manifest_sha256") != compute_file_sha256(SOURCE_MANIFEST)
             ):
                 raise ValueError("Resume protocol or membership changed")
+            if progress.get("approved_amendment") != self.approved_amendment:
+                raise ValueError("Resume approved amendment changed or missing; start a new run")
             if progress.get("detector_sha256") != self.detector_sha256:
                 raise ValueError("Resume detector changed")
             if progress["code_revision"] != self.code_revision:
@@ -1615,6 +1718,7 @@ class EventTimingAuditRunner:
                 "detector_sha256": self.detector_sha256,
                 "code_sha256": self.code_sha256,
                 "code_revision": self.code_revision,
+                "approved_amendment": self.approved_amendment,
                 "smoke": self.smoke,
                 "membership_sha256": compute_file_sha256(self.membership_file),
                 "brief_sha256": compute_file_sha256(BRIEF),
@@ -2059,19 +2163,22 @@ class EventTimingAuditRunner:
             ] + [collected]
             self.checkpoint(f"release:{filing['accession']}")
 
-    def prepare_insider(self) -> tuple[list[dict], dict]:
+    def prepare_insider(self, *, representation: str | None = None) -> tuple[list[dict], dict]:
         """Normalize raw lots, retain unassignable anomalies and reconcile stored losses."""
         from ggTrader.lab.event_timing_reconstruction import reconcile_lots
 
         lots, filing_checks = [], []
-        self.reconstruction_amendments = []
-        if not self.work_available("insider_preparation"):
+        amendments = []
+        if representation is None:
+            self.reconstruction_amendments = amendments
+        preparation_key = "insider_preparation" + (f":{representation}" if representation else "")
+        if not self.work_available(preparation_key):
             return lots, {"filings": filing_checks, "lots": lots, "amendment_actions": []}
         stored = [dict(r, accession=r["accession_number"]) for r in self.stored["insider_cluster"]]
         stored_by_accession: dict[str, list[dict]] = {}
         for row in stored:
             stored_by_accession.setdefault(row["accession"], []).append(row)
-        progress = self.cpu_progress.setdefault("insider_preparation", {})
+        progress = self.cpu_progress.setdefault(preparation_key, {})
         for filing in self.evidence["filings"]:
             if not self.work_available("insider_preparation"):
                 break
@@ -2080,12 +2187,18 @@ class EventTimingAuditRunner:
                 saved = progress[accession]
                 lots.extend(saved["lots"])
                 filing_checks.append(saved["check"])
-                self.reconstruction_amendments.extend(saved["amendments"])
+                amendments.extend(saved["amendments"])
                 continue
             public = event_clock(
-                filing, "insider_cluster", self.clock, self.query_run_date, self.client
+                filing,
+                "insider_cluster",
+                self.clock,
+                self.query_run_date,
+                self.client,
+                representation=representation,
+                inventories=self.evidence["inventories"],
             )
-            amendment_start = len(self.reconstruction_amendments)
+            amendment_start = len(amendments)
             if filing.get("form") == "4/A":
                 links = [a for a in self.evidence["amendments"] if a["accession"] == accession]
                 action = (
@@ -2110,14 +2223,14 @@ class EventTimingAuditRunner:
                     action["availability"] or action["decision_eligibility_time"]
                 ):
                     action["linkage_unverified"] = True
-                self.reconstruction_amendments.append(action)
+                amendments.append(action)
             raw_lots = []
             for lot in filing.get("lots", []):
                 if not self.work_available(f"insider_preparation:{accession}"):
                     return lots, {
                         "filings": filing_checks,
                         "lots": lots,
-                        "amendment_actions": self.reconstruction_amendments,
+                        "amendment_actions": amendments,
                     }
                 row = dict(lot)
                 if (
@@ -2178,13 +2291,13 @@ class EventTimingAuditRunner:
             progress[accession] = {
                 "lots": raw_lots,
                 "check": filing_checks[-1],
-                "amendments": self.reconstruction_amendments[amendment_start:],
+                "amendments": amendments[amendment_start:],
             }
             self.checkpoint(f"prepared:{accession}")
         return lots, {
             "filings": filing_checks,
             "lots": lots,
-            "amendment_actions": self.reconstruction_amendments,
+            "amendment_actions": amendments,
         }
 
     def prepare_pead(self) -> tuple[list[dict], list[dict]]:
@@ -2364,10 +2477,18 @@ class EventTimingAuditRunner:
             self.checkpoint("pead_preparation")
         return events, duplicates
 
-    def attach_population(self, signal: str, events: list[dict], units: list[dict]) -> list[dict]:
+    def attach_population(
+        self,
+        signal: str,
+        events: list[dict],
+        units: list[dict],
+        *,
+        representation: str | None = None,
+    ) -> list[dict]:
         """Restrict known executions at the cutoff; unknowns remain explicit "
         "unresolved candidates."""
-        progress = self.cpu_progress.setdefault(f"population:{signal}", {})
+        progress_key = f"population:{signal}" + (f":{representation}" if representation else "")
+        progress = self.cpu_progress.setdefault(progress_key, {})
         all_events = events
         events = [e for e in events if e["event_id"] not in progress]
         query_start = len(self.db.query_log) if self.db is not None else 0
@@ -2561,6 +2682,8 @@ class EventTimingAuditRunner:
         denominators: Denominators,
         lots: list[dict] | None = None,
         raw_checks: dict | None = None,
+        *,
+        representation: str | None = None,
     ) -> dict:
         """Evaluate annual raw-source requirements from complete units and event records."""
         from ggTrader.lab.event_timing_reconstruction import (
@@ -2570,6 +2693,18 @@ class EventTimingAuditRunner:
             replay_clusters,
         )
 
+        if (
+            representation not in (None, FILING_DATE_ONLY)
+            or representation
+            and signal != "insider_cluster"
+        ):
+            raise ValueError("Unsupported audit representation")
+        suffix = f":{representation}" if representation else ""
+        amendments = (
+            (raw_checks or {}).get("amendment_actions", [])
+            if representation
+            else getattr(self, "reconstruction_amendments", [])
+        )
         identities_by_symbol: dict[str, list[dict]] = {}
         inventories_by_cik: dict[str, list[dict]] = {}
         fetches_by_symbol: dict[str, list[dict]] = {}
@@ -2616,6 +2751,14 @@ class EventTimingAuditRunner:
                 and str(f.get("cik", "")).lstrip("0") in all_primary_ciks
             }
             raw_status = {r["accession"]: bool(r.get("raw_complete")) for r in filings.values()}
+            if representation:
+                clocks = {r["accession"]: r["clock"] for r in (raw_checks or {}).get("filings", [])}
+                raw_status = {
+                    accession: complete
+                    and clocks.get(accession, {}).get("timestamp_predicate") == PRED_PASS
+                    and not clocks[accession].get("quarantine")
+                    for accession, complete in raw_status.items()
+                }
             lot_status: dict[str, bool] = {}
             for row in lots:
                 accession = row.get("accession")
@@ -2646,7 +2789,7 @@ class EventTimingAuditRunner:
                         )
                         and all(
                             not a.get("linkage_unverified") and a.get("source_refs")
-                            for a in self.reconstruction_amendments
+                            for a in amendments
                             if parse_date(a.get("filing_date")) is None
                             or parse_date(a["filing_date"]) <= period.end_time.date()
                         )
@@ -2681,7 +2824,7 @@ class EventTimingAuditRunner:
             ]
             relevant_amendments = [
                 a
-                for a in self.reconstruction_amendments
+                for a in amendments
                 if str(a.get("issuer_cik", "")).lstrip("0") in all_primary_ciks
             ]
             events, issues = replay_clusters(
@@ -2689,7 +2832,7 @@ class EventTimingAuditRunner:
                 relevant_amendments,
                 horizon,
                 self.client.within_deadline,
-                self.cpu_progress.setdefault("cluster_replay", {}),
+                self.cpu_progress.setdefault("cluster_replay" + suffix, {}),
                 lambda: self.checkpoint("cluster_replay"),
             )
             issue_years = {}
@@ -2729,7 +2872,7 @@ class EventTimingAuditRunner:
                 self.clock,
                 prefix_ready,
                 self.client.within_deadline,
-                self.cpu_progress.setdefault("prefix", {}),
+                self.cpu_progress.setdefault("prefix" + suffix, {}),
                 lambda: self.checkpoint("prefix"),
             )
             extra.update(
@@ -2738,14 +2881,14 @@ class EventTimingAuditRunner:
                     lots,
                     self.clock,
                     self.client.within_deadline,
-                    self.cpu_progress.setdefault("filing_lags", {}),
+                    self.cpu_progress.setdefault("filing_lags" + suffix, {}),
                     lambda: self.checkpoint("filing_lags"),
                 ),
                 load_boundary_diagnostics=load_boundaries(
                     lots,
                     self.clock,
                     self.client.within_deadline,
-                    self.cpu_progress.setdefault("boundaries", {}),
+                    self.cpu_progress.setdefault("boundaries" + suffix, {}),
                     lambda: self.checkpoint("boundaries"),
                 ),
                 plan_field_inventory={
@@ -2765,7 +2908,7 @@ class EventTimingAuditRunner:
             )
         else:
             events, duplicate_events = self.prepare_pead()
-            events = self.attach_population(signal, events, units)
+            events = self.attach_population(signal, events, units, representation=representation)
             for year in year_range:
                 year_units = [u for u in units if u["year"] == year]
                 year_events = [
@@ -2794,7 +2937,7 @@ class EventTimingAuditRunner:
                 )
             extra.update(duplicate_events=duplicate_events)
         if signal == "insider_cluster":
-            events = self.attach_population(signal, events, units)
+            events = self.attach_population(signal, events, units, representation=representation)
         stored_periods = set()
         date_field = "filing_date" if signal == "insider_cluster" else "earnings_date"
         for row in self.stored[signal]:
@@ -2914,7 +3057,7 @@ class EventTimingAuditRunner:
                         "signal": signal,
                         "year": year,
                         "requirement": requirement,
-                        "representation_assessed": "raw-source reconstruction",
+                        "representation_assessed": representation or "raw-source reconstruction",
                         "inputs": {"unit_keys": [u["key"] for u in units if u["year"] == year]},
                         "test": requirement,
                         "predicate": predicate,
@@ -2928,6 +3071,15 @@ class EventTimingAuditRunner:
         }
         window, length = evaluate_eligible_window(annual_pass)
         return {
+            **(
+                {
+                    "representation": representation,
+                    "timing_pass_basis": "declared date-only convention compliance",
+                    "dissemination_predicate": PRED_UNVERIFIED,
+                }
+                if representation
+                else {}
+            ),
             "status": resolve_signal_status(
                 signal, matrix, self.evidence["routes"], self.client, self.smoke
             ),
@@ -2952,6 +3104,11 @@ class EventTimingAuditRunner:
         self.checkpoint("insider_evaluation")
         pead = self.evaluate_signal("pead", denominators)
         self.checkpoint("pead_evaluation")
+        date_lots, date_checks = self.prepare_insider(representation=FILING_DATE_ONLY)
+        date_only = self.evaluate_signal(
+            "insider_cluster", denominators, date_lots, date_checks, representation=FILING_DATE_ONLY
+        )
+        self.checkpoint(FILING_DATE_ONLY + "_evaluation", force=True)
         results = {
             "audit_meta": {
                 "mode": "smoke" if self.smoke else "offline" if self.offline else "full",
@@ -2964,6 +3121,7 @@ class EventTimingAuditRunner:
                 "detector_sha256": self.detector_sha256,
                 "code_sha256": self.code_sha256,
                 "code_revision": self.code_revision,
+                "approved_amendment": self.approved_amendment,
                 "calendar": "pandas_market_calendars/NYSE",
                 "sec_requests_used": self.client.checkpoint.sec_requests_total,
                 "yf_requests_used": self.client.checkpoint.yf_requests_total,
@@ -2971,6 +3129,7 @@ class EventTimingAuditRunner:
                 "external_stop": self.client.checkpoint.stopped_reason,
             },
             "insider_cluster": insider,
+            FILING_DATE_ONLY: date_only,
             "pead": pead,
             "samples": self.samples,
             "classification": self.classification_manifest,
@@ -3085,7 +3244,9 @@ def render_report(results: dict) -> str:
         else "Partial evidence; no completed audit claim.",
         "",
     ]
-    for name in ("insider_cluster", "pead"):
+    for name in ("insider_cluster", FILING_DATE_ONLY, "pead"):
+        if name not in results:
+            continue
         signal = results[name]
         lines.extend(
             [
@@ -3103,6 +3264,15 @@ def render_report(results: dict) -> str:
             for r in signal["requirement_matrix"]
         )
         lines.append("")
+        if name == FILING_DATE_ONLY:
+            lines.extend(
+                [
+                    "Timing PASS means declared date-only convention compliance; "
+                    "historical dissemination and its bound remain UNVERIFIED. "
+                    "Original receipt conflicts and disposition are retained above.",
+                    "",
+                ]
+            )
     lines.extend(
         [
             "## Ambiguities",

@@ -2415,3 +2415,360 @@ def test_residual_completed_event_observation_survives_interruption_on_next_even
     assert resumed.observation_queries[: len(receipts)] == receipts
     saved = json.loads(resumed.progress_file.read_text())
     assert set(saved["cpu_progress"]["population:pead"]) == {"first", "second"}
+
+
+def test_amendment_original_fixture_regression(reconstructed_runner):
+    """Pin the full original assessments before changing the implementation."""
+    import json
+
+    report = reconstructed_runner.run()
+    for name in ("insider_cluster", "pead"):
+        value = json.dumps(report[name], sort_keys=True, default=str).encode()
+        expected = {
+            "insider_cluster": "b7514e570e98469a7dc12efb3e4b0d7abaebee5cf3f71d1b402899fec3abf042",
+            "pead": "a1a43816918377d254cefc2ee28947b487b73aa14b1b3546c854c44956a0469c",
+        }
+        assert hashlib.sha256(value).hexdigest() == expected[name]
+
+
+@pytest.fixture
+def amendment_runner(reconstructed_runner):
+    """Same census, with explicit raw header issuer identity for the new representation."""
+    from ggTrader.lab.event_timing_audit import validate_evidence_record
+
+    runner = reconstructed_runner
+    for filing in runner.evidence["filings"]:
+        ref = filing["source_refs"][1]
+        header = runner.client.referenced_bytes(ref).decode()
+        ref = runner.fixture_add(
+            header + "\nISSUER:\n\tCOMPANY DATA:\n\t\tCENTRAL INDEX KEY: 0000000001\n", ref["url"]
+        )
+        filing["source_refs"][1] = ref
+        rebuilt = validate_evidence_record(
+            "filings", filing, runner.client, runner.evidence["inventories"]
+        )
+        filing.update(rebuilt)
+    return runner
+
+
+def amendment_clock(runner, filing):
+    from ggTrader.lab.event_timing_audit import event_clock
+
+    return event_clock(
+        filing,
+        "insider_cluster",
+        runner.clock,
+        runner.query_run_date,
+        runner.client,
+        representation="insider_filing_date_only",
+        inventories=runner.evidence["inventories"],
+    )
+
+
+def amendment_receipt_conflict(runner, filing):
+    """Make the API/header conflict real in the synthetic raw sources too."""
+    import json
+
+    filing["acceptance"] = "2023-05-15T14:00:00-04:00"
+    inventory = runner.evidence["inventories"][0]
+    ref = inventory["source_refs"][0]
+    api = json.loads(runner.client.referenced_bytes(ref))
+    index = api["filings"]["recent"]["accessionNumber"].index(filing["accession"])
+    api["filings"]["recent"]["acceptanceDateTime"][index] = filing["acceptance"]
+    inventory["source_refs"][0] = runner.fixture_add(json.dumps(api), ref["url"])
+    for row in inventory["filings"]:
+        if row["accession"] == filing["accession"]:
+            row["acceptance"] = filing["acceptance"]
+
+
+@pytest.mark.parametrize("conflict", [False, True])
+def test_amendment_receipts_retained_without_public_time_or_source_overwrite(
+    amendment_runner, conflict
+):
+    import copy
+
+    from ggTrader.lab.event_timing_audit import event_clock
+
+    runner = amendment_runner
+    filing = copy.deepcopy(runner.evidence["filings"][0])
+    if conflict:
+        amendment_receipt_conflict(runner, filing)
+    else:
+        refs = filing["source_refs"]
+        filing["dissemination_bound_seconds"] = 0
+        reviewed_fixture(
+            filing, "dissemination", runner.fixture_add, ["dissemination_bound_seconds"]
+        )
+        filing["source_refs"] = [*refs, *filing["source_refs"]]
+    before = copy.deepcopy(filing)
+    original = event_clock(
+        filing, "insider_cluster", runner.clock, runner.query_run_date, runner.client
+    )
+    event = amendment_clock(runner, filing)
+    assert event["tradeable_date"] == "2023-05-16"
+    assert event["tradeable_close"] == "2023-05-16T16:00:00-04:00"
+    assert event["timestamp_predicate"] == "PASS"
+    assert event["precision"] == "date_only"
+    assert event["availability"] is None
+    assert event["dissemination_predicate"] == "UNVERIFIED"
+    assert event["original_clock"] == original
+    assert event["acceptance_reconciliation"] == ("FAIL" if conflict else "PASS")
+    assert original["quarantine"] == (
+        QuarantineReason.UNRESOLVED_TIMESTAMP_CONFLICT if conflict else None
+    )
+    if not conflict:
+        assert original["precision"] == "timestamp"
+        assert original["tradeable_date"] == "2023-05-15"
+        assert original["availability"] == "2023-05-15T10:00:00-04:00"
+    assert filing == before
+    assert event["acceptance"] == filing["acceptance"]
+    assert event["header_acceptance"] == filing["header_acceptance"]
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "wrong_issuer",
+        "wrong_accession",
+        "missing",
+        "corrupt",
+        "different_date",
+        "missing_date",
+        "asserted_date",
+        "asserted_api_date",
+    ],
+)
+def test_amendment_requires_actual_same_issuer_accession_dates(amendment_runner, defect):
+    import copy
+
+    runner = amendment_runner
+    filing = copy.deepcopy(runner.evidence["filings"][0])
+    ref = filing["source_refs"][1]
+    header = runner.client.referenced_bytes(ref).decode()
+    if defect == "wrong_issuer":
+        header = header.replace("CENTRAL INDEX KEY: 0000000001", "CENTRAL INDEX KEY: 0000000002")
+    elif defect == "wrong_accession":
+        header = header.replace(filing["accession"], "0000000001-23-999999")
+    elif defect == "missing":
+        filing["source_refs"].remove(ref)
+    elif defect == "corrupt":
+        (runner.cache_dir / ref["cache_file"]).write_text("corrupt fixture")
+    elif defect == "different_date":
+        header = header.replace("<FILED-AS-OF-DATE>20230515", "<FILED-AS-OF-DATE>20230516")
+    elif defect == "missing_date":
+        header = header.replace("<FILED-AS-OF-DATE>20230515", "")
+    elif defect == "asserted_date":
+        filing["header_filing_date"] = "2023-05-16"
+    else:
+        filing["filing_date"] = "2023-05-16"
+        filing["header_filing_date"] = "2023-05-16"
+    if defect in ("wrong_issuer", "wrong_accession", "different_date", "missing_date"):
+        filing["source_refs"][1] = runner.fixture_add(header, ref["url"])
+    event = amendment_clock(runner, filing)
+    assert event["timestamp_predicate"] != "PASS"
+    assert event["tradeable_date"] is None
+    assert event["availability"] is None
+    assert event["filing_date_corroboration"]["predicate"] != "PASS"
+
+
+@pytest.mark.parametrize(
+    "filed,expected",
+    [
+        ("2023-05-15", "2023-05-16T16:00:00-04:00"),
+        ("2023-05-27", "2023-05-30T16:00:00-04:00"),
+        ("2023-07-03", "2023-07-05T16:00:00-04:00"),
+        ("2023-11-22", "2023-11-24T13:00:00-05:00"),
+    ],
+)
+def test_amendment_strict_next_session_holiday_and_early_close(amendment_runner, filed, expected):
+    import json
+
+    runner = amendment_runner
+    filing = runner.evidence["filings"][0]
+    inventory = runner.evidence["inventories"][0]
+    ref = inventory["source_refs"][0]
+    api = json.loads(runner.client.referenced_bytes(ref))
+    api["filings"]["recent"]["filingDate"][1] = filed
+    inventory["source_refs"][0] = runner.fixture_add(json.dumps(api), ref["url"])
+    filing["filing_date"] = filing["header_filing_date"] = filed
+    ref = filing["source_refs"][1]
+    header = (
+        runner.client.referenced_bytes(ref)
+        .decode()
+        .replace("<FILED-AS-OF-DATE>20230515", "<FILED-AS-OF-DATE>" + filed.replace("-", ""))
+    )
+    filing["source_refs"][1] = runner.fixture_add(header, ref["url"])
+    event = amendment_clock(runner, filing)
+    assert event["tradeable_close"] == expected
+    assert event["availability"] is None
+    assert event["precision"] == "date_only"
+
+
+@pytest.mark.parametrize(
+    "transaction,reason",
+    [
+        ("1989-12-31", "TX_DATE_PRE_1990"),
+        ("2023-05-16", "TX_DATE_POST_FILING"),
+        ("2030-01-01", "FUTURE_DATED"),
+        (None, "UNPARSEABLE_OR_MISSING_DATE"),
+    ],
+)
+def test_amendment_retains_other_transaction_quarantines(amendment_runner, transaction, reason):
+    runner = amendment_runner
+    amendment_receipt_conflict(runner, runner.evidence["filings"][0])
+    for lot in runner.evidence["filings"][0]["lots"]:
+        lot["transaction_date"] = transaction
+    lots, checks = runner.prepare_insider(representation="insider_filing_date_only")
+    affected = [r for r in lots if r["accession"] == runner.evidence["filings"][0]["accession"]]
+    assert affected and all(r["quarantine"] == reason for r in affected)
+    assert all(r["availability"] is None for r in affected)
+    assert len(checks["filings"]) == 3
+
+
+def test_amendment_uniform_population_and_separate_matrices(amendment_runner):
+    runner = amendment_runner
+    amendment_receipt_conflict(runner, runner.evidence["filings"][0])
+    report = runner.run()
+    original, amended = report["insider_cluster"], report["insider_filing_date_only"]
+    assert (
+        len(original["raw_reconstruction"]["filings"])
+        == len(amended["raw_reconstruction"]["filings"])
+        == 3
+    )
+    assert len(amended["raw_reconstruction"]["lots"]) == 6
+    assert {r["clock"]["precision"] for r in amended["raw_reconstruction"]["filings"]} == {
+        "date_only"
+    }
+    assert len(original["quarantined_lots"]) == 2
+    assert not amended["quarantined_lots"]
+    assert original["annual_coverage"][2023]["in_scope_events"] is None
+    assert amended["annual_coverage"][2023]["in_scope_events"] == 1
+    assert amended["annual_coverage"][2023]["denominator_units"] == 12
+    assert all(
+        r["representation_assessed"] == "insider_filing_date_only"
+        for r in amended["requirement_matrix"]
+    )
+    assert all(
+        r["representation_assessed"] == "raw-source reconstruction"
+        for r in original["requirement_matrix"]
+    )
+    assert len(amended["prefix"]["decisions"]) == 136
+    assert all(e["availability"] is None for e in amended["events"])
+    assert "insider_filing_date_only" in runner.output_file.with_suffix(".md").read_text()
+    assert (
+        report["audit_meta"]["approved_amendment"]["sha256"]
+        == hashlib.sha256(
+            Path(
+                "docs/research/briefs/2026-10-22-event-timing-source-conflict-proposal.md"
+            ).read_bytes()
+        ).hexdigest()
+    )
+
+
+def test_amendment_missing_pair_keeps_population_unknown(amendment_runner):
+    runner = amendment_runner
+    runner.evidence["filings"][0]["source_refs"].pop(1)
+    report = runner.run()["insider_filing_date_only"]
+    assert len(report["raw_reconstruction"]["filings"]) == 3
+    assert len(report["raw_reconstruction"]["lots"]) == 6
+    assert report["annual_coverage"][2023]["in_scope_events"] is None
+    assert report["annual_coverage"][2023]["observed_event_lower_bound"] == 0
+    assert all(
+        r["predicate"] == "UNVERIFIED" for r in report["requirement_matrix"] if r["year"] == 2023
+    )
+    # The synthetic census still proves earlier, entirely empty years.
+    assert report["eligible_window"][1] <= 2022
+
+
+def test_amendment_prefix_includes_only_at_declared_close(cluster_lots):
+    from ggTrader.lab.event_timing_reconstruction import evaluate_prefix_invariance
+
+    for lot in cluster_lots:
+        lot.update(
+            availability=None,
+            decision_eligibility_time="2023-06-01T16:00:00-04:00",
+            tradeable_close="2023-06-01T16:00:00-04:00",
+        )
+    result = evaluate_prefix_invariance(
+        cluster_lots,
+        [],
+        AuditClock(),
+        {str(p): True for p in pd.period_range("2015-01", "2026-04", freq="M")},
+    )
+    decisions = {r["month"]: r for r in result["decisions"]}
+    assert len(decisions) == 136
+    assert decisions["2023-05"]["full_outputs"] == []
+    assert decisions["2023-06"]["full_outputs"][0]["availability"] is None
+    assert decisions["2023-06"]["full_outputs"][0]["formed_at"] == "2023-06-01T16:00:00-04:00"
+    assert all(r["predicate"] == "PASS" for r in result["decisions"])
+
+
+@pytest.mark.parametrize("changed", ["hash", "legacy_missing"])
+def test_amendment_resume_rejects_changed_policy(
+    reconstructed_runner, monkeypatch, tmp_path, changed
+):
+    import json
+
+    import ggTrader.lab.event_timing_audit as audit
+
+    runner = reconstructed_runner
+    runner.checkpoint("registered", force=True)
+    progress = json.loads(runner.progress_file.read_text())
+    assert progress["approved_amendment"]["sha256"]
+    if changed == "legacy_missing":
+        progress.pop("approved_amendment")
+        runner.progress_file.write_text(json.dumps(progress))
+    else:
+        policy = tmp_path / "policy.md"
+        policy.write_text("Changed amendment")
+        monkeypatch.setattr(audit, "APPROVED_AMENDMENT", policy)
+    preserved = runner.progress_file.read_bytes()
+    with pytest.raises(ValueError, match="amendment"):
+        audit.EventTimingAuditRunner(
+            resume=True,
+            evidence_file=runner.output_file.parent / "evidence.json",
+            cache_dir=runner.cache_dir,
+            membership_file=runner.membership_file,
+            detector_file=runner.output_file.parent / "flags.json",
+        )
+    assert runner.progress_file.read_bytes() == preserved
+
+
+@pytest.mark.parametrize("reading", ["2030-01-01T10:00:00Z", "invalid timestamp"])
+def test_amendment_receipt_conflict_does_not_erase_other_date_quarantine(amendment_runner, reading):
+    runner = amendment_runner
+    filing = dict(runner.evidence["filings"][0], acceptance=reading)
+    event = amendment_clock(runner, filing)
+    assert event["quarantine"] in ("FUTURE_DATED", "UNPARSEABLE_OR_MISSING_DATE")
+    assert event["tradeable_date"] is None
+    assert event["availability"] is None
+
+
+def test_amendment_zero_lot_missing_clock_is_not_complete_population(amendment_runner):
+    runner = amendment_runner
+    filing = runner.evidence["filings"][0]
+    filing["lots"] = []
+    filing["source_refs"].pop(1)
+    report = runner.run()["insider_filing_date_only"]
+    assert report["annual_coverage"][2023]["in_scope_events"] is None
+    assert report["annual_coverage"][2023]["population_complete"] is False
+    assert report["prefix"]["annual"][2023] == "UNVERIFIED"
+
+
+@pytest.mark.parametrize(
+    "eligible,may_events",
+    [
+        ("2023-05-31T16:00:00-04:00", 1),
+        ("2023-06-01T16:00:00-04:00", 0),
+    ],
+)
+def test_amendment_prefix_exact_month_end_close(cluster_lots, eligible, may_events):
+    from ggTrader.lab.event_timing_reconstruction import evaluate_prefix_invariance
+
+    for lot in cluster_lots:
+        lot.update(availability=None, decision_eligibility_time=eligible, tradeable_close=eligible)
+    result = evaluate_prefix_invariance(cluster_lots, [], AuditClock(), {"2023-05": True})
+    may = next(r for r in result["decisions"] if r["month"] == "2023-05")
+    assert len(may["full_outputs"]) == len(may["prefix_outputs"]) == may_events
+    assert may["predicate"] == "PASS"
+    assert all(e["availability"] is None for e in may["full_outputs"])

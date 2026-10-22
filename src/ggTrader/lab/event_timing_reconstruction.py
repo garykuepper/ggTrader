@@ -84,7 +84,7 @@ def reconcile_lots(lots: list[dict], stored: list[dict]) -> dict:
 
 
 def known_time(lot: dict) -> pd.Timestamp | None:
-    """Observed public time or a separately labelled conservative date-only execution bound."""
+    """Observed availability or declared eligibility; never impute public time."""
     value = lot.get("availability") or lot.get("decision_eligibility_time")
     return pd.Timestamp(value) if value is not None else None
 
@@ -95,7 +95,7 @@ def cluster_snapshot(
     amendments: list[dict],
     deadline: Callable[[], bool] | None = None,
 ) -> tuple[list[dict], list[str]]:
-    """Reconstruct the 14-day, three-owner signal using only then-public source lots."""
+    """Reconstruct the 14-day, three-owner signal from eligible source lots at the decision."""
     issues = []
     visible = [
         r
@@ -207,7 +207,7 @@ def replay_clusters(
     progress: dict | None = None,
     save_progress: Callable[[], None] | None = None,
 ) -> tuple[list[dict], list[str]]:
-    """Freeze emitted signals while replaying each security's disclosures in public-time order."""
+    """Freeze emitted signals in observed-availability or declared-eligibility order."""
     ledger: dict[str, dict] = {}
     issues = []
     by_symbol: dict[str, list[dict]] = {}
