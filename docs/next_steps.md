@@ -42,10 +42,12 @@ observed for the two examples.
 [26-URL evidence batch](research/briefs/2026-10-22-identity-inventory-resolution-batch.md)
 completed: 26 HTTP 200 responses, 79 cumulative collection attempts, all raw
 hashes verified. Northrop’s missing page is acquired and its disputed filing
-date corroborated; the source descriptor remains inconsistent. Review the
-[documentary results](research/_insider_identity_inventory_resolution_results.json),
-including Costco’s changing reported par value, before asserting identity
-continuity. No further requests or return test are queued.
+date corroborated; the source descriptor remains inconsistent. Independent review supports the
+[documentary results](research/_insider_identity_inventory_resolution_results.json).
+The exact next identity evidence is COST’s 2015 and 2022 charter exhibits,
+identified in that artifact; cached annual statements do not resolve the legal
+class history. Reconcile those provisions/effective dates and separately document
+the NOC inventory-rule disposition before asserting completeness or continuity. No further requests or return test are queued.
 
 ### Research context and standing decisions
 

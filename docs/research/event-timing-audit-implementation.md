@@ -949,5 +949,35 @@ primary annual evidence. It did not resolve mandatory continuous identity,
 price-vendor lineage/bar metadata, the inventory predicate conflict, full
 ownership/amendment reconstruction, annual population gates or PEAD consensus
 provenance. Both signals remain **UNRESOLVED**; this is no strategy-return or
-SPY-outperformance result. A fresh offline review of these documentary findings
-is pending. No production code, DB, price/return analysis or deployment changed.
+SPY-outperformance result. Fresh independent Codex review supports these bounded documentary findings
+with no blocker. The reviewer independently checked all 79 raw hashes, 57
+registered parent-file hashes, the unchanged 53-request accounting prefix, all
+26 URLs and every annual raw-document cover/symbol extract. No production code, DB, price/return analysis or deployment changed.
+
+### Independent documentary review and exact next evidence
+
+The review found no cached statement resolving COST's legal class history or
+effective dates. Its 2017 equity statement records a $2 million transfer into
+common stock from additional paid-in capital; the 2022 statement records the
+reverse. Both use a combined dividends/other row. These entries show the
+difference extends beyond cover typography, but explain neither a legal
+conversion nor its timing. No conclusion about a changed security is warranted.
+
+Two exact charter exhibits are the smallest named follow-up, with URLs retained
+in the results artifact: the 2015 charter `0000909832-15-000003/
+costex3110q21515.htm`, incorporated by both 2016 and 2017 annual reports, and
+the 2022 charter `0000909832-22-000021/costex3110k082822.htm`. They are not cached
+and no statements about their contents are made. If needed after that comparison,
+the specifically named intermediate document is the 2020 charter
+`0000909832-20-000004/costex3110q21620.htm`; the 2020/2022 Exhibit 4.8 security
+descriptions are conditional supporting candidates, not an automatic fetch list.
+
+Keep another source discrepancy visible: the 2019 annual Exhibit 3.1 row cites
+a 2019 quarterly filing, but its hyperlink points to the 2015 charter. The caption
+does not establish a distinct 2019 charter or an effective date. Follow actual
+raw links and operative legal language rather than guessing from the caption.
+
+The completed batch remains bounded; no new external request is included in
+this review. Inventory-rule disposition and any next acquisition must be concrete
+and reviewed; no annual/five-year gate or price-vendor link is passed by these
+observations. Both signals remain UNRESOLVED.

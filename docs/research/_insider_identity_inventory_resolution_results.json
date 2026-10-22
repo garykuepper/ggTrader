@@ -803,5 +803,28 @@
     "Complete raw ownership/amendment reconstruction and annual A6/A7 population gates",
     "PEAD original announcement and pre-announcement consensus lineage"
   ],
-  "status": "UNRESOLVED"
+  "status": "UNRESOLVED",
+  "independent_review": {
+    "verdict": "Supported bounded documentary claims; no blocker",
+    "raw_hashes_verified": 79,
+    "registered_parent_file_hashes_verified": 57,
+    "accounting_prefix_verified": 53,
+    "authorized_urls_verified": 26,
+    "annual_raw_documents_independently_parsed": 24,
+    "class_effective_date_disposition": "Unresolved; cached exhibits are references, not their underlying charter contents.",
+    "additional_cached_evidence": "2017 equity statement transfers $2 million into common stock from additional paid-in capital; 2022 shows reverse transfer. Combined dividends/other rows do not establish legal explanation or effective date.",
+    "additional_source_conflict": "2019 annual Exhibit 3.1 caption cites a 2019 quarterly filing, but hyperlink targets the 2015 charter; not evidence of a distinct 2019 charter."
+  },
+  "targeted_follow_up_candidates": [
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983215000003/costex3110q21515.htm",
+      "purpose": "2015 charter incorporated by both 2016 and 2017 annual reports; inspect common-stock/par-value provisions and effective-date history",
+      "cached": false
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/costex3110k082822.htm",
+      "purpose": "2022 charter filed as Exhibit 3.1; compare operative common-stock terms and effective-date clauses",
+      "cached": false
+    }
+  ]
 }
