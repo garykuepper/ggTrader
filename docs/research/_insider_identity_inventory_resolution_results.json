@@ -1,0 +1,807 @@
+{
+  "scope": "Two operational issuers only; no A6/A7 population claim",
+  "code_revision": "5d4b1de216b71248971f10bd4ef25a4948080ea2",
+  "child_cache": "data/external/event_timing_audit/identity-inventory-we_55vr8",
+  "network": {
+    "new_attempts": 26,
+    "cumulative_attempts": 79,
+    "new_http_200": 26,
+    "elapsed_seconds": 104.3013715306297,
+    "stop": null,
+    "yahoo_attempts": 0
+  },
+  "verified_raw_responses": 79,
+  "parent_unchanged": true,
+  "outcomes": [
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342125000006/noc-20241231.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342125000006/noc-20241231.htm",
+        "cache_file": "sec_e849a0bb98f460f8c67aef77fe870b58fdc94f6fda6557f30ddbbaa75c6b5c01_78b31d8ce1b6093298f3d7b8af1a29549e8c02e6a6296268aacd5032185e476a.raw",
+        "sha256": "78b31d8ce1b6093298f3d7b8af1a29549e8c02e6a6296268aacd5032185e476a",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:21.577486+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342115000008/noc-12312014x10k.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342115000008/noc-12312014x10k.htm",
+        "cache_file": "sec_a38c36e412bd9ad0e9c6ad99771feec67b5dd96ad11c1759bbd98a81cfbe7cdf_dff12c3d04fd88ae875b8de4d4c0b10660f0d0e9b91a1ed621d126379c8f40a9.raw",
+        "sha256": "dff12c3d04fd88ae875b8de4d4c0b10660f0d0e9b91a1ed621d126379c8f40a9",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:21.742357+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520817005319/0001225208-17-005319.txt",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520817005319/0001225208-17-005319.txt",
+        "cache_file": "sec_76f793899c864722e5efffac688bcc2d6ff57fc1f432409c69bb7531323fd063_6e69fb3e6315de0015748d333b8e4b24a5aa0761b1fa38f53de1e172267141be.raw",
+        "sha256": "6e69fb3e6315de0015748d333b8e4b24a5aa0761b1fa38f53de1e172267141be",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:21.884250+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983224000049/cost-20240901.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983224000049/cost-20240901.htm",
+        "cache_file": "sec_2c13e56b6626925f1cb6d4989223fb2a6d39ede4c858f801cc9752eb8dc55469_11a96e3c5c9dfd7369f07fad1305a4f417a5f9a57d1b57cc08bab3202675ed9c.raw",
+        "sha256": "11a96e3c5c9dfd7369f07fad1305a4f417a5f9a57d1b57cc08bab3202675ed9c",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:22.206699+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342118000005/noc-12312017x10k.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342118000005/noc-12312017x10k.htm",
+        "cache_file": "sec_c5d0062f429751b78be1ffbf0de117bda09eb0080bc58bb032789dae1a85a746_2f53c9e0b00602d6e85f996e90f101b5e67277747b5165a5eeff372435e9608b.raw",
+        "sha256": "2f53c9e0b00602d6e85f996e90f101b5e67277747b5165a5eeff372435e9608b",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:22.388323+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342123000006/noc-20221231.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342123000006/noc-20221231.htm",
+        "cache_file": "sec_b45229cc986a0ab4920e3f96873711829dc842887f58873811f84206939175a2_37c3f86fef62db851199df11a2221893b278a4b92add487da9ca63d5374a06ed.raw",
+        "sha256": "37c3f86fef62db851199df11a2221893b278a4b92add487da9ca63d5374a06ed",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:22.703205+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983217000014/cost10k90317.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983217000014/cost10k90317.htm",
+        "cache_file": "sec_54a15b41d06465cd77eb5cec19a610a97c46892d9df2ce80d21ed45e31f6f574_7ea92e05defbb5198232108ab572bad620f11884b422a3f15981adaeeb99aef9.raw",
+        "sha256": "7ea92e05defbb5198232108ab572bad620f11884b422a3f15981adaeeb99aef9",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:22.901784+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983219000019/cost10k9119.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983219000019/cost10k9119.htm",
+        "cache_file": "sec_1810d14ae80b0b84093ff5a927c086794110e1bc629c01540263b0016100ebc5_85242b026429e1cfd03dc626b3f37a0a59ca1330030734dadc267e16b7bc4125.raw",
+        "sha256": "85242b026429e1cfd03dc626b3f37a0a59ca1330030734dadc267e16b7bc4125",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:23.090742+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342121000006/noc-20201231.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342121000006/noc-20201231.htm",
+        "cache_file": "sec_8aeb2f13d98a2ae60e98869f43574f6dff5204de92873110e244d467f91fa57f_f9ada85225ed4e51aaf87bd7dc69a8b3b96b8e24edad2252dc35c847e04c138e.raw",
+        "sha256": "f9ada85225ed4e51aaf87bd7dc69a8b3b96b8e24edad2252dc35c847e04c138e",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:23.371432+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983214000021/cost10k2014.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983214000021/cost10k2014.htm",
+        "cache_file": "sec_62322ed2230d459d6385b2a8bcd1adf5b7949dfe1dd1921ef058ad705bcc9890_b4cd6c8730235e6b6ca9cd4e36c180303cd6e116963e92e09026637b2bb67fca.raw",
+        "sha256": "b4cd6c8730235e6b6ca9cd4e36c180303cd6e116963e92e09026637b2bb67fca",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:23.551111+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342124000006/noc-20231231.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342124000006/noc-20231231.htm",
+        "cache_file": "sec_c4d7bd1b5942f355b0a717471bbe2270516c99d5e61c33622bfc90b444554f19_1fb46d1a8b414d9d466a9508db4bd13c5c1653d0808fea90a5d234505b706234.raw",
+        "sha256": "1fb46d1a8b414d9d466a9508db4bd13c5c1653d0808fea90a5d234505b706234",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:23.832662+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342116000065/noc-12312015x10k.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342116000065/noc-12312015x10k.htm",
+        "cache_file": "sec_b35634c7883334426820de2c4438ce8b3fc4b22bae131ff5387d8f569b70b861_d84a845f4c7dab06a68604b0d19e5317d9f27f964083fa65c9fe9177159d2e04.raw",
+        "sha256": "d84a845f4c7dab06a68604b0d19e5317d9f27f964083fa65c9fe9177159d2e04",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:24.035318+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342120000006/noc-12312019x10k.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342120000006/noc-12312019x10k.htm",
+        "cache_file": "sec_02995f3d6e36125c03d45fc5174d377c7e0378fd29dc4ed27c6647e024ff196a_d9629b5a835c3dffdb2a83fab39cb9bcd5ed5519662dde19583cad2c8b2a6291.raw",
+        "sha256": "d9629b5a835c3dffdb2a83fab39cb9bcd5ed5519662dde19583cad2c8b2a6291",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:24.243954+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983218000013/cost10k9218.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983218000013/cost10k9218.htm",
+        "cache_file": "sec_efa9e61cb4b9dd85987e2b2f75c427eb251265b1d4d372670d3fcd6f576eaa37_2b6d04ee07ae05cb0901cce8354a3f92b23f76622f62a37dbee68b579b19045e.raw",
+        "sha256": "2b6d04ee07ae05cb0901cce8354a3f92b23f76622f62a37dbee68b579b19045e",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:24.530958+00:00"
+      }
+    },
+    {
+      "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-002.json",
+      "decoded": true,
+      "reference": {
+        "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-002.json",
+        "cache_file": "sec_bbcfeeaa24647e0a011146b07af43880a3ceda2e4f8a9f72524f441479e7aabf_e8970e3ef511fcee9c003aac721b644067c383a802279bc719ac6f9448a91235.raw",
+        "sha256": "e8970e3ef511fcee9c003aac721b644067c383a802279bc719ac6f9448a91235",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:24.817563+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/cost-20250831.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/cost-20250831.htm",
+        "cache_file": "sec_4e7585096e765e60ce491caf00703f26229ebfdd4a1fb16303d0cb736df74387_d35f39ac8e7f190e1ff2756cbc002dcdceeef201ed64a2b696ecbe063e77abfe.raw",
+        "sha256": "d35f39ac8e7f190e1ff2756cbc002dcdceeef201ed64a2b696ecbe063e77abfe",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:25.086013+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983223000042/cost-20230903.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983223000042/cost-20230903.htm",
+        "cache_file": "sec_4ab0305e377321b511a3818c8811c924ccf10eb2e41cca97ca41a5ea4fb404c2_507087cf435749ac7328a869623da292f0ae24b960dfa8d33e07be5c234a7b74.raw",
+        "sha256": "507087cf435749ac7328a869623da292f0ae24b960dfa8d33e07be5c234a7b74",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:25.221585+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342126000003/noc-20251231.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342126000003/noc-20251231.htm",
+        "cache_file": "sec_23857fe236c70b014a3b53abbb21a32a8798c6257b0bf4397429dca22a4f1dc9_3a0abee0743180f02cabb906a17d51ccf01916ee3c5871f8753820f409183141.raw",
+        "sha256": "3a0abee0743180f02cabb906a17d51ccf01916ee3c5871f8753820f409183141",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:25.735330+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983216000032/cost10k82816.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983216000032/cost10k82816.htm",
+        "cache_file": "sec_0013e8ba441e54eb8ec371e9269b1f7c365fa9dbce0f9a410204ca3d96e76bac_52233b22e818e0e9dfcd4c9d9ca249981188e91d7f6655a2519216aa0aedfdda.raw",
+        "sha256": "52233b22e818e0e9dfcd4c9d9ca249981188e91d7f6655a2519216aa0aedfdda",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:25.972956+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983220000017/cost-20200830.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983220000017/cost-20200830.htm",
+        "cache_file": "sec_2bdf1ce9fe0d6eb9058c162a6e1827a6ae2b6ee17625b2f016e7870dc20bd0e4_f04c30387140ca49697f6654402184fb4ca8807cb8bfbb0c7d9e0d49253a697b.raw",
+        "sha256": "f04c30387140ca49697f6654402184fb4ca8807cb8bfbb0c7d9e0d49253a697b",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:26.197390+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342119000007/noc-12312018x10k.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342119000007/noc-12312018x10k.htm",
+        "cache_file": "sec_0d13679c5ae2180ae8b7aa9aad69e380b1aee1ed1dc624dde76e9d14b1c3dc61_9f82bc3b63d99c32aa2898fcdb9e1b8a795148aa9d0156698ac29e741dbebc1e.raw",
+        "sha256": "9f82bc3b63d99c32aa2898fcdb9e1b8a795148aa9d0156698ac29e741dbebc1e",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:26.485450+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/cost-20220828.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/cost-20220828.htm",
+        "cache_file": "sec_41a02098a26968ce3a64a48c384b251dba940177ae4b68fa35200afe22f90218_dc15d40a9324fa59f07a1267b6364899994958b73a561562b754948b132180f4.raw",
+        "sha256": "dc15d40a9324fa59f07a1267b6364899994958b73a561562b754948b132180f4",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:26.667150+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983221000014/cost-20210829.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983221000014/cost-20210829.htm",
+        "cache_file": "sec_99cd8a942800aa1cc07746bb636089b39b6abb17a958a7c27c6ae4a021c2afd5_faa198a71b68a04409ad22a38b6cc65a810c18ae59181d2cad0b6a338cc92dff.raw",
+        "sha256": "faa198a71b68a04409ad22a38b6cc65a810c18ae59181d2cad0b6a338cc92dff",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:27.364801+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342117000008/noc-12312016x10k.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342117000008/noc-12312016x10k.htm",
+        "cache_file": "sec_9de921c0e1dc78a10ef48b092d58207dbf76f318cfd3087304b0494a44148fcc_750fe935a8077e1e3bbac945ba2b130998d4a68667c7c0fe90e3b0fa2de95e86.raw",
+        "sha256": "750fe935a8077e1e3bbac945ba2b130998d4a68667c7c0fe90e3b0fa2de95e86",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:27.583190+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983215000014/cost10k83015.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983215000014/cost10k83015.htm",
+        "cache_file": "sec_d5402d19ab932d9a1e283e2bf6077d2d498b635eb781afdd18618fff149bfba9_921181d13788638d083c78401b61cd7bc9b65d68ec658108afca27fb3436ed3c.raw",
+        "sha256": "921181d13788638d083c78401b61cd7bc9b65d68ec658108afca27fb3436ed3c",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:27.738908+00:00"
+      }
+    },
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342122000004/noc-20211231.htm",
+      "decoded": true,
+      "reference": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342122000004/noc-20211231.htm",
+        "cache_file": "sec_d404b83d968134bcd8f6fa64dda393f3785caa3d99f8161235c84d657729eb42_dad3564fc9c95f0a41862c499c0e8df340967e4eafc4e06bbd02d58bfd565ac0.raw",
+        "sha256": "dad3564fc9c95f0a41862c499c0e8df340967e4eafc4e06bbd02d58bfd565ac0",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:28.208982+00:00"
+      }
+    }
+  ],
+  "inventory_disposition": {
+    "accession": "0001225208-17-005319",
+    "api_date": "2017-03-02",
+    "header": {
+      "header_acceptance": "2017-03-02T16:23:24",
+      "header_filing_date": "2017-03-02"
+    },
+    "xml_issuer_cik": "0001133421",
+    "source_ref": {
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520817005319/0001225208-17-005319.txt",
+      "cache_file": "sec_76f793899c864722e5efffac688bcc2d6ff57fc1f432409c69bb7531323fd063_6e69fb3e6315de0015748d333b8e4b24a5aa0761b1fa38f53de1e172267141be.raw",
+      "sha256": "6e69fb3e6315de0015748d333b8e4b24a5aa0761b1fa38f53de1e172267141be",
+      "content_encoding": "identity",
+      "status_code": 200,
+      "timestamp": "2026-10-22T22:35:21.884250+00:00"
+    },
+    "conclusion": "API and raw header agree; root descriptor excludes a real page row. Source disagreement corroborated, cause unresolved; no interval repair or complete inventory PASS.",
+    "older_page": {
+      "source_ref": {
+        "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-002.json",
+        "cache_file": "sec_bbcfeeaa24647e0a011146b07af43880a3ceda2e4f8a9f72524f441479e7aabf_e8970e3ef511fcee9c003aac721b644067c383a802279bc719ac6f9448a91235.raw",
+        "sha256": "e8970e3ef511fcee9c003aac721b644067c383a802279bc719ac6f9448a91235",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:24.817563+00:00"
+      },
+      "actual_count": 214,
+      "min_date": "2001-02-01",
+      "max_date": "2002-06-17",
+      "declared_count": 214,
+      "declared_from": "2001-02-01",
+      "declared_to": "2002-06-22",
+      "within_declared_range": true
+    }
+  },
+  "annual_identity_observations": [
+    {
+      "cik": "1133421",
+      "report_date": "2025-12-31",
+      "filing_date": "2026-01-27",
+      "accession": "0001133421-26-000003",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342126000003/noc-20251231.htm",
+        "cache_file": "sec_23857fe236c70b014a3b53abbb21a32a8798c6257b0bf4397429dca22a4f1dc9_3a0abee0743180f02cabb906a17d51ccf01916ee3c5871f8753820f409183141.raw",
+        "sha256": "3a0abee0743180f02cabb906a17d51ccf01916ee3c5871f8753820f409183141",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:25.735330+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "symbol_support": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2024-12-31",
+      "filing_date": "2025-01-30",
+      "accession": "0001133421-25-000006",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342125000006/noc-20241231.htm",
+        "cache_file": "sec_e849a0bb98f460f8c67aef77fe870b58fdc94f6fda6557f30ddbbaa75c6b5c01_78b31d8ce1b6093298f3d7b8af1a29549e8c02e6a6296268aacd5032185e476a.raw",
+        "sha256": "78b31d8ce1b6093298f3d7b8af1a29549e8c02e6a6296268aacd5032185e476a",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:21.577486+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "symbol_support": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2023-12-31",
+      "filing_date": "2024-01-25",
+      "accession": "0001133421-24-000006",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342124000006/noc-20231231.htm",
+        "cache_file": "sec_c4d7bd1b5942f355b0a717471bbe2270516c99d5e61c33622bfc90b444554f19_1fb46d1a8b414d9d466a9508db4bd13c5c1653d0808fea90a5d234505b706234.raw",
+        "sha256": "1fb46d1a8b414d9d466a9508db4bd13c5c1653d0808fea90a5d234505b706234",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:23.832662+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "symbol_support": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2022-12-31",
+      "filing_date": "2023-01-26",
+      "accession": "0001133421-23-000006",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342123000006/noc-20221231.htm",
+        "cache_file": "sec_b45229cc986a0ab4920e3f96873711829dc842887f58873811f84206939175a2_37c3f86fef62db851199df11a2221893b278a4b92add487da9ca63d5374a06ed.raw",
+        "sha256": "37c3f86fef62db851199df11a2221893b278a4b92add487da9ca63d5374a06ed",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:22.703205+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "symbol_support": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2021-12-31",
+      "filing_date": "2022-01-27",
+      "accession": "0001133421-22-000004",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342122000004/noc-20211231.htm",
+        "cache_file": "sec_d404b83d968134bcd8f6fa64dda393f3785caa3d99f8161235c84d657729eb42_dad3564fc9c95f0a41862c499c0e8df340967e4eafc4e06bbd02d58bfd565ac0.raw",
+        "sha256": "dad3564fc9c95f0a41862c499c0e8df340967e4eafc4e06bbd02d58bfd565ac0",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:28.208982+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "symbol_support": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2020-12-31",
+      "filing_date": "2021-01-28",
+      "accession": "0001133421-21-000006",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342121000006/noc-20201231.htm",
+        "cache_file": "sec_8aeb2f13d98a2ae60e98869f43574f6dff5204de92873110e244d467f91fa57f_f9ada85225ed4e51aaf87bd7dc69a8b3b96b8e24edad2252dc35c847e04c138e.raw",
+        "sha256": "f9ada85225ed4e51aaf87bd7dc69a8b3b96b8e24edad2252dc35c847e04c138e",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:23.371432+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "symbol_support": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2019-12-31",
+      "filing_date": "2020-01-30",
+      "accession": "0001133421-20-000006",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342120000006/noc-12312019x10k.htm",
+        "cache_file": "sec_02995f3d6e36125c03d45fc5174d377c7e0378fd29dc4ed27c6647e024ff196a_d9629b5a835c3dffdb2a83fab39cb9bcd5ed5519662dde19583cad2c8b2a6291.raw",
+        "sha256": "d9629b5a835c3dffdb2a83fab39cb9bcd5ed5519662dde19583cad2c8b2a6291",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:24.243954+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "symbol_support": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Trading Symbol(s) Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock NOC New York Stock Exchange ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2018-12-31",
+      "filing_date": "2019-01-31",
+      "accession": "0001133421-19-000007",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342119000007/noc-12312018x10k.htm",
+        "cache_file": "sec_0d13679c5ae2180ae8b7aa9aad69e380b1aee1ed1dc624dde76e9d14b1c3dc61_9f82bc3b63d99c32aa2898fcdb9e1b8a795148aa9d0156698ac29e741dbebc1e.raw",
+        "sha256": "9f82bc3b63d99c32aa2898fcdb9e1b8a795148aa9d0156698ac29e741dbebc1e",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:26.485450+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock,\u00a0$1\u00a0par\u00a0value New\u00a0York\u00a0Stock\u00a0Exchange ",
+      "symbol_support": "Our common stock is listed on the New York Stock Exchange and trades under the symbol NOC.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2017-12-31",
+      "filing_date": "2018-01-29",
+      "accession": "0001133421-18-000005",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342118000005/noc-12312017x10k.htm",
+        "cache_file": "sec_c5d0062f429751b78be1ffbf0de117bda09eb0080bc58bb032789dae1a85a746_2f53c9e0b00602d6e85f996e90f101b5e67277747b5165a5eeff372435e9608b.raw",
+        "sha256": "2f53c9e0b00602d6e85f996e90f101b5e67277747b5165a5eeff372435e9608b",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:22.388323+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock,\u00a0$1\u00a0par\u00a0value New\u00a0York\u00a0Stock\u00a0Exchange ",
+      "symbol_support": "Our common stock is listed on the New York Stock Exchange and trades under the symbol NOC.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2016-12-31",
+      "filing_date": "2017-01-30",
+      "accession": "0001133421-17-000008",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342117000008/noc-12312016x10k.htm",
+        "cache_file": "sec_9de921c0e1dc78a10ef48b092d58207dbf76f318cfd3087304b0494a44148fcc_750fe935a8077e1e3bbac945ba2b130998d4a68667c7c0fe90e3b0fa2de95e86.raw",
+        "sha256": "750fe935a8077e1e3bbac945ba2b130998d4a68667c7c0fe90e3b0fa2de95e86",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:27.583190+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock,\u00a0$1\u00a0par\u00a0value New\u00a0York\u00a0Stock\u00a0Exchange ",
+      "symbol_support": "Our common stock is listed on the New York Stock Exchange and trades under the symbol NOC.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2015-12-31",
+      "filing_date": "2016-02-01",
+      "accession": "0001133421-16-000065",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342116000065/noc-12312015x10k.htm",
+        "cache_file": "sec_b35634c7883334426820de2c4438ce8b3fc4b22bae131ff5387d8f569b70b861_d84a845f4c7dab06a68604b0d19e5317d9f27f964083fa65c9fe9177159d2e04.raw",
+        "sha256": "d84a845f4c7dab06a68604b0d19e5317d9f27f964083fa65c9fe9177159d2e04",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:24.035318+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock,\u00a0$1\u00a0par\u00a0value New\u00a0York\u00a0Stock\u00a0Exchange ",
+      "symbol_support": "Our common stock is listed on the New York Stock Exchange and trades under the symbol NOC.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "1133421",
+      "report_date": "2014-12-31",
+      "filing_date": "2015-02-02",
+      "accession": "0001133421-15-000008",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342115000008/noc-12312014x10k.htm",
+        "cache_file": "sec_a38c36e412bd9ad0e9c6ad99771feec67b5dd96ad11c1759bbd98a81cfbe7cdf_dff12c3d04fd88ae875b8de4d4c0b10660f0d0e9b91a1ed621d126379c8f40a9.raw",
+        "sha256": "dff12c3d04fd88ae875b8de4d4c0b10660f0d0e9b91a1ed621d126379c8f40a9",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:21.742357+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to section 12(b) of the Act: Title\u00a0of\u00a0each\u00a0class Name\u00a0of\u00a0each\u00a0exchange\u00a0on\u00a0which\u00a0registered Common\u00a0Stock,\u00a0$1\u00a0par\u00a0value New\u00a0York\u00a0Stock\u00a0Exchange ",
+      "symbol_support": "Our common stock is listed on the New York Stock Exchange and trades under the symbol NOC.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2025-08-31",
+      "filing_date": "2025-10-08",
+      "accession": "0000909832-25-000101",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/cost-20250831.htm",
+        "cache_file": "sec_4e7585096e765e60ce491caf00703f26229ebfdd4a1fb16303d0cb736df74387_d35f39ac8e7f190e1ff2756cbc002dcdceeef201ed64a2b696ecbe063e77abfe.raw",
+        "sha256": "d35f39ac8e7f190e1ff2756cbc002dcdceeef201ed64a2b696ecbe063e77abfe",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:25.086013+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.005 Par Value COST The NASDAQ Global Select Market ",
+      "symbol_support": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.005 Par Value COST The NASDAQ Global Select Market ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2024-09-01",
+      "filing_date": "2024-10-09",
+      "accession": "0000909832-24-000049",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983224000049/cost-20240901.htm",
+        "cache_file": "sec_2c13e56b6626925f1cb6d4989223fb2a6d39ede4c858f801cc9752eb8dc55469_11a96e3c5c9dfd7369f07fad1305a4f417a5f9a57d1b57cc08bab3202675ed9c.raw",
+        "sha256": "11a96e3c5c9dfd7369f07fad1305a4f417a5f9a57d1b57cc08bab3202675ed9c",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:22.206699+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.005 Par Value COST The NASDAQ Global Select Market ",
+      "symbol_support": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.005 Par Value COST The NASDAQ Global Select Market ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2023-09-03",
+      "filing_date": "2023-10-11",
+      "accession": "0000909832-23-000042",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983223000042/cost-20230903.htm",
+        "cache_file": "sec_4ab0305e377321b511a3818c8811c924ccf10eb2e41cca97ca41a5ea4fb404c2_507087cf435749ac7328a869623da292f0ae24b960dfa8d33e07be5c234a7b74.raw",
+        "sha256": "507087cf435749ac7328a869623da292f0ae24b960dfa8d33e07be5c234a7b74",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:25.221585+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.005 Par Value COST The NASDAQ Global Select Market ",
+      "symbol_support": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.005 Par Value COST The NASDAQ Global Select Market ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2022-08-28",
+      "filing_date": "2022-10-05",
+      "accession": "0000909832-22-000021",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/cost-20220828.htm",
+        "cache_file": "sec_41a02098a26968ce3a64a48c384b251dba940177ae4b68fa35200afe22f90218_dc15d40a9324fa59f07a1267b6364899994958b73a561562b754948b132180f4.raw",
+        "sha256": "dc15d40a9324fa59f07a1267b6364899994958b73a561562b754948b132180f4",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:26.667150+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.005 Par Value COST The NASDAQ Global Select Market ",
+      "symbol_support": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.005 Par Value COST The NASDAQ Global Select Market ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2021-08-29",
+      "filing_date": "2021-10-06",
+      "accession": "0000909832-21-000014",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983221000014/cost-20210829.htm",
+        "cache_file": "sec_99cd8a942800aa1cc07746bb636089b39b6abb17a958a7c27c6ae4a021c2afd5_faa198a71b68a04409ad22a38b6cc65a810c18ae59181d2cad0b6a338cc92dff.raw",
+        "sha256": "faa198a71b68a04409ad22a38b6cc65a810c18ae59181d2cad0b6a338cc92dff",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:27.364801+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.01 Par Value COST The NASDAQ Global Select Market ",
+      "symbol_support": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.01 Par Value COST The NASDAQ Global Select Market ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2020-08-30",
+      "filing_date": "2020-10-07",
+      "accession": "0000909832-20-000017",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983220000017/cost-20200830.htm",
+        "cache_file": "sec_2bdf1ce9fe0d6eb9058c162a6e1827a6ae2b6ee17625b2f016e7870dc20bd0e4_f04c30387140ca49697f6654402184fb4ca8807cb8bfbb0c7d9e0d49253a697b.raw",
+        "sha256": "f04c30387140ca49697f6654402184fb4ca8807cb8bfbb0c7d9e0d49253a697b",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:26.197390+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.01 Par Value COST The NASDAQ Global Select Market ",
+      "symbol_support": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.01 Par Value COST The NASDAQ Global Select Market ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2019-09-01",
+      "filing_date": "2019-10-11",
+      "accession": "0000909832-19-000019",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983219000019/cost10k9119.htm",
+        "cache_file": "sec_1810d14ae80b0b84093ff5a927c086794110e1bc629c01540263b0016100ebc5_85242b026429e1cfd03dc626b3f37a0a59ca1330030734dadc267e16b7bc4125.raw",
+        "sha256": "85242b026429e1cfd03dc626b3f37a0a59ca1330030734dadc267e16b7bc4125",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:23.090742+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.01 Par Value COST The NASDAQ Global Select Market ",
+      "symbol_support": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Trading Symbol Name of each exchange on which registered Common Stock, $.01 Par Value COST The NASDAQ Global Select Market ",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2018-09-02",
+      "filing_date": "2018-10-26",
+      "accession": "0000909832-18-000013",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983218000013/cost10k9218.htm",
+        "cache_file": "sec_efa9e61cb4b9dd85987e2b2f75c427eb251265b1d4d372670d3fcd6f576eaa37_2b6d04ee07ae05cb0901cce8354a3f92b23f76622f62a37dbee68b579b19045e.raw",
+        "sha256": "2b6d04ee07ae05cb0901cce8354a3f92b23f76622f62a37dbee68b579b19045e",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:24.530958+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Name of each exchange on which registered Common Stock, $.01 Par Value The NASDAQ Global Select Market ",
+      "symbol_support": "Our common stock trades on the NASDAQ Global Select Market, under the symbol \u201cCOST.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2017-09-03",
+      "filing_date": "2017-10-18",
+      "accession": "0000909832-17-000014",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983217000014/cost10k90317.htm",
+        "cache_file": "sec_54a15b41d06465cd77eb5cec19a610a97c46892d9df2ce80d21ed45e31f6f574_7ea92e05defbb5198232108ab572bad620f11884b422a3f15981adaeeb99aef9.raw",
+        "sha256": "7ea92e05defbb5198232108ab572bad620f11884b422a3f15981adaeeb99aef9",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:22.901784+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Name of each exchange on which registered Common Stock, $.01 Par Value The NASDAQ Global Select Market ",
+      "symbol_support": "Our common stock trades on the NASDAQ Global Select Market, under the symbol \u201cCOST.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2016-08-28",
+      "filing_date": "2016-10-12",
+      "accession": "0000909832-16-000032",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983216000032/cost10k82816.htm",
+        "cache_file": "sec_0013e8ba441e54eb8ec371e9269b1f7c365fa9dbce0f9a410204ca3d96e76bac_52233b22e818e0e9dfcd4c9d9ca249981188e91d7f6655a2519216aa0aedfdda.raw",
+        "sha256": "52233b22e818e0e9dfcd4c9d9ca249981188e91d7f6655a2519216aa0aedfdda",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:25.972956+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Name of each exchange on which registered Common Stock, $.005 Par Value The NASDAQ Global Select Market ",
+      "symbol_support": "Our common stock trades on the NASDAQ Global Select Market, under the symbol \u201cCOST.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2015-08-30",
+      "filing_date": "2015-10-14",
+      "accession": "0000909832-15-000014",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983215000014/cost10k83015.htm",
+        "cache_file": "sec_d5402d19ab932d9a1e283e2bf6077d2d498b635eb781afdd18618fff149bfba9_921181d13788638d083c78401b61cd7bc9b65d68ec658108afca27fb3436ed3c.raw",
+        "sha256": "921181d13788638d083c78401b61cd7bc9b65d68ec658108afca27fb3436ed3c",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:27.738908+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Name of each exchange on which registered Common Stock, $.005 Par Value The NASDAQ Global Select Market ",
+      "symbol_support": "Our common stock trades on the NASDAQ Global Select Market under the symbol \u201cCOST.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    },
+    {
+      "cik": "909832",
+      "report_date": "2014-08-31",
+      "filing_date": "2014-10-15",
+      "accession": "0000909832-14-000021",
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983214000021/cost10k2014.htm",
+        "cache_file": "sec_62322ed2230d459d6385b2a8bcd1adf5b7949dfe1dd1921ef058ad705bcc9890_b4cd6c8730235e6b6ca9cd4e36c180303cd6e116963e92e09026637b2bb67fca.raw",
+        "sha256": "b4cd6c8730235e6b6ca9cd4e36c180303cd6e116963e92e09026637b2bb67fca",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T22:35:23.551111+00:00"
+      },
+      "cover_excerpt": "Securities registered pursuant to Section\u00a012(b) of the Act: Title of each class Name of each exchange on which registered Common Stock, $.005 Par Value The NASDAQ Global Select Market ",
+      "symbol_support": "Our common stock trades on the NASDAQ Global Select Market under the symbol \u201cCOST.",
+      "continuous_validity_established": false,
+      "vendor_price_security_link_established": false
+    }
+  ],
+  "new_documentary_gap": "COST cover par value is .005 in 2014-2016, .01 in 2017-2021, .005 in 2022-2025. Do not assume typo or corporate action; review charter/amendment evidence and effective dates.",
+  "mandatory_gaps_remaining": [
+    "Continuous dated security validity and corporate-action linkage",
+    "Price-vendor security lineage and mapped bar-existence/detector metadata",
+    "NOC descriptor conflict disposition under registered inventory predicate",
+    "Complete raw ownership/amendment reconstruction and annual A6/A7 population gates",
+    "PEAD original announcement and pre-announcement consensus lineage"
+  ],
+  "status": "UNRESOLVED"
+}

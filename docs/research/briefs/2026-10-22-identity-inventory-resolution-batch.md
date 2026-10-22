@@ -87,3 +87,18 @@ path-containment and regular-file checks, in both parent and final child sweeps.
 The offline check `/tmp/check_insider_batch_hashes.py` passes valid duplicate-URL
 responses and rejects a corrupted older response and a symlink. Ruff, formatting
 and dry-run checks pass. A fresh scoped rereview is pending before execution.
+
+## Execution complete
+
+Fresh Codex rereview cleared the checksum fix with no new blocker, including
+corrupt-old-response, symlink, missing-file and path-escape checks. The parent
+then executed the batch once: **26 HTTP 200 responses in 26 attempts**, no retry
+or new 403/429. Cumulative collection accounting is **79 SEC attempts**, zero
+Yahoo attempts and **104.3013715306297 seconds**. All **79 raw response hashes**
+were verified individually and every parent file remained unchanged.
+
+Child cache: `data/external/event_timing_audit/identity-inventory-we_55vr8/`.
+The exclusive claim is retained. This batch's authorization is consumed; no
+further requests are queued. The exact observations and outcome references are
+in [the results artifact](../_insider_identity_inventory_resolution_results.json).
+Documentary findings and unresolved requirements are recorded in the handoff.

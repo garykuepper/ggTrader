@@ -40,9 +40,12 @@ observed for the two examples.
 
 **Active bounded resolution:** The owner instructed “Resolve”. The
 [26-URL evidence batch](research/briefs/2026-10-22-identity-inventory-resolution-batch.md)
-is prepared and awaiting independent acquisition review. After clearance, execute
-once with inherited accounting, then review the raw evidence. No population
-collection or return test is authorized.
+completed: 26 HTTP 200 responses, 79 cumulative collection attempts, all raw
+hashes verified. Northrop’s missing page is acquired and its disputed filing
+date corroborated; the source descriptor remains inconsistent. Review the
+[documentary results](research/_insider_identity_inventory_resolution_results.json),
+including Costco’s changing reported par value, before asserting identity
+continuity. No further requests or return test are queued.
 
 ### Research context and standing decisions
 

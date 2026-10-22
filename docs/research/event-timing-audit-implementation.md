@@ -892,3 +892,62 @@ selection, cached-primary preference, counted fallback, actual source references
 declared-source replay, issuer/accession validation and timing/gates remain
 intact. Broader tests were not repeated by the reviewer. No SEC/Yahoo requests, operational-cache writes, DB activity or
 production changes occurred. Both research paths remain UNRESOLVED.
+
+## 2026-10-22 bounded identity/inventory resolution results
+
+Owner instruction “Resolve” authorized the reviewed
+[26-URL batch](briefs/2026-10-22-identity-inventory-resolution-batch.md).
+First review identified one verification defect (URL lookup skipped earlier
+retry responses); the runner now checks each response's own bytes/hash and path.
+Fresh Codex review cleared that fix before execution. All 26 requests returned
+HTTP 200 without retries, taking cumulative collection attempts from 53 to 79,
+with zero Yahoo attempts and 104.3013715306297 cumulative seconds. All 79 raw
+hashes and unchanged parent files were verified. Exact outcome references and
+24 annual security observations are in
+[the immutable-point-in-time results](_insider_identity_inventory_resolution_results.json).
+The child cache is `data/external/event_timing_audit/identity-inventory-we_55vr8/`;
+its persistent claim prevents another execution. No more collection is queued.
+
+### Inventory disposition
+
+The discrepant NOC accession `0001225208-17-005319` has raw header filing date
+**2017-03-02**, matching its API row; its header receipt is 2017-03-02 16:23:24
+and its embedded ownership XML identifies issuer CIK 1133421. This independently
+corroborates the page row against the accession's raw filing. The root page
+metadata's end date, 2017-03-01, excludes that real row. Cause remains unknown;
+no automatic date shift, source correction or interval-rule relaxation is made.
+The current inventory predicate therefore still does not pass.
+
+Previously missing NOC page 002 is now retained: all **214** rows match its
+count, spanning 2001-02-01 through 2002-06-17, within the declared interval ending
+2002-06-22. An endpoint inside a declared range is not itself a discrepancy.
+This closes the missing-page acquisition gap, but not the separate page-001
+metadata conflict or complete annual population qualification.
+
+### Historical identity disposition
+
+All 24 original annual reports (fiscal 2014–2025 for each issuer) contain dated
+common-stock and exchange statements. Pre-2019 reports state NOC/COST explicitly
+in their text; newer covers carry the symbols. These provide actual historical
+symbol evidence without relying on today's map. The source refs, exact cover
+and symbol extracts, fiscal dates and filing dates are retained in the artifact.
+No fiscal-end observation is silently backdated or extended to the next year.
+
+There is a concrete reconciliation item: Costco covers report par value $.005
+for 2014–2016, $.01 for 2017–2021 and $.005 for 2022–2025. Selected balance-sheet
+extracts also show those respective values, so this is not simply an absent
+symbol or a display normalization. Neither a typo nor a security change is
+assumed. Effective charter/class changes and the corresponding price-security
+link require documentary review. Annual repeated tickers do not establish
+uninterrupted validity or vendor lineage for either issuer.
+
+### Remaining decision
+
+The batch resolved the missing-page retrieval and corroborated the disputed
+filing date, and replaced speculation about pre-2019 ticker availability with
+primary annual evidence. It did not resolve mandatory continuous identity,
+price-vendor lineage/bar metadata, the inventory predicate conflict, full
+ownership/amendment reconstruction, annual population gates or PEAD consensus
+provenance. Both signals remain **UNRESOLVED**; this is no strategy-return or
+SPY-outperformance result. A fresh offline review of these documentary findings
+is pending. No production code, DB, price/return analysis or deployment changed.
