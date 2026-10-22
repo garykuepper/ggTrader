@@ -1,17 +1,21 @@
 # Event-timing audit implementation handoff — targeted review fixes
 
 This is an implementation/re-review handoff, **not an audit report, collection
-result, vendor approval or feasibility conclusion**. The starting commit was
-`c964659` on `research/event-timing-audit`. The
+result, vendor approval or feasibility conclusion**. The original implementation
+round started at `c964659`; this four-residual round starts at `4f6e3ab`, on the same
+`research/event-timing-audit` branch. The
 [approved brief](briefs/2026-10-21-event-timing-audit.md), especially A1–A12,
 and [source manifest](briefs/2026-10-21-event-timing-audit-sources.md) are unchanged.
 
-The round follows all 14 findings in `/tmp/event-timing-rework-codex-review.md`
+The earlier implementation follows all 14 findings in `/tmp/event-timing-rework-codex-review.md`
 and the recovered original 17 in `/tmp/event-timing-original-code-review.md`.
 The independent `/tmp/event-timing-vendor-evidence-review.md` supersedes the
 unsupported vendor narrative. Neither vendor document is ingested as runtime
 facts. No paid path, qualifying real window, price entitlement or guaranteed
-SEC dissemination bound is established here.
+SEC dissemination bound is established here. The independent follow-up
+`/tmp/event-timing-fourteen-fix-rereview.md` judged the prior head **10 addressed,
+4 partial (prior items 1, 2, 6, 10), 0 critical / 4 important**. This round changes
+only those four confirmed residual blockers, pending fresh scoped re-review.
 
 ## Scope and operation
 
@@ -113,9 +117,60 @@ Rejected candidates and their reasons remain in `input_errors` and affected
 population uncertainty; dropping an annotation cannot manufacture an annual
 population or a qualifying window.
 
+## Four residual blockers after `4f6e3ab`
+
+All four were reproduced against the reviewed code before editing. Their
+implementation fixes and regressions are confined to the same audit path:
+
+1. **Historical descriptor count.** `enumerate_sec()` now checks a supplied
+   `filingCount` is an integer (not a boolean), nonnegative and exactly the
+   number of rows returned by `filing_rows()`. That parser preserves every form;
+   comparison occurs before form filtering or accession deduplication. A mismatch
+   retains the page reference/bytes, observed rows and an explicit reason, with
+   `complete=False`; imported revalidation therefore cannot certify it. No new
+   coverage threshold or source assertion was added.
+   `test_residual_historical_page_count_matches_all_parsed_rows` covers a missing
+   third row with both interval endpoints retained, invalid count types/range,
+   and a matching count including a non-Form-4 row.
+2. **Supported-bound receipt comparison.** Timestamp PASS now requires both API
+   acceptance and the correct-accession header acceptance, with the existing
+   within-one-minute reconciliation. A supported bound alone cannot replace the
+   independent reading. Missing or wrong-accession headers remain UNVERIFIED.
+   The independently checked filing-date fallback remains permitted.
+   `test_residual_bound_timestamp_needs_independent_matching_receipts` exercises
+   missing/wrong headers, a matching-header positive control and the checked-date
+   fallback. Its valid dissemination bound is synthetic, not real evidence.
+3. **Executing code identity on resume.** Progress now binds the on-disk imported
+   `index_constituents.py` helper as well as the three owned audit modules. These
+   hashes include uncommitted file changes. Resume also rejects a changed Git
+   HEAD and retains the actual current revision rather than overwriting it with
+   a saved label. This deliberately rejects unrelated commits too: a single
+   conservative registration rule avoids an exemption/dependency-analysis
+   mechanism. Existing progress is preserved on rejection; no accounting is
+   reset or cache migrated.
+   `test_residual_resume_rejects_changed_revision_or_membership_code` simulates
+   changed revision and changed helper bytes without editing the shared helper,
+   creating commits or altering the branch; both must reject without changing
+   progress bytes.
+4. **Durable event observations.** `attach_population()` now completes each
+   event's tape/diagnostic observations and query receipts, then forces its
+   existing population checkpoint before starting the next event. This removes
+   the two-pass tape staging and bypasses the normal 30-second checkpoint
+   throttle for completed observations. Resume reuses those saved event results.
+   `test_residual_completed_event_observation_survives_interruption_on_next_event`
+   interrupts B's count query after A finishes. A's result and receipts must
+   already be on disk; resume is forbidden from re-querying A and completes B.
+
+No other review scope, strategy rules, thresholds, dependencies or production
+paths changed. No subagent/reviewer or real collection was invoked. These are
+fixture-verified implementation dispositions, not independent approval or a
+feasibility result.
+
 ## Disposition of the 14 rework findings
 
-All 14 were confirmed against the code and fixed within this round's scope.
+The original builder dispositions below are retained as the 14-item map.
+Independent review at `4f6e3ab` confirmed 10 and left 1, 2, 6 and 10 partial;
+the preceding four-residual section records the targeted follow-up fixes.
 These are implementation dispositions backed by offline fixtures, not external
 review approval or real-data verification. Tests live in
 [`test_event_timing_audit.py`](../../tests/lab/test_event_timing_audit.py);
@@ -128,11 +183,11 @@ review approval or real-data verification. Tests live in
 | 3 | Prefix/population readiness includes cumulative required disclosures, carry-in and earlier amendments, not just the current filing year. Unknown populations have null official denominators. Regression: `missing_prior_year_xml_blocks_later_population`, retaining an independent observed cluster. Existing later-amendment tests protect earlier years. |
 | 4 | Complete `event-timing-accounting-v2` state is mandatory; required types, counters/reservations, runtime and stop state reconcile. Manifest responses require reservations. Regressions: `reduced_checkpoint_with_valid_manifest_is_rejected`, `manifest_requires_matching_reservation`. |
 | 5 | `SafeRedirect` refuses every automatic redirect, including same-host, downgrade and non-443 targets. Responses remain unresolved within counted attempts. Regression: `redirects_are_not_automatic` (three cases); no endpoint call. |
-| 6 | Progress binds detector and module hashes plus original protocol/input hashes. It persists stored snapshots/query metadata, frames, selected keys/outcomes, failures and stage progress. Resume reuses stored observations. Regressions: `resume_binds_detector`, `resume_keeps_stored_snapshot`, plus the original full resume fixture. |
+| 6 | Progress binds detector, owned-module and imported membership-helper hashes, plus Git HEAD and the original protocol/input hashes. It persists stored snapshots/query metadata, frames, selected keys/outcomes, failures and stage progress. Resume reuses stored observations. Regressions: `resume_binds_detector`, `resume_keeps_stored_snapshot`, plus the original full resume fixture. |
 | 7 | Identical complete empty reconstructions pass; no minimum-activity gate. Empty tape/collision aggregation requires explicit proven emptiness plus complete inputs. Regression: `proven_no_cluster_prefix_passes`; the complete-census fixture also checks honest zero-event years. |
 | 8 | Stored losses compare each `(lot_id, owner)` pair; lot-level summaries derive from those pairs. Regression: `coowner_missing_lot_is_counted`. Raw recoverability stays separate from Phase 2 storage repair. |
 | 9 | Malformed owners/fingerprints are retained as unassignable, excluded from reconstruction and reported UNVERIFIED. Regressions: `malformed_owner_survives_preparation`, `malformed_raw_owner_is_reported_by_full_orchestration`. |
-| 10 | CPU unit boundaries check deadlines and checkpoint preparation, units, replay disclosures, prefix months, diagnostic periods and event observations. Indexes replace per-filing/per-period stored scans and repeated identity/inventory lookups. Lag counts use vectorized session searches. Regressions: `expired_cpu_preparation_checkpoints_remaining`, `expired_runner_emits_partial_without_cpu_or_db_work`, `cpu_replay_resumes_completed_disclosures`, `prepared_pead_resumes_without_recomputing_clocks`. No full-population benchmark was run. |
+| 10 | CPU unit boundaries check deadlines and checkpoint preparation, units, replay disclosures, prefix months, diagnostic periods and event observations. Indexes replace per-filing/per-period stored scans and repeated identity/inventory lookups. Lag counts use vectorized session searches. Regressions: `expired_cpu_preparation_checkpoints_remaining`, `expired_runner_emits_partial_without_cpu_or_db_work`, `cpu_replay_resumes_completed_disclosures`, `prepared_pead_resumes_without_recomputing_clocks`. Per-event tape/diagnostic observations and receipts now force a checkpoint before the next event (residual 4). No full-population benchmark was run. |
 | 11 | Each selected PEAD key records a fresh-response comparison, unmatched/changed/missing/failed outcomes, fields, references and request failures without replacement. Matching is stability only; fiscal/issuer PIT lineage stays separate. Regression: `selected_pead_exact_key_reconciles_missing_and_changed`. |
 | 12 | Scope uncertainty propagates to every affected year and official event population. Regression: `boundary_uncertainty_blocks_both_annual_populations`, with otherwise complete quarterly inputs. Temporarily restoring the old annual-only condition makes this test fail. |
 | 13 | Completed bounded protocol work can publish truthful UNRESOLVED final artifacts while source search remains incomplete. Runtime interruption/smoke/offline stay partial. Regression: `completed_bounded_audit_can_publish_unresolved`, writing only below a synthetic `/tmp` root. |
@@ -198,7 +253,7 @@ invoked by the implementer. No Phase 2 return test, purchase, production change,
 project shutdown or account change follows from this work. Existing NO-GOs and
 production freezes remain unchanged.
 
-## Verification record for this round
+## Verification record for the prior `4f6e3ab` round
 
 - Initial regression run: 16 failed / 1 passed before fixes. The annual boundary
   test was subsequently strengthened; restoring its original defect produced
@@ -229,3 +284,28 @@ disabled. No network request, real DB query/write, standalone collection/smoke,
 return calculation, price change, new detector or full-population benchmark was
 performed. All orchestration/replay evidence in this round is synthetic `/tmp`
 fixture output, not the registered audit artifacts.
+
+## Verification record for the four-residual round
+
+- Pre-fix scoped run: `scripts/run_tests.sh tests/lab/test_event_timing_audit.py -q -k residual`
+  — **11 failed, 3 positive controls passed, 110 deselected**. All four reported
+  defects were reproduced; the tests did not merely assert implementation details.
+- Post-fix scoped run: the same command — **14 passed, 110 deselected in 3.40 s**.
+- Exactly one final focused run after the fixes:
+  `scripts/run_tests.sh tests/lab/test_event_timing_audit.py -q` —
+  **124 passed in 126.02 s** (the prior 110 plus 14 parameterized residual cases).
+- Ruff `check --no-cache` and `format --check --no-cache` passed on the five
+  audit/CLI/focused-test Python files. `--help` and `git diff --check` passed.
+- Logs: `/tmp/event-timing-residual-red.log`,
+  `/tmp/event-timing-residual-green.log`, `/tmp/event-timing-residual-focused.log`.
+- Approved brief/source-manifest SHA-256 values remain exactly those recorded
+  above; neither file was modified.
+
+Test commands set `PYTHONDONTWRITEBYTECODE=1` and
+`PYTEST_ADDOPTS='-p no:cacheprovider'` and always use `scripts/run_tests.sh`
+(MemoryMax=8G, swap disabled). No broader lab run was performed: the changes remain
+inside the audit contract, and the membership helper is only hashed, not edited.
+The prior 902-pass broader result is historical, not rerun verification.
+
+Real input prerequisites and bounded/full-run limitations above are unchanged.
+This re-review/implementation round does not authorize a smoke or collection.

@@ -2215,3 +2215,203 @@ def test_round2_prepared_pead_resumes_without_recomputing_clocks(reconstructed_r
         audit, "event_clock", lambda *a, **k: pytest.fail("completed clock repeated")
     )
     assert runner.prepare_pead() == expected
+
+
+@pytest.mark.parametrize("declared", [3, -1, "2", 2.0, True, None, 2])
+def test_residual_historical_page_count_matches_all_parsed_rows(raw_cache, declared):
+    import json
+
+    from ggTrader.lab.event_timing_audit import validate_evidence_record
+    from ggTrader.lab.event_timing_sources import enumerate_sec
+
+    _, client, add = raw_cache
+    historical = {
+        "accessionNumber": ["0000000001-10-000001", "0000000001-22-000001"],
+        "form": ["10-K", "4/A"],
+        "filingDate": ["2010-01-01", "2022-12-31"],
+        "primaryDocument": ["report.htm", "form4.xml"],
+    }
+    descriptor = {
+        "name": "CIK1-old.json",
+        "filingFrom": "2010-01-01",
+        "filingTo": "2022-12-31",
+        "filingCount": declared,
+    }
+    add(
+        json.dumps(
+            {
+                "cik": "1",
+                "filings": {
+                    "recent": {key: [] for key in historical},
+                    "files": [descriptor],
+                },
+            }
+        ),
+        "https://data.sec.gov/submissions/CIK0000000001.json",
+    )
+    raw = json.dumps(historical)
+    ref = add(raw, "https://data.sec.gov/submissions/CIK1-old.json")
+    inventory = enumerate_sec(client, "1")
+    valid_count = type(declared) is int and declared == 2
+    assert inventory["complete"] is valid_count
+    assert inventory["request_succeeded"]
+    assert ref in inventory["source_refs"]
+    assert client.referenced_bytes(ref).decode() == raw
+    if valid_count:
+        # filing_rows preserves every form; filingCount is not a Form 4-only count.
+        assert [row["form"] for row in inventory["filings"]] == ["10-K", "4/A"]
+        assert validate_evidence_record("inventories", inventory, client, [])
+    else:
+        assert "filingCount" in inventory["reason"]
+        assert validate_evidence_record("inventories", inventory, client, []) is None
+
+
+@pytest.mark.parametrize("header_case", ["missing", "wrong_accession", "matching", "checked_date"])
+def test_residual_bound_timestamp_needs_independent_matching_receipts(raw_cache, header_case):
+    from ggTrader.lab.event_timing_audit import event_clock
+    from ggTrader.lab.event_timing_sources import parse_filing_header
+
+    _, client, add = raw_cache
+    accession = "0000000001-23-000001"
+    record = {
+        "cik": "1",
+        "accession": accession,
+        "form": "4",
+        "filing_date": "2023-05-04",
+        "acceptance": "2023-05-04T15:00:00-04:00",
+        "dissemination_bound_seconds": 60,
+    }
+    reviewed_fixture(record, "dissemination", add, ["dissemination_bound_seconds"])
+    if header_case != "missing":
+        header_accession = "0000000001-23-000002" if header_case == "wrong_accession" else accession
+        header = f"ACCESSION NUMBER: {header_accession}\n<FILED-AS-OF-DATE>20230504"
+        if header_case != "checked_date":
+            header += "\n<ACCEPTANCE-DATETIME>20230504150000"
+        else:
+            record.pop("dissemination_bound_seconds")
+        record.update(parse_filing_header(header, accession))
+    event = event_clock(
+        record, "insider_cluster", AuditClock(), datetime.date(2026, 10, 21), client
+    )
+    if header_case in ("matching", "checked_date"):
+        assert event["timestamp_predicate"] == "PASS"
+        assert event["precision"] == ("timestamp" if header_case == "matching" else "date_only")
+        assert event["tradeable_date"] == (
+            "2023-05-04" if header_case == "matching" else "2023-05-05"
+        )
+    else:
+        assert (
+            event["dissemination_predicate"] == "PASS"
+        )  # Synthetic valid bound, not real evidence.
+        assert event["timestamp_predicate"] == "UNVERIFIED"
+
+
+@pytest.mark.parametrize("changed", ["revision", "membership_helper"])
+def test_residual_resume_rejects_changed_revision_or_membership_code(
+    reconstructed_runner, monkeypatch, changed
+):
+    from types import SimpleNamespace
+
+    import ggTrader.lab.event_timing_audit as audit
+
+    runner = reconstructed_runner
+    runner.checkpoint("frozen_registration", force=True)
+    preserved = runner.progress_file.read_bytes()
+    if changed == "revision":
+        # Even an unrelated commit with unchanged module hashes requires a new run.
+        monkeypatch.setattr(
+            audit.subprocess, "run", lambda *a, **k: SimpleNamespace(stdout="0" * 40)
+        )
+        message = "revision"
+    else:
+        original = audit.compute_file_sha256
+        helper = Path(audit.load_sp500_history.__code__.co_filename).resolve()
+
+        def changed_hash(path):
+            return "f" * 64 if Path(path).resolve() == helper else original(path)
+
+        # Simulate changed on-disk helper bytes without touching the shared source file.
+        monkeypatch.setattr(audit, "compute_file_sha256", changed_hash)
+        message = "implementation"
+    with pytest.raises(ValueError, match=message):
+        audit.EventTimingAuditRunner(
+            resume=True,
+            evidence_file=runner.output_file.parent / "evidence.json",
+            cache_dir=runner.cache_dir,
+            membership_file=runner.membership_file,
+            detector_file=runner.output_file.parent / "flags.json",
+        )
+    assert runner.progress_file.read_bytes() == preserved
+
+
+def test_residual_completed_event_observation_survives_interruption_on_next_event(
+    reconstructed_runner,
+):
+    import json
+
+    from ggTrader.lab.event_timing_audit import (
+        EventTimingAuditRunner,
+        build_universe_denominators,
+        event_clock,
+    )
+
+    runner = reconstructed_runner
+    first_date, second_date = datetime.date(2023, 5, 5), datetime.date(2023, 5, 8)
+
+    class ObservationDb:
+        def __init__(self, interrupt):
+            self.interrupt = interrupt
+            self.query_log = []
+            self.count_dates = []
+
+        def execute_select(self, sql, params=None):
+            self.query_log.append({"sql": sql, "params": list(params or ())})
+            if "count(*)" in sql:
+                date = params[1]
+                self.count_dates.append(date)
+                if self.interrupt and date == second_date:
+                    raise KeyboardInterrupt("fixture interruption during second event")
+                if not self.interrupt and date == first_date:
+                    pytest.fail("completed first tape observation was replaced on resume")
+                return ["count"], [(1,)]
+            assert sql.startswith("SELECT timestamp::date")
+            return ["date"], []
+
+    events = [
+        event_clock(
+            {"event_id": key, "symbol": "A", "earnings_date": date},
+            "pead",
+            runner.clock,
+            runner.query_run_date,
+        )
+        for key, date in [("first", "2023-05-04"), ("second", "2023-05-05")]
+    ]
+    units = build_universe_denominators(runner.membership_file).units["pead"]
+    runner.db = ObservationDb(interrupt=True)
+    runner.checkpoint("before_population", force=True)  # Exercise the normal 30-second throttle.
+    with pytest.raises(KeyboardInterrupt, match="second event"):
+        runner.attach_population("pead", events, units)
+    progress = json.loads(runner.progress_file.read_text())
+    completed = progress["cpu_progress"].get("population:pead", {})
+    assert set(completed) == {"first"}
+    assert completed["first"]["tape"]["bar_count"] == 1
+    receipts = progress["observation_queries"]
+    assert any("count(*)" in row["sql"] and row["params"][1] == str(first_date) for row in receipts)
+    assert not any(
+        "count(*)" in row["sql"] and row["params"][1] == str(second_date) for row in receipts
+    )
+    resumed_db = ObservationDb(interrupt=False)
+    resumed = EventTimingAuditRunner(
+        resume=True,
+        evidence_file=runner.output_file.parent / "evidence.json",
+        cache_dir=runner.cache_dir,
+        membership_file=runner.membership_file,
+        detector_file=runner.output_file.parent / "flags.json",
+        db=resumed_db,
+    )
+    output = resumed.attach_population("pead", events, units)
+    assert resumed_db.count_dates == [second_date]
+    assert output[0]["tape"] == completed["first"]["tape"]
+    assert resumed.observation_queries[: len(receipts)] == receipts
+    saved = json.loads(resumed.progress_file.read_text())
+    assert set(saved["cpu_progress"]["population:pead"]) == {"first", "second"}

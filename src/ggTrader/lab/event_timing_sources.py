@@ -414,11 +414,18 @@ def enumerate_sec(client: SecEdgarClient, cik: str) -> dict:
             if older is None:
                 complete = False
                 continue
+            result["source_refs"].append(client.reference(page_url))
             rows = filing_rows(json.loads(older))
+            if "filingCount" in page and (
+                type(page["filingCount"]) is not int
+                or page["filingCount"] < 0
+                or page["filingCount"] != len(rows)
+            ):
+                complete = False
+                result["reason"] = f"Historical page filingCount invalid or mismatched: {name}"
             if any(not page["filingFrom"] <= r["filing_date"] <= page["filingTo"] for r in rows):
                 raise ValueError("Historical page interval mismatch")
             result["filings"].extend(rows)
-            result["source_refs"].append(client.reference(page_url))
         by_key: dict = {}
         for row in result["filings"]:
             key = row["accession"]

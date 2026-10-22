@@ -2,6 +2,14 @@
 
 ## 2026-10-21
 
+- **Lab infrastructure: four residual event-timing audit fixes.** Reconciled
+  historical-page `filingCount` with every parsed row, required independent
+  API/header receipt agreement for supported-bound timestamp PASS, bound resume
+  to Git HEAD and membership-helper bytes, and durably checkpointed each event's
+  observations/queries before the next. Added focused synthetic regressions;
+  no collection, real-data verdict or strategy change. See the
+  [residual-fix handoff](research/event-timing-audit-implementation.md#four-residual-blockers-after-4f6e3ab).
+
 - **Lab infrastructure: event-timing audit targeted review fixes.** Added raw-fact
   revalidation and field-specific semantic receipts, conservative insider timing,
   cumulative population/prefix completeness, strict accounting/redirect refusal,

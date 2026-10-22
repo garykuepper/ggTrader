@@ -942,7 +942,13 @@ def event_clock(
             and semantic_fields_supported("dissemination", record, client)
         )
         event["dissemination_predicate"] = PRED_PASS if bound_supported else PRED_UNVERIFIED
-        event["acceptance_reconciliation"] = acceptance["predicate"]
+        event["acceptance_reconciliation"] = (
+            PRED_PASS
+            if acceptance["predicate"] == PRED_PASS
+            and record.get("acceptance") is not None
+            and record.get("header_acceptance") is not None
+            else PRED_UNVERIFIED
+        )
         supported = (
             [acceptance["time"] + pd.Timedelta(seconds=bound)]
             if (bound_supported and acceptance["time"] is not None)
@@ -964,6 +970,7 @@ def event_clock(
             if (
                 precision == "timestamp"
                 and event["dissemination_predicate"] == PRED_PASS
+                and event["acceptance_reconciliation"] == PRED_PASS
                 or precision == "date_only"
                 and parse_date(record.get("header_filing_date"))
                 == parse_date(record.get("filing_date"))
@@ -1448,6 +1455,9 @@ class EventTimingAuditRunner:
                 "event_timing_reconstruction.py",
             )
         }
+        self.code_sha256["index_constituents.py"] = compute_file_sha256(
+            Path(load_sp500_history.__code__.co_filename)
+        )
         self.code_revision = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             cwd=Path(__file__).parent,
@@ -1500,10 +1510,11 @@ class EventTimingAuditRunner:
                 raise ValueError("Resume protocol or membership changed")
             if progress.get("detector_sha256") != self.detector_sha256:
                 raise ValueError("Resume detector changed")
+            if progress["code_revision"] != self.code_revision:
+                raise ValueError("Resume Git revision changed; start a new run")
             if progress.get("code_sha256") != self.code_sha256:
                 raise ValueError("Resume audit implementation changed; start a new run")
             self.query_run_date = datetime.date.fromisoformat(progress["query_run_date"])
-            self.code_revision = progress["code_revision"]
             self.evidence = progress["evidence"]
             self.stored = progress["stored"]
             self.stored_frozen = progress["stored_frozen"]
@@ -2473,26 +2484,20 @@ class EventTimingAuditRunner:
                 event["missing_reason"] = "historical_price_identity_unverified"
             else:
                 event["missing_reason"] = "|".join(sorted(known_causes)) or None
-        scoped = [e for e in events if e["in_scope"]]
-        tape = {}
-        for event in scoped:
-            if not self.client.within_deadline():
-                self.pending.append("tape checks: runtime budget exhausted")
-                break
-            try:
-                tape.update(
-                    check_tape_integrity_batch(self.db, self.clock, [event], self.artifact_flags)
-                )
-            except (RuntimeError, ValueError):
-                self.pending.append(f"tape:{event['event_id']}: bar evidence unavailable")
+            event["tape"] = {
+                "predicate": PRED_UNVERIFIED,
+                "reason": "bar evidence unavailable or outside execution-date scope",
+            }
         for event in events:
-            event["tape"] = tape.get(
-                event["event_id"],
-                {
-                    "predicate": PRED_UNVERIFIED,
-                    "reason": "bar evidence unavailable or outside execution-date scope",
-                },
-            )
+            if not self.work_available("tape checks"):
+                break
+            if event["in_scope"]:
+                try:
+                    event["tape"] = check_tape_integrity_batch(
+                        self.db, self.clock, [event], self.artifact_flags
+                    )[event["event_id"]]
+                except (RuntimeError, ValueError):
+                    self.pending.append(f"tape:{event['event_id']}: bar evidence unavailable")
             dates = None
             if (
                 self.db is not None
@@ -2523,7 +2528,7 @@ class EventTimingAuditRunner:
                 if self.db is not None:
                     self.observation_queries.extend(self.db.query_log[query_start:])
                     query_start = len(self.db.query_log)
-                self.checkpoint(f"population:{signal}")
+                self.checkpoint(f"population:{signal}", force=True)
         return [progress.get(e["event_id"], e) for e in all_events]
 
     def rejected_population_evidence(self, signal: str, year: int) -> list[dict]:
