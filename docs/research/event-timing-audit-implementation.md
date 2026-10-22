@@ -721,3 +721,45 @@ External requests remain paused. Before any restart, the acquisition decision
 must explicitly address the reported 403, cumulative reservations/runtime and
 registration lineage; neither a fresh cache nor the date-only amendment clears
 the stop. No strategy test or real qualifying window follows from this work.
+
+## Limited three-document restart and corroboration results — 2026-10-22
+
+The owner instructed “Continue” after the explicit limited-restart decision was
+presented. The [dated batch authorization](briefs/2026-10-22-three-document-restart.md)
+and `/tmp/insider_three_document_restart.py` received a scoped independent review
+with zero blockers. The parent executed only its three canonical URLs.
+
+- All three responses were HTTP 200, requiring three attempts and no retries.
+  Cumulative collection reservations advanced from 50 to 53, Yahoo remained
+  zero, and elapsed accounting advanced from 96.1154 to 97.4432 seconds.
+- Child cache: `data/external/event_timing_audit/three-document-restart-sc5zqn6c/`.
+  It retains the original 50 raw response copies and accounting prefix, plus
+  the three new responses. All 53 manifest hashes were checked. The parent
+  smoke directory's file hashes remained identical. The child registration is
+  new transport work, not a resumption of the old smoke assessment.
+- The persistent `three-document-restart-20261022-claim.json` prevents executing
+  this authorization twice. The reported documentation 403 remains in the
+  history; the absence of a new stop is not a general collection restart.
+- Northrop `0001628280-25-006862`: the newly retrieved full submission/header
+  corroborates filing date 2025-02-20. Amended execution is 2025-02-21 close.
+- Costco `0000909832-26-000039`: newly retrieved XML and full submission/header
+  corroborate filing date 2026-04-01. Amended execution is 2026-04-02 close.
+- Both original clocks still report unresolved receipt-time conflicts. Neither
+  the raw values nor the original quarantine were changed. Amended observed
+  availability remains null and dissemination remains UNVERIFIED.
+- Reapplying the pure clocks offline to all 24 operational records now gives
+  23 complying with the amended date-only convention and one UNVERIFIED. The
+  remaining Northrop record is dated 2026-05-21, after the cutoff; it stays in
+  the selected record/shortfall accounting and was not fetched or substituted.
+
+Results: `/tmp/insider-three-document-restart-result.json` and
+`/tmp/insider-three-document-restart-offline-comparison.json`. All child cache
+files were hashed before/after the offline comparison and remained unchanged.
+No DB query, price, return, strategy test or detector calculation occurred.
+
+This resolves the known missing in-window timing pairs in these operational
+examples. It does not establish continuous historical security identity, complete
+raw inventories, amendment linkage, price-security mapping, detector coverage,
+annual qualification or end-to-end data feasibility. Northrop's historical-page
+discrepancy remains unresolved. Both signal paths remain UNRESOLVED. The one
+bounded request authorization is exhausted; further collection is not queued.

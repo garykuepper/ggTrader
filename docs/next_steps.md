@@ -17,15 +17,19 @@ feasibility. Both signals remain UNRESOLVED.
    gaps in [the handoff](research/event-timing-audit-implementation.md#offline-identity-observations-and-exact-missing-support--2026-10-22).
    The approved date-only amendment is implemented in `740781a` and cleared by
    independent review. Cached comparison: 21 filing-date pairs comply with the
-   amended timing convention; three remain unknown. Eight cached pre-2019 XML
+   amended timing convention before the limited restart. The three newly fetched
+   documents now corroborate both missing in-window pairs: 23 of the 24 operational
+   records comply; the remaining incomplete record is after the cutoff.
+   Eight cached pre-2019 XML
    records provide event-local identity evidence, not continuous validity or
    price-security linkage. Original timestamp conflicts remain reported.
-2. External requests remain paused after the reported HTTP 403. Prepare an
-   explicit restart/acquisition decision retaining cumulative accounting and
-   registration lineage. Three known missing documents concern two in-window
-   examples; another incomplete selected record is after the cutoff and remains
-   recorded. Northrop's inventory and other mandatory evidence gaps remain.
-   No full-universe run, return test or automatic clock/interval repair is queued.
+2. The owner-authorized [three-document restart](research/briefs/2026-10-22-three-document-restart.md)
+   completed with three HTTP 200 responses, advancing collection attempts to 53
+   while preserving the original cache. That authorization is consumed; external
+   requests remain paused outside it. Next assess continuous identity and raw
+   inventory evidence gaps; Northrop's page discrepancy and other mandatory
+   gates remain unresolved. No full-universe run, return test or automatic
+   clock/interval repair is queued.
 
 ### Research context and standing decisions
 
