@@ -140,7 +140,7 @@ recorded; original and any alternate assessments remain distinguishable.
 **Consumes:** supported identities, existing detector/export contract and local
 artifact inventory. **Produces:** metadata availability map and minimal read plan.
 
-- [ ] Inspect `load_existing_artifact_flags()` and `ReadOnlySnapshot` in
+- [ ] Inspect `load_existing_artifact_flags()` and `ReadOnlyDb` in
   `event_timing_audit.py`; record actual fields and provenance requirements.
 - [ ] Locate existing flags/counts-only artifacts without reading price values
   or return paths. List available date/security coverage and hashes; missing export
