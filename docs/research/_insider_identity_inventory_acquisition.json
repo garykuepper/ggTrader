@@ -1,0 +1,941 @@
+{
+  "scope": "Two operational issuers only; no A6/A7 population claim",
+  "parent_cache": "data/external/event_timing_audit/three-document-restart-sc5zqn6c",
+  "raw_hashes_verified": 53,
+  "sec_attempts_in_collection_lineage": 53,
+  "elapsed_seconds": 97.44320130860433,
+  "documentation_403_history": "Retained separately; tool-level HTTP subrequests not exactly metered by this collection ledger",
+  "inventory_incidents": [
+    {
+      "cik": "1133421",
+      "descriptor": {
+        "name": "CIK0001133421-submissions-001.json",
+        "filingCount": 2000,
+        "filingFrom": "2002-06-24",
+        "filingTo": "2017-03-01"
+      },
+      "actual_count": 2000,
+      "row_index": 0,
+      "row": {
+        "accession": "0001225208-17-005319",
+        "form": "4",
+        "filing_date": "2017-03-02",
+        "primary_document": "xslF345X03/doc4.xml",
+        "acceptance": "2017-03-03T02:23:24.000Z",
+        "report_date": "2017-02-28",
+        "items": ""
+      },
+      "source_ref": {
+        "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+        "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+        "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T04:03:41.371524+00:00"
+      },
+      "root_ref": {
+        "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+        "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+        "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T04:03:41.253924+00:00"
+      },
+      "cached_occurrences": [
+        {
+          "cik": "1133421",
+          "row": {
+            "accession": "0001225208-17-005319",
+            "form": "4",
+            "filing_date": "2017-03-02",
+            "primary_document": "xslF345X03/doc4.xml",
+            "acceptance": "2017-03-03T02:23:24.000Z",
+            "report_date": "2017-02-28",
+            "items": ""
+          }
+        }
+      ]
+    }
+  ],
+  "annual_document_candidates": [
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-26-000003",
+        "form": "10-K",
+        "filing_date": "2026-01-27",
+        "primary_document": "noc-20251231.htm",
+        "acceptance": "2026-01-28T02:02:49.000Z",
+        "report_date": "2025-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342126000003/noc-20251231.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-25-000006",
+        "form": "10-K",
+        "filing_date": "2025-01-30",
+        "primary_document": "noc-20241231.htm",
+        "acceptance": "2025-01-31T02:11:12.000Z",
+        "report_date": "2024-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342125000006/noc-20241231.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-24-000006",
+        "form": "10-K",
+        "filing_date": "2024-01-25",
+        "primary_document": "noc-20231231.htm",
+        "acceptance": "2024-01-26T02:02:51.000Z",
+        "report_date": "2023-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342124000006/noc-20231231.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-23-000006",
+        "form": "10-K",
+        "filing_date": "2023-01-26",
+        "primary_document": "noc-20221231.htm",
+        "acceptance": "2023-01-26T18:32:09.000Z",
+        "report_date": "2022-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342123000006/noc-20221231.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-22-000004",
+        "form": "10-K",
+        "filing_date": "2022-01-27",
+        "primary_document": "noc-20211231.htm",
+        "acceptance": "2022-01-27T16:39:15.000Z",
+        "report_date": "2021-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342122000004/noc-20211231.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-21-000006",
+        "form": "10-K",
+        "filing_date": "2021-01-28",
+        "primary_document": "noc-20201231.htm",
+        "acceptance": "2021-01-28T16:36:59.000Z",
+        "report_date": "2020-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342121000006/noc-20201231.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-20-000006",
+        "form": "10-K",
+        "filing_date": "2020-01-30",
+        "primary_document": "noc-12312019x10k.htm",
+        "acceptance": "2020-01-30T16:39:26.000Z",
+        "report_date": "2019-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342120000006/noc-12312019x10k.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-19-000007",
+        "form": "10-K",
+        "filing_date": "2019-01-31",
+        "primary_document": "noc-12312018x10k.htm",
+        "acceptance": "2019-01-31T16:39:46.000Z",
+        "report_date": "2018-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342119000007/noc-12312018x10k.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-18-000005",
+        "form": "10-K",
+        "filing_date": "2018-01-29",
+        "primary_document": "noc-12312017x10k.htm",
+        "acceptance": "2018-01-30T03:09:25.000Z",
+        "report_date": "2017-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342118000005/noc-12312017x10k.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-17-000008",
+        "form": "10-K",
+        "filing_date": "2017-01-30",
+        "primary_document": "noc-12312016x10k.htm",
+        "acceptance": "2017-01-31T02:16:57.000Z",
+        "report_date": "2016-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342117000008/noc-12312016x10k.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-16-000065",
+        "form": "10-K",
+        "filing_date": "2016-02-01",
+        "primary_document": "noc-12312015x10k.htm",
+        "acceptance": "2016-02-02T03:14:57.000Z",
+        "report_date": "2015-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342116000065/noc-12312015x10k.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "1133421",
+      "row": {
+        "accession": "0001133421-15-000008",
+        "form": "10-K",
+        "filing_date": "2015-02-02",
+        "primary_document": "noc-12312014x10k.htm",
+        "acceptance": "2015-02-03T03:09:25.000Z",
+        "report_date": "2014-12-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342115000008/noc-12312014x10k.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.253924+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.371524+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-25-000101",
+        "form": "10-K",
+        "filing_date": "2025-10-08",
+        "primary_document": "cost-20250831.htm",
+        "acceptance": "2025-10-08T05:16:06.000Z",
+        "report_date": "2025-08-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/cost-20250831.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-24-000049",
+        "form": "10-K",
+        "filing_date": "2024-10-09",
+        "primary_document": "cost-20240901.htm",
+        "acceptance": "2024-10-09T02:40:07.000Z",
+        "report_date": "2024-09-01",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983224000049/cost-20240901.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-23-000042",
+        "form": "10-K",
+        "filing_date": "2023-10-11",
+        "primary_document": "cost-20230903.htm",
+        "acceptance": "2023-10-11T03:13:15.000Z",
+        "report_date": "2023-09-03",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983223000042/cost-20230903.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-22-000021",
+        "form": "10-K",
+        "filing_date": "2022-10-05",
+        "primary_document": "cost-20220828.htm",
+        "acceptance": "2022-10-05T05:59:05.000Z",
+        "report_date": "2022-08-28",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/cost-20220828.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-21-000014",
+        "form": "10-K",
+        "filing_date": "2021-10-06",
+        "primary_document": "cost-20210829.htm",
+        "acceptance": "2021-10-06T04:49:17.000Z",
+        "report_date": "2021-08-29",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983221000014/cost-20210829.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-20-000017",
+        "form": "10-K",
+        "filing_date": "2020-10-07",
+        "primary_document": "cost-20200830.htm",
+        "acceptance": "2020-10-07T03:07:39.000Z",
+        "report_date": "2020-08-30",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983220000017/cost-20200830.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-19-000019",
+        "form": "10-K",
+        "filing_date": "2019-10-11",
+        "primary_document": "cost10k9119.htm",
+        "acceptance": "2019-10-11T02:06:12.000Z",
+        "report_date": "2019-09-01",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983219000019/cost10k9119.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-18-000013",
+        "form": "10-K",
+        "filing_date": "2018-10-26",
+        "primary_document": "cost10k9218.htm",
+        "acceptance": "2018-10-26T17:21:46.000Z",
+        "report_date": "2018-09-02",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983218000013/cost10k9218.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-17-000014",
+        "form": "10-K",
+        "filing_date": "2017-10-18",
+        "primary_document": "cost10k90317.htm",
+        "acceptance": "2017-10-18T05:17:47.000Z",
+        "report_date": "2017-09-03",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983217000014/cost10k90317.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-16-000032",
+        "form": "10-K",
+        "filing_date": "2016-10-12",
+        "primary_document": "cost10k82816.htm",
+        "acceptance": "2016-10-12T03:26:22.000Z",
+        "report_date": "2016-08-28",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983216000032/cost10k82816.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-15-000014",
+        "form": "10-K",
+        "filing_date": "2015-10-14",
+        "primary_document": "cost10k83015.htm",
+        "acceptance": "2015-10-14T02:50:16.000Z",
+        "report_date": "2015-08-30",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983215000014/cost10k83015.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    },
+    {
+      "cik": "909832",
+      "row": {
+        "accession": "0000909832-14-000021",
+        "form": "10-K",
+        "filing_date": "2014-10-15",
+        "primary_document": "cost10k2014.htm",
+        "acceptance": "2014-10-16T01:30:17.000Z",
+        "report_date": "2014-08-31",
+        "items": ""
+      },
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983214000021/cost10k2014.htm",
+      "inventory_refs": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:41.623742+00:00"
+        },
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650",
+          "content_encoding": "identity",
+          "status_code": 200,
+          "timestamp": "2026-10-22T04:03:42.222240+00:00"
+        }
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "key": "0001225208-17-005319",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520817005319/0001225208-17-005319.txt",
+      "purpose": "Corroborate discrepant filing date from raw header and ownership XML"
+    },
+    {
+      "key": "CIK0001133421-submissions-002.json",
+      "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-002.json",
+      "purpose": "Complete declared pagination; does not resolve descriptor conflict alone"
+    },
+    {
+      "key": "0001133421-26-000003",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342126000003/noc-20251231.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-25-000006",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342125000006/noc-20241231.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-24-000006",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342124000006/noc-20231231.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-23-000006",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342123000006/noc-20221231.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-22-000004",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342122000004/noc-20211231.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-21-000006",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342121000006/noc-20201231.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-20-000006",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342120000006/noc-12312019x10k.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-19-000007",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342119000007/noc-12312018x10k.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-18-000005",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342118000005/noc-12312017x10k.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-17-000008",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342117000008/noc-12312016x10k.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-16-000065",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342116000065/noc-12312015x10k.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0001133421-15-000008",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000113342115000008/noc-12312014x10k.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-25-000101",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/cost-20250831.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-24-000049",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983224000049/cost-20240901.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-23-000042",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983223000042/cost-20230903.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-22-000021",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/cost-20220828.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-21-000014",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983221000014/cost-20210829.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-20-000017",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983220000017/cost-20200830.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-19-000019",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983219000019/cost10k9119.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-18-000013",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983218000013/cost10k9218.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-17-000014",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983217000014/cost10k90317.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-16-000032",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983216000032/cost10k82816.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-15-000014",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983215000014/cost10k83015.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    },
+    {
+      "key": "0000909832-14-000021",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983214000021/cost10k2014.htm",
+      "purpose": "Dated annual securities/class/exchange and corporate-history review; no presumed continuous validity"
+    }
+  ],
+  "maximum_new_attempts": 104,
+  "batch_cumulative_sec_ceiling": 157,
+  "identity_limit": "Annual observations and unchanged names/tickers alone do not establish uninterrupted security identity or price-vendor lineage"
+}

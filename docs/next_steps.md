@@ -38,6 +38,12 @@ Next work remains the identity/inventory evidence gaps above. This does not
 relax any audit predicate or authorize the 1,545 uncached full submissions
 observed for the two examples.
 
+**Active bounded resolution:** The owner instructed “Resolve”. The
+[26-URL evidence batch](research/briefs/2026-10-22-identity-inventory-resolution-batch.md)
+is prepared and awaiting independent acquisition review. After clearance, execute
+once with inherited accounting, then review the raw evidence. No population
+collection or return test is authorized.
+
 ### Research context and standing decisions
 
 **Owner correction:** Follow [the standing owner instructions](../AGENTS.md#owner-instructions-2026-10-20).
