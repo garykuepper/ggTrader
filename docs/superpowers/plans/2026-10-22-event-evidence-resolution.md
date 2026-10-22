@@ -4,6 +4,11 @@
 > owner's explicitly delegated execution. Track the checkboxes below. Gemini
 > Flash on agy performs the evidence work; Codex validates claims and acquisitions.
 
+**Owner update (2026-10-22):** Flash is restricted to simple, bounded extraction
+or exact-link checks. The broad Flash workbook was rejected in independent
+review; Codex now owns its correction, synthesis and remaining plan execution.
+Earlier Flash ownership instructions below are superseded by this update.
+
 **Goal:** Resolve each of the five outstanding evidence gaps to a supported
 finding or an exact remaining dependency, then finish the registered per-signal
 feasibility audit. Resolution does not promise a PASS or an investable strategy.
