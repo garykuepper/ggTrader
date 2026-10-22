@@ -73,3 +73,17 @@ links. Write a requirement-by-requirement evidence/gap disposition in the handof
 If this batch cannot establish a mandatory fact, name the remaining evidence;
 do not fetch more automatically or manufacture a PASS. Both research paths
 remain UNRESOLVED until the complete registered feasibility requirements pass.
+
+## Acquisition review follow-up
+
+The first independent Codex review found no scope/source blocker and independently
+verified all 53 parent hashes and all 26 candidate URLs. It blocked execution on
+one runner verification defect: looking up a manifest entry by URL validates only
+the latest response, potentially missing corruption in an older retry response.
+No actual cache corruption was found and no HTTP requests ran.
+
+The runner now validates every entry's own file and checksum, retaining symlink,
+path-containment and regular-file checks, in both parent and final child sweeps.
+The offline check `/tmp/check_insider_batch_hashes.py` passes valid duplicate-URL
+responses and rejects a corrupted older response and a symlink. Ruff, formatting
+and dry-run checks pass. A fresh scoped rereview is pending before execution.
