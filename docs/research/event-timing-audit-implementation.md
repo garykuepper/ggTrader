@@ -864,8 +864,8 @@ detector work or deployment occurred. The prior 23-pair equivalence and
 two-issuer acquisition counts remain diagnostics, not population forecasts.
 Historical identity continuity, Northrop's inventory discrepancy/missing page,
 amendment linkage, tape mapping/detector evidence and annual/five-year gates
-remain unresolved. Both real signal paths remain UNRESOLVED. Fresh independent
-review is pending, and no further collection is authorized by this change.
+remain unresolved. Both real signal paths remain UNRESOLVED. The review and follow-up verdict
+are recorded below; no further collection is authorized by this change.
 
 ## 2026-10-22 collector review: malformed TEXT envelope
 
@@ -884,6 +884,11 @@ full-response bytes/reference, one counted request and no primary download.
 After the fix, `scripts/run_tests.sh tests/lab/test_event_timing_audit.py -q
 -k test_collect_filing --tb=short` passed **33 tests, 153 deselected in 2.93 s**.
 Ruff check, format-check and diff-check passed. The earlier 185-test run predates
-this fix; it was not repeated. Fresh independent review of the follow-up is
-pending. No SEC/Yahoo requests, operational-cache writes, DB activity or
+this fix; it was not repeated. Fresh independent Codex review of `bbf6f44`
+against `3ffb112`, including connected collector/replay callers, is clean: no
+actionable findings and the prior P2 blocker is fixed. The reviewer independently
+ran the collector selection: **33 passed, 153 deselected in 3.03 s**. Canonical
+selection, cached-primary preference, counted fallback, actual source references,
+declared-source replay, issuer/accession validation and timing/gates remain
+intact. Broader tests were not repeated by the reviewer. No SEC/Yahoo requests, operational-cache writes, DB activity or
 production changes occurred. Both research paths remain UNRESOLVED.

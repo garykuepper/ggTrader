@@ -31,12 +31,12 @@ feasibility. Both signals remain UNRESOLVED.
    gates remain unresolved. No full-universe run, return test or automatic
    clock/interval repair is queued.
 
-**Collector implementation — review follow-up:** 23 cached full submissions reproduce the
-separate ownership XML parser outputs exactly, including Form 4/A. The collector now reuses those
-bodies in `3ffb112`. Review found one malformed TEXT-envelope gap; `bbf6f44`
-rejects content after `</TEXT>` and adds a regression. Obtain a fresh review
-of that fix before collection. This does not relax any audit predicate
-or authorize the 1,545 uncached full submissions observed for the two examples.
+**Collector implementation complete:** `3ffb112` reuses canonical full-submission
+ownership XML; `bbf6f44` closes the malformed TEXT-envelope gap found in review.
+Fresh independent Codex review is clean, with 33 collector tests passing.
+Next work remains the identity/inventory evidence gaps above. This does not
+relax any audit predicate or authorize the 1,545 uncached full submissions
+observed for the two examples.
 
 ### Research context and standing decisions
 
