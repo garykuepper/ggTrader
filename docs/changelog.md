@@ -7,8 +7,9 @@
   canonical type/filename XML from the accession's full response before a
   counted primary-document fallback. Actual response references and existing
   timing/qualification gates are retained. Offline fixtures cover replay,
-  ambiguity, identity and transport failures; fresh independent review is
-  pending. No new collection or data-feasibility conclusion. See the
+  ambiguity, identity and transport failures. Review identified a malformed
+  TEXT-envelope gap; the follow-up rejects trailing content and regression-tests
+  that fallback cannot conceal it. Fresh review of that fix is pending. No new collection or data-feasibility conclusion. See the
   [collector handoff](research/event-timing-audit-implementation.md#2026-10-22-offline-full-submission-collector-efficiency).
 
 - **Lab infrastructure: approved insider filing-date convention, offline implementation.**

@@ -795,8 +795,8 @@ primary XML if available; otherwise request the canonical full submission and
 extract the matching ownership XML there, with a separate primary-document
 request only as a validated fallback. Preserve source references and fail closed
 on ambiguous/wrong-identity content. API/header corroboration and all approved
-timing, quarantine and completeness rules remain unchanged. Code implementation,
-focused regression tests and independent review are the next offline work.
+timing, quarantine and completeness rules remain unchanged. Implementation and focused tests are recorded below; independent review
+identified the follow-up described at the end of this handoff.
 No new collection is authorized; the known uncached full-submission count alone
 would still be 1,545 before retries and carry-in requirements.
 
@@ -866,3 +866,24 @@ Historical identity continuity, Northrop's inventory discrepancy/missing page,
 amendment linkage, tape mapping/detector evidence and annual/five-year gates
 remain unresolved. Both real signal paths remain UNRESOLVED. Fresh independent
 review is pending, and no further collection is authorized by this change.
+
+## 2026-10-22 collector review: malformed TEXT envelope
+
+Independent Codex review of `5371bba..3ffb112` found one P2 blocker: the
+selector discarded content after `</TEXT>`, allowing misplaced, invalid XML
+to trigger a valid primary-XML fallback and report raw completeness. The
+review's collector selection passed 32 tests, which did not cover this
+malformed placement. No other actionable findings were reported.
+
+The parent reproduced the finding with a new real-collector fixture: it failed
+on `raw_complete=True` before the fix. In `bbf6f44`, the selector now partitions
+the TEXT envelope once and rejects any non-whitespace trailing content before
+selecting XML or falling back. The regression verifies rejection, retained
+full-response bytes/reference, one counted request and no primary download.
+
+After the fix, `scripts/run_tests.sh tests/lab/test_event_timing_audit.py -q
+-k test_collect_filing --tb=short` passed **33 tests, 153 deselected in 2.93 s**.
+Ruff check, format-check and diff-check passed. The earlier 185-test run predates
+this fix; it was not repeated. Fresh independent review of the follow-up is
+pending. No SEC/Yahoo requests, operational-cache writes, DB activity or
+production changes occurred. Both research paths remain UNRESOLVED.

@@ -31,11 +31,11 @@ feasibility. Both signals remain UNRESOLVED.
    gates remain unresolved. No full-universe run, return test or automatic
    clock/interval repair is queued.
 
-**Immediate offline implementation:** 23 cached full submissions reproduce the
-separate ownership XML parser outputs exactly, including Form 4/A. Reuse those
-bodies to avoid redundant XML requests, retaining strict document selection,
-source provenance and a primary-XML fallback. Add focused fixtures and obtain
-independent review before collection. This does not relax any audit predicate
+**Collector implementation — review follow-up:** 23 cached full submissions reproduce the
+separate ownership XML parser outputs exactly, including Form 4/A. The collector now reuses those
+bodies in `3ffb112`. Review found one malformed TEXT-envelope gap; `bbf6f44`
+rejects content after `</TEXT>` and adds a regression. Obtain a fresh review
+of that fix before collection. This does not relax any audit predicate
 or authorize the 1,545 uncached full submissions observed for the two examples.
 
 ### Research context and standing decisions
