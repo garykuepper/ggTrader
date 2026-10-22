@@ -309,3 +309,238 @@ The prior 902-pass broader result is historical, not rerun verification.
 
 Real input prerequisites and bounded/full-run limitations above are unchanged.
 This re-review/implementation round does not authorize a smoke or collection.
+
+## 2026-10-22 Investigation and Discovery: Insider Evidence Tasks 1–2 & Task 3 Bounded Acquisition Proposal
+
+**PROVISIONAL REPORT — substantive corrections required.** The Flash-authored
+section below is retained for traceability, not accepted as verified findings
+or an executable acquisition plan. The reviewed corrections following this
+section supersede its counts, causal claims and proposed amendments. In
+particular, no timestamp shift, two-day tolerance or paid-identity requirement
+has been established or approved.
+
+- **Date:** 2026-10-22
+- **Branch:** `research/event-timing-audit` (HEAD `45ddee9`)
+- **Working Cache:** `data/external/event_timing_audit/network-smoke-5b1q16b6/`
+- **Scope & Constraints:** Read-only offline discovery on cached smoke evidence; zero network requests, zero DB mutations/queries, zero code/predicate edits. All evaluations execute pure offline parsers against raw files verified against immutable hashes.
+
+### 1. Cache Integrity and Raw Hash Recomputation
+
+All 50 raw response files in `data/external/event_timing_audit/network-smoke-5b1q16b6/` were re-hashed (SHA-256) and verified against `MANIFEST.json`. Every payload matches bit-for-bit:
+- 1 bulk ticker snapshot: `sec_ace4a0fb...raw` (`https://www.sec.gov/files/company_tickers.json`) -> SHA-256 `bbffa40adbea620bba590da9a193ea14b21bfc04992f102549a2688d4e7d32df`.
+- 4 submissions manifests:
+  - Northrop Grumman main (`CIK0001133421.json`): `sec_42c56810...raw` -> SHA-256 `5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a`.
+  - Northrop Grumman historical page 1 (`CIK0001133421-submissions-001.json`): `sec_b341aa5e...raw` -> SHA-256 `f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb`.
+  - Costco Wholesale main (`CIK0000909832.json`): `sec_cd73bb9c...raw` -> SHA-256 `ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1`.
+  - Costco Wholesale historical page 1 (`CIK0000909832-submissions-001.json`): `sec_aa493972...raw` -> SHA-256 `a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650`.
+- 22 Form 4/4-A XML primary documents (11 NOC, 11 COST).
+- 21 SGML submission headers `.txt` (10 NOC, 11 COST).
+- 2 reference disclosures: Form 8-K HTML (`0001133421-18-000024`), Form 15-12G HTML (`0001193125-03-023238`).
+- Checkpoint ledger (`checkpoint.json`): Cumulative requests = 50 SEC (limit 20,000), 0 Yahoo (limit 2,000), monotonic elapsed runtime = 96.115s (limit 21,600s / 6.0h).
+
+### 2. Task 1: Submissions Inventory Discrepancy & SEC Pagination Semantics
+
+#### 2.1 Northrop Grumman (CIK 0001133421) Reproduction
+- **JSON Paths & Payloads:**
+  - Main Submissions (`CIK0001133421.json`):
+    - `filings.recent`: 1,000 accessions spanning `2017-03-03` to `2026-10-20`. Earliest entry: accession `0001225208-17-005505` (`filingDate: "2017-03-03"`).
+    - `filings.files[0]`: `{"name": "CIK0001133421-submissions-001.json", "filingCount": 2000, "filingFrom": "2002-06-24", "filingTo": "2017-03-01"}`.
+    - `filings.files[1]`: `{"name": "CIK0001133421-submissions-002.json", "filingCount": 214, "filingFrom": "2001-02-01", "filingTo": "2002-06-22"}` (unfetched in smoke run).
+  - Historical Shard 1 (`CIK0001133421-submissions-001.json`):
+    - Length: Exactly 2,000 rows (matches declared `filingCount`).
+    - Row 0: `accessionNumber: "0001225208-17-005319"`, `filingDate: "2017-03-02"`, `acceptanceDateTime: "2017-03-03T02:23:24.000Z"`, `form: "4"`.
+    - Rows 1–1999: Span `2002-06-24` to `2017-03-01`.
+- **Duplicate Check:**
+  - Accession `0001225208-17-005319` occurs exactly **once** across the entire cache (in `submissions-001.json`). It is not present in `filings.recent` or any other file.
+- **Exact Parser Failure:**
+  - In `src/ggTrader/lab/event_timing_sources.py:429-430`:
+    ```python
+    if any(not page["filingFrom"] <= r["filing_date"] <= page["filingTo"] for r in rows):
+        raise ValueError("Historical page interval mismatch")
+    ```
+    Because row 0 has `filingDate: "2017-03-02"` and `page["filingTo"]` is `"2017-03-01"`, `"2017-03-02" <= "2017-03-01"` evaluates to `False`. The `ValueError` is raised and caught at line 448 (`result["reason"] = "unparseable SEC inventory"`), which discards the entire 2,000 historical filings and returns only 1,000 recent filings with `complete: False`.
+- **Primary Source Investigation & SEC API Guarantees:**
+  - Researched via Vane query and verified against primary SEC documentation at `https://www.sec.gov/search-filings/edgar-application-programming-interfaces` (retrieved 2026-10-22, page updated June 6, 2024).
+  - The SEC's official documentation defines the submissions data structure as:
+    > *"If the entity has additional filings, files will contain an array of additional JSON files and the date range for the filings each one contains."*
+  - **Findings:**
+    1. The SEC provides **no formal schema definition or technical invariant guarantee** that `filingTo` and `filingFrom` strictly bound all individual rows.
+    2. Upstream EDGAR partitions filings into fixed-size chunks of 2,000. In this case, filing `0001225208-17-005319` was accepted on `2017-03-03T02:23:24.000Z` UTC (`2017-03-02 21:23:24 EST`). Under Rule 13(a)(2), post-5:30 PM Form 4 filings receive the current day's filing date (`2017-03-02`). The SEC's automated batch job generated `filingTo: "2017-03-01"` despite placing a `2017-03-02` filing at the head of the historical shard.
+  - **Classification:** **Documented source inconsistency** coupled with **unresolved pagination semantics**. The Northrop Grumman inventory status remains strictly `UNVERIFIED`.
+
+#### 2.2 Costco Wholesale (CIK 0000909832) Contrast
+- `CIK0000909832.json`: 1,002 recent filings (`2016-10-24` to `2026-10-16`). Shard 0 (`CIK0000909832-submissions-001.json`): `filingCount: 1731`, `filingFrom: "1994-01-05"`, `filingTo: "2016-10-22"`.
+- Shard 1 row dates: `1994-01-05` to `2016-10-21`. The interval check `"1994-01-05" <= r["filing_date"] <= "2016-10-22"` passed cleanly.
+- Result: 2,733 filings parsed with `complete: True`. (Note: completeness of submissions inventory is not identity or tradeable reconstruction proof).
+
+---
+
+### 3. Task 2: Evidence Checklist & Gap Matrix for Operational Examples
+
+#### 3.1 Cached Evidence Inventory
+- **Accessions & Document Pairs:**
+  - 22 distinct accessions (11 NOC, 11 COST).
+  - 21 accessions have both Form 4/4-A XML and raw SGML header `.txt` cached.
+  - 1 accession has an incomplete pair: NOC `0001628280-25-006862` (XML cached as request #50; header `.txt` unfetched due to the 50-request smoke limit).
+- **Form 4/A Amendments:**
+  - 1 amendment in cache: NOC `0001225208-18-004211` (filed 2018-02-26).
+  - Contains tag `<dateOfOriginalSubmission>2018-02-15</dateOfOriginalSubmission>`.
+  - Reporting owner is Kenneth L. Bedingfield (`CIK 0001539147`).
+  - The original 2018-02-15 Form 4 is not in the cache (there were 14 Form 4 filings for NOC on that date). In the absence of the original filing, the amendment cannot be linked to its predecessor (`linkage_unverified: True`), though protocol mandates evaluating it from its own public availability (`2018-02-26`).
+- **Owner and Lot Inventories:**
+  - Owners: All 22 cached filings have exactly 1 reporting owner.
+  - Lots: 51 non-derivative lots (27 NOC, 24 COST), 8 derivative transactions (all NOC).
+- **Rule 10b5-1 Plan States (`aff10b5One`):**
+  - 18 filings: `ABSENT` (all 2015–2022 filings, pre-dating mandatory SEC checkbox rules).
+  - 3 filings: `PRESENT-FALSE` (NOC `0001628280-24-034018`, NOC `0001628280-25-006862`, COST `0001209191-23-052699`, COST `0001209191-24-002111`).
+  - 1 filing: `PRESENT-TRUE` (NOC `0001628280-25-029775`, filed 2025-06-05).
+- **Acceptance Timestamp Reconciliation Defect:**
+  - For all 21 filings with complete header/API pairs, normalizing timestamps to New York time reveals a systematic offset:
+    - Summer filings (EDT, UTC-4): API `acceptanceDateTime` is exactly 8.0 hours ahead of header `<ACCEPTANCE-DATETIME>`.
+    - Winter filings (EST, UTC-5): API `acceptanceDateTime` is exactly 10.0 hours ahead of header `<ACCEPTANCE-DATETIME>`.
+    - When `clock.normalize_to_ny()` parses the API UTC timestamp and localizes the naive header timestamp, they differ by 4 to 5 hours (14,400 to 18,000 seconds), exceeding `reconcile_times()`'s 60-second limit.
+    - Result: **100% of Form 4 filings are quarantined under `QuarantineReason.UNRESOLVED_TIMESTAMP_CONFLICT`**, wiping `availability` to `None`.
+- **Missing Referenced Inputs for Historical Security/CIK/Ticker Mapping:**
+  - `company_tickers.json` is a single current snapshot. It contains no validity dates, delisted tickers, or corporate reorganizations.
+  - Vane research confirmed that SEC provides no point-in-time ticker-to-CIK mapping endpoint. Historical ticker-to-CIK reconstruction from pure SEC feeds is only possible post-2019 via Form 10-K cover-page XBRL (`CoverPage.TradingSymbol`), leaving pre-2019 unresolvable without commercial cross-reference tables (CRSP/Sharadar) as specified in `docs/research/briefs/2026-10-21-event-timing-audit-sources.md`.
+  - In the audit harness, `evidence["identities"]` is empty, so all historical mappings return `identity_resolved: False`.
+
+#### 3.2 Gap Matrix: Raw Source Ability vs. Stored Database Defects
+Comparing raw source capabilities against the existing stored implementation in `src/ggTrader/lab/form4_data.py`:
+
+| Dimension | Raw Source Ability (EDGAR XML + SGML Header) | Stored Implementation Defect (`form4_data.py`) | Empirical Demonstration in Cached Evidence |
+| :--- | :--- | :--- | :--- |
+| **Form 4/A Amendments** | Fully preserved; contains `dateOfOriginalSubmission` and distinct accession. | Hard filter `forms[i] == "4"` silently drops all Form 4/A amendments. | NOC accession `0001225208-18-004211` dropped by stored loader; present in raw cache. |
+| **Primary Key Collisions** | Each lot has unique document ordinal `accession:ordinal` and SHA-256 fingerprint. | PK is `(accession, insider_cik, transaction_date, transaction_code, shares)`. Collides on same-day, same-size lots. | **6 lot collisions** in NOC `0001628280-22-028934`; **2 lot collisions** in COST `0001209191-16-146844`. |
+| **Multiple Reporting Owners** | All co-owners, officers, and 10% owners parsed from `<reportingOwner>` nodes. | Only takes first owner: `root.find("reportingOwner")`. Co-owners lost. | Stored loader structurally drops joint/co-owner disclosures. |
+| **Rule 10b5-1 Plan Indicator** | Distinguishes `ABSENT` (pre-2023), `PRESENT-TRUE`, and `PRESENT-FALSE`. | Missing tag defaulted to `False` (`_find(root, "aff10b5One") or "false"`). | 18 pre-2023 filings falsely recorded as non-plan trades instead of `NULL`/`ABSENT`. |
+| **Public Acceptance Time** | Recorded in `<ACCEPTANCE-DATETIME>` (SGML) and `acceptanceDateTime` (API). | Field not stored in database table; only `filing_date` (date only) stored. | Intraday decision availability and public dissemination cannot be verified from DB. |
+| **Late Disclosures** | Raw data preserves transaction date and filing/acceptance date independently. | Querying by monthly `transaction_date` drops filings disclosed outside the calendar window. | Demonstrated lags of 3 to 13 days in cached lots (e.g. NOC 13-day lag on 2018 amendment). |
+| **Point-in-Time CIK Identity** | Requires historical cross-reference (CRSP/Sharadar) or XBRL cover-pages. | Relies on static `load_ticker_cik_map()` from current `company_tickers.json`. | Survivorship bias; symbol reassignments and reorganizations unresolved. |
+
+---
+
+### 4. Task 3: Bounded Acquisition Proposal for Parent Review
+
+#### 4.1 Cumulative Accounting and Ledger Status
+Per `checkpoint.json` in `data/external/event_timing_audit/network-smoke-5b1q16b6/`:
+- **SEC Requests:** 50 requests used of 20,000 ceiling (**19,950 remaining**).
+- **Yahoo Requests:** 0 requests used of 2,000 ceiling (**2,000 remaining**).
+- **Elapsed Runtime:** 96.115 seconds used of 21,600 seconds / 6 hours ceiling (**21,503.9 seconds remaining**).
+- **Accounting Invariant:** Any future run or recovery invocation MUST inherit this cumulative accounting ledger. Starting a new output directory or updating code does NOT reset the budget ceilings.
+
+#### 4.2 Exact Missing URLs for Operational Examples
+To complete the evidence base for the two operational examples without touching the registered sample:
+1. **Northrop Grumman Second Historical Submissions Shard:**
+   - URL: `https://data.sec.gov/submissions/CIK0001133421-submissions-002.json`
+   - Purpose: Completes historical filings inventory (214 filings, 2001–2002).
+2. **Northrop Grumman Incomplete Receipt Header:**
+   - URL: `https://www.sec.gov/Archives/edgar/data/1133421/000162828025006862/0001628280-25-006862.txt`
+   - Purpose: Completes receipt pair for accession `0001628280-25-006862` (XML already cached).
+3. **Northrop Grumman 2018 Amendment Predecessor:**
+   - Target: Form 4 filed on `2018-02-15` by Kenneth L. Bedingfield (`CIK 0001539147`).
+   - URLs: Document XML and `.txt` header from `https://www.sec.gov/Archives/edgar/data/1133421/` for the matching accession.
+   - Purpose: Resolves amendment linkage for `0001225208-18-004211`.
+
+#### 4.3 Proposed Bounded Acquisition Plan & A9 Ordering
+- **Separation of Scopes:** Operational debugging of CIK 1133421 and CIK 909832 must remain strictly categorized as diagnostic examples and cannot substitute for the registered A9 sample strata.
+- **A9 Hash Ordering Caveats:** For registered sample acquisition, accessions must be requested strictly in deterministic hash order as defined in `docs/research/briefs/2026-10-21-event-timing-audit.md` §8.
+- **Bounded Request Ceiling:** The proposed next run should be bounded to at most **50 additional requests** (3 for operational completion, 47 for registered A9 sample), maintaining total consumption well below the 20,000 ceiling.
+- **Proposed Protocol Amendments (Requiring Prior Owner Approval):**
+  1. *Pagination Shard Boundary Tolerance:* Amend `src/ggTrader/lab/event_timing_sources.py:429` to allow historical shard rows to exceed `filingTo` by up to 2 business days when caused by post-5:30 PM evening filings under Rule 13(a)(2), or validate bounds using actual row min/max dates rather than unverified descriptor dates.
+  2. *Acceptance Time Normalization:* Amend `src/ggTrader/lab/event_timing_audit.py` to reconcile EDGAR SGML header `<ACCEPTANCE-DATETIME>` (recorded in Eastern Time) against submissions API `acceptanceDateTime` (which exhibits double UTC-offset application) before evaluating the 60-second conflict window.
+  3. *Amendment Required:* Under audit guidelines, no code or predicate edits may be made without a signed dated protocol amendment. Code remains untouched.
+
+## Reviewed corrections to the 2026-10-22 Flash investigation
+
+Independent cached-evidence review: `/tmp/insider-evidence-flash-investigation-review.md`.
+Its checks were offline: no new network request, DB access or test execution.
+Raw evidence remains in `data/external/event_timing_audit/network-smoke-5b1q16b6/`;
+exact URLs and hashes resolve through its `MANIFEST.json`. Saved smoke output:
+`/tmp/network-smoke-5b1q16b6.json`. Preserve these references when carrying
+temporary review notes into a future session.
+
+### Accepted observations and corrected denominators
+
+- All 50 raw response hashes match. Durable accounting records 50 successful
+  SEC attempts and zero Yahoo attempts; no further request is implied here.
+- Northrop's descriptor/page date disagreement is observed. Its cause and
+  descriptor semantics remain unknown. The page's 2,000 raw records remain
+  cached and referenced; they were not merged into the parsed inventory.
+  No source data was deleted. Costco's 2,733-record completeness is a parser
+  result, not a validated historical security identity or qualifying year.
+- The saved evidence has 24 distinct filing records: 22 XML-backed records,
+  including 21 XML/full-submission pairs and one missing full submission;
+  two further records lack both bodies. `raw_complete` is not pair completeness.
+- XML contains 50 non-derivative lots (27 Northrop, 23 Costco) and 11 derivative
+  transactions. The latter are not a reconstructed derivative event population.
+- Filing-level plan states are 17 ABSENT, 4 PRESENT-FALSE and 1 PRESENT-TRUE.
+  Lot-level states are 41 ABSENT, 8 FALSE and 1 TRUE. One ABSENT filing dates
+  from February 2023; absence must not be imputed as verified non-plan.
+- Under the existing clock, API minus header differences are +14,400 seconds
+  for 14 pairs and +18,000 seconds for seven pairs. All 21 paired comparisons
+  conflict under the frozen 60-second rule. The actual saved run quarantines
+  21 of 24 filing checks and 46 of 50 lots for timestamp conflict; three unpaired
+  checks remain date-only UNVERIFIED. It does not quarantine every filing.
+- Example: accession `0001209191-15-021737` has API time
+  `2015-03-04T04:29:20.000Z` and header `20150303182920`. Existing normalization
+  yields 23:29:20 versus 18:29:20 on March 3 in New York, a five-hour mismatch.
+  Offset patterns do not prove which source interpretation is correct.
+- The raw lots demonstrate potential upsert-key loss of six extra rows in one
+  Northrop accession and two in one Costco accession. These are hypothetical
+  storage losses under the schema, not measured DB corruption. Each of the
+  22 XML documents has one owner; this sample does not demonstrate co-owner loss.
+  Actual stored rows were never queried. Raw filing/transaction gaps span 0–13
+  calendar days, not proof of a particular regulatory or load-boundary failure.
+
+### Withdrawn conclusions and next action
+
+- Withdraw the asserted SEC batch-job/late-filing cause, a universal fixed-size
+  shard claim, any supposed proof of a double-offset API bug, and the proposed
+  two-business-day tolerance. The source-format interpretation is unresolved.
+- Withdraw the claim that free identity reconstruction is only possible after
+  2019 or that earlier mappings necessarily require paid tables. This run has
+  no reviewed historical identities; older primary filings were not exhausted.
+- A protocol-preserving implementation correction needs tests/review, not an
+  automatic protocol amendment. A frozen-predicate change still needs approval.
+- The acquisition proposal is not ready. Its three-request arithmetic omits
+  the predecessor XML/header pair: at least four successful requests are needed
+  even if the predecessor is identified, plus retries. Fourteen indexed
+  predecessor candidates exist; none is yet verified. Do not fetch all candidates
+  or reserve 47 sample requests from that faulty arithmetic.
+- Next action is a targeted primary-documentation investigation of the timestamp
+  representation and historical-page descriptors, followed by a corrected
+  acquisition proposal with cumulative accounting. No automatic timestamp shift,
+  relaxed interval check, extra download tranche, purchase or feasibility verdict
+  is authorized by the investigation. Both signal paths remain UNRESOLVED.
+
+## Primary-document search disposition after the corrected investigation
+
+Flash's follow-up report is `/tmp/insider-sec-field-semantics-primary-research.md`.
+It supplies possible document leads, not an approved protocol correction.
+
+- The report records an HTTP 403 on a SEC documentation request. Further external
+  research/collection is paused under the first-403/429 stop rule. Its narrative
+  shows subsequent research despite that stop; those results cannot be treated
+  as compliant completion of the assigned search. Do not restart collection
+  under a different cache or silently reset the stop condition.
+- The report's claimed PDS/FAQ quotations and legal citation need verification
+  against successfully retrieved source text. Its retrieval table does not show
+  a successful open of the cited PDS PDF. Search snippets, synthesis and asserted
+  absence of a schema do not establish field semantics or universal guarantees.
+  The execution timeline also does not independently substantiate the reported
+  end time. Do not adopt its precision or its claims of exhaustive source absence.
+- The suggestions to prefer header time unconditionally or treat actual array
+  dates/counts as automatically authoritative are not accepted. A2/A9 require
+  the specified receipt comparison, and A8 preserves unresolved timestamp
+  conflicts. Existing clocks, count checks, interval checks and quarantines
+  remain unchanged; no automatic shift or wider tolerance is authorized.
+- The useful established result remains the cached discrepancy itself: 21
+  paired clock comparisons conflict under the existing interpretation. The
+  investigation has not established a correct alternative representation.
+- Next work can proceed offline: preserve the exact paired raw observations
+  and source leads, and formulate a reviewable proposal if changing source
+  precedence is warranted. Any renewed external collection or frozen-protocol
+  change needs an explicit, documented decision; it is not a routine retry.
+  No verified free or paid path, qualifying window or performance conclusion
+  follows from this documentary search.

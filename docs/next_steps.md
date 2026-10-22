@@ -8,6 +8,32 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-21)
 
+**Immediate work — insider evidence validation:** Follow the
+[next-steps plan](superpowers/plans/2026-10-21-insider-evidence-next-steps.md).
+The reviewed audit passed its bounded SEC transport/cache smoke, not data
+feasibility. Both signals remain UNRESOLVED.
+
+1. Establish authoritative interpretation of the cached API/header timestamp
+   mismatch and Northrop page-date discrepancy. The corrected investigation is
+   in [the implementation handoff](research/event-timing-audit-implementation.md#reviewed-corrections-to-the-2026-10-22-flash-investigation).
+   No inferred clock shift, two-day tolerance or paid-identity requirement is
+   accepted. Northrop and Costco remain operational examples, not replacements
+   for the registered sample.
+   The follow-up documentation search reported HTTP 403: external requests are
+   paused. Continue with already-retrieved evidence only; do not reset accounting
+   or change source precedence to make the conflicts disappear.
+   The [approved source-conflict amendment](research/briefs/2026-10-22-event-timing-source-conflict-proposal.md)
+   preserves the original result and defines a uniform date-only alternative
+   for separate assessment. Owner approved offline implementation on 2026-10-22;
+   implement it with focused tests and independent review. External requests
+   remain paused.
+2. Prepare and review the next bounded acquisition with cumulative request and
+   runtime accounting. No full-universe run or return test until its inputs and
+   protocol prerequisites are met. Use Vane only for specific documentary gaps,
+   and verify the primary sources it cites.
+
+### Research context and standing decisions
+
 **Owner correction:** Follow [the standing owner instructions](../AGENTS.md#owner-instructions-2026-10-20).
 Earlier retirement recommendations and retirement-account suggestions below
 are superseded, not pending decisions. Focus on research, strategy evidence,
@@ -20,10 +46,10 @@ and paper-trading reliability; the account is taxable only.
    (best full-window Newey-West t 1.34 vs 3.40 hurdle); all fail economic A2
    since 1994 (+0.83, -0.62, 0.00, -0.56 pt/yr vs +1.0 hurdle). Phase 2 is
    cancelled; no paid data. Both classic long-history routes (momentum and factors)
-   are now closed under the two-part standard. **Proposed next research step
-   (needs separate owner authorization):** repairing public-availability timing
-   for post-earnings announcement drift (PEAD) and insider cluster buying, both
-   parked since 2026-10-20 triage. See the
+   are now closed under the two-part standard. The owner subsequently approved
+   the event-timing/data-integrity audit for post-earnings announcement drift
+   (PEAD) and insider cluster buying; its evidence work is the immediate plan
+   above. This does not authorize a new return test. See the
    [Factor screen report](research/2026-10-21-factor-screen-nogo.md) and
    [registered brief](research/briefs/2026-10-20-factor-screen.md).
 2. **Momentum re-test closed NO-GO.** Neither size passes the registered
