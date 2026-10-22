@@ -8,6 +8,13 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-22)
 
+**Active consolidated plan:** Follow the owner-requested
+[five-gap resolution plan](superpowers/plans/2026-10-22-event-evidence-resolution.md).
+Gemini Flash on agy owns the first offline evidence workbook across all five
+gaps; Codex reviews its findings and the consolidated acquisition package.
+This supersedes piecemeal scheduling below, while preserving all prior findings.
+
+
 **Immediate work — insider evidence validation:** Follow the
 [next-steps plan](superpowers/plans/2026-10-21-insider-evidence-next-steps.md).
 The reviewed audit passed its bounded SEC transport/cache smoke, not data
