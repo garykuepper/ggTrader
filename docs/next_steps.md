@@ -11,7 +11,9 @@ any) — don't let this file accumulate a backlog.
 **Active consolidated plan:** Follow the owner-requested
 [five-gap resolution plan](superpowers/plans/2026-10-22-event-evidence-resolution.md).
 Gemini Flash on agy owns the first offline evidence workbook across all five
-gaps; Codex reviews its findings and the consolidated acquisition package.
+gaps. Flash has delivered draft Markdown/JSON workbooks; they are unreviewed
+and must not supply audit predicates or request authorization. Codex is reviewing
+source references, budget claims, proposed SQL and requirement statuses.
 This supersedes piecemeal scheduling below, while preserving all prior findings.
 
 
