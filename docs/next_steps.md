@@ -13,8 +13,9 @@ any) — don't let this file accumulate a backlog.
 Gemini Flash on agy owns the first offline evidence workbook across all five
 gaps. Flash has delivered draft Markdown/JSON workbooks; they are unreviewed
 and must not supply audit predicates or request authorization. Independent
-Codex review found 14 substantive corrections; Codex is rebuilding the two
-workbooks against raw evidence before a fresh scoped review.
+Codex review found 14 substantive corrections. Codex has rebuilt the two
+workbooks against raw evidence; fresh independent review is running. The
+corrected drafts remain unaccepted until that review clears.
 This supersedes piecemeal scheduling below, while preserving all prior findings.
 
 
