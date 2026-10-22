@@ -6,31 +6,26 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Current research decision (2026-10-21)
+## Current research decision (2026-10-22)
 
 **Immediate work — insider evidence validation:** Follow the
 [next-steps plan](superpowers/plans/2026-10-21-insider-evidence-next-steps.md).
 The reviewed audit passed its bounded SEC transport/cache smoke, not data
 feasibility. Both signals remain UNRESOLVED.
 
-1. Establish authoritative interpretation of the cached API/header timestamp
-   mismatch and Northrop page-date discrepancy. The corrected investigation is
-   in [the implementation handoff](research/event-timing-audit-implementation.md#reviewed-corrections-to-the-2026-10-22-flash-investigation).
-   No inferred clock shift, two-day tolerance or paid-identity requirement is
-   accepted. Northrop and Costco remain operational examples, not replacements
-   for the registered sample.
-   The follow-up documentation search reported HTTP 403: external requests are
-   paused. Continue with already-retrieved evidence only; do not reset accounting
-   or change source precedence to make the conflicts disappear.
-   The [approved source-conflict amendment](research/briefs/2026-10-22-event-timing-source-conflict-proposal.md)
-   preserves the original result and defines a uniform date-only alternative
-   for separate assessment. Owner approved offline implementation on 2026-10-22;
-   implement it with focused tests and independent review. External requests
-   remain paused.
-2. Prepare and review the next bounded acquisition with cumulative request and
-   runtime accounting. No full-universe run or return test until its inputs and
-   protocol prerequisites are met. Use Vane only for specific documentary gaps,
-   and verify the primary sources it cites.
+1. Review the dated issuer/symbol observations and remaining identity/inventory
+   gaps in [the handoff](research/event-timing-audit-implementation.md#offline-identity-observations-and-exact-missing-support--2026-10-22).
+   The approved date-only amendment is implemented in `740781a` and cleared by
+   independent review. Cached comparison: 21 filing-date pairs comply with the
+   amended timing convention; three remain unknown. Eight cached pre-2019 XML
+   records provide event-local identity evidence, not continuous validity or
+   price-security linkage. Original timestamp conflicts remain reported.
+2. External requests remain paused after the reported HTTP 403. Prepare an
+   explicit restart/acquisition decision retaining cumulative accounting and
+   registration lineage. Three known missing documents concern two in-window
+   examples; another incomplete selected record is after the cutoff and remains
+   recorded. Northrop's inventory and other mandatory evidence gaps remain.
+   No full-universe run, return test or automatic clock/interval repair is queued.
 
 ### Research context and standing decisions
 

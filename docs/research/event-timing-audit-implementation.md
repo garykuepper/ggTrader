@@ -655,3 +655,69 @@ formats without a supported issuer section remain UNVERIFIED. Per-filing raw
 corroboration reparses issuer inventories; complete-population cost is unmeasured.
 No collection restart, qualifying real window or independent code approval is
 claimed. Both real end-to-end signal paths remain UNRESOLVED.
+
+## Date-only independent review and first cached comparison
+
+The independent review of `740781a` cleared all seven amendment items with
+zero critical/important findings. It ran 34 amendment tests successfully;
+119 other focused tests were deselected. Review artifact:
+`/tmp/insider-date-only-implementation-review.md`. The preceding implementation
+section's review-pending limitation is superseded by this scoped approval for
+offline representation use, not collection or data-feasibility approval.
+
+The parent then ran the pure `event_clock` comparison over all 24 filing records
+in `/tmp/network-smoke-5b1q16b6.json`, using the existing checked raw cache with
+an offline client. Result: `/tmp/insider-date-only-cached-comparison.json`.
+Twenty-one records have corroborated raw filing-date pairs and satisfy the
+amended timing convention; three remain UNVERIFIED because a required raw pair
+is unavailable. This is per-filing timing only, not annual or cluster coverage.
+
+All 24 amended records retained their original clock result, kept observed
+availability null and dissemination UNVERIFIED. The comparison independently
+hashed every existing cache file before/after and confirmed no change. It made
+zero external requests and zero DB queries, calculated no returns or prices,
+and did not resume or rewrite the old smoke registration. Original failures
+remain intact; identity, inventory, reconstruction and tape gates still need
+their own evidence. Both end-to-end data paths remain UNRESOLVED.
+
+## Offline identity observations and exact missing support — 2026-10-22
+
+The parent extracted issuer CIK/name/trading symbol and non-derivative security
+titles directly from the 22 cached ownership XML bodies. Each response hash and
+issuer CIK was checked; the membership comparison used the existing pure
+`sp500_members_asof()` helper and static historical membership file. Original
+cache hashes remained unchanged. No network, DB, prices or return calculations.
+Detailed observations and canonical source URLs/hashes are in
+`/tmp/insider-cached-identity-and-missing-evidence.json`.
+
+- Northrop: 11 event-local NOC/CIK 1133421 observations from 2017-05-12 through
+  2025-06-05, including three before 2019.
+- Costco: 11 event-local COST/CIK 909832 observations from 2015-03-03 through
+  2024-01-23, including five before 2019.
+- All 22 reported symbols appear in the PIT membership snapshot in force on
+  their respective filing dates. This compares metadata only, not prices.
+- These are discrete source assertions, not proof of continuous validity,
+  corporate-action/share-class continuity or linkage to the price security.
+  No validity interval or reviewed `identities` record was manufactured from
+  first/last observations. The earlier categorical claim that useful free
+  historical identity evidence is unavailable before 2019 is unsupported by
+  these cached counterexamples.
+
+The three incomplete records in the amended clock comparison have these gaps:
+
+| Accession | Filing date | Missing raw support | Cutoff treatment |
+|---|---|---|---|
+| `0001628280-25-006862` (Northrop) | 2025-02-20 | Full submission/header; XML already cached | In-window candidate, timing remains UNVERIFIED |
+| `0000909832-26-000039` (Costco) | 2026-04-01 | XML and full submission/header | In-window candidate, timing and raw transactions unknown |
+| `0001628280-26-037192` (Northrop) | 2026-05-21 | XML and full submission/header | Already after 2026-04-30; retain A9 selected failure/shortfall, cannot produce an in-window event |
+
+Three successful document requests would supply the missing bodies for the two
+in-window examples, before retries. This is a count of known missing URLs, not
+an authorization or a claim that retrieval will resolve them. Northrop's missing
+historical page, descriptor inconsistency, amendment predecessor, full interval
+identity evidence and existing detector export remain independent gaps.
+
+External requests remain paused. Before any restart, the acquisition decision
+must explicitly address the reported 403, cumulative reservations/runtime and
+registration lineage; neither a fresh cache nor the date-only amendment clears
+the stop. No strategy test or real qualifying window follows from this work.
