@@ -16,7 +16,7 @@ and its calibration window was open-ended.
 is satisfied this way:
 1. Freeze the A23 inputs once, as fetched today, to `data/external/a23_inputs/` with a SHA-256
    manifest.
-2. Run A23 at commit `5eba0a6` (the code before the study) on those frozen inputs.
+2. Run the A23 logic as of commit `53b739c` (this commit, before any study refactor) on those frozen inputs. The only change allowed is a loader that reads the frozen files in place of the live fetch, with the same columns and values.
 3. Run it again with the study's code.
 4. The two outputs must be numerically identical.
 
