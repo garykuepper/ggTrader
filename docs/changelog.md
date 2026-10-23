@@ -2,6 +2,14 @@
 
 ## 2026-10-23
 
+- **Research standard: forward-paper Part B (owner-approved).** The owner ruled out paid data
+  permanently, so the paid 2000–2020 Part B replay was unreachable. It is replaced, for future
+  candidates only, by B0 (a kill-only replay on the clean 2021–2026-04 tape) and B1 (a forward
+  shadow book of at least 18 months), plus 6 months of clean paper trading before any real money.
+  PEAD and insider cluster buying are parked. Brief:
+  `research/briefs/2026-10-23-forward-paper-standard.md`.
+
+
 - **Event-timing source decision:** added an offline hash-verified acceptance
   diagnostic reproducing 25/25 header-consistent and 9/25 API-inconsistent cached
   pairs, with eight focused tests. The proposed header-source amendment stays

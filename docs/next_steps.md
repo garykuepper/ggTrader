@@ -8,6 +8,17 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-23)
 
+**Standard updated 2026-10-23 (owner-approved):** the
+[forward-paper standard](research/briefs/2026-10-23-forward-paper-standard.md) replaces the
+paid-data Part B for future stock candidates:
+- Part A is unchanged: long free history, Holm-corrected t ≥ 3, and ≥ +1.0 pt/yr net since 1994.
+- B0 is a kill-only replay on the clean 2021–2026-04 tape: kill below −1.0 pt/yr after tax vs SPY.
+- B1 is a forward shadow book of at least 18 months: ≥ +1.0 pt/yr after tax vs SPY, and stop at
+  15% or more behind.
+- Before any real money: 6 months of clean Alpaca paper trading for mechanics.
+
+**Next:** find candidates that can be tested under Part A on free data.
+
 The [resolution plan](superpowers/plans/2026-10-23-resolve-event-audit.md)
 supersedes earlier event-audit scheduling. The
 [owner decision memo](research/2026-10-23-event-timing-audit-decision.md) assigns
