@@ -260,6 +260,23 @@ does not authorize capital.**
    represented here as an independent temporal holdout. No Part A test or
    threshold is changed to resolve that tension.
 
+### Senior-quant resolutions (for owner approval with this brief)
+
+- **R1 (conflict 1):** B0 + B1 replace the paid Part B for future candidates only.
+- **R2 (conflict 2):** the B0 kill bar stays at **−1.0 pt/yr**, deliberately. On a 5-year window
+  with about 10% tracking error, the standard error of annual excess is roughly 4.5 pt/yr, so a
+  +1.0 bar would wrongly kill about half of genuine +1 pt/yr strategies. B0 removes clear losers
+  only; the +1.0 pt/yr bar is enforced by B1.
+- **R3–R4 (conflicts 3–4):** B1 (shadow) judges performance. Before any real money, the frozen
+  rules must also run for at least **6 months of clean Alpaca paper trading**, checking mechanics
+  only (order parity, lots, operations), which is free. This may overlap B1's final 6 months and
+  starts only after the production freeze lifts. The real-money prerequisites are a B1 pass plus
+  6 clean paper months, replacing Phase 3 plus 6 paper months. The momentum §8 pilot terms are
+  otherwise unchanged.
+- **R5 (conflict 5):** one boundary everywhere: **15% or more** behind SPY triggers the stop,
+  inclusive, matching momentum §8. This is the stricter reading.
+- **Conflicts 6–8** stand as recorded; none changes a gate.
+
 ## 9. Scope and approval
 
 **Free data only. Taxable account only.** No dataset purchase, subscription,
