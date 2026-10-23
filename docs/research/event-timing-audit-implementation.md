@@ -1056,3 +1056,25 @@ representations and PEAD remain UNRESOLVED; production remains frozen.
 
 Owner delegation correction is recorded in AGENTS.md: Flash only receives simple
 bounded extraction or exact-link checks; Codex owns synthesis, plans and reviews.
+
+## 2026-10-22 bounded local export search — parent verified
+
+Flash was assigned only exact local filename/schema-string discovery. Parent
+verification independently walked `docs/`, `results/` and
+`data/external/event_timing_audit/`, without following symlinks or reading private
+locations. Both returned candidate paths and SHA-256 values matched: the human
+workbook mentions the detector schema; the machine workbook includes a nested
+contract but has a different top-level schema. Neither is a detector export.
+
+The parent checked 185 / 3,542 / 197 non-symlink regular files in those respective
+roots, including 175 / 1,951 / 15 JSON/Markdown content searches. Flash reported
+3,544 results files; the independently counted 3,542 governs this recorded scan.
+No specified mapping/detector filename match or exact top-level detector export
+was located. This is scoped discovery, not exhaustive absence, proof of clean
+tape or historical identity. Differently named mapping inputs remain possible.
+
+[Search evidence](_event_evidence_export_file_search.json) records exact scope,
+counts, hashes and limits before creating that artifact. No HTTP, DB, private
+environment reads, price analysis or detector run. The two-charter acquisition
+remains under separate independent review and has not run. The next metadata
+dependency remains a source-bound historical map and existing detector export.

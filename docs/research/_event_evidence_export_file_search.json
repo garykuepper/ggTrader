@@ -1,0 +1,47 @@
+{
+  "scope": [
+    "docs",
+    "results",
+    "data/external/event_timing_audit"
+  ],
+  "symlinks": "not followed; symlink files skipped",
+  "counts": {
+    "docs": {
+      "regular_files": 185,
+      "json_md_contents_searched": 175
+    },
+    "results": {
+      "regular_files": 3542,
+      "json_md_contents_searched": 1951
+    },
+    "data/external/event_timing_audit": {
+      "regular_files": 197,
+      "json_md_contents_searched": 15
+    }
+  },
+  "candidates": [
+    {
+      "path": "docs/research/2026-10-22-event-evidence-resolution-workbook.md",
+      "sha256": "72a81f9c77e0333ed26355e468b2415af327dc24d6309bb6441a1fa62fa6bb0c",
+      "filename_match": false,
+      "literal_match": true
+    },
+    {
+      "path": "docs/research/_event_evidence_resolution_workbook.json",
+      "sha256": "6f0bc21ffa53182c7fb2501cec3e8d7dad1e385fbd22fdde0c4789137cc352d9",
+      "filename_match": false,
+      "literal_match": true
+    }
+  ],
+  "exact_top_level_schema_exports": [],
+  "network_requests": 0,
+  "db_queries": 0,
+  "conclusion": "No matching export located within searched roots; no claim about other locations or detector cleanliness.",
+  "verification_notes": [
+    "Both returned candidate paths and SHA-256 values independently matched Flash output.",
+    "Parent counted 3,542 non-symlink regular files under results, versus Flash reported 3,544; parent count governs this recorded scan.",
+    "Candidate search is by specified basenames or literal schema string in JSON/Markdown; differently named mapping files without these markers are not ruled out.",
+    "No top-level matching detector export was found among parsed JSON files in these roots.",
+    "This records the scan before this result artifact/handoff update was created."
+  ]
+}

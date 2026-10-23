@@ -88,10 +88,12 @@ and actual `ReadOnlyDb`/`check_tape_integrity_batch()` contracts.
 **Outputs:** A source/location/coverage manifest, executable read-only metadata
 handoff if inputs exist, or named unavailable inputs.
 
-- [ ] Search documented local research/export locations for a historical security
+- [x] Search documented local research/export locations for a historical security
   map and existing detector export. Record searched paths, hashes, supported
   periods and missing fields. Do not claim filesystem-wide absence from filename
   searches. No database query, detector rerun or private-vault search in this step.
+  Initial bounded scan is recorded in `_event_evidence_export_file_search.json`;
+  no qualifying export was located in the three specified roots.
 - [ ] Validate map issuer/class/vendor identity and explicit validity intervals;
   do not create intervals by interpolating annual reports or today's ticker map.
 - [ ] Validate existing flags-only export and its referenced source bytes,
