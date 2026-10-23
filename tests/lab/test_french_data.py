@@ -70,6 +70,17 @@ def test_parse_value_weighted_section_only() -> None:
     pd.testing.assert_frame_equal(result, expected)
 
 
+def test_parse_rejects_headerless_section_instead_of_reading_next() -> None:
+    """A VW title without its header must not fall through to the EW table."""
+    broken = SIZE_MOM_TEXT.replace(
+        ",SMALL LoPRIOR,ME1 PRIOR2,SMALL HiPRIOR,BIG LoPRIOR,ME2 PRIOR2,BIG HiPRIOR\n192701,1",
+        "192701,1",
+        1,
+    )
+    with pytest.raises(ValueError, match="header missing directly after"):
+        parse_french_monthly(broken, VW_SECTION)
+
+
 def test_parse_marks_missing_codes_nan() -> None:
     """Missing sentinels must not turn into very large negative returns."""
     result = parse_french_monthly(" , winner , loser , valid \n200002,-99.99,-999,-1.00\n", None)

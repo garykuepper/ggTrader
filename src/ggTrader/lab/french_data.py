@@ -125,6 +125,11 @@ def parse_french_monthly(text: str, section_title: str | None) -> pd.DataFrame:
         if start is None:
             raise ValueError(f"French section not found: {section_title!r}")
         lines = lines[start + 1 :]
+        # The header must directly follow the title; searching further would
+        # silently read the next section (e.g. equal- for value-weighted).
+        first = next((i for i, line in enumerate(lines) if line.strip()), None)
+        if first is None or not lines[first].lstrip().startswith(","):
+            raise ValueError(f"French table header missing directly after {section_title!r}")
     header = next((i for i, line in enumerate(lines) if line.lstrip().startswith(",")), None)
     if header is None:
         raise ValueError(f"French monthly table not found after {section_title!r}")
