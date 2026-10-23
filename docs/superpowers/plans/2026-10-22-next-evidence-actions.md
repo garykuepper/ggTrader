@@ -56,22 +56,22 @@ and current manifest/checkpoint/registration/claim hashes.
 **Outputs:** A bounded acquisition registration/results artifact and a source-bound
 charter comparison appended to the durable handoff.
 
-- [ ] Freeze exactly these two uncached canonical targets with their existing
+- [x] Freeze exactly these two uncached canonical targets with their existing
   annual-report href provenance:
   - `https://www.sec.gov/Archives/edgar/data/909832/000090983215000003/costex3110q21515.htm`
   - `https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/costex3110k082822.htm`
-- [ ] Adapt the already reviewed bounded runner; bind input/spec/code hashes, a
+- [x] Adapt the already reviewed bounded runner; bind input/spec/code hashes, a
   new exclusive claim and the inherited checkpoint. Verify each raw manifest
   entry's own file/hash, including earlier responses to retried URLs. Dry run
   must issue zero HTTP calls and leave the parent unchanged.
-- [ ] Obtain one fresh scoped Codex acquisition review. Resolve authority/stop
+- [x] Obtain one fresh scoped Codex acquisition review. Resolve authority/stop
   clearance before HTTP. If a new owner decision is required, present the exact
   two-URL package, not a general permission request.
-- [ ] Execute only the cleared package: 2 nominal / 8 maximum new attempts;
+- [x] Execute only the cleared package: 2 nominal / 8 maximum new attempts;
   projected cumulative count 81 nominal / 87 maximum. Runtime is not estimated;
   retain the existing hard deadline. Verify hashes, accounting prefix, failures,
   actual outcomes and unchanged parent bytes.
-- [ ] Compare operative common-stock/par-value terms, amendment history and
+- [x] Compare operative common-stock/par-value terms, amendment history and
   explicit effective dates. Explain precisely what supports or fails to explain
   $.005 → $.01 → $.005. Do not infer a conversion, typo or continuous identity.
 - [ ] If the comparison needs the named 2020 charter or Exhibit 4.8 descriptions,
@@ -136,3 +136,10 @@ inputs, or a specific unavailable export/source blocks it. No inferred clean fla
 **Completion:** Two concrete evidence tracks have checked outcomes and a bounded
 next action. Both signals stay UNRESOLVED unless their complete registered
 requirements actually pass; plan completion is not strategy validation.
+
+**Task 1 execution record:** Two HTTP 200 responses, 81 cumulative SEC attempts,
+105.01228246744722 seconds, all 81 hashes verified. Comparison artifact:
+`docs/research/_cost_charter_comparison_results.json`. The 2022 exhibit contains
+a Section 2.1 amendment adopted 1999/executed 2001, effective on state filing;
+actual filing date is not verified. Documentary review remains pending. No
+continuous-identity PASS or additional request follows.

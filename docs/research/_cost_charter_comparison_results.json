@@ -1,0 +1,78 @@
+{
+  "scope": "Two original SEC exhibit bodies; documentary comparison, not legal opinion or full identity qualification",
+  "cache": "data/external/event_timing_audit/cost-charters-h1kbl362",
+  "acquisition": {
+    "new_sec_attempts": 2,
+    "cumulative_sec_attempts": 81,
+    "yahoo_attempts": 0,
+    "elapsed_seconds": 105.01228246744722,
+    "all_http_200": true,
+    "all_raw_hashes_verified": 81,
+    "parent_unchanged": true,
+    "accounting_prefix_verified": 79,
+    "stop": null,
+    "authorization_consumed": true
+  },
+  "charter_observations": [
+    {
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/costex3110k082822.htm",
+        "cache_file": "sec_a0de122a089f8dd58c458eddc3492570907034c071bcc432910f063b9397ce19_47043bf75e8a21f987fe5b223d0365219eb82023976357a99a3a83049dbd32bd.raw",
+        "sha256": "47043bf75e8a21f987fe5b223d0365219eb82023976357a99a3a83049dbd32bd",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-23T00:56:54.523024+00:00"
+      },
+      "base_article_ii_2_1": {
+        "locator": "First ARTICLE II / 2.1 Classes / common and preferred stock",
+        "excerpt": "2.1 Classes . The total number of shares of all classes of stock which this corporation shall have authority to issue is one billion (1,000,000,000), consisting of: (a)\u00a0\u00a0\u00a0\u00a0Nine hundred million (900,000,000) shares of common stock, the par value of each of which is $0.01 (the \u201cCommon Stock\u201d). (b)\u00a0\u00a0\u00a0\u00a0One hundred million (100,000,000) shares of preferred stock, the par value of each of which is $0.01 (the \u201cPreferred Stock\u201d). ",
+        "reported_common_par": "0.01"
+      },
+      "base_execution_date_text": "27th day of August, 1999",
+      "exhibit_year": 2022,
+      "effective_legal_date": null,
+      "article_ii_amendment": {
+        "locator": "Appended ARTICLES OF AMENDMENT / SECOND through execution block before next amendment",
+        "excerpt": "SECOND: Section 2.1 of Article 2 of the Articles of Incorporation is amended to read in its entirety as follows: 2.1 Classes . The total number of shares of all classes of stock which this corporation shall have authority to issue is one billion (1,000,000,000), consisting of: (a)\u00a0\u00a0\u00a0\u00a0Nine hundred million (900,000,000) shares of common stock, the par value of each of which is $0.005 (the \u201cCommon Stock\u201d). (b)\u00a0\u00a0\u00a0\u00a0One hundred million (100,000,000) shares of preferred stock, the par value of each of which is $0.005 (the \u201cPreferred Stock\u201d). THIRD: The foregoing amendment to the Articles of Incorporation was adopted on December 7, 1999 by the Board of Directors of the Corporation. No shareholder action was required to adopt the foregoing amendment to the Articles of Incorporation pursuant to RCW 23B.10.020(1) and 23B.10.020(4). FOURTH: The foregoing amendment is effective upon filing of these Articles of Amendment with the Washington Secretary of State. EXECUTED this 14th day of November, 2001. COSTCO WHOLESALE CORPORATION /s/ Richard J. Olin By: Richard J. Olin Title: VP/Asst. Secretary ",
+        "common_and_preferred_par": "0.005",
+        "adoption_date": "1999-12-07",
+        "execution_date": "2001-11-14",
+        "effective_condition": "Upon filing with Washington Secretary of State",
+        "state_filing_date_verified": false
+      }
+    },
+    {
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983215000003/costex3110q21515.htm",
+        "cache_file": "sec_bbb2186ce92a1724c9b46c5d8fa64e0e1f4d5e433f35764240705b0b9ebda765_d9f3355cb5dba2899e6d8ef24e2ee683446498820da8884b4cbd307d009c7387.raw",
+        "sha256": "d9f3355cb5dba2899e6d8ef24e2ee683446498820da8884b4cbd307d009c7387",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-23T00:56:54.965669+00:00"
+      },
+      "base_article_ii_2_1": {
+        "locator": "First ARTICLE II / 2.1 Classes / common and preferred stock",
+        "excerpt": "2.1 Classes . The total number of shares of all classes of stock which this corporation shall have authority to issue is one billion (1,000,000,000), consisting of: (a) Nine hundred million (900,000,000) shares of common stock, the par value of each of which is $0.01 (the \u201cCommon Stock\u201d). (b) One hundred million (100,000,000) shares of preferred stock, the par value of each of which is $0.01 (the \u201cPreferred Stock\u201d). ",
+        "reported_common_par": "0.01"
+      },
+      "base_execution_date_text": "27th day of August, 1999",
+      "exhibit_year": 2015,
+      "effective_legal_date": null,
+      "article_ii_amendment": {
+        "locator": "Entire retained exhibit text; base restatement plus 2015 Article VIII amendment",
+        "observed": "No appended amendment changing Section 2.1 to $0.005 located in this exhibit",
+        "absence_scope": "This response only, not all company/state filings"
+      }
+    }
+  ],
+  "supported_disposition": "The 2022 exhibit includes an older Article II amendment not present in the 2015 exhibit body. Annual cover/balance-sheet par-value changes alone cannot establish a 2017 or 2022 security conversion.",
+  "not_established": [
+    "Actual state filing/effective date of the amendment",
+    "An exhaustive list of intervening amendments or uninterrupted historical legal-class continuity",
+    "The cause of the annual-report par-value differences",
+    "Historical ticker/vendor-price security linkage or A6/A7 qualification"
+  ],
+  "next_dependency": "Seek dated state-filing evidence or already-existing source-bound security mapping if exact effective chronology is required; do not auto-fetch conditional exhibits or invent legal dates.",
+  "status": "UNRESOLVED",
+  "independent_documentary_review": "pending"
+}

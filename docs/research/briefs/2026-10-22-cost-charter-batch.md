@@ -37,3 +37,19 @@ effective/amendment dates. Identify explicit legal support or exact remaining
 unknowns; never infer continuity from repeated tickers or a charter's publication
 date. Conditional 2020/Exhibit 4.8 leads are not included in these two requests.
 Both signal paths and the final feasibility audit remain UNRESOLVED.
+
+## Execution complete
+
+Independent Codex review cleared the runner (SHA-256
+`29c76fb49125e4e110b1c4f386967a3b0fde227815c8d73d24907714b9501c33`)
+and the parent verified that hash before execution. Both requests returned
+HTTP 200 in two attempts without retry or new 403/429. Cumulative collection
+state is 81 SEC, zero Yahoo and 105.01228246744722 seconds. All 81 raw hashes,
+the unchanged first 79 reservations and unchanged parent files were verified.
+Child cache: `data/external/event_timing_audit/cost-charters-h1kbl362/`.
+The persistent claim remains; this two-request authorization is consumed.
+
+[Comparison evidence](../_cost_charter_comparison_results.json) records the
+base restatement and appended Article II amendment separately. It supplies no
+unverified legal effective date or continuous security identity. Fresh offline
+documentary review of the comparison is pending. No extra exhibits are queued.

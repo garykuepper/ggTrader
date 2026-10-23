@@ -1078,3 +1078,36 @@ counts, hashes and limits before creating that artifact. No HTTP, DB, private
 environment reads, price analysis or detector run. The two-charter acquisition
 remains under separate independent review and has not run. The next metadata
 dependency remains a source-bound historical map and existing detector export.
+
+## 2026-10-22 two-charter execution and comparison
+
+Independent acquisition review cleared the exact two-URL slice. The reviewed
+runner hash matched immediately before execution. Both SEC responses returned
+HTTP 200 without retries, increasing cumulative collection accounting from 79 to
+**81 SEC attempts**, with zero Yahoo and **105.01228246744722 seconds**. All 81
+raw response hashes were verified individually; parent files and the accounting
+prefix remained unchanged. The child cache is
+`data/external/event_timing_audit/cost-charters-h1kbl362/`. This bounded claim is
+consumed, not reset. [Exact excerpts and references](_cost_charter_comparison_results.json)
+retain documentary evidence without modifying the previously accepted workbook.
+
+Both exhibits reproduce the base Article II Section 2.1 common/preferred par
+value of $0.01 and the base execution text dated August 27, 1999. The 2022 exhibit
+also includes an appended amendment replacing that section with $0.005 for both
+classes, adopted December 7, 1999 and executed November 14, 2001. It expressly
+conditions effectiveness on filing with the Washington Secretary of State;
+the actual state-filing date has not been verified. That appended Section 2.1
+amendment was not located in the acquired 2015 exhibit body, which includes the
+2015 Article VIII amendment instead. This absence is limited to that document.
+
+The source set therefore contains an older amendment that prevents treating the
+annual 2017/2022 par-value changes as proof of new security conversions in those
+years. It does not establish why the annual reports differ, rule out other
+amendments, prove legal effective chronology or justify continuous validity.
+Do not substitute exhibit publication, adoption or execution for the stated
+filing condition. Price-vendor security linkage remains a separate missing input.
+
+Fresh scoped documentary review is pending. No more documents are queued; local
+export search found no qualifying detector export in its three searched roots.
+No database, price/return analysis, new detector, runtime code or production work
+occurred. Both representations and PEAD remain UNRESOLVED.
