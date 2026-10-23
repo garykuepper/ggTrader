@@ -1,0 +1,837 @@
+{
+  "schema": "event-acceptance-diagnostic-v1",
+  "scope": "Cached Form 4/4-A pairs only; no source-rule change or annual qualification",
+  "cache_directory": "insider-predecessor-bnz1mn22",
+  "manifest_sha256": "07d63f70d44280066c71aa099b27f8309cbf272c9dc965eba988b7dbbe39c83e",
+  "pair_count": 25,
+  "header_consistent_count": 25,
+  "api_inconsistent_count": 9,
+  "twice_offset_pattern_count": 25,
+  "pairs": [
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001225208-17-005319",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520817005319/0001225208-17-005319.txt",
+        "cache_file": "sec_76f793899c864722e5efffac688bcc2d6ff57fc1f432409c69bb7531323fd063_6e69fb3e6315de0015748d333b8e4b24a5aa0761b1fa38f53de1e172267141be.raw",
+        "sha256": "6e69fb3e6315de0015748d333b8e4b24a5aa0761b1fa38f53de1e172267141be"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421-submissions-001.json",
+          "cache_file": "sec_b341aa5e3215d9ddbb06ea5b4565dd601780e28a8f0cd25cff46ed42ba315cae_f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb.raw",
+          "sha256": "f1931d3c91bc70f0c411faaa6c3cf058e9bb493e7b7387e9422e8e586f3903cb"
+        }
+      ],
+      "header_acceptance": "2017-03-02T16:23:24",
+      "api_acceptance": "2017-03-03T02:23:24.000Z",
+      "header_filing_date": "2017-03-02",
+      "api_filing_date": "2017-03-02",
+      "header_new_york": "2017-03-02T16:23:24-05:00",
+      "api_read_as_utc_in_new_york": "2017-03-02T21:23:24-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001225208-17-009570",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520817009570/0001225208-17-009570.txt",
+        "cache_file": "sec_85c6c4ad4ea0a17d8fc6e7cebd4ee47da28ca33194693183dc4bb54ac0008de9_14d88619e1881caf48f22befd8801a2d11b40d24ea5e9c4ad58d9acc2bf6777e.raw",
+        "sha256": "14d88619e1881caf48f22befd8801a2d11b40d24ea5e9c4ad58d9acc2bf6777e"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2017-05-12T15:22:35",
+      "api_acceptance": "2017-05-12T23:22:35.000Z",
+      "header_filing_date": "2017-05-12",
+      "api_filing_date": "2017-05-12",
+      "header_new_york": "2017-05-12T15:22:35-04:00",
+      "api_read_as_utc_in_new_york": "2017-05-12T19:22:35-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001225208-18-003052",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520818003052/0001225208-18-003052.txt",
+        "cache_file": "sec_0ef932560134ede1d606377a0ddc1ed1b8efe09ec34c44b7be7900f9762232cc_c1c5585857ed3feb59663abc1c4476a06c5c410e3d1002b9e7655af354c36d40.raw",
+        "sha256": "c1c5585857ed3feb59663abc1c4476a06c5c410e3d1002b9e7655af354c36d40"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2018-02-15T17:33:37",
+      "api_acceptance": "2018-02-16T03:33:37.000Z",
+      "header_filing_date": "2018-02-15",
+      "api_filing_date": "2018-02-15",
+      "header_new_york": "2018-02-15T17:33:37-05:00",
+      "api_read_as_utc_in_new_york": "2018-02-15T22:33:37-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": false,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": false
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001225208-18-004211",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520818004211/0001225208-18-004211.txt",
+        "cache_file": "sec_e2cd8182197047e068709fa77a4d0a06082b545c965c9cdbf72b7379dd25e0b1_0415762b37a539e6e2cc6b8f7463abcb56d5bc15ac2b50a2273418860dff7c04.raw",
+        "sha256": "0415762b37a539e6e2cc6b8f7463abcb56d5bc15ac2b50a2273418860dff7c04"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2018-02-26T17:48:55",
+      "api_acceptance": "2018-02-27T03:48:55.000Z",
+      "header_filing_date": "2018-02-26",
+      "api_filing_date": "2018-02-26",
+      "header_new_york": "2018-02-26T17:48:55-05:00",
+      "api_read_as_utc_in_new_york": "2018-02-26T22:48:55-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": false,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": false
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001225208-18-012263",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520818012263/0001225208-18-012263.txt",
+        "cache_file": "sec_c073a4873febae72e30612b2e518616b93e065065bbc2585211c8576c670b75b_4916e44c4aa288c2c4e9f4b105acfff726652e271cf2869876eebfa38a25ddb9.raw",
+        "sha256": "4916e44c4aa288c2c4e9f4b105acfff726652e271cf2869876eebfa38a25ddb9"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2018-08-03T16:27:07",
+      "api_acceptance": "2018-08-04T00:27:07.000Z",
+      "header_filing_date": "2018-08-03",
+      "api_filing_date": "2018-08-03",
+      "header_new_york": "2018-08-03T16:27:07-04:00",
+      "api_read_as_utc_in_new_york": "2018-08-03T20:27:07-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001225208-20-002414",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520820002414/0001225208-20-002414.txt",
+        "cache_file": "sec_7fd9a866fc6fa532395e43a6a84e3e193cc2cd125f92b747c8571e7ab403d8ec_66dd0fc28929b5b5b8c68a0089e853c0c4d1b6afec3fd0b98a78fb5f599dc072.raw",
+        "sha256": "66dd0fc28929b5b5b8c68a0089e853c0c4d1b6afec3fd0b98a78fb5f599dc072"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2020-02-14T19:25:27",
+      "api_acceptance": "2020-02-15T05:25:27.000Z",
+      "header_filing_date": "2020-02-14",
+      "api_filing_date": "2020-02-14",
+      "header_new_york": "2020-02-14T19:25:27-05:00",
+      "api_read_as_utc_in_new_york": "2020-02-15T00:25:27-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": false,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": false,
+      "header_consistent": true,
+      "api_consistent": false
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001628280-21-010865",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000162828021010865/0001628280-21-010865.txt",
+        "cache_file": "sec_7d8a0b0e03fc4164a1424c041bd755cfb19f9fb36bd9c458084b225f35e848b4_681229855c439ee2836f049a6885e8b11421857070255570633ab4a50dfa0353.raw",
+        "sha256": "681229855c439ee2836f049a6885e8b11421857070255570633ab4a50dfa0353"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2021-05-21T13:53:14",
+      "api_acceptance": "2021-05-21T21:53:14.000Z",
+      "header_filing_date": "2021-05-21",
+      "api_filing_date": "2021-05-21",
+      "header_new_york": "2021-05-21T13:53:14-04:00",
+      "api_read_as_utc_in_new_york": "2021-05-21T17:53:14-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001628280-22-014934",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000162828022014934/0001628280-22-014934.txt",
+        "cache_file": "sec_c0bce8756284be259689147800690604d66e1ed78d39f6461d94f7ea8d1da9d0_12e7d9f2a2a70e4592ca99d579e94842c4b38189e3d7ab6681d4a062be523c55.raw",
+        "sha256": "12e7d9f2a2a70e4592ca99d579e94842c4b38189e3d7ab6681d4a062be523c55"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2022-05-19T17:31:40",
+      "api_acceptance": "2022-05-20T01:31:40.000Z",
+      "header_filing_date": "2022-05-19",
+      "api_filing_date": "2022-05-19",
+      "header_new_york": "2022-05-19T17:31:40-04:00",
+      "api_read_as_utc_in_new_york": "2022-05-19T21:31:40-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001628280-22-028934",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000162828022028934/0001628280-22-028934.txt",
+        "cache_file": "sec_e2eb2eb2c49e369a9ddbcbc7261873473fe97f4cd1dccb8e8ecdec11d96f3222_3aec9aaabd62aecee7981bbfe2cdde00c92a273db5086dff0424b58452dd896d.raw",
+        "sha256": "3aec9aaabd62aecee7981bbfe2cdde00c92a273db5086dff0424b58452dd896d"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2022-11-08T16:21:18",
+      "api_acceptance": "2022-11-09T02:21:18.000Z",
+      "header_filing_date": "2022-11-08",
+      "api_filing_date": "2022-11-08",
+      "header_new_york": "2022-11-08T16:21:18-05:00",
+      "api_read_as_utc_in_new_york": "2022-11-08T21:21:18-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001628280-23-004318",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000162828023004318/0001628280-23-004318.txt",
+        "cache_file": "sec_ff5f7e25e0065bd2c20cd27574e9e2d0c09fa2e4194638a699055ee1f70b0494_7d5e1839c39e6d760474cda0cbca4642292feae7c5a54f529296a3054a4fac08.raw",
+        "sha256": "7d5e1839c39e6d760474cda0cbca4642292feae7c5a54f529296a3054a4fac08"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2023-02-21T16:30:51",
+      "api_acceptance": "2023-02-22T02:30:51.000Z",
+      "header_filing_date": "2023-02-21",
+      "api_filing_date": "2023-02-21",
+      "header_new_york": "2023-02-21T16:30:51-05:00",
+      "api_read_as_utc_in_new_york": "2023-02-21T21:30:51-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001628280-24-034018",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000162828024034018/0001628280-24-034018.txt",
+        "cache_file": "sec_695ea771dfa130370df60352c1de3c2d8968c8ffbc3bf6cb926556592ed784a7_28e7a2d9439a84055588497a2697d58db033ab066df5ffd43a6fff298fbfb3ba.raw",
+        "sha256": "28e7a2d9439a84055588497a2697d58db033ab066df5ffd43a6fff298fbfb3ba"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2024-08-01T13:11:47",
+      "api_acceptance": "2024-08-01T21:11:47.000Z",
+      "header_filing_date": "2024-08-01",
+      "api_filing_date": "2024-08-01",
+      "header_new_york": "2024-08-01T13:11:47-04:00",
+      "api_read_as_utc_in_new_york": "2024-08-01T17:11:47-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001628280-25-006862",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000162828025006862/0001628280-25-006862.txt",
+        "cache_file": "sec_dced5809a141aaac56389f2f44bb95e8cc197fee4abbaeaa9f7ecb726c9f5bd1_88d558a49885e10e73e54e5c5749448f28148eba63c6b0f38ab6974fe346469b.raw",
+        "sha256": "88d558a49885e10e73e54e5c5749448f28148eba63c6b0f38ab6974fe346469b"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2025-02-20T17:17:54",
+      "api_acceptance": "2025-02-21T03:17:54.000Z",
+      "header_filing_date": "2025-02-20",
+      "api_filing_date": "2025-02-20",
+      "header_new_york": "2025-02-20T17:17:54-05:00",
+      "api_read_as_utc_in_new_york": "2025-02-20T22:17:54-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": false,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": false
+    },
+    {
+      "issuer_cik": "1133421",
+      "accession": "0001628280-25-029775",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000162828025029775/0001628280-25-029775.txt",
+        "cache_file": "sec_661dd4d764b8b8375b1eaf1346f372306f235ca4ccfba7e6f2aba8893a9043dc_52ff79585f28522862f660bb77a62c9ade3b1d9e55aeb9b101ea2e6846b7c201.raw",
+        "sha256": "52ff79585f28522862f660bb77a62c9ade3b1d9e55aeb9b101ea2e6846b7c201"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0001133421.json",
+          "cache_file": "sec_42c568105b92c54a612abdea6b14d2dd196d9789c9b9de98a426430eec19f7c3_5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a.raw",
+          "sha256": "5ffdb48ff1025a815a3fefc28635e7eaef3ec24ffaf327055bbef59ff698ed2a"
+        }
+      ],
+      "header_acceptance": "2025-06-05T18:17:10",
+      "api_acceptance": "2025-06-06T02:17:10.000Z",
+      "header_filing_date": "2025-06-05",
+      "api_filing_date": "2025-06-05",
+      "header_new_york": "2025-06-05T18:17:10-04:00",
+      "api_read_as_utc_in_new_york": "2025-06-05T22:17:10-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": false,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": false
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0000909832-26-000039",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983226000039/0000909832-26-000039.txt",
+        "cache_file": "sec_eaea3fdc388f48024ff93debe30ad014f04098aa16ca87dacf85ffc58ef341b9_86323d2eaa6cc68cc5720bb9f146f8def375b76721f81659a39de5112ee57e9e.raw",
+        "sha256": "86323d2eaa6cc68cc5720bb9f146f8def375b76721f81659a39de5112ee57e9e"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2026-04-01T18:13:26",
+      "api_acceptance": "2026-04-02T02:13:26.000Z",
+      "header_filing_date": "2026-04-01",
+      "api_filing_date": "2026-04-01",
+      "header_new_york": "2026-04-01T18:13:26-04:00",
+      "api_read_as_utc_in_new_york": "2026-04-01T22:13:26-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": false,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": false
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-15-021737",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919115021737/0001209191-15-021737.txt",
+        "cache_file": "sec_46ddbe55de10fe0673e98fc8a75606bf458c865b6d2dacdc52ee050cd6299920_6ca2ea6eff59b5ea6b394f9f3477910f1923745779fb2e9a380a5cdbf2be605d.raw",
+        "sha256": "6ca2ea6eff59b5ea6b394f9f3477910f1923745779fb2e9a380a5cdbf2be605d"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650"
+        }
+      ],
+      "header_acceptance": "2015-03-03T18:29:20",
+      "api_acceptance": "2015-03-04T04:29:20.000Z",
+      "header_filing_date": "2015-03-03",
+      "api_filing_date": "2015-03-03",
+      "header_new_york": "2015-03-03T18:29:20-05:00",
+      "api_read_as_utc_in_new_york": "2015-03-03T23:29:20-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": false,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": false
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-15-076803",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919115076803/0001209191-15-076803.txt",
+        "cache_file": "sec_58df193ef77f0deb6a0f1bfcba84846ce80548f515b3de116646878698a47471_f30b306e6b6d021caeb148f4786c76248250fe8fcfbf93d7b13a10ff3c947d78.raw",
+        "sha256": "f30b306e6b6d021caeb148f4786c76248250fe8fcfbf93d7b13a10ff3c947d78"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832-submissions-001.json",
+          "cache_file": "sec_aa4939727bc073fe51b2393263c8917c312a38c889decafbec004a8779ceddcf_a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650.raw",
+          "sha256": "a9bb23d82576d50530a216bb5b22d46daeba57b8d61520435084b7b05e1a8650"
+        }
+      ],
+      "header_acceptance": "2015-10-26T18:51:11",
+      "api_acceptance": "2015-10-27T02:51:11.000Z",
+      "header_filing_date": "2015-10-26",
+      "api_filing_date": "2015-10-26",
+      "header_new_york": "2015-10-26T18:51:11-04:00",
+      "api_read_as_utc_in_new_york": "2015-10-26T22:51:11-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": false,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": false
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-16-146701",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919116146701/0001209191-16-146701.txt",
+        "cache_file": "sec_42ffe16905e145087a5a980146335e9e317074212b6214f0bb77a68e0955d799_cbcc89feb56d51a6411855833425296000cab52371075bd09294a9488e749406.raw",
+        "sha256": "cbcc89feb56d51a6411855833425296000cab52371075bd09294a9488e749406"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2016-10-24T14:50:07",
+      "api_acceptance": "2016-10-24T22:50:07.000Z",
+      "header_filing_date": "2016-10-24",
+      "api_filing_date": "2016-10-24",
+      "header_new_york": "2016-10-24T14:50:07-04:00",
+      "api_read_as_utc_in_new_york": "2016-10-24T18:50:07-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-16-146844",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919116146844/0001209191-16-146844.txt",
+        "cache_file": "sec_995ec8d7a2261a13a3818599ed18cd25d437f54ef42a9128cd0a223adca8bc71_c12618dbd33fd24cd944a57cda29ba64536c67f0e88d4f90a3ffebb5cc83792b.raw",
+        "sha256": "c12618dbd33fd24cd944a57cda29ba64536c67f0e88d4f90a3ffebb5cc83792b"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2016-10-25T15:17:28",
+      "api_acceptance": "2016-10-25T23:17:28.000Z",
+      "header_filing_date": "2016-10-25",
+      "api_filing_date": "2016-10-25",
+      "header_new_york": "2016-10-25T15:17:28-04:00",
+      "api_read_as_utc_in_new_york": "2016-10-25T19:17:28-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-17-057866",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919117057866/0001209191-17-057866.txt",
+        "cache_file": "sec_c254929149462ecc2b2fa5cc1f54e1c3f666d98908c8957375f51e5075e54b9d_76fdd9f796f1b0cab7cc67efa0b2168929ae069089f757774aa0a79219ff4175.raw",
+        "sha256": "76fdd9f796f1b0cab7cc67efa0b2168929ae069089f757774aa0a79219ff4175"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2017-10-24T17:32:01",
+      "api_acceptance": "2017-10-25T01:32:01.000Z",
+      "header_filing_date": "2017-10-24",
+      "api_filing_date": "2017-10-24",
+      "header_new_york": "2017-10-24T17:32:01-04:00",
+      "api_read_as_utc_in_new_york": "2017-10-24T21:32:01-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-19-019086",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919119019086/0001209191-19-019086.txt",
+        "cache_file": "sec_365328ee5049940cc00e3a3966460e7f7ff8f8f62d48adca892cd20d4b171501_bccb5212bbffef3f7eca44caa2d03e60538557287a9f9ff37c78655f62bb02e6.raw",
+        "sha256": "bccb5212bbffef3f7eca44caa2d03e60538557287a9f9ff37c78655f62bb02e6"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2019-03-13T14:55:21",
+      "api_acceptance": "2019-03-13T22:55:21.000Z",
+      "header_filing_date": "2019-03-13",
+      "api_filing_date": "2019-03-13",
+      "header_new_york": "2019-03-13T14:55:21-04:00",
+      "api_read_as_utc_in_new_york": "2019-03-13T18:55:21-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-19-053882",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919119053882/0001209191-19-053882.txt",
+        "cache_file": "sec_2bee36b45fac53eacbcf1e43a4ea00e23cd1cc9355e583838d179ec119709b37_fa06cbae2950170049b72464de20d0119c41e47c88c95f7584073934671510e8.raw",
+        "sha256": "fa06cbae2950170049b72464de20d0119c41e47c88c95f7584073934671510e8"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2019-10-24T15:46:19",
+      "api_acceptance": "2019-10-24T23:46:19.000Z",
+      "header_filing_date": "2019-10-24",
+      "api_filing_date": "2019-10-24",
+      "header_new_york": "2019-10-24T15:46:19-04:00",
+      "api_read_as_utc_in_new_york": "2019-10-24T19:46:19-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-20-062897",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919120062897/0001209191-20-062897.txt",
+        "cache_file": "sec_af39f85b8b59f90abb3c27d0fbf8be7c1f675ee405ece3c49b97ad999d102894_62ae2e37f9caf858f99ffa336205122762e9b0656fd09f2b901c70565ea3146d.raw",
+        "sha256": "62ae2e37f9caf858f99ffa336205122762e9b0656fd09f2b901c70565ea3146d"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2020-12-11T13:16:17",
+      "api_acceptance": "2020-12-11T23:16:17.000Z",
+      "header_filing_date": "2020-12-11",
+      "api_filing_date": "2020-12-11",
+      "header_new_york": "2020-12-11T13:16:17-05:00",
+      "api_read_as_utc_in_new_york": "2020-12-11T18:16:17-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-21-061606",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919121061606/0001209191-21-061606.txt",
+        "cache_file": "sec_20576ff79701530243e9841c1c891641e2d013d173f1cbabad4d0a383afe82da_7e6b231eddc22acfba5a783c239efb480e4d78a316a3e3eded6c01f30e99556c.raw",
+        "sha256": "7e6b231eddc22acfba5a783c239efb480e4d78a316a3e3eded6c01f30e99556c"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2021-10-26T16:04:54",
+      "api_acceptance": "2021-10-27T00:04:54.000Z",
+      "header_filing_date": "2021-10-26",
+      "api_filing_date": "2021-10-26",
+      "header_new_york": "2021-10-26T16:04:54-04:00",
+      "api_read_as_utc_in_new_york": "2021-10-26T20:04:54-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-23-052699",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919123052699/0001209191-23-052699.txt",
+        "cache_file": "sec_1965a275ebcec45711892b2632cc7e5192d53daea76a72a33e2357e72a76f2fc_9e0684fda863f32f082608a7faa54393c112fd48367661995099ae2c2e630c94.raw",
+        "sha256": "9e0684fda863f32f082608a7faa54393c112fd48367661995099ae2c2e630c94"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2023-10-12T16:26:33",
+      "api_acceptance": "2023-10-13T00:26:33.000Z",
+      "header_filing_date": "2023-10-12",
+      "api_filing_date": "2023-10-12",
+      "header_new_york": "2023-10-12T16:26:33-04:00",
+      "api_read_as_utc_in_new_york": "2023-10-12T20:26:33-04:00",
+      "new_york_utc_offset_hours": -4.0,
+      "wall_clock_difference_hours": 8.0,
+      "instant_difference_hours": 4.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": true,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": true
+    },
+    {
+      "issuer_cik": "909832",
+      "accession": "0001209191-24-002111",
+      "header_source": {
+        "url": "https://www.sec.gov/Archives/edgar/data/909832/000120919124002111/0001209191-24-002111.txt",
+        "cache_file": "sec_f73d1b5094cc185b40949c49247af42cad1a78fb01c10274c0e609624ddaa701_b9c534abb0722a64495821b832f5b33dbdbb618e2c890839bc46d973f67372f0.raw",
+        "sha256": "b9c534abb0722a64495821b832f5b33dbdbb618e2c890839bc46d973f67372f0"
+      },
+      "api_sources": [
+        {
+          "url": "https://data.sec.gov/submissions/CIK0000909832.json",
+          "cache_file": "sec_cd73bb9c4183c7a4c440b03f4ea0358aa65895735d260e089d64872bb4ca6d95_ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1.raw",
+          "sha256": "ddbc474ee1b766ecc36ba39759b1e2910135401dc12c08e93f034c65fc9c15d1"
+        }
+      ],
+      "header_acceptance": "2024-01-23T18:55:49",
+      "api_acceptance": "2024-01-24T04:55:49.000Z",
+      "header_filing_date": "2024-01-23",
+      "api_filing_date": "2024-01-23",
+      "header_new_york": "2024-01-23T18:55:49-05:00",
+      "api_read_as_utc_in_new_york": "2024-01-23T23:55:49-05:00",
+      "new_york_utc_offset_hours": -5.0,
+      "wall_clock_difference_hours": 10.0,
+      "instant_difference_hours": 5.0,
+      "twice_offset_pattern": true,
+      "filing_dates_corroborate": true,
+      "header_in_filing_hours": true,
+      "api_in_filing_hours": false,
+      "header_matches_filing_date": true,
+      "api_matches_filing_date": true,
+      "header_consistent": true,
+      "api_consistent": false
+    }
+  ]
+}
