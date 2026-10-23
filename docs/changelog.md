@@ -2,6 +2,16 @@
 
 ## 2026-10-23
 
+- **Research: century synthetic leverage closed under the registered rule.**
+  The mechanical proposal is keep 30%, though its 1926–2026 synthetic path
+  reaches −91.4% drawdown versus −84.6% at 0%; 15% stays above the ruin line
+  at a 0.54 point/year after-tax CAGR cost versus 30%. Committed calibration
+  and A23 X-gate reproduction; the trade-off is for the 2027-09-30 owner review,
+  with no current allocation change. [Report](research/2026-10-23-century-leverage.md);
+  `_century_leverage_results.json`:
+  `scenarios["0.84%|24/15|wash=False|shiller"][mix]["full"]` (mix = 0, 15, 30),
+  `recommendation_rule.proposal`.
+
 - **Research: net-issuance screen — Part A NO-GO.** Closed the registered
   long-only `BIG NegNI` hypothesis: full-window Newey-West t 0.26 (p 0.398)
   fails A1 t ≥ 3.0, and since-1994 net CAGR difference +0.48 pt/yr fails A2

@@ -8,6 +8,15 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-23)
 
+**2026-10-23 century-leverage decision:** The [closed synthetic study](research/2026-10-23-century-leverage.md)
+returns the registered **keep 30%** proposal: the 30% arm has 10.71% after-tax CAGR versus
+9.47% at 0% but trips the −90% ruin flag (−91.4% versus −84.6%); 15% avoids that flag at
+10.18%, a 0.54 point/year CAGR cost versus 30% (`_century_leverage_results.json`:
+`scenarios["0.84%|24/15|wash=False|shiller"][mix]["full"]`, mix = 0, 15, 30;
+`recommendation_rule.proposal`). Present this trade-off at the 2027-09-30 A23 review.
+Current allocation and date-based terms stay in force; queue paper-trading reliability work
+for the approximate 2026-12-29 freeze lift.
+
 **2026-10-23 net-issuance decision:** [Part A closed NO-GO](research/2026-10-23-net-issuance-screen-nogo.md).
 Registered `BIG NegNI` fails A1 (Newey-West t 0.26, p 0.398 vs t ≥ 3.0) and A2
 (+0.48 vs +1.0 pt/yr since 1994; `_net_issuance_screen_results.json`:
