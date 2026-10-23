@@ -669,6 +669,50 @@ def test_empty_inventory_rules_and_identity_gap():
     assert resolve_unit(unit, [mapping]) is None
 
 
+@pytest.mark.parametrize(
+    ("venues", "expected_count", "expected_predicate"),
+    [
+        (["yfinance", "other"], 1, "PASS"),
+        (["other"], 0, "FAIL"),
+        (["yfinance", "yfinance"], 2, "FAIL"),
+        ([], 0, "FAIL"),
+    ],
+)
+def test_tape_count_uses_only_equity_venue(venues, expected_count, expected_predicate):
+    import sqlite3
+
+    from ggTrader.lab.event_timing_audit import check_tape_integrity_batch
+
+    with sqlite3.connect(":memory:") as connection:
+        connection.execute("CREATE TABLE ohlcv (symbol, timestamp, interval, venue)")
+        connection.executemany(
+            "INSERT INTO ohlcv VALUES ('A', '2023-05-04', '1d', ?)",
+            [(venue,) for venue in venues],
+        )
+
+        class CountDb:
+            def execute_select(self, sql, params):
+                # Translate syntax only; execute the actual query against fixture rows.
+                query = sql.replace("timestamp::date", "date(timestamp)").replace("%s", "?")
+                rows = connection.execute(query, tuple(map(str, params))).fetchall()
+                return ["count"], rows
+
+        event = {
+            "event_id": "A:venue",
+            "tradeable_date": "2023-05-04",
+            "identity_resolved": True,
+            "price_symbol": "A",
+        }
+        flags = {
+            "screened": [{"symbol": "A", "start": "2023-05-01", "end": "2023-05-05"}],
+            "flags": [],
+        }
+        result = check_tape_integrity_batch(CountDb(), AuditClock(), [event], flags)
+
+    assert result["A:venue"]["bar_count"] == expected_count
+    assert result["A:venue"]["predicate"] == expected_predicate
+
+
 def test_unknown_detector_cannot_pass_unique_bar():
     from ggTrader.lab.event_timing_audit import check_tape_integrity_batch
 

@@ -1,0 +1,6293 @@
+{
+  "path": "docs/research/_production_replica_results.json",
+  "sha256": "95c00309be1b03d62443028f3f2c64fc738752997b7972d2420a75316b0f8d0b",
+  "scope": "Existing flag/date/symbol metadata only; no prices, returns or statistics extracted",
+  "windows": {
+    "primary": {
+      "seam_scan_records": 120,
+      "recorded_flags": [
+        {
+          "symbol": "ENPH",
+          "date": "2020-02-19 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "APA",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "FANG",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MRO",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "OXY",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TRGP",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PENN",
+          "date": "2020-03-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CVNA",
+          "date": "2020-03-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CZR",
+          "date": "2020-03-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "DXC",
+          "date": "2020-03-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "NCLH",
+          "date": "2020-03-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "AAL",
+          "date": "2020-06-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "BIIB",
+          "date": "2020-11-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PARA",
+          "date": "2021-02-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "HOOD",
+          "date": "2021-08-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EPAM",
+          "date": "2022-02-28 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CVNA",
+          "date": "2022-08-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "ABMD",
+          "date": "2022-11-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CVNA",
+          "date": "2022-12-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CVNA",
+          "date": "2023-01-12 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-03-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-03-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-03-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-04-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CVNA",
+          "date": "2023-06-08 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-06-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CVNA",
+          "date": "2023-07-19 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-08-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-08-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-08-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-08-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-09-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-09-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-10-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-10-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-10-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-10-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-11-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-12-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-12-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-12-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PARA",
+          "date": "2023-12-15 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-12-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-12-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2023-12-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PARA",
+          "date": "2024-01-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-01-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-01-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-02-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-02-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-02-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-02-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-03-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-03-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-03-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-03-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-03-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-03-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-03-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-03-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-04-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GL",
+          "date": "2024-04-11 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-04-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-04-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-05-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-05-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-05-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-05-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-06-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-06-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-06-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-06-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-07-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-07-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-07-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "DXCM",
+          "date": "2024-07-26 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "NWL",
+          "date": "2024-07-26 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-08-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "LUMN",
+          "date": "2024-08-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-08-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-08-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-08-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-08-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-08-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-08-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PARA",
+          "date": "2024-09-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PARA",
+          "date": "2024-09-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-09-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-10-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PARA",
+          "date": "2024-10-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-10-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-10-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-10-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-11-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SIVB",
+          "date": "2024-11-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "APP",
+          "date": "2024-11-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PARA",
+          "date": "2024-12-10 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PARA",
+          "date": "2025-01-29 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "AAP",
+          "date": "2025-05-22 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SATS",
+          "date": "2025-06-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CNC",
+          "date": "2025-07-02 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SATS",
+          "date": "2025-08-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "FI",
+          "date": "2025-10-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "FISV",
+          "date": "2025-10-29 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "FMC",
+          "date": "2025-10-30 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SBNY",
+          "date": "2025-12-09 00:00:00+00:00",
+          "artifact": false
+        }
+      ],
+      "explicit_screened_manifest_present": false,
+      "metadata_keys": [
+        "citable",
+        "coverage_member_days",
+        "eval_end",
+        "eval_start",
+        "mean_coverage",
+        "seam_scan",
+        "stop_flags"
+      ]
+    },
+    "holdout": {
+      "seam_scan_records": 1129,
+      "recorded_flags": [
+        {
+          "symbol": "XL",
+          "date": "2008-12-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2008-12-12 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2008-12-19 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "GR",
+          "date": "2008-12-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-01-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "GR",
+          "date": "2009-01-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2009-01-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-01-12 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-01-14 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-01-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2009-01-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "GR",
+          "date": "2009-01-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PNC",
+          "date": "2009-01-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "STT",
+          "date": "2009-01-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "GR",
+          "date": "2009-01-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "FITB",
+          "date": "2009-02-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "RF",
+          "date": "2009-02-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "XL",
+          "date": "2009-02-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2009-02-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2009-02-25 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "GNW",
+          "date": "2009-03-10 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "ODP",
+          "date": "2009-03-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GGP",
+          "date": "2009-03-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "AIG",
+          "date": "2009-03-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "AIG",
+          "date": "2009-03-18 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "ETFC",
+          "date": "2009-03-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GGP",
+          "date": "2009-03-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBRE",
+          "date": "2009-03-25 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MGM",
+          "date": "2009-04-03 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-04-08 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TXT",
+          "date": "2009-04-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "GGP",
+          "date": "2009-04-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "THC",
+          "date": "2009-04-21 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-04-22 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2009-04-30 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "GR",
+          "date": "2009-05-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2009-05-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-05-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2009-05-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "FITB",
+          "date": "2009-05-08 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "GMCR",
+          "date": "2009-06-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "AIG",
+          "date": "2009-08-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-08-10 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-08-19 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-08-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2009-09-14 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MIL",
+          "date": "2009-11-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MIL",
+          "date": "2009-11-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2009-11-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2009-12-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2009-12-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2009-12-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2009-12-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2009-12-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2010-01-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-01-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-01-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-01-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-01-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-01-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-01-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-01-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-01-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-02-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-02-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "ARG",
+          "date": "2010-02-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-02-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-02-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2010-02-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-02-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-02-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-02-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-02-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-02-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-03-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-04-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-04-15 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-04-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-04-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-04-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-04-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-05-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-05-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MIL",
+          "date": "2010-05-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MIL",
+          "date": "2010-05-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GMCR",
+          "date": "2010-05-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GMCR",
+          "date": "2010-05-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-05-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-05-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-05-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2010-06-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-06-15 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-06-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-06-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-06-18 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-06-21 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2010-06-21 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-06-25 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-06-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-06-30 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-07-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-07-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-07-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-07-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-08-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MFE",
+          "date": "2010-08-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-08-27 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-09-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-09-03 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-09-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-09-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-09-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-09-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-09-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-10-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-11-12 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-11-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-11-18 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2010-11-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2010-11-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "THC",
+          "date": "2010-12-10 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2010-12-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2010-12-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-12-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2010-12-27 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2010-12-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-01-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-01-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2011-01-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-01-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-01-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2011-01-13 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2011-01-28 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-01-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-02-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2011-02-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "GMCR",
+          "date": "2011-03-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-04-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-04-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-05-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-05-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2011-05-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2011-06-03 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2011-06-27 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2011-08-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2011-08-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-09-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2011-09-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2011-09-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2011-10-03 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2011-10-18 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2011-10-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2011-11-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2011-11-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2011-11-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2011-11-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2011-12-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PTV",
+          "date": "2012-01-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2012-01-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "ILMN",
+          "date": "2012-01-25 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2012-01-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2012-01-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2012-01-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2012-03-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2012-04-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2012-04-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2012-04-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2012-05-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GMCR",
+          "date": "2012-05-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "VRTX",
+          "date": "2012-05-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2012-05-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2012-05-15 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2012-05-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2012-05-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2012-05-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2012-05-25 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PBG",
+          "date": "2012-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "HSH",
+          "date": "2012-06-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SVU",
+          "date": "2012-07-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2012-07-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "BMC",
+          "date": "2012-08-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2012-09-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2012-10-17 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2012-10-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2012-10-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2012-10-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SVU",
+          "date": "2012-10-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2012-11-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2012-11-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2012-11-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2012-11-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2012-11-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2012-11-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2012-11-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2012-11-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2012-12-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2012-12-12 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "BMC",
+          "date": "2012-12-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2012-12-17 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2012-12-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2012-12-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2013-01-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-01-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "NFLX",
+          "date": "2013-01-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-02-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2013-02-15 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-02-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-02-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2013-03-25 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-03-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-04-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "FSLR",
+          "date": "2013-04-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "VRTX",
+          "date": "2013-04-19 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2013-04-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-04-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-04-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-05-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-05-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2013-05-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-06-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-06-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-06-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2013-06-19 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-07-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2013-07-03 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2013-07-08 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PBG",
+          "date": "2013-07-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2013-07-10 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-07-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-07-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-07-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-07-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2013-08-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2013-08-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2013-08-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-09-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2013-09-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2013-10-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-10-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-10-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-10-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "COL",
+          "date": "2013-10-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-11-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2013-11-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2013-12-02 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2013-12-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-12-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-12-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2013-12-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2013-12-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-01-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-01-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-01-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-01-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-01-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-02-10 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-02-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-02-18 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-02-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-02-21 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-02-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-02-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-02-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2014-03-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-03-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-03-10 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-03-11 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-03-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-03-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-03-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-03-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-03-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-04-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-04-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2014-04-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-04-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-04-11 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PTV",
+          "date": "2014-05-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2014-05-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-05-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-05-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-05-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-05-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "COL",
+          "date": "2014-05-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "COL",
+          "date": "2014-06-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-06-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-06-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-06-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "VRTX",
+          "date": "2014-06-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-07-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-07-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-07-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-07-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-07-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-07-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-07-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-07-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-07-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2014-07-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-07-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-08-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-08-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-08-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-08-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-08-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-08-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2014-08-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-08-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-08-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-08-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-08-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-08-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-08-28 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-09-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-09-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-09-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-09-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-09-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-09-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-09-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-09-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-09-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2014-09-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-09-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "JNS",
+          "date": "2014-09-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2014-10-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-10-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-10-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-10-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-10-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-10-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2014-10-30 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-11-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-11-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-11-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-11-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-11-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-11-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2014-11-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2014-11-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2014-11-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-11-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-11-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-11-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-11-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-11-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2014-12-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2014-12-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2014-12-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-12-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2014-12-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-12-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2014-12-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-12-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2014-12-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2014-12-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-12-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2014-12-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2014-12-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-12-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-12-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-12-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2014-12-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2014-12-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-01-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2015-01-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-01-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-01-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-01-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-01-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2015-01-12 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-01-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-01-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-01-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-01-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-01-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-01-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-02-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2015-02-03 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "DD",
+          "date": "2015-02-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-02-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-02-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-02-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-02-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-02-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2015-02-13 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2015-02-13 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-02-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-02-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-02-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-02-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-02-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-02-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-02-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-02-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-02-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-03-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2015-03-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2015-03-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "RSHCQ",
+          "date": "2015-03-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "RSHCQ",
+          "date": "2015-03-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2015-03-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-03-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "RSHCQ",
+          "date": "2015-04-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-04-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2015-05-26 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2015-05-27 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2015-05-27 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2015-05-28 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-05-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-06-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-06-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-06-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-06-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2015-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-06-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-06-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-06-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-06-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2015-06-26 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-07-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-07-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-07-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-07-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-07-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-07-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "ANRZQ",
+          "date": "2015-07-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2015-07-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2015-07-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-07-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-08-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-08-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-08-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-08-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-08-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-08-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2015-08-31 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-09-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-09-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2015-09-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-09-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "RSHCQ",
+          "date": "2015-09-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-09-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-09-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2015-09-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-09-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2015-09-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-09-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "RSHCQ",
+          "date": "2015-10-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-10-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2015-10-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-10-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-10-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-10-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-10-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-10-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-10-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-10-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-10-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2015-11-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-11-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-11-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-11-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-11-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-11-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-12-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GMCR",
+          "date": "2015-12-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-12-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-12-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2015-12-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2015-12-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-01-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2016-01-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "ANRZQ",
+          "date": "2016-01-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-01-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-01-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-01-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-01-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2016-01-28 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-02-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-02-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-02-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-02-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-02-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-02-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2016-02-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-02-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2016-02-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-02-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-02-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-02-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2016-02-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-02-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2016-02-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-02-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-02-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2016-03-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "COL",
+          "date": "2016-03-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "DNR",
+          "date": "2016-03-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-03-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2016-03-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-03-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-03-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-03-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "ANRZQ",
+          "date": "2016-03-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-03-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-03-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-03-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2016-03-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-03-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-03-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-03-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-03-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-03-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SUNEQ",
+          "date": "2016-03-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SUNEQ",
+          "date": "2016-04-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-04-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SUNEQ",
+          "date": "2016-04-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-04-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-04-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GR",
+          "date": "2016-04-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SUNEQ",
+          "date": "2016-04-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-04-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-04-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "AMD",
+          "date": "2016-04-22 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2016-04-26 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-04-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MI",
+          "date": "2016-04-28 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-04-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-05-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-05-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-05-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-05-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-05-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2016-05-10 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-05-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "ODP",
+          "date": "2016-05-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-05-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2016-05-25 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "DXC",
+          "date": "2016-05-25 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-05-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-05-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2016-05-31 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-05-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-06-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-06-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-06-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-06-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-06-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-06-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-06-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-06-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "DHR",
+          "date": "2016-07-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "ANRZQ",
+          "date": "2016-07-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "COL",
+          "date": "2016-07-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "ANRZQ",
+          "date": "2016-07-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-07-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-07-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-07-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-07-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-07-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-08-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-08-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-08-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-08-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-08-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SUNEQ",
+          "date": "2016-08-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-08-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-08-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-08-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-08-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-08-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-08-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-09-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-09-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-09-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-09-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-09-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-10-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "RRD",
+          "date": "2016-10-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-10-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-10-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-10-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-10-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SUNEQ",
+          "date": "2016-10-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-10-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-10-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-10-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-10-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-10-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-10-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-10-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-10-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2016-10-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2016-10-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2016-10-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SUNEQ",
+          "date": "2016-10-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2016-10-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-10-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2016-10-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-11-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-11-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2016-11-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-11-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-11-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-11-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-11-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "NVLS",
+          "date": "2016-11-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-11-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-11-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2016-11-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-11-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-12-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-12-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-12-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-12-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2016-12-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-12-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-12-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-12-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-12-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-12-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-12-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2016-12-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-12-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2016-12-21 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2016-12-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2016-12-28 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2016-12-28 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2016-12-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-01-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-01-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-01-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-01-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-01-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-01-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2017-01-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-01-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-01-27 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-02-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-02-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-02-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-02-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-02-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-02-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-02-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-02-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-02-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-02-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-03-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-03-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-03-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-03-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-03-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-03-10 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "TIE",
+          "date": "2017-03-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-03-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "NKTR",
+          "date": "2017-03-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-03-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-03-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-03-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-03-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-03-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2017-03-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-03-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2017-03-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2017-03-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-03-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BTUUQ",
+          "date": "2017-04-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-04-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-17 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-04-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-04-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-04-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-04-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-04-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-04-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-05-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PTV",
+          "date": "2017-05-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-05-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-06-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-06-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-06-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2017-06-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2017-06-21 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-06-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-06-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-07-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-07-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-07-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-07-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-07-18 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-07-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-07-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-07-20 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-07-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-07-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-07-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "NVLS",
+          "date": "2017-07-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-07-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-07-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MEE",
+          "date": "2017-07-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SUNEQ",
+          "date": "2017-07-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-07-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-07-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-07-31 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-08-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-08-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-16 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-21 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "SUNEQ",
+          "date": "2017-08-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-08-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-08-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-08-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-08-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-09-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2017-09-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-09-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-09-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-09-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-09-12 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-09-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-19 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-22 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-09-22 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-25 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PBG",
+          "date": "2017-09-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-27 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-09-27 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-09-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-09-29 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-10-02 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-10-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-10-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-11-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-11-22 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-11-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2017-11-27 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-11-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-12-01 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-12-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-12-11 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-12-14 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-12-15 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2017-12-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2018-01-02 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CBE",
+          "date": "2018-01-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-01-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "FOSL",
+          "date": "2018-02-14 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-04-27 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-05-17 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-05-22 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-05-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "NKTR",
+          "date": "2018-06-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-06-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-06-25 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SVU",
+          "date": "2018-07-26 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-08-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "KG",
+          "date": "2018-08-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-08-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2018-08-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "RHT",
+          "date": "2018-10-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-11-26 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-12-07 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2018-12-21 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "QEP",
+          "date": "2019-01-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PCG",
+          "date": "2019-01-14 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PCG",
+          "date": "2019-01-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-02-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-04-03 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-04-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-04-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-04-12 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2019-05-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-07-30 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-09-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-09-10 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2019-10-15 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2019-10-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "COL",
+          "date": "2019-11-07 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2019-11-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "BMC",
+          "date": "2019-12-03 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2019-12-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-12-13 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2019-12-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2019-12-26 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2020-01-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "SIG",
+          "date": "2020-01-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2020-01-17 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "BMC",
+          "date": "2020-02-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2020-02-06 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2020-02-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2020-02-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2020-03-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2020-03-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2020-03-06 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "APA",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "FANG",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MRO",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "MUR",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "NBR",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "OXY",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "QEP",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "WPX",
+          "date": "2020-03-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2020-03-11 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CHK",
+          "date": "2020-03-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "QEP",
+          "date": "2020-03-13 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "FLR",
+          "date": "2020-03-19 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "KG",
+          "date": "2020-03-20 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "DXC",
+          "date": "2020-03-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "NCLH",
+          "date": "2020-03-24 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2020-04-15 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "EP",
+          "date": "2020-04-16 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "DNR",
+          "date": "2020-04-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CHK",
+          "date": "2020-04-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "FTR",
+          "date": "2020-04-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "RRD",
+          "date": "2020-04-29 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CPWR",
+          "date": "2020-05-22 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "AAL",
+          "date": "2020-06-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "COL",
+          "date": "2020-06-04 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CHK",
+          "date": "2020-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "DNR",
+          "date": "2020-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "NBR",
+          "date": "2020-06-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "QEP",
+          "date": "2020-06-05 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "RIG",
+          "date": "2020-06-05 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CHK",
+          "date": "2020-06-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "DNR",
+          "date": "2020-06-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "FOSL",
+          "date": "2020-06-08 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "QEP",
+          "date": "2020-06-08 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "RIG",
+          "date": "2020-06-08 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "CHK",
+          "date": "2020-06-09 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2020-06-23 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "BMC",
+          "date": "2020-06-24 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "CHK",
+          "date": "2020-06-30 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "EP",
+          "date": "2020-07-23 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "ADT",
+          "date": "2020-08-03 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "PBI",
+          "date": "2020-08-03 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "COL",
+          "date": "2020-08-18 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "PLL",
+          "date": "2020-09-28 00:00:00+00:00",
+          "artifact": true
+        },
+        {
+          "symbol": "GME",
+          "date": "2020-10-08 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "BIIB",
+          "date": "2020-11-04 00:00:00+00:00",
+          "artifact": false
+        },
+        {
+          "symbol": "MI",
+          "date": "2020-12-17 00:00:00+00:00",
+          "artifact": false
+        }
+      ],
+      "explicit_screened_manifest_present": false,
+      "metadata_keys": [
+        "citable",
+        "coverage_member_days",
+        "eval_end",
+        "eval_start",
+        "mean_coverage",
+        "seam_scan",
+        "stop_flags"
+      ]
+    }
+  },
+  "producer": {
+    "path": "scripts/production_replica_audit.py",
+    "sha256": "9d179ca40e0631c539aba409921002a3ca6edc611ecb200b8d4f6a034584b053",
+    "locators": [
+      "seam_scan(): recorded seam dates/symbols",
+      "_verify_seams(): persisted artifact booleans",
+      "WINDOWS: declared study windows, not per-security screened coverage"
+    ]
+  },
+  "disposition": "Recovered legacy positive/negative flag observations, not an exhaustive source-bound per-security screened interval export. No detector was run and no price/return values were selected for the output.",
+  "mapping_disposition": "Inspected symbol_inception contains symbol/interval/venue/first_date/recorded_at; universe_cache contains dated symbol lists. Neither inspected schema supplies historical issuer/class/vendor validity intervals. No universal database absence claim."
+}

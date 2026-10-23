@@ -11,13 +11,13 @@ any) — don't let this file accumulate a backlog.
 Use the updated [connected-metadata execution plan](superpowers/plans/2026-10-22-next-evidence-actions.md).
 Codex owns SQL, interpretation and code; Flash only receives simple exact extraction/link tasks.
 
-1. Use the working read-only PostgreSQL connector to inventory available
-   identity/detector/provenance metadata, measure pinned stored counts, and narrow
-   the 2018 amendment's predecessor by issuer/owner/filing date. Record exact
-   queries and results; no prices, returns, DB writes or new external calls.
-2. Trace candidate mapping/detector sources to their original evidence. If usable,
-   fix/test the runtime venue filter before evaluating metadata/reconstruction;
-   otherwise record the exact unavailable input and coverage requirement.
+1. Independent Codex review of the executed metadata slice and venue fix is
+   pending. All 190 focused audit tests pass. The original predecessor is narrowed
+   to `0001225208-18-003052`; the exact one-request acquisition package is ready
+   for review before any HTTP.
+2. After clearance, compare the raw predecessor and amendment at their own public
+   times. Historical mapping and exhaustive detector export remain missing from
+   the inspected inputs; no population PASS or new return test is inferred.
 
 Database access is available; [connector evidence](research/_event_audit_connected_metadata.json)
 supersedes the earlier direct-process access limitation. Two COST charters and

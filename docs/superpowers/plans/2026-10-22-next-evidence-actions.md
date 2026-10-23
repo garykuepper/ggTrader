@@ -68,18 +68,18 @@ findings to `docs/research/event-timing-audit-implementation.md`.
 **Consumes:** Working connector and actual database schema.
 **Produces:** Query/source receipts, inventory counts and exact candidate IDs.
 
-- [ ] Query `information_schema` for tables/views and relevant column names
+- [x] Query `information_schema` for tables/views and relevant column names
   describing security identities, historical symbols, validity intervals,
   corporate actions, detector runs or flags. Record the searched schemas and
   results. Name matches alone do not establish usable provenance or coverage.
-- [ ] Inspect candidate schemas before selecting data. Read only identifiers,
+- [x] Inspect candidate schemas before selecting data. Read only identifiers,
   dates, lineage references, counts and missing-field indicators. If no candidate
   exists, record the bounded search; do not infer universal absence.
-- [ ] Produce pinned annual metadata counts for `form4_transactions` and
+- [x] Produce pinned annual metadata counts for `form4_transactions` and
   `earnings_surprise` through the cutoff. Retain malformed/unknown dates and
   anomalous transaction/filing relationships in separate counts. These are stored
   inventories, not verified source coverage or tradeable event counts.
-- [ ] Identify the 2018 amendment predecessor using this metadata-only query:
+- [x] Identify the 2018 amendment predecessor using this metadata-only query:
 
 ```sql
 SELECT DISTINCT accession_number, issuer_cik, insider_cik, filing_date
@@ -90,10 +90,10 @@ WHERE issuer_cik = 1133421
 ORDER BY accession_number;
 ```
 
-- [ ] Compare any returned accession with the 14 cached-inventory candidates.
+- [x] Compare any returned accession with the 14 cached-inventory candidates.
   Stored owner/date matches narrow acquisition; they do not prove lot replacement.
   If none matches, retain the candidate list and its uncertainty.
-- [ ] Record exact SQL, parameters, query timestamp, connector identity, raw result
+- [x] Record exact SQL, parameters, query timestamp, connector identity, raw result
   and hash. No secrets. Do not invent an existing-runner adapter or canonical
   status from a custom metadata record.
 
@@ -106,10 +106,10 @@ which exact accession(s) need raw verification, and which metadata sources are a
 **Consumes:** Task 1 locations/lineage and the workbook's detector contract.
 **Produces:** Supported identity intervals/export receipts, or named missing inputs.
 
-- [ ] Trace existing detector outputs from their producing script/report and
+- [x] Trace existing detector outputs from their producing script/report and
   recorded source locations. Search only project/research locations implicated
   by those references; no private-vault or arbitrary whole-host scan.
-- [ ] If a legacy artifact exists, determine what dates/securities were actually
+- [x] If a legacy artifact exists, determine what dates/securities were actually
   screened and which flags were retained. Export existing metadata only when
   its lineage supports the required representation. Do not rerun detection or
   synthesize exhaustive clean intervals from incomplete legacy results.
@@ -119,7 +119,7 @@ which exact accession(s) need raw verification, and which metadata sources are a
   explicit validity intervals and supporting records. Annual observations and
   current symbol/CIK matches remain diagnostic. Identify any COST effective-date
   evidence actually needed by that map; do not let it block unrelated work.
-- [ ] If a required source is unavailable, record its exact fields, historical
+- [x] If a required source is unavailable, record its exact fields, historical
   scope and source/location requirement. The owner should receive one concrete
   missing-input request only if local/connected recovery is exhausted.
 
@@ -133,15 +133,15 @@ or has a precise missing-source dependency. No clean-tape or identity PASS is in
 **Consumes:** Reviewed event/security/date pairs and Task 2 evidence.
 **Produces:** Correct venue-pinned counts and per-event supported predicates.
 
-- [ ] Before using `check_tape_integrity_batch()`, add a failing multi-venue fixture:
+- [x] Before using `check_tape_integrity_batch()`, add a failing multi-venue fixture:
   one yfinance daily bar plus a same-date other-venue bar must count as one;
   an other-venue-only row must count as zero. Keep missing/duplicate cases distinct.
-- [ ] Reproduce the failure, pin the shared equity count query to
+- [x] Reproduce the failure, pin the shared equity count query to
   `venue='yfinance'`, and preserve existing NYSE/session and detector checks.
   Read all callers first; change no unrelated runtime behavior.
 - [ ] Run capped focused tests via `scripts/run_tests.sh` and Ruff check/format
   on changed Python files; obtain one fresh scoped code review before relying on it.
-- [ ] Use the accepted paired LEFT JOIN query/parameters for supported exact event
+- [x] Use the accepted paired LEFT JOIN query/parameters for supported exact event
   pairs. Preserve zero counts, unknown mappings, missing tradeable dates, existing
   detector flags and scope gaps. Do not query price/outcome values.
 - [ ] Replay only source-supported insider inputs. Verify predecessor links from
@@ -156,7 +156,7 @@ missing population or source evidence is explicit rather than silently omitted.
 **Consumes:** Tasks 1–3, accepted source-route evidence and fixed denominators.
 **Produces:** Measured supported gates and one consolidated unresolved-input list.
 
-- [ ] Freeze the smallest raw-request union needed for confirmed predecessor or
+- [x] Freeze the smallest raw-request union needed for confirmed predecessor or
   independent inventory corroboration. Cost nominal/worst attempts, overlaps,
   runtime/deadline and recovery before acquisition review. Do not download the
   whole population or refresh NOC pages merely because endpoints are reachable.
@@ -185,3 +185,14 @@ and any evaluated gates have raw receipts. If a necessary input is unavailable,
 return the exact missing source/fields/date scope and one actionable dependency.
 Do not claim all five gaps are resolved or start another planning/review cycle
 merely because those inputs are still missing.
+
+## Execution progress
+
+Connected metadata and provenance receipts are committed alongside the handoff.
+Stored predecessor match narrowed to one accession; its raw source remains
+unfetched pending acquisition review. Mapping and exhaustive detector inputs
+were not recovered from the inspected schemas/artifacts, so dependent population
+checks are explicitly blocked. The venue regression reproduced two failures;
+the minimal fix passed all 190 focused audit tests, plus Ruff/format/diff checks.
+Fresh independent review of this execution slice and one-URL acquisition is
+pending. No new SEC/Yahoo request, price/return computation or DB write occurred.

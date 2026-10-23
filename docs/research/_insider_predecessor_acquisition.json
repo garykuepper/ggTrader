@@ -1,0 +1,21 @@
+{
+  "scope": "One NOC predecessor candidate raw submission only; no population or return work",
+  "parent_cache": "data/external/event_timing_audit/cost-charters-h1kbl362",
+  "requests": [
+    {
+      "key": "0001225208-18-003052",
+      "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520818003052/0001225208-18-003052.txt",
+      "purpose": "Verify original owner and raw-lot linkage to amendment 0001225208-18-004211; stored match is not proof"
+    }
+  ],
+  "maximum_new_attempts": 4,
+  "batch_cumulative_sec_ceiling": 85,
+  "workbook_sha256": "6f0bc21ffa53182c7fb2501cec3e8d7dad1e385fbd22fdde0c4789137cc352d9",
+  "parent_binding_sha256": {
+    "MANIFEST.json": "1b94be16fd70303c8cb4ecee1308deb972956e84d33f2f696ce5e1072ce8d0fa",
+    "checkpoint.json": "342146c908ff0844f37e9a2572aad1367ebd8a2ac4f69d06cd86ceae4a4b1d3e",
+    "registration.json": "41859862b30d7699451eddd4adb1d8cef5a40d829088b9e45b53f4b6a6c39d1d"
+  },
+  "metadata_inputs_sha256": "431e57a194f5a59d2458816aa53578703cda3c2a8d35f71d0f4084d324da4977",
+  "authorization": "Owner Execute covers next-actions Task4 smallest confirmed predecessor candidate; fresh scoped acquisition review before HTTP. No automatic further requests."
+}

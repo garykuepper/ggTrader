@@ -1133,3 +1133,72 @@ not run. The attempt was unavailable with exported settings and returned no
 rows, so no database/table-absence inference or decision change is warranted.
 No additional HTTP/DB execution, price/return analysis, detector, runtime change
 or test accompanied the review. Missing inputs remain the blocker.
+
+## Connected-metadata plan execution — 2026-10-22 local / 2026-10-23 UTC
+
+Executed the [current plan](../superpowers/plans/2026-10-22-next-evidence-actions.md)
+through the available read-only PostgreSQL connector. Six metadata queries and
+one batched operational bar-count query are recorded with exact SQL, source,
+observation timestamp and raw results. No price, EPS value, return, live position
+or production configuration was selected; no database writes occurred.
+
+- [Metadata inputs](_event_audit_metadata_inputs.json): the stored insider window
+  contains **767,999 rows**, including **6 transaction-before-1990 rows** and
+  **78 transaction-after-filing rows**. Categories can overlap and are not an
+  anomaly-union count. These are stored transaction rows, not verified filing
+  inventories, cluster events, PIT coverage or source-completeness numerators.
+  PEAD has **61,377 stored rows** in its pinned window; non-null estimate/reported
+  fields do not establish release, EPS-basis or pre-announcement vintage lineage.
+- The original-submission candidate set narrows from 14 same-issuer/date filings
+  to one stored owner match, **`0001225208-18-003052`**, CIK 1133421 and owner
+  1539147, filing date 2018-02-15. It appears in the cached enumerated frame too.
+  Raw predecessor/lot replacement remains UNVERIFIED until the source is compared.
+- Candidate schemas `symbol_inception` and `universe_cache` describe inception
+  dates and dated symbol lists respectively; the inspected fields do not supply
+  issuer/class/vendor validity-interval evidence. The public-schema lineage
+  column search also supplies no detector export or PEAD announcement/snapshot
+  fields. This is the scoped schema result, not universal absence from all stores.
+- [Legacy detector provenance](_event_audit_detector_provenance.json) traces
+  `scripts/production_replica_audit.py` to `_production_replica_results.json`.
+  Existing seam metadata contains 120 primary records (84 artifact=True) and
+  1,129 holdout records (920 artifact=True). The artifact lacks explicit screened
+  manifests; the producer/report disclose trade-proximity and gap limitations.
+  No values were recomputed and no return fields were extracted. These recovered
+  flags cannot be promoted into exhaustive per-security clean intervals or a
+  source-bound A7 export. The rebaseline artifact's meta fields do not supply it.
+- [Operational bar counts](_event_audit_operational_bar_counts.json): 23 exact
+  filing-date-convention diagnostics have one `yfinance`/`1d` bar each. All requested
+  dates were independently checked as NYSE sessions. Historical mapping remains
+  UNVERIFIED, original timestamp conflicts remain and these filing diagnostics
+  are not cluster events or annual population coverage.
+
+### Venue defect reproduced and corrected
+
+`check_tape_integrity_batch()` previously counted all venues. Real in-memory SQL
+fixtures reproduced two wrong results: yfinance+other counted as two; other-only
+counted as one. The shared query now pins `venue='yfinance'`. Two duplicate/missing
+control cases remain. The test adapter only translates PostgreSQL placeholders
+and date-cast syntax to SQLite; it executes the production query rather than
+fabricating counts. Existing missing-detector behavior is retained.
+
+The new selection was RED (two expected failures, two passing controls), then the
+full focused command `scripts/run_tests.sh tests/lab/test_event_timing_audit.py
+-q --tb=short` passed **190 tests in 206.66 seconds**. Ruff check/format and diff
+checks pass. No broader suite was needed for this isolated audit query change.
+Fresh independent review of this execution slice is pending before relying on
+the runtime path or executing the one-request predecessor acquisition.
+
+### Exact next acquisition and remaining gates
+
+[One-predecessor handoff](briefs/2026-10-22-insider-predecessor-batch.md) freezes
+one canonical full-submission URL, not 14 candidate downloads. One nominal/four
+maximum new attempts would move 81 SEC attempts to 82 nominal/85 maximum, retaining
+the prior stop history, cumulative runtime, immutable parent and exclusive claim.
+Runner help/dry run and Ruff pass; no new SEC/Yahoo requests have run in this slice.
+The first dry run caught a copied assertion typo; the corrected ceiling is 85.
+
+After raw comparison, link only source-supported replacement lots at the
+amendment's own eligibility time. No predecessor assumption, broad population
+collection, detector rerun or vendor-search reset is authorized. Mapping/export
+inputs, independent NOC completeness, population reconstruction and PEAD lineage
+remain unmet; current metadata counts do not change the no-Phase-2 decision.

@@ -1,0 +1,180 @@
+{
+  "id": "operational_bar_counts",
+  "sql": "SELECT e.accession, e.symbol, e.session_date, count(o.timestamp)::bigint AS bar_count FROM (VALUES ('0000909832-26-000039'::text, 'COST'::text, DATE '2026-04-02'), ('0001209191-15-021737'::text, 'COST'::text, DATE '2015-03-04'), ('0001209191-15-076803'::text, 'COST'::text, DATE '2015-10-27'), ('0001209191-16-146701'::text, 'COST'::text, DATE '2016-10-25'), ('0001209191-16-146844'::text, 'COST'::text, DATE '2016-10-26'), ('0001209191-17-057866'::text, 'COST'::text, DATE '2017-10-25'), ('0001209191-19-019086'::text, 'COST'::text, DATE '2019-03-14'), ('0001209191-19-053882'::text, 'COST'::text, DATE '2019-10-25'), ('0001209191-20-062897'::text, 'COST'::text, DATE '2020-12-14'), ('0001209191-21-061606'::text, 'COST'::text, DATE '2021-10-27'), ('0001209191-23-052699'::text, 'COST'::text, DATE '2023-10-13'), ('0001209191-24-002111'::text, 'COST'::text, DATE '2024-01-24'), ('0001225208-17-009570'::text, 'NOC'::text, DATE '2017-05-15'), ('0001225208-18-004211'::text, 'NOC'::text, DATE '2018-02-27'), ('0001225208-18-012263'::text, 'NOC'::text, DATE '2018-08-06'), ('0001225208-20-002414'::text, 'NOC'::text, DATE '2020-02-18'), ('0001628280-21-010865'::text, 'NOC'::text, DATE '2021-05-24'), ('0001628280-22-014934'::text, 'NOC'::text, DATE '2022-05-20'), ('0001628280-22-028934'::text, 'NOC'::text, DATE '2022-11-09'), ('0001628280-23-004318'::text, 'NOC'::text, DATE '2023-02-22'), ('0001628280-24-034018'::text, 'NOC'::text, DATE '2024-08-02'), ('0001628280-25-006862'::text, 'NOC'::text, DATE '2025-02-21'), ('0001628280-25-029775'::text, 'NOC'::text, DATE '2025-06-06')) AS e(accession, symbol, session_date) LEFT JOIN public.ohlcv AS o ON o.symbol=e.symbol AND o.venue='yfinance' AND o.interval='1d' AND o.timestamp >= e.session_date::timestamp AND o.timestamp < e.session_date::timestamp + INTERVAL '1 day' GROUP BY e.accession,e.symbol,e.session_date ORDER BY e.accession",
+  "pairs": [
+    {
+      "accession": "0000909832-26-000039",
+      "symbol": "COST",
+      "session_date": "2026-04-02",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-15-021737",
+      "symbol": "COST",
+      "session_date": "2015-03-04",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-15-076803",
+      "symbol": "COST",
+      "session_date": "2015-10-27",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-16-146701",
+      "symbol": "COST",
+      "session_date": "2016-10-25",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-16-146844",
+      "symbol": "COST",
+      "session_date": "2016-10-26",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-17-057866",
+      "symbol": "COST",
+      "session_date": "2017-10-25",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-19-019086",
+      "symbol": "COST",
+      "session_date": "2019-03-14",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-19-053882",
+      "symbol": "COST",
+      "session_date": "2019-10-25",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-20-062897",
+      "symbol": "COST",
+      "session_date": "2020-12-14",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-21-061606",
+      "symbol": "COST",
+      "session_date": "2021-10-27",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-23-052699",
+      "symbol": "COST",
+      "session_date": "2023-10-13",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001209191-24-002111",
+      "symbol": "COST",
+      "session_date": "2024-01-24",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001225208-17-009570",
+      "symbol": "NOC",
+      "session_date": "2017-05-15",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001225208-18-004211",
+      "symbol": "NOC",
+      "session_date": "2018-02-27",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001225208-18-012263",
+      "symbol": "NOC",
+      "session_date": "2018-08-06",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001225208-20-002414",
+      "symbol": "NOC",
+      "session_date": "2020-02-18",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001628280-21-010865",
+      "symbol": "NOC",
+      "session_date": "2021-05-24",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001628280-22-014934",
+      "symbol": "NOC",
+      "session_date": "2022-05-20",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001628280-22-028934",
+      "symbol": "NOC",
+      "session_date": "2022-11-09",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001628280-23-004318",
+      "symbol": "NOC",
+      "session_date": "2023-02-22",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001628280-24-034018",
+      "symbol": "NOC",
+      "session_date": "2024-08-02",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001628280-25-006862",
+      "symbol": "NOC",
+      "session_date": "2025-02-21",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    },
+    {
+      "accession": "0001628280-25-029775",
+      "symbol": "NOC",
+      "session_date": "2025-06-06",
+      "historical_security_mapping": "UNVERIFIED",
+      "scope": "filing convention diagnostic, not cluster event"
+    }
+  ],
+  "workbook_sha256": "6f0bc21ffa53182c7fb2501cec3e8d7dad1e385fbd22fdde0c4789137cc352d9",
+  "queried_at": "2026-10-23T04:38:29.623Z",
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[\n  {\n    \"accession\": \"0000909832-26-000039\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2026-04-02T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-15-021737\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2015-03-04T08:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-15-076803\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2015-10-27T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-16-146701\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2016-10-25T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-16-146844\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2016-10-26T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-17-057866\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2017-10-25T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-19-019086\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2019-03-14T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-19-053882\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2019-10-25T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-20-062897\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2020-12-14T08:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-21-061606\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2021-10-27T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-23-052699\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2023-10-13T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001209191-24-002111\",\n    \"symbol\": \"COST\",\n    \"session_date\": \"2024-01-24T08:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001225208-17-009570\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2017-05-15T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001225208-18-004211\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2018-02-27T08:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001225208-18-012263\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2018-08-06T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001225208-20-002414\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2020-02-18T08:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001628280-21-010865\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2021-05-24T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001628280-22-014934\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2022-05-20T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001628280-22-028934\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2022-11-09T08:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001628280-23-004318\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2023-02-22T08:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001628280-24-034018\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2024-08-02T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001628280-25-006862\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2025-02-21T08:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"accession\": \"0001628280-25-029775\",\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2025-06-06T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  }\n]"
+      }
+    ],
+    "isError": false
+  },
+  "tool": "mcp__postgres__query",
+  "interpretation": "23 date-only filing diagnostics only; no historical identity, cluster-event, tape-screening or population predicate is passed"
+}

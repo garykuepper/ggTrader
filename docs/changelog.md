@@ -2397,3 +2397,12 @@ Losses appeared catastrophic but Kraken showed otherwise. Root cause was a singl
 ### Fixed
 - BTC regime filter DB fallback for workers without BTC in coin batch
 - BTC regime filter timezone mismatch causing vectorized path crash
+
+### Event audit metadata execution (2026-10-22)
+
+- Pin tape-integrity equity bar counts to `venue='yfinance'` so another venue
+  cannot create a false duplicate or supply a missing equity bar. In-memory SQL
+  regressions reproduce both failures and retain missing/duplicate checks.
+- Record read-only stored metadata counts and identify one candidate original
+  for the unresolved 2018 amendment. Stored counts are not source coverage;
+  mapping, detector provenance, reconstruction and PEAD gates remain unverified.

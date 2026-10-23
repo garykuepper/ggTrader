@@ -610,7 +610,8 @@ def check_tape_integrity_batch(
             result["reason"] = "bar-existence evidence unavailable"
         else:
             _, rows = db.execute_select(
-                "SELECT count(*) FROM ohlcv WHERE interval = '1d' AND symbol = %s "
+                "SELECT count(*) FROM ohlcv WHERE venue = 'yfinance' "
+                "AND interval = '1d' AND symbol = %s "
                 "AND timestamp::date = %s",
                 (event["price_symbol"], date),
             )
