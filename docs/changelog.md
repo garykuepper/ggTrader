@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-23
+
+- **Event-timing source decision:** added an offline hash-verified acceptance
+  diagnostic reproducing 25/25 header-consistent and 9/25 API-inconsistent cached
+  pairs, with eight focused tests. The proposed header-source amendment stays
+  DRAFT; no audit-runner rule changed. SEC documentation citation is UNVERIFIED
+  because the configured contact environment variable was unset.
+- **Public source feasibility:** assessed R1–R9 with four evidence items each and
+  individual prices/history. Sharadar SEP and Norgate pass only the documented
+  execution-price component; no requirement-complete paid combination or common
+  qualifying window is established. The
+  [owner memo](research/2026-10-23-event-timing-audit-decision.md) assigns PEAD and
+  both approved insider representations UNRESOLVED and recommends parking those
+  studies pending the owner. The registered canonical audit remains unpublished;
+  paper observation and production freeze continue. Independent review reproduced
+  counts, focused tests and gates; its R7 quotation transcription correction is
+  included, and final closure re-review is CLEAN. No new SEC collection, return
+  test, purchase, deployment or push.
+
 ## 2026-10-22
 
 - **Lab infrastructure: reuse full-submission ownership XML.** The event-timing

@@ -622,7 +622,7 @@
             "not_after": "2026-10-23T15:57:13Z",
             "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
           },
-          "excerpt": "open, high, low, close, volume",
+          "excerpt": "open, high, low, close and volume",
           "rationale": "Daily OHLCV fields, adjustment choices and assetid are documented. Historical ticker/CIK linkage is a separate blocking input."
         },
         {

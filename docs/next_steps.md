@@ -6,34 +6,37 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Current research decision (2026-10-22)
+## Current research decision (2026-10-23)
 
-Use the [registered-audit completion plan](superpowers/plans/2026-10-22-complete-event-feasibility-audit.md).
-Codex owns execution and synthesis; Flash only receives mechanically checkable extraction/link tasks.
-The plan's exhaustive checklist covers every registered question and protocol
-requirement. Missing inputs remain open dependencies until recovered or explicitly
-accounted for in a completed bounded audit; they do not count as resolved work.
+The [resolution plan](superpowers/plans/2026-10-23-resolve-event-audit.md)
+supersedes earlier event-audit scheduling. The
+[owner decision memo](research/2026-10-23-event-timing-audit-decision.md) assigns
+**UNRESOLVED** to PEAD and insider, separately retaining original timestamp and
+approved filing-date-only representations. It recommends **PARK both studies**;
+the owner has not yet accepted or rejected that recommendation.
 
-1. Freeze one registered evidence package and establish the existing full bounded
-   audit's actual input/completion path, using the working read-only connector.
-   Ingest the reviewed specific F-lot link without pretending population replay ran.
-2. Complete supported mapping/tape/inventory/PEAD and R1–R9 dispositions, then
-   execute and review the registered audit for canonical JSON/report publication.
-   Unknown inputs stay UNVERIFIED. If the completion guard cannot be met, name
-   the exact external input or protocol decision; do not issue another readiness memo.
+1. Owner: approve or reject the
+   [DRAFT header-source amendment](research/briefs/2026-10-23-insider-acceptance-time-amendment.md).
+   Offline results reproduce 25/25 header-consistent and 9/25 API-inconsistent
+   cached pairs; the SEC documentation citation is UNVERIFIED. The runner is
+   unchanged and the separate approved date-only alternative remains in force.
+2. Owner: decide the memo's buy-or-park choice for each signal. The
+   [R1–R9 ledger](research/_event_source_search_ledger.json) documents priced
+   execution-price components, but no requirement-complete paid combination,
+   annual cost or common qualifying five-year window. No purchase case is ready.
 
-Database access is available; [connector evidence](research/_event_audit_connected_metadata.json)
-supersedes the earlier direct-process access limitation. Two COST charters and
-comparison have passed independent review; do not repeat that acquisition.
-Latest SEC lineage is 82 attempts, zero Yahoo, 105.33867007261142 seconds.
+Historical identity, annual coverage, complete insider inventories/reconstruction,
+existing detector export scope and PEAD release/actual/consensus lineage remain
+blockers. No further charter, predecessor, identity-inventory, broad SEC or
+runner/protocol work is queued. The canonical audit artifact remains unpublished
+because this documentary decision does not satisfy its completion guard.
+Source-search exhaustive completion is not claimed while relevant items remain
+unresolved. The existing SEC stop and historical accounting are preserved.
 
-The [accepted workbook](research/2026-10-22-event-evidence-resolution-workbook.md)
-records all five gaps; the [reviewed readiness decision](research/2026-10-22-event-audit-readiness-decision.md)
-remains no Phase 2 with current verified inputs. Historical identity, inventory,
-reconstruction, tape evidence and PEAD lineage have not passed annual A6/A7.
-Source feasibility remains UNRESOLVED; the registered final audit is unfinished.
-Earlier worklists are superseded by the completion plan; historical evidence
-and the [durable handoff](research/event-timing-audit-implementation.md) remain authoritative.
+Database access and the specific predecessor comparison are already recovered;
+the [durable handoff](research/event-timing-audit-implementation.md) records them.
+Paper observation and the production freeze continue under standing owner
+instructions. No return test or production change follows from this decision.
 
 ### Research context and standing decisions
 

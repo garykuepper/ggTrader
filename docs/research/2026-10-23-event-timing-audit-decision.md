@@ -1,8 +1,11 @@
 # Event-timing audit: owner decision on data and timestamp convention
 
-**Classification:** Internal Quantitative Research & Engineering Strategy  
-**Date:** 2026-10-23  
-**Audience:** Owner and quantitative research reviewers  
+**Classification:** Internal Quantitative Research & Engineering Strategy
+
+**Date:** 2026-10-23
+
+**Audience:** Owner and quantitative research reviewers
+
 **Disposition:** PEAD **UNRESOLVED**; insider cluster buying **UNRESOLVED**,
 including its separately approved filing-date-only representation.
 
@@ -253,7 +256,12 @@ completion is also false while relevant documentation remains unresolved.
 Verification for this memo: the Task 1 artifact was regenerated exactly, eight
 focused tests passed through the capped wrapper, changed Python files passed
 Ruff, the ledger's nine ordered routes and 36 evidence items were checked, and
-the frozen membership hash was reproduced. Independent Task 4 review follows.
+the frozen membership hash was reproduced. Independent Task 4 review of
+`58a1dcb..ddce4c4` reproduced the artifact, hashes, eight focused tests and Ruff,
+and found no substantive correctness blockers. Its one minor R7 quotation
+transcription issue was corrected to match the cited FAQ. Final closure
+re-review is **CLEAN**, including that correction, the add-only changelog,
+closure links, scoped snapshot/worklist updates and pending owner gates.
 No database or new SEC request was needed for this synthesis.
 
 **Decision submitted to the owner: PEAD — PARK; insider — PARK. No
