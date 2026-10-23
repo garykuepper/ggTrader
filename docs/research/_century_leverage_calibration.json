@@ -1,0 +1,44 @@
+{
+  "registered_window": [
+    "2006-06-21",
+    "2026-04-30"
+  ],
+  "aligned_window": [
+    "2006-06-22",
+    "2026-04-30"
+  ],
+  "aligned_sessions": 4995,
+  "missing_sessions_by_series": {
+    "SPY_total_return": [],
+    "SSO_total_return": [
+      "2006-06-21"
+    ],
+    "French_RF": []
+  },
+  "return_definition": "(Close_t + Dividends_t) / Close_t-1 - 1, frozen yfinance",
+  "rf_definition": "Ken French daily RF / 100",
+  "fit": "signed mean of zero-spread synthetic-minus-real daily residual times 252; daily RMSE loss",
+  "input_sha256": {
+    "French_daily_zip": "2f29e22546069914890a712680a6f81f3680ebc3543b52864484d209ca13a7db",
+    "SPY.csv": "83c63d73d2d2e5b17bd4a2d484248175ff71a282c501a6eef6ead72b9bd6264d",
+    "SSO.csv": "7244c846d9475d00565054cd9637a84a596974699347fe2ede4a94ed67a20cac"
+  },
+  "fees": {
+    "0.84%": {
+      "expense_ratio_annual": 0.0084,
+      "fitted_spread_annual": 0.00918382333377512,
+      "rmse_daily": 0.0023186657384988187,
+      "residual_bias_daily": -2.361585512841299e-20,
+      "residual_std_daily": 0.0023188978720268066,
+      "zero_spread_rmse_daily": 0.002318952123981951
+    },
+    "0.89%": {
+      "expense_ratio_annual": 0.0089,
+      "fitted_spread_annual": 0.008683823333775214,
+      "rmse_daily": 0.0023186657384988182,
+      "residual_bias_daily": -8.335007692381055e-21,
+      "residual_std_daily": 0.002318897872026806,
+      "zero_spread_rmse_daily": 0.002318921790843963
+    }
+  }
+}
