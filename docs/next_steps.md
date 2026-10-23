@@ -10,6 +10,9 @@ any) — don't let this file accumulate a backlog.
 
 Use the [registered-audit completion plan](superpowers/plans/2026-10-22-complete-event-feasibility-audit.md).
 Codex owns execution and synthesis; Flash only receives mechanically checkable extraction/link tasks.
+The plan's exhaustive checklist covers every registered question and protocol
+requirement. Missing inputs remain open dependencies until recovered or explicitly
+accounted for in a completed bounded audit; they do not count as resolved work.
 
 1. Freeze one registered evidence package and establish the existing full bounded
    audit's actual input/completion path, using the working read-only connector.

@@ -57,6 +57,51 @@ a verified historical interval; a positive flag list into exhaustive screening;
 a corrected lot into an entire filing replacement; or a readiness NO-GO into a
 strategy-performance or universal-source NO-GO.
 
+## Exhaustive completion checklist and ownership
+
+This is the single completion plan for the registered audit, including acquisition
+dependencies and publication. Codex owns every task and verifies delegated output.
+Flash receives only one specified extraction/link check at a time, with exact
+input paths and literal, checkable output; it does not write plans, code or verdicts.
+
+Before closing Task 1, cross-reference every P1–P4, I1–I4 and A1–A12 requirement
+against the existing runner's requirement matrix. Each entry must name its owner,
+source/hash, producing task, verification and outstanding dependency. Preserve
+existing fields rather than introducing a second competing audit schema.
+
+| Required work | Task | Completion evidence |
+|---|---|---|
+| Historical defect applicability and prior outcome exposure | 1, 5 | Each documented defect tied to implementation/run vintage, confirmed or unresolved; no new performance inspection |
+| PIT universes, classification before sampling, deterministic selections | 1, 4 | Frozen membership/classification receipts, exact A9 frames, quotas, shortfalls and failed selections; Russell diagnostic separate |
+| Clock, original availability and date-only representations | 2, 4 | NYSE/DST/early-close checks, separate observed/inferred times, original conflicts retained, monthly-close implementation comparison |
+| Owners, roles, related entities, private purchases and plan fields | 2 | Raw/stored sample reconciliation; PRESENT-TRUE / PRESENT-FALSE / ABSENT retained; no discretionary-trade inference from stored False |
+| Amendment lots, collisions, anomaly quarantine and load boundaries | 2 | Supported links applied at their own eligibility; omitted disclosures, reason counts and valid filing-lag distributions kept separate |
+| Historical issuer/security mapping and complete filing inventories | 3 | Dated source-backed intervals and inventory predicates; NOC descriptor failure preserved; no annual pass from operational examples |
+| Prefix invariance | 2 | All 136 checkpoints compared when information sets are complete; mismatch FAIL, unavailable input UNVERIFIED |
+| PEAD original releases, fiscal periods, EPS and consensus lineage | 4 | Filing-regime labels, basis/currency/split/scaling/zero-negative/duplicate/missingness metadata; consensus strictly before original announcement |
+| Tape and forward completeness diagnostics | 3, 5 | Unique venue-pinned event-date bar, NYSE session and existing detector scope; 63 trading / 126,189,252 calendar-day diagnostics without price paths |
+| Coverage, missingness and qualifying windows | 5 | Annual A6 ratios, separate units/events and censoring causes, every A7 mandatory predicate, longest qualifying window with latest tie break; 2026 diagnostic only |
+| Free and paid/mixed route dispositions | 4, 5 | R1–R9 receipts, documented common window or exact unknown; no universal infeasibility claim from exhausted search |
+| Request accounting, cache integrity and canonical publication | 1, 5 | A11/A12 cumulative lineage, raw hashes, registered run completion, JSON/report agreement and independent final review |
+
+A missing input is an open dependency, not a resolved deliverable. For each such
+dependency Codex must identify the exact field/export, source and scope, whether
+it can be recovered within current authority, and the bounded action needed to
+obtain it. Perform authorized recovery; if unavailable or outside authority,
+carry the exact dependency into the final disposition. An evidence-based
+UNVERIFIED predicate can be final only after the registered bounded audit actually
+completes; mandatory execution inputs still block canonical publication.
+
+The first Flash assignment is a literal key/line extraction from
+`validate_evidence_record()` and `reviewed_fields()` in the existing audit modules.
+Codex checks it against source before using it in Task 1. Later suitable jobs are
+exact hash/link checks or extracting a named field from an identified cached file.
+
+Execution follows Tasks 1–5 without another planning cycle. Tasks 2–4 may proceed
+independently after their input contracts are frozen. No automatic repeat vendor
+survey, collection restart or review loop. Final review findings are verified and
+fixed; any remaining substantive objection prevents a clean-completion claim.
+
 ## Task 1: Freeze inputs and establish the actual completion path
 
 **Output:** One registered `event-timing-evidence-v1` input package plus source
