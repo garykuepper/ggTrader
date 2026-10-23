@@ -1,6 +1,6 @@
 # Brief: free forward evidence for future taxable stock candidates
 
-**Status:** DRAFT 2026-10-23, awaiting owner approval
+**Status:** approved by the owner 2026-10-23 ("execute"), before any candidate was run under it. It replaces Part B for future stock candidates; changing it needs a new dated brief.
 
 **Terms used below:**
 
