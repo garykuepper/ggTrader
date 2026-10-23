@@ -1,0 +1,126 @@
+{
+  "schema": "event-audit-readiness-decision-v1",
+  "schema_authority": "Documentary decision record, not registered final audit output",
+  "date": "2026-10-22",
+  "decision": "DO_NOT_START_PHASE_2_RETURN_TEST",
+  "decision_scope": "Readiness with currently verified inputs only; no new strategy performance or universal source infeasibility claim",
+  "decision_basis": "Mandatory registered evidence gates have not passed; starting a return test cannot yield an accepted test under this protocol.",
+  "source_feasibility": {
+    "insider_original": "UNRESOLVED",
+    "insider_filing_date_only": "UNRESOLVED",
+    "pead": "UNRESOLVED",
+    "qualifying_five_year_window": "not established"
+  },
+  "registered_final_audit_complete": false,
+  "canonical_audit_outputs_modified": false,
+  "input_bindings": [
+    {
+      "path": "docs/research/_event_evidence_resolution_workbook.json",
+      "sha256": "6f0bc21ffa53182c7fb2501cec3e8d7dad1e385fbd22fdde0c4789137cc352d9"
+    },
+    {
+      "path": "docs/research/_cost_charter_comparison_results.json",
+      "sha256": "949b510f223c2bec16ae45a0b634a9503af5d4670626561e340160cfeb3ca0f7"
+    },
+    {
+      "path": "docs/research/_event_evidence_export_file_search.json",
+      "sha256": "cd47add9644a3abd67ac4b2f9943a5675959ed9c8b30c46a8f30b9b65dcd070a"
+    },
+    {
+      "path": "docs/research/briefs/2026-10-21-event-timing-audit.md",
+      "sha256": "4272da4069bb33640c0b2d7f621cb27969d97fa5d97f424d1b7ce01a9ad7d904"
+    },
+    {
+      "path": "docs/research/briefs/2026-10-22-event-timing-source-conflict-proposal.md",
+      "sha256": "a8d1cee1f4c2226d7eda0f28bbbcfc156ae1d55d94a5a0fef9354917bef9297d"
+    }
+  ],
+  "accounting": {
+    "new_sec_attempts": 2,
+    "cumulative_sec_attempts": 81,
+    "yahoo_attempts": 0,
+    "elapsed_seconds": 105.01228246744722,
+    "all_http_200": true,
+    "all_raw_hashes_verified": 81,
+    "parent_unchanged": true,
+    "accounting_prefix_verified": 79,
+    "stop": null,
+    "authorization_consumed": true
+  },
+  "read_only_metadata_check": {
+    "scope": "Read-only schema metadata only; no price, return or event values",
+    "sql": "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND (table_name IN ('ohlcv', 'form4_transactions', 'earnings_surprises') OR table_name ILIKE '%identit%' OR table_name ILIKE '%security%' OR table_name ILIKE '%detect%' OR table_name ILIKE '%flag%') ORDER BY table_name, ordinal_position",
+    "db_writes": 0,
+    "status": "unavailable",
+    "reason": "Read-only metadata unavailable using exported settings; .env not read and no alternate connection attempted",
+    "query_log": []
+  },
+  "blocking_requirements": [
+    {
+      "id": "IDENTITY",
+      "signals": [
+        "insider_cluster",
+        "pead"
+      ],
+      "predicate": "A6 historical identity and mapped-price coverage",
+      "status": "UNVERIFIED",
+      "required_input": "Source-bound historical issuer/security class/ticker/vendor mapping with explicit validity intervals and delisted/acquired coverage; COST effective chronology if needed for that mapping.",
+      "resolution_test": "Existing audit resolves each PIT membership interval and event to the correct historical price security, then measures annual coverage >=95%.",
+      "available_evidence": "Dated annual observations and charters do not supply a complete historical mapping."
+    },
+    {
+      "id": "TAPE",
+      "signals": [
+        "insider_cluster",
+        "pead"
+      ],
+      "predicate": "A7 mapped unique NYSE-session bar plus existing detector flags",
+      "status": "UNVERIFIED",
+      "required_input": "Existing source-bound detector flags export, original referenced bytes, and reviewed event/security/date manifest; read-only metadata access via exported settings.",
+      "resolution_test": "Validate source correspondence and screening scope; count bars including zero per pair with venue=yfinance, interval=1d, NYSE calendar and cutoff2026-04-30.",
+      "available_evidence": "No qualifying export located in three searched roots; no DB rows were obtained. Runtime count venue omission must be fixed/tested before that path is relied on."
+    },
+    {
+      "id": "INSIDER_INVENTORY",
+      "signals": [
+        "insider_cluster"
+      ],
+      "predicate": "A6 complete monthly filing inventory",
+      "status": "UNVERIFIED",
+      "required_input": "Independent completeness corroboration for issuer filing lists, including NOC descriptor conflict, with a frozen source set and cost.",
+      "resolution_test": "Preserve discrepant row/header and establish inventory coverage without an unapproved boundary tolerance.",
+      "available_evidence": "NOC page-001 descriptor check FAIL; missing page002 acquired. COST parsed inventory completeness alone does not pass identity or reconstruction."
+    },
+    {
+      "id": "INSIDER_REPLAY",
+      "signals": [
+        "insider_cluster"
+      ],
+      "predicate": "A7 amendment/collision/load boundary and 136-prefix invariance",
+      "status": "UNVERIFIED",
+      "required_input": "Raw population and carry-in disclosures, source-backed predecessor links, stored metadata comparison and supported identities.",
+      "resolution_test": "Replay public-time information at all 136 decision closes, preserving original/date-only assessments, quarantines and failed selections; measure all annual mandatory gates.",
+      "available_evidence": "24 cached ownership accessions/52 lots are operational diagnostics. No cached non-derivative purchase lot demonstrates a purchase-cluster population; unresolved amendments remain excluded."
+    },
+    {
+      "id": "PEAD_LINEAGE",
+      "signals": [
+        "pead"
+      ],
+      "predicate": "A3/A7 original announcement, actual EPS and pre-announcement consensus",
+      "status": "UNVERIFIED",
+      "required_input": "Source-linked original release/issuer/fiscal-period matching, actual EPS/basis/currency/split metadata and consensus snapshots strictly before the original announcement.",
+      "resolution_test": "Demonstrate historically available matching signal inputs and complete member-quarter retrieval across a common qualifying window.",
+      "available_evidence": "Stored contract lacks required lineage; no R1\u2013R9 combination is requirement-complete, and vendor search spent/remaining time is unreconciled."
+    }
+  ],
+  "reopen_condition": "Supply and validate actual missing inputs above; then evaluate original annual A6/A7 predicates without relaxing them. No further charter fetching alone can establish tape or EPS/consensus lineage.",
+  "continuing_work": "Research and frozen paper observation remain active under owner instructions; no account or project shutdown is proposed.",
+  "verification_limits": [
+    "No price values, return tests, new detectors, DB writes or production changes",
+    "ReadOnlyDb refused/unavailable using exported settings; no alternate connection or .env read",
+    "No new SEC/Yahoo/vendor request in this decision step",
+    "No claim that paid routes or all possible data sources are disproven"
+  ],
+  "independent_review": "pending"
+}

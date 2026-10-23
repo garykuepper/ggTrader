@@ -8,6 +8,14 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-22)
 
+**Readiness decision under independent review:**
+[Present test-readiness decision](research/2026-10-22-event-audit-readiness-decision.md).
+Mandatory mapping, detector/export, inventory/reconstruction and PEAD lineage
+inputs are still unavailable. Do not start Phase 2 with current verified inputs.
+Source feasibility remains UNRESOLVED; the registered final audit is not complete.
+No further charter or collection loop is queued just to replace missing inputs.
+
+
 **Next execution slice:** Use the [next evidence actions plan](superpowers/plans/2026-10-22-next-evidence-actions.md):
 (1) two COST charters and their comparison passed independent review (81
 cumulative SEC attempts); actual state-filing chronology remains unverified.
