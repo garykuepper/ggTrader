@@ -8,6 +8,15 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-23)
 
+**2026-10-23 net-issuance decision:** [Part A closed NO-GO](research/2026-10-23-net-issuance-screen-nogo.md).
+Registered `BIG NegNI` fails A1 (Newey-West t 0.26, p 0.398 vs t ≥ 3.0) and A2
+(+0.48 vs +1.0 pt/yr since 1994; `_net_issuance_screen_results.json`:
+`H1.A1.t`, `H1.A1.p`, `H1.A2.cagr_diff_pp`). Heavy issuers lag, but that
+short-side diagnostic cannot establish a long-only edge. With momentum, four
+classic factors, and net issuance closed, the next research step is an owner
+discussion of direction based on available free-data evidence. Existing paper
+observation and the production freeze continue.
+
 **Standard updated 2026-10-23 (owner-approved):** the
 [forward-paper standard](research/briefs/2026-10-23-forward-paper-standard.md) replaces the
 paid-data Part B for future stock candidates:

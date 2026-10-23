@@ -2,6 +2,15 @@
 
 ## 2026-10-23
 
+- **Research: net-issuance screen — Part A NO-GO.** Closed the registered
+  long-only `BIG NegNI` hypothesis: full-window Newey-West t 0.26 (p 0.398)
+  fails A1 t ≥ 3.0, and since-1994 net CAGR difference +0.48 pt/yr fails A2
+  +1.0 pt/yr. Heavy-issuer weakness is a short-side diagnostic, not a
+  qualifying long-only return. No candidate advances to B0/B1; next is an
+  owner discussion of research direction. [Report](research/2026-10-23-net-issuance-screen-nogo.md);
+  `_net_issuance_screen_results.json`: `H1.A1`, `H1.A2`,
+  `issuance_shape["BIG HiNI"].base`.
+
 - **Research standard: forward-paper Part B (owner-approved).** The owner ruled out paid data
   permanently, so the paid 2000–2020 Part B replay was unreachable. It is replaced, for future
   candidates only, by B0 (a kill-only replay on the clean 2021–2026-04 tape) and B1 (a forward
