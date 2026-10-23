@@ -8,82 +8,29 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-22)
 
-**Database access correction:** An existing read-only PostgreSQL connector works.
-Schema and two operational bar-count queries succeeded; no credentials or `.env`
-are needed for that connector. Use the [recorded metadata](research/_event_audit_connected_metadata.json).
-Historical security mapping and existing detector evidence still need resolution.
+Use the updated [connected-metadata execution plan](superpowers/plans/2026-10-22-next-evidence-actions.md).
+Codex owns SQL, interpretation and code; Flash only receives simple exact extraction/link tasks.
 
-**Reviewed readiness decision:**
-[Present test-readiness decision](research/2026-10-22-event-audit-readiness-decision.md).
-Mandatory mapping, detector/export, inventory/reconstruction and PEAD lineage
-inputs are still unavailable. Do not start Phase 2 with current verified inputs.
-Source feasibility remains UNRESOLVED; the registered final audit is not complete.
-Independent review supports this decision; a future metadata-query table-name
-correction is recorded without rerunning the unavailable query. No further
-charter or collection loop is queued just to replace missing inputs.
+1. Use the working read-only PostgreSQL connector to inventory available
+   identity/detector/provenance metadata, measure pinned stored counts, and narrow
+   the 2018 amendment's predecessor by issuer/owner/filing date. Record exact
+   queries and results; no prices, returns, DB writes or new external calls.
+2. Trace candidate mapping/detector sources to their original evidence. If usable,
+   fix/test the runtime venue filter before evaluating metadata/reconstruction;
+   otherwise record the exact unavailable input and coverage requirement.
 
+Database access is available; [connector evidence](research/_event_audit_connected_metadata.json)
+supersedes the earlier direct-process access limitation. Two COST charters and
+comparison have passed independent review; do not repeat that acquisition.
+Latest SEC lineage is 81 attempts, zero Yahoo, 105.01228246744722 seconds.
 
-**Next execution slice:** Use the [next evidence actions plan](superpowers/plans/2026-10-22-next-evidence-actions.md):
-(1) two COST charters and their comparison passed independent review (81
-cumulative SEC attempts); actual state-filing chronology remains unverified.
-(2) Bounded local search found no qualifying
-mapping/detector export in the searched roots. Next establish exact effective-date
-and mapping/export dependencies; no DB query or extra acquisition is queued.
-Codex owns both tracks.
-
-**Active consolidated plan:** Follow the owner-requested
-[five-gap resolution plan](superpowers/plans/2026-10-22-event-evidence-resolution.md).
-Codex rebuilt the rejected Flash draft; independent review now clears all 14
-findings at [offline workbook scope](research/2026-10-22-event-evidence-resolution-workbook.md).
-Flash is restricted to simple extraction/link checks per AGENTS.md.
-Next: prepare a reviewed acquisition handoff for the two COST charter exhibits,
-and locate the existing detector export/historical mapping inputs identified in
-the workbook. Preserve the strict NOC inventory failure, original timing
-conflicts and every unknown dependency. No new requests, DB queries or return
-test are authorized by workbook acceptance.
-This supersedes piecemeal scheduling below, while preserving all prior findings.
-
-
-**Immediate work — insider evidence validation:** Follow the
-[next-steps plan](superpowers/plans/2026-10-21-insider-evidence-next-steps.md).
-The reviewed audit passed its bounded SEC transport/cache smoke, not data
-feasibility. Both signals remain UNRESOLVED.
-
-1. Review the dated issuer/symbol observations and remaining identity/inventory
-   gaps in [the handoff](research/event-timing-audit-implementation.md#offline-identity-observations-and-exact-missing-support--2026-10-22).
-   The approved date-only amendment is implemented in `740781a` and cleared by
-   independent review. Cached comparison: 21 filing-date pairs comply with the
-   amended timing convention before the limited restart. The three newly fetched
-   documents now corroborate both missing in-window pairs: 23 of the 24 operational
-   records comply; the remaining incomplete record is after the cutoff.
-   Eight cached pre-2019 XML
-   records provide event-local identity evidence, not continuous validity or
-   price-security linkage. Original timestamp conflicts remain reported.
-2. The owner-authorized [three-document restart](research/briefs/2026-10-22-three-document-restart.md)
-   completed with three HTTP 200 responses, advancing collection attempts to 53
-   while preserving the original cache. That authorization is consumed; external
-   requests remain paused outside it. Next assess continuous identity and raw
-   inventory evidence gaps; Northrop's page discrepancy and other mandatory
-   gates remain unresolved. No full-universe run, return test or automatic
-   clock/interval repair is queued.
-
-**Collector implementation complete:** `3ffb112` reuses canonical full-submission
-ownership XML; `bbf6f44` closes the malformed TEXT-envelope gap found in review.
-Fresh independent Codex review is clean, with 33 collector tests passing.
-Next work remains the identity/inventory evidence gaps above. This does not
-relax any audit predicate or authorize the 1,545 uncached full submissions
-observed for the two examples.
-
-**Active bounded resolution:** The owner instructed “Resolve”. The
-[26-URL evidence batch](research/briefs/2026-10-22-identity-inventory-resolution-batch.md)
-completed: 26 HTTP 200 responses, 79 cumulative collection attempts, all raw
-hashes verified. Northrop’s missing page is acquired and its disputed filing
-date corroborated; the source descriptor remains inconsistent. Independent review supports the
-[documentary results](research/_insider_identity_inventory_resolution_results.json).
-The exact next identity evidence is COST’s 2015 and 2022 charter exhibits,
-identified in that artifact; cached annual statements do not resolve the legal
-class history. Reconcile those provisions/effective dates and separately document
-the NOC inventory-rule disposition before asserting completeness or continuity. No further requests or return test are queued.
+The [accepted workbook](research/2026-10-22-event-evidence-resolution-workbook.md)
+records all five gaps; the [reviewed readiness decision](research/2026-10-22-event-audit-readiness-decision.md)
+remains no Phase 2 with current verified inputs. Historical identity, inventory,
+reconstruction, tape evidence and PEAD lineage have not passed annual A6/A7.
+Source feasibility remains UNRESOLVED; the registered final audit is unfinished.
+Earlier worklists are superseded by this execution slice; historical evidence
+and the [durable handoff](research/event-timing-audit-implementation.md) remain authoritative.
 
 ### Research context and standing decisions
 

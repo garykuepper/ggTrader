@@ -1,146 +1,187 @@
-# Next Evidence Actions Plan
+# Connected Metadata and Evidence Recovery Plan
 
 > **For agentic workers:** Use superpowers:executing-plans for Codex execution.
-> Track the checkboxes below. This is the next executable slice of the accepted
-> five-gap plan, not another research or protocol redesign.
+> Track the checkboxes below. This replaces the completed charter-acquisition
+> slice; do not repeat that acquisition or its reviews.
 
-**Goal:** Establish what the COST charters resolve and whether existing security
-mapping and detector metadata can support the next audit stage.
+**Goal:** Recover usable audit inputs through the working read-only connection
+and existing research artifacts, then measure the registered gates they support.
 
-**Architecture:** Reuse the reviewed transport/accounting and accepted workbook.
-Handle one bounded two-document acquisition, and independently locate existing
-metadata inputs. Make runtime changes only if a demonstrated defect blocks use.
+**Architecture:** Reuse `mcp__postgres__query`, reviewed SEC caches, the accepted
+workbook and existing audit/reconstruction code. Preserve connector results as
+source-bound metadata snapshots. Make no new ingestion framework or parallel audit.
 
-**Tech stack:** Existing Python environment, SEC HTML, immutable raw cache,
-existing audit metadata/export interfaces and Markdown/JSON evidence artifacts.
+**Tech stack:** Read-only PostgreSQL, existing Python audit and tests, immutable
+JSON/raw evidence and Markdown reporting.
 
 **Spec:** [Approved audit](../../research/briefs/2026-10-21-event-timing-audit.md),
-[approved date-only amendment](../../research/briefs/2026-10-22-event-timing-source-conflict-proposal.md),
-[accepted workbook](../../research/2026-10-22-event-evidence-resolution-workbook.md),
-and [five-gap plan](2026-10-22-event-evidence-resolution.md).
+[source manifest](../../research/briefs/2026-10-21-event-timing-audit-sources.md),
+[date-only amendment](../../research/briefs/2026-10-22-event-timing-source-conflict-proposal.md),
+[accepted workbook](../../research/2026-10-22-event-evidence-resolution-workbook.md).
+
+## Starting point
+
+- Read-only connector works. Schema and two venue-pinned daily-bar counts are
+  [recorded](../../research/_event_audit_connected_metadata.json). The earlier
+  failed direct-process lookup is not a database-access blocker.
+- Two COST charters and their comparison passed independent review. Do not
+  chase more charter exhibits unless a specific mapping assertion needs them.
+- Latest SEC lineage: 81 attempts, zero Yahoo, 105.01228246744722 seconds;
+  raw cache `data/external/event_timing_audit/cost-charters-h1kbl362/`.
+- No qualifying mapping or detector export was found in the three recorded
+  search roots. Different names/locations and existing DB metadata remain to check.
+- Present decision remains no Phase 2 return test; source feasibility and the
+  registered final audit remain unfinished. This plan does not relax that gate.
 
 ## Global constraints
 
-**Execution update:** After this plan, the owner instructed “delegate easy tasks
-to agy flash but you handle the hard stuff.” Proceed with the two-charter slice
-and bounded local artifact search. This supersedes the planning-only scope below;
-acquisition review and all stop limits remain mandatory.
-
-- Codex owns execution, synthesis and reviews. Flash may only extract a named
-  field or exact link from specified inputs, with independent verification.
-- This request creates a plan; it does not itself execute the acquisition or DB
-  query. Prior 26-document authorization is consumed. Before HTTP, review the
-  concrete handoff against existing authorization and explicit restart history.
-- Inherit actual lineage state: 79 SEC attempts, zero Yahoo attempts and
-  104.3013715306297 seconds in `identity-inventory-we_55vr8`. Recheck hashes/state;
-  do not reset accounting or reuse the consumed claim.
-- SEC ≤5 requests/sec, initial plus three retries, cumulative ≤20,000 SEC and
-  ≤2,000 Yahoo attempts, six-hour cumulative runtime. First new 403/429 stops all
-  external requests; no automatic restart, blocked-URL retry or routing change.
-- No returns, price values, P&L, backtests, new detectors, paid purchases, outreach,
-  production changes, `.env` reads/edits or DB writes. Contact stays process-only.
-- Preserve all existing timing conflicts, quarantine, denominators, cutoff,
-  A6/A7/A9 gates and unknowns. Source consistency is not completeness.
+- Codex owns SQL, interpretation, reconstruction, code and reviews. Flash may
+  only list specified paths or extract exact fields/links, with parent verification.
+- This request creates a plan; no new queries, acquisition or tests execute here.
+- During execution use read-only metadata queries only: no price values, EPS
+  values, return/P&L paths, production state, DB writes or detector reruns.
+  Dates, identifiers, counts and missing-field indicators are sufficient.
+- No `.env` read, credential request or alternate connection is needed for the
+  working connector. No production/container/configuration edits or deployment.
+- No external request in the first two tasks. A later exact acquisition needs
+  a reviewed request list, source/spec hashes, fresh exclusive claim, inherited
+  accounting and authority/stop clearance. Do not reuse consumed claims.
+- SEC ≤5/sec, initial plus three retries, ≤20,000 SEC / ≤2,000 Yahoo attempts,
+  six-hour cumulative deadline; first new 403/429 stops calls. Preserve old stops.
+- Vendor search spent/remaining time is unknown; reconcile before further R1–R9
+  searching. No fresh two-hour allocation, purchase, trial, account or outreach.
+- Preserve 2026-04-30 cutoff, original conflicts/quarantine and the separate uniform
+  date-only convention. Preserve A6/A7/A9 denominators, failed samples and all
+  136 insider prefix checkpoints. No one-day NOC inventory tolerance.
 
 ## Review focus
 
-Check charter effective dates against reporting dates; distinguish issuer/class
-identity from vendor mapping; retain zero-bar pairs and venue in metadata queries;
-validate detector source bytes rather than JSON shape alone; never manufacture
-an inventory PASS or a vendor-search allowance from missing evidence.
+Check zero-bar pairs, venue mixing, current versus dated identity, source-bound
+screening versus absent flags, and amendment predecessor candidates versus proved
+links. Keep insider member-months separate from PEAD member-quarters. Diagnostics
+cannot pass population gates or certify a qualifying five-year window.
 
-## Task 1: Prepare, review and execute the two-charter subpackage
+## Task 1: Recover database metadata and identify exact source dependencies
 
-**Inputs:** Machine workbook `acquisition_handoff`, `charter_link_observations`
-and current manifest/checkpoint/registration/claim hashes.
-**Outputs:** A bounded acquisition registration/results artifact and a source-bound
-charter comparison appended to the durable handoff.
+**Files:** Create `docs/research/_event_audit_metadata_inputs.json`; append the
+findings to `docs/research/event-timing-audit-implementation.md`.
+**Consumes:** Working connector and actual database schema.
+**Produces:** Query/source receipts, inventory counts and exact candidate IDs.
 
-- [x] Freeze exactly these two uncached canonical targets with their existing
-  annual-report href provenance:
-  - `https://www.sec.gov/Archives/edgar/data/909832/000090983215000003/costex3110q21515.htm`
-  - `https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/costex3110k082822.htm`
-- [x] Adapt the already reviewed bounded runner; bind input/spec/code hashes, a
-  new exclusive claim and the inherited checkpoint. Verify each raw manifest
-  entry's own file/hash, including earlier responses to retried URLs. Dry run
-  must issue zero HTTP calls and leave the parent unchanged.
-- [x] Obtain one fresh scoped Codex acquisition review. Resolve authority/stop
-  clearance before HTTP. If a new owner decision is required, present the exact
-  two-URL package, not a general permission request.
-- [x] Execute only the cleared package: 2 nominal / 8 maximum new attempts;
-  projected cumulative count 81 nominal / 87 maximum. Runtime is not estimated;
-  retain the existing hard deadline. Verify hashes, accounting prefix, failures,
-  actual outcomes and unchanged parent bytes.
-- [x] Compare operative common-stock/par-value terms, amendment history and
-  explicit effective dates. Explain precisely what supports or fails to explain
-  $.005 → $.01 → $.005. Do not infer a conversion, typo or continuous identity.
-- [ ] If the comparison needs the named 2020 charter or Exhibit 4.8 descriptions,
-  record the exact unresolved clause/date and conditional URL. No automatic
-  expansion. NOC continuity and vendor mapping remain independent requirements.
+- [ ] Query `information_schema` for tables/views and relevant column names
+  describing security identities, historical symbols, validity intervals,
+  corporate actions, detector runs or flags. Record the searched schemas and
+  results. Name matches alone do not establish usable provenance or coverage.
+- [ ] Inspect candidate schemas before selecting data. Read only identifiers,
+  dates, lineage references, counts and missing-field indicators. If no candidate
+  exists, record the bounded search; do not infer universal absence.
+- [ ] Produce pinned annual metadata counts for `form4_transactions` and
+  `earnings_surprise` through the cutoff. Retain malformed/unknown dates and
+  anomalous transaction/filing relationships in separate counts. These are stored
+  inventories, not verified source coverage or tradeable event counts.
+- [ ] Identify the 2018 amendment predecessor using this metadata-only query:
 
-**Done when:** A verified legal-source disposition exists, or the precise remaining
-legal evidence is named. A fetched charter alone is not an identity PASS.
+```sql
+SELECT DISTINCT accession_number, issuer_cik, insider_cik, filing_date
+FROM public.form4_transactions
+WHERE issuer_cik = 1133421
+  AND insider_cik = 1539147
+  AND filing_date = DATE '2018-02-15'
+ORDER BY accession_number;
+```
 
-## Task 2: Locate existing mapping and detector inputs, then validate metadata use
+- [ ] Compare any returned accession with the 14 cached-inventory candidates.
+  Stored owner/date matches narrow acquisition; they do not prove lot replacement.
+  If none matches, retain the candidate list and its uncertainty.
+- [ ] Record exact SQL, parameters, query timestamp, connector identity, raw result
+  and hash. No secrets. Do not invent an existing-runner adapter or canonical
+  status from a custom metadata record.
 
-**Inputs:** Workbook D3/D5, `detector_export_contract`, `metadata_query_proposals`
-and actual `ReadOnlyDb`/`check_tape_integrity_batch()` contracts.
-**Outputs:** A source/location/coverage manifest, executable read-only metadata
-handoff if inputs exist, or named unavailable inputs.
+**Done when:** We know which useful inputs actually exist in the connected DB,
+which exact accession(s) need raw verification, and which metadata sources are absent.
 
-- [x] Search documented local research/export locations for a historical security
-  map and existing detector export. Record searched paths, hashes, supported
-  periods and missing fields. Do not claim filesystem-wide absence from filename
-  searches. No database query, detector rerun or private-vault search in this step.
-  Initial bounded scan is recorded in `_event_evidence_export_file_search.json`;
-  no qualifying export was located in the three specified roots.
-- [ ] Validate map issuer/class/vendor identity and explicit validity intervals;
-  do not create intervals by interpolating annual reports or today's ticker map.
-- [ ] Validate existing flags-only export and its referenced source bytes,
-  screened interval and flag correspondence. Missing export is UNVERIFIED.
-- [ ] Prepare the exact event/security/date input manifest for the accepted paired
-  LEFT JOIN metadata query, pinning `venue='yfinance'`, `interval='1d'`, appropriate
-  per-signal horizon and 2026-04-30 cutoff. Preserve zero counts, unknown mappings,
-  NYSE-session failures and detector exceptions. No price/outcome columns.
-- [ ] Before using the runtime audit count path, reproduce its omitted-venue
-  defect with a multi-venue failing fixture. Make the smallest shared query fix;
-  run `scripts/run_tests.sh tests/lab/test_event_timing_audit.py -q` and Ruff checks
-  on changed Python files, then obtain fresh code review. Do not change runtime
-  code merely to write this plan or locate exports.
-- [ ] Review any read-only DB handoff before execution. Query results establish
-  bar existence/multiplicity only, not historical identity or clean tape alone.
-  If source/export input is absent, report its exact schema/coverage requirement.
+## Task 2: Recover source-bound identity and existing detector evidence
 
-**Done when:** The next tape/mapping predicate can be evaluated with traceable
-inputs, or a specific unavailable export/source blocks it. No inferred clean flags.
+**Files:** Update metadata-input JSON and handoff; preserve accepted source artifacts.
+**Consumes:** Task 1 locations/lineage and the workbook's detector contract.
+**Produces:** Supported identity intervals/export receipts, or named missing inputs.
 
-## Task 3: Update the audit disposition and choose the next dependency
+- [ ] Trace existing detector outputs from their producing script/report and
+  recorded source locations. Search only project/research locations implicated
+  by those references; no private-vault or arbitrary whole-host scan.
+- [ ] If a legacy artifact exists, determine what dates/securities were actually
+  screened and which flags were retained. Export existing metadata only when
+  its lineage supports the required representation. Do not rerun detection or
+  synthesize exhaustive clean intervals from incomplete legacy results.
+- [ ] Validate an export's source bytes, screened intervals and flag correspondence
+  using the existing ingestion contract; shape-valid JSON is insufficient.
+- [ ] Inspect historical mapping candidates for issuer/class/ticker/vendor IDs,
+  explicit validity intervals and supporting records. Annual observations and
+  current symbol/CIK matches remain diagnostic. Identify any COST effective-date
+  evidence actually needed by that map; do not let it block unrelated work.
+- [ ] If a required source is unavailable, record its exact fields, historical
+  scope and source/location requirement. The owner should receive one concrete
+  missing-input request only if local/connected recovery is exhausted.
 
-- [ ] Append Task 1/2 outcomes to the existing handoff and workbook; preserve the
-  original accepted observations and separate later acquisition evidence.
-- [ ] Keep NOC's descriptor failure unchanged; define independent inventory
-  corroboration before any proposed predicate amendment. No one-day waiver.
-- [ ] From the accepted dependency order, select the next bounded work only when
-  these results justify it: identify the amendment predecessor among the 14
-  candidates, or prepare complete reconstruction/mapping inputs. Freeze the union
-  of exact URLs before costing; candidate lists overlap the population footprint.
-- [ ] Keep PEAD release, actual-EPS and pre-announcement consensus lineage visible.
-  Reconcile vendor-search spending/stop history before any targeted R1–R9 search;
-  unknown remaining time is not a new two-hour allocation.
-- [ ] Produce a concise disposition: closed gaps, evidence references, remaining
-  blocking inputs and the next one or two actions. No full-universe collection
-  or Phase 2 test until its registered prerequisites and authority are satisfied.
-- [ ] Check JSON/relative links and `git diff --check`; commit coherent reviewed
-  changes. No push, merge or deployment. Documentation-only work needs no tests.
+**Done when:** Each mapping/detector input is either source-supported and usable
+or has a precise missing-source dependency. No clean-tape or identity PASS is inferred.
 
-**Completion:** Two concrete evidence tracks have checked outcomes and a bounded
-next action. Both signals stay UNRESOLVED unless their complete registered
-requirements actually pass; plan completion is not strategy validation.
+## Task 3: Make metadata evaluation reliable, then test supported inputs
 
-**Task 1 execution record:** Two HTTP 200 responses, 81 cumulative SEC attempts,
-105.01228246744722 seconds, all 81 hashes verified. Comparison artifact:
-`docs/research/_cost_charter_comparison_results.json`. The 2022 exhibit contains
-a Section 2.1 amendment adopted 1999/executed 2001, effective on state filing;
-actual filing date is not verified. Independent documentary review is CLEAN;
-all clauses/date bindings, 81 hashes and accounting reconcile. No
-continuous-identity PASS or additional request follows.
+**Files:** Conditional change in `src/ggTrader/lab/event_timing_audit.py` and
+`tests/lab/test_event_timing_audit.py`; changelog if runtime logic changes.
+**Consumes:** Reviewed event/security/date pairs and Task 2 evidence.
+**Produces:** Correct venue-pinned counts and per-event supported predicates.
+
+- [ ] Before using `check_tape_integrity_batch()`, add a failing multi-venue fixture:
+  one yfinance daily bar plus a same-date other-venue bar must count as one;
+  an other-venue-only row must count as zero. Keep missing/duplicate cases distinct.
+- [ ] Reproduce the failure, pin the shared equity count query to
+  `venue='yfinance'`, and preserve existing NYSE/session and detector checks.
+  Read all callers first; change no unrelated runtime behavior.
+- [ ] Run capped focused tests via `scripts/run_tests.sh` and Ruff check/format
+  on changed Python files; obtain one fresh scoped code review before relying on it.
+- [ ] Use the accepted paired LEFT JOIN query/parameters for supported exact event
+  pairs. Preserve zero counts, unknown mappings, missing tradeable dates, existing
+  detector flags and scope gaps. Do not query price/outcome values.
+- [ ] Replay only source-supported insider inputs. Verify predecessor links from
+  raw disclosures at their own public times; exclude unresolved amendments.
+  Population prefix checks stay UNVERIFIED until complete required inputs exist.
+
+**Done when:** Metadata/replay results are reproducible for their stated scope;
+missing population or source evidence is explicit rather than silently omitted.
+
+## Task 4: Advance the remaining branches only when the inputs justify it
+
+**Consumes:** Tasks 1–3, accepted source-route evidence and fixed denominators.
+**Produces:** Measured supported gates and one consolidated unresolved-input list.
+
+- [ ] Freeze the smallest raw-request union needed for confirmed predecessor or
+  independent inventory corroboration. Cost nominal/worst attempts, overlaps,
+  runtime/deadline and recovery before acquisition review. Do not download the
+  whole population or refresh NOC pages merely because endpoints are reachable.
+- [ ] Keep NOC completeness uncleared until independently supported; a corroborated
+  row and disjoint pages cannot prove that no filings were omitted.
+- [ ] For PEAD, inspect any newly located provenance metadata for original
+  release/issuer/fiscal matching, actual-EPS basis and strictly pre-announcement
+  consensus timestamps. No EPS values or return tests are needed to establish
+  whether the lineage exists. If absent, preserve that exact dependency.
+- [ ] Reconcile vendor-search accounting before proposing one targeted question
+  within the existing R1–R9 manifest. Do not repeat the whole vendor search.
+- [ ] Compute registered annual coverage only when full applicable denominators
+  and supported numerators exist. A6: ≥95% identity/retrieval/mapped prices and
+  both unexplained-missingness ratios ≤2%; A7: every mandatory annual check plus
+  ≥5 contiguous complete qualifying years. 2026 is diagnostic only.
+- [ ] Update the existing workbook/handoff and next one or two worklist actions.
+  Publish canonical audit outputs only through the existing completed bounded-run
+  contract; offline snapshots cannot bypass it. Keep source UNRESOLVED separate
+  from the present no-Phase-2 decision. Commit coherent verified work; no deployment.
+
+## Completion criteria
+
+The next work is complete when database metadata is measured, the predecessor
+candidate set is narrowed, mapping/detector sources have supported dispositions,
+and any evaluated gates have raw receipts. If a necessary input is unavailable,
+return the exact missing source/fields/date scope and one actionable dependency.
+Do not claim all five gaps are resolved or start another planning/review cycle
+merely because those inputs are still missing.
