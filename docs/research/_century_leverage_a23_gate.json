@@ -1,0 +1,35 @@
+{
+  "gate": "A23 frozen-input X==Y",
+  "baseline_commit": "53b739c",
+  "frozen_inputs": {
+    "SPY.csv": "83c63d73d2d2e5b17bd4a2d484248175ff71a282c501a6eef6ead72b9bd6264d",
+    "SSO.csv": "7244c846d9475d00565054cd9637a84a596974699347fe2ede4a94ed67a20cac",
+    "BIL.csv": "53dc5451b3e2eb95ebec594416d2b17cdd99d6373fb1b9918d714c2b1d990331",
+    "DTB3.csv": "3437358abeac96f2417ec10d173e985b8aa831d09dee78debdafa52f016f21c8"
+  },
+  "parameters": {
+    "spread": 0.0075,
+    "calib_end": "2026-09-30",
+    "other_arguments": "A23 defaults"
+  },
+  "runs": {
+    "X": {
+      "logic": "53b739c scripts/static_leverage_aftertax.py",
+      "loader": "verified frozen files substituted for yfinance/FRED fetch at IO boundary",
+      "output_sha256": "645d4ee2dad880e61bffd147cee0985842f01fab1dae3caf4508fd567ddb6be4"
+    },
+    "Y": {
+      "logic": "study scripts/static_leverage_aftertax.py",
+      "loader": "--frozen-inputs data/external/a23_inputs",
+      "output_sha256": "645d4ee2dad880e61bffd147cee0985842f01fab1dae3caf4508fd567ddb6be4"
+    }
+  },
+  "numeric_identical": true,
+  "byte_identical": true,
+  "windows": [
+    "main_real_sso",
+    "holdout_synthetic",
+    "full_1993_2026_stitched"
+  ],
+  "arm_window_rows": 21
+}

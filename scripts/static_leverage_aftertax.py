@@ -16,6 +16,7 @@ import argparse
 import json
 import sys
 from dataclasses import dataclass, field
+from hashlib import sha256
 from pathlib import Path
 
 import numpy as np
@@ -23,7 +24,7 @@ import pandas as pd
 import yfinance as yf
 
 sys.path.insert(0, "src")
-from ggTrader.lab.fred_data import load_fred_series  # noqa: E402
+from ggTrader.lab.fred_data import load_fred_series, parse_fred_csv  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_JSON = ROOT / "docs" / "research" / "_static_leverage_aftertax_results.json"
@@ -44,23 +45,49 @@ STRESS = {
 
 # ----------------------------------------------------------------------------- data
 def load_prices(
-    spread: float, rf_offset: float = 0.0, calib_end: str = "2026-09-30"
+    spread: float,
+    rf_offset: float = 0.0,
+    calib_end: str = "2026-09-30",
+    frozen_inputs: Path | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Unadjusted closes + per-share distributions for SPY/SSO/BIL, with synthetic SSO pre-2006.
 
     Returns (close, dist, calib). Synthetic SSO has zero distributions (all return in price),
     which slightly favours it on tax deferral; noted in the report.
     """
+    manifest = json.loads((frozen_inputs / "MANIFEST.json").read_text()) if frozen_inputs else {}
+
+    def frozen_file(filename: str) -> Path:
+        """Verify one frozen input before reading it."""
+        path = frozen_inputs / filename
+        if sha256(path.read_bytes()).hexdigest() != manifest[filename]["sha256"]:
+            raise ValueError(f"A23 frozen input checksum mismatch: {path}")
+        return path
+
     close, dist = {}, {}
     for s in ("SPY", "SSO", "BIL"):
-        h = yf.Ticker(s).history(start="1993-01-01", auto_adjust=False)
+        h = (
+            pd.read_csv(
+                frozen_file(f"{s}.csv"),
+                index_col="date",
+                parse_dates=True,
+                float_precision="round_trip",
+            )
+            if frozen_inputs
+            else yf.Ticker(s).history(start="1993-01-01", auto_adjust=False)
+        )
         h.index = h.index.tz_localize(None).normalize()
         close[s], dist[s] = h["Close"], h["Dividends"].fillna(0.0)
     close, dist = pd.DataFrame(close), pd.DataFrame(dist).fillna(0.0)
     close = close.dropna(subset=["SPY"])
     dist = dist.reindex(close.index).fillna(0.0)
 
-    rf = load_fred_series("DTB3", "1990-01-01", "2030-01-01")
+    rf = (
+        parse_fred_csv(frozen_file("DTB3.csv").read_text(), "DTB3")
+        if frozen_inputs
+        else load_fred_series("DTB3", "1990-01-01", "2030-01-01")
+    )
+    rf = rf.loc[rf["date"].between("1990-01-01", "2030-01-01")]
     rf = rf.set_index(pd.to_datetime(rf["date"]))["value"].astype(float) / 100.0
     rf = rf.reindex(close.index, method="ffill").bfill()
     rf = (rf + rf_offset) / 252.0  # rf_offset: funding-regime sensitivity (annual, added)
@@ -385,6 +412,7 @@ def main() -> None:
     p.add_argument("--main-only", action="store_true", help="skip holdout/stitched windows")
     p.add_argument("--arms", default="", help="comma list of arm names to run (default all)")
     p.add_argument("--out", default=str(OUT_JSON))
+    p.add_argument("--frozen-inputs", type=Path, help="checksummed A23 input directory")
     p.add_argument(
         "--sso-dist-tax",
         choices=["lt", "st"],
@@ -399,7 +427,7 @@ def main() -> None:
     )
     a = p.parse_args()
 
-    close, dist, calib = load_prices(a.spread, a.rf_offset, a.calib_end)
+    close, dist, calib = load_prices(a.spread, a.rf_offset, a.calib_end, a.frozen_inputs)
     close, dist = close.loc[: a.end], dist.loc[: a.end]
     print("synthetic calibration:", calib)
 
