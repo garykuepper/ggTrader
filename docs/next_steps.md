@@ -8,17 +8,16 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-22)
 
-Use the updated [connected-metadata execution plan](superpowers/plans/2026-10-22-next-evidence-actions.md).
-Codex owns SQL, interpretation and code; Flash only receives simple exact extraction/link tasks.
+Use the [registered-audit completion plan](superpowers/plans/2026-10-22-complete-event-feasibility-audit.md).
+Codex owns execution and synthesis; Flash only receives mechanically checkable extraction/link tasks.
 
-1. Runtime/metadata execution and the one-request acquisition passed independent
-   review. The original filing is acquired; the source comparison supports the
-   F-lot correction from 8,576 to 8,532 shares. Independent documentary review is
-   clean; preserve the repeated M lot’s changed F1 wording. Formal ingestion and
-   replay have not run. No additional request is queued.
-2. Remaining inputs are historical mapping intervals, exhaustive existing
-   detector evidence, independent inventory completeness and population/PEAD
-   provenance. The executed metadata slice does not pass these missing gates.
+1. Freeze one registered evidence package and establish the existing full bounded
+   audit's actual input/completion path, using the working read-only connector.
+   Ingest the reviewed specific F-lot link without pretending population replay ran.
+2. Complete supported mapping/tape/inventory/PEAD and R1–R9 dispositions, then
+   execute and review the registered audit for canonical JSON/report publication.
+   Unknown inputs stay UNVERIFIED. If the completion guard cannot be met, name
+   the exact external input or protocol decision; do not issue another readiness memo.
 
 Database access is available; [connector evidence](research/_event_audit_connected_metadata.json)
 supersedes the earlier direct-process access limitation. Two COST charters and
@@ -30,7 +29,7 @@ records all five gaps; the [reviewed readiness decision](research/2026-10-22-eve
 remains no Phase 2 with current verified inputs. Historical identity, inventory,
 reconstruction, tape evidence and PEAD lineage have not passed annual A6/A7.
 Source feasibility remains UNRESOLVED; the registered final audit is unfinished.
-Earlier worklists are superseded by this execution slice; historical evidence
+Earlier worklists are superseded by the completion plan; historical evidence
 and the [durable handoff](research/event-timing-audit-implementation.md) remain authoritative.
 
 ### Research context and standing decisions
