@@ -21,6 +21,11 @@ and [five-gap plan](2026-10-22-event-evidence-resolution.md).
 
 ## Global constraints
 
+**Execution update:** After this plan, the owner instructed “delegate easy tasks
+to agy flash but you handle the hard stuff.” Proceed with the two-charter slice
+and bounded local artifact search. This supersedes the planning-only scope below;
+acquisition review and all stop limits remain mandatory.
+
 - Codex owns execution, synthesis and reviews. Flash may only extract a named
   field or exact link from specified inputs, with independent verification.
 - This request creates a plan; it does not itself execute the acquisition or DB

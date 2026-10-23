@@ -1,0 +1,25 @@
+{
+  "scope": "Two COST charter exhibits only; not population, vendor search or return work",
+  "parent_cache": "data/external/event_timing_audit/identity-inventory-we_55vr8",
+  "requests": [
+    {
+      "key": "https://www.sec.gov/Archives/edgar/data/909832/000090983215000003/costex3110q21515.htm",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983215000003/costex3110q21515.htm",
+      "purpose": "2015 charter incorporated by both 2016 and 2017 annual reports; inspect common-stock/par-value provisions and effective-date history"
+    },
+    {
+      "key": "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/costex3110k082822.htm",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/costex3110k082822.htm",
+      "purpose": "2022 charter filed as Exhibit 3.1; compare operative common-stock terms and effective-date clauses"
+    }
+  ],
+  "maximum_new_attempts": 8,
+  "batch_cumulative_sec_ceiling": 87,
+  "workbook_sha256": "6f0bc21ffa53182c7fb2501cec3e8d7dad1e385fbd22fdde0c4789137cc352d9",
+  "parent_binding_sha256": {
+    "MANIFEST.json": "eca3624d68c792f4ba3220812cc12a456f68ab78a80504586c4af8ac382e34f4",
+    "checkpoint.json": "41165a367e384dabe6d7776aab62b22afc6abd56212ed926641045f3ea48601e",
+    "registration.json": "9ea643d91b42471e1bb5beb368f74c019d687c268707929baa66c0f6b0948b5f"
+  },
+  "authorization": "Owner instructed delegate easy tasks and handle hard work after next-actions plan; interpreted as execution of this two-document slice only; no automatic expansion or retry of blocked documentation URL."
+}
