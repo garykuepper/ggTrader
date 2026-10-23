@@ -55,5 +55,8 @@ hashes, unchanged parent files and first 81 reservations were verified. Child:
 F-lot correction, 8,576 to 8,532 shares, and identifies the unchanged repeated M
 lot by identical raw fingerprint. No purchase lot or full-ledger replacement is
 inferred. Both documents' dates/owner/issuer and amendment footnote 2 are retained.
-Fresh offline documentary review of this new comparison is pending. No further
+Fresh independent documentary review is CLEAN. F2 attaches to each F row’s
+transactionShares. The repeated M transaction element is identical, but its
+referenced F1 wording changes the anticipated distribution date; do not infer
+unchanged footnote semantics or count that repeated lot twice. No further
 request is included; global identity, tape, population and PEAD gaps remain.

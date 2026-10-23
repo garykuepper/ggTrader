@@ -196,5 +196,14 @@ checks are explicitly blocked. The venue regression reproduced two failures;
 the minimal fix passed all 190 focused audit tests, plus Ruff/format/diff checks.
 Independent review cleared the execution slice and one-URL acquisition. One
 HTTP 200 advanced collection to 82 SEC attempts; the specific F-lot correction
-is source-supported and awaiting documentary review. No price/return computation
+is source-supported and cleared by independent documentary review. Formal
+evidence ingestion/replay have not run; repeated M element identity does not
+extend to its changed footnote F1. No price/return computation
 or DB write occurred. Remaining population/mapping/tape/PEAD inputs stay blocked.
+
+**Execution slice disposition:** Completed read-only metadata recovery, legacy
+provenance tracing, the tested venue fix, 23 operational count diagnostics and
+the independently reviewed one-original/F-lot comparison. Remaining unchecked
+steps require missing historical mappings, exhaustive screening, complete raw
+population and PEAD lineage. No unperformed ingestion/replay or annual gate is
+marked complete, and no further acquisition is queued.

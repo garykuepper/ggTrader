@@ -13,8 +13,9 @@ Codex owns SQL, interpretation and code; Flash only receives simple exact extrac
 
 1. Runtime/metadata execution and the one-request acquisition passed independent
    review. The original filing is acquired; the source comparison supports the
-   F-lot correction from 8,576 to 8,532 shares. Documentary review of this new
-   comparison is pending. No additional request is queued.
+   F-lot correction from 8,576 to 8,532 shares. Independent documentary review is
+   clean; preserve the repeated M lot’s changed F1 wording. Formal ingestion and
+   replay have not run. No additional request is queued.
 2. Remaining inputs are historical mapping intervals, exhaustive existing
    detector evidence, independent inventory completeness and population/PEAD
    provenance. The executed metadata slice does not pass these missing gates.

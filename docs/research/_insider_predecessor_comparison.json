@@ -272,7 +272,8 @@
     "unchanged_repeated_lot": {
       "original_lot_id": "0001225208-18-003052:0",
       "amendment_lot_id": "0001225208-18-004211:0",
-      "same_raw_lot_sha256": true
+      "same_raw_lot_sha256": true,
+      "qualification": "Transaction element fingerprint is identical, but referenced footnote F1 changes anticipated distribution from February 22 to February 26; element equality does not imply identical footnote semantics."
     },
     "limitations": "Specific F-lot correction corroborated; no global full-ledger replacement or derivative-row replacement inferred."
   },
@@ -290,5 +291,16 @@
     "Existing exhaustive source-bound detector export",
     "PEAD announcement, actual EPS and pre-announcement consensus lineage"
   ],
-  "independent_documentary_review": "pending"
+  "independent_documentary_review": {
+    "verdict": "CLEAN within specific raw comparison scope",
+    "blocking_findings": 0,
+    "checked": [
+      "All 82 raw hashes, registered parent hashes and unchanged 81-request prefix",
+      "Runner/spec bindings and cumulative accounting",
+      "Issuer/owner/dates and original-submission date",
+      "F2 footnote attaches directly to transactionShares on both F rows; specific 8576-to-8532 correction supported",
+      "M transaction fingerprint identity with changed F1 anticipated-distribution wording preserved"
+    ],
+    "scope_limits": "No formal evidence ingestion, automatic lot linking, replay, population or Phase 2 clearance. No network/DB/runtime/tests during this review."
+  }
 }

@@ -147,5 +147,19 @@
     "operational_bar_counts": "One yfinance daily bar for NOC 2025-02-21 and COST 2026-04-02; no price values selected",
     "decision_effect": "Removes database-access blocker; does not establish historical security mapping, detector cleanliness, population coverage or PEAD lineage. Do not start Phase 2 until those mandatory gates pass.",
     "review_scope": "Earlier independent readiness review predates this connector check; query results are directly recorded tool evidence"
+  },
+  "subsequent_plan_execution": {
+    "metadata": "docs/research/_event_audit_metadata_inputs.json",
+    "detector_provenance": "docs/research/_event_audit_detector_provenance.json",
+    "operational_counts": "docs/research/_event_audit_operational_bar_counts.json",
+    "specific_amendment": "docs/research/_insider_predecessor_comparison.json",
+    "runtime": "Venue count fix independently reviewed; 190 focused tests passed in author run, five independently rerun",
+    "resolution": "Specific raw F-lot correction corroborated; no formal ingestion, automatic linkage or population replay. Mapping, inventory, exhaustive detector, annual reconstruction and PEAD inputs remain missing.",
+    "collection_totals": {
+      "sec": 82,
+      "yahoo": 0,
+      "elapsed_seconds": 105.33867007261142
+    },
+    "readiness_decision_unchanged": true
   }
 }

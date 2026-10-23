@@ -1237,7 +1237,13 @@ it to the original. API/header conflicts and unknown actual dissemination remain
 the approved date-only representation remains separate. No new source identity,
 publication timestamp, annual gate or qualifying window is manufactured.
 
-Fresh documentary review of the comparison is pending. The executed slice has
+Fresh independent documentary review is CLEAN at specific raw-comparison scope.
+It verified the F2-to-transactionShares binding, all 82 raw hashes, parent/prefix
+and runner/spec bindings. Qualification: the repeated M transaction element is
+identical, but its referenced F1 changes anticipated distribution from February
+22 to February 26. Both footnote versions are preserved; element identity does
+not imply unchanged footnote semantics. No formal evidence ingestion, automatic
+lot linking, replay or Phase 2 clearance follows. The executed slice has
 recovered concrete metadata, narrowed and acquired one original, and fixed the
 venue query. Historical interval mapping, exhaustive existing detector export,
 independent NOC inventory completeness, population replay and PEAD lineage remain
