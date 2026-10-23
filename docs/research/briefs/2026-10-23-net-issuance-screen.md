@@ -1,6 +1,6 @@
 # Brief: long-only large-size net-issuance screen for a taxable trading sleeve
 
-**Status:** DRAFT 2026-10-23, awaiting owner approval. Nothing has been computed.
+**Status:** pre-registered; approved by the owner 2026-10-23 before anything was computed. Its numbers are now the bar; changing any of them needs a new dated brief.
 
 **Terms used below:**
 
