@@ -1,0 +1,948 @@
+{
+  "schema": "event_source_search_ledger_v1",
+  "authority": [
+    "docs/superpowers/plans/2026-10-23-resolve-event-audit.md#task-2",
+    "docs/research/briefs/2026-10-21-event-timing-audit-sources.md",
+    "docs/research/briefs/2026-10-21-event-timing-audit.md#8-protocol-annex"
+  ],
+  "scope": "Public documentation only. Documentary component PASS is not an A6/A7 annual qualification or a signal-level PAID\u2014DOCUMENTED PATH.",
+  "execution": {
+    "started_at_utc": "2026-10-23T15:53:51Z",
+    "documentation_retrieval_finished_at_utc": "2026-10-23T15:57:13Z",
+    "observed_documentation_search_seconds": 202,
+    "hard_cap_seconds": 7200,
+    "initial_route_order": [
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "R5",
+      "R6",
+      "R7",
+      "R8",
+      "R9"
+    ],
+    "order_note": "Each route first assessed in manifest order. After R9's retained-evidence review, two previously identified R2 offer URLs were checked for a price; both returned bot-interruption pages.",
+    "historical_budget": {
+      "status": "UNVERIFIED",
+      "accepted_source": "docs/research/_event_evidence_resolution_workbook.json",
+      "note": "Earlier four-minute review receipt and unverified fifty-minute claim retained unchanged. This execution reports only its observed new documentation search; it does not certify cumulative earlier time or reset the audit collection budget."
+    },
+    "accounts_created": 0,
+    "trials_started": 0,
+    "purchases": 0,
+    "sales_contacts": 0,
+    "flash_used": false,
+    "sec_network_requests": 0,
+    "sec_stop_preserved": true,
+    "sec_stop_evidence": "docs/research/_insider_identity_inventory_acquisition.json: documentation_403_history",
+    "completion_predicate_satisfied": false,
+    "completion_reason": "All nine routes assessed, but public documentation leaves relevant items UNRESOLVED. Manifest completion requires all four items PASS or a documented contradiction for each route. No claim that search exhaustion or vendor infeasibility was proved; no extra collection pursued.",
+    "observations_only": "No returns, price changes, drift, P&L, live prices, database reads or database writes.",
+    "ledger_prepared_at_utc": "2026-10-23T16:00:09Z",
+    "observed_task_total_seconds_at_ledger_preparation": 378
+  },
+  "status_rule": "PASS only for the expressly stated component. Silence and inaccessible documentation are UNRESOLVED. EXCLUDED requires explicit contradictory authoritative evidence; a subproduct exclusion does not eliminate a possible mixed route.",
+  "routes": [
+    {
+      "route_id": "R1",
+      "candidate": "LSEG I/B/E/S historical estimates",
+      "blocking_requirement": "PEAD pre-announcement consensus history",
+      "status": "UNRESOLVED",
+      "history_start": {
+        "ordinary_us": "1976",
+        "ordinary_international": "1987",
+        "qualified_pit_start": null
+      },
+      "individual_price": {
+        "status": "UNRESOLVED",
+        "currency": null,
+        "annual_cost": null,
+        "reason": "No matched individual historical-data offer or public quote found. A request-details link is not a price."
+      },
+      "evidence": [
+        {
+          "evidence_item": "fields",
+          "status": "UNRESOLVED",
+          "url": "https://www.lseg.com/en/data-catalogue/company-data/ibes-estimates/broker-estimates",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "estimate values, estimate sources, announcement dates",
+          "rationale": "Estimate/fiscal-period/currency metadata exists, but the public page does not specify the exact EPS snapshot/basis contract needed for strict pre-release selection."
+        },
+        {
+          "evidence_item": "history",
+          "status": "UNRESOLVED",
+          "url": "https://www.lseg.com/en/data-catalogue/company-data/ibes-estimates/broker-estimates",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "United States from 1976; Rest of the World from 1987",
+          "rationale": "Ordinary-series starts documented; matched historical-estimates package coverage of delisted/acquired issuers and its PIT start remain unstated."
+        },
+        {
+          "evidence_item": "point_in_time",
+          "status": "UNRESOLVED",
+          "url": "https://www.lseg.com/content/dam/data-analytics/en_us/documents/fact-sheets/quantitative-analytics-over-snowflake-factsheet.pdf",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "original point-in-time data and restated values as well as data for delisted companies",
+          "rationale": "QA documentation includes I/B/E/S and PIT/delisted content generally; it does not establish the selected estimates package's pre-announcement EPS lineage and history."
+        },
+        {
+          "evidence_item": "access",
+          "status": "UNRESOLVED",
+          "url": "https://www.lseg.com/en/data-catalogue/company-data/ibes-estimates/broker-estimates",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "silent",
+          "rationale": "The public historical-feed description offers FTP delivery and requests details; it neither confirms individual entitlement nor states a price."
+        }
+      ],
+      "checked_urls": [
+        "https://www.lseg.com/en/data-catalogue/company-data/ibes-estimates/broker-estimates",
+        "https://www.lseg.com/en/data-catalogue/company-data/ibes-estimates/consensus-estimates",
+        "https://www.lseg.com/en/training/learning-centre/learning-paths/learning-path-for-data-solutions/learn-about-quantitative-data-solutions/learn-about-data-and-content/learn-about-ibes",
+        "https://www.lseg.com/en/data-analytics/financial-data/company-data/ibes-estimates"
+      ],
+      "retrieval_limits": [
+        "Consensus-estimates URL inaccessible through web tool.",
+        "Older I/B/E/S landing URL redirected to general company-data catalogue.",
+        "No account used to access training content."
+      ],
+      "does_not_resolve": [
+        "Matched package PIT EPS schema",
+        "Delisted/acquired PIT history",
+        "Individual entitlement and price"
+      ]
+    },
+    {
+      "route_id": "R2",
+      "candidate": "Zacks historical consensus estimates",
+      "blocking_requirement": "PEAD pre-announcement consensus history",
+      "status": "UNRESOLVED",
+      "history_start": {
+        "annual_consensus_faq": "1979",
+        "annual_and_ltg_institutional_page": "1978",
+        "quarterly_consensus": "1982",
+        "earnings_surprises": "1994",
+        "note": "Different series/page starts retained; no invented reconciliation."
+      },
+      "individual_price": {
+        "status": "UNRESOLVED",
+        "currency": null,
+        "annual_cost": null,
+        "reason": "Public FAQ directs pricing inquiries to sales; current Research Wizard offer pages were blocked. No sales contact made."
+      },
+      "evidence": [
+        {
+          "evidence_item": "fields",
+          "status": "PASS",
+          "url": "https://zackspro.com/historical.asp",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "Daily Consensus Estimates - Observation Date, Estimate Type, Annual/Quarterly/LTG, Mean",
+          "rationale": "Specific daily consensus observation and estimate fields are documented. This establishes fields, not snapshot immutability or strict historical pre-release availability."
+        },
+        {
+          "evidence_item": "history",
+          "status": "UNRESOLVED",
+          "url": "https://zacksdata.com/consensus/faq/",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "annual EPS estimates going back to 1979 and quarterly estimates going back to 1982",
+          "rationale": "Quarterly history stated. Institutional page describes active/inactive equities broadly; the selected consensus package's delisted/acquired retention is not expressly tied to its history.",
+          "supporting_url": "https://zackspro.com/historical.asp",
+          "supporting_excerpt": "16,000 active and inactive US and Canadian equities"
+        },
+        {
+          "evidence_item": "point_in_time",
+          "status": "UNRESOLVED",
+          "url": "https://zacksdata.com/consensus/faq/",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "silent",
+          "rationale": "Observation dates and history exist, but correction/split maintenance does not establish an unrevised pre-announcement snapshot contract for this matched product."
+        },
+        {
+          "evidence_item": "access",
+          "status": "UNRESOLVED",
+          "url": "https://zacksdata.com/consensus/faq/",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "pricing, file formats, and API documentation",
+          "rationale": "Consensus individual eligibility and a matched price are unstated. The separate institutional restriction on individual analyst estimates does not exclude consensus."
+        }
+      ],
+      "checked_urls": [
+        "https://zackspro.com/historical.asp",
+        "https://zacksdata.com/consensus/faq/",
+        "https://data.nasdaq.com/databases/ZEEH/documentation",
+        "https://www.zacks.com/researchwizard",
+        "https://www.zacksrw.com/tipsandtrick-num013.html",
+        "https://www.zacks.com/registration/rw/welcome/eoffer/4077",
+        "https://www.zacks.com/p/p/7203"
+      ],
+      "retrieval_limits": [
+        "Nasdaq documentation returned a JavaScript shell.",
+        "Research Wizard and two offer pages returned bot-interruption text; no bypass attempted."
+      ],
+      "does_not_resolve": [
+        "Historical consensus snapshot contract",
+        "Matched delisted/acquired package scope",
+        "Individual historical entitlement and price"
+      ]
+    },
+    {
+      "route_id": "R3",
+      "candidate": "S&P Capital IQ estimates history",
+      "blocking_requirement": "PEAD pre-announcement consensus history",
+      "status": "UNRESOLVED",
+      "history_start": {
+        "ordinary_north_america": "1999",
+        "ordinary_international": "1997",
+        "pit_snapshot": "2016-08",
+        "pit_snapshot_precision": "month"
+      },
+      "individual_price": {
+        "status": "UNRESOLVED",
+        "currency": null,
+        "annual_cost": null,
+        "reason": "No individual subscriber eligibility or matched historical Snapshot price found."
+      },
+      "evidence": [
+        {
+          "evidence_item": "fields",
+          "status": "PASS",
+          "url": "https://www.spglobal.com/market-intelligence/en/solutions/capital-iq-estimates",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "Compare estimates from the day before a company reported earnings with the actual values",
+          "rationale": "Consensus/actual comparison and dated Snapshot fields are expressly documented. EPS accounting basis and exact period mapping still require product-level verification for the full audit."
+        },
+        {
+          "evidence_item": "history",
+          "status": "UNRESOLVED",
+          "url": "https://www.spglobal.com/market-intelligence/en/solutions/capital-iq-estimates",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "1999",
+          "rationale": "Ordinary North American history starts in 1999; the explicit PIT Snapshot begins August 2016. Selected-product retention of delisted/acquired companies is not established by active-company coverage statistics."
+        },
+        {
+          "evidence_item": "point_in_time",
+          "status": "PASS",
+          "url": "https://www.spglobal.com/market-intelligence/en/solutions/capital-iq-estimates",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "Snapshot every 2 hours",
+          "rationale": "Snapshot explicitly captures all database updates since August 2016 with spEffectiveDate and spToDate; this is a documentary version/as-of mechanism, not a completed event reconstruction."
+        },
+        {
+          "evidence_item": "access",
+          "status": "UNRESOLVED",
+          "url": "https://www.spglobal.com/market-intelligence/en/solutions/capital-iq-estimates",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "silent",
+          "rationale": "No individual license terms or price for the matched historical Snapshot package are stated."
+        }
+      ],
+      "checked_urls": [
+        "https://www.spglobal.com/market-intelligence/en/solutions/capital-iq-estimates",
+        "https://www.spglobal.com/market-intelligence/en/solutions/products/estimates"
+      ],
+      "does_not_resolve": [
+        "Delisted/acquired coverage for Snapshot package",
+        "Exact EPS accounting-basis reconciliation",
+        "Individual entitlement and price"
+      ]
+    },
+    {
+      "route_id": "R4",
+      "candidate": "Wall Street Horizon earnings-date history",
+      "blocking_requirement": "PEAD announcement timestamps",
+      "status": "UNRESOLVED",
+      "history_start": {
+        "general_historical_events": "2006",
+        "note": "Vendor says historical timeframes vary by dataset; original-release timestamp history start not separately established."
+      },
+      "individual_price": {
+        "status": "UNRESOLVED",
+        "currency": null,
+        "annual_cost": null,
+        "reason": "No matched historical subscription price or individual entitlement documented; current calendars are not a substitute."
+      },
+      "evidence": [
+        {
+          "evidence_item": "fields",
+          "status": "PASS",
+          "url": "https://www.wallstreethorizon.com/upload/WSHEclassesandfieldsforIBAPI2022-12-23.pdf",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "announce_datetime* DateTime1 Event announcement date & time (Eastern US time zone);",
+          "rationale": "Earnings Report wshe_eps documents release datetime, fiscal year/quarter/end and purl. Website/SEC-sourced records can be date-only. Earnings Date wshe_ed confirmation time is a different field.",
+          "locator": "PDF pp.3\u20134, wshe_eps; compare wshe_ed on p.3"
+        },
+        {
+          "evidence_item": "history",
+          "status": "UNRESOLVED",
+          "url": "https://www.wallstreethorizon.com/historical-data",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "Data is available from 2006-present -- historical timeframes vary per dataset",
+          "rationale": "General start only; original-release timing history and delisted/acquired coverage are not specified."
+        },
+        {
+          "evidence_item": "point_in_time",
+          "status": "UNRESOLVED",
+          "url": "https://www.wallstreethorizon.com/news/Wall-Street-Horizon-Expands-Historical-Corporate-Event-Data",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "Earnings Date Daily Snapshots",
+          "rationale": "Schedule snapshots are documented but do not prove original earnings-release timestamp versions, matching or historical availability."
+        },
+        {
+          "evidence_item": "access",
+          "status": "UNRESOLVED",
+          "url": "https://www.wallstreethorizon.com/historical-data",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "silent",
+          "rationale": "Public page requests more information. No individual historical-data entitlement or price established."
+        }
+      ],
+      "checked_urls": [
+        "https://www.wallstreethorizon.com/historical-data",
+        "https://www.wallstreethorizon.com/news/Wall-Street-Horizon-Expands-Historical-Corporate-Event-Data",
+        "https://www.wallstreethorizon.com/upload/WSHEclassesandfieldsforIBAPI2022-12-23.pdf"
+      ],
+      "does_not_resolve": [
+        "Historical original-release timestamp lineage",
+        "Delisted/acquired inclusion",
+        "Individual historical entitlement and price"
+      ]
+    },
+    {
+      "route_id": "R5",
+      "candidate": "CRSP daily stock file",
+      "blocking_requirement": "Survivorship-free daily execution prices",
+      "status": "UNRESOLVED",
+      "history_start": {
+        "nyse": "1925-12-31",
+        "nyse_american": "1962-07-02",
+        "nasdaq": "1972-12-14",
+        "nyse_arca": "2006-03-08",
+        "cboe_bzx": "2012-01-24"
+      },
+      "individual_price": {
+        "status": "UNRESOLVED",
+        "currency": null,
+        "annual_cost": null,
+        "reason": "Subscription-information requests only; neither an individual price nor an explicit natural-person prohibition found."
+      },
+      "evidence": [
+        {
+          "evidence_item": "fields",
+          "status": "PASS",
+          "url": "https://www.crsp.org/wp-content/uploads/2023/10/crsp_us_stock.pdf",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "PRC PRICE OR BID/ASK AVERAGE",
+          "rationale": "Daily date, PERMNO and price fields; dated name/ticker/CUSIP history; delisting fields documented. This is not a historical CIK crosswalk.",
+          "locator": "PDF pp.6\u20138; SFZ_DEL, SFZ_NAM and SFZ_DP_DLY"
+        },
+        {
+          "evidence_item": "history",
+          "status": "PASS",
+          "url": "https://www.crsp.org/research/crsp-us-stock-databases-2025-layout/",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "Precise, survivor-bias-free history",
+          "rationale": "Active/inactive coverage, delisting records and exchange-specific starts support the documentary execution-price history requirement; annual coverage still needs measurement."
+        },
+        {
+          "evidence_item": "point_in_time",
+          "status": "PASS",
+          "url": "https://www.crsp.org/wp-content/uploads/2023/10/crsp_us_stock.pdf",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "silent",
+          "rationale": "NOT REQUIRED FOR EXECUTION PRICES under A10: historical price corrections/versioning do not exclude this route. This does not certify PIT signal inputs or CIK identity.",
+          "applicability": "A10 execution-price exemption"
+        },
+        {
+          "evidence_item": "access",
+          "status": "UNRESOLVED",
+          "url": "https://indexes.morningstar.com/research-data-products/crsp-us-stock-databases",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "Request Subscription Information",
+          "rationale": "Commercial/investment-practitioner licensing is described, but individual non-academic eligibility and price are not stated."
+        }
+      ],
+      "checked_urls": [
+        "https://www.crsp.org/research/crsp-us-stock-databases-2025-layout/",
+        "https://www.crsp.org/wp-content/uploads/2023/10/crsp_us_stock.pdf",
+        "https://indexes.morningstar.com/research-data-products/crsp-us-stock-databases"
+      ],
+      "does_not_resolve": [
+        "Individual entitlement and price",
+        "Historical ticker-to-CIK linkage",
+        "A6/A7 tape checks and detector provenance"
+      ]
+    },
+    {
+      "route_id": "R6",
+      "candidate": "Sharadar Equity Prices (Nasdaq Data Link), including documented direct Sharadar SEP alias",
+      "blocking_requirement": "Survivorship-free daily execution prices",
+      "status": "PASS",
+      "status_scope": "Documented price component only, through the direct personal-use stocks/SEP subscription. Nasdaq-hosted package quote remains UNRESOLVED.",
+      "history_start": {
+        "full_history": "1997-12",
+        "full_history_precision": "month",
+        "five_year_tier_start": null,
+        "ten_year_tier_start": null,
+        "note": "Purchased history is explicitly 5 Years, 10 Years or Full History. Do not equate the five-year tier with five complete calendar years before 2026-04-30."
+      },
+      "individual_price": {
+        "status": "PASS",
+        "currency": "USD",
+        "channel": "direct Sharadar personal use",
+        "plans": [
+          {
+            "product": "Prices",
+            "history": "5 Years",
+            "monthly": 9,
+            "annual": 99
+          },
+          {
+            "product": "Prices",
+            "history": "10 Years",
+            "monthly": 19,
+            "annual": 199
+          },
+          {
+            "product": "Prices",
+            "history": "Full History",
+            "monthly": 39,
+            "annual": 299
+          }
+        ],
+        "bundled_alternative": {
+          "product": "Bundle",
+          "history": "Full History",
+          "monthly": 69,
+          "annual": 499
+        },
+        "nasdaq_individual_quote": null,
+        "note": "Current direct schedule, not a Nasdaq Data Link entitlement/quote. Ten-year tier is the lowest listed tier potentially covering five complete years at this audit cutoff; exact purchased start requires verification."
+      },
+      "evidence": [
+        {
+          "evidence_item": "fields",
+          "status": "PASS",
+          "url": "https://sharadar.com/docs/stocks",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "Open, High, Low, Close and Volume (OHLCV)",
+          "rationale": "Stocks documentation expressly labels the table SEP and documents dated adjusted/unadjusted OHLCV."
+        },
+        {
+          "evidence_item": "history",
+          "status": "PASS",
+          "url": "https://sharadar.com/docs/stocks",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "active and delisted US public stocks",
+          "rationale": "Full-history start is December 1997. Corporate-action documentation also lists acquisitions/delist reasons; tier history must match the purchase.",
+          "supporting_url": "https://sharadar.com/prices",
+          "supporting_excerpt": "Corporate actions covering splits, dividends, spinoffs, acquisitions, delist reasons and ticker changes"
+        },
+        {
+          "evidence_item": "point_in_time",
+          "status": "PASS",
+          "url": "https://sharadar.com/docs/stocks",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "silent",
+          "rationale": "NOT REQUIRED FOR EXECUTION PRICES under A10. Updated price records are permitted; signal-input PIT and historical identity are separate.",
+          "applicability": "A10 execution-price exemption"
+        },
+        {
+          "evidence_item": "access",
+          "status": "PASS",
+          "url": "https://sharadar.com/subscribe",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "$199",
+          "rationale": "Direct personal-use subscription has matched tables/history/annual and monthly prices. Terms restrict use to individuals for personal non-professional purposes.",
+          "supporting_url": "https://sharadar.com/terms",
+          "supporting_excerpt": "These License Terms apply only to individuals using Sharadar for personal, non-professional purposes.",
+          "locator": "Subscription schedule: Prices / 10 Years / Annual column"
+        }
+      ],
+      "checked_urls": [
+        "https://sharadar.com/docs/stocks",
+        "https://sharadar.com/prices",
+        "https://sharadar.com/subscribe",
+        "https://sharadar.com/terms",
+        "https://data.nasdaq.com/databases/SEP/documentation"
+      ],
+      "retrieval_limits": [
+        "Nasdaq-hosted SEP documentation returned a JavaScript shell; direct vendor schema explicitly identifies SEP."
+      ],
+      "does_not_resolve": [
+        "Historical ticker-to-CIK identity",
+        "A6 annual coverage/missingness",
+        "A7 event-date tape/detector checks"
+      ]
+    },
+    {
+      "route_id": "R7",
+      "candidate": "Norgate Data US stocks, delisted included",
+      "blocking_requirement": "Survivorship-free daily execution prices",
+      "status": "PASS",
+      "status_scope": "Platinum/Diamond price component only. Historical ticker-to-CIK mapping is not provided by a permanent assetid.",
+      "history_start": {
+        "platinum": "1990",
+        "diamond": "1950",
+        "coverage_caveat": "FAQ considers covered US security types essentially complete from late 1992; earlier coverage varies by exchange."
+      },
+      "individual_price": {
+        "status": "PASS",
+        "currency": "USD",
+        "plans": [
+          {
+            "product": "US Stocks Silver",
+            "annual": 270,
+            "six_month": 148.5,
+            "delisted_included": false
+          },
+          {
+            "product": "US Stocks Gold",
+            "annual": 360,
+            "six_month": 198,
+            "delisted_included": false
+          },
+          {
+            "product": "US Stocks Platinum",
+            "annual": 630,
+            "six_month": 346.5,
+            "delisted_included": true
+          },
+          {
+            "product": "US Stocks Diamond",
+            "annual": 787.5,
+            "six_month": 433.13,
+            "delisted_included": true
+          }
+        ],
+        "cheapest_delisted_price_component_annual": 630,
+        "note": "Price-component comparison only. Updater/integrations require Windows; vendor permits personal-use exports and processing separately. No software or account installed."
+      },
+      "evidence": [
+        {
+          "evidence_item": "fields",
+          "status": "PASS",
+          "url": "https://norgatedata.com/data-package-faq.php",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "open, high, low, close, volume",
+          "rationale": "Daily OHLCV fields, adjustment choices and assetid are documented. Historical ticker/CIK linkage is a separate blocking input."
+        },
+        {
+          "evidence_item": "history",
+          "status": "PASS",
+          "url": "https://norgatedata.com/stockmarketpackages.php",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "Back to 1990",
+          "rationale": "Platinum and Diamond include delisted stocks; FAQ explicitly describes acquired and non-surviving merger entities as delisted.",
+          "supporting_url": "https://norgatedata.com/data-package-faq.php",
+          "supporting_excerpt": "Takeover/Acquisition/Management buyout",
+          "locator": "US Stocks package table: Delisted Securities / Platinum; Diamond column says Back to 1950"
+        },
+        {
+          "evidence_item": "point_in_time",
+          "status": "PASS",
+          "url": "https://norgatedata.com/data-package-faq.php",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "no versioning mechanism provided",
+          "rationale": "NOT REQUIRED FOR EXECUTION PRICES under A10; unversioned price corrections do not exclude the price route.",
+          "applicability": "A10 execution-price exemption"
+        },
+        {
+          "evidence_item": "access",
+          "status": "PASS",
+          "url": "https://norgatedata.com/subscribe/eula.php",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "\"Licensee\" means one individual natural person.",
+          "rationale": "Personal investment/research permitted, including exported data in separate processing environments; listed Platinum is USD630 per 12 months.",
+          "supporting_url": "https://norgatedata.com/stockmarketpackages.php",
+          "supporting_excerpt": "12 months = USD 630"
+        }
+      ],
+      "documented_subproduct_exclusions": [
+        {
+          "scope": "Silver and Gold as delisted-inclusive price routes",
+          "status": "EXCLUDED",
+          "url": "https://norgatedata.com/stockmarketpackages.php",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "All currently-listed securities",
+          "reason": "Package table leaves delisted coverage absent for Silver/Gold; Platinum is the cheapest listed tier including it."
+        },
+        {
+          "scope": "Norgate alone as historical ticker/CIK identity map",
+          "status": "EXCLUDED",
+          "url": "https://norgatedata.com/data-package-faq.php",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "No, only the current symbol and current company name is provided.",
+          "reason": "Historical ticker names are explicitly unavailable; only assetid is supplied as a stable identifier. A separate identity source is required."
+        }
+      ],
+      "checked_urls": [
+        "https://norgatedata.com/stockmarketpackages.php",
+        "https://norgatedata.com/data-package-faq.php",
+        "https://norgatedata.com/subscribe/eula.php",
+        "https://norgatedata.com/accessibility.php",
+        "https://norgatedata.com/data-content-tables.php"
+      ],
+      "does_not_resolve": [
+        "Historical ticker-to-CIK identity",
+        "A6 annual coverage/missingness",
+        "A7 event-date tape/detector checks"
+      ]
+    },
+    {
+      "route_id": "R8",
+      "candidate": "Sharadar insider holdings (Nasdaq Data Link), including documented direct SF2 alias",
+      "blocking_requirement": "Insider filings with acceptance times and all owners",
+      "status": "UNRESOLVED",
+      "history_start": {
+        "full_history": "2008-01",
+        "precision": "month",
+        "note": "All SEC Forms 3/4/5 are described, but historical delisted/acquired retention and all co-owner/amendment lineage are not established."
+      },
+      "individual_price": {
+        "status": "PASS",
+        "currency": "USD",
+        "channel": "direct Sharadar personal use",
+        "plans": [
+          {
+            "product": "Investors",
+            "history": "5 Years",
+            "monthly": 19,
+            "annual": 99
+          },
+          {
+            "product": "Investors",
+            "history": "10 Years",
+            "monthly": 29,
+            "annual": 199
+          },
+          {
+            "product": "Investors",
+            "history": "Full History",
+            "monthly": 39,
+            "annual": 299
+          }
+        ],
+        "bundled_alternative": {
+          "product": "Bundle",
+          "history": "Full History",
+          "monthly": 69,
+          "annual": 499
+        },
+        "nasdaq_individual_quote": null,
+        "note": "Insiders table explicitly aliases SF2. These are direct personal-use prices, not Nasdaq quotes; a cheap subscription does not prove the filing requirement."
+      },
+      "evidence": [
+        {
+          "evidence_item": "fields",
+          "status": "UNRESOLVED",
+          "url": "https://sharadar.com/docs/insiders",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "date (YYYY-MM-DD)",
+          "rationale": "Published date is calendar-only, so it cannot itself supply intraday acceptance. Owner name/roles/transaction fields exist; exhaustive co-owner/accession/amendment lineage is not documented. Approved date-only or SEC-supplemented combinations remain unresolved rather than excluded.",
+          "locator": "Insiders schema: Filing Date / date field"
+        },
+        {
+          "evidence_item": "history",
+          "status": "UNRESOLVED",
+          "url": "https://sharadar.com/docs/insiders",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "January 2008",
+          "rationale": "Start date documented; explicit historical delisted/acquired retention and complete all-owner filing history remain unstated."
+        },
+        {
+          "evidence_item": "point_in_time",
+          "status": "UNRESOLVED",
+          "url": "https://sharadar.com/docs/insiders",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "silent",
+          "rationale": "No as-of version or amendment-history guarantee documented. Do not infer PIT from event frequency or filing-date field."
+        },
+        {
+          "evidence_item": "access",
+          "status": "PASS",
+          "url": "https://sharadar.com/subscribe",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "$199",
+          "rationale": "Direct personal-use schedule names insiders table, matching history tiers and prices; Nasdaq-hosted matched entitlement remains unknown.",
+          "supporting_url": "https://sharadar.com/terms",
+          "supporting_excerpt": "personal, non-professional purposes",
+          "locator": "Subscription schedule: Investors / 10 Years / Annual column"
+        }
+      ],
+      "checked_urls": [
+        "https://sharadar.com/docs/insiders",
+        "https://data.nasdaq.com/databases/SF2",
+        "https://sharadar.com/subscribe",
+        "https://sharadar.com/terms"
+      ],
+      "retrieval_limits": [
+        "Nasdaq-hosted SF2 page returned a JavaScript shell."
+      ],
+      "does_not_resolve": [
+        "Acceptance times and complete co-owner lineage",
+        "Historical delisted/acquired inclusion",
+        "PIT amendments/prefix reconstruction"
+      ],
+      "documented_subproduct_exclusions": [
+        {
+          "scope": "Using the documented SF2 filing-date field itself as an intraday acceptance timestamp",
+          "status": "EXCLUDED",
+          "url": "https://sharadar.com/docs/insiders",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-23T15:53:51Z",
+            "not_after": "2026-10-23T15:57:13Z",
+            "precision": "bounded UTC retrieval interval; individual web responses do not expose a request timestamp"
+          },
+          "excerpt": "date (YYYY-MM-DD)",
+          "reason": "The documented date field has calendar-date precision and cannot provide an exact acceptance clock. This excludes that substitution only. The approved separate date-only representation and SEC-supplemented combinations remain UNRESOLVED for complete owners, amendments, PIT lineage, identity and common-window requirements."
+        }
+      ]
+    },
+    {
+      "route_id": "R9",
+      "candidate": "SEC EDGAR itself (free; re-parse)",
+      "blocking_requirement": "Insider filings with acceptance times and all owners",
+      "status": "UNRESOLVED",
+      "history_start": {
+        "mandatory_electronic_ownership_filing": "2003-06-30",
+        "verified_complete_inventory_start": null,
+        "note": "Electronic filing regime is not proof of per-issuer/month complete retained inventories."
+      },
+      "individual_price": {
+        "status": "PASS",
+        "currency": "USD",
+        "annual_cost": 0,
+        "channel": "public SEC filing content",
+        "basis": "Accepted retained 2026-10-21 review; no fresh SEC request this execution."
+      },
+      "evidence": [
+        {
+          "evidence_item": "fields",
+          "status": "UNRESOLVED",
+          "url": "https://www.sec.gov/files/info/edgar/ownershipxmltechspec-v3.pdf",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-21T21:48:01Z",
+            "not_after": "2026-10-21T21:48:32Z",
+            "precision": "retained review interval; no primary documentation cache"
+          },
+          "reviewed_at_utc": "2026-10-23T15:57:13Z",
+          "excerpt": "reportingOwner",
+          "rationale": "Accepted review describes repeated owner nodes, Form4/4-A fields and headers. Cached source pairs demonstrate receipt conflict under current rules; accepting a header as availability remains a separate DRAFT. Raw fields support further reconstruction but full requirement is unresolved.",
+          "evidence_kind": "accepted retained review plus cached diagnostic; no fresh SEC request",
+          "accepted_artifact": "docs/research/_event_evidence_resolution_workbook.json",
+          "locator": "vendor_routes[R9]; timing_observations; ownership_inventory"
+        },
+        {
+          "evidence_item": "history",
+          "status": "UNRESOLVED",
+          "url": "https://www.sec.gov/files/rules/final/33-8230.htm",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-21T21:48:01Z",
+            "not_after": "2026-10-21T21:48:32Z",
+            "precision": "retained review interval; no primary documentation cache"
+          },
+          "reviewed_at_utc": "2026-10-23T15:57:13Z",
+          "excerpt": "silent",
+          "rationale": "Accepted review records mandatory electronic ownership filing from 2003-06-30; retained complete delisted/acquired issuer-month inventory coverage is not established.",
+          "evidence_kind": "accepted retained review",
+          "accepted_artifact": "docs/research/_event_evidence_resolution_workbook.json"
+        },
+        {
+          "evidence_item": "point_in_time",
+          "status": "UNRESOLVED",
+          "url": "https://www.sec.gov/about/webmaster-frequently-asked-questions",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-21T21:48:01Z",
+            "not_after": "2026-10-21T21:48:32Z",
+            "precision": "retained review interval; no primary documentation cache"
+          },
+          "reviewed_at_utc": "2026-10-23T15:57:13Z",
+          "excerpt": "There is no timestamp to indicate when filing content is first available on sec.gov.",
+          "rationale": "Verbatim span is retained by the accepted review, not independently re-fetched here. Acceptance is not dissemination; original receipt conflicts, complete amendment links and prefix reconstruction remain unverified. Approved filing-date convention is separately assessed.",
+          "evidence_kind": "accepted retained quotation; live primary verification not renewed",
+          "accepted_artifact": "docs/research/_event_evidence_resolution_workbook.json"
+        },
+        {
+          "evidence_item": "access",
+          "status": "PASS",
+          "url": "https://www.sec.gov/search-filings/edgar-application-programming-interfaces",
+          "retrieval_time_utc": {
+            "not_before": "2026-10-21T21:48:01Z",
+            "not_after": "2026-10-21T21:48:32Z",
+            "precision": "retained review interval; no primary documentation cache"
+          },
+          "reviewed_at_utc": "2026-10-23T15:57:13Z",
+          "excerpt": "silent",
+          "rationale": "Accepted prior review documents public filing/API access free without authentication. This narrow access PASS does not clear the retained SEC403 stop or certify complete history.",
+          "evidence_kind": "accepted retained review",
+          "accepted_artifact": "docs/research/_event_evidence_resolution_workbook.json"
+        }
+      ],
+      "checked_urls": [],
+      "retained_urls": [
+        "https://www.sec.gov/about/webmaster-frequently-asked-questions",
+        "https://www.sec.gov/search-filings/edgar-application-programming-interfaces",
+        "https://www.sec.gov/files/info/edgar/ownershipxmltechspec-v3.pdf",
+        "https://www.sec.gov/files/rules/final/33-8230.htm"
+      ],
+      "retrieval_limits": [
+        "Existing SEC documentation HTTP403 stop preserved. No fresh SEC request, issuer collection or broad SEC work. No new claim that retained quotations were freshly verified."
+      ],
+      "does_not_resolve": [
+        "Historical security identity",
+        "Complete annual inventories/reconstruction",
+        "Receipt/dissemination validity under existing timestamp rules",
+        "Execution prices and detector provenance"
+      ]
+    }
+  ],
+  "combinations": {
+    "pead": "R1/R2/R3 consensus + verified original-release/actual EPS (R4 or demonstrated SEC evidence) + R5/R6/R7 prices",
+    "insider": "R9 or R8 with necessary SEC/date-only supplementation + R5/R6/R7 prices",
+    "cheapest_requirement_complete_paid_combination": null,
+    "annual_cost": null,
+    "common_qualifying_window": null,
+    "status": "UNRESOLVED",
+    "reason": "No documentary route supplies every blocking signal-input, historical-identity and tape/provenance property over a shared five-complete-calendar-year window. R6/R7 price-component passes do not remove those blockers. Unresolved combinations are not documented exclusions.",
+    "priced_components_only": {
+      "lowest_listed_ten_year_prices_annual_usd": 199,
+      "lowest_listed_norgate_delisted_prices_annual_usd": 630,
+      "note": "No buy recommendation follows from these component prices."
+    }
+  }
+}
