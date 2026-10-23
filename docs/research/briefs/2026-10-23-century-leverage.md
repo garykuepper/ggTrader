@@ -179,6 +179,25 @@ The “reduce only if” clause is a necessary extra condition, not an automatic
 reduction when 30% ruins or trails 0%; if its intended priority differs, the
 owner must settle it before approval.
 
+### Senior-quant resolutions of the flagged items (approved with this brief)
+
+- **Fee.** The base case uses SSO's current **0.84% net** expense ratio (ProShares page and
+  summary prospectus, retrieved 2026-10-23), with **0.89%** as a conservative sensitivity. The
+  financing spread is calibrated jointly against real SSO, so it absorbs any residual fee
+  difference. Report the calibrated spread under both.
+- **Distributions.** These come from free data. For the 1× leg, use the monthly S&P Composite
+  dividend yield from Robert Shiller's public long-run dataset, which is free online. Record the
+  retrieval URL, date and SHA-256 at freeze. Each year's dividends are taxed at the year-end
+  qualified rate, and the remaining return is treated as price. For the 2× fund, keep A23's
+  zero-distribution treatment, with SSO's real distributions reported as a 2006+ check. Current
+  tax law is applied throughout and labelled hypothetical; historical rates are not modelled.
+  Because the S&P dividend yield is applied to an all-US index, the result is an approximation;
+  say so. A zero-distribution run for both legs is reported as a sensitivity only.
+- **A23 action set.** Kept as written. The research rule produces a *proposal* for the 2027-09-30
+  review. Changing the SSO target from 30% needs the owner to amend A23 at that review, and the
+  study never triggers a sale by itself. The "reduce only if" clause is a condition for making
+  that proposal, not an automatic reduction.
+
 ## 7. Calls for the owner to check and execution boundary
 
 1. French all-US-market returns are **not** S&P 500 returns. The study's
@@ -189,8 +208,8 @@ owner must settle it before approval.
    need explicit approval. No calibration choice may use century outcomes.
 3. The ±8-point band is fixed for all targets, even 15% and 60%; this follows
    A23's 30% rule shape but is a design choice, not a historical optimum.
-4. The distribution-data gap and A23 action-set conflict above require owner
-   resolution before an after-tax verdict or allocation change.
+4. The distribution-data gap and A23 action-set conflict are resolved above; any change in
+   allocation remains an owner decision at the 2027 review.
 
 **This task is this brief only.** After approval, new code may be added only
 under `src/ggTrader/lab/` and `scripts/`, reusing the A23 tax and band logic.
