@@ -138,7 +138,7 @@ The following proposed controls make those fixed terms auditable:
 
 - **Pass.** After the full registered period of at least 18 months, after-tax
   annualized excess over SPY is **≥ +1.0 pt/yr**, and no quarterly check has been
-  **more than 15% cumulatively behind SPY**. Both conditions are required, with
+  **15% or more cumulatively behind SPY**. Both conditions are required, with
   a complete, reconciled record. A valid full-period result below +1.0 is NO-GO;
   an unresolved evidence fault is UNRESOLVED, never a pass.
 - **Annualized excess.** Subtract SPY's after-tax CAGR from the shadow's, using
@@ -147,12 +147,10 @@ The following proposed controls make those fixed terms auditable:
 - **Quarterly check.** Check on the last trading day of each calendar quarter,
   from inception, using the same starting notional. Cumulative relative wealth
   is `shadow_after_tax_wealth / SPY_after_tax_wealth - 1`. A value **< −0.15**
-  means more than 15% behind: **stop this candidate's shadow, NO-GO**. It is not
+  means 15% or more behind: **stop this candidate's shadow, NO-GO**. It is not
   a 15 percentage-point return difference or an absolute-drawdown stop. A
   quarterly breach cannot be cured by a later recovery or a new inception date.
-- **Threshold conflict.** The supplied B1 wording is strict: exactly −15% does
-  not breach it. Momentum §8's real-money stop is **15% or more** (≤ −0.15).
-  These are transcribed separately; §8 flags the difference for approval.
+- **Threshold.** Inclusive: exactly −15% breaches (see §8 R5).
 - **Evidence limit.** Eighteen months cannot establish statistical significance.
   Under the illustrative approximation `t ≈ IR × sqrt(years)`, IR ≈ 0.36 over
   1.5 years gives expected **t ≈ 0.44**, not 3. This is an illustration, not a
