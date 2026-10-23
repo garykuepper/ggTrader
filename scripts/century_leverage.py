@@ -87,7 +87,9 @@ def provenance(calibration: dict) -> dict:
         ),
         "distribution_basis": "S&P yield on all-US French market is an approximation",
         "known_market_closures": {
-            "1933-03-03_to_1933-03-15": "https://www.federalreservehistory.org/essays/emergency-banking-act-of-1933",
+            "1933-03-03_to_1933-03-15": (
+                "https://www.federalreservehistory.org/essays/emergency-banking-act-of-1933"
+            ),
             "2001-09-10_to_2001-09-17": "https://www.sec.gov/investor/mktrecovery.shtml",
         },
     }

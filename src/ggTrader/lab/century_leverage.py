@@ -249,6 +249,7 @@ def simulate(
 def recommendation_rule(rows: dict[str, dict]) -> dict:
     """Evaluate every pre-registered condition on unrounded primary rows."""
     baseline = rows["30"]
+    # The registered gate applies ruin to the full window only, not each subperiod.
     low_extra = baseline["full"]["ruin"] or (
         baseline["full"]["after_tax_cagr"] < rows["0"]["full"]["after_tax_cagr"]
     )
