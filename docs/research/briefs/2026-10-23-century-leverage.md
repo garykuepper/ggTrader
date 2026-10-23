@@ -1,6 +1,6 @@
 # Brief: century-scale static fractional leverage in a taxable account
 
-**Status:** DRAFT 2026-10-23, awaiting owner approval. Nothing has been computed.
+**Status:** pre-registered; approved by the owner 2026-10-23 before anything was computed. Its numbers and the recommendation rule are now fixed; changing them needs a new dated brief.
 
 **Decision fed:** one input to the owner's **2027-09-30** annual A23 review. This brief
 does not change the adopted 70% SPY / 30% SSO allocation now, authorize a trade,
