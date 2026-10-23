@@ -12,8 +12,11 @@ The [resolution plan](superpowers/plans/2026-10-23-resolve-event-audit.md)
 supersedes earlier event-audit scheduling. The
 [owner decision memo](research/2026-10-23-event-timing-audit-decision.md) assigns
 **UNRESOLVED** to PEAD and insider, separately retaining original timestamp and
-approved filing-date-only representations. It recommends **PARK both studies**;
-the owner has not yet accepted or rejected that recommendation.
+approved filing-date-only representations. **Owner decision 2026-10-23: both studies PARKED. No paid data, now or later.** The owner will
+not buy any dataset or subscription, so every route in the source manifest that needs payment is
+closed. The two-part standard's Part B (an exact-rules replay on paid 2000–2020 data) is
+unreachable as written. The insider header-timestamp amendment stays an unapproved DRAFT, since
+nothing depends on it.
 
 1. Owner: approve or reject the
    [DRAFT header-source amendment](research/briefs/2026-10-23-insider-acceptance-time-amendment.md).
