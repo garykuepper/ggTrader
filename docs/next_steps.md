@@ -8,6 +8,11 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-22)
 
+**Next execution slice:** Use the [next evidence actions plan](superpowers/plans/2026-10-22-next-evidence-actions.md):
+(1) prepare/review the two COST charter requests and compare operative terms;
+(2) locate historical mapping/existing detector inputs, then validate metadata use.
+Planning does not execute HTTP or DB work. Codex owns both tracks.
+
 **Active consolidated plan:** Follow the owner-requested
 [five-gap resolution plan](superpowers/plans/2026-10-22-event-evidence-resolution.md).
 Codex rebuilt the rejected Flash draft; independent review now clears all 14
