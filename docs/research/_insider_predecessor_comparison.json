@@ -1,0 +1,294 @@
+{
+  "schema": "insider-predecessor-comparison-v1",
+  "scope": "One operational original/amendment pair; non-derivative correction only, not population reconstruction",
+  "cache": "data/external/event_timing_audit/insider-predecessor-bnz1mn22",
+  "accounting": {
+    "new_sec_attempts": 1,
+    "cumulative_sec_attempts": 82,
+    "yahoo_attempts": 0,
+    "elapsed_seconds": 105.33867007261142,
+    "stop": null,
+    "all_raw_hashes_verified": 82,
+    "parent_unchanged": true,
+    "prefix_reservations_verified": 81,
+    "exclusive_claim_consumed": true
+  },
+  "raw_records": [
+    {
+      "filing": {
+        "accession": "0001225208-18-003052",
+        "form": "4",
+        "filing_date": "2018-02-15",
+        "primary_document": "xslF345X03/doc4.xml",
+        "acceptance": "2018-02-16T03:33:37.000Z",
+        "report_date": "2018-02-13",
+        "items": ""
+      },
+      "header": {
+        "header_acceptance": "2018-02-15T17:33:37",
+        "header_filing_date": "2018-02-15"
+      },
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520818003052/0001225208-18-003052.txt",
+        "cache_file": "sec_0ef932560134ede1d606377a0ddc1ed1b8efe09ec34c44b7be7900f9762232cc_c1c5585857ed3feb59663abc1c4476a06c5c410e3d1002b9e7655af354c36d40.raw",
+        "sha256": "c1c5585857ed3feb59663abc1c4476a06c5c410e3d1002b9e7655af354c36d40",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-23T04:44:58.198946+00:00"
+      },
+      "schema_issues": [],
+      "issuer_cik": "0001133421",
+      "symbol": "NOC",
+      "owners": [
+        {
+          "cik": "1539147",
+          "name": "Bedingfield Kenneth L",
+          "roles": {
+            "isDirector": null,
+            "isOfficer": "1",
+            "isTenPercentOwner": null,
+            "isOther": null,
+            "officerTitle": "Corp VP, CFO"
+          }
+        }
+      ],
+      "lots": [
+        {
+          "lot_id": "0001225208-18-003052:0",
+          "ordinal": 0,
+          "symbol": "NOC",
+          "issuer_cik": "0001133421",
+          "owners": [
+            "1539147"
+          ],
+          "owner_inventory": [
+            {
+              "cik": "1539147",
+              "name": "Bedingfield Kenneth L",
+              "roles": {
+                "isDirector": null,
+                "isOfficer": "1",
+                "isTenPercentOwner": null,
+                "isOther": null,
+                "officerTitle": "Corp VP, CFO"
+              }
+            }
+          ],
+          "transaction_date": "2018-02-13",
+          "transaction_code": "M",
+          "shares": "17755.5000",
+          "acquired_disposed_code": "A",
+          "security_class": "Common Stock",
+          "ownership": "D",
+          "plan_state": "ABSENT",
+          "filing_date": "2018-02-15",
+          "accession": "0001225208-18-003052",
+          "form": "4",
+          "acceptance": "2018-02-16T03:33:37.000Z",
+          "raw_lot_sha256": "c81cc5033aafb0c669f5632894a07a651b50477770f000a440c666a819f8654d"
+        },
+        {
+          "lot_id": "0001225208-18-003052:1",
+          "ordinal": 1,
+          "symbol": "NOC",
+          "issuer_cik": "0001133421",
+          "owners": [
+            "1539147"
+          ],
+          "owner_inventory": [
+            {
+              "cik": "1539147",
+              "name": "Bedingfield Kenneth L",
+              "roles": {
+                "isDirector": null,
+                "isOfficer": "1",
+                "isTenPercentOwner": null,
+                "isOther": null,
+                "officerTitle": "Corp VP, CFO"
+              }
+            }
+          ],
+          "transaction_date": "2018-02-13",
+          "transaction_code": "F",
+          "shares": "8576.0000",
+          "acquired_disposed_code": "D",
+          "security_class": "Common Stock",
+          "ownership": "D",
+          "plan_state": "ABSENT",
+          "filing_date": "2018-02-15",
+          "accession": "0001225208-18-003052",
+          "form": "4",
+          "acceptance": "2018-02-16T03:33:37.000Z",
+          "raw_lot_sha256": "a827495d162d2a577fabf98f7ab79dfc6d6730cb2fbf623e9e62c2303fd33c35"
+        }
+      ],
+      "plan_state": "ABSENT",
+      "original_submission_date": null,
+      "footnotes": [
+        "Shares expected to be issued in settlement of Restricted Performance Stock Rights (\"RPSRs\") granted under the 2011 Long-Term Incentive Stock Plan (\"LTISP\") on 2/18/15 with a valuation of performance measurement period (\"measurement period\") that ended 12/31/17.   RPSRs to be settled at 150% of target. The shares are anticipated to be distributed into the participant's account on February 22, 2018.",
+        "Shares surrendered to issuer in payment of tax liability in connection with settlement of RPSRs in accordance with Rule 16b-3(e)",
+        "Each RPSR represents a contingent right to receive an equivalent number of shares of Issuer common stock, or, at the Issuer's election, cash or a combination of cash and Issuer common stock.  The RPSRs vest if the application performance metric is satisfied for the relevant measurement period.  Grants awarded pursuant to Rule 16b-3(d).",
+        "The RPSRs acquired include (i) 5,918.50 vested RPSRs with respect to the measurement period ended 12/31/17 acquired due to settlement of the 2015 RPSRs held at 150% of the target award and (ii) 6,961 unvested RPSRs granted under the LTISP on 2/13/18 with a measurement period ending on 12/31/20.",
+        "Total amount includes 17,755.50 vested RPSRs granted under the LTISP on 2/18/15 with a measurement period ended on 12/31/17; 6,961 RPSRs granted on 2/13/18 with a measurement period ending on 12/31/20; 9,914 RPSRs granted on 2/17/17 with a measurement period ending on 12/31/19; and 10,895 RPSRs granted on 2/17/16 with a measurement period ending on 12/31/18.",
+        "Total amount includes 6,961 RPSRs granted on 2/13/18 with a measurement period ending on 12/31/20; 9,914 RPSRs granted on 2/17/17 with a measurement period ending on 12/31/19; and 10,895 RPSRs granted on 2/17/16 with a measurement period ending on 12/31/18.",
+        "Each Restricted Stock Right (\"RSR\") represents a contingent right to receive an equivalent number of shares of Issuer common stock, or, at the election of the Issuer's Compensation Committee, cash or a combination of cash and Issuer common stock.  The RSRs were granted under the LTISP on 2/13/18 and will vest on 2/13/21.",
+        "Total amount includes 3,161 RSRs granted under the LTISP on 2/13/18 that will vest on 2/13/21; 4,146 RSRs granted under the LTISP on 2/17/17 that will vest on 2/17/20; 4,943 RSRs granted under the LTISP on 2/17/16 that will vest on 2/17/19; and 5,582 RSRs granted under the LTISP on 2/18/15 that will vest on 2/18/18."
+      ],
+      "derivative_lots": 3
+    },
+    {
+      "filing": {
+        "accession": "0001225208-18-004211",
+        "form": "4/A",
+        "filing_date": "2018-02-26",
+        "primary_document": "xslF345X03/doc4a.xml",
+        "acceptance": "2018-02-27T03:48:55.000Z",
+        "report_date": "2018-02-13",
+        "items": ""
+      },
+      "header": {
+        "header_acceptance": "2018-02-26T17:48:55",
+        "header_filing_date": "2018-02-26"
+      },
+      "source_ref": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1133421/000122520818004211/0001225208-18-004211.txt",
+        "cache_file": "sec_e2cd8182197047e068709fa77a4d0a06082b545c965c9cdbf72b7379dd25e0b1_0415762b37a539e6e2cc6b8f7463abcb56d5bc15ac2b50a2273418860dff7c04.raw",
+        "sha256": "0415762b37a539e6e2cc6b8f7463abcb56d5bc15ac2b50a2273418860dff7c04",
+        "content_encoding": "identity",
+        "status_code": 200,
+        "timestamp": "2026-10-22T04:03:46.300496+00:00"
+      },
+      "schema_issues": [],
+      "issuer_cik": "0001133421",
+      "symbol": "NOC",
+      "owners": [
+        {
+          "cik": "1539147",
+          "name": "Bedingfield Kenneth L",
+          "roles": {
+            "isDirector": null,
+            "isOfficer": "1",
+            "isTenPercentOwner": null,
+            "isOther": null,
+            "officerTitle": "Corp VP, CFO"
+          }
+        }
+      ],
+      "lots": [
+        {
+          "lot_id": "0001225208-18-004211:0",
+          "ordinal": 0,
+          "symbol": "NOC",
+          "issuer_cik": "0001133421",
+          "owners": [
+            "1539147"
+          ],
+          "owner_inventory": [
+            {
+              "cik": "1539147",
+              "name": "Bedingfield Kenneth L",
+              "roles": {
+                "isDirector": null,
+                "isOfficer": "1",
+                "isTenPercentOwner": null,
+                "isOther": null,
+                "officerTitle": "Corp VP, CFO"
+              }
+            }
+          ],
+          "transaction_date": "2018-02-13",
+          "transaction_code": "M",
+          "shares": "17755.5000",
+          "acquired_disposed_code": "A",
+          "security_class": "Common Stock",
+          "ownership": "D",
+          "plan_state": "ABSENT",
+          "filing_date": "2018-02-26",
+          "accession": "0001225208-18-004211",
+          "form": "4/A",
+          "acceptance": "2018-02-27T03:48:55.000Z",
+          "raw_lot_sha256": "c81cc5033aafb0c669f5632894a07a651b50477770f000a440c666a819f8654d"
+        },
+        {
+          "lot_id": "0001225208-18-004211:1",
+          "ordinal": 1,
+          "symbol": "NOC",
+          "issuer_cik": "0001133421",
+          "owners": [
+            "1539147"
+          ],
+          "owner_inventory": [
+            {
+              "cik": "1539147",
+              "name": "Bedingfield Kenneth L",
+              "roles": {
+                "isDirector": null,
+                "isOfficer": "1",
+                "isTenPercentOwner": null,
+                "isOther": null,
+                "officerTitle": "Corp VP, CFO"
+              }
+            }
+          ],
+          "transaction_date": "2018-02-13",
+          "transaction_code": "F",
+          "shares": "8532.0000",
+          "acquired_disposed_code": "D",
+          "security_class": "Common Stock",
+          "ownership": "D",
+          "plan_state": "ABSENT",
+          "filing_date": "2018-02-26",
+          "accession": "0001225208-18-004211",
+          "form": "4/A",
+          "acceptance": "2018-02-27T03:48:55.000Z",
+          "raw_lot_sha256": "f6acd715df572916ef9fc01a343a5599c2efa32d66d16f82e85b339e11e75866"
+        }
+      ],
+      "plan_state": "ABSENT",
+      "original_submission_date": "2018-02-15",
+      "footnotes": [
+        "Shares expected to be issued in settlement of Restricted Performance Stock Rights (\"RPSRs\") granted under the 2011 Long-Term Incentive Stock Plan (\"LTISP\") on 2/18/15 with a valuation of performance measurement period (\"measurement period\") that ended 12/31/17.   RPSRs to be settled at 150% of target. The shares are anticipated to be distributed into the participant's account on February 26, 2018.",
+        "Shares surrendered to issuer in payment of tax liability in connection with settlement of RPSRs in accordance with Rule 16b-3(e).  Amendment filed to correct the number of shares surrendered.",
+        "Each RPSR represents a contingent right to receive an equivalent number of shares of Issuer common stock, or, at the Issuer's election, cash or a combination of cash and Issuer common stock.  The RPSRs vest if the application performance metric is satisfied for the relevant measurement period.  Grants awarded pursuant to Rule 16b-3(d).",
+        "Total amount includes 6,961 RPSRs granted on 2/13/18 with a measurement period ending on 12/31/20; 9,914 RPSRs granted on 2/17/17 with a measurement period ending on 12/31/19; and 10,895 RPSRs granted on 2/17/16 with a measurement period ending on 12/31/18."
+      ],
+      "derivative_lots": 1
+    }
+  ],
+  "supported_link": {
+    "original_accession": "0001225208-18-003052",
+    "amendment_accession": "0001225208-18-004211",
+    "replaces_lot_ids": [
+      "0001225208-18-003052:1"
+    ],
+    "replacement_lot_ids": [
+      "0001225208-18-004211:1"
+    ],
+    "old_shares": "8576.0000",
+    "new_shares": "8532.0000",
+    "transaction_code": "F",
+    "transaction_date": "2018-02-13",
+    "statement_locator": "Amendment footnote 2; original and amendment nonDerivativeTransaction ordinal1",
+    "unchanged_repeated_lot": {
+      "original_lot_id": "0001225208-18-003052:0",
+      "amendment_lot_id": "0001225208-18-004211:0",
+      "same_raw_lot_sha256": true
+    },
+    "limitations": "Specific F-lot correction corroborated; no global full-ledger replacement or derivative-row replacement inferred."
+  },
+  "timing": {
+    "original_filing_date": "2018-02-15",
+    "amendment_filing_date": "2018-02-26",
+    "retroactive_replacement_allowed": false,
+    "observed_public_dissemination": null,
+    "original_receipt_conflicts": "Retained; API/header readings remain different. Date-only convention is separate.",
+    "current_rule_signal_effect": "Neither original nor amended non-derivative lots has code P; no purchase-cluster or population result demonstrated."
+  },
+  "remaining_gaps": [
+    "Historical security mapping",
+    "Complete inventory and population reconstruction",
+    "Existing exhaustive source-bound detector export",
+    "PEAD announcement, actual EPS and pre-announcement consensus lineage"
+  ],
+  "independent_documentary_review": "pending"
+}

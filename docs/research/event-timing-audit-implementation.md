@@ -1202,3 +1202,44 @@ amendment's own eligibility time. No predecessor assumption, broad population
 collection, detector rerun or vendor-search reset is authorized. Mapping/export
 inputs, independent NOC completeness, population reconstruction and PEAD lineage
 remain unmet; current metadata counts do not change the no-Phase-2 decision.
+
+## Metadata slice cleared; exact predecessor acquired and compared
+
+Independent Codex review cleared `4b3e792..c589879` runtime/evidence work and the
+one-request acquisition. It independently reran five focused tests and checked
+SQL behavior, source bindings, stored counts, legacy flags, 23 NYSE diagnostic
+pairs and the guarded acquisition. No actionable findings or deferred minors.
+Reviewer declined to infer actual linkage before acquisition, universal source
+absence, complete inventory, clean tape, historical mapping or population PASS;
+those remain gated by actual evidence rather than review completion.
+
+The cleared runner and spec hashes were checked before HTTP. The one canonical
+submission returned HTTP 200 in one attempt. Collection now has **82 SEC attempts**,
+zero Yahoo and **105.33867007261142 cumulative seconds**; all 82 raw hashes, parent
+immutability and the unchanged 81-entry prefix verified. Raw child:
+`data/external/event_timing_audit/insider-predecessor-bnz1mn22/`. Claim consumed.
+
+[Source-bound comparison](_insider_predecessor_comparison.json) identifies the
+original `0001225208-18-003052` (2018-02-15) and amendment
+`0001225208-18-004211` (2018-02-26), issuer 1133421, owner 1539147, transaction date
+2018-02-13. Amendment original-submission date points to 2018-02-15. Footnote 2
+explicitly corrects the number of shares surrendered; the matching F disposition
+changes **8,576 to 8,532 shares**. Both rows share class, owner, date, code and
+ownership attributes. Original lot `:1` and amendment lot `:1` are the supported
+specific replacement link. The M acquisition repeated at ordinal 0 has identical
+raw-lot SHA-256. This is not an instruction to ingest that repeated lot twice or
+to replace the entire original filing; derivative content is not adjudicated.
+
+Neither non-derivative record has code P. The specific correction therefore
+supplies no purchase-cluster example or measured strategy outcome. Any replay
+must apply a supported amendment at its own eligible/public time, never backdate
+it to the original. API/header conflicts and unknown actual dissemination remain;
+the approved date-only representation remains separate. No new source identity,
+publication timestamp, annual gate or qualifying window is manufactured.
+
+Fresh documentary review of the comparison is pending. The executed slice has
+recovered concrete metadata, narrowed and acquired one original, and fixed the
+venue query. Historical interval mapping, exhaustive existing detector export,
+independent NOC inventory completeness, population replay and PEAD lineage remain
+exact missing dependencies. No broader collection, detector rerun, database write,
+price analysis, return test or production change occurred.

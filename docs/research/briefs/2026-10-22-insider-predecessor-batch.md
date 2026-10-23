@@ -40,3 +40,20 @@ Never backdate a correction or convert unknown linkage into standalone usable
 lots. Output `/tmp/insider-predecessor-batch-result.json` and source-bound evidence
 in the handoff. No return test, detector run, population expansion, DB write or
 production change is authorized. The wider audit remains unfinished.
+
+## Execution complete
+
+Fresh independent Codex review cleared both the runtime/evidence slice and this
+one-request acquisition, with no actionable finding. The parent verified runner
+SHA-256 `230b3424e942e0d7c666d77b371b4d5746d18d31dd2e593f8877a32a2acb8010`
+and frozen spec hash before execution. One HTTP 200 in one attempt advanced the
+SEC ledger to 82, zero Yahoo, 105.33867007261142 cumulative seconds. All 82 raw
+hashes, unchanged parent files and first 81 reservations were verified. Child:
+`data/external/event_timing_audit/insider-predecessor-bnz1mn22/`. Claim is consumed.
+
+[Raw comparison](../_insider_predecessor_comparison.json) corroborates the exact
+F-lot correction, 8,576 to 8,532 shares, and identifies the unchanged repeated M
+lot by identical raw fingerprint. No purchase lot or full-ledger replacement is
+inferred. Both documents' dates/owner/issuer and amendment footnote 2 are retained.
+Fresh offline documentary review of this new comparison is pending. No further
+request is included; global identity, tape, population and PEAD gaps remain.

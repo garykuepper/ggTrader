@@ -139,7 +139,7 @@ or has a precise missing-source dependency. No clean-tape or identity PASS is in
 - [x] Reproduce the failure, pin the shared equity count query to
   `venue='yfinance'`, and preserve existing NYSE/session and detector checks.
   Read all callers first; change no unrelated runtime behavior.
-- [ ] Run capped focused tests via `scripts/run_tests.sh` and Ruff check/format
+- [x] Run capped focused tests via `scripts/run_tests.sh` and Ruff check/format
   on changed Python files; obtain one fresh scoped code review before relying on it.
 - [x] Use the accepted paired LEFT JOIN query/parameters for supported exact event
   pairs. Preserve zero counts, unknown mappings, missing tradeable dates, existing
@@ -194,5 +194,7 @@ unfetched pending acquisition review. Mapping and exhaustive detector inputs
 were not recovered from the inspected schemas/artifacts, so dependent population
 checks are explicitly blocked. The venue regression reproduced two failures;
 the minimal fix passed all 190 focused audit tests, plus Ruff/format/diff checks.
-Fresh independent review of this execution slice and one-URL acquisition is
-pending. No new SEC/Yahoo request, price/return computation or DB write occurred.
+Independent review cleared the execution slice and one-URL acquisition. One
+HTTP 200 advanced collection to 82 SEC attempts; the specific F-lot correction
+is source-supported and awaiting documentary review. No price/return computation
+or DB write occurred. Remaining population/mapping/tape/PEAD inputs stay blocked.
