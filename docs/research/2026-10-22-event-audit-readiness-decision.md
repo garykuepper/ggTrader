@@ -66,7 +66,13 @@ Research and the existing frozen paper observation continue under standing owner
 instructions. The absence of permission to run an accepted new return test says
 nothing about shutting down the project or changing the account.
 
-Independent review is pending. No new external request, market-price inspection,
+Independent Codex review supports this readiness decision. It found one metadata
+lookup typo: the attempted SQL names `earnings_surprises`, while the repository
+table is `earnings_surprise`. The historical attempt is preserved unchanged in
+the machine record alongside a corrected future query; neither query returned
+schema evidence and the corrected query has not been executed. This does not
+change the present decision. Source bindings, accounting, blockers and reopening
+conditions passed review; the broader audit remains unfinished. No new external request, market-price inspection,
 return test, detector run, production change or broad test was performed for
 this decision. Mandatory data gaps remain; no significant improvement over SPY
 is established by this work.

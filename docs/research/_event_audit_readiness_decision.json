@@ -53,7 +53,14 @@
     "db_writes": 0,
     "status": "unavailable",
     "reason": "Read-only metadata unavailable using exported settings; .env not read and no alternate connection attempted",
-    "query_log": []
+    "query_log": [],
+    "correction_for_future_use": {
+      "issue": "Attempted schema lookup used earnings_surprises; actual table is earnings_surprise. Attempted SQL above is preserved unchanged.",
+      "source": "src/ggTrader/lab/earnings_surprise_data.py:28",
+      "sql": "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND (table_name IN ('ohlcv', 'form4_transactions', 'earnings_surprise') OR table_name ILIKE '%identit%' OR table_name ILIKE '%security%' OR table_name ILIKE '%detect%' OR table_name ILIKE '%flag%') ORDER BY table_name, ordinal_position",
+      "executed": false,
+      "decision_impact": "None: original attempt was unavailable and returned no rows; no table-absence claim is supported."
+    }
   },
   "blocking_requirements": [
     {
@@ -122,5 +129,16 @@
     "No new SEC/Yahoo/vendor request in this decision step",
     "No claim that paid routes or all possible data sources are disproven"
   ],
-  "independent_review": "pending"
+  "independent_review": {
+    "verdict": "Readiness conclusion supported; otherwise clean after recording future metadata-query table correction",
+    "execution_decision": "DO_NOT_START_PHASE_2_RETURN_TEST",
+    "remaining_scope": "Broader audit unfinished; mandatory inputs and qualifying window unverified",
+    "checks": [
+      "Five direct input hashes and source-manifest transitive binding",
+      "Accounting and five blockers/reopening conditions",
+      "Metadata-only query scope and unavailable-access limitation",
+      "Canonical outputs absent and offline publication guard intact"
+    ],
+    "not_checked": "No new services, DB, private environment, prices/returns, detector runs or tests"
+  }
 }

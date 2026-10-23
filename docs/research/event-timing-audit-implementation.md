@@ -1116,3 +1116,20 @@ remains a separate dependency. No more documents are queued; local
 export search found no qualifying detector export in its three searched roots.
 No database, price/return analysis, new detector, runtime code or production work
 occurred. Both representations and PEAD remain UNRESOLVED.
+
+## 2026-10-22 present readiness decision reviewed
+
+Independent Codex review supports [DO_NOT_START_PHASE_2_RETURN_TEST](2026-10-22-event-audit-readiness-decision.md) with current verified inputs.
+It checked source hashes, accounting, blockers and reopening conditions, and
+confirmed that canonical final audit outputs remain absent rather than falsely
+published from offline work. It identified no already-recoverable mandatory
+input in the named evidence. This resolves the execution decision, not the
+owner's broader unfinished feasibility objective.
+
+One correction is recorded for future metadata use: actual table name is
+`earnings_surprise`, not the attempted `earnings_surprises`. The original SQL
+is retained as historical evidence; corrected SQL is added separately and has
+not run. The attempt was unavailable with exported settings and returned no
+rows, so no database/table-absence inference or decision change is warranted.
+No additional HTTP/DB execution, price/return analysis, detector, runtime change
+or test accompanied the review. Missing inputs remain the blocker.

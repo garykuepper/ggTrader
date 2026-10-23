@@ -8,12 +8,14 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-22)
 
-**Readiness decision under independent review:**
+**Reviewed readiness decision:**
 [Present test-readiness decision](research/2026-10-22-event-audit-readiness-decision.md).
 Mandatory mapping, detector/export, inventory/reconstruction and PEAD lineage
 inputs are still unavailable. Do not start Phase 2 with current verified inputs.
 Source feasibility remains UNRESOLVED; the registered final audit is not complete.
-No further charter or collection loop is queued just to replace missing inputs.
+Independent review supports this decision; a future metadata-query table-name
+correction is recorded without rerunning the unavailable query. No further
+charter or collection loop is queued just to replace missing inputs.
 
 
 **Next execution slice:** Use the [next evidence actions plan](superpowers/plans/2026-10-22-next-evidence-actions.md):
