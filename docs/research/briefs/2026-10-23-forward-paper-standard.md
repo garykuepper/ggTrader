@@ -221,6 +221,8 @@ does not authorize capital.**
 
 ## 8. Conflicts with the cited briefs: flagged, not silently resolved
 
+*As approved 2026-10-23, the senior-quant resolutions R1–R5 below settle each conflict; where an item's original wording below says “proposed” or “not rewritten”, the resolution governs.*
+
 1. **Paid Part B versus free forward evidence.** Momentum §3/§7 requires an
    exact-rules 2000–2020 paid replay; factor §2/§8 also routes a passer to paid
    Phase 2. The owner's no-paid-data decision closes those routes permanently.
