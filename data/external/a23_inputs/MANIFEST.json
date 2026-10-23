@@ -1,0 +1,37 @@
+{
+  "SPY.csv": {
+    "url": "https://finance.yahoo.com/quote/SPY/history/",
+    "fetch": "yfinance Ticker.history(start='1993-01-01', auto_adjust=False)",
+    "downloaded_utc": "2026-10-23T22:15:50.833995+00:00",
+    "sha256": "83c63d73d2d2e5b17bd4a2d484248175ff71a282c501a6eef6ead72b9bd6264d",
+    "rows": 8492,
+    "first": "1993-01-29",
+    "last": "2026-10-23"
+  },
+  "SSO.csv": {
+    "url": "https://finance.yahoo.com/quote/SSO/history/",
+    "fetch": "yfinance Ticker.history(start='1993-01-01', auto_adjust=False)",
+    "downloaded_utc": "2026-10-23T22:15:51.124579+00:00",
+    "sha256": "7244c846d9475d00565054cd9637a84a596974699347fe2ede4a94ed67a20cac",
+    "rows": 5118,
+    "first": "2006-06-21",
+    "last": "2026-10-23"
+  },
+  "BIL.csv": {
+    "url": "https://finance.yahoo.com/quote/BIL/history/",
+    "fetch": "yfinance Ticker.history(start='1993-01-01', auto_adjust=False)",
+    "downloaded_utc": "2026-10-23T22:15:51.433929+00:00",
+    "sha256": "53dc5451b3e2eb95ebec594416d2b17cdd99d6373fb1b9918d714c2b1d990331",
+    "rows": 4883,
+    "first": "2007-05-30",
+    "last": "2026-10-23"
+  },
+  "DTB3.csv": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3",
+    "downloaded_utc": "2026-10-23T22:15:51.701780+00:00",
+    "sha256": "3437358abeac96f2417ec10d173e985b8aa831d09dee78debdafa52f016f21c8",
+    "rows_raw": 18994,
+    "first": "1954-01-04",
+    "last": "2026-10-22"
+  }
+}
