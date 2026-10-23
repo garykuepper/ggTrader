@@ -76,3 +76,22 @@ conditions passed review; the broader audit remains unfinished. No new external 
 return test, detector run, production change or broad test was performed for
 this decision. Mandatory data gaps remain; no significant improvement over SPY
 is established by this work.
+
+## Subsequent correction: read-only database access is available
+
+The controller discovered the existing read-only PostgreSQL connector after the
+direct-process attempt failed. Schema queries through that connector confirm
+`ohlcv`, `form4_transactions` and `earnings_surprise` are accessible. The earlier
+process-environment limitation must not be treated as a general access blocker
+or a request for the owner to configure credentials.
+
+[Recorded connector queries/results](_event_audit_connected_metadata.json) also
+show exactly one `yfinance`/`1d` bar for each operational pair NOC 2025-02-21 and
+COST 2026-04-02. Queries selected counts and schema only, with no price/outcome
+values or writes. Connector date serialization is preserved as returned; the
+requested calendar dates are fixed in the SQL.
+
+These counts do not establish historical security identity, valid detector
+screening, full population coverage or PEAD input lineage. Database access is
+now available; those separate evidence gates keep the present decision intact.
+The earlier independent readiness review predates this new connector check.

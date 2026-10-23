@@ -140,5 +140,12 @@
       "Canonical outputs absent and offline publication guard intact"
     ],
     "not_checked": "No new services, DB, private environment, prices/returns, detector runs or tests"
+  },
+  "subsequent_connected_metadata": {
+    "artifact": "docs/research/_event_audit_connected_metadata.json",
+    "database_access": "Available through existing read-only PostgreSQL connector; direct-process environment limitation does not mean database inaccessible",
+    "operational_bar_counts": "One yfinance daily bar for NOC 2025-02-21 and COST 2026-04-02; no price values selected",
+    "decision_effect": "Removes database-access blocker; does not establish historical security mapping, detector cleanliness, population coverage or PEAD lineage. Do not start Phase 2 until those mandatory gates pass.",
+    "review_scope": "Earlier independent readiness review predates this connector check; query results are directly recorded tool evidence"
   }
 }

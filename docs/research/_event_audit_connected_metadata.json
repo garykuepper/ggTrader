@@ -1,0 +1,40 @@
+{
+  "schema": "event-audit-connected-metadata-v1",
+  "scope": "Read-only connected PostgreSQL metadata; two operational date pairs only",
+  "connection_discovery": "Existing mcp__postgres__query connector; no credentials requested or .env read",
+  "schema_query": {
+    "sql": "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND (table_name IN ('ohlcv', 'form4_transactions', 'earnings_surprise') OR table_name ILIKE '%identit%' OR table_name ILIKE '%security%' OR table_name ILIKE '%detect%' OR table_name ILIKE '%flag%') ORDER BY table_name, ordinal_position",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "[\n  {\n    \"table_name\": \"earnings_surprise\",\n    \"column_name\": \"symbol\",\n    \"data_type\": \"text\"\n  },\n  {\n    \"table_name\": \"earnings_surprise\",\n    \"column_name\": \"earnings_date\",\n    \"data_type\": \"date\"\n  },\n  {\n    \"table_name\": \"earnings_surprise\",\n    \"column_name\": \"eps_estimate\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"earnings_surprise\",\n    \"column_name\": \"eps_reported\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"earnings_surprise\",\n    \"column_name\": \"surprise_pct\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"symbol\",\n    \"data_type\": \"text\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"issuer_cik\",\n    \"data_type\": \"integer\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"insider_cik\",\n    \"data_type\": \"integer\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"insider_name\",\n    \"data_type\": \"text\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"accession_number\",\n    \"data_type\": \"text\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"transaction_date\",\n    \"data_type\": \"date\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"transaction_code\",\n    \"data_type\": \"text\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"shares\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"price_per_share\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"acquired_disposed_code\",\n    \"data_type\": \"text\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"is_10b5_1_plan\",\n    \"data_type\": \"boolean\"\n  },\n  {\n    \"table_name\": \"form4_transactions\",\n    \"column_name\": \"filing_date\",\n    \"data_type\": \"date\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"timestamp\",\n    \"data_type\": \"timestamp without time zone\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"symbol\",\n    \"data_type\": \"character varying\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"interval\",\n    \"data_type\": \"character varying\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"open\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"high\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"low\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"close\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"volume\",\n    \"data_type\": \"double precision\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"trades\",\n    \"data_type\": \"integer\"\n  },\n  {\n    \"table_name\": \"ohlcv\",\n    \"column_name\": \"venue\",\n    \"data_type\": \"character varying\"\n  }\n]"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "bar_count_query": {
+    "sql": "SELECT e.symbol, e.session_date, count(o.timestamp)::bigint AS bar_count FROM (VALUES ('NOC'::text, DATE '2025-02-21'), ('COST'::text, DATE '2026-04-02')) AS e(symbol, session_date) LEFT JOIN public.ohlcv AS o ON o.symbol = e.symbol AND o.venue = 'yfinance' AND o.interval = '1d' AND o.timestamp >= e.session_date::timestamp AND o.timestamp < e.session_date::timestamp + INTERVAL '1 day' GROUP BY e.symbol, e.session_date ORDER BY e.symbol, e.session_date",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "[\n  {\n    \"symbol\": \"COST\",\n    \"session_date\": \"2026-04-02T07:00:00.000Z\",\n    \"bar_count\": \"1\"\n  },\n  {\n    \"symbol\": \"NOC\",\n    \"session_date\": \"2025-02-21T08:00:00.000Z\",\n    \"bar_count\": \"1\"\n  }\n]"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "interpretation": {
+    "database_access": "AVAILABLE through connected read-only tool; earlier direct-process settings failure was not a global access failure",
+    "operational_counts": "One yfinance daily bar exists for each requested NOC/COST date pair. Counts only; no price or outcome fields selected.",
+    "date_serialization": "Returned date values are retained exactly as serialized by the connector; requested calendar dates are fixed in SQL.",
+    "identity": "UNVERIFIED; bare symbol/date counts do not establish historical security mapping",
+    "detector": "UNVERIFIED; no detector export was supplied or recomputed",
+    "population": "Two operational examples do not measure annual population coverage"
+  },
+  "sec_requests": 0,
+  "yahoo_requests": 0,
+  "db_writes": 0
+}

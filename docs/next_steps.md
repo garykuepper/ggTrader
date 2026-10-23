@@ -8,6 +8,11 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-22)
 
+**Database access correction:** An existing read-only PostgreSQL connector works.
+Schema and two operational bar-count queries succeeded; no credentials or `.env`
+are needed for that connector. Use the [recorded metadata](research/_event_audit_connected_metadata.json).
+Historical security mapping and existing detector evidence still need resolution.
+
 **Reviewed readiness decision:**
 [Present test-readiness decision](research/2026-10-22-event-audit-readiness-decision.md).
 Mandatory mapping, detector/export, inventory/reconstruction and PEAD lineage
