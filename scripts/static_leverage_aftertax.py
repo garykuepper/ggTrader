@@ -43,7 +43,9 @@ STRESS = {
 
 
 # ----------------------------------------------------------------------------- data
-def load_prices(spread: float, rf_offset: float = 0.0) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+def load_prices(
+    spread: float, rf_offset: float = 0.0, calib_end: str = "2026-09-30"
+) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Unadjusted closes + per-share distributions for SPY/SSO/BIL, with synthetic SSO pre-2006.
 
     Returns (close, dist, calib). Synthetic SSO has zero distributions (all return in price),
@@ -67,7 +69,8 @@ def load_prices(spread: float, rf_offset: float = 0.0) -> tuple[pd.DataFrame, pd
     synth = 2.0 * r_spy - (rf + spread / 252.0) - SSO_ER / 252.0
     # calibrate on the real overlap
     r_sso = (close["SSO"] + dist["SSO"]) / close["SSO"].shift(1) - 1
-    ov = pd.concat([r_sso, synth], axis=1, keys=["real", "synth"]).dropna()
+    # Pinned: an open-ended overlap re-fits on every run and drifts the pre-2006 holdout.
+    ov = pd.concat([r_sso, synth], axis=1, keys=["real", "synth"]).dropna().loc[:calib_end]
     resid = ov["real"] - ov["synth"]
     calib = {
         "overlap": [str(ov.index[0].date()), str(ov.index[-1].date())],
@@ -372,6 +375,11 @@ def main() -> None:
     p.add_argument("--spread", type=float, default=0.0075, help="financing spread over T-bill")
     p.add_argument("--main-start", default="2006-06-21")
     p.add_argument("--end", default="2026-09-29")
+    p.add_argument(
+        "--calib-end",
+        default="2026-09-30",
+        help="last day of the real-SSO calibration overlap (pinned for reproducibility)",
+    )
     p.add_argument("--holdout", nargs=2, default=["1993-02-01", "2006-06-20"])
     p.add_argument("--rf-offset", type=float, default=0.0, help="add to T-bill rate (annual)")
     p.add_argument("--main-only", action="store_true", help="skip holdout/stitched windows")
@@ -391,7 +399,7 @@ def main() -> None:
     )
     a = p.parse_args()
 
-    close, dist, calib = load_prices(a.spread, a.rf_offset)
+    close, dist, calib = load_prices(a.spread, a.rf_offset, a.calib_end)
     close, dist = close.loc[: a.end], dist.loc[: a.end]
     print("synthetic calibration:", calib)
 
