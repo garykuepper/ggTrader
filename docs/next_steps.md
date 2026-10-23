@@ -9,8 +9,9 @@ any) — don't let this file accumulate a backlog.
 ## Current research decision (2026-10-22)
 
 **Next execution slice:** Use the [next evidence actions plan](superpowers/plans/2026-10-22-next-evidence-actions.md):
-(1) two COST charters are acquired (81 cumulative SEC attempts), with comparison
-awaiting documentary review; (2) bounded local search found no qualifying
+(1) two COST charters and their comparison passed independent review (81
+cumulative SEC attempts); actual state-filing chronology remains unverified.
+(2) Bounded local search found no qualifying
 mapping/detector export in the searched roots. Next establish exact effective-date
 and mapping/export dependencies; no DB query or extra acquisition is queued.
 Codex owns both tracks.

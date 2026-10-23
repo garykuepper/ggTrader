@@ -74,5 +74,17 @@
   ],
   "next_dependency": "Seek dated state-filing evidence or already-existing source-bound security mapping if exact effective chronology is required; do not auto-fetch conditional exhibits or invent legal dates.",
   "status": "UNRESOLVED",
-  "independent_documentary_review": "pending"
+  "independent_documentary_review": {
+    "verdict": "CLEAN within two-charter documentary scope",
+    "blocking_findings": 0,
+    "verified": [
+      "Both base Section 2.1 clauses and August 27, 1999 execution text",
+      "2022 appended amendment par values, adoption and execution dates and state-filing effectiveness condition",
+      "Absence of that appendix in acquired 2015 body",
+      "No class-clause markup caveat",
+      "All 81 raw hashes, unchanged parent and 79-entry accounting prefix, unchanged accepted machine workbook hash, consumed claim"
+    ],
+    "remaining_dependency": "Dated state-filing evidence for this exact Article II amendment; separately source-bound issuer/class/ticker/vendor mapping with explicit validity intervals",
+    "not_checked": "Wider audit, external sources, DB, price/return data, detectors, runtime or tests"
+  }
 }

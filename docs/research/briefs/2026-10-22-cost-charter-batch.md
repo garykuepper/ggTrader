@@ -51,5 +51,7 @@ The persistent claim remains; this two-request authorization is consumed.
 
 [Comparison evidence](../_cost_charter_comparison_results.json) records the
 base restatement and appended Article II amendment separately. It supplies no
-unverified legal effective date or continuous security identity. Fresh offline
-documentary review of the comparison is pending. No extra exhibits are queued.
+unverified legal effective date or continuous security identity. Fresh independent offline
+documentary review is CLEAN: source clauses, date bindings, markup, all 81 raw
+hashes and accounting reconcile. No extra exhibits are queued. Actual state
+filing/effective date and historical mapping remain unverified.

@@ -141,5 +141,6 @@ requirements actually pass; plan completion is not strategy validation.
 105.01228246744722 seconds, all 81 hashes verified. Comparison artifact:
 `docs/research/_cost_charter_comparison_results.json`. The 2022 exhibit contains
 a Section 2.1 amendment adopted 1999/executed 2001, effective on state filing;
-actual filing date is not verified. Documentary review remains pending. No
+actual filing date is not verified. Independent documentary review is CLEAN;
+all clauses/date bindings, 81 hashes and accounting reconcile. No
 continuous-identity PASS or additional request follows.
