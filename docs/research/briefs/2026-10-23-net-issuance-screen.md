@@ -30,20 +30,20 @@ Use monthly **value-weighted** returns. Before any return calculation, download 
 
 | Source | Exact value-weighted monthly section | Registered labels | First–last month in section |
 |---|---|---|---|
-| [25 size × NI portfolios](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/25_Portfolios_ME_NI_5x5_CSV.zip) | `Average Value Weighted Returns -- Monthly` | H1: `BIG LoNI`; other four BIG quintile cells: `ME5 NI2`, `ME5 NI3`, `ME5 NI4`, `BIG HiNI`; additional buckets: `BIG NegNI`, `BIG ZeroNI` | 1963-07–2026-08 |
+| [25 size × NI portfolios](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/25_Portfolios_ME_NI_5x5_CSV.zip) | `Average Value Weighted Returns -- Monthly` | H1: `BIG NegNI` (large-cap net repurchasers); diagnostics: `BIG ZeroNI` and the five BIG issuer quintiles `BIG LoNI`, `ME5 NI2`, `ME5 NI3`, `ME5 NI4`, `BIG HiNI` | 1963-07–2026-08 |
 | [Portfolios formed on NI](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/Portfolios_Formed_on_NI_CSV.zip) | `Value Weighted Returns -- Monthly` | Net-repurchaser CSV column: `< 0 ` (trailing space in raw header; `< 0` after stripping) | 1963-07–2026-08 |
 
 The 5 × 5 archive contains **seven** named NI buckets per size quintile: negative, zero, and five named quintile cells. The diagnostic univariate `< 0 ` portfolio includes small caps; it is not a BIG-only test. Freeze the current archives only after approval, then truncate all analysis to the registered **2026-04** endpoint despite the archives' later month labels. Verify that the already-frozen market file covers every required month through that endpoint.
 
 ## 4. Hypothesis: a family of ONE (BIG only)
 
-**H1:** the `BIG LoNI` value-weighted portfolio beats the French market after the base haircut. This is the sole confirmatory hypothesis and the only portfolio whose A1/A2 values determine the Part A verdict. `BIG NegNI`, `BIG ZeroNI`, the other four BIG quintile cells, and the univariate `< 0 ` portfolio cannot be substituted for H1 after seeing returns. No cross-study error control is claimed for choosing this new candidate after earlier screens.
+**H1:** the `BIG NegNI` value-weighted portfolio (large-cap net repurchasers) beats the French market after the base haircut. This is the sole confirmatory hypothesis and the only portfolio whose A1/A2 values determine the Part A verdict. `BIG NegNI`, `BIG ZeroNI`, the other four BIG quintile cells, and the univariate `< 0 ` portfolio cannot be substituted for H1 after seeing returns. No cross-study error control is claimed for choosing this new candidate after earlier screens.
 
 ## 5. Series and cost haircuts
 
 For monthly decimal returns, define the registered excess series
 
-$$e_t = R_{\text{BIG LoNI},t} - R_{\text{mkt},t} - c/12.$$
+$$e_t = R_{\text{BIG NegNI},t} - R_{\text{mkt},t} - c/12.$$
 
 The portfolio is formed at the source's annual June rebalance. **Base:** $c=1.0\%$/yr. **Stress:** $c=2.0\%$/yr. Subtract $c/12$ each month before compounding, as in the factor brief. These are policy assumptions for annual-rebalance friction, not measured turnover, execution cost, or tax. The market is gross of those costs and tax. A pass establishes robustness only to the stated base haircut.
 
@@ -67,7 +67,7 @@ Report these for interpretation, **never as pass criteria**. A weak post-publica
 - **CAPM:** annualized arithmetic alpha and market beta from gross $R_p-R_f$ regressed on $R_m-R_f$ over the A1 window. No alpha $t$ is reported.
 - **Relative risk:** worst compounded rolling 12-month gross portfolio-to-market wealth ratio minus one; maximum peak-to-trough decline in base-cost relative wealth $\prod(1+R_p-c/12)/\prod(1+R_m)$ from initial value 1.0, peak/trough dates, and calendar months to recovery (null if unrecovered).
 - **Univariate repurchasers:** the value-weighted `< 0 ` column from the second archive at **the same 1.0%/yr base and 2.0%/yr stress haircuts**. It **includes small caps** and cannot replace the BIG-only H1.
-- **Quintile shape:** report the other four BIG NI quintile cells (`ME5 NI2`, `ME5 NI3`, `ME5 NI4`, `BIG HiNI`) beside `BIG LoNI` to show monotonicity or its absence. For each of these four cells and the univariate repurchaser column, report full-window base and stress NW $t$/$p$, plus base and stress net CAGR differences for 1994-01 → 2026-04 and 2009-01 → 2026-04, whether favorable or unfavorable. The separate `BIG NegNI` and `BIG ZeroNI` buckets are outside these five quintile cells; do not silently fold either into a quintile.
+- **Issuance shape:** report `BIG ZeroNI` and the five BIG issuer quintiles (`BIG LoNI`, `ME5 NI2`, `ME5 NI3`, `ME5 NI4`, `BIG HiNI`) beside `BIG NegNI` to show monotonicity or its absence. For each of these six cells and the univariate repurchaser column, report full-window base and stress NW $t$/$p$, plus base and stress net CAGR differences for 1994-01 → 2026-04 and 2009-01 → 2026-04, whether favorable or unfavorable. Never merge buckets.
 
 ## 8. What happens next
 
@@ -94,6 +94,6 @@ Stop before any verdict if an archive is absent from `MANIFEST.json`, a SHA-256 
 2. **Low volatility excluded:** it is primarily a risk-reduction effect, unlikely to meet A2's absolute return bar and contrary to the owner's greater-gains goal.
 3. **Industry momentum excluded:** the momentum family is closed NO-GO, and industry momentum would require constructing a new signal rather than selecting a ready long-only French cell.
 4. **Other literature candidates excluded:** accruals, E/P, CF/P, D/P, long-term and short-term reversal, and BAB are outside this brief because the reviewed evidence points to short-leg dependence, overlap with the closed value family, high turnover, or leverage. Their exclusion is a scope choice, not a new measured NO-GO for each.
-5. **Source-label ambiguity, unresolved:** the requested “lowest-net-issuance quintile” is registered here as the literal `BIG LoNI` quintile cell. The same source also has a separate `BIG NegNI` bucket, whose NI is lower in sign than LoNI, plus `BIG ZeroNI`. This makes “lowest net issuance” ambiguous as ordinary English. **Owner check:** confirm that the intended H1 is `BIG LoNI`, not `BIG NegNI`. Do not calculate either candidate until this is settled by an approved brief; no post-result substitution.
+5. **Source-label choice, resolved by the senior quant:** H1 is `BIG NegNI`. French ranks positive net issuers into quintiles and keeps net repurchasers (`NegNI`) and zero issuers (`ZeroNI`) in separate buckets, so `BIG LoNI` firms are still net issuers. The published long-side idea is that firms shrinking their share count outperform, which is `NegNI`. Both buckets have complete data for all 754 months, 1963-07 → 2026-04; this was checked from the missing-value codes only, with no returns viewed. `BIG LoNI` is a diagnostic. No post-result substitution.
 6. **Forward-standard text conflict, unresolved in its source:** its status and [`docs/next_steps.md`](../../next_steps.md) say owner-approved on 2026-10-23, but its §§1, 8, and 9 still call the replacement a draft or proposed. This brief follows the approved B0/B1 path as instructed and does not silently edit that source or treat its stale draft wording as authority for paid data.
 7. **B1 stop-boundary conflict, unresolved in its source:** the forward standard's §5 writes the quarterly breach condition as relative wealth **`< -0.15`**, which excludes equality, while the same section and §8 resolution R5 say **15% or more behind** breaches, which includes equality. This does not affect Part A. A later B1 candidate brief must reconcile the operator before its rules are frozen; no B1 verdict should rest on that ambiguity.
