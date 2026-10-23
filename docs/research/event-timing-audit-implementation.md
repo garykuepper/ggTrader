@@ -1030,3 +1030,29 @@ Codex is correcting only the two workbook drafts against raw evidence. No runtim
 change, network request, DB query, protocol amendment, acquisition authorization
 or PASS follows from this review. Original reviewed 79-response evidence and both
 UNRESOLVED per-signal verdicts remain valid. Fresh review follows the corrections.
+
+## 2026-10-22 consolidated workbook accepted at offline scope
+
+Codex rebuilt the rejected Flash workbook and its source-bound JSON companion.
+Independent round 2 cleared findings 1–9 and 11–14, reproducing all 79 hashes,
+24 annual/API bindings, 24 ownership reparses/52 lots, 136 checkpoints, separate
+annual denominators, predecessor candidates, query contracts and dependencies.
+Its only remaining blocker was vendor retrieval-label provenance. The parent
+corrected labels directly from retained receipts and embedded exact excerpts
+and receipt hashes. Fresh round 3 checked all 38 entries/37 unique URLs across
+R1–R9 and found no additional blocker. All 14 findings are now resolved at
+workbook scope. The last round did not repeat the earlier raw reconstruction
+checks. No new services, DB, prices/returns, detector runs or broad tests.
+
+Accepted outputs: [human workbook](2026-10-22-event-evidence-resolution-workbook.md)
+and [machine workbook](_event_evidence_resolution_workbook.json). These are
+offline documentary dispositions, not the registered final audit JSON/report.
+They preserve the two charter leads and exact remaining dependencies for
+inventory, security identity, predecessor/amendment inputs, mapping/tape exports,
+population reconstruction and PEAD lineage/vendor-budget reconciliation.
+No new acquisition authority, changed predicate, annual qualification, five-year
+window or validated strategy edge follows from acceptance. Both insider
+representations and PEAD remain UNRESOLVED; production remains frozen.
+
+Owner delegation correction is recorded in AGENTS.md: Flash only receives simple
+bounded extraction or exact-link checks; Codex owns synthesis, plans and reviews.

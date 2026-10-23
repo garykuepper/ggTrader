@@ -10,12 +10,14 @@ any) — don't let this file accumulate a backlog.
 
 **Active consolidated plan:** Follow the owner-requested
 [five-gap resolution plan](superpowers/plans/2026-10-22-event-evidence-resolution.md).
-Gemini Flash on agy owns the first offline evidence workbook across all five
-gaps. Flash has delivered draft Markdown/JSON workbooks; they are unreviewed
-and must not supply audit predicates or request authorization. Independent
-Codex review found 14 substantive corrections. Codex has rebuilt the two
-workbooks against raw evidence; fresh independent review is running. The
-corrected drafts remain unaccepted until that review clears.
+Codex rebuilt the rejected Flash draft; independent review now clears all 14
+findings at [offline workbook scope](research/2026-10-22-event-evidence-resolution-workbook.md).
+Flash is restricted to simple extraction/link checks per AGENTS.md.
+Next: prepare a reviewed acquisition handoff for the two COST charter exhibits,
+and locate the existing detector export/historical mapping inputs identified in
+the workbook. Preserve the strict NOC inventory failure, original timing
+conflicts and every unknown dependency. No new requests, DB queries or return
+test are authorized by workbook acceptance.
 This supersedes piecemeal scheduling below, while preserving all prior findings.
 
 
