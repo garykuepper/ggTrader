@@ -8,6 +8,13 @@ any) — don't let this file accumulate a backlog.
 
 ## Current research decision (2026-10-23)
 
+**Tool ready 2026-10-24: A23 month-end rebalance helper (advisory only).** Run
+`scripts/a23_rebalance_check.py --lots <your lots CSV> [--new-cash N]` after the month's last
+NYSE close. It proposes trades only when SSO leaves 22–38%, restoring 30% with cash first and
+then the highest-basis long-term lots. It never places orders and has no drawdown logic. See
+`docs/cli_reference.md`. Moving the rule into the paper trader's two-symbol sweep is a separate
+deploy after the ~2026-12-29 freeze lift.
+
 **2026-10-23 century-leverage decision:** The [closed synthetic study](research/2026-10-23-century-leverage.md)
 returns the registered **keep 30%** proposal: the 30% arm has 10.71% after-tax CAGR versus
 9.47% at 0% but trips the −90% ruin flag (−91.4% versus −84.6%); 15% avoids that flag at
