@@ -10,6 +10,8 @@ import pandas as pd
 COST_BPS = 1.0  # per side, unchanged from the frozen A23 study
 TARGETS = {"SPY": 0.70, "SSO": 0.30, "BIL": 0.0}
 SSO_BAND = 0.08
+# A sub-cent 'loss' (fill friction, float dust) is not a reportable loss; don't warn on it.
+WASH_LOSS_MIN_DOLLARS = 0.01
 
 
 @dataclass
@@ -279,7 +281,11 @@ def check_rebalance(
     # shortcut: open lots omit closed buys and reinvestments; upgrade if history is supplied.
     bought = {buy["symbol"] for buy in result["buys"]}
     for symbol in sorted(
-        {sale["symbol"] for sale in result["sales"] if sale["estimated_gain"] < 0}
+        {
+            sale["symbol"]
+            for sale in result["sales"]
+            if sale["estimated_gain"] <= -WASH_LOSS_MIN_DOLLARS
+        }
     ):
         other = "SPY" if symbol == "SSO" else "SSO"
         findings = []

@@ -8,7 +8,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from ggTrader.lab.a23_rebalance import Book, Lot, _trade_to, check_rebalance
+from ggTrader.lab.a23_rebalance import (
+    WASH_LOSS_MIN_DOLLARS,
+    Book,
+    Lot,
+    _trade_to,
+    check_rebalance,
+)
 from scripts import static_leverage_aftertax as a23
 
 
@@ -269,3 +275,10 @@ def test_frozen_marks_match_sold_and_bought_shares() -> None:
     assert len(plan["buys"]) == 1
     assert plan["buys"][0]["symbol"] == "SSO"
     assert plan["buys"][0]["shares"] == pytest.approx(book.qty("SSO") - before)
+
+
+def test_sub_cent_friction_loss_does_not_warn() -> None:
+    """A flat-price sale loses only the 1 bp fill friction: no wash-sale warning."""
+    plan = check([lot(0.8)], [lot(0.2)], new_cash=2.5)
+    assert plan["sales"] and -WASH_LOSS_MIN_DOLLARS < plan["sales"][0]["estimated_gain"] < 0
+    assert not any("WASH-SALE" in w for w in plan["warnings"])

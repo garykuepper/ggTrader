@@ -152,3 +152,29 @@ def test_yfinance_stale_close_fails_cli(
         cli.main()
     assert exc.value.code != 0
     assert "price dates" in capsys.readouterr().err
+
+
+def test_first_session_pre_close_evaluates_prior_month_end(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """10:00 ET on 2026-10-01 must evaluate the completed 2026-09-30 month-end."""
+
+    class Today(date):
+        @classmethod
+        def today(cls) -> date:
+            return date(2026, 10, 1)
+
+    class Morning(datetime):
+        @classmethod
+        def now(cls, tz: timezone | None = None) -> datetime:
+            return datetime(2026, 10, 1, 14, tzinfo=timezone.utc)
+
+    monkeypatch.setattr(cli, "date", Today)
+    monkeypatch.setattr(cli, "datetime", Morning)
+    month_end, effective, next_session = cli.session_dates(date(2026, 10, 1))
+    assert (month_end, effective, next_session) == (True, date(2026, 9, 30), date(2026, 10, 1))
+
+
+def test_money_display_never_negative_zero() -> None:
+    assert f"{cli._money(-0.000825):,.2f}" == "0.00"
+    assert f"{cli._money(-0.01):,.2f}" == "-0.01"

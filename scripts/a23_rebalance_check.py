@@ -93,6 +93,11 @@ def fetch_prices(asof: date) -> tuple[dict[str, float], dict[str, str]]:
     return prices, dates
 
 
+def _money(x: float) -> float:
+    """Round-to-cent display value that never prints $-0.00."""
+    return 0.0 if abs(x) < 0.005 else x
+
+
 def session_dates(asof: date) -> tuple[bool, date, date]:
     """Find the final available NYSE close and the next session."""
     if asof > date.today():
@@ -113,6 +118,12 @@ def session_dates(asof: date) -> tuple[bool, date, date]:
             raise ValueError("no action: month-end close not yet final")
         past = past.iloc[:-1]
     effective = past.index[-1].date()
+    # Month-end belongs to the evaluated session's month: a pre-close run on the first
+    # session of a month steps back to the prior month's final session.
+    if (effective.year, effective.month) != (asof.year, asof.month):
+        e_first = date(effective.year, effective.month, 1)
+        e_last = (pd.Timestamp(e_first) + pd.offsets.MonthEnd(0)).date()
+        month_schedule = nyse.schedule(start_date=str(e_first), end_date=str(e_last))
     month_end = effective == month_schedule.index[-1].date()
     future = nyse.schedule(
         start_date=str(effective + timedelta(days=1)),
@@ -157,7 +168,7 @@ def main() -> None:
     args = parser.parse_args()
     try:
         month_end, effective, next_session = session_dates(args.asof)
-        lots = read_lots(args.lots, args.asof)
+        lots = read_lots(args.lots, effective)
         prices, dates = (
             read_prices(args.prices, args.asof) if args.prices else fetch_prices(effective)
         )
@@ -175,7 +186,7 @@ def main() -> None:
             lt_rate=args.lt_rate,
         )
         plan["price_dates"] = dates
-        plan["review_reminder"] = annual_review_note(args.asof)
+        plan["review_reminder"] = annual_review_note(effective)
         plan["fund_risk_note"] = (
             "Check SSO expense ratio, fee waiver, and closure notices; no automatic action."
         )
@@ -197,8 +208,8 @@ def main() -> None:
             print(
                 f"  SELL {sale['shares']:.6f} {sale['symbol']} (lot {sale['acquired_date']}, "
                 f"{sale['term']}); proceeds ${sale['estimated_proceeds']:,.2f}; "
-                f"gain/loss ${sale['estimated_gain']:,.2f}; "
-                f"bracket tax effect ${sale['estimated_tax']:,.2f} before wash/netting"
+                f"gain/loss ${_money(sale['estimated_gain']):,.2f}; "
+                f"bracket tax effect ${_money(sale['estimated_tax']):,.2f} before wash/netting"
             )
         for buy in plan["buys"]:
             print(f"  BUY  {buy['shares']:.6f} {buy['symbol']}; cost ${buy['estimated_cost']:,.2f}")
