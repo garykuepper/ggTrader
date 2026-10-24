@@ -37,6 +37,8 @@ dependencies = [
     "tqdm",
     # Capped at the validated minor: the same rebuild pulled vectorbt 1.0.0.
     "vectorbt>=0.28.5,<0.29",
+    # Reads Shiller's legacy .xls dividend workbook (century leverage study).
+    "xlrd>=2.0.1",
     "xlsxwriter",
     "yfinance",
     "alpaca-py",
