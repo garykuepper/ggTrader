@@ -19,9 +19,10 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 `scripts/a23_rebalance_check.py` checks the owner's 70% SPY / 30% SSO equity
 allocation. It proposes trades only after the last NYSE session of a month if
-SSO is outside 22–38%. Trades are indicative for the next session; the script
-never sends an order. Cash is used first. Sale estimates use highest-basis
-long-term lots before short-term lots and flag possible wash sales for review.
+SSO is outside 22–38%. It then restores SSO to 30%. Trades are indicative for
+the next session; the script never sends an order. Cash is used first. Sale
+estimates use highest-basis long-term lots before short-term lots and flag
+possible wash sales for review.
 The displayed SSO weight uses SPY plus SSO market value; cash is available
 funding for the proposed rebalance.
 
@@ -33,12 +34,15 @@ funding for the proposed rebalance.
 
 The lots CSV needs `symbol,shares,cost_basis_total,acquired_date`; the optional
 price CSV needs `symbol,close,date` with one unadjusted close per symbol. Without
-`--prices`, the script fetches the last available closes from yfinance and prints
-their dates. `--cash` and `--new-cash` are available dollars; `--st-rate` and
+`--prices`, the script fetches closes from yfinance and prints their dates. Both
+price dates must equal the last completed NYSE session on or before `--asof`,
+including when calendar month-end falls on a weekend or holiday. Running on
+the month-end session before its close causes an error. `--cash` and
+`--new-cash` are available dollars; unused cash is printed. `--st-rate` and
 `--lt-rate` are fractions (defaults `0.24` and `0.15`). Use `--json` for machine
 output. Off-cycle checks report the current SSO weight and propose no trade.
 Wash-sale warnings inspect the supplied open lots and proposed buys; review
-other recent purchases separately.
+other purchases and reinvestments within 30 days before or after a loss sale.
 
 ---
 

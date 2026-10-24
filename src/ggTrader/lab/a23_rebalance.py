@@ -147,13 +147,19 @@ class Book:
         return self.cash
 
 
-def _trade_to(book: Book, tg: dict, px: pd.Series, t: pd.Timestamp) -> None:
+def _trade_to(
+    book: Book, tg: dict, px: pd.Series, t: pd.Timestamp, *, skip_buy_sold: bool = False
+) -> None:
     v = book.value(px)
+    sold = set()
     for s in ("SPY", "SSO", "BIL"):  # sells first
         d = book.qty(s) * px[s] - tg[s] * v
         if d > 1.0:
             book.sell(s, d, px[s], t)
+            sold.add(s)
     for s in ("SPY", "SSO", "BIL"):
+        if skip_buy_sold and s in sold:
+            continue
         d = tg[s] * v - book.qty(s) * px[s]
         if d > 1.0:
             book.buy(s, min(d, book.cash), px[s], t)
@@ -221,22 +227,21 @@ def check_rebalance(
         "sales": [],
         "warnings": [],
         "st_fallback": False,
+        "leftover_cash": cash + new_cash,
     }
     if not month_end or not band_trigger(weight, TARGETS["SSO"]):
         return result
 
-    book.cash = cash + new_cash
-    underweight = "SSO" if weight < TARGETS["SSO"] else "SPY"
-    # Invest cash toward target; a cash-only move inside the band needs no sale.
-    if underweight == "SSO":
-        needed = (TARGETS["SSO"] * invested - book.qty("SSO") * prices["SSO"]) / 0.70
+    marked_value = sum(book.qty(s) * marks[s] for s in ("SPY", "SSO"))
+    marked_sso = book.qty("SSO") * marks["SSO"]
+    if marked_sso / marked_value < TARGETS["SSO"]:
+        needed = (TARGETS["SSO"] * marked_value - marked_sso) / TARGETS["SPY"]
     else:
-        needed = book.qty("SSO") * prices["SSO"] / 0.30 - invested
-    book.buy(underweight, min(needed, book.cash), marks[underweight], next_session)
-    post_cash_value = sum(book.qty(s) * prices[s] for s in ("SPY", "SSO"))
-    post_cash_weight = book.qty("SSO") * prices["SSO"] / post_cash_value
-    if band_trigger(post_cash_weight, TARGETS["SSO"]):
-        _trade_to(book, TARGETS, pd.Series({**marks, "BIL": 1.0}), next_session)
+        needed = marked_sso / TARGETS["SSO"] - marked_value
+    book.cash = min(cash + new_cash, max(needed, 0.0))
+    unused_cash = cash + new_cash - book.cash
+    _trade_to(book, TARGETS, pd.Series({**marks, "BIL": 1.0}), next_session, skip_buy_sold=True)
+    result["leftover_cash"] = unused_cash + book.cash
 
     for symbol in ("SPY", "SSO"):
         for lot, initial_qty in original[symbol]:
@@ -271,26 +276,35 @@ def check_rebalance(
 
     result["sales"].sort(key=lambda sale: (sale["term"] == "ST", -sale["cost_basis_per_share"]))
 
-    # shortcut: open lots omit closed recent buys; upgrade if transaction history is supplied.
+    # shortcut: open lots omit closed buys and reinvestments; upgrade if history is supplied.
     bought = {buy["symbol"] for buy in result["buys"]}
-    for sale in result["sales"]:
-        if sale["estimated_gain"] >= 0:
-            continue
-        symbol = sale["symbol"]
+    for symbol in sorted(
+        {sale["symbol"] for sale in result["sales"] if sale["estimated_gain"] < 0}
+    ):
         other = "SPY" if symbol == "SSO" else "SSO"
+        findings = []
         for candidate in (symbol, other):
             recent = any(
-                0 <= (next_session - lot.date).days <= 30 for lot in lots.get(candidate, [])
+                0 <= (next_session - lot.date).days <= 30
+                and (candidate != symbol or lot.qty == initial_qty)
+                for lot, initial_qty in original[candidate]
             )
             if recent or candidate in bought:
                 qualifier = (
                     "potential substantially identical" if candidate == other else "same symbol"
                 )
-                result["warnings"].append(
-                    f"WASH-SALE WARNING: {symbol} loss sale; {candidate} ({qualifier}) "
-                    "bought within 30 days or bought in this plan. Review manually."
-                )
-    result["status"] = "rebalance proposed"
+                findings.append(f"{candidate} ({qualifier}) bought recently or in this plan")
+        result["warnings"].append(
+            f"WASH-SALE WARNING: {symbol} loss sale; review purchases/reinvestments "
+            f"(including dividend reinvestment) of {symbol} and {other} "
+            "(review for substantially identical) within 30 days BEFORE or AFTER "
+            f"the trade date. Flagged: {', '.join(findings) if findings else 'none'}; "
+            "review manually."
+        )
+    if result["sales"] or result["buys"]:
+        result["status"] = "rebalance proposed"
+    else:
+        result["status"] = "no action: trades below $1 minimum"
     if result["st_fallback"]:
         short_gain = sum(s["estimated_gain"] for s in result["sales"] if s["term"] == "ST")
         result["warnings"].append(

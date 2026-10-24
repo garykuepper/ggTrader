@@ -30,13 +30,15 @@ def read_lots(path: Path, asof: date) -> dict[str, list[Lot]]:
             raise ValueError(f"lots CSV needs columns: {', '.join(sorted(required))}")
         for row_number, row in enumerate(reader, 2):
             try:
+                if None in row or any(value is None for value in row.values()):
+                    raise ValueError("extra or missing columns")
                 symbol = row["symbol"].strip().upper()
                 shares = float(row["shares"])
                 basis_total = float(row["cost_basis_total"])
                 acquired = date.fromisoformat(row["acquired_date"])
                 if symbol not in lots or not math.isfinite(shares) or shares <= 0:
                     raise ValueError("symbol or shares invalid")
-                if not math.isfinite(basis_total) or basis_total < 0 or acquired > asof:
+                if not math.isfinite(basis_total) or basis_total <= 0 or acquired > asof:
                     raise ValueError("cost basis or acquisition date invalid")
             except (TypeError, ValueError, AttributeError) as exc:
                 raise ValueError(f"invalid lots CSV row {row_number}: {exc}") from exc
@@ -54,6 +56,8 @@ def read_prices(path: Path, asof: date) -> tuple[dict[str, float], dict[str, str
             raise ValueError("prices CSV needs columns: symbol, close, date")
         for row_number, row in enumerate(reader, 2):
             try:
+                if None in row or any(value is None for value in row.values()):
+                    raise ValueError("extra or missing columns")
                 symbol = row["symbol"].strip().upper()
                 close = float(row["close"])
                 price_date = date.fromisoformat(row["date"])
@@ -89,19 +93,34 @@ def fetch_prices(asof: date) -> tuple[dict[str, float], dict[str, str]]:
     return prices, dates
 
 
-def session_dates(asof: date) -> tuple[bool, date, datetime | None]:
-    """Return whether asof is the last NYSE session and the next session date."""
+def session_dates(asof: date) -> tuple[bool, date, date]:
+    """Find the final available NYSE close and the next session."""
+    if asof > date.today():
+        raise ValueError(f"future --asof is not allowed: {asof}")
     nyse = mcal.get_calendar("NYSE")
-    last = date(asof.year, asof.month, 1) + pd.offsets.MonthEnd(0)
-    schedule = nyse.schedule(start_date=str(asof), end_date=str(last.date()))
-    month_end = bool(len(schedule) == 1 and schedule.index[0].date() == asof)
+    first = date(asof.year, asof.month, 1)
+    last = (pd.Timestamp(first) + pd.offsets.MonthEnd(0)).date()
+    month_schedule = nyse.schedule(start_date=str(first), end_date=str(last))
+    past = nyse.schedule(start_date=str(asof - timedelta(days=10)), end_date=str(asof))
+    if past.empty:
+        raise ValueError(f"no NYSE session found on or before {asof}")
+    if (
+        asof == date.today()
+        and past.index[-1].date() == asof
+        and past.iloc[-1]["market_close"] > datetime.now(timezone.utc)
+    ):
+        if past.index[-1] == month_schedule.index[-1]:
+            raise ValueError("no action: month-end close not yet final")
+        past = past.iloc[:-1]
+    effective = past.index[-1].date()
+    month_end = effective == month_schedule.index[-1].date()
     future = nyse.schedule(
-        start_date=str(asof + timedelta(days=1)), end_date=str(asof + timedelta(days=10))
+        start_date=str(effective + timedelta(days=1)),
+        end_date=str(effective + timedelta(days=10)),
     )
     if future.empty:
-        raise ValueError(f"no NYSE session found after {asof}")
-    close_time = schedule.iloc[0]["market_close"].to_pydatetime() if month_end else None
-    return month_end, future.index[0].date(), close_time
+        raise ValueError(f"no NYSE session found after {effective}")
+    return month_end, effective, future.index[0].date()
 
 
 def annual_review_note(asof: date) -> str | None:
@@ -137,28 +156,24 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="print machine-readable JSON only")
     args = parser.parse_args()
     try:
+        month_end, effective, next_session = session_dates(args.asof)
         lots = read_lots(args.lots, args.asof)
         prices, dates = (
-            read_prices(args.prices, args.asof) if args.prices else fetch_prices(args.asof)
+            read_prices(args.prices, args.asof) if args.prices else fetch_prices(effective)
         )
-        month_end, next_session, close_time = session_dates(args.asof)
-        if month_end and args.asof == date.today() and close_time > datetime.now(timezone.utc):
-            month_end = False  # today's closing price is not final yet
-        fresh = all(day == str(args.asof) for day in dates.values())
+        if dates != {"SPY": str(effective), "SSO": str(effective)}:
+            raise ValueError(f"price dates must both equal NYSE session {effective}; got {dates}")
         plan = check_rebalance(
             lots,
             prices,
-            pd.Timestamp(args.asof),
+            pd.Timestamp(effective),
             pd.Timestamp(next_session),
-            month_end and fresh,
+            month_end,
             cash=args.cash,
             new_cash=args.new_cash,
             st_rate=args.st_rate,
             lt_rate=args.lt_rate,
         )
-        if month_end and not fresh:
-            plan["month_end"] = True
-            plan["status"] = "no action: month-end close unavailable"
         plan["price_dates"] = dates
         plan["review_reminder"] = annual_review_note(args.asof)
         plan["fund_risk_note"] = (
@@ -175,6 +190,7 @@ def main() -> None:
     print(f"Prices: SPY ${prices['SPY']:.2f} ({dates['SPY']})")
     print(f"        SSO ${prices['SSO']:.2f} ({dates['SSO']})")
     print(f"Status: {plan['status']}")
+    print(f"Leftover cash: ${plan['leftover_cash']:,.2f}")
     if plan["status"] == "rebalance proposed":
         print(f"Indicative next-session trades for {plan['next_session']} (fills may differ):")
         for sale in plan["sales"]:

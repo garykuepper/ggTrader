@@ -2,6 +2,11 @@
 
 ## 2026-10-24
 
+- **A23 advisory review fixes.** Restores triggered weights to 30% with cash
+  before lot sales, recognizes holiday/weekend month-ends, rejects unfinalized
+  or stale closes and malformed CSV rows, and clarifies wash-sale review.
+  Frozen study execution defaults and outputs remain unchanged.
+
 - **A23 advisory rebalance helper.** Added a read-only SPY/SSO month-end check
   with cash-first plans, lot-level tax estimates and wash-sale warnings. Its
   pure core shares the frozen A23 study's lot book and trade routine; the CLI

@@ -44,13 +44,57 @@ def test_band_edges_are_inclusive(sso_shares: float) -> None:
     assert not plan["sales"] and not plan["buys"]
 
 
-def test_cash_reaches_band_without_a_sale() -> None:
-    plan = check([lot(0.8)], [lot(0.2)], new_cash=5)
+def test_cash_restores_target_without_a_sale() -> None:
+    plan = check([lot(0.8)], [lot(0.2)], new_cash=20)
     assert plan["status"] == "rebalance proposed"
     assert plan["sales"] == []
     assert len(plan["buys"]) == 1
     assert plan["buys"][0]["symbol"] == "SSO"
-    assert plan["buys"][0]["estimated_cost"] == pytest.approx(5)
+    assert plan["buys"][0]["estimated_cost"] == pytest.approx(14.285714, rel=1e-5)
+    assert plan["leftover_cash"] == pytest.approx(20 - 14.285714, rel=1e-5)
+    sso = 20 + plan["buys"][0]["shares"] * 100
+    assert sso / (80 + sso) == pytest.approx(0.30, abs=0.0001)
+    assert f"{sso / (80 + sso):.2%}" == "30.00%"
+
+
+@pytest.mark.parametrize("new_cash", [2.50, 2.60])
+def test_partial_cash_still_restores_target_with_one_buy(new_cash: float) -> None:
+    plan = check([lot(0.8)], [lot(0.2)], new_cash=new_cash)
+    assert len(plan["sales"]) == len(plan["buys"]) == 1
+    assert plan["sales"][0]["symbol"] == "SPY"
+    assert plan["buys"][0]["symbol"] == "SSO"
+    spy = 80 - plan["sales"][0]["shares"] * 100
+    sso = 20 + plan["buys"][0]["shares"] * 100
+    assert sso / (spy + sso) == pytest.approx(0.30, abs=0.0001)
+    assert f"{sso / (spy + sso):.2%}" == "30.00%"
+
+
+def test_cash_threshold_uses_execution_marks() -> None:
+    plan = check_rebalance(
+        {"SPY": [lot(0.8)], "SSO": [lot(0.2)]},
+        {"SPY": 100.0, "SSO": 100.0},
+        pd.Timestamp("2026-09-30"),
+        pd.Timestamp("2026-10-01"),
+        True,
+        new_cash=30,
+        execution_prices={"SPY": 120.0, "SSO": 80.0},
+    )
+    assert plan["sales"] == []
+    assert len(plan["buys"]) == 1
+    sso = 16 + plan["buys"][0]["shares"] * 80
+    assert f"{sso / (96 + sso):.2%}" == "30.00%"
+    assert plan["leftover_cash"] == pytest.approx(30 - 25.142857, abs=0.01)
+
+
+def test_next_session_one_year_boundary() -> None:
+    plan = check(
+        [lot(0.4)],
+        [lot(0.1, acquired="2025-09-30"), lot(0.5, acquired="2025-10-01")],
+    )
+    assert [(sale["acquired_date"], sale["term"]) for sale in plan["sales"]] == [
+        ("2025-09-30", "LT"),
+        ("2025-10-01", "ST"),
+    ]
 
 
 def test_insufficient_cash_sells_highest_basis_long_term_first() -> None:
@@ -82,6 +126,22 @@ def test_loss_sale_warns_for_recent_cross_leg_buy_and_plan_buy() -> None:
     assert plan["sales"][0]["estimated_gain"] < 0
     assert any("SSO (same symbol)" in w for w in plan["warnings"])
     assert any("SPY (potential substantially identical)" in w for w in plan["warnings"])
+
+
+def test_loss_warning_does_not_match_sold_lot_or_repeat_symbol() -> None:
+    plan = check(
+        [lot(0.4)],
+        [lot(0.3, 120, "2026-09-20"), lot(0.3, 130, "2026-09-20")],
+    )
+    assert len([w for w in plan["warnings"] if "SSO (same symbol)" in w]) == 0
+    assert len([w for w in plan["warnings"] if "purchases/reinvestments" in w]) == 1
+    assert "BEFORE or AFTER" in plan["warnings"][0]
+
+
+def test_no_trade_above_minimum_has_no_proposed_status() -> None:
+    plan = check([lot(0.04)], [lot(0.01)])
+    assert plan["status"] != "rebalance proposed"
+    assert not plan["sales"] and not plan["buys"]
 
 
 def test_off_cycle_never_proposes_a_trade() -> None:
@@ -176,3 +236,36 @@ def test_frozen_a23_shadow_rebalance_dates_and_lots_match(monkeypatch: pytest.Mo
         ):
             assert (a_symbol, a_day) == (e_symbol, e_day)
             assert a_basis == pytest.approx(e_basis)
+
+
+def test_frozen_marks_match_sold_and_bought_shares() -> None:
+    close, _, _ = a23.load_prices(0.0075, frozen_inputs=Path("data/external/a23_inputs"))
+    marks = close.loc["2026-09-29"]
+    day = pd.Timestamp("2026-09-30")
+    book = Book(0.24, 0.15, False)
+    for symbol, dollars in (("SPY", 80_000), ("SSO", 20_000)):
+        book.buy(symbol, dollars, marks[symbol], pd.Timestamp("2024-01-02"))
+    book.cash = 0.0
+    before = book.qty("SSO")
+    sold_lot = book.lots["SPY"][0]
+    initial_qty = sold_lot.qty
+    plan = check_rebalance(
+        {symbol: book.lots[symbol] for symbol in ("SPY", "SSO")},
+        {symbol: marks[symbol] for symbol in ("SPY", "SSO")},
+        pd.Timestamp("2026-09-29"),
+        day,
+        True,
+    )
+    _trade_to(
+        book,
+        {"SPY": 0.70, "SSO": 0.30, "BIL": 0.0},
+        marks,
+        day,
+        skip_buy_sold=True,
+    )
+    assert sum(sale["shares"] for sale in plan["sales"]) == pytest.approx(
+        initial_qty - sold_lot.qty
+    )
+    assert len(plan["buys"]) == 1
+    assert plan["buys"][0]["symbol"] == "SSO"
+    assert plan["buys"][0]["shares"] == pytest.approx(book.qty("SSO") - before)
