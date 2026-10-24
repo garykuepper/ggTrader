@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from scripts.static_leverage_aftertax import Book, _trade_to
+from ggTrader.lab.a23_rebalance import Book, _trade_to, band_trigger
 
 START = "1926-07-01"
 END = "2026-06-30"
@@ -141,11 +141,6 @@ def build_legs(
     dist["SPY"] = close["SPY"].shift(1) * dividend_rate
     dist.iloc[0, dist.columns.get_loc("SPY")] = 0.0
     return close, dist
-
-
-def band_trigger(weight: float, target: float, band: float = 0.08) -> bool:
-    """Return whether the SSO weight left its strict target band."""
-    return weight < target - band or weight > target + band
 
 
 def _event_positions(index: pd.DatetimeIndex) -> list[int]:

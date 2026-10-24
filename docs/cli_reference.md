@@ -15,6 +15,33 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 ---
 
+## A23 advisory rebalance check
+
+`scripts/a23_rebalance_check.py` checks the owner's 70% SPY / 30% SSO equity
+allocation. It proposes trades only after the last NYSE session of a month if
+SSO is outside 22–38%. Trades are indicative for the next session; the script
+never sends an order. Cash is used first. Sale estimates use highest-basis
+long-term lots before short-term lots and flag possible wash sales for review.
+The displayed SSO weight uses SPY plus SSO market value; cash is available
+funding for the proposed rebalance.
+
+```bash
+.venv/bin/python scripts/a23_rebalance_check.py \
+  --lots docs/examples/a23_lots_example.csv \
+  --prices docs/examples/a23_prices_example.csv --asof 2026-09-30
+```
+
+The lots CSV needs `symbol,shares,cost_basis_total,acquired_date`; the optional
+price CSV needs `symbol,close,date` with one unadjusted close per symbol. Without
+`--prices`, the script fetches the last available closes from yfinance and prints
+their dates. `--cash` and `--new-cash` are available dollars; `--st-rate` and
+`--lt-rate` are fractions (defaults `0.24` and `0.15`). Use `--json` for machine
+output. Off-cycle checks report the current SSO weight and propose no trade.
+Wash-sale warnings inspect the supplied open lots and proposed buys; review
+other recent purchases separately.
+
+---
+
 ## 1. ggt lab (Simulation Engine)
 
 This command runs trading strategies through historical data to test their performance. It simulates a trader who rebalances their portfolio periodically (usually monthly) using historical prices.

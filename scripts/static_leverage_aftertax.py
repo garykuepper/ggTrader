@@ -15,7 +15,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
 
@@ -24,6 +23,7 @@ import pandas as pd
 import yfinance as yf
 
 sys.path.insert(0, "src")
+from ggTrader.lab.a23_rebalance import COST_BPS, Book, Lot, _trade_to  # noqa: E402,F401
 from ggTrader.lab.fred_data import load_fred_series, parse_fred_csv  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,7 +31,6 @@ OUT_JSON = ROOT / "docs" / "research" / "_static_leverage_aftertax_results.json"
 
 SSO_INCEPTION = pd.Timestamp("2006-06-21")  # first yfinance bar
 SSO_ER = 0.0088
-COST_BPS = 1.0  # per side
 BRACKETS = {"24/15": (0.24, 0.15), "40.8/23.8": (0.408, 0.238)}
 STRESS = {
     "2000-02 dot-com (synthetic SSO)": ("2000-03-24", "2002-10-09"),
@@ -132,142 +131,6 @@ def load_prices(
     return close.dropna(subset=["SSO", "BIL"]), dist, calib
 
 
-# ----------------------------------------------------------------------------- tax book
-@dataclass
-class Lot:
-    date: pd.Timestamp
-    qty: float
-    basis: float  # per share
-
-
-@dataclass
-class Book:
-    st_rate: float
-    lt_rate: float
-    wash: bool
-    lots: dict[str, list[Lot]] = field(default_factory=lambda: {"SPY": [], "SSO": [], "BIL": []})
-    cash: float = 0.0
-    year_st: float = 0.0
-    year_lt: float = 0.0  # includes qualified dividends / distributions
-    loss_cf: float = 0.0
-    tax_due: float = 0.0
-    taxes_paid: float = 0.0
-    realized_st_total: float = 0.0
-    realized_lt_total: float = 0.0
-    recent_buys: dict[str, list[pd.Timestamp]] = field(
-        default_factory=lambda: {"SPY": [], "SSO": [], "BIL": []}
-    )
-    disallowed: float = 0.0
-
-    def value(self, px: pd.Series) -> float:
-        return self.cash + sum(
-            lot.qty * px[s] for s, ls in self.lots.items() for lot in ls if lot.qty > 0
-        )
-
-    def qty(self, s: str) -> float:
-        return sum(lot.qty for lot in self.lots[s])
-
-    def buy(self, s: str, dollars: float, px: float, date: pd.Timestamp) -> None:
-        if dollars <= 0:
-            return
-        fill = px * (1 + COST_BPS / 1e4)
-        self.lots[s].append(Lot(date, dollars / fill, fill))
-        self.cash -= dollars
-        self.recent_buys[s].append(date)
-
-    def sell(self, s: str, dollars: float, px: float, date: pd.Timestamp) -> float:
-        """Sell `dollars` of s, HIFO with long-term lots first. Returns dollars raised."""
-        if dollars <= 0 or not self.lots[s]:
-            return 0.0
-        fill = px * (1 - COST_BPS / 1e4)
-        need = min(dollars / fill, self.qty(s))
-        one_year = pd.DateOffset(years=1)
-        order = sorted(
-            self.lots[s], key=lambda lot: ((lot.date + one_year) >= date, -lot.basis)
-        )  # LT (False) first, then highest basis
-        raised = 0.0
-        for lot in order:
-            if need <= 1e-12:
-                break
-            q = min(lot.qty, need)
-            gain = q * (fill - lot.basis)
-            is_lt = (lot.date + one_year) < date
-            if (
-                gain < 0
-                and self.wash
-                and any((date - b).days <= 30 and b != lot.date for b in self.recent_buys[s])
-            ):
-                # loss disallowed: fold it into the newest lot's basis
-                self.disallowed += -gain
-                newest = max(self.lots[s], key=lambda x: x.date)
-                if newest.qty > 0:
-                    newest.basis += -gain / newest.qty
-                gain = 0.0
-            if is_lt:
-                self.year_lt += gain
-                self.realized_lt_total += gain
-            else:
-                self.year_st += gain
-                self.realized_st_total += gain
-            lot.qty -= q
-            need -= q
-            raised += q * fill
-        self.lots[s] = [lot for lot in self.lots[s] if lot.qty > 1e-12]
-        self.cash += raised
-        return raised
-
-    def distributions(
-        self, s: str, per_share: float, px: float, date: pd.Timestamp, taxed_as: str = "lt"
-    ) -> None:
-        if taxed_as not in ("lt", "st"):
-            raise ValueError(f"Invalid tax label: {taxed_as!r}")
-        q = self.qty(s)
-        if q <= 0 or per_share <= 0:
-            return
-        amt = q * per_share
-        if taxed_as == "st":
-            self.year_st += amt
-        else:
-            self.year_lt += amt  # qualified dividends / LT cap-gain distributions at the LT rate
-        self.cash += amt
-        self.buy(s, amt, px, date)  # reinvest
-
-    def year_end(self) -> None:
-        net = self.year_st + self.year_lt - self.loss_cf
-        if net <= 0:
-            self.loss_cf = -net
-            self.tax_due += 0.0
-        else:
-            self.loss_cf = 0.0
-            # losses offset the higher-taxed bucket first
-            st = max(self.year_st, 0.0)
-            lt = net - st if net > st else 0.0
-            st = min(st, net)
-            self.tax_due += st * self.st_rate + lt * self.lt_rate
-        self.year_st = self.year_lt = 0.0
-
-    def pay_tax(self, px: pd.Series, date: pd.Timestamp) -> None:
-        due = self.tax_due
-        if due <= 0:
-            return
-        if self.cash < due:  # raise pro-rata
-            total = self.value(px) - self.cash
-            for s in ("SPY", "SSO", "BIL"):
-                v = self.qty(s) * px[s]
-                if v > 0:
-                    self.sell(s, (due - self.cash) * v / total * 1.002, px[s], date)
-        self.cash -= due
-        self.taxes_paid += due
-        self.tax_due = 0.0
-
-    def liquidate(self, px: pd.Series, date: pd.Timestamp) -> float:
-        for s in ("SPY", "SSO", "BIL"):
-            self.sell(s, 1e18, px[s], date)
-        self.year_end()
-        self.pay_tax(px, date)
-        return self.cash
-
-
 # ----------------------------------------------------------------------------- rules
 def run(
     close: pd.DataFrame,
@@ -360,18 +223,6 @@ def run(
         "wash_disallowed": round(float(book.disallowed), 0),
         "_nav": nav,
     }
-
-
-def _trade_to(book: Book, tg: dict, px: pd.Series, t: pd.Timestamp) -> None:
-    v = book.value(px)
-    for s in ("SPY", "SSO", "BIL"):  # sells first
-        d = book.qty(s) * px[s] - tg[s] * v
-        if d > 1.0:
-            book.sell(s, d, px[s], t)
-    for s in ("SPY", "SSO", "BIL"):
-        d = tg[s] * v - book.qty(s) * px[s]
-        if d > 1.0:
-            book.buy(s, min(d, book.cash), px[s], t)
 
 
 def stress(navs: dict[str, pd.Series]) -> list[dict]:

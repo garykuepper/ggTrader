@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-24
+
+- **A23 advisory rebalance helper.** Added a read-only SPY/SSO month-end check
+  with cash-first plans, lot-level tax estimates and wash-sale warnings. Its
+  pure core shares the frozen A23 study's lot book and trade routine; the CLI
+  accepts dated price overrides and never places orders.
+
 ## 2026-10-23
 
 - **Research: century synthetic leverage closed under the registered rule.**
