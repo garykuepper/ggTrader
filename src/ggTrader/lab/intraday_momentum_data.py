@@ -52,17 +52,6 @@ STOP_RUN = {
     "run_time_cap",
 }
 BAR_FIELDS = ("t", "o", "c", "v")
-ACTION_FIELDS = (
-    "symbol",
-    "ex_date",
-    "process_date",
-    "rate",
-    "special",
-    "foreign",
-    "sub_type",
-    "old_rate",
-    "new_rate",
-)
 
 
 def _reject_constant(value: str) -> None:
@@ -84,12 +73,10 @@ def parse_page(kind: str, payload: Any) -> tuple[list[dict], str | None]:
         if not isinstance(groups, dict):
             raise SchemaError()
         for group, rows in sorted(groups.items()):
-            if not isinstance(rows, list):
+            if group not in core.ACTION_EFFECTIVE_DATE or not isinstance(rows, list):
                 raise SchemaError()
-            for row in rows:
-                if not isinstance(row, dict):
-                    raise SchemaError()
-                records.append({"group": group, **{k: row[k] for k in ACTION_FIELDS if k in row}})
+            # Unknown groups and invalid fields fail the page before anything is persisted.
+            records.extend({"group": group, **core.action_record(group, row)} for row in rows)
         return records, token
     groups = payload.get("bars")
     if not isinstance(groups, dict) or not isinstance(groups.get("SPY", []), list):

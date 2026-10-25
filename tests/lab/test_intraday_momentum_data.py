@@ -163,34 +163,151 @@ def test_malformed_pages_are_schema_errors(body: bytes) -> None:
     assert client.fetch(SPEC)["outcome"] == "schema_error"
 
 
-def test_corporate_actions_are_whitelisted_with_their_group() -> None:
-    payload = {
-        "corporate_actions": {
-            "cash_dividends": [
-                {
-                    "id": "x",
-                    "cusip": "78462F103",
-                    "symbol": "SPY",
-                    "rate": 1.5,
-                    "ex_date": "2024-12-20",
-                    "process_date": "2024-12-20",
-                }
-            ],
-            "forward_splits": [],
-        },
-        "next_page_token": None,
-    }
-    records, token = data.parse_page("corporate_actions", payload)
+# Shapes follow the official v1/corporate-actions OpenAPI examples; every value is invented.
+CASH_DIVIDEND = {
+    "id": "11cfd108-292e-4cc6-bfbf-5999cdbc4029",
+    "symbol": "SPY",
+    "cusip": "000000000",
+    "rate": 1.7,  # REST returns a JSON number
+    "special": False,
+    "foreign": False,
+    "currency": "USD",
+    "sub_type": "provider free text that must not be persisted",
+    "ex_date": "2024-12-20",
+    "record_date": "2024-12-20",
+    "payable_date": "2025-01-31",
+    "process_date": "2025-01-31",
+}
+UNIT_SPLIT = {
+    "id": "3e68e87e-ae95-4d68-91d1-715d52ef143a",
+    "old_symbol": "SPY",
+    "old_cusip": "000000001",
+    "old_rate": 1,
+    "new_symbol": "SPY",
+    "new_cusip": "000000002",
+    "new_rate": 1,
+    "alternate_symbol": "SPYW",
+    "alternate_cusip": "000000003",
+    "alternate_rate": 0.25,
+    "effective_date": "2024-12-03",
+    "process_date": "2024-12-20",
+}
+NAME_CHANGE = {
+    "id": "5a774c35-edec-4532-a812-a56d0bbb623a",
+    "old_symbol": "SPY",
+    "old_cusip": "000000001",
+    "new_symbol": "SPYX",
+    "new_cusip": "000000002",
+    "process_date": "2024-12-02",
+}
+REVERSE_SPLIT = {
+    "symbol": "SPY",
+    "new_symbol": "",  # documented: empty when the ticker does not change
+    "old_rate": 2,
+    "new_rate": 1,
+    "ex_date": "2024-12-03",
+    "process_date": "2024-12-03",
+}
+REORGANIZATION = {
+    "symbol": "SPY",
+    "cash_rate": 0.1,
+    "effective_date": "2024-12-03",
+    "process_date": "2024-12-03",
+    "stock_movements": [{"symbol": "NEW", "cusip": "0", "new_rate": 1, "source_rate": 1}],
+}
+
+
+def actions_page(groups: dict) -> dict:
+    return {"corporate_actions": groups, "next_page_token": None}
+
+
+def test_corporate_actions_keep_validated_aliases_and_effective_dates_only() -> None:
+    records, token = data.parse_page(
+        "corporate_actions",
+        actions_page(
+            {
+                "cash_dividends": [CASH_DIVIDEND],
+                "forward_splits": [],
+                "name_changes": [NAME_CHANGE],
+                "reorganizations": [REORGANIZATION],
+                "reverse_splits": [REVERSE_SPLIT],
+                "unit_splits": [UNIT_SPLIT],
+            }
+        ),
+    )
     assert token is None
     assert records == [
         {
             "group": "cash_dividends",
             "symbol": "SPY",
-            "rate": 1.5,
+            "rate": 1.7,
+            "currency": "USD",
             "ex_date": "2024-12-20",
+            "process_date": "2025-01-31",
+        },
+        {
+            "group": "name_changes",
+            "old_symbol": "SPY",
+            "new_symbol": "SPYX",
+            "process_date": "2024-12-02",
+        },
+        {
+            "group": "reorganizations",
+            "symbol": "SPY",
+            "stock_movements": [{"symbol": "NEW"}],
+            "effective_date": "2024-12-03",
+            "process_date": "2024-12-03",
+        },
+        {
+            "group": "reverse_splits",
+            "symbol": "SPY",
+            "ex_date": "2024-12-03",
+            "process_date": "2024-12-03",
+        },
+        {
+            "group": "unit_splits",
+            "old_symbol": "SPY",
+            "new_symbol": "SPY",
+            "alternate_symbol": "SPYW",
+            "effective_date": "2024-12-03",
             "process_date": "2024-12-20",
-        }
+        },
     ]
+    for record in records:  # the persisted form revalidates to itself
+        group = record["group"]
+        assert core.action_record(group, {k: v for k, v in record.items() if k != "group"}) == {
+            k: v for k, v in record.items() if k != "group"
+        }
+
+
+UNSAFE = "UNSAFE <provider> string"
+
+
+@pytest.mark.parametrize(
+    "groups",
+    [
+        {"mystery_actions": [CASH_DIVIDEND]},
+        {"mystery_actions": []},  # unknown group names fail even when empty
+        {"cash_dividends": [{**CASH_DIVIDEND, "rate": "1.7"}]},  # SSE-style string, not REST
+        {"cash_dividends": [{**CASH_DIVIDEND, "rate": True}]},
+        {"cash_dividends": [{k: v for k, v in CASH_DIVIDEND.items() if k != "rate"}]},
+        {"cash_dividends": [{**CASH_DIVIDEND, "currency": "usd"}]},
+        {"cash_dividends": [{**CASH_DIVIDEND, "currency": UNSAFE}]},
+        {"cash_dividends": [{**CASH_DIVIDEND, "ex_date": "2024-12-2"}]},
+        {"cash_dividends": [{**CASH_DIVIDEND, "symbol": UNSAFE}]},
+        {"name_changes": [{**NAME_CHANGE, "new_symbol": 5}]},
+        {"reorganizations": [{**REORGANIZATION, "stock_movements": UNSAFE}]},
+        {"cash_dividends": CASH_DIVIDEND},
+    ],
+)
+def test_invalid_corporate_action_metadata_is_a_fixed_schema_error(groups: dict) -> None:
+    with pytest.raises(data.SchemaError) as error:
+        data.parse_page("corporate_actions", actions_page(groups))
+    assert str(error.value) == ""
+    client, _, _ = collector([Response(actions_page(groups))])
+    result = client.fetch({**SPEC, "kind": "corporate_actions"})
+    assert result["outcome"] == "schema_error" and result["records"] == []
+    assert UNSAFE not in json.dumps(result) and "mystery" not in json.dumps(result)
 
 
 def vendor_responses() -> list:

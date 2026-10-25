@@ -13,7 +13,10 @@ Schema and public interface (all versions are 1):
 - ``run_validation(directory, output) -> dict``: write-once validation artifact.
 - ``score_inputs(inputs) -> dict``: pure scoring of extracted endpoint prices.
 - ``run_score(directory, validation_path, output) -> dict``: one score, only on a PASS artifact
-  whose protocol, code and data identities match a fresh rehash and revalidation.
+  whose protocol, code and data identities match a fresh rehash and revalidation; the exclusive
+  claim ``<directory>/score.claim`` binds the score to the collection, not to the output name.
+- ``offline_schedule(start, end) -> list[dict]`` and ``action_record(group, row) -> dict``:
+  the offline NYSE calendar check and the shared corporate-action whitelist/validator.
 """
 
 from __future__ import annotations
@@ -23,6 +26,7 @@ import json
 import math
 import os
 import platform
+import re
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -30,6 +34,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import pandas_market_calendars as mcal
 import requests
 import statsmodels
 import statsmodels.api as sm
@@ -72,26 +77,61 @@ SUBPERIODS = (
     ("2024-2026-09", "2024-01-01", "2026-09-30"),
 )
 MINUTE_NS = 60_000_000_000
-# Any SPY action other than a cash dividend inside the window stops the study (r8 D4.3).
-STOP_ACTION_GROUPS = frozenset(
-    {
-        "capital_gains_distributions",
-        "cash_mergers",
-        "forward_splits",
-        "name_changes",
-        "partial_calls",
-        "redemptions",
-        "reorganizations",
-        "reverse_splits",
-        "rights_distributions",
-        "spin_offs",
-        "stock_and_cash_mergers",
-        "stock_dividends",
-        "stock_mergers",
-        "unit_splits",
-        "worthless_removals",
-    }
+# Response groups of the official v1/corporate-actions schema, with the date that each type
+# documents as its effective (credit cutoff) date; None means the type documents only
+# process_date, so its effective date cannot be placed relative to the window.
+ACTION_EFFECTIVE_DATE = {
+    "capital_gains_distributions": "ex_date",
+    "cash_dividends": "ex_date",
+    "cash_mergers": "effective_date",
+    "forward_splits": "ex_date",
+    "name_changes": None,
+    "partial_calls": None,
+    "redemptions": None,
+    "reorganizations": "effective_date",
+    "reverse_splits": "ex_date",
+    "rights_distributions": "ex_date",
+    "spin_offs": "ex_date",
+    "stock_and_cash_mergers": "effective_date",
+    "stock_dividends": "ex_date",
+    "stock_mergers": "effective_date",
+    "unit_splits": "effective_date",
+    "worthless_removals": None,
+}
+# The r8 D4.3 automatic stop covers SPY splits; every other non-cash type is unsupported by the
+# benchmark/ex-dividend valuator, which is a separate, honestly labelled UNRESOLVED reason.
+SPLIT_GROUPS = frozenset({"forward_splits", "reverse_splits", "unit_splits"})
+SYMBOL_FIELDS = (
+    "symbol",
+    "old_symbol",
+    "new_symbol",
+    "source_symbol",
+    "acquirer_symbol",
+    "acquiree_symbol",
+    "alternate_symbol",
 )
+DATE_FIELDS = ("ex_date", "effective_date", "process_date")
+TICKER = re.compile(r"[A-Z0-9][A-Z0-9.\-]{0,11}\Z")
+CURRENCY = re.compile(r"(?:[A-Z]{3})?\Z")  # ISO 4217; empty is documented (USD, n/a or unknown)
+ANCILLARY_COVERAGE = {
+    "corporate_actions": (
+        "One all-types SPY request, process_date filtered from anchor-31d to last+31d "
+        "(default data_quality=complete). Actions are placed by their documented ex_date or "
+        "effective_date, never by process_date; undated non-dividend SPY actions are UNRESOLVED."
+    ),
+    "dividend_quarter_presence": (
+        "Every window quarter must show a cash-dividend ex-date (SPY pays quarterly per its "
+        "issuer). This is a conservative coverage sanity check only."
+    ),
+    "limitations": [
+        "Alpaca documents no guarantee on corporate-action creation or processing delay, so the "
+        "31-day process_date margin is not a completeness bound.",
+        "Quarter presence cannot prove that every historical action was returned; an absent "
+        "split in the response is not certified absence.",
+        "Vendor adjustment changes have no machine-readable feed and cannot be confirmed by raw "
+        "requests; only a documented change can trigger that r8 stop.",
+    ],
+}
 
 ENDPOINTS = {
     "calendar": "https://paper-api.alpaca.markets/v2/calendar",
@@ -112,12 +152,15 @@ CORPORATE_ACTION_MARGIN_DAYS = 31  # the endpoint filters on process_date, not e
 MANIFEST_FILE = "manifest.json"
 PROGRESS_FILE = "progress.json"
 CHUNK_DIR = "chunks"
+# The single-score claim lives with the collection it scores, so a new --output cannot re-score.
+SCORE_CLAIM_FILE = "score.claim"
 SCHEMAS = {
     "manifest": "intraday_momentum_r8_manifest",
     "chunk": "intraday_momentum_r8_chunk",
     "dataset": "intraday_momentum_r8_dataset",
     "validation": "intraday_momentum_r8_validation",
     "score": "intraday_momentum_r8_score",
+    "claim": "intraday_momentum_r8_score_claim",
 }
 LABEL = "Post-original-sample and single-shot proxy feasibility screen (not an untouched holdout)"
 MISMATCH_NOTE = (
@@ -155,6 +198,7 @@ def runtime_versions() -> dict:
         "pandas": pd.__version__,
         "statsmodels": statsmodels.__version__,
         "requests": requests.__version__,
+        "pandas_market_calendars": mcal.__version__,
     }
 
 
@@ -329,6 +373,48 @@ def _calendar(rows: Any, defects: list[str]) -> list[dict]:
     return sessions
 
 
+def offline_schedule(start: str, end: str) -> list[dict]:
+    """Independent offline NYSE sessions with New York open/close, from pandas_market_calendars."""
+    schedule = mcal.get_calendar("NYSE").schedule(start_date=start, end_date=end)
+    opens = schedule["market_open"].dt.tz_convert(NEW_YORK)
+    closes = schedule["market_close"].dt.tz_convert(NEW_YORK)
+    return [
+        {"date": day.date().isoformat(), "open": o.strftime("%H:%M"), "close": c.strftime("%H:%M")}
+        for day, o, c in zip(schedule.index, opens, closes, strict=True)
+    ]
+
+
+def _match_offline_schedule(rows: Any, defects: list[str]) -> dict:
+    """Official dates and hours must equal the offline schedule, so a session dropped together
+    with all its bars and daily close cannot pass as a shorter, self-consistent series."""
+    evidence = {"library": "pandas_market_calendars", "version": mcal.__version__}
+    evidence["calendar"] = "NYSE"
+    try:
+        schedule = offline_schedule(ANCHOR, LAST)
+    except Exception:
+        defects.append("calendar_offline_schedule_unavailable")
+        return {**evidence, "sessions": None, "schedule_sha256": None}
+    evidence.update(sessions=len(schedule), schedule_sha256=canonical_hash(schedule))
+    if not isinstance(rows, list) or not rows:
+        return evidence  # already calendar_malformed; a per-day diff would only add noise
+    expected = {row["date"]: (row["open"], row["close"]) for row in schedule}
+    official = {}
+    for row in rows:
+        try:  # malformed rows are already defects by index; never echo their strings
+            day = valid_date(row.get("date") if isinstance(row, dict) else None)
+        except SchemaError:
+            continue
+        official.setdefault(day, (row.get("open"), row.get("close")))
+    for day in sorted(set(expected) - set(official)):
+        defects.append(f"calendar_mismatch:offline_session_missing:{day}")
+    for day in sorted(set(official) - set(expected)):
+        defects.append(f"calendar_mismatch:session_not_in_offline_schedule:{day}")
+    for day in sorted(set(official) & set(expected)):
+        if official[day] != expected[day]:
+            defects.append(f"calendar_mismatch:offline_hours:{day}")
+    return evidence
+
+
 def _provenance(dataset: dict, defects: list[str]) -> dict:
     """Require the exact frozen manifest and a complete chunk for every request."""
     manifest = dataset["manifest"]
@@ -388,7 +474,9 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
         defects.append(f"identity:{error}")
     chunks = _provenance(dataset, defects)
     calendar_chunk = chunks.get("calendar")
-    sessions = _calendar(calendar_chunk["records"] if calendar_chunk else None, defects)
+    calendar_rows = calendar_chunk["records"] if calendar_chunk else None
+    sessions = _calendar(calendar_rows, defects)
+    offline_calendar = _match_offline_schedule(calendar_rows, defects)
     session_days = {row["date"]: row for row in sessions}
 
     minute_rows = [
@@ -491,6 +579,8 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
         "defects": defects,
         "counts": counts,
         "diagnostics": diagnostics,
+        "offline_calendar": offline_calendar,
+        "ancillary_coverage": ANCILLARY_COVERAGE,
     }
     if defects:
         return None, report
@@ -536,40 +626,103 @@ def _daily_closes(chunk: dict | None, session_days: dict, defects: list[str]) ->
     return closes
 
 
-def _corporate_actions(chunk: dict | None, session_days: dict, defects: list[str]) -> dict:
-    """Dividends for the benchmark/ex-div diagnostics; any other SPY action stops the study.
+def action_record(group: Any, row: Any) -> dict:
+    """Validate one official corporate-action record and keep only what the study needs.
 
-    An empty response is never accepted as verified absence: every window quarter must show a
-    cash-dividend ex-date (SPY distributes quarterly), so split absence is only accepted inside a
-    complete all-types response that demonstrably covered the window.
+    Retains symbol aliases, documented dates and, for cash dividends, the numeric rate and
+    currency. Unknown groups and malformed values raise a message-free SchemaError, so no
+    provider string reaches an artifact. The result revalidates to itself.
+    """
+    if group not in ACTION_EFFECTIVE_DATE or not isinstance(row, dict):
+        raise SchemaError()
+    record: dict[str, Any] = {}
+    for field in SYMBOL_FIELDS:
+        value = row.get(field)
+        if value is None or value == "":  # e.g. an unchanged reverse-split new_symbol
+            continue
+        if not isinstance(value, str) or not TICKER.match(value):
+            raise SchemaError()
+        record[field] = value
+    if group == "reorganizations" and row.get("stock_movements") is not None:
+        movements = row["stock_movements"]
+        if not isinstance(movements, list):
+            raise SchemaError()
+        record["stock_movements"] = [
+            {"symbol": action_record("reorganizations", m).get("symbol")} for m in movements
+        ]
+        if any(m["symbol"] is None for m in record["stock_movements"]):
+            raise SchemaError()
+    for field in DATE_FIELDS:
+        if row.get(field) is not None:
+            record[field] = valid_date(row[field])
+    if group == "cash_dividends":
+        rate, currency = row.get("rate"), row.get("currency")
+        if isinstance(rate, bool) or not isinstance(rate, (int, float)) or not math.isfinite(rate):
+            raise SchemaError()
+        record["rate"] = rate
+        if currency is not None:
+            if not isinstance(currency, str) or not CURRENCY.match(currency):
+                raise SchemaError()
+            record["currency"] = currency
+    return record
+
+
+def _action_symbols(record: dict) -> set[str]:
+    symbols = {record[field] for field in SYMBOL_FIELDS if field in record}
+    return symbols | {m["symbol"] for m in record.get("stock_movements", [])}
+
+
+def _corporate_actions(chunk: dict | None, session_days: dict, defects: list[str]) -> dict:
+    """Dividends for the benchmark/ex-div diagnostics; classify every other SPY action.
+
+    Actions are placed by their type's documented ex_date/effective_date, never process_date, so
+    one processed outside the window still counts if it took effect inside it. An in-window SPY
+    split is the r8 automatic stop. Any other in-window, or unplaceable, non-cash action is
+    UNRESOLVED because the valuator does not implement it, not because it is evidence of a split.
+    The quarter-presence rule is a coverage sanity check; it does not certify that no action is
+    missing from the response.
     """
     if chunk is None:
         return {}
     dividends = {}
     for index, row in enumerate(chunk["records"]):
-        if not isinstance(row, dict) or row.get("symbol") != "SPY":
+        group = row.get("group") if isinstance(row, dict) else None
+        try:
+            fields = {k: v for k, v in row.items() if k != "group"}
+            record = action_record(group, fields)
+            if record != fields:
+                raise SchemaError()
+        except (SchemaError, AttributeError):
             defects.append(f"corporate_action_malformed:{index}")
             continue
-        try:
-            day = valid_date(row.get("ex_date") or row.get("process_date"))
-        except SchemaError:
-            defects.append(f"corporate_action_malformed:{index}")
+        if "SPY" not in _action_symbols(record):
+            defects.append(f"corporate_action_unrelated_symbol:{index}")
+            continue
+        field = ACTION_EFFECTIVE_DATE[group]
+        day = record.get(field) if field else None
+        if day is None:
+            defects.append(
+                f"dividend_missing_ex_date:{index}"
+                if group == "cash_dividends"
+                else f"corporate_action_undated:{group}:{index}"
+            )
             continue
         if not ANCHOR <= day <= LAST:
             continue
-        group = row.get("group")
-        if group in STOP_ACTION_GROUPS:
-            defects.append(f"corporate_action_stop:{group}:{day}")
+        if group in SPLIT_GROUPS:
+            defects.append(f"corporate_action_stop:split:{group}:{day}")
         elif group != "cash_dividends":
-            defects.append(f"corporate_action_unknown_group:{group}:{day}")
-        elif not _price(row.get("rate")):
+            defects.append(f"corporate_action_unsupported:{group}:{day}")
+        elif not _price(record["rate"]):
             defects.append(f"dividend_invalid_rate:{day}")
+        elif record.get("currency", "") not in ("", "USD"):
+            defects.append(f"dividend_currency_not_usd:{day}")
         elif day not in session_days:
             defects.append(f"dividend_ex_date_not_session:{day}")
         elif day in dividends:
             defects.append(f"dividend_duplicate_ex_date:{day}")
         elif day != ANCHOR:
-            dividends[day] = float(row["rate"])
+            dividends[day] = float(record["rate"])
     first, last = date.fromisoformat(ANCHOR), date.fromisoformat(LAST)
     covered = {
         (date.fromisoformat(day).year, (date.fromisoformat(day).month - 1) // 3)
@@ -620,7 +773,9 @@ def strategy_returns(
 def nw_t(values: Any, lags: int = NW_LAGS) -> float | None:
     """Intercept-only OLS t with Bartlett HAC; None when the variance is zero or non-finite."""
     values = np.asarray(values, dtype=float)
-    if len(values) < 2 or not np.all(np.isfinite(values)):
+    # An exact constant has zero variance by definition; OLS would instead return float residual
+    # noise (t ~ 1e15). Only exact equality is tested, so no real low-variance series is erased.
+    if len(values) < 2 or not np.all(np.isfinite(values)) or np.all(values == values[0]):
         return None
     fit = sm.OLS(values, np.ones(len(values))).fit(
         cov_type="HAC", cov_kwds={"maxlags": lags, "use_correction": True}
@@ -727,8 +882,12 @@ def _attribution(side: np.ndarray, r_last: np.ndarray) -> dict:
             cov_type="HAC", cov_kwds={"maxlags": NW_LAGS, "use_correction": True}
         )
         se = float(fit.bse[1])
+        # r_last exactly constant within each side leaves zero residuals: SE is float noise.
+        exact = all(np.ptp(r_last[side == k]) == 0 for k in (0.0, 1.0))
         result["beta1"] = float(fit.params[1])
-        result["beta1_nw5_t"] = float(fit.params[1]) / se if math.isfinite(se) and se > 0 else None
+        result["beta1_nw5_t"] = (
+            float(fit.params[1]) / se if math.isfinite(se) and se > 0 and not exact else None
+        )
     return result
 
 
@@ -896,6 +1055,9 @@ ASSUMPTIONS = [
     "Losing streak counts consecutive losing traded sessions; flat sessions are skipped.",
     "Worst month and drawdown use the pre-tax base-cost sleeve.",
     "Hit rate is the share of traded sessions with a positive net return.",
+    "No in-window SPY split or unsupported action appeared in the corporate-actions response; "
+    "that response is not certified complete, and vendor adjustment changes cannot be confirmed "
+    "from raw requests (see the validation artifact's ancillary_coverage).",
 ]
 
 
@@ -925,15 +1087,22 @@ VALIDATION_KEYS = (
     "defects",
     "counts",
     "diagnostics",
+    "offline_calendar",
+    "ancillary_coverage",
     "identities",
 )
 
 
 def run_score(directory: Path, validation_path: Path, output: Path) -> dict:
-    """Score exactly once against a PASS artifact that matches a fresh rehash and revalidation."""
+    """Score exactly once against a PASS artifact that matches a fresh rehash and revalidation.
+
+    The exclusive claim is created in the input collection directory before computing and records
+    the canonical identities, so neither a different output path nor a retry after a crash can
+    produce a second score of the same collection.
+    """
     output = Path(output)
     report_path = output.with_suffix(".md")
-    claim = output.with_suffix(".claim")
+    claim = Path(directory) / SCORE_CLAIM_FILE
     if output.exists() or report_path.exists() or claim.exists():
         raise FileExistsError("score_already_claimed")
     validation_bytes = Path(validation_path).read_bytes()
@@ -956,14 +1125,28 @@ def run_score(directory: Path, validation_path: Path, output: Path) -> dict:
     if any(validation.get(key) != fresh[key] for key in VALIDATION_KEYS) or inputs is None:
         raise ValueError("validation_identity_mismatch")
     output.parent.mkdir(parents=True, exist_ok=True)
+    validation_sha256 = hashlib.sha256(validation_bytes).hexdigest()
     # Claim before computing: a crash after this point still forbids a second score.
-    os.close(os.open(claim, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+    handle = os.open(claim, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    try:
+        record = {
+            "schema": SCHEMAS["claim"],
+            "version": 1,
+            "identities": fresh["identities"],
+            "validation_sha256": validation_sha256,
+            "output": str(output),
+            "claimed_utc": datetime.now(UTC).isoformat(),
+        }
+        os.write(handle, json.dumps(record, sort_keys=True).encode() + b"\n")
+        os.fsync(handle)
+    finally:
+        os.close(handle)
     result = {
         "schema": SCHEMAS["score"],
         "version": 1,
         "label": LABEL,
         "identities": fresh["identities"],
-        "validation_sha256": hashlib.sha256(validation_bytes).hexdigest(),
+        "validation_sha256": validation_sha256,
         "runtime": runtime_versions(),
         "run_utc": datetime.now(UTC).isoformat(),
         **score_inputs(inputs),

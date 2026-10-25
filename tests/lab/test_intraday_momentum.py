@@ -167,6 +167,23 @@ def test_zero_or_nonfinite_variance_is_unresolved(values: object) -> None:
     assert core.nw_t(values) is None
 
 
+# OLS on an exact constant leaves float residual noise, which gave t ~ 1e15 for these.
+@pytest.mark.parametrize("n", [2, 3, 8, 20, 50, 2679])
+@pytest.mark.parametrize("level", [0.001, -0.0002, 1e-9, 0.1, 0.0])
+@pytest.mark.parametrize("lags", [0, 5, 10, 20])
+def test_exact_constant_series_is_unresolved_at_any_length_and_level(
+    n: int, level: float, lags: int
+) -> None:
+    assert core.nw_t(np.full(n, level), lags) is None
+
+
+def test_valid_low_variance_series_is_not_erased_by_a_tolerance() -> None:
+    values = np.full(8, 0.001)
+    values[-1] += 1e-12
+    t = core.nw_t(values)
+    assert t is not None and np.isfinite(t)
+
+
 def business_days(n: int) -> list[str]:
     days, day = [], date(2016, 1, 5)
     while len(days) < n:
@@ -212,6 +229,25 @@ def test_all_flat_series_is_statistically_unresolved_not_infinite() -> None:
     assert result["a1"]["status"] == "UNRESOLVED"
     assert result["verdict"] == "UNRESOLVED_STATISTICAL"
     assert result["diagnostics"]["signal_counts"]["negative_flat"] == 50
+
+
+def test_constant_positive_series_is_unresolved_not_a1_pass() -> None:
+    inputs = synthetic_inputs(4.6, n=200)
+    inputs["p1559"] = [100.046] * 200  # every session trades the identical net return
+    result = core.score_inputs(inputs)
+    assert result["a1"]["status"] == "UNRESOLVED" and result["a1"]["nw5_t"] is None
+    assert result["verdict"] == "UNRESOLVED_STATISTICAL"
+    assert all(t is None for t in result["diagnostics"]["nw_lags"].values())
+
+
+def test_beta1_t_is_none_when_regression_residuals_are_exactly_zero() -> None:
+    inputs = synthetic_inputs(4.6, n=200)
+    traded = np.arange(200) % 2 == 0
+    inputs["p0959"] = np.where(traded, 101.0, 99.0).tolist()
+    inputs["p1559"] = np.where(traded, 100.05, 100.01).tolist()  # r_last exact in side
+    attribution = core.score_inputs(inputs)["diagnostics"]["attribution"]
+    assert attribution["beta1"] == pytest.approx(0.0004)
+    assert attribution["beta1_nw5_t"] is None
 
 
 def test_failed_mandatory_diagnostic_cannot_be_reported_as_go(
@@ -351,6 +387,76 @@ def test_malformed_calendar_is_unresolved(
     _, report = validate(write_collection(tmp_path, calendar=calendar))
     assert report["status"] == "UNRESOLVED"
     assert defect in report["defects"]
+    assert not any("2024-13-01" in d for d in report["defects"])  # never echoed
+
+
+def test_dropping_an_internal_session_with_all_its_data_is_a_calendar_mismatch(
+    window: None, tmp_path: Path
+) -> None:
+    # Remove 2024-12-02 from the official calendar *and* its bars and daily close; without the
+    # offline schedule this is a shorter, self-consistent series with the wrong prior anchor.
+    calendar = [row for row in CALENDAR if row["date"] != "2024-12-02"]
+    bars = [row for row in thanksgiving_bars() if not row["t"].startswith("2024-12-02")]
+    daily = {k: v for k, v in DAILY.items() if k != "2024-12-02"}
+    actions = [{**DIVIDEND, "ex_date": "2024-12-03"}]
+    inputs, report = validate(
+        write_collection(tmp_path, calendar=calendar, bars=bars, daily=daily, actions=actions)
+    )
+    assert inputs is None
+    assert report["defects"] == ["calendar_mismatch:offline_session_missing:2024-12-02"]
+
+
+def test_extra_session_or_changed_hours_versus_offline_schedule_are_mismatches(
+    window: None, tmp_path: Path
+) -> None:
+    thanksgiving = {"date": "2024-11-28", "open": "09:30", "close": "16:00"}
+    calendar = [CALENDAR[0], thanksgiving, *CALENDAR[1:]]
+    _, report = validate(write_collection(tmp_path / "a", calendar=calendar))
+    assert "calendar_mismatch:session_not_in_offline_schedule:2024-11-28" in report["defects"]
+    calendar = [CALENDAR[0], {**CALENDAR[1], "close": "16:00"}, *CALENDAR[2:]]
+    _, report = validate(write_collection(tmp_path / "b", calendar=calendar))
+    assert "calendar_mismatch:offline_hours:2024-11-29" in report["defects"]
+
+
+def test_offline_schedule_is_compared_and_recorded(
+    window: None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import pandas_market_calendars as mcal
+
+    report = core.validate_dataset(core.load_dataset(write_collection(tmp_path / "a")))
+    assert report["status"] == "PASS"
+    assert report["offline_calendar"] == {
+        "library": "pandas_market_calendars",
+        "version": mcal.__version__,
+        "calendar": "NYSE",
+        "sessions": 4,
+        "schedule_sha256": core.canonical_hash(CALENDAR),
+    }
+    assert core.runtime_versions()["pandas_market_calendars"] == mcal.__version__
+    # A bounded mocked schedule that lacks the last session makes the official one unexpected.
+    monkeypatch.setattr(core, "offline_schedule", lambda start, end: CALENDAR[:3])
+    _, report = validate(write_collection(tmp_path / "b"))
+    assert report["defects"] == ["calendar_mismatch:session_not_in_offline_schedule:2024-12-03"]
+
+    def unavailable(start: str, end: str) -> list:
+        raise RuntimeError("calendar library broken")
+
+    monkeypatch.setattr(core, "offline_schedule", unavailable)
+    _, report = validate(write_collection(tmp_path / "c"))
+    assert report["defects"] == ["calendar_offline_schedule_unavailable"]
+
+
+def test_offline_schedule_for_the_registered_window() -> None:
+    schedule = core.offline_schedule(core.ANCHOR, core.LAST)
+    assert (schedule[0]["date"], schedule[-1]["date"]) == (core.ANCHOR, core.LAST)
+    assert len(schedule) == 2701
+    assert sum(row["close"] == "13:00" for row in schedule) == 21
+    assert {(row["open"], row["close"]) for row in schedule} == {
+        core.FULL_HOURS,
+        core.HALF_HOURS,
+    }
+    days = {row["date"] for row in schedule}
+    assert "2018-12-05" not in days and "2025-01-09" not in days  # unscheduled closures
 
 
 def test_unflagged_half_day_and_non_session_trading_are_calendar_stops(
@@ -378,7 +484,7 @@ def test_interior_gaps_are_diagnostic_only(window: None, tmp_path: Path) -> None
     [
         (
             [DIVIDEND, {"group": "forward_splits", "symbol": "SPY", "ex_date": "2024-12-03"}],
-            "corporate_action_stop:forward_splits:2024-12-03",
+            "corporate_action_stop:split:forward_splits:2024-12-03",
         ),
         ([], "dividend_coverage_missing:2024Q4"),  # empty is not verified absence
         ([{**DIVIDEND, "ex_date": "2024-11-28"}], "dividend_ex_date_not_session:2024-11-28"),
@@ -390,6 +496,107 @@ def test_corporate_action_coverage_and_split_stops(
 ) -> None:
     _, report = validate(write_collection(tmp_path, actions=actions))
     assert defect in report["defects"]
+
+
+# Stored records keep the official field names (see the Alpaca corporate-actions reference);
+# values are invented. Real types carry aliases/effective_date, not a universal symbol/ex_date.
+UNIT_SPLIT = {
+    "group": "unit_splits",
+    "old_symbol": "SPY",
+    "new_symbol": "SPY",
+    "alternate_symbol": "SPYW",
+    "effective_date": "2024-12-03",
+    "process_date": "2024-12-20",  # processed after the scored window
+}
+NAME_CHANGE = {
+    "group": "name_changes",
+    "old_symbol": "SPY",
+    "new_symbol": "SPYX",
+    "process_date": "2024-12-02",
+}
+CASH_MERGER = {
+    "group": "cash_mergers",
+    "acquiree_symbol": "SPY",
+    "acquirer_symbol": "ACQ",
+    "effective_date": "2024-12-03",
+    "process_date": "2024-12-03",
+}
+SPLIT = {"group": "forward_splits", "symbol": "SPY", "ex_date": "2024-12-03"}
+
+
+@pytest.mark.parametrize(
+    ("actions", "defects"),
+    [
+        ([DIVIDEND, UNIT_SPLIT], ["corporate_action_stop:split:unit_splits:2024-12-03"]),
+        # A harmless-looking name change must not hide a real split; neither passes silently.
+        (
+            [DIVIDEND, NAME_CHANGE, SPLIT],
+            [
+                "corporate_action_stop:split:forward_splits:2024-12-03",
+                "corporate_action_undated:name_changes:1",
+            ],
+        ),
+        ([DIVIDEND, CASH_MERGER], ["corporate_action_unsupported:cash_mergers:2024-12-03"]),
+        (
+            [DIVIDEND, {k: v for k, v in SPLIT.items() if k != "ex_date"}],
+            ["corporate_action_undated:forward_splits:1"],
+        ),
+        ([{**DIVIDEND, "symbol": "QQQ"}], ["corporate_action_unrelated_symbol:0"]),
+    ],
+)
+def test_real_action_types_use_aliases_and_effective_dates(
+    window: None, tmp_path: Path, actions: list, defects: list
+) -> None:
+    inputs, report = validate(write_collection(tmp_path, actions=actions))
+    assert inputs is None
+    assert [d for d in report["defects"] if not d.startswith("dividend_coverage")] == defects
+
+
+def test_split_effective_before_window_but_processed_inside_is_irrelevant(
+    window: None, tmp_path: Path
+) -> None:
+    early = {**SPLIT, "ex_date": "2024-11-01", "process_date": "2024-12-02"}
+    _, report = validate(write_collection(tmp_path, actions=[DIVIDEND, early]))
+    assert report["status"] == "PASS", report["defects"]
+
+
+def test_dividend_without_ex_date_never_falls_back_to_process_date(
+    window: None, tmp_path: Path
+) -> None:
+    undated = {
+        "group": "cash_dividends",
+        "symbol": "SPY",
+        "rate": 1.5,
+        "process_date": "2024-12-02",
+    }
+    _, report = validate(write_collection(tmp_path, actions=[undated]))
+    assert report["defects"] == ["dividend_coverage_missing:2024Q4", "dividend_missing_ex_date:0"]
+
+
+@pytest.mark.parametrize(("currency", "ok"), [("USD", True), ("", True), ("CAD", False)])
+def test_dividend_currency_must_be_usd_or_documented_empty(
+    window: None, tmp_path: Path, currency: str, ok: bool
+) -> None:
+    inputs, report = validate(
+        write_collection(tmp_path, actions=[{**DIVIDEND, "currency": currency}])
+    )
+    assert (inputs is not None) is ok
+    if not ok:
+        assert "dividend_currency_not_usd:2024-12-02" in report["defects"]
+
+
+@pytest.mark.parametrize(
+    "stored",
+    [
+        {**DIVIDEND, "group": "mystery_actions"},
+        {**DIVIDEND, "rate": "1.5"},
+        {**DIVIDEND, "cusip": "78462F103"},  # not in the persisted whitelist
+        {**DIVIDEND, "ex_date": "2024-12-2"},
+    ],
+)
+def test_stored_corporate_action_is_revalidated(window: None, tmp_path: Path, stored: dict) -> None:
+    _, report = validate(write_collection(tmp_path, actions=[DIVIDEND, stored]))
+    assert report["defects"] == ["corporate_action_malformed:1"]
 
 
 def test_missing_raw_daily_close_is_unresolved(window: None, tmp_path: Path) -> None:
@@ -456,12 +663,35 @@ def test_score_once_on_matching_pass_with_hand_checked_diagnostics(
         core.run_score(directory, validation, output)
 
 
+def test_claim_is_bound_to_the_collection_not_the_output_name(window: None, tmp_path: Path) -> None:
+    directory, validation = validated(tmp_path)
+    result = core.run_score(directory, validation, tmp_path / "result.json")
+    claim = json.loads((directory / core.SCORE_CLAIM_FILE).read_text())
+    assert claim["identities"] == result["identities"]
+    assert claim["validation_sha256"] == result["validation_sha256"]
+    other = tmp_path / "elsewhere" / "other.json"
+    with pytest.raises(FileExistsError, match="score_already_claimed"):
+        core.run_score(directory, validation, other)
+    assert not other.exists() and not other.with_suffix(".md").exists()
+
+
 def test_claim_left_by_a_crashed_score_still_refuses(window: None, tmp_path: Path) -> None:
     directory, validation = validated(tmp_path)
+    (directory / core.SCORE_CLAIM_FILE).touch()
+    for name in ("result.json", "retry.json"):
+        with pytest.raises(FileExistsError, match="score_already_claimed"):
+            core.run_score(directory, validation, tmp_path / name)
+        assert not (tmp_path / name).exists()
+
+
+def test_existing_output_is_never_overwritten(window: None, tmp_path: Path) -> None:
+    directory, validation = validated(tmp_path)
     output = tmp_path / "result.json"
-    output.with_suffix(".claim").touch()
+    output.write_text("kept")
     with pytest.raises(FileExistsError):
         core.run_score(directory, validation, output)
+    assert output.read_text() == "kept"
+    assert not (directory / core.SCORE_CLAIM_FILE).exists()
 
 
 def test_tampering_after_pass_refuses_to_score(window: None, tmp_path: Path) -> None:
@@ -473,7 +703,7 @@ def test_tampering_after_pass_refuses_to_score(window: None, tmp_path: Path) -> 
     (directory / core.PROGRESS_FILE).write_text(json.dumps(progress))
     with pytest.raises(ValueError, match="validation_identity_mismatch"):
         core.run_score(directory, validation, tmp_path / "result.json")
-    assert not (tmp_path / "result.claim").exists()
+    assert not (directory / core.SCORE_CLAIM_FILE).exists()
 
 
 def test_forged_pass_or_changed_code_or_protocol_refuses(
