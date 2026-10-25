@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-25",
+  "task_id": "node:delegated-task:command%3Amcp%3Ad2509f7c-fd81-44c3-94b8-182f6aba9a93%3Adelegate-task%3Aintraday-preflight-flash-docs-2026-10-25-r1",
+  "provider": "antigravity",
+  "model": "gemini-3.8-flash-high",
+  "reviewer": "Codex parent",
+  "review_status": "All six values checked against public official sources; field3 qualified for trade-condition eligibility.",
+  "fields": [
+    {
+      "field_id": 1,
+      "found": true,
+      "value": "Start-year: 2016 (Since 2016); Historical-request rate: 200 / min",
+      "source_url": "https://docs.alpaca.markets/us/docs/about-market-data-api",
+      "section_name": "Equities",
+      "parent_verification": "confirmed"
+    },
+    {
+      "field_id": 2,
+      "found": true,
+      "value": "The end parameter must be at least 15 minutes old to query SIP data without a subscription.",
+      "source_url": "https://docs.alpaca.markets/us/docs/market-data-faq",
+      "section_name": "Historical data",
+      "parent_verification": "confirmed"
+    },
+    {
+      "field_id": 3,
+      "found": true,
+      "value": "Minute bar contains all trades between start timestamp (inclusive) and next minute (exclusive); timestamp of the bar is the left side of interval.",
+      "source_url": "https://docs.alpaca.markets/us/docs/market-data-faq",
+      "section_name": "How are bars aggregated?",
+      "parent_verification": "confirmed",
+      "qualification": "Trades update fields according to eligibility/condition rules; the timestamp convention alone does not imply every trade contributes to all OHLC fields."
+    },
+    {
+      "field_id": 4,
+      "found": true,
+      "value": "HTTP method and path: GET /v2/stocks/auctions; Allowed feed: sip (only sip is valid for auctions); Pagination-token instruction: page_token is the pagination token from which to continue (always check next_page_token for more pages).",
+      "source_url": "https://docs.alpaca.markets/us/reference/stockauctions-1",
+      "section_name": "Historical auctions",
+      "parent_verification": "confirmed"
+    },
+    {
+      "field_id": 5,
+      "found": true,
+      "value": "CLS orders submitted after 3:50pm but before 7:00pm ET will be rejected.",
+      "source_url": "https://docs.alpaca.markets/us/docs/orders-at-alpaca",
+      "section_name": "Time in Force",
+      "parent_verification": "confirmed"
+    },
+    {
+      "field_id": 6,
+      "found": true,
+      "value": "Market Order: No; Limit Order: No",
+      "source_url": "https://docs.alpaca.markets/us/docs/orders-at-alpaca",
+      "section_name": "Fractional orders (USD)",
+      "parent_verification": "confirmed"
+    }
+  ],
+  "limits": [
+    "Documentation check only; no authenticated endpoint requests or archive coverage proof.",
+    "CLS rejection interval wording does not guarantee acceptance exactly at its boundary."
+  ]
+}

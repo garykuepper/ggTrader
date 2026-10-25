@@ -1,0 +1,34 @@
+# Intraday Stage 0A coverage contract
+
+**Authorization:** owner said “execute” on 2026-10-25 after the delegated preflight review. This authorizes implementation, mocked verification and authenticated **Stage 0A only**. Stage 0B, bulk pulls, signals, strategy returns and orders remain outside scope. The [r7 strategy brief](2026-10-24-intraday-feasibility.md) remains unapproved for its evaluation window and A1/A2.
+
+## Fixed request manifest
+
+- Symbol SPY; bars `1Min`, `adjustment=raw`, `asof=-`, sort ascending, limit10000. Primary SIP; IEX recorded separately. No dynamic symbol/universe or strategy options.
+- Diagnostic sample months: January2016 through September2026 inclusive (129months). Choose indices `j*128//19`, j=0..19. For each selected month retrieve its first10calendar days via paper `GET /v2/calendar`; select the first date with local open09:30 and close16:00. Record the full bounded calendar responses (date/open/close only), selected dates and canonical-JSON manifest SHA256 **before any bar/auction request**. Missing calendar sessions stop the probe as unresolved. This diagnostic range does not approve an evaluation window.
+- Coverage sentinels: regular-session 09:30–09:35 New York on 2014-01-02, 2015-01-02, 2016-01-04. Prior-close input: 2015-12-31 15:59–16:01 New York. Use explicit UTC conversion via `ZoneInfo('America/New_York')`.
+- Each sample session: request bars09:30–16:00 for SIP and IEX, then SIP auctions09:30–16:01. Respect inclusive endpoint semantics by defining regular-session grid as09:30inclusive–16:00exclusive; flag out-of-grid returned timestamps separately rather than silently changing bounds. A response containing a16:00 auction-related bar is not part of the regular390-minute grid.
+- Sentinels also get auction requests covering15:59–16:01 on the same dates. Preserve opening/closing lists, venue and timestamp as documented; do not pick an official venue or compare prices during0A. Missing auction metadata limits the later auction branch, not the existence of bars.
+- Allowed authenticated endpoints only: paper `GET /v2/calendar`; data `GET /v2/stocks/bars`; data `GET /v2/stocks/auctions`. No account, asset, order or write endpoint. Credentials must come from existing `APCA_API_KEY_ID` and `APCA_API_SECRET_KEY` environment variables; do not fetch credentials or edit `.env`. The parent may load the existing root credential file into process environment for the authorized run without exposing it.
+
+## Bounded requests and safe output
+
+Use installed `requests`, no dependency addition. Total request timeout20seconds; at least0.65seconds between request starts. At most3attempts/page and20pages/logical request. Follow every `next_page_token`; a repeated token or page cap is incomplete pagination. A short page alone is not completion. Retry only429,5xx and transport failures with backoff1s then2s, honoring a numeric `Retry-After` or rate-reset header up to30s; if the provider requires a longer delay, checkpoint as deferred rather than violating it. Other errors are not retried. Never log raw error bodies, URLs containing secrets, request headers, credentials, page tokens or exception messages from remote libraries.
+
+For each attempt record status code or a fixed transport-error category, UTC time, attempt number and response-body SHA256 where available. For completed requests retain timestamps and volumes (bars), or event timestamp/venue/type (auctions). Do not persist any price/OHLC/VWAP field, unknown response field or raw payload. Schema errors produce a fixed safe category and retain only whitelisted evidence; never invent a schema from observed prices. Missing or malformed required metadata is unresolved, not an empty-success case. Error classification: nonempty_success, empty_success, authentication_error(401), entitlement_error(403), invalid_request(other4xx), throttled_exhausted, transient_exhausted, schema_error, incomplete_pagination, deferred.
+
+Compute sample expected grid from the official selected full sessions. Report row count, unique timestamps, duplicate count, missing/out-of-grid/misaligned timestamps and volume sum by feed. Retain defects and original dates. Do not interpolate, replace sessions, compare prices or call a gap a market halt without exchange evidence. Record first/last observed timestamp per request, never “archive inception.”
+
+## Artifact and stage conclusion
+
+Write only `docs/research/_intraday_probe.json` by default, with an optional `--output` path for tests/review. Refuse to overwrite an existing result. Checkpoint atomically after the calendar manifest and each logical request; no resume framework or raw market-data cache is needed for this bounded probe. On unexpected local failure preserve the last valid checkpoint and report a sanitized failure. Mark an unfinished artifact `in_progress`, not passing.
+
+Schema must include version, stage0A, authorization/date, run UTC time, strategy-brief and contract hashes, git revision, fixed diagnostic range, frozen calendar/sample manifest/hash, request parameters/outcome/attempts/pagination/hash evidence, feed-specific completeness and conclusion/reasons. No secrets or prices anywhere in nested output. Calendar/endpoint failures must remain distinguishable from empty archives. A run result contains an explicit `full_window_verified=false` and `strategy_evaluated=false`.
+
+Conclusion is `sample_checks_passed` only when every planned primary SIP sample and the required2016/previous-close bar sentinels completes without missing/duplicate/misaligned regular-grid timestamps; required sentinels must contain their expected minutes. No missing-data halt exemption is inferred automatically. Missing auctions produce `auction_branch_unresolved` alongside the bar conclusion. IEX failures stay sensitivity limitations. Empty2014/2015 observations are coverage diagnostics and cannot fail a2016 sample. Otherwise conclude `unresolved` with precise reasons. No candidate GO/NO-GO verdict is issued.
+
+## Implementation and review
+
+Core: `src/ggTrader/lab/intraday_probe.py`; thin CLI: `scripts/intraday_coverage_probe.py`; mocked tests: `tests/lab/test_intraday_probe.py`. Script must support `--help` without credentials, network or writes. No paper imports, database use, strategy registration or production changes. Keep reusable logic in the core and resolve paths dynamically.
+
+Tests: deterministic20months; DST/half-days; multi-page completion and repeated tokens; bounded429/5xx recovery/deferred long waits; empty vs403; missing/duplicate/misaligned/out-of-grid timestamps; auction venue/type separation; artifact deep price/secret-field exclusion and sanitized error bodies; no overwrite/atomic checkpoint; --help without side effects. All pytest via `scripts/run_tests.sh`, memory cap unchanged. Run Ruff check/format gates. Tests must never read real credentials or network.
