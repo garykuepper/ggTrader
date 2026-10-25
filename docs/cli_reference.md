@@ -34,6 +34,34 @@ CLI rather than from a background Python thread.
 A clean sample does not establish full-window coverage or a trading edge.
 Stage 0B and strategy backtesting require their separate authorization.
 
+## Intraday r8 research pipeline
+
+```bash
+.venv/bin/python scripts/intraday_momentum_research.py --help
+.venv/bin/python scripts/intraday_momentum_research.py plan
+```
+
+The standalone script implements the [approved r8 proxy protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md).
+Help, no command and `plan` need no credentials, network or writes. Approval 1
+covers mocked implementation only; real collection and candidate scoring require
+approval 2 after code review. The intended data are SPY raw SIP bars, the paper
+calendar and corporate-action metadata; no auctions, IEX, broker orders or DB.
+
+For a later approved run, `collect --output-dir <new-directory>` collects/resumes
+immutable chunks. `validate --input-dir <directory> --output <validation.json>`
+performs signal-blind endpoint/provenance checks. `score --input-dir <directory>
+--validation <validation.json> --output <result.json>` requires a matching PASS,
+rehashes inputs and claims the collection directory before computing. Existing
+results and a claimed study cannot be overwritten or rescored by changing the
+output path. A crash after claiming remains refused, preserving the audit trail.
+
+Default validation/result paths are `docs/research/_intraday_momentum_validation.json`
+and `docs/research/_intraday_momentum_results.json`. The default collection input
+is `data/external/intraday_momentum_r8`; credentials are inherited through
+`APCA_API_KEY_ID` / `APCA_API_SECRET_KEY`, never read from `.env` by this CLI.
+The HTTP deadline uses Linux main-thread signals. The exact future source
+manifest and outstanding coverage limitations must be reviewed before approval 2.
+
 ## A23 advisory rebalance check
 
 `scripts/a23_rebalance_check.py` checks the owner's 70% SPY / 30% SSO equity

@@ -1,0 +1,41 @@
+{
+  "schema": "intraday_r8_vendor_adjustment_review",
+  "version": 1,
+  "reviewed_on": "2026-10-25",
+  "symbol": "SPY",
+  "window": {"anchor": "2016-01-04", "end": "2026-09-30"},
+  "protocol_sha256": "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85",
+  "status": "reviewed",
+  "known_unresolved_changes": [],
+  "sources": [
+    {
+      "url": "https://docs.alpaca.markets/us/reference/stockbars",
+      "finding": "The current reference defines raw as no adjustments and asof=- as disabling symbol mapping. The proposed requests explicitly use both."
+    },
+    {
+      "url": "https://docs.alpaca.markets/us/docs/market-data-faq",
+      "finding": "The published aggregation and trade-condition rules define the bar construction; raw does not imply an immutable vendor archive."
+    },
+    {
+      "url": "https://docs.alpaca.markets/us/changelog/optionally-adjust-bars-after-spin-offs",
+      "published_on": "2025-10-28",
+      "finding": "The documented change adds optional spin-off adjustment and combined adjustment parameters. It is not identified as a change to the raw SPY price basis. The screen does not request those options."
+    },
+    {
+      "url": "https://docs.alpaca.markets/us/changelog",
+      "finding": "Current index and bounded targeted searches for historical adjustment changes were checked. This was not an exhaustive audit of every release or provider revision since 2016."
+    },
+    {
+      "url": "https://docs.alpaca.markets/us/reference/corporateactions-1",
+      "finding": "Corporate-action processing has no documented creation-delay guarantee. An all-types response and quarterly dividend sanity checks do not certify absence of other events or adjustment changes."
+    }
+  ],
+  "conclusion": "No known unresolved raw-SPY adjustment-basis change affecting the registered window was identified in these checked sources. A documented applicable change must stop collection or scoring until resolved under the registered rules.",
+  "limitations": [
+    "This records a bounded human documentation review, not proof that no historical vendor change exists.",
+    "Undocumented changes, missing corporate actions and later vendor revisions cannot be excluded.",
+    "Approval 2 must identify this exact review and its limitations before any real collection."
+  ],
+  "market_data_requested": false,
+  "candidate_prices_or_returns_inspected": false
+}

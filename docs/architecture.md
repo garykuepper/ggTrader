@@ -327,3 +327,19 @@ read-only HTTP requests and atomic JSON checkpoints, with no database,
 strategy registry, simulation or paper-trader integration. Prices are discarded
 before persistence. See the [Stage 0A contract](research/briefs/2026-10-25-intraday-stage0a-contract.md)
 for request bounds and the limits of its sampled-coverage conclusion.
+
+## Intraday r8 research pipeline
+
+`lab/intraday_momentum.py` owns the frozen protocol identity, dataset validation,
+pure research calculations and write-once evidence. `lab/intraday_momentum_data.py`
+collects complete, hashed, immutable request chunks and atomically checkpoints
+progress for resumption. `scripts/intraday_momentum_research.py` exposes standalone
+`plan`, `collect`, `validate` and `score` commands. It has no strategy-registry,
+vectorbt, database or production-paper integration.
+
+Validation checks every required endpoint independently of the signal and binds
+its PASS artifact to actual protocol, code, calendar and data hashes. Scoring
+rehashes/revalidates those identities and claims the collection directory before
+calculating returns. The original metadata-only Stage 0A code/artifact stays
+separate. See the [r8 protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md)
+and [CLI reference](cli_reference.md) for the current authorization boundary.

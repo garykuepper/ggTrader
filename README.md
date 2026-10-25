@@ -113,6 +113,12 @@ src/ggTrader/
 
 ## Documentation
 
+The standalone intraday r8 research pipeline supports planning, collection,
+signal-blind validation and a single fixed score. Only mocked implementation is
+authorized so far; historical collection/scoring remain pending approval 2. See
+the [approved protocol](docs/research/briefs/2026-10-25-intraday-feasibility-r8.md)
+and [CLI reference](docs/cli_reference.md). It is separate from production paper trading.
+
 For a deeper dive, check out our detailed guides:
 - [**Next Steps**](docs/next_steps.md) — The current worklist. Start here if you are picking up work.
 - [**Roadmap**](docs/roadmap.md) — Goals, strategy status table, and project history.
