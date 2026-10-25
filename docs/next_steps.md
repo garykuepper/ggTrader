@@ -22,6 +22,11 @@ No revised protocol, bulk pull or strategy backtest is approved by this review.
 confirmed the auction null/list mismatch and qualified the statistical estimates.
 Whole-share CLS account availability still needs confirmation before treating
 MOC as an executable exit.
+[Argon independently supports the revised sequence](research/2026-10-25-intraday-overall-plan-argon-review.md).
+Its missing-exit warning is useful; the [checked assessment](research/2026-10-25-intraday-argon-review-assessment.md)
+corrects its classification of the 15:30 bar as pre-entry information. Freeze
+missingness by actual decision-time availability; no quota or auction precedence
+is approved by either review.
 
 ## Current research decision (2026-10-23)
 
