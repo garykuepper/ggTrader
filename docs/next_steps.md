@@ -6,32 +6,24 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Intraday preflight (2026-10-25)
+## Intraday r8 implementation (2026-10-25)
 
-**Decision memo ready, not approved:** [proposed r8 defaults](research/briefs/2026-10-25-intraday-r8-decision-memo.md).
-Opus drafted and revised it; Flash and the parent checked the carried-forward
-fields. Approval would cover protocol finalization and mocked implementation
-only. Whole-window data and conditional scoring need a later explicit approval.
+**Approval 1 active:** the owner said "Continue" after approving the memo defaults.
+The [frozen r8 protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md)
+authorizes protocol finalization and mocked implementation only. Opus is building
+the collector, signal-blind validator and scorer; Flash is checking the frozen
+hash and literal fields. No candidate data collection or scoring is authorized.
 
-[Stage 0A finished unresolved](research/2026-10-25-intraday-stage0a-coverage.md):
-20 sampled SIP sessions have complete regular grids, but the required prior-close
-input is empty, IEX has gaps, and a closing-only auction response failed schema
-validation. [Opus plan review](research/2026-10-25-intraday-overall-plan-opus-review.md)
-recommends a documents-only r8 protocol decision memo before another probe or
-price inspection. The existing next-session fallback can address the start input
-under an approved revision; the Stage 0A verdict stays unchanged. Resolve exit
-execution, research/forward gates, data-quality scope and shadow isolation before
-approving further data work. See the [parent assessment](research/2026-10-25-intraday-opus-review-assessment.md).
-No revised protocol, bulk pull or strategy backtest is approved by this review.
-[Follow-up verification](research/2026-10-25-intraday-opus-proposal-verification.md)
-confirmed the auction null/list mismatch and qualified the statistical estimates.
-Whole-share CLS account availability still needs confirmation before treating
-MOC as an executable exit.
-[Argon independently supports the revised sequence](research/2026-10-25-intraday-overall-plan-argon-review.md).
-Its missing-exit warning is useful; the [checked assessment](research/2026-10-25-intraday-argon-review-assessment.md)
-corrects its classification of the 15:30 bar as pre-entry information. Freeze
-missingness by actual decision-time availability; no quota or auction precedence
-is approved by either review.
+Finish implementation, independently review it and run the capped tests. Then
+present the exact input manifest/code/protocol identities for **approval 2**:
+one whole-window collection, validation and automatic score only on registered
+PASS. Preserve [Stage 0A's unresolved result](research/2026-10-25-intraday-stage0a-coverage.md).
+Orders, shadows and production changes remain separate.
+
+The [Opus verification](research/2026-10-25-intraday-opus-proposal-verification.md)
+and [Argon assessment](research/2026-10-25-intraday-argon-review-assessment.md)
+explain the proxy and missingness choices. Whole-share CLS account capability
+remains unverified and is not required for this idealized research screen.
 
 ## Current research decision (2026-10-23)
 

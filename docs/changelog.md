@@ -2,6 +2,12 @@
 
 ## 2026-10-25
 
+- **Intraday r8 approval 1.** Owner approved the reviewed defaults for protocol
+  finalization and mocked implementation: fixed January 5, 2016–September 30,
+  2026 proxy screen, early-close anchors and signal-blind endpoint validation.
+  Historical collection/scoring remain pending approval 2; production unchanged.
+  [Protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md).
+
 - **Opus plan-review verification.** Reproduced conditional power/cost/page
   estimates and verified the auction schema failure against an identical
   metadata-only response. Corrected the omitted-field conjecture to a null/list
