@@ -8,6 +8,9 @@
   and runtime/vendor-review identity checks; synthetic tests and scoped review
   pass. Historical collection/scoring remain pending approval 2.
   [Implementation record](research/2026-10-25-intraday-r8-implementation.md).
+  Final benchmark-overflow regression and scoped review are closed; the corrected
+  code passes 1,739 capped-suite tests. The execution manifest is ready for
+  approval 2, with vendor-history limits explicitly recorded.
 
 - **Intraday r8 approval 1.** Owner approved the reviewed defaults for protocol
   finalization and mocked implementation: fixed January 5, 2016–September 30,

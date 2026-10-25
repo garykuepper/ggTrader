@@ -1,7 +1,7 @@
 # Intraday r8 mocked implementation and execution preflight
 
-**Status: implementation complete, final review and approval 2 pending.** No
-candidate market data, signals or returns were analyzed. This is infrastructure
+**Status: mocked implementation complete; reviews and checks passed; approval 2 pending.**
+No candidate price/return analysis or actual r8 collection was performed. This is infrastructure
 verification, not a strategy GO/NO-GO. The owner approved protocol finalization
 and mocked implementation by saying "Continue" after the r8 memo's approval
 question. The [approved protocol](briefs/2026-10-25-intraday-feasibility-r8.md)
@@ -46,20 +46,30 @@ now hash-bound and required before collection or scoring. The
 [bounded documentation record](_intraday_r8_vendor_adjustment_review_2026-10-25.json)
 is tracked with the code, without editing the frozen protocol.
 
-The latest focused capped run passed **276 tests**, or **314** including the
-unchanged Stage 0A tests. Repository Ruff check and format-check passed for
-277 files. The [scoped re-review](2026-10-25-intraday-r8-fix-review.md) passes specification
-and quality with no new Critical/Important issues. The previous complete suite
-passed 1,679 tests on `fdea52b`; the updated full-suite run and final branch review
-are pending. Initial implementation
-was not strictly test-first; subsequent fixes had failing regression tests and
-mutation checks. No claim is made that the initial process was strict TDD.
+Before the final numerical fix, the two new test files passed 276 focused
+cases (314 including Stage 0A). The final fix's owned-file run passed 235 cases.
+The complete suite on corrected code `6e89281` passed **1,739 tests**, with
+30 integration tests deselected and one existing `websockets.legacy` warning,
+in 334.53s. Repository Ruff check and format-check passed for 277 files.
+
+Opus's task and scoped fix reviews passed. Its final branch attempt failed an
+API rate limit and produced no verdict. The fallback Codex final review found a
+mandatory-benchmark overflow that could retain GO with null metrics. The focused
+fix and [final scoped review](2026-10-25-intraday-r8-final-fix-review.md) closed that
+finding without changing thresholds. Failed mandatory numerical calculations now
+produce named errors and an unresolved diagnostic verdict.
+
+Initial implementation was not strictly test-first; subsequent fixes had failing
+regression tests and mutation checks. This process deviation is retained in the
+record. All verification used synthetic data, not candidate returns. The prepared
+manifest records the exact tested code, runtime and verification summary.
 
 ## Concrete proposed approval 2 scope
 
 The [prepared manifest](_intraday_r8_execution_preflight_2026-10-25.json) records
 all 132 logical requests and the exact protocol, code, runtime and vendor-review
-identities. The manifest is prepared offline and is **not approved for execution**.
+identities. The manifest is prepared offline, matches the corrected code, and is **not yet
+approved for execution**.
 It requests SPY only:
 
 - One paper-calendar request for 2016-01-04 through 2026-09-30.
@@ -100,3 +110,22 @@ change, live allocation or discretionary re-score is part of approval 2.
 - Runtime changes, even patch releases, invalidate resume/scoring identities.
   Pin this environment for the run. Actual source access, full-window endpoint
   coverage and candidate performance remain unverified.
+
+## Implementation decisions recorded during review
+
+- Runtime versions live in a separate r8 execution appendix, keeping the approved
+  protocol hash stable. A stale runtime requires refreshed evidence before a run.
+- The manifest includes distributions, split metadata and raw daily closes needed
+  by mandatory diagnostics. Missing ancillary coverage stays unresolved rather
+  than producing a partial comparison.
+- Official calendar dates/hours are checked against an independent offline NYSE
+  schedule. A disagreement remains unresolved for review; dates are not changed.
+- A confirmed same-ticker name-only record is metadata rather than a valuation
+  stop. Identity changes, splits and unvalued material actions retain explicit
+  failure reasons; misclassification could invalidate the benchmark.
+- A hash-bound manual review enforces documented adjustment stops. Its bounded
+  search cannot exclude undocumented changes; a newly identified applicable
+  unresolved change stops the run.
+
+These decisions implement the frozen specification and do not change the
+performance gates. The preceding limitations remain part of the proposed run.

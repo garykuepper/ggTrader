@@ -6,25 +6,25 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Intraday r8 implementation (2026-10-25)
+## Intraday r8: ready for approval 2 (2026-10-25)
 
-**Approval 1 active:** the owner said "Continue" after approving the memo defaults.
-The [frozen r8 protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md)
-authorizes protocol finalization and mocked implementation only. The collector,
-signal-blind validator and scorer are implemented and pass the task/fix reviews.
-Flash and the parent checked the frozen hash and offline CLI. Updated full-suite
-and final branch checks are pending. No candidate collection/scoring is authorized.
+**Approval 1 complete.** The [implementation record](research/2026-10-25-intraday-r8-implementation.md)
+and [prepared manifest](research/_intraday_r8_execution_preflight_2026-10-25.json)
+record passed independent reviews, 1,739 capped-suite tests and Ruff checks.
+The [approved protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md)
+remains frozen. Stage 0A's unresolved result remains unchanged.
 
-Finish the [implementation checks](research/2026-10-25-intraday-r8-implementation.md). Then
-present the exact input manifest/code/protocol identities for **approval 2**:
-one whole-window collection, validation and automatic score only on registered
-PASS. Preserve [Stage 0A's unresolved result](research/2026-10-25-intraday-stage0a-coverage.md).
-Orders, shadows and production changes remain separate.
+**Next owner decision: approval 2**, one historical collection/resume in
+`data/external/intraday_momentum_r8`, signal-blind validation and one automatic
+score only on registered PASS with matching protocol/code/runtime/data/vendor-
+review hashes. The manifest contains 132 logical GET queries plus pagination and
+bounded retries. No collection or candidate scoring has run yet.
 
-The [Opus verification](research/2026-10-25-intraday-opus-proposal-verification.md)
-and [Argon assessment](research/2026-10-25-intraday-argon-review-assessment.md)
-explain the proxy and missingness choices. Whole-share CLS account capability
-remains unverified and is not required for this idealized research screen.
+Acknowledge the disclosed corporate-action history/processing limits, bounded
+manual vendor review and counted USD assumption for empty payout currencies.
+A failed validation stops unresolved without changing dates, prices or gates.
+This is an idealized bar-price feasibility screen. Shadows, orders and production
+changes remain separately pending; MOC account capability is unverified.
 
 ## Current research decision (2026-10-23)
 

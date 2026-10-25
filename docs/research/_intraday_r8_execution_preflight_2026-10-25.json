@@ -2,7 +2,7 @@
   "approval_1_active": true,
   "approval_2_given": false,
   "candidate_data_collected": false,
-  "code_commit": "7b0c088",
+  "code_commit": "6e89281",
   "execution_rule": "One collection/resume against this frozen manifest, one signal-blind validation, then one automatic score only on matching PASS. Otherwise stop UNRESOLVED; no alternate outputs, data patches or new criteria.",
   "limitations": [
     "Corporate-action history depth and delay bound are undocumented; quarterly dividend presence is a sanity check, not completeness certification.",
@@ -22,7 +22,7 @@
     "provider_retry_wait_cap_seconds": 30
   },
   "manifest": {
-    "code_sha256": "a5b56fa8d6d6fae6bfe76eb2131544ea52ce131afdbdac89cdf58ee4d365a0b0",
+    "code_sha256": "f0b85690f6a571603da6eba83d51d92ccb6f57668663c5540741bea8ec085517",
     "protocol_sha256": "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85",
     "requests": [
       {
@@ -2143,13 +2143,13 @@
       "last": "2026-09-30"
     }
   },
-  "manifest_sha256": "980a0ff49824a7b17825fff913f4e3324c1daab1f3c113bd34b77dcaed52388f",
+  "manifest_sha256": "b29587ddc8e657fd3a40f055aa831030e4c50e5cdf0bf7c15b19fb0fb1a1a60f",
   "paths": {
     "collection": "data/external/intraday_momentum_r8",
     "result": "docs/research/_intraday_momentum_results.json",
     "validation": "docs/research/_intraday_momentum_validation.json"
   },
-  "prepared_at_utc": "2026-10-25T21:19:09.189305+00:00",
+  "prepared_at_utc": "2026-10-25T21:34:25.719641+00:00",
   "request_counts": {
     "calendar": 1,
     "corporate_actions": 1,
@@ -2157,6 +2157,33 @@
     "minute_bars": 129
   },
   "schema": "intraday_r8_execution_preflight",
-  "status": "pending_final_review_and_approval_2",
+  "status": "ready_for_approval_2",
+  "supersedes_prepared_manifest_sha256": "980a0ff49824a7b17825fff913f4e3324c1daab1f3c113bd34b77dcaed52388f",
+  "verification": {
+    "full_suite": {
+      "deselected": 30,
+      "exit_code": 0,
+      "log_sha256": "08f61a7860d20c897be85c4dd1d02da9119eae042cade3028dc9b749814354ea",
+      "passed": 1739,
+      "runner": "scripts/run_tests.sh",
+      "seconds": 334.53,
+      "warning": "Existing websockets.legacy dependency deprecation in headline-sentiment test",
+      "warnings": 1
+    },
+    "reviews": {
+      "codex_final": "benchmark failure fixed in 6e89281",
+      "codex_scoped_final_fix": "PASS; no new findings",
+      "opus_final_attempt": "API rate limit; no verdict",
+      "opus_scoped_fix": "PASS",
+      "opus_task": "PASS"
+    },
+    "ruff": {
+      "check": "passed",
+      "files": 277,
+      "format_check": "passed"
+    },
+    "synthetic_only": true,
+    "tested_code_commit": "6e89281"
+  },
   "version": 1
 }
