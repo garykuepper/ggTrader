@@ -1,0 +1,154 @@
+{
+  "date": "2026-10-24",
+  "scope": "Public-source identity/content fingerprints, account-flag snapshot and arithmetic check; no intraday data or strategy-return reproduction.",
+  "source_checks": [
+    {
+      "id": "gao_working_paper",
+      "url": "https://assets.super.so/e46b77e7-ee08-445e-b43f-4ffd88ae0a0e/files/ee7dac49-530b-4950-b5d0-e0b5eee08f2e.pdf",
+      "retrieved_at_utc": "2026-10-25T06:48:46.883119+00:00",
+      "http_status": 403,
+      "error_type": "HTTPError"
+    },
+    {
+      "id": "spy_original",
+      "url": "https://concretumgroup.com/wp-content/uploads/2026/02/Beat-the-Market.pdf",
+      "retrieved_at_utc": "2026-10-25T06:48:46.884420+00:00",
+      "http_status": 200,
+      "final_url": "https://concretumgroup.com/wp-content/uploads/2026/02/Beat-the-Market.pdf",
+      "content_type": "application/pdf",
+      "bytes": 1881316,
+      "sha256": "865010dfd938d513c1cd22a7be5932bc232afe498c3cf493d6d8bd4b0de86ebb"
+    },
+    {
+      "id": "qqq_original",
+      "url": "https://concretumgroup.com/wp-content/uploads/2026/02/Can-Day-Trading-Really-Be-Profitable.pdf",
+      "retrieved_at_utc": "2026-10-25T06:48:46.885017+00:00",
+      "http_status": 200,
+      "final_url": "https://concretumgroup.com/wp-content/uploads/2026/02/Can-Day-Trading-Really-Be-Profitable.pdf",
+      "content_type": "application/pdf",
+      "bytes": 2596401,
+      "sha256": "bb800b06ee8e28c9fb40826a4b086f03e7268eec351152e8b970838f76e51fc8"
+    },
+    {
+      "id": "stocks_in_play_original",
+      "url": "https://concretumgroup.com/wp-content/uploads/2026/02/A-Profitable-Day-Trading-Strategy-For-The-U.S.-Equity-Market.pdf",
+      "retrieved_at_utc": "2026-10-25T06:48:46.885490+00:00",
+      "http_status": 200,
+      "final_url": "https://concretumgroup.com/wp-content/uploads/2026/02/A-Profitable-Day-Trading-Strategy-For-The-U.S.-Equity-Market.pdf",
+      "content_type": "application/pdf",
+      "bytes": 979657,
+      "sha256": "9423012e9f0199e3f6925c500725815c236d7ddbdd7500d50d10bac2be745e91"
+    },
+    {
+      "id": "gamma_paper",
+      "url": "https://academicweb.nd.edu/~zda/intramom.pdf",
+      "retrieved_at_utc": "2026-10-25T06:48:46.888033+00:00",
+      "http_status": 200,
+      "final_url": "https://academicweb.nd.edu/~zda/intramom.pdf",
+      "content_type": "application/pdf",
+      "bytes": 2397917,
+      "sha256": "623ba82490acd01546f568cf582de5a9b45dfbd97731cd548cb119d7a0acec57"
+    },
+    {
+      "id": "paz_paper",
+      "url": "https://raw.githubusercontent.com/PazSheimy/spy-intraday-momentum-oos/main/paper/Out-of-Sample_Intraday_Momentum_SPY_PazSerpa_2026.tex",
+      "retrieved_at_utc": "2026-10-25T06:48:47.074700+00:00",
+      "http_status": 200,
+      "final_url": "https://raw.githubusercontent.com/PazSheimy/spy-intraday-momentum-oos/main/paper/Out-of-Sample_Intraday_Momentum_SPY_PazSerpa_2026.tex",
+      "content_type": "text/plain; charset=utf-8",
+      "bytes": 26859,
+      "sha256": "6e7e1a778c536cd83e7c7bbe10eb78495612c1c57ea3de9288c1ba0d2e973f82"
+    },
+    {
+      "id": "paz_analysis_code",
+      "url": "https://raw.githubusercontent.com/PazSheimy/spy-intraday-momentum-oos/main/src/zarattini_paper_analysis.py",
+      "retrieved_at_utc": "2026-10-25T06:48:47.199662+00:00",
+      "http_status": 200,
+      "final_url": "https://raw.githubusercontent.com/PazSheimy/spy-intraday-momentum-oos/main/src/zarattini_paper_analysis.py",
+      "content_type": "text/plain; charset=utf-8",
+      "bytes": 12377,
+      "sha256": "56a5a6230b9c5dd30c14df78c8d976505d9525c430c71823d272e7c543c31f9d"
+    },
+    {
+      "id": "fetna_report",
+      "url": "https://raw.githubusercontent.com/mulhamfetna/trading-strategy-finder/main/subprojects/Parametric-Indicators/shareable/orb_study_bundle/docs/WS-ORB-REPORT.md",
+      "retrieved_at_utc": "2026-10-25T06:48:47.220089+00:00",
+      "http_status": 200,
+      "final_url": "https://raw.githubusercontent.com/mulhamfetna/trading-strategy-finder/main/subprojects/Parametric-Indicators/shareable/orb_study_bundle/docs/WS-ORB-REPORT.md",
+      "content_type": "text/plain; charset=utf-8",
+      "bytes": 10903,
+      "sha256": "b57c3e0bcfade848e8da21b5b2a41e0d9ca2a7f1f05bddc42a38319675e15834"
+    },
+    {
+      "id": "fetna_registration",
+      "url": "https://raw.githubusercontent.com/mulhamfetna/trading-strategy-finder/main/subprojects/Parametric-Indicators/shareable/orb_study_bundle/docs/WS-ORB-PREREGISTRATION.md",
+      "retrieved_at_utc": "2026-10-25T06:48:47.273563+00:00",
+      "http_status": 200,
+      "final_url": "https://raw.githubusercontent.com/mulhamfetna/trading-strategy-finder/main/subprojects/Parametric-Indicators/shareable/orb_study_bundle/docs/WS-ORB-PREREGISTRATION.md",
+      "content_type": "text/plain; charset=utf-8",
+      "bytes": 7949,
+      "sha256": "89702ee3a94cdcfffc0add03c848b6f87ff896ad4878b3a2c151e4e5215383b6"
+    },
+    {
+      "id": "delgado_landing",
+      "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7323419",
+      "retrieved_at_utc": "2026-10-25T06:48:47.292229+00:00",
+      "http_status": 403,
+      "error_type": "HTTPError"
+    },
+    {
+      "id": "demirev_landing",
+      "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5325376",
+      "retrieved_at_utc": "2026-10-25T06:48:47.315512+00:00",
+      "http_status": 403,
+      "error_type": "HTTPError"
+    }
+  ],
+  "sharpe_unit_check": {
+    "inputs": {
+      "annual_sharpes": [
+        1.34,
+        0.39
+      ],
+      "daily_observations": [
+        2333,
+        480
+      ],
+      "sessions_per_year": 252
+    },
+    "incorrect_se_formula": "sqrt((1 + 0.5 * annual_SR**2) / N)",
+    "consistent_iid_se_formula": "sqrt((252 + 0.5 * annual_SR**2) / N)",
+    "incorrect_z_from_rounded_inputs": 17.187062551329966,
+    "consistent_iid_z_from_rounded_inputs": 1.1935213099634387,
+    "two_sided_normal_p_from_consistent_iid_z": 0.23266527143853105,
+    "limitation": "Arithmetic unit check, not raw-return reproduction or a serial-dependence-robust significance test."
+  },
+  "account_snapshot": {
+    "source_tools": [
+      "get_account_info",
+      "get_account_config"
+    ],
+    "environment_verified": false,
+    "max_margin_multiplier": "1",
+    "no_shorting": false,
+    "fractional_trading": true,
+    "closing_transactions_only": false,
+    "suspend_trade": false,
+    "trading_blocked": false,
+    "account_blocked": false,
+    "trade_suspended_by_user": false
+  },
+  "unresolved": [
+    "final Gao published-version full methods",
+    "Delgado full methods",
+    "Demirev primary full text",
+    "outside raw-return replication",
+    "pre-registration chronology",
+    "credential-specific intraday archive and auction coverage",
+    "live-account provenance and settlement permissions",
+    "measured execution costs",
+    "personal and combined-SPY-lot taxes",
+    "long-only strategy edge"
+  ],
+  "access_note": "Fingerprint requests are separate direct-HTTP checks. The web reader exposed the full June2017 Gao manuscript; a subsequent direct download returned403. Delgado primary abstract was visible in indexed primary-host search; direct landing remained403. Access failures are not nonexistence findings."
+}

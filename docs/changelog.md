@@ -2,6 +2,11 @@
 
 ## 2026-10-24
 
+- **Intraday feasibility source verification.** Corrected the QQQ citation, SPY
+  strategy definitions, replication inference, tax assumptions and auction-order
+  compatibility. The long-only brief remains unapproved; no intraday data or
+  return test started. [Review](research/2026-10-24-intraday-trading-feasibility.md).
+
 - **A23 advisory review fixes.** Restores triggered weights to 30% with cash
   before lot sales, recognizes holiday/weekend month-ends, rejects unfinalized
   or stale closes and malformed CSV rows, and clarifies wash-sale review.
