@@ -15,6 +15,25 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 ---
 
+## Intraday Stage 0A coverage probe
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/intraday_coverage_probe.py --help
+PYTHONPATH=src .venv/bin/python scripts/intraday_coverage_probe.py
+```
+
+The standalone research script uses inherited `APCA_API_KEY_ID` and
+`APCA_API_SECRET_KEY` credentials for read-only paper-calendar and market-data
+requests. It does not load `.env`. Its fixed SPY sample, rate limits and evidence
+rules are defined in the [Stage 0A contract](research/briefs/2026-10-25-intraday-stage0a-contract.md).
+It stores timestamps, volumes, auction venues and response hashes, discarding
+prices. The default artifact is `docs/research/_intraday_probe.json`; `--output`
+selects a different artifact path. Existing artifacts are never overwritten.
+The hard request deadline uses Linux main-thread signals; run this as a standalone
+CLI rather than from a background Python thread.
+A clean sample does not establish full-window coverage or a trading edge.
+Stage 0B and strategy backtesting require their separate authorization.
+
 ## A23 advisory rebalance check
 
 `scripts/a23_rebalance_check.py` checks the owner's 70% SPY / 30% SSO equity

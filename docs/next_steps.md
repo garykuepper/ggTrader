@@ -6,6 +6,14 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
+## Intraday preflight (2026-10-25)
+
+[Stage 0A finished unresolved](research/2026-10-25-intraday-stage0a-coverage.md):
+20 sampled SIP sessions have complete regular grids, but the required prior-close
+input is empty, IEX has gaps, and a closing-only auction response failed schema
+validation. Freeze a supplemental metadata manifest to diagnose the auction
+shape and start input before proposing Stage 0B. No strategy backtest is ready.
+
 ## Current research decision (2026-10-23)
 
 **Tool ready 2026-10-24: A23 month-end rebalance helper (advisory only).** Run

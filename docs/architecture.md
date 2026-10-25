@@ -317,3 +317,13 @@ SELECTs for metadata/bar existence, never schema loaders or execution code.
 Offline evidence and fixture tests precede collection/code review. Details and
 remaining input requirements are in the
 [implementation handoff](research/event-timing-audit-implementation.md).
+
+## Intraday metadata preflight
+
+`lab/intraday_probe.py` is an isolated research utility, invoked through
+`scripts/intraday_coverage_probe.py`. It checks a frozen SPY calendar/sample
+manifest against Alpaca SIP and IEX bars and SIP auction metadata. It uses only
+read-only HTTP requests and atomic JSON checkpoints, with no database,
+strategy registry, simulation or paper-trader integration. Prices are discarded
+before persistence. See the [Stage 0A contract](research/briefs/2026-10-25-intraday-stage0a-contract.md)
+for request bounds and the limits of its sampled-coverage conclusion.

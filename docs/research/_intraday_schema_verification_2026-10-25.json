@@ -1,0 +1,30 @@
+{
+  "verified_on": "2026-10-25",
+  "method": "Parent independently inspected embedded official OpenAPI definitions and calendar endpoint reference; no authenticated request",
+  "auctions": {
+    "source": "https://docs.alpaca.markets/us/reference/stockauctions-1",
+    "openapi_version": "3.1.2",
+    "info_version": "1.1",
+    "response_schema": "stock_auctions_resp",
+    "required_outer_fields": ["auctions", "next_page_token"],
+    "symbol_value": "array of stock_daily_auctions",
+    "required_day_fields": ["d", "o", "c"],
+    "required_event_metadata": ["t", "x"],
+    "opening_list": "o",
+    "closing_list": "c",
+    "feed": "sip only",
+    "pagination": "string or null next_page_token",
+    "price_handling": "Discard all prices and conditions; keep only date, timestamp, venue, opening/closing type",
+    "flash_extraction_verified": true
+  },
+  "calendar": {
+    "source": "https://docs.alpaca.markets/us/reference/legacycalendar",
+    "endpoint": "GET /v2/calendar",
+    "response": "array of calendar days",
+    "retained_fields": ["date", "open", "close"],
+    "time_format": "HH:MM",
+    "timezone": "Schema does not specify a zone; contract explicitly interprets calendar hours in America/New_York",
+    "flash_extraction_verified": true
+  },
+  "correction": "Flash labeled 3.1.2 as API version; it is the OpenAPI specification version. Synthetic price examples were not used as validation fixtures."
+}

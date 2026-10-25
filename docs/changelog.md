@@ -2,6 +2,12 @@
 
 ## 2026-10-25
 
+- **Intraday Stage 0A metadata probe.** Added a bounded, read-only SPY coverage
+  tool with atomic evidence and mocked tests. All 20 SIP sample sessions had
+  complete regular grids, but the required 2015-12-31 prior-close input was
+  empty; stage and auction branch remain unresolved. No backtest or production
+  change. [Results](research/2026-10-25-intraday-stage0a-coverage.md).
+
 - **Intraday paper-access follow-up.** Verified the author-linked final Gao
   journal PDF and the Delgado/Demirev registry abstracts. Closed the final-paper
   access gap; exact data mapping and replication full methods remain open.
