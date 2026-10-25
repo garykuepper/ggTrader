@@ -11,8 +11,13 @@ any) — don't let this file accumulate a backlog.
 [Stage 0A finished unresolved](research/2026-10-25-intraday-stage0a-coverage.md):
 20 sampled SIP sessions have complete regular grids, but the required prior-close
 input is empty, IEX has gaps, and a closing-only auction response failed schema
-validation. Freeze a supplemental metadata manifest to diagnose the auction
-shape and start input before proposing Stage 0B. No strategy backtest is ready.
+validation. [Opus plan review](research/2026-10-25-intraday-overall-plan-opus-review.md)
+recommends a documents-only r8 protocol decision memo before another probe or
+price inspection. The existing next-session fallback can address the start input
+under an approved revision; the Stage 0A verdict stays unchanged. Resolve exit
+execution, research/forward gates, data-quality scope and shadow isolation before
+approving further data work. See the [parent assessment](research/2026-10-25-intraday-opus-review-assessment.md).
+No revised protocol, bulk pull or strategy backtest is approved by this review.
 
 ## Current research decision (2026-10-23)
 
