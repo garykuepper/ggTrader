@@ -8,6 +8,11 @@ any) — don't let this file accumulate a backlog.
 
 ## Intraday preflight (2026-10-25)
 
+**Decision memo ready, not approved:** [proposed r8 defaults](research/briefs/2026-10-25-intraday-r8-decision-memo.md).
+Opus drafted and revised it; Flash and the parent checked the carried-forward
+fields. Approval would cover protocol finalization and mocked implementation
+only. Whole-window data and conditional scoring need a later explicit approval.
+
 [Stage 0A finished unresolved](research/2026-10-25-intraday-stage0a-coverage.md):
 20 sampled SIP sessions have complete regular grids, but the required prior-close
 input is empty, IEX has gaps, and a closing-only auction response failed schema
