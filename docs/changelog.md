@@ -2,6 +2,13 @@
 
 ## 2026-10-25
 
+- **Intraday r8 mocked research pipeline.** Added isolated resumable GET
+  collection, signal-blind validation and a hash-bound single-shot scorer.
+  Corrected zero-variance statistics, session omission, corporate-action handling
+  and runtime/vendor-review identity checks; synthetic tests and scoped review
+  pass. Historical collection/scoring remain pending approval 2.
+  [Implementation record](research/2026-10-25-intraday-r8-implementation.md).
+
 - **Intraday r8 approval 1.** Owner approved the reviewed defaults for protocol
   finalization and mocked implementation: fixed January 5, 2016–September 30,
   2026 proxy screen, early-close anchors and signal-blind endpoint validation.

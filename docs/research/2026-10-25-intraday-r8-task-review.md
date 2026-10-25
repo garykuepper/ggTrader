@@ -1,3 +1,10 @@
+> Historical task review at `fdea52b`. I2/I3 and M1/M2/M6 were subsequently
+> resolved in `7b0c088`; the [scoped re-review](2026-10-25-intraday-r8-fix-review.md)
+> passes specification and quality with no new Critical/Important findings.
+> The earlier request to ratify unnecessary name-change stops is superseded.
+> The reviewer's belief that SPY never split is not verified evidence and is not
+> used to certify corporate-action completeness.
+
 **Verdicts:** Spec **PASS** · Quality **APPROVED**
 
 No critical findings. I found no missing mandatory code. The three Important items are about what the owner must accept explicitly in the approval‑2 request: under r8, an UNRESOLVED (data) result closes the study for good, so each of these can end the single shot.

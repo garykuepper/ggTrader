@@ -10,11 +10,12 @@ any) — don't let this file accumulate a backlog.
 
 **Approval 1 active:** the owner said "Continue" after approving the memo defaults.
 The [frozen r8 protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md)
-authorizes protocol finalization and mocked implementation only. Opus is building
-the collector, signal-blind validator and scorer; Flash is checking the frozen
-hash and literal fields. No candidate data collection or scoring is authorized.
+authorizes protocol finalization and mocked implementation only. The collector,
+signal-blind validator and scorer are implemented and pass the task/fix reviews.
+Flash and the parent checked the frozen hash and offline CLI. Updated full-suite
+and final branch checks are pending. No candidate collection/scoring is authorized.
 
-Finish implementation, independently review it and run the capped tests. Then
+Finish the [implementation checks](research/2026-10-25-intraday-r8-implementation.md). Then
 present the exact input manifest/code/protocol identities for **approval 2**:
 one whole-window collection, validation and automatic score only on registered
 PASS. Preserve [Stage 0A's unresolved result](research/2026-10-25-intraday-stage0a-coverage.md).
