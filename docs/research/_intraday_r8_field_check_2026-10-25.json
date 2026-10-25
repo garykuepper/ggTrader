@@ -1,0 +1,93 @@
+{
+  "fields": {
+    "primarysymbol": {
+      "value": "SPY",
+      "source_line": 56,
+      "line_text": "On each full regular session, at 15:30 ET, go long SPY if `r_first > 0`; otherwise stay flat."
+    },
+    "signalendpoint": {
+      "value": "Close of the 09:59 bar (the last trade before 10:00)",
+      "source_line": 63,
+      "line_text": "| 10:00 signal price | Close of the 09:59 bar (the last trade before 10:00) |"
+    },
+    "entryendpoint": {
+      "value": "Open of the 15:30 bar (the first trade at or after 15:30)",
+      "source_line": 64,
+      "line_text": "| 15:30 entry price | Open of the 15:30 bar (the first trade at or after 15:30) |"
+    },
+    "globalexitconventions": {
+      "value": "Same convention as the previous close (auction close, or the close of the 15:59 bar). One global choice, not per session.",
+      "source_line": 65,
+      "line_text": "| Exit price | Same convention as the previous close (auction close, or the close of the 15:59 bar) |"
+    },
+    "priorclosefallback": {
+      "value": "Close of the 15:59 bar (if auctions endpoint does not cover the full window); If 2015-12-31 anchor is unavailable, the first test session is the next day.",
+      "source_line": 62,
+      "line_text": "| Previous close, `P_close(t−1)` | Auction close if the auctions endpoint covers the full window; otherwise the close of the 15:59 bar. One global choice, not per session. |"
+    },
+    "A1tthreshold": {
+      "value": "unrounded t >= 3.0",
+      "source_line": 89,
+      "line_text": "**Pass: unrounded t ≥ 3.0.**"
+    },
+    "primaryNWlags": {
+      "value": "exactly 5 lags (a lag is one eligible full session)",
+      "source_line": 89,
+      "line_text": "Bartlett weights, **exactly 5 lags** (a lag is one eligible full session)"
+    },
+    "A2aftertaxCAGR": {
+      "value": "at least +3.0% a year (standalone after-tax-policy CAGR; standalone hurdle, not SPY-excess / displacement is non-gating)",
+      "source_line": 92,
+      "line_text": "must earn **an after-tax-policy CAGR of at least +3.0% a year** over the window."
+    },
+    "baseroundtripcost": {
+      "value": "2.0 bps per round trip (1.0 bp per side)",
+      "source_line": 78,
+      "line_text": "Charge **1.0 bp per side** (2.0 bps per round trip) in the base case"
+    },
+    "stressroundtripcost": {
+      "value": "2.0 bps per side (4.0 bps per round trip)",
+      "source_line": 78,
+      "line_text": "and **2.0 bps per side** in the stress case"
+    },
+    "annualpositivetaxpolicyfraction": {
+      "value": "24%",
+      "source_line": 80,
+      "line_text": "At each calendar year-end, debit **24%** of that year's positive net realized strategy P&L from sleeve wealth."
+    },
+    "idlecashyield": {
+      "value": "zero",
+      "source_line": 81,
+      "line_text": "The sleeve earns zero on cash outside the 30-minute holding window."
+    }
+  },
+  "final_paragraphs_status_and_authorization": {
+    "approval_boundary": {
+      "source_line": 150,
+      "excerpt": "**Approval boundary:** the owner requested source verification before proceeding. This revision records that review; it does not approve Stage 0A, a window, A1/A2, bulk pulls, strategy returns or a paper shadow. Keep those steps pending. The production freeze and existing paper observation remain in force."
+    },
+    "stage_0a_authorization": {
+      "source_line": 152,
+      "excerpt": "**Stage 0A authorization — 2026-10-25:** the owner’s “execute” instruction authorizes the metadata-only probe and its implementation under the [fixed contract](2026-10-25-intraday-stage0a-contract.md). This supersedes the earlier pending0A status only; Stage0B and strategy-window/gate approval remain pending."
+    }
+  },
+  "verified_by_parent": true,
+  "verification_date": "2026-10-25",
+  "source": "briefs/2026-10-24-intraday-feasibility.md",
+  "parent_corrections": {
+    "globalexitconventions_source_lines": [
+      62,
+      65
+    ],
+    "priorclosefallback_source_lines": [
+      62,
+      69
+    ],
+    "brief_status": {
+      "value": "DRAFT r7, not approved",
+      "source_line": 3
+    },
+    "stress_cost_note": "2 bp/side is literal; 4 bp/round trip is the checked arithmetic conversion, not a separate literal threshold.",
+    "authorization_note": "Line152 supersedes pending Stage0A only; strategy window/gates, further price work, bulk pulls and shadow remain pending."
+  }
+}
