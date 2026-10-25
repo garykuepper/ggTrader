@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import date, timedelta
 from pathlib import Path
@@ -49,10 +50,28 @@ DAILY = {**CLOSES, "2024-12-03": 106.35}
 DIVIDEND = {"group": "cash_dividends", "symbol": "SPY", "ex_date": "2024-12-02", "rate": 1.5}
 
 
+REAL_REVIEW = core.VENDOR_REVIEW_PATH
+
+
+def write_review(path: Path, **overrides: object) -> Path:
+    """A synthetic reviewed vendor-adjustment record bound to the current (patched) window."""
+    record = {**core.vendor_review_binding(), "status": "reviewed", "known_unresolved_changes": []}
+    path.write_text(json.dumps({**record, **overrides}))
+    return path
+
+
+@pytest.fixture(autouse=True)
+def review(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    path = tmp_path_factory.mktemp("review") / "review.json"
+    monkeypatch.setattr(core, "VENDOR_REVIEW_PATH", path)
+    return write_review(path)
+
+
 @pytest.fixture
-def window(monkeypatch: pytest.MonkeyPatch) -> None:
+def window(monkeypatch: pytest.MonkeyPatch, review: Path) -> None:
     monkeypatch.setattr(core, "ANCHOR", "2024-11-27")
     monkeypatch.setattr(core, "LAST", "2024-12-03")
+    write_review(review)
 
 
 def daily_rows(closes: dict) -> list[dict]:
@@ -207,7 +226,7 @@ def synthetic_inputs(gross_bp: float, n: int = 2000) -> dict:
         "closes": closes,
         "half_days": [],
         "daily_closes": closes,
-        "dividends": {dates[10]: 1.0},
+        "distributions": {dates[10]: 1.0},
     }
 
 
@@ -275,7 +294,7 @@ def test_complete_synthetic_dataset_passes_and_uses_half_day_1259_anchor(
     assert inputs["dates"] == ["2024-12-02", "2024-12-03"]
     assert inputs["prior_close"] == [HALF_CLOSE, DEC2["15:59"]]  # 12:59 bar, never 15:59/999.99
     assert inputs["closes"]["2024-11-29"] == HALF_CLOSE
-    assert inputs["dividends"] == {"2024-12-02": 1.5}
+    assert inputs["distributions"] == {"2024-12-02": 1.5}
     assert report["counts"]["half_day_sessions"] == 1
 
 
@@ -334,10 +353,11 @@ def test_duplicate_and_misaligned_endpoints_are_unresolved(window: None, tmp_pat
 
 
 def test_dst_transition_requires_new_york_minutes(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, review: Path
 ) -> None:
     monkeypatch.setattr(core, "ANCHOR", "2024-03-07")
     monkeypatch.setattr(core, "LAST", "2024-03-11")
+    write_review(review)
     calendar = [
         {"date": day, "open": "09:30", "close": "16:00"}
         for day in ("2024-03-07", "2024-03-08", "2024-03-11")
@@ -533,13 +553,13 @@ SPLIT = {"group": "forward_splits", "symbol": "SPY", "ex_date": "2024-12-03"}
             [DIVIDEND, NAME_CHANGE, SPLIT],
             [
                 "corporate_action_stop:split:forward_splits:2024-12-03",
-                "corporate_action_undated:name_changes:1",
+                "corporate_action_unsupported_undated:name_changes:1",
             ],
         ),
         ([DIVIDEND, CASH_MERGER], ["corporate_action_unsupported:cash_mergers:2024-12-03"]),
         (
             [DIVIDEND, {k: v for k, v in SPLIT.items() if k != "ex_date"}],
-            ["corporate_action_undated:forward_splits:1"],
+            ["corporate_action_unsupported_undated:forward_splits:1"],
         ),
         ([{**DIVIDEND, "symbol": "QQQ"}], ["corporate_action_unrelated_symbol:0"]),
     ],
@@ -749,3 +769,265 @@ def test_manifest_is_frozen_raw_sip_and_dst_explicit() -> None:
     assert by_id["calendar"]["parameters"] == {"start": "2016-01-04", "end": "2026-09-30"}
     assert by_id["corporate_actions"]["parameters"]["start"] == "2015-12-04"
     assert "types" not in by_id["corporate_actions"]["parameters"]  # every action type
+
+
+# --- second fix round: name changes, capital gains, currency, vendor review, runtime, chunks ----
+
+SAME_NAME = {"group": "name_changes", "old_symbol": "SPY", "new_symbol": "SPY"}
+# Invented legs in the official REST shape (long_term_rate/short_term_rate, at least one).
+CAPITAL_GAIN = {
+    "group": "capital_gains_distributions",
+    "symbol": "SPY",
+    "ex_date": "2024-12-02",
+    "long_term_rate": 0.4,
+    "short_term_rate": 0.1,
+    "currency": "USD",
+}
+
+
+@pytest.mark.parametrize("process_date", ["2024-11-10", "2024-12-02"])  # margin, in window
+def test_same_ticker_spy_name_change_is_counted_metadata_not_a_stop(
+    window: None, tmp_path: Path, process_date: str
+) -> None:
+    name = {**SAME_NAME, "process_date": process_date}
+    inputs, report = validate(write_collection(tmp_path, actions=[DIVIDEND, name]))
+    assert report["status"] == "PASS", report["defects"]
+    assert report["counts"]["same_ticker_name_changes_non_gating"] == 1
+    assert inputs["distributions"] == {"2024-12-02": 1.5}
+
+
+def test_same_ticker_name_change_cannot_hide_a_split(window: None, tmp_path: Path) -> None:
+    name = {**SAME_NAME, "process_date": "2024-12-02"}
+    _, report = validate(write_collection(tmp_path, actions=[DIVIDEND, name, SPLIT]))
+    assert report["defects"] == ["corporate_action_stop:split:forward_splits:2024-12-03"]
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        NAME_CHANGE,  # SPY -> SPYX: a real identity change
+        {"group": "name_changes", "old_symbol": "SPY", "process_date": "2024-12-02"},
+        {"group": "name_changes", "old_symbol": "SPYX", "new_symbol": "SPY"},
+    ],
+)
+def test_symbol_identity_change_is_unsupported_valuation_not_a_split(
+    window: None, tmp_path: Path, name: dict
+) -> None:
+    _, report = validate(write_collection(tmp_path, actions=[DIVIDEND, name]))
+    assert report["defects"] == ["corporate_action_unsupported_undated:name_changes:1"]
+    assert report["counts"]["same_ticker_name_changes_non_gating"] == 0
+
+
+def test_capital_gain_legs_are_summed_and_aggregated_with_a_same_day_dividend(
+    window: None, tmp_path: Path
+) -> None:
+    directory, validation = validated(tmp_path, actions=[DIVIDEND, CAPITAL_GAIN])
+    inputs, report = validate(directory)
+    assert report["status"] == "PASS", report["defects"]
+    assert inputs["distributions"] == {"2024-12-02": pytest.approx(1.5 + 0.4 + 0.1)}
+    assert report["counts"]["cash_dividends_in_window"] == 1
+    assert report["counts"]["capital_gains_distributions_in_window"] == 1
+    result = core.run_score(directory, validation, tmp_path / "result.json")
+    spy = (106.31 / ANCHOR_CLOSE) * (1 + 2.0 / 104.23)
+    assert result["diagnostics"]["spy_displacement"]["wealth_end"] == pytest.approx(spy)
+    assert result["diagnostics"]["exdiv_flat"]["mean_bp"] == 0.0
+
+
+def test_single_leg_capital_gain_counts_only_the_provided_leg(window: None, tmp_path: Path) -> None:
+    gain = {k: v for k, v in CAPITAL_GAIN.items() if k != "short_term_rate"}
+    inputs, report = validate(write_collection(tmp_path, actions=[DIVIDEND, gain]))
+    assert report["status"] == "PASS", report["defects"]
+    assert inputs["distributions"] == {"2024-12-02": pytest.approx(1.9)}
+
+
+@pytest.mark.parametrize(
+    ("actions", "defect"),
+    [
+        ([DIVIDEND, CAPITAL_GAIN, CAPITAL_GAIN], "capital_gain_duplicate_ex_date:2024-12-02"),
+        ([DIVIDEND, DIVIDEND], "dividend_duplicate_ex_date:2024-12-02"),
+        (
+            [DIVIDEND, {**CAPITAL_GAIN, "currency": "CAD"}],
+            "capital_gain_currency_not_usd:2024-12-02",
+        ),
+        (
+            [DIVIDEND, {**CAPITAL_GAIN, "short_term_rate": -0.1}],
+            "capital_gain_invalid_rate:2024-12-02",
+        ),
+        (
+            [DIVIDEND, {**CAPITAL_GAIN, "long_term_rate": 0, "short_term_rate": 0}],
+            "capital_gain_invalid_rate:2024-12-02",
+        ),
+        (
+            [DIVIDEND, {**CAPITAL_GAIN, "ex_date": "2024-11-28"}],
+            "capital_gain_ex_date_not_session:2024-11-28",
+        ),
+        (
+            [DIVIDEND, {k: v for k, v in CAPITAL_GAIN.items() if k != "ex_date"}],
+            "capital_gain_missing_ex_date:1",
+        ),
+        # A capital gain cannot stand in for a missing cash-dividend quarter.
+        ([CAPITAL_GAIN], "dividend_coverage_missing:2024Q4"),
+    ],
+)
+def test_capital_gain_defects_and_dividend_quarter_presence(
+    window: None, tmp_path: Path, actions: list, defect: str
+) -> None:
+    inputs, report = validate(write_collection(tmp_path, actions=actions))
+    assert inputs is None
+    assert defect in report["defects"]
+
+
+def test_missing_or_empty_payout_currency_is_a_counted_usd_assumption(
+    window: None, tmp_path: Path
+) -> None:
+    gain = {k: v for k, v in CAPITAL_GAIN.items() if k != "currency"}
+    _, report = validate(write_collection(tmp_path, actions=[{**DIVIDEND, "currency": ""}, gain]))
+    assert report["status"] == "PASS", report["defects"]
+    assert report["counts"]["cash_payouts_currency_assumed_usd"] == 2
+    assert any("USD" in line for line in core.ANCILLARY_COVERAGE["limitations"])
+    assert any("currency" in line and "USD" in line for line in core.ASSUMPTIONS)
+
+
+# --- vendor adjustment review evidence ---------------------------------------------------------
+
+
+def test_registered_vendor_review_record_is_bound_to_the_frozen_protocol(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "VENDOR_REVIEW_PATH", REAL_REVIEW)
+    assert core.vendor_review_sha256() == hashlib.sha256(REAL_REVIEW.read_bytes()).hexdigest()
+    assert core.protocol_sha256() == core.PROTOCOL_SHA256  # the protocol file is untouched
+
+
+def test_manifest_and_validation_identities_bind_the_review_file(
+    window: None, tmp_path: Path, review: Path
+) -> None:
+    digest = hashlib.sha256(review.read_bytes()).hexdigest()
+    assert core.build_manifest()["vendor_review_sha256"] == digest
+    _, validation = validated(tmp_path)
+    assert json.loads(validation.read_text())["identities"]["vendor_review_sha256"] == digest
+
+
+BAD_REVIEWS = [
+    ("missing", None, "vendor_review_missing"),
+    ("not json", "{", "vendor_review_malformed"),
+    ("list", "[]", "vendor_review_malformed"),
+    ("pending", {"status": "pending"}, "vendor_review_not_reviewed"),
+    (
+        "documented change",
+        {"known_unresolved_changes": [{"url": "https://example.invalid/change"}]},
+        "vendor_review_stop:documented_adjustment_change",
+    ),
+    ("changes not a list", {"known_unresolved_changes": None}, "vendor_review_malformed"),
+    ("other symbol", {"symbol": "QQQ"}, "vendor_review_binding_mismatch"),
+    (
+        "other window",
+        {"window": {"anchor": "2016-01-04", "end": "2026-09-30"}},
+        "vendor_review_binding_mismatch",
+    ),
+    ("other protocol", {"protocol_sha256": "0" * 64}, "vendor_review_binding_mismatch"),
+    ("price data", {"market_data_requested": True}, "vendor_review_binding_mismatch"),
+]
+
+
+def apply_review(path: Path, content: object) -> None:
+    if content is None:
+        path.unlink()
+    elif isinstance(content, str):
+        path.write_text(content)
+    else:
+        write_review(path, **content)
+
+
+@pytest.mark.parametrize(("case", "content", "reason"), BAD_REVIEWS)
+def test_bad_review_refuses_manifest_and_validation_pass(
+    window: None, tmp_path: Path, review: Path, case: str, content: object, reason: str
+) -> None:
+    directory = write_collection(tmp_path)
+    apply_review(review, content)
+    with pytest.raises(ValueError, match=f"^{reason}$"):
+        core.build_manifest()
+    inputs, report = validate(directory)
+    assert inputs is None and f"identity:{reason}" in report["defects"]
+
+
+@pytest.mark.parametrize(
+    ("content", "reason"),
+    [
+        ({"reviewed_on": "2026-10-26"}, "validation_identity_mismatch"),  # edited, still valid
+        (
+            {"known_unresolved_changes": [{"url": "https://example.invalid/change"}]},
+            "vendor_review_stop:documented_adjustment_change",
+        ),
+        (None, "vendor_review_missing"),
+    ],
+)
+def test_review_edited_after_pass_refuses_to_score(
+    window: None, tmp_path: Path, review: Path, content: object, reason: str
+) -> None:
+    directory, validation = validated(tmp_path)
+    apply_review(review, content)
+    with pytest.raises(ValueError, match=f"^{reason}$"):
+        core.run_score(directory, validation, tmp_path / "result.json")
+    assert not (directory / core.SCORE_CLAIM_FILE).exists()
+
+
+# --- runtime identity ------------------------------------------------------------------------
+
+
+def test_manifest_binds_runtime_versions() -> None:
+    runtime = core.build_manifest()["runtime"]
+    assert set(runtime) == {
+        "python",
+        "numpy",
+        "pandas",
+        "statsmodels",
+        "requests",
+        "pandas_market_calendars",
+    }
+    assert runtime == core.runtime_versions()
+
+
+@pytest.mark.parametrize("library", ["statsmodels", "numpy"])
+def test_changed_runtime_after_pass_refuses_to_score(
+    window: None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, library: str
+) -> None:
+    directory, validation = validated(tmp_path)
+    changed = {**core.runtime_versions(), library: "0.0.0-changed"}
+    monkeypatch.setattr(core, "runtime_versions", lambda: changed)
+    _, report = validate(directory)
+    assert "identity:manifest_runtime_mismatch" in report["defects"]
+    with pytest.raises(ValueError, match="validation_identity_mismatch"):
+        core.run_score(directory, validation, tmp_path / "result.json")
+    assert not (directory / core.SCORE_CLAIM_FILE).exists()
+
+
+# --- corrupt chunk structure ---------------------------------------------------------------
+
+
+@pytest.mark.parametrize("payload", ["[1, 2]", "null", "5", '"CORRUPT-PAYLOAD"'])
+def test_non_object_chunk_json_is_a_structured_defect(
+    window: None, tmp_path: Path, payload: str
+) -> None:
+    directory = write_collection(tmp_path)
+    path = core.chunk_path(directory, "calendar")
+    path.write_text(payload)
+    progress = json.loads((directory / core.PROGRESS_FILE).read_text())
+    progress["chunks"]["calendar"] = core.file_sha256(path)
+    (directory / core.PROGRESS_FILE).write_text(json.dumps(progress))
+    inputs, report = validate(directory)
+    assert inputs is None
+    assert {"chunk_unreadable:calendar", "provenance_incomplete:calendar"} <= set(report["defects"])
+    assert "CORRUPT" not in json.dumps(report)
+
+
+def test_non_object_page_entry_is_a_structured_defect(window: None, tmp_path: Path) -> None:
+    directory = write_collection(tmp_path)
+    path = core.chunk_path(directory, "calendar")
+    chunk = json.loads(path.read_text()) | {"pages": [5]}
+    path.write_text(json.dumps(chunk))
+    progress = json.loads((directory / core.PROGRESS_FILE).read_text())
+    progress["chunks"]["calendar"] = core.file_sha256(path)
+    (directory / core.PROGRESS_FILE).write_text(json.dumps(progress))
+    _, report = validate(directory)
+    assert "provenance_invalid:calendar" in report["defects"]

@@ -80,10 +80,25 @@ def collector(responses: list) -> tuple[data.Collector, Session, Clock]:
     return data.Collector(session, clock=clock.monotonic, sleep=clock.sleep), session, clock
 
 
+def write_review(path: Path, **overrides: object) -> Path:
+    """A synthetic reviewed vendor-adjustment record bound to the current (patched) window."""
+    record = {**core.vendor_review_binding(), "status": "reviewed", "known_unresolved_changes": []}
+    path.write_text(json.dumps({**record, **overrides}))
+    return path
+
+
+@pytest.fixture(autouse=True)
+def review(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    path = tmp_path_factory.mktemp("review") / "review.json"
+    monkeypatch.setattr(core, "VENDOR_REVIEW_PATH", path)
+    return write_review(path)
+
+
 @pytest.fixture
-def window(monkeypatch: pytest.MonkeyPatch) -> None:
+def window(monkeypatch: pytest.MonkeyPatch, review: Path) -> None:
     monkeypatch.setattr(core, "ANCHOR", "2024-12-02")
     monkeypatch.setattr(core, "LAST", "2024-12-03")
+    write_review(review)
 
 
 def test_complete_pagination_hashes_every_page_and_keeps_parameters() -> None:
@@ -207,6 +222,19 @@ REVERSE_SPLIT = {
     "new_rate": 1,
     "ex_date": "2024-12-03",
     "process_date": "2024-12-03",
+}
+CAPITAL_GAIN = {
+    "id": "98c905a1-08c7-450c-8669-b8e7aee8b44d",
+    "symbol": "SPY",
+    "cusip": "000000000",
+    "isin": "US0000000000",
+    "ex_date": "2024-12-20",
+    "record_date": "2024-12-23",
+    "payable_date": "2024-12-31",
+    "process_date": "2024-12-30",
+    "long_term_rate": 0.25,
+    "short_term_rate": 0.05,
+    "currency": "USD",
 }
 REORGANIZATION = {
     "symbol": "SPY",
@@ -472,3 +500,105 @@ def test_collect_without_credentials_refuses_before_any_request(
     script = load_script()
     assert script.main(["collect", "--output-dir", str(offline / "c")]) == 2
     assert "credentials_missing" in capsys.readouterr().err
+
+
+def test_capital_gain_legs_are_validated_and_persisted() -> None:
+    records, _ = data.parse_page(
+        "corporate_actions", actions_page({"capital_gains_distributions": [CAPITAL_GAIN]})
+    )
+    assert records == [
+        {
+            "group": "capital_gains_distributions",
+            "symbol": "SPY",
+            "ex_date": "2024-12-20",
+            "process_date": "2024-12-30",
+            "long_term_rate": 0.25,
+            "short_term_rate": 0.05,
+            "currency": "USD",
+        }
+    ]
+    single = {k: v for k, v in CAPITAL_GAIN.items() if k != "long_term_rate"}
+    records, _ = data.parse_page(
+        "corporate_actions", actions_page({"capital_gains_distributions": [single]})
+    )
+    assert "long_term_rate" not in records[0] and records[0]["short_term_rate"] == 0.05
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        {k: v for k, v in CAPITAL_GAIN.items() if not k.endswith("_rate")},  # neither leg
+        {**CAPITAL_GAIN, "long_term_rate": "0.25"},
+        {**CAPITAL_GAIN, "short_term_rate": True},
+        {**CAPITAL_GAIN, "short_term_rate": None, "long_term_rate": None},
+        {**CAPITAL_GAIN, "currency": UNSAFE},
+    ],
+)
+def test_invalid_capital_gain_is_a_fixed_schema_error(row: dict) -> None:
+    with pytest.raises(data.SchemaError) as error:
+        data.parse_page("corporate_actions", actions_page({"capital_gains_distributions": [row]}))
+    assert str(error.value) == ""
+
+
+BAD_REVIEWS = [
+    (None, "vendor_review_missing"),
+    ("{", "vendor_review_malformed"),
+    ({"status": "pending"}, "vendor_review_not_reviewed"),
+    (
+        {"known_unresolved_changes": ["documented raw-basis change"]},
+        "vendor_review_stop:documented_adjustment_change",
+    ),
+    ({"protocol_sha256": "0" * 64}, "vendor_review_binding_mismatch"),
+]
+
+
+@pytest.mark.parametrize(("content", "reason"), BAD_REVIEWS)
+def test_bad_review_refuses_collection_before_any_request_or_write(
+    window: None, tmp_path: Path, review: Path, content: object, reason: str
+) -> None:
+    if content is None:
+        review.unlink()
+    elif isinstance(content, str):
+        review.write_text(content)
+    else:
+        write_review(review, **content)
+    session = Session([])
+    with pytest.raises(ValueError, match=f"^{reason}$"):
+        data.run_collection(tmp_path / "c", session=session)
+    assert session.calls == [] and not (tmp_path / "c").exists()
+
+
+def test_resume_refuses_changed_runtime_or_review(
+    window: None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, review: Path
+) -> None:
+    clock = Clock()
+    data.run_collection(
+        tmp_path,
+        session=Session(vendor_responses()[:1] + [Response({}, 401)]),
+        clock=clock.monotonic,
+        sleep=clock.sleep,
+    )
+    write_review(review, reviewed_on="2026-10-26")  # still valid, different bytes
+    with pytest.raises(ValueError, match="resume_manifest_mismatch"):
+        data.run_collection(tmp_path, session=Session([]))
+    write_review(review)
+    changed = {**core.runtime_versions(), "statsmodels": "0.0.0-changed"}
+    monkeypatch.setattr(core, "runtime_versions", lambda: changed)
+    with pytest.raises(ValueError, match="resume_manifest_mismatch"):
+        data.run_collection(tmp_path, session=Session([]))
+
+
+@pytest.mark.parametrize("payload", ["[]", "null", "5"])
+def test_unrecorded_non_object_chunk_on_resume_is_refused_not_a_crash(
+    window: None, tmp_path: Path, payload: str
+) -> None:
+    clock = Clock()
+    data.run_collection(
+        tmp_path,
+        session=Session([Response({}, 401)]),
+        clock=clock.monotonic,
+        sleep=clock.sleep,
+    )
+    core.chunk_path(tmp_path, "calendar").write_text(payload)
+    with pytest.raises(ValueError, match="unrecorded_chunk_invalid:calendar"):
+        data.run_collection(tmp_path, session=Session([]))

@@ -3,7 +3,11 @@
 Schema and public interface (all versions are 1):
 
 - ``build_manifest() -> dict``: the frozen input request manifest, derived from the protocol
-  constants alone (official calendar, raw SIP minute bars, raw SIP daily bars, corporate actions).
+  constants alone (official calendar, raw SIP minute bars, raw SIP daily bars, corporate actions),
+  bound before any request to the protocol, code, vendor-review and runtime identities.
+- ``vendor_review_sha256() -> str``: the hash of the local, reviewed vendor-adjustment record at
+  ``VENDOR_REVIEW_PATH``; refuses (ValueError) if it is missing, malformed, unbound, pending or
+  lists a known unresolved change (the r8 documented-adjustment-change stop).
 - Storage (written by ``intraday_momentum_data``): ``manifest.json``, ``progress.json`` and one
   write-once ``chunks/<id>.json`` per *completely paginated* logical request.
 - ``load_dataset(directory) -> dict``: rehash every stored file into the dataset schema
@@ -53,6 +57,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 PROTOCOL_PATH = PROJECT_ROOT / "docs/research/briefs/2026-10-25-intraday-feasibility-r8.md"
 # SHA256 of the whole approved r8 file; any edit must be a deliberate, re-approved code change.
 PROTOCOL_SHA256 = "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85"
+# Bounded human review of documented vendor adjustment changes (r8 D4.3). Local, non-price
+# evidence: it cannot prove that no undocumented change exists.
+VENDOR_REVIEW_PATH = (
+    PROJECT_ROOT / "docs/research/_intraday_r8_vendor_adjustment_review_2026-10-25.json"
+)
+VENDOR_REVIEW_SCHEMA = "intraday_r8_vendor_adjustment_review"
 CODE_FILES = (
     "src/ggTrader/lab/intraday_momentum.py",
     "src/ggTrader/lab/intraday_momentum_data.py",
@@ -98,6 +108,13 @@ ACTION_EFFECTIVE_DATE = {
     "unit_splits": "effective_date",
     "worthless_removals": None,
 }
+# Cash distributions valued by the total-return benchmark and ex-distribution diagnostic: the
+# payout per share is the sum of the documented legs present (capital gains need at least one).
+CASH_PAYOUT_FIELDS = {
+    "cash_dividends": ("rate",),
+    "capital_gains_distributions": ("long_term_rate", "short_term_rate"),
+}
+PAYOUT_PREFIX = {"cash_dividends": "dividend", "capital_gains_distributions": "capital_gain"}
 # The r8 D4.3 automatic stop covers SPY splits; every other non-cash type is unsupported by the
 # benchmark/ex-dividend valuator, which is a separate, honestly labelled UNRESOLVED reason.
 SPLIT_GROUPS = frozenset({"forward_splits", "reverse_splits", "unit_splits"})
@@ -117,7 +134,17 @@ ANCILLARY_COVERAGE = {
     "corporate_actions": (
         "One all-types SPY request, process_date filtered from anchor-31d to last+31d "
         "(default data_quality=complete). Actions are placed by their documented ex_date or "
-        "effective_date, never by process_date; undated non-dividend SPY actions are UNRESOLVED."
+        "effective_date, never by process_date. Cash dividends and capital-gains distributions "
+        "(sum of the long/short-term legs provided) are reinvested by the benchmark and "
+        "flattened by the ex-distribution diagnostic; same-date payouts of the two types add. "
+        "A same-ticker name change (old and new symbol both SPY) changes no valuation and is "
+        "counted as non-gating metadata. Other non-cash SPY actions that cannot be placed, or "
+        "that take effect in the window, are UNRESOLVED as unsupported valuations."
+    ),
+    "vendor_adjustment_review": (
+        "Collection, PASS and scoring require the hash-bound local review record at "
+        "VENDOR_REVIEW_PATH (status reviewed, SPY, window and protocol hash bound, no known "
+        "unresolved changes); its SHA256 is in the manifest and the validation identities."
     ),
     "dividend_quarter_presence": (
         "Every window quarter must show a cash-dividend ex-date (SPY pays quarterly per its "
@@ -128,8 +155,13 @@ ANCILLARY_COVERAGE = {
         "31-day process_date margin is not a completeness bound.",
         "Quarter presence cannot prove that every historical action was returned; an absent "
         "split in the response is not certified absence.",
-        "Vendor adjustment changes have no machine-readable feed and cannot be confirmed by raw "
-        "requests; only a documented change can trigger that r8 stop.",
+        "Vendor adjustment changes have no machine-readable feed. The review record is a "
+        "bounded human documentation review; it does not prove that no undocumented change "
+        "exists.",
+        "A cash payout with a missing or empty currency is assumed to be USD (the vendor "
+        "documents empty as USD, n/a or unknown); SPY is a USD fund and the payout feeds only "
+        "the non-gating benchmark diagnostic. Such records are counted; any other currency is "
+        "UNRESOLVED, never converted.",
     ],
 }
 
@@ -200,6 +232,40 @@ def runtime_versions() -> dict:
         "requests": requests.__version__,
         "pandas_market_calendars": mcal.__version__,
     }
+
+
+def vendor_review_binding() -> dict:
+    """Fields the review record must carry exactly: the study it reviewed, without prices."""
+    return {
+        "schema": VENDOR_REVIEW_SCHEMA,
+        "version": 1,
+        "symbol": "SPY",
+        "window": {"anchor": ANCHOR, "end": LAST},
+        "protocol_sha256": PROTOCOL_SHA256,
+        "market_data_requested": False,
+        "candidate_prices_or_returns_inspected": False,
+    }
+
+
+def vendor_review_sha256() -> str:
+    """Hash the reviewed vendor-adjustment record, refusing anything short of a clean review."""
+    try:
+        raw = VENDOR_REVIEW_PATH.read_bytes()
+    except OSError:
+        raise ValueError("vendor_review_missing") from None
+    try:
+        record = json.loads(raw)
+    except ValueError:
+        raise ValueError("vendor_review_malformed") from None
+    if not isinstance(record, dict) or not isinstance(record.get("known_unresolved_changes"), list):
+        raise ValueError("vendor_review_malformed")
+    if any(record.get(key) != value for key, value in vendor_review_binding().items()):
+        raise ValueError("vendor_review_binding_mismatch")
+    if record.get("status") != "reviewed":
+        raise ValueError("vendor_review_not_reviewed")
+    if record["known_unresolved_changes"]:
+        raise ValueError("vendor_review_stop:documented_adjustment_change")
+    return hashlib.sha256(raw).hexdigest()
 
 
 def chunk_path(directory: Path, request_id: str) -> Path:
@@ -274,6 +340,8 @@ def build_manifest() -> dict:
         "version": 1,
         "protocol_sha256": protocol_sha256(),
         "code_sha256": code_sha256(),
+        "vendor_review_sha256": vendor_review_sha256(),
+        "runtime": runtime_versions(),
         "window": {"anchor": ANCHOR, "last": LAST},
         "requests": requests_,
     }
@@ -300,10 +368,13 @@ def load_dataset(directory: Path) -> dict:
         if recorded.get(spec["id"]) != hashes[spec["id"]]:
             defects.append(f"chunk_hash_mismatch:{spec['id']}")
         try:
-            chunks[spec["id"]] = json.loads(path.read_text())
+            chunk = json.loads(path.read_text())
         except ValueError:
-            chunks[spec["id"]] = None
+            chunk = None
+        if not isinstance(chunk, dict):  # never echo a corrupt payload
+            chunk = None
             defects.append(f"chunk_unreadable:{spec['id']}")
+        chunks[spec["id"]] = chunk
     manifest_hash = canonical_hash(manifest)
     return {
         "schema": SCHEMAS["dataset"],
@@ -415,11 +486,10 @@ def _match_offline_schedule(rows: Any, defects: list[str]) -> dict:
     return evidence
 
 
-def _provenance(dataset: dict, defects: list[str]) -> dict:
+def _provenance(dataset: dict, expected: dict | None, defects: list[str]) -> dict:
     """Require the exact frozen manifest and a complete chunk for every request."""
     manifest = dataset["manifest"]
-    expected = build_manifest()
-    if canonical_hash(manifest) != canonical_hash(expected):
+    if expected is not None and canonical_hash(manifest) != canonical_hash(expected):
         defects.append("provenance:manifest_not_frozen_protocol_manifest")
     defects.extend(dataset.get("integrity_defects", []))
     good = {}
@@ -435,8 +505,11 @@ def _provenance(dataset: dict, defects: list[str]) -> dict:
             or chunk.get("kind") != spec["kind"]
             or chunk.get("endpoint") != spec["endpoint"]
             or chunk.get("parameters") != spec["parameters"]
-            or not chunk.get("pages")
-            or not all(page.get("body_sha256") for page in chunk["pages"])
+            or not isinstance(chunk.get("pages"), list)
+            or not chunk["pages"]
+            or not all(
+                isinstance(page, dict) and page.get("body_sha256") for page in chunk["pages"]
+            )
             or not isinstance(chunk.get("records"), list)
         ):
             defects.append(f"provenance_invalid:{spec['id']}")
@@ -466,13 +539,15 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
     """Return (score inputs or None, validation report). Never computes a signal or return."""
     defects: list[str] = []
     try:
-        if dataset["manifest"].get("protocol_sha256") != protocol_sha256():
-            defects.append("identity:manifest_protocol_mismatch")
-        if dataset["manifest"].get("code_sha256") != code_sha256():
-            defects.append("identity:manifest_code_mismatch")
-    except ValueError as error:
+        expected = build_manifest()
+    except ValueError as error:  # protocol hash or vendor-review refusal
+        expected = None
         defects.append(f"identity:{error}")
-    chunks = _provenance(dataset, defects)
+    for key in ("protocol", "code", "vendor_review", "runtime"):
+        field = key if key == "runtime" else f"{key}_sha256"
+        if expected is not None and dataset["manifest"].get(field) != expected[field]:
+            defects.append(f"identity:manifest_{key}_mismatch")
+    chunks = _provenance(dataset, expected, defects)
     calendar_chunk = chunks.get("calendar")
     calendar_rows = calendar_chunk["records"] if calendar_chunk else None
     sessions = _calendar(calendar_rows, defects)
@@ -554,7 +629,9 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
             gaps[row["date"]] = missing
 
     daily = _daily_closes(chunks.get("daily_bars"), session_days, defects)
-    dividends = _corporate_actions(chunks.get("corporate_actions"), session_days, defects)
+    distributions, action_counts = _corporate_actions(
+        chunks.get("corporate_actions"), session_days, defects
+    )
 
     counts = {
         "calendar_sessions": len(sessions),
@@ -562,7 +639,7 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
         "scored_sessions": len(scored),
         "minute_bars": len(minute_rows),
         "daily_bars": len(daily),
-        "cash_dividends_in_window": len(dividends),
+        **action_counts,
         "chunks_complete": len(chunks),
         "chunks_expected": len(dataset["manifest"].get("requests", [])),
     }
@@ -593,7 +670,7 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
         "closes": closes,
         "half_days": [row["date"] for row in sessions if row["half"]],
         "daily_closes": daily,
-        "dividends": dividends,
+        "distributions": distributions,
     }
     return inputs, report
 
@@ -629,8 +706,8 @@ def _daily_closes(chunk: dict | None, session_days: dict, defects: list[str]) ->
 def action_record(group: Any, row: Any) -> dict:
     """Validate one official corporate-action record and keep only what the study needs.
 
-    Retains symbol aliases, documented dates and, for cash dividends, the numeric rate and
-    currency. Unknown groups and malformed values raise a message-free SchemaError, so no
+    Retains symbol aliases, documented dates and, for cash payouts, the numeric legs present and
+    the currency. Unknown groups and malformed values raise a message-free SchemaError, so no
     provider string reaches an artifact. The result revalidates to itself.
     """
     if group not in ACTION_EFFECTIVE_DATE or not isinstance(row, dict):
@@ -655,11 +732,15 @@ def action_record(group: Any, row: Any) -> dict:
     for field in DATE_FIELDS:
         if row.get(field) is not None:
             record[field] = valid_date(row[field])
-    if group == "cash_dividends":
-        rate, currency = row.get("rate"), row.get("currency")
-        if isinstance(rate, bool) or not isinstance(rate, (int, float)) or not math.isfinite(rate):
+    if group in CASH_PAYOUT_FIELDS:
+        legs = {f: row[f] for f in CASH_PAYOUT_FIELDS[group] if row.get(f) is not None}
+        if not legs or any(
+            isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
+            for v in legs.values()
+        ):
             raise SchemaError()
-        record["rate"] = rate
+        record.update(legs)
+        currency = row.get("currency")
         if currency is not None:
             if not isinstance(currency, str) or not CURRENCY.match(currency):
                 raise SchemaError()
@@ -672,19 +753,37 @@ def _action_symbols(record: dict) -> set[str]:
     return symbols | {m["symbol"] for m in record.get("stock_movements", [])}
 
 
-def _corporate_actions(chunk: dict | None, session_days: dict, defects: list[str]) -> dict:
-    """Dividends for the benchmark/ex-div diagnostics; classify every other SPY action.
+def _same_ticker_name_change(group: str, record: dict) -> bool:
+    """A name change that keeps the SPY ticker changes no valuation; anything else might."""
+    return (
+        group == "name_changes"
+        and record.get("old_symbol") == record.get("new_symbol") == "SPY"
+        and _action_symbols(record) == {"SPY"}
+    )
 
-    Actions are placed by their type's documented ex_date/effective_date, never process_date, so
-    one processed outside the window still counts if it took effect inside it. An in-window SPY
-    split is the r8 automatic stop. Any other in-window, or unplaceable, non-cash action is
+
+def _corporate_actions(
+    chunk: dict | None, session_days: dict, defects: list[str]
+) -> tuple[dict, dict]:
+    """Cash distributions for the benchmark/ex-div diagnostics; classify every other SPY action.
+
+    Returns (distributions by ex-date, counts). Actions are placed by their type's documented
+    ex_date/effective_date, never process_date, so one processed outside the window still counts
+    if it took effect inside it. An in-window SPY split is the r8 automatic stop. A same-ticker
+    SPY name change is counted metadata. Any other in-window, or unplaceable, non-cash action is
     UNRESOLVED because the valuator does not implement it, not because it is evidence of a split.
-    The quarter-presence rule is a coverage sanity check; it does not certify that no action is
-    missing from the response.
+    The quarter-presence rule uses cash dividends only; it is a coverage sanity check and does
+    not certify that no action is missing from the response.
     """
+    counts = {
+        "cash_dividends_in_window": 0,
+        "capital_gains_distributions_in_window": 0,
+        "same_ticker_name_changes_non_gating": 0,
+        "cash_payouts_currency_assumed_usd": 0,
+    }
     if chunk is None:
-        return {}
-    dividends = {}
+        return {}, counts
+    payouts: dict[str, dict[str, float]] = {group: {} for group in CASH_PAYOUT_FIELDS}
     for index, row in enumerate(chunk["records"]):
         group = row.get("group") if isinstance(row, dict) else None
         try:
@@ -698,56 +797,80 @@ def _corporate_actions(chunk: dict | None, session_days: dict, defects: list[str
         if "SPY" not in _action_symbols(record):
             defects.append(f"corporate_action_unrelated_symbol:{index}")
             continue
+        if _same_ticker_name_change(group, record):
+            counts["same_ticker_name_changes_non_gating"] += 1
+            continue
         field = ACTION_EFFECTIVE_DATE[group]
         day = record.get(field) if field else None
+        prefix = PAYOUT_PREFIX.get(group)
         if day is None:
             defects.append(
-                f"dividend_missing_ex_date:{index}"
-                if group == "cash_dividends"
-                else f"corporate_action_undated:{group}:{index}"
+                f"{prefix}_missing_ex_date:{index}"
+                if prefix
+                else f"corporate_action_unsupported_undated:{group}:{index}"
             )
             continue
         if not ANCHOR <= day <= LAST:
             continue
         if group in SPLIT_GROUPS:
             defects.append(f"corporate_action_stop:split:{group}:{day}")
-        elif group != "cash_dividends":
+            continue
+        if not prefix:
             defects.append(f"corporate_action_unsupported:{group}:{day}")
-        elif not _price(record["rate"]):
-            defects.append(f"dividend_invalid_rate:{day}")
+            continue
+        legs = [record[f] for f in CASH_PAYOUT_FIELDS[group] if f in record]
+        if not all(leg == 0 or _price(leg) for leg in legs) or not _price(sum(legs)):
+            defects.append(f"{prefix}_invalid_rate:{day}")
         elif record.get("currency", "") not in ("", "USD"):
-            defects.append(f"dividend_currency_not_usd:{day}")
+            defects.append(f"{prefix}_currency_not_usd:{day}")
         elif day not in session_days:
-            defects.append(f"dividend_ex_date_not_session:{day}")
-        elif day in dividends:
-            defects.append(f"dividend_duplicate_ex_date:{day}")
-        elif day != ANCHOR:
-            dividends[day] = float(record["rate"])
+            defects.append(f"{prefix}_ex_date_not_session:{day}")
+        elif day in payouts[group]:
+            defects.append(f"{prefix}_duplicate_ex_date:{day}")
+        elif day != ANCHOR:  # bought at the anchor close, after the ex-date repricing
+            payouts[group][day] = float(sum(legs))
+            counts[f"{group}_in_window"] += 1
+            counts["cash_payouts_currency_assumed_usd"] += record.get("currency", "") == ""
     first, last = date.fromisoformat(ANCHOR), date.fromisoformat(LAST)
     covered = {
         (date.fromisoformat(day).year, (date.fromisoformat(day).month - 1) // 3)
-        for day in dividends
+        for day in payouts["cash_dividends"]
     }
     year, quarter = first.year, (first.month - 1) // 3
     while (year, quarter) <= (last.year, (last.month - 1) // 3):
         if (year, quarter) not in covered:
             defects.append(f"dividend_coverage_missing:{year}Q{quarter + 1}")
         year, quarter = (year + 1, 0) if quarter == 3 else (year, quarter + 1)
-    return dividends
+    distributions: dict[str, float] = defaultdict(float)
+    for group_payouts in payouts.values():
+        for day, amount in group_payouts.items():
+            distributions[day] += amount
+    return dict(sorted(distributions.items())), counts
+
+
+def _identities(dataset: dict) -> dict:
+    """Fresh protocol, code, vendor-review, runtime and data identities (review None if refused)."""
+    try:
+        review = vendor_review_sha256()
+    except ValueError:
+        review = None  # extract() already records the refusal as a defect
+    return {
+        "protocol_sha256": PROTOCOL_SHA256,
+        "code_sha256": code_sha256(),
+        "vendor_review_sha256": review,
+        "runtime": runtime_versions(),
+        **dataset["identities"],
+    }
 
 
 def validate_dataset(dataset: dict) -> dict:
-    """Signal-blind validation report with the data identities it was computed on."""
+    """Signal-blind validation report with the identities it was computed on."""
     report = extract(dataset)[1]
     return {
         "schema": SCHEMAS["validation"],
         "version": 1,
         **report,
-        "identities": {
-            "protocol_sha256": PROTOCOL_SHA256,
-            "code_sha256": code_sha256(),
-            **dataset["identities"],
-        },
+        "identities": _identities(dataset),
     }
 
 
@@ -825,7 +948,7 @@ def cagr(wealth_end: float) -> float | None:
     return wealth_end ** (1 / registered_years()) - 1
 
 
-def benchmark(closes: dict, dividends: dict) -> dict:
+def benchmark(closes: dict, distributions: dict) -> dict:
     """SPY with distributions reinvested at the ex-date session close, on the sleeve's prices.
 
     Starts at the anchor close-bar and ends at the last session's close-bar; no tax.
@@ -833,10 +956,14 @@ def benchmark(closes: dict, dividends: dict) -> dict:
     days = sorted(closes)
     units = 1.0 / closes[days[0]]
     for day in days[1:]:
-        if day in dividends:
-            units *= 1 + dividends[day] / closes[day]
+        if day in distributions:
+            units *= 1 + distributions[day] / closes[day]
     wealth = units * closes[days[-1]]
-    return {"wealth_end": wealth, "cagr": cagr(wealth), "dividends_reinvested": len(dividends)}
+    return {
+        "wealth_end": wealth,
+        "cagr": cagr(wealth),
+        "distribution_dates_reinvested": len(distributions),
+    }
 
 
 def _summary(dates: list[str], s: np.ndarray) -> dict:
@@ -954,7 +1081,7 @@ def score_inputs(inputs: dict) -> dict:
 
     def exdiv_flat() -> dict:
         flat = s.copy()
-        flat[np.array([d in inputs["dividends"] for d in dates])] = 0.0
+        flat[np.array([d in inputs["distributions"] for d in dates])] = 0.0
         summary = _summary(dates, flat)
         summary.pop("annual_tax_ledger")
         return summary
@@ -966,7 +1093,7 @@ def score_inputs(inputs: dict) -> dict:
         return summary
 
     def displacement() -> dict:
-        spy = benchmark(inputs["closes"], inputs["dividends"])
+        spy = benchmark(inputs["closes"], inputs["distributions"])
         return {
             **spy,
             "sleeve_after_tax_cagr": primary["after_tax_cagr"],
@@ -1050,14 +1177,18 @@ ASSUMPTIONS = [
     "24% of each calendar year's positive net realized P&L debited after its last session; "
     "no loss benefit or carryforward; terminal partial year taxed at the end.",
     "CAGR = (W_end/W_0)^(1/y) - 1, y = days(anchor -> last)/365.25.",
-    "SPY benchmark: same close-bar prices from the anchor, distributions reinvested at the "
-    "ex-date session close, no tax.",
+    "SPY benchmark: same close-bar prices from the anchor, cash distributions (dividends plus "
+    "capital-gains legs provided, summed per ex-date) reinvested at the ex-date session close, "
+    "no tax; the ex-dividend-flat diagnostic zeroes every cash-distribution ex-date.",
+    "A cash payout with a missing or empty currency is assumed USD (vendor: USD, n/a or "
+    "unknown); the count is in the validation counts. Other currencies are UNRESOLVED.",
     "Losing streak counts consecutive losing traded sessions; flat sessions are skipped.",
     "Worst month and drawdown use the pre-tax base-cost sleeve.",
     "Hit rate is the share of traded sessions with a positive net return.",
-    "No in-window SPY split or unsupported action appeared in the corporate-actions response; "
-    "that response is not certified complete, and vendor adjustment changes cannot be confirmed "
-    "from raw requests (see the validation artifact's ancillary_coverage).",
+    "No in-window SPY split or unsupported action appeared in the corporate-actions response "
+    "(same-ticker SPY name changes are counted metadata); that response is not certified "
+    "complete. The vendor-adjustment review is a bounded documentation review bound by hash, "
+    "not proof that no undocumented change exists (see ancillary_coverage).",
 ]
 
 
@@ -1071,7 +1202,6 @@ def run_validation(directory: Path, output: Path) -> dict:
         raise FileExistsError("validation_already_exists")
     result = {
         **validate_dataset(load_dataset(directory)),
-        "runtime": runtime_versions(),
         "run_utc": datetime.now(UTC).isoformat(),
     }
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -1110,18 +1240,11 @@ def run_score(directory: Path, validation_path: Path, output: Path) -> dict:
     if validation.get("status") != "PASS" or validation.get("schema") != SCHEMAS["validation"]:
         raise ValueError("validation_not_pass")
     protocol_sha256()
+    vendor_review_sha256()  # surfaces the specific refusal, e.g. a documented adjustment change
     dataset = load_dataset(directory)
     inputs, report = extract(dataset)
-    fresh = {
-        "schema": SCHEMAS["validation"],
-        "version": 1,
-        **report,
-        "identities": {
-            "protocol_sha256": PROTOCOL_SHA256,
-            "code_sha256": code_sha256(),
-            **dataset["identities"],
-        },
-    }
+    fresh = {"schema": SCHEMAS["validation"], "version": 1, **report}
+    fresh["identities"] = _identities(dataset)
     if any(validation.get(key) != fresh[key] for key in VALIDATION_KEYS) or inputs is None:
         raise ValueError("validation_identity_mismatch")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -1147,7 +1270,6 @@ def run_score(directory: Path, validation_path: Path, output: Path) -> dict:
         "label": LABEL,
         "identities": fresh["identities"],
         "validation_sha256": validation_sha256,
-        "runtime": runtime_versions(),
         "run_utc": datetime.now(UTC).isoformat(),
         **score_inputs(inputs),
     }

@@ -277,8 +277,15 @@ def _collect(output_dir: Path, collector: Collector) -> dict:
         actual = core.file_sha256(path)
         if recorded is None:
             # A crash between the chunk link and the checkpoint: adopt it only if it is ours.
-            stored = json.loads(path.read_text())
-            if stored.get("parameters") != spec["parameters"] or stored.get("complete") is not True:
+            try:
+                stored = json.loads(path.read_text())
+            except ValueError:
+                stored = None
+            if (
+                not isinstance(stored, dict)
+                or stored.get("parameters") != spec["parameters"]
+                or stored.get("complete") is not True
+            ):
                 raise ValueError(f"unrecorded_chunk_invalid:{spec['id']}")
             progress["chunks"][spec["id"]] = actual
         elif recorded != actual:
