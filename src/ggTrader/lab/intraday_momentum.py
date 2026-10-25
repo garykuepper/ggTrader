@@ -959,9 +959,12 @@ def benchmark(closes: dict, distributions: dict) -> dict:
         if day in distributions:
             units *= 1 + distributions[day] / closes[day]
     wealth = units * closes[days[-1]]
+    growth = cagr(wealth)
+    if not math.isfinite(wealth) or wealth <= 0 or growth is None or not math.isfinite(growth):
+        raise ValueError("invalid_benchmark_wealth_or_cagr")
     return {
         "wealth_end": wealth,
-        "cagr": cagr(wealth),
+        "cagr": growth,
         "distribution_dates_reinvested": len(distributions),
     }
 
@@ -1039,7 +1042,7 @@ def _verdict(a1_t: float | None, a2_pass: bool) -> str:
 
 
 def score_inputs(inputs: dict) -> dict:
-    """Score the registered rule at base cost; stress and diagnostics never change the verdict."""
+    """Score at base cost; diagnostic performance is non-gating, but failed computations surface."""
     dates = inputs["dates"]
     legs = [inputs[key] for key in ("prior_close", "p0959", "p1530", "p1559")]
     base = strategy_returns(*legs, BASE_COST)
@@ -1052,7 +1055,10 @@ def score_inputs(inputs: dict) -> dict:
 
     def diagnostic(name: str, compute: Any) -> None:
         try:
-            diagnostics[name] = compute()
+            value = compute()
+            # Reject non-finite results before _json_safe can erase them; None stays undefined.
+            json.dumps(value, allow_nan=False, default=lambda scalar: scalar.item())
+            diagnostics[name] = value
         except Exception as error:  # a failed mandatory diagnostic is surfaced, never hidden
             errors.append(f"{name}:{type(error).__name__}")
 

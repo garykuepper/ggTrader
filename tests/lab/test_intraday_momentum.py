@@ -283,6 +283,95 @@ def test_benchmark_reinvests_distributions_on_aligned_closes() -> None:
     assert result["wealth_end"] == pytest.approx(121 / 100 * (1 + 1 / 110))
 
 
+def test_benchmark_underflow_cannot_report_nonpositive_wealth() -> None:
+    with pytest.raises(ValueError, match="invalid_benchmark_wealth_or_cagr"):
+        core.benchmark({"a": 1e308, "b": 1e-308}, {})
+
+
+def test_validated_benchmark_overflow_is_a_named_failure_in_the_written_score(
+    tmp_path: Path,
+) -> None:
+    calendar = core.offline_schedule(core.ANCHOR, core.LAST)
+    rows, closes, quarters = [], {}, {}
+    scored = 0
+    for session in calendar:
+        day = session["date"]
+        close = 100.0
+        if day != core.ANCHOR and session["close"] == "16:00":
+            close *= 1 + (3.6 if scored % 2 else 5.6) * 1e-4
+            rows.extend([bar(day, "09:59", 101.0), bar(day, "15:30", 100.0)])
+            scored += 1
+        clock = "12:59" if session["close"] == "13:00" else "15:59"
+        rows.append(bar(day, clock, close))
+        closes[day] = close
+        if day != core.ANCHOR:
+            quarters.setdefault((day[:4], (int(day[5:7]) - 1) // 3), day)
+    # All individual payouts and endpoints are finite and positive; only reinvestment overflows.
+    actions = [
+        {"group": "cash_dividends", "symbol": "SPY", "ex_date": day, "rate": 1e10}
+        for day in quarters.values()
+    ]
+    directory = write_collection(
+        tmp_path / "collection", calendar=calendar, bars=rows, daily=closes, actions=actions
+    )
+    validation = tmp_path / "validation.json"
+    report = core.run_validation(directory, validation)
+    assert report["status"] == "PASS", report["defects"]
+    assert scored == 2679 and len(actions) == 43
+    output = tmp_path / "score.json"
+    core.run_score(directory, validation, output)
+    result = json.loads(output.read_text())
+    assert result["a1"]["status"] == result["a2"]["status"] == "PASS"
+    assert result["verdict"] == "UNRESOLVED_DIAGNOSTICS"
+    assert result["diagnostic_errors"] == ["spy_displacement:ValueError"]
+    assert "spy_displacement" not in result["diagnostics"]
+
+
+def test_nonfinite_computed_diagnostic_is_not_silently_serialized_as_null() -> None:
+    inputs = synthetic_inputs(4.6)
+    inputs["daily_closes"] = {day: 1e-308 for day in inputs["closes"]}
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = core.score_inputs(inputs)
+    serialized = json.loads(json.dumps(core._json_safe(result), allow_nan=False))
+    assert serialized["verdict"] == "UNRESOLVED_DIAGNOSTICS"
+    assert serialized["diagnostic_errors"] == ["close_convention_comparison:ValueError"]
+    assert "close_convention_comparison" not in serialized["diagnostics"]
+
+
+def test_legitimately_undefined_diagnostics_preserve_otherwise_valid_results() -> None:
+    inputs = synthetic_inputs(4.6)
+    # A constant trade indicator makes beta undefined without invalidating the benchmark.
+    result = core.score_inputs(inputs)
+    assert result["verdict"] == "GO" and result["diagnostic_errors"] == []
+    assert result["diagnostics"]["attribution"]["beta1"] is None
+    assert result["diagnostics"]["attribution"]["beta1_nw5_t"] is None
+    for period in result["diagnostics"]["subperiods"].values():
+        if not period["sessions"]:
+            assert period["mean_bp"] is period["nw5_t"] is period["hit_rate"] is None
+
+    inputs["p0959"] = [99.0] * len(inputs["dates"])
+    flat = core.score_inputs(inputs)
+    assert flat["verdict"] == "UNRESOLVED_STATISTICAL" and flat["diagnostic_errors"] == []
+    assert all(t is None for t in flat["diagnostics"]["nw_lags"].values())
+    assert flat["diagnostics"]["conditional_on_trading_mean_bp"] is None
+
+
+def test_finite_numpy_diagnostic_scalars_are_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
+    original = core._close_comparison
+
+    def numpy_scalars(*args: object) -> dict:
+        result = original(*args)
+        result["sessions"] = np.int64(result["sessions"])
+        result["mean_signed_bp"] = np.float32(result["mean_signed_bp"])
+        return result
+
+    monkeypatch.setattr(core, "_close_comparison", numpy_scalars)
+    result = core.score_inputs(synthetic_inputs(4.6))
+    assert result["verdict"] == "GO" and result["diagnostic_errors"] == []
+    serialized = json.loads(json.dumps(core._json_safe(result), allow_nan=False))
+    assert serialized["diagnostics"]["close_convention_comparison"]["sessions"] == 2000
+
+
 # --- signal-blind validation -------------------------------------------------------------------
 
 
