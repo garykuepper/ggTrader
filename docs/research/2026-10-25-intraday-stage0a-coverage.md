@@ -64,7 +64,13 @@ both passed without findings. The 38 focused mocked tests passed. Repository
 Ruff check and format-check passed. The parent independently checked all 91
 request records, the manifest/document hashes, planned request set, successful
 pagination, and deep price/token/credential exclusion in the actual artifact.
-Full-suite and final branch-review results are recorded below when complete.
+The full capped suite passed: **1,458 passed, 30 deselected**, in 313.49s.
+One `websockets.legacy` dependency deprecation warning arose in the existing
+headline-sentiment test; it was not changed for this study. The final independent
+branch audit verified all 48 bar grids, the 91-request plan, document/manifest/artifact hashes and the deep metadata whitelist.
+Minimum observed request-start spacing was 0.650023 seconds, meeting the
+0.65-second floor. Both independent reviews found no Critical, Important or
+Minor issues.
 
 Three routine interpretations were fixed before the live run: the previous-close
 bar grid expects 15:59 and 16:00, with the inclusive 16:01 endpoint flagged
