@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-25
+
+- **Intraday paper-access follow-up.** Verified the author-linked final Gao
+  journal PDF and the Delgado/Demirev registry abstracts. Closed the final-paper
+  access gap; exact data mapping and replication full methods remain open.
+  Brief r7 preserves the proposed rules and pending approvals.
+  [Review](research/2026-10-24-intraday-trading-feasibility.md).
+
 ## 2026-10-24
 
 - **Intraday feasibility source verification.** Corrected the QQQ citation, SPY

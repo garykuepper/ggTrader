@@ -1,0 +1,182 @@
+{
+  "retrieved_at_utc": "2026-10-25T14:38:26.091698+00:00",
+  "lead": "User-supplied Perplexity full-text-access audit; expiring signed URL intentionally omitted.",
+  "sources": [
+    {
+      "id": "gao_final",
+      "url": "https://www.dropbox.com/s/wk5ap8hnvgdyudx/MarketIntradayMomentum.pdf?raw=1",
+      "author_provenance_url": "https://sites.google.com/site/szlwebpage",
+      "http_status": 200,
+      "bytes": 774235,
+      "sha256": "f689eefedd3c9de229dc3837fcf7a00ab383e9078783b84762a2f015e20d5fb2",
+      "pdf_pages": 21,
+      "review_scope": "Identity and relevant method/table sections; no raw-data reproduction"
+    },
+    {
+      "id": "gao_appendix",
+      "url": "https://guofuzhou.github.io/Appendix_IntraDay.pdf",
+      "author_provenance_url": "https://guofuzhou.github.io/zpublications.html",
+      "http_status": 200,
+      "bytes": 143168,
+      "sha256": "0028a31a22d4f4606ce8e0c1aa035ded0e6515d4ef353aea77eefcbf4452fa92",
+      "pdf_pages": 14,
+      "review_scope": "Identity and relevant method/table sections; no raw-data reproduction"
+    },
+    {
+      "id": "crossref_5325376",
+      "url": "https://api.crossref.org/works/10.2139/ssrn.5325376",
+      "http_status": 200,
+      "sha256": "3f5dcba3df31bd82fa8279992ccffe6d189a6c4dd37e1dc95e59a9c1e2b7c668",
+      "metadata": {
+        "DOI": "10.2139/ssrn.5325376",
+        "title": [
+          "\"Can Day Trading Really Be Profitable?\" -A Replication Study"
+        ],
+        "author": [
+          {
+            "given": "Steve",
+            "family": "Demirev",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "vocabulary": "crossref",
+                "role": "author"
+              }
+            ]
+          }
+        ],
+        "type": "posted-content",
+        "posted": {
+          "date-parts": [
+            [
+              2025
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2025,
+              6,
+              27
+            ]
+          ],
+          "date-time": "2025-06-27T12:42:36Z",
+          "timestamp": 1751028156000
+        },
+        "deposited": {
+          "date-parts": [
+            [
+              2026,
+              8,
+              14
+            ]
+          ],
+          "date-time": "2026-08-14T21:34:35Z",
+          "timestamp": 1786743275000
+        },
+        "resource": {
+          "primary": {
+            "URL": "https://www.ssrn.com/abstract=5325376"
+          }
+        }
+      },
+      "abstract_present": true,
+      "abstract_read": true,
+      "full_manuscript_obtained": false
+    },
+    {
+      "id": "crossref_7323419",
+      "url": "https://api.crossref.org/works/10.2139/ssrn.7323419",
+      "http_status": 200,
+      "sha256": "b65718e51de1c858b810d8daa8ff9487aa9836a869b145cd689c7fb4b3e65529",
+      "metadata": {
+        "DOI": "10.2139/ssrn.7323419",
+        "title": [
+          "\"Beat the Market\" Revisited An Independent Replication and Statistical Audit of an Intraday Momentum Strategy"
+        ],
+        "author": [
+          {
+            "given": "José Enrique",
+            "family": "Delgado",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "vocabulary": "crossref",
+                "role": "author"
+              }
+            ]
+          }
+        ],
+        "type": "posted-content",
+        "posted": {
+          "date-parts": [
+            [
+              2026
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2026,
+              8,
+              21
+            ]
+          ],
+          "date-time": "2026-08-21T10:28:28Z",
+          "timestamp": 1787308108000
+        },
+        "deposited": {
+          "date-parts": [
+            [
+              2026,
+              8,
+              21
+            ]
+          ],
+          "date-time": "2026-08-21T10:28:28Z",
+          "timestamp": 1787308108000
+        },
+        "resource": {
+          "primary": {
+            "URL": "https://www.ssrn.com/abstract=7323419"
+          }
+        }
+      },
+      "abstract_present": true,
+      "abstract_read": true,
+      "full_manuscript_obtained": false
+    }
+  ],
+  "gao_identity": {
+    "title": "Market intraday momentum",
+    "doi": "10.1016/j.jfineco.2018.05.009",
+    "journal": "Journal of Financial Economics",
+    "volume": 129,
+    "issue": 2,
+    "pages": "394–414",
+    "online_publication_date": "2018-05-25",
+    "received": "2017-06-20",
+    "revised": "2017-09-22",
+    "accepted": "2017-10-18"
+  },
+  "method_checks": {
+    "data_section": "§2, p396",
+    "trade_equation": "Eq5, p404",
+    "original_performance": "Table6, p404",
+    "cost_section": "§6.2, pp408–409; Table11",
+    "prior_close_anchor_confirmed": true,
+    "source_rule_long_short_confirmed": true,
+    "minute_endpoint_equivalence_established": false,
+    "dividend_adjustment_rule_established": false
+  },
+  "limitations": [
+    "Crossref deposit dates are not manuscript version dates",
+    "Delgado and Demirev full methods remain inaccessible",
+    "Public reading access is not redistribution permission; PDFs not copied into repository",
+    "No data probe, strategy-return computation, broker change or protocol approval"
+  ]
+}

@@ -1,6 +1,6 @@
 # Intraday replication source audit
 
-Date: 2026-10-24. Scope: source identity, the quoted results, and applicability to the owner's long-only, unleveraged SPY proposal. No market data, trading, raw-data backtests, or broker configuration changes were performed.
+Date: 2026-10-24; access follow-up 2026-10-25. Scope: source identity, the quoted results, and applicability to the owner's long-only, unleveraged SPY proposal. No market data, trading, raw-data backtests, or broker configuration changes were performed.
 
 ## Findings that change the feasibility report
 
@@ -35,7 +35,7 @@ The paper's z of 17.053 uses unrounded data; these calculations do not reproduce
 
 ## 2. Delgado: noise-band SPY audit, SSRN 7323419
 
-**Indexed primary abstract only; full methods inaccessible.** José Enrique Delgado, August 2026. The [primary-hosted abstract](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7323419) reports pooled Sharpe 0.35, but early-period return 19.3% / Sharpe 1.057 through August 29, 2025 (23.3% / 1.284 from the exact post-publication start), followed by −8.1% / −0.461 for September 2, 2025–August 14, 2026. It expressly rejects immediate decay and discusses implementation reconciliation and subsequent searches. Direct SSRN and readable-fetch requests returned 403; bounded searches found no accessible author full text. This is abstract-level support for regime instability, not a full-methods audit.
+**Primary registry abstract/identity checked on 2026-10-25; full methods inaccessible.** José Enrique Delgado, August 2026. The [Crossref registered abstract](https://api.crossref.org/works/10.2139/ssrn.7323419), independently retrieved after the owner’s access audit, reports pooled Sharpe 0.35, but early-period return 19.3% / Sharpe 1.057 through August 29, 2025 (23.3% / 1.284 from the exact post-publication start), followed by −8.1% / −0.461 for September 2, 2025–August 14, 2026. It expressly rejects immediate decay and discusses implementation reconciliation and subsequent searches. Direct SSRN and readable-fetch requests returned 403; bounded searches found no accessible author full text. This is abstract-level support for regime instability, not a full-methods audit.
 
 ## 3. Fetna: futures ORB study, SSRN 7428398
 
@@ -43,7 +43,7 @@ The paper's z of 17.053 uses unrounded data; these calculations do not reproduce
 
 ## 4. Demirev: QQQ ORB replication, SSRN 5325376
 
-**Secondary abstract only; primary verification remains open.** Exact-title searches located Steve Demirev's [ResearchGate abstract record](https://www.researchgate.net/publication/393109675_Can_Day_Trading_Really_Be_Profitable_-A_Replication_Study), DOI `10.2139/ssrn.5325376`, listing January 2025. It reproduces the claimed **672.71% QQQ return** over the original 2016–2023 period and describes later optimized variants. The page says the author has not claimed the ResearchGate profile, so it is not sufficient as an author-controlled primary source. All SSRN fetch routes were inaccessible/403. A primary full paper and independently located code/data were not obtained. Keep the exact figure **unverified against primary text**. Even as stated, this is an in-sample replication, not new OOS evidence.
+**Primary registry abstract/identity checked on 2026-10-25; full methods remain inaccessible.** [Crossref](https://api.crossref.org/works/10.2139/ssrn.5325376) confirms Steve Demirev, the requested title and DOI. Its abstract contains the 672.71% historical replication claim, optimized extensions and a statement that code/data are provided; no usable repository or full manuscript was obtained. Posted year is 2025; DOI creation is June 27, 2025 and metadata redeposit is August 14, 2026. These are not manuscript-version dates. The earlier January 2025 date came from a secondary record and is not adopted as verified. Registered claims are not reproduced returns or new OOS evidence.
 
 ## 5. García Arano: Gao-rule Substack replication
 
@@ -55,6 +55,12 @@ The paper's z of 17.053 uses unrounded data; these calculations do not reproduce
 
 ## Remaining gaps and decision boundary
 
-No source is labelled fabricated merely because it was blocked. Primary existence and exact returns remain unresolved for Demirev; full methods remain unresolved for Delgado; the Fetna SSRN paper was blocked, but its underlying technical report and registration were read. The raw returns behind all replications remain unreproduced. Public-text fingerprints and the arithmetic self-check are saved in [_intraday_source_verification.json](_intraday_source_verification.json). Source consistency, cost assumptions, dividend conventions, leverage and direction differ enough that their Sharpe ratios cannot be pooled or transferred to the owner's strategy.
+No source is labelled fabricated merely because it was blocked. Demirev’s identity and registered result claims are now confirmed, while full methods and actual returns remain unreproduced; full methods remain unresolved for Delgado; the Fetna SSRN paper was blocked, but its underlying technical report and registration were read. The raw returns behind all replications remain unreproduced. Public-text fingerprints and the arithmetic self-check are saved in [_intraday_source_verification.json](_intraday_source_verification.json). Source consistency, cost assumptions, dividend conventions, leverage and direction differ enough that their Sharpe ratios cannot be pooled or transferred to the owner's strategy.
 
 The defensible conclusion is that the literature raises cost and regime-risk concerns and warrants a carefully specified independent screen. It does not establish a profitable edge, and it also does not justify claiming that every proposed intraday rule has already been decisively refuted.
+
+## 7. Final Gao access follow-up (2026-10-25)
+
+The owner’s Perplexity access audit supplied the author-linked final PDF. We independently verified the [academic-site link](https://sites.google.com/site/szlwebpage), downloaded a valid 21-page typeset PDF, matched its DOI and checked the methods and tables cited in the feasibility report. This closes access, not exact implementation equivalence or raw-return reproduction.
+
+The separate [Zhou appendix](https://guofuzhou.github.io/Appendix_IntraDay.pdf) is accessible and has **14 PDF pages including its cover**, not 13 total pages. Its revision date is not established. Crossref independently confirms Delgado’s title/author/DOI and abstract, but neither outstanding replication full text was obtained. See [dated fingerprints and metadata](_intraday_full_text_verification_2026-10-25.json). No protocol choice or probe was approved by these access findings.

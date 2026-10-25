@@ -1,6 +1,6 @@
 # Brief: intraday feasibility screen — SPY first-half-hour → last-half-hour momentum
 
-**Status:** DRAFT r6, not approved. No intraday prices, signals or strategy returns have been inspected or computed. The daily SPY benchmark alone has been reproduced with a saved artifact. Proposed gates and the window still need owner approval. r5 adopted the owner’s long-only decision; r6 corrects source, tax and execution claims after the [verification review](../2026-10-24-intraday-trading-feasibility.md). Nothing here authorizes a probe or trading.
+**Status:** DRAFT r7, not approved. No intraday prices, signals or strategy returns have been inspected or computed. The daily SPY benchmark alone has been reproduced with a saved artifact. Proposed gates and the window still need owner approval. r5 adopted the owner’s long-only decision; r6 corrects source, tax and execution claims after the [verification review](../2026-10-24-intraday-trading-feasibility.md). r7 records verified final Gao paper access on 2026-10-25; the hypothesis, window, costs and gates are unchanged. Nothing here authorizes a probe or trading.
 
 **Terms used below:**
 
@@ -18,7 +18,7 @@
 
 ## 2. Why: verified evidence and its limits
 
-- **Original idea:** the [author-affiliated Gao publication record](https://www.researchwithrutgers.org/en/publications/market-intraday-momentum/) and a full June 2017 manuscript confirm the prior-close anchor, 1993–2013 sample and final-half-hour long/short strategy. The final 2018 published full text remains inaccessible. This long-only, minute-bar rule is a deliberate variant; no published result validates it directly.
+- **Original idea:** the [final published Gao paper](https://www.dropbox.com/s/wk5ap8hnvgdyudx/MarketIntradayMomentum.pdf?raw=1) was obtained through the author’s academic site on 2026-10-25; its relevant methods and tables confirm the source rule. Its TAQ-to-Alpaca endpoint/adjustment equivalence remains unestablished. This long-only, minute-bar rule remains a deliberate variant.
 - **Publication label:** 2016 is after the 2014 SSRN posting and original sample, but before the final 2018 journal publication. Use “post-original-sample / post-first-public-release,” not “post-journal-publication,” for the full window.
 - **Replication evidence:** the [source audit](../2026-10-24-intraday-replication-source-audit.md) confirms several reported results but finds signal, leverage and cost mismatches. One SPY replication’s Sharpe-significance code has inconsistent annualization; another describes strong early results and weak later results. The Substack test does not clearly include the prior-close anchor. None decisively tests this rule.
 - **Mechanism:** short-gamma hedging is supported as a possible intraday-momentum mechanism. Its main source uses a different predictor; a causal explanation of recent decay by rising 0-DTE volume is not established. No gamma filter is registered.
@@ -71,7 +71,7 @@ The lab is daily-bar only. `ohlcv` holds no intraday equity data, and `docs/road
 - **Flat rule:** every day with `r_first <= 0` is flat (no trade, no cost). Omitting the source rule’s short leg reflects the owner’s trading intent. Report negative- and zero-signal day counts separately.
 - Skip half-day sessions as trading days, taken from the official calendar.
 - No filters, volatility conditioning, or parameter search. The paper's conditioning variants are not tested here (§7). Choosing this candidate after other screens is not covered by any error-rate correction.
-- This is a bar-based implementation of the paper's idea, not an exact replication; the paper's trade filters and adjustment conventions have not been mapped line by line.
+- This is a bar-based implementation of the paper's idea, not an exact replication; the source’s fewer-than-500-trades exclusion is documented, but TAQ-to-Alpaca endpoint and adjustment conventions have not been matched exactly.
 
 ## 5. Cost and tax model *(proposed)*
 
@@ -145,6 +145,6 @@ Stop before any verdict on the following. Do not drop, fill or patch observation
 8. **Connected account:** read-only checks return multiplier cap “1”, fractional trading enabled, shorting not disabled, and no reported account/trading block or suspension. The tool response does not identify paper/live environment; earlier context identified paper. This is not live-account permission verification. No settings changed. Long-only enforcement and operational buying power belong to the later shadow design.
 9. **Order compatibility:** fractional `cls` is unsupported in the documented matrix. A whole-share auction exit or a different registered exit must be designed and tested before a shadow. An idealized fractional backtest cannot certify execution readiness.
 10. **Evidence corrections:** the original QQQ paper is SSRN **4416622**, not 4898296. The noise-band 6.2% baseline is not a fixed final-half-hour rule. The [replication audit](../2026-10-24-intraday-replication-source-audit.md) documents source access levels, the Sharpe unit error, mixed regimes and the distinction between zero passing and zero profitable ORB cells. These corrections remove overstatements; they do not approve a different hypothesis or gate.
-11. **Remaining documentary gaps:** final Gao published-version details, Delgado/Demirev full methods, registration chronology and reproduction of outside raw returns. Unsupported precise cost and 0-DTE claims are excluded. Full archive access, data quality, actual costs and the strategy edge require empirical work that has not started.
+11. **Remaining documentary gaps:** TAQ-to-Alpaca endpoint/adjustment equivalence, Delgado/Demirev full methods, registration chronology and reproduction of outside raw returns. Final Gao access and the replication identities/registered abstracts were verified on 2026-10-25; see the [dated artifact](../_intraday_full_text_verification_2026-10-25.json). Unsupported precise cost and 0-DTE claims are excluded. Full archive access, data quality, actual costs and the strategy edge require empirical work that has not started.
 
 **Approval boundary:** the owner requested source verification before proceeding. This revision records that review; it does not approve Stage 0A, a window, A1/A2, bulk pulls, strategy returns or a paper shadow. Keep those steps pending. The production freeze and existing paper observation remain in force.
