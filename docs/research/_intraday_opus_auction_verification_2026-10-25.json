@@ -1,0 +1,52 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "body_sha256": "9617afc407cbf9824c50f98190cb9d9ac3ba2b7af075b3073ce4808f08273304",
+      "started_utc": "2026-10-25T18:56:17.481716+00:00",
+      "status_code": 200
+    }
+  ],
+  "continuation_present": false,
+  "daily_metadata": [
+    {
+      "closing_events": [
+        {
+          "condition": "6",
+          "timestamp": "2016-01-04T21:00:00.044Z",
+          "venue": "T"
+        },
+        {
+          "condition": "6",
+          "timestamp": "2016-01-04T21:00:00.07Z",
+          "venue": "P"
+        }
+      ],
+      "closing_field_present": true,
+      "closing_field_type": "array",
+      "date": "2016-01-04",
+      "opening_events": [],
+      "opening_field_present": true,
+      "opening_field_type": "null"
+    }
+  ],
+  "endpoint": "https://data.alpaca.markets/v2/stocks/auctions",
+  "existing_parser_outcome": "schema_error",
+  "full_window_verified": false,
+  "manifest_sha256": "58d8f8c17ec7b3218cb6e7e07fb99e46c7d7ad23d83f74a89035df90bbd8df0d",
+  "original_body_sha256": "9617afc407cbf9824c50f98190cb9d9ac3ba2b7af075b3073ce4808f08273304",
+  "outcome": "metadata_observed",
+  "parameters": {
+    "asof": "-",
+    "end": "2016-01-04T21:01:00Z",
+    "feed": "sip",
+    "limit": 10000,
+    "sort": "asc",
+    "start": "2016-01-04T20:59:00Z",
+    "symbols": "SPY"
+  },
+  "purpose": "Verify Opus F5 omitted-opening-array hypothesis; metadata only",
+  "run_utc": "2026-10-25T18:56:17.481716+00:00",
+  "same_body_as_original": true,
+  "strategy_evaluated": false
+}

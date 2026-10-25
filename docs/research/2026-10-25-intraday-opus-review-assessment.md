@@ -59,3 +59,18 @@ policy, simplified collection sequence and shadow isolation. State proposed
 defaults and alternatives clearly for owner approval. Freeze and hash the
 scoring specification before any new price inspection. Do not run the next
 probe or implement the reviewer suggestions implicitly.
+
+## Follow-up verification
+
+The [proposal verification](2026-10-25-intraday-opus-proposal-verification.md)
+subsequently reproduced the auction failure with an identical body hash:
+opening metadata was present as null, with valid closing events. This resolves
+the earlier conjecture without changing the original Stage 0A verdict. It also
+identifies the whole-share CLS sales-contact footnote; account-specific MOC
+availability remains unverified.
+
+The [estimate verification](2026-10-25-intraday-opus-estimates-verification.md)
+reproduces Opus's conditional arithmetic but distinguishes expected t=3 from
+80%/90% power. The exact 25 bp volatility input remains unmeasured, and the
+"most rising markets / under two years" claim is unsupported as a generalization.
+The parent reproduced the calculations and offline calendar hashes independently.

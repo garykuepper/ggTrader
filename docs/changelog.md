@@ -2,6 +2,13 @@
 
 ## 2026-10-25
 
+- **Opus plan-review verification.** Reproduced conditional power/cost/page
+  estimates and verified the auction schema failure against an identical
+  metadata-only response. Corrected the omitted-field conjecture to a null/list
+  mismatch; identified the whole-share CLS sales-contact caveat. No price work,
+  strategy evaluation or protocol changes.
+  [Verification](research/2026-10-25-intraday-opus-proposal-verification.md).
+
 - **Intraday Stage 0A metadata probe.** Added a bounded, read-only SPY coverage
   tool with atomic evidence and mocked tests. All 20 SIP sample sessions had
   complete regular grids, but the required 2015-12-31 prior-close input was

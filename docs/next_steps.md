@@ -18,6 +18,10 @@ under an approved revision; the Stage 0A verdict stays unchanged. Resolve exit
 execution, research/forward gates, data-quality scope and shadow isolation before
 approving further data work. See the [parent assessment](research/2026-10-25-intraday-opus-review-assessment.md).
 No revised protocol, bulk pull or strategy backtest is approved by this review.
+[Follow-up verification](research/2026-10-25-intraday-opus-proposal-verification.md)
+confirmed the auction null/list mismatch and qualified the statistical estimates.
+Whole-share CLS account availability still needs confirmation before treating
+MOC as an executable exit.
 
 ## Current research decision (2026-10-23)
 

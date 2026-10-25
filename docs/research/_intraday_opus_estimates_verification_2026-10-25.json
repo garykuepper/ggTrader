@@ -1,0 +1,349 @@
+{
+  "created_at_utc": "2026-10-25T18:57:58.456124+00:00",
+  "scope": "F1/F2/F9/F10 arithmetic and public-source verification only; no candidate strategy prices, signals, returns or authenticated requests.",
+  "review": "docs/research/2026-10-25-intraday-overall-plan-opus-review.md",
+  "assessment": "docs/research/2026-10-25-intraday-opus-review-assessment.md",
+  "classifications": {
+    "F1_under_two_years_in_most_rising_markets": "unsupported as a general or probabilistic claim; conditional smooth-growth arithmetic only",
+    "F2_t3_at_25bp_N2670": "verified arithmetic conditional on unverified volatility/count/covariance inputs",
+    "F2_25bp_published_long_only_sigma": "unsupported as a direct published measurement; published half-hour scale is available",
+    "F2_A2_3_9percent_to_1_5bp": "conditional approximation; exact only under specified equal-positive-full-year/constant-daily scenarios",
+    "F2_MDE_at_80_90percent": "conditional normal and iid noncentral-t planning calculations; no HAC gate power guarantee",
+    "F9_100pages_per_feed": "conditional approximately 105 regular-session full-page equivalents; not verified total API requests",
+    "F10_shared_window_multiple_testing": "valid methodological concern; numerical family-size illustrations are hypothetical, not actual tested count"
+  },
+  "inputs": {
+    "eligible_full_sessions_assumed_not_verified": 2670,
+    "exact_eligible_calendar_available": false,
+    "window_context_only": "proposed 2016-01-04 or fallback 2016-01-05 through 2026-09-30; neither count verified here",
+    "whole_calendar_sd_bp_assumed_not_measured": 25,
+    "whole_calendar_definition": "all eligible full sessions including zero-return no-trade sessions, not civil days",
+    "traded_session_fraction_assumed_not_measured": 0.5,
+    "round_trip_cost_bp_assumed": 2,
+    "annual_tax_policy_positive_pnl_fraction": 0.24,
+    "after_tax_policy_cagr_target": 0.03,
+    "annualization_sessions_assumed": 252,
+    "t_gate": 3,
+    "hac_gate_context": "draft r7 intercept-only mean, Bartlett five lags, correction setting must be frozen; planning computations do not estimate HAC",
+    "benchmark_cagrs": "explicit external assumptions on after-tax common basis, not observed/forecast SPY returns",
+    "page_size_requested_maximum": 10000
+  },
+  "formulas": {
+    "iid_t": "t = mean_bp / (sigma_bp / sqrt(N))",
+    "normal_power": "P(T>=3) ~= Phi(mean_bp*sqrt(N)/sigma_bp - 3)",
+    "normal_mde": "mean_bp = (3 + Phi_inverse(power))*sigma_bp/sqrt(N)",
+    "iid_student_t_power": "nct.sf(3, df=N-1, nc=mean_bp*sqrt(N)/sigma_bp); iid Gaussian surrogate, not HAC",
+    "trade_translation": "net_bp_per_trade = net_bp_per_session/q; gross_bp_per_trade = net_bp_per_trade+2",
+    "year_tax_ledger": "W_after_year/W_start_year = 1+R_year-0.24*max(R_year,0); multiply year factors then annualize by actual elapsed years, including taxed terminal partial year",
+    "a2_equal_positive_full_years": "R_pre = 0.03/(1-0.24); linear mean proxy=R_pre/252; constant daily rate=(1+R_pre)**(1/252)-1",
+    "last_half_hour_sigma_conversion": "sigma_daily_bp=0.0621/sqrt(252)*10000; sqrt252 is the standard annualized-SD conversion assumption",
+    "long_only_variance_identity": "Var(I*R)=q*E[R**2|I=1]-q**2*E[R|I=1]**2; unconditional half-hour SD alone does not identify it",
+    "hac_long_run_variance": "Omega=gamma0+2*sum(gamma_k,k>=1); SE(mean)~=sqrt(Omega/N). Five-lag Bartlett uses gamma0+2*sum((1-k/6)*gamma_k,k=1..5), before finite-sample correction",
+    "relative_stop": "relative_wealth=(1.03/(1+b))**t; crossing t=log(0.85)/log(1.03/(1+b)), for b>0.03; quarter-aligned first check=ceil(4*t)/4",
+    "page_equivalent": "ceil(assumed_dates*minutes_per_date/10000); actual requests depend on query partitioning and underfilled pages",
+    "independent_repetition": "FWER=1-(1-alpha)**m; arbitrary-dependence union bound<=min(1,m*alpha) if each marginal test is valid"
+  },
+  "sources": [
+    {
+      "id": "gao_final",
+      "url": "https://www.dropbox.com/s/wk5ap8hnvgdyudx/MarketIntradayMomentum.pdf?raw=1",
+      "author_provenance_url": "https://sites.google.com/site/szlwebpage",
+      "sha256": "f689eefedd3c9de229dc3837fcf7a00ab383e9078783b84762a2f015e20d5fb2",
+      "bytes": 774235,
+      "pdf_pages": 21,
+      "identity": "Gao et al., Market intraday momentum, JFE 129 (2018) 394-414, DOI 10.1016/j.jfineco.2018.05.009",
+      "sample": "1993-02-01 through 2013-12-31; final publication 2018, not a pre-2016 published manuscript",
+      "page_references": {
+        "data_and_30minute_definition": "printed p396, PDF page3, section2",
+        "volatility_and_mean": "printed p404, PDF page11, Table6",
+        "annual_mean_multiplier": "printed p404, PDF page11, footnote11",
+        "costs_are_separate": "printed pp408-409, PDF pages15-16, section6.2/Table11"
+      },
+      "stored_in_repository": false,
+      "retrieval": "public unauthenticated urllib download, PDF only in /tmp"
+    },
+    {
+      "id": "statsmodels_power",
+      "url": "https://www.statsmodels.org/stable/generated/statsmodels.stats.power.TTestPower.solve_power.html",
+      "supports": "effect-size, power, one-sided alternative definitions"
+    },
+    {
+      "id": "scipy_nct",
+      "url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.nct.html",
+      "supports": "noncentral t definition and survival function"
+    },
+    {
+      "id": "statsmodels_hac",
+      "url": "https://www.statsmodels.org/stable/generated/statsmodels.stats.sandwich_covariance.cov_hac.html",
+      "supports": "Newey-West autocorrelation robust covariance, Bartlett weights, lags and correction"
+    },
+    {
+      "id": "statsmodels_multiple_tests",
+      "url": "https://www.statsmodels.org/stable/generated/statsmodels.stats.multitest.multipletests.html",
+      "supports": "familywise error distinction and multiple-test adjustments"
+    },
+    {
+      "id": "alpaca_bars",
+      "url": "https://docs.alpaca.markets/us/reference/stockbars",
+      "supports": "limit 1..10000, default1000, pages can be underfilled, next_page_token required, inclusive start/end"
+    },
+    {
+      "id": "nyse_hours",
+      "url": "https://www.nyse.com/markets/hours-calendars",
+      "supports": "NYSE Arca core0930-1600, early0400-0930, late1600-2000, early closes exist; not a verified historical eligible calendar"
+    },
+    {
+      "id": "pandas_market_calendars_usage",
+      "url": "https://pandas-market-calendars.readthedocs.io/en/latest/usage.html",
+      "supports": "schedule generation and early-close identification; local version5.5.0 used, not official Alpaca historical calendar"
+    }
+  ],
+  "software": {
+    "python_executable": "/home/flynn/ggTrader/.venv/bin/python",
+    "scipy": "1.17.1",
+    "pypdf": "6.14.2",
+    "statsmodels": "not installed; public documentation consulted, no install performed",
+    "production_or_test_code_changed": false
+  },
+  "calculated": {
+    "a1": {
+      "iid_standard_error_bp_per_session": 0.4838206248226148,
+      "nominal_mean_over_se_3_net_bp_per_session": 1.4514618744678445,
+      "annual_arithmetic_net_at_threshold": 0.036576839236589685,
+      "net_bp_per_trade_at_threshold": 2.902923748935689,
+      "gross_bp_per_trade_at_threshold": 4.902923748935689,
+      "one_sided_standard_normal_alpha": 0.0013498980316300933,
+      "power_at_nominal_mean_over_se_3_normal": 0.5,
+      "power_at_noncentrality_3_iid_student_t": 0.5001120676484402
+    },
+    "mde": [
+      {
+        "power": 0.8,
+        "z_power": 0.8416212335729143,
+        "normal_net_bp_per_session": 1.8586555855590716,
+        "iid_noncentral_t_noncentrality": 3.842049328515067,
+        "iid_noncentral_t_net_bp_per_session": 1.8588627067214674,
+        "normal_net_bp_per_trade": 3.7173111711181432,
+        "normal_gross_bp_per_trade": 5.717311171118143,
+        "iid_noncentral_t_gross_bp_per_trade": 5.717725413442935
+      },
+      {
+        "power": 0.9,
+        "z_power": 1.2815515655446004,
+        "normal_net_bp_per_session": 2.071502953652033,
+        "iid_noncentral_t_noncentrality": 4.282350483566006,
+        "iid_noncentral_t_net_bp_per_session": 2.0718894866683315,
+        "normal_net_bp_per_trade": 4.143005907304066,
+        "normal_gross_bp_per_trade": 6.143005907304066,
+        "iid_noncentral_t_gross_bp_per_trade": 6.143778973336663
+      }
+    ],
+    "a2": {
+      "equal_positive_full_year_required_pretax_return": 0.039473684210526314,
+      "linearized_net_bp_per_session": 1.5664160401002505,
+      "constant_daily_geometric_net_bp_per_session": 1.5364081813173947,
+      "linearized_net_bp_per_trade": 3.132832080200501,
+      "linearized_gross_bp_per_trade": 5.132832080200501
+    },
+    "published_scale": {
+      "always_long_last_half_hour_annualized_sd": 0.0621,
+      "always_long_last_half_hour_daily_sd_bp_using_sqrt252": 39.11932295645502,
+      "long_short_annualized_sd": 0.0619,
+      "long_short_annualized_arithmetic_mean": 0.0667,
+      "long_short_arithmetic_mean_bp_per_session": 2.6468253968253967,
+      "half_exposure_equal_conditional_second_moment_negligible_mean_proxy_sd_bp": 27.66153853793593,
+      "assumed_25bp_relative_to_proxy": -0.09621802251837186
+    },
+    "relative_stop": [
+      {
+        "assumed_benchmark_after_tax_cagr": 0.0,
+        "assumed_sleeve_after_tax_cagr": 0.03,
+        "continuous_crossing_years_smooth_constant_growth": null,
+        "first_quarter_check_years_if_inception_quarter_aligned": null,
+        "relative_wealth_minus_one_at_two_years": 0.060899999999999954
+      },
+      {
+        "assumed_benchmark_after_tax_cagr": 0.03,
+        "assumed_sleeve_after_tax_cagr": 0.03,
+        "continuous_crossing_years_smooth_constant_growth": null,
+        "first_quarter_check_years_if_inception_quarter_aligned": null,
+        "relative_wealth_minus_one_at_two_years": 0.0
+      },
+      {
+        "assumed_benchmark_after_tax_cagr": 0.05,
+        "assumed_sleeve_after_tax_cagr": 0.03,
+        "continuous_crossing_years_smooth_constant_growth": 8.45072388046029,
+        "first_quarter_check_years_if_inception_quarter_aligned": 8.5,
+        "relative_wealth_minus_one_at_two_years": -0.03773242630385498
+      },
+      {
+        "assumed_benchmark_after_tax_cagr": 0.06,
+        "assumed_sleeve_after_tax_cagr": 0.03,
+        "continuous_crossing_years_smooth_constant_growth": 5.66068722154123,
+        "first_quarter_check_years_if_inception_quarter_aligned": 5.75,
+        "relative_wealth_minus_one_at_two_years": -0.05580277678889278
+      },
+      {
+        "assumed_benchmark_after_tax_cagr": 0.08,
+        "assumed_sleeve_after_tax_cagr": 0.03,
+        "continuous_crossing_years_smooth_constant_growth": 3.4285074563502116,
+        "first_quarter_check_years_if_inception_quarter_aligned": 3.5,
+        "relative_wealth_minus_one_at_two_years": -0.09044924554183809
+      },
+      {
+        "assumed_benchmark_after_tax_cagr": 0.1,
+        "assumed_sleeve_after_tax_cagr": 0.03,
+        "continuous_crossing_years_smooth_constant_growth": 2.4717190045577233,
+        "first_quarter_check_years_if_inception_quarter_aligned": 2.5,
+        "relative_wealth_minus_one_at_two_years": -0.12322314049586791
+      },
+      {
+        "assumed_benchmark_after_tax_cagr": 0.12,
+        "assumed_sleeve_after_tax_cagr": 0.03,
+        "continuous_crossing_years_smooth_constant_growth": 1.9400639412470069,
+        "first_quarter_check_years_if_inception_quarter_aligned": 2.0,
+        "relative_wealth_minus_one_at_two_years": -0.15425701530612257
+      },
+      {
+        "assumed_benchmark_after_tax_cagr": 0.15,
+        "assumed_sleeve_after_tax_cagr": 0.03,
+        "continuous_crossing_years_smooth_constant_growth": 1.474721403589146,
+        "first_quarter_check_years_if_inception_quarter_aligned": 1.5,
+        "relative_wealth_minus_one_at_two_years": -0.19780718336483927
+      },
+      {
+        "assumed_benchmark_after_tax_cagr": 0.2,
+        "assumed_sleeve_after_tax_cagr": 0.03,
+        "continuous_crossing_years_smooth_constant_growth": 1.0638648797211734,
+        "first_quarter_check_years_if_inception_quarter_aligned": 1.25,
+        "relative_wealth_minus_one_at_two_years": -0.26326388888888874
+      }
+    ],
+    "pages_per_feed": [
+      {
+        "label": "regular_full_sessions_0930_1600",
+        "assumed_dates": 2670,
+        "minutes_per_date": 390,
+        "maximum_one_minute_bars_on_assumed_dates": 1041300,
+        "full_10000_row_page_equivalents_rounded_up": 105
+      },
+      {
+        "label": "extended_sessions_0400_2000",
+        "assumed_dates": 2670,
+        "minutes_per_date": 960,
+        "maximum_one_minute_bars_on_assumed_dates": 2563200,
+        "full_10000_row_page_equivalents_rounded_up": 257
+      },
+      {
+        "label": "24_hour_bound_per_assumed_date",
+        "assumed_dates": 2670,
+        "minutes_per_date": 1440,
+        "maximum_one_minute_bars_on_assumed_dates": 3844800,
+        "full_10000_row_page_equivalents_rounded_up": 385
+      }
+    ],
+    "repeated_test_illustrations": [
+      {
+        "hypothetical_null_tests": 1,
+        "independent_familywise_rejection_probability": 0.0013498980316301035,
+        "union_bound_arbitrary_dependence_if_marginal_levels_valid": 0.0013498980316300933
+      },
+      {
+        "hypothetical_null_tests": 5,
+        "independent_familywise_rejection_probability": 0.006731292492769825,
+        "union_bound_arbitrary_dependence_if_marginal_levels_valid": 0.006749490158150466
+      },
+      {
+        "hypothetical_null_tests": 10,
+        "independent_familywise_rejection_probability": 0.013417274686916336,
+        "union_bound_arbitrary_dependence_if_marginal_levels_valid": 0.013498980316300932
+      },
+      {
+        "hypothetical_null_tests": 20,
+        "independent_familywise_rejection_probability": 0.026654526113808585,
+        "union_bound_arbitrary_dependence_if_marginal_levels_valid": 0.026997960632601865
+      },
+      {
+        "hypothetical_null_tests": 100,
+        "independent_familywise_rejection_probability": 0.12635485335490848,
+        "union_bound_arbitrary_dependence_if_marginal_levels_valid": 0.13498980316300932
+      }
+    ],
+    "hac_ar1_illustrations": [
+      {
+        "assumed_rho": 0.0,
+        "infinite_ar1_long_run_sd_multiplier": 1.0,
+        "five_lag_bartlett_sd_multiplier_before_small_sample_correction": 1.0
+      },
+      {
+        "assumed_rho": 0.1,
+        "infinite_ar1_long_run_sd_multiplier": 1.1055415967851334,
+        "five_lag_bartlett_sd_multiplier_before_small_sample_correction": 1.086770444942261
+      },
+      {
+        "assumed_rho": 0.2,
+        "infinite_ar1_long_run_sd_multiplier": 1.224744871391589,
+        "five_lag_bartlett_sd_multiplier_before_small_sample_correction": 1.1814567279422468
+      },
+      {
+        "assumed_rho": 0.3,
+        "infinite_ar1_long_run_sd_multiplier": 1.362770287738494,
+        "five_lag_bartlett_sd_multiplier_before_small_sample_correction": 1.2857721415554157
+      }
+    ],
+    "relative_stop_boundaries": {
+      "benchmark_cagr_for_exact_two_year_smooth_crossing": 0.11719185776607932,
+      "benchmark_cagr_for_exact_1_75_year_smooth_crossing": 0.1302363407422671
+    }
+  },
+  "reproduction_python": "from math import ceil, log, sqrt\nfrom scipy.optimize import brentq\nfrom scipy.stats import norm, nct\nN, sigma_bp, threshold, sessions_per_year = 2670, 25.0, 3.0, 252\nq, round_trip_bp, tax, after_tax_target = 0.5, 2.0, 0.24, 0.03\nse = sigma_bp / sqrt(N)\nalpha = float(norm.sf(threshold))\noutput = {\n    \"a1\": {\n        \"iid_standard_error_bp_per_session\": se,\n        \"nominal_mean_over_se_3_net_bp_per_session\": threshold * se,\n        \"annual_arithmetic_net_at_threshold\": threshold * se * sessions_per_year / 10000,\n        \"net_bp_per_trade_at_threshold\": threshold * se / q,\n        \"gross_bp_per_trade_at_threshold\": threshold * se / q + round_trip_bp,\n        \"one_sided_standard_normal_alpha\": alpha,\n        \"power_at_nominal_mean_over_se_3_normal\": float(norm.sf(0)),\n        \"power_at_noncentrality_3_iid_student_t\": float(nct.sf(threshold, N - 1, threshold)),\n    },\n    \"mde\": [],\n    \"a2\": {},\n    \"published_scale\": {},\n    \"relative_stop\": [],\n    \"pages_per_feed\": [],\n    \"repeated_test_illustrations\": [],\n    \"hac_ar1_illustrations\": [],\n}\nfor power in [0.8, 0.9]:\n    z_power = float(norm.ppf(power))\n    normal_mde = (threshold + z_power) * se\n    noncentrality = brentq(lambda nc: nct.sf(threshold, N - 1, nc) - power, 0, 20)\n    output[\"mde\"].append({\n        \"power\": power,\n        \"z_power\": z_power,\n        \"normal_net_bp_per_session\": normal_mde,\n        \"iid_noncentral_t_noncentrality\": noncentrality,\n        \"iid_noncentral_t_net_bp_per_session\": noncentrality * se,\n        \"normal_net_bp_per_trade\": normal_mde / q,\n        \"normal_gross_bp_per_trade\": normal_mde / q + round_trip_bp,\n        \"iid_noncentral_t_gross_bp_per_trade\": noncentrality * se / q + round_trip_bp,\n    })\n    assert abs(nct.sf(threshold, N - 1, noncentrality) - power) < 1e-10\nannual_pretax = after_tax_target / (1 - tax)\nlinear_daily = annual_pretax / sessions_per_year * 10000\nconstant_daily = ((1 + annual_pretax) ** (1 / sessions_per_year) - 1) * 10000\noutput[\"a2\"] = {\n    \"equal_positive_full_year_required_pretax_return\": annual_pretax,\n    \"linearized_net_bp_per_session\": linear_daily,\n    \"constant_daily_geometric_net_bp_per_session\": constant_daily,\n    \"linearized_net_bp_per_trade\": linear_daily / q,\n    \"linearized_gross_bp_per_trade\": linear_daily / q + round_trip_bp,\n}\npublished_daily = 0.0621 / sqrt(sessions_per_year) * 10000\noutput[\"published_scale\"] = {\n    \"always_long_last_half_hour_annualized_sd\": 0.0621,\n    \"always_long_last_half_hour_daily_sd_bp_using_sqrt252\": published_daily,\n    \"long_short_annualized_sd\": 0.0619,\n    \"long_short_annualized_arithmetic_mean\": 0.0667,\n    \"long_short_arithmetic_mean_bp_per_session\": 0.0667 / sessions_per_year * 10000,\n    \"half_exposure_equal_conditional_second_moment_negligible_mean_proxy_sd_bp\": published_daily * sqrt(q),\n    \"assumed_25bp_relative_to_proxy\": sigma_bp / (published_daily * sqrt(q)) - 1,\n}\nfor benchmark in [0.0, 0.03, 0.05, 0.06, 0.08, 0.10, 0.12, 0.15, 0.20]:\n    ratio = (1 + after_tax_target) / (1 + benchmark)\n    crossing = log(0.85) / log(ratio) if benchmark > after_tax_target else None\n    output[\"relative_stop\"].append({\n        \"assumed_benchmark_after_tax_cagr\": benchmark,\n        \"assumed_sleeve_after_tax_cagr\": after_tax_target,\n        \"continuous_crossing_years_smooth_constant_growth\": crossing,\n        \"first_quarter_check_years_if_inception_quarter_aligned\": ceil(4 * crossing) / 4 if crossing else None,\n        \"relative_wealth_minus_one_at_two_years\": ratio ** 2 - 1,\n    })\noutput[\"relative_stop_boundaries\"] = {\n    \"benchmark_cagr_for_exact_two_year_smooth_crossing\": 1.03 / sqrt(0.85) - 1,\n    \"benchmark_cagr_for_exact_1_75_year_smooth_crossing\": 1.03 / 0.85 ** (1 / 1.75) - 1,\n}\nfor label, minutes in [(\"regular_full_sessions_0930_1600\", 390), (\"extended_sessions_0400_2000\", 960), (\"24_hour_bound_per_assumed_date\", 1440)]:\n    bars = N * minutes\n    pages = ceil(bars / 10000)\n    output[\"pages_per_feed\"].append({\"label\": label, \"assumed_dates\": N, \"minutes_per_date\": minutes, \"maximum_one_minute_bars_on_assumed_dates\": bars, \"full_10000_row_page_equivalents_rounded_up\": pages})\n    assert pages * 10000 >= bars > (pages - 1) * 10000\nfor m in [1, 5, 10, 20, 100]:\n    output[\"repeated_test_illustrations\"].append({\n        \"hypothetical_null_tests\": m,\n        \"independent_familywise_rejection_probability\": 1 - (1 - alpha) ** m,\n        \"union_bound_arbitrary_dependence_if_marginal_levels_valid\": min(1.0, m * alpha),\n    })\nfor rho in [0.0, 0.1, 0.2, 0.3]:\n    output[\"hac_ar1_illustrations\"].append({\n        \"assumed_rho\": rho,\n        \"infinite_ar1_long_run_sd_multiplier\": sqrt((1 + rho) / (1 - rho)),\n        \"five_lag_bartlett_sd_multiplier_before_small_sample_correction\": sqrt(1 + 2 * sum((1 - k / 6) * rho ** k for k in range(1, 6))),\n    })\nassert abs(output[\"a1\"][\"nominal_mean_over_se_3_net_bp_per_session\"] / se - 3) < 1e-12\nassert abs(annual_pretax * (1 - tax) - after_tax_target) < 1e-12\nassert abs(((1 + constant_daily / 10000) ** sessions_per_year - 1) * (1 - tax) - after_tax_target) < 1e-12\nassert output[\"mde\"][1][\"normal_net_bp_per_session\"] > output[\"mde\"][0][\"normal_net_bp_per_session\"] > threshold * se\n",
+  "self_checks": "Passed expected hash, solved power tolerance, daily/annual tax identities, t identity, ordered MDEs and page-ceiling bounds. Re-run reproduction_python with recorded existing interpreter; output variable is the calculated object.",
+  "limitations": [
+    "Official eligible-calendar count, exposure fraction, candidate volatility, covariance, signal frequency, strategy returns, power and pass rate were not measured. An offline library full-session count is separately labeled.",
+    "Published 1993-2013 unconditional half-hour statistics do not identify conditional long-only moments or 2016-2026 regimes.",
+    "Power concerns A1 under explicit reference models only, not the joint A1-and-tax-path-A2 pass probability.",
+    "All-session bounds cover the same assumed date set only; continuous ranges can include extra half-days and overnight dates and must be sized after calendar/query design.",
+    "No data pull, scorer, protocol change, shadow or live action authorized by this verification."
+  ],
+  "offline_calendar_cross_check": {
+    "requested_by_parent": true,
+    "calendar_name": "NYSE",
+    "package": "pandas_market_calendars",
+    "version": "5.5.0",
+    "network_requests": false,
+    "official_vendor_calendar_verified": false,
+    "price_quality_or_candidate_eligibility_verified": false,
+    "rows": [
+      {
+        "start": "2016-01-04",
+        "end": "2026-09-30",
+        "all_library_sessions": 2701,
+        "full_390minute_library_sessions": 2680,
+        "early_close_library_sessions": 21,
+        "total_regular_minutes_all_library_sessions": 1049610,
+        "full_sessions_regular_minutes": 1045200,
+        "full_10000row_page_equivalents_full_sessions": 105,
+        "schedule_csv_sha256": "b36f8a57f75f0f7ec06e8c2e2b2fdc3c753dc607749c8440bb64187950e9edc9",
+        "conditional_t3_mean_bp_at25bp": 1.4487513924117297,
+        "conditional_normal_mde80_bp_at25bp": 1.8551847037524085,
+        "conditional_normal_mde90_bp_at25bp": 2.0676345974217867
+      },
+      {
+        "start": "2016-01-05",
+        "end": "2026-09-30",
+        "all_library_sessions": 2700,
+        "full_390minute_library_sessions": 2679,
+        "early_close_library_sessions": 21,
+        "total_regular_minutes_all_library_sessions": 1049220,
+        "full_sessions_regular_minutes": 1044810,
+        "full_10000row_page_equivalents_full_sessions": 105,
+        "schedule_csv_sha256": "a0824e13d9de9bb71c765d016422ed1fc962962aa36c73ec1b51ae9cc076a7a4",
+        "conditional_t3_mean_bp_at25bp": 1.4490217575148414,
+        "conditional_normal_mde80_bp_at25bp": 1.855530917192719,
+        "conditional_normal_mde90_bp_at25bp": 2.0680204581319526
+      }
+    ],
+    "reproduction_python": "import pandas_market_calendars as mcal\nfrom hashlib import sha256\nfor start in ['2016-01-04', '2016-01-05']:\n    schedule=mcal.get_calendar('NYSE').schedule(start_date=start,end_date='2026-09-30')\n    minutes=(schedule.market_close-schedule.market_open).dt.total_seconds()/60\n    print(start,len(schedule),int((minutes==390).sum()),int((minutes<390).sum()),int(minutes.sum()),sha256(schedule.to_csv().encode()).hexdigest())\n",
+    "limitation": "Library rule-based schedule is an offline cross-check only. Full 390-minute sessions are not automatically data-eligible sessions. Main Opus arithmetic keeps its original N=2670 assumption for faithful reproduction."
+  }
+}
