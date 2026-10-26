@@ -17,6 +17,231 @@ import pytest
 
 from ggTrader.lab import intraday_observer as obs
 
+
+def test_review_live_activation_requires_readiness_evidence(tmp_path):
+    ob, _, _ = make_observer(tmp_path, start=(ACTIVATION, "10:00:00"))
+    with pytest.raises(obs.ObserverError, match="readiness"):
+        ob.activate("owner approved")
+    assert ob.records() == []
+
+
+def test_review_calendar_amendments_cannot_reclassify_an_observed_day(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    full_day(ob, clock, DAY1)
+    with pytest.raises(obs.ObserverError, match="amendment"):
+        ob.amend_session(DAY1, "early_close", "13:00", "owner approved")
+    assert ob.session_row(DAY1)["kind"] == "full"
+
+
+def test_review_bootstrap_is_timely_against_its_input_cutoff(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    clock.set(DAY1, "15:20:05")
+    ob.run_inputs(DAY1)
+    anchor = ob.canonical(ANCHOR_DAY)
+    assert anchor["body"]["bootstrap"]
+    assert anchor["body"]["on_time"]
+    assert "archive_late" not in anchor["body"]["faults"]
+
+
+def test_review_failed_checkpoint_halts_slot21(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    slots = [r for r in ob.effective_rows() if r["slot"]]
+    day20, day21 = slots[19]["date"], slots[20]["date"]
+    # Missing earlier decisions are observable operational failures, not erased days.
+    archive_day(ob, clock, day20)
+    clock.set(day21, "15:25:05")
+    assert any(r["reason"] == "checkpoint_failed" for r in ob.halt_reasons(day21))
+
+
+def test_review_twenty_clean_sessions_including_bootstrap_do_not_halt(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    rows = ob.effective_rows()
+    checkpoint = ob.manifest["calendar"]["checkpoint_date"]
+    for row in rows:
+        if row["date"] > checkpoint:
+            break
+        if row["date"] < DAY1:
+            continue  # Exercise the permitted first-input bootstrap.
+        if row["slot"]:
+            full_day(ob, clock, row["date"])
+        elif row["kind"] == "early_close":
+            archive_day(ob, clock, row["date"])
+    following = ob.neighbours(checkpoint)[1]
+    clock.set(following, "15:25:00")
+    assert ob.checkpoint_status()["conditions_met"] is True
+    assert not ob.halt_reasons(following)
+
+
+def test_review_live_readiness_must_match_the_prepared_manifest(tmp_path):
+    ob, _, _ = make_observer(tmp_path, start=(ACTIVATION, "10:00:00"))
+    path = write_readiness(ob)
+    evidence = json.loads(path.read_text())
+    evidence["manifest_sha256"] = "0" * 64
+    path.write_text(json.dumps(evidence))
+    with pytest.raises(obs.ObserverError, match="readiness_evidence_mismatch"):
+        ob.activate("operator approval", readiness_file=path)
+    assert not ob.has_record(None, "activation")
+
+
+def test_review_slow_halt_check_cannot_backdate_a_decision(tmp_path, monkeypatch):
+    book = Book().day(DAY1, p0959=101)
+    ob, clock, _ = active(tmp_path, book)
+    clock.set(DAY1, "15:20:05")
+    ob.run_inputs(DAY1)
+    clock.set(DAY1, "15:25:59")
+
+    def delayed(day):
+        clock.sleep(2)
+        return []
+
+    monkeypatch.setattr(ob, "halt_reasons", delayed)
+    record = ob.run_decision(DAY1)
+    assert record["body"]["observer_side"] == 0
+    assert "decision_completed_after_window" in record["body"]["faults"]
+
+
+def test_review_slow_durable_write_invalidates_the_decision(tmp_path, monkeypatch):
+    ob, clock, _ = active(tmp_path, Book().day(DAY1, p0959=101))
+    clock.set(DAY1, "15:20:05")
+    ob.run_inputs(DAY1)
+    clock.set(DAY1, "15:25:59")
+    original = obs.atomic_checkpoint
+
+    def slow_write(path, value, **kwargs):
+        original(path, value, **kwargs)
+        if path.name.endswith("__decision.json"):
+            clock.sleep(2)
+
+    monkeypatch.setattr(obs, "atomic_checkpoint", slow_write)
+    result = ob.run_decision(DAY1)
+    assert result["body"]["observer_side"] == 0
+    assert not ob.stage_record(DAY1, "decision")["body"]["timely_valid"]
+    assert ob.verify_chain() == []
+
+
+def test_review_slow_archive_write_cannot_cross_the_valuation_grace(tmp_path, monkeypatch):
+    ob, clock, _ = active(tmp_path)
+    clock.set(DAY1, "15:19:59")
+    original = obs.atomic_checkpoint
+
+    def slow_write(path, value, **kwargs):
+        original(path, value, **kwargs)
+        if path.name.endswith("__archive.1.json"):
+            clock.sleep(2)
+
+    monkeypatch.setattr(obs, "atomic_checkpoint", slow_write)
+    record = ob.run_archive(ANCHOR_DAY)
+    assert not record["body"]["canonical"]
+    assert ob.canonical(ANCHOR_DAY) is None
+
+
+def test_review_pacing_sleep_never_starts_a_get_after_cutoff(tmp_path):
+    ob, clock, deps = make_observer(tmp_path, start=(DAY1, "15:24:59"))
+    ob.reserve_request(DAY1, "previous")
+    clock.sleep(0.5)
+    result = ob.fetch_bars(
+        DAY1, "inputs", at(DAY1, "09:59:00"), at(DAY1, "09:59:00"), at(DAY1, "15:24:59.600000")
+    )
+    assert result["outcome"] == "cutoff_reached"
+    assert not deps.transport.calls
+
+
+def test_review_slow_clock_probe_cannot_make_late_inputs_usable(tmp_path):
+    ob, clock, deps = active(tmp_path)
+    archive_day(ob, clock, ANCHOR_DAY)
+    clock.set(DAY1, "15:24:58")
+
+    def slow_sync():
+        clock.sleep(5)
+        return "synchronized"
+
+    deps.clock_sync = slow_sync
+    record = ob.run_inputs(DAY1)
+    assert not record["body"]["usable"]
+    assert "inputs_completed_after_cutoff" in record["body"]["faults"]
+
+
+def test_review_verify_detects_deleted_referenced_raw(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    record = archive_day(ob, clock, ANCHOR_DAY)
+    path = ob.dir / record["body"]["fetch"]["attempts"][0]["raw_path"]
+    path.unlink()
+    assert any("raw_missing" in p for p in ob.verify_chain())
+
+
+def test_review_crash_temporary_is_not_ledger_corruption(tmp_path):
+    ob, _, _ = make_observer(tmp_path)
+    (ob.dir / "raw" / "tmp_crash_file").write_bytes(b"incomplete unreferenced write")
+    assert ob.verify_chain() == []
+
+
+def test_review_verify_binds_old_records_to_current_manifest(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    archive_day(ob, clock, ANCHOR_DAY)
+    path = ob.dir / "manifest.json"
+    manifest = json.loads(path.read_text())
+    manifest["source_delay_seconds"] = 0
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(obs.BindingMismatch, match="record_binding"):
+        obs.Observer(ob.dir, ob.deps)
+
+
+def test_review_corrupt_evidence_cannot_produce_performance_statistics(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    record = archive_day(ob, clock, ANCHOR_DAY)
+    (ob.dir / record["body"]["fetch"]["attempts"][0]["raw_path"]).unlink()
+    with pytest.raises(obs.BindingMismatch, match="ledger_integrity"):
+        ob.report()
+
+
+def test_review_runtime_binds_statistical_libraries():
+    assert {"numpy", "pandas", "statsmodels"} <= obs.runtime_binding().keys()
+
+
+def test_review_real_issuer_workbook_selects_only_spy(tmp_path):
+    ob, _, _ = make_observer(tmp_path)
+    source = (
+        ROOT
+        / "docs/research/artifacts-2026-10-25-intraday-gap/spdr-etf-historical-distributions.xlsx"
+    )
+    record = ob.ingest_distributions(
+        source,
+        sheet="dividend",
+        source_url="https://www.ssga.com/issuer.xlsx",
+        cusip="78462F103",
+        fund="SPY",
+        currency="USD",
+        decimals=6,
+        header_row=1,
+        columns={
+            "cusip": "CUSIP",
+            "ex_date": "EX-DATE",
+            "dividend": "DIVIDEND ($)",
+            "capital_gains": ["SHORT TERM CAPITAL GAIN ($)", "LONG TERM CAPITAL GAIN ($)"],
+        },
+        date_format="mdy",
+        covers_through="2026-09-30",
+        semantics_verified=True,
+    )
+    assert not record["body"]["defects"]
+    assert len(record["body"]["rows"]) == 136
+    assert any(r["ex_date"] == "2016-03-18" for r in record["body"]["rows"])
+
+
+def test_review_unmapped_capital_gains_cannot_be_complete(tmp_path):
+    ob, clock, _ = make_observer(tmp_path)
+    clock.set(ob.manifest["calendar"]["last_date"], "17:00:00")
+    record = ingest(
+        ob,
+        tmp_path,
+        [HEADER, [serial(DAY1), None, None, "1", "0"]],
+        columns={**COLUMNS, "capital_gains": []},
+    )
+    assert "capital_gain_columns_unmapped" in obs.distribution_reasons(
+        record, ob.manifest["calendar"]["last_date"]
+    )
+
+
 ROOT = Path(__file__).resolve().parents[2]
 ACTIVATION = "2026-10-28"  # Wed; third full session after it is Mon 2026-11-02 (DST ended 11-01)
 
@@ -150,7 +375,10 @@ def test_init_writes_unverified_unactivated_manifest(tmp_path, no_network):
     assert manifest["activated"] is False and manifest["source_preflight"] == "not_performed"
     assert manifest["source_delay_verified"] is False and manifest["source_delay_seconds"] == 900
     assert manifest["state_dir"] == str(state.resolve())
-    assert manifest["calendar"]["official_agreement"] == "agrees_with_offline_nyse_5_5_0"
+    assert (
+        manifest["calendar"]["official_agreement"]
+        == "operator_supplied_snapshot_matches_offline_calendar"
+    )
     for key in ("protocol", "code", "runtime"):
         assert manifest["bindings"][key]
     assert json.loads((state / "manifest.json").read_text()) == manifest
@@ -517,8 +745,28 @@ class Book:
 def active(tmp_path, book=None, transport=None, **kwargs):
     transport = transport or obs.SyntheticTransport(price_fn=book or Book(), closes=HALF_DAYS)
     ob, clock, deps = make_observer(tmp_path, transport, start=(ACTIVATION, "10:00:00"), **kwargs)
-    ob.activate("owner: ok build it, activate for rehearsal")
+    ob.activate("synthetic test activation", readiness_file=write_readiness(ob))
     return ob, clock, deps
+
+
+def write_readiness(ob):
+    """Synthetic readiness evidence for tests; this never verifies a live source."""
+    path = ob.dir / "synthetic-readiness.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema": "intraday_observer_readiness",
+                "status": "verified",
+                "manifest_sha256": ob.manifest_sha256,
+                "source_delay_seconds": ob.manifest["source_delay_seconds"],
+                "calendar_snapshot_sha256": ob.manifest["calendar"]["official_snapshot_sha256"],
+                "checks": dict.fromkeys(
+                    ("sip_access", "source_delay", "calendar_source", "synthetic_rehearsal"), True
+                ),
+            }
+        )
+    )
+    return path
 
 
 def archive_day(ob, clock, day, clock_text="16:20:05"):
@@ -549,11 +797,12 @@ def test_activation_must_be_on_the_registered_date_and_names_an_approval(tmp_pat
     clock.set(ACTIVATION, "10:00:00")
     with pytest.raises(obs.ObserverError, match="owner_approval_required"):
         ob.activate("  ")
-    record = ob.activate("approved by owner", readiness_sha256="a" * 64)
-    assert record["body"]["source_preflight"] == "not_performed"
-    assert record["body"]["source_delay_verified"] is False
+    ready = write_readiness(ob)
+    record = ob.activate("approved by owner", readiness_file=ready)
+    assert record["body"]["source_preflight"] == "verified"
+    assert record["body"]["source_delay_verified"] is True
     with pytest.raises(obs.DuplicateStage):
-        ob.activate("again")
+        ob.activate("again", readiness_file=ready)
 
 
 def test_a_normal_session_records_inputs_one_decision_and_canonical_valuation(tmp_path):
@@ -1111,7 +1360,7 @@ def test_report_for_three_sessions_has_known_counts_and_arithmetic(tmp_path):
     ob, clock, _ = three_sessions(tmp_path)
     report = ob.report()
     assert report["identity"]["activated"] is True and report["identity"]["mode"] == "live"
-    assert report["identity"]["source_preflight"] == "not_performed"
+    assert report["identity"]["source_preflight"] == "verified"
     assert (
         "locally" in report["evidence_note"].lower() or "local" in report["evidence_note"].lower()
     )
@@ -1256,7 +1505,7 @@ COLUMNS = {
 
 def ingest(ob, tmp_path, rows, **overrides):
     path = tmp_path / "issuer.xlsx"
-    path.write_bytes(make_xlsx(rows))
+    path.write_bytes(make_xlsx([["CUSIP", *rows[0]], *[["78462F103", *r] for r in rows[1:]]]))
     args = {
         "sheet": "Distributions",
         "source_url": "https://issuer.example/spy-distributions.xlsx",
@@ -1265,7 +1514,7 @@ def ingest(ob, tmp_path, rows, **overrides):
         "currency": "USD",
         "decimals": 4,
         "header_row": 1,
-        "columns": COLUMNS,
+        "columns": {**COLUMNS, "cusip": "CUSIP"},
         "date_format": "excel_serial",
         "covers_through": ob.manifest["calendar"]["last_date"],
         "semantics_verified": True,
@@ -1419,7 +1668,7 @@ def test_unknown_session_is_refused(tmp_path):
 def test_manifest_is_unchanged_by_activation_and_stays_unverified(tmp_path):
     ob, clock, _ = make_observer(tmp_path, start=(ACTIVATION, "10:00:00"))
     before = (tmp_path / "state" / "manifest.json").read_bytes()
-    ob.activate("owner approved")
+    ob.activate("owner approved", readiness_file=write_readiness(ob))
     assert (tmp_path / "state" / "manifest.json").read_bytes() == before
     manifest = json.loads(before)
     assert manifest["activated"] is False and manifest["source_preflight"] == "not_performed"
@@ -1507,8 +1756,20 @@ def test_cli_prepares_activates_runs_a_session_and_reports(tmp_path, capsys, mon
     assert code == 0 and json.loads(out)["activated"] is False
     code, _, err = run_cli(["inputs", *base, "--session", DAY1], deps, capsys)
     assert code == 2 and "NotActivated" in err  # prepared is not active
+    ready = write_readiness(obs.Observer(state, deps))
     assert (
-        run_cli(["activate", *base, "--owner-approval", "owner OK 2026-10-28"], deps, capsys)[0]
+        run_cli(
+            [
+                "activate",
+                *base,
+                "--owner-approval",
+                "synthetic test approval",
+                "--readiness-file",
+                str(ready),
+            ],
+            deps,
+            capsys,
+        )[0]
         == 0
     )
     steps = [

@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from functools import lru_cache
+from importlib.metadata import version as package_version
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
@@ -320,6 +321,7 @@ def runtime_binding() -> dict:
         "python": platform.python_version(),
         "requests": requests.__version__,
         "pandas_market_calendars": offline_calendar_version(),
+        **{name: package_version(name) for name in ("numpy", "pandas", "statsmodels")},
     }
     return {**versions, "sha256": canonical_hash(versions)}
 
@@ -365,6 +367,7 @@ def init_state(
     rows, snapshot_sha = load_official_calendar(official_calendar_file)
     calendar = build_calendar(rows, activation_date)
     calendar["official_snapshot_sha256"] = snapshot_sha
+    calendar["official_agreement"] = "operator_supplied_snapshot_matches_offline_calendar"
     manifest = {
         "schema": SCHEMA,
         "version": VERSION,
@@ -601,6 +604,13 @@ class Observer:
             "runtime": frozen["runtime"]["sha256"],
             "manifest": self.manifest_sha256,
         }
+        for name in self._names():
+            try:
+                record = json.loads((self.dir / "records" / name).read_text())
+            except (ValueError, OSError):
+                continue  # verify reports unreadable evidence without decoding its fields.
+            if isinstance(record, dict) and record.get("bindings") != self.bindings:
+                raise BindingMismatch("record_binding_mismatch")
 
     # clock -------------------------------------------------------------------------------
 
@@ -625,7 +635,28 @@ class Observer:
 
     def records(self) -> list[dict]:
         """All records in sequence order."""
-        return [json.loads((self.dir / "records" / n).read_text()) for n in self._names()]
+        try:
+            records = [json.loads((self.dir / "records" / n).read_text()) for n in self._names()]
+            if any(
+                not isinstance(r, dict)
+                or not {
+                    "seq",
+                    "stage",
+                    "session",
+                    "kind",
+                    "body",
+                    "bindings",
+                    "sha256",
+                    "recorded_utc",
+                }
+                <= r.keys()
+                or not isinstance(r["body"], dict)
+                for r in records
+            ):
+                raise ValueError("record_fields_missing")
+            return records
+        except (ValueError, TypeError, OSError):
+            raise ObserverError("ledger_record_invalid") from None
 
     @contextmanager
     def _ledger_lock(self) -> Iterator[None]:
@@ -677,21 +708,56 @@ class Observer:
         for number, name in enumerate(self._names(), start=1):
             try:
                 record = json.loads((self.dir / "records" / name).read_text())
-            except ValueError:
+            except (ValueError, OSError):
                 problems.append(f"record_unreadable:{name}")
+                continue
+            if not isinstance(record, dict):
+                problems.append(f"record_invalid:{name}")
                 continue
             claimed = record.pop("sha256", None)
             if canonical_hash(record) != claimed:
                 problems.append(f"record_hash_mismatch:{name}")
-            if record["seq"] != number or not name.startswith(f"{number:06d}__"):
+            if record.get("seq") != number or not name.startswith(f"{number:06d}__"):
                 problems.append(f"sequence_gap:{name}")
-            if record["prev_sha256"] != previous:
+            if record.get("prev_sha256") != previous:
                 problems.append(f"chain_broken:{name}")
+            if record.get("bindings") != self.bindings:
+                problems.append(f"record_binding_mismatch:{name}")
+            if not isinstance(record.get("body"), dict):
+                problems.append(f"record_invalid:{name}")
+            for raw_path in self._raw_references(record):
+                if not re.fullmatch(r"raw/[a-f0-9]{64}\.bin", raw_path):
+                    problems.append(f"raw_path_invalid:{name}")
+                elif not (self.dir / raw_path).is_file():
+                    problems.append(f"raw_missing:{raw_path}")
             previous = claimed
         for path in (self.dir / "raw").iterdir():
+            if not re.fullmatch(r"[a-f0-9]{64}\.bin", path.name):
+                continue  # Unreferenced crash temporaries are reported separately, never evidence.
             if path.stem != hashlib.sha256(path.read_bytes()).hexdigest():
                 problems.append(f"raw_hash_mismatch:{path.name}")
         return problems
+
+    @staticmethod
+    def _raw_references(value: Any) -> Iterator[str]:
+        """Find referenced payloads even if the corresponding file has been deleted."""
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if key == "raw_path" and isinstance(item, str):
+                    yield item
+                else:
+                    yield from Observer._raw_references(item)
+        elif isinstance(value, list):
+            for item in value:
+                yield from Observer._raw_references(item)
+
+    def stray_raw_files(self) -> list[str]:
+        """Non-evidence files left by interrupted writes; no automatic deletion."""
+        return sorted(
+            p.name
+            for p in (self.dir / "raw").iterdir()
+            if not re.fullmatch(r"[a-f0-9]{64}\.bin", p.name)
+        )
 
     def store_raw(self, body: bytes) -> tuple[str, str]:
         """Write the exact response bytes once, keyed by their hash."""
@@ -801,6 +867,9 @@ class Observer:
                     return result
                 request = dict(params, **({"page_token": token} if token else {}))
                 requested = self.clock()
+                if requested >= cutoff:
+                    result["outcome"] = "cutoff_reached"
+                    return result
                 try:
                     reply = self.deps.transport.get(BARS_URL, request)
                 except (RequestDeadline, requests.RequestException):
@@ -905,8 +974,48 @@ class Observer:
 
     def stage_record(self, day: str, stage: str) -> dict | None:
         """One completed stage record, if it exists."""
-        return next(
-            (r for r in self.records() if r["session"] == day and r["stage"] == stage), None
+        return self.completed_stage([r for r in self.records() if r["session"] == day], stage)
+
+    @staticmethod
+    def completed_stage(records: list[dict], stage: str) -> dict | None:
+        """An interrupted durable write cannot become a completed timely decision."""
+        stages = {r["stage"]: r for r in records}
+        base = stages.get(stage)
+        if base and base["body"].get("requires_completion"):
+            return stages.get(f"{stage}.completion")
+        return base
+
+    def append_timed(
+        self,
+        day: str,
+        stage: str,
+        body: dict,
+        at: datetime,
+        cutoff: datetime,
+        sync: str,
+    ) -> dict:
+        """Preserve the durable stage, then attest when its publication finished."""
+        prepared = self.append(
+            "stage", day, stage, {**body, "requires_completion": True}, at, clock_status=sync
+        )
+        finished = self.clock()
+        complete = {
+            **body,
+            "source_record_sha256": prepared["sha256"],
+            "publication_completed_utc": iso(finished),
+        }
+        if finished >= cutoff and (body.get("usable") or body.get("timely_valid")):
+            complete.update(
+                status="fault",
+                usable=False,
+                timely=False,
+                timely_valid=False,
+                observer_side=0,
+                signal_side=None,
+            )
+            complete["faults"] = [*body["faults"], f"{stage}_publication_after_cutoff"]
+        return self.append(
+            "stage_completion", day, f"{stage}.completion", complete, finished, clock_status=sync
         )
 
     def canonical(self, day: str) -> dict | None:
@@ -917,6 +1026,7 @@ class Observer:
                 for r in self.records()
                 if r["session"] == day
                 and r["stage"].startswith("archive.")
+                and not r["body"].get("requires_completion")
                 and r["body"].get("canonical")
             ),
             None,
@@ -925,7 +1035,8 @@ class Observer:
     def next_capture_no(self, day: str) -> int:
         """Sequence number for the next archive capture of the session."""
         return 1 + sum(
-            r["session"] == day and r["stage"].startswith("archive.") for r in self.records()
+            r["session"] == day and re.fullmatch(r"archive\.\d+", r["stage"]) is not None
+            for r in self.records()
         )
 
     def require_active(self) -> None:
@@ -940,18 +1051,49 @@ class Observer:
         except Exception:
             return "unknown"
 
-    def activate(self, owner_approval: str, readiness_sha256: str | None = None) -> dict:
+    def activate(
+        self,
+        owner_approval: str,
+        readiness_sha256: str | None = None,
+        readiness_file: Path | None = None,
+    ) -> dict:
         """Write the activation record; only on the registered date and with a named approval."""
         if not owner_approval.strip():
             raise ObserverError("owner_approval_required")
         now = self.clock()
         if ny_date(now) != self.manifest["calendar"]["activation_date"]:
             raise ClockMismatch("activation_date_mismatch")
+        readiness_path = None
+        if self.manifest["mode"] == "live":
+            if readiness_file is None:
+                raise ObserverError("readiness_file_required")
+            raw = Path(readiness_file).read_bytes()
+            evidence = json.loads(raw)
+            required = {
+                "schema": "intraday_observer_readiness",
+                "status": "verified",
+                "manifest_sha256": self.manifest_sha256,
+                "source_delay_seconds": self.manifest["source_delay_seconds"],
+                "calendar_snapshot_sha256": self.manifest["calendar"]["official_snapshot_sha256"],
+            }
+            checks = ("sip_access", "source_delay", "calendar_source", "synthetic_rehearsal")
+            if (
+                not isinstance(evidence, dict)
+                or any(evidence.get(k) != v for k, v in required.items())
+                or not isinstance(evidence.get("checks"), dict)
+                or any(evidence.get("checks", {}).get(k) is not True for k in checks)
+            ):
+                raise ObserverError("readiness_evidence_mismatch")
+            digest = hashlib.sha256(raw).hexdigest()
+            if readiness_sha256 is not None and readiness_sha256 != digest:
+                raise ObserverError("readiness_hash_mismatch")
+            readiness_sha256, readiness_path = self.store_raw(raw)
         body = {
             "owner_approval": owner_approval,
             "readiness_sha256": readiness_sha256,
-            "source_preflight": self.manifest["source_preflight"],
-            "source_delay_verified": self.manifest["source_delay_verified"],
+            "raw_path": readiness_path,
+            "source_preflight": "verified" if readiness_path else "synthetic_only",
+            "source_delay_verified": readiness_path is not None,
         }
         return self.append("activation", None, "activation", body, now)
 
@@ -979,7 +1121,11 @@ class Observer:
             faults = [] if success else [f"fetch_{fetch['outcome']}"]
             faults += [f"missing_bar:{label}" for label in missing] if success else []
             valid = success and not missing
-            on_time = completed <= utc_at(day, STAGE_CLOCKS["archive_due"] + ":00")
+            on_time = (
+                completed < cutoff
+                if bootstrap
+                else completed <= utc_at(day, STAGE_CLOCKS["archive_due"] + ":00")
+            )
             if valid and completed >= grace_end:
                 faults.append("completed_after_grace")
             if not on_time:
@@ -1010,7 +1156,31 @@ class Observer:
                     "input_close_0959": seen["c"],
                     "archive_close_0959": values["close_0959"],
                 }
-            return self.append("stage", day, stage, body, completed, clock_status=sync)
+            prepared = self.append(
+                "stage",
+                day,
+                stage,
+                {**body, "requires_completion": True},
+                completed,
+                clock_status=sync,
+            )
+            finished = self.clock()
+            body["publication_completed_utc"] = iso(finished)
+            body["source_record_sha256"] = prepared["sha256"]
+            body["on_time"] = (
+                finished < cutoff
+                if bootstrap
+                else finished <= utc_at(day, STAGE_CLOCKS["archive_due"] + ":00")
+            )
+            body["late_capture"] = valid and not body["on_time"]
+            body["canonical"] = valid and finished < grace_end and self.canonical(day) is None
+            if not body["on_time"] and "archive_late" not in faults:
+                faults.append("archive_late")
+            if valid and finished >= grace_end and "completed_after_grace" not in faults:
+                faults.append("completed_after_grace")
+            return self.append(
+                "stage_completion", day, f"{stage}.completion", body, finished, clock_status=sync
+            )
 
     def run_inputs(self, day: str | None = None) -> dict:
         """15:20 stage: freeze the prior anchor and today's 09:59 close, nothing later."""
@@ -1037,7 +1207,10 @@ class Observer:
                 body["timely"] = False
             else:
                 previous, _ = self.neighbours(day)
-                if row["slot"] == 1 and self.canonical(previous) is None:
+                first_full = next(
+                    r["date"] for r in self.effective_rows() if r["slot"] and r["kind"] == "full"
+                )
+                if day == first_full and self.canonical(previous) is None:
                     self.capture(
                         previous,
                         self.next_capture_no(previous),
@@ -1067,16 +1240,18 @@ class Observer:
                         faults.append("missing_0959_bar")
                     else:
                         body["bar_0959"] = fetch["bars"][0]
+                sync = self.clock_status()
                 completed = self.clock()
                 body["completed_utc"] = iso(completed)
                 body["timely"] = completed < cutoff
                 if not body["timely"]:
                     faults.append("inputs_completed_after_cutoff")
-            sync = self.clock_status()
+            if now >= cutoff:
+                sync = self.clock_status()
             if sync != CLOCK_STATUS_OK:
                 faults.append(f"clock_{sync}")
             body.update(faults=faults, usable=not faults, status="fault" if faults else "ok")
-            return self.append("stage", day, "inputs", body, self.clock(), clock_status=sync)
+            return self.append_timed(day, "inputs", body, self.clock(), cutoff, sync)
 
     def halt_reasons(self, day: str) -> list[dict]:
         """Open halting faults before the session, minus those cleared by an approved resume."""
@@ -1085,22 +1260,36 @@ class Observer:
             reasons.append({"reason": "ledger_integrity", "origin": None})
         try:
             records = self.records()
-        except ValueError:
+        except ObserverError:
             return reasons
         decisions: dict[str, list[dict]] = {}
         for record in records:
             if record["stage"] == "decision":
-                decisions.setdefault(record["session"], []).append(record)
+                completed = self.completed_stage(
+                    [r for r in records if r["session"] == record["session"]], "decision"
+                )
+                if completed:
+                    decisions.setdefault(record["session"], []).append(completed)
         now = self.clock()
+        canonical_days = {
+            r["session"]
+            for r in records
+            if r["body"].get("canonical")
+            and r["stage"].startswith("archive.")
+            and not r["body"].get("requires_completion")
+        }
         for row in self.effective_rows():
             found = decisions.get(row["date"], [])
             if len(found) > 1:
                 reasons.append({"reason": "conflicting_decisions", "origin": row["date"]})
             traded = any(r["body"].get("observer_side") == 1 for r in found)
-            if row["slot"] and row["date"] < day and traded and self.canonical(row["date"]) is None:
+            if row["slot"] and row["date"] < day and traded and row["date"] not in canonical_days:
                 grace_end = utc_at(self.neighbours(row["date"])[1], STAGE_CLOCKS["inputs"] + ":00")
                 state = "unresolved_valuation" if now >= grace_end else "pending_valuation"
                 reasons.append({"reason": state, "origin": row["date"]})
+        checkpoint = self.checkpoint_status(records)
+        if checkpoint["reached"] and checkpoint["failures"]:
+            reasons.append({"reason": "checkpoint_failed", "origin": checkpoint["date"]})
         resumes = [
             a["session"]
             for a in records
@@ -1111,6 +1300,60 @@ class Observer:
             for r in reasons
             if r["origin"] is None or not any(r["origin"] < eff <= day for eff in resumes)
         ]
+
+    def checkpoint_status(self, records: list[dict] | None = None) -> dict:
+        """Check all eligible observation slots, including stages never recorded."""
+        day = self.manifest["calendar"]["checkpoint_date"]
+        reached = self.clock() >= utc_at(self.neighbours(day)[1], "15:20:00")
+        failures = []
+        if reached:
+            by_day: dict[str, list[dict]] = {}
+            for record in records if records is not None else self.records():
+                by_day.setdefault(record["session"], []).append(record)
+            for row in self.effective_rows():
+                if not row["slot"] or row["slot"] > CHECKPOINT_SLOT:
+                    continue
+                entries = by_day.get(row["date"], [])
+                required = ("inputs", "decision") if row["kind"] == "full" else ()
+                for stage in required:
+                    if self.completed_stage(entries, stage) is None:
+                        failures.append(
+                            {
+                                "session": row["date"],
+                                "stage": stage,
+                                "fault": f"missing_stage:{stage}",
+                            }
+                        )
+                archives = [
+                    r
+                    for r in entries
+                    if r["stage"].startswith("archive.")
+                    and not r["body"].get("requires_completion")
+                ]
+                if row["kind"] != "closed" and not any(
+                    r["body"].get("canonical") and r["body"].get("on_time") for r in archives
+                ):
+                    failures.append(
+                        {
+                            "session": row["date"],
+                            "stage": "archive",
+                            "fault": "missing_timely_valuation",
+                        }
+                    )
+                failures.extend(
+                    {"session": row["date"], "stage": r["stage"], "fault": fault}
+                    for r in entries
+                    if not r["stage"].startswith("revision.")
+                    and not r["body"].get("requires_completion")
+                    for fault in r["body"].get("faults", [])
+                )
+        return {
+            "slot": CHECKPOINT_SLOT,
+            "date": day,
+            "reached": reached,
+            "conditions_met": not failures if reached else None,
+            "failures": failures,
+        }
 
     def amend_resume(self, effective_session: str, owner_approval: str) -> dict:
         """Owner-approved resume of new positions, effective from a future session's 15:20."""
@@ -1134,6 +1377,13 @@ class Observer:
         if not owner_approval.strip():
             raise ObserverError("owner_approval_required")
         original = self.session_row(day)
+        now = self.clock()
+        if now >= utc_at(day, "15:20:00") or any(
+            r["session"] == day
+            and (r["stage"] in ("inputs", "decision") or r["stage"].startswith("archive."))
+            for r in self.records()
+        ):
+            raise ObserverError("calendar_amendment_after_observation")
         if status == "exchange_closed":
             revised = {**original, "kind": "closed", "close": None, "close_minute": None}
         elif status == "early_close":
@@ -1151,7 +1401,6 @@ class Observer:
             }
         else:
             raise ObserverError("amendment_status_invalid")
-        now = self.clock()
         number = len(self.amendments()) + 1
         body = {
             "type": "session_status",
@@ -1188,6 +1437,7 @@ class Observer:
                 return self.append("stage", day, "decision", body, now)
             inputs = self.stage_record(day, "inputs")  # the only evidence a decision may read
             sync = self.clock_status()
+            reasons = self.halt_reasons(day)
             completed = self.clock()
             if now >= window_end:
                 faults.append("decision_window_missed")
@@ -1206,7 +1456,6 @@ class Observer:
                     inputs["body"]["prior"]["close"],
                     inputs["body"]["bar_0959"]["c"],
                 )
-                reasons = self.halt_reasons(day)
                 body.update(
                     inputs_ref=inputs["sha256"],
                     r_first=first_return(prior_close, p0959),
@@ -1219,7 +1468,7 @@ class Observer:
             body["faults"] = faults
             body["completed_utc"] = iso(completed)
             body["status"] = "fault" if faults else "halted_no_position" if body["halted"] else "ok"
-            return self.append("stage", day, "decision", body, completed, clock_status=sync)
+            return self.append_timed(day, "decision", body, completed, window_end, sync)
 
     def run_archive(self, day: str | None = None) -> dict:
         """16:20 stage (also recovery): capture the session's closing snapshot inside its grace."""
@@ -1315,10 +1564,16 @@ class Observer:
         vendor_rows: list[dict] | None = None,
     ) -> dict:
         """Freeze one local issuer publication (bytes, hash, columns); revisions are new records."""
+        if cusip != "78462F103":
+            raise ObserverError("spy_cusip_required")
         raw = Path(path).read_bytes()
         now = self.clock()
         rows, defects = parse_distributions(
-            read_xlsx(raw, sheet), columns, header_row=header_row, date_format=date_format
+            read_xlsx(raw, sheet),
+            columns,
+            header_row=header_row,
+            date_format=date_format,
+            cusip=cusip,
         )
         digest, raw_path = self.store_raw(raw)
         number = 1 + sum(r["stage"].startswith("distributions.") for r in self.records())
@@ -1348,6 +1603,8 @@ class Observer:
 
     def report(self) -> dict:
         """Descriptive report of everything recorded; counts, faults and unknowns, no verdicts."""
+        if self.verify_chain():
+            raise BindingMismatch("ledger_integrity")
         as_of = self.clock()
         cal = self.manifest["calendar"]
         records = self.records()
@@ -1357,6 +1614,7 @@ class Observer:
         faults = [
             {"session": r["session"], "stage": r["stage"], "fault": fault}
             for r in records
+            if not r["body"].get("requires_completion")
             for fault in r["body"].get("faults", [])
         ]
         slots = dict.fromkeys(
@@ -1383,9 +1641,12 @@ class Observer:
         for row in self.effective_rows():
             day = row["date"]
             recs = by_session.get(day, [])
-            stages = {r["stage"]: r for r in recs}
-            inputs, decision = stages.get("inputs"), stages.get("decision")
-            captures = [r for r in recs if r["stage"].startswith("archive.")]
+            inputs, decision = (self.completed_stage(recs, s) for s in ("inputs", "decision"))
+            captures = [
+                r
+                for r in recs
+                if r["stage"].startswith("archive.") and not r["body"].get("requires_completion")
+            ]
             canonical = next((r for r in captures if r["body"].get("canonical")), None)
             started = as_of >= utc_at(day, STAGE_CLOCKS["inputs"] + ":00")
             grace_end = utc_at(self.neighbours(day)[1], STAGE_CLOCKS["inputs"] + ":00")
@@ -1519,18 +1780,9 @@ class Observer:
                 ],
                 "ex_dates_zeroed": sorted(d for d in cash if any(d == e[0] for e in fixed_entries)),
             }
-        checkpoint_slot = next(
-            r for r in self.effective_rows() if r["date"] == cal["checkpoint_date"]
-        )
-        early = [
-            f
-            for f in faults
-            if f["session"]
-            and f["session"] <= cal["checkpoint_date"]
-            and not f["stage"].startswith("revision.")
-        ]
-        reached = as_of >= utc_at(self.neighbours(checkpoint_slot["date"])[1], "15:20:00")
+        checkpoint = self.checkpoint_status(records)
         halts = self.halt_reasons("9999-12-31")
+        activation = next((r["body"] for r in records if r["stage"] == "activation"), {})
         return {
             "schema": "intraday_observer_report",
             "version": VERSION,
@@ -1546,11 +1798,17 @@ class Observer:
                 "manifest_sha256": self.manifest_sha256,
                 "bindings": self.bindings,
                 "state_dir": self.manifest["state_dir"],
-                "source_preflight": self.manifest["source_preflight"],
+                "source_preflight": activation.get(
+                    "source_preflight", self.manifest["source_preflight"]
+                ),
                 "source_delay_seconds": self.manifest["source_delay_seconds"],
-                "source_delay_verified": self.manifest["source_delay_verified"],
+                "source_delay_verified": activation.get("source_delay_verified", False),
             },
-            "integrity": {"records": len(records), "problems": self.verify_chain()},
+            "integrity": {
+                "records": len(records),
+                "problems": self.verify_chain(),
+                "stray_raw_files": self.stray_raw_files(),
+            },
             "calendar": {
                 "first_date": cal["first_date"],
                 "checkpoint_date": cal["checkpoint_date"],
@@ -1573,13 +1831,7 @@ class Observer:
             "faults": faults,
             "operational": {
                 **operational,
-                "checkpoint": {
-                    "slot": CHECKPOINT_SLOT,
-                    "date": cal["checkpoint_date"],
-                    "reached": reached,
-                    "conditions_met": (not early) if reached else None,
-                    "failures": early if reached else [],
-                },
+                "checkpoint": checkpoint,
             },
             "fixed_rule": {
                 "complete": not fixed_stopped and not gaps and slots["future"] == 0,
@@ -1843,16 +2095,19 @@ def _cell_date(value: Any, date_format: str) -> str | None:
         return None
     if date_format == "excel_serial":
         return (EXCEL_EPOCH + timedelta(days=int(float(value)))).isoformat()
+    if date_format == "mdy":
+        return datetime.strptime(str(value), "%m/%d/%Y").date().isoformat()
     return valid_date(str(value))
 
 
 def parse_distributions(
-    rows: list[list], columns: dict, *, header_row: int, date_format: str
+    rows: list[list], columns: dict, *, header_row: int, date_format: str, cusip: str
 ) -> tuple[list[dict], list[str]]:
     """Map issuer sheet rows to distribution records, listing every defect found."""
     header = rows[header_row - 1] if 0 < header_row <= len(rows) else []
     index = {str(name): i for i, name in enumerate(header)}
     wanted = [columns["ex_date"], columns["dividend"], *columns.get("capital_gains", [])]
+    wanted += [columns["cusip"]] if columns.get("cusip") else []
     wanted += [columns[k] for k in ("record_date", "pay_date") if columns.get(k)]
     defects = [f"header_missing:{name}" for name in wanted if name not in index]
     if defects:
@@ -1865,6 +2120,8 @@ def parse_distributions(
     parsed, seen = [], set()
     for row in rows[header_row:]:
         if all(v in (None, "") for v in row):
+            continue
+        if columns.get("cusip") and str(at(row, columns["cusip"])).strip() != cusip:
             continue
         try:
             ex = _cell_date(at(row, columns["ex_date"]), date_format)
@@ -1902,6 +2159,8 @@ def parse_distributions(
                 "capital_gains": gains,
             }
         )
+    if not parsed:
+        defects.append("no_matching_distribution_rows")
     return parsed, defects
 
 
@@ -1930,6 +2189,10 @@ def distribution_reasons(source: dict | None, last_date: str) -> list[str]:
         reasons.append("currency_unresolved")
     if not body["semantics_verified"]:
         reasons.append("field_semantics_unverified")
+    if not body["columns"].get("cusip"):
+        reasons.append("fund_identity_unverified")
+    if not body["columns"].get("capital_gains"):
+        reasons.append("capital_gain_columns_unmapped")
     if any(v is None for row in body["rows"] for v in row["capital_gains"].values()):
         reasons.append("capital_gain_blank_unknown")
     if body["vendor_differences"]:
@@ -2094,6 +2357,9 @@ def build_parser() -> argparse.ArgumentParser:
     p = command("activate", "write the activation record (registered date, owner approval)")
     p.add_argument("--owner-approval", required=True)
     p.add_argument("--readiness-sha256")
+    p.add_argument(
+        "--readiness-file", type=Path, help="verified, manifest-bound preflight JSON; required live"
+    )
     for name, text in (
         ("inputs", "15:20 ET: freeze prior anchor and 09:59 close"),
         ("decide", "15:25 ET: write the one immutable side from frozen inputs"),
@@ -2119,7 +2385,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--currency", help="documented currency (USD); omitted means unresolved")
     p.add_argument("--decimals", type=int, required=True)
     p.add_argument("--header-row", type=int, default=1)
-    p.add_argument("--date-format", choices=("iso", "excel_serial"), required=True)
+    p.add_argument("--date-format", choices=("iso", "excel_serial", "mdy"), required=True)
+    p.add_argument("--col-cusip", help="CUSIP column used to select the requested fund")
     p.add_argument("--col-ex-date", required=True)
     p.add_argument("--col-dividend", required=True)
     p.add_argument("--col-record-date")
@@ -2168,7 +2435,11 @@ def run_observer_command(args: argparse.Namespace, deps: Deps) -> int:
     day = getattr(args, "session", None)
     command = args.command
     if command == "activate":
-        emit(stage_summary(ob.activate(args.owner_approval, args.readiness_sha256)))
+        emit(
+            stage_summary(
+                ob.activate(args.owner_approval, args.readiness_sha256, args.readiness_file)
+            )
+        )
     elif command in SESSION_COMMANDS:
         run = {
             "inputs": ob.run_inputs,
@@ -2184,6 +2455,7 @@ def run_observer_command(args: argparse.Namespace, deps: Deps) -> int:
         emit(stage_summary(ob.amend_session(day, args.status, args.close, args.owner_approval)))
     elif command == "distributions":
         columns = {
+            "cusip": args.col_cusip,
             "ex_date": args.col_ex_date,
             "dividend": args.col_dividend,
             "record_date": args.col_record_date,
@@ -2216,7 +2488,13 @@ def run_observer_command(args: argparse.Namespace, deps: Deps) -> int:
         )
     elif command == "verify":
         problems = ob.verify_chain()
-        emit({"problems": problems, "records": len(ob.records())})
+        emit(
+            {
+                "problems": problems,
+                "stray_raw_files": ob.stray_raw_files(),
+                "records": len(ob._names()),
+            }
+        )
         return 1 if problems else 0
     elif command == "report":
         report = ob.report()
