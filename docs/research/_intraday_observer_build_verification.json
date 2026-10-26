@@ -1,0 +1,51 @@
+{
+  "activation": "not_authorized_not_performed",
+  "code_commit": "4ab01d1",
+  "code_files": {
+    "scripts/intraday_observe.py": "69715c6d9f014ede21bd11fc0dd0d2f21eafad854fab5d963b1fdc021be43904",
+    "src/ggTrader/lab/intraday_observer.py": "e6e6f0913c3840832a2427cadee2ef64011997ee8885f5cfe23859cee89e2ef4",
+    "tests/lab/test_intraday_observer.py": "c33f1c0918cde979f5f36226f9deee9536de31a9b18cfa21fccbd894606aa52b"
+  },
+  "focused_tests": {
+    "log": "/tmp/ggtrader-observer-review-final.log",
+    "passed": 118,
+    "seconds": 54.29
+  },
+  "full_suite": {
+    "deselected": 30,
+    "exit_code": 0,
+    "log": "/tmp/ggtrader-observer-full-tests-final.log",
+    "log_sha256": "b3ba852b72d1494006554b3953071ac5af772ad73f1aec1e05e81c2588ace1ab",
+    "passed": 1857,
+    "seconds": 393.99,
+    "warning": "Existing websockets.legacy deprecation in headline sentiment test",
+    "warnings": 1
+  },
+  "independent_final_checks": {
+    "code_hashes": "matched",
+    "full_suite_at_child_read": "pending",
+    "full_suite_final_result_verified_by": "parent",
+    "model": "gemini-3.8-flash-high",
+    "provider": "antigravity",
+    "rehearsal_hash_and_mode": "matched_synthetic_only",
+    "ruff_and_diff": "passed"
+  },
+  "network_used_for_build": false,
+  "orders": false,
+  "rehearsal": {
+    "integrity_problems": [],
+    "mode": "rehearsal",
+    "report_sha256": "71ef91c9d70417744882a5ff174650b1cd129a855b859da90eb547fb1edf1018",
+    "sessions": [
+      "2026-11-30",
+      "2026-12-01",
+      "2026-12-02"
+    ]
+  },
+  "ruff_check": "passed",
+  "ruff_format_check": "280 files formatted",
+  "scheduler_installed": false,
+  "schema": "intraday_observer_build_verification_v1",
+  "source_readiness": "unverified",
+  "status": "offline_build_verified_not_activated"
+}

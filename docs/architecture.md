@@ -343,3 +343,21 @@ rehashes/revalidates those identities and claims the collection directory before
 calculating returns. The original metadata-only Stage 0A code/artifact stays
 separate. See the [r8 protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md)
 and [CLI reference](cli_reference.md) for the current authorization boundary.
+
+
+## Prospective intraday observer
+
+`lab/intraday_observer.py` owns an isolated file-based observer, hypothetical
+accounting, calendar slots and append-only source/decision evidence.
+`scripts/intraday_observe.py` exposes manual commands; it is not a `ggt paper`
+subcommand. Safe helpers are reused from `intraday_probe.py`; the historical r8
+scorer and production broker path are not imported or modified.
+
+Each state directory contains an immutable manifest, raw source payloads,
+hash-chained records, exclusive stage claims and a shared per-date GET budget.
+Offline rehearsal uses a synthetic transport and simulated clock. No scheduling
+or real data collection is enabled by installation/import. Timely stages require a durable publication-completion record; interrupted writes
+cannot become completed decisions. Activation requires a manifest-bound readiness
+artifact; actual entitlement, latency and source readiness remain unverified.
+See the [protocol](research/briefs/2026-10-25-intraday-prospective-observation.md)
+and [CLI reference](cli_reference.md#prospective-intraday-practice-journal).

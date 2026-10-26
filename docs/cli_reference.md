@@ -15,6 +15,40 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 ---
 
+## Prospective intraday practice journal
+
+`intraday_observe.py` is a standalone research recorder and hypothetical journal.
+It does not submit orders or use the production paper account. No observer or scheduler has been activated. Independent review findings were
+corrected and regression-tested; the final full capped suite passes.
+
+Safe offline commands:
+
+```bash
+.venv/bin/python scripts/intraday_observe.py --help
+.venv/bin/python scripts/intraday_observe.py plan
+.venv/bin/python scripts/intraday_observe.py rehearse --work-dir /tmp/ggtrader-observer-demo
+```
+
+`rehearse` requires a new empty path and runs three synthetic sessions with fake
+prices and a simulated clock. It saves a practice report; it proves neither real
+source access nor strategy profitability. No credentials or network are needed.
+
+`init` prepares a new state directory from an explicit calendar snapshot, protocol
+hash, activation date and assumed source delay. It does not enable collection.
+`inputs`, `decide`, `archive` and `recover` are manual session stages; `revise`
+retains corrections separately. `verify` checks evidence and `report` produces
+local descriptive JSON. Use each subcommand's `--help` for required parameters.
+Live activation requires an owner approval record and a manifest-bound readiness
+JSON supplied with `--readiness-file`; a label or checksum alone is insufficient.
+The readiness file records verified source access/delay, calendar provenance and
+synthetic rehearsal. Its assertions require operator-checked source evidence;
+the offline build does not perform or certify that real-source preflight. Do
+not invoke `activate` as part of trying the offline demo. There are no timers.
+The issuer importer supports `--date-format mdy` and `--col-cusip CUSIP` for
+State Street's multi-fund workbook. Missing identity mapping or capital-gain
+columns keep the comparison incomplete; blank gains are not converted to zero.
+See the [prospective protocol](research/briefs/2026-10-25-intraday-prospective-observation.md).
+
 ## Intraday Stage 0A coverage probe
 
 ```bash
@@ -42,6 +76,9 @@ Stage 0B and strategy backtesting require their separate authorization.
 ```
 
 The standalone script implements the [approved r8 proxy protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md).
+The historical r8 study is now closed UNRESOLVED (data); do not re-pull or score
+its frozen dataset. See the [completed investigation](research/2026-10-25-intraday-gap-investigation.md).
+The commands below describe the preserved implementation, not permission to reopen it.
 Help, no command and `plan` need no credentials, network or writes. Approval 1
 covers mocked implementation only; real collection and candidate scoring require
 approval 2 after code review. The intended data are SPY raw SIP bars, the paper

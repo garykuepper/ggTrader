@@ -113,6 +113,11 @@ src/ggTrader/
 
 ## Documentation
 
+The prospective intraday recorder and practice journal is available for offline
+rehearsal through `scripts/intraday_observe.py`. It sends no orders and has no
+installed schedule. Live-source readiness is unverified; the observer stays off pending its separate
+readiness and activation step. See [offline usage](docs/cli_reference.md#prospective-intraday-practice-journal).
+
 The standalone intraday r8 research pipeline supports planning, collection,
 signal-blind validation and a single fixed score. Only mocked implementation is
 authorized so far; historical collection/scoring remain pending approval 2. See

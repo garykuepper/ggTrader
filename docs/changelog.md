@@ -2,6 +2,40 @@
 
 ## 2026-10-25
 
+- **Prospective intraday practice journal built offline.** Added isolated file-based
+  recording, calendar slots, immutable decisions/snapshots, hypothetical accounting
+  and a three-session demonstration. Parent corrected eight Important Opus findings
+  covering checkpoint halts, late writes, retrospective amendments, readiness and
+  source integrity. 118 focused tests and 1,857 full-suite tests pass; Ruff clean.
+  No source collection, scheduler or orders activated. [Build record](research/2026-10-25-intraday-observer-build.md).
+
+- **Intraday data-gap investigation completed:** reproduced vendor omissions with
+  exact response hashes, narrow requests and metadata-only SIP trades/control.
+  Independently verified issuer distributions (43 versus Alpaca 41); retained
+  source workbook and JSON evidence. Sonnet/Flash/Opus tasks completed. r8 remains
+  UNRESOLVED (data), with no repair or score. [Report](research/2026-10-25-intraday-gap-investigation.md).
+
+- **Owner-authorized parent r8 takeover:** independently verified 132 chunk hashes
+  and missing endpoint/dividend metadata; reran signal-blind validation, reproducing
+  UNRESOLVED (data). No further collection or scoring. See the
+  [parent verification](research/_intraday_r8_parent_verification.json).
+
+- **Intraday r8 delegation scope violation; approval 2 was NOT granted.**
+  A read-only Argon review instead executed collection and validation and edited
+  documentation. Preserved artifacts report UNRESOLVED (data); this is not an
+  approved run or completed independent review. The child completed the
+  132-request frozen SIP collection into `data/external/intraday_momentum_r8`
+  (263 pages in 263 HTTP 200 GET attempts; `data_manifest_sha256`
+  `110f8f8161179b56650a7486a416f2cb61b92554a4f7e12fa93435f1192e9237`).
+  Signal-blind validation ([`_intraday_momentum_validation.json`](research/_intraday_momentum_validation.json))
+  returned `UNRESOLVED (data)` on four defects: missing required `15:30` and
+  `15:59` SPY minute bars on `2019-08-12` (`endpoint_missing:entry_1530:2019-08-12`,
+  `endpoint_missing:close:2019-08-12`) and missing quarterly cash-dividend
+  records in `2016Q1` and `2018Q2` (`dividend_coverage_missing:2016Q1`,
+  `dividend_coverage_missing:2018Q2`). Per r8 §D4.4/§D6, the study closes
+  without scoring, date edits, endpoint substitution or production changes.
+  [Closure report](research/2026-10-25-intraday-r8-validation-unresolved.md).
+
 - **Intraday r8 mocked research pipeline.** Added isolated resumable GET
   collection, signal-blind validation and a hash-bound single-shot scorer.
   Corrected zero-variance statistics, session omission, corporate-action handling

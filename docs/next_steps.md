@@ -6,25 +6,17 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Intraday r8: ready for approval 2 (2026-10-25)
+## Intraday: practice journal built, not activated (2026-10-25)
 
-**Approval 1 complete.** The [implementation record](research/2026-10-25-intraday-r8-implementation.md)
-and [prepared manifest](research/_intraday_r8_execution_preflight_2026-10-25.json)
-record passed independent reviews, 1,739 capped-suite tests and Ruff checks.
-The [approved protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md)
-remains frozen. Stage 0A's unresolved result remains unchanged.
+Owner authorized building after the plain-language explanation. Sonnet built the
+isolated recorder/CLI; parent fixed Opus's eight Important review findings.
+118 focused tests, a fresh three-day synthetic rehearsal and the corrected-code
+full capped suite (1,857 passed; 30 deselected) pass. Agy verified hashes/lint. See the [build/handoff record](research/2026-10-25-intraday-observer-build.md).
 
-**Next owner decision: approval 2**, one historical collection/resume in
-`data/external/intraday_momentum_r8`, signal-blind validation and one automatic
-score only on registered PASS with matching protocol/code/runtime/data/vendor-
-review hashes. The manifest contains 132 logical GET queries plus pagination and
-bounded retries. No collection or candidate scoring has run yet.
-
-Acknowledge the disclosed corporate-action history/processing limits, bounded
-manual vendor review and counted USD assumption for empty payout currencies.
-A failed validation stops unresolved without changing dates, prices or gates.
-This is an idealized bar-price feasibility screen. Shadows, orders and production
-changes remain separately pending; MOC account capability is unverified.
+Next is a bounded real-source readiness check and a reviewable standalone schedule
+before separate activation. No real observer state, source preflight, scheduler,
+orders or prospective observations have been started. Historical r8 remains
+UNRESOLVED (data); its frozen artifacts are preserved.
 
 ## Current research decision (2026-10-23)
 
