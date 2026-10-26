@@ -1,6 +1,6 @@
 ---
 name: research-prompts
-description: Run ggTrader's LLM strategy-research loop end to end — hand over the web-research discovery prompt ready to paste (refreshing it first if stale), merge pasted research results into docs/research/WEB_RESEARCH_CANDIDATES.md with dedupe and citation checks, and turn a chosen candidate into a filled implementation brief. Use whenever the user wants to "do another research run", "generate the research prompt", "get the Gemini/web prompt", pastes back a strategy-research report or list of trading ideas, asks to "merge these into the candidates", or says "let's build/test candidate X" and needs the implementation prompt filled in — even if they don't name the files.
+description: Run ggTrader's LLM strategy-research loop end to end — run the web-research discovery prompt through Encom's `research` command (or hand it over ready to paste if Gary asks), refreshing it first if stale, merge pasted research results into docs/research/WEB_RESEARCH_CANDIDATES.md with dedupe and citation checks, and turn a chosen candidate into a filled implementation brief. Use whenever the user wants to "do another research run", "generate the research prompt", "get the Gemini/web prompt", pastes back a strategy-research report or list of trading ideas, asks to "merge these into the candidates", or says "let's build/test candidate X" and needs the implementation prompt filled in — even if they don't name the files.
 ---
 
 # ggTrader research-prompt loop
@@ -60,10 +60,25 @@ T=$(mktemp /tmp/ggt-research-prompt-XXXX.md)
 cp docs/research/prompts/web-strategy-research-prompt.md "$T"   # then edit "$T"
 ```
 
-**3. Hand it over.** Give the path (the temp copy if you made one) and tell
-the user to paste the *whole file* into the web tool's deep-research mode,
-then paste the report back here for Mode B. Don't dump 250 lines into chat
-unless asked — the file is the deliverable.
+**3. Run it through `research`** (Encom's research command, see the global `research` skill).
+Condense the prompt's task plus any run focus into one to three questions, one per idea area, each
+under ~300 characters, and start a deep academic job for each:
+
+```bash
+research -d deep -k academic "<condensed question>"     # background job, <= $0.50, Telegram when done
+research result <id>                                     # report.md with a Claim ledger
+```
+
+Each job writes `~/.local/state/research/jobs/<id>/report.md`, `ledger.json`, `sources.json`.
+When it completes, ingest `report.md` through **Mode B** below as if it had been pasted. Treat ledger
+verdicts as the citation check: only `verified` rows count as checked, `contradicted` rows are
+rejected or re-checked, `unverified: …` rows keep that label. Save the draft as
+`docs/research/<date>-<slug>.md` plus `_<slug>_ledger.json` (copy of `ledger.json`).
+**Never commit automatically and never append to `WEB_RESEARCH_CANDIDATES.md` without Gary's go-ahead.**
+
+If Gary explicitly wants an outside web tool instead, hand over the prompt file as before: give the
+path and have him paste the whole file into the tool's deep-research mode, then paste the report back
+for Mode B.
 
 ## Mode B — Ingest pasted research results
 
