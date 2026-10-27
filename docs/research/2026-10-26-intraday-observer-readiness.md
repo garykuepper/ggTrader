@@ -1,7 +1,7 @@
 # Intraday observer readiness — in progress
 
 The real-source samples and offline operational checks pass. The recorder remains
-off: final full-suite verification and independent Opus review are still pending. No live study
+off: independent Opus review is still pending. No live study
 has been initialized and no services have been installed.
 
 ## What the source checks established
@@ -65,7 +65,8 @@ must not be generated while those checks remain pending.
 
 Sonnet added a calendar-aware wrapper and thirty tests (148 observer tests pass).
 Parent reviewed the diff and verified repository-wide Ruff checks/formatting. The
-full capped suite is running; its final result is not yet claimed. The shared
+full capped suite passed: **1,887 passed, 30 deselected, one existing deprecation
+warning in 441.46 seconds**, exit 0. The shared
 recovery fix lets the final archive use its next-session grace without creating
 a 253rd observation. Fault rehearsal covers outages, interrupted jobs, closure
 amendments, early closes, DST, clock failures and the checkpoint halt.

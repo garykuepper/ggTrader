@@ -6,7 +6,8 @@
   access, endpoint timestamps, delayed-access restriction and calendar agreement;
   retained original responses under a twelve-of-twenty GET budget. Added draft
   standalone timer/runbook package and calendar-aware dispatch. No activation or
-  installed schedule; final operational verification and Opus review pending.
+  installed schedule; 148 focused observer tests and 1,887 full-suite tests pass.
+  Independent Opus review pending.
   [Readiness evidence](research/2026-10-26-intraday-observer-readiness.md).
 
 ## 2026-10-25

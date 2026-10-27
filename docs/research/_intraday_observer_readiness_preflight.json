@@ -136,7 +136,24 @@
     "No observation study initialized or activated.",
     "No strategy signals or returns computed from sampled prices.",
     "Sampled completeness does not certify future bars, revisions, issuer schedule or executable fills.",
-    "Full-suite verification and independent Opus review pending; no manifest-bound activation attestation generated."
+    "Independent Opus review pending; no manifest-bound activation attestation generated."
   ],
-  "operational_evidence": "artifacts-2026-10-26-intraday-readiness/runtime_bench_252.json"
+  "operational_evidence": "artifacts-2026-10-26-intraday-readiness/runtime_bench_252.json",
+  "verification": {
+    "code_commit": "8c65987bfebd122f4cb46b1445748c2af6de75d6",
+    "full_suite": {
+      "command": "scripts/run_tests.sh",
+      "exit_code": 0,
+      "passed": 1887,
+      "deselected": 30,
+      "warnings": 1,
+      "seconds": 441.46,
+      "log": "/tmp/ggtrader-observer-readiness-full-tests.log",
+      "log_sha256": "d68d991078b1ac56f2b8724958080d2602ca4ff1bc0f3c4ad4976bccf6f7c158"
+    },
+    "focused_observer_tests": 148,
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "independent_opus_review": "pending"
+  }
 }
