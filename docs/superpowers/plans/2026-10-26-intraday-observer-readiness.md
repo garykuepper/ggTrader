@@ -33,6 +33,16 @@
 - Tests use `scripts/run_tests.sh` with its unchanged memory cap; network fixtures never read real credentials.
 - Local timestamps and hypothetical bar fills remain limited evidence. No profitability pass, capital route or independent timestamp claim.
 
+## Delegation assignment
+
+Owner replaced Sonnet with **Hermes using Kimi Pro** for this plan's implementation
+work. Use provider `hermes`, model `custom:litellm:kimi-pro`, verified in the live
+catalog on 2026-10-26. Opus retains independent readiness review; agy Flash retains
+mechanically checkable extraction/hash work. Parent verifies results and alone
+handles credentials and activation. Do not substitute another provider/model
+silently if the requested one is unavailable. This changes assignments only;
+no task is dispatched or executed by this amendment.
+
 ## Task 1: Verify the real source without starting a study
 
 **Owner:** Parent. **Flash:** extract exact fields from specified saved responses or issuer documents; parent verifies them.
@@ -50,7 +60,7 @@
 
 ## Task 2: Test the remaining operational risks
 
-**Owner:** Parent; Sonnet implements only demonstrated missing behavior. **Opus:** judgment review in Task 3.
+**Owner:** Parent; Hermes with Kimi Pro implements only demonstrated missing behavior. **Opus:** judgment review in Task 3.
 **Files, only if needed:** `src/ggTrader/lab/intraday_observer.py`, `scripts/intraday_observe.py`, `tests/lab/test_intraday_observer.py`; a small separate scheduler wrapper and its focused tests if the existing CLI cannot cleanly skip non-session days. Core logic stays in `src/`.
 
 - [ ] Rehearse outage, delayed valuation, process restart, holiday, early-close transition, DST transition, unexpected closure and failed month-one checkpoint. Preserve every fault and verify no duplicated or retrospective decision.
@@ -64,7 +74,7 @@
 
 ## Task 3: Prepare an exact, separate switch-on package
 
-**Owner:** Parent; Sonnet may prepare bounded wrapper/unit files. **Opus:** independent readiness review. **Flash:** mechanical comparison of hashes, fields and schedule values only.
+**Owner:** Parent; Hermes with Kimi Pro may prepare bounded wrapper/unit files. **Opus:** independent readiness review. **Flash:** mechanical comparison of hashes, fields and schedule values only.
 **Outputs:** reviewed readiness report/JSON; exact proposed service/timer files under `deploy/intraday_observer/` if that location remains suitable after checking repository conventions; operator commands and a local status/report procedure.
 
 - [ ] Use a fixed reviewed release outside the disposable T3 worktree. Proposed release root: `/home/flynn/.local/share/ggtrader/intraday-observer/releases/<commit>/`. Proposed state root: `/home/flynn/.local/share/ggtrader/intraday-observer/studies/<study-id>/`. Resolve exact paths in the activation package; do not create them during planning.
