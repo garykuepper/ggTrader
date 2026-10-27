@@ -12,8 +12,8 @@ tmp_path = PosixPath('/tmp/pytest-of-flynn/pytest-1484/test_review_corrupt_evide
 >       report = ob.report()
                  ^^^^^^^^^^^
 
-tests/lab/test_intraday_observer.py:193: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/lab/test_intraday_observer.py:193:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = <ggTrader.lab.intraday_observer.Observer object at 0x7ee0568e8aa0>
 
@@ -40,7 +40,7 @@ capsys = <_pytest.capture.CaptureFixture object at 0x7ee04e42aba0>
         printed = json.loads(capsys.readouterr().out)
 >       assert printed["manifest_sha256"] == hashlib.sha256((state / "manifest.json").read_bytes()).hexdigest()
 E       AssertionError: assert '7856ccac433f...4c6c72850eaec' == '9d5aa1664b8c...eb5f26d89f205'
-E         
+E
 E         - 9d5aa1664b8cd4ab00db7043d97dbc4247c9a86b457dde6a32aeb5f26d89f205
 E         + 7856ccac433fe832377146a5835536577d2264484bafa8026a74c6c72850eaec
 
