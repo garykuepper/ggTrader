@@ -10,6 +10,7 @@ TimeoutStartSec=270
 Restart=no
 UMask=0077
 Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=__OBSERVER_CREDENTIALS_FILE__
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=ggtrader-intraday-observer

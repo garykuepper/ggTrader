@@ -190,8 +190,10 @@ def test_review_corrupt_evidence_cannot_produce_performance_statistics(tmp_path)
     ob, clock, _ = active(tmp_path)
     record = archive_day(ob, clock, ANCHOR_DAY)
     (ob.dir / record["body"]["fetch"]["attempts"][0]["raw_path"]).unlink()
-    with pytest.raises(obs.BindingMismatch, match="ledger_integrity"):
-        ob.report()
+    report = ob.report()
+    assert report["status"] == "unresolved"
+    assert report["integrity"]["problems"]
+    assert "observer_policy" not in report and "fixed_rule" not in report
 
 
 def test_review_runtime_binds_statistical_libraries():
@@ -2320,3 +2322,85 @@ def test_recover_after_the_endpoint_captures_the_final_archive_directly(tmp_path
     record = ob.run_recover(after)
     assert record["session"] == final and record["body"]["canonical"] is True
     assert ob.run_recover(after) is None
+
+
+def test_readiness_review_init_prints_the_hash_activation_consumes(tmp_path, capsys):
+    args = init_args(tmp_path)
+    state = tmp_path / "cli-state"
+    argv = [
+        "init",
+        "--state-dir",
+        str(state),
+        "--activation-date",
+        ACTIVATION,
+        "--official-calendar",
+        str(args["official_calendar_file"]),
+        "--protocol-file",
+        str(args["protocol_file"]),
+        "--protocol-sha256",
+        args["protocol_sha256"],
+        "--source-delay-seconds",
+        "900",
+    ]
+    assert obs.main(argv) == 0
+    printed = json.loads(capsys.readouterr().out)
+    assert (
+        printed["manifest_sha256"]
+        == hashlib.sha256((state / "manifest.json").read_bytes()).hexdigest()
+    )
+
+
+def test_readiness_review_resume_cannot_waive_current_corruption(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    record = archive_day(ob, clock, ANCHOR_DAY)
+    raw = ob.dir / record["body"]["fetch"]["attempts"][0]["raw_path"]
+    original = raw.read_bytes()
+    raw.write_bytes(b"corrupted")
+    clock.set(DAY1, "10:00:00")
+    before = len(ob.records())
+    with pytest.raises(obs.BindingMismatch, match="ledger_integrity"):
+        ob.amend_resume(DAY1, "owner approved")
+    assert len(ob.records()) == before
+    raw.write_bytes(original)  # exact original bytes, not a re-fetch or a rewritten record
+    ob.amend_resume(DAY1, "owner approved after exact evidence restoration")
+    assert ob.verify_chain() == []
+
+
+def test_readiness_runbook_attestation_is_accepted_by_activation(tmp_path):
+    import re
+
+    ob, clock, _ = make_observer(tmp_path, start=(ACTIVATION, "10:00:00"))
+    commit = "a" * 40
+    evidence = {
+        "status": "preparation_verified_not_activated",
+        "verification": {
+            "code_commit": commit,
+            "full_suite": {"exit_code": 0},
+            "review_disposition": "important_findings_addressed_by_parent",
+        },
+        "source_delay_seconds": 900,
+        "calendar_snapshot_sha256": ob.manifest["calendar"]["official_snapshot_sha256"],
+        "final_code_sha256": ob.manifest["bindings"]["code"]["sha256"],
+        "checks": dict.fromkeys(
+            ("sip_access", "source_delay", "calendar_source", "synthetic_rehearsal"), True
+        ),
+    }
+    path = tmp_path / "synthetic-preflight.json"
+    path.write_text(json.dumps(evidence))
+    runbook = (ROOT / "deploy/intraday_observer/OPERATOR_RUNBOOK.md").read_text()
+    generators = re.findall(r"<<'PY'\n(.*?)\nPY", runbook, re.S)
+    code = next(block for block in generators if "manifest_sha256" in block)
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(ob.dir), str(path), commit],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    readiness = ob.dir / "readiness.json"
+    bound = json.loads(readiness.read_text())
+    assert bound["preflight_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert bound["release_commit"] == commit
+    assert (ob.dir / "preflight.json").read_bytes() == path.read_bytes()
+    ob.activate("synthetic test approval", readiness_file=readiness)
+    assert ob.has_record(None, "activation")

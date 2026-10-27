@@ -1361,6 +1361,8 @@ class Observer:
         if not owner_approval.strip():
             raise ObserverError("owner_approval_required")
         self.session_row(effective_session)
+        if self.verify_chain():
+            raise BindingMismatch("ledger_integrity_restore_original_evidence_before_resume")
         now = self.clock()
         if now >= utc_at(effective_session, STAGE_CLOCKS["inputs"] + ":00"):
             raise ClockMismatch("resume_after_effective_stage_start")
@@ -1616,8 +1618,18 @@ class Observer:
 
     def report(self) -> dict:
         """Descriptive report of everything recorded; counts, faults and unknowns, no verdicts."""
-        if self.verify_chain():
-            raise BindingMismatch("ledger_integrity")
+        problems = self.verify_chain()
+        if problems:
+            return {
+                "schema": "intraday_observer_report",
+                "version": VERSION,
+                "status": "unresolved",
+                "reason": "ledger_integrity",
+                "as_of_utc": iso(self.clock()),
+                "evidence_note": LOCAL_TIMESTAMP_NOTE,
+                "identity": {"manifest_sha256": self.manifest_sha256, "bindings": self.bindings},
+                "integrity": {"problems": problems, "stray_raw_files": self.stray_raw_files()},
+            }
         as_of = self.clock()
         cal = self.manifest["calendar"]
         records = self.records()
@@ -2587,7 +2599,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         if args.command == "plan":
             emit(plan(args.activation_date))
         elif args.command == "init":
-            manifest = init_state(
+            init_state(
                 args.state_dir,
                 mode=args.mode,
                 activation_date=args.activation_date,
@@ -2598,7 +2610,11 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
                 now=deps.clock(),
             )
             emit(
-                {"prepared": True, "activated": False, "manifest_sha256": canonical_hash(manifest)}
+                {
+                    "prepared": True,
+                    "activated": False,
+                    "manifest_sha256": file_sha256(args.state_dir / "manifest.json"),
+                }
             )
         elif args.command == "rehearse":
             emit(
