@@ -1,0 +1,141 @@
+{
+  "schema": "intraday_observer_source_preflight",
+  "status": "source_samples_verified_operations_pending",
+  "retrieved_utc": "2026-10-27T02:11:38.750840+00:00",
+  "activated": false,
+  "source_delay_seconds": 900,
+  "checks": {
+    "sip_access": true,
+    "calendar_source": true,
+    "source_delay": true,
+    "synthetic_rehearsal": false
+  },
+  "delay_evidence": {
+    "documented_end_age_seconds_minimum": 900,
+    "denied_age_minutes": 5,
+    "accepted_age_minutes": 16,
+    "accepted_probe_bar_count": 0,
+    "limitation": "After-hours acceptance verifies entitlement restriction, not exact intraday publication latency or future completeness."
+  },
+  "http_attempts_used": 12,
+  "http_attempts_cap": 20,
+  "additional_connector_discovery_calls": 1,
+  "calendar": {
+    "source": "offline_nyse_calendar",
+    "library_version": "5.5.0",
+    "official_agreement": "agrees_with_offline_nyse_5_5_0",
+    "activation_date": "2026-10-26",
+    "first_date": "2026-10-29",
+    "checkpoint_date": "2026-11-25",
+    "last_date": "2027-11-02",
+    "anchor_date": "2026-10-28",
+    "post_window_next_session": "2027-11-03",
+    "early_closes": [
+      "2026-11-27",
+      "2026-12-24"
+    ],
+    "year_end_sessions": [
+      "2026-12-31"
+    ],
+    "slot_dates_sha256": "f430d8158a19a021a71e4deba154324680efafcf31c9e23dcfb16967af3683c5",
+    "schedule_sha256": "ef81ea0dc0959b9861d4b765256779ff729a68c57199bcb250dfb59a462c985b"
+  },
+  "calendar_dates_are_illustrative_not_activated": true,
+  "samples": [
+    {
+      "name": "bars_2026-10-23",
+      "bar_count": 390,
+      "schema_problems": [],
+      "next_page_token": null,
+      "required_timestamp_checks": {
+        "2026-10-23T13:59:00Z": true,
+        "2026-10-23T19:30:00Z": true,
+        "2026-10-23T19:59:00Z": true
+      },
+      "payload_bytes": 42243,
+      "sha256": "377303be844f3b22aa06632405b1b70364290d7538bfdc37c23ce438ecdca5a3"
+    },
+    {
+      "name": "bars_2026-10-26",
+      "bar_count": 390,
+      "schema_problems": [],
+      "next_page_token": null,
+      "required_timestamp_checks": {
+        "2026-10-26T13:59:00Z": true,
+        "2026-10-26T19:30:00Z": true,
+        "2026-10-26T19:59:00Z": true
+      },
+      "payload_bytes": 42168,
+      "sha256": "e1dfef7fc572af8b5dc883bfd2d4e8e77dbc2e4e182a6ebf0a5a0a85ec9c2e74"
+    },
+    {
+      "name": "early_close_anchor",
+      "bar_count": 1,
+      "schema_problems": [],
+      "next_page_token": null,
+      "required_timestamp_checks": {
+        "2026-07-02T16:59:00Z": true
+      },
+      "payload_bytes": 148,
+      "sha256": "4205b8c08a3d4373cb3a1c6462cc0b643ad1b33df9e1af8abe905e800313dea3"
+    },
+    {
+      "name": "preceding_anchor",
+      "bar_count": 1,
+      "schema_problems": [],
+      "next_page_token": null,
+      "required_timestamp_checks": {
+        "2026-10-22T19:59:00Z": true
+      },
+      "payload_bytes": 151,
+      "sha256": "1872d4b5c53d444285d4e765c656fd5030d0b84759db1032edc82a1a3d325242"
+    }
+  ],
+  "request_runtime": {
+    "slowest_success_seconds": 0.3283,
+    "single_page_archive_bytes_max": 42243,
+    "normal_stage_gets": {
+      "inputs": 1,
+      "archive": 1
+    },
+    "additional_gets_if_needed": {
+      "bootstrap_anchor": 1,
+      "recovery": 1
+    },
+    "normal_two_stage_three_attempt_bound": 6,
+    "with_bootstrap_and_recovery_three_attempt_bound": 12,
+    "pagination_limitation": "Sampled archives fit one page; unusual payloads or pagination can exhaust the unchanged daily budget and remain faults.",
+    "archive_only_252_slots_bytes_estimate": 10645236
+  },
+  "issuer": {
+    "artifact": "docs/research/artifacts-2026-10-25-intraday-gap/spdr-etf-historical-distributions.xlsx",
+    "sha256": "6b65cbf956b5d25705d08470006a0e97e6a7d2a0d5cfd08b63f6f79783b06320",
+    "previous_parent_verified_spy_rows": 43,
+    "cusip": "78462F103",
+    "date_format": "MM/DD/YYYY",
+    "currency_semantics": "unresolved",
+    "blank_capital_gains_semantics": "unresolved",
+    "benchmark_status": "provisional; not complete until semantics and full future schedule are verified",
+    "failed_page_lookup_attempt": "spy_issuer_page returned 301 with empty body; no automatic redirect followed"
+  },
+  "host": {
+    "clock_status": "Timezone=America/Los_Angeles\nNTP=yes\nNTPSynchronized=yes",
+    "linger": "Linger=yes",
+    "python_executable": "/home/flynn/.t3/worktrees/ggTrader/research-intraday-stage0a/.venv/bin/python",
+    "python": "3.12.3",
+    "packages": {
+      "requests": "2.33.1",
+      "pandas_market_calendars": "5.5.0",
+      "numpy": "2.2.6",
+      "pandas": "2.3.3",
+      "statsmodels": "0.15.0"
+    },
+    "disk": "Filesystem                         Size  Used Avail Use% Mounted on\n/dev/mapper/ubuntu--vg-ubuntu--lv  455G  271G  161G  63% /"
+  },
+  "limitations": [
+    "No observation study initialized or activated.",
+    "No strategy signals or returns computed from sampled prices.",
+    "Sampled completeness does not certify future bars, revisions, issuer schedule or executable fills.",
+    "Final wrapper and year-sized timing checks pending; live manifest-bound readiness attestation must not yet be generated."
+  ]
+}

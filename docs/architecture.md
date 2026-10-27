@@ -358,6 +358,10 @@ hash-chained records, exclusive stage claims and a shared per-date GET budget.
 Offline rehearsal uses a synthetic transport and simulated clock. No scheduling
 or real data collection is enabled by installation/import. Timely stages require a durable publication-completion record; interrupted writes
 cannot become completed decisions. Activation requires a manifest-bound readiness
-artifact; actual entitlement, latency and source readiness remain unverified.
+artifact. Real-source sample access and the documented fifteen-minute restriction
+have been checked; future availability and actual intraday publication latency
+are not guaranteed. The calendar-aware `scripts/intraday_observer_job.py` wrapper
+dispatches the same core stages; draft standalone user timers live in
+`deploy/intraday_observer/` and remain uninstalled.
 See the [protocol](research/briefs/2026-10-25-intraday-prospective-observation.md)
 and [CLI reference](cli_reference.md#prospective-intraday-practice-journal).

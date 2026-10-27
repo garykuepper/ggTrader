@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-26
+
+- **Intraday readiness preparation in progress:** parent verified sampled free SIP
+  access, endpoint timestamps, delayed-access restriction and calendar agreement;
+  retained original responses under a twelve-of-twenty GET budget. Added draft
+  standalone timer/runbook package and calendar-aware dispatch. No activation or
+  installed schedule; final operational verification and Opus review pending.
+  [Readiness evidence](research/2026-10-26-intraday-observer-readiness.md).
+
 ## 2026-10-25
 
 - **Prospective intraday practice journal built offline.** Added isolated file-based

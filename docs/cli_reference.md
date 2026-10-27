@@ -43,7 +43,19 @@ JSON supplied with `--readiness-file`; a label or checksum alone is insufficient
 The readiness file records verified source access/delay, calendar provenance and
 synthetic rehearsal. Its assertions require operator-checked source evidence;
 the offline build does not perform or certify that real-source preflight. Do
-not invoke `activate` as part of trying the offline demo. There are no timers.
+not invoke `activate` as part of trying the offline demo. No timers are installed.
+Draft units and the operator runbook live under `deploy/intraday_observer/`.
+The calendar-aware timer entry point is:
+
+```bash
+.venv/bin/python scripts/intraday_observer_job.py --help
+```
+
+It accepts `--stage recover|inputs|decide|archive` and `--state-dir PATH`;
+non-session and out-of-study dates are no-ops, except final next-session recovery.
+Do not run stages against live state before the separate activation approval.
+Read [current readiness evidence](research/2026-10-26-intraday-observer-readiness.md)
+for verified source samples and remaining operational limitations.
 The issuer importer supports `--date-format mdy` and `--col-cusip CUSIP` for
 State Street's multi-fund workbook. Missing identity mapping or capital-gain
 columns keep the comparison incomplete; blank gains are not converted to zero.
