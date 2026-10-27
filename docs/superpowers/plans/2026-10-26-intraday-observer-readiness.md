@@ -1,6 +1,6 @@
 # Intraday Practice Journal Readiness and Activation Plan
 
-> **For agentic workers:** Owner authorized readiness execution with “execute”. Tasks 1–3 are complete; the separate Task 4 activation decision remains pending. No services or live observations are active.
+> **For agentic workers:** Owner authorized readiness execution with “execute”. Tasks 1–3 are complete; the owner subsequently approved Task 4 with “start”. Installation/activation are complete; first actual scheduled collection remains to be verified.
 
 **Goal:** Check that the built practice journal can receive real data reliably, prepare its daily schedule, and present a concrete switch-on package.
 
@@ -95,9 +95,9 @@ no task is dispatched or executed by this amendment.
 
 ## Task 4: Present the concrete activation decision
 
-- [ ] Show a plain-language summary: hypothetical journal only, no orders; exact first date and review dates; separate daily jobs; remaining evidence limits.
-- [ ] Request approval to install/enable only the reviewed standalone observer configuration. This is the separate activation decision reserved by the existing plan/protocol, not another approval of the strategy idea.
-- [ ] If approved, install the fixed release/state and named units, record that authorization, activate using the matching readiness file, and verify the next scheduled runs. Preserve production settings.
+- [x] Show a plain-language summary: hypothetical journal only, no orders; exact first date and review dates; separate daily jobs; remaining evidence limits.
+- [x] Request approval to install/enable only the reviewed standalone observer configuration. This is the separate activation decision reserved by the existing plan/protocol, not another approval of the strategy idea.
+- [x] If approved, install the fixed release/state and named units, record that authorization, activate using the matching readiness file, and verify the next scheduled runs. Preserve production settings.
 - [ ] Verify the first actual input, decision and archive records, their completion times, source references and integrity. If any check fails, report and follow the registered fault/halt policy; do not manufacture a clean first day.
 - [ ] Keep a simple local daily status record so a silent missed job is visible. No external alerts unless separately instructed.
 

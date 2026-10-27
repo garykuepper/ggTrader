@@ -113,10 +113,11 @@ src/ggTrader/
 
 ## Documentation
 
-The prospective intraday recorder and practice journal is available for offline
-rehearsal through `scripts/intraday_observe.py`. It sends no orders and has no
-installed schedule. Real-source samples and operational checks pass; the separate
-owner activation decision remains pending. See [offline usage](docs/cli_reference.md#prospective-intraday-practice-journal).
+The prospective intraday practice journal is activated as an isolated automatic
+recorder. First observation: October 30, 2026; operational checkpoint: November 30.
+It records hypothetical SPY positions and places no orders. See the
+[activation record](docs/research/2026-10-27-intraday-observer-activation.md) and
+[operator commands](docs/cli_reference.md#prospective-intraday-practice-journal).
 
 Historical intraday r8 is closed as **UNRESOLVED (data)** after parent-verified
 collection and signal-blind validation found missing endpoint bars. No score was

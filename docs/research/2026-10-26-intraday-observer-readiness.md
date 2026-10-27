@@ -1,5 +1,9 @@
 # Intraday observer readiness
 
+**Subsequent activation:** owner approved “start”; activated October 27, 2026.
+See the [activation record](2026-10-27-intraday-observer-activation.md). The
+preparation status and October 26 dates below describe the earlier reviewed package.
+
 **Preparation is verified; the observer is off awaiting the separate owner activation
 approval.** The package records hypothetical SPY positions and cannot place orders.
 No credential file, live state, persistent release or daily timer has been installed.

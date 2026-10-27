@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-27
+
+- **Intraday hypothetical journal activated with owner approval (“start”).** Installed
+  the fixed standalone release, dedicated runtime, private fetching credentials and
+  four separate user timers. All installed services passed pre-anchor no-op checks;
+  ledger integrity passes, with no source calls during installation. Refreshed the
+  date registration before init: first observation October 30, slot-20 checkpoint
+  November 30, final slot November 3, 2027. No orders or production configuration
+  changes. Real scheduled collection remains to be verified.
+  [Activation record](research/2026-10-27-intraday-observer-activation.md).
+
 ## 2026-10-26
 
 - **Intraday readiness preparation completed; observer remains off:** parent verified sampled free SIP

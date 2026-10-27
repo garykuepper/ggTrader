@@ -6,25 +6,21 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Intraday: owner activation decision, then first-day verification (2026-10-26)
+## Intraday: verify first actual recordings (activated 2026-10-27)
 
-Preparation is complete; the hypothetical journal remains off. Read the
-[readiness report](research/2026-10-26-intraday-observer-readiness.md) and
-[concrete package](research/_intraday_observer_activation_proposal.json).
+The automatic hypothetical journal is activated. All four standalone timers are
+enabled/active; installed-service no-op checks and ledger integrity pass. See
+[activation record](research/2026-10-27-intraday-observer-activation.md).
 
-1. Obtain the separately reserved owner approval to install the fixed release,
-   private credentials and four standalone daily jobs, then initialize/activate
-   the exact matching state. Regenerate dates if the activation date moves.
-2. Verify the first real input, decision and archive and perform the daily local
-   health check. Preserve any fault; do not backfill a missed decision.
+1. Verify the October 29 anchor archive and October 30 first inputs, decision and
+   archive. Check durable timestamps, source references and integrity; preserve
+   faults and never backfill a missed decision. Perform the daily local health check.
+2. At slot 20, November 30, 2026, review operational reliability under the frozen
+   checkpoint rules. The final slot is November 3, 2027; no performance pass is implied.
 
-Sonnet implemented checks/wrapper, Hermes Kimi drafted units/runbook, Flash
-checked saved source fields, and Opus reviewed readiness. Parent corrected the
-findings; no independent re-review is claimed. The dedicated runtime passes
-1,889 full-suite tests plus one additional runbook integration test (151 unique
-observer tests). See the [review disposition](research/2026-10-26-intraday-observer-review-disposition.md).
-No live state, credential file, persistent release or daily timer is installed.
-Historical r8 remains UNRESOLVED (data), unchanged.
+The journal uses an isolated fixed release and dedicated runtime, not the paper
+account. No production cron, Docker, DB, account positions or broker orders changed.
+Historical r8 remains UNRESOLVED (data). The dividend comparison stays provisional.
 
 ## Current research decision (2026-10-23)
 

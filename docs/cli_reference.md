@@ -18,7 +18,8 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 ## Prospective intraday practice journal
 
 `intraday_observe.py` is a standalone research recorder and hypothetical journal.
-It does not submit orders or use the production paper account. No observer or scheduler has been activated. Independent review findings were
+It does not submit orders or use the production paper account. The standalone observer and its four user timers were activated on October 27, 2026.
+First observation is October 30; see the [activation record](research/2026-10-27-intraday-observer-activation.md). Independent review findings were
 corrected and regression-tested; the final full capped suite passes.
 
 Safe offline commands:
@@ -31,8 +32,8 @@ Safe offline commands:
 
 The [operator runbook](../deploy/intraday_observer/OPERATOR_RUNBOOK.md) describes
 the dedicated frozen runtime, persistent private credentials, separate initialization
-and activation steps, daily health checks and calendar amendments. No daily jobs
-are installed. `init` prints the actual on-disk manifest hash; a corrupt ledger
+and activation steps, daily health checks and calendar amendments. Daily jobs are separately installed; invoking help or rehearsal does not install
+them. `init` prints the actual on-disk manifest hash; a corrupt ledger
 report is unresolved and has no return statistics. Resume cannot waive ongoing
 corruption.
 
@@ -50,8 +51,8 @@ JSON supplied with `--readiness-file`; a label or checksum alone is insufficient
 The readiness file records verified source access/delay, calendar provenance and
 synthetic rehearsal. Its assertions require operator-checked source evidence;
 the offline build does not perform or certify that real-source preflight. Do
-not invoke `activate` as part of trying the offline demo. No timers are installed.
-Draft units and the operator runbook live under `deploy/intraday_observer/`.
+not invoke `activate` as part of trying the offline demo. Four separate user timers are installed for the activated study.
+Unit templates and the operator runbook live under `deploy/intraday_observer/`.
 The calendar-aware timer entry point is:
 
 ```bash
@@ -62,7 +63,7 @@ It accepts `--stage recover|inputs|decide|archive` and `--state-dir PATH`;
 non-session and out-of-study dates are no-ops, except final next-session recovery.
 Do not run stages against live state before the separate activation approval.
 Read [current readiness evidence](research/2026-10-26-intraday-observer-readiness.md)
-for verified source samples and remaining operational limitations.
+for verified source samples and remaining evidence limitations.
 The issuer importer supports `--date-format mdy` and `--col-cusip CUSIP` for
 State Street's multi-fund workbook. Missing identity mapping or capital-gain
 columns keep the comparison incomplete; blank gains are not converted to zero.

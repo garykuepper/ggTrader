@@ -1,0 +1,125 @@
+{
+  "schema": "intraday_observer_activation_verification",
+  "activated": true,
+  "activation_date": "2026-10-27",
+  "owner_approval": "Owner said \"start\" in thread 8547d842-2b6e-4710-94e3-dec42ad87f80 after the plain-language description of the automatic hypothetical trading diary.",
+  "release_commit": "280d4a0edc00f1b4b23ba7bbe8dd80432877b36f",
+  "release_root": "/home/flynn/.local/share/ggtrader/intraday-observer/releases/280d4a0edc00f1b4b23ba7bbe8dd80432877b36f",
+  "state_dir": "/home/flynn/.local/share/ggtrader/intraday-observer/studies/spy-prospective-2026-10-27-280d4a0",
+  "python": "/home/flynn/.local/share/ggtrader/intraday-observer/runtimes/366f9247c65e0a38/bin/python",
+  "calendar": {
+    "source": "offline_nyse_calendar",
+    "library_version": "5.5.0",
+    "official_agreement": "agrees_with_offline_nyse_5_5_0",
+    "activation_date": "2026-10-27",
+    "first_date": "2026-10-30",
+    "checkpoint_date": "2026-11-30",
+    "last_date": "2027-11-03",
+    "anchor_date": "2026-10-29",
+    "post_window_next_session": "2027-11-04",
+    "early_closes": [
+      "2026-11-27",
+      "2026-12-24"
+    ],
+    "year_end_sessions": [
+      "2026-12-31"
+    ],
+    "slot_dates_sha256": "aa97719cb2eacf94130b481fe437c0a3c3edfc87bd491f2aeded7658f310b05d",
+    "schedule_sha256": "0f9a1aca2df1b72755addfbf48463aabedae4062e901df3a9cd07b1262023cc2"
+  },
+  "manifest_sha256": "d3363c0daa7059a5a6fce5840b0bcb340a1e9453f0a9625fd9b60fc296dc4cb7",
+  "readiness_sha256": "5c262a288d5c5aa0b7b61b9fbc041cf7d72e321d8e9fc0e8a8ad27dcab395e50",
+  "code_sha256": "f0320a3efca513da012aaabf7977bb29ce7ee2619c1fe4210562314f518ce4f2",
+  "private_credentials_mode": "0600",
+  "installed_units": {
+    "ggtrader-intraday-observer-recover.service": "4ffe5b0bf7b225605b852f16dbb5c4e575bbfb10d746151a8574a892e98c9636",
+    "ggtrader-intraday-observer-recover.timer": "b0747c7f8a685ef5b0a94c24f528421b0cf3d3baf0d2ac261a8e974e12c8fad3",
+    "ggtrader-intraday-observer-inputs.service": "216eb6bc20129820002268886856385c8b89b20ac81f412a34a3114dca5c5669",
+    "ggtrader-intraday-observer-inputs.timer": "a46d71f848753414cbf0838996150125961550b480dd907499aa34914c0bd028",
+    "ggtrader-intraday-observer-decide.service": "a54c4dd12c1894b717162efff7f2c2ea7f4a94485cc3905eef7071c0bea8f350",
+    "ggtrader-intraday-observer-decide.timer": "2c684f540f7fef39fdb84533458e9c845c47d0af4bdc564d74837e057734c600",
+    "ggtrader-intraday-observer-archive.service": "5a57fc63da5a4e599382db93dbe9a3584b32eaee7ac0b120c5351dcac91a3b50",
+    "ggtrader-intraday-observer-archive.timer": "2eeb01f3ec355ba300a6da1502a25b0b62bb2331416214d1ef3b5bba25a24cf2"
+  },
+  "timers": {
+    "recover": {
+      "enabled": "enabled",
+      "active": "active",
+      "next": "Tue 2026-10-27 12:15:00 PDT"
+    },
+    "inputs": {
+      "enabled": "enabled",
+      "active": "active",
+      "next": "Tue 2026-10-27 12:20:00 PDT"
+    },
+    "decide": {
+      "enabled": "enabled",
+      "active": "active",
+      "next": "Tue 2026-10-27 12:25:00 PDT"
+    },
+    "archive": {
+      "enabled": "enabled",
+      "active": "active",
+      "next": "Tue 2026-10-27 13:20:00 PDT"
+    }
+  },
+  "installed_service_tests": "All four installed units ran successfully before the anchor and safely no-op; no GET budget records created.",
+  "verification": {
+    "problems": [],
+    "records": 1,
+    "stray_raw_files": []
+  },
+  "report_identity": {
+    "activated": true,
+    "bindings": {
+      "code": "f0320a3efca513da012aaabf7977bb29ce7ee2619c1fe4210562314f518ce4f2",
+      "manifest": "d3363c0daa7059a5a6fce5840b0bcb340a1e9453f0a9625fd9b60fc296dc4cb7",
+      "protocol": "bf6f66a412baf9d47ed76cd1d0797b4a4f3ef7deb1ae8d44ade4a581abd633a8",
+      "runtime": "b08690abaa89ec89f5f37da1cd98164f8810080d5e1d78c23aac6a5cc4fb451c"
+    },
+    "manifest_sha256": "d3363c0daa7059a5a6fce5840b0bcb340a1e9453f0a9625fd9b60fc296dc4cb7",
+    "mode": "live",
+    "readiness_sha256": "5c262a288d5c5aa0b7b61b9fbc041cf7d72e321d8e9fc0e8a8ad27dcab395e50",
+    "source_delay_seconds": 900,
+    "source_delay_verified": true,
+    "source_preflight": "verified",
+    "state_dir": "/home/flynn/.local/share/ggtrader/intraday-observer/studies/spy-prospective-2026-10-27-280d4a0"
+  },
+  "integrity": {
+    "problems": [],
+    "records": 1,
+    "stray_raw_files": []
+  },
+  "first_real_stage_verified": false,
+  "network_requests_during_installation": 0,
+  "limitations": [
+    "First actual anchor/input/decision/archive stages remain future scheduled checks.",
+    "Local timestamp and hypothetical bar-fill evidence only.",
+    "Issuer distribution benchmark remains provisional.",
+    "Daily health inspection is manual; no external alerts configured."
+  ],
+  "installation_verified_utc": "2026-10-27T05:07:45.150512+00:00",
+  "installed_service_results": {
+    "recover": {
+      "result": "success",
+      "exit_code": 0,
+      "expected_pre_anchor_noop": true
+    },
+    "inputs": {
+      "result": "success",
+      "exit_code": 0,
+      "expected_pre_anchor_noop": true
+    },
+    "decide": {
+      "result": "success",
+      "exit_code": 0,
+      "expected_pre_anchor_noop": true
+    },
+    "archive": {
+      "result": "success",
+      "exit_code": 0,
+      "expected_pre_anchor_noop": true
+    }
+  },
+  "production_configuration_changed": false
+}
