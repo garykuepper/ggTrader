@@ -16,8 +16,9 @@ The practice journal is built and tested but remains off. Read the
 2. Prepare the exact fixed release, separate schedule, dates and readiness evidence
    for the owner's activation decision. Do not install/enable anything yet.
 
-Implementation assignment: Hermes with configured Kimi Pro, replacing Sonnet.
-Opus reviews readiness; agy Flash checks specified fields/hashes.
+Implementation assignment: Sonnet handles recorder fixes and any scheduler wrapper.
+Hermes with Kimi Pro drafts standalone timer/service files and the operator runbook.
+Parent verifies and integrates; Opus reviews readiness; agy Flash checks specified fields/hashes.
 
 Planning only: no new data requests, scheduler or observations have started.
 The [build record](research/2026-10-25-intraday-observer-build.md) retains the
