@@ -115,8 +115,8 @@ src/ggTrader/
 
 The prospective intraday recorder and practice journal is available for offline
 rehearsal through `scripts/intraday_observe.py`. It sends no orders and has no
-installed schedule. Real-source samples now pass; operational readiness and the separate
-activation review remain pending. See [offline usage](docs/cli_reference.md#prospective-intraday-practice-journal).
+installed schedule. Real-source samples and operational checks pass; the separate
+owner activation decision remains pending. See [offline usage](docs/cli_reference.md#prospective-intraday-practice-journal).
 
 Historical intraday r8 is closed as **UNRESOLVED (data)** after parent-verified
 collection and signal-blind validation found missing endpoint bars. No score was

@@ -1,11 +1,11 @@
 {
   "schema": "intraday_observer_activation_proposal",
-  "status": "awaiting_final_tests_and_opus_review",
+  "status": "preparation_verified_awaiting_owner_activation_approval",
   "activated": false,
-  "release_commit": "8c65987bfebd122f4cb46b1445748c2af6de75d6",
-  "release_root": "/home/flynn/.local/share/ggtrader/intraday-observer/releases/8c65987bfebd122f4cb46b1445748c2af6de75d6",
-  "state_dir": "/home/flynn/.local/share/ggtrader/intraday-observer/studies/spy-prospective-2026-10-26-8c65987",
-  "python": "/home/flynn/ggTrader/.venv/bin/python",
+  "release_commit": "280d4a0edc00f1b4b23ba7bbe8dd80432877b36f",
+  "release_root": "/home/flynn/.local/share/ggtrader/intraday-observer/releases/280d4a0edc00f1b4b23ba7bbe8dd80432877b36f",
+  "state_dir": "/home/flynn/.local/share/ggtrader/intraday-observer/studies/spy-prospective-2026-10-26-280d4a0",
+  "python": "/home/flynn/.local/share/ggtrader/intraday-observer/runtimes/366f9247c65e0a38/bin/python",
   "interpreter_binary_sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f",
   "runtime": {
     "python": "3.12.3",
@@ -18,14 +18,14 @@
   },
   "code": {
     "files": {
-      "src/ggTrader/lab/intraday_observer.py": "bc9128b791b4dec70fbe1ba6e608d9f736d82e6d2cc13bc11096b7cf06990a97",
+      "src/ggTrader/lab/intraday_observer.py": "9e8cd65078db5444f9c430ea9aa2c7934f00ac227178b8748741d7a2e90aa59a",
       "scripts/intraday_observe.py": "69715c6d9f014ede21bd11fc0dd0d2f21eafad854fab5d963b1fdc021be43904",
       "scripts/intraday_observer_job.py": "dfbd779c790532a9575b03f1738dc2e9891082b6b3eb3c8f88076c25d65689b9",
       "src/ggTrader/lab/intraday_probe.py": "632e183faf4f7c8d1950e97b7da838866547edf75ba657e82da262c03945f3de"
     },
-    "sha256": "50b35ad057abdc92a65c5091397778d216120d1a1c9bb7c3177159889bb7b499"
+    "sha256": "f0320a3efca513da012aaabf7977bb29ce7ee2619c1fe4210562314f518ce4f2"
   },
-  "protocol_file": "/home/flynn/.local/share/ggtrader/intraday-observer/releases/8c65987bfebd122f4cb46b1445748c2af6de75d6/docs/research/briefs/2026-10-25-intraday-prospective-observation.md",
+  "protocol_file": "/home/flynn/.local/share/ggtrader/intraday-observer/releases/280d4a0edc00f1b4b23ba7bbe8dd80432877b36f/docs/research/briefs/2026-10-25-intraday-prospective-observation.md",
   "protocol_sha256": "bf6f66a412baf9d47ed76cd1d0797b4a4f3ef7deb1ae8d44ade4a581abd633a8",
   "calendar_snapshot_sha256": "4493cd2e7735aede915971860d48191437d91e2bfb917be33f559970a3e74bfb",
   "source_delay_seconds": 900,
@@ -2092,14 +2092,15 @@
     ]
   },
   "units": {
-    "OPERATOR_RUNBOOK.md": "78156e0636d68224badbac741ef465425ff6cf8cbc797817df1e41614ccad751",
-    "ggtrader-intraday-observer-archive.service": "81cf509949858b0b7378cb72c1b20f3b5f1cd98cea6002b19ffad61a575564d4",
+    "OPERATOR_RUNBOOK.md": "4ab8c9e599e9cb17edd1b4dd951672d9fa19136d3371b1ba2f2fa380bfbc6805",
+    "frozen-requirements.txt": "fa9c5818d34f3f91f64bd407ee67359e93174c77673d53d1d6cec3c6ad114587",
+    "ggtrader-intraday-observer-archive.service": "652d3989d78e48a5cfe2057fcf5e3e7b2a8d4b968138f59ed208c60041a85e1c",
     "ggtrader-intraday-observer-archive.timer": "2eeb01f3ec355ba300a6da1502a25b0b62bb2331416214d1ef3b5bba25a24cf2",
     "ggtrader-intraday-observer-decide.service": "1c5f1c8ce46bb2b8b95e7eed16d93589ea79742b0cf92a49675d947181a32e81",
     "ggtrader-intraday-observer-decide.timer": "2c684f540f7fef39fdb84533458e9c845c47d0af4bdc564d74837e057734c600",
-    "ggtrader-intraday-observer-inputs.service": "a2c4feb00a5a48ff0847c938fc62c2a5b318aac87a005410da801c9d44249dbb",
+    "ggtrader-intraday-observer-inputs.service": "a73ca28a7d5b5212f1196f630d24d4d2e6ec69b31c7917179336dac8e1db4300",
     "ggtrader-intraday-observer-inputs.timer": "a46d71f848753414cbf0838996150125961550b480dd907499aa34914c0bd028",
-    "ggtrader-intraday-observer-recover.service": "03e2cd177f1427a377b994482609aaf67584620fb17e9ce3f4c89e5a443ce796",
+    "ggtrader-intraday-observer-recover.service": "75ec7447b9b3fba1235ea3967df032a94f36c6d66ab1e61489973c079aacb18b",
     "ggtrader-intraday-observer-recover.timer": "b0747c7f8a685ef5b0a94c24f528421b0cf3d3baf0d2ac261a8e974e12c8fad3"
   },
   "approval_required": "Separate owner approval to install units, initialize matching live-mode state and activate. No services or live state prepared yet.",
@@ -2108,6 +2109,9 @@
   "limits": [
     "Local timestamps; bar proxy fills; descriptive results only.",
     "Distribution benchmark provisional; field semantics and future issuer completeness unresolved.",
-    "Existing Python environment version fingerprints refuse version changes, but identical-version file replacement is not authenticated."
-  ]
+    "Dedicated read-only environment isolates research upgrades; host standard library/OS shared libraries remain dependencies."
+  ],
+  "preflight_sha256": "256ab45fdc78225115591a3a9e4bcef337ec53e0b63bcc6c000dc772c2fc1bd9",
+  "credentials_file": "/home/flynn/.config/ggtrader/intraday-observer.credentials",
+  "runtime_snapshot": "/home/flynn/.local/share/ggtrader/intraday-observer/runtimes/366f9247c65e0a38"
 }

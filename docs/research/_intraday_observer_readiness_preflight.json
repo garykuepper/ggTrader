@@ -1,6 +1,6 @@
 {
   "schema": "intraday_observer_source_preflight",
-  "status": "source_and_offline_operations_verified_final_checks_pending",
+  "status": "preparation_verified_not_activated",
   "retrieved_utc": "2026-10-27T02:11:38.750840+00:00",
   "activated": false,
   "source_delay_seconds": 900,
@@ -121,7 +121,7 @@
   "host": {
     "clock_status": "Timezone=America/Los_Angeles\nNTP=yes\nNTPSynchronized=yes",
     "linger": "Linger=yes",
-    "python_executable": "/home/flynn/.t3/worktrees/ggTrader/research-intraday-stage0a/.venv/bin/python",
+    "python_executable": "/home/flynn/.local/share/ggtrader/intraday-observer/runtimes/366f9247c65e0a38/bin/python",
     "python": "3.12.3",
     "packages": {
       "requests": "2.33.1",
@@ -136,12 +136,26 @@
     "No observation study initialized or activated.",
     "No strategy signals or returns computed from sampled prices.",
     "Sampled completeness does not certify future bars, revisions, issuer schedule or executable fills.",
-    "Independent Opus review pending; no manifest-bound activation attestation generated."
+    "No owner activation approval, actual live manifest or manifest-bound activation attestation. Persistent units/credentials/live state remain uninstalled. See review disposition for limitations."
   ],
   "operational_evidence": "artifacts-2026-10-26-intraday-readiness/runtime_bench_252.json",
   "verification": {
-    "code_commit": "8c65987bfebd122f4cb46b1445748c2af6de75d6",
+    "code_commit": "280d4a0edc00f1b4b23ba7bbe8dd80432877b36f",
     "full_suite": {
+      "command": "GGT_TEST_PYTHON=/home/flynn/.local/share/ggtrader/intraday-observer/runtimes/366f9247c65e0a38/bin/python scripts/run_tests.sh",
+      "exit_code": 0,
+      "passed": 1889,
+      "deselected": 30,
+      "warnings": 1,
+      "seconds": 441.45,
+      "artifact": "artifacts-2026-10-26-intraday-readiness/full-tests-final.txt",
+      "log_sha256": "fb185cd8bce47bc1eadb75c6333c0bcd2c5baa8ece17feb9b232ab0184394f7b"
+    },
+    "focused_observer_tests": 151,
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "independent_opus_review": "one completed review; parent addressed findings without re-review",
+    "earlier_worktree_suite": {
       "command": "scripts/run_tests.sh",
       "exit_code": 0,
       "passed": 1887,
@@ -151,9 +165,14 @@
       "log": "/tmp/ggtrader-observer-readiness-full-tests.log",
       "log_sha256": "d68d991078b1ac56f2b8724958080d2602ca4ff1bc0f3c4ad4976bccf6f7c158"
     },
-    "focused_observer_tests": 148,
-    "ruff_check": "passed",
-    "ruff_format_check": "passed",
-    "independent_opus_review": "pending"
-  }
+    "additional_runbook_integration": {
+      "passed": 1,
+      "deselected": 150,
+      "seconds": 3.35,
+      "dedicated_runtime": true
+    },
+    "review_disposition": "important_findings_addressed_by_parent"
+  },
+  "calendar_snapshot_sha256": "4493cd2e7735aede915971860d48191437d91e2bfb917be33f559970a3e74bfb",
+  "final_code_sha256": "f0320a3efca513da012aaabf7977bb29ce7ee2619c1fe4210562314f518ce4f2"
 }

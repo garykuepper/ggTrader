@@ -5,43 +5,22 @@
   "verify_exit": 0,
   "verify_stdout": "",
   "verify_stderr": "",
-  "bash_blocks_syntax_checked": 4,
-  "stages": [
-    {
-      "stage": "recover",
-      "new_york_time": "15:15:00",
-      "timeout_seconds": 270
-    },
-    {
-      "stage": "inputs",
-      "new_york_time": "15:20:00",
-      "timeout_seconds": 270
-    },
-    {
-      "stage": "decide",
-      "new_york_time": "15:25:00",
-      "timeout_seconds": 45
-    },
-    {
-      "stage": "archive",
-      "new_york_time": "16:20:00",
-      "timeout_seconds": 270
-    }
-  ],
+  "bash_blocks_syntax_checked": 8,
+  "persistent_private_credentials_fetching_services_only": true,
   "files": {
-    "OPERATOR_RUNBOOK.md": "78156e0636d68224badbac741ef465425ff6cf8cbc797817df1e41614ccad751",
-    "ggtrader-intraday-observer-archive.service": "81cf509949858b0b7378cb72c1b20f3b5f1cd98cea6002b19ffad61a575564d4",
+    "OPERATOR_RUNBOOK.md": "4ab8c9e599e9cb17edd1b4dd951672d9fa19136d3371b1ba2f2fa380bfbc6805",
+    "frozen-requirements.txt": "fa9c5818d34f3f91f64bd407ee67359e93174c77673d53d1d6cec3c6ad114587",
+    "ggtrader-intraday-observer-archive.service": "652d3989d78e48a5cfe2057fcf5e3e7b2a8d4b968138f59ed208c60041a85e1c",
     "ggtrader-intraday-observer-archive.timer": "2eeb01f3ec355ba300a6da1502a25b0b62bb2331416214d1ef3b5bba25a24cf2",
     "ggtrader-intraday-observer-decide.service": "1c5f1c8ce46bb2b8b95e7eed16d93589ea79742b0cf92a49675d947181a32e81",
     "ggtrader-intraday-observer-decide.timer": "2c684f540f7fef39fdb84533458e9c845c47d0af4bdc564d74837e057734c600",
-    "ggtrader-intraday-observer-inputs.service": "a2c4feb00a5a48ff0847c938fc62c2a5b318aac87a005410da801c9d44249dbb",
+    "ggtrader-intraday-observer-inputs.service": "a73ca28a7d5b5212f1196f630d24d4d2e6ec69b31c7917179336dac8e1db4300",
     "ggtrader-intraday-observer-inputs.timer": "a46d71f848753414cbf0838996150125961550b480dd907499aa34914c0bd028",
-    "ggtrader-intraday-observer-recover.service": "03e2cd177f1427a377b994482609aaf67584620fb17e9ce3f4c89e5a443ce796",
+    "ggtrader-intraday-observer-recover.service": "75ec7447b9b3fba1235ea3967df032a94f36c6d66ab1e61489973c079aacb18b",
     "ggtrader-intraday-observer-recover.timer": "b0747c7f8a685ef5b0a94c24f528421b0cf3d3baf0d2ac261a8e974e12c8fad3"
   },
   "limitations": [
-    "Template syntax only; fixed release paths do not yet exist.",
-    "No installed timers or actual service execution.",
-    "Final wrapper and readiness review still pending."
+    "Template syntax verification; fixed release and live state not installed.",
+    "Real fetching service execution remains untested until activation."
   ]
 }

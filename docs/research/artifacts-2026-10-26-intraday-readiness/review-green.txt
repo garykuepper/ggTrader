@@ -1,0 +1,3 @@
+running pytest under MemoryMax=8G (no swap)
+...                                                                      [100%]
+3 passed, 147 deselected in 1.70s

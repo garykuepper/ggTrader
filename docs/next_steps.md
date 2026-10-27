@@ -6,23 +6,25 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Intraday: prepare real-source readiness, then activation package (2026-10-26)
+## Intraday: owner activation decision, then first-day verification (2026-10-26)
 
-The practice journal is built and tested but remains off. Read the
-[next-step plan](superpowers/plans/2026-10-26-intraday-observer-readiness.md).
+Preparation is complete; the hypothetical journal remains off. Read the
+[readiness report](research/2026-10-26-intraday-observer-readiness.md) and
+[concrete package](research/_intraday_observer_activation_proposal.json).
 
-1. Verify free SIP access, calendar, data timing and source semantics with a bounded
-   read-only preflight; test remaining full-year-size timing and fault paths.
-2. Prepare the exact fixed release, separate schedule, dates and readiness evidence
-   for the owner's activation decision. Do not install/enable anything yet.
+1. Obtain the separately reserved owner approval to install the fixed release,
+   private credentials and four standalone daily jobs, then initialize/activate
+   the exact matching state. Regenerate dates if the activation date moves.
+2. Verify the first real input, decision and archive and perform the daily local
+   health check. Preserve any fault; do not backfill a missed decision.
 
-Implementation assignment: Sonnet handles recorder fixes and any scheduler wrapper.
-Hermes with Kimi Pro drafts standalone timer/service files and the operator runbook.
-Parent verifies and integrates; Opus reviews readiness; agy Flash checks specified fields/hashes.
-
-Planning only: no new data requests, scheduler or observations have started.
-The [build record](research/2026-10-25-intraday-observer-build.md) retains the
-1,857-test result. Historical r8 remains UNRESOLVED (data), unchanged.
+Sonnet implemented checks/wrapper, Hermes Kimi drafted units/runbook, Flash
+checked saved source fields, and Opus reviewed readiness. Parent corrected the
+findings; no independent re-review is claimed. The dedicated runtime passes
+1,889 full-suite tests plus one additional runbook integration test (151 unique
+observer tests). See the [review disposition](research/2026-10-26-intraday-observer-review-disposition.md).
+No live state, credential file, persistent release or daily timer is installed.
+Historical r8 remains UNRESOLVED (data), unchanged.
 
 ## Current research decision (2026-10-23)
 

@@ -29,6 +29,13 @@ Safe offline commands:
 .venv/bin/python scripts/intraday_observe.py rehearse --work-dir /tmp/ggtrader-observer-demo
 ```
 
+The [operator runbook](../deploy/intraday_observer/OPERATOR_RUNBOOK.md) describes
+the dedicated frozen runtime, persistent private credentials, separate initialization
+and activation steps, daily health checks and calendar amendments. No daily jobs
+are installed. `init` prints the actual on-disk manifest hash; a corrupt ledger
+report is unresolved and has no return statistics. Resume cannot waive ongoing
+corruption.
+
 `rehearse` requires a new empty path and runs three synthetic sessions with fake
 prices and a simulated clock. It saves a practice report; it proves neither real
 source access nor strategy profitability. No credentials or network are needed.

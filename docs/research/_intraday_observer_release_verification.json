@@ -1,0 +1,35 @@
+{
+  "schema": "intraday_observer_release_rehearsal",
+  "code_commit": "280d4a0edc00f1b4b23ba7bbe8dd80432877b36f",
+  "temporary_clone": "/tmp/ggtrader-observer-release-check-dwaujbez/release",
+  "clone_and_detach_verified": true,
+  "source_files_read_only": true,
+  "cli_help_under_dedicated_runtime": true,
+  "bindings": {
+    "code": {
+      "files": {
+        "src/ggTrader/lab/intraday_observer.py": "9e8cd65078db5444f9c430ea9aa2c7934f00ac227178b8748741d7a2e90aa59a",
+        "scripts/intraday_observe.py": "69715c6d9f014ede21bd11fc0dd0d2f21eafad854fab5d963b1fdc021be43904",
+        "scripts/intraday_observer_job.py": "dfbd779c790532a9575b03f1738dc2e9891082b6b3eb3c8f88076c25d65689b9",
+        "src/ggTrader/lab/intraday_probe.py": "632e183faf4f7c8d1950e97b7da838866547edf75ba657e82da262c03945f3de"
+      },
+      "sha256": "f0320a3efca513da012aaabf7977bb29ce7ee2619c1fe4210562314f518ce4f2"
+    },
+    "runtime": {
+      "python": "3.12.3",
+      "requests": "2.33.1",
+      "pandas_market_calendars": "5.5.0",
+      "numpy": "2.2.6",
+      "pandas": "2.3.3",
+      "statsmodels": "0.15.0",
+      "sha256": "b08690abaa89ec89f5f37da1cd98164f8810080d5e1d78c23aac6a5cc4fb451c"
+    }
+  },
+  "network_used": false,
+  "live_state_created": false,
+  "installed_units": false,
+  "limitations": [
+    "Temporary clone only; persistent release creation remains activation-only.",
+    "No real timed observer stages or authenticated calls executed."
+  ]
+}
