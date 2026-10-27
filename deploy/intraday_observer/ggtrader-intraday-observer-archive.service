@@ -1,0 +1,17 @@
+# DRAFT: render every observer token only after parent review. Not approved for activation.
+[Unit]
+Description=ggTrader intraday observer closing archive
+
+[Service]
+Type=oneshot
+WorkingDirectory=__OBSERVER_RELEASE_ROOT__
+ExecStart=__OBSERVER_PYTHON__ __OBSERVER_RELEASE_ROOT__/scripts/intraday_observer_job.py --stage archive --state-dir __OBSERVER_STATE_DIR__
+TimeoutStartSec=270
+Restart=no
+UMask=0077
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ggtrader-intraday-observer
+LogRateLimitIntervalSec=60
+LogRateLimitBurst=200

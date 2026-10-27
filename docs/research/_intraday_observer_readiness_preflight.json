@@ -1,6 +1,6 @@
 {
   "schema": "intraday_observer_source_preflight",
-  "status": "source_samples_verified_operations_pending",
+  "status": "source_and_offline_operations_verified_final_checks_pending",
   "retrieved_utc": "2026-10-27T02:11:38.750840+00:00",
   "activated": false,
   "source_delay_seconds": 900,
@@ -8,7 +8,7 @@
     "sip_access": true,
     "calendar_source": true,
     "source_delay": true,
-    "synthetic_rehearsal": false
+    "synthetic_rehearsal": true
   },
   "delay_evidence": {
     "documented_end_age_seconds_minimum": 900,
@@ -136,6 +136,7 @@
     "No observation study initialized or activated.",
     "No strategy signals or returns computed from sampled prices.",
     "Sampled completeness does not certify future bars, revisions, issuer schedule or executable fills.",
-    "Final wrapper and year-sized timing checks pending; live manifest-bound readiness attestation must not yet be generated."
-  ]
+    "Full-suite verification and independent Opus review pending; no manifest-bound activation attestation generated."
+  ],
+  "operational_evidence": "artifacts-2026-10-26-intraday-readiness/runtime_bench_252.json"
 }

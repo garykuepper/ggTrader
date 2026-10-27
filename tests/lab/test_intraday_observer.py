@@ -1985,3 +1985,338 @@ def test_inputs_finishing_exactly_at_the_cutoff_are_not_timely(tmp_path):
     clock.set(DAY1, "15:24:59")
     body = ob.run_inputs(DAY1)["body"]
     assert body["timely"] is False and "inputs_completed_after_cutoff" in body["faults"]
+
+
+# --- scheduler dispatch (the timer-launched wrapper) ---------------------------------------------
+
+JOB_STAGES = ("recover", "inputs", "decide", "archive")
+NON_SESSIONS = (
+    "2026-10-29",  # before the anchor: a session, but outside the registered window
+    "2026-10-31",  # Saturday
+    "2026-11-26",  # Thanksgiving
+)
+
+
+def last_slot(ob):
+    return [r for r in ob.effective_rows() if r["slot"]][-1]["date"]
+
+
+@pytest.mark.parametrize("day", NON_SESSIONS)
+@pytest.mark.parametrize("stage", JOB_STAGES)
+def test_job_is_a_silent_noop_outside_registered_sessions(tmp_path, day, stage):
+    ob, clock, deps = active(tmp_path)
+    before = len(ob.records())
+    clock.set(
+        day,
+        {"recover": "15:15:05", "inputs": "15:20:05", "decide": "15:25:05"}.get(stage, "16:20:05"),
+    )
+    result = obs.run_job(ob, stage)
+    assert result["noop"] is True and result["reason"]
+    assert len(ob.records()) == before and deps.transport.calls == []
+    assert not list((ob.dir / "claims").iterdir()) and not list((ob.dir / "budget").iterdir())
+
+
+def test_job_noop_uses_the_new_york_date_not_the_utc_date(tmp_path):
+    ob, clock, deps = active(tmp_path)
+    clock.now = datetime(2026, 11, 1, 18, 0, tzinfo=UTC)  # Sunday noon ET on the DST change day
+    assert obs.run_job(ob, "archive")["noop"] is True
+    clock.now = datetime(2026, 11, 3, 3, 0, tzinfo=UTC)  # still Monday 22:00 ET, a session day
+    result = obs.run_job(ob, "decide")  # a session day, so the stage is attempted (and faulted)
+    assert result["session"] == DAY1 and "decision_window_missed" in result["faults"]
+
+
+def test_job_runs_a_full_session_through_the_wrapper_with_the_same_records(tmp_path):
+    book = Book().day(ANCHOR_DAY, close=100.0).day(DAY1, p0959=101.0, p1530=100.0, close=101.0)
+    ob, clock, _ = active(tmp_path, book)
+    clock.set(ANCHOR_DAY, "16:20:05")
+    assert obs.run_job(ob, "archive")["recorded"] is True  # the anchor session archives
+    for stage in ("inputs", "decide"):  # but the anchor is not an observation slot
+        clock.set(ANCHOR_DAY, "15:25:05")
+        assert obs.run_job(ob, stage)["noop"] is True
+    clock.set(ANCHOR_DAY, "15:15:05")
+    assert obs.run_job(ob, "recover")["noop"] is True  # nothing earlier exists to recover
+    out = []
+    for stage, text in (
+        ("recover", "15:15:05"),
+        ("inputs", "15:20:05"),
+        ("decide", "15:25:05"),
+        ("archive", "16:20:05"),
+    ):
+        clock.set(DAY1, text)
+        out.append(obs.run_job(ob, stage))
+    assert [r.get("stage") for r in out[1:]] == [
+        "inputs.completion",
+        "decision.completion",
+        "archive.1.completion",
+    ]
+    assert out[0]["noop"] is True  # the anchor already has its canonical value
+    decision = ob.stage_record(DAY1, "decision")
+    assert decision["body"]["observer_side"] == 1 and ob.verify_chain() == []
+
+
+def test_job_early_close_runs_archive_and_recovery_only(tmp_path):
+    book = Book().day(HALF_DAY, close=104.0).day(DAY_AFTER_HALF, p0959=105.0)
+    ob, clock, deps = active(tmp_path, book)
+    before = len(ob.records())
+    for stage, text in (("inputs", "15:20:05"), ("decide", "15:25:05")):
+        clock.set(HALF_DAY, text)
+        result = obs.run_job(ob, stage)
+        assert result["noop"] is True and result["reason"] == "early_close"
+    assert len(ob.records()) == before and deps.transport.calls == []
+    clock.set(HALF_DAY, "16:20:05")
+    archive = obs.run_job(ob, "archive")
+    assert archive["stage"] == "archive.1.completion"
+    assert deps.transport.calls[-1][1]["end"].endswith("17:59:00Z")
+    clock.set(DAY_AFTER_HALF, "15:15:05")  # the early close anchor is recovered like any other
+    assert obs.run_job(ob, "recover")["noop"] is True
+
+
+def test_job_recover_runs_on_an_early_close_day_for_the_prior_session(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    prior = "2026-11-25"  # Wednesday before Thanksgiving; the next session is the Friday half day
+    assert ob.neighbours(HALF_DAY)[0] == prior
+    clock.set(HALF_DAY, "15:15:05")
+    result = obs.run_job(ob, "recover")
+    assert result["session"] == prior and result["stage"] == "archive.1.completion"
+    assert ob.canonical(prior)["body"]["late_capture"] is True
+
+
+def test_job_never_writes_a_retroactive_decision(tmp_path):
+    book = Book().day(ANCHOR_DAY, close=100.0).day(DAY1, p0959=101.0, close=101.0)
+    ob, clock, _ = active(tmp_path, book)
+    archive_day(ob, clock, ANCHOR_DAY)
+    clock.set(DAY1, "15:20:05")
+    obs.run_job(ob, "inputs")
+    clock.set(DAY1, "15:40:00")  # the timer fired after the window closed
+    body = obs.run_job(ob, "decide")
+    record = ob.stage_record(DAY1, "decision")["body"]
+    assert body["faults"] == ["decision_window_missed"]
+    assert record["signal_side"] is None and record["observer_side"] == 0
+    clock.set(DAY2, "15:25:05")  # the next day's job cannot reach back to yesterday's session
+    obs.run_job(ob, "decide")
+    assert [r["session"] for r in ob.records() if r["stage"] == "decision"] == [DAY1, DAY2]
+
+
+def test_job_recovers_the_final_session_on_the_next_session_without_a_slot_253(tmp_path):
+    ob, clock, deps = active(tmp_path)
+    final, after = last_slot(ob), ob.manifest["calendar"]["post_window_next_session"]
+    assert ob.neighbours(final)[1] == after and ob.manifest["calendar"]["last_date"] == final
+    clock.set(after, "15:14:59")
+    with pytest.raises(obs.TooEarly):
+        obs.run_job(ob, "recover")
+    clock.set(after, "15:15:05")
+    recovered = obs.run_job(ob, "recover")
+    assert recovered["session"] == final and recovered["stage"] == "archive.1.completion"
+    body = ob.canonical(final)["body"]
+    assert body["late_capture"] and body["canonical"] and "archive_late" in body["faults"]
+    for stage in ("inputs", "decide", "archive"):  # the day after the endpoint is never observed
+        clock.set(after, "15:25:05" if stage != "archive" else "16:20:05")
+        assert obs.run_job(ob, stage)["noop"] is True
+    assert obs.run_job(ob, "recover")["noop"] is True  # nothing left to recover
+    assert {r["session"] for r in ob.records()} == {None, final}
+    assert ob.verify_chain() == [] and ob.report()["slots"]["registered"] == obs.SLOTS
+    with pytest.raises(obs.ObserverError, match="unknown_session"):
+        ob.run_inputs(after)
+
+
+def test_job_final_recovery_expires_at_the_next_session_input_stage(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    after = ob.manifest["calendar"]["post_window_next_session"]
+    clock.set(after, "15:20:00")
+    with pytest.raises(obs.ObserverError, match="grace_expired_use_revise"):
+        obs.run_job(ob, "recover")
+    assert ob.canonical(last_slot(ob)) is None
+
+
+def test_job_stage_names_are_closed():
+    with pytest.raises(SystemExit):
+        obs.job_main(["--stage", "revise", "--state-dir", "x"])
+
+
+def test_job_main_noop_needs_no_credentials_and_reports_json(tmp_path, capsys, monkeypatch):
+    for name in ("APCA_API_KEY_ID", "APCA_API_SECRET_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    ob, clock, _ = active(tmp_path)
+    clock.set("2026-11-26", "16:20:05")
+    deps = obs.Deps(clock=clock, clock_sync=lambda: "synchronized")
+    code = obs.job_main(["--stage", "archive", "--state-dir", str(ob.dir)], deps)
+    out = json.loads(capsys.readouterr().out)
+    assert code == 0 and out["noop"] is True and out["stage"] == "archive"
+    clock.set(DAY1, "16:20:05")  # a real stage on a session day needs credentials before any write
+    before = len(ob.records())
+    assert obs.job_main(["--stage", "archive", "--state-dir", str(ob.dir)], deps) == 2
+    assert "credentials_missing" in capsys.readouterr().err and len(ob.records()) == before
+
+
+def test_job_main_reports_refusals_with_exit_code_2(tmp_path, capsys):
+    ob, clock, deps = active(tmp_path)
+    clock.set(DAY1, "15:00:00")
+    assert obs.job_main(["--stage", "decide", "--state-dir", str(ob.dir)], deps) == 2
+    assert "TooEarly" in capsys.readouterr().err and ob.records()[-1]["stage"] == "activation"
+    assert obs.job_main(["--stage", "decide", "--state-dir", str(tmp_path / "nope")], deps) == 2
+
+
+def drive_calendar(tmp_path, through_slot, faults, setup=None):
+    """Run the timer wrapper on every calendar date with a fresh Observer per stage."""
+    book = Book()
+    transport = obs.SyntheticTransport(price_fn=book, closes=dict(HALF_DAYS))
+    ob, clock, deps = active(tmp_path, transport=transport)
+    slots = [r["date"] for r in ob.effective_rows() if r["slot"]]
+    for day in slots:
+        book.day(day, p0959=102.0, p1530=100.0, close=101.0)
+    book.day(ANCHOR_DAY, close=101.0)
+    last = slots[through_slot - 1]
+    day, results = date.fromisoformat(ANCHOR_DAY), []
+    while day.isoformat() <= last:
+        text = day.isoformat()
+        for stage, hhmm in (
+            ("recover", "15:15:05"),
+            ("inputs", "15:20:05"),
+            ("decide", "15:25:05"),
+            ("archive", "16:20:05"),
+        ):
+            clock.set(text, hhmm)
+            if setup:
+                setup(text, stage, ob, deps)
+            if (text, stage) in faults:
+                continue  # the timer never ran (host down, job killed)
+            results.append((text, stage, obs.run_job(obs.Observer(ob.dir, deps), stage)))
+        day += timedelta(days=1)
+    return obs.Observer(ob.dir, deps), clock, slots, results
+
+
+def test_job_fault_rehearsal_keeps_every_fault_and_never_decides_retroactively(tmp_path):
+    slots_needed = 22
+
+    def inject(day, stage, ob, deps):
+        slots = [r["date"] for r in ob.effective_rows() if r["slot"]]
+        index = slots.index(day) + 1 if day in slots else 0
+        if index == 2 and stage == "inputs":  # outage during input capture
+            deps.transport.script = [obs.Response(503, {}, b"down")] * 3
+        if index == 4 and stage == "decide":  # the process dies after claiming the decision
+            with obs.Observer(ob.dir, deps).claim(day, "decision"):
+                pass
+            deps.sleep(10)
+        if index == 5 and stage == "recover":  # unexpected closure announced before the open
+            deps.clock.now = obs.utc_at(day, "10:00:00")
+            obs.Observer(ob.dir, deps).amend_session(day, "exchange_closed", None, "owner approved")
+            deps.clock.set(day, "15:15:05")
+        if index == 6 and stage == "recover":  # a listed full day becomes an early close
+            deps.transport.closes[day] = "13:00"
+            deps.clock.now = obs.utc_at(day, "10:00:00")
+            obs.Observer(ob.dir, deps).amend_session(day, "early_close", "13:00", "owner approved")
+            deps.clock.set(day, "15:15:05")
+
+    probe, _, _ = make_observer(tmp_path / "probe")
+    slots = [r["date"] for r in probe.effective_rows() if r["slot"]]
+    skipped = {(slots[2], "archive")}  # day 3's 16:20 job never ran
+    ob, clock, slots, results = drive_calendar(tmp_path / "run", slots_needed, skipped, inject)
+    records = ob.records()
+    decisions = [r for r in records if r["stage"] == "decision"]
+    assert ob.verify_chain() == []
+    # one immutable decision per observed full session; never a second, never a past one
+    decided = [d["session"] for d in decisions]
+    assert decided == sorted(set(decided)) and slots[4] not in decided and slots[5] not in decided
+    assert len(decided) == slots_needed - 2
+    for record in decisions:  # every decision record was written inside its own session's window
+        day = record["session"]
+        assert obs.utc_at(day, "15:25:00") <= obs.parse_iso(record["recorded_utc"])
+        assert obs.parse_iso(record["recorded_utc"]) < obs.utc_at(day, "15:26:00")
+    known = {None, ANCHOR_DAY, HALF_DAY, *slots[:slots_needed]}
+    assert {r["session"] for r in records} <= known  # no weekend/holiday/post-window evidence
+    faults = {(f["session"], f["stage"], f["fault"]) for f in ob.report()["faults"]}
+    assert (slots[1], "inputs.completion", "fetch_transient_exhausted") in faults
+    assert any(f[0] == slots[1] and f[2] == "inputs_unusable" for f in faults)
+    assert (slots[2], "archive.1", "archive_late") in {(f[0], f[1][:9], f[2]) for f in faults}
+    assert ob.stage_record(slots[3], "decision")["body"]["reconciled_claim"] is not None
+    assert ob.canonical(slots[2])["body"]["late_capture"] is True
+    # the clean-looking later sessions did not erase the month-one failure
+    checkpoint = ob.report()["operational"]["checkpoint"]
+    assert checkpoint["reached"] and not checkpoint["conditions_met"]
+    day21 = ob.stage_record(slots[20], "decision")["body"]
+    assert day21["status"] == "halted_no_position" and day21["signal_side"] == 1
+    assert day21["observer_side"] == 0 and day21["halt_reasons"][0]["reason"] == "checkpoint_failed"
+    slot_counts = ob.report()["slots"]
+    assert (slot_counts["exchange_closed"], slot_counts["early_close"]) == (1, 1)
+    assert ob.session_row(slots[4])["slot"] == 5  # closed slot retained, endpoint not extended
+    assert not any(r["session"] == slots[5] and r["stage"] == "decision" for r in records)
+
+
+def test_job_stage_windows_follow_the_spring_dst_change(tmp_path):
+    ob, clock, deps = active(tmp_path)
+    prior, day = "2027-03-12", "2027-03-15"  # clocks change on Sunday 2027-03-14
+    assert ob.neighbours(day)[0] == prior
+    clock.set(prior, "16:20:05")
+    obs.run_job(ob, "archive")
+    assert deps.transport.calls[-1][1]["end"] == "2027-03-12T20:59:00Z"  # EST: 15:59 ET
+    clock.set(day, "15:20:05")
+    assert obs.run_job(ob, "inputs")["status"] == "ok"
+    assert deps.transport.calls[-1][1]["end"] == "2027-03-15T13:59:00Z"  # EDT: 09:59 ET
+    assert obs.utc_at(day, "15:25:00") == datetime(2027, 3, 15, 19, 25, tzinfo=UTC)
+    clock.now = datetime(2027, 3, 15, 19, 24, 59, tzinfo=UTC)
+    with pytest.raises(obs.TooEarly):
+        obs.run_job(ob, "decide")
+    clock.now = datetime(2027, 3, 15, 19, 25, 5, tzinfo=UTC)
+    assert obs.run_job(ob, "decide")["faults"] == []  # timely; halted only by the unobserved months
+    assert ob.stage_record(day, "decision")["body"]["timely_valid"] is True
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        FileNotFoundError("timedatectl"),
+        subprocess.TimeoutExpired("timedatectl", 5),
+        subprocess.CalledProcessError(1, "timedatectl"),
+    ],
+)
+def test_clock_probe_failure_is_unknown_and_never_timely_evidence(tmp_path, monkeypatch, failure):
+    def broken(*args, **kwargs):
+        raise failure
+
+    monkeypatch.setattr(obs.subprocess, "run", broken)
+    assert obs.host_clock_status() == "unknown"
+    book = Book().day(ANCHOR_DAY, close=100.0).day(DAY1, p0959=101.0)
+    ob, clock, deps = active(tmp_path, book)
+    archive_day(ob, clock, ANCHOR_DAY)
+    clock.set(DAY1, "15:20:05")
+    obs.run_job(ob, "inputs")
+    deps.clock_sync = obs.host_clock_status  # the production probe, now failing
+    clock.set(DAY1, "15:25:05")
+    result = obs.run_job(ob, "decide")
+    body = ob.stage_record(DAY1, "decision")["body"]
+    assert "clock_unknown" in result["faults"] and body["observer_side"] == 0
+    assert body["timely_valid"] is False and body["signal_side"] is None
+
+
+def test_job_script_help_and_refusals_run_without_credentials_or_writes(tmp_path):
+    def run_job_script(*argv):
+        env = {"PATH": os.environ["PATH"], "HOME": str(tmp_path)}  # no credentials, no proxies
+        return subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "intraday_observer_job.py"), *argv],
+            cwd=tmp_path,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+    helped = run_job_script("--help")
+    assert helped.returncode == 0 and "--stage" in helped.stdout and "--state-dir" in helped.stdout
+    assert run_job_script("--stage", "revise", "--state-dir", "x").returncode == 2
+    bad = run_job_script("--stage", "inputs", "--state-dir", str(tmp_path / "missing"))
+    assert bad.returncode == 2 and "state_not_initialized" in bad.stderr
+    assert list(tmp_path.iterdir()) == []  # a refused job creates nothing
+
+
+def test_job_wrapper_is_part_of_the_code_binding():
+    assert "scripts/intraday_observer_job.py" in obs.code_binding()["files"]
+
+
+def test_recover_after_the_endpoint_captures_the_final_archive_directly(tmp_path):
+    ob, clock, _ = active(tmp_path)
+    final, after = last_slot(ob), ob.manifest["calendar"]["post_window_next_session"]
+    assert after not in {r["date"] for r in ob.effective_rows()}  # no slot, no session row
+    clock.set(after, "15:15:00")
+    record = ob.run_recover(after)
+    assert record["session"] == final and record["body"]["canonical"] is True
+    assert ob.run_recover(after) is None

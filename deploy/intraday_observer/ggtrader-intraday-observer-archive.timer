@@ -1,0 +1,13 @@
+# DRAFT: no Persistent catch-up and no randomized delay. Not approved for activation.
+[Unit]
+Description=ggTrader intraday observer archive timer
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 16:20:00 America/New_York
+AccuracySec=1s
+RandomizedDelaySec=0
+Persistent=false
+Unit=ggtrader-intraday-observer-archive.service
+
+[Install]
+WantedBy=timers.target

@@ -1,7 +1,7 @@
 # Intraday observer readiness — in progress
 
-The real-source samples pass. The recorder remains off: operational rehearsal,
-final code checks and independent Opus review are still pending. No live study
+The real-source samples and offline operational checks pass. The recorder remains
+off: final full-suite verification and independent Opus review are still pending. No live study
 has been initialized and no services have been installed.
 
 ## What the source checks established
@@ -31,8 +31,7 @@ computed from these samples.
   freeze the actual dates only in the final approved package.
 - The host reports NTP synchronized and user lingering enabled. The largest sampled
   one-page archive is 42,243 bytes: approximately 10.65 MB for 252 such archives,
-  before inputs, ledger records, metadata and filesystem overhead. Full-state size
-  and runtime still require the synthetic operational check.
+  before inputs, ledger records, metadata and filesystem overhead. The synthetic operational check measures the complete state below.
 - Normal inputs and archive need two single-page GETs; bootstrap and recovery can
   add one each. Three attempts for all four would use the full twelve-attempt cap.
   Pagination or unusual retries can exhaust it and produce faults. The cap stays
@@ -61,3 +60,27 @@ and a runbook, with installation deliberately reserved. Parent must reconcile th
 wrapper interface and code bindings, verify final tests and hashes, and obtain
 Opus review of the concrete package. A manifest-bound live readiness attestation
 must not be generated while those checks remain pending.
+
+## Operational evidence
+
+Sonnet added a calendar-aware wrapper and thirty tests (148 observer tests pass).
+Parent reviewed the diff and verified repository-wide Ruff checks/formatting. The
+full capped suite is running; its final result is not yet claimed. The shared
+recovery fix lets the final archive use its next-session grace without creating
+a 253rd observation. Fault rehearsal covers outages, interrupted jobs, closure
+amendments, early closes, DST, clock failures and the checkpoint halt.
+
+The [252-slot synthetic measurement](artifacts-2026-10-26-intraday-readiness/runtime_bench_252.json)
+uses roughly 13 MB of state and 1,515 records. Five fresh-interpreter final decisions
+completed in 1.90–3.50 seconds, including imports and durable writes. This uses an
+injected clock and transport, not a real-time service run or future latency guarantee.
+The [driver](artifacts-2026-10-26-intraday-readiness/runtime_bench.py) and
+[Sonnet report](artifacts-2026-10-26-intraday-readiness/sonnet-report.md) preserve the method.
+Year-sized report generation takes 51 seconds; run it outside timed collection windows,
+not as a frequent status poll. Its speed is a deferred limitation, not a reason to
+rewrite the recorder.
+
+Parent independently rendered and checked all eight draft units with no warnings
+and checked all four runbook Bash blocks. Keep the draft 270-second recovery/input/
+archive timeouts and 45-second decision timeout: Sonnet's longer suggested values
+would exceed stage deadlines. No unit is installed or enabled.

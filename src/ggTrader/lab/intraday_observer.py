@@ -47,6 +47,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CODE_FILES = (
     "src/ggTrader/lab/intraday_observer.py",
     "scripts/intraday_observe.py",
+    "scripts/intraday_observer_job.py",
     "src/ggTrader/lab/intraday_probe.py",
 )
 SCHEMA = "intraday_observer"
@@ -1490,16 +1491,28 @@ class Observer:
             raise DuplicateStage(f"{day}:canonical_valuation_exists_use_revise")
         return self.capture(day, self.next_capture_no(day), cutoff=grace_end, grace_end=grace_end)
 
+    def recover_target(self, day: str) -> str | None:
+        """Prior session a 15:15 job on ``day`` would capture, or None when nothing is missing.
+
+        The first session after the endpoint is not registered, so its prior session is the last
+        non-closed registered one; this recovers the final archive without creating a slot 253.
+        """
+        if day == self.manifest["calendar"]["post_window_next_session"]:
+            previous = next(
+                (r["date"] for r in reversed(self.effective_rows()) if r["kind"] != "closed"), None
+            )
+        else:
+            previous, _ = self.neighbours(day)
+        if previous is None or self.canonical(previous):
+            return None
+        return previous
+
     def run_recover(self, day: str | None = None) -> dict | None:
         """15:15 job: capture the prior session's missing archive; nothing to do returns None."""
         self.require_active()
         day = day or ny_date(self.clock())
-        previous, _ = self.neighbours(day)
-        if (
-            previous is None
-            or self.canonical(previous)
-            or self.session_row(previous)["kind"] == "closed"
-        ):
+        previous = self.recover_target(day)
+        if previous is None:
             return None
         if self.clock() < utc_at(day, STAGE_CLOCKS["recover"] + ":00"):
             raise TooEarly(f"recover:{day}")
@@ -2331,6 +2344,7 @@ class Deps:
 
 FETCHING = ("inputs", "archive", "recover", "revise")
 SESSION_COMMANDS = ("inputs", "decide", "archive", "recover", "revise")
+JOB_STAGES = ("recover", "inputs", "decide", "archive")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -2425,11 +2439,17 @@ def stage_summary(record: dict | None) -> dict:
     }
 
 
-def run_observer_command(args: argparse.Namespace, deps: Deps) -> int:
-    """Commands that act on an existing state directory."""
-    ob = Observer(args.state_dir, deps)
+def open_observer(state_dir: Path, deps: Deps) -> Observer:
+    """Bind an existing state directory; rehearsal states never run on the live clock or source."""
+    ob = Observer(state_dir, deps)
     if ob.manifest["mode"] == "rehearsal" and deps.transport is None:
         raise ObserverError("rehearsal state cannot use the live clock or source; use rehearse")
+    return ob
+
+
+def run_observer_command(args: argparse.Namespace, deps: Deps) -> int:
+    """Commands that act on an existing state directory."""
+    ob = open_observer(args.state_dir, deps)
     if args.command in FETCHING and deps.transport is None:
         deps.transport = HttpTransport()  # fails on missing credentials before any claim or write
     day = getattr(args, "session", None)
@@ -2501,6 +2521,61 @@ def run_observer_command(args: argparse.Namespace, deps: Deps) -> int:
         if args.out:
             atomic_checkpoint(args.out, report, initial=True)  # immutable local file, write once
         emit(report)
+    return 0
+
+
+# --- scheduler dispatch ---------------------------------------------------------------------
+
+
+def job_noop(stage: str, reason: str) -> dict:
+    """A timer fired where the registered calendar has no work: nothing is recorded."""
+    return {"stage": stage, "noop": True, "recorded": False, "reason": reason}
+
+
+def run_job(ob: Observer, stage: str) -> dict:
+    """One timer-launched stage for the current New York date, driven by the registered calendar.
+
+    Only the current date is ever acted on, so a late timer can fault today's stage but can never
+    decide a past session. Non-session days, the anchor's trading stages and early closes (archive
+    and recovery only) are silent no-ops; the first session after the endpoint only recovers.
+    """
+    today = ny_date(ob.clock())
+    row = next((r for r in ob.effective_rows() if r["date"] == today), None)
+    if row is None:
+        if not (
+            stage == "recover" and today == ob.manifest["calendar"]["post_window_next_session"]
+        ):
+            return job_noop(stage, "not_a_registered_session_day")
+    elif row["kind"] == "closed":
+        return job_noop(stage, "exchange_closed")
+    elif stage in ("inputs", "decide") and not (row["kind"] == "full" and row["slot"]):
+        return job_noop(stage, "early_close" if row["kind"] == "early_close" else "anchor_session")
+    if stage == "recover" and ob.recover_target(today) is None:
+        return job_noop(stage, "nothing_to_recover")
+    if stage != "decide" and ob.deps.transport is None:
+        ob.deps.transport = (
+            HttpTransport()
+        )  # fails on missing credentials before any claim or write
+    run = {
+        "inputs": ob.run_inputs,
+        "decide": ob.run_decision,
+        "archive": ob.run_archive,
+        "recover": ob.run_recover,
+    }[stage]
+    return stage_summary(run(today))
+
+
+def job_main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    """Entry point for the timer wrapper: one stage, exit 0 for evidence or no-op, 2 for refusal."""
+    parser = argparse.ArgumentParser(description=run_job.__doc__)
+    parser.add_argument("--stage", choices=JOB_STAGES, required=True)
+    parser.add_argument("--state-dir", type=Path, required=True)
+    args = parser.parse_args(argv)
+    try:
+        emit(run_job(open_observer(args.state_dir, deps or Deps()), args.stage))
+    except (ObserverError, ValueError, OSError) as error:
+        print(f"error: {type(error).__name__}: {error}", file=sys.stderr)
+        return 2
     return 0
 
 
