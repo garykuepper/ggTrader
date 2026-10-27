@@ -6,17 +6,19 @@ cheaper model without them needing to re-derive context from `roadmap.md`'s
 full history. When a step here is done, delete it and add the next one (if
 any) — don't let this file accumulate a backlog.
 
-## Intraday: practice journal built, not activated (2026-10-25)
+## Intraday: prepare real-source readiness, then activation package (2026-10-26)
 
-Owner authorized building after the plain-language explanation. Sonnet built the
-isolated recorder/CLI; parent fixed Opus's eight Important review findings.
-118 focused tests, a fresh three-day synthetic rehearsal and the corrected-code
-full capped suite (1,857 passed; 30 deselected) pass. Agy verified hashes/lint. See the [build/handoff record](research/2026-10-25-intraday-observer-build.md).
+The practice journal is built and tested but remains off. Read the
+[next-step plan](superpowers/plans/2026-10-26-intraday-observer-readiness.md).
 
-Next is a bounded real-source readiness check and a reviewable standalone schedule
-before separate activation. No real observer state, source preflight, scheduler,
-orders or prospective observations have been started. Historical r8 remains
-UNRESOLVED (data); its frozen artifacts are preserved.
+1. Verify free SIP access, calendar, data timing and source semantics with a bounded
+   read-only preflight; test remaining full-year-size timing and fault paths.
+2. Prepare the exact fixed release, separate schedule, dates and readiness evidence
+   for the owner's activation decision. Do not install/enable anything yet.
+
+Planning only: no new data requests, scheduler or observations have started.
+The [build record](research/2026-10-25-intraday-observer-build.md) retains the
+1,857-test result. Historical r8 remains UNRESOLVED (data), unchanged.
 
 ## Current research decision (2026-10-23)
 
