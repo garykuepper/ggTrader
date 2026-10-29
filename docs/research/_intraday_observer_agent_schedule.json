@@ -1,21 +1,14 @@
 {
-  "scheduledTaskId": "scheduled-task:command:mcp:9afa075d-d4b1-4dfb-ba2c-cb4d83ff88fa:schedule-task:intraday-observer-daily-agent-supervision-2026-10-29-r1",
-  "title": "Intraday diary: daily health checks and milestone reviews",
+  "title": "Intraday diary supervision",
   "enabled": true,
   "schedule": {
-    "type": "fixed_time",
-    "timeOfDay": "14:00",
-    "weekdays": [
-      1,
-      2,
-      3,
-      4,
-      5
-    ]
+    "kind": "cron",
+    "expr": "0 14 * * 1-5",
+    "display": "0 14 * * 1-5"
   },
-  "timezone": "America/Los_Angeles (host local time; verified next run at 21:00 UTC / 14:00 PDT)",
+  "timezone": "America/Los_Angeles",
   "nextRunAtAtCreation": "2026-10-29T21:00:00.000Z",
-  "boundThreadId": "8547d842-2b6e-4710-94e3-dec42ad87f80",
+  "boundThreadId": null,
   "scope": [
     "first anchor/observation checks",
     "daily timer, missing-stage and integrity health checks",
@@ -26,8 +19,21 @@
   ],
   "executed_during_scheduling": false,
   "limits": [
-    "Machine and T3 scheduler must be available.",
+    "Machine and Hermes gateway must be available.",
     "Does not place orders, backfill decisions, amend frozen evidence or resume halts.",
-    "Reports in the existing thread; no external notification channel."
-  ]
+    "Reports are local Hermes cron output and study/operator_checks; no external messaging configured.",
+    "First cron execution not yet verified."
+  ],
+  "previous_t3_scheduled_task": {
+    "scheduledTaskId": "scheduled-task:command:mcp:9afa075d-d4b1-4dfb-ba2c-cb4d83ff88fa:schedule-task:intraday-observer-daily-agent-supervision-2026-10-29-r1",
+    "enabled": false
+  },
+  "scheduler": "Hermes cron",
+  "hermes_job_id": "39172df68638",
+  "model": "kimi-pro",
+  "provider": "litellm",
+  "delivery": "local",
+  "nextRunAtAtMigration": "2026-10-29T14:00:00-07:00",
+  "executed_during_migration": false,
+  "creation_method": "Supported hermes cron create CLI with cross-process job-store locking; gateway not restarted; no manual jobs.json edits."
 }

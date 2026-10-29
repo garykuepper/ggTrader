@@ -8,10 +8,10 @@ any) — don't let this file accumulate a backlog.
 
 ## Intraday: verify first actual recordings (activated 2026-10-27)
 
-Agent supervision is scheduled weekdays at 14:00 Pacific, reporting in the original
-thread: first recordings, daily health, weekly calendar, checkpoint and final review.
-See [schedule record](research/_intraday_observer_agent_schedule.json). Scheduling
-did not execute the checks; host/T3 availability is required.
+Hermes agent supervision (Kimi Pro, job `39172df68638`) is scheduled weekdays
+at 14:00 Pacific, saving local reports: first recordings, daily health, weekly calendar, checkpoint and final review.
+See [schedule record](research/_intraday_observer_agent_schedule.json). The T3 schedule is disabled to avoid duplicate runs. Scheduling did not execute
+the checks; the host and Hermes gateway must be available.
 
 The automatic hypothetical journal is activated. All four standalone timers are
 enabled/active; installed-service no-op checks and ledger integrity pass. See
