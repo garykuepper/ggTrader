@@ -1,0 +1,33 @@
+{
+  "scheduledTaskId": "scheduled-task:command:mcp:9afa075d-d4b1-4dfb-ba2c-cb4d83ff88fa:schedule-task:intraday-observer-daily-agent-supervision-2026-10-29-r1",
+  "title": "Intraday diary: daily health checks and milestone reviews",
+  "enabled": true,
+  "schedule": {
+    "type": "fixed_time",
+    "timeOfDay": "14:00",
+    "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "timezone": "America/Los_Angeles (host local time; verified next run at 21:00 UTC / 14:00 PDT)",
+  "nextRunAtAtCreation": "2026-10-29T21:00:00.000Z",
+  "boundThreadId": "8547d842-2b6e-4710-94e3-dec42ad87f80",
+  "scope": [
+    "first anchor/observation checks",
+    "daily timer, missing-stage and integrity health checks",
+    "weekly bounded calendar comparison",
+    "slot-20 review after valuation grace",
+    "monthly descriptive summaries",
+    "final report after final recovery grace"
+  ],
+  "executed_during_scheduling": false,
+  "limits": [
+    "Machine and T3 scheduler must be available.",
+    "Does not place orders, backfill decisions, amend frozen evidence or resume halts.",
+    "Reports in the existing thread; no external notification channel."
+  ]
+}
