@@ -30,7 +30,7 @@
   },
   "scheduler": "Hermes cron",
   "hermes_job_id": "39172df68638",
-  "model": "kimi-pro",
+  "model": "deepseek-flash",
   "provider": "litellm",
   "delivery": "local",
   "nextRunAtAtMigration": "2026-10-29T14:00:00-07:00",

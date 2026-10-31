@@ -8,7 +8,7 @@ any) — don't let this file accumulate a backlog.
 
 ## Intraday: verify first actual recordings (activated 2026-10-27)
 
-Hermes agent supervision (Kimi Pro, job `39172df68638`) is scheduled weekdays
+Hermes agent supervision (DeepSeek Flash, job `39172df68638`) is scheduled weekdays
 at 14:00 Pacific, saving local reports: first recordings, daily health, weekly calendar, checkpoint and final review.
 See [schedule record](research/_intraday_observer_agent_schedule.json). The T3 schedule is disabled to avoid duplicate runs. Scheduling did not execute
 the checks; the host and Hermes gateway must be available.
