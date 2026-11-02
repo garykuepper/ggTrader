@@ -430,3 +430,11 @@ not empirical results. No claim that all NO-GOs deserve or do not deserve a
 second test follows from this audit. The [execution plan](../superpowers/plans/2026-11-01-research-process-audit.md)
 records the work and the authorization boundaries.
 
+## Addendum (2026-11-02): fold attribution and follow-ups
+
+This addendum adds pointers only; no verdict or classification above changed.
+
+- The "walk-forward tests can principally measure fallback" concern now has counts from saved fold records: `xs_momentum` and `dual_momentum` replays deployed the anchor in 17/17 folds and `fomc_drift` in 47/53; the PIT `ensemble_ic` run did in 15/17, and the winner was deployed in most folds of the other runs reviewed. See [fold attribution](2026-11-02-wfo-fold-attribution.md). Pre- and post-DSR-fix runs are kept separate.
+- Current fallback/halt behavior is specified and pinned by tests in [fallback semantics](2026-11-02-wfo-fallback-semantics.md); intended behavior is still an owner decision.
+- The free-data direction question is inventoried, without a recommendation, in [free-data stock feasibility](2026-11-02-free-data-stock-feasibility.md). The B0/B1 accounting prerequisite is in [after-tax lot engine requirements](2026-11-02-after-tax-lot-engine-requirements.md).
+
