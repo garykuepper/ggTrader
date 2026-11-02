@@ -1,6 +1,10 @@
 """Tests for classifying saved WFO fold rows by gate/anchor outcome."""
 
-from ggTrader.lab.wfo_attribution import classify_fold, summarize_run
+from ggTrader.lab.wfo_attribution import (
+    classify_fold,
+    regime_from_ancestry,
+    summarize_run,
+)
 
 
 def _row(num: int, gates: bool, anchor: bool, wfe=0.5) -> dict:
@@ -55,3 +59,35 @@ def test_summarize_run_counts_nan_and_none_wfe_separately():
 def test_summarize_run_reports_missing_fold_numbers():
     rows = [_row(1, True, False), _row(2, True, False), _row(4, True, False)]
     assert summarize_run(rows)["fold_numbers_missing"] == [3]
+
+
+def test_classify_fold_rejects_non_boolean_flags_as_anomalies():
+    assert classify_fold({"fold_num": 1, "gates_passed": "false", "used_anchor": True}) == "anomaly"
+    assert classify_fold({"fold_num": 1, "gates_passed": True, "used_anchor": float("nan")}) == (
+        "anomaly"
+    )
+    assert classify_fold({"fold_num": 1, "gates_passed": 1, "used_anchor": 0}) == "anomaly"
+
+
+def test_summarize_run_counts_absent_wfe_separately_from_explicit_none():
+    rows = [
+        {"fold_num": 1, "gates_passed": True, "used_anchor": False},  # key absent
+        {"fold_num": 2, "gates_passed": True, "used_anchor": False, "wfe": None},
+    ]
+    out = summarize_run(rows)
+    assert out["wfe_absent"] == 1
+    assert out["none_wfe"] == 1
+
+
+def test_regime_from_ancestry_pre_fix_when_last_commit_predates_fix():
+    assert regime_from_ancestry(first_after_fix=False, last_after_fix=False) == "pre_dsr_fix"
+
+
+def test_regime_from_ancestry_after_fix_commit_is_not_proof_of_gate_version():
+    assert regime_from_ancestry(first_after_fix=True, last_after_fix=True) == "committed_after_fix"
+
+
+def test_regime_from_ancestry_unknown_on_straddle_or_git_error():
+    assert regime_from_ancestry(first_after_fix=False, last_after_fix=True) == "unknown"
+    assert regime_from_ancestry(first_after_fix=None, last_after_fix=True) == "unknown"
+    assert regime_from_ancestry(first_after_fix=False, last_after_fix=None) == "unknown"

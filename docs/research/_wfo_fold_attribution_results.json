@@ -3,7 +3,7 @@
   "note": "Counts describe saved folds only. The undeployed winner's performance, the halt state entering a fold, and folds skipped for missing training metrics are not recoverable from these rows.",
   "runs": [
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_anchor_fix_reproduction_results.json",
       "first_commit": "51c8ca7",
       "has_halted_field": false,
@@ -19,18 +19,23 @@
         "gates_pass_winner": 12,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 0
+        "none_wfe": 0,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "first artifact commit already contains the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "artifact first committed after the DSR fix; the gate version that generated the run is not proven by Git",
+      "documented_gate_version": {
+        "gate_version": "corrected harness (DSR fix 09f9f40)",
+        "source": "docs/research/2026-10-19-production-replica-audit-nogo.md ('Momentum and FOMC corrected-harness reruns')"
+      },
       "file": "_audit_reruns_20261019.json",
       "first_commit": "411fbdc",
       "has_halted_field": false,
       "json_path": "fomc_drift/wfo/fold_rows",
       "last_commit": "411fbdc",
       "n_commits": 1,
-      "regime": "post_dsr_fix",
+      "regime": "committed_after_fix",
       "summary": {
         "anomaly": 0,
         "fold_numbers_missing": [],
@@ -39,18 +44,23 @@
         "gates_pass_winner": 6,
         "n_folds": 53,
         "nan_wfe": 0,
-        "none_wfe": 15
+        "none_wfe": 15,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "first artifact commit already contains the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "artifact first committed after the DSR fix; the gate version that generated the run is not proven by Git",
+      "documented_gate_version": {
+        "gate_version": "corrected harness (DSR fix 09f9f40)",
+        "source": "docs/research/2026-10-19-production-replica-audit-nogo.md ('Momentum and FOMC corrected-harness reruns')"
+      },
       "file": "_audit_reruns_20261019.json",
       "first_commit": "411fbdc",
       "has_halted_field": false,
       "json_path": "xs_momentum/fold_rows",
       "last_commit": "411fbdc",
       "n_commits": 1,
-      "regime": "post_dsr_fix",
+      "regime": "committed_after_fix",
       "summary": {
         "anomaly": 0,
         "fold_numbers_missing": [],
@@ -59,18 +69,23 @@
         "gates_pass_winner": 0,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 0
+        "none_wfe": 0,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "first artifact commit already contains the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "artifact first committed after the DSR fix; the gate version that generated the run is not proven by Git",
+      "documented_gate_version": {
+        "gate_version": "corrected harness (DSR fix 09f9f40)",
+        "source": "docs/research/2026-10-19-production-replica-audit-nogo.md ('Momentum and FOMC corrected-harness reruns')"
+      },
       "file": "_audit_reruns_20261019.json",
       "first_commit": "411fbdc",
       "has_halted_field": false,
       "json_path": "dual_momentum/fold_rows",
       "last_commit": "411fbdc",
       "n_commits": 1,
-      "regime": "post_dsr_fix",
+      "regime": "committed_after_fix",
       "summary": {
         "anomaly": 0,
         "fold_numbers_missing": [],
@@ -79,11 +94,12 @@
         "gates_pass_winner": 0,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 0
+        "none_wfe": 0,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_cross_asset_sleeve_results.json",
       "first_commit": "47c66fd",
       "has_halted_field": true,
@@ -99,11 +115,12 @@
         "gates_pass_winner": 10,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 5
+        "none_wfe": 5,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_ic_kelly_rebaseline_20260923.json",
       "first_commit": "d48ee94",
       "has_halted_field": false,
@@ -119,11 +136,12 @@
         "gates_pass_winner": 12,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 0
+        "none_wfe": 0,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_ic_kelly_rebaseline_20260923.json",
       "first_commit": "d48ee94",
       "has_halted_field": false,
@@ -139,11 +157,12 @@
         "gates_pass_winner": 8,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 1
+        "none_wfe": 1,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_ic_kelly_rebaseline_20260923.json",
       "first_commit": "d48ee94",
       "has_halted_field": false,
@@ -159,11 +178,12 @@
         "gates_pass_winner": 13,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 4
+        "none_wfe": 4,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_month_end_treasury_results.json",
       "first_commit": "15b43c0",
       "has_halted_field": true,
@@ -179,11 +199,12 @@
         "gates_pass_winner": 9,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 1
+        "none_wfe": 1,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_pit_rebaseline_20260923.json",
       "first_commit": "d48ee94",
       "has_halted_field": false,
@@ -199,11 +220,12 @@
         "gates_pass_winner": 17,
         "n_folds": 17,
         "nan_wfe": 3,
-        "none_wfe": 0
+        "none_wfe": 0,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_pit_rebaseline_20260923.json",
       "first_commit": "d48ee94",
       "has_halted_field": false,
@@ -219,11 +241,12 @@
         "gates_pass_winner": 2,
         "n_folds": 17,
         "nan_wfe": 1,
-        "none_wfe": 2
+        "none_wfe": 2,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_pit_rebaseline_20260923.json",
       "first_commit": "d48ee94",
       "has_halted_field": false,
@@ -239,11 +262,12 @@
         "gates_pass_winner": 10,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 7
+        "none_wfe": 7,
+        "wfe_absent": 0
       }
     },
     {
-      "basis": "last artifact commit predates the DSR fix (commit time bounds, not proves, the run's gate version)",
+      "basis": "last artifact commit predates the DSR fix",
       "file": "_rebaseline_corrected_tape_20260822.json",
       "first_commit": "51c8ca7",
       "has_halted_field": false,
@@ -259,7 +283,8 @@
         "gates_pass_winner": 12,
         "n_folds": 17,
         "nan_wfe": 0,
-        "none_wfe": 0
+        "none_wfe": 0,
+        "wfe_absent": 0
       }
     }
   ],

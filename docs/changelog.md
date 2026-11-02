@@ -2,15 +2,20 @@
 
 ## 2026-11-02
 
-- **Research process follow-ups (no strategy or live-code change).** Added
-  `src/ggTrader/lab/wfo_attribution.py` and `scripts/wfo_fold_attribution.py`
-  (read saved fold records only), eight attribution tests, and six
-  characterization tests in `tests/lab/test_wfo.py` that pin the current WFO
-  fallback/halt behavior (including NaN WFE not being excluded from the circuit
-  breaker). `wfo.py` is unchanged; intended behavior is an owner decision.
-  New reports: fold attribution, fallback semantics, free-data stock feasibility
-  (with a Part A power note) and after-tax lot-engine requirements. No backtest,
-  data purchase, order or verdict change.
+- **Research process follow-ups (no strategy, live-code or verdict change).**
+  - `src/ggTrader/lab/wfo_attribution.py` and `scripts/wfo_fold_attribution.py` classify
+    saved WFO fold records (read-only); strict boolean flags, regime labels that bound but
+    do not prove the DSR gate version. Reports: fold attribution, fallback semantics,
+    free-data stock feasibility (with an A1 power note), family-scope review.
+  - `src/ggTrader/lab/wfo.py`: opt-in `WfoPolicy` (NaN WFE exclusion; anchor-fold WFE
+    excluded from the breaker history while shadow re-entry still receives it), plus
+    additive `halted_entering` and `WfoResult.skipped_folds`. Defaults are unchanged.
+  - `src/ggTrader/lab/wfo_policy_synthetic.py`: preregistered synthetic study of the
+    breaker bookkeeping (results under stated assumptions only).
+  - `src/ggTrader/lab/tax_lots.py`: `TaxLotBook`, a standalone after-tax lot library
+    (not wired into any strategy; unvalidated against a real broker ledger).
+  - Added `.claude/skills/*-workspace/` to `.gitignore`.
+  No backtest on market data, data purchase, order or deploy.
   [Index](research/RESEARCH_INDEX.md).
 
 ## 2026-10-25

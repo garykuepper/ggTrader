@@ -15,7 +15,7 @@ Terms used: **WFO** = walk-forward optimization (train on a window, deploy on th
 - `gates_pass_anchor`: gates passed but the anchor was still deployed. By `wfo.py:731` this implies the system was halted **entering** that fold.
 - `gates_pass_winner`: gates passed and the training winner was deployed.
 
-*Observation.* The 13 runs in 7 artifacts split into pre- and post-DSR-fix groups (fix `09f9f40`, 2026-10-19). Three runs are dominated by anchor deployment: `xs_momentum` and `dual_momentum` (17/17 anchor, post-fix) and `fomc_drift` (47/53 anchor, post-fix); in the pre-fix group, PIT `ensemble_ic` deployed the anchor in 15/17 folds. Most other pre-fix runs deployed the winner in a majority of folds. Everything pre-fix reflects the density gate only, because the uncorrected DSR gate passed almost everything (`docs/changelog.md`, "Lab DSR correction").
+*Observation.* The 13 runs in 7 artifacts split into two groups by when each artifact entered Git relative to the DSR fix (`09f9f40`, 2026-10-19): ten were committed before it (old gate for certain) and three, all from `_audit_reruns_20261019.json`, after it (a corrected harness is documented for them in the [production-rule audit](2026-10-19-production-replica-audit-nogo.md); Git alone does not prove it). Three runs are dominated by anchor deployment: `xs_momentum` and `dual_momentum` (17/17 anchor, corrected harness documented) and `fomc_drift` (47/53 anchor, corrected harness documented); in the pre-fix group, PIT `ensemble_ic` deployed the anchor in 15/17 folds. Most other pre-fix runs deployed the winner in a majority of folds. Everything pre-fix reflects the density gate only, because the uncorrected DSR gate passed almost everything (`docs/changelog.md`, "Lab DSR correction").
 
 *What this does not show.* It does not show what the undeployed winner would have earned, and it does not make any strategy succeed or fail. Already-closed verdicts stand; this report only states which part of the pipeline each saved run exercised.
 
@@ -25,19 +25,19 @@ Counts are from `docs/research/_wfo_fold_attribution_results.json`, produced by 
 
 | Artifact : run | Folds | gate_fail | gates_pass_anchor | gates_pass_winner | Anchor folds | Regime |
 |---|---:|---:|---:|---:|---:|---|
-| `_rebaseline_corrected_tape_20260822.json` : core | 17 | 5 | 0 | 12 | 5 (29%) | pre-fix |
-| `_anchor_fix_reproduction_results.json` : core | 17 | 5 | 0 | 12 | 5 (29%) | pre-fix |
-| `_pit_rebaseline_20260923.json` : ensemble | 17 | 0 | 0 | 17 | 0 (0%) | pre-fix |
-| `_pit_rebaseline_20260923.json` : ensemble_ic | 17 | 6 | 9 | 2 | 15 (88%) | pre-fix |
-| `_pit_rebaseline_20260923.json` : ensemble_kelly | 17 | 1 | 6 | 10 | 7 (41%) | pre-fix |
-| `_ic_kelly_rebaseline_20260923.json` : ensemble | 17 | 5 | 0 | 12 | 5 (29%) | pre-fix |
-| `_ic_kelly_rebaseline_20260923.json` : ensemble_ic | 17 | 5 | 4 | 8 | 9 (53%) | pre-fix |
-| `_ic_kelly_rebaseline_20260923.json` : ensemble_kelly | 17 | 1 | 3 | 13 | 4 (24%) | pre-fix |
-| `_month_end_treasury_results.json` : wfo | 17 | 4 | 4 | 9 | 8 (47%) | pre-fix |
-| `_cross_asset_sleeve_results.json` : wfo | 17 | 3 | 4 | 10 | 7 (41%) | pre-fix |
-| `_audit_reruns_20261019.json` : xs_momentum | 17 | 17 | 0 | 0 | 17 (100%) | post-fix |
-| `_audit_reruns_20261019.json` : dual_momentum | 17 | 17 | 0 | 0 | 17 (100%) | post-fix |
-| `_audit_reruns_20261019.json` : fomc_drift | 53 | 42 | 5 | 6 | 47 (89%) | post-fix |
+| `_rebaseline_corrected_tape_20260822.json` : core | 17 | 5 | 0 | 12 | 5 (29%) | pre-fix (committed before the fix) |
+| `_anchor_fix_reproduction_results.json` : core | 17 | 5 | 0 | 12 | 5 (29%) | pre-fix (committed before the fix) |
+| `_pit_rebaseline_20260923.json` : ensemble | 17 | 0 | 0 | 17 | 0 (0%) | pre-fix (committed before the fix) |
+| `_pit_rebaseline_20260923.json` : ensemble_ic | 17 | 6 | 9 | 2 | 15 (88%) | pre-fix (committed before the fix) |
+| `_pit_rebaseline_20260923.json` : ensemble_kelly | 17 | 1 | 6 | 10 | 7 (41%) | pre-fix (committed before the fix) |
+| `_ic_kelly_rebaseline_20260923.json` : ensemble | 17 | 5 | 0 | 12 | 5 (29%) | pre-fix (committed before the fix) |
+| `_ic_kelly_rebaseline_20260923.json` : ensemble_ic | 17 | 5 | 4 | 8 | 9 (53%) | pre-fix (committed before the fix) |
+| `_ic_kelly_rebaseline_20260923.json` : ensemble_kelly | 17 | 1 | 3 | 13 | 4 (24%) | pre-fix (committed before the fix) |
+| `_month_end_treasury_results.json` : wfo | 17 | 4 | 4 | 9 | 8 (47%) | pre-fix (committed before the fix) |
+| `_cross_asset_sleeve_results.json` : wfo | 17 | 3 | 4 | 10 | 7 (41%) | pre-fix (committed before the fix) |
+| `_audit_reruns_20261019.json` : xs_momentum | 17 | 17 | 0 | 0 | 17 (100%) | committed after fix; corrected harness documented |
+| `_audit_reruns_20261019.json` : dual_momentum | 17 | 17 | 0 | 0 | 17 (100%) | committed after fix; corrected harness documented |
+| `_audit_reruns_20261019.json` : fomc_drift | 53 | 42 | 5 | 6 | 47 (89%) | committed after fix; corrected harness documented |
 
 *Verification (calculation).* The three-way counts for `core` (08-22), PIT `ensemble_ic` and `fomc_drift` were recomputed independently from the raw `fold_rows` and match. No row was an `anomaly` (no fold had both `gates_passed` and `used_anchor` false), and no run had a gap in `fold_num`. Two artifacts (`_cross_asset_sleeve_results.json`, `_month_end_treasury_results.json`) carry the post-fold `halted` field; in both, every `gates_pass_anchor` fold was preceded by a fold whose recorded `halted` was true, consistent with the halt-entering inference. For `cross_asset_sleeve` the recorded post-fold `halted` was true for folds 2–8; for `month_end_treasury` for folds 8–12.
 

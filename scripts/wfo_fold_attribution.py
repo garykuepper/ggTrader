@@ -16,7 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from ggTrader.lab.wfo_attribution import summarize_run  # noqa: E402
+from ggTrader.lab.wfo_attribution import regime_from_ancestry, summarize_run  # noqa: E402
 
 RESEARCH_DIR = PROJECT_ROOT / "docs" / "research"
 DEFAULT_OUT = RESEARCH_DIR / "_wfo_fold_attribution_results.json"
@@ -49,37 +49,54 @@ def _git(*args: str) -> Optional[str]:
     return proc.stdout.strip() if proc.returncode == 0 else None
 
 
-def _is_ancestor(ancestor: str, descendant: str) -> bool:
-    """Return True when ``ancestor`` is an ancestor of (or equal to) ``descendant``."""
+def _is_ancestor(ancestor: str, descendant: str) -> Optional[bool]:
+    """Return True/False for ancestry, or None when Git cannot answer (error, bad ref)."""
     proc = subprocess.run(
         ["git", "merge-base", "--is-ancestor", ancestor, descendant],
         cwd=PROJECT_ROOT,
         capture_output=True,
         check=False,
     )
-    return proc.returncode == 0
+    if proc.returncode == 0:
+        return True
+    return False if proc.returncode == 1 else None
+
+
+#: Gate versions stated in repo documents (not inferable from Git), keyed by (file, run key).
+DOCUMENTED_GATE_VERSION: Dict[Tuple[str, str], Dict[str, str]] = {
+    ("_audit_reruns_20261019.json", key): {
+        "gate_version": "corrected harness (DSR fix 09f9f40)",
+        "source": "docs/research/2026-10-19-production-replica-audit-nogo.md "
+        "('Momentum and FOMC corrected-harness reruns')",
+    }
+    for key in ("xs_momentum", "dual_momentum", "fomc_drift")
+}
 
 
 def artifact_regime(rel_path: str) -> Dict[str, Any]:
-    """Classify an artifact as pre/post DSR fix from the commits that touched it.
+    """Classify an artifact's DSR regime from Git history; a bound, not a proof.
 
-    The commit date is an upper bound on the run date, so ``post_dsr_fix`` is only
-    asserted when the artifact's FIRST commit already descends from the fix.
+    Only "last commit predates the fix" shows the old gate. A commit after the fix says when the
+    file entered Git, not which gate generated the run, so it is reported as
+    ``committed_after_fix`` (see ``regime_from_ancestry``).
     """
     log = _git("log", "--format=%H", "--follow", "--", rel_path)
     commits = log.splitlines() if log else []
     if not commits:
         return {"regime": "unknown", "basis": "artifact has no git history", "commits": []}
     first, last = commits[-1], commits[0]
-    if not _is_ancestor(DSR_FIX_COMMIT, last):
-        regime, basis = "pre_dsr_fix", "last artifact commit predates the DSR fix"
-    elif _is_ancestor(DSR_FIX_COMMIT, first):
-        regime, basis = "post_dsr_fix", "first artifact commit already contains the DSR fix"
-    else:
-        regime, basis = "unknown", "artifact first added before and regenerated after the fix"
+    regime = regime_from_ancestry(
+        _is_ancestor(DSR_FIX_COMMIT, first), _is_ancestor(DSR_FIX_COMMIT, last)
+    )
+    basis = {
+        "pre_dsr_fix": "last artifact commit predates the DSR fix",
+        "committed_after_fix": "artifact first committed after the DSR fix; the gate version "
+        "that generated the run is not proven by Git",
+        "unknown": "ancestry unclear (straddles the fix, or a Git query failed)",
+    }[regime]
     return {
         "regime": regime,
-        "basis": basis + " (commit time bounds, not proves, the run's gate version)",
+        "basis": basis,
         "first_commit": first[:7],
         "last_commit": last[:7],
         "n_commits": len(commits),
@@ -107,6 +124,9 @@ def build_results(research_dir: Path = RESEARCH_DIR) -> Dict[str, Any]:
         run["summary"] = summarize_run(rows)
         run["has_halted_field"] = bool(rows) and all("halted" in r for r in rows)
         run.update(artifact_regime(f"docs/research/{filename}"))
+        documented = DOCUMENTED_GATE_VERSION.get((filename, path[0]))
+        if documented:
+            run["documented_gate_version"] = documented
         runs.append(run)
     return {
         "schema_version": 1,

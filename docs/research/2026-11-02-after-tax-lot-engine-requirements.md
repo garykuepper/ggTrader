@@ -2,7 +2,7 @@
 
 **Classification:** Internal Quantitative Research & Engineering Strategy
 **Date:** 2026-11-02
-**Status:** Requirements specification and gap table only. **No engine code was written** and no tax validity is asserted. A build needs its own plan and owner approval.
+**Status:** Sections 1–5 are the original requirements specification and gap analysis, dated as a historical snapshot (written before any engine existed; the only tax-lot code then was `Book`). A standalone library, `TaxLotBook`, was implemented afterwards; see section 6 for current status. No tax validity is asserted.
 
 Terms: **B0** = kill-only replay on the clean 2021-01-31 → 2026-04-30 tape; **B1** = forward shadow book (≥ 18 months). **ST/LT** = short-/long-term capital-gain treatment. **HIFO** = highest-basis-first lot sales. **Wash sale** = a loss on a sale disallowed when substantially identical shares are bought within 30 days before or after, with the loss added to the replacement lot's basis and holding period. **PIT** = point-in-time. Source of requirements: [forward-paper standard §§3, 4, 6](briefs/2026-10-23-forward-paper-standard.md).
 
@@ -32,6 +32,13 @@ Each is written to be testable.
 | R14 | Append-only ledger: late data corrections appended with discovery time; decisions never overwritten | §4 |
 | R15 | Standalone limit: no assumption that losses offset outside income or gains | §6 |
 | R16 | Report ST, LT, dividend and cash tax drag explicitly | §6 |
+| R17 | Account for the costs and resulting taxes of any sale made to fund year-end tax (a second-order tax effect) | §6 (tax payments and cash) |
+| R18 | No spendable tax reserve and no unrecorded external top-ups; tax is paid from book cash only | §6 |
+| R19 | Never claim a pass while wash-sale or distribution facts are provisional; retain original and later adjusted values and apply a confirmed quarterly breach even if the book later recovered | §6 (comparable wealth) |
+| R20 | Report the outside-holdings wash-sale limitation (the shadow cannot certify the absence of real-account wash sales) and reconcile it before any separately approved real-money pilot | §6 (standalone limit), §7 |
+| R21 | B1 ledger controls: target weights decided before the fill session and committed before it; decision time, source-availability cutoff and fill date in UTC against a frozen exchange calendar; an independently timestamped receipt for the decision commit; input snapshot and rules hashes; late corrections appended with discovery time; a gap or late commit voids that day and is reported | §4 |
+
+*R17–R21 were added after an independent review found them missing from the first extraction. R17–R19 are partly engine functions (tax funding, cash, provisional status); R20–R21 are study- and integration-level controls that a lot-engine library cannot satisfy alone.*
 
 ## 3. Existing code and gap table
 
@@ -43,7 +50,7 @@ The only tax-lot code found is `Book` in `src/ggTrader/lab/a23_rebalance.py` (us
 | R2 | **Partial** | `st_rate`/`lt_rate` are constructor arguments (line 26); the $100,000 notional is set by the caller, not enforced |
 | R3 | **Partial** | `sell` sorts long-term lots first and then by highest basis (line 66). The standard says HIFO; the extra long-term-first rule must be reconciled in the candidate brief. Ties follow list order, deterministic but not an explicit lot-id rule |
 | R4 | **Partial** | `year_end` nets `year_st + year_lt - loss_cf` (lines 116–128) and taxes the ST bucket first. The carryforward is a **single scalar** (`loss_cf`), so character (ST vs LT) is **not preserved**. No $3,000 credit appears, as required; terminal carryforward is not valued separately |
-| R5 | **Partial** | Wash handling is **backward-only**: it checks buys in the 30 days before the sale (`recent_buys`, lines 78–79) and ignores same-date lots; there is **no forward 30-day window** and no partial-quantity matching. The standard warns the existing approximation is insufficient |
+| R5 | **Partial** | Wash handling is **backward-only**: it checks buys in the 30 days before the sale (`recent_buys`, lines 78–79) and skips a recent buy whose date equals the **sold lot's own acquisition date** (not the sale date); there is **no forward 30-day window** and no partial-quantity matching. The standard warns the existing approximation is insufficient |
 | R6 | **Missing** | A disallowed loss is added to the *newest* lot's basis (lines 83–85) rather than the actual replacement lot, and the **holding period is not adjusted**. Loss is final at the sale date, not provisional |
 | R7 | **Missing** | No split, merger or ticker-change handling; `Lot` holds only date, quantity, basis (line 18) |
 | R8 | **Partial** | `distributions` supports only a `lt`/`st` label and reinvests (lines 100–114); no qualified/unqualified test, no T-bill interest as ordinary income, no distribution-source registration |
@@ -55,6 +62,11 @@ The only tax-lot code found is `Book` in `src/ggTrader/lab/a23_rebalance.py` (us
 | R14 | **Missing** | In-memory only; no append-only ledger, hashing or correction records |
 | R15 | **Present by construction** | The book is standalone; no outside income is modelled |
 | R16 | **Partial** | `realized_st_total`, `realized_lt_total`, `taxes_paid`, `disallowed` are tracked; dividend and cash tax drag are not separated |
+| R17 | **Missing** | `pay_tax` raises on shortage but the tax cost of any funding sale is not modelled in `a23_rebalance.Book` (see R9 row) |
+| R18 | **Partial** | The standalone book pays tax from book cash only; no explicit prohibition of a reserve |
+| R19 | **Missing** | Realized losses are final at the sale date; no provisional-status handling |
+| R20 | **Missing** | No outside-holdings reporting |
+| R21 | **Missing** | In-memory only; no decision/receipt/hash/void-day controls |
 
 Tests: `tests/lab/test_a23_rebalance.py` and `tests/lab/test_century_leverage.py` exist; the only wash-related test found (`test_a23_rebalance.py:281`) checks that a flat-price sale triggers no wash-sale warning. No test covers forward-window washes, partial lots, character-preserving carryforwards or multi-stock books (observation from a grep for "wash").
 
@@ -105,5 +117,10 @@ A standalone library, `src/ggTrader/lab/tax_lots.py` (`TaxLotBook`), now impleme
 | R14 | Implemented: sha256-chained append-only events, corrections as new events, `verify_chain()` |
 | R15 | Present by construction |
 | R16 | Partial: realized ST/LT and tax figures are available; a dedicated drag report is not built |
+| R17 | Partial: a funding sale is a separate caller decision, so its costs and taxes flow through `sell`/`year_end` like any sale; the policy for choosing the sale is the caller's |
+| R18 | Partial by construction: `pay_tax` draws only on book cash and raises `InsufficientCash`; no reserve exists |
+| R19 | Partial: `loss_status` and `amended_tax` expose provisional status and later adjustments; withholding a pass claim is a study-level rule |
+| R20 | Not implemented: study-level reporting and a pre-pilot reconciliation |
+| R21 | Not implemented: study-level decision, receipt, hash and void-day controls; the library supplies only the append-only hash chain |
 
 Reviewed by two independent Codex Sol passes and a Claude Sonnet recomputation of the hand-calculated expectations. A review finding about floating-point roundoff in fractional-share fills was fixed with regression tests.

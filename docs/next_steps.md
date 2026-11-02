@@ -45,10 +45,13 @@ paid-data Part B for future stock candidates:
 **Next:** find candidates that can be tested under Part A on free data.
 
 **2026-11-02 update:** the [free-data feasibility inventory](research/2026-11-02-free-data-stock-feasibility.md)
-lists what can be tested under Part A on free data (no candidate recommended). Owner decisions open:
-(1) direction for the next stock study; (2) WFO fallback semantics
-([F1–F6](research/2026-11-02-wfo-fallback-semantics.md)); (3) whether to plan the after-tax lot engine
-that B0/B1 need ([requirements](research/2026-11-02-after-tax-lot-engine-requirements.md)).
+and the [family-scope review](research/2026-11-02-family-scope-review.md) list what can be tested under
+Part A on free data (no candidate recommended). Owner decisions open: (1) direction for the next stock
+study; (2) whether to adopt any opt-in [WFO policy](research/2026-11-02-wfo-fallback-semantics.md)
+(`WfoPolicy`, default legacy) after the [synthetic study](research/2026-11-02-wfo-policy-synthetic.md);
+(3) what "alternate factor definitions" in the factor-screen closure covers; (4) validating the new
+[`TaxLotBook`](research/2026-11-02-after-tax-lot-engine-requirements.md) library and building the
+study-level B0/B1 controls it does not provide.
 
 The [resolution plan](superpowers/plans/2026-10-23-resolve-event-audit.md)
 supersedes earlier event-audit scheduling. The
