@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-11-02
+
+- **Research process follow-ups (no strategy, live-code or verdict change).**
+  - `src/ggTrader/lab/wfo_attribution.py` and `scripts/wfo_fold_attribution.py` classify
+    saved WFO fold records (read-only); strict boolean flags, regime labels that bound but
+    do not prove the DSR gate version. Reports: fold attribution, fallback semantics,
+    free-data stock feasibility (with an A1 power note), family-scope review.
+  - `src/ggTrader/lab/wfo.py`: opt-in `WfoPolicy` (NaN WFE exclusion; anchor-fold WFE
+    excluded from the breaker history while shadow re-entry still receives it), plus
+    additive `halted_entering` and `WfoResult.skipped_folds`. Defaults are unchanged.
+  - `src/ggTrader/lab/wfo_policy_synthetic.py`: preregistered synthetic study of the
+    breaker bookkeeping (results under stated assumptions only).
+  - `src/ggTrader/lab/tax_lots.py`: `TaxLotBook`, a standalone after-tax lot library
+    (not wired into any strategy; unvalidated against a real broker ledger).
+  - Added `.claude/skills/*-workspace/` to `.gitignore`.
+  No backtest on market data, data purchase, order or deploy.
+  [Index](research/RESEARCH_INDEX.md).
+
 ## 2026-10-25
 
 - **Intraday paper-access follow-up.** Verified the author-linked final Gao

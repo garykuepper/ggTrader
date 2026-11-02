@@ -8,7 +8,7 @@ anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
 Refresh the context below from the current research record whenever it is
-materially out of date — last synced 2026-10-20.
+materially out of date — last synced 2026-11-02 (no web-facing context changed).
 
 ---
 

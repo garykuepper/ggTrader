@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, NamedTuple, Type
+from typing import Any, Callable, Dict, List, Literal, NamedTuple, Tuple, Type
 
 import numpy as np
 import pandas as pd
@@ -56,6 +56,14 @@ def compute_wfe(
     return oos_sharpe / is_sharpe
 
 
+@dataclass(frozen=True)
+class WfoPolicy:
+    """Optional changes to WFO breaker semantics."""
+
+    nan_wfe: Literal["legacy", "exclude"] = "legacy"
+    anchor_fold_wfe: Literal["legacy", "exclude_from_breaker"] = "legacy"
+
+
 @dataclass
 class WfoState:
     """Tracks WFE history and circuit breaker state across WFO folds."""
@@ -72,6 +80,7 @@ def check_circuit_breaker(
     state: WfoState,
     window_size: int = 4,
     wfe_floor: float = 0.25,
+    nan_policy: Literal["legacy", "exclude"] = "legacy",
 ) -> WfoState:
     """Check the OR-gate circuit breaker.
 
@@ -88,7 +97,11 @@ def check_circuit_breaker(
     )
 
     # Chronic decay: trailing non-None WFE avg
-    valid_wfes = [w for w in state.wfe_history if w is not None]
+    valid_wfes = [
+        w
+        for w in state.wfe_history
+        if w is not None and (nan_policy == "legacy" or not math.isnan(w))
+    ]
     recent = valid_wfes[-window_size:] if len(valid_wfes) >= window_size else valid_wfes
     if len(recent) >= window_size:
         avg_wfe = sum(recent) / len(recent)
@@ -175,6 +188,7 @@ class WfoResult(NamedTuple):
     fold_results: List[Dict[str, Any]]
     live_params: Dict[str, Any]
     table: str
+    skipped_folds: Tuple[Dict[str, Any], ...] = ()
 
 
 def generate_folds(
@@ -602,7 +616,8 @@ def run_wfo(
     ndh_threshold: float = 0.85,
     dsr_threshold: float = 0.80,
     universe_fn: "UniverseFn | None" = None,
-) -> str:
+    policy: WfoPolicy = WfoPolicy(),
+) -> WfoResult | str:
     """Main WFO entry point: fold, train, test, concatenate, report."""
     eval_start_ts = pd.Timestamp(eval_start, tz="UTC")
     eval_end_ts = pd.Timestamp(eval_end, tz="UTC")
@@ -622,6 +637,7 @@ def run_wfo(
         entry_mask = pit_entry_mask(ohlcv, universe_fn)
     start_cash = float(base_config["START_CASH"])
     fold_results: List[Dict[str, Any]] = []
+    skipped_folds: List[Dict[str, Any]] = []
     oos_curves: List[pd.Series] = []
     oos_running_value = start_cash
     fold_winners: List[Dict[str, Any]] = []
@@ -670,6 +686,9 @@ def run_wfo(
             entry_mask,
         )
         if not train_metrics:
+            skipped_folds.append(
+                {"fold_num": i + 1, **fold._asdict(), "reason": "no_train_metrics"}
+            )
             continue
 
         # Pick winner by composite score
@@ -726,6 +745,7 @@ def run_wfo(
         gates_passed = ndh_passed and dsr_passed
 
         # Fallback to anchor when gates fail or system is halted
+        halted_entering = wfo_state.halted
         deploy_params = winner["params"]
         used_anchor = False
         if not gates_passed or wfo_state.halted:
@@ -765,12 +785,17 @@ def run_wfo(
             oos_sharpe = test_metrics[0].get("sharpe", float("nan"))
 
         wfe_val = compute_wfe(is_sharpe, oos_sharpe)
-        wfo_state.wfe_history.append(wfe_val)
+        wfo_state.wfe_history.append(
+            None if used_anchor and policy.anchor_fold_wfe == "exclude_from_breaker" else wfe_val
+        )
         if np.isfinite(oos_sharpe):
             wfo_state.oos_sharpes.append(oos_sharpe)
 
         if not wfo_state.halted:
-            wfo_state = check_circuit_breaker(wfo_state)
+            if policy.nan_wfe == "legacy":
+                wfo_state = check_circuit_breaker(wfo_state)
+            else:
+                wfo_state = check_circuit_breaker(wfo_state, nan_policy=policy.nan_wfe)
         else:
             wfo_state = check_shadow_reentry(wfo_state, ndh_passed, dsr_passed, wfe_val)
 
@@ -794,6 +819,7 @@ def run_wfo(
                 "is_sharpe": is_sharpe,
                 "oos_sharpe": oos_sharpe,
                 "halted": wfo_state.halted,
+                "halted_entering": halted_entering,
                 "used_anchor": used_anchor,
             }
         )
@@ -861,6 +887,7 @@ def run_wfo(
         fold_results=fold_results,
         live_params=live,
         table=table,
+        skipped_folds=tuple(skipped_folds),
     )
 
 

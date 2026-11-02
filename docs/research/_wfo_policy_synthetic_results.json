@@ -1,0 +1,642 @@
+{
+  "seed": 20261102,
+  "n_reps": 5000,
+  "model": {
+    "n_folds": 17,
+    "p_nan": 0.05,
+    "is_bias": 0.5,
+    "is_noise_sd": 1.0,
+    "oos_noise_sd": 2.0,
+    "anchor_mean_multiplier": 0.5,
+    "mus": [
+      0.0,
+      0.5,
+      1.0,
+      1.5
+    ],
+    "p_gates": [
+      0.3,
+      0.7,
+      1.0
+    ],
+    "policies": {
+      "legacy": {
+        "nan_wfe": "legacy",
+        "anchor_fold_wfe": "legacy"
+      },
+      "nan_exclude": {
+        "nan_wfe": "exclude",
+        "anchor_fold_wfe": "legacy"
+      },
+      "anchor_exclude_from_breaker": {
+        "nan_wfe": "legacy",
+        "anchor_fold_wfe": "exclude_from_breaker"
+      }
+    },
+    "common_random_numbers": "Identical per-fold gate, IS noise, OOS noise and NaN draws across policies within each replication."
+  },
+  "cells": {
+    "0.0|0.3|legacy": {
+      "anchor_share": 0.8973411764706357,
+      "halted_fold_share": 0.6598941176470794,
+      "ever_halted": 0.9844,
+      "n_halt_episodes": 1.026,
+      "mean_halt_length": 10.93391812865531,
+      "reentries": 0.068,
+      "fraction_runs_ending_halted": 0.958,
+      "fraction_halts_active_at_end": 0.9337231968810915
+    },
+    "0.0|0.3|nan_exclude": {
+      "anchor_share": 0.8982117647059298,
+      "halted_fold_share": 0.6628941176470791,
+      "ever_halted": 0.9862,
+      "n_halt_episodes": 1.029,
+      "mean_halt_length": 10.95160349854261,
+      "reentries": 0.068,
+      "fraction_runs_ending_halted": 0.961,
+      "fraction_halts_active_at_end": 0.9339164237123421
+    },
+    "0.0|0.3|anchor_exclude_from_breaker": {
+      "anchor_share": 0.8875764705882812,
+      "halted_fold_share": 0.627364705882372,
+      "ever_halted": 0.9662,
+      "n_halt_episodes": 0.9972,
+      "mean_halt_length": 10.69514640994818,
+      "reentries": 0.0656,
+      "fraction_runs_ending_halted": 0.9316,
+      "fraction_halts_active_at_end": 0.9342158042519053
+    },
+    "0.0|0.7|legacy": {
+      "anchor_share": 0.7378941176470839,
+      "halted_fold_share": 0.6261647058823665,
+      "ever_halted": 0.9838,
+      "n_halt_episodes": 1.1514,
+      "mean_halt_length": 9.245092930345868,
+      "reentries": 0.2704,
+      "fraction_runs_ending_halted": 0.881,
+      "fraction_halts_active_at_end": 0.7651554629147126
+    },
+    "0.0|0.7|nan_exclude": {
+      "anchor_share": 0.7410941176470842,
+      "halted_fold_share": 0.6308235294117781,
+      "ever_halted": 0.9864,
+      "n_halt_episodes": 1.1584,
+      "mean_halt_length": 9.257596685083069,
+      "reentries": 0.272,
+      "fraction_runs_ending_halted": 0.8864,
+      "fraction_halts_active_at_end": 0.7651933701657457
+    },
+    "0.0|0.7|anchor_exclude_from_breaker": {
+      "anchor_share": 0.7249882352941395,
+      "halted_fold_share": 0.6073294117647177,
+      "ever_halted": 0.9788,
+      "n_halt_episodes": 1.1354,
+      "mean_halt_length": 9.093359168575128,
+      "reentries": 0.2624,
+      "fraction_runs_ending_halted": 0.873,
+      "fraction_halts_active_at_end": 0.7688920204333275
+    },
+    "0.0|1.0|legacy": {
+      "anchor_share": 0.5968352941176546,
+      "halted_fold_share": 0.5968352941176546,
+      "ever_halted": 0.984,
+      "n_halt_episodes": 1.288,
+      "mean_halt_length": 7.8774844720497885,
+      "reentries": 0.4756,
+      "fraction_runs_ending_halted": 0.8124,
+      "fraction_halts_active_at_end": 0.6307453416149068
+    },
+    "0.0|1.0|nan_exclude": {
+      "anchor_share": 0.6015647058823607,
+      "halted_fold_share": 0.6015647058823607,
+      "ever_halted": 0.986,
+      "n_halt_episodes": 1.298,
+      "mean_halt_length": 7.878736517719669,
+      "reentries": 0.479,
+      "fraction_runs_ending_halted": 0.819,
+      "fraction_halts_active_at_end": 0.6309707241910631
+    },
+    "0.0|1.0|anchor_exclude_from_breaker": {
+      "anchor_share": 0.5993176470588277,
+      "halted_fold_share": 0.5993176470588277,
+      "ever_halted": 0.984,
+      "n_halt_episodes": 1.3116,
+      "mean_halt_length": 7.767917047880505,
+      "reentries": 0.4772,
+      "fraction_runs_ending_halted": 0.8344,
+      "fraction_halts_active_at_end": 0.6361695638914303
+    },
+    "0.5|0.3|legacy": {
+      "anchor_share": 0.8848352941176925,
+      "halted_fold_share": 0.6201882352941303,
+      "ever_halted": 0.9704,
+      "n_halt_episodes": 1.0292,
+      "mean_halt_length": 10.244073066459595,
+      "reentries": 0.1094,
+      "fraction_runs_ending_halted": 0.9198,
+      "fraction_halts_active_at_end": 0.8937038476486592
+    },
+    "0.5|0.3|nan_exclude": {
+      "anchor_share": 0.8867882352941635,
+      "halted_fold_share": 0.6265176470588358,
+      "ever_halted": 0.9742,
+      "n_halt_episodes": 1.0366,
+      "mean_halt_length": 10.274744356550464,
+      "reentries": 0.112,
+      "fraction_runs_ending_halted": 0.9246,
+      "fraction_halts_active_at_end": 0.8919544665251785
+    },
+    "0.5|0.3|anchor_exclude_from_breaker": {
+      "anchor_share": 0.8643647058823933,
+      "halted_fold_share": 0.5519529411764797,
+      "ever_halted": 0.9182,
+      "n_halt_episodes": 0.9592,
+      "mean_halt_length": 9.782318598832521,
+      "reentries": 0.0956,
+      "fraction_runs_ending_halted": 0.8636,
+      "fraction_halts_active_at_end": 0.9003336113427857
+    },
+    "0.5|0.7|legacy": {
+      "anchor_share": 0.6771294117647222,
+      "halted_fold_share": 0.5383764705882387,
+      "ever_halted": 0.961,
+      "n_halt_episodes": 1.196,
+      "mean_halt_length": 7.652508361204061,
+      "reentries": 0.4238,
+      "fraction_runs_ending_halted": 0.7722,
+      "fraction_halts_active_at_end": 0.6456521739130435
+    },
+    "0.5|0.7|nan_exclude": {
+      "anchor_share": 0.6825882352941337,
+      "halted_fold_share": 0.5465176470588268,
+      "ever_halted": 0.9664,
+      "n_halt_episodes": 1.2126,
+      "mean_halt_length": 7.661883555995429,
+      "reentries": 0.43,
+      "fraction_runs_ending_halted": 0.7826,
+      "fraction_halts_active_at_end": 0.6453900709219859
+    },
+    "0.5|0.7|anchor_exclude_from_breaker": {
+      "anchor_share": 0.6589411764705998,
+      "halted_fold_share": 0.5126941176470612,
+      "ever_halted": 0.9414,
+      "n_halt_episodes": 1.1876,
+      "mean_halt_length": 7.3390030313237125,
+      "reentries": 0.4036,
+      "fraction_runs_ending_halted": 0.784,
+      "fraction_halts_active_at_end": 0.6601549343213203
+    },
+    "0.5|1.0|legacy": {
+      "anchor_share": 0.47531764705882323,
+      "halted_fold_share": 0.47531764705882323,
+      "ever_halted": 0.9506,
+      "n_halt_episodes": 1.3324,
+      "mean_halt_length": 6.064545181627135,
+      "reentries": 0.6714,
+      "fraction_runs_ending_halted": 0.661,
+      "fraction_halts_active_at_end": 0.49609726808766136
+    },
+    "0.5|1.0|nan_exclude": {
+      "anchor_share": 0.4851176470588223,
+      "halted_fold_share": 0.4851176470588223,
+      "ever_halted": 0.9566,
+      "n_halt_episodes": 1.3608,
+      "mean_halt_length": 6.060405643738961,
+      "reentries": 0.6868,
+      "fraction_runs_ending_halted": 0.674,
+      "fraction_halts_active_at_end": 0.4952968841857731
+    },
+    "0.5|1.0|anchor_exclude_from_breaker": {
+      "anchor_share": 0.5036117647058813,
+      "halted_fold_share": 0.5036117647058813,
+      "ever_halted": 0.9506,
+      "n_halt_episodes": 1.4622,
+      "mean_halt_length": 5.855149774312668,
+      "reentries": 0.7058,
+      "fraction_runs_ending_halted": 0.7564,
+      "fraction_halts_active_at_end": 0.5173026945698262
+    },
+    "1.0|0.3|legacy": {
+      "anchor_share": 0.8684000000000452,
+      "halted_fold_share": 0.5642823529411859,
+      "ever_halted": 0.9466,
+      "n_halt_episodes": 1.0192,
+      "mean_halt_length": 9.412087912088069,
+      "reentries": 0.159,
+      "fraction_runs_ending_halted": 0.8602,
+      "fraction_halts_active_at_end": 0.8439952904238617
+    },
+    "1.0|0.3|nan_exclude": {
+      "anchor_share": 0.8716941176471052,
+      "halted_fold_share": 0.5758705882353035,
+      "ever_halted": 0.9562,
+      "n_halt_episodes": 1.0326,
+      "mean_halt_length": 9.480728258764438,
+      "reentries": 0.1612,
+      "fraction_runs_ending_halted": 0.8714,
+      "fraction_halts_active_at_end": 0.8438892116986249
+    },
+    "1.0|0.3|anchor_exclude_from_breaker": {
+      "anchor_share": 0.8390235294118024,
+      "halted_fold_share": 0.4671647058823561,
+      "ever_halted": 0.859,
+      "n_halt_episodes": 0.906,
+      "mean_halt_length": 8.76578366445922,
+      "reentries": 0.1322,
+      "fraction_runs_ending_halted": 0.7738,
+      "fraction_halts_active_at_end": 0.854083885209713
+    },
+    "1.0|0.7|legacy": {
+      "anchor_share": 0.6050235294117707,
+      "halted_fold_share": 0.4380470588235282,
+      "ever_halted": 0.9148,
+      "n_halt_episodes": 1.1506,
+      "mean_halt_length": 6.472101512254458,
+      "reentries": 0.5066,
+      "fraction_runs_ending_halted": 0.644,
+      "fraction_halts_active_at_end": 0.5597079784460282
+    },
+    "1.0|0.7|nan_exclude": {
+      "anchor_share": 0.6133058823529476,
+      "halted_fold_share": 0.44990588235294016,
+      "ever_halted": 0.9248,
+      "n_halt_episodes": 1.1772,
+      "mean_halt_length": 6.4971117906897575,
+      "reentries": 0.5188,
+      "fraction_runs_ending_halted": 0.6584,
+      "fraction_halts_active_at_end": 0.5592932381923207
+    },
+    "1.0|0.7|anchor_exclude_from_breaker": {
+      "anchor_share": 0.5830117647058857,
+      "halted_fold_share": 0.4063529411764701,
+      "ever_halted": 0.8566,
+      "n_halt_episodes": 1.1214,
+      "mean_halt_length": 6.160156946673793,
+      "reentries": 0.4628,
+      "fraction_runs_ending_halted": 0.6586,
+      "fraction_halts_active_at_end": 0.5873015873015873
+    },
+    "1.0|1.0|legacy": {
+      "anchor_share": 0.3408705882352903,
+      "halted_fold_share": 0.3408705882352903,
+      "ever_halted": 0.875,
+      "n_halt_episodes": 1.1932,
+      "mean_halt_length": 4.856520281595655,
+      "reentries": 0.6974,
+      "fraction_runs_ending_halted": 0.4958,
+      "fraction_halts_active_at_end": 0.4155212872946698
+    },
+    "1.0|1.0|nan_exclude": {
+      "anchor_share": 0.35303529411764334,
+      "halted_fold_share": 0.35303529411764334,
+      "ever_halted": 0.8876,
+      "n_halt_episodes": 1.2358,
+      "mean_halt_length": 4.8564492636348415,
+      "reentries": 0.7234,
+      "fraction_runs_ending_halted": 0.5124,
+      "fraction_halts_active_at_end": 0.41463019906133675
+    },
+    "1.0|1.0|anchor_exclude_from_breaker": {
+      "anchor_share": 0.3868823529411756,
+      "halted_fold_share": 0.3868823529411756,
+      "ever_halted": 0.875,
+      "n_halt_episodes": 1.408,
+      "mean_halt_length": 4.671164772727263,
+      "reentries": 0.7812,
+      "fraction_runs_ending_halted": 0.6268,
+      "fraction_halts_active_at_end": 0.44517045454545456
+    },
+    "1.5|0.3|legacy": {
+      "anchor_share": 0.8498000000000422,
+      "halted_fold_share": 0.49994117647059094,
+      "ever_halted": 0.913,
+      "n_halt_episodes": 0.9856,
+      "mean_halt_length": 8.623173701298748,
+      "reentries": 0.1694,
+      "fraction_runs_ending_halted": 0.8162,
+      "fraction_halts_active_at_end": 0.828125
+    },
+    "1.5|0.3|nan_exclude": {
+      "anchor_share": 0.8540823529412203,
+      "halted_fold_share": 0.5138117647058854,
+      "ever_halted": 0.9272,
+      "n_halt_episodes": 1.0054,
+      "mean_halt_length": 8.68788541873886,
+      "reentries": 0.1752,
+      "fraction_runs_ending_halted": 0.8302,
+      "fraction_halts_active_at_end": 0.8257409986075194
+    },
+    "1.5|0.3|anchor_exclude_from_breaker": {
+      "anchor_share": 0.8096705882353241,
+      "halted_fold_share": 0.3684000000000001,
+      "ever_halted": 0.7422,
+      "n_halt_episodes": 0.7798,
+      "mean_halt_length": 8.031290074378047,
+      "reentries": 0.1222,
+      "fraction_runs_ending_halted": 0.6576,
+      "fraction_halts_active_at_end": 0.8432931520902794
+    },
+    "1.5|0.7|legacy": {
+      "anchor_share": 0.542247058823532,
+      "halted_fold_share": 0.3463529411764692,
+      "ever_halted": 0.818,
+      "n_halt_episodes": 0.9914,
+      "mean_halt_length": 5.939076054064936,
+      "reentries": 0.4674,
+      "fraction_runs_ending_halted": 0.524,
+      "fraction_halts_active_at_end": 0.528545491224531
+    },
+    "1.5|0.7|nan_exclude": {
+      "anchor_share": 0.5501647058823561,
+      "halted_fold_share": 0.35790588235294,
+      "ever_halted": 0.8382,
+      "n_halt_episodes": 1.0252,
+      "mean_halt_length": 5.934841982052264,
+      "reentries": 0.4846,
+      "fraction_runs_ending_halted": 0.5406,
+      "fraction_halts_active_at_end": 0.5273117440499415
+    },
+    "1.5|0.7|anchor_exclude_from_breaker": {
+      "anchor_share": 0.5112470588235293,
+      "halted_fold_share": 0.3014705882352932,
+      "ever_halted": 0.7226,
+      "n_halt_episodes": 0.9322,
+      "mean_halt_length": 5.497747264535491,
+      "reentries": 0.4092,
+      "fraction_runs_ending_halted": 0.523,
+      "fraction_halts_active_at_end": 0.5610384037760138
+    },
+    "1.5|1.0|legacy": {
+      "anchor_share": 0.2397882352941147,
+      "halted_fold_share": 0.2397882352941147,
+      "ever_halted": 0.7294,
+      "n_halt_episodes": 0.9214,
+      "mean_halt_length": 4.424137182548241,
+      "reentries": 0.5874,
+      "fraction_runs_ending_halted": 0.334,
+      "fraction_halts_active_at_end": 0.3624918602127198
+    },
+    "1.5|1.0|nan_exclude": {
+      "anchor_share": 0.24989411764705555,
+      "halted_fold_share": 0.24989411764705555,
+      "ever_halted": 0.7502,
+      "n_halt_episodes": 0.9626,
+      "mean_halt_length": 4.413255765634681,
+      "reentries": 0.6124,
+      "fraction_runs_ending_halted": 0.3502,
+      "fraction_halts_active_at_end": 0.3638063577810098
+    },
+    "1.5|1.0|anchor_exclude_from_breaker": {
+      "anchor_share": 0.2842117647058796,
+      "halted_fold_share": 0.2842117647058796,
+      "ever_halted": 0.7294,
+      "n_halt_episodes": 1.1586,
+      "mean_halt_length": 4.170205420334847,
+      "reentries": 0.6932,
+      "fraction_runs_ending_halted": 0.4654,
+      "fraction_halts_active_at_end": 0.4016916968755394
+    }
+  },
+  "comparisons": {
+    "0.0|0.3": {
+      "legacy": {
+        "p_halt": 0.9844,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.9337231968810915
+      },
+      "nan_exclude": {
+        "p_halt": 0.9862,
+        "absolute_p_halt_difference": 0.0017999999999999128,
+        "absolute_anchor_share_difference": 0.0008705882352940675,
+        "fraction_halts_active_at_end": 0.9339164237123421
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.9662,
+        "absolute_p_halt_difference": 0.018200000000000105,
+        "absolute_anchor_share_difference": 0.009764705882354563,
+        "fraction_halts_active_at_end": 0.9342158042519053
+      }
+    },
+    "0.0|0.7": {
+      "legacy": {
+        "p_halt": 0.9838,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.7651554629147126
+      },
+      "nan_exclude": {
+        "p_halt": 0.9864,
+        "absolute_p_halt_difference": 0.0026000000000000467,
+        "absolute_anchor_share_difference": 0.0032000000000003137,
+        "fraction_halts_active_at_end": 0.7651933701657457
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.9788,
+        "absolute_p_halt_difference": 0.0050000000000000044,
+        "absolute_anchor_share_difference": 0.012905882352944431,
+        "fraction_halts_active_at_end": 0.7688920204333275
+      }
+    },
+    "0.0|1.0": {
+      "legacy": {
+        "p_halt": 0.984,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.6307453416149068
+      },
+      "nan_exclude": {
+        "p_halt": 0.986,
+        "absolute_p_halt_difference": 0.0020000000000000018,
+        "absolute_anchor_share_difference": 0.004729411764706093,
+        "fraction_halts_active_at_end": 0.6309707241910631
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.984,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0024823529411731604,
+        "fraction_halts_active_at_end": 0.6361695638914303
+      }
+    },
+    "0.5|0.3": {
+      "legacy": {
+        "p_halt": 0.9704,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.8937038476486592
+      },
+      "nan_exclude": {
+        "p_halt": 0.9742,
+        "absolute_p_halt_difference": 0.0037999999999999146,
+        "absolute_anchor_share_difference": 0.0019529411764710458,
+        "fraction_halts_active_at_end": 0.8919544665251785
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.9182,
+        "absolute_p_halt_difference": 0.052200000000000024,
+        "absolute_anchor_share_difference": 0.020470588235299125,
+        "fraction_halts_active_at_end": 0.9003336113427857
+      }
+    },
+    "0.5|0.7": {
+      "legacy": {
+        "p_halt": 0.961,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.6456521739130435
+      },
+      "nan_exclude": {
+        "p_halt": 0.9664,
+        "absolute_p_halt_difference": 0.005400000000000071,
+        "absolute_anchor_share_difference": 0.005458823529411516,
+        "fraction_halts_active_at_end": 0.6453900709219859
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.9414,
+        "absolute_p_halt_difference": 0.01959999999999995,
+        "absolute_anchor_share_difference": 0.01818823529412239,
+        "fraction_halts_active_at_end": 0.6601549343213203
+      }
+    },
+    "0.5|1.0": {
+      "legacy": {
+        "p_halt": 0.9506,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.49609726808766136
+      },
+      "nan_exclude": {
+        "p_halt": 0.9566,
+        "absolute_p_halt_difference": 0.006000000000000005,
+        "absolute_anchor_share_difference": 0.009799999999999087,
+        "fraction_halts_active_at_end": 0.4952968841857731
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.9506,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.02829411764705808,
+        "fraction_halts_active_at_end": 0.5173026945698262
+      }
+    },
+    "1.0|0.3": {
+      "legacy": {
+        "p_halt": 0.9466,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.8439952904238617
+      },
+      "nan_exclude": {
+        "p_halt": 0.9562,
+        "absolute_p_halt_difference": 0.009600000000000053,
+        "absolute_anchor_share_difference": 0.003294117647060002,
+        "fraction_halts_active_at_end": 0.8438892116986249
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.859,
+        "absolute_p_halt_difference": 0.08760000000000001,
+        "absolute_anchor_share_difference": 0.029376470588242887,
+        "fraction_halts_active_at_end": 0.854083885209713
+      }
+    },
+    "1.0|0.7": {
+      "legacy": {
+        "p_halt": 0.9148,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.5597079784460282
+      },
+      "nan_exclude": {
+        "p_halt": 0.9248,
+        "absolute_p_halt_difference": 0.010000000000000009,
+        "absolute_anchor_share_difference": 0.008282352941176852,
+        "fraction_halts_active_at_end": 0.5592932381923207
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.8566,
+        "absolute_p_halt_difference": 0.05819999999999992,
+        "absolute_anchor_share_difference": 0.022011764705885062,
+        "fraction_halts_active_at_end": 0.5873015873015873
+      }
+    },
+    "1.0|1.0": {
+      "legacy": {
+        "p_halt": 0.875,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.4155212872946698
+      },
+      "nan_exclude": {
+        "p_halt": 0.8876,
+        "absolute_p_halt_difference": 0.012599999999999945,
+        "absolute_anchor_share_difference": 0.012164705882353022,
+        "fraction_halts_active_at_end": 0.41463019906133675
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.875,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.046011764705885305,
+        "fraction_halts_active_at_end": 0.44517045454545456
+      }
+    },
+    "1.5|0.3": {
+      "legacy": {
+        "p_halt": 0.913,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.828125
+      },
+      "nan_exclude": {
+        "p_halt": 0.9272,
+        "absolute_p_halt_difference": 0.01419999999999999,
+        "absolute_anchor_share_difference": 0.004282352941178069,
+        "fraction_halts_active_at_end": 0.8257409986075194
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.7422,
+        "absolute_p_halt_difference": 0.17080000000000006,
+        "absolute_anchor_share_difference": 0.04012941176471807,
+        "fraction_halts_active_at_end": 0.8432931520902794
+      }
+    },
+    "1.5|0.7": {
+      "legacy": {
+        "p_halt": 0.818,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.528545491224531
+      },
+      "nan_exclude": {
+        "p_halt": 0.8382,
+        "absolute_p_halt_difference": 0.020199999999999996,
+        "absolute_anchor_share_difference": 0.00791764705882414,
+        "fraction_halts_active_at_end": 0.5273117440499415
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.7226,
+        "absolute_p_halt_difference": 0.09539999999999993,
+        "absolute_anchor_share_difference": 0.031000000000002692,
+        "fraction_halts_active_at_end": 0.5610384037760138
+      }
+    },
+    "1.5|1.0": {
+      "legacy": {
+        "p_halt": 0.7294,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.0,
+        "fraction_halts_active_at_end": 0.3624918602127198
+      },
+      "nan_exclude": {
+        "p_halt": 0.7502,
+        "absolute_p_halt_difference": 0.02079999999999993,
+        "absolute_anchor_share_difference": 0.010105882352940854,
+        "fraction_halts_active_at_end": 0.3638063577810098
+      },
+      "anchor_exclude_from_breaker": {
+        "p_halt": 0.7294,
+        "absolute_p_halt_difference": 0.0,
+        "absolute_anchor_share_difference": 0.04442352941176492,
+        "fraction_halts_active_at_end": 0.4016916968755394
+      }
+    }
+  }
+}
