@@ -6,9 +6,9 @@
     "potential_part_a_source": "A free source with a possibly long enough history is listed; history start, construction and point-in-time status are UNVERIFIED. Not a recommendation and not a statement that the test is feasible",
     "testable_b0_b1_only": "Free data covers only the modern window; the approved standard requires Part A first, so use needs an owner amendment",
     "infeasible_free": "No free point-in-time source found",
-    "family_scope_review_pending": "No recorded verdict for this exact variant; a related family has a recorded NO-GO. Whether that closure applies is undecided and requires a documented family-scope review",
     "closed_no_reopen": "A recorded NO-GO for this exact family",
-    "parked": "Paused, blocked, untriaged or owner-parked"
+    "parked": "Paused, blocked, untriaged or owner-parked",
+    "family_scope_review_undetermined": "No recorded verdict for this exact variant; a related family has a recorded NO-GO. The 2026-11-02 definitions-only family-scope review could not decide whether that closure applies (outcome: undetermined). The closure is neither extended nor lifted"
   },
   "sources_checked_not_checked": {
     "checked_2026-11-02": [
@@ -92,7 +92,32 @@
       "link": "WEB_RESEARCH_CANDIDATES.md",
       "recorded_verdict": "none for this exact test",
       "inferred_overlap": "INFERENCE: may overlap the closed value (HiBM) screen; overlap not computed; family-scope review pending",
-      "eligibility": "unverified: library history start and construction not checked"
+      "eligibility": "unverified: library history start and construction not checked",
+      "family_scope_review": {
+        "outcome": "undetermined",
+        "rationale": "Sol read the 13-60 month loser sort as a different sort and channel from 12-2 month momentum and book-to-market (distinct_mechanism); Sonnet read the row's own 'value overlap' text and the net-issuance brief's remark that its exclusion of related ideas was a scope choice, and called it undetermined. The reviewers disagree, so the preregistered rule resolves to undetermined.",
+        "reconciliation": "disagreement: Sol distinct_mechanism, Sonnet undetermined",
+        "evidence": [
+          {
+            "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+            "line": 96,
+            "quote": "Their exclusion is a scope choice, not a new measured NO-GO for each."
+          },
+          {
+            "file": "docs/research/RESEARCH_INDEX.md",
+            "line": 16,
+            "quote": "applies to that test and its data, not automatically to every related idea."
+          },
+          {
+            "file": "docs/research/briefs/2026-10-20-momentum-retest.md",
+            "line": 94,
+            "quote": "and the 70th percentile of prior 12-2 month return."
+          }
+        ],
+        "method": "definitions only; no returns, correlations or result files used; no recommendation",
+        "reviewed": "2026-11-02",
+        "report": "2026-11-02-family-scope-review.md"
+      }
     },
     {
       "id": "S03",
@@ -135,7 +160,27 @@
       "link": "WEB_RESEARCH_CANDIDATES.md",
       "recorded_verdict": "idio_vol: historical NO-GO on the daily SP500 WFO (validity unresolved per the audit ledger); MAX: historical NO-GO; neither tested this French-portfolio construction",
       "inferred_overlap": "INFERENCE: related mechanism; the audit ledger distinguishes these as separate experiments; family-scope review pending",
-      "eligibility": "unverified: library history start and construction not checked; AQR terms not stated"
+      "eligibility": "unverified: library history start and construction not checked; AQR terms not stated",
+      "family_scope_review": {
+        "outcome": "undetermined",
+        "rationale": "The row bundles beta, variance and residual-variance sorts. The residual-variance leg shares a sort variable with the closed idio_vol and MAX sleeves, which used a different construction (SP500, equal-weight quintiles) whose validity is recorded as unresolved; the files do not define the French-portfolio construction. Neither equivalence nor a wholly distinct channel is established.",
+        "reconciliation": "both reviewers: undetermined",
+        "evidence": [
+          {
+            "file": "docs/research/2026-07-17-max-effect-nogo.md",
+            "line": 13,
+            "quote": "per stock, equal-weight the lowest-MAX quintile of the eligible SP500"
+          },
+          {
+            "file": "docs/research/RESEARCH_SNAPSHOT.md",
+            "line": 126,
+            "quote": "| `idio_vol` | Historical NO-GO |"
+          }
+        ],
+        "method": "definitions only; no returns, correlations or result files used; no recommendation",
+        "reviewed": "2026-11-02",
+        "report": "2026-11-02-family-scope-review.md"
+      }
     },
     {
       "id": "S04",
@@ -178,7 +223,27 @@
       "link": "WEB_RESEARCH_CANDIDATES.md",
       "recorded_verdict": "none",
       "inferred_overlap": "INFERENCE: may overlap the closed profitability/quality screens; family-scope review pending",
-      "eligibility": "unverified: needs PIT fundamentals for stock-level versions; library history not checked"
+      "eligibility": "unverified: needs PIT fundamentals for stock-level versions; library history not checked",
+      "family_scope_review": {
+        "outcome": "distinct_mechanism",
+        "rationale": "The accruals sort and its cash-versus-accrual earnings channel differ from every registered sort variable (operating profitability, book-to-market, asset growth, prior 12-2 month return, net share issues) and the row is neither a combination nor a sibling construction. Caveat: the project files give no accruals construction beyond the row's mechanism text; the matrix's overlap flag is theme-level only.",
+        "reconciliation": "both reviewers: distinct_mechanism (Sonnet: moderate confidence)",
+        "evidence": [
+          {
+            "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+            "line": 8,
+            "quote": "*Robust Profitability (HiOP)* means buying stocks with high operating profitability relative to book equity."
+          },
+          {
+            "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+            "line": 47,
+            "quote": "The confirmatory test family comprises exactly four primary hypotheses, restricted to large-cap (Big) portfolios:"
+          }
+        ],
+        "method": "definitions only; no returns, correlations or result files used; no recommendation",
+        "reviewed": "2026-11-02",
+        "report": "2026-11-02-family-scope-review.md"
+      }
     },
     {
       "id": "S05",
@@ -200,7 +265,7 @@
       "b0_tape_ok": "blocked by S11: needs PIT fundamentals",
       "b1_live_source_continuity": "partial: needs a free fundamentals feed",
       "status_vs_prior_work": "closed_family: the book-to-market value screen (H2 HiBM) failed Holm and the post-1994 bar; these are correlated variants",
-      "classification": "family_scope_review_pending",
+      "classification": "family_scope_review_undetermined",
       "blocking_gaps": [
         "Would reopen the value family with new variants after seeing the closed result; the standard does not grant error control across successive studies"
       ],
@@ -210,7 +275,32 @@
       "link": "WEB_RESEARCH_CANDIDATES.md",
       "recorded_verdict": "none for these variants; the book-to-market value screen (H2 HiBM) is a recorded NO-GO",
       "inferred_overlap": "INFERENCE: may be a correlated variant of the closed HiBM result; no documented rationale yet that the closure applies; the index says a NO-GO does not automatically apply to every related idea",
-      "eligibility": "pending family-scope review"
+      "eligibility": "pending family-scope review",
+      "family_scope_review": {
+        "outcome": "undetermined",
+        "rationale": "Same cheapness channel as the closed book-to-market value hypothesis but a different sort variable (earnings, cash flow or dividends over price). That makes it a sibling construction, not near-identical, and the closed report's scope statement covers only its registered Big portfolios. The net-issuance brief separately records the project's judgment that valuation siblings overlap the closed value family, but calls its exclusions a scope choice, not a measured NO-GO.",
+        "reconciliation": "both reviewers: undetermined",
+        "evidence": [
+          {
+            "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+            "line": 7,
+            "quote": "*Value (HiBM)* means buying stocks with high book equity relative to market equity (cheap on book value)."
+          },
+          {
+            "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+            "line": 119,
+            "quote": "Holm covers this registered four-hypothesis family only."
+          },
+          {
+            "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+            "line": 96,
+            "quote": "overlap with the closed value family, high turnover, or leverage."
+          }
+        ],
+        "method": "definitions only; no returns, correlations or result files used; no recommendation",
+        "reviewed": "2026-11-02",
+        "report": "2026-11-02-family-scope-review.md"
+      }
     },
     {
       "id": "S06",
@@ -232,7 +322,7 @@
       "b0_tape_ok": "yes in principle: industry classification must be PIT on the clean tape (not built)",
       "b1_live_source_continuity": "partial: needs a free industry mapping",
       "status_vs_prior_work": "momentum family closed NO-GO (Big/Small, +0.08/+0.20 pt/yr); an industry-level variant is a correlated variant",
-      "classification": "family_scope_review_pending",
+      "classification": "family_scope_review_undetermined",
       "blocking_gaps": [
         "Same-mechanism sibling of the closed momentum screen"
       ],
@@ -242,7 +332,32 @@
       "link": "WEB_RESEARCH_CANDIDATES.md",
       "recorded_verdict": "none for the industry variant; the momentum screen (Big/Small) is a recorded NO-GO",
       "inferred_overlap": "INFERENCE: industry momentum may share the mechanism of the closed momentum screen; no documented rationale yet that the closure applies",
-      "eligibility": "pending family-scope review"
+      "eligibility": "pending family-scope review",
+      "family_scope_review": {
+        "outcome": "undetermined",
+        "rationale": "Same continuation channel as the closed momentum screen, so not distinct; but the sort unit is an industry's prior return, not the registered stock-level 12-2 month HiPRIOR portfolios, and no lookback or construction is stated. The momentum report's scope statement is idea-level and does not enumerate variants. The net-issuance brief excluded industry momentum as a closed-family sibling, a project judgment rather than a registered scope.",
+        "reconciliation": "both reviewers: undetermined",
+        "evidence": [
+          {
+            "file": "docs/research/briefs/2026-10-20-momentum-retest.md",
+            "line": 92,
+            "quote": "Use **Big HiPRIOR** (large-cap winners)"
+          },
+          {
+            "file": "docs/research/2026-10-20-momentum-french-screen-nogo.md",
+            "line": 219,
+            "quote": "an idea-level test, not a rerun of those exact rules."
+          },
+          {
+            "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+            "line": 95,
+            "quote": "industry momentum would require constructing a new signal"
+          }
+        ],
+        "method": "definitions only; no returns, correlations or result files used; no recommendation",
+        "reviewed": "2026-11-02",
+        "report": "2026-11-02-family-scope-review.md"
+      }
     },
     {
       "id": "S07",
@@ -264,7 +379,7 @@
       "b0_tape_ok": "blocked: needs PIT fundamentals (S11)",
       "b1_live_source_continuity": "partial",
       "status_vs_prior_work": "profitability (HiOP) closed NO-GO; QMJ is a broader composite that overlaps it",
-      "classification": "family_scope_review_pending",
+      "classification": "family_scope_review_undetermined",
       "blocking_gaps": [
         "Overlap with the closed profitability result",
         "Composite built by a third party; construction details not source-checked here"
@@ -276,7 +391,22 @@
       "link": "WEB_RESEARCH_CANDIDATES.md",
       "recorded_verdict": "none for QMJ; the profitability screen (H1 HiOP) is a recorded NO-GO",
       "inferred_overlap": "INFERENCE: QMJ is a composite that overlaps profitability; no documented rationale yet that the closure applies",
-      "eligibility": "pending family-scope review"
+      "eligibility": "pending family-scope review",
+      "family_scope_review": {
+        "outcome": "undetermined",
+        "rationale": "QMJ is a composite of profitability, growth, safety and payout. Its profitability component relates to the closed HiOP hypothesis, but the composite is not HiOP and not a registered combination (H4 is HiBM plus HiPRIOR); construction and weights are not in the project files.",
+        "reconciliation": "both reviewers: undetermined",
+        "evidence": [
+          {
+            "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+            "line": 52,
+            "quote": "**H4:** Combo = 50% BIG HiBM + 50% BIG HiPRIOR (rebalanced monthly) > market (value + momentum combination)."
+          }
+        ],
+        "method": "definitions only; no returns, correlations or result files used; no recommendation",
+        "reviewed": "2026-11-02",
+        "report": "2026-11-02-family-scope-review.md"
+      }
     },
     {
       "id": "S08",
@@ -311,7 +441,27 @@
       "link": "WEB_RESEARCH_CANDIDATES.md",
       "recorded_verdict": "none; register has no entry",
       "inferred_overlap": "INFERENCE: ROE overlaps the closed profitability screen; expected growth untested; family-scope review pending",
-      "eligibility": "unverified: long-only implementability, construction and terms not checked"
+      "eligibility": "unverified: long-only implementability, construction and terms not checked",
+      "family_scope_review": {
+        "outcome": "undetermined",
+        "rationale": "ROE is profitability-adjacent but not HiOP's definition; the listed benchmark portfolios are jointly sorted on investment-to-assets and ROE, partly sharing channels with H1 and H3, and expected growth matches no closed sort. Construction of the listed portfolios was not checked.",
+        "reconciliation": "both reviewers: undetermined",
+        "evidence": [
+          {
+            "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+            "line": 9,
+            "quote": "*Conservative Investment (LoINV)* means buying stocks of firms that grow their total assets conservatively (low annual asset growth rate)."
+          },
+          {
+            "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+            "line": 49,
+            "quote": "**H1:** BIG HiOP > market (robust profitability premium)."
+          }
+        ],
+        "method": "definitions only; no returns, correlations or result files used; no recommendation",
+        "reviewed": "2026-11-02",
+        "report": "2026-11-02-family-scope-review.md"
+      }
     },
     {
       "id": "S09",
@@ -485,7 +635,22 @@
       "link": "WEB_RESEARCH_CANDIDATES.md",
       "recorded_verdict": "register status: untriaged",
       "inferred_overlap": "INFERENCE: register notes heavy SPY correlation; built on factor families with recorded NO-GOs; family-scope review pending",
-      "eligibility": "unverified"
+      "eligibility": "unverified",
+      "family_scope_review": {
+        "outcome": "undetermined",
+        "rationale": "The row sorts factor-sleeve returns over time (an allocation construction), not stocks. No closed hypothesis or scope statement addresses factor-level timing, and the construction is not specified.",
+        "reconciliation": "both reviewers: undetermined",
+        "evidence": [
+          {
+            "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+            "line": 52,
+            "quote": "**H4:** Combo = 50% BIG HiBM + 50% BIG HiPRIOR"
+          }
+        ],
+        "method": "definitions only; no returns, correlations or result files used; no recommendation",
+        "reviewed": "2026-11-02",
+        "report": "2026-11-02-family-scope-review.md"
+      }
     },
     {
       "id": "C01",

@@ -1,0 +1,220 @@
+{
+  "extracted_from": [
+    "docs/research/2026-10-20-momentum-french-screen-nogo.md",
+    "docs/research/briefs/2026-10-20-momentum-retest.md",
+    "docs/research/2026-10-21-factor-screen-nogo.md",
+    "docs/research/briefs/2026-10-20-factor-screen.md",
+    "docs/research/2026-10-23-net-issuance-screen-nogo.md",
+    "docs/research/briefs/2026-10-23-net-issuance-screen.md"
+  ],
+  "closed_reports": [
+    {
+      "id": "momentum",
+      "path": "docs/research/2026-10-20-momentum-french-screen-nogo.md",
+      "brief_path": "docs/research/briefs/2026-10-20-momentum-retest.md",
+      "sort_variable": "prior 12-2 month return (HiPRIOR)",
+      "universe": "Ken French Big HiPRIOR (large-cap winners) and Small HiPRIOR (small-cap winners)",
+      "weighting": "value-weighted",
+      "rebalance": "not stated",
+      "long_short_or_long_only": "long position (inferred from 'buying the stocks with the biggest gains'; the files never use the phrase 'long-only')",
+      "hypotheses": [
+        {
+          "id": "H1",
+          "text": "For each of *g* = Big and Small, the winners' return beats the market's."
+        },
+        {
+          "id": "H2",
+          "text": "For each of *g* = Big and Small, the winners' return beats the market's."
+        }
+      ],
+      "scope_statement": "Its closure does not claim momentum never existed; it rejects further work under the registered bar.",
+      "source_lines": [
+        {
+          "file": "docs/research/briefs/2026-10-20-momentum-retest.md",
+          "line": 94,
+          "quote": "and the 70th percentile of prior 12-2 month return. Big HiPRIOR is the"
+        },
+        {
+          "file": "docs/research/2026-10-20-momentum-french-screen-nogo.md",
+          "line": 53,
+          "quote": "Inputs are the frozen monthly value-weighted Big HiPRIOR and Small HiPRIOR"
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-momentum-retest.md",
+          "line": 92,
+          "quote": "(`6_Portfolios_ME_Prior_12_2`). Use **Big HiPRIOR** (large-cap winners) and"
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-momentum-retest.md",
+          "line": 10,
+          "quote": "- *Momentum* means buying the stocks with the biggest gains over the past year,"
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-momentum-retest.md",
+          "line": 101,
+          "quote": "- **Hypotheses (two).** For each of *g* = Big and Small, the winners' return beats"
+        },
+        {
+          "file": "docs/research/2026-10-20-momentum-french-screen-nogo.md",
+          "line": 219,
+          "quote": "an idea-level test, not a rerun of those exact rules. Its closure does not"
+        },
+        {
+          "file": "docs/research/2026-10-20-momentum-french-screen-nogo.md",
+          "line": 34,
+          "quote": "This is an independent-data historical screen, not a walk-forward out-of-sample"
+        },
+        {
+          "file": "docs/research/2026-10-20-momentum-french-screen-nogo.md",
+          "line": 259,
+          "quote": "The screen does not measure turnover, investor taxes, sector concentration"
+        }
+      ]
+    },
+    {
+      "id": "four_factor_screen",
+      "path": "docs/research/2026-10-21-factor-screen-nogo.md",
+      "brief_path": "docs/research/briefs/2026-10-20-factor-screen.md",
+      "sort_variable": "BIG HiOP (operating profitability), BIG HiBM (book-to-market), BIG LoINV (investment); H4 = 50% BIG HiBM + 50% BIG HiPRIOR",
+      "universe": "large-cap (Big) Ken French portfolios; small-cap portfolios are explicitly excluded from the confirmatory family",
+      "weighting": "value-weighted",
+      "rebalance": "monthly for the H4 combo; not stated for H1-H3",
+      "long_short_or_long_only": "long_only",
+      "hypotheses": [
+        {
+          "id": "H1",
+          "text": "BIG HiOP > market (robust profitability premium)."
+        },
+        {
+          "id": "H2",
+          "text": "BIG HiBM > market (value premium)."
+        },
+        {
+          "id": "H3",
+          "text": "BIG LoINV > market (conservative investment premium)."
+        },
+        {
+          "id": "H4",
+          "text": "Combo = 50% BIG HiBM + 50% BIG HiPRIOR (rebalanced monthly) > market (value + momentum combination)."
+        }
+      ],
+      "scope_statement": "This is a historical screen on external academic data on Ken French value-weighted portfolios, not an out-of-sample test of our exact trading rules or S&P 500 universe.",
+      "source_lines": [
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 49,
+          "quote": "- **H1:** BIG HiOP > market (robust profitability premium)."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 50,
+          "quote": "- **H2:** BIG HiBM > market (value premium)."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 51,
+          "quote": "- **H3:** BIG LoINV > market (conservative investment premium)."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 52,
+          "quote": "- **H4:** Combo = 50% BIG HiBM + 50% BIG HiPRIOR (rebalanced monthly) > market (value + momentum combination)."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 47,
+          "quote": "The confirmatory test family comprises exactly four primary hypotheses, restricted to large-cap (Big) portfolios:"
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 54,
+          "quote": "Small-cap portfolios are explicitly excluded from the confirmatory family (see \u00a77 and \u00a711)."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 35,
+          "quote": "Monthly, value-weighted portfolios from the Ken French Data Library."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 67,
+          "quote": "- **H4 (Value + Momentum Combo):** R_combo,t = 0.5 \u00b7 R_BIG HiBM,t + 0.5 \u00b7 R_BIG HiPRIOR,t (gross, rebalanced every month), then the haircut below is subtracted once from the combo."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 1,
+          "quote": "# Brief: classic long-only factor screen for a taxable trading sleeve"
+        },
+        {
+          "file": "docs/research/2026-10-21-factor-screen-nogo.md",
+          "line": 15,
+          "quote": "This is a historical screen on external academic data on Ken French value-weighted portfolios, not an out-of-sample test of our exact trading rules or S&P 500 universe."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-20-factor-screen.md",
+          "line": 119,
+          "quote": "Holm covers this registered four-hypothesis family only."
+        }
+      ]
+    },
+    {
+      "id": "net_issuance",
+      "path": "docs/research/2026-10-23-net-issuance-screen-nogo.md",
+      "brief_path": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+      "sort_variable": "net share issues (NI): the change in the natural log of split-adjusted shares outstanding between fiscal year-ends",
+      "universe": "French BIG NegNI (large-cap net repurchasers; BIG is the largest NYSE market-equity quintile)",
+      "weighting": "value-weighted",
+      "rebalance": "annual June rebalance",
+      "long_short_or_long_only": "long_only",
+      "hypotheses": [
+        {
+          "id": "H1",
+          "text": "the `BIG NegNI` value-weighted portfolio (large-cap net repurchasers) beats the French market after the base haircut."
+        }
+      ],
+      "scope_statement": "This is an idea-level screen on survivorship-free French value-weighted portfolios against French market total return, not an out-of-sample test of ggTrader's exact stock rules or SPY.",
+      "source_lines": [
+        {
+          "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+          "line": 7,
+          "quote": "- *Net share issues (NI)* is the change in the natural log of split-adjusted shares outstanding between fiscal year-ends, as defined by the [Ken French size \u00d7 NI library](https://mba.tuck.dartmouth.edu/pages/faculty/Ken.french/Data_Library/tw_5_ports_me_NI.html). Negative NI identifies net repurchasers; zero NI has its own bucket."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+          "line": 8,
+          "quote": "- *BIG* is the largest NYSE market-equity quintile in this file. It is a broad US-stock sort, not an S&P 500 portfolio or a point-in-time implementation of our stock rules."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+          "line": 40,
+          "quote": "**H1:** the `BIG NegNI` value-weighted portfolio (large-cap net repurchasers) beats the French market after the base haircut."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+          "line": 29,
+          "quote": "Use monthly **value-weighted** returns."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+          "line": 48,
+          "quote": "The portfolio is formed at the source's annual June rebalance."
+        },
+        {
+          "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+          "line": 1,
+          "quote": "# Brief: long-only large-size net-issuance screen for a taxable trading sleeve"
+        },
+        {
+          "file": "docs/research/2026-10-23-net-issuance-screen-nogo.md",
+          "line": 28,
+          "quote": "This is an idea-level screen on survivorship-free French value-weighted"
+        },
+        {
+          "file": "docs/research/2026-10-23-net-issuance-screen-nogo.md",
+          "line": 119,
+          "quote": "an independent rescue or a substitute gate. Serial selection of this candidate"
+        }
+      ]
+    }
+  ]
+}
