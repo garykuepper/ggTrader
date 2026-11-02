@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-02
+
+- **Research process follow-ups (no strategy or live-code change).** Added
+  `src/ggTrader/lab/wfo_attribution.py` and `scripts/wfo_fold_attribution.py`
+  (read saved fold records only), eight attribution tests, and six
+  characterization tests in `tests/lab/test_wfo.py` that pin the current WFO
+  fallback/halt behavior (including NaN WFE not being excluded from the circuit
+  breaker). `wfo.py` is unchanged; intended behavior is an owner decision.
+  New reports: fold attribution, fallback semantics, free-data stock feasibility
+  (with a Part A power note) and after-tax lot-engine requirements. No backtest,
+  data purchase, order or verdict change.
+  [Index](research/RESEARCH_INDEX.md).
+
 ## 2026-10-25
 
 - **Intraday paper-access follow-up.** Verified the author-linked final Gao

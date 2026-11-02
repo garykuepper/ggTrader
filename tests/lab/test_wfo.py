@@ -1326,3 +1326,187 @@ def test_run_wfo_signal_entries_respect_universe_fn():
     masked = run_wfo(*args, universe_fn=lambda asof, past: ["X"])
     assert unmasked.oos_equity.nunique() > 1  # Y trades when admitted
     assert masked.oos_equity.nunique() == 1  # and never when excluded
+
+
+# ── characterization tests: pin CURRENT fallback/halt semantics ────────
+# These document behavior only. Whether the behavior is intended is an open owner
+# decision (docs/research/2026-11-02-wfo-fallback-semantics.md); a failing test
+# here means the doc misread the code or the code changed.
+
+
+def test_compute_wfe_returns_nan_when_oos_nan():
+    """NaN OOS Sharpe with a healthy IS Sharpe gives NaN WFE, not None."""
+    import math
+
+    from ggTrader.lab.wfo import compute_wfe
+
+    result = compute_wfe(is_sharpe=1.0, oos_sharpe=float("nan"))
+    assert result is not None
+    assert math.isnan(result)
+
+
+def test_circuit_breaker_none_wfe_excluded_from_window():
+    """Control: a trailing None is dropped, so the last four real values are averaged."""
+    from ggTrader.lab.wfo import WfoState, check_circuit_breaker
+
+    state = WfoState(wfe_history=[0.1, 0.1, 0.1, 0.1, None])
+    assert check_circuit_breaker(state).halted is True
+
+
+def test_circuit_breaker_nan_wfe_suppresses_chronic_decay():
+    """OPEN DECISION: a NaN is not filtered, so it poisons the window average.
+
+    Excluding NaN like None would average [0.1] * 4 = 0.1 < 0.25 and halt.
+    """
+    from ggTrader.lab.wfo import WfoState, check_circuit_breaker
+
+    state = WfoState(wfe_history=[0.1, 0.1, 0.1, 0.1, float("nan")])
+    assert check_circuit_breaker(state).halted is False
+
+
+def _scripted_wfo(monkeypatch, scripts, skip_train=(), breaker=None):
+    """Run ``run_wfo`` with scripted sweeps/gates so every fold is hand-checkable.
+
+    ``scripts[i]`` holds ``ndh``/``dsr`` (bool), ``winner_is`` (training Sharpe of the
+    winning combo, param_a=2), ``winner_oos`` and ``anchor_oos`` (test-window Sharpe
+    of the deployed combo). Anchor params are always ``{"param_a": 1}``.
+    """
+    from types import SimpleNamespace
+
+    import ggTrader.lab.wfo as wfo_mod
+    from ggTrader.lab.sweep import combo_name
+
+    anchor_params = {"param_a": 1}
+    winner_params = {"param_a": 2}
+    n = 252 * 7
+    ohlcv = _ohlcv(["X", "Y"], n)
+    eval_start, eval_end = ohlcv.index[0], ohlcv.index[-1]
+    folds = wfo_mod.generate_folds(
+        pd.Timestamp(str(eval_start.date()), tz="UTC"),
+        pd.Timestamp(str(eval_end.date()), tz="UTC"),
+    )
+    by_train = {f.train_start: i for i, f in enumerate(folds)}
+    by_test = {f.test_start: i for i, f in enumerate(folds)}
+    skip_train = set(skip_train)
+
+    def fake_dispatch(
+        name, inst, cls, cfg, data, start, end, base, grid, universe_fn, entry_mask=None
+    ):
+        def metric(params, sharpe):
+            return {
+                "combo": combo_name(name, params),
+                "params": params,
+                "sharpe": sharpe,
+                "sortino": sharpe,
+                "max_drawdown_pct": -5.0,
+                "cagr_pct": 5.0,
+                "total_return_pct": 5.0,
+                "n_trades": 3,
+            }
+
+        if len(grid) > 1:  # training sweep (or the final live-parameter sweep)
+            i = by_train.get(start)
+            if i in skip_train:
+                return [], {}
+            s = scripts[i] if i is not None else {"winner_is": 2.0}
+            ms = [metric(winner_params, s["winner_is"]), metric(anchor_params, 0.5)]
+            idx = pd.date_range(start, end, freq="B")
+            curve = pd.Series(100.0 * 1.001 ** np.arange(len(idx)), index=idx)
+            eq = {m["combo"]: curve for m in ms}
+            return ms, eq
+        i = by_test[start]
+        params = grid[0]
+        sharpe = scripts[i]["anchor_oos" if params == anchor_params else "winner_oos"]
+        idx = pd.date_range(start, end, freq="B")
+        key = combo_name(name, params)
+        return [metric(params, sharpe)], {key: pd.Series(100.0 + np.arange(len(idx)), index=idx)}
+
+    def fake_anchor(*args, **kwargs):
+        return wfo_mod.AnchorSet(
+            combo=combo_name("tiny", anchor_params),
+            params=anchor_params,
+            max_drawdown_pct=-1.0,
+            cagr_pct=5.0,
+            sharpe=0.5,
+        )
+
+    def fake_ndh(*args, **kwargs):
+        s = scripts[fake_ndh.calls]
+        fake_ndh.calls += 1
+        return SimpleNamespace(passed=s["ndh"], density=1.0, variance_ratio=0.0)
+
+    fake_ndh.calls = 0
+
+    def fake_dsr(*args, **kwargs):
+        s = scripts[fake_ndh.calls - 1]  # ndh_check runs first within a fold
+        return SimpleNamespace(passed=s["dsr"], dsr_value=1.0)
+
+    monkeypatch.setattr(wfo_mod, "_sweep_fold_dispatch", fake_dispatch)
+    monkeypatch.setattr(wfo_mod, "compute_anchor_set", fake_anchor)
+    monkeypatch.setattr(wfo_mod, "ndh_check", fake_ndh)
+    monkeypatch.setattr(wfo_mod, "dsr_check", fake_dsr)
+    if breaker is not None:
+        monkeypatch.setattr(wfo_mod, "check_circuit_breaker", breaker)
+    cfg = LabConfig(top_n=10, lookback=20, skip=5, min_history_bars=10)
+    base = {"START_CASH": 10000.0, "FEES": 0.0, "SLIPPAGE": 0.0, "FREQ": "1d"}
+    result = run_wfo(
+        "tiny",
+        _TinySignal,
+        cfg,
+        ohlcv,
+        ohlcv["X"]["close"].copy(),
+        str(eval_start.date()),
+        str(eval_end.date()),
+        "test",
+        base,
+        [winner_params, anchor_params],
+    )
+    return result, folds
+
+
+def _fold_script(n, **overrides):
+    base = {"ndh": True, "dsr": True, "winner_is": 2.0, "winner_oos": 1.9, "anchor_oos": 0.3}
+    base.update(overrides)
+    return [dict(base) for _ in range(n)]
+
+
+def test_run_wfo_wfe_on_anchor_fold_uses_winner_is_sharpe(monkeypatch):
+    """OPEN DECISION: on an anchor fold WFE = anchor OOS Sharpe / WINNER in-sample Sharpe."""
+    scripts = _fold_script(40, ndh=False)  # more scripts than folds; extras unused
+    result, _ = _scripted_wfo(monkeypatch, scripts)
+    row = result.fold_results[0]
+    assert row["gates_passed"] is False
+    assert row["used_anchor"] is True
+    assert row["is_sharpe"] == pytest.approx(2.0)
+    assert row["oos_sharpe"] == pytest.approx(0.3)  # the anchor's, not the winner's 1.9
+    assert row["wfe"] == pytest.approx(0.3 / 2.0)
+
+
+def test_run_wfo_halted_field_is_post_fold_state(monkeypatch):
+    """OPEN DECISION: row['halted'] is the state AFTER the fold, not the state that
+    chose the fold's parameters (fold 1 deploys the winner yet records halted=True)."""
+    from ggTrader.lab.wfo import WfoState
+
+    def halt_now(state):
+        return WfoState(
+            wfe_history=list(state.wfe_history),
+            oos_sharpes=list(state.oos_sharpes),
+            halted=True,
+            halt_reason="scripted",
+            shadow_window=list(state.shadow_window),
+        )
+
+    result, _ = _scripted_wfo(monkeypatch, _fold_script(40), breaker=halt_now)
+    first, second = result.fold_results[0], result.fold_results[1]
+    assert first["gates_passed"] is True and first["used_anchor"] is False
+    assert first["halted"] is True
+    assert second["gates_passed"] is True
+    assert second["used_anchor"] is True  # halted entering fold 2, though gates passed
+
+
+def test_run_wfo_skips_fold_without_train_metrics(monkeypatch):
+    """OPEN DECISION: a fold with no training metrics leaves no row, so fold_num has a gap."""
+    result, folds = _scripted_wfo(monkeypatch, _fold_script(40), skip_train=(1,))
+    nums = [r["fold_num"] for r in result.fold_results]
+    assert len(nums) == len(folds) - 1
+    assert 2 not in nums

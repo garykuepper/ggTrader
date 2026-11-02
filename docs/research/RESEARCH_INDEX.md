@@ -8,6 +8,8 @@ registered amendments govern their own scope. The snapshot's last full regenerat
 was 2026-10-19 and its last incremental update was 2026-10-23; later work is
 included below where identified.
 
+For the process review and evidence limitations, see the [2026-11-01 research process audit](2026-11-01-research-process-audit.md) and its [claim ledger](_research_process_audit_ledger.json).
+
 ## How to read the classifications
 
 - **NO-GO**: a specified test failed its registered or documented standard. It
@@ -60,6 +62,17 @@ later audit corrected or limited an older report, both are linked below.
 | Paper signal warm-up | **Operations:** measured indicator-window mismatch; 365-day warm-up removed the measured drift. | [Warm-up study](2026-09-28-live-indicator-warmup.md), [results](_live_indicator_warmup_results.json) |
 | Crypto execution venues | **Feasibility:** historical venue comparison, not a tested crypto strategy or a current price quote. | [Venue comparison](2026-07-06-crypto-execution-venues.md) |
 | Intraday sources and preflight | **Candidate / feasibility:** source and replication review plus protocol design, not a project return test. The Stage 0A contract is separately documented; no strategy edge follows. | [Feasibility review](2026-10-24-intraday-trading-feasibility.md), [source audit](2026-10-24-intraday-replication-source-audit.md), [preflight](2026-10-25-intraday-preflight-delegation.md), [Stage 0A contract](briefs/2026-10-25-intraday-stage0a-contract.md) |
+
+## Process follow-ups (2026-11-02)
+
+Documentary and diagnostic follow-ups to the [process audit](2026-11-01-research-process-audit.md). None changes a verdict, the production freeze or the parked event studies, and none ran a market-return test.
+
+| Topic | Classification and finding | Records |
+|---|---|---|
+| WFO fold attribution | **Methods:** saved fold records split into gate failure, anchor deployed with gates passed, and winner deployed. `xs_momentum`, `dual_momentum` and `fomc_drift` replays were anchor-dominated (100%, 100%, 89%); pre- and post-DSR-fix runs are kept separate. | [Attribution](2026-11-02-wfo-fold-attribution.md), [results](_wfo_fold_attribution_results.json) |
+| WFO fallback and halt semantics | **Methods:** current behavior is specified and pinned by characterization tests; intended behavior (NaN WFE handling, winner-vs-anchor WFE, post-fold `halted`, skipped folds) awaits owner decisions. `wfo.py` unchanged. | [Semantics](2026-11-02-wfo-fallback-semantics.md) |
+| Free-data stock feasibility | **Feasibility inventory:** no candidate recommended, no return computed; includes an analytic power note for Part A. | [Inventory](2026-11-02-free-data-stock-feasibility.md), [matrix](_free_data_feasibility_matrix.json) |
+| After-tax multi-stock lot engine | **Requirements and gap table only:** the existing three-symbol `Book` meets few B0/B1 accounting requirements; no engine built. | [Requirements](2026-11-02-after-tax-lot-engine-requirements.md) |
 
 ## Candidate literature and supporting artifacts
 

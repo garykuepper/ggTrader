@@ -1,0 +1,652 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-11-02",
+  "selection_rule": "Families are included for coverage of mechanism and free-data availability, not by realized or published return. The inventory is non-exhaustive. Recorded verdicts, inferred overlaps and eligibility are kept in separate fields. No returns were computed or read from candidate testing. The chronology of the rule relative to enumeration is asserted by the author, not independently witnessed.",
+  "classifications": {
+    "potential_part_a_source": "A free source with a possibly long enough history is listed; history start, construction and point-in-time status are UNVERIFIED. Not a recommendation and not a statement that the test is feasible",
+    "testable_b0_b1_only": "Free data covers only the modern window; the approved standard requires Part A first, so use needs an owner amendment",
+    "infeasible_free": "No free point-in-time source found",
+    "family_scope_review_pending": "No recorded verdict for this exact variant; a related family has a recorded NO-GO. Whether that closure applies is undecided and requires a documented family-scope review",
+    "closed_no_reopen": "A recorded NO-GO for this exact family",
+    "parked": "Paused, blocked, untriaged or owner-parked"
+  },
+  "sources_checked_not_checked": {
+    "checked_2026-11-02": [
+      "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+      "https://www.aqr.com/Insights/Datasets",
+      "https://global-q.org/factors.html",
+      "https://www.sec.gov/data-research/sec-markets-data/form-13f-data-sets",
+      "https://www.sec.gov/dera/data/financial-statement-data-sets.html"
+    ],
+    "not_source_checked_in_this_pass": [
+      "52-week-high momentum",
+      "earnings announcement premium",
+      "stock-level seasonality",
+      "buyback/net payout yield",
+      "crypto families (out of scope for this stock inventory)"
+    ]
+  },
+  "rows": [
+    {
+      "id": "S01",
+      "family": "Short-term reversal (monthly, long-only loser leg)",
+      "economic_mechanism": "Prior 1-month losers outperform winners (liquidity/overreaction)",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "Short-Term Reversal Factor and 10 Portfolios Formed on Short-Term Reversal are listed",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "unknown: needs a monthly stock-level sort on the clean tape; not built",
+      "b1_live_source_continuity": "yes: price-only, Alpaca/yfinance free",
+      "status_vs_prior_work": "untested_at_part_a; related to but distinct from the daily mean-reversion ensemble (production NO-GO is a different horizon)",
+      "classification": "potential_part_a_source",
+      "blocking_gaps": [
+        "High turnover makes short-term-gain taxation the central after-tax question; Part A A2 is pre-tax with a cost haircut, so tax needs B0/B1",
+        "Turnover and short-term-gain exposure unmeasured; the cost haircut must be frozen before any run"
+      ],
+      "unknowns": [
+        "Library start date",
+        "Whether the long-only decile alone can clear the net bar"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "none for this exact monthly French-portfolio test",
+      "inferred_overlap": "INFERENCE: related to, but a different horizon from, the daily mean-reversion ensemble (production-rule model NO-GO); overlap not measured",
+      "eligibility": "unverified: library history start and construction not checked"
+    },
+    {
+      "id": "S02",
+      "family": "Long-term reversal (long-only loser leg)",
+      "economic_mechanism": "Prior 13-60 month losers outperform (overreaction/value overlap)",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "Long-Term Reversal Factor and 10 Portfolios Formed on Long-Term Reversal are listed",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "unknown: needs a 60-month price history per stock on the clean tape",
+      "b1_live_source_continuity": "yes: price-only",
+      "status_vs_prior_work": "untested_at_part_a; likely overlaps the closed value (HiBM) screen",
+      "classification": "potential_part_a_source",
+      "blocking_gaps": [
+        "Overlap with closed value result: treat as a correlated variant, not an independent test"
+      ],
+      "unknowns": [
+        "Library start date",
+        "Correlation with the closed HiBM series (not computed)"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "none for this exact test",
+      "inferred_overlap": "INFERENCE: may overlap the closed value (HiBM) screen; overlap not computed; family-scope review pending",
+      "eligibility": "unverified: library history start and construction not checked"
+    },
+    {
+      "id": "S03",
+      "family": "Low market beta / low variance / low residual variance",
+      "economic_mechanism": "Low-risk stocks earn higher risk-adjusted returns (leverage constraints, lottery demand)",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "Portfolios Formed on Market Beta, Variance and Residual Variance are listed",
+          "accessed": "2026-11-02"
+        },
+        {
+          "url_or_name": "https://www.aqr.com/Insights/Datasets",
+          "name": "AQR Betting Against Beta: Equity Factors, Monthly",
+          "point_in_time": "unknown",
+          "history_start": "not stated on the datasets page",
+          "update_lag": "monthly (page: updated monthly)",
+          "note": "Terms of use not stated on the page; general footer Terms link not read",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "yes in principle: rolling beta/variance from daily prices",
+      "b1_live_source_continuity": "yes: price-only",
+      "status_vs_prior_work": "idio_vol historical NO-GO (SP500 WFO, 0.57 vs SPY 0.58, evidence unresolved per audit ledger); MAX NO-GO; not tested under Part A",
+      "classification": "potential_part_a_source",
+      "blocking_gaps": [
+        "Low-beta long-only portfolios may differ from SPY mainly by beta, so an exposure-matched benchmark must be registered first",
+        "Overlaps closed idio_vol/MAX lottery results"
+      ],
+      "unknowns": [
+        "AQR terms of use",
+        "Library start date"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "idio_vol: historical NO-GO on the daily SP500 WFO (validity unresolved per the audit ledger); MAX: historical NO-GO; neither tested this French-portfolio construction",
+      "inferred_overlap": "INFERENCE: related mechanism; the audit ledger distinguishes these as separate experiments; family-scope review pending",
+      "eligibility": "unverified: library history start and construction not checked; AQR terms not stated"
+    },
+    {
+      "id": "S04",
+      "family": "Accruals",
+      "economic_mechanism": "Low accrual (high cash-earnings quality) firms outperform",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "Portfolios Formed on Accruals and 25 on Size and Accruals are listed",
+          "accessed": "2026-11-02"
+        },
+        {
+          "url_or_name": "https://www.sec.gov/dera/data/financial-statement-data-sets.html",
+          "name": "SEC Financial Statement Data Sets",
+          "point_in_time": "partial: filings after quarter-end appear in the following quarter's file; acceptance-date field not confirmed on the landing page",
+          "history_start": "2009 Q1",
+          "update_lag": "quarterly",
+          "note": "Enabler for stock-level fundamentals on B0/B1 only",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "possible: SEC data begins 2009 so 2021-2026 is covered, but filing-date availability must be confirmed from the documentation PDF",
+      "b1_live_source_continuity": "yes: SEC publishes quarterly",
+      "status_vs_prior_work": "untested",
+      "classification": "potential_part_a_source",
+      "blocking_gaps": [
+        "Stock-level B0/B1 construction needs a PIT fundamentals pipeline; none exists in the project",
+        "Overlaps closed profitability/quality screens"
+      ],
+      "unknowns": [
+        "Whether FSDS carries an acceptance date usable for point-in-time dating",
+        "Library start date"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "none",
+      "inferred_overlap": "INFERENCE: may overlap the closed profitability/quality screens; family-scope review pending",
+      "eligibility": "unverified: needs PIT fundamentals for stock-level versions; library history not checked"
+    },
+    {
+      "id": "S05",
+      "family": "Valuation variants: earnings/price, cash-flow/price, dividend yield",
+      "economic_mechanism": "Cheap stocks on earnings/cash-flow/dividend measures outperform",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "Portfolios Formed on Earnings/Price, Cashflow/Price and Dividend Yield are listed",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "blocked by S11: needs PIT fundamentals",
+      "b1_live_source_continuity": "partial: needs a free fundamentals feed",
+      "status_vs_prior_work": "closed_family: the book-to-market value screen (H2 HiBM) failed Holm and the post-1994 bar; these are correlated variants",
+      "classification": "family_scope_review_pending",
+      "blocking_gaps": [
+        "Would reopen the value family with new variants after seeing the closed result; the standard does not grant error control across successive studies"
+      ],
+      "unknowns": [
+        "Correlation with the closed HiBM series (not computed)"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "none for these variants; the book-to-market value screen (H2 HiBM) is a recorded NO-GO",
+      "inferred_overlap": "INFERENCE: may be a correlated variant of the closed HiBM result; no documented rationale yet that the closure applies; the index says a NO-GO does not automatically apply to every related idea",
+      "eligibility": "pending family-scope review"
+    },
+    {
+      "id": "S06",
+      "family": "Industry momentum / rotation (49 industries)",
+      "economic_mechanism": "Industries with strong prior returns continue",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "5/10/12/17/30/38/48/49 Industry Portfolios, monthly and daily, are listed",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "yes in principle: industry classification must be PIT on the clean tape (not built)",
+      "b1_live_source_continuity": "partial: needs a free industry mapping",
+      "status_vs_prior_work": "momentum family closed NO-GO (Big/Small, +0.08/+0.20 pt/yr); an industry-level variant is a correlated variant",
+      "classification": "family_scope_review_pending",
+      "blocking_gaps": [
+        "Same-mechanism sibling of the closed momentum screen"
+      ],
+      "unknowns": [
+        "Library start date"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "none for the industry variant; the momentum screen (Big/Small) is a recorded NO-GO",
+      "inferred_overlap": "INFERENCE: industry momentum may share the mechanism of the closed momentum screen; no documented rationale yet that the closure applies",
+      "eligibility": "pending family-scope review"
+    },
+    {
+      "id": "S07",
+      "family": "Quality (QMJ) long-only quality-sorted deciles",
+      "economic_mechanism": "Profitable, growing, safe, high-payout firms outperform",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://www.aqr.com/Insights/Datasets",
+          "name": "AQR Quality Minus Junk: 10 Quality-Sorted Portfolios, Monthly",
+          "point_in_time": "unknown",
+          "history_start": "US long sample from 1956 (per the datasets page)",
+          "update_lag": "monthly (page lists Aug 31 2026)",
+          "note": "Terms of use not stated on the page; constructed by AQR from vendor data",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "blocked: needs PIT fundamentals (S11)",
+      "b1_live_source_continuity": "partial",
+      "status_vs_prior_work": "profitability (HiOP) closed NO-GO; QMJ is a broader composite that overlaps it",
+      "classification": "family_scope_review_pending",
+      "blocking_gaps": [
+        "Overlap with the closed profitability result",
+        "Composite built by a third party; construction details not source-checked here"
+      ],
+      "unknowns": [
+        "AQR terms of use",
+        "PIT construction details"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "none for QMJ; the profitability screen (H1 HiOP) is a recorded NO-GO",
+      "inferred_overlap": "INFERENCE: QMJ is a composite that overlaps profitability; no documented rationale yet that the closure applies",
+      "eligibility": "pending family-scope review"
+    },
+    {
+      "id": "S08",
+      "family": "q-factor ROE and expected-growth",
+      "economic_mechanism": "High ROE and expected investment growth predict returns",
+      "side": "unknown",
+      "free_sources": [
+        {
+          "url_or_name": "https://global-q.org/factors.html",
+          "name": "Global-q.org q-factor CSV files",
+          "point_in_time": "unknown",
+          "history_start": "1967 (per the page)",
+          "update_lag": "unknown (page shows a July 2026 release)",
+          "note": "Page lists two sorted benchmark-portfolio sets in CSV (18 size/investment-to-assets/ROE portfolios and 6 size/expected-growth portfolios, ranks ascending, all frequencies); construction, implementability and terms of use not checked",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": "unknown: benchmark portfolio files are listed; whether they support a long-only Part A test is not checked",
+      "b0_tape_ok": "blocked: PIT fundamentals",
+      "b1_live_source_continuity": "unknown",
+      "status_vs_prior_work": "ROE overlaps closed profitability; expected-growth factor untested",
+      "classification": "parked",
+      "blocking_gaps": [
+        "Long-only implementability not shown",
+        "Terms of use not stated"
+      ],
+      "unknowns": [
+        "Construction of the listed benchmark portfolios",
+        "Terms of use",
+        "Whether a long-only leg is implementable"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "none; register has no entry",
+      "inferred_overlap": "INFERENCE: ROE overlaps the closed profitability screen; expected growth untested; family-scope review pending",
+      "eligibility": "unverified: long-only implementability, construction and terms not checked"
+    },
+    {
+      "id": "S09",
+      "family": "Analyst estimate-revision momentum (register #2)",
+      "economic_mechanism": "Upward earnings-estimate revisions predict returns",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "Free-tier vendors named in the register (Zacks Rank, Seeking Alpha, FMP forecasts)",
+          "name": "Free-tier vendors named in the register (Zacks Rank, Seeking Alpha, FMP forecasts)",
+          "point_in_time": "no: no point-in-time consensus history found",
+          "history_start": "none for a long backtest (register: deep history needs paid I/B/E/S-style data)",
+          "update_lag": "unknown",
+          "note": "Not source-checked in this pass beyond the register's own statement",
+          "accessed": null
+        }
+      ],
+      "part_a_testable": false,
+      "b0_tape_ok": "no: no free PIT revision history",
+      "b1_live_source_continuity": "unknown",
+      "status_vs_prior_work": "untested",
+      "classification": "infeasible_free",
+      "blocking_gaps": [
+        "No free long-history source: Part A cannot run",
+        "Forward-only collection would not satisfy the standard without a passed Part A"
+      ],
+      "unknowns": [
+        "Whether any free vendor offers a stable, ToS-permitting history"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "none (register: untested)",
+      "inferred_overlap": "INFERENCE: n/a",
+      "eligibility": "infeasible_free: no free PIT consensus history found"
+    },
+    {
+      "id": "S10",
+      "family": "13F institutional-holdings signals",
+      "economic_mechanism": "Changes in institutional holdings predict returns (information or flow)",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://www.sec.gov/data-research/sec-markets-data/form-13f-data-sets",
+          "name": "SEC Form 13F Data Sets",
+          "point_in_time": "partial: reports are filed up to 45 days after quarter-end; filing date field not confirmed on the page",
+          "history_start": "July 2013",
+          "update_lag": "quarterly",
+          "note": "Fields not confirmed from the landing page",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": false,
+      "b0_tape_ok": "yes in principle: 2013+ covers 2021-2026",
+      "b1_live_source_continuity": "yes: SEC updates quarterly",
+      "status_vs_prior_work": "untested; not in the candidate register",
+      "classification": "testable_b0_b1_only",
+      "blocking_gaps": [
+        "Free history starts 2013, so the Part A (since 1994) bar cannot be applied; under the approved standard a candidate needs Part A first, so use would require an owner amendment",
+        "Mechanism evidence not assessed in this pass"
+      ],
+      "unknowns": [
+        "Literature support",
+        "Filing-date field name"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "none; not in the register",
+      "inferred_overlap": "INFERENCE: n/a",
+      "eligibility": "blocked by the Part A-first rule; free history starts 2013"
+    },
+    {
+      "id": "S11",
+      "family": "Enabler: point-in-time fundamentals pipeline (not a strategy)",
+      "economic_mechanism": "n/a",
+      "side": "n/a",
+      "free_sources": [
+        {
+          "url_or_name": "https://www.sec.gov/dera/data/financial-statement-data-sets.html",
+          "name": "SEC Financial Statement Data Sets",
+          "point_in_time": "partial",
+          "history_start": "2009 Q1",
+          "update_lag": "quarterly",
+          "note": "",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": false,
+      "b0_tape_ok": "possible for 2021-2026 after confirming dating fields",
+      "b1_live_source_continuity": "yes",
+      "status_vs_prior_work": "not built",
+      "classification": "testable_b0_b1_only",
+      "blocking_gaps": [
+        "Required by S04, S05, S07, S08 stock-level versions",
+        "No pre-2009 free source identified"
+      ],
+      "unknowns": [
+        "Acceptance-date field"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "n/a (enabler, not a strategy)",
+      "inferred_overlap": "INFERENCE: n/a",
+      "eligibility": "n/a"
+    },
+    {
+      "id": "S12",
+      "family": "Retail attention (Google Trends)",
+      "economic_mechanism": "Search-volume spikes drive short-term buying pressure",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "Google Trends via pytrends",
+          "name": "Google Trends via pytrends",
+          "point_in_time": "unknown",
+          "history_start": "unknown",
+          "update_lag": "n/a",
+          "note": "Backfill hit a 429 IP lockout; register says do not circumvent",
+          "accessed": null
+        }
+      ],
+      "part_a_testable": false,
+      "b0_tape_ok": "blocked by data access",
+      "b1_live_source_continuity": "no: access blocked",
+      "status_vs_prior_work": "paused, no verdict (snapshot)",
+      "classification": "parked",
+      "blocking_gaps": [
+        "Data access blocked; no circumvention"
+      ],
+      "unknowns": [
+        "Whether the block has cleared"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "paused, no verdict (snapshot)",
+      "inferred_overlap": "INFERENCE: n/a",
+      "eligibility": "blocked by data access"
+    },
+    {
+      "id": "S13",
+      "family": "Factor momentum across factor portfolios (register A13)",
+      "economic_mechanism": "Factor returns are autocorrelated",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "Factor and portfolio returns usable as a long-history proxy",
+          "accessed": "2026-11-02"
+        },
+        {
+          "url_or_name": "Factor ETFs (QUAL, VLUE, MTUM, USMV, SIZE)",
+          "name": "Factor ETFs (QUAL, VLUE, MTUM, USMV, SIZE)",
+          "point_in_time": "yes",
+          "history_start": "2011-2013 per the register",
+          "update_lag": "daily",
+          "note": "Free via the project's loaders per the register",
+          "accessed": null
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "yes: ETFs cover 2021-2026",
+      "b1_live_source_continuity": "yes",
+      "status_vs_prior_work": "register status untriaged; register notes heavy SPY correlation",
+      "classification": "parked",
+      "blocking_gaps": [
+        "Allocation/timing among factor sleeves, not stock selection; correlation with SPY",
+        "Based on closed factor families"
+      ],
+      "unknowns": [
+        "Long-only proxy fidelity"
+      ],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "register status: untriaged",
+      "inferred_overlap": "INFERENCE: register notes heavy SPY correlation; built on factor families with recorded NO-GOs; family-scope review pending",
+      "eligibility": "unverified"
+    },
+    {
+      "id": "C01",
+      "family": "Momentum (cross-sectional, dual, French size portfolios)",
+      "economic_mechanism": "Past winners continue",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "n/a",
+      "b1_live_source_continuity": "n/a",
+      "status_vs_prior_work": "NO-GO: 2026-10-20 French screen",
+      "classification": "closed_no_reopen",
+      "blocking_gaps": [],
+      "unknowns": [],
+      "link": "2026-10-20-momentum-french-screen-nogo.md",
+      "recorded_verdict": "NO-GO: 2026-10-20 French screen",
+      "inferred_overlap": "n/a",
+      "eligibility": "closed"
+    },
+    {
+      "id": "C02",
+      "family": "Classic factors: profitability, value, investment, value+momentum",
+      "economic_mechanism": "Factor premia",
+      "side": "long_only_feasible",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "n/a",
+      "b1_live_source_continuity": "n/a",
+      "status_vs_prior_work": "NO-GO: all four fail Holm A1 and post-1994 A2",
+      "classification": "closed_no_reopen",
+      "blocking_gaps": [],
+      "unknowns": [],
+      "link": "2026-10-21-factor-screen-nogo.md",
+      "recorded_verdict": "NO-GO: all four fail Holm A1 and post-1994 A2",
+      "inferred_overlap": "n/a",
+      "eligibility": "closed"
+    },
+    {
+      "id": "C03",
+      "family": "Net issuance",
+      "economic_mechanism": "Low issuers outperform",
+      "side": "needs_short",
+      "free_sources": [
+        {
+          "url_or_name": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+          "name": "Ken French Data Library",
+          "point_in_time": "unverified: lagged portfolio formation per library documentation not rechecked; the library states it reconstructs the full history each update (historical returns can change), so an unrevised historical vintage is not available",
+          "history_start": "unknown (library index page does not state it; per-file details page not fetched)",
+          "update_lag": "unknown (library index page lists no release lag)",
+          "note": "",
+          "accessed": "2026-11-02"
+        }
+      ],
+      "part_a_testable": true,
+      "b0_tape_ok": "n/a",
+      "b1_live_source_continuity": "n/a",
+      "status_vs_prior_work": "NO-GO: BIG NegNI t 0.26, +0.48 pt/yr",
+      "classification": "closed_no_reopen",
+      "blocking_gaps": [],
+      "unknowns": [],
+      "link": "2026-10-23-net-issuance-screen-nogo.md",
+      "recorded_verdict": "NO-GO: BIG NegNI t 0.26, +0.48 pt/yr",
+      "inferred_overlap": "n/a",
+      "eligibility": "closed"
+    },
+    {
+      "id": "C04",
+      "family": "PEAD and insider cluster buying",
+      "economic_mechanism": "Post-event drift",
+      "side": "long_only_feasible",
+      "free_sources": [],
+      "part_a_testable": false,
+      "b0_tape_ok": "unresolved",
+      "b1_live_source_continuity": "unresolved",
+      "status_vs_prior_work": "Historical NO-GO; data feasibility UNRESOLVED; parked by owner",
+      "classification": "parked",
+      "blocking_gaps": [
+        "Owner parking decision"
+      ],
+      "unknowns": [],
+      "link": "2026-10-23-event-timing-audit-decision.md",
+      "recorded_verdict": "Historical NO-GO; data feasibility UNRESOLVED; parked by owner",
+      "inferred_overlap": "n/a",
+      "eligibility": "parked"
+    },
+    {
+      "id": "C05",
+      "family": "Short interest, short volume, stealthy shorts, congress trades, headline sentiment, MAX, index deletion, pairs, overnight gap, idio_vol",
+      "economic_mechanism": "various",
+      "side": "mixed",
+      "free_sources": [],
+      "part_a_testable": false,
+      "b0_tape_ok": "n/a",
+      "b1_live_source_continuity": "n/a",
+      "status_vs_prior_work": "Historical NO-GO or provisional NO-GO (tape and harness caveats in the process audit)",
+      "classification": "closed_no_reopen",
+      "blocking_gaps": [],
+      "unknowns": [],
+      "link": "RESEARCH_INDEX.md",
+      "recorded_verdict": "Historical NO-GO or provisional NO-GO (tape and harness caveats in the process audit)",
+      "inferred_overlap": "n/a",
+      "eligibility": "closed"
+    },
+    {
+      "id": "C06",
+      "family": "Options skew (#14) and Anomaly-Driven Demand (#7)",
+      "economic_mechanism": "various",
+      "side": "mixed",
+      "free_sources": [],
+      "part_a_testable": false,
+      "b0_tape_ok": "no",
+      "b1_live_source_continuity": "no",
+      "status_vs_prior_work": "Register: RESOLVED INFEASIBLE (skew); INFEASIBLE (ADD)",
+      "classification": "infeasible_free",
+      "blocking_gaps": [
+        "Register findings; not re-verified"
+      ],
+      "unknowns": [],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "Register: RESOLVED INFEASIBLE (skew); INFEASIBLE (ADD); not re-verified",
+      "inferred_overlap": "n/a",
+      "eligibility": "infeasible_per_register"
+    },
+    {
+      "id": "C07",
+      "family": "Turn-of-month calendar rotation (A14)",
+      "economic_mechanism": "Month-boundary flow",
+      "side": "n/a",
+      "free_sources": [],
+      "part_a_testable": false,
+      "b0_tape_ok": "n/a",
+      "b1_live_source_continuity": "n/a",
+      "status_vs_prior_work": "Register: sanity check failed on the pinned window; index-level calendar rule, not selection",
+      "classification": "parked",
+      "blocking_gaps": [],
+      "unknowns": [],
+      "link": "WEB_RESEARCH_CANDIDATES.md",
+      "recorded_verdict": "Register: sanity check failed on the pinned window; recommend not queuing",
+      "inferred_overlap": "n/a",
+      "eligibility": "parked"
+    }
+  ],
+  "non_exhaustive": true
+}
