@@ -5,7 +5,7 @@ validation or a change to any research or production decision. For the current
 strategy roster and qualifications use [RESEARCH_SNAPSHOT.md](RESEARCH_SNAPSHOT.md);
 for current decisions use [next steps](../next_steps.md). Study reports and their
 registered amendments govern their own scope. The snapshot's last full regeneration
-was 2026-10-19 and its last incremental update was 2026-10-23; later work is
+was 2026-10-19 and its last incremental update was 2026-11-02; later work is
 included below where identified.
 
 For the process review and evidence limitations, see the [2026-11-01 research process audit](2026-11-01-research-process-audit.md) and its [claim ledger](_research_process_audit_ledger.json).
@@ -73,7 +73,7 @@ Documentary and diagnostic follow-ups to the [process audit](2026-11-01-research
 | WFO fallback and halt semantics | **Methods:** current behavior is specified and pinned by characterization tests; opt-in `WfoPolicy` options (NaN WFE exclusion, anchor-fold WFE excluded from the breaker history) and additive `halted_entering` / `skipped_folds` reporting are implemented with defaults unchanged. Owner adoption of any alternative is pending. | [Semantics](2026-11-02-wfo-fallback-semantics.md) |
 | Free-data stock feasibility | **Feasibility inventory:** no candidate recommended, no return computed; includes an analytic power note for Part A. | [Inventory](2026-11-02-free-data-stock-feasibility.md), [matrix](_free_data_feasibility_matrix.json) |
 | After-tax multi-stock lot engine | **Library implemented, unvalidated:** `TaxLotBook` (HIFO, wash sales over ±30 days, character-preserving carryforwards, hash-chained ledger) with 46 tests; study-level B0/B1 controls (decision receipts, outside-holdings reconciliation) are not implemented. The original gap analysis is kept as a dated snapshot. | [Requirements and status](2026-11-02-after-tax-lot-engine-requirements.md) |
-| Synthetic WFO policy study | **Preregistered synthetic study** (36 cells, 5000 reps): under the stated assumptions the legacy circuit breaker halts at least once in 87.5% of runs for a true-Sharpe-1.0 strategy; plausibly driven (by calculation, an inference) by the two-consecutive-negative-Sharpe rule. Not evidence about any real strategy or the real gates. | [Study](2026-11-02-wfo-policy-synthetic.md), [results](_wfo_policy_synthetic_results.json) |
+| Synthetic WFO policy study | **Preregistered synthetic study** (36 cells, 5000 reps): under the stated assumptions (gates passing every fold, `p_gate = 1.0`) the legacy circuit breaker halts at least once in 87.5% of runs for a true-Sharpe-1.0 strategy; the two-consecutive-negative-Sharpe trigger alone accounts for 72.8% by exact calculation, so other triggers contribute (cause split unmeasured). A first-run aggregation defect in halt-length statistics is corrected in the report. Not evidence about any real strategy or the real gates. | [Study](2026-11-02-wfo-policy-synthetic.md), [results](_wfo_policy_synthetic_results.json) |
 | Family-scope review | **Documentary, definitions only:** of eight pending feasibility rows, S04 (accruals) is `distinct_mechanism`; seven are `undetermined`; none is judged covered by a closed NO-GO. No recorded verdict changed; no candidate recommended. | [Review](2026-11-02-family-scope-review.md), [extracted definitions](_family_scope_extraction.json) |
 
 ## Candidate literature and supporting artifacts

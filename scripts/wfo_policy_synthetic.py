@@ -41,12 +41,9 @@ def main() -> None:
                     "absolute_anchor_share_difference": abs(
                         cells[f"{mu}|{gate}|{name}"]["anchor_share"] - base["anchor_share"]
                     ),
-                    "fraction_halts_active_at_end": (
-                        cells[f"{mu}|{gate}|{name}"]["never_reentered"]
-                        / cells[f"{mu}|{gate}|{name}"]["n_halt_episodes"]
-                        if cells[f"{mu}|{gate}|{name}"]["n_halt_episodes"]
-                        else 0.0
-                    ),
+                    "fraction_halts_active_at_end": cells[f"{mu}|{gate}|{name}"][
+                        "fraction_halts_active_at_end"
+                    ],
                 }
                 for name in POLICIES
             }

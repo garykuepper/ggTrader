@@ -29,7 +29,7 @@ Each row keeps three things apart: the **recorded verdict** (a documented NO-GO 
 | Classification | Count | Rows |
 |---|---:|---|
 | `potential_part_a_source` | 4 | S01 short-term reversal, S02 long-term reversal, S03 low beta/variance, S04 accruals |
-| `family_scope_review_pending` | 3 | S05 valuation variants, S06 industry momentum, S07 quality (QMJ) |
+| `family_scope_review_undetermined` | 3 | S05 valuation variants, S06 industry momentum, S07 quality (QMJ) |
 | `testable_b0_b1_only` | 2 | S10 13F holdings signals, S11 PIT-fundamentals enabler |
 | `infeasible_free` | 2 | S09 analyst revisions, C06 options skew / anomaly-driven demand (register findings) |
 | `closed_no_reopen` | 4 | C01 momentum, C02 four classic factors, C03 net issuance, C05 other recorded NO-GOs |
@@ -38,7 +38,7 @@ Each row keeps three things apart: the **recorded verdict** (a documented NO-GO 
 What the labels mean, and do not mean:
 
 - `potential_part_a_source` means a free source is **listed** that might supply long-history data. History start dates, construction and point-in-time status are **unverified** (the French library index page states no start dates, and the library says it reconstructs the full history of returns each update, so an unrevised historical vintage is not available; lagged portfolio formation is a separate question and was not rechecked). It is not a recommendation and not a statement that the test is feasible.
-- `family_scope_review_pending` rows have **no recorded verdict for their own variant**. A related family has a recorded NO-GO, but the [research index](RESEARCH_INDEX.md) says a NO-GO does not automatically apply to every related idea. Whether the closure applies needs a documented family-scope review. The same overlap uncertainty applies to S02, S03, S04 and S13 and is stated in their rows.
+- `family_scope_review_undetermined` rows have **no recorded verdict for their own variant**; the [family-scope review](2026-11-02-family-scope-review.md) could not decide whether the related closure applies. A related family has a recorded NO-GO, but the [research index](RESEARCH_INDEX.md) says a NO-GO does not automatically apply to every related idea. Whether the closure applies needs a documented family-scope review. The same overlap uncertainty applies to S02, S03, S04 and S13 and is stated in their rows.
 - `testable_b0_b1_only` rows cannot satisfy Part A on free data (history begins 2009 or 2013). The approved standard requires Part A **first**, so using them would need an owner amendment; this inventory does not propose one.
 - Terms-of-use caveat: several free sources do not state terms of use on the pages read here. Verify terms before any use.
 - S08: the checked page lists two sorted benchmark-portfolio sets (18 size/investment-to-assets/ROE portfolios and 6 size/expected-growth portfolios). Their construction, implementability and terms of use were not checked.

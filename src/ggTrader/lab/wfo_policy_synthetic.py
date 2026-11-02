@@ -67,6 +67,25 @@ def simulate_run(
     }
 
 
+def finalize_cell(cell: Dict[str, float], n_folds: int = N_FOLDS) -> Dict[str, float]:
+    """Pool episode statistics from per-run means (ratio of means, not a mean of ratios).
+
+    ``mean_halt_length`` becomes halted folds divided by halt episodes over all runs, and
+    ``fraction_halts_active_at_end`` becomes active-at-end halts divided by halt episodes.
+    The run-level share ending halted is kept separately as ``fraction_runs_ending_halted``.
+    """
+    out = dict(cell)
+    episodes = out["n_halt_episodes"]
+    out["fraction_runs_ending_halted"] = out.pop("never_reentered")
+    if episodes > 0:
+        out["mean_halt_length"] = out["halted_fold_share"] * n_folds / episodes
+        out["fraction_halts_active_at_end"] = out["fraction_runs_ending_halted"] / episodes
+    else:
+        out["mean_halt_length"] = 0.0
+        out["fraction_halts_active_at_end"] = 0.0
+    return out
+
+
 def run_grid(
     seed: int,
     n_reps: int,
@@ -90,7 +109,7 @@ def run_grid(
                     for key, value in values.items():
                         totals[name][key] = totals[name].get(key, 0.0) + value
             for name in policies:
-                result[f"{mu}|{p_gate}|{name}"] = {
-                    key: value / n_reps for key, value in totals[name].items()
-                }
+                result[f"{mu}|{p_gate}|{name}"] = finalize_cell(
+                    {key: value / n_reps for key, value in totals[name].items()}
+                )
     return result

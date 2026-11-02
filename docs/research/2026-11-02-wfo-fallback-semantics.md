@@ -66,7 +66,7 @@ Implementation: additive reporting (`halted_entering`, `skipped_folds`) is imple
 ### F6. DSR trial count equals the parameter-grid size
 
 - `wfo.py:718`: `n_trials=len(grid)`. Correlated variants count as independent trials in that fold, and this says nothing about the many studies tried before.
-- Not pinned by a unit test (it would restate a constant); sensitivity belongs to the optional synthetic study (plan Task 6).
+- Not pinned by a unit test (it would restate a constant); the [synthetic study](2026-11-02-wfo-policy-synthetic.md) holds the grid size fixed and does not test DSR trial counting.
 - **Owner decision:** whether the effective trial count should be reduced for correlated grids, and how to account for repeated research across strategies.
 
 ## 3. What this document does not decide
@@ -83,4 +83,4 @@ Implementation: additive reporting (`halted_entering`, `skipped_folds`) is imple
 - [ ] F4: should non-finite folds break "consecutive"?
 - [ ] F5: record skipped folds?
 - [ ] F6: effective trial-count policy
-- [ ] Will the WFO harness be used by any future brief? (If not, F1–F6 stay documented only and the synthetic study, plan Task 6, is not started.)
+- [ ] Will the WFO harness be used by any future brief? (If not, F1–F6 stay documented only. The preregistered [synthetic study](2026-11-02-wfo-policy-synthetic.md) has been run; it informs but does not decide F1–F6.)

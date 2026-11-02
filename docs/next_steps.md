@@ -45,8 +45,9 @@ paid-data Part B for future stock candidates:
 **Next:** find candidates that can be tested under Part A on free data.
 
 **2026-11-02 update:** the [free-data feasibility inventory](research/2026-11-02-free-data-stock-feasibility.md)
-and the [family-scope review](research/2026-11-02-family-scope-review.md) list what can be tested under
-Part A on free data (no candidate recommended). Owner decisions open: (1) direction for the next stock
+and the [family-scope review](research/2026-11-02-family-scope-review.md) list potential free-data sources and
+the unresolved Part A feasibility questions (history, construction and point-in-time status are
+unverified; no candidate recommended). Owner decisions open: (1) direction for the next stock
 study; (2) whether to adopt any opt-in [WFO policy](research/2026-11-02-wfo-fallback-semantics.md)
 (`WfoPolicy`, default legacy) after the [synthetic study](research/2026-11-02-wfo-policy-synthetic.md);
 (3) what "alternate factor definitions" in the factor-screen closure covers; (4) validating the new

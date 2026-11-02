@@ -102,3 +102,45 @@ def test_nan_exclude_halts_where_legacy_does_not():
 
     assert run(WfoPolicy())["ever_halted"] == 0
     assert run(WfoPolicy(nan_wfe="exclude"))["ever_halted"] == 1
+
+
+def test_run_grid_pools_halt_length_over_episodes_not_runs(monkeypatch) -> None:
+    """Mean halt length is halted folds / episodes pooled across runs, not a mean of run means."""
+    import ggTrader.lab.wfo_policy_synthetic as synthetic
+    from ggTrader.lab.wfo import WfoPolicy
+
+    zero = {
+        "anchor_share": 0.0,
+        "halted_fold_share": 0.0,
+        "ever_halted": 0.0,
+        "n_halt_episodes": 0.0,
+        "mean_halt_length": 0.0,
+        "reentries": 0.0,
+        "never_reentered": 0.0,
+    }
+    halted = {
+        **zero,
+        "halted_fold_share": 6 / 17,  # 6 halted folds over 17
+        "ever_halted": 1.0,
+        "n_halt_episodes": 2.0,
+        "mean_halt_length": 3.0,
+        "never_reentered": 1.0,  # one halt still active at the end
+    }
+    runs = iter([halted, zero])
+    monkeypatch.setattr(synthetic, "simulate_run", lambda *a, **k: next(runs))
+    cell = synthetic.run_grid(1, 2, [1.0], [1.0], {"legacy": WfoPolicy()})["1.0|1.0|legacy"]
+    # pooled: 6 halted folds / 2 episodes = 3.0 (a mean of run means would give 1.5)
+    assert cell["mean_halt_length"] == 3.0
+    # one run of two ends halted; one active halt among two episodes pooled -> 0.5
+    assert cell["fraction_runs_ending_halted"] == 0.5
+    assert cell["fraction_halts_active_at_end"] == 0.5
+
+
+def test_fraction_halts_active_at_end_is_per_episode() -> None:
+    """Two halt episodes per run on average and half the runs ending halted give 0.25."""
+    import ggTrader.lab.wfo_policy_synthetic as synthetic
+
+    cell = {"n_halt_episodes": 2.0, "never_reentered": 0.5, "halted_fold_share": 0.0}
+    out = synthetic.finalize_cell(cell, n_folds=17)
+    assert out["fraction_halts_active_at_end"] == 0.25
+    assert out["fraction_runs_ending_halted"] == 0.5

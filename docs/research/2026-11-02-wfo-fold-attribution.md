@@ -63,11 +63,11 @@ No arc is reopened. For orientation, these closed studies relied on runs with th
 
 ## 6. Contrarian Evaluation & Parked Research
 
-*Contrarian question:* does an anchor-dominated run mean the strategy was never tested? Partly. It tested the gate/fallback policy; a high anchor share says the training winner rarely cleared the gates, which is itself evidence about the winner's robustness, but it cannot say the undeployed winner would have lost or won. Unmeasurable from saved rows:
+*Contrarian question:* does an anchor-dominated run mean the strategy was never tested? Partly. It tested the gate/fallback policy; a high anchor share says the training winner was rarely deployed. That has two causes that the counts separate: gate failure (`gate_fail`) and deployment blocked by an existing halt after the gates passed (`gates_pass_anchor`; for example PIT `ensemble_ic` passed the gates in 11 of 17 folds yet deployed the anchor in 15). Infer gate passage only from the explicit gate counts. Neither cause says whether the undeployed winner would have lost or won. Unmeasurable from saved rows:
 
 - The winner's OOS performance on anchor folds (not recorded).
 - The halt state entering each fold (only the post-fold `halted` is stored, in 2 of 7 artifacts).
 - Folds skipped for missing training metrics, which leave no row (`wfo.py` fold loop).
 - Runs not saved as artifacts (database-only lab runs were not examined).
 
-*Parked:* a synthetic characterization of the full policy (Task 6, needs owner approval) and any rerun with the winner forced on.
+*Not done:* any rerun with the winner forced on. A preregistered synthetic characterization of the breaker bookkeeping has been run; see the [synthetic study](2026-11-02-wfo-policy-synthetic.md).
