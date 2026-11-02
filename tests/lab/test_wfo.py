@@ -1073,7 +1073,14 @@ def test_run_wfo_returns_wforesult_namedtuple():
         table="x",
     )
     assert r.table == "x"
-    assert list(r._fields) == ["oos_equity", "fold_results", "live_params", "table"]
+    assert list(r._fields) == [
+        "oos_equity",
+        "fold_results",
+        "live_params",
+        "table",
+        "skipped_folds",
+    ]
+    assert r.skipped_folds == ()
 
 
 def test_run_wfo_weight_strategy_integration():
@@ -1364,7 +1371,7 @@ def test_circuit_breaker_nan_wfe_suppresses_chronic_decay():
     assert check_circuit_breaker(state).halted is False
 
 
-def _scripted_wfo(monkeypatch, scripts, skip_train=(), breaker=None):
+def _scripted_wfo(monkeypatch, scripts, skip_train=(), breaker=None, policy=None):
     """Run ``run_wfo`` with scripted sweeps/gates so every fold is hand-checkable.
 
     ``scripts[i]`` holds ``ndh``/``dsr`` (bool), ``winner_is`` (training Sharpe of the
@@ -1460,6 +1467,7 @@ def _scripted_wfo(monkeypatch, scripts, skip_train=(), breaker=None):
         "test",
         base,
         [winner_params, anchor_params],
+        **({"policy": policy} if policy is not None else {}),
     )
     return result, folds
 
@@ -1510,3 +1518,108 @@ def test_run_wfo_skips_fold_without_train_metrics(monkeypatch):
     nums = [r["fold_num"] for r in result.fold_results]
     assert len(nums) == len(folds) - 1
     assert 2 not in nums
+
+
+def test_circuit_breaker_nan_policy_exclude_halts():
+    """Excluding NaN exposes chronic decay."""
+    from ggTrader.lab.wfo import WfoState, check_circuit_breaker
+
+    assert check_circuit_breaker(
+        WfoState(wfe_history=[0.1] * 4 + [float("nan")]), nan_policy="exclude"
+    ).halted
+
+
+def test_circuit_breaker_nan_policy_legacy_unchanged():
+    """The default preserves NaN behavior."""
+    from ggTrader.lab.wfo import WfoState, check_circuit_breaker
+
+    assert not check_circuit_breaker(WfoState(wfe_history=[0.1] * 4 + [float("nan")])).halted
+
+
+def test_run_wfo_records_halted_entering(monkeypatch):
+    """Capture the state that selected the deployed parameters."""
+    from ggTrader.lab.wfo import WfoState
+
+    def halt_now(state):
+        return WfoState(wfe_history=list(state.wfe_history), halted=True)
+
+    result, _ = _scripted_wfo(monkeypatch, _fold_script(40), breaker=halt_now)
+    assert [r["halted_entering"] for r in result.fold_results[:2]] == [False, True]
+
+
+def test_run_wfo_result_exposes_skipped_folds(monkeypatch):
+    """Skipped attempts are reported separately from executed folds."""
+    result, _ = _scripted_wfo(monkeypatch, _fold_script(40), skip_train=(1,))
+    assert result.skipped_folds[0]["fold_num"] == 2
+    assert result.skipped_folds[0]["reason"] == "no_train_metrics"
+    assert 2 not in [r["fold_num"] for r in result.fold_results]
+
+
+def test_policy_exclude_from_breaker_keeps_shadow_reentry_wfe(monkeypatch):
+    """Anchor WFE still permits recovery from a halt."""
+    from ggTrader.lab.wfo import WfoPolicy, WfoState
+
+    def halt_now(state):
+        return WfoState(wfe_history=list(state.wfe_history), halted=True)
+
+    scripts = _fold_script(40, anchor_oos=1.9)
+    legacy, _ = _scripted_wfo(monkeypatch, scripts, breaker=halt_now)
+    opted, _ = _scripted_wfo(
+        monkeypatch,
+        scripts,
+        breaker=halt_now,
+        policy=WfoPolicy(anchor_fold_wfe="exclude_from_breaker"),
+    )
+
+    def sequence(result):
+        return [(r["halted"], r["used_anchor"]) for r in result.fold_results]
+
+    assert sequence(legacy) == sequence(opted)
+    assert sequence(opted)[:3] == [(True, False), (True, True), (False, True)]
+
+
+def test_policy_exclude_from_breaker_passes_computed_wfe_to_reentry(monkeypatch):
+    """Re-entry sees anchor_oos / winner_is while the breaker history holds None."""
+    import ggTrader.lab.wfo as wfo_mod
+    from ggTrader.lab.wfo import WfoPolicy, WfoState
+
+    calls = []
+    real = wfo_mod.check_shadow_reentry
+
+    def spy(state, ndh_passed, dsr_passed, wfe, *args, **kwargs):
+        calls.append((wfe, state.wfe_history[-1]))
+        return real(state, ndh_passed, dsr_passed, wfe, *args, **kwargs)
+
+    def halt_now(state):
+        return WfoState(wfe_history=list(state.wfe_history), halted=True)
+
+    monkeypatch.setattr(wfo_mod, "check_shadow_reentry", spy)
+    # winner IS 2.0, anchor OOS 0.6 -> computed WFE 0.3 (an unhealthy anchor fold)
+    _scripted_wfo(
+        monkeypatch,
+        _fold_script(40, anchor_oos=0.6),
+        breaker=halt_now,
+        policy=WfoPolicy(anchor_fold_wfe="exclude_from_breaker"),
+    )
+    assert calls
+    assert calls[0][0] == pytest.approx(0.3)
+    assert calls[0][1] is None
+
+
+def test_policy_exclude_from_breaker_appends_none_for_anchor_folds(monkeypatch):
+    """Breaker history omits the mixed WFE for anchor deployments."""
+    from ggTrader.lab.wfo import WfoPolicy
+
+    histories = []
+
+    def record(state):
+        histories.append(list(state.wfe_history))
+        return state
+
+    _scripted_wfo(
+        monkeypatch,
+        _fold_script(40, ndh=False),
+        breaker=record,
+        policy=WfoPolicy(anchor_fold_wfe="exclude_from_breaker"),
+    )
+    assert histories and all(history[-1] is None for history in histories)
