@@ -157,6 +157,12 @@ free-data source or a paid-data decision — same class of blocker as
 candidates #2 and #7 (infeasible for the required methodology, not an
 engineering-effort problem).
 
+*Data note (batch 2026-10-25):* the ~1-year limit above is Kraken's API.
+Binance's public `data.binance.vision` dumps hold BTCUSDT perpetual
+funding monthly from 2020-01 (verified 2026-10-25). Binance.com doesn't
+serve US persons for trading, so this doesn't revive the harvest itself,
+but it does make funding usable as a **signal** (see B14).
+
 *Overlaps with `RESEARCH_SNAPSHOT.md` §6 internal Rank 4 (revisit parked
 crypto-carry) — this entry is the more detailed, citation-backed version;
 check here before restarting that internal item.*
@@ -1327,6 +1333,18 @@ stronger source or a tightly-scoped falsification test.**
   motivated by recurring activity patterns." Pre-register exact sessions
   and whether the test is trend, reversal, breakout, or vol-timing before
   running it. **Status: deprioritized (downgraded from active queue).**
+  *Additional source (batch 2026-10-25):* Mazur & Polyzos, *JAI* 27(4),
+  2025 (verified) report that most BTC price appreciation happens outside
+  ETF trading hours, a return claim rather than an activity claim. **Sanity
+  check, not WFO** (`docs/research/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.py`):
+  on IBIT from 2024-01-11 to 2026-10-23, close-to-open returned +186% and
+  open-to-close −43%. The overnight gain is not a weekend artifact:
+  weeknights alone returned +111% (t 1.65) and weekends +35% (t 0.71).
+  **But since NGHT (the dedicated close-to-open ETF) launched on
+  2026-04-08, the pattern reversed:** overnight returned −9% and intraday
+  +23%. NGHT itself returned −16.8% vs IBIT +13.7% over the same window.
+  Nothing is significant, and the obvious reading is decay after
+  publicity. **Status: closed in practice — do not build.**
 - **G10 currency three-factor core** *(prior draft: item 18, Tier 4,
   deprioritized as "fabricated citation" — that verdict was itself
   wrong; see the major correction below).* ⚠ **Major correction:** the
@@ -2784,3 +2802,385 @@ static same-exposure comparator pre-registered; the internal
 B5-sleeve / B13** are cheap overlays to try on top of A23 after it exists.
 Everything else in this batch is closed or parked. C8 is required before
 any of it runs.
+
+## 2026-10-25 batch — Crypto only: crash-risk overlays, attention, crypto value, after-tax sleeve mechanics
+
+Source: one web-research report ("Crypto Strategy Scout — Spot-Only
+Candidates"), run from the prompt synced 2026-10-20, with a temporary
+`## Focus for this run: crypto only` section (spot coins or US spot crypto
+ETFs, long/flat, one fixed-time daily decision, 0.25–0.40% per side,
+taxable account, free point-in-time data). **18 candidates pasted; 8 new
+entries added (A25–A27, B14–B15, C9–C11), 1 appended to an existing entry,
+1 data correction appended to #4, 4 parked bullets, 2 rejected on
+intake.** The report's A4 and B2 (the same stablecoin-supply signal as an
+entry rule and as an overlay) are merged into B14 here.
+
+**Citation checks (done this session, single pass):**
+- **Verified:** Liu & Tsyvinski attention result (NBER w24877 / *RFS*
+  2021). **Corrected:** the report says a "1–2 week" horizon; the authors'
+  column gives a **one-week** effect, +1.84% next-week BTC return per
+  one-standard-deviation rise in Google searches. No two-week figure was
+  found.
+- **Verified:** Schmeling, Schrimpf & Todorov, BIS WP 1087. The BIS page
+  states "a high crypto carry predicts future price crashes" and "up to
+  60% p.a."; the CEPR DP20719 version says "sometimes exceeding 40% per
+  annum". **Not confirmed:** the claimed 2026 *Management Science*
+  publication (INFORMS returned 403 to fetches, and search didn't surface
+  it). Cite the BIS version.
+- **Verified:** Cong, Karolyi, Tang & Zhao, *Management Science*, DOI
+  10.1287/mnsc.2024.05875, with a value effect on
+  active-addresses-to-market-cap. Search summaries confirm the abstract
+  wording; the full text wasn't opened. Disclosures: Cong advises
+  Chainlink Labs, Karolyi consults for Avantis. **Additional source
+  found:** Liebi, "Is there a value premium in cryptoasset markets?"
+  (Univ. St. Gallen, 652 assets): high active-address-to-network-value
+  coins earned about 2.1 pp/week more than low-ratio peers of the same
+  size.
+- **Verified:** Mazur & Polyzos, *Journal of Alternative Investments*
+  27(4), 110–123 (2025). The abstract confirms R² of 95% on price
+  **levels**, flows several times mining output, and most price moves
+  outside ETF hours. **Not found:** Boon Chuan Lim's "Price Impact of
+  Spot Bitcoin ETF Flows". The report itself flags that two summaries
+  conflict (+0.20% vs +53 bp per $100M). Treat the next-day predictability
+  claim as **unverified**.
+- **Verified:** Kristoufek, *FRL* 43, 101991 (2021): no support for
+  stablecoins pushing up crypto prices.
+- **Verified:** Kumar, *Managerial Finance* 48(5), 821–829 (2022):
+  August 2015 to August 2021, +21.77%/yr over BTC buy-and-hold.
+- **Verified:** Dambra, Glover, Lee & Quinn, "Exchange-Traded Funds and
+  the Wash Sale Loophole," *Management Science* (online 2026-04-03).
+- **Verified:** Llanos, arXiv 2607.03124 (Open Bitcoin Metrics, Zenodo
+  archive).
+- **Wash-sale status checked, secondary sources only:** direct crypto is
+  still outside §1091 and spot ETFs are inside it. Extension drafts (for
+  example a December 2025 "PARITY Act" discussion draft) are not enacted.
+  The IRS site and bill status were not checked directly.
+- **Not checked:** Griffin & Shams (*JF* 2020; known real), Ante et al.,
+  Saggu, Bianchi et al., Palazzi et al., Borri et al. *ARFE* 2026,
+  Willenbrock (known real), Cong–Landsman–Maydew–Rabetti (known real),
+  Memon et al. (*AIJMR*), Vojtko & Dujava, Lim's halving paper, and Chi,
+  Chu & Hao.
+
+**Data claims checked against live sources (2026-10-25):**
+- Yahoo `BTC=F` CME continuous runs from **2017-12-18**, `BTC-USD` from
+  2014-09-17, `IBIT` from 2024-01-11 and `NGHT` from 2026-04-08.
+- Binance `data.binance.vision` monthly BTCUSDT perpetual funding files
+  run from **2020-01** to 2026-09 (81 files).
+- Wikipedia daily pageviews for "Bitcoin" are available via the Wikimedia
+  REST API from **2015-07-01**.
+- Our own `ohlcv` crypto history starts 2023-01-01, with daily bars ending
+  2026-06-07. It is too short for any of these tests, so use free Yahoo or
+  exchange dumps.
+
+**Alpaca tradability (`get_asset`, 2026-10-25):** `BTC/USD` (crypto
+class: tradable, fractionable, not shortable, not marginable), `IBIT` and
+`FBTC` (tradable, fractionable, options listed, no `ptp_with_exception`,
+so no K-1). Tax traps: spot ETFs are securities, so the wash-sale rule
+applies to them. Staking rewards are ordinary income on receipt (Rev.
+Rul. 2023-14).
+
+**Rejected on intake:**
+- **CME futures-expiration window:** the report's own source documents a
+  sign flip after BITO launched (2017–2021 pattern reversed). A sign flip
+  on a short sample is the overfit signature.
+- **Halving issuance shock:** four events in total, so there is no
+  statistical power. The supporting SSRN paper is unverified.
+
+#### Appended to existing entries this batch
+
+- **Crypto session directionality** (2026-07-19 batch, deprioritized
+  bullet): new return-based source (Mazur & Polyzos, above). See the
+  dated note appended there, with this session's IBIT sanity check
+  (`docs/research/artifacts-2026-10-25-crypto-web-batch/`).
+- **#4 crypto funding-rate carry:** data note appended. Binance public
+  dumps hold funding from 2020-01, which matters for B14 (signal use
+  only).
+
+# A. Active strategy replication queue
+
+### A25. Investor-attention shock timing (BTC long/flat, weekly) *(crypto)*
+
+**Mechanism.** Standardize weekly "Bitcoin" attention against its prior
+four-week average. Hold BTC when the deviation is above a frozen
+threshold and cash (T-bills) otherwise; decide weekly. The paper tests
+the **predictor**, not this long/flat rule against static BTC after
+costs.
+**Source(s).** Yukun Liu & Aleh Tsyvinski, "Risks and Returns of
+Cryptocurrency," *RFS* 34(6), 2021 (NBER w24877), verified. **Corrected:**
+the effect is one week ahead (+1.84% per SD of searches), not 1–2 weeks.
+Same paper as A16: its time-series momentum coefficient (+3.16% per SD of
+the current week's return) is *larger* than the attention one. Decay
+context, unchecked: Bianchi, Guidolin & Pedio (*EJF* 2022), and a 2026
+SSRN paper on predictability shifting to macro drivers after 2019.
+**Why it's plausible.** Retail-heavy marginal buyer with no cash flows.
+Weaker after 2024, when ETF and advisor flows dilute retail attention.
+**Data requirements.** Google Trends is free but **not point-in-time**:
+values re-normalize per download window. This repo already hit that wall
+on the equity `retail_attention` arc (#8, blocked on Trends data).
+Wikipedia "Bitcoin" pageviews from 2015-07-01 are a stable, non-revised
+substitute (verified), but an unvalidated proxy for the paper's measure.
+**How it differs from what's already been tried.** It isn't price
+action, but it co-moves with recent returns. **It must show incremental
+value over A16 (1–4 week BTC momentum) on the same days**, or it is a
+momentum variant and gets dropped.
+**Evidence status:** Peer-reviewed (predictor). **Rule correspondence:**
+Close adaptation. **Implementation class:** Retail. **Validation stage:**
+Literature only. Kill risk: 10–25 switches a year at about 0.6% per round
+trip, with nearly all gains short-term.
+
+**Status: untriaged.**
+
+### A26. Crypto value tilt: active addresses to market cap (long-only, large coins) *(crypto)*
+
+**Mechanism.** Each month, rank the 10–20 most liquid coins by active
+addresses ÷ market cap and hold the top third. Compare with the same
+universe held statically and with BTC alone. The source is a **long-short
+factor on more than 4,000 assets**. A long-only, large-coin, monthly
+version is untested.
+**Source(s).** Cong, Karolyi, Tang & Zhao, "Crypto Value, Factor Pricing,
+and Market Segmentation," *Management Science* (2026), verified (abstract
+via search). Additional source: Liebi (St. Gallen), with a value premium
+on the same ratio, about 2.1 pp/week across 652 assets. Context, unchecked:
+Borri, Liu, Tsyvinski & Wu, *ARFE* 2026, on liquidity, costs and
+survivorship.
+**Why it's plausible.** On-chain usage is the nearest thing to a
+fundamental. The authors frame the premium as compensation for activity
+risk.
+**Data requirements.** Coin Metrics community active addresses are
+**revisable**, and community history was cut back in late 2025 (report
+claim, unchecked). Snapshot now, and treat backfill as non-point-in-time.
+C11 fixes this for BTC only, not cross-chain. Coin lists need
+point-in-time liquidity membership (survivorship). Alpaca's tradable coin
+list is narrow, which shrinks the universe further.
+**How it differs from what's already been tried.** A cross-sectional
+fundamental sort inside crypto. The nearest arcs are the 2026-06 per-coin
+technical WFO (wider universes surfaced more borderline coins, never a
+strong one) and A22. The equity factor-screen NO-GO (2026-10-21) is the
+prior that long-only versions of long-short factors lose most of the
+premium.
+**Evidence status:** Peer-reviewed. **Rule correspondence:** Close
+adaptation (long-short broad universe → long-only top coins).
+**Implementation class:** Retail. **Validation stage:** Literature only.
+
+**Status: untriaged — low; data revision plus survivorship plus the
+long-only haircut.**
+
+### A27. Lagged spot-ETF flow persistence *(crypto)*
+
+**Mechanism.** At day t, hold full BTC weight if the trailing 5-day
+aggregate US spot-BTC ETF net flow through t−1 is positive, otherwise a
+reduced weight, with a dead band.
+**Source(s).** Mazur & Polyzos, *JAI* 27(4), 2025, verified. It documents
+a **contemporaneous** flow–price link on levels, not next-day
+predictability. The next-day claim rests on an SSRN paper by Boon Chuan
+Lim that was **not found**, with conflicting effect sizes in two
+summaries.
+**Why it's plausible.** Creations force authorized participants to buy
+spot BTC. If advisor and model-portfolio flows are autocorrelated,
+yesterday's flow forecasts today's demand.
+**Data requirements.** Farside free daily flows run from 2024-01-11, which
+is **under 3 years, too short for a multi-fold walk-forward test**.
+Late-reporting issuers make day t−1 totals incomplete at decision time,
+so the only honest point-in-time series is one we archive ourselves from
+now on.
+**How it differs from what's already been tried.** A flow mechanism, but
+flows chase returns, so it must beat A16 on the same days.
+**Evidence status:** Peer-reviewed (contemporaneous); next-day claim
+unverified. **Rule correspondence:** Close adaptation.
+**Implementation class:** Retail. **Validation stage:** Literature only.
+
+**Status: parked — infeasible for walk-forward until about 4+ years of
+self-archived point-in-time flows exist.** Starting an archive is cheap if
+the owner wants the option.
+
+# B. Risk and exposure overlays
+
+### B14. Crypto-carry (futures basis) crash-risk trim *(crypto)*
+
+**Mechanism.** Compute the annualized BTC futures basis daily (CME front
+month vs spot; perpetual funding as a cross-check). When it is in the top
+decile of its trailing distribution, **trim** BTC weight (for example to
+60–70% of target) and restore it when the basis normalizes. The source
+supports "high carry → crash risk". It does **not** support "high carry →
+negative expected return", so this is a trim, not an exit.
+**Source(s).** Schmeling, Schrimpf & Todorov, "Crypto Carry," BIS WP 1087
+(2023) / CEPR DP20719, verified: "a high crypto carry predicts future
+price crashes" (BIS findings), carry up to 60% p.a., driven by
+trend-chasing small investors and scarce arbitrage capital. The *MS* 2026
+publication is not confirmed. Data precedent: Borri et al. (arXiv
+2510.14435) built carry from free Binance funding, 2020-08 to 2025-05.
+**Why it's plausible.** A high basis means crowded leveraged longs, so a
+drop triggers margin calls and liquidations. This is structural (leverage
+plus constrained arbitrage), not a price pattern.
+**Data requirements.** Free, and the best data in this batch.
+- Yahoo `BTC=F` CME continuous runs from 2017-12-18 (verified). CME
+  settlements aren't revised, but the continuous series needs roll
+  handling, and CME settlement timing differs from 00:00 UTC spot.
+- Binance perpetual funding dumps run from 2020-01 (verified).
+  Binance.com doesn't serve US persons for trading; check the terms for
+  research downloads.
+- Liquidation history, the ideal companion, is paid-vendor only.
+
+**How it differs from what's already been tried.** #4 tried to *harvest*
+carry (delta-neutral) and was infeasible. This only *reads* carry as a
+risk signal for a spot holding. It is distinct from the equity VIX
+gating arcs because it is crypto-native leverage. It is also a different
+input from B10 (sentiment index) and B1 (depeg events). Benchmarks to
+pre-register: static BTC, and a random trim with the same time-in-trim.
+**Evidence status:** Peer-reviewed (crash predictability). **Rule
+correspondence:** Close adaptation (the trim rule is untested).
+**Implementation class:** Retail (signal from futures, trade spot or
+ETF). **Validation stage:** Literature only. Bull-run give-up is
+material, because high carry persists through manias.
+
+**Status: untriaged.**
+
+### B15. Stablecoin net-issuance regime / contraction de-risk flag *(crypto)*
+
+**Mechanism.** Take the trailing 7–28-day net change in aggregate
+USDT+USDC supply. As an **overlay** (the report's B2, the better-supported
+framing): cut BTC weight when supply contracts past a threshold, and
+never add exposure. The report's A4 entry version (full weight on
+expansion) is weaker, because the evidence disputes the direction of
+causality.
+**Source(s).**
+- Griffin & Shams, *JF* 75(4), 2020 (hourly 2017–18; not re-checked).
+- Ante, Fiedler & Strehle, *FRL* 41, 2021 (issuance events; unchecked).
+- Saggu, *FRL* 49, 2022 (minutes after mints; unchecked).
+- **Counter:** Kristoufek, *FRL* 43, 2021, verified: no support for
+  stablecoins boosting prices; issuance reacts to prices.
+
+All of the published evidence is intraday or event-based. A daily regime
+rule is mechanism only.
+**Why it's plausible.** Stablecoins are the cash leg of offshore crypto
+trading, so net issuance proxies new dollar capital. If Kristoufek is
+right, the signal is lagged momentum. That is the null: it must beat A16.
+**Data requirements.** Mint and burn events are on-chain, immutable and
+point-in-time (rebuild from chain data; aggregator series may be revised).
+Usable from about 2019.
+**How it differs from what's already been tried.** B1 uses depeg
+*events*, B11 uses stablecoin *volume* as a volatility forecaster, and
+this uses *supply growth* as a flow proxy. Same family, different input.
+Consider testing B1, B11 and B14 together as one overlay family, with one
+pre-registered winner, rather than three separate studies.
+**Evidence status:** Peer-reviewed (intraday); direction disputed.
+**Rule correspondence:** Mechanism only. **Implementation class:**
+Retail. **Validation stage:** Literature only.
+
+**Status: untriaged — low.**
+
+# C. Portfolio construction and methods
+
+### C9. Spot-coin tax-loss harvesting without wash-sale disallowance *(crypto, tax mechanics)*
+
+**Mechanism.** Hold any BTC sleeve as directly owned coins rather than
+ETF shares. When a lot is more than 15–20% below cost, sell it and rebuy
+immediately. This realizes the loss without leaving the position. It is
+a tax mechanism (deferral plus rate arbitrage), not a return anomaly.
+**Source(s).** IRS Notice 2014-21 (property treatment) and §1091 ("stock
+or securities"). Secondary sources checked this session agree that direct
+crypto is outside wash-sale rules, ETFs are inside them, and extension
+drafts are not enacted. Cong, Landsman, Maydew & Rabetti, *JAE* 76(2–3),
+2023 (harvesting behaviour; not re-checked). Dambra et al., *MS* 2026,
+verified (the ETF-swap loophole, a gray area for IBIT↔FBTC).
+**Why it's plausible.** At BTC's roughly 50–60% annualized volatility,
+harvestable drawdowns are frequent. Report example: a $10k lot at −35%
+harvests about $3.5k of losses for about $39 in round-trip cost.
+**Data requirements.** Tax lots only; no signal, so nothing can overfit.
+**Risks:**
+- The law can change prospectively. Wash-sale extension is repeatedly
+  drafted.
+- The economic-substance doctrine is untested for same-day rebuys.
+- Custody risk on spot coins, and 0.25% per side vs a commission-free
+  ETF.
+- **Needs a tax adviser's sign-off before any real use.** This is an
+  after-tax construction note, not something the lab validates.
+
+**How it differs from what's already been tried.** It is the first
+after-tax construction item in crypto. Its nearest analogue is the C8
+after-tax accounting standard.
+**Evidence status:** Primary legal sources plus peer-reviewed behaviour.
+**Rule correspondence:** Mechanism only. **Implementation class:**
+Retail. **Validation stage:** Literature only.
+
+**Status: untriaged — applies only if a BTC sleeve is opened; the
+choice between spot coins and ETF follows from it.**
+
+### C10. Wide-band rebalanced BTC sleeve against SPY (diversification return) *(crypto)*
+
+**Mechanism.** Hold a 5–10% BTC target and rebalance only when the
+weight drifts outside a wide band (for example ±50% of target). Compare
+with the same initial weight never rebalanced, and with SPY alone.
+**Source(s).** Willenbrock, *FAJ* 67(4), 2011 (diversification return;
+known real, not re-checked). Borri et al. *ARFE* 2026 (small allocations
+capture most of the diversification gain; unchecked).
+**Why it's plausible.** Rebalancing return scales with the variance of
+the return gap. BTC's volatility is extreme, and its correlation with SPY
+is about 0.33–0.39 outside crises (report's computed table; not
+re-checked). It rises to 0.56–0.60 in the 2020 and 2022 drawdowns.
+**Data requirements.** Free daily data from 2014 (Yahoo `BTC-USD`,
+verified).
+**How it differs from what's already been tried.** The same band-rebalance
+mechanics as A23 (SPY/SSO, owner-adopted), applied to a different
+volatile asset. B9 (shared risk budget) is the sizing counterpart. It
+answers the brief's sleeve bar directly.
+**Evidence status:** Peer-reviewed (mechanism). **Rule
+correspondence:** Mechanism only. **Implementation class:** Retail.
+**Validation stage:** Literature only. Trims realize gains, so pair with
+C9 and long-term lots.
+
+**Status: untriaged.**
+
+### C11. Point-in-time on-chain series from a local full node (method) *(crypto)*
+
+Llanos, "Open Bitcoin Metrics: Verifiable Full-Node-Derived Bitcoin Time
+Series for Economic Research," arXiv 2607.03124 (July 2026), verified. It
+provides daily hashrate, fees, issuance, Bitcoin Days Destroyed,
+dormancy, liveliness and UTXO-age series, with code on GitHub and data on
+Zenodo. It removes the revision problem for BTC metrics defined from raw
+chain data. Entity-labelled metrics (exchange flows) still depend on
+vendor labels. It needs about 1 TB and an initial sync on the home-lab
+server; the Zenodo archive may make the node unnecessary for a first
+pass. **Status: untriaged — method; prerequisite for any BTC on-chain
+candidate.**
+
+# D. Parked hypotheses — cheap falsification only
+
+- **BTC turn-of-month.** Kumar, *Managerial Finance* 48(5), 2022,
+  verified (2015-08 → 2021-08, +21.77%/yr over buy-and-hold, an
+  implausibly large figure). Pre-ETF, single paper, about 12 round trips a
+  year, all short-term gains. The SPY turn-of-month A14 and month-end
+  Treasury NO-GOs are the priors: check whether it is just SPY beta on
+  those days. Frozen rule, post-2021 data only, net of 0.6% round trips,
+  vs static BTC. **Parked.**
+- **Extreme negative funding as a buy-scheduling filter.** Memon,
+  Anklesaria-Dalal & Mishra, *AIJMR* 2026 (low-visibility venue,
+  **unchecked**): bottom-decile Binance funding → +0.506% next-24h BTC.
+  That is about one round trip of cost, so it is useful only for
+  *scheduling* C10 rebalance buys, which adds no turnover. **Parked.**
+- **On-chain exchange net inflows.** Chi, Chu & Hao, arXiv 2411.06327
+  (unchecked): significant only at 1–2 hours, nothing at daily horizon.
+  Vendor-labelled and revisable. **Parked — nothing at this account's
+  cadence.**
+- **Staked ETH exposure.** An implementation note, not alpha. Staking
+  rewards are ordinary income on receipt (Rev. Rul. 2023-14), so the
+  after-tax yield is about 1.6–1.7%. Relevant only if the book ever holds
+  ETH. **Parked.**
+
+**Triage.** Today's bar for this batch is *beat BTC buy-and-hold
+risk-adjusted after costs and tax, or improve SPY + a small crypto
+sleeve over the same weight in plain BTC*.
+- **(1) A16 (BTC time-series momentum, 2026-09-23 batch)** is still the
+  anchor. Three of this batch's ideas (A25, A27, B15) are only worth
+  anything if they beat it on the same days, so it has to be measured
+  first.
+- **(2) B14 (carry crash trim)** is the best new idea. It has a
+  structural mechanism, a verified peer-reviewed crash-prediction
+  finding, and free unrevised data from 2017 (CME) and 2020 (Binance).
+- **(3) C10 + C9** decide *how* a BTC sleeve would be held (band
+  rebalancing, spot coins for harvesting). They are construction, not
+  signals, and can't overfit. C9 needs a tax adviser, not the lab.
+
+The session-directionality item is now effectively closed (see its
+appended note): the overnight effect reversed after its own ETF
+launched.
