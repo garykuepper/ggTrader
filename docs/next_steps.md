@@ -44,15 +44,17 @@ paid-data Part B for future stock candidates:
 
 **Next:** find candidates that can be tested under Part A on free data.
 
-**2026-11-02 update:** the [free-data feasibility inventory](research/2026-11-02-free-data-stock-feasibility.md)
-and the [family-scope review](research/2026-11-02-family-scope-review.md) list potential free-data sources and
-the unresolved Part A feasibility questions (history, construction and point-in-time status are
-unverified; no candidate recommended). Owner decisions open: (1) direction for the next stock
-study; (2) whether to adopt any opt-in [WFO policy](research/2026-11-02-wfo-fallback-semantics.md)
-(`WfoPolicy`, default legacy) after the [synthetic study](research/2026-11-02-wfo-policy-synthetic.md);
-(3) what "alternate factor definitions" in the factor-screen closure covers; (4) validating the new
-[`TaxLotBook`](research/2026-11-02-after-tax-lot-engine-requirements.md) library and building the
-study-level B0/B1 controls it does not provide.
+**2026-11-02 working list:** the full ranked queue (Track A), the calendar track (Track B),
+the reasoning and the glossary are in [`working_task_list.md`](working_task_list.md). The next two steps are:
+1. Owner decision batch (minutes): rule on what "alternate factor definitions" in the factor-screen
+   closure covers (narrow: retuned rescues only; broad: any redefinition of value, profitability or
+   investment; it reaches only the valuation, quality and q-factor rows, not momentum or accruals).
+   The DRAFT insider amendment below may be left unapproved.
+2. Draft the freeze-readiness documents for the ~2026-12-29 freeze lift: what counts as a clean
+   parity window, an incident ledger (any parity incident resets the clock), the pre-lift checklist
+   and the two-symbol sweep design. No change to the live config before the window ends.
+The research-direction inputs are the [free-data feasibility inventory](research/2026-11-02-free-data-stock-feasibility.md)
+and the [family-scope review](research/2026-11-02-family-scope-review.md); no candidate is recommended there.
 
 The [resolution plan](superpowers/plans/2026-10-23-resolve-event-audit.md)
 supersedes earlier event-audit scheduling. The
@@ -69,10 +71,11 @@ nothing depends on it.
    Offline results reproduce 25/25 header-consistent and 9/25 API-inconsistent
    cached pairs; the SEC documentation citation is UNVERIFIED. The runner is
    unchanged and the separate approved date-only alternative remains in force.
-2. Owner: decide the memo's buy-or-park choice for each signal. The
+2. ~~Owner: decide the memo's buy-or-park choice for each signal.~~ **Resolved 2026-10-23:
+   park both; no purchase** (no paid data, now or later). The
    [R1–R9 ledger](research/_event_source_search_ledger.json) documents priced
    execution-price components, but no requirement-complete paid combination,
-   annual cost or common qualifying five-year window. No purchase case is ready.
+   annual cost or common qualifying five-year window.
 
 Historical identity, annual coverage, complete insider inventories/reconstruction,
 existing detector export scope and PEAD release/actual/consensus lineage remain
