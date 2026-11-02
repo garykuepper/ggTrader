@@ -295,11 +295,17 @@
             "file": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
             "line": 96,
             "quote": "overlap with the closed value family, high turnover, or leverage."
+          },
+          {
+            "file": "docs/research/2026-10-21-factor-screen-nogo.md",
+            "line": 145,
+            "quote": "Do not re-propose or re-screen these factors on adjusted windows or alternate factor definitions."
           }
         ],
         "method": "definitions only; no returns, correlations or result files used; no recommendation",
         "reviewed": "2026-11-02",
-        "report": "2026-11-02-family-scope-review.md"
+        "report": "2026-11-02-family-scope-review.md",
+        "note": "The factor-screen report's closure sentence ('alternate factor definitions') is undefined and could be read to reach value, quality or profitability variants; both reviewers judged it too undefined to establish closure, so the outcome stays undetermined."
       }
     },
     {
@@ -401,11 +407,17 @@
             "file": "docs/research/briefs/2026-10-20-factor-screen.md",
             "line": 52,
             "quote": "**H4:** Combo = 50% BIG HiBM + 50% BIG HiPRIOR (rebalanced monthly) > market (value + momentum combination)."
+          },
+          {
+            "file": "docs/research/2026-10-21-factor-screen-nogo.md",
+            "line": 145,
+            "quote": "Do not re-propose or re-screen these factors on adjusted windows or alternate factor definitions."
           }
         ],
         "method": "definitions only; no returns, correlations or result files used; no recommendation",
         "reviewed": "2026-11-02",
-        "report": "2026-11-02-family-scope-review.md"
+        "report": "2026-11-02-family-scope-review.md",
+        "note": "The factor-screen report's closure sentence ('alternate factor definitions') is undefined and could be read to reach value, quality or profitability variants; both reviewers judged it too undefined to establish closure, so the outcome stays undetermined."
       }
     },
     {
@@ -456,11 +468,17 @@
             "file": "docs/research/briefs/2026-10-20-factor-screen.md",
             "line": 49,
             "quote": "**H1:** BIG HiOP > market (robust profitability premium)."
+          },
+          {
+            "file": "docs/research/2026-10-21-factor-screen-nogo.md",
+            "line": 145,
+            "quote": "Do not re-propose or re-screen these factors on adjusted windows or alternate factor definitions."
           }
         ],
         "method": "definitions only; no returns, correlations or result files used; no recommendation",
         "reviewed": "2026-11-02",
-        "report": "2026-11-02-family-scope-review.md"
+        "report": "2026-11-02-family-scope-review.md",
+        "note": "The factor-screen report's closure sentence ('alternate factor definitions') is undefined and could be read to reach value, quality or profitability variants; both reviewers judged it too undefined to establish closure, so the outcome stays undetermined."
       }
     },
     {
