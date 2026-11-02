@@ -82,3 +82,28 @@ Each test uses a hand-computed expected value.
 Planning estimate (unmeasured): three to five focused engineering days for the engine, tests and a reconciliation note, because the standard's wash-sale, character and corporate-action rules are each stateful. A build is not scheduled by this document. It should be its own plan, with the existing `Book` kept unchanged and A23 results reproducible, per the owner's reproducibility rules.
 
 Unknowns: how Alpaca-reported corporate actions will be sourced for historical lots on a free tier; whether the standard's "free distribution source" exists for every held symbol.
+
+## 6. Implementation status (2026-11-02)
+
+A standalone library, `src/ggTrader/lab/tax_lots.py` (`TaxLotBook`), now implements most of the table above with 46 tests in `tests/lab/test_tax_lots.py`. The existing `Book` in `a23_rebalance.py` is unchanged and A23 results remain reproducible. The library is **unvalidated against a real broker ledger or corporate-action feed** and claims no tax validity; it is not wired into any strategy or the paper trader.
+
+| ID | Status in `tax_lots.py` |
+|---|---|
+| R1 | Implemented: dynamic symbols, per-lot quantity, basis, acquisition date |
+| R2 | Implemented: `TaxParams` (24% ST/ordinary, 15% LT); the $100,000 notional is the caller's setting |
+| R3 | Implemented: HIFO with tie-break (basis per share desc, acquisition date asc, lot id asc); no long-term-first rule |
+| R4 | Implemented: character-preserving carryforwards, no $3,000 credit, unused terminal carryforward worth zero |
+| R5 | Implemented: same-symbol purchases 30 days before and after, partial quantities, lots being sold excluded |
+| R6 | Implemented: disallowed loss added to replacement basis, acquisition date moved earlier by the holding days, forward matches appended as adjustment events, `amended_tax(year)` for assessed years |
+| R7 | Partial: splits and ticker renames keep dates and basis; mergers beyond a rename are not modelled |
+| R8 | Partial: qualified vs unqualified dividends and ordinary interest are supported; the free distribution source and qualification policy remain the caller's responsibility |
+| R9 | Implemented as a rule: `pay_tax` never sells and raises `InsufficientCash`; any funding sale is a separate caller decision |
+| R10 | Supported: the same engine runs the benchmark; the caller must apply identical assumptions |
+| R11 | Implemented: `liquidation_value` (no state change) |
+| R12 | Implemented: `terminal_liquidate` |
+| R13 | Caller responsibility: next-session-close fills and frozen costs |
+| R14 | Implemented: sha256-chained append-only events, corrections as new events, `verify_chain()` |
+| R15 | Present by construction |
+| R16 | Partial: realized ST/LT and tax figures are available; a dedicated drag report is not built |
+
+Reviewed by two independent Codex Sol passes and a Claude Sonnet recomputation of the hand-calculated expectations. A review finding about floating-point roundoff in fractional-share fills was fixed with regression tests.
