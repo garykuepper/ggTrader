@@ -33,3 +33,15 @@ Any parity incident resets the clock under the current rule. Record the actual i
 - [ ] Establish and test an operator-readable rollback plan, including previous image/configuration and broker reconciliation.
 - [ ] Before any separately authorized deployment, verify the documented push, published image build, `docker compose pull`, and `docker compose up -d` sequence and confirm the deployed image. See [project deployment guidance](../../AGENTS.md).
 - [ ] Review the [sweep design](2026-11-02-two-symbol-sweep-design.md) and its unresolved decisions. A completed checklist is not itself authorization to change production.
+
+## Image provenance recorded before integration push
+
+Read-only inspection on 2026-11-02 found the running `ggtrader_live` image ID
+`sha256:31fcff2829203764bb5ff9c5ae80bc92565b321496b78e126c3e859f16f549ab`,
+registry digest
+`ghcr.io/garykuepper/ggtrader@sha256:0f2403f1bdee3148081982faf06713a6fec94542f6c2ab1388b993a27cbf37c7`,
+and revision label `291e6dd4c8628033623a640cf086ab02fbe5a1ff`. Container
+creation was 2026-09-30 00:12:09 UTC. These identify the observed image; registry
+retention and rollback execution have not been tested. A push to `main` publishes
+an image and can move `:latest`. Do not pull or recreate the running container
+during the freeze; a rollback plan must verify immutable image availability.

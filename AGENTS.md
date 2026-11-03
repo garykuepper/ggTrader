@@ -21,9 +21,10 @@ This document serves as the consolidated source of truth for all AI assistants (
   an exact link. Verify its output before use.
 - Use Codex for evidence synthesis, audit conclusions, research plans, protocol
   decisions, code changes and reviews. Do not delegate these complex tasks to Flash.
-- Also available (owner, 2026-10-23): agy **Gemini Argon** (more capable than Flash; suitable
-  for independent reviews and second opinions alongside Codex) and the **Hermes** agent on
-  DeepSeek Flash (simple, bounded tasks only, the same as Flash). Verify their outputs before use.
+- Also available: agy **Gemini Argon** (suitable for independent reviews and
+  second opinions alongside Codex). For **DeepSeek Flash**, the owner prefers
+  **Pi**; **Hermes** and **OpenCode** are also options. Use DeepSeek Flash only
+  for simple, bounded tasks, like Gemini Flash, and verify its outputs before use.
 
 ## Role
 
