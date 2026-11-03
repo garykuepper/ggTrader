@@ -14,8 +14,8 @@ The [freeze-readiness framework](research/2026-11-02-paper-freeze-readiness.md)
 and [two-symbol sweep design](research/2026-11-02-two-symbol-sweep-design.md)
 are drafted; the observation ledger, owner designation, current fund facts and
 readiness decision remain open. The design does not authorize implementation.
-The three A3 regression fixes are implemented on the research branch; see its
-commit history and verification before merging.
+The three A3 regression fixes are implemented and independently reviewed on the
+research branch; see its commit history and verification before merging.
 
 The [accruals metadata review](research/2026-11-02-accruals-feasibility.md)
 finds free pre-1994 history but is **unresolved** on terms, accrual-specific
@@ -28,7 +28,7 @@ A4b/c remain conditional. Factor scope and the insider amendment remain open.
 |---|---|---|---|---|---|
 | A1 | Owner decision batch: factor-scope ruling; insider amendment | Owner | Open | None | Minutes |
 | A2 | Freeze-readiness (part 1): qualifying evidence, incident ledger, pre-lift checklist | Claude drafts; Owner approves | Open | None | Small to medium |
-| A3 | Fix three deferred code minors | Codex | Implemented on research branch; review pending | None | Under an hour |
+| A3 | Fix three deferred code minors | Codex | Implemented and reviewed on research branch; integration pending | None | Under an hour |
 | A4 | Accruals (S04): feasibility check → registered brief → one Part A run | Owner approves brief; Claude runs | Proposed | A4a metadata check passes; A1 (soft) | ~30 min check; about a day to run if feasible |
 | A5 | Correct stale instructions in `next_steps.md` | Claude | Done 2026-11-02 (buy-or-park marked resolved) | None | Minutes |
 | A6 | `TaxLotBook` validation and B0/B1 integration | Claude | Conditional | A candidate passes Part A | Several days |
