@@ -16,15 +16,19 @@ This document serves as the consolidated source of truth for all AI assistants (
 
 ## Delegation preference (2026-10-22)
 
-- Use agy Gemini Flash only for simple, bounded tasks with specified inputs and
-  mechanically checkable outputs, such as extracting a named field or checking
-  an exact link. Verify its output before use.
-- Use Codex for evidence synthesis, audit conclusions, research plans, protocol
-  decisions, code changes and reviews. Do not delegate these complex tasks to Flash.
+- Prefer agy **Gemini Flash** for bulk and batch work where its generous quota
+  is useful; it can also implement substantive, well-specified research,
+  documentation and code tasks. Give it the objective, relevant context,
+  constraints and expected verification. A stronger model independently reviews
+  its work and verifies sources, conclusions, changes and checks before reliance
+  or integration. The lead remains responsible for final decisions.
+- Use Codex for final evidence synthesis, audit conclusions, research plans,
+  protocol decisions, code changes and reviews; Gemini Flash may contribute
+  drafts and implementation to these tasks under the review rule above.
 - Also available: agy **Gemini Argon** (suitable for independent reviews and
   second opinions alongside Codex). For **DeepSeek Flash**, the owner prefers
   **Pi**; **Hermes** and **OpenCode** are also options. Use DeepSeek Flash only
-  for simple, bounded tasks, like Gemini Flash, and verify its outputs before use.
+  for simple, bounded tasks and verify its outputs before use.
 
 ## Role
 

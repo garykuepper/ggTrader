@@ -46,7 +46,7 @@ Task 1 precedes Tasks 2–5. Task 2 first defines evidence, AVB and shadow scope
 - **Sweep design:** Codex Sol owns the design; Gemini Argon independently challenges the cash, fill and lot scenarios after the paper-evidence findings are available.
 - **Accruals:** Codex Sol assesses sources and feasibility; Gemini Argon independently reviews the source interpretation and feasibility classification.
 - **Factor scope:** lead Codex prepares the bounded recommendation. The owner-only ruling remains open unless explicitly given.
-- Run only one Antigravity task at a time, with Argon reviews ordered paper evidence, sweep design, then accruals. Use DeepSeek Flash through **Pi**, the owner's preferred provider, only for a simple bounded extraction (such as a named field or exact passage); verify against the source. Gemini Flash is subject to the same bounded-task restriction. Neither forms audit conclusions.
+- Run only one Antigravity task at a time, with Argon reviews ordered paper evidence, sweep design, then accruals. Gemini Flash may implement well-specified substantive tasks under the independent stronger-model review rule in `AGENTS.md`. Use DeepSeek Flash through **Pi**, the owner's preferred provider, only for simple, bounded tasks; verify its output before use.
 - Before execution, discover the requested providers and exact model IDs through the active orchestration tools. If a requested provider or model is unavailable, report it and continue independent work without silently substituting a model. Do not delegate access to credentials or raw account data unnecessarily; share sanitized evidence summaries and safe paths for review.
 
 ---
