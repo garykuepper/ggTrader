@@ -59,3 +59,22 @@ These are choices the owner can make; this review does not rank them.
 1. Treat S04 as eligible for Part A registration on its own merits, subject to the point-in-time data questions already listed in the [feasibility inventory](2026-11-02-free-data-stock-feasibility.md).
 2. Commission definitional work to settle one or more `undetermined` rows (the definitions listed in §4), without running any test.
 3. Leave all rows as they are and take no new stock study.
+
+## 7. Wording-only recommendation (2026-11-02)
+
+**Recommendation for owner consideration, not a ruling or candidate
+recommendation:** read “alternate factor definitions” narrowly as a guard
+against re-testing or retuning the same registered factor constructions to
+rescue a failed screen. The closure text names the tested factors but does not
+define the boundary of every economic sibling. A narrow interpretation keeps
+the recorded failures and their original scope intact while requiring a
+separate, pre-registered rationale before a different construction is tested.
+It does not establish an edge or correct for selection across studies.
+
+This interpretation does not make S05 valuation variants, S07 quality or S08
+q-factor portfolios test-ready: their constructions and relationship to the
+closed factors remain undetermined; S08 also remains parked pending its
+long-only implementability check. It does not govern S04 accruals or supersede
+the separate momentum closure. A broader interpretation would exclude some
+such variants earlier, but is not established by the undefined wording alone.
+The owner has not made a ruling here; no recorded NO-GO is revised.
