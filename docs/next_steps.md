@@ -46,13 +46,10 @@ paid-data Part B for future stock candidates:
 
 **2026-11-02 working list:** the full ranked queue (Track A), the calendar track (Track B),
 the reasoning and the glossary are in [`working_task_list.md`](working_task_list.md). The next two steps are:
-1. Owner decision batch (minutes): rule on what "alternate factor definitions" in the factor-screen
-   closure covers (narrow: retuned rescues only; broad: any redefinition of value, profitability or
-   investment; it reaches only the valuation, quality and q-factor rows, not momentum or accruals).
-   The DRAFT insider amendment below may be left unapproved.
-2. Draft the freeze-readiness documents for the ~2026-12-29 freeze lift: what counts as a clean
-   parity window, an incident ledger (any parity incident resets the clock), the pre-lift checklist
-   and the two-symbol sweep design. No change to the live config before the window ends.
+1. Populate and review the [freeze-readiness evidence and incident ledger](research/2026-11-02-paper-freeze-readiness.md); designate its operator and resolve the [sweep design](research/2026-11-02-two-symbol-sweep-design.md) questions before any implementation. No calendar date alone lifts the freeze.
+2. Resolve the [accruals feasibility](research/2026-11-02-accruals-feasibility.md) gaps in terms, revisions and benchmark/cost design before registering a screen. Do not examine returns until a candidate brief is registered.
+
+The factor-scope ruling remains open and affects valuation, quality and q-factor rows, not accruals. The insider amendment may remain unapproved.
 The research-direction inputs are the [free-data feasibility inventory](research/2026-11-02-free-data-stock-feasibility.md)
 and the [family-scope review](research/2026-11-02-family-scope-review.md); no candidate is recommended there.
 
