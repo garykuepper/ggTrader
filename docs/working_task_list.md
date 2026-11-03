@@ -10,25 +10,28 @@
 
 ## Execution update (2026-11-02)
 
-The [freeze-readiness framework](research/2026-11-02-paper-freeze-readiness.md)
-and [two-symbol sweep design](research/2026-11-02-two-symbol-sweep-design.md)
-are drafted; the observation ledger, owner designation, current fund facts and
-readiness decision remain open. The design does not authorize implementation.
-The three A3 regression fixes are implemented and independently reviewed on the
-research branch; see its commit history and verification before merging.
+The three A3 regression fixes were merged into `main` and pushed in integration
+commit `9eaf0389`; 117 targeted tests and Ruff checks passed. The production
+container was not pulled or restarted. The [readiness reconciliation](research/2026-11-02-paper-freeze-readiness.md)
+finds a persistent untradable AVB condition and missing decision-time evidence;
+a clean parity window is **not established**. The effective start, reset
+and shadow scope remain unresolved. The [sweep design](research/2026-11-02-two-symbol-sweep-design.md)
+now separates the paper sweep, proposed paper design and real-account helper;
+its future funding policies remain proposals.
 
-The [accruals metadata review](research/2026-11-02-accruals-feasibility.md)
-finds free pre-1994 history but is **unresolved** on terms, accrual-specific
-revision behavior and the benchmark/cost protocol. No returns were examined;
-A4b/c remain conditional. Factor scope and the insider amendment remain open.
+The [accruals feasibility review](research/2026-11-02-accruals-feasibility.md)
+remains **unresolved** on usage, accounting revisions and cell metadata; it
+proposes a benchmark/cost protocol without examining returns. A4b/c remain
+conditional. The [factor wording recommendation](research/2026-11-02-family-scope-review.md#7-wording-only-recommendation-2026-11-02)
+is not an owner ruling. The insider amendment remains unapproved.
 
 ## 1. Track A: ranked queue
 
 | # | Item | Decides / does | Status | Hard prerequisites | Effort |
 |---|---|---|---|---|---|
 | A1 | Owner decision batch: factor-scope ruling; insider amendment | Owner | Open | None | Minutes |
-| A2 | Freeze-readiness (part 1): qualifying evidence, incident ledger, pre-lift checklist | Claude drafts; Owner approves | Open | None | Small to medium |
-| A3 | Fix three deferred code minors | Codex | Implemented and reviewed on research branch; integration pending | None | Under an hour |
+| A2 | Freeze-readiness (part 1): qualifying evidence, incident ledger, pre-lift checklist | Codex drafts; Owner decides | Partially reconciled; AVB and evidence gaps unresolved | None | Small to medium |
+| A3 | Fix three deferred code minors | Codex | Done 2026-11-02; integrated in 9eaf0389 | None | Under an hour |
 | A4 | Accruals (S04): feasibility check → registered brief → one Part A run | Owner approves brief; Claude runs | Proposed | A4a metadata check passes; A1 (soft) | ~30 min check; about a day to run if feasible |
 | A5 | Correct stale instructions in `next_steps.md` | Claude | Done 2026-11-02 (buy-or-park marked resolved) | None | Minutes |
 | A6 | `TaxLotBook` validation and B0/B1 integration | Claude | Conditional | A candidate passes Part A | Several days |
@@ -40,7 +43,7 @@ A4b/c remain conditional. Factor scope and the insider amendment remain open.
 | # | Item | When | Who |
 |---|---|---|---|
 | B1 | Month-end A23 rebalance check | After each month's last NYSE close, once the real position is funded | Owner runs the advisory helper |
-| B2 | Freeze-lift readiness review and deploy decision (part 2 of A2) | Earliest ~2026-12-29; later if a parity incident resets the clock | Owner decides; Claude prepares |
+| B2 | Freeze-lift readiness review and deploy decision (part 2 of A2) | Date unknown until AVB, evidence and window start are adjudicated | Owner decides; Claude prepares |
 | B3 | Research snapshot refresh | After the next closed research arc | Claude, via the `research-snapshot` skill |
 | B4 | 2027-09-30 A23 annual review (including 15% vs 30%) | 2027-09-30 | Owner |
 
@@ -64,8 +67,8 @@ A4b/c remain conditional. Factor scope and the insider amendment remain open.
 - **Open question for the Owner.** Whether the sweep code may be written and unit-tested on an unmerged branch before the window ends. Sol's review kept A2 to documents; Argon would code it now without deploying. The A23 brief says live implementation waits for the window; I default to documents only.
 - **Done when.** Items 1–4 are written and approved. Part 2 (B2) is the actual lift review and deploy.
 
-### A3. Deferred code minors (under an hour)
-Fix each with a failing test first. Do these now, not "at the next edit": `tax_lots.py` is parked behind A6 and may not be touched for months.
+### A3. Deferred code minors — DONE 2026-11-02
+The following were fixed with regression tests and integrated in `9eaf0389`. Do these now, not "at the next edit": `tax_lots.py` is parked behind A6 and may not be touched for months.
 1. `tax_lots`: a fully matched fractional wash loss can stay `provisional`, because `loss_status` compares dollar totals exactly while `sell()` decides finality by quantity exhaustion (repro: sell 0.3 shares bought at $1 for $0.80, repurchase three 0.1-share tranches).
 2. `tax_lots`: a tiny sold quantity matched against a much larger replacement lot is skipped by the exhaustion check, which is measured against the replacement lot.
 3. `tests/lab/test_wfo.py::_scripted_wfo`: the gate-script index counts gate calls while sweeps use the fold index, so heterogeneous scripts misalign after a skipped fold (no current test exposes it).

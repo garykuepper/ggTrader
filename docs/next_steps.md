@@ -46,8 +46,8 @@ paid-data Part B for future stock candidates:
 
 **2026-11-02 working list:** the full ranked queue (Track A), the calendar track (Track B),
 the reasoning and the glossary are in [`working_task_list.md`](working_task_list.md). The next two steps are:
-1. Populate and review the [freeze-readiness evidence and incident ledger](research/2026-11-02-paper-freeze-readiness.md); designate its operator and resolve the [sweep design](research/2026-11-02-two-symbol-sweep-design.md) questions before any implementation. No calendar date alone lifts the freeze.
-2. Resolve the [accruals feasibility](research/2026-11-02-accruals-feasibility.md) gaps in terms, revisions and benchmark/cost design before registering a screen. Do not examine returns until a candidate brief is registered.
+1. Resolve the [parity evidence and AVB condition](research/2026-11-02-paper-freeze-readiness.md), the applicable shadow book, the qualifying start/reset and ongoing observation owner. The clean-window review date is unknown; no calendar date alone lifts the freeze.
+2. Resolve the [accruals feasibility](research/2026-11-02-accruals-feasibility.md) gaps in usage terms, accrual-specific revisions and portfolio-cell metadata; review the proposed benchmark and cost protocol before registration. Do not examine returns until a candidate brief is registered.
 
 The factor-scope ruling remains open and affects valuation, quality and q-factor rows, not accruals. The insider amendment may remain unapproved.
 The research-direction inputs are the [free-data feasibility inventory](research/2026-11-02-free-data-stock-feasibility.md)
