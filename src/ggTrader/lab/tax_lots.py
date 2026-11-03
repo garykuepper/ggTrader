@@ -298,7 +298,7 @@ class TaxLotBook:
     def _match(self, sale: _Sale, lot: _Lot, date: pd.Timestamp) -> None:
         """Assign one replacement slice exactly once and append its correction."""
         matched = min(sale.remaining, lot.qty)
-        if _exhausted(matched, lot.qty):
+        if _exhausted(matched, sale.realization.qty * sale.split_factor):
             return
         if matched < lot.qty:
             remainder = replace(lot, qty=lot.qty - matched)
@@ -408,7 +408,12 @@ class TaxLotBook:
                     and event.date <= asof
                 )
                 break
-        return "final" if disallowed >= -realization.gain else "provisional"
+        return (
+            "final"
+            if disallowed >= -realization.gain
+            or math.isclose(disallowed, -realization.gain, rel_tol=REL_TOL, abs_tol=0.0)
+            else "provisional"
+        )
 
     def split(self, symbol: str, ratio: float, date: pd.Timestamp) -> None:
         """Scale holdings and open replacement quantities without changing basis."""

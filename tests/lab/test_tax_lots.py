@@ -725,3 +725,49 @@ def test_tiny_positive_residual_position_is_not_deleted() -> None:
     book.sell("X", 1e-12, 1e12, pd.Timestamp("2025-03-01"))
     # cash 100 - 10 + 1 = 91; remaining 9e-12 shares x 1e12 = 9; no gain so no tax
     assert book.liquidation_value({"X": 1e12}, pd.Timestamp("2025-03-01")) == pytest.approx(100.0)
+
+
+def test_fractional_forward_matches_finalize_as_of_last_match() -> None:
+    book = TaxLotBook(TaxParams(), cash=10.0)
+    book.buy("XYZ", 0.3, 1.0, pd.Timestamp("2025-01-01"))
+    loss = book.sell("XYZ", 0.3, 0.7, pd.Timestamp("2025-03-01"))[0]
+    for day in range(2, 12):
+        book.buy("XYZ", 0.03, 1.0, pd.Timestamp("2025-03-01") + pd.Timedelta(days=day - 1))
+    assert book.loss_status(loss, pd.Timestamp("2025-03-10")) == "provisional"
+    assert book.loss_status(loss, pd.Timestamp("2025-03-11")) == "final"
+    adjustments = [e for e in book.events if e.kind == "wash_adjustment"]
+    assert sum(e.payload["disallowed"] for e in adjustments) == pytest.approx(0.09)
+    assert loss.disallowed == 0.0 and loss.status == "provisional"
+    assert book.verify_chain()
+
+
+def test_tiny_loss_matches_large_replacement_lot() -> None:
+    book = TaxLotBook(TaxParams(), cash=2_000_001.0)
+    book.buy("XYZ", 0.000001, 100.0, pd.Timestamp("2025-01-01"))
+    loss = book.sell("XYZ", 0.000001, 80.0, pd.Timestamp("2025-03-01"))[0]
+    book.buy("XYZ", 2_000_000.0, 1.0, pd.Timestamp("2025-03-02"))
+    adjustments = [e for e in book.events if e.kind == "wash_adjustment"]
+    assert len(adjustments) == 1
+    assert adjustments[0].payload["qty"] == pytest.approx(0.000001)
+    assert adjustments[0].payload["disallowed"] == pytest.approx(0.00002)
+    assert book.loss_status(loss, pd.Timestamp("2025-03-02")) == "final"
+    sales = book.sell("XYZ", 2_000_000.0, 2.0, pd.Timestamp("2025-04-15"))
+    assert len(sales) == 2
+    assert sales[0].qty == pytest.approx(0.000001, rel=0, abs=1e-15)
+    assert sales[0].basis == pytest.approx(0.000021, rel=0, abs=1e-15)
+    assert sales[1].qty == pytest.approx(1_999_999.999999, rel=0, abs=1e-9)
+    assert sales[1].basis == pytest.approx(1_999_999.999999, rel=0, abs=1e-9)
+    assert book.verify_chain()
+
+
+def test_loss_status_as_of_split_before_forward_matches() -> None:
+    book = TaxLotBook(TaxParams(), cash=1000.0)
+    book.buy("XYZ", 4.0, 10.0, pd.Timestamp("2025-01-01"))
+    loss = book.sell("XYZ", 4.0, 8.0, pd.Timestamp("2025-03-01"))[0]
+    book.split("XYZ", 2.0, pd.Timestamp("2025-03-02"))
+    book.buy("XYZ", 4.0, 4.0, pd.Timestamp("2025-03-03"))
+    book.buy("XYZ", 4.0, 4.0, pd.Timestamp("2025-03-04"))
+    assert book.loss_status(loss, pd.Timestamp("2025-03-02")) == "provisional"
+    assert book.loss_status(loss, pd.Timestamp("2025-03-03")) == "provisional"
+    assert book.loss_status(loss, pd.Timestamp("2025-03-04")) == "final"
+    assert book.verify_chain()
