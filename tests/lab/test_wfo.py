@@ -1395,6 +1395,7 @@ def _scripted_wfo(monkeypatch, scripts, skip_train=(), breaker=None, policy=None
     by_train = {f.train_start: i for i, f in enumerate(folds)}
     by_test = {f.test_start: i for i, f in enumerate(folds)}
     skip_train = set(skip_train)
+    active_fold = [None]
 
     def fake_dispatch(
         name, inst, cls, cfg, data, start, end, base, grid, universe_fn, entry_mask=None
@@ -1413,6 +1414,8 @@ def _scripted_wfo(monkeypatch, scripts, skip_train=(), breaker=None, policy=None
 
         if len(grid) > 1:  # training sweep (or the final live-parameter sweep)
             i = by_train.get(start)
+            if i is not None:
+                active_fold[0] = i
             if i in skip_train:
                 return [], {}
             s = scripts[i] if i is not None else {"winner_is": 2.0}
@@ -1438,14 +1441,11 @@ def _scripted_wfo(monkeypatch, scripts, skip_train=(), breaker=None, policy=None
         )
 
     def fake_ndh(*args, **kwargs):
-        s = scripts[fake_ndh.calls]
-        fake_ndh.calls += 1
+        s = scripts[active_fold[0]]
         return SimpleNamespace(passed=s["ndh"], density=1.0, variance_ratio=0.0)
 
-    fake_ndh.calls = 0
-
     def fake_dsr(*args, **kwargs):
-        s = scripts[fake_ndh.calls - 1]  # ndh_check runs first within a fold
+        s = scripts[active_fold[0]]
         return SimpleNamespace(passed=s["dsr"], dsr_value=1.0)
 
     monkeypatch.setattr(wfo_mod, "_sweep_fold_dispatch", fake_dispatch)
@@ -1623,3 +1623,15 @@ def test_policy_exclude_from_breaker_appends_none_for_anchor_folds(monkeypatch):
         policy=WfoPolicy(anchor_fold_wfe="exclude_from_breaker"),
     )
     assert histories and all(history[-1] is None for history in histories)
+
+
+def test_scripted_wfo_gate_alignment_after_skipped_fold(monkeypatch):
+    scripts = _fold_script(40)
+    scripts[0]["ndh"] = False
+    scripts[2]["ndh"] = False
+    result, _ = _scripted_wfo(monkeypatch, scripts, skip_train=(0,))
+    rows = {row["fold_num"]: row for row in result.fold_results}
+    assert rows[2]["gates_passed"] is True
+    assert rows[2]["used_anchor"] is False
+    assert rows[3]["gates_passed"] is False
+    assert rows[3]["used_anchor"] is True
