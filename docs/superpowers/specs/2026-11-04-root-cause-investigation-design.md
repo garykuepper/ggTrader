@@ -51,9 +51,16 @@ every finding must be explained in plain language with its evidence.
 - **Read-only on live and data:** never delete or modify `data/` or database configuration;
   no database writes; no orders; do not touch the `ggtrader_live` container.
 - **Tests:** run only via `scripts/run_tests.sh`.
-- **Delegation:** follow `AGENTS.md` / `CLAUDE.md` delegation guidance. Bulk or mechanical
-  work may go to Gemini Flash, but a stronger model independently verifies every
-  conclusion before it is relied on. Private account records stay out of delegate prompts.
+- **Delegation** (per the `AGENTS.md` delegation preference dated 2026-10-22, broadened
+  2026-11-03): Gemini Flash (agy) takes bulk and batch work, because its quota is generous,
+  and may also implement well-specified research, documentation and code tasks, given the
+  objective, context, constraints and expected verification. A stronger model
+  independently verifies Flash's sources, conclusions, changes and checks before anyone
+  relies on them. Codex owns final evidence synthesis, audit conclusions and protocol
+  decisions. Gemini Argon, Codex or Claude Opus give independent second opinions.
+  DeepSeek Flash (via Pi) is for simple, bounded tasks only, and its output is verified.
+  The lead stays responsible for final decisions. Private account records stay out of
+  delegate prompts.
 - **Definitions:** expand abbreviations (WFO, OOS, IR, PIT, etc.) on first use in every
   report written for the owner.
 
@@ -172,8 +179,8 @@ Each lens is one or more read-mostly subagents that report to the lead. Each lis
    (15 min). Hours-to-days items (after-tax replica, July event-study re-runs, a clean
    2010-2020 holdout) wait for a separate decision.
 4. **Phase 3 (synthesis):** one report for the owner with the ranked root causes, a trust
-   table across stocks and crypto, what is sound, and what remains unknown. Reviewed by a
-   second, independent model before delivery.
+   table across stocks and crypto, what is sound, and what remains unknown. Final synthesis
+   is Codex's; Gemini Argon or Claude Opus independently challenges it before delivery.
 
 ## 7. Deliverables
 
@@ -197,15 +204,14 @@ Each lens is one or more read-mostly subagents that report to the lead. Each lis
 
 ## 9. Left to the builder
 
-- How many subagents per lens, and which model runs each (Flash for bulk extraction,
-  Opus or Codex for judgment, per the delegation guidance).
+- How many subagents per lens, and which model runs each, within the delegation
+  preference in section 3.
 - Exact memory caps per run within the 6 GB / 2-parallel limits.
 - Report file names and the exact table layouts.
 
 ## 10. Open for the owner
 
 - Approve this design, then the Phase 2 re-run list when it is ready.
-- Compute, quota and time budget (see section 11, item 6).
 
 ## 11. Calls made by the lead (settled without the owner; check these)
 
@@ -229,6 +235,7 @@ Each lens is one or more read-mostly subagents that report to the lead. Each lis
    table, not a new pass bar: each result is shown at t of at least 2 and at least 3, with
    its effect size and confidence interval, labelled exploratory. No verdict changes on the
    looser bar alone.
-6. **Budget (pending):** until the owner sets one, the default is thorough-by-default within
-   the memory limits, with Gemini Flash used for bulk extraction and a stronger model
-   verifying. No hard dollar or quota ceiling has been set.
+6. **Budget:** no hard ceiling is set. The project's delegation preference settles the
+   model mix (Flash for bulk because its quota is generous, a stronger model verifying,
+   Codex for final synthesis; see section 3). Work is thorough by default within the memory
+   limits, covering all 49 triage rows rather than a sample.
