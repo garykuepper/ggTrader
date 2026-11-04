@@ -29,8 +29,8 @@ but this is a short-side diagnostic, not a long-only candidate.
 
 The 2026-10-23 event-data update assigns **UNRESOLVED** to PEAD and insider
 cluster buying, including the separately approved filing-date-only convention.
-The [owner memo](2026-10-23-event-timing-audit-decision.md) recommends **PARK both
-studies**, pending the owner's choice. [R1–R9 documentation](_event_source_search_ledger.json)
+The owner decided to **park both studies** with no paid data. See the
+[decision memo](2026-10-23-event-timing-audit-decision.md). [R1–R9 documentation](_event_source_search_ledger.json)
 establishes priced execution-price components, but no complete paid combination
 or qualifying five-year window. The
 [header-clock amendment](briefs/2026-10-23-insider-acceptance-time-amendment.md)
@@ -246,8 +246,10 @@ annual A6 coverage and missingness, complete insider inventories/public-time
 reconstruction, source-bound detector screening, and PEAD release/actual/consensus
 lineage remain unverified. Public paid-data documentation does not close all
 requirements over a common window. The registered canonical audit is unfinished;
-the [decision memo](2026-10-23-event-timing-audit-decision.md) and DRAFT source
-amendment await the owner. Paper observation and production freeze continue.
+the [decision memo](2026-10-23-event-timing-audit-decision.md) records the owner decision
+to park both studies without paid data. The separate timestamp amendment remains a draft
+and needs no decision while the studies are parked. Paper observation and the production
+freeze continue.
 
 - **Exact historical live parity unresolved.** Same-session/retained partial
   bars and absent immutable decision inputs prevent reconstruction of ALL/ARES.
