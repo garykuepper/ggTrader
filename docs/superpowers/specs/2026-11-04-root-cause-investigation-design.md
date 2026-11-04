@@ -1,6 +1,6 @@
 # Root-Cause Investigation: Why Haven't Stocks or Crypto Beaten SPY?
 
-**Date:** 2026-11-04 · **Status:** draft for owner approval, revised after an independent Opus review · **Type:** investigation design (diagnosis only)
+**Date:** 2026-11-04 · **Status:** approved by the owner 2026-11-04 (Claude Max; quota not a constraint); revised after an independent Opus review · **Type:** investigation design (diagnosis only)
 
 ## 1. Intent
 
@@ -183,6 +183,12 @@ the cheapest test that would settle it.
   sleeve of about 10%?
 
 ### Lens 4 - Target feasibility and how professionals do it
+- **Measured ceiling (owner's question, 2026-11-04):** the owner knows 2x SPY is very
+  ambitious and wants to find the maximum. What is the highest raw return over SPY that
+  sound evidence in this project supports, for each approach tried, with a confidence
+  interval and the conditions it needs (exposure, leverage, regime, costs, tax)? The answer
+  is a measured number from existing and approved re-run evidence, not a forecast or a
+  new strategy.
 - Using the section 1 definition, what return-over-SPY would the target require, and how
   does that compare with each measured effect?
 - Which of breadth, leverage, concentration and long-short were ruled out in this
@@ -306,8 +312,8 @@ raises an unknown that could change a verdict, Phase 2 is skipped and the lead s
 
 ## 10. Open for the owner
 
-- Approve this design, then state current Claude quota headroom (the plan is sized to it),
-  then approve the Phase 2 re-run list when it is ready.
+- Approve the Phase 2 re-run list when it is ready. (Design approved and quota headroom
+  stated as ample on 2026-11-04.)
 
 ## 11. Calls made by the lead (settled without the owner; check these)
 
