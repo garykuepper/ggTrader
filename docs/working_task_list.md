@@ -25,7 +25,7 @@ Three **separate plans are proposed but not yet written**. Start the paper-parit
 
 The production paper trader remains frozen. A plan or design does not authorize a return test, installation, scheduling, container change or order. A parity incident resets the window; elapsed calendar time does not establish readiness.
 
-**Models:** Follow the [delegation guidance](../AGENTS.md#delegation-preference-2026-10-22). Prefer Gemini Flash for suitable bulk and batch work; it can also implement well-specified substantive tasks. A stronger model independently reviews its output before reliance or integration. Codex owns final synthesis and protocol decisions; Claude Opus or Gemini Argon can independently challenge material conclusions. Keep private account records out of delegate prompts. For DeepSeek Flash, Pi is preferred and its work remains limited to simple, bounded tasks.
+**Models:** Claude only for now; follow the [delegation guidance](../AGENTS.md#delegation-preference-2026-11-04). Check quota with the owner before writing a delegation plan. Sonnet orchestrates, Opus takes critical tasks, Haiku takes easy and bulk tasks, and a stronger model checks Haiku's output before reliance. Keep private account records out of delegate prompts.
 
 ## Open decisions
 

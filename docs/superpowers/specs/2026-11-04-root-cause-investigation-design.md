@@ -51,9 +51,9 @@ every finding must be explained in plain language with its evidence.
 - **Read-only on live and data:** never delete or modify `data/` or database configuration;
   no database writes; no orders; do not touch the `ggtrader_live` container.
 - **Tests:** run only via `scripts/run_tests.sh`.
-- **Models (owner instruction 2026-11-04, overrides the `AGENTS.md` Gemini/Codex delegation
-  preference for this investigation only):** Claude only, to protect the owner's
-  other-provider quota. Sonnet is the orchestrator. Opus takes critical tasks: the trust and
+- **Models (owner instruction 2026-11-04; now also recorded in the `AGENTS.md` delegation
+  preference):** Claude only. Before the delegation plan is written, the owner states
+  current quota headroom and the plan is sized to it. Sonnet is the orchestrator. Opus takes critical tasks: the trust and
   verdict judgments, the implementation-correctness review, the root-cause ranking and the
   final synthesis. Haiku takes easy and bulk tasks: extracting numbers from reports and JSON,
   inventories, listing and cross-referencing, and file-by-file reads. Rules that carry over
@@ -240,6 +240,7 @@ Each lens is one or more read-mostly subagents that report to the lead. Each lis
    looser bar alone.
 6. **Budget and models:** the owner set the model mix (Claude only: Sonnet orchestrates, Opus
    for critical tasks, Haiku for easy and bulk tasks; section 3). No dollar ceiling has been
-   stated, and I cannot see the owner's Claude usage from here, so the plan batches Haiku
+   stated, and the agent cannot see Claude usage, so the owner reports headroom before the
+   plan is written. The plan batches Haiku
    work, keeps Opus to the judgment tasks, and reports usage after each phase so the owner
    can pause it. Work covers all 49 triage rows within the memory limits.

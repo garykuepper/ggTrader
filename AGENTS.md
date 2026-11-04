@@ -14,21 +14,34 @@ This document serves as the consolidated source of truth for all AI assistants (
   prompts, and handoffs. Preserve honest NO-GO findings and production freezes;
   neither authorizes a shutdown or an account change.
 
-## Delegation preference (2026-10-22)
+## Delegation preference (2026-11-04)
 
-- Prefer agy **Gemini Flash** for bulk and batch work where its generous quota
-  is useful; it can also implement substantive, well-specified research,
-  documentation and code tasks. Give it the objective, relevant context,
-  constraints and expected verification. A stronger model independently reviews
-  its work and verifies sources, conclusions, changes and checks before reliance
-  or integration. The lead remains responsible for final decisions.
-- Use Codex for final evidence synthesis, audit conclusions, research plans,
-  protocol decisions, code changes and reviews; Gemini Flash may contribute
-  drafts and implementation to these tasks under the review rule above.
-- Also available: agy **Gemini Argon** (suitable for independent reviews and
-  second opinions alongside Codex). For **DeepSeek Flash**, the owner prefers
-  **Pi**; **Hermes** and **OpenCode** are also options. Use DeepSeek Flash only
-  for simple, bounded tasks and verify its outputs before use.
+**Claude only, for now** (owner instruction; revisit when the owner says so).
+
+- **Check quota before writing any delegation plan.** The agent cannot see plan usage
+  or remaining quota, so ask the owner for current headroom (or have them check the
+  Claude usage settings) and size the plan to it: number of subagents, which phases
+  run, and where to pause. Report usage after each phase so the owner can stop early.
+  If quota is unknown, say so in the plan and default to the smaller, phased version.
+- **Sonnet** (`claude-sonnet-5-5`) is the main orchestrator.
+- **Opus** (`claude-opus-5-5`) takes critical tasks: trust and verdict judgments, audit
+  conclusions, implementation-correctness review, protocol decisions, root-cause ranking
+  and final synthesis.
+- **Haiku** (`claude-haiku-5-5`) takes easy and bulk tasks: extracting numbers from
+  reports and JSON, inventories, listing and cross-referencing, file-by-file reads. Give
+  it the objective, relevant context, constraints and expected verification.
+- A stronger model independently checks Haiku's work (a sample of each batch, plus
+  every figure that reaches a report) before reliance or integration. Opus reviewing
+  Opus is not independent: give the challenger a fresh context with only the evidence
+  and the claims, and state the limitation in the report.
+- The lead remains responsible for final decisions. Keep private account records out of
+  delegate prompts.
+
+*Superseded 2026-11-04 (kept for history):* the 2026-10-22 preference used agy Gemini
+Flash for bulk and batch work (generous quota), Codex for final synthesis, audit
+conclusions, protocol decisions, code changes and reviews, Gemini Argon for second
+opinions, and DeepSeek Flash via Pi for simple bounded tasks. Do not use those unless
+the owner re-enables them.
 
 ## Role
 
