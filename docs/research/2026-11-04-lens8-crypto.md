@@ -28,19 +28,29 @@ ccxt = the exchange-access library the legacy code used; EW = equal weight.
 
 ## Summary
 
-1. **No crypto result beat buy-and-hold BTC over its full stated window.** Every portfolio
-   with a recoverable artifact lost to BTC over its three-year range by 5 to 44 pp per year
-   (ratio of cumulative returns -0.19 to 0.82). The only wins over BTC are trailing-12-month
-   ("YTD") windows in which BTC fell 17-40%. Those windows sit inside the WFO folds that chose
-   the coins and parameters, so they are in-sample replays, not OOS tests.
+1. **No crypto result beat buy-and-hold BTC over any three-year window** (the one-year
+   funding-carry window, +0.45% vs BTC -23%, beat BTC but is not like-for-like: the strategy is
+   delta-neutral). Every portfolio with a recoverable artifact lost to BTC over its three-year
+   range by 5 to 44 pp per year (ratio of cumulative returns -0.19 to 0.82; the negative value is
+   edge-search run 3, which lost money while BTC gained). The only wins over BTC are
+   trailing-12-month ("YTD") windows in which BTC fell 17-40%. For the 2026-04-01, 04-02 and
+   05-01 runs those windows sit inside the WFO folds that chose the coins and parameters, so
+   they are in-sample. For edge-search runs 2 and 3 about 7 of the 12 months (2025-11-01 to
+   2026-06-08) are the 20% holdout, after selection: over that holdout stretch run 2 returned
+   -9.4% and run 3 -18.9% vs BTC -42%, i.e. they lost less than BTC out of sample in a falling
+   market, with low BTC beta and no significant intercept (t = 0.43 and -0.44), and both lost
+   to BTC over three years.
 2. **The steelman (2026-05-01: 48.46% vs BTC -21.34%) is real in the artifact and does not
-   survive scrutiny as evidence of an edge.** It is a one-year in-sample replay on a tape that
-   was later wiped for a timestamp bug, using a universe picked by 2026 trading volume. BTC beta
-   is 0.26 and does not explain the gain; the leftover (alpha) has t = 1.51, which is not
-   significant. Over the same run's three-year range it lost to BTC (137.6% vs 167.1%).
+   survive scrutiny as evidence of an edge.** It is a one-year in-sample replay on the pre-repair
+   tape (about 55 of its 366 days, 15%, fall in the 2026-03-08..05-05 period of time-shifted
+   bars, later wiped), using a universe picked by 2026 trading volume. BTC beta is 0.26-0.31
+   (depending on how 4h bars are aligned to days) and does not explain the gain; the leftover
+   (alpha) has t = 1.51-1.56, which is not significant. Over the same run's three-year range it
+   lost to BTC (137.6% vs 167.1%).
 3. **The current tape is clean on the equity bug classes** (no day-level duplicates, no off-grid
    or shifted timestamps, daily labels match yfinance) **but has crypto-specific defects:**
-   43.7% of Binance.US 4h bars are byte-identical copies of Kraken bars; delisted Binance.US
+   43.7% of Binance.US 4h bars match the Kraken bar at the same time in open, close and volume
+   (copied); delisted Binance.US
    coins were deleted; about 100 equity tickers, 52 quote-less coin symbols and 7 un-split
    `XBT` pair codes sit under the crypto venues. Universe construction was not point-in-time.
 4. **Annualization:** the current lab (`src/ggTrader/lab/metrics.py:10-29`) uses 252 days, which
@@ -78,8 +88,10 @@ working view (no crypto edge; tape fit for purpose).
 - **F7 (live evidence exists):** order or trade rows in the database for live crypto, or a
   surviving trade log, sufficient to compute a live return.
 
-Outcome: F1 holds only in its weak form, for in-sample trailing windows. F2 is not met (best
-t = 1.53). F3 is not met. F4 is met for the equity bug classes and fails on cross-venue copying
+Outcome: F1 is not met over any three-year window. It holds only in its weak form, for
+trailing windows in which BTC fell: in-sample for the 04-01, 04-02 and 05-01 runs, and partly
+out of sample (the post-2025-11-01 holdout) for edge-search runs 2 and 3, where the strategy lost
+less than BTC. F2 is not met (best t = 1.56). F3 is not met. F4 is met for the equity bug classes and fails on cross-venue copying
 and deleted delisted symbols. F5 is not met. F6 is not met. F7 is not met.
 
 ## Steelman
@@ -96,7 +108,7 @@ The numbers in the artifacts are real: the 48.40% total return re-derives from t
 stored in `results/research/archive/research_20260501_010648/plots/combined_portfolio_ytd_dashboard.html`
 (48.72% from the first stored point, 48.40% from the 1,000 start value), and the report's
 Sharpe 1.2378 re-derives at 1.2438. In that window the strategy beat both BTC and ETH in raw
-terms, with low BTC exposure (beta 0.26), so it was not simply levered BTC.
+terms, with low BTC exposure (beta 0.26-0.31), so it was not simply levered BTC.
 
 How well it survives:
 
@@ -108,18 +120,30 @@ How well it survives:
   So this is an in-sample replay.
 - **Full range.** The same run lost to BTC over its three-year range: 137.60% vs 167.09% (ratio
   0.82, -5.3 pp per year). The 2026-04-02 run lost 53.89% vs 140.97% (ratio 0.38).
-- **Single regime.** All three "YTD" wins are in one BTC drawdown year. When BTC rose, the
+- **Single regime.** All three "YTD" results beat BTC in one BTC drawdown year (the 04-02 one
+  by losing less). When BTC rose, the
   strategies trailed it.
 - **Universe.** The coin list was ranked by trading volume at run time (2026), then backtested
   from 2023. It includes coins that only became large later (PENGU, FARTCOIN, HYPE, TRUMP, MON,
   RAVE in `results/research/archive/research_20260501_010648/top_ccxt_volume.json`). That is
   look-ahead in coin selection.
-- **Tape.** Both runs predate the 2026-05-05 repair of the timestamp bug (`docs/changelog.md:2058-2068`):
-  every crypto symbol had about 346 off-grid 4h bars from 2026-03-08, and all 1.7M crypto 4h rows
-  were then wiped and re-imported. The tape these runs used no longer exists, so they cannot be
-  reproduced.
+- **Tape.** All three runs predate the 2026-05-05 repair of the timestamp bug
+  (`docs/changelog.md:2058-2068`): the live writer stored bars 7 hours early from 2026-03-08, about
+  346 off-grid 4h bars per symbol by early May, and all 1.7M crypto 4h rows were then wiped and
+  re-imported. Sized from the changelog dates, the affected stretch (2026-03-08 to the run date) is
+  about 26 of 366 days (7%, ~156 4h bars) of the 04-01 and 04-02 "YTD" windows, 55 of 366 days
+  (15%, ~330 bars) of the 05-01 "YTD" window, and 2-5% of each three-year window. The changelog
+  also attributes two earlier phantom ADA gaps (ending 2025-04-01 and 2025-11-29) to the same
+  shift, so some symbols may have been affected earlier; how many is unknown. The three-year BTC
+  comparisons rest mostly on unaffected data, and the stated BTC figures sit within 0.1-2.7 pp of
+  today's clean tape after costs, so the "lost to BTC over three years" result does not depend on
+  the bad bars. The "YTD" strategy figures could; that is not checkable because the old tape no
+  longer exists.
 - **Alpha.** OLS of daily strategy returns on BTC: beta 0.263 (standard error 0.041), intercept
-  +50.1% per year simple, t = 1.51, R² 0.10. Adding an EW basket of the run's own coins: intercept
+  +50.1% per year simple, t = 1.51, R² 0.10, with BTC re-sampled onto the equity curve's own 4h
+  timestamps and both taken at the last bar of each UTC day. Taking BTC's daily last bar directly
+  from the tape gives beta 0.314, intercept +50.4%, t = 1.56 (an independent reviewer got 0.314,
+  standard error 0.040). The beta is alignment-sensitive within 0.26-0.31; the conclusion is not. Adding an EW basket of the run's own coins: intercept
   +42.0% per year, t = 1.39, R² 0.26. Neither intercept is significant, and both are in-sample.
 - **Fees.** Net of 0.4% fee + 0.3% slippage per side (1.4% RT), so the cost assumption is, if
   anything, conservative for Kraken taker.
@@ -127,7 +151,8 @@ How well it survives:
   (sizing unwired, BTC regime gate) and moved venue on 2026-05-23 without trading. No live
   return exists to compare.
 
-Verdict on the steelman: the artifact supports "beat BTC in one falling-BTC year, in sample".
+Verdict on the steelman: the artifact supports "beat BTC in one falling-BTC year, in sample, on
+a partly time-shifted tape".
 It does not support "beat BTC".
 
 ## What was tried
@@ -186,12 +211,30 @@ Strategy figures are as stated in each run's `research_report.md`, net of that r
 | 0402_123248 YTD | 2025-04-03..2026-04-02 | IS replay, net | -10.65% | -19.88% | 12.78% | n/a | 1.12 | +9.3 | yes / no |
 | 0501_010648 full (live 05-01) | 2023-05-01..2026-04-30 | IS replay, net | 137.60% | 167.09% | 22.22% | 0.82 | 0.89 | -5.3 | no / yes |
 | 0501_010648 YTD (48.46% headline) | 2025-05-01..2026-05-01 | IS replay, net; labelled CAGR | 48.40% | -17.46% | 26.97% | n/a | 1.80 | +65.9 | yes / yes |
-| edge run 2 full (Binance.US tape) | 2023-06-09..2026-06-08 | IS replay incl. 20% holdout, net | 47.32% | 141.94% | -6.85% | 0.33 | 0.61 | -20.5 | no / yes |
-| edge run 2 YTD | 2025-06-08..2026-06-08 | replay, net | 3.38% | -39.09% | -32.23% | n/a | 1.70 | +42.5 | yes / yes |
-| edge run 3 full (Kraken) | 2023-06-09..2026-06-08 | IS replay, net | -27.13% | 139.93% | -8.07% | -0.19 | 0.30 | -43.9 | no / no |
-| edge run 3 YTD | 2025-06-08..2026-06-08 | replay, net | -21.15% | -39.77% | -32.76% | n/a | 1.31 | +18.6 | yes / yes |
+| edge run 2 full (Binance.US tape) | 2023-06-09..2026-06-08 | replay, net; IS to 2025-11-01, then 20% holdout (OOS) | 47.32% | 141.94% | -6.85% | 0.33 | 0.61 | -20.5 | no / yes |
+| edge run 2 YTD | 2025-06-08..2026-06-08 | replay, net; ~5 months IS, ~7 months holdout (OOS) | 3.38% | -39.09% | -32.23% | n/a | 1.70 | +42.5 | yes / yes |
+| edge run 3 full (Kraken) | 2023-06-09..2026-06-08 | replay, net; IS to 2025-10-31, then holdout (OOS) | -27.13% | 139.93% | -8.07% | -0.19 | 0.30 | -43.9 | no / no |
+| edge run 3 YTD | 2025-06-08..2026-06-08 | replay, net; ~5 months IS, ~7 months holdout (OOS) | -21.15% | -39.77% | -32.76% | n/a | 1.31 | +18.6 | yes / yes |
 | Funding carry A (Kraken) | 2025-05-15..2026-05-15 | delta-neutral; prose only | 0.45% | -23.09% | -10.36% | n/a | 1.31 | +23.6 | yes / yes (not like-for-like) |
 | Funding carry B (proxy) | 2023-01-01..2025-05-15 | proxy; prose only | 3.45% | 528.0% | 113.6% | 0.007 | 0.16 | -115.8 | no / no |
+
+Negative ratio: edge run 3 lost money (-27.13%) while BTC gained (+139.93%), so the ratio of
+cumulative returns is negative (-0.19).
+
+Holdout split of the edge-search "YTD" windows (same extracted curves and tape). The WFO folds
+end 2025-11-01; the edge report treats the rest as true OOS for the passers
+(`docs/archive/edge_search_report_2026-06-08.md:28-38`).
+
+| Run | Part | Strategy | BTC | ETH |
+|---|---|---:|---:|---:|
+| edge run 2 | 2025-06-08..2025-11-01 (IS) | +14.24% | +4.08% | +54.65% |
+| edge run 2 | 2025-11-01..2026-06-08 (holdout, OOS) | -9.44% | -41.94% | -55.95% |
+| edge run 3 | 2025-06-08..2025-11-01 (IS) | -2.75% | +4.03% | +54.21% |
+| edge run 3 | 2025-11-01..2026-06-08 (holdout, OOS) | -18.92% | -42.30% | -56.21% |
+
+Out of sample, both books lost money but lost less than BTC and ETH while BTC fell 42%. That fits
+low BTC exposure (beta 0.10 and 0.20) rather than a significant intercept (t = 0.43 and -0.44).
+Both books lost to BTC over the three-year range.
 
 Not computable: the 28 March pipeline runs (windows unpinned, folders not found; the record
 shows each below its own EW B&H, `docs/archive/pipeline_run_history.md`, 28 negative "Excess
@@ -211,12 +254,19 @@ CAGR" lines); the Kraken live PnL (a dollar figure with a mid-window capital inj
 
 BTC beta does not explain the "YTD" outperformance: the books held little BTC risk (beta
 0.10-0.42), and a BTC-plus-cash mix at the same beta lost 2-8% in each window. The residual is
-not significant (largest t = 1.53) and every window is in-sample. Full-range regressions were not
+not significant (largest t = 1.53; 1.56 for 05-01 under the alternative alignment). The 04-01,
+04-02 and 05-01 windows are in-sample; the edge-search windows are about 7/12 holdout. Bucketing:
+BTC re-indexed to each curve's 4h timestamps, last bar of each UTC day, simple daily returns, OLS
+with intercept, n = 364-365. For 05-01 the beta is 0.263 under this bucketing and 0.314 when BTC's
+daily last bar is taken directly from the tape (intercept +50.4%, t 1.56; matches an independent
+reviewer's 0.314, s.e. 0.040), so read the betas as ±0.05 alignment-sensitive. Full-range regressions were not
 run: only per-worker full-range curves are stored, not the combined portfolio.
 
 **Benchmark-figure discrepancies (stated vs tape).** For the Kraken runs the stated BTC figure is
-within 1.1-2.0 pp of the tape once the run's 1.4% RT cost is applied (4.4-5.3 pp before cost; e.g.
-136.55% stated vs 140.97% tape gross, 137.6% net).
+within 0.1-2.7 pp of the tape once the run's 1.4% RT cost is applied (e.g. 136.55% stated vs
+140.97% tape gross, 137.6% net). The largest gap is the 05-01 "YTD" window: -21.32% stated vs
+-17.46% gross, about -18.6% net. It closes when the start bar is aligned with the equity curve's
+first point (2025-05-01 12:00): BTC -20.1% gross, about -21.2% net.
 Edge-search run 2 states BTC +167.21% (DD -49.89%) for 2023-06-09..2026-06-08; the Binance.US tape
 gives +141.94% (DD -51.66%) for that window but +169.71% (DD -49.82%) if the series ends on
 2026-06-01. The report's BTC benchmark therefore appears to end about a week before its stated end
@@ -311,6 +361,12 @@ What is sound:
   "0.5% RT"; the stored config is 0.2% + 0.3% per side, i.e. 1.0% RT.)
 - Turnover is high enough for costs to matter: edge run 2 made 167 trades over three years on
   two coins, run 3 made 172.
+- **Inventory pointer is mis-pointed.** Row crypto-wfo-textbook-reset cites
+  `results/research/research_20260511_193048/wfo_stats_snapshot.json` as the raw artifact for
+  "zero combos pass under realistic fees". That run is the frictionless one (stored config FEES
+  0, SLIPPAGE 0; 36 gate passes). The realistic-fee run (0.4% + 0.3% per side; 0 passes) is
+  `results/research/research_20260511_162755`. Both claims recompute from the worker logs, but
+  only the frictionless run has a full `wfo_stats_snapshot.json`.
 
 What is confounded or missing:
 - The headline flip (+13.8% on Binance.US → -10.0% on Kraken) changes four things at once:
@@ -404,6 +460,74 @@ container on 2026-06-03 (about 372 restarts, per the memory note), and the daily
 tripped on 2026-06-04. The engines were removed on 2026-06-16 (commit `82931a40`). The only live
 performance figure, +$9.88 over about 5 days on Kraken in April 2026, cannot be checked.
 
+## Upstream implications
+
+Upstream files are not edited here. This section states what Lens 8's findings mean for them.
+
+**Located artifacts.** Gitignored run folders exist for rows the upstream lenses treated as
+artifact-less: crypto-wfo-recalibration-2026-05-01 (`results/research/archive/research_20260501_010648`),
+crypto-wfo-research-snapshots-kraken (`results/research/archive/research_20260402_123248` and
+`results/research/archive/research_20260401_225306`; the 03-29 run was not found) and
+crypto-edge-search-2026-06-08 (`results/research/research_20260607_215008`,
+`results/research/research_20260608_083103`, `results/research/research_20260608_093714`). Each
+holds `research_report.md`, worker result JSON with the stored config, worker logs with gate
+verdicts, `top_ccxt_volume.json` and plot HTML with the combined equity curve. Folders dated
+2026-05-07..05-09 also exist under `results/research/archive/` and may back the 05-07..05-09
+configuration rows; they were not opened.
+
+**Inventory raw_artifact pointers.** Of the 3 crypto rows with a pointer, 1 is mis-pointed:
+crypto-wfo-textbook-reset points at the frictionless run (`research_20260511_193048`, 36 passes)
+for a claim about the realistic-fee run (`research_20260511_162755`, 0 passes). The two IBIT
+pointers (`docs/research/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json`) are
+correct. Three rows have a null pointer although an artifact exists (the three rows above).
+
+**Lens 6** (`docs/research/_lens6_verdicts.json`). spec_matches_code can stay "unverifiable" for
+crypto-wfo-recalibration-2026-05-01 and crypto-wfo-research-snapshots-kraken because the code was
+removed and was not compared with a spec here. Its evidence text "Run artifacts not found in
+results/" is wrong for the recalibration row. The numbers-true question is now answerable, and
+this lens verified: the 05-01 "YTD" total 48.40% from the stored equity curve; Sharpe re-derived
+for the 04-01, 04-02, 05-01 and edge run-2 "YTD" curves within 0.006; stored fees and slippage
+per run; and gate-pass counts 36/14/13/0 and 13/22/13 from worker logs. Not verified: the
+full-range combined returns (only per-worker curves are stored).
+
+**Lens 7** (`docs/research/_lens7_recompute.json`). Rows whose prose-only or cannot-locate status
+could change, because a raw artifact exists: crypto-wfo-recalibration-2026-05-01,
+crypto-wfo-research-snapshots-kraken, crypto-edge-search-2026-06-08 (now prose-only) and
+crypto-wfo-textbook-reset (now cannot_locate; the gate counts recompute from the logs of
+`research_20260511_193048` and `research_20260511_162755`). Possibly also
+crypto-diversity-cap-disabled-2026-05-07, crypto-trade-frequency-gate-2026-05-07,
+crypto-strategy-usage-analyzer-2026-05-07 and crypto-wfo-overfitting-param-stability (archive
+folders of those dates exist, not opened). One recompute discrepancy relates to a benchmark,
+not a strategy figure: the run-2 BTC benchmark (+167.21% stated vs +141.94% tape).
+
+**Lens 2** (`docs/research/_lens2_sensitivity.json`). No crypto row's class would change under
+its written rules. R2 states that crypto rows do not meet the data condition, and Lens 8's
+findings would not meet it either: the NO rows (crypto-edge-search-2026-06-08,
+crypto-wfo-textbook-reset) carry universe survivorship, which favours the strategy, but also
+cross-venue copying (a tape identity fault, direction unknown), so not every item favours the
+strategy. R3 stays unmet (Lens 6 unverifiable or no row). R5 stays unmet (Lens 9 has no MDE).
+Under R4 the recompute basis for edge-search moves from "prose-only (flagged)" (met) to an
+artifact that Lens 7 has not recomputed (not met until it does). That does not change
+"inconclusive". For the two GO rows (crypto-funding-carry-phase4, crypto-kraken-live-bot-pnl)
+no universe-survivorship item applies (BTC only, live), and R3/R4 remain unmet, so they stay
+inconclusive. No row becomes "unreliable NO" by R6: the strategy figures recompute.
+
+**Lens 1** (`docs/research/_lens1_tape_state.json`). All crypto rows are "unknown" there. On
+Lens 8's evidence:
+- Rows run between 2026-03-08 and 2026-05-05 (crypto-wfo-research-snapshots-kraken 04-01/04-02,
+  crypto-config-tweaks-reverted-2026-04-02, crypto-wfo-recalibration-2026-05-01,
+  crypto-kraken-live-bot-pnl, crypto-wfo-tournament-robustness) used a tape with a time-shift
+  fault covering 7-15% of the trailing windows and 2-5% of three-year windows. That is the
+  day_shift class (direction unknown); the tape no longer exists.
+- Rows run after the re-import (crypto-wfo-textbook-reset, crypto-diversity-cap-disabled-2026-05-07
+  onward, crypto-edge-search-2026-06-08) used the repaired Kraken 4h tape, which is clean on the
+  equity bug classes today. Edge-search runs 1-2 also used the Binance.US series (cross-venue
+  copies: tape identity fault) and, from 2026-06-07, the tape with delisted Binance.US symbols
+  deleted. All universe-ranked rows carry universe survivorship (favours the strategy).
+- Whether the tape at each run date equals today's tape is not established (later edits
+  include the 2026-06-07 deletions and Binance.US backfills), so "clean" cannot be asserted for
+  any crypto row. Their tape_state stays "unknown", with these items attached.
+
 ## Questions and answers
 
 1. **What was tried, with what universe, fees, venue and benchmark?** Long-only spot per-coin
@@ -411,14 +535,17 @@ performance figure, +$9.88 over about 5 days on Kraken in April 2026, cannot be 
    ranked by live volume. Kraken (0.4% + 0.3% per side) through May 2026, then Binance.US
    (0.02% + 0.3%) and a Kraken-maker variant (0.25% + 0.3%). Benchmarked against BTC B&H and SPY,
    or EW B&H in March. Also one delta-neutral funding-carry study. See "What was tried".
-2. **Did any crypto strategy beat buy-and-hold BTC or ETH?** BTC: not over any full stated window
-   (ratio 0.33-0.82 where positive, -5 to -44 pp per year). Yes in five trailing-12-month windows
-   when BTC fell, all in-sample. ETH: the full-range results beat ETH in four of five cases because
+2. **Did any crypto strategy beat buy-and-hold BTC or ETH?** BTC: not over any three-year window
+   (ratio -0.19 to 0.82, -5 to -44 pp per year). The one-year funding-carry window beat BTC
+   (+0.45% vs -23%) but is delta-neutral, so not like-for-like. Yes in five trailing-12-month
+   windows when BTC fell: in-sample for the 04-01, 04-02 and 05-01 runs; for edge runs 2 and 3
+   about 7 of the 12 months are the post-selection holdout, where the books lost 9-19% vs BTC
+   -42% (low beta, intercept t 0.43 / -0.44). ETH: the full-range results beat ETH in four of five cases because
    ETH returned between -8% and +22% over three years; the 2026-05-01 "YTD" beat ETH (+48.4% vs
    +27.0%) in-sample.
 3. **Does BTC beta explain apparent alpha?** No. Betas are 0.10-0.42, and same-beta BTC-plus-cash
-   lost money in every window. The remaining intercepts are not significant (t ≤ 1.53) and are
-   in-sample. Full-range beta is not computable (no combined full-range curve stored).
+   lost money in every window. The remaining intercepts are not significant (t ≤ 1.56) and the
+   largest ones are in-sample. Full-range beta is not computable (no combined full-range curve stored).
 4. **Is the 2026-06-08 "fees dominate" finding sound and complete?** Partly. A controlled
    7-coin sweep shows costs eliminating gate passes (36 → 0). The headline +13.8% → -10% comparison
    is confounded by universe, tape and coin selection, and both runs carry a 0.3% slippage that
@@ -427,9 +554,9 @@ performance figure, +$9.88 over about 5 days on Kraken in April 2026, cannot be 
 5. **Do venue fee tiers and quote-currency choice change it?** Fee tier changes gate counts
    (36/14/13/0). Venue changes the price series (44% copied, with a 20% divergence episode in
    2023). Quote currency was never varied (USD only). Tier effects beyond the $0 tier: unknown,
-   never tested; the cheapest test is a gate replay of the stored `wfo_stats_snapshot.json` files,
-   which only covers stage-1 gates, so a re-run (Phase 2, owner-gated) is needed for portfolio
-   effects.
+   never tested; the record lacks a like-for-like re-run that varies only the tier. Cheapest test:
+   a gate replay of the stored `wfo_stats_snapshot.json` files (stage-1 gates only; portfolio
+   effects are not covered by it).
 6. **Long-only spot only? Shorting, perpetuals, funding carry?** Directional work was long-only
    spot. Directional shorting was never tested. Funding carry on PF_XBTUSD was tested once, for one
    year (prose results, data and code recoverable). Cash-and-carry exists as code without a found
@@ -453,8 +580,10 @@ performance figure, +$9.88 over about 5 days on Kraken in April 2026, cannot be 
     regime gate, the venue move with legacy parameters, the IP-allowlist crash loop and the
     breaker. The DB holds 0 trades, 1 dry-run order and 4,681 snapshots. No live return can be
     computed.
-12. **Steelman: is there evidence an edge existed?** Only in-sample, in one falling-BTC year, on a
-    since-replaced tape, with a hindsight universe and an insignificant intercept.
+12. **Steelman: is there evidence an edge existed?** The strongest result (05-01) is in-sample,
+    in one falling-BTC year, on a partly time-shifted (15% of the window) since-replaced tape,
+    with a hindsight universe and an insignificant intercept. The only OOS evidence (edge-search
+    holdout) is losing less than a falling BTC at low beta, without a significant intercept.
 13. **Why did the stated BTC benchmark in edge-search run 2 not match the tape?** Unknown. The
     numbers fit a BTC series ending around 2026-06-01. The cheapest test is reading the benchmark
     loader at `82931a40^` (pipeline report code) for its data source and end bar.
@@ -504,4 +633,6 @@ What remains unverified:
 - ✅ Annualization: current lab affected (×0.831); published legacy numbers not affected (recomputed); ❓ funding-carry Sharpe convention (separate engine not read).
 - ✅ Live evidence counts (no balances).
 - ❓ Cause of the edge-search run-2 BTC benchmark mismatch (benchmark loader not read).
-- ❓ April-May runs on the pre-fix tape: not reproducible from current data.
+- ❓ April-May runs on the pre-fix tape: not reproducible from current data; the affected share is sized (7-15% of the trailing windows, 2-5% of the three-year windows).
+- ✅ Upstream implications for Lenses 1, 2, 6 and 7, and the inventory pointer check (1 mis-pointed of 3).
+- ✅ In-sample vs OOS stated per window (edge-search trailing windows are about 7/12 holdout).
