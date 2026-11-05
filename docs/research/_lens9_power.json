@@ -17,6 +17,20 @@
    "source_keys": [
     "docs/research/_static_leverage_aftertax_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "calibration",
+     "brackets",
+     "cost_bps_per_side",
+     "windows",
+     "beta_matched_pretax_cagr",
+     "stress_panel_pretax",
+     "recovery_days",
+     "rolling_10y_pretax_vs_spy"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "includes data from 2006"
   },
@@ -37,6 +51,20 @@
    "source_keys": [
     "docs/research/_static_leverage_aftertax_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "calibration",
+     "brackets",
+     "cost_bps_per_side",
+     "windows",
+     "beta_matched_pretax_cagr",
+     "stress_panel_pretax",
+     "recovery_days",
+     "rolling_10y_pretax_vs_spy"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "includes data from 2006"
   },
@@ -201,6 +229,20 @@
    "source_keys": [
     "docs/research/_century_leverage_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "provenance",
+     "calibration",
+     "sso_real_distribution_check",
+     "scenarios",
+     "rolling_windows",
+     "rolling_summary",
+     "recommendation_rule",
+     "complete"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "includes data from 1926"
   },
@@ -257,6 +299,22 @@
    "source_keys": [
     "docs/research/_core_spy_blend_20260924.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "spy",
+     "core_alone",
+     "core_idle_mean_pct",
+     "corr_core_vs_spy_daily",
+     "live_k0.0",
+     "live_k0.5",
+     "live_k1.0",
+     "live_k1.5",
+     "decision",
+     "meta"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -337,7 +395,8 @@
    "regime_window_class": "2020-2026 only",
    "target_required_cagr_gap_pp": 9.535959914032867,
    "could_detect_target_sized_effect_t3": false,
-   "could_detect_target_sized_effect_t2": false
+   "could_detect_target_sized_effect_t2": false,
+   "caveat": "Units differ: MDE is on arithmetic annualized mean excess, the target is a CAGR (geometric) gap; comparison approximate."
   },
   {
    "id": "stocks-ema-cross",
@@ -410,6 +469,16 @@
    "source_keys": [
     "docs/research/_pit_rebaseline_20260923.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "ensemble",
+     "ensemble_ic",
+     "ensemble_kelly"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -448,6 +517,16 @@
    "source_keys": [
     "docs/research/_pit_rebaseline_20260923.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "ensemble",
+     "ensemble_ic",
+     "ensemble_kelly"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -558,6 +637,31 @@
    "source_keys": [
     "docs/research/_event_audit_readiness_decision.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "schema",
+     "schema_authority",
+     "date",
+     "decision",
+     "decision_scope",
+     "decision_basis",
+     "source_feasibility",
+     "registered_final_audit_complete",
+     "canonical_audit_outputs_modified",
+     "input_bindings",
+     "accounting",
+     "read_only_metadata_check",
+     "blocking_requirements",
+     "reopen_condition",
+     "continuing_work",
+     "verification_limits",
+     "independent_review",
+     "subsequent_connected_metadata",
+     "subsequent_plan_execution"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "window not recorded"
   },
@@ -578,6 +682,51 @@
    "source_keys": [
     "docs/research/_event_evidence_resolution_workbook.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "schema",
+     "schema_authority",
+     "generated_date",
+     "scope",
+     "sources",
+     "observations",
+     "inference",
+     "missing",
+     "actions",
+     "dependencies",
+     "lineage_accounting",
+     "population_denominators",
+     "requirements",
+     "annual_identity_observations",
+     "charter_link_observations",
+     "page_inventory",
+     "ownership_inventory",
+     "raw_lots",
+     "raw_reconciliation",
+     "predecessor_identification",
+     "timing_observations",
+     "filing_lag_diagnostic",
+     "load_boundary_diagnostic",
+     "prefix_checkpoints",
+     "two_issuer_observed_footprint",
+     "vendor_routes",
+     "mixed_route_assessment",
+     "metadata_query_proposals",
+     "detector_export_contract",
+     "runtime_follow_up",
+     "acquisition_handoff",
+     "overall_feasibility_disposition",
+     "verification",
+     "registered_sampling_unchanged",
+     "transaction_size_field_observations",
+     "independent_review_disposition"
+    ],
+    "stat_like_leaf_keys": [
+     ".requirements[i].current_status",
+     ".transaction_size_field_observations.transaction_price_and_dollar_amount_values"
+    ],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "window not recorded"
   },
@@ -598,6 +747,21 @@
    "source_keys": [
     "docs/research/_event_evidence_export_file_search.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "scope",
+     "symlinks",
+     "counts",
+     "candidates",
+     "exact_top_level_schema_exports",
+     "network_requests",
+     "db_queries",
+     "conclusion",
+     "verification_notes"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "includes data from 2002"
   },
@@ -701,6 +865,14 @@
    "source_keys": [
     "docs/research/_family_scope_extraction.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "extracted_from",
+     "closed_reports"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "window not recorded"
   },
@@ -757,6 +929,19 @@
    "source_keys": [
     "docs/research/_free_data_feasibility_matrix.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "schema_version",
+     "as_of",
+     "selection_rule",
+     "classifications",
+     "sources_checked_not_checked",
+     "rows",
+     "non_exhaustive"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -795,6 +980,16 @@
    "source_keys": [
     "docs/research/_ic_kelly_rebaseline_20260923.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "ensemble",
+     "ensemble_ic",
+     "ensemble_kelly"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -851,6 +1046,21 @@
    "source_keys": [
     "docs/research/_insider_acceptance_diagnostic.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "schema",
+     "scope",
+     "cache_directory",
+     "manifest_sha256",
+     "pair_count",
+     "header_consistent_count",
+     "api_inconsistent_count",
+     "twice_offset_pattern_count",
+     "pairs"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "includes data from 2015"
   },
@@ -889,6 +1099,26 @@
    "source_keys": [
     "docs/research/_insider_identity_inventory_resolution_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "scope",
+     "code_revision",
+     "child_cache",
+     "network",
+     "verified_raw_responses",
+     "parent_unchanged",
+     "outcomes",
+     "inventory_disposition",
+     "annual_identity_observations",
+     "new_documentary_gap",
+     "mandatory_gaps_remaining",
+     "status",
+     "independent_review",
+     "targeted_follow_up_candidates"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "window not recorded"
   },
@@ -927,6 +1157,20 @@
    "source_keys": [
     "docs/research/_intraday_benchmark_verification.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "retrieved_at_utc",
+     "source",
+     "yfinance_version",
+     "request",
+     "method",
+     "windows",
+     "data_sha256",
+     "daily_observations"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "window not recorded"
   },
@@ -1019,6 +1263,16 @@
    "source_keys": [
     "docs/research/_pit_rebaseline_20260923.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "ensemble",
+     "ensemble_ic",
+     "ensemble_kelly"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -1075,6 +1329,15 @@
    "source_keys": [
     "docs/research/_rebaseline_corrected_tape_20260822.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "core",
+     "blend"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -1095,6 +1358,15 @@
    "source_keys": [
     "docs/research/_live_indicator_warmup_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "by_lookback",
+     "avb_2026_08_14"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -1463,6 +1735,14 @@
    "source_keys": [
     "docs/research/_position_sizing_wfo_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "results"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -1505,11 +1785,18 @@
     "windows.primary.arms.primary.mean_exposure"
    ],
    "target_window_key": "primary_2021-01-31_2026-04-30",
+   "sleeve_scale_illustration": {
+    "stock_exposure": 0.09369851944289703,
+    "mde_t3_pp_per_yr_over_stock_exposure": 45.287778000060825,
+    "mde_t2_pp_per_yr_over_stock_exposure": 33.49899780429322,
+    "label": "ILLUSTRATION: book-level MDE divided by mean stock exposure (linear scaling), not a recomputation"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only for the citable primary; the 2010-2020 holdout ran but is not citable (tainted trades)",
    "target_required_cagr_gap_pp": 9.57495617809445,
    "could_detect_target_sized_effect_t3": true,
-   "could_detect_target_sized_effect_t2": true
+   "could_detect_target_sized_effect_t2": true,
+   "caveat": "Book-level result: the book is ~85% SPY and ~9.3-9.4% stocks (mean_exposure), so the low MDE reflects low tracking error from SPY, not a test of whether stock picking can reach 2x SPY. Scaled linearly by stock exposure (illustration) the sleeve-level MDE is ~45.3 pp/yr at t>=3 and ~33.5 at t>=2. Units differ: MDE is on arithmetic annualized mean excess, the target is a CAGR (geometric) gap; comparison approximate."
   },
   {
    "id": "stocks-production-replica-holdout-2010-2020",
@@ -1551,11 +1838,18 @@
    ],
    "target_window_key": "holdout_2010-01-31_2020-12-31",
    "note": "Holdout is not citable: verdict.reasons = ['holdout:tainted_trade:primary'], windows.holdout.stop_flags = ['tainted_trade:primary'], closure.holdout = 'INCONCLUSIVE'.",
+   "sleeve_scale_illustration": {
+    "stock_exposure": 0.09259548751428762,
+    "mde_t3_pp_per_yr_over_stock_exposure": 45.545654254290476,
+    "mde_t2_pp_per_yr_over_stock_exposure": 33.689746753694244,
+    "label": "ILLUSTRATION: book-level MDE divided by mean stock exposure (linear scaling), not a recomputation"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "includes data from 2010",
    "target_required_cagr_gap_pp": 6.13645961667355,
    "could_detect_target_sized_effect_t3": true,
-   "could_detect_target_sized_effect_t2": true
+   "could_detect_target_sized_effect_t2": true,
+   "caveat": "Book-level result: the book is ~85% SPY and ~9.3-9.4% stocks (mean_exposure), so the low MDE reflects low tracking error from SPY, not a test of whether stock picking can reach 2x SPY. Scaled linearly by stock exposure (illustration) the sleeve-level MDE is ~45.5 pp/yr at t>=3 and ~33.7 at t>=2. Units differ: MDE is on arithmetic annualized mean excess, the target is a CAGR (geometric) gap; comparison approximate."
   },
   {
    "id": "stocks-production-replica-live-parity",
@@ -1574,6 +1868,26 @@
    "source_keys": [
     "docs/research/_replica_parity_20261019.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "orders",
+     "strategy_orders",
+     "explained_orders",
+     "explained_pct",
+     "daily",
+     "notes",
+     "stop_flags",
+     "since",
+     "through",
+     "distinct_reasons",
+     "universe_size",
+     "panel_first_bar",
+     "panel_last_bar",
+     "investigation"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -1594,6 +1908,19 @@
    "source_keys": [
     "docs/research/_research_process_audit_ledger.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "schema_version",
+     "as_of",
+     "coverage",
+     "claims",
+     "shared_findings"
+    ],
+    "stat_like_leaf_keys": [
+     ".shared_findings[i].impact_status"
+    ],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "window not recorded"
   },
@@ -1704,6 +2031,15 @@
    "source_keys": [
     "docs/research/_anchor_fix_reproduction_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "core",
+     "blend"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -1724,6 +2060,15 @@
    "source_keys": [
     "docs/research/_rebaseline_corrected_tape_20260822.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "core",
+     "blend"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -1744,6 +2089,16 @@
    "source_keys": [
     "docs/research/_pit_rebaseline_20260923.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "ensemble",
+     "ensemble_ic",
+     "ensemble_kelly"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -2070,6 +2425,16 @@
    "source_keys": [
     "docs/research/_wfo_fold_attribution_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "dsr_fix_commit",
+     "note",
+     "runs",
+     "schema_version"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "window not recorded"
   },
@@ -2090,6 +2455,17 @@
    "source_keys": [
     "docs/research/_wfo_policy_synthetic_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "seed",
+     "n_reps",
+     "model",
+     "cells",
+     "comparisons"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "window not recorded"
   },
@@ -2188,7 +2564,8 @@
    "regime_window_class": "2020-2026 only",
    "target_required_cagr_gap_pp": 9.535959914032867,
    "could_detect_target_sized_effect_t3": false,
-   "could_detect_target_sized_effect_t2": false
+   "could_detect_target_sized_effect_t2": false,
+   "caveat": "Units differ: MDE is on arithmetic annualized mean excess, the target is a CAGR (geometric) gap; comparison approximate."
   },
   {
    "id": "cross-asset-commodity-trend",
@@ -2267,7 +2644,8 @@
    "regime_window_class": "includes data from 2012",
    "target_required_cagr_gap_pp": 5.1058819627845615,
    "could_detect_target_sized_effect_t3": true,
-   "could_detect_target_sized_effect_t2": true
+   "could_detect_target_sized_effect_t2": true,
+   "caveat": "Per-event Treasury-ETF event-minus-non-event effect, annualized by a labelled derivation; not an SPY-excess test. Units differ: MDE is on arithmetic annualized mean excess, the target is a CAGR (geometric) gap; comparison approximate."
   },
   {
    "id": "cross-asset-fomc-drift-wfo",
@@ -2310,20 +2688,154 @@
    "market": "cross-asset",
    "verdict": "NO-GO",
    "raw_artifact": "docs/research/_month_end_treasury_results.json",
-   "window": "2021-01-31 \u2192 2026-04-30",
-   "n_obs_or_folds": null,
-   "se_method": "none reported",
-   "se_value": null,
-   "mde_t3_pp_per_yr": null,
-   "mde_t2_pp_per_yr": null,
+   "window": "2021-02-01..2026-04-30",
+   "n_obs_or_folds": {
+    "n_trades": 63,
+    "exposure_pct": 14.33990895295903
+   },
+   "se_method": "artifact's own statistic: Welch t on daily IEF close-to-close returns, invested days vs other days (scripts/month_end_treasury_wfo.py:82-88), gross of cost (identical in the 1/3/5 bp arms); tested quantity: mean invested-day minus mean other-day daily return, per day, not vs SPY; overlap/fold dependence: not stated (invested days are three consecutive trading days a month, so they are serially adjacent; the Welch t assumes independent days)",
+   "se_value": 0.035580815356946176,
+   "se_units": "percent per invested day",
+   "mde_per_day_bp": {
+    "t3": 13.668726027524443,
+    "t2": 10.110644491829825
+   },
+   "mde_t3_pp_per_yr": 4.9394088257885755,
+   "mde_t2_pp_per_yr": 3.653640181008126,
+   "annualization": "DERIVED, labelled: per-day MDE x invested days per year = exposure_pct / 100 x 252 (36.14); assumes the sleeve earns the invested-minus-other difference on each invested day",
    "required_ir_t3": null,
-   "status": "not computable from artifact",
-   "missing_key": "t-statistic (primary.* carry CAGR/Sharpe/vol/hit-rate only)",
-   "source_keys": [
-    "docs/research/_month_end_treasury_results.json"
+   "observed_t": 2.751626285542873,
+   "observed_mean_diff_bp_per_day": 9.790510679722061,
+   "observed_fraction_of_mde_t3": 0.7162708989855457,
+   "subrows": [
+    {
+     "label": "pinned/1bp",
+     "window": "2021-02-01..2026-04-30",
+     "n_trades": 63,
+     "exposure_pct": 14.33990895295903,
+     "mean_diff_bp_per_day": 9.790510679722061,
+     "welch_t": 2.751626285542873,
+     "se_bp_per_day": 3.5580815356946176,
+     "mde_bp_per_day": {
+      "t3": 13.668726027524443,
+      "t2": 10.110644491829825
+     },
+     "invested_days_per_year_derived": 36.13657056145676,
+     "mde_t3_pp_per_yr_derived": 4.9394088257885755,
+     "mde_t2_pp_per_yr_derived": 3.653640181008126,
+     "observed_pp_per_yr_derived": 3.537954800104722,
+     "observed_fraction_of_mde_t3": 0.7162708989855457
+    },
+    {
+     "label": "pinned/3bp",
+     "window": "2021-02-01..2026-04-30",
+     "n_trades": 63,
+     "exposure_pct": 14.33990895295903,
+     "mean_diff_bp_per_day": 9.790510679722061,
+     "welch_t": 2.751626285542873,
+     "se_bp_per_day": 3.5580815356946176,
+     "mde_bp_per_day": {
+      "t3": 13.668726027524443,
+      "t2": 10.110644491829825
+     },
+     "invested_days_per_year_derived": 36.13657056145676,
+     "mde_t3_pp_per_yr_derived": 4.9394088257885755,
+     "mde_t2_pp_per_yr_derived": 3.653640181008126,
+     "observed_pp_per_yr_derived": 3.537954800104722,
+     "observed_fraction_of_mde_t3": 0.7162708989855457
+    },
+    {
+     "label": "pinned/5bp",
+     "window": "2021-02-01..2026-04-30",
+     "n_trades": 63,
+     "exposure_pct": 14.33990895295903,
+     "mean_diff_bp_per_day": 9.790510679722061,
+     "welch_t": 2.751626285542873,
+     "se_bp_per_day": 3.5580815356946176,
+     "mde_bp_per_day": {
+      "t3": 13.668726027524443,
+      "t2": 10.110644491829825
+     },
+     "invested_days_per_year_derived": 36.13657056145676,
+     "mde_t3_pp_per_yr_derived": 4.9394088257885755,
+     "mde_t2_pp_per_yr_derived": 3.653640181008126,
+     "observed_pp_per_yr_derived": 3.537954800104722,
+     "observed_fraction_of_mde_t3": 0.7162708989855457
+    },
+    {
+     "label": "post_pub/1bp",
+     "window": "2019-01-02..2021-01-29",
+     "n_trades": 25,
+     "exposure_pct": 14.31297709923664,
+     "mean_diff_bp_per_day": 7.578021369098921,
+     "welch_t": 1.9864117236591565,
+     "se_bp_per_day": 3.8149298450270397,
+     "mde_bp_per_day": {
+      "t3": 14.655434492655877,
+      "t2": 10.840504647628837
+     },
+     "invested_days_per_year_derived": 36.06870229007633,
+     "mde_t3_pp_per_yr_derived": 5.286025036473206,
+     "mde_t2_pp_per_yr_derived": 3.910029348095134,
+     "observed_pp_per_yr_derived": 2.7332939670986565,
+     "observed_fraction_of_mde_t3": 0.5170792700070691
+    },
+    {
+     "label": "post_pub/3bp",
+     "window": "2019-01-02..2021-01-29",
+     "n_trades": 25,
+     "exposure_pct": 14.31297709923664,
+     "mean_diff_bp_per_day": 7.578021369098921,
+     "welch_t": 1.9864117236591565,
+     "se_bp_per_day": 3.8149298450270397,
+     "mde_bp_per_day": {
+      "t3": 14.655434492655877,
+      "t2": 10.840504647628837
+     },
+     "invested_days_per_year_derived": 36.06870229007633,
+     "mde_t3_pp_per_yr_derived": 5.286025036473206,
+     "mde_t2_pp_per_yr_derived": 3.910029348095134,
+     "observed_pp_per_yr_derived": 2.7332939670986565,
+     "observed_fraction_of_mde_t3": 0.5170792700070691
+    },
+    {
+     "label": "post_pub/5bp",
+     "window": "2019-01-02..2021-01-29",
+     "n_trades": 25,
+     "exposure_pct": 14.31297709923664,
+     "mean_diff_bp_per_day": 7.578021369098921,
+     "welch_t": 1.9864117236591565,
+     "se_bp_per_day": 3.8149298450270397,
+     "mde_bp_per_day": {
+      "t3": 14.655434492655877,
+      "t2": 10.840504647628837
+     },
+     "invested_days_per_year_derived": 36.06870229007633,
+     "mde_t3_pp_per_yr_derived": 5.286025036473206,
+     "mde_t2_pp_per_yr_derived": 3.910029348095134,
+     "observed_pp_per_yr_derived": 2.7332939670986565,
+     "observed_fraction_of_mde_t3": 0.5170792700070691
+    }
    ],
+   "arm_selection": "Spec 2.1: brief criterion 1 (primary rule, pinned window) names no cost and criterion 5 names 3 bp; step 3 emits sub-rows pinned/1bp, 3bp, 5bp. All three carry identical Welch-t inputs (the statistic is computed on gross returns), so row-level values equal every pinned sub-row. post_pub (2019-01-02..2021-01-29) is the brief's criterion-2 window and is its own sub-row; paper_is is reference only (brief item 1) and not a row.",
+   "original_bar": "brief docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md:151-161 (Sharpe, return, yearly, WFO-gate, portfolio and 3 bp criteria; no t bar). Verdict fields verdict.checks.*",
+   "status": "computed",
+   "missing_key": "required_ir_t3: no tracking-error field",
+   "source_keys": [
+    "docs/research/_month_end_treasury_results.json: primary.{pinned,post_pub}.start/.end",
+    "primary.<w>.<c>bp.mean_ret_invested_day_bp",
+    "primary.<w>.<c>bp.mean_ret_other_days_bp",
+    "primary.<w>.<c>bp.welch_t_invested_vs_other",
+    "primary.<w>.<c>bp.exposure_pct",
+    "primary.<w>.<c>bp.n_trades"
+   ],
+   "target_window_key": "primary_2021-01-31_2026-04-30",
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
-   "regime_window_class": "2020-2026 only"
+   "regime_window_class": "2020-2026 verdict window (pinned); artifact also holds primary.post_pub 2019-01-02..2021-01-29 (brief criterion 2) and primary.paper_is 2011-2018 (reference only)",
+   "target_required_cagr_gap_pp": 9.57495617809445,
+   "could_detect_target_sized_effect_t3": true,
+   "could_detect_target_sized_effect_t2": true,
+   "caveat": "Per-day IEF invested-minus-other-day effect, gross of cost, annualized by a labelled derivation; not an SPY-excess test and not the brief's pass criterion. Units differ: MDE is on arithmetic annualized mean excess, the target is a CAGR (geometric) gap; comparison approximate."
   },
   {
    "id": "cross-asset-on-deck-candidate-feasibility",
@@ -2360,6 +2872,20 @@
    "source_keys": [
     "docs/research/_cross_asset_sleeve_holdout_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "window",
+     "prices",
+     "overlap_check_vs_ohlcv",
+     "1bp",
+     "3bp",
+     "bh",
+     "reported_loo_1bp",
+     "verdict"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "includes data from 2007"
   },
@@ -2380,6 +2906,33 @@
    "source_keys": [
     "docs/research/_cross_asset_sleeve_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "primary:pinned",
+     "primary:pinned_elapsed_s",
+     "primary:long",
+     "primary:long_elapsed_s",
+     "primary:y2022",
+     "primary:y2022_elapsed_s",
+     "primary:wfo_oos",
+     "primary:wfo_oos_elapsed_s",
+     "reported",
+     "reported_elapsed_s",
+     "wfo",
+     "wfo_elapsed_s",
+     "verdict",
+     "post_hoc",
+     "post_hoc_elapsed_s"
+    ],
+    "stat_like_leaf_keys": [
+     ".reported.long.tail_months.sleeve_mean_ret_pct_spy_worst10pct",
+     ".reported.long.tail_months.spy_mean_ret_pct_spy_worst10pct",
+     ".reported.pinned.tail_months.sleeve_mean_ret_pct_spy_worst10pct",
+     ".reported.pinned.tail_months.spy_mean_ret_pct_spy_worst10pct"
+    ],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "includes data from 2016"
   },
@@ -2400,6 +2953,33 @@
    "source_keys": [
     "docs/research/_cross_asset_sleeve_results.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "meta",
+     "primary:pinned",
+     "primary:pinned_elapsed_s",
+     "primary:long",
+     "primary:long_elapsed_s",
+     "primary:y2022",
+     "primary:y2022_elapsed_s",
+     "primary:wfo_oos",
+     "primary:wfo_oos_elapsed_s",
+     "reported",
+     "reported_elapsed_s",
+     "wfo",
+     "wfo_elapsed_s",
+     "verdict",
+     "post_hoc",
+     "post_hoc_elapsed_s"
+    ],
+    "stat_like_leaf_keys": [
+     ".reported.long.tail_months.sleeve_mean_ret_pct_spy_worst10pct",
+     ".reported.long.tail_months.spy_mean_ret_pct_spy_worst10pct",
+     ".reported.pinned.tail_months.sleeve_mean_ret_pct_spy_worst10pct",
+     ".reported.pinned.tail_months.spy_mean_ret_pct_spy_worst10pct"
+    ],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 verdict window; artifact also holds primary:long 2016-01-04..2026-04-30, and a separate 2007-06-01..2011-02-28 holdout row exists (cross-asset-sleeve-holdout-2007-2011)"
   },
@@ -2622,10 +3202,10 @@
     "t_stat.*"
    ],
    "target_window_key": "ibit_2024-01-11_2026-10-23",
-   "note": "Benchmark for crypto is BTC/ETH buy-and-hold per the spec (Lens 8); this artifact has neither, so the SPY-based target comparison is shown for scale only. Session-level derived annualization assumes holding only that session every day it occurs.",
+   "note": "n_weeknight + n_weekend = 698, one fewer than n_days = 699 (the intraday sub-row's n); the artifact does not say which session is missing an overnight pair (likely the first day, which has no prior close). Benchmark for crypto is BTC/ETH buy-and-hold per the spec (Lens 8); this artifact has neither, so the SPY-based target comparison is shown for scale only. Session-level derived annualization assumes holding only that session every day it occurs.",
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only",
-   "target_required_cagr_gap_pp": 15.145334785310325
+   "target_required_cagr_gap_pp": 15.145338299774046
   },
   {
    "id": "crypto-kraken-live-bot-pnl",
@@ -2900,10 +3480,10 @@
     "t_stat.*"
    ],
    "target_window_key": "ibit_2024-01-11_2026-10-23",
-   "note": "Benchmark for crypto is BTC/ETH buy-and-hold per the spec (Lens 8); this artifact has neither, so the SPY-based target comparison is shown for scale only. Session-level derived annualization assumes holding only that session every day it occurs.",
+   "note": "n_weeknight + n_weekend = 698, one fewer than n_days = 699 (the intraday sub-row's n); the artifact does not say which session is missing an overnight pair (likely the first day, which has no prior close). Benchmark for crypto is BTC/ETH buy-and-hold per the spec (Lens 8); this artifact has neither, so the SPY-based target comparison is shown for scale only. Session-level derived annualization assumes holding only that session every day it occurs.",
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only",
-   "target_required_cagr_gap_pp": 15.145334785310325
+   "target_required_cagr_gap_pp": 15.145338299774046
   },
   {
    "id": "crypto-wfo-overfitting-param-stability",
@@ -2976,6 +3556,13 @@
    "source_keys": [
     "results/research/research_20260511_193048/wfo_stats_snapshot.json"
    ],
+   "keys_examined": {
+    "top_level": [
+     "list[231] of records"
+    ],
+    "stat_like_leaf_keys": [],
+    "scan_regex": "(^|_)t($|_)|welch|tstat|t_stat|t_value|p_value|^p$|_p$|pvalue|hit|binom|signif|zscore|stderr|_se$|^se$|ann_excess|mean_ret|mean_diff"
+   },
    "window_source_note": "window from Lens 1 eval_window (docs/research/_lens1_tape_state.json) unless artifact keys are cited",
    "regime_window_class": "2020-2026 only"
   },
@@ -3456,18 +4043,18 @@
     "years": 14.327173169062286
    },
    "ibit_2024-01-11_2026-10-23": {
-    "spy_total_return_pct": 64.76117508974872,
-    "target_total_return_pct": 129.52235017949744,
-    "spy_cagr_pct": 19.662728917855986,
-    "target_cagr_pct": 34.80806370316631,
-    "required_cagr_gap_pp": 15.145334785310325,
+    "spy_total_return_pct": 64.76119689160376,
+    "target_total_return_pct": 129.52239378320752,
+    "spy_cagr_pct": 19.662734610237067,
+    "target_cagr_pct": 34.80807291001111,
+    "required_cagr_gap_pp": 15.145338299774046,
     "years": 2.7816563997262147,
     "spy_source": {
      "from_close": "2024-01-11",
      "to_close": "2026-10-23",
      "years": 2.7816563997262147,
-     "total_return_pct": 64.76117508974872,
-     "cagr_pct": 19.662728917855986
+     "total_return_pct": 64.76119689160376,
+     "cagr_pct": 19.662734610237067
     }
    },
    "french_mkt_1927-01_2026-04": {
