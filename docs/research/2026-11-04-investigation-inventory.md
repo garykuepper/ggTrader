@@ -13,25 +13,28 @@ A result is **material** when it carries a headline number, a verdict, or a live
 | Measure | Count |
 |---|---|
 | Raw extracted rows in | 671 |
-| Merged inventory rows out | 140 |
-| Raw rows contributing to merged rows | 666 |
-| Raw rows dropped as immaterial | 5 |
-| Rows with `raw_artifact: null` | 99 |
-| Rows by market: stocks / cross-asset / crypto | 108 / 11 / 21 |
-| Rows superseded (`superseded_by` set) | 14 |
-| Rows with conflicts between sources | 22 |
-| live_deployed true / false / null | 36 / 26 / 78 |
+| Merged inventory rows out | 144 |
+| Raw rows contributing to merged rows | 667 |
+| Raw rows dropped as immaterial | 4 |
+| Sources added by hand in review fix round 1 (not raw rows) | 14 |
+| Files reviewed with no material result | 3 |
+| Rows with `raw_artifact: null` | 103 |
+| Rows by market: stocks / cross-asset / crypto | 108 / 11 / 25 |
+| Rows superseded (`superseded_by` set) | 15 |
+| Rows with conflicts between sources | 25 |
+| live_deployed true / false / null | 39 / 25 / 80 |
 
-Check: 666 contributing + 5 dropped = 671 = raw rows in.
+Check: 667 contributing + 4 dropped = 671 = raw rows in.
 
 ## How this was built
 
 - **Extraction:** 671 raw rows were extracted by Haiku passes (20 batches) from the research reports and briefs, the `docs/research/_*.json` artifacts, `docs/roadmap.md`, `docs/changelog.md`, `docs/research/RESEARCH_SNAPSHOT.md`, `docs/research/RESEARCH_INDEX.md`, `docs/research/WEB_RESEARCH_CANDIDATES.md`, `docs/archive/` and the auto-memory notes. Each raw row carries a verbatim quote of at most 200 characters.
 - **Merge (Opus):** rows describing the same strategy or study became one row. `source_report` is the primary source, ranked: dated research report, then brief, then results JSON, then other `docs/research/` pages, then roadmap/changelog, then archive, then memory notes. Every contributing raw row is kept in `sources` with its quote. Headline number and verdict are the primary's; when the primary states none, the value is copied from the highest-ranked source that does and `notes` says so. No number was computed, averaged or reworded.
 - **Superseded results** (for example the 1.12 core Sharpe and the 1.14 blend Sharpe) keep their own rows with `superseded_by` pointing at the replacing row, because they drove decisions.
-- **live_deployed:** true when any source states the strategy is or was live. The extractors marked many NO-GO rows false without a stated reason; 66 such rows were set to null because no contributing source text says not deployed, shadow, frozen, parked or similar.
+- **live_deployed:** true when any source states the strategy is or was live. The extractors marked many NO-GO rows false without a stated reason; 65 such rows were set to null because no contributing source text says not deployed, shadow, frozen, parked or similar.
 - **lens_owners** follow the rules in the task brief, applied by pattern matching over each row's name and headline numbers; Lens 5 is on every row. They are a routing aid, not a judgment.
 - **Known extraction caveats:** some verdict words were inferred by the extractor from prose rather than stated as a label (for example "matches SPY, no alpha"); several sources cite artifacts by bare filename (for example `_pit_rebaseline_20260923.json`), which were resolved under `docs/research/`; two extracted artifact paths do not exist and are recorded in `notes`; one snapshot row was extracted under A24 but its figure belongs to A23 and was reassigned; one brief row recorded a planned re-run parameter as a headline and is flagged in `notes`. Real-money crypto account balance figures in two raw rows were redacted.
+- **Review fix round 1:** 14 sources were added by hand from the cited files (marked `added_in_fix_round` in the JSON); several verdict and headline fields were corrected to the source's own label, with the extractor's paraphrase moved to `notes`; three rows were split out of merged rows; one row (crypto execution venue fees) was added.
 - **Phase 0 audit not used:** `docs/research/2026-11-04-phase0-trust-audit.md` is unreviewed and was not used as a source of rows.
 - **Verification:** every `source_report`, every contributing source path and every `raw_artifact` exists; every contributing quote was found in its cited file; headline numbers were checked against their source file, and 20 rows were re-opened by hand. Details are in the task report.
 
@@ -43,7 +46,14 @@ Check: 666 contributing + 5 dropped = 671 = raw rows in.
 | 58 | vectorbt simplification proposal: custom numba path vs native accessors | engineering speed claim (vectorbt proposal), not a trading result |
 | 371 | WFO train-metric optimization (3 coins, cold run) | WFO runtime profiling (memory duplicate of 57), not a trading result |
 | 593 | Stablecoin stress signal (B1) | stablecoin stress overlay: no number, no verdict, no deployment decision (crypto dormant) |
-| 667 | Crypto execution venues | RESEARCH_INDEX category label only ('Feasibility'): historical venue/fee comparison, not a tested result, no number or verdict extracted |
+
+## Reviewed, no material result
+
+| File | Reason |
+|---|---|
+| `docs/research/2026-10-25-intraday-preflight-delegation.md` | Process only: delegation and documentation review; no result, number or verdict on a strategy. |
+| `docs/research/briefs/2026-10-21-event-timing-audit-sources.md` | Process only: approved source-search manifest for the event-timing audit. |
+| `docs/research/briefs/2026-10-22-cost-charter-batch.md` | Process only: scope of the COST two-charter acquisition slice; its outputs are sources of stocks-insider-identity-inventory. |
 
 ## Inventory
 
@@ -57,13 +67,13 @@ Sorted by market, then id. "Live" is `live_deployed` (blank = null). Full claims
 | stocks-after-tax-lot-engine | After-tax multi-stock lot engine (TaxLotBook) | Library implemented, unvalidated | 46 tests in tests/lab/test_tax_lots.py; no tax validity asserted | false | 2, 3, 5, 7, 9 | `docs/research/2026-11-02-after-tax-lot-engine-requirements.md` |
 | stocks-analyst-revisions | Analyst estimate revisions | Infeasible |  |  | 2, 5 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
 | stocks-anomaly-driven-demand | Anomaly-driven demand (factor-crowding flow) | Infeasible |  |  | 2, 5 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
-| stocks-avb-eqr-merger-holding | AVB holding after EQR merger (tape and broker-frozen position) | CORRECTED: data-integrity failure | ohlcv AVB close 68.69 on 2026-07-20 vs EQR 68.80; phantom −64% crash; live account still holds 4.050706521 merged AVB shares | true | 2, 3, 4, 5, 7, 9 | `docs/research/2026-09-28-live-indicator-warmup.md` |
+| stocks-avb-eqr-merger-holding | AVB holding after EQR merger (tape and broker-frozen position) | CORRECTED | ohlcv AVB close 68.69 on 2026-07-20 vs EQR 68.80; phantom −64% crash; live account still holds 4.050706521 merged AVB shares | true | 2, 3, 4, 5, 7, 9 | `docs/research/2026-09-28-live-indicator-warmup.md` |
 | stocks-bb-reversion | bb_reversion Bollinger reversion | Beat SPY in WFO | Sharpe 0.80 vs 0.59 (SPY), CAGR 17%+ |  | 1, 2, 4, 5, 6, 7, 9 | `docs/changelog.md` |
 | stocks-cash-sweep-live | Cash sweep of idle cash into SPY (5% reserve) on live paper |  | +2.51% vs ~+4.4% over 6/23–8/20 | true | 3, 4, 5, 6, 7, 9 | `docs/changelog.md` |
 | stocks-catastrophe-stop | Catastrophe stop (-25%) on live paper |  | -25% | true | 3, 5, 6, 7 | `docs/changelog.md` |
 | stocks-century-leverage | Century synthetic leverage 1926-2026 after-tax (SPY/SSO mixes) | keep 30% | Full window 1926-07-01 to 2026-06-30 (24/15 bracket, 0.84% fee): 30% SSO after-tax CAGR 10.71% vs 0% 9.47%; max drawdown -91.4% vs -84.6% | false | 1, 2, 3, 4, 5, 7, 9 | `docs/research/2026-10-23-century-leverage.md` |
 | stocks-congress-trades | congress_trades House PTR mirroring | NO-GO | Matched window 2021-01..2026-04 (17 folds): OOS Sharpe 0.36 vs SPY 0.58; CAGR 6.1%; MaxDD -20.0%. Long window 2015-06..2026-07 (40 folds): Sharpe 0.89 vs SPY 0.77; 4-sleeve blend Sharpe 1.14 to 1.04 |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-07-19-congress-trades-nogo.md` |
-| stocks-conviction-bb | conviction_bb conviction position sizing | Inactive | Zero extra profit (no numeric value in table) |  | 2, 5, 6, 7 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
+| stocks-conviction-bb | conviction_bb conviction position sizing | Inactive | Zero extra profit |  | 2, 5, 6, 7 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
 | stocks-core-spy-blend-keep | Core + idle cash swept to SPY blend (KEEP, 2026-09-24) (superseded by stocks-production-replica) | KEEP | k = 1 Sharpe 0.80 vs SPY 0.78; MaxDD -20.72% vs SPY -22.09%; WFO OOS span 2022-01 → 2026-04 | true | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/research/2026-09-24-core-spy-blend-keep.md` |
 | stocks-daily-threshold-tilt | Daily threshold tilt SPY/IEF (A12 variant) | untriaged | Sharpe 0.94 vs SPY 0.91 on the pinned window; 0.89 vs 0.84 on the long window |  | 1, 2, 4, 5, 7, 9 | `docs/research/WEB_RESEARCH_CANDIDATES.md` |
 | stocks-dsr-gate-correction | Lab DSR gate scaling correction and power |  | An annual Sharpe of 1.0 over 252 days with 48 trials scored 1.0 instead of about 0.10. |  | 1, 3, 5, 6, 7, 9 | `docs/changelog.md` |
@@ -75,7 +85,7 @@ Sorted by market, then id. "Live" is `live_deployed` (blank = null). Full claims
 | stocks-ensemble-kelly-2026-07 | ensemble_kelly Kelly-criterion sizing (July 2026 test vs 1.12 baseline) (superseded by stocks-ic-kelly-rebaseline-pre-pit) | NO-GO | Sharpe 0.98, DD -17.0% |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
 | stocks-ensemble-kelly-pit | ensemble_kelly under point-in-time membership | closed NO-GO | OOS Sharpe 0.50, CAGR 6.3%, MaxDD -13.9%, gates 16/17, top winner 10/17; SPY Sharpe 0.78 |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-09-23-pit-rebaseline-core-nogo.md` |
 | stocks-ensemble-ndh-baseline-1-12 | 5-voter ensemble SP500 baseline after NDH variance-cap exemption (1.12 Sharpe) (superseded by stocks-sp500-core-anchor-fix-reproduction) | Validated | OOS aggregate Sharpe 1.12 / CAGR 16.3% / MaxDD -11.0% vs SPY 0.58 / 13.0% / -22.1%; aggregate WFE 1.13; NDH gate tally 13/17 to 16/17 (SP500 ensemble, 17 rolling 12mo/3mo folds) | true | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/changelog.md` |
-| stocks-ensemble-paper-deployment | Ensemble paper trading on Alpaca (deployment) |  | WFO Sharpe 1.11 vs SPY 0.59 (as stated in note) | true | 1, 3, 4, 5, 6, 7 | `docs/changelog.md` |
+| stocks-ensemble-paper-deployment | Ensemble paper trading on Alpaca (deployment) |  | WFO Sharpe 1.11 vs SPY 0.59 | true | 1, 3, 4, 5, 6, 7 | `docs/changelog.md` |
 | stocks-ensemble-wfo-validated-2026-06-20 | Ensemble (bb+rsi+ema vote) with vol targeting, first SP500 WFO (superseded by stocks-ensemble-ndh-baseline-1-12) | Validated | OOS Sharpe 0.84 vs SPY 0.59, CAGR 18.8% vs 13.0%, MaxDD -23.4% vs -22.1%, WFE 1.25; 17-fold rolling 12mo/3mo, 2021-01 to 2026-04 | true | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/changelog.md` |
 | stocks-equity-diversification-sleeves | Equity diversification sleeves (gated 3-way reversion blend, correlations) | failed | S&P 500 vs MidCap 400 correlation 0.70; MidCap 400 vs Nasdaq-100 0.35; idealized MidCap+Nasdaq blend Sharpe 1.39, MaxDD -4.0% |  | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/roadmap.md` |
 | stocks-equity-pre-fomc-drift-intake | Equity pre-FOMC drift / FOMC even-week cycle | rejected on intake |  |  | 2, 5, 6 | `docs/research/WEB_RESEARCH_CANDIDATES.md` |
@@ -108,8 +118,8 @@ Sorted by market, then id. "Live" is `live_deployed` (blank = null). Full claims
 | stocks-live-signal-lookback-365d | Live indicator warm-up lookback 120d vs 365d |  | 120-day window: entry mismatch 4.0% (21 missed / 21 extra of 1,026); exit mismatch 3.4% (106 / 97 of 5,881); last_exit wrong 7.0%; span 125 sessions 2026-03-30 → 2026-09-25 | true | 2, 3, 4, 5, 6, 7, 9 | `docs/research/2026-09-28-live-indicator-warmup.md` |
 | stocks-macd-divergence | macd_divergence | Shipped | Sharpe 0.68 to 0.89 |  | 1, 2, 3, 5, 6, 7 | `docs/roadmap.md` |
 | stocks-max-effect | max_effect lottery-demand filter | NO-GO | OOS Sharpe 0.39-0.45 vs SPY 0.76-0.88; CAGR 5.0-5.1% vs 15.2%; MaxDD -36.5% vs SPY -33.7%; WFE 0.84-0.97; gate 31/42; eval_start 2015-01-01 |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-07-17-max-effect-nogo.md` |
-| stocks-midcap400-reversion | MidCap 400 reversion (5-voter + 0.03) vs MDY | Researching | MidCap 400: 15.0% CAGR / 1.08 Sharpe after survivorship haircut vs MDY 9.1% / 0.40 | false | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/roadmap.md` |
-| stocks-ml-entry-gate-falsified | LightGBM ML entry gate ablation and falsification | NO-GO | Anti-predictive (no numeric value in table; §3 cites 0.56% vs 1.09% mean return) | true | 1, 2, 3, 4, 5, 6, 7 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
+| stocks-midcap400-reversion | MidCap 400 reversion (5-voter + 0.03) vs MDY | Researching | MidCap 400: 15.0% CAGR / 1.08 Sharpe after survivorship haircut vs MDY 9.1% / 0.40 | true | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/roadmap.md` |
+| stocks-ml-entry-gate-falsified | LightGBM ML entry gate ablation and falsification | NO-GO | Anti-predictive | true | 1, 2, 3, 4, 5, 6, 7 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
 | stocks-ml-feature-gate-deploy | LightGBM feature gate on live entries (deployment) (superseded by stocks-ml-entry-gate-falsified) |  | Precision 0.585, coverage 42%, trained on 3,203 historical entries | true | 3, 5, 6, 7 | `docs/changelog.md` |
 | stocks-momentum-french-screen | Momentum screen on French Big/Small momentum portfolios | NO-GO | Big full-window NW t 3.052434, post-publication CAGR diff +0.081863 pt/yr; Small t 3.107965, +0.197551 pt/yr (base cost); bar +1.0 pt/yr |  | 1, 2, 3, 4, 5, 7, 9 | `docs/research/2026-10-20-momentum-french-screen-nogo.md` |
 | stocks-mtf-reversion | mtf_reversion multi-timeframe (weekly RSI) voter | NO-GO | Sharpe 0.68 → 0.49 |  | 1, 2, 3, 5, 6, 7, 9 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
@@ -132,11 +142,11 @@ Sorted by market, then id. "Live" is `live_deployed` (blank = null). Full claims
 | stocks-rsi-reversion | rsi_reversion | Component; independent edge unverified |  |  | 2, 5, 6 | `docs/research/RESEARCH_SNAPSHOT.md` |
 | stocks-short-interest | short_interest FINRA days-to-cover | NO-GO | OOS Sharpe 0.27 vs SPY 0.61; CAGR 3.8% vs 13.0%; MaxDD -27.1% vs SPY -24.5%; aggregate WFE 0.11; gate 15/20; eval_start 2020-07-01 |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-07-17-short-interest-nogo.md` |
 | stocks-short-volume-ratio | short_volume_ratio FINRA short volume | NO-GO | OOS Sharpe 0.21 vs SPY 0.72, CAGR 1.1% vs 17.0%, gate pass 16/27 (59%), regime halt 20/27 (74%), eval_start 2018-09-01, 27 folds |  | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/research/2026-07-19-short-volume-ratio-nogo.md` |
-| stocks-six-indicator-ensemble | 6-indicator ensemble (with MTF voter) | NO-GO | Degraded vs 5-voter (no numeric value in source table) |  | 2, 4, 5, 6, 7 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
+| stocks-six-indicator-ensemble | 6-indicator ensemble (with MTF voter) | NO-GO | Degraded vs 5-voter |  | 2, 4, 5, 6, 7 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
 | stocks-sp500-core-anchor-fix-reproduction | SP500 core 17-fold reproduction, pinned window (2026-08-19) (superseded by stocks-sp500-core-corrected-tape-rebaseline) | did not reproduce | OOS Sharpe 0.97, CAGR 7.8%, MaxDD -7.6%, gates 12/17 on 2021-01-31 to 2026-04-30; SPY same window Sharpe 0.78 (cited baseline's SPY 0.58) | true | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/research/2026-08-19-anchor-fix-reproduction.md` |
-| stocks-sp500-core-corrected-tape-rebaseline | SP500 core and 3-sleeve blend re-baseline on corrected tape (2026-08-22) (superseded by stocks-sp500-core-pit-rebaseline) | Live Core | SP500 Core Sharpe 0.99, CAGR 8.0%, MaxDD -7.65%, 12/17 gates; 3-sleeve blend Sharpe 0.69, CAGR 4.78%, MaxDD -6.70%; SPY matched window Sharpe 0.78, CAGR 12.79%, MaxDD -22.09% |  | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
+| stocks-sp500-core-corrected-tape-rebaseline | SP500 core and 3-sleeve blend re-baseline on corrected tape (2026-08-22) (superseded by stocks-sp500-core-pit-rebaseline) | Live Core | SP500 Core Sharpe 0.99, CAGR 8.0%, MaxDD -7.65%, 12/17 gates; 3-sleeve blend Sharpe 0.69, CAGR 4.78%, MaxDD -6.70%; SPY matched window Sharpe 0.78, CAGR 12.79%, MaxDD -22.09% | true | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
 | stocks-sp500-core-pit-rebaseline | SP500 core under point-in-time membership (PIT re-baseline) | loses to SPY | OOS Sharpe 0.59, CAGR 3.1%, MaxDD -5.3%, gates 17/17; SPY Sharpe 0.78, CAGR 13.0%, MaxDD -22.1%; 17 folds, 2021-01-31 → 2026-04-30 | true | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/research/2026-09-23-pit-rebaseline-core-nogo.md` |
-| stocks-sp500-equity-research-doc-trials | Archived SP500 equity strategy research doc (Top-50 trials) | RECOMMENDED | Total Return +304.79%, CAGR +14.35%, Sharpe 2.153, Sortino 3.418, Max Drawdown -10.91% vs SPY +335.07% |  | 1, 2, 3, 4, 5, 7 | `docs/archive/sp500_equity_strategy_research.md` |
+| stocks-sp500-equity-research-doc-trials | Archived SP500 equity strategy research doc (Top-50 trials) (superseded by stocks-wfo-tournament-sp500-monthly) | RECOMMENDED | Total Return +304.79%, CAGR +14.35%, Sharpe 2.153, Sortino 3.418, Max Drawdown -10.91% vs SPY +335.07% |  | 1, 2, 3, 4, 5, 7 | `docs/archive/sp500_equity_strategy_research.md` |
 | stocks-split-dividend-corrections | Paper split and dividend corrections (MNST guard, dividend accrual) |  | MNST reported unrealized_pl -$893.30 (-47.3%); split-adjusted $1,987.62, +$100.51 (+5.3%) | true | 2, 3, 5, 6, 7, 9 | `docs/changelog.md` |
 | stocks-spy-benchmark-pinned-window | SPY buy-and-hold benchmark on pinned 17-fold window |  | SPY buy-and-hold Sharpe 0.78, CAGR 13.0%, MaxDD -22.1%, pinned 17-fold window 2021-01-31 to 2026-04-30 |  | 1, 4, 5, 7, 9 | `docs/research/briefs/2026-09-28-cross-asset-sleeve.md` |
 | stocks-spy-duplicate-rows | SPY benchmark duplicate-row contamination (2023+) | Direction sound; absolute Sharpe understated ~29% | AAPL buy-and-hold 2023-01 to 2026-06 Sharpe 0.848 contaminated vs 1.187 clean (CAGR 30.70% both); SPY 2025-08 to 2026-07 harness 1.14 vs independent 1.61 |  | 1, 2, 4, 5, 7, 9 | `docs/research/2026-07-25-strategy-implementation-audit.md` |
@@ -150,9 +160,9 @@ Sorted by market, then id. "Live" is `live_deployed` (blank = null). Full claims
 | stocks-vix-entry-throttling | VIX entry throttling | Historical NO-GO |  |  | 2, 5 | `docs/research/RESEARCH_SNAPSHOT.md` |
 | stocks-vol-managed-spy | Vol-managed SPY holding (B5) | untriaged (shortlist) | Sanity check: Sharpe 1.02 vs 0.91; MaxDD -10.1% vs -24.5% (pinned); CAGR 10.2% vs 15.1% |  | 1, 2, 4, 5, 7 | `docs/research/WEB_RESEARCH_CANDIDATES.md` |
 | stocks-volume-bb-reversion | volume_bb_reversion | Component; independent edge unverified |  |  | 2, 5, 6 | `docs/research/RESEARCH_SNAPSHOT.md` |
-| stocks-voter-ablation-5-voter | Voter ablation under fixed gates (5-voter best; 6-voter dilution artifact) | best (live switched to 5-voter) | Sharpe 0.89 / CAGR 10.5% / DD -10.5% / gate 14-of-17 (SP500, 17 folds); SPY 0.58 / 13.0% / -22.1% | true | 1, 2, 3, 4, 5, 6, 7, 9 | memory: project_voter_reconcile_2026-06-24.md |
+| stocks-voter-ablation-5-voter | Voter ablation under fixed gates (5-voter best; 6-voter dilution artifact) | Best = core+macd+vbb (5-voter, drop MTF) | Sharpe 0.89 / CAGR 10.5% / DD -10.5% / gate 14-of-17 (SP500, 17 folds); SPY 0.58 / 13.0% / -22.1% | true | 1, 2, 3, 4, 5, 6, 7, 9 | memory: project_voter_reconcile_2026-06-24.md |
 | stocks-wfo-anchor-leakage-fix | WFO anchor-set leakage fix (2026-08-18) (superseded by stocks-sp500-core-anchor-fix-reproduction) | SUPERSEDED | Two observed folds OOS Sharpe 1.11 (fold 1) and 0.99 (fold 2), identical before and after fix; cited live SP500 core Sharpe 1.12, CAGR 16.3%, MaxDD -11%, 16/17 folds (superseded) |  | 1, 2, 3, 4, 5, 7, 9 | `docs/research/2026-08-18-wfo-anchor-leakage-fix.md` |
-| stocks-wfo-fallback-semantics | WFO fallback semantics (anchor WFE, NaN folds) | halt effect not established | 4 NaN WFE folds in saved artifacts (PIT ensemble 3, PIT ensemble_ic 1) |  | 1, 2, 5, 7, 9 | `docs/research/2026-11-02-wfo-fallback-semantics.md` |
+| stocks-wfo-fallback-semantics | WFO fallback semantics (anchor WFE, NaN folds) |  | 4 NaN WFE folds in saved artifacts (PIT ensemble 3, PIT ensemble_ic 1) |  | 1, 5, 7, 9 | `docs/research/2026-11-02-wfo-fallback-semantics.md` |
 | stocks-wfo-fold-attribution | WFO fold attribution across 13 saved runs |  | PIT ensemble_ic 15/17 anchor folds (88%); fomc_drift 47/53 anchor folds (89%) |  | 1, 2, 3, 5, 7, 9 | `docs/research/2026-11-02-wfo-fold-attribution.md` |
 | stocks-wfo-policy-synthetic | Synthetic WFO halt-policy (circuit breaker) study | supported under this model | P_halt = 0.875 at mu=1.0, p_gate=1.0 (legacy); preregistered threshold 0.50 |  | 1, 2, 3, 5, 7, 9 | `docs/research/2026-11-02-wfo-policy-synthetic.md` |
 | stocks-wfo-research-run-2026-05-02 | Stocks WFO research run 2026-05-02 aggregate reporting |  | reported YTD CAGR -56% / Sharpe -2.14 (per-worker phase-1: +101%, +95%, +40% on three of five shards) |  | 1, 4, 5, 6, 7 | `docs/changelog.md` |
@@ -161,7 +171,7 @@ Sorted by market, then id. "Live" is `live_deployed` (blank = null). Full claims
 | stocks-xs-momentum-corrected-replay | xs_momentum corrected-harness replay (production replica secondary) | NO-GO stands | excess CAGR +4.367 pt/yr vs SPY; NW t 0.761 (registered: t ≥ 3 and excess ≥ +1); primary window |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-10-19-production-replica-audit-nogo.md` |
 | cross-asset-commodity-trend | commodity_trend 12-1 commodity momentum (A3) | NO-GO | OOS Sharpe 0.13 vs SPY 0.74, CAGR 1.0%, MaxDD -37.0% (SPY -33.7%), gate pass 27/50 (54%), eval_start 2013-01-01, 50 folds |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-07-20-commodity-trend-nogo.md` |
 | cross-asset-etf-implied-fx-expectations | ETF-implied FX expectations (A6) | untriaged; contested pending direct re-read |  |  | 2, 3, 5 | `docs/research/WEB_RESEARCH_CANDIDATES.md` |
-| cross-asset-fomc-drift-corrected-harness | fomc_drift corrected-harness replay and day-clustered event study | not significant | net t 0.981 (p 0.3288; n_event_dates 113); gross t 2.258 (p 0.0258) |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-10-19-production-replica-audit-nogo.md` |
+| cross-asset-fomc-drift-corrected-harness | fomc_drift corrected-harness replay and day-clustered event study | NO-GO stands | net t 0.981 (p 0.3288; n_event_dates 113); gross t 2.258 (p 0.0258) |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-10-19-production-replica-audit-nogo.md` |
 | cross-asset-fomc-drift-wfo | fomc_drift pre-FOMC long-Treasury drift WFO (A7, July 2026) | NO-GO | OOS Sharpe 0.10, total return 0.45%, CAGR 0.03%, MaxDD -1.2%, WFE 0.44 (below 0.50 floor), regime halt active, 54 folds, eval_start 2012-01-01 |  | 1, 2, 4, 5, 6, 7, 9 | `docs/research/2026-07-20-fomc-drift-nogo.md` |
 | cross-asset-fx-hedge-overlay | fx_hedge_overlay dynamic FX hedge (A1) | NO-GO | Dynamic Sharpe 0.41, CAGR 6.0%, MaxDD -36.7%; static 50/50 Sharpe 0.66; static 100% hedged Sharpe 0.73; OOS window 2017-01-02 to 2026-06-30; standalone WFE 1.10, 38 folds |  | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/research/2026-07-20-fx-hedge-overlay-nogo.md` |
 | cross-asset-month-end-treasury | month_end_treasury IEF last-3-days sleeve (A10) | NO-GO | WFO OOS Sharpe 0.61 vs SPY 0.79 (5 bp, OOS 2022-01 → 2026-04); gates 13/17, halted; top winner 5/17. Frozen rule standalone Sharpe 0.96 at 1 bp, pinned 2021-01-31 → 2026-04-30 | false | 1, 2, 3, 4, 5, 6, 7, 9 | `docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md` |
@@ -173,21 +183,25 @@ Sorted by market, then id. "Live" is `live_deployed` (blank = null). Full claims
 | crypto-binance-us-live-trader | Binance.US live crypto trader status | On hold | Deployed 2026-05-23; never opened a trade | true | 2, 3, 5, 7, 8, 9 | `docs/archive/roadmap-pre-lab.md` |
 | crypto-config-tweaks-reverted-2026-04-02 | Crypto config tweaks tested and reverted (2026-04-02) | reverted | cut portfolio from 32→26 coins | false | 2, 3, 5, 7, 8, 9 | `docs/changelog.md` |
 | crypto-defi-tokenized-equity-arb | DeFi / tokenized-equity 24/7 arbitrage | Do not build — watch-and-revisit only |  | false | 2, 3, 5, 8 | `docs/research/WEB_RESEARCH_CANDIDATES.md` |
+| crypto-diversity-cap-disabled-2026-05-07 | Crypto MAX_COINS_PER_STRATEGY diversity cap disabled | disabled | 13 psar_adx winners surviving despite a configured cap of 10 in the 2026-05-07 5y research |  | 2, 5, 7, 8, 9 | `docs/changelog.md` |
 | crypto-edge-search-2026-06-08 | Crypto edge search (gates, universe, fees) | no deployable edge | combined CAGR +13.8%, Sharpe 0.54, Max DD -30.4%; BTC buy-hold +38.8% | false | 2, 3, 4, 5, 7, 8 | `docs/archive/edge_search_report_2026-06-08.md` |
+| crypto-execution-venue-fees | Crypto execution venue fee comparison (Alpaca, Kraken Pro, Binance.US) |  | Maker / Taker Rates (Low Volume): Alpaca Crypto 0.15% / 0.25% (Tier 1) down to 0.00% / 0.10%; Kraken (Kraken Pro) 0.25% / 0.40% (low volume) down to 0.00% / 0.05%; Binance.US 0% / 0.02% |  | 5, 7, 8 | `docs/research/2026-07-06-crypto-execution-venues.md` |
 | crypto-funding-carry-phase4 | FundingCarryBTC Phase 4 (real funding and basis proxy) | directionally credible but not numerically trustworthy | +0.45 %, Sharpe 4.44, Max DD -0.05 %, 8 trades; window 2025-05-15 → 2026-05-15 (1.00 years) |  | 2, 4, 5, 7, 8, 9 | `docs/archive/phase4_funding_carry.md` |
 | crypto-ibit-overnight-session | Crypto session directionality (IBIT overnight split) | closed in practice — do not build | IBIT close-to-open +186% vs open-to-close -43% (2024-01-11 to 2026-10-23); after NGHT launch overnight -9%, intraday +23% | false | 2, 3, 4, 5, 7, 8, 9 | `docs/research/WEB_RESEARCH_CANDIDATES.md` |
 | crypto-kraken-live-bot-pnl | Kraken live bot realized PnL and ledger repair | modestly profitable | +$9.88 realized over 5 days, 24 round trips, 5W/19L (local CSV showed -$123.38 with 0W/13L) | true | 2, 3, 4, 5, 7, 8, 9 | `docs/changelog.md` |
 | crypto-live-ohlcv-tz-bug | Crypto live OHLCV writer timezone bug |  | Every crypto symbol had ~346 off-grid bars from 2026-03-08 onward (US DST start) | true | 3, 5, 7, 8, 9 | `docs/changelog.md` |
 | crypto-perp-funding-carry-candidate | Crypto perpetual funding-rate carry candidate (#4) | Infeasible | 8,912 hourly rows, about 372 days (earliest 2025-07-13 as of 2026-07-20) | false | 2, 3, 5, 7, 8, 9 | `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` |
-| crypto-pipeline-runs-2026-03 | Crypto automated pipeline runs 2026-03-21..23 |  | Total return 15.86% \| CAGR 5.04% \| Sharpe 0.8183 \| Max DD -10.88% \| Trades 119; BH return 342.26% \| Excess CAGR -59.19% |  | 4, 5, 7, 8 | `docs/archive/pipeline_run_history.md` |
+| crypto-pipeline-runs-2026-03 | Crypto automated pipeline runs 2026-03-21..23 |  |  |  | 4, 5, 7, 8 | `docs/archive/pipeline_run_history.md` |
 | crypto-regime-filters | Crypto BTC/altcoin/per-coin regime filters |  | 17 days of zero entries; BTC gate sole blocker for 19 of 22 universe coins (confirmed via ggt signals) | true | 3, 4, 5, 7, 8, 9 | `docs/changelog.md` |
 | crypto-spot-etf-flow-persistence | Lagged spot-ETF flow persistence (A27) | parked (infeasible) |  | false | 2, 3, 5, 8 | `docs/research/WEB_RESEARCH_CANDIDATES.md` |
+| crypto-strategy-usage-analyzer-2026-05-07 | Crypto strategy-usage analyzer win counts |  | mtf_momentum and stoch_rsi_reversal at 0 wins across 4 runs |  | 5, 7, 8 | `docs/changelog.md` |
+| crypto-trade-frequency-gate-2026-05-07 | Crypto WFO trade-frequency gate MIN_TRADES_PER_YEAR added |  | Hits TRX/SOL/DASH (1 trade over 5y) and ADA (16 trades over 5y) from the prior run |  | 5, 7, 8 | `docs/changelog.md` |
 | crypto-tsmom-btc | Crypto time-series momentum BTC long/flat (A16) | untriaged (literature only) | Sharpe 1.51 vs 0.84 for the market, net of costs (as reported in the source's verified abstract) |  | 2, 4, 5, 7, 8 | `docs/research/WEB_RESEARCH_CANDIDATES.md` |
 | crypto-universal-trailing-stops | Crypto universal trailing stops on live sells |  |  | true | 3, 5, 8 | `docs/changelog.md` |
 | crypto-venue-migration-path-d | Venue migration Kraken to Binance.US, Path D | defer (90-day) | 22 of 36 textbook-validated combos go live across BTC/ETH/DOGE; TRX Binance.US 24h volume $2.0K | false | 2, 3, 4, 5, 7, 8 | `docs/changelog.md` |
 | crypto-web-research-batch-2026-10-25 | Crypto web-research batch 2026-10-25 | Literature candidates in the register |  |  | 2, 5, 8 | `docs/research/RESEARCH_SNAPSHOT.md` |
 | crypto-wfo-overfitting-param-stability | Crypto WFO overfitting steps (param stability, z-rank) | NO-OP | picks changed on 0 of 4 surviving coins; n_oos_gt_0 2 vs 2; n_survivors 4 vs 4 |  | 2, 3, 4, 5, 7, 8, 9 | `docs/changelog.md` |
+| crypto-wfo-recalibration-2026-05-01 | Crypto monthly WFO recalibration run 2026-05-01 (deployed live) |  | YTD Strategy CAGR of 48.46% (vs BTC at -21.34%) in the validation window | true | 3, 4, 5, 7, 8, 9 | `docs/changelog.md` |
 | crypto-wfo-research-snapshots-kraken | Crypto WFO research snapshots, Kraken era (Mar-May 2026) |  | 32 coins, WFO CAGR 15.46%, YTD -10.66% (vs BTC -20.92%) | true | 3, 4, 5, 7, 8, 9 | `docs/changelog.md` |
-| crypto-wfo-selection-changes-2026-05-07 | Crypto WFO selection changes (diversity cap, trade-frequency gate, usage analyzer) | disabled | 13 psar_adx winners surviving despite a configured cap of 10 in the 2026-05-07 5y research |  | 2, 5, 7, 8, 9 | `docs/changelog.md` |
 | crypto-wfo-textbook-reset | Crypto WFO textbook reset | closed | 35–36 validated combos under frictionless conditions; zero combos pass under realistic fees (0.4% per-side + 0.3% slippage = 1.4% round-trip) | true | 2, 3, 4, 5, 7, 8 | `docs/changelog.md` |
 | crypto-wfo-tournament-robustness | Crypto WFO tournament strategy robustness (keltner, stoch_rsi) |  | robustness 0.99 (#2 overall, TAO-USD) | true | 3, 5, 7, 8 | memory: project_strategies_april2026.md |

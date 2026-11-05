@@ -106,11 +106,21 @@
       {
         "source": "/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_static_leverage_a23_2026-09-30.md lines 11-18",
         "quote": "70/30 SPY/SSO (~1.3x, band 22–38%, month-end): after-tax CAGR **12.00% vs SPY 10.40%**"
+      },
+      {
+        "source": "docs/research/2026-09-30-static-fractional-leverage.md, section 1 Executive Summary, lines 21-23",
+        "quote": "margin falling to +0.80 pt/yr at today's ~4% bills, below the +1.0 bar.",
+        "added_in_fix_round": 1
+      },
+      {
+        "source": "docs/research/2026-09-30-static-fractional-leverage.md, section 7 Addendum (2026-10-19), line 297",
+        "quote": "Both figures remain below the pre-registered **+1.0 pp/yr** hurdle bar.",
+        "added_in_fix_round": 1
       }
     ],
-    "conflicts": "Report verdict 'GO for owner decision'; snapshot calls it an 'owner allocation choice, not a Sharpe-based lab GO'; archive notes the lab Sharpe-vs-SPY gate fails (0.61 vs 0.64).",
+    "conflicts": "Report verdict 'GO for owner decision'; snapshot calls it an 'owner allocation choice, not a Sharpe-based lab GO'; archive notes the lab Sharpe-vs-SPY gate fails (0.61 vs 0.64). Same report: historical +1.6 pt/yr clears the bar, but at today's bills the margin is +0.80 pt/yr (+0.77 pp/yr under the section 7 ordinary-distribution bound), below the pre-registered +1.0 bar.",
     "superseded_by": null,
-    "notes": "Owner-adopted allocation; not yet implemented in live per sources. Raw row 664 (snapshot) was extracted under A24 but its 11.17% vs 10.40% figure is the A23 distribution-tax bound; reassigned here. Raw row 107 extracted '+2.5 pt' as a headline but it is the bill-funding level of a planned re-run, not a result."
+    "notes": "Owner-adopted allocation; not yet implemented in live per sources. Raw row 664 (snapshot) was extracted under A24 but its 11.17% vs 10.40% figure is the A23 distribution-tax bound; reassigned here. Raw row 107 extracted '+2.5 pt' as a headline but it is the bill-funding level of a planned re-run, not a result. The same report downgrades the GO: section 1 and the section 3 funding-cost check give +0.80 pt/yr at today's ~4% bills, and the section 7 addendum gives +0.77 pp/yr under the ordinary-distribution bound; both are below the pre-registered +1.0 bar."
   },
   {
     "id": "stocks-a24-sleeve-trend-rider",
@@ -281,7 +291,7 @@
     "market": "stocks",
     "claim": "The 2026-08-14 AVB RSI exit is a data-integrity failure: the ohlcv AVB series tracks EQR's price level from 2026-07-20, not a warm-up effect.",
     "headline_number": "ohlcv AVB close 68.69 on 2026-07-20 vs EQR 68.80; phantom −64% crash; live account still holds 4.050706521 merged AVB shares",
-    "verdict": "CORRECTED: data-integrity failure",
+    "verdict": "CORRECTED",
     "source_report": "docs/research/2026-09-28-live-indicator-warmup.md",
     "raw_artifact": null,
     "live_deployed": true,
@@ -309,7 +319,7 @@
     ],
     "conflicts": null,
     "superseded_by": null,
-    "notes": "no raw artifact"
+    "notes": "no raw artifact verdict is the report's label at line 131; the extractor's paraphrase was 'CORRECTED: data-integrity failure' (report: 'CORRECTED: it's a data-integrity failure')."
   },
   {
     "id": "stocks-bb-reversion",
@@ -553,7 +563,7 @@
     "name": "conviction_bb conviction position sizing",
     "market": "stocks",
     "claim": "Conviction sizing listed as inactive with no extra profit.",
-    "headline_number": "Zero extra profit (no numeric value in table)",
+    "headline_number": "Zero extra profit",
     "verdict": "Inactive",
     "source_report": "docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
     "raw_artifact": null,
@@ -580,7 +590,7 @@
     ],
     "conflicts": null,
     "superseded_by": null,
-    "notes": "no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null."
+    "notes": "no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null. Source table gives no numeric value (extractor comment moved from headline)."
   },
   {
     "id": "stocks-core-spy-blend-keep",
@@ -1029,7 +1039,7 @@
     "name": "Ensemble paper trading on Alpaca (deployment)",
     "market": "stocks",
     "claim": "Ensemble strategy deployed to Alpaca paper trading via the ggt paper CLI, signal runner, trader, notifier, persistence layer and cron wrapper.",
-    "headline_number": "WFO Sharpe 1.11 vs SPY 0.59 (as stated in note)",
+    "headline_number": "WFO Sharpe 1.11 vs SPY 0.59",
     "verdict": null,
     "source_report": "docs/changelog.md",
     "raw_artifact": null,
@@ -1066,7 +1076,7 @@
     ],
     "conflicts": "A memory source cites WFO Sharpe 1.11 vs SPY 0.59 for the deployed ensemble, while the deployment-era changelog validation figure is 0.84 vs 0.59.",
     "superseded_by": null,
-    "notes": "Deployment decision row; 1.11 Sharpe figure in one memory source is the pre-reproduction number. headline_number taken from /home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_alpaca_paper_trading_2026-06-20.md (line 19) (primary states none). no raw artifact"
+    "notes": "Deployment decision row; 1.11 Sharpe figure in one memory source is the pre-reproduction number. headline_number taken from /home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_alpaca_paper_trading_2026-06-20.md (line 19) (primary states none). no raw artifact The 1.11 figure is as stated in the memory note (comment moved from headline)."
   },
   {
     "id": "stocks-ensemble-wfo-validated-2026-06-20",
@@ -2588,7 +2598,7 @@
     "verdict": "Researching",
     "source_report": "docs/roadmap.md",
     "raw_artifact": null,
-    "live_deployed": false,
+    "live_deployed": true,
     "lens_owners": [
       1,
       2,
@@ -2611,18 +2621,23 @@
       {
         "source": "/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_paper_recon_and_gate_fix_2026-06-27.md lines 18-21",
         "quote": "gate-pass 6→11/17, anchor folds 15→10, haircut 1.07→1.08/15.0%"
+      },
+      {
+        "source": "docs/roadmap.md, section 3 'Large + Mid-Cap Portfolio Blend' (line 152)",
+        "quote": "deploy mid-cap only as a diversification sleeve *behind* the deploy-clean large-cap core",
+        "added_in_fix_round": 1
       }
     ],
     "conflicts": "Roadmap verdict 'Researching' (15.0% / 1.08 after haircut); memory note verdict 'PASS (script verdict); NOT deploy-clean' with 14.5% / 1.07 before gate Lever A.",
     "superseded_by": null,
-    "notes": "Memory note gives 14.5%/1.07 before gate Lever A and 15.0%/1.08 after. no raw artifact"
+    "notes": "Memory note gives 14.5%/1.07 before gate Lever A and 15.0%/1.08 after. no raw artifact live_deployed true: MidCap 400 ran live as a sleeve of the 3-sleeve blend (stocks-three-sleeve-blend-1-14), and the roadmap decision was to deploy it only as a diversification sleeve; 'NOT deploy-clean' in the memory note is a quality verdict on standalone gating, not a deployment statement."
   },
   {
     "id": "stocks-ml-entry-gate-falsified",
     "name": "LightGBM ML entry gate ablation and falsification",
     "market": "stocks",
     "claim": "ML entry filter listed as NO-GO, anti-predictive.",
-    "headline_number": "Anti-predictive (no numeric value in table; §3 cites 0.56% vs 1.09% mean return)",
+    "headline_number": "Anti-predictive",
     "verdict": "NO-GO",
     "source_report": "docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
     "raw_artifact": null,
@@ -2664,7 +2679,7 @@
     ],
     "conflicts": null,
     "superseded_by": null,
-    "notes": "no raw artifact live flag mixed across sources (1 true, 4 false); true kept because a source states it is/was live."
+    "notes": "no raw artifact live flag mixed across sources (1 true, 4 false); true kept because a source states it is/was live. Source table gives no numeric value; per the extractor, the report's section 3 cites 0.56% vs 1.09% mean return (comment moved from headline)."
   },
   {
     "id": "stocks-ml-feature-gate-deploy",
@@ -2747,11 +2762,21 @@
       {
         "source": "docs/archive/next-steps-history-2026-11-03.md, 'Research context and standing decisions' item 2, lines 114-121",
         "quote": "differences are Big +0.08 and Small +0.20 percentage"
+      },
+      {
+        "source": "docs/research/2026-10-20-momentum-french-screen-nogo.md, size-matched diagnostic table, line 121",
+        "quote": "| Big | 3.724889 (`groups.big.size_matched.t`) | 0.000097701 (`groups.big.size_matched.p`) | +3.663765 pt/yr (`groups.big.size_matched.cagr_diff_pp`) |",
+        "added_in_fix_round": 1
+      },
+      {
+        "source": "docs/research/2026-10-20-momentum-french-screen-nogo.md, size-matched diagnostic table, line 122",
+        "quote": "| Small | 5.183887 (`groups.small.size_matched.t`) | 0.000000109 (`groups.small.size_matched.p`) | +5.135458 pt/yr (`groups.small.size_matched.cagr_diff_pp`) |",
+        "added_in_fix_round": 1
       }
     ],
-    "conflicts": null,
+    "conflicts": "Registered screen NO-GO (post-1994 net CAGR difference Big +0.08 / Small +0.20 pt/yr, Holm rejects neither) vs size-matched gross diagnostic t 3.72 / 5.18 and +3.66 / +5.14 pt/yr in the same report.",
     "superseded_by": null,
-    "notes": "extractor marked not-live but no source text states not deployed/shadow; set null."
+    "notes": "extractor marked not-live but no source text states not deployed/shadow; set null. Counter-evidence in the same report: the size-matched diagnostic (gross, no cost haircut) gives t 3.724889 Big / 5.183887 Small and +3.663765 / +5.135458 pt/yr versus same-size comparators; the registered screen is still NO-GO."
   },
   {
     "id": "stocks-mtf-reversion",
@@ -3319,11 +3344,26 @@
       {
         "source": "/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_strategy_audit_2026-10-19.md lines 15-18",
         "quote": "the replica's CAGR was 14.19% vs SPY's 14.83%, with a Newey-West t of −0.69, so it fails."
+      },
+      {
+        "source": "docs/research/_production_replica_results.json (JSON key verdict.verdict, about line 21786)",
+        "quote": "\"verdict\": { \"verdict\": \"INCONCLUSIVE\", \"stage\": \"stopped\", \"reasons\": [ \"holdout:tainted_trade:primary\" ] }",
+        "added_in_fix_round": 1
+      },
+      {
+        "source": "docs/research/_production_replica_results.json (JSON key closure.verdict, about line 21823)",
+        "quote": "\"closure\": { \"verdict\": \"NO-GO\", \"stage\": \"pretax_fail\", \"scope\": \"historical_daily_bar_model\",",
+        "added_in_fix_round": 1
+      },
+      {
+        "source": "docs/research/briefs/2026-10-19-production-replica-closure-amendment.md, line 52",
+        "quote": "Keep the raw driver's `verdict` as `INCONCLUSIVE/stopped`. Record the approved",
+        "added_in_fix_round": 1
       }
     ],
-    "conflicts": null,
+    "conflicts": "Raw JSON top-level verdict.verdict is INCONCLUSIVE (stage stopped, reason holdout:tainted_trade:primary) while closure.verdict is NO-GO (stage pretax_fail); docs/research/briefs/2026-10-19-production-replica-closure-amendment.md keeps the raw verdict as INCONCLUSIVE/stopped and records the NO-GO closure separately. Both recorded; neither chosen here.",
     "superseded_by": null,
-    "notes": "live flag mixed across sources (5 true, 4 false); true kept because a source states it is/was live."
+    "notes": "live flag mixed across sources (5 true, 4 false); true kept because a source states it is/was live. Raw JSON carries two verdicts: top-level verdict.verdict INCONCLUSIVE (stage stopped, holdout:tainted_trade:primary) and closure.verdict NO-GO (pretax_fail); the closure amendment brief keeps both."
   },
   {
     "id": "stocks-production-replica-holdout-2010-2020",
@@ -3585,7 +3625,7 @@
     "name": "6-indicator ensemble (with MTF voter)",
     "market": "stocks",
     "claim": "Ensemble variant with the MTF filter is listed as a NO-GO.",
-    "headline_number": "Degraded vs 5-voter (no numeric value in source table)",
+    "headline_number": "Degraded vs 5-voter",
     "verdict": "NO-GO",
     "source_report": "docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
     "raw_artifact": null,
@@ -3613,7 +3653,7 @@
     ],
     "conflicts": null,
     "superseded_by": null,
-    "notes": "Snapshot row 642 covers six-voter ensemble and trailing stops together. no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null."
+    "notes": "Snapshot row 642 covers six-voter ensemble and trailing stops together. no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null. Source table gives no numeric value (extractor comment moved from headline)."
   },
   {
     "id": "stocks-sp500-core-anchor-fix-reproduction",
@@ -3674,7 +3714,7 @@
     "verdict": "Live Core",
     "source_report": "docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
     "raw_artifact": "docs/research/_rebaseline_corrected_tape_20260822.json",
-    "live_deployed": null,
+    "live_deployed": true,
     "lens_owners": [
       1,
       2,
@@ -3719,9 +3759,9 @@
         "quote": "0.99 / CAGR 8.0% / MaxDD −7.7%; 3-sleeve blend @lev1.0 (live config) 0.69 / 4.8%;"
       }
     ],
-    "conflicts": null,
+    "conflicts": "Sources mix two configurations: 0.99 is the SP500 core, 0.69 the 3-sleeve blend at lev 1.0 (live at the time); verdict 'Live Core' is the 2026-09-10 table's status label for the core.",
     "superseded_by": "stocks-sp500-core-pit-rebaseline",
-    "notes": "0.99 was later attributed to the point-in-time membership gap (entries on non-member days). verdict taken from docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md §2 table and §1 (primary states none). extractor marked not-live but no source text states not deployed/shadow; set null."
+    "notes": "0.99 was later attributed to the point-in-time membership gap (entries on non-member days). verdict taken from docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md §2 table and §1 (primary states none). live_deployed true: the 2026-09-10 report table labels the 5-voter core 'Live Core', and the core became the live configuration on 2026-09-22 (stocks-live-revert-blend-to-core). At the 2026-08-22 re-baseline the live configuration was the 3-sleeve blend. Numbers by configuration: SP500 core Sharpe 0.99 / CAGR 8.0% / MaxDD -7.65% to -7.7%, 12/17 gates; 3-sleeve blend at lev 1.0 Sharpe 0.69 / CAGR 4.8% (also cited in stocks-live-revert-blend-to-core); SPY 0.78."
   },
   {
     "id": "stocks-sp500-core-pit-rebaseline",
@@ -3846,8 +3886,8 @@
       }
     ],
     "conflicts": "Archived doc marks Top-50 @ 2% 'RECOMMENDED' (Sharpe 2.153); a memory review note says 'do not approve as-is' and calls the figures invalid.",
-    "superseded_by": null,
-    "notes": "Review memory note rejected the doc (selection bias); figures invalid per that review. no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null."
+    "superseded_by": "stocks-wfo-tournament-sp500-monthly",
+    "notes": "Review memory note rejected the doc (selection bias); figures invalid per that review and the doc was superseded by the 2026-06-10 honest monthly walk-forward rebuild, whose verdict row is stocks-wfo-tournament-sp500-monthly. no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null."
   },
   {
     "id": "stocks-split-dividend-corrections",
@@ -4263,7 +4303,7 @@
     "market": "stocks",
     "claim": "Best voter set in the redone ablation; live default switched to 5-voter.",
     "headline_number": "Sharpe 0.89 / CAGR 10.5% / DD -10.5% / gate 14-of-17 (SP500, 17 folds); SPY 0.58 / 13.0% / -22.1%",
-    "verdict": "best (live switched to 5-voter)",
+    "verdict": "Best = core+macd+vbb (5-voter, drop MTF)",
     "source_report": "/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_voter_reconcile_2026-06-24.md",
     "raw_artifact": null,
     "live_deployed": true,
@@ -4293,7 +4333,7 @@
     ],
     "conflicts": null,
     "superseded_by": null,
-    "notes": "no raw artifact live flag mixed across sources (1 true, 2 false); true kept because a source states it is/was live."
+    "notes": "no raw artifact live flag mixed across sources (1 true, 2 false); true kept because a source states it is/was live. verdict uses the memory note's own words; the extractor's paraphrase was 'best (live switched to 5-voter)'. The note also states LIVE SWITCHED to 5-voter and labels the earlier 6-voter dilution verdict an ARTIFACT."
   },
   {
     "id": "stocks-wfo-anchor-leakage-fix",
@@ -4330,13 +4370,12 @@
     "market": "stocks",
     "claim": "Saved artifacts contain NaN WFE folds; whether they changed a halt is not established.",
     "headline_number": "4 NaN WFE folds in saved artifacts (PIT ensemble 3, PIT ensemble_ic 1)",
-    "verdict": "halt effect not established",
+    "verdict": null,
     "source_report": "docs/research/2026-11-02-wfo-fallback-semantics.md",
     "raw_artifact": null,
     "live_deployed": null,
     "lens_owners": [
       1,
-      2,
       5,
       7,
       9
@@ -4353,7 +4392,7 @@
     ],
     "conflicts": null,
     "superseded_by": null,
-    "notes": "no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null."
+    "notes": "no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null. verdict null: the report states no decision label (status: owner adoption pending); the extractor's paraphrase was 'halt effect not established' (report: whether NaN folds changed a halt is 'not established')."
   },
   {
     "id": "stocks-wfo-fold-attribution",
@@ -4697,7 +4736,7 @@
     "market": "cross-asset",
     "claim": "After clustering returns by meeting date, the FOMC net event effect is not statistically significant.",
     "headline_number": "net t 0.981 (p 0.3288; n_event_dates 113); gross t 2.258 (p 0.0258)",
-    "verdict": "not significant",
+    "verdict": "NO-GO stands",
     "source_report": "docs/research/2026-10-19-production-replica-audit-nogo.md",
     "raw_artifact": "docs/research/_fomc_clustered_event_study_20261020.json",
     "live_deployed": null,
@@ -4750,11 +4789,21 @@
       {
         "source": "/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_strategy_triage_2026-10-20.md lines 27 and 60",
         "quote": "(clustered FOMC: 113 days, gross t 2.258, net t 0.981)"
+      },
+      {
+        "source": "docs/research/briefs/2026-10-19-production-replica-fomc-timing-amendment.md, title and status",
+        "quote": "# Amendment: correct close-to-close event-return attribution",
+        "added_in_fix_round": 1
+      },
+      {
+        "source": "docs/research/2026-10-19-production-replica-audit-nogo.md, line 121",
+        "quote": "| FOMC primary pair | Not the decision metric | Net Welch t 1.572 | WFE 0.244 vs ≥ 0.50 | NO-GO stands |",
+        "added_in_fix_round": 1
       }
     ],
     "conflicts": "Unclustered estimates (net t 1.572 / gross 3.619, n 339; memory 'net t 1.57, gross t 3.6') vs day-clustered (net t 0.981 / gross 2.258, 113 dates); a brief cites a superseded ~2.1 estimate marked do-not-cite. Verdict NO-GO is the same in all.",
     "superseded_by": null,
-    "notes": "extractor marked not-live but no source text states not deployed/shadow; set null."
+    "notes": "extractor marked not-live but no source text states not deployed/shadow; set null. verdict is the report's decision label (lines 121 and 190); the extractor's paraphrase was 'not significant' (report text: 'not statistically significant')."
   },
   {
     "id": "cross-asset-fomc-drift-wfo",
@@ -5254,6 +5303,33 @@
     "notes": "no raw artifact"
   },
   {
+    "id": "crypto-diversity-cap-disabled-2026-05-07",
+    "name": "Crypto MAX_COINS_PER_STRATEGY diversity cap disabled",
+    "market": "crypto",
+    "claim": "Per-strategy coin diversity cap disabled because it replaced WFO-optimal picks and was applied per worker shard, not post-merge.",
+    "headline_number": "13 psar_adx winners surviving despite a configured cap of 10 in the 2026-05-07 5y research",
+    "verdict": "disabled",
+    "source_report": "docs/changelog.md",
+    "raw_artifact": null,
+    "live_deployed": null,
+    "lens_owners": [
+      2,
+      5,
+      7,
+      8,
+      9
+    ],
+    "sources": [
+      {
+        "source": "docs/changelog.md, 2026-05-07 'Disabled: MAX_COINS_PER_STRATEGY diversity cap' (lines 1959-1965)",
+        "quote": "`MAX_COINS_PER_STRATEGY: 10 → None`."
+      }
+    ],
+    "conflicts": null,
+    "superseded_by": null,
+    "notes": "no raw artifact"
+  },
+  {
     "id": "crypto-edge-search-2026-06-08",
     "name": "Crypto edge search (gates, universe, fees)",
     "market": "crypto",
@@ -5300,6 +5376,51 @@
     "conflicts": null,
     "superseded_by": null,
     "notes": "no raw artifact"
+  },
+  {
+    "id": "crypto-execution-venue-fees",
+    "name": "Crypto execution venue fee comparison (Alpaca, Kraken Pro, Binance.US)",
+    "market": "crypto",
+    "claim": "Historical venue fee comparison used to set crypto backtest fee and slippage parameters; not a tested strategy.",
+    "headline_number": "Maker / Taker Rates (Low Volume): Alpaca Crypto 0.15% / 0.25% (Tier 1) down to 0.00% / 0.10%; Kraken (Kraken Pro) 0.25% / 0.40% (low volume) down to 0.00% / 0.05%; Binance.US 0% / 0.02%",
+    "verdict": null,
+    "source_report": "docs/research/2026-07-06-crypto-execution-venues.md",
+    "raw_artifact": null,
+    "live_deployed": null,
+    "lens_owners": [
+      5,
+      7,
+      8
+    ],
+    "sources": [
+      {
+        "source": "docs/research/RESEARCH_INDEX.md line 63",
+        "quote": "| Crypto execution venues | **Feasibility:** historical venue comparison, not a tested crypto strategy or a current price quote. | [Venue comparison](2026-07-06-crypto-execution-venues.md) |"
+      },
+      {
+        "source": "docs/research/2026-07-06-crypto-execution-venues.md, section 2 fee table (Alpaca row)",
+        "quote": "| **Alpaca Crypto** | Tiered Commission | 0.15% / 0.25% (Tier 1) down to 0.00% / 0.10% |",
+        "added_in_fix_round": 1
+      },
+      {
+        "source": "docs/research/2026-07-06-crypto-execution-venues.md, section 2 fee table (Kraken row)",
+        "quote": "| **Kraken (Kraken Pro)** | Tiered Commission | 0.25% / 0.40% (low volume) down to 0.00% / 0.05% |",
+        "added_in_fix_round": 1
+      },
+      {
+        "source": "docs/research/2026-07-06-crypto-execution-venues.md, section 2 fee table (Binance.US row)",
+        "quote": "| **Binance.US** | Flat Commission | 0% / 0.02% |",
+        "added_in_fix_round": 1
+      },
+      {
+        "source": "docs/research/2026-07-06-crypto-execution-venues.md, section 3.2 Kraken Pro",
+        "quote": "Model using `fees=0.0025` (maker) or `fees=0.0040` (taker) for low-volume baselines.",
+        "added_in_fix_round": 1
+      }
+    ],
+    "conflicts": null,
+    "superseded_by": null,
+    "notes": "Material because it carries venue fee rates that feed the crypto fee findings; not a tested strategy. Fee figures copied from the report's comparison table (section 2). no raw artifact Raw row (RESEARCH_INDEX) labels it 'Feasibility'; the fee figures come from sources added by hand from the report itself."
   },
   {
     "id": "crypto-funding-carry-phase4",
@@ -5487,7 +5608,7 @@
     "name": "Crypto automated pipeline runs 2026-03-21..23",
     "market": "crypto",
     "claim": "Automated full-pipeline run recorded in the run-history index: strategy metrics vs equal-weight buy-and-hold.",
-    "headline_number": "Total return 15.86% | CAGR 5.04% | Sharpe 0.8183 | Max DD -10.88% | Trades 119; BH return 342.26% | Excess CAGR -59.19%",
+    "headline_number": null,
     "verdict": null,
     "source_report": "docs/archive/pipeline_run_history.md",
     "raw_artifact": null,
@@ -5614,7 +5735,7 @@
     ],
     "conflicts": null,
     "superseded_by": null,
-    "notes": "28 separate automated runs; headline_number is the first run only, each run's figures are in sources. no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null."
+    "notes": "28 separate automated runs; each run's figures are in sources. no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null. headline_number null: per-run figures in sources (28 runs; Sharpe ranges from -0.7668 to 1.4168 across runs)."
   },
   {
     "id": "crypto-regime-filters",
@@ -5672,6 +5793,56 @@
       {
         "source": "WEB_RESEARCH_CANDIDATES.md, '2026-10-25 batch' A27",
         "quote": "parked — infeasible for walk-forward until about 4+ years of"
+      }
+    ],
+    "conflicts": null,
+    "superseded_by": null,
+    "notes": "no raw artifact"
+  },
+  {
+    "id": "crypto-strategy-usage-analyzer-2026-05-07",
+    "name": "Crypto strategy-usage analyzer win counts",
+    "market": "crypto",
+    "claim": "Aggregated best_strategy selections across research runs to flag strategies that never win.",
+    "headline_number": "mtf_momentum and stoch_rsi_reversal at 0 wins across 4 runs",
+    "verdict": null,
+    "source_report": "docs/changelog.md",
+    "raw_artifact": null,
+    "live_deployed": null,
+    "lens_owners": [
+      5,
+      7,
+      8
+    ],
+    "sources": [
+      {
+        "source": "docs/changelog.md, 2026-05-07 'Added: strategy-usage analyzer' (lines 1955-1957)",
+        "quote": "Already showed `mtf_momentum` and `stoch_rsi_reversal` at 0 wins across 4 runs."
+      }
+    ],
+    "conflicts": null,
+    "superseded_by": null,
+    "notes": "no raw artifact"
+  },
+  {
+    "id": "crypto-trade-frequency-gate-2026-05-07",
+    "name": "Crypto WFO trade-frequency gate MIN_TRADES_PER_YEAR added",
+    "market": "crypto",
+    "claim": "Phase-3 trade-frequency gate catches coins whose WFO-counted trades do not survive contiguous replay.",
+    "headline_number": "Hits TRX/SOL/DASH (1 trade over 5y) and ADA (16 trades over 5y) from the prior run",
+    "verdict": null,
+    "source_report": "docs/changelog.md",
+    "raw_artifact": null,
+    "live_deployed": null,
+    "lens_owners": [
+      5,
+      7,
+      8
+    ],
+    "sources": [
+      {
+        "source": "docs/changelog.md, 2026-05-07 'WFO selection: trade-frequency gate, top-K fallback...' item (1) (line 1933)",
+        "quote": "Hits TRX/SOL/DASH (1 trade over 5y) and ADA (16 trades over 5y) from the prior run."
       }
     ],
     "conflicts": null,
@@ -5833,6 +6004,34 @@
     "notes": "no raw artifact extractor marked not-live but no source text states not deployed/shadow; set null."
   },
   {
+    "id": "crypto-wfo-recalibration-2026-05-01",
+    "name": "Crypto monthly WFO recalibration run 2026-05-01 (deployed live)",
+    "market": "crypto",
+    "claim": "Automated monthly recalibration ran and its production parameters were promoted to live trading.",
+    "headline_number": "YTD Strategy CAGR of 48.46% (vs BTC at -21.34%) in the validation window",
+    "verdict": null,
+    "source_report": "docs/changelog.md",
+    "raw_artifact": null,
+    "live_deployed": true,
+    "lens_owners": [
+      3,
+      4,
+      5,
+      7,
+      8,
+      9
+    ],
+    "sources": [
+      {
+        "source": "docs/changelog.md, 2026-05-01 'Monthly Recalibration: WFO Run Successful' (lines 2173-2179)",
+        "quote": "YTD Strategy CAGR of **48.46%** (vs BTC at **-21.34%**) in the validation window."
+      }
+    ],
+    "conflicts": null,
+    "superseded_by": null,
+    "notes": "no raw artifact"
+  },
+  {
     "id": "crypto-wfo-research-snapshots-kraken",
     "name": "Crypto WFO research snapshots, Kraken era (Mar-May 2026)",
     "market": "crypto",
@@ -5856,10 +6055,6 @@
         "quote": "`research_20260402_123248` — 32 coins, WFO CAGR 15.46%, YTD -10.66% (vs BTC -20.92%)"
       },
       {
-        "source": "docs/changelog.md, 2026-05-01 'Monthly Recalibration: WFO Run Successful' (lines 2173-2179)",
-        "quote": "YTD Strategy CAGR of **48.46%** (vs BTC at **-21.34%**) in the validation window."
-      },
-      {
         "source": "docs/changelog.md, 2026-04-01 'Research Results' (lines 2453-2456)",
         "quote": "`research_20260401_225306` — 33 coins, WFO CAGR 15.15%, YTD 27.41%"
       },
@@ -5874,42 +6069,7 @@
     ],
     "conflicts": null,
     "superseded_by": null,
-    "notes": "Several runs; headline_number is the 2026-04-02 run. no raw artifact live flag mixed across sources (2 true, 1 false); true kept because a source states it is/was live."
-  },
-  {
-    "id": "crypto-wfo-selection-changes-2026-05-07",
-    "name": "Crypto WFO selection changes (diversity cap, trade-frequency gate, usage analyzer)",
-    "market": "crypto",
-    "claim": "Per-strategy coin diversity cap disabled because it replaced WFO-optimal picks and was applied per worker shard, not post-merge.",
-    "headline_number": "13 psar_adx winners surviving despite a configured cap of 10 in the 2026-05-07 5y research",
-    "verdict": "disabled",
-    "source_report": "docs/changelog.md",
-    "raw_artifact": null,
-    "live_deployed": null,
-    "lens_owners": [
-      2,
-      5,
-      7,
-      8,
-      9
-    ],
-    "sources": [
-      {
-        "source": "docs/changelog.md, 2026-05-07 'Disabled: MAX_COINS_PER_STRATEGY diversity cap' (lines 1959-1965)",
-        "quote": "`MAX_COINS_PER_STRATEGY: 10 → None`."
-      },
-      {
-        "source": "docs/changelog.md, 2026-05-07 'WFO selection: trade-frequency gate, top-K fallback...' item (1) (line 1933)",
-        "quote": "Hits TRX/SOL/DASH (1 trade over 5y) and ADA (16 trades over 5y) from the prior run."
-      },
-      {
-        "source": "docs/changelog.md, 2026-05-07 'Added: strategy-usage analyzer' (lines 1955-1957)",
-        "quote": "Already showed `mtf_momentum` and `stoch_rsi_reversal` at 0 wins across 4 runs."
-      }
-    ],
-    "conflicts": null,
-    "superseded_by": null,
-    "notes": "Three distinct 2026-05-07 changelog items merged as one selection-rule change set. no raw artifact"
+    "notes": "Several runs; headline_number is the 2026-04-02 run. The 2026-05-01 monthly recalibration is split out to crypto-wfo-recalibration-2026-05-01. no raw artifact live flag mixed across sources (1 true, 1 false); true kept because a source states it is/was live."
   },
   {
     "id": "crypto-wfo-textbook-reset",
