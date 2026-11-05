@@ -28,36 +28,86 @@ judgement about any strategy. It does not recommend strategies, deployments or w
   task and found no difference from `docs/research/_investigation_guard_baseline_2026-11-04.txt`.
   I re-ran it after the incident below (2026-11-04 23:5x PST): still no difference (intraday
   observer timers, observer worktree HEAD, `ggtrader_live` container state, `data/` git status).
-- **Incident (my error; reported, not hidden).** To read driver options I ran a shell loop of
-  `scripts/<name>.py --help` over twelve driver scripts. `scripts/pead_correlation_check.py`
-  has no argument parser, ignored `--help` and started its body. It ran for about two minutes
-  (about 23:47 to 23:49:45 PST) before I stopped it. Its body calls `load_ohlcv`, which reads
-  through the DB cache loader, and that loader can write to the `ohlcv` table (it upserts
-  refetched bars and persists symbols missing from the cache; `src/ggTrader/lab/data.py:57-110`;
-  Lens 6 noted the same at `docs/research/2026-11-04-lens6-implementation-correctness.md:347-348`).
-  What SELECT-only checks show afterwards:
-  - PostgreSQL's table statistics show every `ohlcv` chunk from 2026-07-22 to 2026-11-04 was
-    auto-analyzed between 23:48:57 and 23:49:09 PST, inside the run's window. That points to
-    rows being upserted in those chunks. The table has no write timestamp, so which rows changed
-    cannot be read back.
-  - The likely mechanism is the loader's incremental refresh, which starts at 2026-08-11 because
-    of the stale symbol EA (Lens 6, lines 256-271). The 12:45 PT production run performs the same
-    refresh every weekday, rewriting those bars with current yfinance values.
-  - Bars that earlier lenses measured are unchanged: the partial 2026-11-04 bars for SPY (767.17,
-    volume 46,895,290) and HAS (122.255, volume 978,471) still match the values Lenses 1 and 6
-    recorded, and the VZ (07-14 to 07-17) and SPY (07-24) adjustment-seam bars still sit at the
-    ratios Lens 1 reported (VZ 43.59 against yfinance 42.92 on 07-17).
-  - No rows were added to `ohlcv_no_data` in the last three hours. The 14 index members Lens 1
-    found without tape still have none. No file under `data/` or `results/` changed.
-  - Nothing live was touched: no order, no container, no observer, no broker call.
+- **Incident (my error; reported, not hidden; corrected after review on 2026-11-05).** To read
+  driver options I ran a shell loop of `scripts/<name>.py --help` over twelve driver scripts.
+  `scripts/pead_correlation_check.py` has no argument parser, ignored `--help` and started its
+  body. It ran for about two minutes (about 23:47 to 23:49:45 PST on 2026-11-04) before I stopped
+  it. Its body calls `load_ohlcv` from a warm-up start 700 calendar days before 2015-06-01 (400 bars x
+  1.6 + 60 days; its log shows fetches starting 2013-07-01) to "today" (`scripts/pead_correlation_check.py:25-39`), and
+  `load_ohlcv` reads and writes through the database cache loader (`src/ggTrader/lab/data.py:57-110`;
+  Lens 6 noted the writes at `docs/research/2026-11-04-lens6-implementation-correctness.md:347-348`).
 
-  So the read-only rule was probably broken for a set of `ohlcv` bars from 2026-08-11 onward, by
-  the same kind of write the production cron makes daily. No lens figure was found to have
-  changed. The finding that matters for Phase 2: **every stock driver that loads prices through
-  `load_ohlcv` writes to the DB cache** (29 scripts under `scripts/` call it or the cached
-  loader). A Phase 2 run through any of them would break the "no database writes" rule unless the
-  owner accepts these cache writes or the driver reads SELECT-only. Item 0 of the decision block
-  asks about this.
+  **What it wrote (established with SELECT-only queries):**
+  - **It definitely wrote to the database.** The `symbol_inception` table carries a write
+    timestamp (`recorded_at`, set by the loader at
+    `src/ggTrader/data/live/cached_yfinance_loader.py:151-168`). 19 rows were rewritten at exactly
+    2026-11-04 23:48:18 PST, for APC, ARES, CAM, CSRA, CZR, EMC, GDDY, LITE, NE, PARA, PCL, POM,
+    QRVO, SBNY, SEDG, SPLS, STI, VEEV and XYZ.
+  - **Each of those 19 symbols was refetched over its full range and upserted.** The loader sends
+    a symbol to a full-range fetch when it has no cached bars, or when its first cached bar is more
+    than 7 days after the requested start and does not match its recorded inception
+    (`src/ggTrader/data/live/cached_yfinance_loader.py:329-345`). The full fetch is then written
+    with `INSERT ... ON CONFLICT ... DO UPDATE` over the whole fetched range (lines 257-263, called
+    at lines 355-368), and the new inception dates are recorded. All 31,967 `ohlcv` rows the 19
+    symbols now hold (yfinance, daily; sum of the 19 per-symbol row counts) lie inside the fetched
+    range (earliest 2013-10-16), so up to 31,967 rows were rewritten on today's yfinance adjustment
+    basis. The 12:45 PT production run's incremental refresh does not rewrite whole histories, so
+    this was not the same kind of write the cron makes daily.
+  - **Other rewrites cannot be ruled out or sized.** PostgreSQL's table statistics show every
+    `ohlcv` chunk from 2026-07-22 to 2026-11-04 auto-analyzed between 23:48:57 and 23:49:09 PST.
+    That fits the loader's incremental refresh (from about 2026-08-11 for other symbols, because
+    of the stale symbol EA; Lens 6 lines 256-271), but `ohlcv` has no write timestamp, so which
+    other rows changed cannot be read back.
+  - **`ohlcv_no_data` was not touched:** its latest `checked_at` is 2026-10-19 18:35 PST
+    (173 rows). No file under `data/` or `results/` changed. Nothing live was touched: no order,
+    no container, no observer, no broker call. The guard snapshot is unchanged.
+
+  **A lens figure did change: PARA.**
+  - Lens 1 measured PARA closes from 72.20 to 113,900 over its S&P 500 membership
+    (2022-02-17 to 2025-07-23), near $100,000 through 2023 Q3, about 25,700 in 2024 Q1 and about
+    42 in 2025 Q3, median volume 9 (`docs/research/2026-11-04-lens1-backtest-validity.md:37-41, 208-210`).
+    Lens 2 quotes the same figures (`docs/research/2026-11-04-lens2-verdict-audit.md:381`).
+  - The database now shows, over the same membership window: maximum close 3,935.11, minimum
+    5.96, median volume 8. Quarterly maxima are about 3,386-3,935 from 2022 Q1 to 2023 Q4,
+    887.9 in 2024 Q1 and 57.6 in 2025 Q3. The two highest reference points both shrank by the
+    same factor (113,900 / 3,935.11 = 28.9; 25,700 / 887.9 = 28.9). The low end did not follow that
+    factor (Lens 1's minimum 72.20 against 5.96 now), so this is not a uniform rescaling.
+  - PARA is still the wrong security (prices in the thousands, median volume 8-9 shares), but the
+    PARA figures in Lens 1, Lens 2 and finding 1 of section 3b below can no longer be reproduced
+    from the database.
+  - **The other 18 symbols:** I searched every lens report, the Phase 0 audit, the inventory report
+    and the lens JSON files for each symbol. Only SBNY is cited, in Lens 1's list of members whose
+    maximum/minimum close exceeds 50x in 2021-01-31..2026-04-30
+    (`docs/research/2026-11-04-lens1-backtest-validity.md:414-416`); the database still reproduces
+    that (ratio 766). No lens cites a price, volume or return for the other 17.
+
+  **My earlier check did not test the affected set.** The first version of this section said "no
+  lens figure was found to have changed", based on SPY, HAS and VZ bars. None of those is among
+  the 19 rewritten symbols. That check was mine, and it was relied on in the first version of this
+  checkpoint and my task report.
+
+  **Consequences, stated plainly:**
+  - The investigation's read-only rule was broken.
+  - Phase 1 evidence for these 19 symbols is no longer exactly reproducible from the database
+    (for PARA, demonstrably not).
+  - Every Phase 2 stock item would run on the post-incident tape.
+  - The write cannot be undone from inside this investigation. Whether to restore the 19 symbols
+    from a backup is an owner decision. What exists, established read-only: the table
+    `ohlcv_yf_preshift_backup_20260820` (bars stamped one day early, the pre-migration state, ending
+    mid-August 2026; it holds PARA, SBNY and ARES rows) and the file
+    `backups/ohlcv_yf_preshift_20260820.sql.gz` (same date; contents not opened). Whether either is
+    a suitable restore source, and whether any later backup exists, is not established.
+  - **Live trader exposure.** The live trader's universe is the S&P 500 point-in-time membership as
+    of the run date (`src/ggTrader/paper/signal_runner.py:60-77`, `universe_members_asof`). By the
+    membership file, 5 of the 19 are current members: ARES, GDDY, LITE, VEEV and XYZ, so their
+    rewritten bars are inside the live signal window (365 days). The paper ledger shows two ARES
+    trades, the last on 2026-10-22. Whether the rewrite changes any live signal is unknown (not
+    compared).
+
+  **Consequence for Phase 2:** 29 scripts under `scripts/` call `load_ohlcv` or the cached loader.
+  Through them, a run can write (a) full-history rewrites of `ohlcv` for symbols with no cache or a
+  changed inception, (b) incremental refreshes of recent bars, (c) `symbol_inception` rows and
+  (d) possibly `ohlcv_no_data` rows. Decision 0 in section 7 asks about this.
 
 ## 1. Coverage against the inventory
 
@@ -114,8 +164,8 @@ counts the ❓ lines in each report's Done checklist.
 
 | Lens | Report | Commits (add, correction) | Review rounds | Done status | Unknown items |
 |---|---|---|---|---|---|
-| 1 Backtest validity | `docs/research/2026-11-04-lens1-backtest-validity.md` | 77cecdab, 6576811e | 2 (1 fix round) | Done by the design's rule: every question answered or marked unknown with a cheapest test. Unknown: adjustment-seam extent beyond VZ and SPY; PARA's effect on the replica and core; day-shift direction per July event study (lines 460-481) | 3 |
-| 2 Verdict audit | `docs/research/2026-11-04-lens2-verdict-audit.md` | 1b6c60d6, 3dfacd83 | 2 (1 fix round) | Done. Unknown: whether strict bars rejected small real effects (no SE or MDE for most rows); how much each of 18 revisions moved each verdict; PARA's effect; simpler-test outcome for 48 gated rows; crypto rows inconclusive on data (lines 1164-1187) | 5 |
+| 1 Backtest validity | `docs/research/2026-11-04-lens1-backtest-validity.md` | 77cecdab, 6576811e | 2 (1 fix round) | Done by the design's rule: every question answered or marked unknown with a cheapest test. Unknown: adjustment-seam extent beyond VZ and SPY; PARA's effect on the replica and core; day-shift direction per July event study (lines 464-485) | 3 |
+| 2 Verdict audit | `docs/research/2026-11-04-lens2-verdict-audit.md` | 1b6c60d6, 3dfacd83 | 2 (1 fix round) | Done. Unknown: whether strict bars rejected small real effects (no SE or MDE for most rows); how much each of 18 revisions moved each verdict; PARA's effect; simpler-test outcome for 48 gated rows; crypto rows inconclusive on data (lines 1168-1191) | 5 |
 | 3 Live parity | `docs/research/2026-11-04-lens3-live-parity.md` | c145d1ed, a825594b | 2 (1 fix round) | Done. Unknown: partial-bar signal parity; Alpaca's EOD valuation of AVB; rejected orders outside 09-25 (lines 469-482) | 3 |
 | 4 Feasibility and ceiling | `docs/research/2026-11-04-lens4-feasibility-and-ceiling.md` | bad6d855, 18cac0da | 2 (1 fix round) | Done. Unknown: crypto ceiling (Lens 8 was not yet committed; it now is, 392158e5); confidence intervals for leverage, cross-asset, French-screen and century rows; replica after-tax (lines 545-564) | 3 |
 | 5 Coverage gaps | `docs/research/2026-11-04-lens5-coverage-gaps.md` | e14494e2, 9769a79d | 2 (1 fix round; Sonnet review) | Done. Unknown: external crowding per family; crypto detail (deferred to Lens 8, now committed) (lines 554-567) | 2 |
@@ -165,13 +215,13 @@ From Lens 3:
 
 | # | Finding, plain language | Where | Owner decision needed to look further? |
 |---|---|---|---|
-| 1 | The S&P 500 member PARA is the wrong security in the price table for its whole membership (prices up to 113,900; median volume 9 shares). The replica, the most trusted stock result, bought and sold it 3 times and its taint check did not flag it. Effect on the result: not measured. | `docs/research/2026-11-04-lens1-backtest-validity.md:33-37, 204-210` | Yes: measuring it needs a replica re-run (P2-16) |
-| 2 | Stored prices mix dividend-adjustment levels. The price cache never re-adjusts older bars, so where a later download overlaps an earlier one a dividend shows up as a fake one-day move (VZ: -1.7% on 2026-07-20 against -0.2% in yfinance; SPY bars through 07-24 sit 0.25% high). Live signals read this same table, so a fake move can reach a live indicator. How many such seams exist was not measured. | Lens 1 lines 38-42, 234-250, 326-328 | No for a read-only count (P2-09); any repair is outside this investigation |
-| 3 | In the price table AVB has carried EQR's price since 2026-07-20. | Lens 1 lines 43, 214-215 | Noted only |
-| 4 | 14 index members in 2021-2026 have no prices in the table (for example ABC, ANTM, VIAC), so those member-days are missing from every stock backtest. | Lens 1 lines 44-46, 216-225 | Noted only |
-| 5 | The 2010-2020 price data has identity faults (5,595 daily moves of 40% or more across 217 symbols), which is why there is no clean holdout. | Lens 1 lines 47-48 | Yes: a clean holdout is a multi-day item (P2-28) |
-| 6 | The index membership file ends on 2026-06-02; some old tickers (FB, INFO, DISCA) now carry other securities (outside their membership windows); 9,567 bars close below $0.05 and 18 have a high below the low. | Lens 1 lines 226-233, 264 | Noted only |
-| 7 | Some paper-versus-SPY comparisons used SPY's price return while the paper side included dividends. | Lens 1 lines 58-62, 329-330 | Noted only |
+| 1 | The S&P 500 member PARA is the wrong security in the price table for its whole membership (prices up to 113,900, median volume 9 shares, as measured before the 2026-11-04 incident; not reproducible from the database now, see the incident section). The replica, which Lens 2 classes inconclusive (formerly rated by Phase 0 as the most trusted stock result), bought and sold it 3 times and its taint check did not flag it. Effect on the result: not measured. | `docs/research/2026-11-04-lens1-backtest-validity.md:37-41, 208-214` | Yes: measuring it needs a replica re-run (P2-16) |
+| 2 | Stored prices mix dividend-adjustment levels. The price cache never re-adjusts older bars, so where a later download overlaps an earlier one a dividend shows up as a fake one-day move (VZ: -1.7% on 2026-07-20 against -0.2% in yfinance; SPY bars through 07-24 sit 0.25% high). Live signals read this same table, so a fake move can reach a live indicator. How many such seams exist was not measured. | Lens 1 lines 42-46, 238-254, 330-332 | No for a read-only count (P2-09); any repair is outside this investigation |
+| 3 | In the price table AVB has carried EQR's price since 2026-07-20. | Lens 1 lines 47, 218-219 | Noted only |
+| 4 | 14 index members in 2021-2026 have no prices in the table (for example ABC, ANTM, VIAC), so those member-days are missing from every stock backtest. | Lens 1 lines 48-50, 220-229 | Noted only |
+| 5 | The 2010-2020 price data has identity faults (5,595 daily moves of 40% or more across 217 symbols), which is why there is no clean holdout. | Lens 1 lines 51-52 | Yes: a clean holdout is a multi-day item (P2-28) |
+| 6 | The index membership file ends on 2026-06-02; some old tickers (FB, INFO, DISCA) now carry other securities (outside their membership windows); 9,567 bars close below $0.05 and 18 have a high below the low. | Lens 1 lines 230-237, 268 | Noted only |
+| 7 | Some paper-versus-SPY comparisons used SPY's price return while the paper side included dividends. | Lens 1 lines 62-66, 333-334 | Noted only |
 | 8 | The day's unfinished 12:45 PT bar is overwritten in the price table only by accident: a stale symbol (EA, last bar 2026-08-10) pulls every refresh back to 2026-08-11. Without it, partial bars would stay in the research tape. | Lens 6 lines 256-271 | Noted only |
 | 9 | Live compares a partial day's volume with a 20-day average of full days for the volume voter, and needs only 60 bars of history where the backtests default to 400. | Lens 6 table rows 6 and 8 (lines 243, 245) | Noted only (P2-14 measures the partial-bar part) |
 | 10 | The lab's "stability-aware live parameters" function has no consumer; live always uses class defaults. | Lens 6 lines 285-287 | Noted only |
@@ -204,7 +254,8 @@ should be done. Nothing on this list runs until the owner approves it by id.
   where named, is read-only (allowed for Lens 3 by design section 3).
 - **Peak memory has not been recorded for any driver** (no artifact stores it), so memory is
   "unknown" for every item; the 6 GB cap bounds it.
-- **Database writes.** Items marked "DB-cache writes" use drivers that load prices through
+- **Database writes.** Items marked "DB-cache writes" (tagged "writes to the price cache" in
+  section 7) use drivers that load prices through
   `load_ohlcv` and so write to the `ohlcv` table (see the incident above). They need decision 0.
 - Runtimes come from `elapsed_sec` fields in the artifacts where they exist
   (`docs/research/_audit_reruns_20261019.json`: xs_momentum 2,230 s, dual_momentum 1,877 s, FOMC
@@ -222,7 +273,7 @@ depend on each other.
 window behind the 1.12 Sharpe (it used "now" as its end date); the 2026-07-13 raw output behind
 1.14; the April-May 2026 crypto runs (their tape was wiped and re-imported on 2026-05-05;
 `docs/research/2026-11-04-lens8-crypto.md:636`); whether SPY's stray rows existed before
-2026-06-20 (the table has no write timestamps; `docs/research/2026-11-04-lens1-backtest-validity.md:450-451`).
+2026-06-20 (the table has no write timestamps; `docs/research/2026-11-04-lens1-backtest-validity.md:454-455`).
 
 ### Summary table
 
@@ -273,7 +324,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   `docs/research/_wfo_fold_attribution_results.json`); split OOS fold returns into folds ending
   in 2022 and the rest; report means and counts. Driver would need writing: a 30-line script.
 - Window/config: the artifacts' own pinned windows (2021-01-31 to 2026-04-30); no leverage setting.
-- Runtime: minutes. Memory: unknown, small. Data: committed JSON only.
+- Runtime: minutes. Memory: unknown, small (capped at 6 GB, as in the rules above). Data: committed JSON only.
 - Could change: no verdict or class (folds overlap and are not independent, per Lens 9). It adds
   a description of how much of each OOS result sits in 2022.
 - Changes nothing if: the split is similar across both groups.
@@ -283,7 +334,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   verdict or class changes on this result."
 
 **P2-02. MDE for the French momentum, factor and net-issuance screens.**
-- Unknown: their power in pp/yr (Lens 2 lines 46-56 and 1181-1182; Lens 9 lines 555-561; Lens 4
+- Unknown: their power in pp/yr (Lens 2 lines 50-60 and 1185-1186; Lens 9 lines 555-561; Lens 4
   lines 560-562).
 - Method: recompute the monthly net excess series from the frozen archives in
   `data/external/french/` (read-only) with each screen's registered construction, and store the
@@ -293,12 +344,12 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   SE per hypothesis), run with `--out` pointing to a new file. Then MDE = (t-bar + 0.84) x SE.
 - Window/config: the registered windows (factor 1963-07 to 2026-04; momentum 1927 onward with the
   post-1994 bar; net issuance as registered); no leverage.
-- Runtime: minutes (the momentum screen recorded 0.07 s). Memory: unknown, small. Data: frozen
+- Runtime: minutes (the momentum screen recorded 0.07 s). Memory: unknown, small (capped at 6 GB, as in the rules above). Data: frozen
   free French files already on disk.
 - Could change: Lens 2's power condition for three rows that fail only that condition (lines
-  52-54). If an MDE is at or below the row's bar, that row could move from inconclusive to
+  56-58). If an MDE is at or below the row's bar, that row could move from inconclusive to
   reliable NO; if above, it stays inconclusive. Lens 2's indicative note puts the momentum MDE
-  near 2.5 pp/yr over 1927-2026 against a +1.0 bar (lines 63-72), which points to "stays".
+  near 2.5 pp/yr over 1927-2026 against a +1.0 bar (lines 67-76), which points to "stays".
 - Changes nothing if: each MDE exceeds its registered bar.
 - Owner flag: no (offline, no DB).
 - Pre-registration: "Question: what is the MDE (t >= 3, 80% power) in pp/yr for each registered
@@ -308,12 +359,13 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 
 **P2-03. Month-end Treasury WFO under the DSR fix.**
 - Unknown: whether its NO-GO holds on current code; its only failing Lens 2 condition is that its
-  WFO predates the DSR units fix (Lens 2 line 57; Lens 1 line 159).
+  WFO predates the DSR units fix (Lens 2 line 61; Lens 1 line 163).
 - Method: `scripts/run_capped.sh .venv/bin/python scripts/month_end_treasury_wfo.py --force --out <new file>`.
 - Window/config: pinned in the driver, 2021-01-31 to 2026-04-30; 1 bp costs as stored; single
   overlay funded from SPY, no blend, so max-leverage does not apply.
 - Runtime: about 16 s of compute recorded (`wfo_elapsed_s` 11.4 plus primary 4.5). Memory:
-  unknown. Data: DB tape for IEF and SPY. **DB-cache writes** (the driver uses `load_ohlcv`).
+  unknown (capped at 6 GB, as in the rules above). Data: DB tape for IEF and SPY. **DB-cache
+  writes** (the driver uses `load_ohlcv`).
 - Could change: Lens 1 state (contaminated to clean on the DSR item). If the NO holds, the row
   meets Lens 2's data condition and could move from inconclusive to reliable NO; if the overlay now
   beats its SPY funding leg, the recorded NO-GO is in question. Either direction is possible.
@@ -332,7 +384,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   and the same with `--rf-offset 0.015`.
 - Window/config: driver defaults 2006-06-21 to 2026-09-29, spread 0.75%; no lab max-leverage
   setting (leverage is the SSO weight).
-- Runtime: minutes (estimate; not recorded). Memory: unknown. Data: frozen checksummed inputs on
+- Runtime: minutes (estimate; not recorded). Memory: unknown (capped at 6 GB, as in the rules above). Data: frozen checksummed inputs on
   disk; no DB.
 - Could change: the Lens 4 ceiling condition for the 2.0x arm (lower at higher funding, in
   principle). No inventory verdict: A23 is out of scope (design section 2) and this does not
@@ -357,13 +409,13 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 
 **P2-06. French top-decile big-cap momentum after 1994.**
 - Unknown: whether a concentrated big-cap momentum portfolio differs from the top-30% proxy the
-  screen used (`docs/research/2026-11-04-phase0-trust-audit.md:35, 108`; Lens 2 line 54).
+  screen used (`docs/research/2026-11-04-phase0-trust-audit.md:35, 108`; Lens 2 line 58).
 - Method: the frozen file `6_Portfolios_ME_Prior_12_2` has no decile split. A free French
   library file with size-by-momentum quintiles or momentum deciles would need downloading and
   freezing with a checksum, then the registered post-1994 calculation run on it. Driver would
   need writing (a small variant of `scripts/momentum_french_screen.py`).
 - Window/config: 1994-01 to the last month in the file; no leverage.
-- Runtime: about 15 min after the download. Memory: unknown, small. Data: free French library.
+- Runtime: about 15 min after the download. Memory: unknown, small (capped at 6 GB, as in the rules above). Data: free French library.
 - Could change: no recorded verdict (the registered screen is closed). A gap above +2 pp/yr would
   narrow the scope of the momentum NO (Phase 0's threshold); below it, nothing changes.
 - Changes nothing if: the post-1994 gap is below +2 pp/yr.
@@ -397,11 +449,11 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   non-entitled one included, beyond AEP and SPY? Use: Lens 3 snapshot-gap section only."
 
 **P2-09. Adjustment-seam extent inside the pinned window.**
-- Unknown: Lens 1 lines 444-446 and 467-468.
+- Unknown: Lens 1 lines 448-450 and 471-472.
 - Method: one fresh yfinance download (`auto_adjust=True`) for the 597 members with tape, compared
   with SELECT-only DB closes; flag dates where the DB/yfinance ratio breaks. Driver would need
   writing; it must call yfinance directly and not through `load_ohlcv` (which writes to the DB).
-- Window: 2021-01-31 to 2026-04-30. Runtime: about 30 min (Lens 1 estimate). Memory: unknown.
+- Window: 2021-01-31 to 2026-04-30. Runtime: about 30 min (Lens 1 estimate). Memory: unknown (capped at 6 GB, as in the rules above).
   Data: free yfinance; DB read-only.
 - Could change: Lens 1 tape states for stock rows (unknown or clean to contaminated where a seam
   falls on a traded name), which feeds Lens 2's data condition. Direction for any verdict:
@@ -413,11 +465,11 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 
 **P2-10. Code check of the corrected FOMC event study.**
 - Unknown: Lens 6 did not reach it (`docs/research/2026-11-04-lens6-implementation-correctness.md:321-335`);
-  it is that row's only failing Lens 2 condition (Lens 2 lines 56 and 331).
+  it is that row's only failing Lens 2 condition (Lens 2 lines 60 and 335).
 - Method: read `scripts/fomc_clustered_event_study.py` and the strategy code against its method
   section and brief; hand-replay one month on three symbols with the Lens 6 replay pattern
   (SELECT-only reads).
-- Window: one pinned month inside 2012-01-01..2026-04-30. Runtime: 20-40 min. Memory: unknown.
+- Window: one pinned month inside 2012-01-01..2026-04-30. Runtime: 20-40 min. Memory: unknown (capped at 6 GB, as in the rules above).
 - Could change: Lens 6 verdict for `cross-asset-fomc-drift-corrected-harness`; if "yes", Lens 2's
   rules would make it the first reliable NO; if "no" or "partly", it stays inconclusive.
 - Changes nothing if: the result is "partly" or "unverifiable".
@@ -427,7 +479,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   Lens 2 code condition only."
 
 **P2-11. Day-shift direction for each July event study.**
-- Unknown: Lens 1 lines 372-377, 452-453, 480-481.
+- Unknown: Lens 1 lines 376-381, 456-457, 484-485.
 - Method: read each study's event join (PEAD, insider, congress, short interest, short volume,
   index deletion, headline sentiment) against the day-shifted tape description.
 - Runtime: about 10 min per study, about 70 min total. Memory: n/a. Data: code only.
@@ -460,7 +512,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 - Method: read the gitignored run folders under `results/research/` named in Lens 8 (for example
   `results/research/archive/research_20260501_010648`), recompute stated figures; replay stage-1
   gates from the stored `wfo_stats_snapshot.json` at alternative fee levels.
-- Runtime: about 1 h. Memory: unknown. Data: local files.
+- Runtime: about 1 h. Memory: unknown (capped at 6 GB, as in the rules above). Data: local files.
 - Could change: Lens 7 recompute status (prose-only to recomputed). Not a Lens 2 class (Lens 8).
 - Changes nothing if: figures match the reports.
 - Owner flag: yes (about 1 hour).
@@ -476,7 +528,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   directly (not through `load_ohlcv`) and must not touch the intraday observer.
 - Window: the 30 most recent sessions at run time, pinned by date when registered. Live defaults
   (min_agree 2, 3-name cap); no leverage.
-- Runtime: about 1 h (estimate). Memory: unknown. Data: free yfinance.
+- Runtime: about 1 h (estimate). Memory: unknown (capped at 6 GB, as in the rules above). Data: free yfinance.
 - Could change: no verdict; sizes a live-versus-backtest difference.
 - Changes nothing if: decisions match on every session.
 - Owner flag: yes (about 1 hour).
@@ -495,8 +547,8 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   Lens 7 fields only."
 
 **P2-16. Replica re-run with PARA excluded, writing per-trade and sleeve output.**
-- Unknown: PARA's effect on the replica (Lens 1 lines 447-449, 471-472; Lens 2 lines 395-399,
-  1184). The same run can write the sleeve return series needed by P2-17 and the trade list needed
+- Unknown: PARA's effect on the replica (Lens 1 lines 451-453, 475-476; Lens 2 lines 399-403,
+  1188). The same run can write the sleeve return series needed by P2-17 and the trade list needed
   by P2-21.
 - Method: `scripts/run_capped.sh .venv/bin/python scripts/production_replica_audit.py --window primary --out <new file> --curves <new file>`
   after a small driver change: the replica has no symbol-exclusion option
@@ -506,12 +558,16 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 - Window/config: primary 2021-01-31 to 2026-04-30 (pinned in the driver); live defaults, 3-name
   cap, 3.3% sizing, next-bar fills, 5 bp costs; the replica models the live book without lab
   leverage (no max-leverage setting).
-- Runtime: about 1 h (Lens 1 estimate; the artifact records none). Memory: unknown. Data: DB tape.
+- Runtime: about 1 h (Lens 1 estimate; the artifact records none). Memory: unknown (capped at 6 GB, as in the rules above). Data: DB tape.
   **DB-cache writes.**
 - Could change: Lens 1 tape state of the replica (unknown to clean on PARA if immaterial).
   Not its Lens 2 class: the replica also fails Lens 2's power condition (MDE 4.24 > +1.0 pp/yr), so
   it stays inconclusive whatever the result. It could change the condition attached to the
   replica's book-level reading ("rules out above about 4.2 pp/yr if PARA is immaterial").
+- Tape note: PARA's bars were rewritten on 2026-11-04 (incident section). A re-run of the
+  unchanged replica now would read the post-incident PARA series, not the one the 2026-10-19 run
+  traded. The other 18 rewritten symbols would also be read in their rewritten form, so even
+  the PARA-excluded arm is not an exact like-for-like comparison with the stored result.
 - Changes nothing if: the CAGR gap and t move by less than their rounding.
 - Owner flag: yes.
 - Pre-registration: "Question: with PARA excluded (and nothing else changed), what are the primary
@@ -524,7 +580,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   `docs/research/2026-11-04-phase0-trust-audit.md:106`).
 - Method: compare the sleeve return series from P2-16 with RSP total return (free yfinance), NW t
   on the daily difference. Driver would need writing (short).
-- Window: 2021-01-31 to 2026-04-30. Runtime: 15-30 min after P2-16. Memory: unknown, small.
+- Window: 2021-01-31 to 2026-04-30. Runtime: 15-30 min after P2-16. Memory: unknown, small (capped at 6 GB, as in the rules above).
 - Could change: no recorded verdict. Lens 9's sleeve-scale illustration (MDE about 45 pp/yr at
   t >= 3) implies low power, so a non-significant result is the expected outcome under most effect
   sizes.
@@ -547,7 +603,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 
 **P2-19. PIT core, ensemble_ic and ensemble_kelly under the DSR fix, with stored excess series.**
 - Unknown: the "corrected" Sharpe 0.59 predates the DSR units fix, and a failed DSR check changes
-  which parameters a fold deploys, so its OOS returns would change (Lens 1 lines 21-31, 359-364);
+  which parameters a fold deploys, so its OOS returns would change (Lens 1 lines 25-35, 363-368);
   no SPY-excess t is stored, so no MDE (Lens 9 lines 555-565).
 - Method: `scripts/run_capped.sh .venv/bin/python scripts/ic_kelly_rebaseline_wfo.py --out <new file>`
   on current code, with a small addition to store each strategy's OOS daily excess series and
@@ -555,7 +611,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 - Window/config: 2021-01-31 to 2026-04-30 (pinned via `scripts/anchor_fix_reproduction_wfo.py`);
   gated WFO, single strategy, leverage 1.0 as in the original run (no blend, so the 2.0 default
   does not apply).
-- Runtime: about 1 h (recorded 1,479 + 1,348 + 652 s). Memory: unknown. Data: DB tape.
+- Runtime: about 1 h (recorded 1,479 + 1,348 + 652 s). Memory: unknown (capped at 6 GB, as in the rules above). Data: DB tape.
   **DB-cache writes.**
 - Could change: the recorded figures 0.59 / 0.41 / 0.50 in either direction; Lens 1 states
   (contaminated to clean on DSR); Lens 9 MDE for three rows. Lens 2 classes could stay
@@ -582,7 +638,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 - Method: feed the P2-16 trade list and dividends into `TaxLotBook`
   (`src/ggTrader/lab/tax_lots.py`, a library with no current consumer). Driver would need writing.
 - Window/config: as P2-16; tax brackets 24/15 and 37/20 as in Lens 4.
-- Runtime: 2-4 h after P2-16 (Phase 0 estimate). Memory: unknown.
+- Runtime: 2-4 h after P2-16 (Phase 0 estimate). Memory: unknown (capped at 6 GB, as in the rules above).
 - Could change: no recorded verdict. The closure ends the replica's test at the pre-tax fail
   ("after_tax: Not run: primary pre-tax bar failed"), so no after-tax result can change it. It
   fills the Lens 4 after-tax figure for the replica.
@@ -596,14 +652,15 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   cross-asset sleeve and holdout, A23 arms, century leverage and others named in
   `docs/research/_lens9_power.json`); Lens 4's missing confidence intervals.
 - Method: re-run each driver to a new file with a stored monthly excess series and NW t:
-  `scripts/core_spy_blend.py --rerun --out <new file>` (blend: production max-leverage 1.0;
-  reserve as in the artifact), `scripts/cross_asset_sleeve_wfo.py --force --out <new file>`,
+  `scripts/core_spy_blend.py --rerun --out <new file>` (a linear k-scaled blend of the PIT core
+  and SPY with a 5% cash reserve, `scripts/core_spy_blend.py:1-24`; it has no max-leverage
+  setting, so that parameter does not apply), `scripts/cross_asset_sleeve_wfo.py --force --out <new file>`,
   `scripts/static_leverage_aftertax.py --frozen-inputs data/external/a23_inputs --out <new file>`,
   `scripts/century_leverage.py` (frozen Shiller inputs). Each needs a small output addition.
 - Windows: as pinned in each driver (2021-01-31..2026-04-30; 2006-06-21..2026-09-29; century as
   stored).
 - Runtime: 2-4 h total (estimate; allocation drivers ran in seconds, WFO drivers 10-40 min).
-  Memory: unknown. **DB-cache writes** for the two WFO drivers; none for the frozen-input drivers.
+  Memory: unknown (capped at 6 GB, as in the rules above). **DB-cache writes** for the two WFO drivers; none for the frozen-input drivers.
 - Could change: Lens 9 MDEs and Lens 4 confidence intervals; through them, Lens 2's power condition
   in principle (classes could stay inconclusive on other conditions).
 - Changes nothing if: MDEs exceed each row's bar.
@@ -627,7 +684,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 - Unknown: Lens 6 lines 321-335 and 379-380 (17 rows; FOMC is P2-10).
 - Method: read each strategy file against its report's method section and hand-replay one month on
   three symbols (SELECT-only), as Lens 6 did.
-- Runtime: 20-40 min each, 5-11 h total. Memory: unknown.
+- Runtime: 20-40 min each, 5-11 h total. Memory: unknown (capped at 6 GB, as in the rules above).
 - Could change: Lens 6 verdicts and Lens 2's code condition for those rows; classes could stay
   inconclusive on other conditions (most of these rows also lack artifacts or predate fixes).
 - Changes nothing if: verdicts come back "partly" or "unverifiable".
@@ -638,14 +695,14 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 **P2-25. July event studies on the corrected tape, pinned.**
 - Unknown: Lens 1 contamination and drifting windows for PEAD, insider, congress, short interest,
   short volume, index deletion, headline sentiment, MAX and related July rows (Lens 1 lines
-  306-309; Lens 7 lines 277-282; Phase 0 line 109).
+  310-313; Lens 7 lines 277-282; Phase 0 line 109).
 - Method: driver would need writing: one pinned driver per study that runs the corrected harness
   and writes JSON, on the pattern of `scripts/audit_reruns_wfo.py`. The existing
   `*_correlation_check.py` scripts use "today" as their end date and must not be used as they are.
   Event inputs come from tables already backfilled in the DB (read-only).
 - Window/config: 2021-01-31 to 2026-04-30 (and each study's long window where it had one, for
   example PEAD from 2015-06); single-strategy WFO, no blend.
-- Runtime: 30-60 min each per Lens 7, 1-3 h each per Phase 0; 5-20 h total. Memory: unknown.
+- Runtime: 30-60 min each per Lens 7, 1-3 h each per Phase 0; 5-20 h total. Memory: unknown (capped at 6 GB, as in the rules above).
   **DB-cache writes.**
 - Could change: Lens 1 states (contaminated to clean), Lens 7 (prose-only to recomputable), and the
   sign of each recorded NO. Lens 2 classes would likely stay inconclusive on power.
@@ -657,13 +714,13 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 
 **P2-26. Non-gated arms and one-change re-runs for gate revisions.**
 - Unknowns: simpler-test outcome for 48 gated rows; how much each of 18 revisions moved each verdict
-  (Lens 2 lines 1027-1040 and 1183-1185).
+  (Lens 2 lines 1031-1044 and 1187-1189).
 - Method: a fixed-rule (no WFO) arm per gated candidate on the pinned window, as the replica did
   for the ensemble; and one-change re-runs reverting one revision at a time. Driver would need
   writing.
 - Window: 2021-01-31 to 2026-04-30; leverage per the original config (1.0 where production, noted
   per run).
-- Runtime: tens of hours (10-40 min per run, many runs). Memory: unknown. **DB-cache writes.**
+- Runtime: tens of hours (10-40 min per run, many runs). Memory: unknown (capped at 6 GB, as in the rules above). **DB-cache writes.**
 - Could change: Lens 2's gate-machinery and researcher-freedom answers; recorded NOs where a
   fixed-rule arm differs.
 - Changes nothing if: fixed-rule arms agree with the gated verdicts.
@@ -677,7 +734,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   checkout) and re-run one configuration varying only the fee tier, writing a combined curve.
   The tape has changed since (Binance.US deletions; Kraken 4h re-import), so results are on
   today's tape, not the original runs'.
-- Runtime: hours to a day or more. Memory: unknown.
+- Runtime: hours to a day or more. Memory: unknown (capped at 6 GB, as in the rules above).
 - Could change: Lens 8's fee answer; not a Lens 2 class under its written rules (Lens 8 lines
   499-509).
 - Changes nothing if: the fee ordering matches the stored sweep.
@@ -686,12 +743,12 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 
 **P2-28. Clean 2010-2020 holdout.**
 - Unknown: regime dependence of the 2021-2026 verdicts; the replica holdout is non-citable on a
-  faulty tape (Lens 9 lines 571-577 and 648; Lens 1 lines 47-48, 269-271).
+  faulty tape (Lens 9 lines 571-577 and 648; Lens 1 lines 51-52, 273-275).
 - Method: build an identity-checked 2010-2020 tape from free data (flag implausible levels and
   moves of 40% or more not tied to known corporate events), then
   `scripts/production_replica_audit.py --window holdout --out <new file>`. Free yfinance lacks many
   delisted names, so a free rebuild risks survivorship gaps.
-- Window: the replica's registered holdout window. Runtime: days. Memory: unknown. **DB-cache
+- Window: the replica's registered holdout window. Runtime: days. Memory: unknown (capped at 6 GB, as in the rules above). **DB-cache
   writes** unless the tape is built outside the DB.
 - Could change: the replica holdout from non-citable to citable; the regime unknown.
 - Changes nothing if: the holdout fails both registered bars again.
@@ -718,18 +775,18 @@ hypothesis, **and** no lens raised an unknown that could change a verdict. Neith
 
 | Phase 0 hypothesis | Phase 1 result |
 |---|---|
-| 1. No real stock-picking edge; replica "Reliable NO, high trust" | Not confirmed as rated. Lens 2: replica inconclusive (MDE 4.24 > 1.0 bar; PARA traded unflagged); 0 reliable NOs in the whole record (`docs/research/2026-11-04-lens2-verdict-audit.md:23-38, 356-399`) |
-| 2. Live book about 84% SPY; sleeve too small to move it | Consistent: replica 85.33% SPY, 9.37% stocks (Lens 2 line 369); sleeve-scale MDE about 45 pp/yr (Lens 9 lines 49-54) |
-| 3. Early beat-SPY figures from five bugs; corrected 0.59 | Partly: the bug signatures are gone, but 0.59 itself predates the DSR fix, which changes OOS returns too; "five bugs alone" not confirmed (Lens 1 lines 353-366) |
+| 1. No real stock-picking edge; replica "Reliable NO, high trust" | Not confirmed as rated. Lens 2: replica inconclusive (MDE 4.24 > 1.0 bar; PARA traded unflagged); 0 reliable NOs in the whole record (`docs/research/2026-11-04-lens2-verdict-audit.md:27-42, 360-403`) |
+| 2. Live book about 84% SPY; sleeve too small to move it | Consistent: replica 85.33% SPY, 9.37% stocks (Lens 2 line 373); sleeve-scale MDE about 45 pp/yr (Lens 9 lines 49-54) |
+| 3. Early beat-SPY figures from five bugs; corrected 0.59 | Partly: the bug signatures are gone, but 0.59 itself predates the DSR (deflated Sharpe ratio significance gate) units fix, which changes OOS returns too; "five bugs alone" not confirmed (Lens 1 lines 357-370) |
 | 4. WFO NO-GOs weak; pass bars unreachable on five years | "Unreachable" confirmed; "t >= 3 needs IR near 1.3" partly overturned (1.62-1.68 at 80% power) (Lens 9 lines 58-66) |
 | 5. Paper shortfall mostly configuration churn (-1.9 / -2.6 / +1.4) | Reproduces only on Phase 0's own method; corrected -3.02 / -2.28 / +1.60; idle cash -2.46 pp is the largest part (Lens 3 lines 25-49) |
 | 6. Snapshot excess fits the dividend add-back, unproven | Confirmed (Lens 3 lines 16-24) |
 | 7. 2x SPY out of reach; "+10 to +15 pp needed" | Target is 9.57 pp/yr on 2021-2026 but 0.77 to 3.54 on longer windows; no sound stock-selection result after 1994 reaches its window's gap (Lens 4 lines 34-90) |
 
 **Unknowns that could change a recorded verdict or class (from section 4):** P2-02 (French screens'
-power condition), P2-03 (month-end Treasury on current code), P2-09 (seam extent, feeding tape
-states), P2-10 (FOMC code check, the row's only failing condition), P2-19 (the 0.59 PIT core and
-the IC/Kelly figures under the DSR fix), P2-22 (power for artifacts without a t-statistic), P2-24
+power condition), P2-03 (month-end Treasury on current code), P2-09 (how many "adjustment seams", fake one-day price moves where old and new dividend
+adjustments meet, sit in the price table; this feeds tape states), P2-10 (FOMC code check, the row's only failing condition), P2-19 (the 0.59 point-in-time S&P 500 core and
+the IC/Kelly figures under the DSR significance-gate fix), P2-22 (power for artifacts without a t-statistic), P2-24
 (16 unexamined code rows), P2-25 (sign of the July event-study NOs), P2-26 (gated versus fixed-rule
 verdicts), P2-28 (clean holdout). P2-16 (PARA) changes the replica's tape state and its stated
 condition but not its class.
@@ -749,8 +806,8 @@ workspace files, Tasks 1 to 11:
 | Implementer dispatches (one per task or sub-task) | 14 | Tasks 1-5, 6a, 6b, 7, 8, 9, 10a, 10b-i, 10b-ii, 11. Code tasks 1-3 per the plan's Sonnet role; lens and judgement tasks Opus (the Task 6a report confirms Opus). Plus 1 Opus dispatch for Lens 5 that failed on the usage limit (below) |
 | Fix rounds | 13 | Task 2: 1; Task 4: 1; Task 5: 2; one each for 6a, 6b, 7, 8, 9, 10a, 10b-i, 10b-ii, 11 |
 | Review rounds | 27 | One review diff per round in the workspace; every task ended with a clean review. Reviews for Lens 5 and Lens 8 ran on Sonnet and Lens 4's on Opus per the ledger; the ledger does not record the model of the others |
-| Haiku extraction passes | 31 | 20 inventory, 4 Lens 1, 4 Lens 5, 2 Lens 7, 1 Lens 8 |
-| This checkpoint (Task 12) | 1 | Opus; no subagents |
+| Haiku extraction passes | 28 from the ledger (20 inventory, 4 Lens 1, 4 Lens 5); 3 more not recorded in the ledger | The workspace also holds extraction outputs for Lens 7 (2 files) and Lens 8 (1 file); the ledger does not record those passes, so their count is inferred from files only |
+| This checkpoint (Task 12) | 1, plus 1 fix round | Run on Opus 5.5 with no subagents; the commit trailer reads Sonnet 5.5 because the task brief set that line |
 
 The agent cannot see the owner's plan usage or remaining quota. One Opus dispatch (Lens 5) hit the
 five-hour usage limit once, at about 21:50 PST on 2026-11-04; it was retried after the reset at
@@ -763,14 +820,28 @@ in section 4 are compute and wall-clock estimates, not quota estimates.
 The owner is asked to approve, by id, which of these items run. **Default if there is no answer:
 approve none.** Nothing runs until the owner approves.
 
-- **Decision 0 (applies to any approved item marked "DB-cache writes"):** accept that the driver's
-  price loader writes refreshed bars and missing-symbol rows to the `ohlcv` cache table, or require
-  a SELECT-only price path for that item (which may need driver changes and changes which symbols
-  load). Default: neither; such items do not run.
-- Items under one hour: P2-01, P2-02, P2-03, P2-04, P2-05, P2-06, P2-07, P2-08, P2-09, P2-10.
-- Items of about one to two hours: P2-11, P2-12, P2-13, P2-14, P2-15, P2-16, P2-17 (needs P2-16),
-  P2-18 (out-of-scope topic), P2-19, P2-20, P2-23 (private records).
-- Items of several hours or more: P2-21 (needs P2-16), P2-22, P2-24, P2-25, P2-26, P2-27, P2-28,
+- **Decision 0 (applies to every item tagged "writes to the price cache" below):** 29 scripts
+  under `scripts/` load prices through `load_ohlcv` or the cached loader. Run through them, an item
+  can (a) rewrite a symbol's whole price history in the `ohlcv` table when the symbol has no cached
+  bars or its first cached bar does not match its recorded listing date (this is what rewrote 19
+  symbols, PARA among them, on 2026-11-04), (b) refresh recent bars, (c) write `symbol_inception`
+  rows and (d) possibly write `ohlcv_no_data` rows. The owner can accept these writes for the
+  approved items, or require a read-only price path for them (which may need driver changes and
+  can change which symbols load). Default: neither; tagged items do not run.
+- **Restoring the 19 rewritten symbols** (incident section) is a separate owner decision; it is not
+  a Phase 2 item and nothing here restores them.
+- Items under one hour: P2-01, P2-02, P2-03 (writes to the price cache: runs only if Decision 0 is
+  approved), P2-04, P2-05, P2-06, P2-07, P2-08, P2-09, P2-10.
+- Items of about one to two hours: P2-11, P2-12, P2-13, P2-14, P2-15, P2-16 (writes to the price
+  cache: runs only if Decision 0 is approved), P2-17 (needs P2-16, so it also depends on Decision
+  0), P2-18 (out-of-scope topic), P2-19 (writes to the price cache: runs only if Decision 0 is
+  approved), P2-20, P2-23 (private records).
+- Items of several hours or more: P2-21 (needs P2-16, so it also depends on Decision 0), P2-22 (its
+  two WFO drivers write to the price cache: those parts run only if Decision 0 is approved), P2-24,
+  P2-25 (writes to the price cache: runs only if Decision 0 is approved), P2-26 (writes to the price
+  cache: runs only if Decision 0 is approved), P2-27 (whether the restored legacy crypto pipeline
+  writes to the database is not established; treated as needing Decision 0), P2-28 (writes to the
+  price cache unless the tape is built outside the database: runs only if Decision 0 is approved),
   P2-29 (needs a live change outside this investigation).
 
 Approved items would run at most two at a time, each under the 6 GB cap, with its pre-registration

@@ -1,5 +1,9 @@
 # Lens 1: Backtest validity (stocks): what contamination remains after the five known fixes
 
+**Erratum 2026-11-04 (after review):** PARA price figures quoted in this report were measured
+before an accidental database refresh at 23:48 PST; they are not reproducible from the database
+now (see `docs/research/2026-11-04-phase1-checkpoint.md`, section on the incident).
+
 **Date:** 2026-11-04 · **Branch:** `investigation/root-cause-2026-11-04` · **Type:** diagnosis
 only (read-only; no re-runs of strategies) · **Spec:**
 `docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` (section 5, Lens 1)
