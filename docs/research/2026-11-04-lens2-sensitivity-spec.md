@@ -29,9 +29,12 @@ contains and how each cell is computed.
   labelled post hoc in the table header and does not rewrite rows already filled.
 - **Authoring rule.** While writing this document, results JSONs were opened only to
   list their key names and value types (section 9). Selections in section 9 were taken
-  from the pass-bar, decision-rule and key-naming text of briefs and reports. Some
-  result values were visible in report lines read for that purpose; none was used to
-  make a selection or shape a rule.
+  from the pass-bar, decision-rule and key-naming text of briefs and reports. Result
+  values were visible in these sources while doing so: sections 1 and 7 of
+  `docs/research/2026-09-30-static-fractional-leverage.md`; the k = 1 table rows of
+  `docs/research/2026-09-24-core-spy-blend-keep.md`; and the module docstring of
+  `scripts/core_spy_blend.py`, which quotes a PIT core versus SPY headline. None of
+  them drove a selection or shaped a rule.
 
 ## 2. Unit of the table
 
@@ -431,10 +434,11 @@ from result values.
 
 - Inventory rows: `stocks-sp500-core-pit-rebaseline` → key `ensemble`;
   `stocks-ensemble-ic-pit` → `ensemble_ic`; `stocks-ensemble-kelly-pit` →
-  `ensemble_kelly`; `stocks-live-ensemble-defaults-vs-pit-picks` → `ensemble` (the
-  live strategy's own key).
-- Selection (step 1): the inventory row names the strategy; one key per row. No
-  sub-rows.
+  `ensemble_kelly`; `stocks-live-ensemble-defaults-vs-pit-picks` → `ensemble`.
+- Selection (mapping rule): the strategy class named in the inventory row maps to its
+  key in `STRATEGY_REGISTRY` (`src/ggTrader/lab/strategies/__init__.py`), and the
+  artifact's top-level key of the same name is used. The live-defaults row names
+  `EnsembleSignal`, whose registry key is `ensemble`. One key per row; no sub-rows.
 - Column 2: `<s>.eval_start`, `<s>.eval_end` (also `meta.*`). Fold windows
   (`<s>.fold_rows[i].test_start` / `.test_end`) are not row windows.
 - Column 3: `<s>.cagr_pct`.
@@ -446,29 +450,50 @@ from result values.
   and `ensemble_kelly`), with the report as the next source per column 12
   precedence. Verdict fields: `<s>.verdict.go`, `<s>.n_gate_pass`.
 
+
 ### `docs/research/_static_leverage_aftertax_results.json`
 
 - Inventory rows: `stocks-a23-static-leverage` → arm
   `static 1.3x (70/30) band 8pp`; `stocks-a24-sleeve-trend-rider` → arm
   `A24 rider: 60 SPY + 40 sleeve (10m SMA +/-2%)`. SPY: `SPY buy-and-hold`.
-- Selection (step 1): the report `docs/research/2026-09-30-static-fractional-leverage.md`
-  §1 headline and §7 addendum judge on window `main_real_sso` at the primary 24%/15%
-  bracket. Window: `main_real_sso` only (`holdout_synthetic` and
-  `full_1993_2026_stitched` are not rows). Pre-tax columns 3 to 5 read bracket key
-  `24/15`.
-- Column 2: `windows.main_real_sso.<arm>.24/15.window` (two-element list).
-- Column 3: `windows.main_real_sso.<arm>.24/15.pre_tax_cagr`. Column 4:
-  `windows.main_real_sso.SPY buy-and-hold.24/15.pre_tax_cagr`. The driver
+- Selection (step 1): the pre-registered pass bar in
+  `docs/research/briefs/2026-09-30-static-fractional-leverage.md` (A23 section,
+  "Pre-registered pass bar" and "Tax engine" bullets) names **two windows** (the real-SSO
+  2006-07 → 2026-09 window and the synthetic 1993 → 2006 holdout) and says to report
+  **two brackets** (24% ST / 15% LT and 37%+3.8% ST / 20%+3.8% LT), with neither marked
+  primary. The brief outranks the report, so the report's "primary bracket" label is not
+  used as a tie-break.
+- Sub-rows (step 1 names several, so all are emitted): for each of the two inventory
+  rows, four sub-rows, one per window and bracket, in this order:
+  `<id>/main_real_sso/24/15`, `<id>/main_real_sso/40.8/23.8`,
+  `<id>/holdout_synthetic/24/15`, `<id>/holdout_synthetic/40.8/23.8`. Artifact keys:
+  windows `main_real_sso` and `holdout_synthetic`; bracket `24/15` is the brief's
+  24%/15% bracket and `40.8/23.8` is its 37%+3.8% / 20%+3.8% bracket.
+- Wash-sale variants (`24/15 wash`, `40.8/23.8 wash`): the brief names wash sales as a
+  sensitivity, so they are not sub-rows. Each sub-row quotes its bracket's wash variant
+  in column 10 after the non-wash figure, labelled "wash-sale sensitivity".
+- Not rows: window `full_1993_2026_stitched` (not named by the brief's pass bar); the
+  other ratio arms (the brief calls the ratio sweep reporting only).
+- Each sub-row reads every column from its own window key `<w>` and bracket key `<b>`;
+  the pre-tax columns are not shared across brackets.
+- Column 2: `windows.<w>.<arm>.<b>.window` (two-element list).
+- Column 3: `windows.<w>.<arm>.<b>.pre_tax_cagr`. Column 4:
+  `windows.<w>.SPY buy-and-hold.<b>.pre_tax_cagr`. The driver
   `scripts/static_leverage_aftertax.py` builds SPY total return from unadjusted closes
   plus distributions; confirm per column 4.
-- Column 5: derived column 3 minus column 4.
+- Column 5: derived column 3 minus column 4 (same `<w>` and `<b>`).
 - Columns 6, 7, 8, 9, 11: "not computable from artifact (missing: t-statistic)".
-- Column 10: `after_tax_cagr` for arm and SPY, listed for every bracket key in key
-  order (`24/15`, `24/15 wash`, `40.8/23.8`, `40.8/23.8 wash`), with `24/15` labelled
-  primary per the report.
+- Column 10: `windows.<w>.<arm>.<b>.after_tax_cagr` minus
+  `windows.<w>.SPY buy-and-hold.<b>.after_tax_cagr`; then the same for `<b> wash`,
+  labelled as above.
 - Column 14: leverage from the arm name; `cost_bps_per_side`; `beta_matched_pretax_cagr.*`
   as a note only.
 - Not used: `rolling_10y_pretax_vs_spy.*`, `stress_panel_pretax`, `recovery_days.*`.
-- Column 12: the A23 brief `docs/research/briefs/2026-09-30-static-fractional-leverage.md`
-  and the report's pre-registered +1.0 pt/yr after-tax hurdle, per column 12
+- Column 12, A23 rows: the brief's pre-registered pass bar (after-tax gap on the
+  real-SSO window and "not below" after-tax SPY on the synthetic holdout), per column 12
   precedence.
+- Column 12, A24 rows: the brief states the rider's bar is the static book at the same
+  average exposure, after tax, not SPY. Column 12 records "original bar comparator:
+  static book at the same average exposure, not SPY". Columns 4 to 11 stay on SPY
+  (section 8 forbids changing the comparator), so the table's gap for these rows is not
+  the gap the original bar judged.
