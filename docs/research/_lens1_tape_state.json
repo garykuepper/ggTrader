@@ -1,0 +1,1534 @@
+[
+ {
+  "id": "stocks-a23-static-leverage",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-09-30",
+  "eval_window": "2006-06-21 → 2026-09-29",
+  "window_pinned": true,
+  "evidence": "ran 2026-09-30 after all tape fixes; SSO/UPRO re-fetched in full that day (docs/changelog.md 2026-09-30); no WFO gates or stock universe, so anchor/PIT/DSR do not apply"
+ },
+ {
+  "id": "stocks-a24-sleeve-trend-rider",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-09-30",
+  "eval_window": "2006-06-21 → 2026-09-29",
+  "window_pinned": true,
+  "evidence": "same run and tape as A23 (2026-09-30); no WFO gates or universe"
+ },
+ {
+  "id": "stocks-accruals-feasibility",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-11-02",
+  "eval_window": null,
+  "window_pinned": false,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-after-tax-lot-engine",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-11-02",
+  "eval_window": "2021-01-31..2026-04-30 (planned B0 kill-only replay; not run)",
+  "window_pinned": true,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable; the B0 replay was planned, not run"
+ },
+ {
+  "id": "stocks-analyst-revisions",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable (infeasible, paid data)"
+ },
+ {
+  "id": "stocks-anomaly-driven-demand",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable (infeasible)"
+ },
+ {
+  "id": "stocks-avb-eqr-merger-holding",
+  "tape_state_at_run": "unknown",
+  "contamination": [
+   "tape_identity (unfixed)"
+  ],
+  "run_date": "2026-09-28",
+  "eval_window": "2026-03-30 → 2026-09-25",
+  "window_pinned": true,
+  "evidence": "the row documents a tape identity fault; checked 2026-11-04: AVB closes 195.50 on 2026-07-16 then 68.69 on 07-20 vs EQR 68.80 (lens1_tape_out.json avb_eqr); not one of the five fixes"
+ },
+ {
+  "id": "stocks-bb-reversion",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-19",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "WFO 2026-06-19; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps); SPY stray rows were in the tape by 2026-06-20: the cited SPY 0.58 matches the contaminated stored 0.571 (memory project_spy_duplicate_rows_rootcause_2026-08-19); code collapse 1b9b7f5 2026-07-25, DB dedupe 2026-08-20"
+ },
+ {
+  "id": "stocks-cash-sweep-live",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-08-22",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "live operations change, not a backtest; tape state not applicable (live parity is Lens 3)"
+ },
+ {
+  "id": "stocks-catastrophe-stop",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-09-11",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "live operations change, not a backtest; tape state not applicable (live parity is Lens 3)"
+ },
+ {
+  "id": "stocks-century-leverage",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-10-23",
+  "eval_window": "1926-07-01 → 2026-06-30",
+  "window_pinned": true,
+  "evidence": "2026-10-23, Shiller/French long-history data, not the ohlcv tape; none of the five fixes apply"
+ },
+ {
+  "id": "stocks-congress-trades",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "day_shift",
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-19",
+  "eval_window": "2021-01–2026-04 (matched, 17 folds); 2015-06–2026-07 (long, 40 folds)",
+  "window_pinned": true,
+  "evidence": "WFO 2026-07-19 (weights); calendar-dated event join on the day-shifted tape (fixed 2026-08-20 migration, ef4e15f); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; SPY stray rows were in the tape by 2026-06-20: the cited SPY 0.58 matches the contaminated stored 0.571 (memory project_spy_duplicate_rows_rootcause_2026-08-19); code collapse 1b9b7f5 2026-07-25, DB dedupe 2026-08-20"
+ },
+ {
+  "id": "stocks-conviction-bb",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "conviction runs 2026-06-22 (results/wfo_conviction_comparison_20260622_204326.log); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-core-spy-blend-keep",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "dsr_units"
+  ],
+  "run_date": "2026-09-24",
+  "eval_window": "2021-01-31 → 2026-04-30 (WFO OOS span 2022-01 → 2026-04)",
+  "window_pinned": true,
+  "evidence": "2026-09-24, built on the PIT re-baseline (after c9d1abe) but before 09f9f40; gate decisions decide anchor fallback, so OOS returns and gate counts move"
+ },
+ {
+  "id": "stocks-daily-threshold-tilt",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-09-28",
+  "eval_window": "Pinned 2021-02 → 2026-04; Long 2011-03 → 2026-04",
+  "window_pinned": true,
+  "evidence": "quick sanity check 2026-09-23/28 batch on one instrument with plain pandas on adjusted closes, after the tape fixes (docs/research/WEB_RESEARCH_CANDIDATES.md:1557-1567); no WFO or universe"
+ },
+ {
+  "id": "stocks-dsr-gate-correction",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-19",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "row is the DSR fix itself (09f9f40, 2026-10-19); not a tape-based result"
+ },
+ {
+  "id": "stocks-dual-momentum",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "corrected re-run committed 2026-10-19 21:25 (411fbdca) after 09f9f40 (16:04) and 7320c1d (17:22); weight strategy, PIT via universe_fn; pinned 2021-01-31..2026-04-30; the report says these ran on the corrected harness with 0/17 corrected gate passes (docs/research/2026-10-19-production-replica-audit-nogo.md:39,124-129), but _wfo_fold_attribution_results.json notes Git does not prove the gate version that generated the run"
+ },
+ {
+  "id": "stocks-ema-cross",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe"
+  ],
+  "run_date": "2026-06-18",
+  "eval_window": "2021-2026 (as stated; no explicit end date)",
+  "window_pinned": false,
+  "evidence": "2026-06-18; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps); window not pinned (extraction); whether it ran through run_wfo (anchor/DSR) not established"
+ },
+ {
+  "id": "stocks-ensemble-conviction",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "code 2026-06-22/23 (b07b8c26, 92fff496), runs in results/wfo_6voter_conviction_20260623_084103.log; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-ensemble-ic-2026-06-28",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-28",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "WFO 2026-06-28; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps); SPY stray rows were in the tape by 2026-06-20: the cited SPY 0.58 matches the contaminated stored 0.571 (memory project_spy_duplicate_rows_rootcause_2026-08-19); code collapse 1b9b7f5 2026-07-25, DB dedupe 2026-08-20"
+ },
+ {
+  "id": "stocks-ensemble-ic-pit",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "dsr_units"
+  ],
+  "run_date": "2026-09-23",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "2026-09-23 after c9d1abe (PIT) and the tape fixes, before 09f9f40; pinned window"
+ },
+ {
+  "id": "stocks-ensemble-kelly-2026-07",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "WFO in the June-July era (alpha-optimization plan); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-ensemble-kelly-pit",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "dsr_units"
+  ],
+  "run_date": "2026-09-23",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "2026-09-23 after c9d1abe, before 09f9f40; pinned window"
+ },
+ {
+  "id": "stocks-ensemble-ndh-baseline-1-12",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-26",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "2026-06-26, window unpinned (--eval-end defaulted to now; memory project_baseline_did_not_reproduce_2026-08-19); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps); SPY stray rows were in the tape by 2026-06-20: the cited SPY 0.58 matches the contaminated stored 0.571 (memory project_spy_duplicate_rows_rootcause_2026-08-19); code collapse 1b9b7f5 2026-07-25, DB dedupe 2026-08-20"
+ },
+ {
+  "id": "stocks-ensemble-paper-deployment",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-20",
+  "eval_window": "2021-01 → 2026-04 (17-fold rolling 12mo/3mo)",
+  "window_pinned": true,
+  "evidence": "deployment justified by the 2026-06-20 WFO; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-ensemble-wfo-validated-2026-06-20",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-20",
+  "eval_window": "2021-01 → 2026-04",
+  "window_pinned": true,
+  "evidence": "WFO 2026-06-20 (3-voter era); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps); SPY stray rows were in the tape by 2026-06-20: the cited SPY 0.58 matches the contaminated stored 0.571 (memory project_spy_duplicate_rows_rootcause_2026-08-19); code collapse 1b9b7f5 2026-07-25, DB dedupe 2026-08-20"
+ },
+ {
+  "id": "stocks-equity-diversification-sleeves",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-27",
+  "eval_window": "2021-01 → 2026-06 (standalone sleeves, fixed-param)",
+  "window_pinned": true,
+  "evidence": "blend WFO 2026-06-27; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-equity-pre-fomc-drift-intake",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-09-23",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-event-audit-readiness-decision",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-22",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-event-evidence-resolution-workbook",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-22",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-event-timing-audit-decision",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-23",
+  "eval_window": "registered assessment ranges, not a run: PEAD 2002–2025; insider 2015–2025",
+  "window_pinned": false,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-exit-rule-sweep",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "WFO 2026-06-28 (memory project_exit_rule_sweep_2026-06-28); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-factor-screen-h1-h4",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-10-21",
+  "eval_window": "Common 1963-07 → 2026-04 (754 months); A2 1994-01 → 2026-04",
+  "window_pinned": true,
+  "evidence": "2026-10-21 on survivorship-free French portfolios, not the ohlcv tape; none of the five fixes apply"
+ },
+ {
+  "id": "stocks-family-scope-review",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-11-02",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-form-144-inversion",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": false,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-forward-paper-standard",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-23",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-free-data-stock-feasibility",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-11-02",
+  "eval_window": "B0 replay on clean tape 2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-headline-sentiment",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "day_shift",
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-24",
+  "eval_window": "2024-07-21 to 2026-07-21 (pilot sample backfill window as stated)",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-24 (weights); calendar-dated event join on the day-shifted tape (fixed 2026-08-20 migration, ef4e15f); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; before 1b9b7f5 (2026-07-25)"
+ },
+ {
+  "id": "stocks-ic-kelly-rebaseline-pre-pit",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-09-23",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "2026-09-23 before c9d1abe (the report itself is marked invalid: SIVB garbage bar) and before 09f9f40"
+ },
+ {
+  "id": "stocks-idio-vol",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-07",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "full gated WFO 2026-07-07 (docs/roadmap.md:149); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; SPY stray rows were in the tape by 2026-06-20: the cited SPY 0.58 matches the contaminated stored 0.571 (memory project_spy_duplicate_rows_rootcause_2026-08-19); code collapse 1b9b7f5 2026-07-25, DB dedupe 2026-08-20; weight strategy so c9d1abe does not apply"
+ },
+ {
+  "id": "stocks-index-deletion-fade",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "day_shift",
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-17",
+  "eval_window": "2015-01-01 → end not stated (42 folds)",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-17; calendar-dated event join on the day-shifted tape (fixed 2026-08-20 migration, ef4e15f); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; window end not pinned"
+ },
+ {
+  "id": "stocks-insider-acceptance-time-diagnostic",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-23",
+  "eval_window": "2015–2025 (insider); 2026 through April 30 diagnostic only",
+  "window_pinned": true,
+  "evidence": "SEC filing-timestamp diagnostic, not a price-tape backtest"
+ },
+ {
+  "id": "stocks-insider-cluster-buy",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "day_shift",
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-19",
+  "eval_window": "2021-01–2026-04 (matched, 17 folds); 2015-06–2026-07 (long, 40 folds)",
+  "window_pinned": true,
+  "evidence": "WFO 2026-07-19; calendar-dated event join on the day-shifted tape (fixed 2026-08-20 migration, ef4e15f); Form 4 lookahead fixed in 1b9b7f5 2026-07-25; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "stocks-insider-identity-inventory",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-institutional-rebalancing-tilt",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-09-23",
+  "eval_window": "Pinned 2021-02 → 2026-04; long 2011-03 → 2026-04",
+  "window_pinned": true,
+  "evidence": "A12 sanity check, 2026-09-23 batch, plain pandas on adjusted closes after the tape fixes (docs/research/WEB_RESEARCH_CANDIDATES.md:1557-1571); no WFO or universe"
+ },
+ {
+  "id": "stocks-intraday-feasibility",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-24",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "minute-bar feasibility study, not the daily ohlcv tape"
+ },
+ {
+  "id": "stocks-intraday-replication-source-audit",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-24",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-july-research-program-summary",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "day_shift",
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "summarises the July event-study and WFO NO-GOs, all run 2026-07-16..07-24 before the day-shift, SPY-duplicate, anchor and DSR fixes"
+ },
+ {
+  "id": "stocks-leveraged-rotation",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units",
+   "universe_survivorship (2eafab1)"
+  ],
+  "run_date": "2026-07-16",
+  "eval_window": "2019-01-01 → end not stated (also 2010-06-30 variant)",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-16 with today's membership applied to the past (survivorship), reverted in 2eafab1; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "stocks-leveraged-trend",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-16",
+  "eval_window": "eval_start=2019-01-01 (end not stated)",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-16 on leveraged ETFs; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; window end not pinned"
+ },
+ {
+  "id": "stocks-live-ensemble-defaults-vs-pit-picks",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "dsr_units"
+  ],
+  "run_date": "2026-09-23",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "uses the 2026-09-23 PIT re-baseline (after c9d1abe, before 09f9f40)"
+ },
+ {
+  "id": "stocks-live-exit-parity",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-09-28",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "live operations change, not a backtest; tape state not applicable (live parity is Lens 3)"
+ },
+ {
+  "id": "stocks-live-paper-performance-vs-spy",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-19",
+  "eval_window": "2021-01 → 2026-04 (primary window)",
+  "window_pinned": true,
+  "evidence": "paper ledger, not a tape backtest; snapshot value includes $320.24 dividend accrual (Lens 6) and comparisons have used SPY price return; Lens 3 owns"
+ },
+ {
+  "id": "stocks-live-revert-blend-to-core",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-08-22",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "decision rests on the 2026-08-22 corrected-tape re-baseline (after day-shift, SPY dedupe, 2eafab1) which predates c9d1abe and 09f9f40"
+ },
+ {
+  "id": "stocks-live-signal-lookback-365d",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "split_mixed_adjustment (APH/MNST tape repair 2026-09-29)",
+   "tape_identity (AVB=EQR, unfixed)"
+  ],
+  "run_date": "2026-09-28",
+  "eval_window": "2026-03-30 → 2026-09-25",
+  "window_pinned": true,
+  "evidence": "warm-up study 2026-09-28 on 2026-03-30..09-25, spanning the 2026-07-20 seam where APH/MNST bars were 2x too high before the 09-29 repair (docs/changelog.md 2026-09-29) and AVB tracks EQR; none of the five fixes apply"
+ },
+ {
+  "id": "stocks-macd-divergence",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "shipped on June WFO evidence (Sharpe 0.68 to 0.89, docs/roadmap.md:131; results/wfo_macd_divergence_20260623_084121.log); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-max-effect",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-17",
+  "eval_window": "2015-01-01 → present",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-17, window to present; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "stocks-midcap400-reversion",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-25",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "WFO 2026-06-25; no public PIT MidCap 400 membership; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "stocks-ml-entry-gate-falsified",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe"
+  ],
+  "run_date": "2026-06-28",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "2026-06-28 ablation; train_gate.py membership and purge-gap fixed in 2eafab1 2026-08-18; not a run_wfo result"
+ },
+ {
+  "id": "stocks-ml-feature-gate-deploy",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe"
+  ],
+  "run_date": "2026-06-22",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "2026-06-22 deploy of a gate trained before the 2eafab1 train_gate membership/purge fix"
+ },
+ {
+  "id": "stocks-momentum-french-screen",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-10-20",
+  "eval_window": "Full 1927-01 → 2026-04; post-publication 1994-01 → 2026-04",
+  "window_pinned": true,
+  "evidence": "2026-10-20 on French portfolios, not the ohlcv tape; none of the five fixes apply"
+ },
+ {
+  "id": "stocks-mtf-reversion",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "June 2026 WFO (results/wfo_mtf_reversion_20260623_084142.log); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-nasdaq100-single-core",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-27",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "WFO 2026-06-27; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-net-issuance-screen",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-10-23",
+  "eval_window": "1963-07 → 2026-04 (full window, 754 months); A2 1994-01 → 2026-04 (388 months)",
+  "window_pinned": true,
+  "evidence": "2026-10-23 on French portfolios, not the ohlcv tape; none of the five fixes apply"
+ },
+ {
+  "id": "stocks-ohlcv-day-shift",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-08-20",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "row is the day-shift fix itself; current-state check 2026-11-04: all yfinance 1d bars at 00:00, Monday-Friday only, zero duplicate days"
+ },
+ {
+  "id": "stocks-option-iv-skew",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable (infeasible)"
+ },
+ {
+  "id": "stocks-overnight-gap",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-07",
+  "eval_window": null,
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-07; open/close returns so day-shift labels do not matter; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-pairs-stat-arb",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-17",
+  "eval_window": "2015-01-01 through present (42 folds)",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-17; the report itself records SPY stray-row NaN injection; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "stocks-paper-cron-1245",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-06-27",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "live operations change, not a backtest; tape state not applicable (live parity is Lens 3)"
+ },
+ {
+  "id": "stocks-paper-freeze-readiness",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-11-02",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-paper-sell-fill-wait",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-09-25",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "live operations change, not a backtest; tape state not applicable (live parity is Lens 3)"
+ },
+ {
+  "id": "stocks-pead",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "day_shift",
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-17",
+  "eval_window": "2021-01-31..2026-04-30 (matched, 17 folds); long window 2015-06–2026-07 (40 folds)",
+  "window_pinned": true,
+  "evidence": "WFO 2026-07-17; calendar-dated event join on the day-shifted tape (fixed 2026-08-20 migration, ef4e15f); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "stocks-position-sizing-regimes",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-08-19",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "2026-08-19 after 2eafab1 and 1b9b7f5, on the still-shifted tape (pure price, labels only), before c9d1abe and 09f9f40; pinned 2023-10-30..2026-04-30"
+ },
+ {
+  "id": "stocks-production-replica",
+  "tape_state_at_run": "unknown",
+  "contamination": [
+   "tape_identity (PARA, unfixed)"
+  ],
+  "run_date": "2026-10-19",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "ran 2026-10-19 19:06 (8bc365ee) after all five fixes (DSR not used; PIT membership; next-bar fills); but the primary arm traded PARA 3 round trips (_production_replica_results.json windows.primary.arms.primary.trade_counts) while the tape's PARA series is a different security (~$100,000 closes, median volume 9) through PARA's whole 2022-02-17..2025-07-23 membership; tainted_trades is empty, so the detector missed it; effect unmeasured"
+ },
+ {
+  "id": "stocks-production-replica-holdout-2010-2020",
+  "tape_state_at_run": "unknown",
+  "contamination": [
+   "tape_identity (2010-2020, unfixed)"
+  ],
+  "run_date": "2026-10-19",
+  "eval_window": "primary 2021-01-31 → 2026-04-30; holdout 2010-01-31 → 2020-12-31",
+  "window_pinned": true,
+  "evidence": "ran after all five fixes; stopped itself on tainted trades (TIE/MEE/RHT) in a tape with identity faults; no citable figure"
+ },
+ {
+  "id": "stocks-production-replica-live-parity",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-19",
+  "eval_window": "2026-09-29..2026-10-19 (parity since/through)",
+  "window_pinned": true,
+  "evidence": "live-order parity check, not a tape backtest; Lens 3 owns"
+ },
+ {
+  "id": "stocks-research-process-audit",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-11-01",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-retail-attention",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-07-25",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "paused before a completed run; the 2026-07-25 audit that found the SPY duplicate bug is its source"
+ },
+ {
+  "id": "stocks-rsi-reversion",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "ensemble component with no standalone headline run in the inventory"
+ },
+ {
+  "id": "stocks-short-interest",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "day_shift",
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-17",
+  "eval_window": "2020-07-01 through present (20 folds)",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-17; calendar-dated event join on the day-shifted tape (fixed 2026-08-20 migration, ef4e15f); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "stocks-short-volume-ratio",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "day_shift",
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-19",
+  "eval_window": "2018-09-01 → end not stated (27 folds)",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-19; calendar-dated event join on the day-shifted tape (fixed 2026-08-20 migration, ef4e15f); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "stocks-six-indicator-ensemble",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "June 2026 WFO (results/wfo_6voter_ensemble_20260623_084055.log); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-sp500-core-anchor-fix-reproduction",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-08-19",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "2026-08-19 after 2eafab1 and 1b9b7f5, before the 08-20 tape migration (labels only), c9d1abe and 09f9f40; pinned window"
+ },
+ {
+  "id": "stocks-sp500-core-corrected-tape-rebaseline",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-08-22",
+  "eval_window": "2021-01-31..2026-04-30",
+  "window_pinned": true,
+  "evidence": "2026-08-21/22 (artifact in ba1daa63 2026-08-22) after the tape migration and 2eafab1, before c9d1abe and 09f9f40; pinned window"
+ },
+ {
+  "id": "stocks-sp500-core-pit-rebaseline",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "dsr_units"
+  ],
+  "run_date": "2026-09-23",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "2026-09-23 after c9d1abe and the tape fixes, before 09f9f40; PIT mask admits PARA during its 2022-2025 membership, whose tape series is a different security (unmeasured)"
+ },
+ {
+  "id": "stocks-sp500-equity-research-doc-trials",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": "2016–2026 (as stated in archive review)",
+  "window_pinned": false,
+  "evidence": "archived document; numbers not reproducible (memory project_sp500_research_review_2026-06-09)"
+ },
+ {
+  "id": "stocks-split-dividend-corrections",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-08-19",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "live operations change, not a backtest; tape state not applicable (live parity is Lens 3)"
+ },
+ {
+  "id": "stocks-spy-benchmark-pinned-window",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-09-28",
+  "eval_window": "2021-01-31..2026-04-30 (pinned 17-fold window)",
+  "window_pinned": true,
+  "evidence": "SPY on the pinned window measured 2026-09-28, after the day-shift migration and SPY dedupe; current check: 1,318 SPY bars 2021-01-31..2026-04-30, one per date"
+ },
+ {
+  "id": "stocks-spy-duplicate-rows",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-07-25",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "row is the SPY-duplicate finding itself; current-state check 2026-11-04: SPY 6,751 rows = 6,751 dates, all at 00:00"
+ },
+ {
+  "id": "stocks-stability-aware-live-params",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-06-26",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "live operations change, not a backtest; tape state not applicable (live parity is Lens 3); Lens 6 found no live consumer"
+ },
+ {
+  "id": "stocks-three-pct-position-size",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-24",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "WFO 2026-06-24 (8897328b); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-three-sleeve-blend-1-14",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-13",
+  "eval_window": "2021-01-31..2026-04-30",
+  "window_pinned": true,
+  "evidence": "blend WFO 2026-07-13 on 2021-01-31..2026-04-30 at max-leverage 1.0 (docs/roadmap.md:158-170); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-three-sleeve-blend-reproduction",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-08-19",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "2026-08-19 after 2eafab1, before c9d1abe and 09f9f40; pinned window"
+ },
+ {
+  "id": "stocks-trailing-stops",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "June 2026 era (docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:58); anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-turn-of-month-rotation",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-09-23",
+  "eval_window": "Pinned 2021-02 → 2026-04; Long 2011-03 → 2026-04",
+  "window_pinned": true,
+  "evidence": "A14 sanity check, 2026-09-23 batch, plain pandas after the tape fixes (docs/research/WEB_RESEARCH_CANDIDATES.md:1572); no WFO or universe"
+ },
+ {
+  "id": "stocks-two-symbol-sweep-design",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-11-02",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "stocks-vix-entry-throttling",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "2026-06-28 optimization plan era; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-vol-managed-spy",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-09-23",
+  "eval_window": null,
+  "window_pinned": true,
+  "evidence": "B5 sanity check, 2026-09-23 batch, plain pandas after the tape fixes (docs/research/WEB_RESEARCH_CANDIDATES.md:1573); no WFO or universe"
+ },
+ {
+  "id": "stocks-volume-bb-reversion",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "ensemble component with no standalone headline run in the inventory"
+ },
+ {
+  "id": "stocks-voter-ablation-5-voter",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-06-24",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "ablation WFO 2026-06-24; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19; signal strategy on an index universe: no PIT entry mask before 2eafab1 (to_targets) / c9d1abe 2026-09-23 (WFO sweeps)"
+ },
+ {
+  "id": "stocks-wfo-anchor-leakage-fix",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "pit_universe",
+   "dsr_units"
+  ],
+  "run_date": "2026-08-18",
+  "eval_window": "2021-01-31 → 2026-08-18 (run described as 2021-01-31 → present)",
+  "window_pinned": false,
+  "evidence": "2026-08-18 mechanism A/B with window to present (unpinned), on the shifted tape (labels only), before c9d1abe and 09f9f40"
+ },
+ {
+  "id": "stocks-wfo-fallback-semantics",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-11-02",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "code-semantics analysis, not a tape backtest"
+ },
+ {
+  "id": "stocks-wfo-fold-attribution",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-11-02",
+  "eval_window": null,
+  "window_pinned": false,
+  "evidence": "2026-11-02 after all five fixes; records dsr_fix_commit 09f9f40 (_wfo_fold_attribution_results.json)"
+ },
+ {
+  "id": "stocks-wfo-policy-synthetic",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-11-02",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "synthetic return model, no price tape; none of the five fixes apply"
+ },
+ {
+  "id": "stocks-wfo-research-run-2026-05-02",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-02",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "pre-lab pipeline (code removed 2026-06-16); data path and timestamp handling at run time not established"
+ },
+ {
+  "id": "stocks-wfo-tournament-sp500-monthly",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-06-12",
+  "eval_window": "2021-02 → 2026-05 (64 OOS months)",
+  "window_pinned": true,
+  "evidence": "2026-06-12 pre-WFO monthly harness (anchor and DSR gates added 2026-06-17); whether the SPY stray rows existed on 06-12 and the harness's PIT handling were not established"
+ },
+ {
+  "id": "stocks-xs-momentum-2026-06",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-06-12",
+  "eval_window": "2021-02 → 2026-05 (64 OOS months)",
+  "window_pinned": true,
+  "evidence": "2026-06-12 pre-WFO monthly harness; same gaps as the wfo_tournament row; superseded by the 2026-10-19 corrected replay"
+ },
+ {
+  "id": "stocks-xs-momentum-corrected-replay",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-10-19",
+  "eval_window": "2021-01-31..2026-04-30 (pinned primary window)",
+  "window_pinned": true,
+  "evidence": "committed 2026-10-19 21:25 (411fbdca) after 09f9f40 and 7320c1d; weight strategy, PIT via universe_fn; pinned 2021-01-31..2026-04-30; the report says these ran on the corrected harness with 0/17 corrected gate passes (docs/research/2026-10-19-production-replica-audit-nogo.md:39,124-129), but _wfo_fold_attribution_results.json notes Git does not prove the gate version that generated the run"
+ },
+ {
+  "id": "cross-asset-commodity-trend",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-20",
+  "eval_window": "2013-01-01 → end not stated (50 folds)",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-20, end not pinned; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "cross-asset-etf-implied-fx-expectations",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-07-19",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "cross-asset-fomc-drift-corrected-harness",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-10-20",
+  "eval_window": "2012-01-01 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "clustered event study 2026-10-20 (bf0e8279) after the day-shift fix and 7320c1d; window 2012-01-01..2026-04-30"
+ },
+ {
+  "id": "cross-asset-fomc-drift-wfo",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "day_shift",
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units",
+   "event_pre_entry_returns (7320c1d)"
+  ],
+  "run_date": "2026-07-20",
+  "eval_window": "eval_start 2012-01-01 (end not stated in this report)",
+  "window_pinned": false,
+  "evidence": "WFO 2026-07-20; ef4e15f names fomc_drift's calendar-date workaround as a day-shift symptom; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "cross-asset-fx-hedge-overlay",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-20",
+  "eval_window": "Standalone 2016-01 → 2026-07 (38 folds); OOS 2017-01-02 → 2026-06-30",
+  "window_pinned": true,
+  "evidence": "WFO 2026-07-20; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "cross-asset-month-end-treasury",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "dsr_units"
+  ],
+  "run_date": "2026-09-24",
+  "eval_window": "2021-01-31 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "WFO 2026-09-24 after the tape fixes, before 09f9f40; fixed ETF universe so PIT does not apply"
+ },
+ {
+  "id": "cross-asset-on-deck-candidate-feasibility",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "no backtest on the price tape behind this row (design, feasibility, intake, review or ops note); tape state not applicable"
+ },
+ {
+  "id": "cross-asset-sleeve-holdout-2007-2011",
+  "tape_state_at_run": "clean",
+  "contamination": [],
+  "run_date": "2026-09-28",
+  "eval_window": "2007-06-01 → 2011-02-28",
+  "window_pinned": true,
+  "evidence": "2026-09-28, yfinance auto_adjust fetched at run time; static weights, no WFO gates or universe"
+ },
+ {
+  "id": "cross-asset-sleeve-trend-arm",
+  "tape_state_at_run": "unknown",
+  "contamination": [
+   "dsr_units"
+  ],
+  "run_date": "2026-09-28",
+  "eval_window": "pinned 2021-02-01 → 2026-04-30; 2016-01-04 → 2026-04-30",
+  "window_pinned": true,
+  "evidence": "2026-09-28 after the tape fixes; pinned static/trend backtests need no DSR, but the WFO OOS arm in _cross_asset_sleeve_results.json predates 09f9f40; which figure carries the verdict is for Lens 2"
+ },
+ {
+  "id": "cross-asset-static-80-20-sleeve",
+  "tape_state_at_run": "unknown",
+  "contamination": [
+   "dsr_units"
+  ],
+  "run_date": "2026-09-28",
+  "eval_window": "2021-02-01 → 2026-04-30 (report table heading; raw JSON meta says 2021-01-31 → 2026-04-30)",
+  "window_pinned": true,
+  "evidence": "2026-09-28 after the tape fixes; the pinned static figure needs no DSR, but the WFO arm predates 09f9f40; report table says 2021-02-01 start, raw meta 2021-01-31"
+ },
+ {
+  "id": "cross-asset-treasury-curve",
+  "tape_state_at_run": "contaminated",
+  "contamination": [
+   "spy_duplicates",
+   "anchor_leak",
+   "dsr_units"
+  ],
+  "run_date": "2026-07-20",
+  "eval_window": "2014-01-01 → 2026-06-30",
+  "window_pinned": true,
+  "evidence": "WFO 2026-07-20; anchor and DSR (deflated Sharpe ratio) gates were in run_wfo from 2026-06-17 (fa8ec4b5, be405aae); anchor leak fixed 2eafab1 2026-08-18, DSR units 09f9f40 2026-10-19"
+ },
+ {
+  "id": "crypto-binance-us-live-trader",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-23",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-config-tweaks-reverted-2026-04-02",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-04-02",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-defi-tokenized-equity-arb",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-07-16",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-diversity-cap-disabled-2026-05-07",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-07",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-edge-search-2026-06-08",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-06-08",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-execution-venue-fees",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-07-06",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-funding-carry-phase4",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-18",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-ibit-overnight-session",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-25",
+  "eval_window": "2024-01-11 → 2026-10-23",
+  "window_pinned": true,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-kraken-live-bot-pnl",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-04-06",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-live-ohlcv-tz-bug",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-perp-funding-carry-candidate",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-09-10",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-pipeline-runs-2026-03",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-03-21 to 2026-03-23",
+  "eval_window": "symbols-file names 2023-01-01 → 2025-12-31; recent-validation windows vary (e.g. 2025-06-01 → 2025-12-30)",
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-regime-filters",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-06",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-spot-etf-flow-persistence",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-strategy-usage-analyzer-2026-05-07",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-08",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-trade-frequency-gate-2026-05-07",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-07",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-tsmom-btc",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-09-28",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-universal-trailing-stops",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-06",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-venue-migration-path-d",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-12",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-web-research-batch-2026-10-25",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-10-25",
+  "eval_window": "2024-01-11 → 2026-10-23",
+  "window_pinned": true,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-wfo-overfitting-param-stability",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-09",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-wfo-recalibration-2026-05-01",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-01",
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-wfo-research-snapshots-kraken",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-04-02",
+  "eval_window": null,
+  "window_pinned": false,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-wfo-textbook-reset",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": "2026-05-11",
+  "eval_window": "--days 1095 --end-date 2026-05-01 (start derived)",
+  "window_pinned": false,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ },
+ {
+  "id": "crypto-wfo-tournament-robustness",
+  "tape_state_at_run": "unknown",
+  "contamination": [],
+  "run_date": null,
+  "eval_window": null,
+  "window_pinned": null,
+  "evidence": "crypto row: Lens 8 owns crypto tape integrity; no Lens 1 evidence"
+ }
+]
