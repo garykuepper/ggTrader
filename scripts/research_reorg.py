@@ -55,11 +55,13 @@ MANIFEST_COLUMNS = ("current_path", "proposed_path", "folder", "kind", "notes")
 HASH_CHUNK_BYTES = 1 << 20
 # Where consumers of docs/research live; docs/ is scanned minus the research tree itself.
 INBOUND_SCAN_ROOTS: tuple[str, ...] = ("scripts", "src", "tests", ".claude", "docs")
-INBOUND_SCAN_FILES: tuple[str, ...] = ("AGENTS.md",)
+INBOUND_SCAN_FILES: tuple[str, ...] = ("AGENTS.md", "README.md")
 # The reorganization's own spec/plan/manifest/draft/ledger files all carry this name prefix.
 REORG_DOC_PREFIX = "2026-11-05-research-reorg"
 REORG_SELF_PATHS = frozenset({"scripts/research_reorg.py", "tests/scripts/test_research_reorg.py"})
 SKIP_DIR_NAMES = frozenset({"__pycache__", ".git", ".venv", "node_modules"})
+# Git-ignored skill eval scratch: never in a rewrite scope, and absent from a clean checkout.
+SKIP_DIR_SUFFIX = "-workspace"
 # A Markdown inline link target, with an optional "title" part.
 LINK_PATTERN = re.compile(r"\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
 URL_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
@@ -249,7 +251,10 @@ def _iter_scan_files(root: Path) -> list[str]:
         if not base.is_dir():
             continue
         for path in base.rglob("*"):
-            if not path.is_file() or SKIP_DIR_NAMES.intersection(path.relative_to(root).parts):
+            if not path.is_file():
+                continue
+            dirs = path.relative_to(root).parts[:-1]
+            if SKIP_DIR_NAMES.intersection(dirs) or any(d.endswith(SKIP_DIR_SUFFIX) for d in dirs):
                 continue
             rel = path.relative_to(root).as_posix()
             if rel.startswith(f"{OLD_ROOT}/") or _is_reorg_own_file(rel):

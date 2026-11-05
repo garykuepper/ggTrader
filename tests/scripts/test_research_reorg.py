@@ -237,3 +237,19 @@ def test_ledger_git_head_via_cli_is_deterministic(tmp_path: Path) -> None:
         ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
     ).stdout.strip()
     assert json.loads(first)["source_revision"] == head
+
+
+def test_inbound_scan_includes_root_readme(tmp_path: Path) -> None:
+    _write(tmp_path, "README.md", "a docs/research b docs/research c docs/research\n")
+    rows, root = _ledger_tree(tmp_path)
+    inbound = build_ledger(rows, root, "abc")["inbound_references"]
+    assert inbound["README.md"] == 3
+
+
+def test_inbound_scan_skips_workspace_directories(tmp_path: Path) -> None:
+    _write(tmp_path, ".claude/skills/foo-workspace/run/out.md", "docs/research\n")
+    _write(tmp_path, ".claude/skills/foo/SKILL.md", "docs/research\n")
+    rows, root = _ledger_tree(tmp_path)
+    inbound = build_ledger(rows, root, "abc")["inbound_references"]
+    assert ".claude/skills/foo/SKILL.md" in inbound
+    assert not any("-workspace" in key for key in inbound)
