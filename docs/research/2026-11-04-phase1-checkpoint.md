@@ -164,6 +164,8 @@ Review rounds come from the ledger in the SDD workspace
 lens took one review, one fix round and one re-review that came back clean. "Unknown items"
 counts the ❓ lines in each report's Done checklist.
 
+*Added 2026-11-05:* the ledger is now also committed as `docs/research/2026-11-04-investigation-ledger.md`.
+
 | Lens | Report | Commits (add, correction) | Review rounds | Done status | Unknown items |
 |---|---|---|---|---|---|
 | 1 Backtest validity | `docs/research/2026-11-04-lens1-backtest-validity.md` | 77cecdab, 6576811e | 2 (1 fix round) | Done by the design's rule: every question answered or marked unknown with a cheapest test. Unknown: adjustment-seam extent beyond VZ and SPY; PARA's effect on the replica and core; day-shift direction per July event study (lines 464-485) | 3 |

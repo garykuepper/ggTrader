@@ -722,6 +722,9 @@ about 21:50 PST on 2026-11-04 and was retried after the 22:20 reset; nothing was
 The task ledger (`.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md`) is gitignored,
 so this section is the committed record of the decisions; the owner is the authority on them.
 
+*Added 2026-11-05 after the merge:* a copy of the ledger is committed as
+`docs/research/2026-11-04-investigation-ledger.md`, and the scratch workspace was removed.
+
 **Recorded (2026-11-05):**
 - Phase 2: none of the 29 items is run.
 - Decision 0 (allowing re-runs to write to the price cache): no.
@@ -783,6 +786,7 @@ in section 1 ("What is unknown") and section 7; the challenger's list agrees
 
 Commits from `git log --oneline -- <file>` (newest first). Review rounds from the gitignored task
 ledger `.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md`.
+(A copy is committed as `docs/research/2026-11-04-investigation-ledger.md`.)
 
 | Evidence | File(s) | Commits | Review rounds |
 |---|---|---|---|
