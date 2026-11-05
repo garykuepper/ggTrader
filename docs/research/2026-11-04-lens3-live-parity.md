@@ -45,7 +45,8 @@ TimescaleDB database; SD = standard deviation; MDE = minimum detectable effect.
    applied MNST's 2-for-1 split, so the 09-29 sale credited half the position's value. By
    configuration era:
    - Cash dominates before 08-21.
-   - The blend-era stock picks lost about -2.3 pp in 08-21 to 09-22, excluding MNST.
+   - The blend-era stock picks lost about -3.3 pp over E3 and E4 (07-30 to 09-22): -0.99
+     in E3 and -2.33 in E4. The MNST hit is not in either era; it lands in E6.
    - The frozen-era stock sleeve gained +1.6 pp.
 4. **Fills before the close match the backtest's close-price assumption on average:**
    +0.3 bp notional-weighted for stocks (n = 106, SD 39 bp per fill) and -0.2 bp for SPY
@@ -72,6 +73,14 @@ H-gap was partly supported in advance.
   - Two independent value sources (DB snapshot and Alpaca EOD equity) disagree with each
     other by more than 0.5 pp.
   - Git history and the changelog do not support the era boundaries.
+
+  **Verdict against these rules.** The first era (06-24 to 08-21) is **overturned**. On
+  the broker-consistent basis it moves 1.10 pp (-1.92 to -3.02), past the 0.5 pp limit.
+  The two value sources also disagree by 0.67 pp (U -3.02, Alpaca EOD -3.69). The second
+  era moves 0.32 pp (-2.60 to -2.28) and the third 0.23 pp (+1.37 to +1.60). Their two
+  sources agree within 0.2 pp, so **both survive**. The signs are unchanged, and git and
+  the changelog support the boundaries. The JSON records
+  `phase0_era_figures_survive_correction: false` because the first era fails.
 - **H-era-cause ("most paper shortfall is config churn, not signal"):** overturned if the
   decomposition puts most of the shortfall in the stock sleeve's own picks rather than in
   idle cash, broker artifacts and transition events.
@@ -190,20 +199,32 @@ How the bases differ:
 - **U vs B (E3, E6):** this is MNST. U drops about $951 at 08-11, when the broker kept the
   pre-split share count. B carries the full value until the 09-29 sale credited half
   (-$874).
-- **EOD vs U (E3 onward):** an extra -$600 to -$1,100 a day from 08-11. The data fit the
-  following hypothesis, which is not proven: EOD equity carries MNST at the unsplit
-  quantity and values the merged AVB holding (about $746, price frozen at 184.06 since
-  08-17) at about zero. The live `portfolio_value` includes AVB, and Alpaca's
-  `last_equity` for 11-03 ($100,941.02) is about $748 below the 11-03 snapshot U. Series:
-  JSON `broker_eod_offset`.
+- **EOD vs U (from 08-18):** these are Alpaca's daily equity minus the snapshot's broker
+  value U (cash + quantity × price), on the same date.
+  - Before 08-11: the offset is -$435 to +$177. That is consistent with the 15:45 ET
+    snapshot being taken 15 minutes before the close.
+  - 08-11 to 08-17: -$84 to +$48, so about $0.
+  - From 08-18: -$456 to -$1,107, mostly near -$750. It is -$748 on 11-03.
+
+  **AVB alone fits.** The merged AVB holding is about $746, and its price has been frozen
+  at 184.06 since 08-17. The hypothesis is that Alpaca's EOD series values it at about
+  zero, while the live `portfolio_value` includes it at 184.06. Alpaca's `last_equity` for
+  11-03 ($100,941.02) is about $748 below the 11-03 snapshot U. This mechanism is
+  **unproven**.
+
+  MNST cannot contribute: U already carries MNST at the broker's unsplit quantity, and
+  the offset is about $0 from 08-11 to 08-17. The larger gap, -$613 to -$1,976, appears
+  only when EOD is measured against the *stored* value V. V also includes the MNST split
+  correction (about $1,000 until 09-28) and the dividend accrual ($74-$320). Series
+  against U: JSON `broker_eod_offset`.
 
 ### Phase 0 boundaries
 
 | Era | Phase 0 | Phase 0 method reproduced | **U vs SPY TR** | EOD vs SPY TR | Verdict |
 |---|---|---|---|---|---|
-| 06-24 → 08-21 | -1.9 | -1.92 | **-3.02** | -3.69 | Reproduced on Phase 0's method. Moves 1.1-1.8 pp on broker-consistent bases (MNST and AVB fall in this era for U and EOD) |
-| 08-21 → 09-30 | -2.6 | -2.60 | **-2.28** | -2.32 | Reproduced. Phase 0's SPY figure is price, not TR, because of the tape seam (+0.25 pp). Corrected shortfall is smaller |
-| 09-30 → 11-04 | +1.4 | +1.37 | **+1.60** | +1.40 (to 11-03) | Survives, within 0.3 pp |
+| 06-24 → 08-21 | -1.9 | -1.92 | **-3.02** | -3.69 | **Overturned** under the pre-registered rule. It reproduces on Phase 0's method, but moves 1.10 pp on U (the MNST split, which U carries at the unsplit quantity from 08-11) and 1.77 pp on EOD (AVB valued at about 0 from 08-18). The sources disagree by 0.67 pp |
+| 08-21 → 09-30 | -2.6 | -2.60 | **-2.28** | -2.32 | **Survives** (moves 0.32 pp). Phase 0's SPY figure is price, not TR, because of the tape seam (+0.25 pp) |
+| 09-30 → 11-04 | +1.4 | +1.37 | **+1.60** | +1.40 (to 11-03) | **Survives** (moves 0.23 pp) |
 | Headline since 06-24 | +1.39% vs +4.63% | +1.386% vs +4.628% | +1.07% vs +4.84% TR | -1.48% vs +3.09% (to 11-03) | The headline uses V and SPY price on the partial 11-04 bar |
 
 Phase 0's method was: V, at about 15:45 ET, against `ohlcv` SPY daily closes (06-24 close
@@ -233,7 +254,9 @@ Method (JSON `decomposition_B_basis_estimate`):
 
 Reading the table:
 - **Stock sleeve:** E6's -0.98 is almost all the MNST sale at half value (-$874, about
-  -0.85 pp). This is a paper-broker artifact. A real broker would have applied the split.
+  -0.85 pp). This is a paper-broker artifact. *Assumption, not tested here:* a live
+  brokerage account would have applied the split. Alpaca paper recorded no SPLIT activity
+  (see "Snapshot gap").
 - **SPY sweep:** E4's -0.15 equals the uncredited 09-18 SPY dividend (83.17 shares ×
   $1.889 = $157).
 - **Residual:** P&L from fill to snapshot on positions opened in the same run, plus fees
@@ -263,7 +286,12 @@ cumulative accrual at the snapshot's `created_at`, the residual, the Alpaca DIV 
 - **Alpaca DIV series:** empty. `get_account_activities_by_type(DIV, after=2026-05-01)`
   returns `[]`. Non-trade activities since 08-15 are FEE only (REG, TAF and CAT fees, a
   few cents each). This matches the 2026-08-18 note in
-  `src/ggTrader/paper/dividend_check.py`.
+  `src/ggTrader/paper/dividend_check.py`. I re-ran the reviewer's check with
+  `get_account_activities` for types DIV, DIVCGL, DIVCGS, DIVFEE, DIVFT, DIVNRA, DIVROC,
+  DIVTW, DIVTXEX, CGD, SPLIT, MA, REORG, REO, NC, SPIN, JNLC, JNLS, INT, CSD and CSW, from
+  2024-06-01. It returns one entry: the 2024-06-21 $100,000 JNLC funding journal. The
+  account has never been credited a dividend, a split, a merger, interest or any other
+  cash flow.
 - **Accrual errors.** `qty_held_at_ex_date` uses the snapshot at or *on* the ex-date
   (`src/ggTrader/paper/dividend_check.py:55-76`). A run on the ex-date therefore counts
   shares bought after that day's open, which are not entitled to the dividend:
@@ -272,8 +300,14 @@ cumulative accrual at the snapshot's `created_at`, the residual, the Alpaca DIV 
 
   The other 17 rows have the same quantity in the prior day's snapshot.
 - **Verdict:** confirmed. The gap is the code's cumulative uncredited-dividend accrual
-  (`src/ggTrader/paper/trader.py:1056`). DB, code and broker agree, and the broker paid
-  nothing. The consequence for the daily-loss halt (about 2.7% instead of 3%) is Lens 6's
+  (`src/ggTrader/paper/trader.py:1056`). The broker paid nothing.
+  - **"Gap = accrual"** is confirmed from the DB accrual table and the code at
+    `src/ggTrader/paper/trader.py:1056`. These are not independent: the same code writes
+    both the accrual and the snapshot.
+  - **"Never credited"** is the only part with an independent broker source: empty
+    dividend activity and the activity re-check above.
+  - Broker cash equalled snapshot cash ($5,177.86) on 11-04. That was checked on one day
+    only. The consequence for the daily-loss halt (about 2.7% instead of 3%) is Lens 6's
   finding and is not re-derived here.
 
 ## Unmodelled behaviours
@@ -373,11 +407,15 @@ whole period t = 0.73. The window cannot detect any realistic effect, so **H-fro
 5. **How long would frozen paper trading need to run to detect an effect of a given size
    in a sleeve of about 10%?** Answered: 23-40 years for 10 pp/yr at the sleeve level.
    See the table.
-6. **Why is EOD equity below the snapshot by about $750-$1,800?** Partly answered. The
-   timing and amounts fit MNST (unsplit quantity) and AVB valued at about zero in Alpaca's
-   EOD series. Unknown, because Alpaca's EOD valuation rule was not inspected. The cheapest
-   test is portfolio history at 15-minute resolution on one day around 16:00 ET, compared
-   with the position list.
+6. **Why is EOD equity below the snapshot?** Partly answered. Against the broker value U,
+   the offset is about $0 from 08-11 to 08-17. From 08-18 it is -$456 to -$1,107, mostly
+   near -$750 (-$748 on 11-03). AVB alone (about $746, price frozen since 08-17) fits,
+   valued at about zero in Alpaca's EOD series. MNST does not contribute, because U already
+   carries it at the unsplit quantity. Against the stored value V the gap is -$613 to
+   -$1,976. V adds the MNST split correction (about $1,000) and the dividend accrual
+   ($74-$320). The mechanism is unproven, because Alpaca's EOD valuation rule was not
+   inspected. The cheapest test is portfolio history at 15-minute resolution on one day
+   around 16:00 ET, compared with the position list.
 
 ## Verification
 
@@ -390,7 +428,8 @@ Commands and outputs. Scratch scripts are in the session scratchpad, under
 - Alpaca read-only tools:
   - `get_account_info`: paper account confirmed; identifier not recorded. Cash 5,177.86;
     `last_equity` 100,941.02.
-  - DIV activities: `[]`.
+  - DIV activities: `[]`. Fix round: 21 activity types since 2024-06-01 return only the
+    2024-06-21 $100,000 JNLC funding entry.
   - Non-trade activities since 08-15: FEE only.
   - `get_portfolio_history` 1D, 06-20 to 11-04: 95 points; cash flows FEE only.
   - `get_all_positions`: 5 names; the position sum matches `long_market_value` within
@@ -413,7 +452,12 @@ Commands and outputs. Scratch scripts are in the session scratchpad, under
 
 **Unverified:**
 - The partial-bar signal effect.
-- Alpaca's EOD valuation rule for AVB and MNST (hypothesis only).
+- Alpaca's EOD valuation rule for AVB (hypothesis only).
+- The mirror-image accrual error. The accrual takes its share count from the snapshot on
+  the ex-date (`src/ggTrader/paper/dividend_check.py:55-76`), so a holding sold in an
+  ex-date run would be missed even though it was entitled. No such case was searched for.
+- The fill-cost statistics (n = 106, +0.3 bp; n = 52 SPY; 44 next-open fills at 47 bp)
+  and the 212-order total were not independently re-verified by the review.
 - Rejected-order counts beyond 09-25.
 - Whether any dividend on a held name is missing from the accruals. The corporate-actions
   feed was not re-queried per holding.
@@ -434,5 +478,5 @@ Commands and outputs. Scratch scripts are in the session scratchpad, under
 - ✅ Unmodelled behaviours with paper evidence (fill times, next-open fills, liquidations, AVB, MNST, rejections)
 - ✅ Detectable-effect formula, inputs and table
 - ❓ Partial-bar signal parity: unknown (decision-time bars not stored)
-- ❓ Alpaca EOD valuation of AVB and MNST: unknown (hypothesis consistent with data)
+- ❓ Alpaca EOD valuation of AVB: unknown (hypothesis consistent with data)
 - ❓ Rejected orders outside 09-25: unknown (no broker record of rejections)

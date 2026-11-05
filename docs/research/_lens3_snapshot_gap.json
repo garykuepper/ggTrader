@@ -1176,10 +1176,15 @@
     "amount": 0.1,
     "note": "0.051 shares added by the 09-18 sweep after the ex-date open"
    }
-  ]
+  ],
+  "alpaca_activity_recheck_fix_round": {
+   "query": "get_account_activities(activity_types=[DIV,DIVCGL,DIVCGS,DIVFEE,DIVFT,DIVNRA,DIVROC,DIVTW,DIVTXEX,CGD,SPLIT,MA,REORG,REO,NC,SPIN,JNLC,JNLS,INT,CSD,CSW], after=2024-06-01)",
+   "result": "one entry: JNLC 2024-06-21 net_amount 100000 (initial funding); nothing else"
+  },
+  "accrual_errors_unchecked": "mirror case: a holding sold in an ex-date run would be missed (dividend_check.py:55-76); not searched"
  },
  "broker_eod_offset": {
-  "description": "Alpaca EOD equity minus snapshot U, same date",
+  "description": "Alpaca EOD equity minus snapshot U (cash + qty*current_price, the broker's own value), same date",
   "series": [
    [
     "2026-06-24",
@@ -1542,7 +1547,7 @@
     -748.1
    ]
   ],
-  "explanation": "hypothesis consistent with data: EOD equity values the merged AVB holding (~$746) at zero from about 2026-08-18 while intraday portfolio_value prices it at a frozen 184.06; before 09-29 the EOD figure also carries MNST at the broker's unsplit qty"
+  "explanation": "Unproven mechanism. Before 08-11: -435..+177 (15:45 ET snapshot vs close). 08-11..08-17: -84..+48 (about 0). From 2026-08-18: -456..-1107, mostly near -750 (-748.10 on 11-03). AVB alone fits: about $746 holding, price frozen at 184.06 since 08-17, hypothesised to be valued at about zero in EOD while intraday portfolio_value includes it. MNST does not contribute: U already carries MNST at the broker's unsplit qty. Measured against stored value V instead, the offset is -613..-1976, because V adds the MNST split correction (about $1,000 until 09-28) and the dividend accrual ($74-$320)."
  },
  "fills": {
   "definition": "cost in basis points vs the reference close, positive = worse for the trader",
@@ -1726,14 +1731,16 @@
    "sources": [
     "paper_dividend_accruals cumulative sum vs snapshot gap: |residual| <= $6.59 on every day 08-20..11-04, 0.00 on most",
     "code: trader.py:1051-1056 adds dividend_info['total'] to the persisted value"
-   ]
+   ],
+   "independence_note": "DB accrual table and the persisted value share one writer (trader.py:1056); not independent sources"
   },
   "broker_never_credited_dividends": {
    "value": true,
    "sources": [
     "Alpaca DIV activities: empty since 2026-05-01",
     "Alpaca non-trade activities since 2026-08-15: FEE only",
-    "Alpaca live account cash equals snapshot cash on 2026-11-04 (5177.86), so no dividend cash reached the account"
+    "Alpaca live account cash equals snapshot cash on 2026-11-04 (5177.86), so no dividend cash reached the account (single-day check)",
+    "fix-round re-check: 21 activity types since 2024-06-01 return only the 2024-06-21 funding JNLC"
    ]
   },
   "phase0_era_figures_reproduced": {
@@ -1748,7 +1755,12 @@
    "sources": [
     "U vs SPY TR: -3.02 / -2.28 / +1.60",
     "Alpaca EOD vs SPY TR: -3.69 / -2.32 / +1.40 (P3 to 11-03 close)"
-   ]
+   ],
+   "per_era": {
+    "P1": "overturned: moves 1.10 pp (-1.92 -> -3.02 U); U vs EOD differ 0.67 pp",
+    "P2": "survives: moves 0.32 pp (-2.60 -> -2.28)",
+    "P3": "survives: moves 0.23 pp (+1.37 -> +1.60)"
+   }
   }
  }
 }
