@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-"""Tooling for the docs/research -> research/ reorganization (manifest loading and checking)."""
+"""Tooling for the docs/research -> research/ reorganization (manifest checking and ledger)."""
 
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
+import json
+import posixpath
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
+from typing import Any
+from urllib.parse import unquote
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OLD_ROOT = "docs/research"
@@ -46,6 +52,18 @@ PINNED_PATHS: tuple[str, ...] = tuple(
     )
 )
 MANIFEST_COLUMNS = ("current_path", "proposed_path", "folder", "kind", "notes")
+HASH_CHUNK_BYTES = 1 << 20
+# Where consumers of docs/research live; docs/ is scanned minus the research tree itself.
+INBOUND_SCAN_ROOTS: tuple[str, ...] = ("scripts", "src", "tests", ".claude", "docs")
+INBOUND_SCAN_FILES: tuple[str, ...] = ("AGENTS.md",)
+# The reorganization's own spec/plan/manifest/draft/ledger files all carry this name prefix.
+REORG_DOC_PREFIX = "2026-11-05-research-reorg"
+REORG_SELF_PATHS = frozenset({"scripts/research_reorg.py", "tests/scripts/test_research_reorg.py"})
+SKIP_DIR_NAMES = frozenset({"__pycache__", ".git", ".venv", "node_modules"})
+# A Markdown inline link target, with an optional "title" part.
+LINK_PATTERN = re.compile(r"\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
+URL_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+FENCE_PATTERN = re.compile(r"^\s*(```|~~~)")
 
 
 @dataclass(frozen=True)
@@ -202,6 +220,164 @@ def tracked_research_files(root: Path = REPO_ROOT) -> set[str]:
     return {line for line in out.splitlines() if line}
 
 
+def sha256_file(path: Path) -> str:
+    """Return the hex SHA-256 of a file, read in chunks.
+
+    Args:
+        path: File to hash.
+
+    Returns:
+        Lowercase hex digest.
+    """
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(HASH_CHUNK_BYTES), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _is_reorg_own_file(rel: str) -> bool:
+    """Return True for the reorganization's own files, which mention docs/research by design."""
+    return rel in REORG_SELF_PATHS or PurePosixPath(rel).name.startswith(REORG_DOC_PREFIX)
+
+
+def _iter_scan_files(root: Path) -> list[str]:
+    """List repo-relative paths of candidate consumer files, sorted, outside the research tree."""
+    found: set[str] = {name for name in INBOUND_SCAN_FILES if (root / name).is_file()}
+    for top in INBOUND_SCAN_ROOTS:
+        base = root / top
+        if not base.is_dir():
+            continue
+        for path in base.rglob("*"):
+            if not path.is_file() or SKIP_DIR_NAMES.intersection(path.relative_to(root).parts):
+                continue
+            rel = path.relative_to(root).as_posix()
+            if rel.startswith(f"{OLD_ROOT}/") or _is_reorg_own_file(rel):
+                continue
+            found.add(rel)
+    return sorted(found)
+
+
+def scan_inbound_references(root: Path) -> dict[str, int]:
+    """Count literal `docs/research` occurrences in files outside the research tree.
+
+    Read-only text scan; binary or unreadable files are skipped.
+
+    Args:
+        root: Repository root.
+
+    Returns:
+        Mapping of repo-relative file to occurrence count (files with none are omitted).
+    """
+    counts: dict[str, int] = {}
+    for rel in _iter_scan_files(root):
+        try:
+            text = (root / rel).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        hits = text.count(OLD_ROOT)
+        if hits:
+            counts[rel] = hits
+    return counts
+
+
+def find_dead_links(rows: list[ManifestRow], root: Path) -> list[dict[str, Any]]:
+    """List relative Markdown links in manifest files whose target does not exist.
+
+    URLs, mailto/other schemes and pure `#anchors` are ignored, `#fragment` is stripped, and
+    fenced code blocks are skipped.
+
+    Args:
+        rows: Manifest rows; only `.md` files are inspected.
+        root: Repository root.
+
+    Returns:
+        `{file, line, link}` records in manifest then line order.
+    """
+    dead: list[dict[str, Any]] = []
+    for row in rows:
+        if not row.current_path.endswith(".md"):
+            continue
+        try:
+            lines = (root / row.current_path).read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeDecodeError):
+            continue
+        parent = PurePosixPath(row.current_path).parent.as_posix()
+        in_fence = False
+        for number, line in enumerate(lines, start=1):
+            if FENCE_PATTERN.match(line):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            for match in LINK_PATTERN.finditer(line):
+                link = match.group(1)
+                target = unquote(link.split("#", 1)[0])
+                if not target or URL_SCHEME.match(link):
+                    continue
+                resolved = (
+                    target.lstrip("/")
+                    if target.startswith("/")
+                    else posixpath.normpath(posixpath.join(parent, target))
+                )
+                if not (root / resolved).exists():
+                    dead.append({"file": row.current_path, "line": number, "link": link})
+    return dead
+
+
+def build_ledger(rows: list[ManifestRow], root: Path, git_head: str) -> dict[str, Any]:
+    """Record the pre-move state so a later step can prove nothing changed.
+
+    Args:
+        rows: Manifest rows, in manifest order.
+        root: Repository root the rows' current paths resolve against.
+        git_head: Revision the ledger was taken at.
+
+    Returns:
+        A JSON-serializable dict: `source_revision`, `files`, `inbound_references`,
+        `existing_dead_links`.
+
+    Raises:
+        FileNotFoundError: If a manifest file is missing on disk.
+    """
+    files = []
+    for row in rows:
+        path = root / row.current_path
+        files.append(
+            {
+                "current_path": row.current_path,
+                "proposed_path": row.proposed_path,
+                "sha256": sha256_file(path),
+                "size": path.stat().st_size,
+                "frozen": row.frozen,
+                "pinned": row.pinned,
+            }
+        )
+    return {
+        "source_revision": git_head,
+        "files": files,
+        "inbound_references": scan_inbound_references(root),
+        "existing_dead_links": find_dead_links(rows, root),
+    }
+
+
+def current_git_head(root: Path = REPO_ROOT) -> str:
+    """Return `git rev-parse HEAD` for the repository at `root`."""
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=root, check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def _cmd_ledger(args: argparse.Namespace) -> int:
+    """Run `ledger`: write the deterministic provenance ledger JSON."""
+    rows = load_manifest(Path(args.manifest))
+    ledger = build_ledger(rows, Path(args.root), current_git_head())
+    text = json.dumps(ledger, indent=2, sort_keys=True) + "\n"
+    Path(args.out).write_text(text, encoding="utf-8")
+    print(f"OK ledger {len(rows)} files, {len(ledger['inbound_references'])} referencing files")
+    return 0
+
+
 def _cmd_manifest_check(args: argparse.Namespace) -> int:
     """Run `manifest-check`: print problems and return 1 if any."""
     rows = load_manifest(Path(args.manifest))
@@ -224,6 +400,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check.add_argument("--manifest", required=True, help="Path to the manifest CSV.")
     check.set_defaults(func=_cmd_manifest_check)
+    ledger = sub.add_parser("ledger", help="Write the pre-move provenance ledger (JSON).")
+    ledger.add_argument("--manifest", required=True, help="Path to the manifest CSV.")
+    ledger.add_argument("--out", required=True, help="Path of the ledger JSON to write.")
+    ledger.add_argument(
+        "--root", default=str(REPO_ROOT), help="Repository root (default: this repository)."
+    )
+    ledger.set_defaults(func=_cmd_ledger)
     return parser
 
 
