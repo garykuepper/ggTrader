@@ -2474,8 +2474,8 @@
     "data_used": null,
     "sizing_style": null
    },
-   "verified": true,
-   "source_for_fields": "docs/research/_investigation_inventory.json row sources (docs/roadmap.md:152 quote; anchor 15/17 per memory note quoted in inventory)",
+   "verified": false,
+   "source_for_fields": "verified against inventory quote only (not the source report): docs/research/_investigation_inventory.json row sources quote docs/roadmap.md:152 and a private memory note; verified=false",
    "upstream": {
     "lens1_tape": "contaminated",
     "lens1_items": [
@@ -5799,7 +5799,8 @@
     "docs/research/WEB_RESEARCH_CANDIDATES.md:398-403 (PEAD found sensitive to microcap inclusion; not followed up)",
     "docs/research/WEB_RESEARCH_CANDIDATES.md:126-130 (short-interest effect concentrates in small/illiquid names)",
     "git log --all -i --grep=micro: 2ac0ff71 only"
-   ]
+   ],
+   "rule_note": null
   },
   {
    "area": "Small caps: single-stock selection",
@@ -5819,7 +5820,8 @@
     "docs/research/2026-07-17-pead-nogo.md:19-20,47,72-75,100-105",
     "docs/roadmap.md:154 ('Russell 2000 could not be included — its data is only ~29% loaded')",
     "data/universe/russell2000_tickers_snapshot_2026-06-09.txt (200 lines)"
-   ]
+   ],
+   "rule_note": null
   },
   {
    "area": "Small caps: portfolio-level size screens (French library)",
@@ -5840,7 +5842,8 @@
    "evidence": [
     "docs/research/2026-10-20-momentum-french-screen-nogo.md:18-31,71,83-90",
     "docs/research/2026-10-21-factor-screen-nogo.md:125-135"
-   ]
+   ],
+   "rule_note": "Defining feature here is the portfolio-level size screen itself, which these rows exercised on survivorship-free French data; not a snapshot universe."
   },
   {
    "area": "Mid caps",
@@ -5853,7 +5856,7 @@
     "stocks-headline-sentiment"
    ],
    "record_summary": "MidCap 400 reversion (status 'Researching', anchor-driven 15/17 folds), the 3-sleeve SP500+MidCap+Nasdaq blend (GO, later reverted), sleeve correlations, and a 50-name MidCap 400 headline-sentiment pilot.",
-   "quality": "Every row carries pre-fix contamination (anchor leak, PIT universe, DSR units); MidCap 400 universe is a 2026-06-24 current-list snapshot; Lens 6 'no' for the MidCap and blend rows; blend GO is Lens 2 'unreliable GO'; the sentiment pilot held ~7 names from an alphabetical first-50 sample (record says unrepresentative). No raw artifacts.",
+   "quality": "Every row carries pre-fix contamination (anchor leak, PIT universe, DSR units); MidCap 400 universe is a 2026-06-24 current-list snapshot; Lens 6 'no' for the MidCap and blend rows; blend GO is Lens 2 'unreliable GO'; the sentiment pilot held ~7 names from an alphabetical first-50 sample (record says unrepresentative). No raw artifacts. Rule: the only stand-alone MidCap 400 test used a current-list snapshot universe and the only mid-cap-only measured test was an unrepresentative 50-name pilot, so the record documents that the defining feature (an investable PIT mid-cap universe) was not exercised; the blend rows are Lens 2 unreliable GO or rest on the same snapshot.",
    "upstream_by_id": [
     "stocks-midcap400-reversion: L1 contaminated ['spy_duplicates', 'anchor_leak', 'pit_universe', 'dsr_units']; L2 inconclusive; L6 no; L9 no raw artifact",
     "stocks-three-sleeve-blend-1-14: L1 contaminated ['spy_duplicates', 'anchor_leak', 'pit_universe', 'dsr_units']; L2 unreliable GO; L6 no; L9 no raw artifact",
@@ -5862,13 +5865,14 @@
     "stocks-live-revert-blend-to-core: L1 contaminated ['pit_universe', 'dsr_units']; L2 inconclusive; L6 yes; L9 not computable from artifact",
     "stocks-headline-sentiment: L1 contaminated ['day_shift', 'spy_duplicates', 'anchor_leak', 'dsr_units']; L2 inconclusive; L6 partly; L9 no raw artifact"
    ],
-   "classification": "tested, inconclusive",
+   "classification": "tested badly (flawed test)",
    "prospective": false,
    "evidence": [
     "docs/research/2026-07-24-headline-sentiment-nogo.md:15-21",
     "data/universe/midcap400_tickers_snapshot_2026-06-24.txt (400 lines, current list)",
     "docs/research/_lens2_sensitivity.json classifications (stocks-three-sleeve-blend-1-14: unreliable GO)"
-   ]
+   ],
+   "rule_note": null
   },
   {
    "area": "Concentration (few single stocks, large weights)",
@@ -5894,7 +5898,8 @@
     "docs/research/2026-10-19-production-replica-audit-nogo.md:259-263 (anchor top_n 50)",
     "docs/research/2026-08-19-position-sizing-regimes.md:24,96-101 (slot caps 8-30)",
     "docs/research/RESEARCH_SNAPSHOT.md:49-51 (9.37% mean stock exposure)"
-   ]
+   ],
+   "rule_note": null
   },
   {
    "area": "Sizing and exit levers inside the ensemble",
@@ -5924,7 +5929,8 @@
    "prospective": false,
    "evidence": [
     "docs/research/_lens2_sensitivity.json classifications for the listed ids"
-   ]
+   ],
+   "rule_note": "Levers were exercised in the ensemble; only the 3% size row is Lens 2 unreliable, so not every row is flawed."
   },
   {
    "area": "Long-short / shorting single stocks",
@@ -5948,7 +5954,8 @@
     "docs/research/2026-07-17-pairs-stat-arb-nogo.md:20-25,98-105,140-160",
     "docs/research/2026-07-19-short-volume-ratio-nogo.md:9-14",
     "docs/research/2026-10-23-net-issuance-screen-nogo.md:20-25"
-   ]
+   ],
+   "rule_note": "Both books took real long and short weights (pairs beta 0.03); missing borrow costs would only lower returns per the record; not a documented non-exercise."
   },
   {
    "area": "Market-neutral",
@@ -5968,7 +5975,8 @@
    "prospective": false,
    "evidence": [
     "docs/research/2026-07-17-pairs-stat-arb-nogo.md:98-99"
-   ]
+   ],
+   "rule_note": "Same as long-short; market-neutrality was achieved mechanically per the record."
   },
   {
    "area": "Options (as instruments)",
@@ -5986,14 +5994,15 @@
     "docs/research/WEB_RESEARCH_CANDIDATES.md:446",
     "docs/research/prompts/web-strategy-research-prompt.md:200-204",
     "src/ggTrader/lab/strategies/__init__.py:56-95 (no options entry)"
-   ]
+   ],
+   "rule_note": null
   },
   {
-   "area": "Futures contracts (commodity, index, rates)",
+   "area": "Futures contracts (commodity, index, rates; crypto perps excluded)",
    "inventory_ids": [
     "cross-asset-on-deck-candidate-feasibility"
    ],
-   "record_summary": "None traded or simulated. Prompt states 'no futures'; commodity carry (A2), futures-basis reversal (A4), basis momentum (A20) left untriaged or blocked on paid curve history.",
+   "record_summary": "No commodity, index or rates futures contract was traded or simulated (crypto perpetual futures are a separate area, see the crypto-perps row and Lens 8). Prompt states 'no futures'; commodity carry (A2), futures-basis reversal (A4), basis momentum (A20) left untriaged or blocked on paid curve history.",
    "quality": "Not applicable.",
    "upstream_by_id": [
     "cross-asset-on-deck-candidate-feasibility: L1 unknown []; L2 inconclusive; L6 no row; L9 no raw artifact"
@@ -6003,7 +6012,8 @@
    "evidence": [
     "docs/research/prompts/web-strategy-research-prompt.md:200-205",
     "docs/research/WEB_RESEARCH_CANDIDATES.md:636,724,2245"
-   ]
+   ],
+   "rule_note": null
   },
   {
    "area": "Commodities via ETFs",
@@ -6026,15 +6036,16 @@
    "evidence": [
     "docs/research/2026-07-20-commodity-trend-nogo.md:22-39",
     "docs/research/2026-09-28-cross-asset-sleeve.md:1,11,16"
-   ]
+   ],
+   "rule_note": "Exercised on fixed ETF lists; no row is Lens 2 unreliable."
   },
   {
-   "area": "International equities (allocation or selection)",
+   "area": "International equities: country or single-name exposure (excluding the FX-hedge ETF test)",
    "inventory_ids": [
     "cross-asset-fx-hedge-overlay"
    ],
    "record_summary": "Only the FX-hedge overlay used international equity ETFs (EWJ/DXJ, EZU/HEZU), and it tested the currency-hedge ratio, not international equity exposure. Ex-US rotation, EM forecast combination (A19), dash-for-cash EFA and lagged US-to-international tilt are parked/untriaged. The Antonacci SPY/VEU dual momentum was folded into dual_momentum, whose lab version is SP500 single stocks identical to xs_momentum.",
-   "quality": "FX overlay pre-fix contaminated, no artifact (not an international-exposure test in any case).",
+   "quality": "FX overlay pre-fix contaminated, no artifact; it is a measured test on international ETFs but of the hedge ratio, so it does not exercise international equity exposure. The research prompt lists developed-market international equities as explicitly welcome (docs/research/prompts/web-strategy-research-prompt.md:191-196).",
    "upstream_by_id": [
     "cross-asset-fx-hedge-overlay: L1 contaminated ['spy_duplicates', 'anchor_leak', 'dsr_units']; L2 inconclusive; L6 unverifiable; L9 no raw artifact"
    ],
@@ -6045,7 +6056,8 @@
     "docs/research/WEB_RESEARCH_CANDIDATES.md:1372-1379,2217,2048,2433 (parked/untriaged)",
     "docs/research/WEB_RESEARCH_CANDIDATES.md:1581-1585 (Antonacci folded into dual_momentum)",
     "docs/research/2026-10-19-production-replica-audit-nogo.md:259-263"
-   ]
+   ],
+   "rule_note": null
   },
   {
    "area": "Intraday (prospective)",
@@ -6053,7 +6065,7 @@
     "stocks-intraday-feasibility",
     "stocks-intraday-replication-source-audit"
    ],
-   "record_summary": "Feasibility and source audit only; no intraday bars or returns obtained in the repo. A separate owner-approved observer records one fixed SPY rule prospectively: long 15:30-15:59 ET when the prior-close-to-09:59 return is positive, else flat; $100,000 hypothetical, no leverage, 1/2 bp per side, 252 scheduled slots from 2026-10-30 to 2027-11-03; descriptive output only, no pass/fail.",
+   "record_summary": "Feasibility and source audit only; no intraday bars or returns obtained in the repo. A separate owner-approved observer records one fixed SPY rule prospectively: long 15:30-15:59 ET when the prior-close-to-09:59 return is positive, else flat; $100,000 hypothetical, no leverage, cost c = 1 bp per side (base) or 2 bp (stress) charged as 2c per traded day, 252 scheduled slots from 2026-10-30 to 2027-11-03; descriptive output only, no pass/fail.",
    "quality": "Not evaluated: results do not exist yet. Observer lives in a separate worktree and is off-limits; read only.",
    "upstream_by_id": [
     "stocks-intraday-feasibility: L1 unknown []; L2 inconclusive; L6 no row; L9 not computable from artifact",
@@ -6063,9 +6075,10 @@
    "prospective": true,
    "evidence": [
     "docs/research/2026-10-24-intraday-trading-feasibility.md:3-5,92",
-    "worktree /home/flynn/.t3/worktrees/ggTrader/research-intraday-stage0a: docs/research/2026-10-27-intraday-observer-activation.md (milestones, timers); docs/research/briefs/2026-10-25-intraday-prospective-observation.md:105-112 (fixed rule); docs/research/2026-10-25-intraday-prospective-protocol-review.md:23-50",
+    "worktree /home/flynn/.t3/worktrees/ggTrader/research-intraday-stage0a: docs/research/2026-10-27-intraday-observer-activation.md (milestones, timers); docs/research/briefs/2026-10-25-intraday-prospective-observation.md:105-115 (fixed rule and costs); docs/research/2026-10-25-intraday-prospective-protocol-review.md:23-50",
     "commit 6f0362e0 (activation)"
-   ]
+   ],
+   "rule_note": null
   },
   {
    "area": "Weekly-rebalanced cross-sectional strategies",
@@ -6085,10 +6098,11 @@
     "src/ggTrader/lab/data.py:266-271 (decision dates: window start plus month-ends)",
     "docs/research/2026-07-17-pairs-stat-arb-nogo.md:140-148",
     "docs/research/2026-07-17-max-effect-nogo.md:105-112"
-   ]
+   ],
+   "rule_note": null
   },
   {
-   "area": "Daily-signal mean reversion on S&P 500 large caps (most-tested area)",
+   "area": "Daily-signal mean reversion on large caps (S&P 500; one Nasdaq-100 row) (most-tested area)",
    "inventory_ids": [
     "stocks-production-replica",
     "stocks-production-replica-holdout-2010-2020",
@@ -6117,7 +6131,8 @@
     "docs/research/_lens2_sensitivity.json multiple_testing.families['ensemble/reversion and its levers'].n = 33",
     "docs/research/RESEARCH_SNAPSHOT.md:44-51",
     "docs/research/_lens9_power.json rows stocks-production-replica"
-   ]
+   ],
+   "rule_note": "Replica and PIT rows exercised the feature on PIT S&P 500 membership; only the Nasdaq-100 row is unreliable."
   },
   {
    "area": "Cross-sectional momentum (large caps)",
@@ -6140,7 +6155,8 @@
    "evidence": [
     "docs/research/_lens9_power.json rows",
     "docs/research/2026-10-20-momentum-french-screen-nogo.md:18-31"
-   ]
+   ],
+   "rule_note": "Exercised on PIT S&P 500 and French data; the top_n-10 non-deployment is a concentration issue, scored under Concentration."
   },
   {
    "area": "Fundamentals: value, quality, investment, issuance (large caps)",
@@ -6160,7 +6176,8 @@
    "prospective": false,
    "evidence": [
     "docs/research/RESEARCH_SNAPSHOT.md:163-167,236-238,285-288"
-   ]
+   ],
+   "rule_note": "Exercised as registered French BIG screens; no row unreliable."
   },
   {
    "area": "Fundamentals at small-cap scale",
@@ -6178,7 +6195,8 @@
    "prospective": false,
    "evidence": [
     "docs/research/2026-10-21-factor-screen-nogo.md:125-135"
-   ]
+   ],
+   "rule_note": null
   },
   {
    "area": "Event-driven equity (PEAD, deletions, insider, congress)",
@@ -6203,7 +6221,8 @@
    "evidence": [
     "docs/research/RESEARCH_SNAPSHOT.md:30-40,236-240",
     "docs/research/_lens1_tape_state.json (day_shift on all four)"
-   ]
+   ],
+   "rule_note": "S&P 500 arms used ever-member universes and were exercised; day-shift lookahead is a Lens 1 item whose direction Lens 2 lists as unknown, not a documented non-exercise. The PEAD Russell arm is scored under small caps."
   },
   {
    "area": "Alternative data (short interest, short volume, attention, sentiment)",
@@ -6230,7 +6249,8 @@
    "evidence": [
     "docs/research/2026-07-17-short-interest-nogo.md:53",
     "docs/research/RESEARCH_SNAPSHOT.md:132,162"
-   ]
+   ],
+   "rule_note": "Short interest and short-volume ratio exercised the feature on the S&P 500; the sentiment pilot is the only documented non-exercise, so not every row is flawed."
   },
   {
    "area": "ML / LLM signals",
@@ -6250,28 +6270,62 @@
    "prospective": false,
    "evidence": [
     "docs/research/RESEARCH_SNAPSHOT.md:155"
-   ]
+   ],
+   "rule_note": "The ML filter was exercised on the ensemble's entries; only the LLM pilot is documented as unrepresentative."
   },
   {
-   "area": "Treasury calendar effects (FOMC, month-end)",
+   "area": "Treasury calendar: pre-FOMC drift, corrected day-clustered event study (this id only)",
    "inventory_ids": [
-    "cross-asset-fomc-drift-corrected-harness",
-    "cross-asset-fomc-drift-wfo",
-    "cross-asset-month-end-treasury"
+    "cross-asset-fomc-drift-corrected-harness"
    ],
-   "record_summary": "Pre-FOMC long-Treasury drift: day-clustered net t 0.981 over 113 dates. Month-end IEF: standalone premium real, SPY-funded overlay adds nothing.",
-   "quality": "FOMC corrected study: clean tape, MDE 2.37 pp/yr <= target gap 5.11 (meets R2 and R5); Lens 6 unverifiable so Lens 2 class stays inconclusive. Month-end: MDE 4.94 <= 9.57 but DSR-units item (direction unknown).",
+   "record_summary": "Pre-FOMC long-Treasury drift over 113 FOMC dates, 2012-01-01..2026-04-30: day-clustered net t 0.981.",
+   "quality": "Clean tape (Lens 1). Lens 9 MDE 2.37 pp/yr at t>=3 is DERIVED: a per-event MDE of about 30.08 bp on the event-day-minus-non-event-day Welch t (Treasury-ETF universe, net of round-trip cost) times 7.887 events a year; it is not an excess return versus SPY. The 5.11 pp/yr comparator is the owner's target CAGR gap over the same window. Units differ (an annualized calendar-effect arithmetic mean versus a geometric CAGR gap), so Lens 9 calls the comparison approximate. Meets Lens 2 R2 (data) and R5 (power) but not R3 (code: Lens 6 unverifiable), so Lens 2 keeps the class inconclusive.",
    "upstream_by_id": [
-    "cross-asset-fomc-drift-corrected-harness: L1 clean []; L2 inconclusive; L6 unverifiable; L9 computed MDE 2.37 pp vs target gap 5.11",
-    "cross-asset-fomc-drift-wfo: L1 contaminated ['day_shift', 'spy_duplicates', 'anchor_leak', 'dsr_units', 'event_pre_entry_returns (7320c1d)']; L2 inconclusive; L6 unverifiable; L9 no raw artifact",
-    "cross-asset-month-end-treasury: L1 contaminated ['dsr_units']; L2 inconclusive; L6 yes; L9 computed MDE 4.94 pp vs target gap 9.57"
+    "cross-asset-fomc-drift-corrected-harness: L1 clean []; L2 inconclusive; L6 unverifiable; L9 computed MDE 2.37 pp vs target gap 5.11"
    ],
    "classification": "tested, evidence against at the size the test could detect",
    "prospective": false,
    "evidence": [
-    "docs/research/_lens9_power.json rows cross-asset-fomc-drift-corrected-harness, cross-asset-month-end-treasury",
-    "docs/research/RESEARCH_SNAPSHOT.md:137-138"
-   ]
+    "docs/research/_lens9_power.json row cross-asset-fomc-drift-corrected-harness (se_method, annualization 'DERIVED, labelled', caveat)",
+    "docs/research/_fomc_clustered_event_study_20261020.json",
+    "docs/research/RESEARCH_SNAPSHOT.md:137"
+   ],
+   "rule_note": "'Evidence against' applies to this id only, for an effect of the derived size in these units; not to the other Treasury calendar ids."
+  },
+  {
+   "area": "Treasury calendar: pre-FOMC drift, July 2026 WFO",
+   "inventory_ids": [
+    "cross-asset-fomc-drift-wfo"
+   ],
+   "record_summary": "TLT/IEF/EDV entry-offset and hold-days sweep, 54 folds from 2012; NO-GO.",
+   "quality": "Pre-fix tape (day shift, SPY duplicates, anchor leak, DSR units, pre-entry event returns), Lens 6 unverifiable, no raw artifact, no MDE.",
+   "upstream_by_id": [
+    "cross-asset-fomc-drift-wfo: L1 contaminated ['day_shift', 'spy_duplicates', 'anchor_leak', 'dsr_units', 'event_pre_entry_returns (7320c1d)']; L2 inconclusive; L6 unverifiable; L9 no raw artifact"
+   ],
+   "classification": "tested, inconclusive",
+   "prospective": false,
+   "evidence": [
+    "docs/research/2026-07-20-fomc-drift-nogo.md:14,51-52"
+   ],
+   "rule_note": "Exercised the feature; not documented as a non-exercise; no power figure, so inconclusive."
+  },
+  {
+   "area": "Treasury calendar: month-end IEF sleeve",
+   "inventory_ids": [
+    "cross-asset-month-end-treasury"
+   ],
+   "record_summary": "Frozen IEF last-3-days rule: standalone premium present (Welch t 2.75 on invested days versus other days, gross of cost); funded out of SPY it added nothing; NO-GO as an SPY-funded sleeve.",
+   "quality": "Lens 9 MDE 4.94 pp/yr (DERIVED, per-day effect times 36.14 invested days a year, not versus SPY) is below the 9.57 pp/yr target gap, but the tape carries a DSR-units item of unknown direction, so Lens 2 R2 is not met. Lens 6 yes.",
+   "upstream_by_id": [
+    "cross-asset-month-end-treasury: L1 contaminated ['dsr_units']; L2 inconclusive; L6 yes; L9 computed MDE 4.94 pp vs target gap 9.57"
+   ],
+   "classification": "tested, inconclusive",
+   "prospective": false,
+   "evidence": [
+    "docs/research/_lens9_power.json row cross-asset-month-end-treasury",
+    "docs/research/RESEARCH_SNAPSHOT.md:138"
+   ],
+   "rule_note": "R2 not met (DSR-units item, direction unknown), so not 'evidence against'."
   },
   {
    "area": "Cross-asset breadth (rates, commodities, gold, FX via ETFs)",
@@ -6301,7 +6355,8 @@
    "prospective": false,
    "evidence": [
     "docs/research/RESEARCH_SNAPSHOT.md:75-81,135-141"
-   ]
+   ],
+   "rule_note": "Exercised on fixed ETF lists; no row unreliable."
   },
   {
    "area": "Leverage and exposure (A23, LETF timing, century study, vol scaling)",
@@ -6330,7 +6385,8 @@
    "evidence": [
     "docs/research/RESEARCH_SNAPSHOT.md:82-92,142-147,159-161",
     "docs/research/WEB_RESEARCH_CANDIDATES.md:1573,2681"
-   ]
+   ],
+   "rule_note": "Exercised; A23/A24/century on clean tape; no row unreliable."
   },
   {
    "area": "Crypto perpetuals / funding carry (Lens 8 owns detail)",
@@ -6349,7 +6405,8 @@
    "evidence": [
     "docs/research/_investigation_inventory.json rows",
     "docs/research/WEB_RESEARCH_CANDIDATES.md:136"
-   ]
+   ],
+   "rule_note": "One year of real funding was exercised; thin sample, not a documented non-exercise."
   },
   {
    "area": "Crypto spot (Lens 8 owns detail)",
@@ -6371,13 +6428,14 @@
    "prospective": false,
    "evidence": [
     "docs/research/_investigation_inventory.json rows"
-   ]
+   ],
+   "rule_note": "Exercised on coin universes; detail in Lens 8."
   }
  ],
  "gap_classification_counts": {
   "never tested": 6,
-  "tested badly (flawed test)": 3,
-  "tested, inconclusive": 16,
+  "tested badly (flawed test)": 4,
+  "tested, inconclusive": 17,
   "tested, evidence against at the size the test could detect": 1
  },
  "hypothesis_sourcing": {
@@ -6403,7 +6461,11 @@
    "b_of_which_cite_published_paper": 16,
    "c_internal_observation_or_lever": 31,
    "d_practitioner_lore_technical_indicators": 14,
-   "any_published_anomaly_link": 26
+   "any_published_anomaly_link": 26,
+   "published_link_unknown": [
+    "stocks-a24-sleeve-trend-rider",
+    "stocks-july-research-program-summary"
+   ]
   },
   "web_research_candidates": {
    "counting_rule": "An entry is a numbered candidate heading (### 1-14, A1-A27, B1-B15, C1-C11) or a parked bullet ('- **' under a 'D. Parked' or 'Parked this batch' heading) in docs/research/WEB_RESEARCH_CANDIDATES.md. C-items are methods, not trading hypotheses. 'Run' = a measured return test exists (an inventory row with Lens 2 verdict_type NO/GO/TEST-INCONCLUSIVE, or a registry strategy with a report). 'Sanity check only' = a one-off pandas check in the batch artifacts, not a WFO or registered test. Summary lines at :3173-3180 are not counted.",
@@ -6565,10 +6627,10 @@
   },
   "decay_evidence": {
    "mclean_pontiff_2016": {
-    "claim": "97 cross-sectional stock-return predictors: portfolio returns 26% lower out of sample and 58% lower after publication; post-publication correlations with other published predictors rise; returns higher in high idiosyncratic risk, low liquidity stocks.",
+    "claim": "97 cross-sectional stock-return predictors: portfolio returns 26% lower out of sample and 58% lower after publication; post-publication correlations with other published predictors rise; returns are higher for portfolios concentrated in stocks with high idiosyncratic risk and low liquidity (abstract wording).",
     "source": "McLean & Pontiff, Journal of Finance 71(1), 5-32 (2016), doi 10.1111/jofi.12365; free text https://gwern.net/doc/economics/2016-mclean.pdf",
     "verification": "abstract text read via search results (Wiley, Dialnet, CFA digest); full PDF not read; which of the 97 predictors match each project test not checked",
-    "applies_to": "cross-sectional US stock anomalies only (not Treasury, commodity, FX or leverage rows)"
+    "applies_to": "cross-sectional US stock anomalies only (not Treasury, commodity, FX or leverage rows); the project's 16 stock anomalies include event studies (insider, congress, index deletion, PEAD); mapping of each to the paper's 97 is unverified"
    },
    "record_own_decay_measurements": [
     "momentum Small: t 3.38 (1927-1993), 1.11 (1994-2012), -0.77 (2013-2026): docs/research/2026-10-20-momentum-french-screen-nogo.md:83-90",

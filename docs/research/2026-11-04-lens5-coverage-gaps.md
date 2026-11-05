@@ -29,21 +29,27 @@ index, moving-average convergence/divergence, exponential moving average (techni
 
 1. **The record is narrow in the dimensions a small account could use.** Of the 51 measured
    single-stock tests, 44 are large-cap only (S&P 500 or Nasdaq-100), and 65 of the 72 measured
-   tests are long-only. There is no micro-cap universe, no options strategy, no futures
-   simulation and no weekly-rebalanced cross-sectional strategy anywhere in the registry, code
-   or git history. The single small-cap stock-selection arm (PEAD on the Russell 2000) ran on a
+   tests are long-only. There is no micro-cap universe, no options strategy, no commodity,
+   index or rates futures simulation and no weekly-rebalanced cross-sectional strategy anywhere
+   in the registry, code or git history. (Crypto perpetual futures do appear: a one-year Kraken
+   funding-carry backtest and a deleted carry module; see the crypto-perps row and Lens 8.) The single small-cap stock-selection arm (PEAD on the Russell 2000) ran on a
    200-name current-list snapshot that the project itself calls a partial universe.
-2. **Gap table (26 areas):** 6 never tested, 3 tested badly (flawed test), 16 tested and
-   inconclusive, 1 tested with evidence against at the size the test could detect (Treasury
-   calendar effects, through the corrected FOMC event study). The six never-tested areas are
-   micro caps, options, futures contracts, international equity exposure, weekly-rebalanced
-   cross-sectional strategies and intraday (intraday is prospective evidence in progress, not
-   evaluated here). The three tested-badly areas are small-cap stock selection, concentration
-   (few names at large weights) and small-cap fundamentals.
+2. **Gap table (28 areas):** 6 never tested, 4 tested badly (flawed test), 17 tested and
+   inconclusive, 1 tested with evidence against at the size the test could detect. That one is
+   a single id, the corrected day-clustered pre-FOMC Treasury event study, and only with
+   caveats: its 2.37 pp/yr detectable effect is a derived annualization of a per-event
+   calendar-effect return (not an excess over SPY), compared approximately with a CAGR gap, and
+   its code was not verified (Lens 2 keeps it inconclusive). The six never-tested areas are
+   micro caps, options, commodity/index/rates futures contracts, international country or
+   single-name equity exposure (only an FX-hedge-ratio test touched international ETFs),
+   weekly-rebalanced cross-sectional strategies and intraday (prospective evidence in progress,
+   not evaluated here). The four tested-badly areas are small-cap stock selection, mid caps,
+   concentration (few names at large weights) and small-cap fundamentals.
 3. **Hypothesis sources (72 measured tests):** 31 internal observations or construction levers,
    19 from LLM/web research batches (16 of them citing a published paper), 14 practitioner
    technical indicators (RSI, Bollinger, MACD, EMA cross and ensembles of them), 8 taken
-   directly from published academic anomalies. 26 of 72 are tied to a published paper.
+   directly from published academic anomalies. 26 of 72 are tied to a published paper; for 2
+   (A24 rider, July programme summary) the record does not say.
    33 of 72 are the RSI/Bollinger mean-reversion ensemble or levers on it (Lens 2 family count).
 4. **Web-research backlog:** 56 trading entries plus 26 parked bullets (82 hypotheses) and 11
    method entries. 15 trading entries were run as measured tests, 1 was built without a result,
@@ -52,10 +58,12 @@ index, moving-average convergence/divergence, exponential moving average (techni
    cross-sectional stock predictors earn 26% less out of sample and 58% less after publication.
    The project's own long-history screens show the same shape (momentum Small t 3.38 before
    1994, -0.77 after 2013). Which of the project's anomalies are among the 97 was not checked.
-6. **The research prompt steered away from small-account advantages.** It asks for free data,
-   one daily decision before the close, 1.0x, no futures, and to "avoid strategies that only work
-   at institutional scale/capacity"; no line asks for capacity-limited, concentrated or
-   micro-cap ideas (`docs/research/prompts/web-strategy-research-prompt.md:184-205`).
+6. **The research prompt does not ask for small-account advantages.** It asks for free data,
+   one daily decision before the close, 1.0x and no futures, and excludes ideas that need
+   institutional scale or capacity; it puts small-cap indices and developed-market international
+   equities in scope. No line asks specifically for capacity-limited, concentrated or micro-cap
+   ideas (`docs/research/prompts/web-strategy-research-prompt.md:184-205`). That this shaped
+   which hypotheses arrived is this lens's inference, not something the record states.
 
 ## Falsifiers
 
@@ -68,10 +76,11 @@ narrower, than the inventory suggests, and the result.
   git subject searches for micro, futures, options, shorting, international and weekly found no
   such strategy (Verification). Not met.
 - **F2 (broader):** web-batch candidates marked untriaged were in fact run in the batch artifact
-  folders. Checked: the four artifact folders hold sanity checks for A10, A12, A14, B5, the
-  cross-asset sleeve, UUP/UDN buy-and-hold context, static SPY/SSO mixes and IBIT
-  (`docs/research/artifacts-2026-09-28-web-batch/sanity_checks_output.txt`). Partly met: four
-  entries gained a sanity check, none a measured test.
+  folders. Checked: the four artifact folders hold sanity checks for A10 (later run as a
+  measured test), A12, A14, B5, the cross-asset sleeve, UUP/UDN buy-and-hold context, static
+  SPY/SSO mixes and IBIT (`docs/research/artifacts-2026-09-28-web-batch/sanity_checks_output.txt`).
+  Partly met: three untriaged entries (A12, A14, B5) and one parked bullet (crypto session)
+  gained only a sanity check, none a measured test.
 - **F3 (broader):** the Russell 2000 or MidCap 400 universes are full and point-in-time. Checked:
   they are 200- and 400-line current-list snapshots (`data/universe/` listing). Not met.
 - **F4 (broader):** a concentrated stock arm (10 names or fewer at 10% or more each) has an OOS
@@ -123,8 +132,9 @@ assumed cost haircuts, not tradable small-cap books.
 2. Normalized each row to fixed codes (instrument, market-cap segment, decision horizon,
    direction, signal family, idea source, published link, data, sizing) in one table, filling
    Haiku nulls from the inventory row's name and claim.
-3. Re-read the source lines for 42 rows that the gap table relies on (listed per row in
-   `rows[].source_for_fields`, `verified: true`).
+3. Re-read the source lines for 41 rows that the gap table relies on (listed per row in
+   `rows[].source_for_fields`, `verified: true`). The MidCap 400 reversion row was checked only
+   against its inventory quotes and is marked `verified: false`.
 4. Attached each row's Lens 1 tape state, Lens 2 class, Lens 6 code match and Lens 9 MDE.
 5. Wrote the gap-table classification rules before classifying (JSON
    `classification_rules`), then classified each area from its cited rows, the registry and a git
@@ -136,7 +146,7 @@ assumed cost haircuts, not tradable small-cap books.
 Counts from `coverage_counts` in the JSON. "Measured tests" = Lens 2 verdict type NO, GO or
 TEST-INCONCLUSIVE (72 rows); the other rows are 42 status/feasibility labels and 30
 operations/infrastructure rows with no Lens 2 row. "Decision horizon" is the decision or
-rebalance cadence, not the holding period. Values were normalized by this lens; 102 of 144 rows
+rebalance cadence, not the holding period. Values were normalized by this lens; 103 of 144 rows
 were not re-read against their sources (Verification).
 
 **Instrument class** (Haiku null in 2 of 144 rows before Lens 5 filled them)
@@ -281,38 +291,43 @@ measured rows exercised the feature, none is flawed in that way, and none meets 
 **Tested, evidence against at the size the test could detect** = at least one measured NO row
 whose Lens 9 MDE (t >= 3) is known and at or below the owner's 2x-SPY target gap over its
 window, on a clean tape or one whose contamination favours the strategy (Lens 2 rules R2 and
-R5); Lens 2's own class, which also needs the code check, is quoted beside it.
+R5); Lens 2's own class, which also needs the code check, is quoted beside it. An area whose
+ids would fall in different classes is split into per-id lines. Each "inconclusive" and
+"evidence against" line carries a rule note saying why it is not "tested badly".
 
-Per-id Lens 1/2/6/9 states are in `gap_table[].upstream_by_id` in the JSON.
+Per-id Lens 1/2/6/9 states are in `gap_table[].upstream_by_id`, rule notes in
+`gap_table[].rule_note`, in the JSON.
 
 | area | what the record contains (inventory ids) | quality of that testing | classification |
 |---|---|---|---|
 | Micro caps (single stocks below small-cap index size) | Nothing. No micro-cap universe file under data/universe/ (11 files: SP500, Nasdaq-100, MidCap 400, a 200-name Russell 2000 snapshot, ETF lists, coin listings); no registry entry; the only git subject containing 'micro' is a crypto tick-size fix (2ac0ff71). Ids: none. | Not applicable. Evidence: docs/research/2026-10-21-factor-screen-nogo.md:127 ('ggTrader has no point-in-time small-cap universe, no liquidity screening, and no small-cap execution infrastructure'); docs/research/WEB_RESEARCH_CANDIDATES.md:398-403 (PEAD found sensitive to microcap inclusion; not followed up); docs/research/WEB_RESEARCH_CANDIDATES.md:126-130 (short-interest effect concentrates in small/illiquid names); git log --all -i --grep=micro: 2ac0ff71 only. | **never tested** |
 | Small caps: single-stock selection | One measured small-cap stock-selection arm: pead@russell2000 on 2015-06..2026-07 (40 folds), OOS Sharpe 0.77, tied with SPY, regime halt 60%, not re-run on the matched window. The leveraged-rotation Russell 2000 variant used constituent breadth only to time TNA/UWM index ETFs. Ids: `stocks-pead`, `stocks-leveraged-rotation`. | The record calls the Russell 2000 universe 'a partial ~200-symbol subset (not the full ~2000)' and 'a known ... data limitation'; the file is a current-list snapshot (survivorship), roadmap says ~29% loaded. Tape pre-fix (day shift, SPY duplicates, anchor leak, DSR units), Lens 6 partly, no raw artifact. Evidence: docs/research/2026-07-17-pead-nogo.md:19-20,47,72-75,100-105; docs/roadmap.md:154 ('Russell 2000 could not be included — its data is only ~29% loaded'); data/universe/russell2000_tickers_snapshot_2026-06-09.txt (200 lines). | **tested badly (flawed test)** |
-| Small caps: portfolio-level size screens (French library) | Momentum Small HiPRIOR was a registered group (full t 3.11, fails Holm; post-1994 +0.20 pp/yr vs +1.0 bar; 1927-1993 t 3.38, 2013-2026 t -0.77). SMALL HiOP/HiBM/LoINV reported only as diagnostics outside the Holm family (t 0.47-0.90, post-2013 -6.3 to -6.8 pp/yr). Accruals: feasibility only. Ids: `stocks-momentum-french-screen`, `stocks-factor-screen-h1-h4`, `stocks-accruals-feasibility`. | Clean tape (Lens 1), no Lens 6 row, Lens 9 MDE not computable (no stored mean excess). Value-weighted portfolios with an assumed 3%/yr small-cap cost haircut, not a tradable small-cap book. Evidence: docs/research/2026-10-20-momentum-french-screen-nogo.md:18-31,71,83-90; docs/research/2026-10-21-factor-screen-nogo.md:125-135. | **tested, inconclusive** |
-| Mid caps | MidCap 400 reversion (status 'Researching', anchor-driven 15/17 folds), the 3-sleeve SP500+MidCap+Nasdaq blend (GO, later reverted), sleeve correlations, and a 50-name MidCap 400 headline-sentiment pilot. Ids: `stocks-midcap400-reversion`, `stocks-three-sleeve-blend-1-14`, `stocks-three-sleeve-blend-reproduction`, `stocks-equity-diversification-sleeves`, `stocks-live-revert-blend-to-core`, `stocks-headline-sentiment`. | Every row carries pre-fix contamination (anchor leak, PIT universe, DSR units); MidCap 400 universe is a 2026-06-24 current-list snapshot; Lens 6 'no' for the MidCap and blend rows; blend GO is Lens 2 'unreliable GO'; the sentiment pilot held ~7 names from an alphabetical first-50 sample (record says unrepresentative). No raw artifacts. Evidence: docs/research/2026-07-24-headline-sentiment-nogo.md:15-21; data/universe/midcap400_tickers_snapshot_2026-06-24.txt (400 lines, current list); docs/research/_lens2_sensitivity.json classifications (stocks-three-sleeve-blend-1-14: unreliable GO). | **tested, inconclusive** |
+| Small caps: portfolio-level size screens (French library) | Momentum Small HiPRIOR was a registered group (full t 3.11, fails Holm; post-1994 +0.20 pp/yr vs +1.0 bar; 1927-1993 t 3.38, 2013-2026 t -0.77). SMALL HiOP/HiBM/LoINV reported only as diagnostics outside the Holm family (t 0.47-0.90, post-2013 -6.3 to -6.8 pp/yr). Accruals: feasibility only. Ids: `stocks-momentum-french-screen`, `stocks-factor-screen-h1-h4`, `stocks-accruals-feasibility`. | Clean tape (Lens 1), no Lens 6 row, Lens 9 MDE not computable (no stored mean excess). Value-weighted portfolios with an assumed 3%/yr small-cap cost haircut, not a tradable small-cap book. Rule note: Defining feature here is the portfolio-level size screen itself, which these rows exercised on survivorship-free French data; not a snapshot universe. Evidence: docs/research/2026-10-20-momentum-french-screen-nogo.md:18-31,71,83-90; docs/research/2026-10-21-factor-screen-nogo.md:125-135. | **tested, inconclusive** |
+| Mid caps | MidCap 400 reversion (status 'Researching', anchor-driven 15/17 folds), the 3-sleeve SP500+MidCap+Nasdaq blend (GO, later reverted), sleeve correlations, and a 50-name MidCap 400 headline-sentiment pilot. Ids: `stocks-midcap400-reversion`, `stocks-three-sleeve-blend-1-14`, `stocks-three-sleeve-blend-reproduction`, `stocks-equity-diversification-sleeves`, `stocks-live-revert-blend-to-core`, `stocks-headline-sentiment`. | Every row carries pre-fix contamination (anchor leak, PIT universe, DSR units); MidCap 400 universe is a 2026-06-24 current-list snapshot; Lens 6 'no' for the MidCap and blend rows; blend GO is Lens 2 'unreliable GO'; the sentiment pilot held ~7 names from an alphabetical first-50 sample (record says unrepresentative). No raw artifacts. Rule: the only stand-alone MidCap 400 test used a current-list snapshot universe and the only mid-cap-only measured test was an unrepresentative 50-name pilot, so the record documents that the defining feature (an investable PIT mid-cap universe) was not exercised; the blend rows are Lens 2 unreliable GO or rest on the same snapshot. Evidence: docs/research/2026-07-24-headline-sentiment-nogo.md:15-21; data/universe/midcap400_tickers_snapshot_2026-06-24.txt (400 lines, current list); docs/research/_lens2_sensitivity.json classifications (stocks-three-sleeve-blend-1-14: unreliable GO). | **tested badly (flawed test)** |
 | Concentration (few single stocks, large weights) | The only concentrated stock arm was xs_momentum top_n 10 (10% each) inside a 10/20/50 grid; the corrected replay deployed the anchor (top_n 50) in 17/17 folds, so no top_n 10 OOS return exists. Sizing study minimum was 8 slots per sleeve. The live/replica book holds at most 3 names at ~3% each (9.37% mean stock exposure), which is few names but small weights. The 7-name sentiment book was accidental. Ids: `stocks-xs-momentum-corrected-replay`, `stocks-position-sizing-regimes`, `stocks-headline-sentiment`, `stocks-production-replica`. | Replay tape clean, Lens 6 yes, MDE 22.66 pp/yr; but the concentrated arm itself was never deployed. Sizing study contaminated (PIT, DSR), single window, Lens 6 partly. Evidence: src/ggTrader/lab/strategies/momentum.py:25 (top_n grid [10, 20, 50]); docs/research/2026-11-02-wfo-fold-attribution.md:38-39,66-68 (17/17 anchor; winner OOS not recorded); docs/research/2026-10-19-production-replica-audit-nogo.md:259-263 (anchor top_n 50); docs/research/2026-08-19-position-sizing-regimes.md:24,96-101 (slot caps 8-30); docs/research/RESEARCH_SNAPSHOT.md:49-51 (9.37% mean stock exposure). | **tested badly (flawed test)** |
-| Sizing and exit levers inside the ensemble | 3% position size (GO), sizing regimes (inconclusive), conviction and Kelly sizing (NO), exit-rule sweep, trailing stops, VIX throttling (NO). Ids: `stocks-three-pct-position-size`, `stocks-position-sizing-regimes`, `stocks-conviction-bb`, `stocks-ensemble-kelly-pit`, `stocks-ensemble-kelly-2026-07`, `stocks-exit-rule-sweep`, `stocks-trailing-stops`, `stocks-vix-entry-throttling`. | 3% size is 'unreliable GO'; the rest Lens 2 inconclusive; all but Kelly-PIT carry pre-fix contamination; no MDE. Evidence: docs/research/_lens2_sensitivity.json classifications for the listed ids. | **tested, inconclusive** |
-| Long-short / shorting single stocks | Two measured long/short books on SP500: pairs (same-sector, monthly) and short-volume-ratio quintiles. Net issuance short side (BIG HiNI) is a French diagnostic, not a short test. Leveraged rotation shorted the index via inverse ETFs. Ids: `stocks-pairs-stat-arb`, `stocks-short-volume-ratio`, `stocks-net-issuance-screen`, `stocks-leveraged-rotation`. | Both books Lens 2 inconclusive, pre-fix tape (anchor leak, SPY duplicates, DSR; SVR also day shift), Lens 6 unverifiable/partly, no raw artifacts. Pairs modelled no borrow fee or margin interest; the record says the monthly cadence may be 'mistimed' and the cadence hypothesis was not tested. Evidence: docs/research/2026-07-17-pairs-stat-arb-nogo.md:20-25,98-105,140-160; docs/research/2026-07-19-short-volume-ratio-nogo.md:9-14; docs/research/2026-10-23-net-issuance-screen-nogo.md:20-25. | **tested, inconclusive** |
-| Market-neutral | Same two equity books (pairs realized beta 0.03 to SPY); crypto delta-neutral carry on one year of Kraken funding (8 trades). Ids: `stocks-pairs-stat-arb`, `stocks-short-volume-ratio`, `crypto-funding-carry-phase4`. | As for long-short; carry row has no raw artifact (archived doc only). Crypto detail belongs to Lens 8. Evidence: docs/research/2026-07-17-pairs-stat-arb-nogo.md:98-99. | **tested, inconclusive** |
+| Sizing and exit levers inside the ensemble | 3% position size (GO), sizing regimes (inconclusive), conviction and Kelly sizing (NO), exit-rule sweep, trailing stops, VIX throttling (NO). Ids: `stocks-three-pct-position-size`, `stocks-position-sizing-regimes`, `stocks-conviction-bb`, `stocks-ensemble-kelly-pit`, `stocks-ensemble-kelly-2026-07`, `stocks-exit-rule-sweep`, `stocks-trailing-stops`, `stocks-vix-entry-throttling`. | 3% size is 'unreliable GO'; the rest Lens 2 inconclusive; all but Kelly-PIT carry pre-fix contamination; no MDE. Rule note: Levers were exercised in the ensemble; only the 3% size row is Lens 2 unreliable, so not every row is flawed. Evidence: docs/research/_lens2_sensitivity.json classifications for the listed ids. | **tested, inconclusive** |
+| Long-short / shorting single stocks | Two measured long/short books on SP500: pairs (same-sector, monthly) and short-volume-ratio quintiles. Net issuance short side (BIG HiNI) is a French diagnostic, not a short test. Leveraged rotation shorted the index via inverse ETFs. Ids: `stocks-pairs-stat-arb`, `stocks-short-volume-ratio`, `stocks-net-issuance-screen`, `stocks-leveraged-rotation`. | Both books Lens 2 inconclusive, pre-fix tape (anchor leak, SPY duplicates, DSR; SVR also day shift), Lens 6 unverifiable/partly, no raw artifacts. Pairs modelled no borrow fee or margin interest; the record says the monthly cadence may be 'mistimed' and the cadence hypothesis was not tested. Rule note: Both books took real long and short weights (pairs beta 0.03); missing borrow costs would only lower returns per the record; not a documented non-exercise. Evidence: docs/research/2026-07-17-pairs-stat-arb-nogo.md:20-25,98-105,140-160; docs/research/2026-07-19-short-volume-ratio-nogo.md:9-14; docs/research/2026-10-23-net-issuance-screen-nogo.md:20-25. | **tested, inconclusive** |
+| Market-neutral | Same two equity books (pairs realized beta 0.03 to SPY); crypto delta-neutral carry on one year of Kraken funding (8 trades). Ids: `stocks-pairs-stat-arb`, `stocks-short-volume-ratio`, `crypto-funding-carry-phase4`. | As for long-short; carry row has no raw artifact (archived doc only). Crypto detail belongs to Lens 8. Rule note: Same as long-short; market-neutrality was achieved mechanically per the record. Evidence: docs/research/2026-07-17-pairs-stat-arb-nogo.md:98-99. | **tested, inconclusive** |
 | Options (as instruments) | No options strategy in registry, code or git history. Option-implied skew as a stock signal was judged infeasible (no free historical chains). The research prompt lists listed options as available at the broker. Ids: `stocks-option-iv-skew`. | Not applicable. Evidence: docs/research/WEB_RESEARCH_CANDIDATES.md:446; docs/research/prompts/web-strategy-research-prompt.md:200-204; src/ggTrader/lab/strategies/__init__.py:56-95 (no options entry). | **never tested** |
-| Futures contracts (commodity, index, rates) | None traded or simulated. Prompt states 'no futures'; commodity carry (A2), futures-basis reversal (A4), basis momentum (A20) left untriaged or blocked on paid curve history. Ids: `cross-asset-on-deck-candidate-feasibility`. | Not applicable. Evidence: docs/research/prompts/web-strategy-research-prompt.md:200-205; docs/research/WEB_RESEARCH_CANDIDATES.md:636,724,2245. | **never tested** |
-| Commodities via ETFs | Commodity 12-1 trend over 14 commodity ETFs (NO); PDBC as one third of the 20% cross-asset sleeve (static GO shadow-only; trend arm NO). Ids: `cross-asset-commodity-trend`, `cross-asset-static-80-20-sleeve`, `cross-asset-sleeve-trend-arm`, `cross-asset-sleeve-holdout-2007-2011`. | Commodity trend pre-fix contaminated, Lens 6 unverifiable, no artifact. Sleeve rows clean tape but MDE not computable; Lens 2 inconclusive. Evidence: docs/research/2026-07-20-commodity-trend-nogo.md:22-39; docs/research/2026-09-28-cross-asset-sleeve.md:1,11,16. | **tested, inconclusive** |
-| International equities (allocation or selection) | Only the FX-hedge overlay used international equity ETFs (EWJ/DXJ, EZU/HEZU), and it tested the currency-hedge ratio, not international equity exposure. Ex-US rotation, EM forecast combination (A19), dash-for-cash EFA and lagged US-to-international tilt are parked/untriaged. The Antonacci SPY/VEU dual momentum was folded into dual_momentum, whose lab version is SP500 single stocks identical to xs_momentum. Ids: `cross-asset-fx-hedge-overlay`. | FX overlay pre-fix contaminated, no artifact (not an international-exposure test in any case). Evidence: docs/research/2026-07-20-fx-hedge-overlay-nogo.md:16-21; docs/research/WEB_RESEARCH_CANDIDATES.md:1372-1379,2217,2048,2433 (parked/untriaged); docs/research/WEB_RESEARCH_CANDIDATES.md:1581-1585 (Antonacci folded into dual_momentum); docs/research/2026-10-19-production-replica-audit-nogo.md:259-263. | **never tested** |
-| Intraday (prospective) | Feasibility and source audit only; no intraday bars or returns obtained in the repo. A separate owner-approved observer records one fixed SPY rule prospectively: long 15:30-15:59 ET when the prior-close-to-09:59 return is positive, else flat; $100,000 hypothetical, no leverage, 1/2 bp per side, 252 scheduled slots from 2026-10-30 to 2027-11-03; descriptive output only, no pass/fail. Ids: `stocks-intraday-feasibility`, `stocks-intraday-replication-source-audit`. | Not evaluated: results do not exist yet. Observer lives in a separate worktree and is off-limits; read only. Evidence: docs/research/2026-10-24-intraday-trading-feasibility.md:3-5,92; worktree /home/flynn/.t3/worktrees/ggTrader/research-intraday-stage0a: docs/research/2026-10-27-intraday-observer-activation.md (milestones, timers); docs/research/briefs/2026-10-25-intraday-prospective-observation.md:105-112 (fixed rule); docs/research/2026-10-25-intraday-prospective-protocol-review.md:23-50; commit 6f0362e0 (activation). | **never tested** (prospective) |
+| Futures contracts (commodity, index, rates; crypto perps excluded) | No commodity, index or rates futures contract was traded or simulated (crypto perpetual futures are a separate area, see the crypto-perps row and Lens 8). Prompt states 'no futures'; commodity carry (A2), futures-basis reversal (A4), basis momentum (A20) left untriaged or blocked on paid curve history. Ids: `cross-asset-on-deck-candidate-feasibility`. | Not applicable. Evidence: docs/research/prompts/web-strategy-research-prompt.md:200-205; docs/research/WEB_RESEARCH_CANDIDATES.md:636,724,2245. | **never tested** |
+| Commodities via ETFs | Commodity 12-1 trend over 14 commodity ETFs (NO); PDBC as one third of the 20% cross-asset sleeve (static GO shadow-only; trend arm NO). Ids: `cross-asset-commodity-trend`, `cross-asset-static-80-20-sleeve`, `cross-asset-sleeve-trend-arm`, `cross-asset-sleeve-holdout-2007-2011`. | Commodity trend pre-fix contaminated, Lens 6 unverifiable, no artifact. Sleeve rows clean tape but MDE not computable; Lens 2 inconclusive. Rule note: Exercised on fixed ETF lists; no row is Lens 2 unreliable. Evidence: docs/research/2026-07-20-commodity-trend-nogo.md:22-39; docs/research/2026-09-28-cross-asset-sleeve.md:1,11,16. | **tested, inconclusive** |
+| International equities: country or single-name exposure (excluding the FX-hedge ETF test) | Only the FX-hedge overlay used international equity ETFs (EWJ/DXJ, EZU/HEZU), and it tested the currency-hedge ratio, not international equity exposure. Ex-US rotation, EM forecast combination (A19), dash-for-cash EFA and lagged US-to-international tilt are parked/untriaged. The Antonacci SPY/VEU dual momentum was folded into dual_momentum, whose lab version is SP500 single stocks identical to xs_momentum. Ids: `cross-asset-fx-hedge-overlay`. | FX overlay pre-fix contaminated, no artifact; it is a measured test on international ETFs but of the hedge ratio, so it does not exercise international equity exposure. The research prompt lists developed-market international equities as explicitly welcome (docs/research/prompts/web-strategy-research-prompt.md:191-196). Evidence: docs/research/2026-07-20-fx-hedge-overlay-nogo.md:16-21; docs/research/WEB_RESEARCH_CANDIDATES.md:1372-1379,2217,2048,2433 (parked/untriaged); docs/research/WEB_RESEARCH_CANDIDATES.md:1581-1585 (Antonacci folded into dual_momentum); docs/research/2026-10-19-production-replica-audit-nogo.md:259-263. | **never tested** |
+| Intraday (prospective) | Feasibility and source audit only; no intraday bars or returns obtained in the repo. A separate owner-approved observer records one fixed SPY rule prospectively: long 15:30-15:59 ET when the prior-close-to-09:59 return is positive, else flat; $100,000 hypothetical, no leverage, cost c = 1 bp per side (base) or 2 bp (stress) charged as 2c per traded day, 252 scheduled slots from 2026-10-30 to 2027-11-03; descriptive output only, no pass/fail. Ids: `stocks-intraday-feasibility`, `stocks-intraday-replication-source-audit`. | Not evaluated: results do not exist yet. Observer lives in a separate worktree and is off-limits; read only. Evidence: docs/research/2026-10-24-intraday-trading-feasibility.md:3-5,92; worktree /home/flynn/.t3/worktrees/ggTrader/research-intraday-stage0a: docs/research/2026-10-27-intraday-observer-activation.md (milestones, timers); docs/research/briefs/2026-10-25-intraday-prospective-observation.md:105-115 (fixed rule and costs); docs/research/2026-10-25-intraday-prospective-protocol-review.md:23-50; commit 6f0362e0 (activation). | **never tested** (prospective) |
 | Weekly-rebalanced cross-sectional strategies | Every weights strategy rebalances at month-end; the harness has no weekly path. Pairs and MAX reports name a weekly version as untested. Daily-signal multi-day holds (the ensemble family, overnight gap, event holds of 0-21 days) were tested. Ids: `stocks-pairs-stat-arb`, `stocks-max-effect`. | Not applicable for weekly; daily-signal rows as in the ensemble lines. Evidence: src/ggTrader/lab/data.py:266-271 (decision dates: window start plus month-ends); docs/research/2026-07-17-pairs-stat-arb-nogo.md:140-148; docs/research/2026-07-17-max-effect-nogo.md:105-112. | **never tested** |
-| Daily-signal mean reversion on S&P 500 large caps (most-tested area) | 33 of the 72 measured tests are the ensemble/reversion family or its levers (Lens 2 family count). Fixed-default replica: excess -0.64 pp/yr, NW t -0.69. Ids: `stocks-production-replica`, `stocks-production-replica-holdout-2010-2020`, `stocks-sp500-core-pit-rebaseline`, `stocks-ensemble-ic-pit`, `stocks-voter-ablation-5-voter`, `stocks-overnight-gap`, `stocks-mtf-reversion`, `stocks-nasdaq100-single-core`. | Replica MDE 4.24 pp/yr at t>=3 is below the 9.57 pp/yr target gap, so the test could detect a target-sized book effect, but its tape is 'unknown' (PARA identity unfixed) and Lens 6 'partly', so R2 is not met. Older rows pre-fix contaminated; Nasdaq-100 core 'unreliable NO'. Evidence: docs/research/_lens2_sensitivity.json multiple_testing.families['ensemble/reversion and its levers'].n = 33; docs/research/RESEARCH_SNAPSHOT.md:44-51; docs/research/_lens9_power.json rows stocks-production-replica. | **tested, inconclusive** |
-| Cross-sectional momentum (large caps) | 12-1 top-N replay (anchor 17/17), dual momentum identical to it, French Big/Small screen fails Holm and the +1.0 pp/yr post-1994 bar. Ids: `stocks-xs-momentum-2026-06`, `stocks-xs-momentum-corrected-replay`, `stocks-dual-momentum`, `stocks-momentum-french-screen`. | Replay clean, Lens 6 yes, but MDE 22.66 pp/yr exceeds the 9.54 pp/yr target gap; French screen MDE not computable. Evidence: docs/research/_lens9_power.json rows; docs/research/2026-10-20-momentum-french-screen-nogo.md:18-31. | **tested, inconclusive** |
-| Fundamentals: value, quality, investment, issuance (large caps) | French BIG portfolios over 63 years: H1-H4 and BIG NegNI fail Holm and the +1.0 pp/yr bar (best +0.83). Alternate definitions left 'undetermined'. Ids: `stocks-factor-screen-h1-h4`, `stocks-net-issuance-screen`, `stocks-family-scope-review`. | Clean tape, no Lens 6 row, MDE not computable (no stored mean excess). Portfolio-level, value-weighted, not stock-level PIT fundamentals (none available). Evidence: docs/research/RESEARCH_SNAPSHOT.md:163-167,236-238,285-288. | **tested, inconclusive** |
+| Daily-signal mean reversion on large caps (S&P 500; one Nasdaq-100 row) (most-tested area) | 33 of the 72 measured tests are the ensemble/reversion family or its levers (Lens 2 family count). Fixed-default replica: excess -0.64 pp/yr, NW t -0.69. Ids: `stocks-production-replica`, `stocks-production-replica-holdout-2010-2020`, `stocks-sp500-core-pit-rebaseline`, `stocks-ensemble-ic-pit`, `stocks-voter-ablation-5-voter`, `stocks-overnight-gap`, `stocks-mtf-reversion`, `stocks-nasdaq100-single-core`. | Replica MDE 4.24 pp/yr at t>=3 is below the 9.57 pp/yr target gap, so the test could detect a target-sized book effect, but its tape is 'unknown' (PARA identity unfixed) and Lens 6 'partly', so R2 is not met. Older rows pre-fix contaminated; Nasdaq-100 core 'unreliable NO'. Rule note: Replica and PIT rows exercised the feature on PIT S&P 500 membership; only the Nasdaq-100 row is unreliable. Evidence: docs/research/_lens2_sensitivity.json multiple_testing.families['ensemble/reversion and its levers'].n = 33; docs/research/RESEARCH_SNAPSHOT.md:44-51; docs/research/_lens9_power.json rows stocks-production-replica. | **tested, inconclusive** |
+| Cross-sectional momentum (large caps) | 12-1 top-N replay (anchor 17/17), dual momentum identical to it, French Big/Small screen fails Holm and the +1.0 pp/yr post-1994 bar. Ids: `stocks-xs-momentum-2026-06`, `stocks-xs-momentum-corrected-replay`, `stocks-dual-momentum`, `stocks-momentum-french-screen`. | Replay clean, Lens 6 yes, but MDE 22.66 pp/yr exceeds the 9.54 pp/yr target gap; French screen MDE not computable. Rule note: Exercised on PIT S&P 500 and French data; the top_n-10 non-deployment is a concentration issue, scored under Concentration. Evidence: docs/research/_lens9_power.json rows; docs/research/2026-10-20-momentum-french-screen-nogo.md:18-31. | **tested, inconclusive** |
+| Fundamentals: value, quality, investment, issuance (large caps) | French BIG portfolios over 63 years: H1-H4 and BIG NegNI fail Holm and the +1.0 pp/yr bar (best +0.83). Alternate definitions left 'undetermined'. Ids: `stocks-factor-screen-h1-h4`, `stocks-net-issuance-screen`, `stocks-family-scope-review`. | Clean tape, no Lens 6 row, MDE not computable (no stored mean excess). Portfolio-level, value-weighted, not stock-level PIT fundamentals (none available). Rule note: Exercised as registered French BIG screens; no row unreliable. Evidence: docs/research/RESEARCH_SNAPSHOT.md:163-167,236-238,285-288. | **tested, inconclusive** |
 | Fundamentals at small-cap scale | Only SMALL HiOP/HiBM/LoINV diagnostics outside the confirmatory family; no stock-level small-cap fundamentals data or universe. Ids: `stocks-factor-screen-h1-h4`, `stocks-accruals-feasibility`. | Diagnostic, not registered; clean French data; 3%/6% assumed haircuts. Evidence: docs/research/2026-10-21-factor-screen-nogo.md:125-135. | **tested badly (flawed test)** |
-| Event-driven equity (PEAD, deletions, insider, congress) | Four measured NO-GOs (July 2026) on SP500 ever-members (PEAD also Russell 200-name). Event-timing re-audit parked UNRESOLVED (no paid data). Ids: `stocks-pead`, `stocks-index-deletion-fade`, `stocks-insider-cluster-buy`, `stocks-congress-trades`, `stocks-event-timing-audit-decision`. | All on the pre-fix tape with day-shift lookahead on event joins; Lens 6 partly; no raw artifacts; re-audit unresolved. Evidence: docs/research/RESEARCH_SNAPSHOT.md:30-40,236-240; docs/research/_lens1_tape_state.json (day_shift on all four). | **tested, inconclusive** |
-| Alternative data (short interest, short volume, attention, sentiment) | Short interest and short volume ratio NO-GO (SP500), headline sentiment provisional NO-GO (50-name pilot), Google Trends built but blocked, analyst revisions and ADD infeasible. Ids: `stocks-short-interest`, `stocks-short-volume-ratio`, `stocks-retail-attention`, `stocks-headline-sentiment`, `stocks-analyst-revisions`, `stocks-anomaly-driven-demand`. | Measured rows pre-fix contaminated (day shift), Lens 6 partly, no artifacts; short-interest literature effect is in small/illiquid names outside the SP500 universe tested. Evidence: docs/research/2026-07-17-short-interest-nogo.md:53; docs/research/RESEARCH_SNAPSHOT.md:132,162. | **tested, inconclusive** |
-| ML / LLM signals | LightGBM used only as an entry filter on the ensemble (found anti-predictive, disabled); LLM headline scoring as a primary signal on a 50-name pilot. No ML model as the primary stock-ranking signal. Ids: `stocks-ml-entry-gate-falsified`, `stocks-ml-feature-gate-deploy`, `stocks-headline-sentiment`. | Gate training leaked membership (favours strategy, so its loss stands as direction); Lens 6 unverifiable; no artifact. Sentiment pilot documented as unrepresentative. Evidence: docs/research/RESEARCH_SNAPSHOT.md:155. | **tested, inconclusive** |
-| Treasury calendar effects (FOMC, month-end) | Pre-FOMC long-Treasury drift: day-clustered net t 0.981 over 113 dates. Month-end IEF: standalone premium real, SPY-funded overlay adds nothing. Ids: `cross-asset-fomc-drift-corrected-harness`, `cross-asset-fomc-drift-wfo`, `cross-asset-month-end-treasury`. | FOMC corrected study: clean tape, MDE 2.37 pp/yr <= target gap 5.11 (meets R2 and R5); Lens 6 unverifiable so Lens 2 class stays inconclusive. Month-end: MDE 4.94 <= 9.57 but DSR-units item (direction unknown). Evidence: docs/research/_lens9_power.json rows cross-asset-fomc-drift-corrected-harness, cross-asset-month-end-treasury; docs/research/RESEARCH_SNAPSHOT.md:137-138. | **tested, evidence against at the size the test could detect** |
-| Cross-asset breadth (rates, commodities, gold, FX via ETFs) | Static 80/20 SPY+TLT/GLD/PDBC shadow GO (CAGR 13.61% vs SPY 14.70%); curve rotation, FX hedge, commodity trend NO-GO; 7 on-deck candidates infeasible or blocked. Ids: `cross-asset-static-80-20-sleeve`, `cross-asset-sleeve-holdout-2007-2011`, `cross-asset-sleeve-trend-arm`, `cross-asset-treasury-curve`, `cross-asset-fx-hedge-overlay`, `cross-asset-commodity-trend`, `cross-asset-on-deck-candidate-feasibility`, `cross-asset-etf-implied-fx-expectations`. | Sleeve rows clean but MDE not computable; others pre-fix contaminated, no artifacts. Untriaged: A2, A4, A6, A9, A11, A13, A17-A21, B1-B4, B6-B8, B12. Evidence: docs/research/RESEARCH_SNAPSHOT.md:75-81,135-141. | **tested, inconclusive** |
-| Leverage and exposure (A23, LETF timing, century study, vol scaling) | 70/30 SPY/SSO owner allocation (after-tax +1.6 pp/yr, +0.77-0.80 at today's funding, below +1.0 bar); A24 rider NO-GO; century study keeps 30% (-91.4% drawdown); LETF rotation/trend NO-GO incl. Russell 2000 TNA/UWM; vol-managed SPY sanity check only; B13 drawdown control untested. Ids: `stocks-a23-static-leverage`, `stocks-a24-sleeve-trend-rider`, `stocks-century-leverage`, `stocks-leveraged-rotation`, `stocks-leveraged-trend`, `stocks-vol-managed-spy`, `stocks-two-symbol-sweep-design`. | A23/A24/century clean tape but no t-statistic (MDE not computable); LETF rows pre-fix contaminated, no artifacts. Evidence: docs/research/RESEARCH_SNAPSHOT.md:82-92,142-147,159-161; docs/research/WEB_RESEARCH_CANDIDATES.md:1573,2681. | **tested, inconclusive** |
-| Crypto perpetuals / funding carry (Lens 8 owns detail) | One year of real Kraken funding, +0.45%, 8 trades; three-year basis proxy 'directionally credible'; lab candidate infeasible (one year of history). Legacy carry modules were deleted from the tree (git: src/ggTrader/strategies/carry/funding_carry.py). Ids: `crypto-funding-carry-phase4`, `crypto-perp-funding-carry-candidate`. | Archived doc, no raw artifact; Lens 1 unknown; Lens 2 inconclusive. See the Lens 8 report for venue, fees and benchmark. Evidence: docs/research/_investigation_inventory.json rows; docs/research/WEB_RESEARCH_CANDIDATES.md:136. | **tested, inconclusive** |
-| Crypto spot (Lens 8 owns detail) | Kraken/Binance.US spot WFO runs (best +13.8% vs BTC +38.8%), IBIT session sanity check, BTC trend literature only. Ids: `crypto-edge-search-2026-06-08`, `crypto-wfo-textbook-reset`, `crypto-ibit-overnight-session`, `crypto-tsmom-btc`. | No raw artifacts; Lens 1 unknown; deferred to Lens 8. Evidence: docs/research/_investigation_inventory.json rows. | **tested, inconclusive** |
+| Event-driven equity (PEAD, deletions, insider, congress) | Four measured NO-GOs (July 2026) on SP500 ever-members (PEAD also Russell 200-name). Event-timing re-audit parked UNRESOLVED (no paid data). Ids: `stocks-pead`, `stocks-index-deletion-fade`, `stocks-insider-cluster-buy`, `stocks-congress-trades`, `stocks-event-timing-audit-decision`. | All on the pre-fix tape with day-shift lookahead on event joins; Lens 6 partly; no raw artifacts; re-audit unresolved. Rule note: S&P 500 arms used ever-member universes and were exercised; day-shift lookahead is a Lens 1 item whose direction Lens 2 lists as unknown, not a documented non-exercise. The PEAD Russell arm is scored under small caps. Evidence: docs/research/RESEARCH_SNAPSHOT.md:30-40,236-240; docs/research/_lens1_tape_state.json (day_shift on all four). | **tested, inconclusive** |
+| Alternative data (short interest, short volume, attention, sentiment) | Short interest and short volume ratio NO-GO (SP500), headline sentiment provisional NO-GO (50-name pilot), Google Trends built but blocked, analyst revisions and ADD infeasible. Ids: `stocks-short-interest`, `stocks-short-volume-ratio`, `stocks-retail-attention`, `stocks-headline-sentiment`, `stocks-analyst-revisions`, `stocks-anomaly-driven-demand`. | Measured rows pre-fix contaminated (day shift), Lens 6 partly, no artifacts; short-interest literature effect is in small/illiquid names outside the SP500 universe tested. Rule note: Short interest and short-volume ratio exercised the feature on the S&P 500; the sentiment pilot is the only documented non-exercise, so not every row is flawed. Evidence: docs/research/2026-07-17-short-interest-nogo.md:53; docs/research/RESEARCH_SNAPSHOT.md:132,162. | **tested, inconclusive** |
+| ML / LLM signals | LightGBM used only as an entry filter on the ensemble (found anti-predictive, disabled); LLM headline scoring as a primary signal on a 50-name pilot. No ML model as the primary stock-ranking signal. Ids: `stocks-ml-entry-gate-falsified`, `stocks-ml-feature-gate-deploy`, `stocks-headline-sentiment`. | Gate training leaked membership (favours strategy, so its loss stands as direction); Lens 6 unverifiable; no artifact. Sentiment pilot documented as unrepresentative. Rule note: The ML filter was exercised on the ensemble's entries; only the LLM pilot is documented as unrepresentative. Evidence: docs/research/RESEARCH_SNAPSHOT.md:155. | **tested, inconclusive** |
+| Treasury calendar: pre-FOMC drift, corrected day-clustered event study (this id only) | Pre-FOMC long-Treasury drift over 113 FOMC dates, 2012-01-01..2026-04-30: day-clustered net t 0.981. Ids: `cross-asset-fomc-drift-corrected-harness`. | Clean tape (Lens 1). Lens 9 MDE 2.37 pp/yr at t>=3 is DERIVED: a per-event MDE of about 30.08 bp on the event-day-minus-non-event-day Welch t (Treasury-ETF universe, net of round-trip cost) times 7.887 events a year; it is not an excess return versus SPY. The 5.11 pp/yr comparator is the owner's target CAGR gap over the same window. Units differ (an annualized calendar-effect arithmetic mean versus a geometric CAGR gap), so Lens 9 calls the comparison approximate. Meets Lens 2 R2 (data) and R5 (power) but not R3 (code: Lens 6 unverifiable), so Lens 2 keeps the class inconclusive. Rule note: 'Evidence against' applies to this id only, for an effect of the derived size in these units; not to the other Treasury calendar ids. Evidence: docs/research/_lens9_power.json row cross-asset-fomc-drift-corrected-harness (se_method, annualization 'DERIVED, labelled', caveat); docs/research/_fomc_clustered_event_study_20261020.json; docs/research/RESEARCH_SNAPSHOT.md:137. | **tested, evidence against at the size the test could detect** |
+| Treasury calendar: pre-FOMC drift, July 2026 WFO | TLT/IEF/EDV entry-offset and hold-days sweep, 54 folds from 2012; NO-GO. Ids: `cross-asset-fomc-drift-wfo`. | Pre-fix tape (day shift, SPY duplicates, anchor leak, DSR units, pre-entry event returns), Lens 6 unverifiable, no raw artifact, no MDE. Rule note: Exercised the feature; not documented as a non-exercise; no power figure, so inconclusive. Evidence: docs/research/2026-07-20-fomc-drift-nogo.md:14,51-52. | **tested, inconclusive** |
+| Treasury calendar: month-end IEF sleeve | Frozen IEF last-3-days rule: standalone premium present (Welch t 2.75 on invested days versus other days, gross of cost); funded out of SPY it added nothing; NO-GO as an SPY-funded sleeve. Ids: `cross-asset-month-end-treasury`. | Lens 9 MDE 4.94 pp/yr (DERIVED, per-day effect times 36.14 invested days a year, not versus SPY) is below the 9.57 pp/yr target gap, but the tape carries a DSR-units item of unknown direction, so Lens 2 R2 is not met. Lens 6 yes. Rule note: R2 not met (DSR-units item, direction unknown), so not 'evidence against'. Evidence: docs/research/_lens9_power.json row cross-asset-month-end-treasury; docs/research/RESEARCH_SNAPSHOT.md:138. | **tested, inconclusive** |
+| Cross-asset breadth (rates, commodities, gold, FX via ETFs) | Static 80/20 SPY+TLT/GLD/PDBC shadow GO (CAGR 13.61% vs SPY 14.70%); curve rotation, FX hedge, commodity trend NO-GO; 7 on-deck candidates infeasible or blocked. Ids: `cross-asset-static-80-20-sleeve`, `cross-asset-sleeve-holdout-2007-2011`, `cross-asset-sleeve-trend-arm`, `cross-asset-treasury-curve`, `cross-asset-fx-hedge-overlay`, `cross-asset-commodity-trend`, `cross-asset-on-deck-candidate-feasibility`, `cross-asset-etf-implied-fx-expectations`. | Sleeve rows clean but MDE not computable; others pre-fix contaminated, no artifacts. Untriaged: A2, A4, A6, A9, A11, A13, A17-A21, B1-B4, B6-B8, B12. Rule note: Exercised on fixed ETF lists; no row unreliable. Evidence: docs/research/RESEARCH_SNAPSHOT.md:75-81,135-141. | **tested, inconclusive** |
+| Leverage and exposure (A23, LETF timing, century study, vol scaling) | 70/30 SPY/SSO owner allocation (after-tax +1.6 pp/yr, +0.77-0.80 at today's funding, below +1.0 bar); A24 rider NO-GO; century study keeps 30% (-91.4% drawdown); LETF rotation/trend NO-GO incl. Russell 2000 TNA/UWM; vol-managed SPY sanity check only; B13 drawdown control untested. Ids: `stocks-a23-static-leverage`, `stocks-a24-sleeve-trend-rider`, `stocks-century-leverage`, `stocks-leveraged-rotation`, `stocks-leveraged-trend`, `stocks-vol-managed-spy`, `stocks-two-symbol-sweep-design`. | A23/A24/century clean tape but no t-statistic (MDE not computable); LETF rows pre-fix contaminated, no artifacts. Rule note: Exercised; A23/A24/century on clean tape; no row unreliable. Evidence: docs/research/RESEARCH_SNAPSHOT.md:82-92,142-147,159-161; docs/research/WEB_RESEARCH_CANDIDATES.md:1573,2681. | **tested, inconclusive** |
+| Crypto perpetuals / funding carry (Lens 8 owns detail) | One year of real Kraken funding, +0.45%, 8 trades; three-year basis proxy 'directionally credible'; lab candidate infeasible (one year of history). Legacy carry modules were deleted from the tree (git: src/ggTrader/strategies/carry/funding_carry.py). Ids: `crypto-funding-carry-phase4`, `crypto-perp-funding-carry-candidate`. | Archived doc, no raw artifact; Lens 1 unknown; Lens 2 inconclusive. See the Lens 8 report for venue, fees and benchmark. Rule note: One year of real funding was exercised; thin sample, not a documented non-exercise. Evidence: docs/research/_investigation_inventory.json rows; docs/research/WEB_RESEARCH_CANDIDATES.md:136. | **tested, inconclusive** |
+| Crypto spot (Lens 8 owns detail) | Kraken/Binance.US spot WFO runs (best +13.8% vs BTC +38.8%), IBIT session sanity check, BTC trend literature only. Ids: `crypto-edge-search-2026-06-08`, `crypto-wfo-textbook-reset`, `crypto-ibit-overnight-session`, `crypto-tsmom-btc`. | No raw artifacts; Lens 1 unknown; deferred to Lens 8. Rule note: Exercised on coin universes; detail in Lens 8. Evidence: docs/research/_investigation_inventory.json rows. | **tested, inconclusive** |
 
 ### Structural advantages of a small account: what the record contains
 
@@ -325,9 +340,11 @@ Per-id Lens 1/2/6/9 states are in `gap_table[].upstream_by_id` in the JSON.
 | Shorting single stocks | two S&P 500 long/short books with no borrow-fee model | tested, inconclusive |
 
 The research prompt describes the account as unable to use futures, spot FX or leverage, with
-one daily decision, and tells researchers to avoid capacity-dependent ideas, but it does not ask
-for ideas that use the account's small size
-(`docs/research/prompts/web-strategy-research-prompt.md:184-205`).
+one daily decision, and excludes ideas that only work at institutional scale or capacity. It
+puts small-cap indices and international equities in scope but does not ask specifically for
+ideas that use the account's small size
+(`docs/research/prompts/web-strategy-research-prompt.md:184-205`). Whether that shaped the
+candidates is an inference of this lens.
 
 ## Hypothesis sourcing
 
@@ -345,7 +362,7 @@ lever on an existing strategy.
 | (b) LLM/web research batches | 19 | 16 |
 | (c) internal observation or construction lever | 31 | 2 |
 | (d) practitioner lore (RSI, Bollinger, MACD, EMA cross ensembles) | 14 | 0 |
-| total | 72 | 26 |
+| total | 72 | 26 (plus 2 unknown: `stocks-a24-sleeve-trend-rider`, `stocks-july-research-program-summary`) |
 
 Every web batch was produced by running the project's prompt in an LLM research tool (Gemini,
 ChatGPT deep research, Claude web research) and pasting the results back
@@ -384,15 +401,16 @@ used.
   Predictability?", Journal of Finance 71(1), 5-32 (2016), doi 10.1111/jofi.12365, free text at
   https://gwern.net/doc/economics/2016-mclean.pdf. Abstract: 97 cross-sectional predictors;
   portfolio returns 26% lower out of sample and 58% lower post-publication; post-publication
-  correlations with other published predictors rise; returns are higher in stocks with high
-  idiosyncratic risk and low liquidity. Verified from the abstract as shown on several indexes;
+  correlations with other published predictors rise; returns are higher for portfolios
+  concentrated in stocks with high idiosyncratic risk and low liquidity. Verified from the abstract as shown on several indexes;
   the full PDF was not read. It covers U.S. cross-sectional stock predictors only, not Treasury,
   commodity, FX or leverage rows.
 - **How many published tests it bears on:** of the 26 measured tests tied to a paper, 16 are
   cross-sectional U.S. stock anomalies (PEAD; momentum in four rows; value/profitability/
   investment; net issuance; MAX; idiosyncratic volatility; short interest; short-volume ratio;
-  insider buying; congressional trades; index deletion; pairs; headline sentiment). Whether each
-  is among McLean and Pontiff's 97 is **unverified** (appendix not read). The other 10 are
+  insider buying; congressional trades; index deletion; pairs; headline sentiment). Several are
+  event studies (PEAD, insider, congress, index deletion) rather than characteristic sorts.
+  Whether each is among McLean and Pontiff's 97 is **unverified** (appendix not read). The other 10 are
   Treasury, commodity, FX, calendar or crypto effects.
 - **The record's own decay measurements:** momentum Small t 3.38 (1927-1993), 1.11 (1994-2012),
   -0.77 (2013-2026) (`docs/research/2026-10-20-momentum-french-screen-nogo.md:83-90`); SMALL
@@ -407,7 +425,8 @@ used.
   concentrates in small or illiquid names outside the tested S&P 500 universe for short interest
   (`docs/research/WEB_RESEARCH_CANDIDATES.md:126-130`,
   `docs/research/2026-07-17-short-interest-nogo.md:53`) and for PEAD (lines 398-403). McLean and
-  Pontiff report the same for predictor returns generally.
+  Pontiff's abstract says predictor returns are higher in stocks with high idiosyncratic risk
+  and low liquidity.
 
 ### Crowding and correlation
 
@@ -436,21 +455,32 @@ the crypto ones.
 ## Questions and answers
 
 **Q1. What was never tested, as opposed to tested badly?**
-Answered. Never tested: micro caps; options as instruments; futures contracts; international
-equity exposure (the FX-hedge overlay used international ETFs only to time a currency hedge);
+Answered. Never tested: micro caps; options as instruments; commodity, index and rates futures
+contracts (crypto perpetual futures were backtested once, Lens 8); international country or
+single-name equity exposure (the FX-hedge overlay is a measured test on international ETFs but
+of the currency-hedge ratio; the prompt lists international equities as welcome);
 weekly-rebalanced cross-sectional strategies (the harness decides at month-ends only,
 `src/ggTrader/lab/data.py:266-271`); intraday (prospective, below). Tested badly: small-cap stock
-selection (200-name snapshot), concentration (arm never deployed OOS), small-cap fundamentals
-(diagnostics only). The spec's candidates: small and micro caps (above); concentration (tested
+selection (200-name snapshot), mid caps (current-list MidCap 400 snapshot, unrepresentative
+50-name pilot), concentration (arm never deployed OOS), small-cap fundamentals (diagnostics
+only). The spec's candidates: small and micro caps (above); concentration (tested
 badly); long-short (tested, inconclusive: two pre-fix S&P 500 books without borrow costs);
-cross-asset breadth (tested, inconclusive, except Treasury calendar effects, where the corrected
-FOMC study had power for a target-sized effect and found none; Lens 2 still classes it
-inconclusive because Lens 6 could not verify its code). Intraday is not a gap: an owner-approved
-observer records one fixed SPY rule prospectively (long 15:30-15:59 ET when the
-prior-close-to-09:59 return is positive, else flat; $100,000 hypothetical; no leverage; 1/2 bp per
-side; 252 slots from 2026-10-30 to 2027-11-03; descriptive output, no pass mark), per
+cross-asset breadth (tested, inconclusive, with one exception scoped to a single id: the
+corrected day-clustered pre-FOMC study, `cross-asset-fomc-drift-corrected-harness`, window
+2012-01-01..2026-04-30. Its Lens 9 MDE of 2.37 pp/yr is DERIVED: a per-event MDE of about
+30.08 bp on an event-day-minus-non-event-day Welch t, times 7.887 events a year; it is not an
+excess return versus SPY. It sits below the 5.11 pp/yr target CAGR gap for that window, but
+the units differ (annualized calendar-effect mean versus a geometric CAGR gap) and Lens 9 calls
+the comparison approximate. The row meets Lens 2 R2 and R5 but not R3, since Lens 6 could not
+verify the code, so Lens 2 keeps it inconclusive. The July FOMC WFO and the month-end IEF sleeve
+are inconclusive: no artifact, and a DSR-units item of unknown direction, respectively). Intraday
+is not a gap: an owner-approved observer records one fixed SPY rule prospectively (long
+15:30-15:59 ET when the prior-close-to-09:59 return is positive, else flat; $100,000
+hypothetical; no leverage; cost c of 1 bp per side in the base path and 2 bp in the stress path,
+charged as 2c per traded day; 252 slots from 2026-10-30 to 2027-11-03; descriptive output, no
+pass mark), per
 `/home/flynn/.t3/worktrees/ggTrader/research-intraday-stage0a/docs/research/briefs/2026-10-25-intraday-prospective-observation.md`
-(lines 105-112) and the activation record in the same worktree (commit 6f0362e0). Its results
+(lines 105-115) and the activation record in the same worktree (commit 6f0362e0). Its results
 were not read or evaluated.
 
 **Q2. Where did hypotheses come from, how correlated or crowded are they, and were most of them
@@ -469,8 +499,8 @@ test window.
 See Steelman: broad across asset classes, narrow within stock selection.
 
 **Which structural advantages of a small account were never used?** Micro caps, options and a
-weekly cadence were never used; small caps and concentration appear only in flawed tests (table
-above). This lens does not say whether any of them would help.
+weekly cadence were never used; small caps, mid caps and concentration appear only in flawed
+tests (table above). This lens does not say whether any of them would help.
 
 ## Verification
 
@@ -481,15 +511,16 @@ Commands run (all read-only):
   infrastructure), Lens 9 144 rows.
 - Haiku null counts out of 144: universe 45, market-cap 57, horizon 95, holding period 119,
   direction 112, idea source 46, published flag 58, data 53, sizing 94.
-- Source reads (grep and sed on the cited lines) for 42 rows: PEAD, short-volume ratio, pairs,
+- Source reads (grep and sed on the cited lines) for 41 rows: PEAD, short-volume ratio, pairs,
   short interest, MAX, index deletion, insider, congress, headline sentiment, commodity trend,
   leveraged trend and rotation, Treasury curve, FOMC WFO, month-end Treasury, cross-asset sleeve,
   century leverage, FX hedge, momentum French screen, factor screen, net issuance, xs_momentum
   replay and dual momentum, sizing regimes, diversification sleeves, intraday feasibility, A23,
   IBIT, production replica, equity pre-FOMC intake, turn-of-month, vol-managed SPY, rebalancing
   tilt and threshold tilt, option skew, analyst revisions, perp carry candidate, anomaly-driven
-  demand, retail attention, DeFi, Form 144, MidCap 400 (inventory quotes only).
-- Haiku check on those 42 rows (378 fields): 105 were null and were filled by this lens; among
+  demand, retail attention, DeFi, Form 144. The MidCap 400 row was checked against inventory
+  quotes only and is not counted (`verified: false`).
+- Haiku check on those 41 rows (369 fields): 99 were null and were filled by this lens; among
   non-null fields one error was found and corrected (leveraged rotation horizon is monthly
   breadth, `docs/research/2026-07-16-leveraged-index-rotation-nogo.md:11`); no market-cap or
   direction value contradicted its source.
@@ -512,7 +543,7 @@ Commands run (all read-only):
 
 What remains unverified:
 
-- 102 of 144 rows keep this lens's normalization of the Haiku lead without a source re-read;
+- 103 of 144 rows (including MidCap 400 reversion) keep this lens's normalization of the Haiku lead without a source re-read;
   most are operations, status or legacy crypto rows not used in the gap table.
 - Whether each published anomaly is in McLean and Pontiff's 97, and each paper's publication
   date relative to the test window.
@@ -524,8 +555,8 @@ What remains unverified:
 
 - ✅ Falsifiers written before evidence (F1-F4, N1-N2, Phase 0 H1 and H7).
 - ✅ Steelman stated and tested.
-- ✅ Coverage matrix: all 144 ids once, null counts reported, 42 rows verified.
-- ✅ Gap table: 26 areas, each from cited rows with Lens 1/2/6/9 quality and a fixed-rule class.
+- ✅ Coverage matrix: all 144 ids once, null counts reported, 41 rows verified against source.
+- ✅ Gap table: 28 areas (6 / 4 / 17 / 1), each from cited rows with Lens 1/2/6/9 quality and a fixed-rule class.
 - ✅ Q1 (never tested versus tested badly): answered.
 - ✅ Q2 sources and decay: answered.
 - ❓ External crowding per family: unknown (no measure in the record; cheapest test: map the 16
