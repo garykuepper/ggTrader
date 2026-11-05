@@ -547,80 +547,32 @@
    "times_fits_in_gap": null
   },
   {
-   "approach": "Static leverage on SPY via SSO (2.0x)",
-   "inventory_ids": [
-    "stocks-a23-static-leverage",
-    "stocks-a24-sleeve-trend-rider"
-   ],
-   "best_id": "stocks-a23-static-leverage/main_real_sso/static 2.0x (SSO) no rebalance",
-   "best_value_pp_per_yr": 4.44,
-   "value_kind": "cagr_gap",
-   "tier": "B (L4-X1, L4-X2 non-registered arm)",
-   "window": "2006-06-21..2026-09-29",
-   "gap_pp_per_yr": 3.54291768349988,
-   "exposure": "static 2.0x (SSO) no rebalance",
-   "leverage": "2.0x",
-   "costs": "1 bp per side; SSO expense inside fund",
-   "regime": "2006-2026 incl. 2008 and 2020",
-   "pretax": 4.44,
-   "aftertax": {
-    "24/15": 4.29,
-    "40.8/23.8": 4.26
-   },
-   "max_drawdown": {
-    "arm": -0.8482,
-    "SPY": -0.5534
-   },
-   "status": "leverage multiplies beta and drawdown; not alpha. Synthetic 1993-2006 holdout and stitched 1993-2026 in ruled_out/notes",
-   "ci95": "not computable from artifact",
-   "times_fits_in_gap": 1.253
-  },
-  {
-   "approach": "Static leverage on SPY via SSO (1.5x)",
-   "inventory_ids": [
-    "stocks-a23-static-leverage",
-    "stocks-a24-sleeve-trend-rider"
-   ],
-   "best_id": "stocks-a23-static-leverage/main_real_sso/static 1.5x (50/50) band 10pp",
-   "best_value_pp_per_yr": 2.66,
-   "value_kind": "cagr_gap",
-   "tier": "B (L4-X1, L4-X2 non-registered arm)",
-   "window": "2006-06-21..2026-09-29",
-   "gap_pp_per_yr": 3.54291768349988,
-   "exposure": "static 1.5x (50/50) band 10pp",
-   "leverage": "1.5x",
-   "costs": "1 bp per side; SSO expense inside fund",
-   "regime": "2006-2026 incl. 2008 and 2020",
-   "pretax": 2.66,
-   "aftertax": {
-    "24/15": 2.58,
-    "40.8/23.8": 2.52
-   },
-   "max_drawdown": {
-    "arm": -0.7264,
-    "SPY": -0.5534
-   },
-   "status": "leverage multiplies beta and drawdown; not alpha. Synthetic 1993-2006 holdout and stitched 1993-2026 in ruled_out/notes",
-   "ci95": "not computable from artifact",
-   "times_fits_in_gap": 0.751
-  },
-  {
    "approach": "Static leverage on SPY via SSO (1.3x (A23 registered arm))",
    "inventory_ids": [
     "stocks-a23-static-leverage",
     "stocks-a24-sleeve-trend-rider"
    ],
    "best_id": "stocks-a23-static-leverage/main_real_sso/static 1.3x (70/30) band 8pp",
-   "best_value_pp_per_yr": 1.61,
-   "value_kind": "cagr_gap",
+   "best_value_pp_per_yr": 1.3164,
+   "value_kind": "cagr_gap (consistent basis)",
+   "value_artifact_basis": 1.61,
+   "times_fits_artifact_basis": 0.454,
+   "basis_note": "artifact basis = arm pre_tax_cagr minus artifact SPY pre_tax_cagr (24/15); the driver pays tax out of NAV each April (scripts/static_leverage_aftertax.py:177-178), so 'pre-tax' is the artifact's label and its SPY comparator is taxed-NAV-based. consistent basis = arm pre_tax_cagr (24/15) minus SPY true TR CAGR from yfinance (Lens 4) over the same window; gap on that basis from the same yfinance series. The ratio uses the consistent basis.",
    "tier": "B (L4-X1)",
    "window": "2006-06-21..2026-09-29",
-   "gap_pp_per_yr": 3.54291768349988,
+   "gap_pp_per_yr": 3.546168834029406,
+   "gap_artifact_basis_lens9": 3.54291768349988,
    "exposure": "static 1.3x (70/30) band 8pp",
-   "leverage": "1.3x",
+   "leverage": "1.3x (A23 registered arm)",
    "costs": "1 bp per side; SSO expense inside fund",
    "regime": "2006-2026 incl. 2008 and 2020",
-   "pretax": 1.61,
+   "funding": "T-bills averaged 1.64% in the window (beta_matched_pretax_cagr.rf_ann)",
+   "registered_arm": true,
+   "post_hoc_pick": false,
+   "pretax": {
+    "artifact_label_24/15": 1.61,
+    "consistent_basis": 1.3164
+   },
    "aftertax": {
     "24/15": 1.6,
     "40.8/23.8": 1.55
@@ -629,9 +581,187 @@
     "arm": -0.6639,
     "SPY": -0.5534
    },
-   "status": "leverage multiplies beta and drawdown; not alpha. Synthetic 1993-2006 holdout and stitched 1993-2026 in ruled_out/notes",
+   "rolling_10y": {
+    "worst_10y_rel_cagr": -0.0329,
+    "worst_10y_end": "2009-03-02",
+    "share_10y_windows_behind_spy": 0.238
+   },
    "ci95": "not computable from artifact",
-   "times_fits_in_gap": 0.454
+   "times_fits_in_gap": 0.371
+  },
+  {
+   "approach": "Static leverage on SPY via SSO (1.3x, funding +1.5 points)",
+   "inventory_ids": [
+    "stocks-a23-static-leverage",
+    "stocks-a24-sleeve-trend-rider"
+   ],
+   "best_id": "stocks-a23-static-leverage/main_real_sso/static 1.3x (70/30) band 8pp",
+   "best_value_pp_per_yr": 0.8664,
+   "value_kind": "cagr_gap (consistent basis)",
+   "value_artifact_basis": 1.16,
+   "times_fits_artifact_basis": 0.327,
+   "basis_note": "artifact basis = arm pre_tax_cagr minus artifact SPY pre_tax_cagr (24/15); the driver pays tax out of NAV each April (scripts/static_leverage_aftertax.py:177-178), so 'pre-tax' is the artifact's label and its SPY comparator is taxed-NAV-based. consistent basis = arm pre_tax_cagr (24/15) minus SPY true TR CAGR from yfinance (Lens 4) over the same window; gap on that basis from the same yfinance series. The ratio uses the consistent basis.",
+   "tier": "B (L4-X1)",
+   "window": "2006-06-21..2026-09-29",
+   "gap_pp_per_yr": 3.546168834029406,
+   "gap_artifact_basis_lens9": 3.54291768349988,
+   "exposure": "static 1.3x (70/30) band 8pp",
+   "leverage": "1.3x, funding +1.5 points",
+   "costs": "1 bp per side; SSO expense inside fund",
+   "regime": "2006-2026 incl. 2008 and 2020",
+   "funding": "1.64% + 1.5 = about 3.1% (docs/research/_static_leverage_aftertax_rf_plus0.015.json)",
+   "registered_arm": true,
+   "post_hoc_pick": false,
+   "pretax": {
+    "artifact_label_24/15": 1.16,
+    "consistent_basis": 0.8664
+   },
+   "aftertax": {
+    "24/15": 1.13,
+    "40.8/23.8": 1.1
+   },
+   "max_drawdown": {
+    "arm": -0.6645,
+    "SPY": -0.5534
+   },
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 0.244
+  },
+  {
+   "approach": "Static leverage on SPY via SSO (1.3x, funding +2.5 points)",
+   "inventory_ids": [
+    "stocks-a23-static-leverage",
+    "stocks-a24-sleeve-trend-rider"
+   ],
+   "best_id": "stocks-a23-static-leverage/main_real_sso/static 1.3x (70/30) band 8pp",
+   "best_value_pp_per_yr": 0.5164,
+   "value_kind": "cagr_gap (consistent basis)",
+   "value_artifact_basis": 0.81,
+   "times_fits_artifact_basis": 0.229,
+   "basis_note": "artifact basis = arm pre_tax_cagr minus artifact SPY pre_tax_cagr (24/15); the driver pays tax out of NAV each April (scripts/static_leverage_aftertax.py:177-178), so 'pre-tax' is the artifact's label and its SPY comparator is taxed-NAV-based. consistent basis = arm pre_tax_cagr (24/15) minus SPY true TR CAGR from yfinance (Lens 4) over the same window; gap on that basis from the same yfinance series. The ratio uses the consistent basis.",
+   "tier": "B (L4-X1)",
+   "window": "2006-06-21..2026-09-29",
+   "gap_pp_per_yr": 3.546168834029406,
+   "gap_artifact_basis_lens9": 3.54291768349988,
+   "exposure": "static 1.3x (70/30) band 8pp",
+   "leverage": "1.3x, funding +2.5 points",
+   "costs": "1 bp per side; SSO expense inside fund",
+   "regime": "2006-2026 incl. 2008 and 2020",
+   "funding": "1.64% + 2.5 = about 4.1%, near today's bills (docs/research/_static_leverage_aftertax_rf_plus0.025.json)",
+   "registered_arm": true,
+   "post_hoc_pick": false,
+   "pretax": {
+    "artifact_label_24/15": 0.81,
+    "consistent_basis": 0.5164
+   },
+   "aftertax": {
+    "24/15": 0.8,
+    "40.8/23.8": 0.79
+   },
+   "max_drawdown": {
+    "arm": -0.6649,
+    "SPY": -0.5534
+   },
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 0.146
+  },
+  {
+   "approach": "Static leverage on SPY via SSO (1.5x)",
+   "inventory_ids": [
+    "stocks-a23-static-leverage",
+    "stocks-a24-sleeve-trend-rider"
+   ],
+   "best_id": "stocks-a23-static-leverage/main_real_sso/static 1.5x (50/50) band 10pp",
+   "best_value_pp_per_yr": 2.3664,
+   "value_kind": "cagr_gap (consistent basis)",
+   "value_artifact_basis": 2.66,
+   "times_fits_artifact_basis": 0.751,
+   "basis_note": "artifact basis = arm pre_tax_cagr minus artifact SPY pre_tax_cagr (24/15); the driver pays tax out of NAV each April (scripts/static_leverage_aftertax.py:177-178), so 'pre-tax' is the artifact's label and its SPY comparator is taxed-NAV-based. consistent basis = arm pre_tax_cagr (24/15) minus SPY true TR CAGR from yfinance (Lens 4) over the same window; gap on that basis from the same yfinance series. The ratio uses the consistent basis.",
+   "tier": "B (L4-X1, L4-X2)",
+   "window": "2006-06-21..2026-09-29",
+   "gap_pp_per_yr": 3.546168834029406,
+   "gap_artifact_basis_lens9": 3.54291768349988,
+   "exposure": "static 1.5x (50/50) band 10pp",
+   "leverage": "1.5x",
+   "costs": "1 bp per side; SSO expense inside fund",
+   "regime": "2006-2026 incl. 2008 and 2020",
+   "funding": "1.64% only; no funding-sensitivity run exists for this arm (rf_plus artifacts hold SPY, 1.25x, 1.3x only)",
+   "registered_arm": false,
+   "post_hoc_pick": true,
+   "pretax": {
+    "artifact_label_24/15": 2.66,
+    "consistent_basis": 2.3664
+   },
+   "aftertax": {
+    "24/15": 2.58,
+    "40.8/23.8": 2.52
+   },
+   "max_drawdown": {
+    "arm": -0.7264,
+    "SPY": -0.5534
+   },
+   "rolling_10y": {
+    "worst_10y_rel_cagr": -0.06,
+    "worst_10y_end": "2009-03-02",
+    "share_10y_windows_behind_spy": 0.265
+   },
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 0.667
+  },
+  {
+   "approach": "Static leverage on SPY via SSO (2.0x (post-hoc pick, best of five leverage arms))",
+   "inventory_ids": [
+    "stocks-a23-static-leverage",
+    "stocks-a24-sleeve-trend-rider"
+   ],
+   "best_id": "stocks-a23-static-leverage/main_real_sso/static 2.0x (SSO) no rebalance",
+   "best_value_pp_per_yr": 4.1464,
+   "value_kind": "cagr_gap (consistent basis)",
+   "value_artifact_basis": 4.44,
+   "times_fits_artifact_basis": 1.253,
+   "basis_note": "artifact basis = arm pre_tax_cagr minus artifact SPY pre_tax_cagr (24/15); the driver pays tax out of NAV each April (scripts/static_leverage_aftertax.py:177-178), so 'pre-tax' is the artifact's label and its SPY comparator is taxed-NAV-based. consistent basis = arm pre_tax_cagr (24/15) minus SPY true TR CAGR from yfinance (Lens 4) over the same window; gap on that basis from the same yfinance series. The ratio uses the consistent basis.",
+   "tier": "B (L4-X1, L4-X2)",
+   "window": "2006-06-21..2026-09-29",
+   "gap_pp_per_yr": 3.546168834029406,
+   "gap_artifact_basis_lens9": 3.54291768349988,
+   "exposure": "static 2.0x (SSO) no rebalance",
+   "leverage": "2.0x (post-hoc pick, best of five leverage arms)",
+   "costs": "1 bp per side; SSO expense inside fund",
+   "regime": "2006-2026 incl. 2008 and 2020",
+   "funding": "1.64% only; no funding-sensitivity run exists for this arm (rf_plus artifacts hold SPY, 1.25x, 1.3x only)",
+   "registered_arm": false,
+   "post_hoc_pick": true,
+   "pretax": {
+    "artifact_label_24/15": 4.44,
+    "consistent_basis": 4.1464
+   },
+   "aftertax": {
+    "24/15": 4.29,
+    "40.8/23.8": 4.26
+   },
+   "max_drawdown": {
+    "arm": -0.8482,
+    "SPY": -0.5534
+   },
+   "rolling_10y": {
+    "worst_10y_rel_cagr": -0.1256,
+    "worst_10y_end": "2009-03-09",
+    "share_10y_windows_behind_spy": 0.375
+   },
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 1.169,
+   "holdout_synthetic_1993_2006": {
+    "artifact_basis": 1.28,
+    "consistent_basis": 0.9635,
+    "gap": 4.542426806000344
+   },
+   "plain_caveats": [
+    "picked after seeing results: best of five leverage arms, not the registered 1.3x arm",
+    "no t-statistic, no confidence interval",
+    "Tier B only through a Lens 4 judgement exception (code not reviewed)",
+    "measured only at the window's 1.64% average funding",
+    "leverage: more market exposure and drawdown (-84.8% in the window), not stock-picking skill"
+   ]
   },
   {
    "approach": "Century leverage (30% SSO-like 2x fund, synthetic)",
@@ -654,12 +784,12 @@
    },
    "max_drawdown": {
     "arm": -0.9141219352840759,
-    "0% arm": -0.8459901962670137
+    "0% (1x) arm": -0.8459901962670137
    },
    "ruin_flag": true,
-   "status": "after-tax CAGR gap compared against a pre-tax target gap: different bases, shown side by side only",
+   "status": "times_fits_in_gap not computed (basis mismatch: after-tax value, pre-tax gap)",
    "ci95": "not computable from artifact",
-   "times_fits_in_gap": 1.615
+   "times_fits_in_gap": null
   },
   {
    "approach": "Century leverage (60% SSO-like 2x fund, synthetic)",
@@ -682,12 +812,12 @@
    },
    "max_drawdown": {
     "arm": -0.9572792926562317,
-    "0% arm": -0.8459901962670137
+    "0% (1x) arm": -0.8459901962670137
    },
    "ruin_flag": true,
-   "status": "after-tax CAGR gap compared against a pre-tax target gap: different bases, shown side by side only",
+   "status": "times_fits_in_gap not computed (basis mismatch: after-tax value, pre-tax gap)",
    "ci95": "not computable from artifact",
-   "times_fits_in_gap": 2.773
+   "times_fits_in_gap": null
   },
   {
    "approach": "Leveraged-ETF timing (rotation, trend)",
@@ -746,7 +876,7 @@
    "lever": "leverage",
    "status": "tested; measured, not ruled out (measured results exist on clean tape, no t-statistic)",
    "evidence": [
-    "A23 artifact: 1.3x +1.61, 1.5x +2.66, 2.0x +4.44 pp/yr pre-tax CAGR gap over 2006-2026; max drawdown -66.4%/-72.6%/-84.8% vs SPY -55.3%",
+    "A23 artifact (artifact basis, 1.64% funding): 1.3x +1.61, 1.5x +2.66, 2.0x +4.44 pp/yr CAGR gap over 2006-2026 (consistent basis +1.32/+2.37/+4.15); 1.3x at funding +2.5 points +0.81; max drawdown -66.4%/-72.6%/-84.8% vs SPY -55.3%",
     "Synthetic 1993-2006 holdout: 2.0x +1.28 vs target gap 4.54; stitched 1993-2026: 2.0x +3.18 vs gap 2.25",
     "Century: 30% arm +1.24 after-tax vs 0% arm, max drawdown -91.4% (ruin flag true); 60% +2.13, -95.7%",
     "LETF timing (rotation/trend): tested badly per Lens 2 conditions (no artifact, pre-fix tape)"
@@ -762,7 +892,7 @@
   },
   {
    "lever": "long-short",
-   "status": "tested, inconclusive; not ruled out at the size a test could detect",
+   "status": "tested, inconclusive; not ruled out (no MDE computable)",
    "evidence": [
     "pairs stat-arb and short-volume-ratio books: Lens 2 inconclusive, pre-fix tape, no raw artifacts, no borrow-fee model",
     "no MDE computable"
@@ -866,14 +996,15 @@
    "gross_loss": -4358.534288669855,
    "net_gain": 772.3930066067559,
    "short_term_net": 772.3930066067559,
-   "hold_days_median": 26,
+   "hold_days_median": 25.5,
    "hold_days_max": 92,
    "hold_days_mean": 30.10810810810811,
    "cost_total": 126647.63000872146,
    "unmatched_sells": [],
    "first_date": "2026-06-24",
    "last_date": "2026-11-04",
-   "still_open_excluded": true
+   "still_open_excluded": true,
+   "hold_days_median_note": "statistics.median over 74 holds; earlier draft used the upper middle value 26"
   },
   "paper_tax_by_bracket": {
    "24/15": {
@@ -896,6 +1027,8 @@
    }
   },
   "short_term_share_of_realized_gains": 1.0,
+  "median_hold_days": 25.5,
+  "scope": "stock round trips only; 52 SPY cash-sweep rows (20 BUY, 32 SELL) excluded; the sweep also realizes SPY gains, not computed",
   "replica": "docs/research/_production_replica_results.json holds trade_counts only (no holding periods or per-trade gains); no result claimed",
   "stylised_books": {
    "2021-01-31..2026-04-30|24/15": {

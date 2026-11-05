@@ -38,8 +38,9 @@ French = Kenneth French data library.
    **3.54 pp/yr over 2006-06-21..2026-09-29**, **2.34 pp/yr over 1994-2026** and **0.77 pp/yr
    over 1927-2026** (French market). Because the target doubles a cumulative return, the
    longer the window the smaller the annual gap it implies. Phase 0's "+10 to +15 pp/yr needed"
-   matches only short windows: it is 9.5 to 9.8 pp/yr on the 2021-2026 and 2022-2026 windows,
-   and much smaller on every long window. Section "Target arithmetic".
+   is close only for 5-year windows (9.5 to 9.8 pp/yr on 2021-2026 and 2022-2026), and Lens 9's
+   2.8-year IBIT window (15.15 pp/yr, `docs/research/_lens9_power.json`) is the only window
+   inside 10-15; every longer window is much smaller. Section "Target arithmetic".
 2. **Tier A is empty.** Lens 2 classed 0 of 72 test rows reliable (0 reliable NO, 0 reliable
    GO) and 9 GO rows unreliable. Every ceiling figure below is Tier B at most, and all the
    early "beat SPY" headlines are Tier C.
@@ -54,19 +55,34 @@ French = Kenneth French data library.
    - Event/calendar: no Tier A/B figure versus SPY.
    - Cross-asset 80/20: **+3.08** only in the 2007-2011 crisis holdout (where SPY lost money
      and the 2x target is undefined in a useful sense); -1.07 over 2016-2026.
-   - Static leverage (A23 artifact, 2006-2026): 1.3x **+1.61**, 1.5x +2.66, 2.0x SSO
-     **+4.44 pp/yr pre-tax** (+4.29 after tax at 24/15), which is 1.25 times the 3.54 pp/yr gap,
-     with a **-84.8% maximum drawdown** versus SPY's -55.3%. Over the synthetic 1993-2006
-     holdout the same 2.0x arm is +1.28 against a 4.54 pp/yr gap. Century study (after tax
-     only): 30% arm +1.24 (max drawdown -91.4%, ruin flag), 60% arm +2.13 (-95.7%).
+   - Static leverage (A23 artifact, 2006-2026, T-bill funding averaging 1.64% in the window):
+     registered 1.3x arm **+1.61** pp/yr on the artifact's basis, falling to **+0.81 (+0.80
+     after tax)** when funding is set 2.5 points higher (about today's 4.1% bills;
+     `docs/research/_static_leverage_aftertax_rf_plus0.025.json`). The 2.0x SSO arm measured
+     **+4.44 pp/yr on the artifact's basis** (its SPY comparator, 11.10%, is NAV after the
+     artifact's annual tax payments) and **+4.15 on one consistent basis** (15.54% against
+     SPY's true total-return CAGR of 11.39%), which is **1.17 times** the 3.55 pp/yr gap on
+     that basis. That 2.0x figure is a pick made after seeing the results (the best of five
+     leverage arms in the artifact, not the registered 1.3x arm); it has no t-statistic and no
+     confidence interval; it reaches Tier B only through a Lens 4 judgement exception (code not
+     reviewed); it has no funding-sensitivity run, so it holds only at the window's 1.64%
+     average funding; and it is leverage, meaning more market exposure and deeper drawdown
+     (**-84.8%** against SPY's -55.3%), not stock-picking skill. It trailed SPY in 37.5% of
+     rolling 10-year windows (worst -12.56 pp/yr, ending 2009-03-09), against 23.8% (worst
+     -3.29) for the 1.3x arm. Over the synthetic 1993-2006 holdout the 2.0x arm is +1.28 on the
+     artifact's basis (+0.96 against true SPY TR) against a 4.54 pp/yr gap. Century study
+     (after tax only): 30% arm +1.24 (max drawdown -91.4%, ruin flag), 60% arm +2.13 (-95.7%);
+     the 1x base arm itself fell -84.6% in the same study.
    - Crypto: pointer to Lens 8 (not in the repo at this commit).
 4. **The only Tier B figures that reach the target gap of their own window are leverage
-   (2.0x SSO 2006-2026; century arms) and pre-1994 French momentum.** Leverage multiplies
+   (the post-hoc 2.0x SSO arm over 2006-2026, at that window's funding) and pre-1994 French
+   momentum.** The century arms are after-tax only and the gap is pre-tax, so their ratio is
+   not computed (basis mismatch). Leverage multiplies
    SPY's beta and drawdown; it is not stock-selection skill. Pre-1994 momentum is the
    pre-publication period and it reverses after 2013. No Tier A/B stock-selection figure after
    1994 reaches its window's gap.
 5. **After tax (DERIVED):** all 74 closed paper stock round trips were short-term (median hold
-   26 days, maximum 92), net realized gain $772.39. In a stylised book that realizes every
+   25.5 days, maximum 92; the 52 SPY sweep rows are outside this count), net realized gain $772.39. In a stylised book that realizes every
    gain short-term each year against SPY held and taxed once at the end, the book needs
    **+2.42 pp/yr pre-tax** (24/15) or **+5.05 pp/yr** (37/20) just to tie SPY after tax over
    2021-2026. A +4.37 pp/yr pre-tax edge keeps +1.48 (34%) at 24/15 and turns to -0.43 at
@@ -115,8 +131,8 @@ observed or is attainable, and how it survives the other lenses:
 | Production replica holdout 2010-2020 | +1.00 pp/yr CAGR gap; exposure-matched +1.85 (t 1.57) | `docs/research/_production_replica_results.json` `windows.holdout.arms.primary.excess_vs_spy`, `excess_vs_exposure_matched` | **Weakly.** Not citable (`windows.holdout.citable=False`, tainted trades); t 0.69; Lens 1 tape identity unknown. Tier C. |
 | xs_momentum corrected replay | +4.37 pp/yr CAGR gap; arithmetic +4.49, t 0.76 | `docs/research/_audit_reruns_20261019.json` `xs_momentum.excess_stats` | **As a point estimate, yes; as evidence, weak.** Clean tape, Lens 6 match, Lens 7 recompute yes: Tier B. CI [-7.07, 16.05]; MDE at t >= 3 is 22.66 pp/yr (Lens 9), so the test could not distinguish +4.37 from zero or from +15. |
 | French momentum before 1994 | Big +3.12 pp/yr (t 3.56), Small +4.77 (t 3.38); size-matched full window +3.66 (t 3.72) / +5.14 (t 5.18) | `docs/research/_momentum_french_screen_results.json` `groups.<g>.diag[0]`, `groups.<g>.size_matched` | **In its window, yes; later, no.** Clean French data, statistic recomputed (Lens 7): Tier B. The same groups are +0.78/+2.60 in 1994-2012 and -0.97/-3.34 in 2013-2026; registered post-1994 A2 +0.08/+0.20. The size-matched comparator is the same-size portfolio, not the market or SPY, so it is not a raw-over-SPY figure. |
-| Static 2x leverage | 2.0x SSO +4.44 pp/yr pre-tax over 2006-2026, above that window's 3.54 gap | `docs/research/_static_leverage_aftertax_results.json` `windows.main_real_sso` | **Measured, Tier B under exception L4-X1 and L4-X2.** No t-statistic; maximum drawdown -84.8%; synthetic 1993-2006 holdout +1.28 (below its 4.54 gap); not the registered arm (1.3x, +1.61). |
-| Century leverage | 60% arm +2.13 pp/yr after tax over 100 years, above the 0.77 gap | `docs/research/_century_leverage_results.json` `scenarios` | **Measured, Tier B (L4-X1).** After-tax only; ruin flag true for 30% and above; max drawdown -91.4% (30%) to -95.7% (60%). |
+| Static 2x leverage | 2.0x SSO +4.44 pp/yr over 2006-2026 on the artifact's basis (+4.15 against true SPY TR), above that window's 3.54-3.55 gap | `docs/research/_static_leverage_aftertax_results.json` `windows.main_real_sso` | **Measured, but weakly placed.** Picked after the fact as the best of five leverage arms (registered arm: 1.3x, +1.61, and +0.81 at 2.5 points higher funding per `docs/research/_static_leverage_aftertax_rf_plus0.025.json`); no t-statistic or CI; Tier B only by a Lens 4 judgement exception; no funding-sensitivity run, so conditional on the window's 1.64% average bills; maximum drawdown -84.8%; behind SPY in 37.5% of rolling 10-year windows; synthetic 1993-2006 holdout +1.28 (below its 4.54 gap). |
+| Century leverage | 60% arm +2.13 pp/yr after tax over 100 years | `docs/research/_century_leverage_results.json` `scenarios` | **Measured, Tier B (L4-X1).** After-tax only, so not comparable with the pre-tax 0.77 gap; ruin flag true for 30% and above; max drawdown -91.4% (30%) to -95.7% (60%), and -84.6% for the 1x base arm. |
 | Cross-asset 80/20 in the 2007-2011 holdout | +3.08 pp/yr | `docs/research/_cross_asset_sleeve_holdout_results.json` | **Only in a crisis window.** -1.07 over 2016-2026, -1.09 over 2021-2026 (`docs/research/_cross_asset_sleeve_results.json`). |
 | Month-end Treasury rule | Welch t 2.75 on invested days | `docs/research/_month_end_treasury_results.json` | **Not as an SPY excess.** SPY-funded portfolio -0.08 pp/yr; Lens 1 DSR-units item of unknown direction. Tier C. |
 | Crypto (Kraken live bot "profitable", funding carry +0.45%) | prose | inventory rows `crypto-kraken-live-bot-pnl`, `crypto-funding-carry-phase4` | **Not examined here.** No raw artifacts; benchmark is BTC/ETH, not SPY; Lens 8 owns it. |
@@ -156,6 +172,7 @@ with the same start-close convention: R = +108.60%, gap 9.56 (Y = 5.248 by calen
 | 1963-07..2026-04 (factor, net-issuance A1) | Lens 9 / Lens 4, French | +63,838% | x2 | 10.83 | 12.06 | 1.23 |
 | 1994-01..2026-04 (factor/momentum/net-issuance A2) | Lens 9 / Lens 4, French | +2,712% | x2 | 10.87 | 13.21 | **2.34** |
 | 2013-01..2026-04 (screens' latest sub-period) | Lens 4, French | +529% | x2 | 14.79 | 20.16 | 5.38 |
+| 2024-01-11..2026-10-23 (IBIT session split; SPY for scale only, crypto benchmark is not SPY) | Lens 9 | +64.76% | +129.52% | 19.66 | 34.81 | 15.15 (2.78 years) |
 | 2026-06-24..2026-11-03 (paper account, for scale only) | Lens 4 | +3.09% | +6.18% | 8.71 | 17.88 | 9.17 (0.36 years) |
 
 Sources: Lens 9 rows from `docs/research/_lens9_power.json` `regime.targets_2x_spy_total_return`;
@@ -225,11 +242,13 @@ that the t-statistic tests, per the fixed spec, and is **not** an interval on th
 | Net issuance (`stocks-net-issuance-screen`) | `.../H1/A2` | +0.48 (CAGR gap vs French market) | not computable (window mismatch) | **B** | 1994-01..2026-04 | 2.34 | 0.21 | BIG NegNI / 1.0 | haircut 1%/yr | post-1994 (2009-2026: -0.93) | +0.48 | not in artifact |
 | Event/calendar (`cross-asset-month-end-treasury`, `cross-asset-fomc-drift-corrected-harness`, `cross-asset-fomc-drift-wfo`, `stocks-turn-of-month-rotation`, `stocks-pead`, `stocks-index-deletion-fade`, `stocks-insider-cluster-buy`, `stocks-congress-trades`) | `cross-asset-month-end-treasury/portfolio/pinned/1bp` | -0.08 (CAGR gap) | not computable from artifact | **C** | 2021-01-31..2026-04-30 | 9.57 | -0.01 | 80% SPY + 20% rotating SPY->IEF / 1.0 | 1 bp | 2021-2026 | -0.08 | not in artifact |
 | Cross-asset 80/20 (`cross-asset-static-80-20-sleeve`, `cross-asset-sleeve-holdout-2007-2011`, `cross-asset-sleeve-trend-arm`, `cross-asset-treasury-curve`, `cross-asset-fx-hedge-overlay`, `cross-asset-commodity-trend`) | `cross-asset-sleeve-holdout-2007-2011/1bp` | +3.08 (CAGR gap) | not computable from artifact | **B** (L4-X1) | 2007-06-01..2011-02-28 | -1.68 (degenerate) | n/a | 80% SPY, 20% TLT/GLD/DBC / 1.0 | 1 bp | GFC holdout | +3.08 | not in artifact |
-| Static leverage, A23 registered arm (`stocks-a23-static-leverage`) | `.../main_real_sso/static 1.3x` | +1.61 (CAGR gap) | not computable from artifact | **B** (L4-X1) | 2006-06-21..2026-09-29 | 3.54 | 0.45 | 70/30 SPY/SSO / 1.3x | 1 bp/side + SSO fee | 2006-2026 | +1.61 | 24/15 +1.60; 40.8/23.8 +1.55 |
-| Static leverage 1.5x | `.../static 1.5x (50/50)` | +2.66 (CAGR gap) | not computable from artifact | **B** (L4-X1, X2) | 2006-06-21..2026-09-29 | 3.54 | 0.75 | 50/50 SPY/SSO / 1.5x | as above | 2006-2026 | +2.66 | 24/15 +2.58; 40.8/23.8 +2.52 |
-| Static leverage 2.0x | `.../static 2.0x (SSO) no rebalance` | **+4.44** (CAGR gap) | not computable from artifact | **B** (L4-X1, X2) | 2006-06-21..2026-09-29 | 3.54 | **1.25** | 100% SSO / 2.0x | as above | 2006-2026 | +4.44 | 24/15 +4.29; 40.8/23.8 +4.26 |
-| Century leverage 30% (`stocks-century-leverage`) | `.../30/full` | +1.24 (after-tax CAGR gap vs French market) | not computable from artifact | **B** (L4-X1) | 1926-07-01..2026-06-30 | 0.77 (pre-tax) | 1.62 (mixed bases) | 30% 2x fund / 1.30x | 0.84% fund fee | 1926-2026 | not in artifact | 24/15 +1.24 |
-| Century leverage 60% | `.../60/full` | +2.13 (after-tax CAGR gap) | not computable from artifact | **B** (L4-X1, X2) | 1926-07-01..2026-06-30 | 0.77 (pre-tax) | 2.77 (mixed bases) | 60% 2x fund / 1.60x | as above | 1926-2026 | not in artifact | 24/15 +2.13 |
+| Static leverage, A23 registered arm (`stocks-a23-static-leverage`) | `.../main_real_sso/static 1.3x` | +1.61 artifact basis; +1.32 consistent basis (CAGR gap) | not computable from artifact | **B** (L4-X1) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.45 / 0.37 | 70/30 SPY/SSO / 1.3x | 1 bp/side + SSO fee | 2006-2026 incl. 2008, 2020; **T-bill funding averaged 1.64%** | +1.61 (artifact "pre-tax" label) | 24/15 +1.60; 40.8/23.8 +1.55 |
+| Static leverage 1.3x, funding +1.5 points (`docs/research/_static_leverage_aftertax_rf_plus0.015.json`) | `.../static 1.3x` | +1.16 artifact basis; +0.87 consistent basis | not computable from artifact | **B** (L4-X1) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.33 / 0.24 | 70/30 / 1.3x | as above | **funding about 3.1% (1.64% + 1.5)** | +1.16 (artifact label) | 24/15 +1.13; 40.8/23.8 +1.10 |
+| Static leverage 1.3x, funding +2.5 points (`docs/research/_static_leverage_aftertax_rf_plus0.025.json`) | `.../static 1.3x` | +0.81 artifact basis; +0.52 consistent basis | not computable from artifact | **B** (L4-X1) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.23 / 0.15 | 70/30 / 1.3x | as above | **funding about 4.1% (1.64% + 2.5), near today's bills** | +0.81 (artifact label) | 24/15 +0.80; 40.8/23.8 +0.79 |
+| Static leverage 1.5x | `.../static 1.5x (50/50)` | +2.66 artifact basis; +2.37 consistent basis | not computable from artifact | **B** (L4-X1, X2) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.75 / 0.67 | 50/50 SPY/SSO / 1.5x | as above | **funding 1.64% only; no funding-sensitivity run for this arm** | +2.66 (artifact label) | 24/15 +2.58; 40.8/23.8 +2.52 |
+| Static leverage 2.0x (post-hoc pick, best of five leverage arms) | `.../static 2.0x (SSO) no rebalance` | **+4.44 artifact basis; +4.15 consistent basis** | not computable from artifact | **B** (L4-X1, X2) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | **1.25 / 1.17** | 100% SSO / 2.0x | as above | **funding 1.64% only; no funding-sensitivity run for this arm**; max DD -84.8%; behind SPY in 37.5% of rolling 10-year windows | +4.44 (artifact label) | 24/15 +4.29; 40.8/23.8 +4.26 |
+| Century leverage 30% (`stocks-century-leverage`) | `.../30/full` | +1.24 (after-tax CAGR gap vs French market) | not computable from artifact | **B** (L4-X1) | 1926-07-01..2026-06-30 | 0.77 (pre-tax) | not computed (basis mismatch: after-tax value, pre-tax gap) | 30% 2x fund / 1.30x | 0.84% fund fee, spread fitted to SSO over 2006-2026 | 1926-2026 incl. 1929-32; funding = French T-bill rate per day | not in artifact | 24/15 +1.24 |
+| Century leverage 60% | `.../60/full` | +2.13 (after-tax CAGR gap) | not computable from artifact | **B** (L4-X1, X2) | 1926-07-01..2026-06-30 | 0.77 (pre-tax) | not computed (basis mismatch) | 60% 2x fund / 1.60x | as above | as above | not in artifact | 24/15 +2.13 |
 | LETF timing (`stocks-leveraged-rotation`, `stocks-leveraged-trend`) | none | no raw artifact | n/a | **C** | n/a | n/a | n/a | 2x/3x ETFs | n/a | n/a | n/a | n/a |
 | Crypto (`crypto-*` rows) | pointer | Lens 8 | n/a | Lens 8 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
 
@@ -244,24 +263,61 @@ annualized mean excess / t; CI = mean +/- 1.96 SE), recomputed here: replica SE 
 0.6898 = 1.1046, CI = -0.762 +/- 2.165; xs_momentum SE = 4.4856 / 0.7606 = 5.898, CI = 4.486
 +/- 11.56.
 
+**Basis of the A23 figures.** The A23 driver pays tax out of NAV every April
+(`scripts/static_leverage_aftertax.py:177-178`), so the artifact's `pre_tax_cagr` is the
+taxed-NAV path, and the SPY comparator inside the artifact changes with the bracket (11.10% at
+24/15, 10.93% at 40.8/23.8). "Pre-tax" in the A23 rows is therefore the artifact's label, not
+a tax-free return. Two bases are shown and never mixed in one number:
+
+- *Artifact basis:* arm `pre_tax_cagr` minus the artifact's SPY `pre_tax_cagr`, same bracket
+  (24/15). 2.0x: 15.54 - 11.10 = +4.44; 4.44 / 3.54 = 1.25.
+- *Consistent basis (used for the ratio):* arm `pre_tax_cagr` (24/15) minus SPY's true
+  total-return CAGR over the same window from yfinance (11.39%, Lens 4; the gap on this basis
+  is 3.55). 2.0x: 15.54 - 11.39 = **+4.15; 4.15 / 3.55 = 1.17.** 1.3x: 12.71 - 11.39 = +1.32
+  (0.37). 1.5x: 13.76 - 11.39 = +2.37 (0.67). The arm's own figure still carries the tax paid
+  on its small distributions (the 40.8/23.8 bracket shows 15.45 against 15.54), so this basis
+  understates the arm slightly; with Lens 9's 11.35% and 3.54 the 2.0x figure is +4.19 (1.18).
+- Synthetic 1993-2006 holdout, 2.0x: 10.92 - 9.64 = +1.28 artifact basis; 10.92 - 9.96 = +0.96
+  consistent basis; gap 4.54 (0.21 on the consistent basis).
+
+**Funding.** The 2006-2026 window's T-bills averaged 1.64%
+(`beta_matched_pretax_cagr.rf_ann` in `docs/research/_static_leverage_aftertax_results.json`);
+the A23 report treats funding as the headline condition
+(`docs/research/2026-09-30-static-fractional-leverage.md:20-25`, `:116-131`). The two
+funding-sensitivity artifacts present, `docs/research/_static_leverage_aftertax_rf_plus0.015.json`
+and `docs/research/_static_leverage_aftertax_rf_plus0.025.json`, contain only the SPY,
+1.25x and 1.3x arms (verified by listing `windows.main_real_sso` keys). For the 1.3x arm they
+give +1.16 and +0.81 on the artifact basis (after tax at 24/15: +1.13 and +0.80). **No funding
+run exists for the 1.5x or 2.0x arms**, so their figures hold only at the window's 1.64%
+average funding.
+
 Conditions that apply to every leverage row, stated plainly: leverage multiplies SPY's beta
 and its drawdown. The project's measured leverage results are what they are: A23 1.3x
-returned +1.61 pp/yr over 2006-2026 with a -66.4% maximum drawdown against SPY's -55.3%; the
-2.0x SSO arm returned +4.44 with -84.8%; the 1993-2006 synthetic holdout gave the 2.0x arm
-+1.28 against a 4.54 pp/yr gap with -79.2%; the century study's 30% arm had a -91.4% drawdown
-in 1929-32 with its ruin flag set. The artifact's beta-matched figure (`beta_matched_pretax_cagr`:
+returned +1.61 pp/yr (artifact basis) over 2006-2026 with a -66.4% maximum drawdown against
+SPY's -55.3%; the 2.0x SSO arm returned +4.44 (artifact basis) with -84.8%; the 1993-2006
+synthetic holdout gave the 2.0x arm +1.28 against a 4.54 pp/yr gap with -79.2%; the century
+study's 30% arm had a -91.4% drawdown in 1929-32 with its ruin flag set, and its 1x base arm
+fell -84.6% in the same study. The artifact's beta-matched figure (`beta_matched_pretax_cagr`:
 1.3x cash-financed at 1.64% risk-free = 13.94%) is above the SSO book's 12.71%, so the SSO
-route returned less than the beta it carried would have at that funding rate. The
-rolling 10-year table (`rolling_10y_pretax_vs_spy`) shows the 1.3x book behind SPY in 23.8%
-of 10-year windows, worst -3.29 pp/yr (ending 2009-03).
+route returned less than the beta it carried would have at that funding rate. The rolling
+10-year table (`rolling_10y_pretax_vs_spy`) shows the 1.3x book behind SPY in 23.8% of 10-year
+windows (worst -3.29 pp/yr, ending 2009-03-02) and the 2.0x arm behind SPY in 37.5% (worst
+-12.56 pp/yr, ending 2009-03-09).
 
-Highest sound figure overall versus the target gap: **2.0x SSO, +4.44 pp/yr pre-tax CAGR gap
-over 2006-2026, 1.25 times the 3.54 pp/yr gap** (Tier B under L4-X1 and L4-X2; drawdown
--84.8%). Highest sound stock-selection figure: **pre-1994 French Small momentum, +4.77, 4.18
-times its window's 1.14 gap** (L4-X2); after 1994 the highest registered Tier B
-stock-selection figure is **+0.83** (factor H1), 0.35 of the 2.34 gap. On the 2021-2026
-window that the paper account and the replica live in, the highest Tier B figure is
-**xs_momentum +4.37**, 0.46 of the 9.54 gap, with a CI spanning -7 to +16.
+Highest figure that passes the tiers, versus the target gap: the 2.0x SSO arm, **+4.15 pp/yr
+over 2006-2026 against true SPY total return (+4.44 on the artifact's own basis), 1.17 times
+the 3.55 pp/yr gap.** In plain words: it was picked after seeing the results, as the best of
+five leverage arms in the artifact, not the registered 1.3x arm; it has no t-statistic and no
+confidence interval; it counts as Tier B only because Lens 4 judged that unreviewed code does
+not matter for a fixed-weight book; it was measured only at the window's 1.64% average
+funding; and it is leverage, meaning more market exposure and a -84.8% drawdown in the
+window, not stock-picking skill. Beside it, the registered 1.3x arm measured +1.61 at the
+window's funding and +0.80 after tax at funding 2.5 points higher. Highest Tier B
+stock-selection figure: **pre-1994 French Small momentum, +4.77, 4.18 times its window's 1.14
+gap** (a non-registered sub-period); after 1994 the highest registered Tier B stock-selection
+figure is **+0.83** (factor H1), 0.35 of the 2.34 gap. On the 2021-2026 window that the paper
+account and the replica live in, the highest Tier B figure is **xs_momentum +4.37**, 0.46 of
+the 9.54 gap, with a CI spanning -7 to +16.
 
 ## Ruled-out table
 
@@ -274,7 +330,7 @@ an MDE at or below the size in question), "not tested", "tested badly" (Lens 5 c
 | Breadth (more independent bets: more names, small/micro caps, more asset classes, faster cadence) | **Not ruled out at any size.** Micro caps, weekly cross-sectional rebalancing and international equity exposure: not tested. Small-cap stock selection and fundamentals at small-cap scale: tested badly. Cross-asset breadth and French Small screens: tested, inconclusive. | Lens 5 gap table (`docs/research/2026-11-04-lens5-coverage-gaps.md`, section "Gap table"); Lens 2: no reliable NO in any of these rows. |
 | Leverage (more than 1x SPY) | **Not ruled out; measured.** Static leverage tested on a clean tape with recomputed numbers but no t-statistic (Lens 2 inconclusive, power not established). LETF timing (rotation, trend): tested, inconclusive on a pre-fix tape with no raw artifact. | `docs/research/_static_leverage_aftertax_results.json`; `docs/research/_century_leverage_results.json`; Lens 2 classes for `stocks-a23-static-leverage`, `stocks-century-leverage`, `stocks-leveraged-rotation`, `stocks-leveraged-trend`. |
 | Concentration (few names at large weights) | **Tested badly.** The only concentrated arm (xs_momentum top_n 10) was never deployed OOS; the live/replica book holds 3 names at about 3.3% each (9.37% total). | Lens 5 gap table, row "Concentration"; `docs/research/_production_replica_results.json` `mean_exposure`. |
-| Long-short / shorting | **Tested, inconclusive; not ruled out at the size the test could detect** (no MDE computable). Pairs and short-volume-ratio books on a pre-fix tape, no borrow-fee model, no raw artifacts. | Lens 5 gap table, row "Long-short"; Lens 2 classes for `stocks-pairs-stat-arb`, `stocks-short-volume-ratio`. |
+| Long-short / shorting | **Tested, inconclusive; not ruled out (no MDE computable).** Pairs and short-volume-ratio books on a pre-fix tape, no borrow-fee model, no raw artifacts. | Lens 5 gap table, row "Long-short"; Lens 2 classes for `stocks-pairs-stat-arb`, `stocks-short-volume-ratio`. |
 
 No lever is "ruled out at the size the test could detect": that wording needs a reliable NO
 with known power, and Lens 2 has none. The one area Lens 5 marks "evidence against at the size
@@ -356,9 +412,10 @@ production replica artifact holds only `trade_counts` (symbol, side, count), no 
 or per-trade gains, so **no after-tax result is claimed for the replica**, and none for any
 strategy without trade lists.
 
+Scope: stock round trips only; the 52 SPY cash-sweep rows (20 buys, 32 sells) are excluded.
 Paper round trips, 2026-06-24..2026-11-04: 74 closed (54 strategy sells, 15 manual legacy
 liquidations, 4 orphan liquidations, 1 catastrophe stop; matches Lens 3 `trades_by_reason`).
-Holding period mean 30.1 days, median 26, maximum 92: **100% short-term.** Gross gains
+Holding period mean 30.1 days, median 25.5, maximum 92: **100% short-term.** Gross gains
 $5,130.93, gross losses -$4,358.53, net realized **$772.39** on $126,647.63 of cost. Dividends
 not included (Lens 3: the broker credited none).
 
@@ -385,9 +442,12 @@ slightly); not the fixed spec's column 10 (that column uses artifact after-tax f
 
 Reading: in this stylised book the tax cost falls on the whole return (the market part as well
 as the edge), so a pre-tax edge below about +2.4 pp/yr (24/15) or about +5 pp/yr (37/20)
-becomes a shortfall after tax. The paper account is not this book: about 85% of it is SPY held
-by the sweep, and only the 9.4% stock sleeve realizes short-term gains, so its tax drag is
-roughly the sleeve's share of it (an approximation, not computed). Cross-check against an
+becomes a shortfall after tax. The paper account is not this book: about 85% of it is SPY
+bought by the cash sweep, and the stock sleeve is about 9.4%. The SPY core is not simply held:
+the sweep sold SPY 32 times and bought it 20 times between 2026-06-24 and 2026-11-04
+(`paper_trades` rows with `reason = 'cash_sweep'`; Lens 3 `trades_by_reason`), so it also
+realizes gains, all short-term so far given the account's age. Those 52 SPY sweep rows are
+outside the 74-round-trip check above, and the account's total tax drag is not computed here. Cross-check against an
 artifact that has after-tax fields: the A23 study, which mostly holds rather than trades,
 loses almost nothing to tax (1.3x: +1.61 pre-tax, +1.60 after tax at 24/15;
 `docs/research/_static_leverage_aftertax_results.json`).
@@ -398,8 +458,9 @@ loses almost nothing to tax (1.3x: +1.61 pre-tax, +1.60 after tax at 24/15;
    per approach, with CI and conditions?** Answered in the ceiling table. Tier A is empty.
    Tier B: momentum replay +4.37 pp/yr (CI on arithmetic excess [-7.07, 16.05]); French
    momentum +0.08/+0.20 post-1994 and +3.12/+4.77 pre-1994; factor +0.83; net issuance +0.48;
-   cross-asset +3.08 only in 2007-2011; static leverage +1.61 (1.3x) to +4.44 (2.0x) over
-   2006-2026 with drawdowns to -84.8%; century leverage +1.24 to +2.13 after tax with
+   cross-asset +3.08 only in 2007-2011; static leverage +1.61 (1.3x, registered; +0.81 at
+   funding 2.5 points higher) to +4.44 (2.0x, post-hoc; +4.15 against true SPY TR) over
+   2006-2026 at 1.64% average funding, with drawdowns to -84.8%; century leverage +1.24 to +2.13 after tax with
    drawdowns to -95.7%. SPY sweep, ensemble selection, event/calendar and LETF timing: no
    Tier A/B figure. CIs are "not computable from artifact" wherever the artifact has no
    t-statistic. Crypto: unknown here, owned by Lens 8; cheapest test: read the Lens 8 report
@@ -407,8 +468,11 @@ loses almost nothing to tax (1.3x: +1.61 pre-tax, +1.60 after tax at 24/15;
 2. **What return over SPY does the target require, and how does it compare with each measured
    effect?** 9.57 pp/yr (2021-2026), 9.54 (2022-2026), 6.14 (2010-2020), 5.11 (2012-2026),
    3.54 (2006-2026), 2.34 (1994-2026), 0.77 (1927-2026); full table above. Tier B effects
-   reach their own window's gap only for 2.0x SSO (1.25x), century leverage (after-tax
-   versus pre-tax gap, 1.6x and 2.8x) and pre-1994 French momentum (2.7x, 4.2x). Post-1994
+   reach their own window's gap only for the post-hoc 2.0x SSO arm (1.17x on a consistent
+   basis, 1.25x on the artifact's basis, at the window's 1.64% funding) and pre-1994 French
+   momentum (2.7x, 4.2x); the century arms are after-tax against a pre-tax gap, so no ratio is
+   computed. The registered 1.3x arm reaches 0.37-0.45 at the window's funding and 0.15-0.23
+   with funding 2.5 points higher. Post-1994
    registered stock-selection effects reach 0.03 to 0.35 of the 2.34 gap; the 2022-2026
    momentum replay reaches 0.46 of 9.54.
 3. **Which of breadth, leverage, concentration and long-short were ruled out, by what
@@ -454,6 +518,13 @@ Commands run (all read-only; repo code only through the capped runner):
 - `python3 -I <scratch>/l4/trips.py` (FIFO pairing) and
   `scripts/run_capped.sh .venv/bin/python -I <scratch>/l4/aftertax.py` (derived tables).
 - `python3 -I <scratch>/l4/build_json.py` writes `docs/research/_lens4_ceiling.json`.
+- Fix round 1: listed `windows.main_real_sso` keys in both funding-sensitivity artifacts
+  (SPY, 1.25x, 1.3x only); read `rolling_10y_pretax_vs_spy` (2.0x: share 0.375, worst
+  -0.1256 ending 2009-03-09; 1.3x: 0.238, -0.0329, 2009-03-02); read the tax-payment step in
+  `scripts/static_leverage_aftertax.py:177-178`; recomputed the consistent-basis gaps
+  (15.54 - 11.39 = 4.15, 4.15 / 3.55 = 1.169; 12.71 - 11.39 = 1.32; 13.76 - 11.39 = 2.37;
+  11.91 - 11.39 = 0.52; 10.92 - 9.96 = 0.96); median hold recomputed with
+  `statistics.median` = 25.5 days.
 - Web: fetched the Wikipedia pages for Renaissance Technologies, Millennium Management and
   Prime brokerage, the OMSCS notes, Robeco, AQR and Alpaca pages; search snippets for New
   Frontier, Institutional Investor and Accounting Today.
