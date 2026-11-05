@@ -1,7 +1,10 @@
 """Rebuild the Lens 2 verdict-audit JSON (classifications and sensitivity table) from inputs.
 
-Reads only committed files: the investigation inventory, the Lens 1/6/7/9 outputs and the raw
-artifacts the inventory names. Writes only the paths given with --out-json and --md-dir.
+Reads committed files (the investigation inventory, the Lens 1/6/7/9 outputs and the raw
+artifacts the inventory names) plus one gitignored artifact,
+results/research/research_20260511_193048/wfo_stats_snapshot.json. On a fresh clone that file is
+absent and the crypto-wfo-textbook-reset sensitivity row reads "listed path missing".
+Writes only the paths given with --out-json and --md-dir.
 Classification rules are the fixed text in RULES_TEXT; the verdict-type vocabularies, the
 contamination-direction table, the 1.12-comparator pattern and the column-14 logic are module
 constants below. Sensitivity columns follow docs/research/2026-11-04-lens2-sensitivity-spec.md.

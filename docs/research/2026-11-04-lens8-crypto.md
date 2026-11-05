@@ -38,7 +38,8 @@ ccxt = the exchange-access library the legacy code used; EW = equal weight.
    they are in-sample. For edge-search runs 2 and 3 about 7 of the 12 months (2025-11-01 to
    2026-06-08) are the 20% holdout, after selection: over that holdout stretch run 2 returned
    -9.4% and run 3 -18.9% vs BTC -42%, i.e. they lost less than BTC out of sample in a falling
-   market, with low BTC beta and no significant intercept (t = 0.43 and -0.44), and both lost
+   market. In the full 12-month regression (not the holdout alone) their BTC beta was low and the
+   intercept not significant (beta 0.10 and 0.20; t = 0.43 and -0.44), and both lost
    to BTC over three years.
 2. **The steelman (2026-05-01: 48.46% vs BTC -21.34%) is real in the artifact and does not
    survive scrutiny as evidence of an edge.** It is a one-year in-sample replay on the pre-repair
@@ -232,8 +233,9 @@ end 2025-11-01; the edge report treats the rest as true OOS for the passers
 | edge run 3 | 2025-06-08..2025-11-01 (IS) | -2.75% | +4.03% | +54.21% |
 | edge run 3 | 2025-11-01..2026-06-08 (holdout, OOS) | -18.92% | -42.30% | -56.21% |
 
-Out of sample, both books lost money but lost less than BTC and ETH while BTC fell 42%. That fits
-low BTC exposure (beta 0.10 and 0.20) rather than a significant intercept (t = 0.43 and -0.44).
+Out of sample, both books lost money but lost less than BTC and ETH while BTC fell 42%. In the
+full 12-month regression (not the holdout alone), BTC exposure was low (beta 0.10 and 0.20) and
+the intercept was not significant (t = 0.43 and -0.44).
 Both books lost to BTC over the three-year range.
 
 Not computable: the 28 March pipeline runs (windows unpinned, folders not found; the record

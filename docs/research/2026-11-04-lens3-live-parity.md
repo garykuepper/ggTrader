@@ -14,7 +14,8 @@ TimescaleDB database; SD = standard deviation; MDE = minimum detectable effect.
 ## Summary
 
 1. **The snapshot gap is the dividend accrual, and the broker never paid those dividends.
-   Confirmed from two independent sources.** From 2026-08-20 to 2026-11-04, the daily gap
+   The gap-equals-accrual part is not independent; only "never credited" has a broker
+   source.** From 2026-08-20 to 2026-11-04, the daily gap
    `value - (cash + positions)` in `paper_snapshots` equals the cumulative
    `paper_dividend_accruals` total to within $6.59 on every day, and to the cent on most
    days. It is $320.24 from 10-30 onward. Alpaca records no dividends: there are zero DIV
@@ -401,9 +402,10 @@ whole period t = 0.73. The window cannot detect any realistic effect, so **H-fro
    basis. Phase 0's -1.9 / -2.6 / +1.4 reproduce only on its own method. Corrected: -3.02
    / -2.28 / +1.60 (U) and -3.69 / -2.32 / +1.40 (EOD).
 4. **What explains the snapshot-value discrepancy?** Answered and confirmed. It is the
-   cumulative uncredited-dividend accrual. Two independent sources agree (DB accrual table
-   vs the snapshot gap; Alpaca DIV is empty and cash matches). Two rows are over-accrued by
-   $5.86.
+   cumulative uncredited-dividend accrual. The DB accrual table and the snapshot gap share
+   one writer (`trader.py:1056`), so that match is not independent; only "never credited"
+   has an independent broker source (Alpaca DIV is empty and cash matches, checked on one
+   day). Two rows are over-accrued by $5.86.
 5. **How long would frozen paper trading need to run to detect an effect of a given size
    in a sleeve of about 10%?** Answered: 23-40 years for 10 pp/yr at the sleeve level.
    See the table.

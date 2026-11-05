@@ -3592,7 +3592,7 @@
    "spy_cagr_pct": 15.054698502276832,
    "negative_full_calendar_years": "1 of 4 (2022)",
    "negative_quarters": "6 of 22 (first and last partial)",
-   "negative_months": "21 of 64",
+   "negative_months": "21 of 63",
    "bear_episodes_le_-20pct": 1,
    "max_drawdown": {
     "depth_pct": -24.496388853798678,
@@ -3744,7 +3744,8 @@
    },
    "n_quarters": 22,
    "n_negative_quarters": 6,
-   "n_months": 64,
+   "n_months": 63,
+   "n_months_note": "63 monthly returns, February 2021 to April 2026, starting from the 2021-01-29 close; an earlier count of 64 included a zero-length January 2021 stub",
    "n_negative_months": 21,
    "max_drawdown_primary": {
     "depth_pct": -24.496388853798678,

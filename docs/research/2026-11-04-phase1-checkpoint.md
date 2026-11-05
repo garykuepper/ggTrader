@@ -53,6 +53,8 @@ judgement about any strategy. It does not recommend strategies, deployments or w
     range (earliest 2013-10-16), so up to 31,967 rows were rewritten on today's yfinance adjustment
     basis. The 12:45 PT production run's incremental refresh does not rewrite whole histories, so
     this was not the same kind of write the cron makes daily.
+    Erratum 2026-11-05: at most 27,579 rows were rewritten; 4,388 older rows for CSRA, PARA, QRVO
+    and SBNY were not (see `docs/research/2026-11-04-root-cause-investigation.md`, section 6).
   - **Other rewrites cannot be ruled out or sized.** PostgreSQL's table statistics show every
     `ohlcv` chunk from 2026-07-22 to 2026-11-04 auto-analyzed between 23:48:57 and 23:49:09 PST.
     That fits the loader's incremental refresh (from about 2026-08-11 for other symbols, because

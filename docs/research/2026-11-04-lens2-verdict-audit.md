@@ -1109,7 +1109,9 @@ t-statistic behind any of them. The rules were fixed beforehand, so no class was
 - `grep` on `docs/changelog.md`, briefs and the CLI.
 - Python reads of every inventory artifact and every upstream lens JSON.
 - `scripts/lens2_build.py` (committed in fix round 1) rebuilds the JSON from committed inputs
-  only and writes nothing outside its `--out-json` / `--md-dir` paths:
+  plus one gitignored artifact (`results/research/research_20260511_193048/wfo_stats_snapshot.json`;
+  on a fresh clone the crypto-wfo-textbook-reset sensitivity row would read "listed path
+  missing") and writes nothing outside its `--out-json` / `--md-dir` paths:
   `scripts/run_capped.sh .venv/bin/python scripts/lens2_build.py --out-json <tmp>/new.json
   --md-dir <tmp>/md`. Result: the 114 classifications are identical to the committed
   `classifications`, and the committed JSON is that script's output. It holds the verdict-type
