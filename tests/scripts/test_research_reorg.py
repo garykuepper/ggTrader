@@ -8,17 +8,23 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from scripts.research_reorg import (
     PINNED_PATHS,
     ManifestRow,
+    MoveRefusedError,
     Unresolved,
+    apply_moves,
     build_ledger,
     check_manifest,
     load_manifest,
     main,
+    remove_leftover_dirs,
     rewrite_code,
     rewrite_markdown,
     sha256_file,
+    verify_moved,
 )
 
 OLD = "docs/research/"
@@ -834,3 +840,195 @@ def test_write_is_atomic_and_preserves_mode(tmp_path: Path, monkeypatch) -> None
     assert "docs/roadmap.md" not in failed["written"]
     assert target.read_bytes() == original
     assert not list(root.rglob("*.tmp"))
+
+
+# --- move and verify stages on a throwaway git repository -------------------------------------
+
+BRIEF_OLD = f"{OLD}briefs/2026-10-23-century-leverage.md"
+BRIEF_NEW = "research/allocation/century-leverage/2026-10-23-century-leverage-brief.md"
+JSON_OLD = f"{OLD}_century_results.json"
+JSON_NEW = "research/allocation/century-leverage/_century_results.json"
+REPORT_OLD = f"{OLD}2026-10-23-century-leverage.md"
+REPORT_NEW = "research/allocation/century-leverage/2026-10-23-century-leverage.md"
+GIT_ID = ["-c", "user.name=Test", "-c", "user.email=test@example.com"]
+
+
+def _git(root: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", *GIT_ID, *args], cwd=root, check=True, capture_output=True, text=True
+    ).stdout
+
+
+def _move_repo(tmp_path: Path) -> tuple[Path, list[ManifestRow], dict]:  # type: ignore[type-arg]
+    """Build and commit a small repo with research files; return root, rows and ledger."""
+    root = tmp_path / "repo"
+    _write(root, BRIEF_OLD, "# brief\nregistered before the run\n")
+    _write(root, JSON_OLD, '{"sharpe": 0.8, "path": "docs/research/x.md"}\n')
+    _write(root, REPORT_OLD, "# report\nNO-GO\n")
+    _write(root, "docs/other.md", "outside the tree\n")
+    _git(root, "init", "-q")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-q", "-m", "initial")
+    rows = [
+        _row(JSON_OLD, JSON_NEW, "result"),
+        _row(REPORT_OLD, REPORT_NEW),
+        _row(BRIEF_OLD, BRIEF_NEW, "brief"),
+    ]
+    ledger = build_ledger(rows, root, "test-head")
+    return root, rows, ledger
+
+
+def _tree_state(root: Path) -> tuple[dict[str, bytes], str]:
+    files = {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in root.rglob("*")
+        if p.is_file() and ".git" not in p.relative_to(root).parts
+    }
+    return files, _git(root, "status", "--porcelain")
+
+
+def test_apply_moves_preserves_history_and_content(tmp_path: Path) -> None:
+    root, rows, _ = _move_repo(tmp_path)
+    before = {r.current_path: (root / r.current_path).read_bytes() for r in rows}
+    moved = apply_moves(rows, root, dry_run=False)
+    assert moved == [(r.current_path, r.proposed_path) for r in rows]
+    _git(root, "commit", "-q", "-m", "move")
+    for row in rows:
+        assert (root / row.proposed_path).read_bytes() == before[row.current_path]
+        assert not (root / row.current_path).exists()
+    status = _git(root, "diff", "-M", "--name-status", "HEAD~1", "HEAD").splitlines()
+    assert sorted(status) == sorted(f"R100\t{r.current_path}\t{r.proposed_path}" for r in rows)
+    log = _git(root, "log", "--follow", "--oneline", "--", BRIEF_NEW).splitlines()
+    assert len(log) == 2
+
+
+def test_apply_moves_refuses_existing_destination(tmp_path: Path) -> None:
+    root, rows, _ = _move_repo(tmp_path)
+    _write(root, REPORT_NEW, "already here\n")
+    before = _tree_state(root)
+    with pytest.raises(MoveRefusedError, match="destination exists"):
+        apply_moves(rows, root, dry_run=False)
+    assert _tree_state(root) == before
+    assert (root / REPORT_NEW).read_text() == "already here\n"
+
+
+def test_apply_moves_refuses_missing_source_before_moving_anything(tmp_path: Path) -> None:
+    root, rows, _ = _move_repo(tmp_path)
+    _git(root, "rm", "-q", BRIEF_OLD)  # the last row: earlier rows must not move either
+    before = _tree_state(root)
+    with pytest.raises(MoveRefusedError, match="source missing"):
+        apply_moves(rows, root, dry_run=False)
+    assert _tree_state(root) == before
+    assert (root / JSON_OLD).exists()
+
+
+def test_apply_moves_dry_run_changes_nothing(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    root, rows, _ = _move_repo(tmp_path)
+    before = _tree_state(root)
+    plan = apply_moves(rows, root, dry_run=True)
+    assert plan == [(r.current_path, r.proposed_path) for r in rows]
+    assert _tree_state(root) == before
+    assert not (root / "research").exists()
+    assert BRIEF_NEW in capsys.readouterr().out
+
+
+def test_apply_moves_skips_rows_that_do_not_move(tmp_path: Path) -> None:
+    root, rows, _ = _move_repo(tmp_path)
+    rows = [*rows, _row("docs/other.md", "docs/other.md")]
+    moved = apply_moves(rows, root, dry_run=False)
+    assert ("docs/other.md", "docs/other.md") not in moved
+    assert len(moved) == 3
+
+
+def test_verify_passes_after_clean_move(tmp_path: Path) -> None:
+    root, rows, ledger = _move_repo(tmp_path)
+    apply_moves(rows, root, dry_run=False)
+    assert verify_moved(rows, ledger, root) == []
+
+
+def test_verify_fails_when_frozen_file_bytes_change(tmp_path: Path) -> None:
+    root, rows, ledger = _move_repo(tmp_path)
+    apply_moves(rows, root, dry_run=False)
+    # A re-serialization that keeps the meaning but not the bytes must still fail.
+    (root / JSON_NEW).write_text('{"sharpe":0.8,"path":"docs/research/x.md"}\n')
+    problems = verify_moved(rows, ledger, root)
+    assert any("sha256" in p and JSON_NEW in p for p in problems)
+
+
+def test_verify_fails_when_unfrozen_markdown_bytes_change(tmp_path: Path) -> None:
+    root, rows, ledger = _move_repo(tmp_path)
+    apply_moves(rows, root, dry_run=False)
+    (root / REPORT_NEW).write_text("# report\nGO\n")
+    assert any(REPORT_NEW in p for p in verify_moved(rows, ledger, root))
+
+
+def test_verify_flags_leftover_tracked_file_under_old_root(tmp_path: Path) -> None:
+    root, rows, ledger = _move_repo(tmp_path)
+    apply_moves(rows, root, dry_run=False)
+    _write(root, f"{OLD}stray.md", "left behind\n")
+    _git(root, "add", f"{OLD}stray.md")
+    problems = verify_moved(rows, ledger, root)
+    assert any("tracked" in p and f"{OLD}stray.md" in p for p in problems)
+
+
+def test_verify_flags_untracked_leftover_but_ignores_pycache(tmp_path: Path) -> None:
+    root, rows, ledger = _move_repo(tmp_path)
+    apply_moves(rows, root, dry_run=False)
+    _write(root, f"{OLD}__pycache__/x.cpython-312.pyc", b"\x00")
+    assert verify_moved(rows, ledger, root) == []
+    _write(root, f"{OLD}notes.txt", "scratch\n")
+    problems = verify_moved(rows, ledger, root)
+    assert any("untracked" in p and f"{OLD}notes.txt" in p for p in problems)
+
+
+def test_verify_flags_missing_destination_and_extra_file(tmp_path: Path) -> None:
+    root, rows, ledger = _move_repo(tmp_path)
+    apply_moves(rows, root, dry_run=False)
+    (root / REPORT_NEW).unlink()
+    _write(root, "research/allocation/century-leverage/extra.md", "new\n")
+    problems = verify_moved(rows, ledger, root)
+    assert any("missing destination" in p and REPORT_NEW in p for p in problems)
+    assert any("extra.md" in p for p in problems)
+
+
+def test_verify_flags_destination_too_deep(tmp_path: Path) -> None:
+    root, rows, ledger = _move_repo(tmp_path)
+    deep = "research/allocation/century-leverage/sub/_century_results.json"
+    rows = [_row(JSON_OLD, deep, "result"), *rows[1:]]
+    ledger = build_ledger(rows, root, "test-head")
+    apply_moves(rows, root, dry_run=False)
+    assert any("depth" in p and deep in p for p in verify_moved(rows, ledger, root))
+
+
+def test_remove_leftover_dirs_only_removes_empty_and_pycache(tmp_path: Path) -> None:
+    root, rows, _ = _move_repo(tmp_path)
+    apply_moves(rows, root, dry_run=False)
+    _write(root, f"{OLD}__pycache__/x.cpython-312.pyc", b"\x00")
+    (root / OLD / "empty" / "nested").mkdir(parents=True)
+    removed = remove_leftover_dirs(root)
+    assert not (root / OLD).exists()
+    assert f"{OLD}__pycache__" in removed
+    _write(root, f"{OLD}keep.md", "real\n")
+    remove_leftover_dirs(root)
+    assert (root / OLD / "keep.md").exists()
+
+
+def test_main_move_and_verify_cli(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    root, rows, ledger = _move_repo(tmp_path)
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        + "".join(f'"{r.current_path}","{r.proposed_path}","","{r.kind}",""\n' for r in rows)
+    )
+    ledger_path = tmp_path / "ledger.json"
+    ledger_path.write_text(json.dumps(ledger))
+    common = ["--manifest", str(manifest), "--root", str(root)]
+    assert main(["move", *common, "--dry-run"]) == 0
+    assert not (root / "research").exists()
+    verify = ["verify", "--stage", "moved", *common, "--ledger", str(ledger_path)]
+    assert main(verify) == 1
+    assert main(["move", *common]) == 0
+    assert main(verify) == 0
+    assert "OK" in capsys.readouterr().out
+    assert main(["verify", "--stage", "rewritten", *common, "--ledger", str(ledger_path)]) == 1
+    assert "stage not implemented" in capsys.readouterr().out

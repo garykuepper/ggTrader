@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tooling for the docs/research -> research/ reorganization (manifest, ledger, rewriter)."""
+"""Tooling for the docs/research -> research/ reorganization (manifest, ledger, rewrite, move)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import json
 import os
 import posixpath
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -129,6 +130,11 @@ REASON_FENCED = "fenced code"
 REASON_UNSUPPORTED = "unsupported link form"
 STATUS_OK = "ok"
 STATUS_FAILED = "failed"
+
+# --- Move and verify constants ---
+PYCACHE_DIR = "__pycache__"
+VERIFY_STAGES: tuple[str, ...] = ("moved", "rewritten", "final")
+IMPLEMENTED_STAGES = frozenset({"moved"})
 
 
 @dataclass(frozen=True)
@@ -1086,6 +1092,217 @@ def _cmd_rewrite(args: argparse.Namespace) -> int:
     return 0
 
 
+class MoveRefusedError(RuntimeError):
+    """Raised when the move pre-flight finds a problem; nothing has been moved."""
+
+
+def _move_pairs(rows: list[ManifestRow]) -> list[tuple[str, str]]:
+    """Return (source, destination) for every row that actually moves, in manifest order."""
+    return [(r.current_path, r.proposed_path) for r in rows if r.current_path != r.proposed_path]
+
+
+def _move_preflight(pairs: list[tuple[str, str]], root: Path) -> list[str]:
+    """Check every move before any is made: sources present, destinations free and unique."""
+    problems: list[str] = []
+    seen: set[str] = set()
+    sources = {src for src, _ in pairs}
+    for src, dst in pairs:
+        source = root / src
+        if not source.is_file() or source.is_symlink():
+            problems.append(f"source missing: {src}")
+        dest = root / dst
+        if dest.exists() or dest.is_symlink():
+            problems.append(f"destination exists: {dst}")
+        if dst in seen:
+            problems.append(f"destination used twice: {dst}")
+        if dst in sources:
+            problems.append(f"destination is another row's source: {dst}")
+        seen.add(dst)
+    return problems
+
+
+def apply_moves(rows: list[ManifestRow], root: Path, dry_run: bool) -> list[tuple[str, str]]:
+    """Move every manifest file to its destination with `git mv`, in manifest order.
+
+    The pre-flight checks all rows before the first move: a missing source, an existing
+    destination or a repeated destination refuses the whole run, so nothing is moved.
+    Rows whose current and proposed paths are equal are skipped. Destination folders are
+    created first; nothing is ever overwritten.
+
+    Args:
+        rows: Manifest rows.
+        root: Repository root the paths resolve against.
+        dry_run: When True, print the plan and change nothing.
+
+    Returns:
+        The (source, destination) pairs moved, or that would be moved in a dry run.
+
+    Raises:
+        MoveRefusedError: If the pre-flight finds any problem.
+        subprocess.CalledProcessError: If a `git mv` fails part-way (the message on stderr
+            says how far the run got).
+    """
+    pairs = _move_pairs(rows)
+    problems = _move_preflight(pairs, root)
+    if problems:
+        raise MoveRefusedError(
+            f"move refused, nothing moved ({len(problems)} problems): " + "; ".join(problems)
+        )
+    if dry_run:
+        for src, dst in pairs:
+            print(f"PLAN {src} -> {dst}")
+        return pairs
+    for done, (src, dst) in enumerate(pairs):
+        (root / dst).parent.mkdir(parents=True, exist_ok=True)
+        try:
+            subprocess.run(
+                ["git", "mv", "--", src, dst], cwd=root, check=True, capture_output=True, text=True
+            )
+        except subprocess.CalledProcessError as exc:
+            print(
+                f"FAIL git mv {src} -> {dst} after {done} of {len(pairs)} moves: "
+                f"{exc.stderr.strip()}",
+                file=sys.stderr,
+            )
+            raise
+    return pairs
+
+
+def remove_leftover_dirs(root: Path) -> list[str]:
+    """Delete `__pycache__` folders and empty folders left under docs/research.
+
+    A `__pycache__` folder is removed only when it holds nothing but `.pyc` files. No other
+    file is ever deleted.
+
+    Args:
+        root: Repository root.
+
+    Returns:
+        Repo-relative paths of the removed folders.
+    """
+    base = root / OLD_ROOT
+    if not base.is_dir():
+        return []
+    removed: list[str] = []
+    for cache in sorted(base.rglob(PYCACHE_DIR), reverse=True):
+        if not cache.is_dir() or cache.is_symlink():
+            continue
+        contents = list(cache.rglob("*"))
+        if all(p.is_file() and p.suffix == ".pyc" for p in contents):
+            shutil.rmtree(cache)
+            removed.append(cache.relative_to(root).as_posix())
+    dirs = [p for p in base.rglob("*") if p.is_dir() and not p.is_symlink()]
+    for folder in sorted(dirs, key=lambda p: len(p.parts), reverse=True) + [base]:
+        if folder.is_dir() and not any(folder.iterdir()):
+            folder.rmdir()
+            removed.append(folder.relative_to(root).as_posix())
+    return removed
+
+
+def _files_under(base: Path, root: Path) -> list[str]:
+    """List repo-relative files under `base`, ignoring `__pycache__` folders."""
+    if not base.is_dir():
+        return []
+    return sorted(
+        p.relative_to(root).as_posix()
+        for p in base.rglob("*")
+        if (p.is_file() or p.is_symlink()) and PYCACHE_DIR not in p.relative_to(root).parts
+    )
+
+
+def verify_moved(rows: list[ManifestRow], ledger: dict[str, Any], root: Path) -> list[str]:
+    """Check the tree right after the move-only step.
+
+    Checks: every destination exists and matches its ledger sha256 (all files, frozen or
+    not); the number of files under research/ equals the number of manifest rows; no
+    destination is deeper than research/<category>/<study>/<file>; nothing is tracked
+    under docs/research; and no untracked file is left there (`__pycache__` is ignored).
+
+    Args:
+        rows: Manifest rows.
+        ledger: The pre-move ledger (`files` entries keyed by `current_path`).
+        root: Repository root.
+
+    Returns:
+        Problem descriptions; an empty list means the gate passes.
+    """
+    problems: list[str] = []
+    entries = {e["current_path"]: e for e in ledger.get("files", [])}
+    if len(entries) != len(rows):
+        problems.append(f"ledger has {len(entries)} files but the manifest has {len(rows)} rows")
+    for row in rows:
+        entry = entries.get(row.current_path)
+        dest = root / row.proposed_path
+        if entry is None:
+            problems.append(f"not in ledger: {row.current_path}")
+        elif entry.get("proposed_path") != row.proposed_path:
+            problems.append(
+                f"ledger destination differs: {row.current_path} -> "
+                f"{entry.get('proposed_path')} (manifest {row.proposed_path})"
+            )
+        if not dest.is_file():
+            problems.append(f"missing destination: {row.proposed_path}")
+        elif entry is not None and sha256_file(dest) != entry["sha256"]:
+            problems.append(f"sha256 differs from ledger: {row.proposed_path}")
+        if (
+            not row.proposed_path.startswith(f"{NEW_ROOT}/")
+            or len(PurePosixPath(row.proposed_path).parts) > MAX_COMPONENTS
+        ):
+            problems.append(
+                f"depth exceeds research/<category>/<study>/<file>: {row.proposed_path}"
+            )
+    on_disk = _files_under(root / NEW_ROOT, root)
+    if len(on_disk) != len(rows):
+        problems.append(f"{len(on_disk)} files under {NEW_ROOT}/ but {len(rows)} manifest rows")
+    expected = {r.proposed_path for r in rows}
+    problems.extend(f"unexpected file under {NEW_ROOT}/: {p}" for p in on_disk if p not in expected)
+    tracked = sorted(tracked_research_files(root))
+    problems.extend(f"still tracked under {OLD_ROOT}: {p}" for p in tracked)
+    tracked_set = set(tracked)
+    problems.extend(
+        f"untracked leftover under {OLD_ROOT}: {p}"
+        for p in _files_under(root / OLD_ROOT, root)
+        if p not in tracked_set
+    )
+    return problems
+
+
+def _cmd_move(args: argparse.Namespace) -> int:
+    """Run `move`: preflight, then move (or print the plan) and clear leftover folders."""
+    rows = load_manifest(Path(args.manifest))
+    root = Path(args.root)
+    try:
+        pairs = apply_moves(rows, root, args.dry_run)
+    except MoveRefusedError as exc:
+        print(f"FAIL {exc}")
+        return 1
+    renamed = sum(PurePosixPath(s).name != PurePosixPath(d).name for s, d in pairs)
+    if args.dry_run:
+        print(f"DRY-RUN {len(pairs)} moves planned, {renamed} basename changes, 0 collisions")
+        return 0
+    for folder in remove_leftover_dirs(root):
+        print(f"REMOVED {folder}")
+    print(f"MOVED {len(pairs)} files, {renamed} basename changes")
+    return 0
+
+
+def _cmd_verify(args: argparse.Namespace) -> int:
+    """Run `verify`: check one stage's gate and print problems one per line."""
+    if args.stage not in IMPLEMENTED_STAGES:
+        print(f"FAIL stage not implemented: {args.stage}")
+        return 1
+    rows = load_manifest(Path(args.manifest))
+    ledger = json.loads(Path(args.ledger).read_text(encoding="utf-8"))
+    problems = verify_moved(rows, ledger, Path(args.root))
+    for problem in problems:
+        print(f"PROBLEM {problem}")
+    if problems:
+        print(f"FAIL stage={args.stage} {len(problems)} problems")
+        return 1
+    print(f"OK stage={args.stage} {len(rows)} files byte-identical to the ledger")
+    return 0
+
+
 def current_git_head(root: Path = REPO_ROOT) -> str:
     """Return `git rev-parse HEAD` for the repository at `root`."""
     return subprocess.run(
@@ -1149,6 +1366,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--root", default=str(REPO_ROOT), help="Repository root (default: this repository)."
     )
     rewrite.set_defaults(func=_cmd_rewrite)
+    move = sub.add_parser("move", help="git mv every manifest file to its destination.")
+    move.add_argument("--manifest", required=True, help="Path to the manifest CSV.")
+    move.add_argument("--dry-run", action="store_true", help="Print the plan; change nothing.")
+    move.add_argument(
+        "--root", default=str(REPO_ROOT), help="Repository root (default: this repository)."
+    )
+    move.set_defaults(func=_cmd_move)
+    verify = sub.add_parser("verify", help="Check one stage's gate (exit 1 on any problem).")
+    verify.add_argument("--stage", required=True, choices=VERIFY_STAGES, help="Gate to check.")
+    verify.add_argument("--manifest", required=True, help="Path to the manifest CSV.")
+    verify.add_argument("--ledger", required=True, help="Path to the pre-move ledger JSON.")
+    verify.add_argument(
+        "--root", default=str(REPO_ROOT), help="Repository root (default: this repository)."
+    )
+    verify.set_defaults(func=_cmd_verify)
     return parser
 
 
