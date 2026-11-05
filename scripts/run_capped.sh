@@ -54,7 +54,7 @@ set +e
 systemd-run --user --scope -q --collect \
     -p MemoryMax="$MEM_MAX" \
     -p MemorySwapMax=0 \
-    env "PATH=$REPO/.venv/bin:$PATH" PYTHONPATH=src "$@"
+    env "PATH=$REPO/.venv/bin:$PATH" "$@"
 status=$?
 set -e
 
