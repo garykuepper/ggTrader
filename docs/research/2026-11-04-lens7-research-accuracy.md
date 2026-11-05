@@ -22,7 +22,7 @@ each verdict reached under a pass bar set before the result was known.
 | Are the headline numbers true? | Yes for every headline that has a raw file. I recomputed five of them from raw data with my own code (production replica, its holdout, momentum, factor and net-issuance screens) and they match to the stored precision. I read 27 more directly from their files. One mismatch (position sizing) is a labelling problem: the report's number comes from a different, earlier run that has no raw file. |
 | How much has no raw file? | 103 of 144 inventory rows (72%) are prose only. These include most of the "beat SPY" history (1.12, 1.14, 0.84 Sharpe), the July event-study NO-GOs, the live paper-versus-SPY figure, and all crypto results except one IBIT file. |
 | Do the academic sources say what the reports say? | 11 of 14 citations checked against free sources say what the reports say. One (the "profitability and investment were introduced 2013 to 2015" framing) is only partly accurate. Two were not examined. |
-| Were pass bars set first? | For the October studies, mostly yes: 18 rows pre-registered, 4 amended, 1 late (momentum). For everything before 2026-09-24, no committed per-study bar exists: 48 verdict rows have no brief. This includes all July NO-GOs and every early "beat SPY" claim. |
+| Were pass bars set first? | For the October studies, mostly yes: 18 rows pre-registered, 4 amended, 1 late (momentum). The `docs/research/briefs/` folder starts on 2026-09-24. The 2026-09-10 strategy audit (`083afc7d`) is the earliest committed source of per-study "Success Criteria". Nothing earlier than 2026-09-10 has a committed per-study bar. 48 verdict rows have no brief, including all July NO-GOs and every early "beat SPY" claim. |
 
 Findings that matter for the owner's question (raw return of 2x SPY):
 
@@ -31,9 +31,15 @@ Findings that matter for the owner's question (raw return of 2x SPY):
    14.8294%. That is -0.6423 pp/yr with NW t -0.6898, the same as the report.
 2. **The stopped holdout did produce a completed primary arm.** It shows CAGR 15.29%
    against SPY 14.29% (+1.00 pp/yr, NW t 0.69, 2,750 days). The closure amendment marks it
-   non-citable, and it sits on tainted prices. Phase 0 and the FOMC amendment say "no
-   holdout arm completed"; that text describes an earlier attempt that was interrupted.
-   Even taken at face value, this arm fails the t ≥ 3 bar.
+   non-citable, and it sits on tainted prices (`citable` false, `stop_flags`
+   ["tainted_trade:primary"]). Only the four sensitivity arms (lag0, cost3, cost10, cash0)
+   never ran. The wording "no holdout arm completed" appears in three places: the
+   investigation spec section 4, the results JSON's own `audit_stop.holdout` string, and
+   the FOMC amendment (`docs/research/briefs/2026-10-19-production-replica-fomc-timing-amendment.md:16-17`).
+   All three describe an earlier attempt stopped with SIGTERM. The Phase 0 audit does not
+   use that wording; it calls the holdout "unusable because of bad price data"
+   (`docs/research/2026-11-04-phase0-trust-audit.md:71-72`). Even taken at face value, the
+   completed arm fails the t ≥ 3 bar.
 3. **The production-replica verdict was reached under an amended rule.** The original
    brief said no verdict could be issued while live parity was below 100% or while an
    artifact stop was open. The closure amendment, committed nine seconds before the results
@@ -44,7 +50,7 @@ Findings that matter for the owner's question (raw return of 2x SPY):
    plan and the results were all added in one commit (`bf0e8279`). The French archive was
    downloaded about 3 h 20 min before that commit. The two-part standard also replaced the
    2026-10-19 t ≥ 3 bar after the xs_momentum replay (t 0.76) was already known.
-5. **Every early "beat SPY" headline has neither a raw file nor a pre-registered bar.**
+5. **Every early "beat SPY" headline has neither a raw file nor a pre-registered bar.** All of them predate the 2026-09-10 audit, the earliest committed per-study criteria.
    These are the 1.12 Sharpe baseline, the 1.14 three-sleeve blend, the 0.84 "first to
    beat SPY" figure and the 16.2% CAGR. Lenses 1 and 6 already void most of them for other
    reasons.
@@ -105,7 +111,7 @@ The Haiku pass covered 41 rows. Its raw output was 31 yes, 2 partial, 1 no and
 
 | Source of check | Rows | What it means |
 |---|---|---|
-| Recomputed by me from raw data or curves | 5 | `stocks-production-replica`, `stocks-production-replica-holdout-2010-2020`, `stocks-momentum-french-screen`, `stocks-factor-screen-h1-h4`, `stocks-net-issuance-screen` |
+| Recomputed by me from raw data or curves | 5 | `stocks-production-replica`, `stocks-production-replica-holdout-2010-2020`, `stocks-momentum-french-screen`, `stocks-factor-screen-h1-h4`, `stocks-net-issuance-screen`. For the holdout row, only its CAGR and t were recomputed from the curves; coverage and tainted counts were counted from JSON keys. |
 | Read by me from the artifact key (spot-check of Haiku) | 27 | All other headline rows (A23, A24, century, PIT core, ic/kelly PIT, xs_momentum, dual momentum, parity, cross-asset static/trend/holdout, month-end, FOMC, KEEP blend, pre-PIT ic/kelly, anchor-fix, corrected-tape, WFO policy), plus all 10 non-yes rows |
 | Haiku output, not re-checked | 9 | Mostly event-audit and process rows with count headlines (see JSON) |
 | Prose only (no raw artifact) | 103 | Not recomputable |
@@ -131,13 +137,19 @@ Of the 31 rows Haiku marked yes, I re-checked 22 (71%). The required minimum was
 different run than its cited artifact). There are no numerical disagreements between any
 artifact and the report that cites it. Two smaller notes:
 
-- The PIT core artifact (`docs/research/_pit_rebaseline_20260923.json`) does not contain
-  the SPY CAGR (13.0%) or MaxDD (-22.1%) that reports quote beside it. Those come from the
-  KEEP JSON on the same window.
-- The holdout's completed primary arm (finding 2) is a record-accuracy issue: the text
+- The PIT core artifact (`docs/research/_pit_rebaseline_20260923.json`) and the pre-PIT
+  ic/kelly artifact (`docs/research/_ic_kelly_rebaseline_20260923.json`) store SPY CAGR
+  13.0% and MaxDD -22.1% only as text. Each has the line "SPY baseline: Sharpe 0.78 | CAGR
+  13.0% | MaxDD -22.1%" three times in its `table` strings and no numeric key. Only
+  `spy_sharpe` is numeric. The figures match; the same values are numeric keys in
+  `docs/research/_core_spy_blend_20260924.json` (12.96 / -22.09).
+- The holdout's completed primary arm (finding 2) is a record-accuracy issue. The text
   "no holdout portfolio arms completed"
-  (`docs/research/briefs/2026-10-19-production-replica-fomc-timing-amendment.md`) is stale
-  relative to the committed JSON.
+  (`docs/research/briefs/2026-10-19-production-replica-fomc-timing-amendment.md:17`) and
+  the JSON's `audit_stop.holdout` string describe the earlier SIGTERM-stopped attempt.
+  `windows.holdout.arms` holds the completed `primary` arm. The JSON also has a `closure`
+  block: verdict NO-GO, stage pretax_fail, holdout INCONCLUSIVE, live replication
+  UNVERIFIED.
 
 **Figures in this report and how each was checked:**
 
@@ -226,13 +238,18 @@ Small caveats:
   owner allocation decision, not re-judged against the bar.
 - ensemble_ic: the 09-10 text reads "MaxDD ≤ -10%", which literally points the wrong way.
   The 09-23 report adds "above the control". IC fails every reading.
-- ensemble_kelly: no Kelly-specific criteria exist. They were borrowed from IC.
+- ensemble_kelly: the 2026-09-10 audit gives no Kelly-specific criteria. The 09-23 report applies the IC criteria to Kelly. For that reason `stocks-ensemble-kelly-pit` is "no brief found". The combined pre-PIT row `stocks-ic-kelly-rebaseline-pre-pit` is "pre-registered" for its IC half only, and its JSON note says the Kelly half has no bar of its own.
 - FOMC: the clustered re-analysis came after the first result and lowered net t from 1.57
   to 0.98. That is the conservative direction, and both fail the registered bar of net
   t ≥ 3 and WFE ≥ 0.50 (WFE was 0.24).
 
 **No brief found (48 verdict rows).** The `docs/research/briefs/` directory begins
-2026-09-24. Before that:
+2026-09-24 (first file `664cadee`). The earliest committed per-study criteria are the
+"Success Criteria" items in the 2026-09-10 strategy audit
+(`docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:183-212`,
+`083afc7d`, 2026-09-10 22:08). Those cover xs_momentum/dual_momentum, cross-asset trend,
+constrained ensemble_ic, pre-FOMC drift and retail attention. Nothing committed before
+2026-09-10 sets a per-study bar. Rows without a bar:
 
 - **July studies** (PEAD, insider, congress, short interest, short volume, index deletion,
   MAX, pairs, headline sentiment, leveraged rotation and trend, commodity trend, FOMC WFO,
@@ -272,13 +289,14 @@ number was misquoted.
 
 **Q3. Was each verdict reached under the pre-registered bar or one chosen after the
 result?**
-- From 2026-09-24 onward: mostly yes.
+- From 2026-09-10 onward (the strategy audit's Success Criteria, then the briefs folder from 2026-09-24): mostly yes.
 - Production replica: the verdict rests on an amendment written after the results. Its
   direction matches the original bars, but it replaced "no verdict" with NO-GO.
 - Momentum: pre-registration is self-attested only, and the standard itself was rewritten
   after a related result.
-- Before 2026-09-24: unknown-to-negative. No committed per-study bar exists for 48 verdict
-  rows, including all early "beat SPY" claims and all July NO-GOs. The cheapest test is a
+- Before 2026-09-10: unknown-to-negative. Nothing committed earlier sets a per-study bar.
+  48 verdict rows have no brief, including all early "beat SPY" claims and all July
+  NO-GOs. The cheapest test is a
   search of private session transcripts for each brief's text and timestamp. Those are
   outside the repo and were not searched here.
 
@@ -302,7 +320,11 @@ Commands run, all read-only:
 - My own scripts, run with `.venv/bin/python -I` on scratchpad copies: `recompute_replica.py`
   on `docs/research/_production_replica_curves.csv` (output: "primary primary n 1317 ...
   CAGR365 14.1871 vs 14.8294 NWt5 -0.6898"; "holdout primary n 2750 ... CAGR365 15.2857
-  vs 14.2855 NWt5 0.6884"), and `recompute_french.py` on unzipped frozen archives (output:
+  vs 14.2855 NWt5 0.6884"). The script's "CAGR365" label is a misnomer: it uses
+  365.25-day years (calendar days / 365.25), which is the only convention that reproduces
+  the stored figures. Holdout coverage (87.39%) and the tainted counts (21 matches, 11
+  pairs) were counted from JSON keys, not recomputed from raw data. Only CAGR and t came
+  from the curves., and `recompute_french.py` on unzipped frozen archives (output:
   "MOM big (3.0524342824851454, 0.0818628053081305, 1192)"; "H4 50/50 (1.338846128355209,
   -0.5592...)"; "NI H1 BIG NegNI (0.2589571335822779, 0.4822...)").
 - `python3` JSON reads of each artifact key cited in `_lens7_recompute.json`.
@@ -337,8 +359,9 @@ was not needed. No tests were run.
 - ✅ Academic claims: 11 verified, 1 partly accurate, with URLs.
 - ❓ Two minor citations: not examined (time); they set no bar.
 - ✅ Pre-registration for October studies: classified, with commits.
-- ❓ Pre-registration before 2026-09-24: unknown. No brief exists in the repo; the
-  cheapest test is a search of session transcripts outside the repo.
+- ❓ Pre-registration before 2026-09-10: unknown. No committed per-study bar exists in
+  the repo before the 2026-09-10 audit; the cheapest test is a search of session
+  transcripts outside the repo.
 - ✅ Production-replica closure, parity and FOMC amendments and the stopped holdout:
   surfaced and timed.
 - ✅ Falsifiers written before the evidence; steelman answered.

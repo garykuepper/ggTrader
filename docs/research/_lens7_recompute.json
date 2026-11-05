@@ -234,7 +234,7 @@
    "recomputed_by_me": null,
    "source_of_check": "haiku_spot_checked",
    "match": "yes",
-   "evidence": "Haiku \"partial\" resolved: values match; SPY CAGR/MaxDD come from _core_spy_blend_20260924.json (12.96 / -22.09). The report itself calls these CAGRs artifacts of one OOS day.",
+   "evidence": "Haiku \"partial\" resolved: values match (IC 0.614 / 33.95 / -14.67; Kelly 0.598 / 38.24 / -15.81). SPY CAGR 13.0% and MaxDD -22.1% are stored only as text in the table strings (\"SPY baseline: Sharpe 0.78 | CAGR 13.0% | MaxDD -22.1%\", 3 occurrences); there is no numeric key (numeric 12.96 / -22.09 in _core_spy_blend_20260924.json). The report itself calls these CAGRs artifacts of one OOS day.",
    "window_in_artifact": "meta eval_start 2021-01-31, eval_end 2026-04-30",
    "raw_artifact": "docs/research/_ic_kelly_rebaseline_20260923.json",
    "value_read_by_me": "IC Sharpe 0.614, CAGR 33.95, MaxDD -14.67; Kelly 0.598 / 38.24 / -15.81"
@@ -347,7 +347,7 @@
    "recomputed_by_me": "coverage 1,204,838/1,378,759 = 87.39%; 21 tainted matches, 11 distinct symbol/date pairs",
    "source_of_check": "recomputed_by_me",
    "match": "yes",
-   "evidence": "Counted from windows.holdout.coverage_member_days and arms.primary.tainted_trades. Also found: the holdout primary arm completed (curves CSV: CAGR 15.29% vs SPY 14.29%, +1.00 pp, NW t 0.69, n=2,750), declared non-citable by the closure amendment; audit_stop.holdout text \"no holdout arms completed\" describes an earlier interrupted attempt.",
+   "evidence": "Coverage (1,204,838/1,378,759 = 87.39%) and tainted counts (21 matches, 11 distinct symbol/date pairs) were counted from JSON keys windows.holdout.coverage_member_days and arms.primary.tainted_trades, not recomputed from raw data. Only CAGR and NW t were recomputed, from the curves CSV: the holdout PRIMARY arm completed (windows.holdout.arms = [\"primary\"]; CAGR 15.2857 vs SPY 14.2855, NW t 0.6884, n_obs 2750; citable false; stop_flags [\"tainted_trade:primary\"]). Only its four sensitivity arms (lag0, cost3, cost10, cash0) never ran (closure amendment, Evidence section). The JSON also has a closure block (verdict NO-GO, stage pretax_fail, holdout INCONCLUSIVE, live_replication UNVERIFIED). The wording \"no holdout arm completed\" comes from the spec section 4, the JSON audit_stop.holdout string and the FOMC amendment line 17, all describing an earlier SIGTERM-stopped attempt. It is not in the Phase 0 audit, which calls the holdout \"unusable because of bad price data\" (lines 71-72).",
    "window_in_artifact": "windows.holdout eval_start=2010-01-31; eval_end=2020-12-31",
    "raw_artifact": "docs/research/_production_replica_results.json"
   },
@@ -400,7 +400,7 @@
    "recomputed_by_me": null,
    "source_of_check": "haiku_spot_checked",
    "match": "yes",
-   "evidence": "Read ensemble.*; SPY CAGR 12.96 and MaxDD -22.09 are not in this file (they are in _core_spy_blend_20260924.json, same window). 17/17 gate count predates the 2026-10-19 DSR fix (09f9f401) and is void.",
+   "evidence": "Read ensemble.* (Sharpe 0.592, CAGR 3.08, MaxDD -5.28, 17/17; numeric spy_sharpe 0.779). SPY CAGR 13.0% and MaxDD -22.1% are stored only as text in the table strings (\"SPY baseline: Sharpe 0.78 | CAGR 13.0% | MaxDD -22.1%\", 3 occurrences); there is no numeric key. They match the numeric 12.96 / -22.09 in _core_spy_blend_20260924.json. The 17/17 gate count predates the 2026-10-19 DSR fix (09f9f401) and is void.",
    "window_in_artifact": "ensemble.eval_start=2021-01-31; ensemble.eval_end=2026-04-30",
    "raw_artifact": "docs/research/_pit_rebaseline_20260923.json",
    "value_read_by_me": "Sharpe 0.592, CAGR 3.08, MaxDD -5.28, 17/17; SPY Sharpe 0.779"
@@ -467,7 +467,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-after-tax-lot-engine",
@@ -477,7 +477,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-analyst-revisions",
@@ -487,7 +487,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-anomaly-driven-demand",
@@ -497,7 +497,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-avb-eqr-merger-holding",
@@ -507,7 +507,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-bb-reversion",
@@ -517,7 +517,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-century-leverage",
@@ -547,7 +547,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-core-spy-blend-keep",
@@ -567,7 +567,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-dual-momentum",
@@ -587,7 +587,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-ensemble-conviction",
@@ -597,7 +597,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-ensemble-ic-2026-06-28",
@@ -607,7 +607,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-ensemble-ic-pit",
@@ -627,7 +627,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-ensemble-kelly-pit",
@@ -637,7 +637,7 @@
    "brief_date": null,
    "result_date": "2026-09-23 00:34",
    "pass_bar": "Report applies the ensemble_ic criteria from the 2026-09-10 audit.",
-   "note": "The 09-10 audit lists no Kelly-specific criteria (only the ic item at line 197)."
+   "note": "The 2026-09-10 audit lists no Kelly-specific criteria (only the ensemble_ic item at line 197); the 09-23 report applies the IC criteria. Hence no brief found, consistent with the Kelly half of stocks-ic-kelly-rebaseline-pre-pit."
   },
   {
    "id": "stocks-ensemble-ndh-baseline-1-12",
@@ -647,7 +647,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-ensemble-wfo-validated-2026-06-20",
@@ -657,7 +657,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-equity-diversification-sleeves",
@@ -667,7 +667,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-equity-pre-fomc-drift-intake",
@@ -677,7 +677,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-event-audit-readiness-decision",
@@ -717,7 +717,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-factor-screen-h1-h4",
@@ -737,7 +737,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-form-144-inversion",
@@ -747,7 +747,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-forward-paper-standard",
@@ -767,7 +767,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-headline-sentiment",
@@ -787,7 +787,7 @@
    "brief_date": "2026-09-10",
    "result_date": "2026-09-23 00:34",
    "pass_bar": "Same as ensemble_ic.",
-   "note": "Run declared invalid (single-day artifact), not closed."
+   "note": "Pre-registered for the ensemble_ic half only (2026-09-10 audit line 197). The Kelly half has no criteria of its own; the IC criteria were applied to it, as for stocks-ensemble-kelly-pit (classified no brief found). Run declared invalid (single-day artifact), not closed."
   },
   {
    "id": "stocks-idio-vol",
@@ -797,7 +797,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-index-deletion-fade",
@@ -847,7 +847,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-intraday-feasibility",
@@ -867,7 +867,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-leveraged-rotation",
@@ -897,7 +897,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-macd-divergence",
@@ -907,7 +907,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-max-effect",
@@ -927,7 +927,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-ml-entry-gate-falsified",
@@ -937,7 +937,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-momentum-french-screen",
@@ -957,7 +957,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-nasdaq100-single-core",
@@ -967,7 +967,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-net-issuance-screen",
@@ -987,7 +987,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-option-iv-skew",
@@ -997,7 +997,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-overnight-gap",
@@ -1007,7 +1007,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-pairs-stat-arb",
@@ -1027,7 +1027,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-pead",
@@ -1087,7 +1087,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-rsi-reversion",
@@ -1097,7 +1097,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-short-interest",
@@ -1127,7 +1127,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-sp500-core-anchor-fix-reproduction",
@@ -1137,7 +1137,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-sp500-core-corrected-tape-rebaseline",
@@ -1147,7 +1147,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-sp500-core-pit-rebaseline",
@@ -1167,7 +1167,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-spy-duplicate-rows",
@@ -1177,7 +1177,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-three-pct-position-size",
@@ -1187,7 +1187,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-three-sleeve-blend-1-14",
@@ -1197,7 +1197,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-trailing-stops",
@@ -1207,7 +1207,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-turn-of-month-rotation",
@@ -1217,7 +1217,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-two-symbol-sweep-design",
@@ -1227,7 +1227,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-vix-entry-throttling",
@@ -1237,7 +1237,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-vol-managed-spy",
@@ -1247,7 +1247,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-volume-bb-reversion",
@@ -1257,7 +1257,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-voter-ablation-5-voter",
@@ -1267,7 +1267,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-wfo-anchor-leakage-fix",
@@ -1277,7 +1277,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-wfo-policy-synthetic",
@@ -1297,7 +1297,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-xs-momentum-2026-06",
@@ -1307,7 +1307,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "stocks-xs-momentum-corrected-replay",
@@ -1337,7 +1337,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "cross-asset-fomc-drift-corrected-harness",
@@ -1387,7 +1387,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "cross-asset-sleeve-holdout-2007-2011",
@@ -1437,7 +1437,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-config-tweaks-reverted-2026-04-02",
@@ -1447,7 +1447,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-defi-tokenized-equity-arb",
@@ -1457,7 +1457,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-diversity-cap-disabled-2026-05-07",
@@ -1467,7 +1467,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-edge-search-2026-06-08",
@@ -1477,7 +1477,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-funding-carry-phase4",
@@ -1487,7 +1487,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-ibit-overnight-session",
@@ -1497,7 +1497,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-kraken-live-bot-pnl",
@@ -1507,7 +1507,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-perp-funding-carry-candidate",
@@ -1517,7 +1517,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-spot-etf-flow-persistence",
@@ -1527,7 +1527,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-tsmom-btc",
@@ -1537,7 +1537,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-venue-migration-path-d",
@@ -1547,7 +1547,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-web-research-batch-2026-10-25",
@@ -1557,7 +1557,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-wfo-overfitting-param-stability",
@@ -1567,7 +1567,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   },
   {
    "id": "crypto-wfo-textbook-reset",
@@ -1577,7 +1577,7 @@
    "brief_date": null,
    "result_date": null,
    "pass_bar": null,
-   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+   "note": "No brief in docs/research/briefs/ (folder starts 2026-09-24), no matching Success Criteria in the 2026-09-10 audit (083afc7d, the earliest committed per-study criteria), and no pass-bar statement found in the source report."
   }
  ],
  "academic_claims": [
@@ -1681,5 +1681,5 @@
   }
  ],
  "prose_only_count": 103,
- "notes": "Lens 7, 2026-11-04. recompute: recomputed_by_me = independent recomputation from raw data or curves; value_read_by_me = value read directly from the artifact key (spot-check); haiku_unchecked = Haiku output not re-verified."
+ "notes": "Lens 7, 2026-11-04; corrected 2026-11-04 per review. recompute: recomputed_by_me = independent recomputation from raw data or curves; value_read_by_me = value read directly from the artifact key (spot-check); haiku_unchecked = Haiku output not re-verified. match is a string enum: \"yes\" | \"partial\" | \"no\" | \"cannot_locate\". CAGR recomputations use calendar days / 365.25. Pre-registration: docs/research/briefs/ starts 2026-09-24; the 2026-09-10 audit (083afc7d) is the earliest committed per-study Success Criteria; nothing earlier sets a per-study bar."
 }
