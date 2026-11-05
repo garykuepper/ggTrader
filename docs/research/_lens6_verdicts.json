@@ -1,0 +1,542 @@
+[
+ {
+  "id": "stocks-avb-eqr-merger-holding",
+  "spec_matches_code": "partly",
+  "evidence": "Live excludes broker-untradable holdings from slots and sells (trader.py:605-620); the replica has no merger handling, it only force-sells on a missing price (replica.py:181-183). The tape fault itself is Lens 1.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-bb-reversion",
+  "spec_matches_code": "partly",
+  "evidence": "Current code matches the written rule (hand replay 21/21 entry events, all exits; bb_signals indicators.py:67-81 is a crossing event, changelog says 'touch'). The 0.80 headline: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-cash-sweep-live",
+  "spec_matches_code": "partly",
+  "evidence": "Live sweep (trader.py:781-835, 937-972) and the replica call the same cash_sweep functions (replica.py:14-20, 226-282); the lab WFO and the KEEP blend never simulated the sweep (KEEP scaled returns linearly per its brief).",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-catastrophe-stop",
+  "spec_matches_code": "yes",
+  "evidence": "Code matches the stated -25% env-flagged stop (catastrophe_stop.py:28-43, trader.py:718-758); .env sets CATASTROPHE_STOP_ENABLED=true. Modelled in the replica (replica.py:200-202), absent from lab WFO.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-congress-trades",
+  "spec_matches_code": "partly",
+  "evidence": "Code gates on filing_date with a 1-day lag (congress_trades.py:31-34); not hand-replayed; July run predates the 2026-08-20 day-shift fix, so event-date joins carried a one-day offset (Lens 1).",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-conviction-bb",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-core-spy-blend-keep",
+  "spec_matches_code": "no",
+  "evidence": "KEEP measured WFO-picked parameters (all 17 folds: min_agree 3-4, divergence 10, vol_mult 1.5 in docs/research/_pit_rebaseline_20260923.json) while live runs class defaults min_agree 2, divergence 20, vol_mult 2.0 (ensemble.py:70-90, signal_runner.py:85-86); no position cap, percent-of-cash sizing and same-bar close fills (simulate.py:249-290). It did not test the code that runs live.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-dsr-gate-correction",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made; gates.py fix commit 09f9f40 (2026-10-19) exists",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-dual-momentum",
+  "spec_matches_code": "yes",
+  "evidence": "DualMomentum drops picks with momentum < 0 to cash without renormalizing (momentum.py:76-85), as written; the base 12-1 ranking matched a hand replay (xs_momentum replay).",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-ema-cross",
+  "spec_matches_code": "partly",
+  "evidence": "Rule code ema_signals (indicators.py:141-149) is a standard 20/50 EMA cross; headline 0.90 from a 2026-06 run: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-ensemble-conviction",
+  "spec_matches_code": "yes",
+  "evidence": "Sizes = 1% + mean strength of agreeing voters x 3% (ensemble.py:434-441), matching the changelog 2026-06-22 description (1%-4% by average strength). No headline number to check.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-ensemble-ic-2026-06-28",
+  "spec_matches_code": "no",
+  "evidence": "June run: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec; compared against the later-voided 1.12 baseline.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-ensemble-ic-pit",
+  "spec_matches_code": "yes",
+  "evidence": "IC weights are causal: forward returns are only used up to horizon bars before each rebalance date (ic_weights.py:51-59, 75-81); run after c9d1abe. Gate counts predate the DSR fix 09f9f40, so '11/17 gates' is not a significance count. Not hand-replayed.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-ensemble-kelly-2026-07",
+  "spec_matches_code": "no",
+  "evidence": "July run: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-ensemble-kelly-pit",
+  "spec_matches_code": "yes",
+  "evidence": "Kelly fraction uses only trades closed strictly before each entry (kelly.py:84-110, 166-175); run after c9d1abe; gate counts predate the DSR fix. Not hand-replayed.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-ensemble-ndh-baseline-1-12",
+  "spec_matches_code": "no",
+  "evidence": "Produced before 2eafab1 and c9d1abe on the day-shifted tape with duplicate SPY rows; did not reproduce (0.97 on 2026-08-19). Code at run time did not match its honest-OOS spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-ensemble-paper-deployment",
+  "spec_matches_code": "partly",
+  "evidence": "Live calls the same EnsembleSignal code (signal_runner.py:85-98) but with untested defaults, today's partial bar, a 3-name cap filled A to Z, 3.3%-of-NAV sizing and no ATR/trailing stop; see the difference table.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-ensemble-wfo-validated-2026-06-20",
+  "spec_matches_code": "no",
+  "evidence": "3-voter ensemble at the time (changelog 2026-06-18: bb+rsi+ema) versus today's 5-voter default (ensemble.py:37-39); run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-equity-diversification-sleeves",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-equity-pre-fomc-drift-intake",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Rejected on intake; no strategy code was written for it, so there is nothing to compare.",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-event-timing-audit-decision",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Decision row, no strategy code under test; event-timing reconstruction code not examined by Lens 6.",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-exit-rule-sweep",
+  "spec_matches_code": "partly",
+  "evidence": "td_stop and tp_stop are implemented as described (ensemble.py:211-221, simulate.py:243-246); 2026-06-28 run: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-forward-paper-standard",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Design standard only; no code to compare.",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-headline-sentiment",
+  "spec_matches_code": "partly",
+  "evidence": "select() only reads sentiment up to asof and targets start the next bar (headline_sentiment.py:64-100); headline timestamp availability not checked; not replayed.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-ic-kelly-rebaseline-pre-pit",
+  "spec_matches_code": "no",
+  "evidence": "Run on the pre-c9d1abe universe (entries on non-member days); the source itself labels it invalid.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-idio-vol",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-index-deletion-fade",
+  "spec_matches_code": "partly",
+  "evidence": "Uses deletion-date age at asof and next-bar targets (index_deletion.py:84-127); whether the deletion date is the announcement or effective date was not checked; not replayed.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-insider-cluster-buy",
+  "spec_matches_code": "partly",
+  "evidence": "Cluster becomes visible at the latest filing_date, with a 2-business-day fallback and a guard against pre-trade visibility (insider_cluster.py:36-61); the 2026-10-21 event-timing audit found the free timestamp source insufficient (PARK).",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-leveraged-rotation",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-leveraged-trend",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-live-ensemble-defaults-vs-pit-picks",
+  "spec_matches_code": "no",
+  "evidence": "Confirmed: live defaults min_agree 2 / min_agree_exit 2 / divergence 20 / vol_mult 2.0 (ensemble.py:70-90; signal_runner.py:86) were never picked; every fold of _pit_rebaseline_20260923.json picked min_agree 3-4, divergence 10, vol_mult 1.5, and the sweep grid cannot produce divergence 20 or vol_mult 2.0 (ensemble.py:123-141).",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-live-exit-parity",
+  "spec_matches_code": "partly",
+  "evidence": "Catch-up exists (trader.py:104-130, 642-647) and mirrors the replica rule (replica.py:203-208), but a caught-up exit sells at the catch-up day's ~15:45 ET price, not the exit bar's close, and today's exit is read off a partial bar (signal_runner.py:97-107).",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-live-paper-performance-vs-spy",
+  "spec_matches_code": "partly",
+  "evidence": "The live book does not run the configuration any backtest measured: untested defaults, partial-bar signals, 3-name A-Z cap, NAV-based sizing, SPY sweep, halts; only the 2026-10-19 replica approximates it, with a one-day lag live does not have.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-live-revert-blend-to-core",
+  "spec_matches_code": "yes",
+  "evidence": "Live calls generate_core_signals (trader.py:519), which runs only the sp500 sleeve with weight 1.0 and scale 1.0 (signal_runner.py:175-196).",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-live-signal-lookback-365d",
+  "spec_matches_code": "yes",
+  "evidence": "generate_signals defaults to lookback_days=365 (signal_runner.py:60-77); today's log shows 251 rows x 503 symbols.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-macd-divergence",
+  "spec_matches_code": "partly",
+  "evidence": "Changelog 2026-06-23 says bearish/bullish divergence; code implements bullish only, as 'close at its 20-bar low while the MACD histogram is above its 20-bar low', with a warm-up mask applied to the first 55 rows of the whole frame, not per symbol (indicators.py:182-212). Headline 0.68 to 0.89: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-max-effect",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-midcap400-reversion",
+  "spec_matches_code": "no",
+  "evidence": "Headline from 2026-06-25/27 runs: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-ml-entry-gate-falsified",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made; gate is off unless ML_GATE_ENABLED is truthy (feature_gate.py:22-26) and the host .env does not set it",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-ml-feature-gate-deploy",
+  "spec_matches_code": "partly",
+  "evidence": "Gate code exists and filters buys when enabled (signal_runner.py:109-124) but no backtest in the WFO path applies it; now disabled by default (feature_gate.py:22-26).",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-mtf-reversion",
+  "spec_matches_code": "partly",
+  "evidence": "Weekly RSI is resampled to week-end labels and forward-filled, so no same-week lookahead (indicators.py:281-324); headline: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-nasdaq100-single-core",
+  "spec_matches_code": "no",
+  "evidence": "2026-06-27 result: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-ohlcv-day-shift",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Data-tape item owned by Lens 1. Lens 6 adds: live signals read today's partial bar, and past partial bars are only overwritten because a stale symbol (EA) drags every incremental fetch back to 2026-08-11 (cached_yfinance_loader.py:346-349, 371-377; log 2026-11-04).",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-overnight-gap",
+  "spec_matches_code": "partly",
+  "evidence": "Entry is a gap-z cross computed from today's open, but the fill is the same day's close (indicators.py:84-115), i.e. the trade buys after the intraday move rather than fading the gap at the open; written spec 'fades extreme overnight gap-down' does not say which.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-pairs-stat-arb",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-paper-cron-1245",
+  "spec_matches_code": "yes",
+  "evidence": "crontab runs scripts/paper_trade.sh at 45 12 * * 1-5 (host time PT); consequence: signals use a bar 15 minutes before the close.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-paper-freeze-readiness",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Process/evidence row; no code comparison applies.",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-paper-sell-fill-wait",
+  "spec_matches_code": "yes",
+  "evidence": "Buys run only after _poll_orders on all submitted sells (trader.py:870-876).",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-pead",
+  "spec_matches_code": "partly",
+  "evidence": "Report-lag and max-age gating present (pead.py:45-90); event dates sit on the pre-2026-08-20 day-shifted tape for the July run, and the 2026-10-21 event-timing audit parked PEAD on timestamp evidence.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-position-sizing-regimes",
+  "spec_matches_code": "partly",
+  "evidence": "Confirmed the two regimes exist as described: backtest buys 3% of remaining cash (synthetic fill check; simulate.py:249, 277-282), live buys 3.3% of portfolio value (risk.py:73-75, 119-135). The study's own numbers not re-checked.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-production-replica",
+  "spec_matches_code": "partly",
+  "evidence": "Replica uses the live defaults and the live risk/sweep/stop functions (replica.py:35-46, 81, 200-282), so rules match. Timing does not: replica uses bar t-1 signals filled at bar t close (replica.py:178-208); live signals on bar t's 15:45 ET partial bar and fills then (signal_runner.py:71-77, trader.py:109-110, log 2026-11-04). The brief's claim that live uses the prior completed bar (citing trader.py:60-66) is contradicted by code, log and DB.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-production-replica-holdout-2010-2020",
+  "spec_matches_code": "partly",
+  "evidence": "Same replica code and timing assumption as the primary arm.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-production-replica-live-parity",
+  "spec_matches_code": "partly",
+  "evidence": "Low parity (10/32) is consistent with a timing mismatch Lens 6 found: replica lags signals one bar while live acts on the same day's partial bar; not quantified here.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-retail-attention",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Never traded (empty Google Trends table per source); code not examined.",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-rsi-reversion",
+  "spec_matches_code": "yes",
+  "evidence": "rsi_signals (indicators.py:118-138): RSI(14) crosses below 30 to enter, crosses up through 50 to exit; matched inside the ensemble hand replay. Changelog wording is level-based ('RSI < oversold'), code is a crossing event.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-short-interest",
+  "spec_matches_code": "partly",
+  "evidence": "Settlement-to-publish lag gate present (short_interest.py:40-59); not replayed.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-short-volume-ratio",
+  "spec_matches_code": "partly",
+  "evidence": "Publish-lag gate and asof-bounded reads present (short_volume_ratio.py:25-89); not replayed.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-six-indicator-ensemble",
+  "spec_matches_code": "partly",
+  "evidence": "MTF voter code is causal (indicators.py:281-324); headline from the 2026-06 ablation: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-sp500-core-anchor-fix-reproduction",
+  "spec_matches_code": "no",
+  "evidence": "Run 2026-08-19, after 2eafab1 but before c9d1abe (2026-09-23), so entries on non-member days were still possible; later attributed as leak-inflated.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-sp500-core-corrected-tape-rebaseline",
+  "spec_matches_code": "no",
+  "evidence": "Run 2026-08-22, before the PIT fix c9d1abe; the 0.99 was later attributed to the membership gap.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-sp500-core-pit-rebaseline",
+  "spec_matches_code": "partly",
+  "evidence": "Run after c9d1abe with the PIT mask applied after sweep_signals (sweep.py:159-168); but it measured WFO-picked parameters, not the live defaults, and its 17/17 gate count predates the DSR fix 09f9f40.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-split-dividend-corrections",
+  "spec_matches_code": "yes",
+  "evidence": "Snapshot value = broker value + split delta + cumulative dividend accrual (trader.py:1045-1056). DB check: paper_dividend_accruals sums to $320.24 (19 rows), equal to the snapshot-minus-(cash+positions) gap on 2026-10-30..11-04; October gap ~$156.49 equals the accrual total before the 10-30 batch. Whether Alpaca later credited any of it is Lens 3.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-stability-aware-live-params",
+  "spec_matches_code": "partly",
+  "evidence": "select_live_params exists (wfo.py:922) but the live path never reads its output: signal_runner instantiates EnsembleSignal(cfg) with class defaults (signal_runner.py:85-86).",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-three-pct-position-size",
+  "spec_matches_code": "partly",
+  "evidence": "Lab default 0.03 is a share of remaining cash (data.py:24-29; synthetic check), live 0.033 is a share of portfolio value (risk.py:18, 73-75); the data.py comment 'Matches the live paper trader's position_pct' is not a match on sizing base. Headline 16.2%/1.09: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Live path vs backtest"
+ },
+ {
+  "id": "stocks-three-sleeve-blend-1-14",
+  "spec_matches_code": "no",
+  "evidence": "July 13 result: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec; did not reproduce.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-three-sleeve-blend-reproduction",
+  "spec_matches_code": "no",
+  "evidence": "2026-08-19 run, before c9d1abe (PIT gap).",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-two-symbol-sweep-design",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Design only; no code.",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-volume-bb-reversion",
+  "spec_matches_code": "yes",
+  "evidence": "volume_bb_signals (indicators.py:237-263): BB cross below with volume > 2.0 x 20-day mean volume; matched in the ensemble hand replay. Live reads a partial-day volume against full-day averages.",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "stocks-voter-ablation-5-voter",
+  "spec_matches_code": "no",
+  "evidence": "2026-06-24 ablation: run predates the anchor-leak fix 2eafab1 (2026-08-18) and the PIT-membership fix c9d1abe (2026-09-23); the code that produced the number had known defects relative to its 'honest OOS' spec.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-wfo-research-run-2026-05-02",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Legacy pre-lab pipeline (removed in 82931a40); not examined.",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-wfo-tournament-sp500-monthly",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "stocks-xs-momentum-2026-06",
+  "spec_matches_code": "partly",
+  "evidence": "Ranking rule matches a hand replay (3/3 month-ends identical); the June 2026 harness predates 2eafab1/c9d1abe.",
+  "report_section": "Historical runs and code at run time"
+ },
+ {
+  "id": "stocks-xs-momentum-corrected-replay",
+  "spec_matches_code": "yes",
+  "evidence": "12-1 top-N ranking matches the hand replay exactly at 3 month-ends; weights take effect on the bar after asof (momentum.py:62-73).",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "cross-asset-commodity-trend",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "cross-asset-fomc-drift-corrected-harness",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "cross-asset-fomc-drift-wfo",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "cross-asset-fx-hedge-overlay",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "cross-asset-month-end-treasury",
+  "spec_matches_code": "yes",
+  "evidence": "Entry close of 4th-to-last trading day, exit close of last; hand replay matches 6/6 months (month_end_treasury.py:80-114).",
+  "report_section": "Per-strategy findings"
+ },
+ {
+  "id": "cross-asset-sleeve-holdout-2007-2011",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "cross-asset-sleeve-trend-arm",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "cross-asset-treasury-curve",
+  "spec_matches_code": "unverifiable",
+  "evidence": "NOT EXAMINED in this pass (scope: ensemble, live path and replayed strategies first); no spec-to-code comparison made",
+  "report_section": "Rows not examined"
+ },
+ {
+  "id": "crypto-binance-us-live-trader",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Legacy engine removed in 82931a40; recoverable from git but no spec-to-code comparison made and no live trades exist to compare. Unverifiable, prose only.",
+  "report_section": "Crypto"
+ },
+ {
+  "id": "crypto-kraken-live-bot-pnl",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Ledger/PnL claim; cited script scripts/investigate_live_trades.py was deleted in 82931a40. Unverifiable, prose only.",
+  "report_section": "Crypto"
+ },
+ {
+  "id": "crypto-live-ohlcv-tz-bug",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Data item (Lens 1/8).",
+  "report_section": "Crypto"
+ },
+ {
+  "id": "crypto-regime-filters",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Config flags lived in removed code; not compared. Unverifiable, prose only.",
+  "report_section": "Crypto"
+ },
+ {
+  "id": "crypto-universal-trailing-stops",
+  "spec_matches_code": "no",
+  "evidence": "Live engine (82931a40^ crypto_execution_engine.py ~lines 700-730) converted WFO-selected fixed_sl_tp exits to exchange trailing stops at placement, and set atr_trailing as a fixed percent from entry-time ATR, while the backtest exit recomputed ATR each bar (82931a40^ indicators/strategies.py AtrTrailingExit, line 1047+). Live exits were not the tested exits.",
+  "report_section": "Crypto"
+ },
+ {
+  "id": "crypto-wfo-recalibration-2026-05-01",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Run artifacts not found in results/; code removed in 82931a40. Unverifiable, prose only.",
+  "report_section": "Crypto"
+ },
+ {
+  "id": "crypto-wfo-research-snapshots-kraken",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Code removed in 82931a40; snapshots not compared. Unverifiable, prose only.",
+  "report_section": "Crypto"
+ },
+ {
+  "id": "crypto-wfo-textbook-reset",
+  "spec_matches_code": "unverifiable",
+  "evidence": "Raw artifact results/research/research_20260511_193048/wfo_stats_snapshot.json exists but was not opened by Lens 6; code removed in 82931a40.",
+  "report_section": "Crypto"
+ },
+ {
+  "id": "crypto-wfo-tournament-robustness",
+  "spec_matches_code": "unverifiable",
+  "evidence": "KeltnerBreakoutEntry/StochRsiReversalEntry exist at 82931a40^ indicators/strategies.py:903-1046; not compared with a spec. Unverifiable, prose only.",
+  "report_section": "Crypto"
+ }
+]
