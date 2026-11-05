@@ -19,15 +19,21 @@ table in TimescaleDB that every stock backtest reads.
    duplicate days for any symbol, and SPY with exactly one row per date (6,751 rows,
    6,751 dates). Recent SPY closes match yfinance exactly.
 2. **Almost every number from before 2026-10-19 predates at least one fix.** Of the 144
-   inventory rows, 55 are marked contaminated, 17 clean, and 72 unknown (most of the
+   inventory rows, 55 are marked contaminated, 18 clean, and 71 unknown (most of the
    unknowns are design notes, operations changes or crypto, which have no stock backtest).
-   Every WFO result run before 2026-10-19 predates the DSR units fix, which changed which
-   parameters each fold used, not only the gate counts. That includes the "corrected"
-   core figure (Sharpe 0.59 vs SPY 0.78, 2026-09-23).
+   Every WFO result run before 2026-10-19 predates the DSR units fix. That includes the
+   "corrected" core figure (Sharpe 0.59 vs SPY 0.78, 2026-09-23). Phase 0 already said its
+   "17/17 gates" count predates the fix (`docs/research/2026-11-04-phase0-trust-audit.md:30`).
+   What Lens 1 adds is that the fix also changes which parameters each fold deploys: a
+   failed DSR check makes the fold run on the anchor parameters (`gates_passed = ndh_passed
+   and dsr_passed`, then `deploy_params = anchor.params`, lines 726-733 of
+   `src/ggTrader/lab/wfo.py` at 09f9f40). So the fix changes the out-of-sample returns, not
+   only the gate counts.
 3. **Contamination not covered by the five fixes remains in the tape:**
    - **PARA is the wrong security** for its whole S&P 500 membership (2022-02-17 to
-     2025-07-23). The tape shows closes near $100,000 with a median daily volume of 9
-     shares. The production replica, the most trusted stock result, traded it 3 times,
+     2025-07-23). Over that span the tape's closes run from 72.20 to 113,900: near
+     $100,000 through 2023 Q3, then falling from about 25,700 (2024 Q1) to about 42
+     (2025 Q3). Median daily volume is 9 shares. The production replica, the most trusted stock result, traded it 3 times,
      and its taint detector did not flag it. Effect on the result: unmeasured.
    - **Stored prices mix dividend and split adjustment bases.** The cache never
      re-adjusts old bars, so where a later fetch overlaps an earlier one the tape shows a
@@ -35,16 +41,19 @@ table in TimescaleDB that every stock backtest reads.
      through at least 2026-07-24 sit 0.25% above today's yfinance series. APH and MNST
      were off by 2x before a manual repair on 2026-09-29.
    - **AVB still tracks EQR's price from 2026-07-20.**
-   - **16 index members have no tape at all** under the ticker the membership file uses,
-     including VIAC, ABC and ANTM (renamed tickers).
+   - **14 index members have no tape in the 2021-2026 window,** even after the lab's
+     ticker normalisation (which maps BRK.B to BRK-B and BF.B to BF-B; both of those have
+     full tape). The 14 include VIAC, ABC and ANTM (renamed tickers).
    - **The 2010-2020 tape has identity faults:** 5,595 daily moves of 40% or more across
      217 symbols, against 572 across 97 symbols from 2021.
 4. **No current headline number rests on a drifting window.** The current headlines all
    pin their windows: the replica, the PIT core, A23, the momentum replay and the French
    screens. The window behind 1.12 cannot be recovered (`--eval-end` defaulted to "now").
    Project notes say the same of 1.14, but the roadmap records 1.14 as a pinned
-   2021-01-31 to 2026-04-30 run (`docs/roadmap.md:158-170`). It failed to reproduce
-   because of code fixes, not window drift. The July event-study NO-GOs used windows that
+   2021-01-31 to 2026-04-30 run (`docs/roadmap.md:158-170`). That points to code fixes,
+   not window drift, as the reason it failed to reproduce. This rests on prose only, and
+   data-side changes between 07-13 and 08-19 have not been ruled out: the SPY-duplicate
+   collapse (1b9b7f5) and refetch adjustment seams. The July event-study NO-GOs used windows that
    ran "to present" and cannot be reproduced exactly.
 5. **The backtests and the paper ledger do not measure returns the same way.** Backtests
    use adjusted (total-return) closes, apart from the adjustment seams above. The paper
@@ -133,26 +142,36 @@ The full per-row answer is in `docs/research/_lens1_tape_state.json`. Rules:
 - **clean:** evidence shows it ran after every relevant fix.
 - **unknown:** otherwise, with the reason given.
 
-Counts: **55 contaminated, 17 clean, 72 unknown**. Of the unknowns, 25 are crypto rows
+Counts: **55 contaminated, 18 clean, 71 unknown**. Of the unknowns, 25 are crypto rows
 (Lens 8 owns them). Most of the rest have no tape backtest: design, feasibility, intake or
-operations rows. How often each fix appears among the contaminated rows: DSR units 53,
-anchor leak 38, SPY duplicates 38, PIT universe 31, day-shift 9.
+operations rows. How often each fix appears among the contaminated rows: DSR units 51,
+anchor leak 38, SPY duplicates 38, PIT universe 29, day-shift 9, and 2eafab1's
+`train_gate.py` fix 2 (the ML-gate rows).
 
 By group:
 
 | Group | Rows (examples) | Predates |
 |---|---|---|
-| June-July ensemble work: 1.12 baseline, 0.84 "validated", voter ablation, 3% sizing, ML gate, exit rules, IC/Kelly, MACD divergence, MTF, trailing stops, 1.14 blend, MidCap, Nasdaq core | `stocks-ensemble-ndh-baseline-1-12`, `stocks-three-sleeve-blend-1-14`, `stocks-ensemble-wfo-validated-2026-06-20` | SPY duplicates, anchor leak, PIT, DSR (all four that apply; day-shift does not change pure price returns) |
+| June-July ensemble work: 1.12 baseline, 0.84 "validated", voter ablation, 3% sizing, ML gate, exit rules, IC/Kelly, MACD divergence, MTF, trailing stops, 1.14 blend, MidCap, Nasdaq core | `stocks-ensemble-ndh-baseline-1-12`, `stocks-three-sleeve-blend-1-14`, `stocks-ensemble-wfo-validated-2026-06-20` | SPY duplicates, anchor leak, PIT, DSR (all four that apply; day-shift does not change pure price returns). The ML-gate rows are the exception: they predate 2eafab1's `train_gate.py` fix |
 | July event studies (PEAD, insider, congress, short interest, short volume, index deletion, headline sentiment) and FOMC WFO | `stocks-pead`, `cross-asset-fomc-drift-wfo` | Day-shift, SPY duplicates (all but headline sentiment ran 07-17..07-20; it ran 07-24, still before 1b9b7f5), anchor leak, DSR; FOMC also 7320c1d |
 | July weight/ETF WFOs (idio vol, max effect, pairs, leveraged rotation and trend, commodity trend, FX hedge, Treasury curve) | `stocks-max-effect`, `cross-asset-treasury-curve` | SPY duplicates, anchor leak, DSR (leveraged rotation also the survivorship reversal in 2eafab1) |
 | 2026-08-19 to 08-22 re-baselines (0.97 anchor-fix reproduction, 0.68 blend, 0.99 corrected tape, position sizing) | `stocks-sp500-core-corrected-tape-rebaseline` | PIT, DSR |
 | 2026-09-23 to 09-24 PIT re-baseline (0.59 vs 0.78), IC/Kelly, core+SPY KEEP, month-end Treasury | `stocks-sp500-core-pit-rebaseline` | DSR only |
-| 2026-10-19 onward replays, French-data screens, A23/A24, Shiller century study, 09-23 sanity checks, cross-asset holdout | `stocks-xs-momentum-corrected-replay`, `stocks-factor-screen-h1-h4` | None of the five (clean), except the replica rows, marked unknown for tape identity (part b) |
+| 2026-10-19 onward replays, French-data screens, A23/A24, Shiller century study, 09-23 sanity checks, cross-asset holdout | `stocks-xs-momentum-corrected-replay`, `stocks-factor-screen-h1-h4` | None of the five (clean), except the replica rows, marked unknown for tape identity (part b). The cross-asset static 80/20 (2026-09-28) is also clean |
 
-Two cross-asset rows (`cross-asset-static-80-20-sleeve`, `cross-asset-sleeve-trend-arm`)
-are unknown. Their pinned static backtests need no DSR, but the WFO arm in
-`docs/research/_cross_asset_sleeve_results.json` predates 09f9f40, and which figure
-carries the verdict is for Lens 2 to decide.
+Two cross-asset rows share one results file,
+`docs/research/_cross_asset_sleeve_results.json`, but are classified differently:
+
+- `cross-asset-static-80-20-sleeve` is clean. Its headline is the pinned static figure
+  (Sharpe 0.973 vs SPY 0.896), a fixed-weight backtest run on 2026-09-28 after the tape
+  fixes, and needs no DSR. The WFO arm in the same file predates 09f9f40 but is not part
+  of this headline.
+- `cross-asset-sleeve-trend-arm` is unknown. Its headline combines a clean pinned
+  comparison with the statement that the lookback WFO halted in folds 2-8, and that WFO
+  predates 09f9f40.
+
+The two ML-gate rows are tagged with 2eafab1's `train_gate.py` membership and purge-gap
+fix, not the WFO anchor or PIT fixes.
 
 ### (b) What contamination remains today?
 
@@ -194,10 +213,16 @@ carries the verdict is for Lens 2 to decide.
     it. Before c9d1abe it produced Kelly's +170% day (memory note).
   - **AVB:** tracks EQR from 2026-07-20 (195.50 on 07-16, then 68.69 on 07-20 against
     EQR 68.80).
-  - **Missing tape:** 16 of 611 symbols that were members on 2021-01-31 to 2026-04-30
-    have no tape under the membership ticker: ABC, ANTM, BF.B, BLL, BRK.B, CDAY, COG,
-    FBHS, FRC, GPS, HFC, MMC, PKI, RE, VIAC, WLTW. Those member-days are absent from
-    every backtest.
+  - **Missing tape:** 14 of 611 symbols that were members on 2021-01-31 to 2026-04-30
+    have no tape in that window, even after the lab's ticker normalisation
+    (`normalize_yf_ticker`, `src/ggTrader/data/core/index_constituents.py:110-112`,
+    applied at `src/ggTrader/lab/data.py:78`). The 14:
+    - no rows at all: ABC, ANTM, BLL, COG, FBHS, FRC, GPS, HFC, MMC, PKI, RE, WLTW;
+    - rows outside the window only: CDAY (3 rows, 2026-06-08 to 06-10) and VIAC (193
+      rows, 2019-03-04 to 2019-12-04).
+
+    Those member-days are absent from every backtest. BRK.B and BF.B are not missing:
+    they map to BRK-B and BF-B, which have 1,318 bars each over the window.
   - **Old tickers reused:** FB (2025-06 onward, median volume 600), INFO (2024-10 onward)
     and DISCA (2022-04 onward) now carry other securities, but only outside their
     membership windows.
@@ -211,9 +236,13 @@ carries the verdict is for Lens 2 to decide.
     (`src/ggTrader/data/live/yfinance_loader.py:66`). The cache only upserts the window
     it refetches (`src/ggTrader/data/live/cached_yfinance_loader.py:256-265`) and never
     re-adjusts older bars.
-  - **VZ:** DB/yfinance ratio is 1.0156 on 2026-07-17 and 0.9999 on 07-20. The DB return
-    on 07-20 is -1.73%, against -0.19% in yfinance, so the July dividend appears as a
-    misdated price loss.
+  - **VZ:** the DB/yfinance ratio is about 1.0155 on 2026-07-14 to 07-17 and 0.9999 on
+    07-20. The DB return on 07-20 is -1.73%, against -0.19% in yfinance. The ratio
+    matches the adjustment for the dividend that went ex on 2026-10-09
+    (1/(1 - 0.708/45.64) ≈ 1.0158), not the July dividend (≈ 1.0176). So bars up to
+    07-17 were stored before the October adjustment, bars from 07-20 were refetched
+    after it, and the October dividend's adjustment shows up as a misdated -1.5% move
+    on 07-20.
   - **SPY:** DB closes on 06-12, 06-26, 07-02, 07-10, 07-17 and 07-24 are all 0.248%
     above yfinance's current series (one quarterly dividend), and equal from 10-29.
   - **APH/MNST:** the same mechanism at split scale was repaired by hand on 2026-09-29.
@@ -233,7 +262,7 @@ carries the verdict is for Lens 2 to decide.
 **Universe:**
 
 - Membership comes from a static history file that ends 2026-06-02.
-- The 16 missing tickers above make up a coverage gap; it removes member-days rather
+- The 14 missing tickers above make up a coverage gap; it removes member-days rather
   than adding survivors.
 - Weight strategies were PIT from the start; signal strategies are PIT only from c9d1abe.
 - There is no PIT MidCap 400 membership (inventory row `stocks-midcap400-reversion`).
@@ -271,7 +300,9 @@ carries the verdict is for Lens 2 to decide.
 - **Not unrecoverable, contrary to the project notes:** 1.14 is recorded as a pinned
   2021-01-31 to 2026-04-30 run at max-leverage 1.0 (`docs/roadmap.md:158-170`). Its
   re-run on the same window gave 0.68. That points to code fixes, not window drift. This
-  comes from prose; the 2026-07-13 raw output was not found.
+  comes from prose; the 2026-07-13 raw output was not found. Data-side changes between
+  07-13 and 08-19 have not been ruled out either: the SPY-duplicate collapse (1b9b7f5)
+  and refetch adjustment seams.
 - **Drifting ("to present" or end not stated):** these July NO-GOs cannot be reproduced
   exactly: index deletion, max effect, pairs, short interest, short volume, leveraged
   rotation and trend, commodity trend, FOMC WFO, headline sentiment, and the 2026-08-18
@@ -325,7 +356,12 @@ Lens 1 ran no crypto checks; Lens 8 owns them.
   - The bug signatures are gone from today's tape.
   - Pre-2026-10-19 gate counts are void, and so are the fold-level parameter choices
     behind them.
-  - The "corrected" 0.59 is not fully corrected: it predates 09f9f40.
+  - The "corrected" 0.59 is not fully corrected: it predates 09f9f40. Phase 0 already
+    noted that its "17/17 gates" count predates the fix
+    (`docs/research/2026-11-04-phase0-trust-audit.md:30`). What Lens 1 adds is that a
+    failed DSR check deploys the anchor parameters for that fold (lines 726-733 of
+    `src/ggTrader/lab/wfo.py` at 09f9f40). So 0.59's out-of-sample returns would also
+    change under the corrected gate, not only its gate count.
   - Not confirmed: that the five bugs *alone* caused the drop from 1.12. That run's window
     cannot be recovered, and it used the 3- and then 5-voter ensembles at different times.
 - **H1 (Lens 1 part), not confirmed as "high trust":** the replica ran after all five
@@ -366,8 +402,12 @@ Commands and key outputs:
     names; the 503 current symbols are fresh to 2026-11-04).
   - backup tables `ohlcv`, `ohlcv_no_data`, `ohlcv_yf_preshift_backup_20260820`.
 - **Identity scan.** Command: `lens1_ident.py` over 2021-01-31 to 2026-04-30 members,
-  output in `lens1_ident_out.json`. Results: 611 members, 595 with tape, 16 missing;
-  median volume under 20k: DISCA, FB, INFO, NVR (19,600, genuine), PARA, SW (pre-listing
+  output in `lens1_ident_out.json`. Results: 611 members; 595 had tape under the raw
+  membership ticker and 16 did not. That scan did not apply the lab's normalisation, so I
+  re-checked the 16 with `normalize_yf_ticker` (`l1_norm.py`, bounded SELECT on the
+  normalised symbols): BF-B and BRK-B have 1,318 bars each in the window; CDAY has 3 rows
+  (2026-06-08 to 06-10); VIAC has 193 rows (2019-03-04 to 2019-12-04); the other 12 have no
+  rows. Corrected count: 597 members with tape, 14 without. Median volume under 20k: DISCA, FB, INFO, NVR (19,600, genuine), PARA, SW (pre-listing
   history only; 3-6M volume once listed); maximum/minimum close above 50x: APP, CVNA,
   PARA, SBNY, SIVB.
 - **PARA quarterly levels and the replica's PARA trade count**, as quoted above.
@@ -402,7 +442,7 @@ Commands and key outputs:
 **Not verified:**
 
 - How many adjustment seams fall inside the pinned window, for all symbols. Cheapest
-  test: compare DB closes with one fresh yfinance pull for the 595 members and flag
+  test: compare DB closes with one fresh yfinance pull for the 597 members with tape and flag
   breaks in the ratio. Read-only, about 30 minutes.
 - PARA's effect on the replica and on the PIT core. Cheapest test: a Phase 2 replica
   re-run with PARA excluded, or the PARA trade dates printed from a re-run. Roughly 1 hour,
@@ -421,7 +461,7 @@ Commands and key outputs:
 
 - ✅ Fix timeline (five fixes plus three extras), with commits and dates.
 - ✅ (a) Fixes each headline predates: all 144 rows in `docs/research/_lens1_tape_state.json`
-  (55 contaminated / 17 clean / 72 unknown, each with a reason).
+  (55 contaminated / 18 clean / 71 unknown, each with a reason).
 - ✅ (b) Tape: duplicates, stamp hour, weekdays, gaps, partial bars and identity checked
   today.
 - ❓ (b) Adjustment-seam extent: unknown. Only VZ and SPY were measured. Cheapest test:
