@@ -1,0 +1,1685 @@
+{
+ "recompute": [
+  {
+   "id": "cross-asset-fomc-drift-corrected-harness",
+   "reported": "net t 0.981 (p 0.3288; n_event_dates 113); gross t 2.258 (p 0.0258)",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read _fomc_clustered_event_study_20261020.json. The 2026-10-19 unclustered run (_audit_reruns_20261019.json) gave net t 1.572 and WFE 0.244; both fail the brief section 6 bar.",
+   "window_in_artifact": "eval_start=2012-01-01; eval_end=2026-04-30; universe=fomc_treasury",
+   "raw_artifact": "docs/research/_fomc_clustered_event_study_20261020.json",
+   "value_read_by_me": "clustered net t 0.9805 (p 0.3288, 113 dates); gross t 2.2576"
+  },
+  {
+   "id": "cross-asset-month-end-treasury",
+   "reported": "WFO OOS Sharpe 0.61 vs SPY 0.79 (5 bp, OOS 2022-01 → 2026-04); gates 13/17, halted; top winner 5/17. Frozen rule standalone Sharpe 0.96 at 1 bp, pinned 2021-01-31 → 2026-04-30",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read wfo.oos and verdict.checks.",
+   "window_in_artifact": "WFO OOS test from 2022-01-31 to 2026-04-30; primary.pinned 2021-02-01 to 2026-04-30; meta eval 2021-01-31 to 2026-04-30",
+   "raw_artifact": "docs/research/_month_end_treasury_results.json",
+   "value_read_by_me": "WFO OOS Sharpe 0.608; checks 3 and 4 false"
+  },
+  {
+   "id": "cross-asset-sleeve-holdout-2007-2011",
+   "reported": "2007-06 → 2011-02: Sharpe 0.172 vs SPY 0.078; MaxDD -46.3% vs -55.2%",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read 1bp.static; SPY figure taken from Haiku, not re-read.",
+   "window_in_artifact": "window.start=2007-06-01; window.end=2011-02-28",
+   "raw_artifact": "docs/research/_cross_asset_sleeve_holdout_results.json",
+   "value_read_by_me": "Sharpe 0.172; MaxDD -46.26"
+  },
+  {
+   "id": "cross-asset-sleeve-trend-arm",
+   "reported": "pinned: +0.007 Sharpe and +1.6 pts MaxDD vs static (bar was ≥0.05 Sharpe or ≥3 pts MaxDD); lookback WFO halted folds 2–8",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read verdict.trend_minus_static_*.",
+   "window_in_artifact": "pinned 2021-02-01 to 2026-04-30; wfo_oos 2022-01-31 to 2026-04-30",
+   "raw_artifact": "docs/research/_cross_asset_sleeve_results.json",
+   "value_read_by_me": "+0.0066 Sharpe, +1.63 pts MaxDD"
+  },
+  {
+   "id": "cross-asset-static-80-20-sleeve",
+   "reported": "pinned 2021-02-01 → 2026-04-30: Sharpe 0.973 vs SPY 0.896; MaxDD -21.3% vs -24.5%; CAGR 13.6% vs 14.7%",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read primary:pinned 1bp static and bh.SPY. Raw CAGR is 1.09 pp/yr below SPY.",
+   "window_in_artifact": "primary:pinned start=2021-02-01; end=2026-04-30",
+   "raw_artifact": "docs/research/_cross_asset_sleeve_results.json",
+   "value_read_by_me": "Sharpe 0.9729 vs 0.8963; MaxDD -21.26 vs -24.50; CAGR 13.61 vs 14.70"
+  },
+  {
+   "id": "crypto-ibit-overnight-session",
+   "reported": "IBIT close-to-open +186% vs open-to-close -43% (2024-01-11 to 2026-10-23); after NGHT launch overnight -9%, intraday +23%",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "partial",
+   "evidence": "Values match; the post-NGHT split (-9% / +23%) is only in docs/research/WEB_RESEARCH_CANDIDATES.md:1343-1345 (prose).",
+   "window_in_artifact": "2024-01-11 to 2026-10-23",
+   "raw_artifact": "docs/research/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json",
+   "value_read_by_me": "overnight +186.1%, intraday -42.5%, close-to-close +72.6%"
+  },
+  {
+   "id": "crypto-web-research-batch-2026-10-25",
+   "reported": null,
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "cannot_locate",
+   "evidence": "No headline number; artifact is the IBIT split only. Not applicable.",
+   "window_in_artifact": null,
+   "raw_artifact": "docs/research/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json",
+   "value_read_by_me": null
+  },
+  {
+   "id": "crypto-wfo-textbook-reset",
+   "reported": "35–36 validated combos under frictionless conditions; zero combos pass under realistic fees (0.4% per-side + 0.3% slippage = 1.4% round-trip)",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "cannot_locate",
+   "evidence": "Snapshot has per-fold wfo_stats but no fee scenario or pass field; 35-36 frictionless / 0 post-cost passers is changelog prose (docs/changelog.md:1667-1700).",
+   "window_in_artifact": "per-fold test dates in wfo_stats (first fold test 2023-11-19 to 2024-01-26)",
+   "raw_artifact": "results/research/research_20260511_193048/wfo_stats_snapshot.json",
+   "value_read_by_me": null
+  },
+  {
+   "id": "stocks-a23-static-leverage",
+   "reported": "after-tax CAGR 12.00% vs SPY 10.40% (24%/15%), 2006-06-21 → 2026-09-29; pre-tax Sharpe 0.61 vs 0.64; MaxDD -66.4% vs -55.3%",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read windows.main_real_sso[\"static 1.3x (70/30) band 8pp\"][\"24/15\"] and SPY row; window 2006-06-21..2026-09-29. Holdout_synthetic 9.53% vs 8.89% (second bar condition met). Not re-simulated.",
+   "window_in_artifact": "windows/main_real_sso 24/15 window 2006-06-21 to 2026-09-29",
+   "raw_artifact": "docs/research/_static_leverage_aftertax_results.json",
+   "value_read_by_me": "after-tax CAGR 0.1200 vs 0.1040; pre-tax Sharpe 0.609 vs 0.641; MaxDD -0.6639 vs -0.5534"
+  },
+  {
+   "id": "stocks-a24-sleeve-trend-rider",
+   "reported": "after-tax CAGR 11.73% vs static 1.3x 12.00% (24%/15%); MaxDD -58.0% vs -66.4%; short-term gains realized $87.2k vs $0.9k",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read A24 rider row, 24/15 bracket.",
+   "window_in_artifact": "windows/main_real_sso 24/15 window 2006-06-21 to 2026-09-29",
+   "raw_artifact": "docs/research/_static_leverage_aftertax_results.json",
+   "value_read_by_me": "after-tax CAGR 0.1173; MaxDD -0.5804"
+  },
+  {
+   "id": "stocks-century-leverage",
+   "reported": "Full window 1926-07-01 to 2026-06-30 (24/15 bracket, 0.84% fee): 30% SSO after-tax CAGR 10.71% vs 0% 9.47%; max drawdown -91.4% vs -84.6%",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read scenarios[\"0.84%|24/15|wash=False|shiller/{0,30}/full\"]. Not re-simulated.",
+   "window_in_artifact": "provenance.full_window 1926-07-01 to 2026-06-30",
+   "raw_artifact": "docs/research/_century_leverage_results.json",
+   "value_read_by_me": "30%: 0.10713 after-tax, MaxDD -0.9141; 0%: 0.09473, -0.8460"
+  },
+  {
+   "id": "stocks-core-spy-blend-keep",
+   "reported": "k = 1 Sharpe 0.80 vs SPY 0.78; MaxDD -20.72% vs SPY -22.09%; WFO OOS span 2022-01 → 2026-04",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read live_k1.0 and spy. Raw CAGR edge is 0.004 pp/yr.",
+   "window_in_artifact": "meta eval_start 2021-01-31, eval_end 2026-04-30",
+   "raw_artifact": "docs/research/_core_spy_blend_20260924.json",
+   "value_read_by_me": "k=1 Sharpe 0.7996 vs 0.7792; MaxDD -20.72 vs -22.09; CAGR 12.963 vs 12.959"
+  },
+  {
+   "id": "stocks-dual-momentum",
+   "reported": "minimum selected momentum across all 64 months was +12.2% (Oct 2022)",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "cannot_locate",
+   "evidence": "Artifact confirms dual_momentum metrics identical to xs_momentum (Sharpe 0.8657, CAGR 17.33). The +12.2% minimum-momentum figure exists only in docs/changelog.md:1304 (prose).",
+   "window_in_artifact": "dual_momentum eval_start 2021-01-31, eval_end 2026-04-30",
+   "raw_artifact": "docs/research/_audit_reruns_20261019.json",
+   "value_read_by_me": null
+  },
+  {
+   "id": "stocks-ensemble-ic-pit",
+   "reported": "OOS Sharpe 0.41, CAGR 3.3%, MaxDD -12.8%, gates 11/17, top winner 4/17; SPY Sharpe 0.78",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read ensemble_ic in _pit_rebaseline_20260923.json.",
+   "window_in_artifact": "meta eval_start 2021-01-31, eval_end 2026-04-30",
+   "raw_artifact": "docs/research/_pit_rebaseline_20260923.json",
+   "value_read_by_me": "Sharpe 0.412, CAGR 3.33, MaxDD -12.79, 11/17, top winner 4"
+  },
+  {
+   "id": "stocks-ensemble-kelly-pit",
+   "reported": "OOS Sharpe 0.50, CAGR 6.3%, MaxDD -13.9%, gates 16/17, top winner 10/17; SPY Sharpe 0.78",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read ensemble_kelly.",
+   "window_in_artifact": "meta eval_start 2021-01-31, eval_end 2026-04-30",
+   "raw_artifact": "docs/research/_pit_rebaseline_20260923.json",
+   "value_read_by_me": "Sharpe 0.498, CAGR 6.28, MaxDD -13.92, 16/17, top winner 10"
+  },
+  {
+   "id": "stocks-event-audit-readiness-decision",
+   "reported": "62,373 rows across 762 symbols, latest date 2026-07-17",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "cannot_locate",
+   "evidence": "The 62,373 / 762 / 2026-07-17 figures are a DB snapshot quoted in the 2026-10-21 brief, not in this JSON. Prose only; not re-queried.",
+   "window_in_artifact": "date 2026-10-22; no data window stored",
+   "raw_artifact": "docs/research/_event_audit_readiness_decision.json",
+   "value_read_by_me": null
+  },
+  {
+   "id": "stocks-event-evidence-resolution-workbook",
+   "reported": "Insider 68,806 member-months / 761 symbols; PEAD 49,542 member-quarters / 1,013 symbols (including partial 2026-Q2)",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_unchecked",
+   "match": "yes",
+   "evidence": "Haiku: Counts match. The 2026 annual figures are diagnostic only per the qualification text. Raw: insider_cluster units 68806, symbols 761; pead units 49542, symbols 1013; pead_2026_detail partial_2026Q2_through_2026_04_30 504",
+   "window_in_artifact": "qualification: insider complete years 2015-2025, PEAD 2002-2025, 2026 diagnostic only; cutoff 2026-04-30",
+   "raw_artifact": "docs/research/_event_evidence_resolution_workbook.json"
+  },
+  {
+   "id": "stocks-event-timing-audit-decision",
+   "reported": null,
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "cannot_locate",
+   "evidence": "No headline number; PARK verdict confirmed in docs/research/2026-10-23-event-timing-audit-decision.md:267. Artifact is a file-search scope record.",
+   "window_in_artifact": null,
+   "raw_artifact": "docs/research/_event_evidence_export_file_search.json",
+   "value_read_by_me": null
+  },
+  {
+   "id": "stocks-factor-screen-h1-h4",
+   "reported": "best full-window NW t 1.34 (H4, p 0.0903) vs Holm threshold 0.0003375; best post-1994 net +0.83 pt/yr (H1) vs bar +1.0 pt/yr; common window 1963-07 → 2026-04",
+   "recomputed_by_me": "H4 t 1.338846 (p 0.0903); H1 post-1994 +0.8267 pp",
+   "source_of_check": "recomputed_by_me",
+   "match": "yes",
+   "evidence": "Recomputed H1 (BIG HiOP, 1% cost) and H4 (50/50 BIG HiBM + BIG HiPRIOR, 1.5% cost) from frozen French archives; matches hypotheses.H1/H4.",
+   "window_in_artifact": "inputs/common_window 1963-07 to 2026-04; A2 window 1994-01 to 2026-04",
+   "raw_artifact": "docs/research/_factor_screen_results.json"
+  },
+  {
+   "id": "stocks-family-scope-review",
+   "reported": "0 of 8 closure_applies_inferred; 7 undetermined; S04 distinct_mechanism (conditional)",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "cannot_locate",
+   "evidence": "Outcome table is in docs/research/2026-11-02-family-scope-review.md:31-37 (S04 distinct_mechanism, others undetermined); the JSON holds only the extraction.",
+   "window_in_artifact": null,
+   "raw_artifact": "docs/research/_family_scope_extraction.json",
+   "value_read_by_me": null
+  },
+  {
+   "id": "stocks-free-data-stock-feasibility",
+   "reported": "Matrix (20 rows, non-exhaustive): 4 potential_part_a_source, 3 family_scope_review_undetermined, 2 testable_b0_b1_only, 2 infeasible_free, 4 closed_no_reopen, 5 parked",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_unchecked",
+   "match": "yes",
+   "evidence": "Haiku: Counts match. The 'No candidate is recommended' statement is consistent with the artifact's wording, not an exact string. Raw: classification counts: potential_part_a_source 4, family_scope_review_undetermined 3, testable_b0_b1_only 2, infeasible_free 2, closed_no_reopen 4, parked 5; non_exhaustive true",
+   "window_in_artifact": "as_of 2026-11-02",
+   "raw_artifact": "docs/research/_free_data_feasibility_matrix.json"
+  },
+  {
+   "id": "stocks-ic-kelly-rebaseline-pre-pit",
+   "reported": "OOS Sharpe 0.61, CAGR 34.0% (artifact), MaxDD -14.7%; SPY Sharpe 0.78, CAGR 13.0%, MaxDD -22.1%; window 2021-01-31 → 2026-04-30 (pinned)",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Haiku \"partial\" resolved: values match; SPY CAGR/MaxDD come from _core_spy_blend_20260924.json (12.96 / -22.09). The report itself calls these CAGRs artifacts of one OOS day.",
+   "window_in_artifact": "meta eval_start 2021-01-31, eval_end 2026-04-30",
+   "raw_artifact": "docs/research/_ic_kelly_rebaseline_20260923.json",
+   "value_read_by_me": "IC Sharpe 0.614, CAGR 33.95, MaxDD -14.67; Kelly 0.598 / 38.24 / -15.81"
+  },
+  {
+   "id": "stocks-insider-acceptance-time-diagnostic",
+   "reported": "reproduces 25/25 header-consistent pairs and 9/25 API-inconsistent pairs",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_unchecked",
+   "match": "yes",
+   "evidence": "Haiku: Counts match. The 'DRAFT, owner approval required' status is not stored in this JSON; scope is cached Form 4/4-A pairs only. Raw: pair_count 25; header_consistent_count 25; api_inconsistent_count 9; twice_offset_pattern_count 25",
+   "window_in_artifact": null,
+   "raw_artifact": "docs/research/_insider_acceptance_diagnostic.json"
+  },
+  {
+   "id": "stocks-insider-identity-inventory",
+   "reported": "verified_raw_responses = 79; status = UNRESOLVED",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_unchecked",
+   "match": "yes",
+   "evidence": "Haiku: Reported and stored values agree. Raw: verified_raw_responses 79; status 'UNRESOLVED'",
+   "window_in_artifact": null,
+   "raw_artifact": "docs/research/_insider_identity_inventory_resolution_results.json"
+  },
+  {
+   "id": "stocks-intraday-feasibility",
+   "reported": "working paper 6.67% annualized arithmetic mean and Sharpe 1.08 (Table 6)",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "cannot_locate",
+   "evidence": "6.67% and Sharpe 1.08 are the Gao et al. (2018) Table 6 figures; verified against the published paper (see academic_claims), not against this artifact.",
+   "window_in_artifact": "request start 2013-12-31, end_exclusive 2026-10-01; windows keyed 2014-01-02 and 2016-01-04 (CAGR only)",
+   "raw_artifact": "docs/research/_intraday_benchmark_verification.json",
+   "value_read_by_me": null
+  },
+  {
+   "id": "stocks-live-ensemble-defaults-vs-pit-picks",
+   "reported": "all 17 folds picked min_agree 3 or 4, divergence 10, vol_mult 1.5",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_unchecked",
+   "match": "yes",
+   "evidence": "Haiku: Tally matches the headline. No verdict is stored (headline verdict is null). Raw: winner_combo min_agree3: 7 folds, min_agree4: 10 folds; divergence_window10: 17 folds; vol_mult1.5: 17 folds",
+   "window_in_artifact": "meta eval_start 2021-01-31, eval_end 2026-04-30",
+   "raw_artifact": "docs/research/_pit_rebaseline_20260923.json"
+  },
+  {
+   "id": "stocks-live-revert-blend-to-core",
+   "reported": "Sharpe 0.69 vs SPY 0.78 (matched window); CAGR 4.78%, MaxDD -6.70%",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_unchecked",
+   "match": "yes",
+   "evidence": "Haiku: Numbers match. The artifact's own table lists SPY as Sharpe 0.77 and CAGR 12.79%, while core spy_sharpe is 0.78; the headline uses 0.78. 'Underperforms; Revert Queued' is not stored. Raw: blend sharpe 0.686415865578953, cagr_pct 4.77656869474139, max_drawdown_pct -6.695126300289012; core spy_sharpe 0.7792168856067855; eval 2021-01-31 to 2026-04-30",
+   "window_in_artifact": "meta eval_start 2021-01-31, eval_end 2026-04-30",
+   "raw_artifact": "docs/research/_rebaseline_corrected_tape_20260822.json"
+  },
+  {
+   "id": "stocks-live-signal-lookback-365d",
+   "reported": "120-day window: entry mismatch 4.0% (21 missed / 21 extra of 1,026); exit mismatch 3.4% (106 / 97 of 5,881); last_exit wrong 7.0%; span 125 sessions 2026-03-30 → 2026-09-25",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_unchecked",
+   "match": "yes",
+   "evidence": "Haiku: All figures match. The 365-day row shows zero mismatch against the reference on entries, exits and last-exit date; the artifact stores no proposal or verdict field. Raw: entries missed 21, spurious 21, ref 1026, mismatch_pct_of_union 4.011461318051576; exits missed 106, spurious 97, ref 5881, mismatch_pct_of_union 3.395784543325527; last_exit_date differ_pct 6.9966386",
+   "window_in_artifact": "meta eval_span 2026-03-30 to 2026-09-25; eval_days 125",
+   "raw_artifact": "docs/research/_live_indicator_warmup_results.json"
+  },
+  {
+   "id": "stocks-momentum-french-screen",
+   "reported": "Big full-window NW t 3.052434, post-publication CAGR diff +0.081863 pt/yr; Small t 3.107965, +0.197551 pt/yr (base cost); bar +1.0 pt/yr",
+   "recomputed_by_me": "Big t 3.052434, post-1994 +0.081863 pp; Small t 3.107965, +0.197551 pp",
+   "source_of_check": "recomputed_by_me",
+   "match": "yes",
+   "evidence": "Recomputed from frozen data/external/french/6_Portfolios_ME_Prior_12_2_CSV.zip and F-F_Research_Data_Factors_CSV.zip with my own parser and NW(12); matches groups.{big,small}.full_t/post_cagr_diff_pp to 1e-12.",
+   "window_in_artifact": "diag sub-periods span 1927-01 to 2026-04 (no explicit eval window key)",
+   "raw_artifact": "docs/research/_momentum_french_screen_results.json"
+  },
+  {
+   "id": "stocks-net-issuance-screen",
+   "reported": "A1 full-window Newey-West t 0.26 (one-sided p 0.398) vs bar t >= 3.0; A2 since-1994 net CAGR +0.48 pt/yr vs bar +1.0 pt/yr; full window 1963-07 to 2026-04",
+   "recomputed_by_me": "BIG NegNI t 0.258957; post-1994 +0.482235 pp",
+   "source_of_check": "recomputed_by_me",
+   "match": "yes",
+   "evidence": "Recomputed from frozen 25_Portfolios_ME_NI_5x5_CSV.zip, 1963-07..2026-04, 1% cost; matches H1.A1.t and H1.A2.cagr_diff_pp.",
+   "window_in_artifact": "inputs.full_window 1963-07 to 2026-04 (754 months); A2 window 1994-01 to 2026-04",
+   "raw_artifact": "docs/research/_net_issuance_screen_results.json"
+  },
+  {
+   "id": "stocks-position-sizing-regimes",
+   "reported": "Blend Sharpe Regime P 0.70 (CAGR 4.97%, MaxDD -7.64%); Regime F cap=16 0.57 (3.48%, -7.78%); cap=30 0.66 (4.74%, -8.00%); SPY 0.85 same window; window 2021-01-31 to 2026-04-30",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "no",
+   "evidence": "Mismatch confirmed but explained: headline (0.70 / 4.97 / -7.64) is the single ungated window in the report table (docs/research/2026-08-19-position-sizing-regimes.md:95) and has no raw artifact; the JSON is the later 6-fold gated WFO scheduled in the section 6 addendum, whose results were never written into any report.",
+   "window_in_artifact": "meta.eval_start=2023-10-30; meta.eval_end=2026-04-30",
+   "raw_artifact": "docs/research/_position_sizing_wfo_results.json",
+   "value_read_by_me": "artifact: regime_p 0.525 / 6.19 / -8.84; f_cap16 0.574; f_cap30 0.474; window 2023-10-30..2026-04-30"
+  },
+  {
+   "id": "stocks-production-replica",
+   "reported": "primary CAGR 14.19% vs SPY 14.83%; excess -0.642 pt/yr; NW t -0.690 (registered bars: t ≥ 3.0 and excess ≥ +1.0 pt/yr); window 2021-01-31 → 2026-04-30",
+   "recomputed_by_me": "CAGR 14.1871% vs SPY 14.8294%; diff -0.6423 pp; NW(5) t -0.6898",
+   "source_of_check": "recomputed_by_me",
+   "match": "yes",
+   "evidence": "Recomputed from docs/research/_production_replica_curves.csv (window=primary, arm=primary, 1,317 daily returns) with my own Newey-West code, calendar-day CAGR; matches windows.primary.arms.primary.{stats,spy_stats,excess_vs_spy}.",
+   "window_in_artifact": "windows.primary eval_start=2021-01-31; eval_end=2026-04-30",
+   "raw_artifact": "docs/research/_production_replica_results.json"
+  },
+  {
+   "id": "stocks-production-replica-holdout-2010-2020",
+   "reported": "holdout coverage 87.39% of member-days (floor 70%); 21 tainted trade/artifact matches (11 distinct symbol/date pairs)",
+   "recomputed_by_me": "coverage 1,204,838/1,378,759 = 87.39%; 21 tainted matches, 11 distinct symbol/date pairs",
+   "source_of_check": "recomputed_by_me",
+   "match": "yes",
+   "evidence": "Counted from windows.holdout.coverage_member_days and arms.primary.tainted_trades. Also found: the holdout primary arm completed (curves CSV: CAGR 15.29% vs SPY 14.29%, +1.00 pp, NW t 0.69, n=2,750), declared non-citable by the closure amendment; audit_stop.holdout text \"no holdout arms completed\" describes an earlier interrupted attempt.",
+   "window_in_artifact": "windows.holdout eval_start=2010-01-31; eval_end=2020-12-31",
+   "raw_artifact": "docs/research/_production_replica_results.json"
+  },
+  {
+   "id": "stocks-production-replica-live-parity",
+   "reported": "parity 10/32 orders (31.25%); denominator includes 19 manual liquidations",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read explained_orders, strategy_orders, explained_pct; counted orders[].explained = 10.",
+   "window_in_artifact": "since=2026-09-29; through=2026-10-19",
+   "raw_artifact": "docs/research/_replica_parity_20261019.json",
+   "value_read_by_me": "10/32 = 31.25%"
+  },
+  {
+   "id": "stocks-research-process-audit",
+   "reported": "38 registry entries: 25 qualified, 13 unresolved",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_unchecked",
+   "match": "yes",
+   "evidence": "Haiku:  Raw: coverage.counts.registry=38; registry claims=38; evidence_validity qualified=25, unresolved=13",
+   "window_in_artifact": "as_of=2026-11-01 (ledger date; no eval window)",
+   "raw_artifact": "docs/research/_research_process_audit_ledger.json"
+  },
+  {
+   "id": "stocks-sp500-core-anchor-fix-reproduction",
+   "reported": "OOS Sharpe 0.97, CAGR 7.8%, MaxDD -7.6%, gates 12/17 on 2021-01-31 to 2026-04-30; SPY same window Sharpe 0.78 (cited baseline's SPY 0.58)",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read core.* in _anchor_fix_reproduction_results.json.",
+   "window_in_artifact": "meta.eval_start=2021-01-31; meta.eval_end=2026-04-30",
+   "raw_artifact": "docs/research/_anchor_fix_reproduction_results.json",
+   "value_read_by_me": "Sharpe 0.971, CAGR 7.81, MaxDD -7.63, 12/17"
+  },
+  {
+   "id": "stocks-sp500-core-corrected-tape-rebaseline",
+   "reported": "SP500 Core Sharpe 0.99, CAGR 8.0%, MaxDD -7.65%, 12/17 gates; 3-sleeve blend Sharpe 0.69, CAGR 4.78%, MaxDD -6.70%; SPY matched window Sharpe 0.78, CAGR 12.79%, MaxDD -22.09%",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read core.*; blend values taken from Haiku.",
+   "window_in_artifact": "meta.eval_start=2021-01-31; meta.eval_end=2026-04-30",
+   "raw_artifact": "docs/research/_rebaseline_corrected_tape_20260822.json",
+   "value_read_by_me": "core Sharpe 0.991, CAGR 8.00, MaxDD -7.65, 12/17"
+  },
+  {
+   "id": "stocks-sp500-core-pit-rebaseline",
+   "reported": "OOS Sharpe 0.59, CAGR 3.1%, MaxDD -5.3%, gates 17/17; SPY Sharpe 0.78, CAGR 13.0%, MaxDD -22.1%; 17 folds, 2021-01-31 → 2026-04-30",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read ensemble.*; SPY CAGR 12.96 and MaxDD -22.09 are not in this file (they are in _core_spy_blend_20260924.json, same window). 17/17 gate count predates the 2026-10-19 DSR fix (09f9f401) and is void.",
+   "window_in_artifact": "ensemble.eval_start=2021-01-31; ensemble.eval_end=2026-04-30",
+   "raw_artifact": "docs/research/_pit_rebaseline_20260923.json",
+   "value_read_by_me": "Sharpe 0.592, CAGR 3.08, MaxDD -5.28, 17/17; SPY Sharpe 0.779"
+  },
+  {
+   "id": "stocks-wfo-fold-attribution",
+   "reported": "PIT ensemble_ic 15/17 anchor folds (88%); fomc_drift 47/53 anchor folds (89%)",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_unchecked",
+   "match": "yes",
+   "evidence": "Haiku: The attribution file's own summary gates_pass_anchor (9 and 5) is a different count; the headline matches the per-fold used_anchor flag in the source runs. Raw: ensemble_ic used_anchor=True in 15 of 17 fold rows; fomc_drift used_anchor=True in 47 of 53 fold rows",
+   "window_in_artifact": null,
+   "raw_artifact": "docs/research/_wfo_fold_attribution_results.json"
+  },
+  {
+   "id": "stocks-wfo-policy-synthetic",
+   "reported": "P_halt = 0.875 at mu=1.0, p_gate=1.0 (legacy); preregistered threshold 0.50",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read the scenario key in _wfo_policy_synthetic_results.json.",
+   "window_in_artifact": null,
+   "raw_artifact": "docs/research/_wfo_policy_synthetic_results.json",
+   "value_read_by_me": "ever_halted 0.875 at 1.0|1.0|legacy"
+  },
+  {
+   "id": "stocks-xs-momentum-corrected-replay",
+   "reported": "excess CAGR +4.367 pt/yr vs SPY; NW t 0.761 (registered: t ≥ 3 and excess ≥ +1); primary window",
+   "recomputed_by_me": null,
+   "source_of_check": "haiku_spot_checked",
+   "match": "yes",
+   "evidence": "Read xs_momentum.excess_stats.",
+   "window_in_artifact": "xs_momentum.eval_start=2021-01-31; eval_end=2026-04-30",
+   "raw_artifact": "docs/research/_audit_reruns_20261019.json",
+   "value_read_by_me": "cagr_diff_pp 4.367; NW t 0.7606; n 1,064"
+  }
+ ],
+ "preregistration": [
+  {
+   "id": "stocks-a23-static-leverage",
+   "verdict": "GO for owner decision",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-09-30-static-fractional-leverage.md",
+   "brief_date": "2026-09-30 13:02 (928151f2)",
+   "result_date": "2026-09-30 13:22 (f3b5733a)",
+   "pass_bar": "After-tax CAGR >= after-tax SPY + 1.0 pt/yr on 2006-07..2026-09 AND not below after-tax SPY on 1993-2006 synthetic holdout.",
+   "note": "Pre-tax sanity results were already seen and disclosed in the brief (\"Windows already seen\"). The 2026-10-19 addendum shows +0.80 pt/yr at today's bills (+0.77 under ordinary-income distributions), below the bar; the verdict was kept as an owner allocation decision rather than revised."
+  },
+  {
+   "id": "stocks-a24-sleeve-trend-rider",
+   "verdict": "NO-GO as a return improvement",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-09-30-static-fractional-leverage.md",
+   "brief_date": "2026-09-30 13:02",
+   "result_date": "2026-09-30 13:22",
+   "pass_bar": "Optional rider after the static result; same framing.",
+   "note": ""
+  },
+  {
+   "id": "stocks-accruals-feasibility",
+   "verdict": "unresolved",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-after-tax-lot-engine",
+   "verdict": "Library implemented, unvalidated",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-analyst-revisions",
+   "verdict": "Infeasible",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-anomaly-driven-demand",
+   "verdict": "Infeasible",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-avb-eqr-merger-holding",
+   "verdict": "CORRECTED",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-bb-reversion",
+   "verdict": "Beat SPY in WFO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-century-leverage",
+   "verdict": "keep 30%",
+   "status": "amended",
+   "brief": "docs/research/briefs/2026-10-23-century-leverage.md",
+   "brief_date": "approved 2026-10-23 13:18 (5eba0a60)",
+   "result_date": "2026-10-23 15:52 (2671d6f9)",
+   "pass_bar": "Brief section 6 mechanical rule on static 2x-fund weights (keep 30% unless an alternative passes every condition).",
+   "note": "Rulings r1 (15:14, reproduction gate) and r2 (15:19, end date 2026-08-31 -> 2026-06-30 because Shiller dividends end 2026-06, confirmed in the frozen ie_data.xls) were both committed before the results. Amended before results."
+  },
+  {
+   "id": "stocks-congress-trades",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-conviction-bb",
+   "verdict": "Inactive",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-core-spy-blend-keep",
+   "verdict": "KEEP",
+   "status": "no brief found",
+   "brief": "self-attested in docs/research/2026-09-24-core-spy-blend-keep.md:29",
+   "brief_date": null,
+   "result_date": "2026-09-24 22:07 (report and JSON in one commit)",
+   "pass_bar": "KEEP if k=1 Sharpe > SPY with MaxDD no worse; else HALVE; else SHRINK.",
+   "note": "Rule stated in the report as pre-registered; no earlier committed copy found."
+  },
+  {
+   "id": "stocks-daily-threshold-tilt",
+   "verdict": "untriaged",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-dual-momentum",
+   "verdict": "vacuous at this book size",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-10-19-production-replica-audit.md",
+   "brief_date": "2026-10-19 15:56",
+   "result_date": "2026-10-19 21:25 (411fbdca)",
+   "pass_bar": "Same as xs_momentum.",
+   "note": "The \"vacuous\" label and +12.2% figure are changelog prose; the registered verdict is NO-GO stands."
+  },
+  {
+   "id": "stocks-ema-cross",
+   "verdict": "matches SPY, no alpha",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-ensemble-conviction",
+   "verdict": "Soft NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-ensemble-ic-2026-06-28",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-ensemble-ic-pit",
+   "verdict": "closed NO-GO",
+   "status": "pre-registered",
+   "brief": "docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:197",
+   "brief_date": "2026-09-10 22:08 (083afc7d)",
+   "result_date": "2026-09-23 00:34",
+   "pass_bar": "Sharpe > 1.05, MaxDD bound -10%, winning parameter stable >= 8/17.",
+   "note": "The 09-23 report adds \"above the control\" not in the 09-10 text; the 09-10 text writes \"MaxDD <= -10%\", which read literally is the wrong direction (the code checks maxdd_ge_-10). IC fails all four either way."
+  },
+  {
+   "id": "stocks-ensemble-kelly-2026-07",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-ensemble-kelly-pit",
+   "verdict": "closed NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": "2026-09-23 00:34",
+   "pass_bar": "Report applies the ensemble_ic criteria from the 2026-09-10 audit.",
+   "note": "The 09-10 audit lists no Kelly-specific criteria (only the ic item at line 197)."
+  },
+  {
+   "id": "stocks-ensemble-ndh-baseline-1-12",
+   "verdict": "Validated",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-ensemble-wfo-validated-2026-06-20",
+   "verdict": "Validated",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-equity-diversification-sleeves",
+   "verdict": "failed",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-equity-pre-fomc-drift-intake",
+   "verdict": "rejected on intake",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-event-audit-readiness-decision",
+   "verdict": "UNRESOLVED",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-10-21-event-timing-audit.md",
+   "brief_date": "2026-10-21 12:00",
+   "result_date": "2026-10-22 18:05",
+   "pass_bar": "Audit predicates; no return test.",
+   "note": ""
+  },
+  {
+   "id": "stocks-event-evidence-resolution-workbook",
+   "verdict": "UNRESOLVED",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-10-21-event-timing-audit.md",
+   "brief_date": "2026-10-21 12:00",
+   "result_date": "2026-10-22 17:05",
+   "pass_bar": "Audit predicates; no return test.",
+   "note": ""
+  },
+  {
+   "id": "stocks-event-timing-audit-decision",
+   "verdict": "PARK",
+   "status": "amended",
+   "brief": "docs/research/briefs/2026-10-21-event-timing-audit.md",
+   "brief_date": "approved 2026-10-21 12:00 (5670eb10)",
+   "result_date": "2026-10-23 09:04 (ddce4c4d)",
+   "pass_bar": "Audit completion predicates (data provenance and timing), not a return pass bar.",
+   "note": "Date-only insider amendment approved 2026-10-22 08:17 (6e16e256) before the decision; header acceptance-time amendment remains a draft (b0870b42)."
+  },
+  {
+   "id": "stocks-exit-rule-sweep",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-factor-screen-h1-h4",
+   "verdict": "NO-GO",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-10-20-factor-screen.md",
+   "brief_date": "drafted 2026-10-20 23:37 (6d8f3943); approved 2026-10-21 03:26:16 (0227a5e7)",
+   "result_date": "2026-10-21 03:32:54 (905f8c79)",
+   "pass_bar": "Holm at family alpha 0.00135 over H1-H4 on 1963-07..2026-04 AND post-1994 net CAGR >= +1.0 pt/yr.",
+   "note": "Four review edits all before approval and before results. Hypotheses chosen after the momentum result was known (H4 includes momentum)."
+  },
+  {
+   "id": "stocks-family-scope-review",
+   "verdict": "undetermined",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-form-144-inversion",
+   "verdict": "downgraded; low priority",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-forward-paper-standard",
+   "verdict": "approved",
+   "status": "not applicable",
+   "brief": "docs/research/briefs/2026-10-23-forward-paper-standard.md",
+   "brief_date": "2026-10-23 09:43",
+   "result_date": null,
+   "pass_bar": "A standard, not a result.",
+   "note": ""
+  },
+  {
+   "id": "stocks-free-data-stock-feasibility",
+   "verdict": "No candidate is recommended here",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-headline-sentiment",
+   "verdict": "NO-GO (PROVISIONAL)",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-ic-kelly-rebaseline-pre-pit",
+   "verdict": "invalid",
+   "status": "pre-registered",
+   "brief": "docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:197",
+   "brief_date": "2026-09-10",
+   "result_date": "2026-09-23 00:34",
+   "pass_bar": "Same as ensemble_ic.",
+   "note": "Run declared invalid (single-day artifact), not closed."
+  },
+  {
+   "id": "stocks-idio-vol",
+   "verdict": "Rejected as a standalone strategy",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-index-deletion-fade",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-insider-acceptance-time-diagnostic",
+   "verdict": "DRAFT, owner approval required",
+   "status": "not applicable",
+   "brief": "docs/research/briefs/2026-10-23-insider-acceptance-time-amendment.md",
+   "brief_date": "2026-10-23 08:58",
+   "result_date": "2026-10-23 08:58",
+   "pass_bar": "Draft amendment; no verdict.",
+   "note": ""
+  },
+  {
+   "id": "stocks-insider-cluster-buy",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-insider-identity-inventory",
+   "verdict": "UNRESOLVED",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-10-22-identity-inventory-resolution-batch.md",
+   "brief_date": "2026-10-22 15:28 (1ca6d722)",
+   "result_date": "2026-10-22 15:37",
+   "pass_bar": "Bounded evidence batch; no return test.",
+   "note": ""
+  },
+  {
+   "id": "stocks-institutional-rebalancing-tilt",
+   "verdict": "untriaged",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-intraday-feasibility",
+   "verdict": "UNRESOLVED",
+   "status": "not applicable",
+   "brief": "docs/research/briefs/2026-10-24-intraday-feasibility.md",
+   "brief_date": "DRAFT r7, not approved",
+   "result_date": null,
+   "pass_bar": "No return computed.",
+   "note": ""
+  },
+  {
+   "id": "stocks-july-research-program-summary",
+   "verdict": "closed NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-leveraged-rotation",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-leveraged-trend",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-live-revert-blend-to-core",
+   "verdict": "Underperforms; Revert Queued",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-macd-divergence",
+   "verdict": "Shipped",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-max-effect",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-midcap400-reversion",
+   "verdict": "Researching",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-ml-entry-gate-falsified",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-momentum-french-screen",
+   "verdict": "NO-GO",
+   "status": "pre-registered-late",
+   "brief": "docs/research/briefs/2026-10-20-momentum-retest.md",
+   "brief_date": "first commit 2026-10-20 22:40:22 (bf0e8279), same commit as the results",
+   "result_date": "2026-10-20 22:40:22 (bf0e8279); French archive downloaded 2026-10-21T02:20:57Z = 2026-10-20 19:20 PT",
+   "pass_bar": "Part A: Holm family at one-sided p 0.00135 (stronger t >= ~3.2, other t >= 3.0) on 1927-01..2026-04 at 1%/3% cost AND post-1994 net CAGR >= +1.0 pt/yr.",
+   "note": "The brief self-attests \"pre-registered 2026-10-20, before any result existed\", but git shows brief, plan and results in one commit; time order cannot be confirmed from the repo. The two-part standard also replaced the 2026-10-19 implementation-level t >= 3 bar after the xs_momentum replay (t 0.76) was known. Diagnostics (rebound, relative drawdown) were defined after the NO-GO and are disclosed as such (report lines 125-128)."
+  },
+  {
+   "id": "stocks-mtf-reversion",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-nasdaq100-single-core",
+   "verdict": "rejected; SP500 stays the core",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-net-issuance-screen",
+   "verdict": "NO-GO",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+   "brief_date": "drafted 10:10:04; H1 set 10:11:06 (530ff159); approved 11:18:36 (9e6e7703)",
+   "result_date": "2026-10-23 11:31:24 (9dff1067)",
+   "pass_bar": "A1 NW t >= 3.0 (p <= 0.00135) AND A2 post-1994 net CAGR >= +1.0 pt/yr.",
+   "note": ""
+  },
+  {
+   "id": "stocks-ohlcv-day-shift",
+   "verdict": "RESOLVED",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-option-iv-skew",
+   "verdict": "Infeasible",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-overnight-gap",
+   "verdict": "Rejected",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-pairs-stat-arb",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-paper-freeze-readiness",
+   "verdict": "not demonstrated clean",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-pead",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-position-sizing-regimes",
+   "verdict": "Inconclusive",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is \"Inconclusive\"; the gated-WFO follow-up results exist in JSON but were never reported."
+  },
+  {
+   "id": "stocks-production-replica",
+   "verdict": "NO-GO",
+   "status": "amended",
+   "brief": "docs/research/briefs/2026-10-19-production-replica-audit.md",
+   "brief_date": "2026-10-19 15:56 (9ee18ea3)",
+   "result_date": "primary + holdout results committed 2026-10-19 19:06:02 (8bc365ee)",
+   "pass_bar": "GO needs NW(5) t >= 3.0 AND CAGR - SPY >= +1.0 pt/yr on both windows (pre-tax), then after-tax >= +1.0; stop: no verdict while parity < 100%, artifact within 5 bars, or holdout coverage < 70%.",
+   "note": "Three amendments: parity (a89f31c2, 16:24, 4 min after the parity result 77014bb2 at 16:20, before the primary run); FOMC timing (7320c1d6, 17:22, after the registered FOMC stop fired; primary simulator unaffected); closure (80981e25, 19:05:53, 9 s before the results commit and written after the primary and holdout numbers were known; it quotes them). The closure amendment changed the rule from \"no verdict until stops resolve\" to \"NO-GO on primary failure\". Direction check: the original bars already made GO impossible after the primary failure, so the amendment produced a NO-GO where the original text produced no verdict; it did not turn a pass into a fail. Raw driver verdict stays INCONCLUSIVE/stopped."
+  },
+  {
+   "id": "stocks-production-replica-holdout-2010-2020",
+   "verdict": "INCONCLUSIVE",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-10-19-production-replica-audit.md",
+   "brief_date": "2026-10-19 15:56 (9ee18ea3)",
+   "result_date": "2026-10-19 19:06 (8bc365ee)",
+   "pass_bar": "Artifact within 5 bars stops the run; coverage < 70% => INCONCLUSIVE.",
+   "note": "INCONCLUSIVE follows the registered stop rule. The primary arm did complete before the stop (CAGR 15.29% vs SPY 14.29%, NW t 0.69, n 2,750) and is non-citable by the closure amendment; even untainted it would fail t >= 3."
+  },
+  {
+   "id": "stocks-production-replica-live-parity",
+   "verdict": "UNVERIFIED",
+   "status": "amended",
+   "brief": "docs/research/briefs/2026-10-19-production-replica-audit.md",
+   "brief_date": "2026-10-19 15:56",
+   "result_date": "parity result 2026-10-19 16:20 (77014bb2)",
+   "pass_bar": "Parity must explain 100% of live strategy orders or no verdict.",
+   "note": "Parity amendment (a89f31c2, 16:24) was approved after the 10/32 result and narrowed the study to a daily-bar model; it kept exact live replication UNVERIFIED rather than relabeling it."
+  },
+  {
+   "id": "stocks-retail-attention",
+   "verdict": "PAUSED (not GO/NO-GO)",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-rsi-reversion",
+   "verdict": "Component; independent edge unverified",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-short-interest",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-short-volume-ratio",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "stocks-six-indicator-ensemble",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-sp500-core-anchor-fix-reproduction",
+   "verdict": "did not reproduce",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-sp500-core-corrected-tape-rebaseline",
+   "verdict": "Live Core",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-sp500-core-pit-rebaseline",
+   "verdict": "loses to SPY",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": "2026-09-23 00:34",
+   "pass_bar": "Compared against SPY on the pinned window; no registered bar found.",
+   "note": "Verdict \"loses to SPY\" is a direct comparison (Sharpe 0.59 vs 0.78, CAGR 3.1% vs 13.0%), not a bar decision."
+  },
+  {
+   "id": "stocks-sp500-equity-research-doc-trials",
+   "verdict": "RECOMMENDED",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-spy-duplicate-rows",
+   "verdict": "Direction sound; absolute Sharpe understated ~29%",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-three-pct-position-size",
+   "verdict": "Done",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-three-sleeve-blend-1-14",
+   "verdict": "GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-trailing-stops",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-turn-of-month-rotation",
+   "verdict": "recommend not queuing",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-two-symbol-sweep-design",
+   "verdict": "design only; not authorized",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-vix-entry-throttling",
+   "verdict": "Historical NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-vol-managed-spy",
+   "verdict": "untriaged (shortlist)",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-volume-bb-reversion",
+   "verdict": "Component; independent edge unverified",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-voter-ablation-5-voter",
+   "verdict": "Best = core+macd+vbb (5-voter, drop MTF)",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-wfo-anchor-leakage-fix",
+   "verdict": "SUPERSEDED",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-wfo-policy-synthetic",
+   "verdict": "supported under this model",
+   "status": "pre-registered",
+   "brief": "docs/research/2026-11-02-wfo-policy-synthetic.md (preregistration commit edc4d79)",
+   "brief_date": "2026-11-02 13:43:19 (edc4d79)",
+   "result_date": "2026-11-02 13:54",
+   "pass_bar": "P_halt threshold 0.50.",
+   "note": ""
+  },
+  {
+   "id": "stocks-wfo-tournament-sp500-monthly",
+   "verdict": "clear NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-xs-momentum-2026-06",
+   "verdict": "no risk-adjusted edge",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "stocks-xs-momentum-corrected-replay",
+   "verdict": "NO-GO stands",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-10-19-production-replica-audit.md",
+   "brief_date": "2026-10-19 15:56",
+   "result_date": "2026-10-19 21:25 (411fbdca)",
+   "pass_bar": "Brief section 6: section 4 items 1-2 (t >= 3 and >= +1.0 pt/yr) vs SPY on OOS daily returns.",
+   "note": ""
+  },
+  {
+   "id": "cross-asset-commodity-trend",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "cross-asset-etf-implied-fx-expectations",
+   "verdict": "untriaged; contested pending direct re-read",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "cross-asset-fomc-drift-corrected-harness",
+   "verdict": "NO-GO stands",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-10-19-production-replica-audit.md",
+   "brief_date": "2026-10-19 15:56",
+   "result_date": "unclustered 2026-10-19 21:25; clustered 2026-10-20 22:40 (bf0e8279)",
+   "pass_bar": "Net event t >= 3.0 AND WFE >= 0.50.",
+   "note": "Clustered re-analysis was added after the first result; it lowered net t from 1.57 to 0.98 (conservative direction). Both fail; WFE 0.24 also fails."
+  },
+  {
+   "id": "cross-asset-fomc-drift-wfo",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "cross-asset-fx-hedge-overlay",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "cross-asset-month-end-treasury",
+   "verdict": "NO-GO",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md",
+   "brief_date": "2026-09-24 07:24 (664cadee)",
+   "result_date": "2026-09-24 07:50",
+   "pass_bar": "Five criteria; GO needs all.",
+   "note": "Prior sanity check (IEF Sharpe 0.96) disclosed in the brief."
+  },
+  {
+   "id": "cross-asset-on-deck-candidate-feasibility",
+   "verdict": "Infeasible or blocked for most candidates; B1 and B4 data-feasible but gated on crypto dormancy",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "cross-asset-sleeve-holdout-2007-2011",
+   "verdict": "PASSED (weak)",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-09-28-cross-asset-sleeve-holdout.md",
+   "brief_date": "2026-09-28 20:23:56 (96ac565f)",
+   "result_date": "2026-09-28 20:40 (results JSON first commit)",
+   "pass_bar": "Book Sharpe > SPY; MaxDD no worse; both hold at 3 bp.",
+   "note": "Holdout brief committed with the parent study results, 17 min before the holdout results."
+  },
+  {
+   "id": "cross-asset-sleeve-trend-arm",
+   "verdict": "fails its bar",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-09-28-cross-asset-sleeve.md",
+   "brief_date": "2026-09-28 19:37",
+   "result_date": "2026-09-28 20:23",
+   "pass_bar": ">= +0.05 Sharpe or >= 3 pts MaxDD without Sharpe loss; WFO gates >= 12/17; no halt; same lookback >= 8/17.",
+   "note": ""
+  },
+  {
+   "id": "cross-asset-static-80-20-sleeve",
+   "verdict": "GO (shadow only)",
+   "status": "pre-registered",
+   "brief": "docs/research/briefs/2026-09-28-cross-asset-sleeve.md",
+   "brief_date": "2026-09-28 19:37 (38754cc2)",
+   "result_date": "2026-09-28 20:23 (96ac565f)",
+   "pass_bar": "Sharpe > SPY on pinned and 2016-2026; MaxDD no worse; 2022 no worse; holds at 3 bp; holds with any leg removed.",
+   "note": "Sharpe-based bar; raw CAGR 13.6% vs SPY 14.7% does not enter the bar."
+  },
+  {
+   "id": "cross-asset-treasury-curve",
+   "verdict": "NO-GO",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "July 2026 study: the only committed bar was the implementation prompt's \"Current baseline -- the bar to beat\" (docs/research/prompts/local-implementation-prompt-TEMPLATE.md, added 2026-07-16 46f9ff83), i.e. the then-current baseline numbers, which later proved leak-inflated (1.12). No per-study pass bar committed before results."
+  },
+  {
+   "id": "crypto-binance-us-live-trader",
+   "verdict": "On hold",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-config-tweaks-reverted-2026-04-02",
+   "verdict": "reverted",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-defi-tokenized-equity-arb",
+   "verdict": "Do not build — watch-and-revisit only",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-diversity-cap-disabled-2026-05-07",
+   "verdict": "disabled",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-edge-search-2026-06-08",
+   "verdict": "no deployable edge",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-funding-carry-phase4",
+   "verdict": "directionally credible but not numerically trustworthy",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-ibit-overnight-session",
+   "verdict": "closed in practice — do not build",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-kraken-live-bot-pnl",
+   "verdict": "modestly profitable",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-perp-funding-carry-candidate",
+   "verdict": "Infeasible",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-spot-etf-flow-persistence",
+   "verdict": "parked (infeasible)",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-tsmom-btc",
+   "verdict": "untriaged (literature only)",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-venue-migration-path-d",
+   "verdict": "defer (90-day)",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-web-research-batch-2026-10-25",
+   "verdict": "Literature candidates in the register",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-wfo-overfitting-param-stability",
+   "verdict": "NO-OP",
+   "status": "not applicable",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "Verdict is a status, feasibility or audit label, not a pass/fail result against a performance bar. No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  },
+  {
+   "id": "crypto-wfo-textbook-reset",
+   "verdict": "closed",
+   "status": "no brief found",
+   "brief": null,
+   "brief_date": null,
+   "result_date": null,
+   "pass_bar": null,
+   "note": "No brief in docs/research/briefs/ (directory starts 2026-09-24) and no pass-bar statement found in the source report."
+  }
+ ],
+ "academic_claims": [
+  {
+   "claim": "French BIG portfolios split at the NYSE median market cap (so BIG is not the S&P 500); momentum sort on prior 2-12 return with 30/70 NYSE breakpoints",
+   "source_cited_in_repo": "docs/research/2026-10-21-factor-screen-nogo.md:28; docs/research/_momentum_french_screen_results.json provenance",
+   "external_source_url_or_null": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/Data_Library/det_6_port_form_sz_pr_12_2.html",
+   "verified": true,
+   "note": "Page: 'The monthly size breakpoint is the median NYSE market equity. The monthly prior (2-12) return breakpoints are the 30th and 70th NYSE percentiles.' The report's '~1,000+ names' count is not stated on the page (not verified)."
+  },
+  {
+   "claim": "French 25 size x net-issuance portfolios: NI = change in log split-adjusted shares, NYSE breakpoints, formed each June",
+   "source_cited_in_repo": "docs/research/briefs/2026-10-23-net-issuance-screen.md:7,33",
+   "external_source_url_or_null": "https://mba.tuck.dartmouth.edu/pages/faculty/Ken.french/Data_Library/tw_5_ports_me_NI.html",
+   "verified": true,
+   "note": "Page: 'NI for June of year t is the change in the natural log of split-adjusted shares outstanding from the fiscal yearend in t-2 to the fiscal yearend in t-1. The NI breakpoints are NYSE quintiles.'"
+  },
+  {
+   "claim": "Momentum post-publication cutoff 1994-01 (momentum published 1993)",
+   "source_cited_in_repo": "docs/research/briefs/2026-10-20-momentum-retest.md:116 (no paper named)",
+   "external_source_url_or_null": "https://ideas.repec.org/a/bla/jfinan/v48y1993i1p65-91.html",
+   "verified": true,
+   "note": "Jegadeesh and Titman, Journal of Finance 48(1), 65-91, March 1993. The brief never names the paper; the report itself marks any causal 'publication caused decay' claim unverified (docs/research/2026-10-20-momentum-french-screen-nogo.md:91-92)."
+  },
+  {
+   "claim": "Robust profitability and investment were formally introduced circa 2013-2015 (Novy-Marx 2013; Fama and French 2015), so 1963-2012 is retrospective",
+   "source_cited_in_repo": "docs/research/2026-10-21-factor-screen-nogo.md:30; docs/research/briefs/2026-10-20-factor-screen.md:105",
+   "external_source_url_or_null": "https://www.sciencedirect.com/science/article/abs/pii/S0304405X14002323",
+   "verified": false,
+   "note": "PARTLY ACCURATE. Both papers exist as cited (Novy-Marx, JFE 108(1) 2013, gross profitability; Fama-French, JFE 116 2015, 'A five-factor model ... performs better than the three-factor model'). But Fama-French 2015's own introduction cites earlier evidence: 'Aharoni, Grundy, and Zeng (2013) document ... investment ... (See also Haugen and Baker, 1996, ... Titman et al., 2004, Fama and French, 2006...)'. Novy-Marx measures gross, not 'robust' (operating) profitability. 'Formally introduced circa 2013-2015' is a simplification; the effect on the screen is small because A2 starts in 1994 either way."
+  },
+  {
+   "claim": "Pontiff and Woodgate (2008) documented the share-issuance relation",
+   "source_cited_in_repo": "docs/research/briefs/2026-10-23-net-issuance-screen.md:24",
+   "external_source_url_or_null": "https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1540-6261.2008.01335.x",
+   "verified": true,
+   "note": "Abstract (via search index; publisher page returned 403 to direct fetch): 'Post-1970, share issuance exhibits a strong cross-sectional ability to predict stock returns ... We estimate the issuance relation pre-1970 and find no statistically significant predictive ability.' Note the pre-1970 null, which the repo brief does not mention; the screen's 1963-07 start includes 1963-1969."
+  },
+  {
+   "claim": "McLean and Pontiff (2016) find post-publication decay across anomalies",
+   "source_cited_in_repo": "docs/research/briefs/2026-10-23-net-issuance-screen.md:23",
+   "external_source_url_or_null": "https://gwern.net/doc/economics/2016-mclean.pdf",
+   "verified": true,
+   "note": "Abstract: '97 variables ... Portfolio returns are 26% lower out-of-sample and 58% lower post-publication.' The brief says these mostly examine long-short spreads, not long-only BIG legs; that caveat is correct."
+  },
+  {
+   "claim": "Hou, Xue and Zhang (2020) find weak replication across anomalies",
+   "source_cited_in_repo": "docs/research/briefs/2026-10-23-net-issuance-screen.md:23",
+   "external_source_url_or_null": "https://ideas.repec.org/a/oup/rfinst/v33y2020i5p2019-2133..html",
+   "verified": true,
+   "note": "Abstract: '65% of the 452 anomalies ... cannot clear the single test hurdle of the absolute t-value of 1.96. Imposing the higher multiple test hurdle of 2.78 ... raises the failure rate to 82%.' (OUP page 403 on direct fetch; abstract via RePEc/search index.)"
+  },
+  {
+   "claim": "Hartley & Schwarz (2019): long Treasuries over the last few days of the month, Sharpe around 1, sample 1990-2018, ~20 bp/month at 10y",
+   "source_cited_in_repo": "docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md:62",
+   "external_source_url_or_null": "https://www.kristaschwarz.com/EOM.pdf",
+   "verified": true,
+   "note": "Paper: 'A long Treasury position for just the last few days of each month gives a high annualized Sharpe ratio of around 1'; 'We consider data from January 1990 to the end of 2018'; 'excess returns of around 20 basis points per month at the 10-year maturity'; also 'around 25 basis points per month' on the 10-year note in a later section. The '0.25% over the last 3 days' wording in the extraction was not separately located."
+  },
+  {
+   "claim": "Bianchi & Goldberg (arXiv 2604.27287): over 2022-23 S&P +0.076%, SSO -11.09%, UPRO -28.24%; two-thirds variance drag; covariance term -2.24 pts/yr SSO, -5.64 UPRO",
+   "source_cited_in_repo": "docs/research/briefs/2026-09-30-static-fractional-leverage.md:60-66",
+   "external_source_url_or_null": "https://arxiv.org/html/2604.27287v1",
+   "verified": true,
+   "note": "Paper: index 'was up slightly, earning a cumulative return of 0.076%'; 'SSO and UPRO were down, earning -11.09% and -28.24%'; abstract 'Roughly two-thirds ... compounding and volatility'; Table 3 Cov row -2.242 (SSO), -5.643 (UPRO). Sample starts 2022-01-03."
+  },
+  {
+   "claim": "Gao, Han, Li and Zhou (2018): first-half-hour timing strategy 6.67% annualized mean, Sharpe 1.08 (Table 6)",
+   "source_cited_in_repo": "docs/research/2026-10-24-intraday-trading-feasibility.md:24",
+   "external_source_url_or_null": "https://www.dropbox.com/s/wk5ap8hnvgdyudx/MarketIntradayMomentum.pdf?raw=1",
+   "verified": true,
+   "note": "Journal of Financial Economics 129 (2018) 394-414; Table 6 row eta(r1): 6.67*** mean, Sharpe 1.08; text: 'resulting in a Sharpe ratio of 1.08'. Long/short rule (-r13 if r1 <= 0) as the repo states."
+  },
+  {
+   "claim": "ProShares SSO expense ratio 0.88% gross / 0.84% net",
+   "source_cited_in_repo": "docs/research/briefs/2026-10-23-century-leverage.md:51-54,184",
+   "external_source_url_or_null": "https://www.proshares.com/our-etfs/leveraged-and-inverse/sso",
+   "verified": true,
+   "note": "Page (2026-11-04): 'Gross Expense Ratio 0.88%', 'Net Expense Ratio 0.84%', waiver through 2027-09-30."
+  },
+  {
+   "claim": "Shiller S&P dividend series ends 2026-06 (century study end moved to 2026-06-30)",
+   "source_cited_in_repo": "docs/research/briefs/2026-10-23-century-leverage-ruling-r2.md",
+   "external_source_url_or_null": null,
+   "verified": true,
+   "note": "Checked in the frozen copy data/external/shiller/ie_data.xls (sheet Data): last non-blank D is 2026.06 (81.70); 2026.07 onward blank. Not re-fetched from Shiller's site."
+  },
+  {
+   "claim": "Smirnov & Dapporto (SSRN 5341539/5288640): Kelly leverage 1.17x (Thorp 1926-84) vs 2.40x (1996-2024); Cooper SSRN 1664823",
+   "source_cited_in_repo": "docs/research/briefs/2026-09-30-static-fractional-leverage.md:58-69",
+   "external_source_url_or_null": null,
+   "verified": false,
+   "note": "Not examined (time); context-only citations that did not set any pass bar."
+  },
+  {
+   "claim": "Baltussen et al. (2021) intraday momentum and gamma hedging",
+   "source_cited_in_repo": "docs/research/2026-10-24-intraday-trading-feasibility.md:56",
+   "external_source_url_or_null": "https://academicweb.nd.edu/~zda/intramom.pdf",
+   "verified": false,
+   "note": "Not examined; no verdict in this study rests on it."
+  }
+ ],
+ "prose_only_count": 103,
+ "notes": "Lens 7, 2026-11-04. recompute: recomputed_by_me = independent recomputation from raw data or curves; value_read_by_me = value read directly from the artifact key (spot-check); haiku_unchecked = Haiku output not re-verified."
+}
