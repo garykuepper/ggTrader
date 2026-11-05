@@ -15,12 +15,16 @@ MACD = moving-average convergence/divergence; vbb = volume-confirmed Bollinger v
 
 ## Summary for the owner
 
-1. **The strategy code computes what its written rules say.** I re-wrote four rules from
-   their written descriptions in my own plain code and ran them on real prices: the live
-   `ensemble` (10 stocks, March to May 2025), `bb_reversion`, 12-1 cross-sectional
-   momentum and the month-end Treasury rule. All four produced exactly the same buy and
-   sell dates as the repo code (0 mismatches). There is no hidden coding error in the
-   signal math of the strategies I checked.
+1. **The strategy arithmetic is right for the four rules I replayed.** I wrote four rules
+   in my own plain code and ran them on real prices: the live `ensemble`, `bb_reversion`
+   (both on 10 names over March to May 2025), 12-1 cross-sectional momentum (20 names,
+   3 month-ends) and the month-end Treasury rule (6 months). All four produced exactly the
+   same buy and sell dates as the repo code (0 mismatches). Where the written description
+   is ambiguous, my hand code followed the code's reading: crossing events rather than
+   levels ("touch the band", "RSI < 30"), the code's MACD divergence proxy, and its
+   warm-up mask at row 55. So the replays test the arithmetic, not whether the code's
+   interpretation of the specification is the intended one, and the coverage is small
+   (10 names, 3 months for the daily signals).
 2. **The live paper trader does not run the configuration that the backtests measured.**
    This is the main Lens 6 finding. The differences are design and configuration, not
    typos:
@@ -30,22 +34,38 @@ MACD = moving-average convergence/divergence; vbb = volume-confirmed Bollinger v
    - Live computes its signals at 12:45 PT from **today's unfinished bar** (price and
      volume 15 minutes before the close) and trades at once. The walk-forward backtests
      trade at the **same day's final close**, and the 2026-10-19 production replica trades
-     **one day later** than the signal. Neither matches live. The replica's design brief
-     states that live uses the prior completed bar; the code, today's run log and the
-     database all show otherwise.
+     **one day later** than the signal. Neither matches live. This is not new: the
+     original replica brief assumed live uses the prior completed bar
+     (`docs/research/briefs/2026-10-19-production-replica-audit.md:38-39`), and the
+     project already conceded on 2026-10-19 that this assumption does not hold. The
+     parity amendment says the loader "can include a same-session daily bar" and does
+     not guarantee the prior completed close
+     (`docs/research/briefs/2026-10-19-production-replica-parity-amendment.md:29-31`),
+     and it narrows the replica's question to a prior-completed-bar model (lines
+     38-42). Lens 6 confirms the amendment from the code, today's run log and the
+     database.
    - Live holds at most 3 stocks, picked alphabetically when more signals fire, each sized
      at 3.3% of account value. The walk-forward backtests have no position cap and size
      each buy at 3% of the cash left, which shrinks as cash is used. The replica does model
      the cap, alphabetical fill and 3.3% sizing.
 3. **Most published headline numbers were produced by code that later had bugs fixed.**
-   Fifteen rows were produced before the anchor-leak fix (2026-08-18) and/or the
-   point-in-time membership fix (2026-09-23). For those, the code at run time did not
-   match its "honest out-of-sample" specification.
-4. **The paper snapshot's extra $320.24 is the code's cumulative dividend accrual.** The
-   database table of accrued dividends sums to exactly $320.24 and the snapshot gap equals
-   it on 2026-10-30 to 11-04 (and about $156.49, the earlier total, through October). The
-   code adds this on purpose because the paper broker does not credit dividends (per its
-   module notes). Whether Alpaca later credited any of it is for Lens 3.
+   18 rows were produced before the anchor-leak fix (2026-08-18) and/or the
+   point-in-time membership fix (2026-09-23): 12 are marked "no" and 6 "partly" (the
+   rule code is right; only the harness era is at issue). For those, the code at run
+   time did not match its "honest out-of-sample" specification. (The verdicts file has
+   14 "no" rows in all; the other 2 are the KEEP blend and the live-defaults row.)
+4. **The paper snapshot's extra $320.24 is the code's cumulative dividend accrual, and
+   it feeds the daily-loss halt.** Cause confirmed from code and database: the 19 rows of
+   `paper_dividend_accruals` sum to $320.24, and the snapshot gap (value minus cash minus
+   positions) is $320.24 on each day from 2026-10-30 to 11-04. Through October the gap
+   was $155.17 to $163.08, about the $156.48 accrued before the 2026-10-30 batch. The
+   accrual is not only cosmetic. `trader.py:1056` puts it into the value saved to the
+   snapshot (`trader.py:1091`). The next run takes that snapshot as its day-start value
+   (`trader.py:685-688`) and compares it with the broker's uncorrected value
+   (`trader.py:588, 690`). So the 3% daily-loss halt now fires about $320 sooner than a
+   true 3% loss: at about $102K, near 2.7%. The drawdown halt (`trader.py:670`) and
+   position sizing use the broker value and are unaffected. Whether this is a defect,
+   and whether Alpaca credited any of these dividends, is left to Lens 3.
 5. **Not examined:** 33 of 90 rows are marked "unverifiable": 17 because I did not reach
    them in this pass, 8 because they have no code to compare (designs, decisions, data
    items), and 8 crypto rows whose code was removed on 2026-06-16 and whose run
@@ -72,9 +92,10 @@ from the scratch note made at the start; outcome added after the arrow).
   timing.
 - **F4 (dividend add-back near `src/ggTrader/paper/trader.py:1051-1056`).** Overturned if
   that code does not add dividends to snapshot value, or adds only dividends the broker
-  did not already include in cash. → **Code adds the cumulative accrual every run;
-  the DB gap equals the accrual total.** Whether the broker credited any of it is not
-  testable from code (Lens 3).
+  did not already include in cash. → **Code adds the cumulative accrual to the saved
+  snapshot value every run, and the DB gap equals the accrual total.** That saved value
+  becomes the next day-start for the daily-loss halt. Whether the broker credited any of
+  it cannot be tested from code (Lens 3).
 - **F5 (ensemble spec vs code).** Code matches if voters, thresholds, min_agree, lookbacks
   and exit rules equal the written description; a mismatch in any rule means partly/no.
   → **Matches** (hand replay 0 mismatches), with three wording ambiguities noted.
@@ -94,13 +115,15 @@ from the scratch note made at the start; outcome added after the arrow).
 
 The strongest case that the implementation is sound:
 
-- **The signal math is right.** Independent re-implementations of four written rules,
-  using textbook formulas in plain loops (not pandas rolling functions, and with
-  textbook Wilder seeding for RSI where the code uses a different seed), reproduced the
-  repo's entry and exit dates exactly on real prices: ensemble (live defaults, 10 names,
-  2025-03-01 to 2025-05-30), bb_reversion (same names and window), 12-1 momentum (20
-  names, 3 month-ends) and month-end Treasury (6 months). See
-  `docs/research/_lens6_replays.json`.
+- **The signal arithmetic is right.** I wrote four rules again with textbook formulas
+  in plain loops (not pandas rolling functions; RSI uses textbook Wilder seeding where
+  the code uses a different seed). They reproduced the repo's entry and exit dates
+  exactly on real prices: ensemble (live defaults, 10 names, 2025-03-01 to 2025-05-30),
+  bb_reversion (same names and window), 12-1 momentum (20 names, 3 month-ends) and
+  month-end Treasury (6 months). See `docs/research/_lens6_replays.json`. Limit: where
+  the written rule is ambiguous (crossings rather than levels, the MACD divergence proxy,
+  the row-55 warm-up mask), the hand code adopted the code's reading. These replays
+  therefore test the arithmetic, not the interpretation of the specification.
 - **The code is causal where it matters.** Indicators look only backward
   (`src/ggTrader/lab/strategies/indicators.py:67-149`); the weekly RSI is labelled at
   week end and forward-filled, so no same-week lookahead (`indicators.py:281-291`); IC
@@ -146,7 +169,10 @@ lookbacks, rebalance timing, PIT data use)?**
   and cheapest test under Rows not examined).
 
 **Q2. Does a hand replay of a small window agree with the code?** **Yes, 4 of 4
-strategies, 0 mismatches** (`docs/research/_lens6_replays.json`). A synthetic check of
+strategies, 0 mismatches** (`docs/research/_lens6_replays.json`), on the arithmetic.
+The hand code followed the code's reading of ambiguous wording, so this does not settle
+the interpretation question in Q1. Coverage: 10 names over 3 months for the daily
+signals. A synthetic check of
 `simulate_signals` also confirmed the fill moment and sizing base (signal-bar close;
 3% of remaining cash).
 
@@ -176,8 +202,8 @@ Cheapest test to go further: check out 82931a40's parent in a scratch worktree a
 |---|---|
 | Live signals come from a partial bar at 12:45 PT | Confirmed (code, run log, DB bar) |
 | `max_positions 3`, `position_pct 0.033` | Confirmed (`.env`, `src/ggTrader/paper/risk.py:17-18`) |
-| Snapshot includes about $320 of dividends added back (`trader.py:1050-1055`) | Confirmed as mechanism: gap = accrual total $320.24; broker side not checked (Lens 3) |
-| Replica uses next-bar fills | Confirmed, and it is not what live does (live is same-day) |
+| Snapshot includes about $320 of dividends added back (`trader.py:1050-1055`) | Cause confirmed (code + DB: gap = accrual total $320.24). Also feeds the next run's daily-loss day-start. Defect judgement and broker side left to Lens 3 |
+| Replica uses next-bar fills | Confirmed. It is not what live does (live is same-day); the project already conceded this in the 2026-10-19 parity amendment (`docs/research/briefs/2026-10-19-production-replica-parity-amendment.md:29-42`) |
 | 10/32 orders explained; no decision inputs archived | Not checked by Lens 6 (Lens 3) |
 | Live ensemble, 3% sizing and blend were adopted on phantom numbers | Confirmed for the code side: those numbers came from code with the anchor and PIT defects |
 
@@ -199,8 +225,8 @@ Cheapest test to go further: check out 82931a40's parent in a scratch worktree a
 | month_end_treasury | `docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md` | `src/ggTrader/lab/strategies/month_end_treasury.py:80-114` | entry/exit calendar | yes | Hand replay 6/6 months |
 | overnight_gap | `docs/roadmap.md` (strategy table) | `indicators.py:84-115` | fill moment | partly | Gap known at the open, filled at the close |
 | pead / insider_cluster_buy / congress_trades / short_interest / short_volume_ratio / headline_sentiment / index_deletion_fade | their 2026-07 NO-GO reports under `docs/research/` | `src/ggTrader/lab/strategies/pead.py:45-90`, `insider_cluster.py:36-61`, `congress_trades.py:31-34`, `short_interest.py:40-59`, `short_volume_ratio.py:82-89`, `headline_sentiment.py:64-100`, `index_deletion.py:84-127` | PIT availability gates only | partly | Gates exist in current code; not replayed; event dates in July runs sat on the day-shifted tape (Lens 1) |
-| production replica | `docs/research/briefs/2026-10-19-production-replica-audit.md` §3 | `src/ggTrader/lab/replica.py:35-290` | rules vs live | partly | Rules match live; timing does not (Live path vs backtest) |
-| crypto entries/exits | `docs/archive/roadmap-pre-lab.md` | removed; 82931a40 parent | see Crypto | unverifiable / no | Code in git only |
+| production replica | `docs/research/briefs/2026-10-19-production-replica-audit.md` §3 | `src/ggTrader/lab/replica.py:35-290` | rules vs live | partly | Rules match live; timing does not, as the 2026-10-19 parity amendment already states (lines 29-31) |
+| crypto entries/exits | `docs/archive/roadmap-pre-lab.md` | removed; 82931a40 parent | see Crypto | unverifiable / partly | Code in git only |
 
 ## Live path vs backtest
 
@@ -222,25 +248,40 @@ What each path does, with the evidence. "WFO" is the lab walk-forward (`run_wfo`
 | 11 | Drawdown 15% and daily-loss 3% halts | On (`trader.py:655-693`, `risk.py:20-21`) | Not modelled | Modelled (`replica.py:185-191`) |
 | 12 | ML entry gate | Off unless ML_GATE_ENABLED is truthy (`src/ggTrader/paper/feature_gate.py:22-26`); host `.env` does not set it | Not modelled | Not modelled |
 | 13 | Untradable holdings (AVB) | Excluded from slots and sells (`trader.py:605-620`) | n/a | Not modelled |
-| 14 | Dividends | Prices not adjusted live; uncredited dividends added to reported value only (`trader.py:1051-1056`) | Adjusted closes (total return, per the replica brief §3) | Same as WFO |
+| 14 | Dividends | Prices not adjusted live. The cumulative uncredited-dividend accrual is added to the value saved in the snapshot (`trader.py:1056, 1091`), and that snapshot becomes the next run's daily-loss day-start (`trader.py:685-690`). Tradable cash, sizing and the drawdown halt use the broker value | Adjusted closes (total return, per the replica brief §3) | Same as WFO |
 | 15 | Trailing / ATR stops | None | Optional `atr_mult`/`ts_stop` in sweeps (`simulate.py:201-241`) | None |
 
 **Other findings from the live path:**
 
-- **Partial bars in the research tape are overwritten only by accident.** The cache's
-  incremental fetch starts every symbol from the oldest stale symbol's last bar
-  (`src/ggTrader/data/live/cached_yfinance_loader.py:346-349, 371-377`). EA has had no
-  data since 2026-08-10, so each run refetches all symbols from 2026-08-11 and
-  overwrites the previous day's partial bar. Spot check: AAPL and HAS bars for
-  2026-10-27 to 11-03 equal yfinance's final values. Without a stale symbol, a 12:45 PT
-  partial bar would be judged fresh the next day and kept (the benchmark refresh comments
-  at `signal_runner.py:30-41` describe this same failure for SPY). Tape impact is Lens 1.
-- **Dividend add-back, confirmed from two sources.** Code: reported value = broker value
-  + split delta + cumulative accrual (`trader.py:1045-1056`). Database: the
-  `paper_dividend_accruals` table holds 19 rows summing to $320.24; the gap between
-  snapshot value and cash plus position values is $320.24 on 2026-10-30, 11-02, 11-03 and
-  11-04, and $155.17 to $157.64 earlier in October (accrual total before the 2026-10-30
-  batch: $156.48). The remaining $1-2 daily wobble in October is not explained here.
+- **Partial bars in the research tape are overwritten only by accident.** At the 12:45 PT
+  run (20:45 UTC) the previous day's bar, stamped 00:00 UTC, is about 1.86 days old. That
+  exceeds the 1.5-day freshness limit, so the symbol is judged stale
+  (`src/ggTrader/data/live/cached_yfinance_loader.py:346-349`). But the incremental
+  refetch starts at that bar's date plus one day, which is today, so on its own it never
+  rewrites the previous day's partial bar. One batch start serves every stale symbol: it
+  is the minimum over symbols (`cached_yfinance_loader.py:349, 371-377`). EA's last bar is
+  2026-08-10, so every run's start is pulled back to 2026-08-11 (log line
+  `1d 2026-08-11 -> 2026-11-05`), and that refetch overwrites the earlier partial bars.
+  Spot check: AAPL and HAS bars for 2026-10-27 to 11-03 equal yfinance's final values.
+  Without such a stale symbol, each 12:45 PT partial bar would stay in the tape (the
+  benchmark refresh comments at `signal_runner.py:30-41` describe the same failure for
+  SPY). Tape impact is Lens 1.
+- **Dividend add-back: cause confirmed from two sources; defect judgement open.** Code:
+  `corrected_value` = broker value + split delta + cumulative accrual
+  (`trader.py:1045-1056`), saved as the snapshot value (`trader.py:1089-1094`). Database:
+  `paper_dividend_accruals` holds 19 rows summing to $320.24. The gap between snapshot
+  value and cash plus position values is $320.24 on 2026-10-30, 11-02, 11-03 and 11-04.
+  From 2026-10-01 to 10-29 it ranges from $155.17 to $163.08 (21 days, most near $156.49),
+  against $156.48 accrued before the 2026-10-30 batch. The remaining few-dollar daily
+  wobble in October is not explained here. **Effect on a live control:** the next run
+  takes `day_start = get_latest_snapshot()` (`trader.py:685-688`;
+  `src/ggTrader/paper/persist.py:186-192`), which includes the accrual, and compares it
+  with the broker's uncorrected `portfolio_value` (`trader.py:588, 690`). The 3%
+  daily-loss halt therefore fires on about $320 less real loss. At the 2026-11-03 value
+  of about $102,009 that is roughly 2.7% instead of 3%. The drawdown halt
+  (`trader.py:670`) and position sizing use the broker value and are not affected.
+  Whether this is a defect, and whether Alpaca credited these dividends, is left to
+  Lens 3.
 - **Stability-aware live parameters have no consumer.** `select_live_params`
   (`src/ggTrader/lab/wfo.py:922`) is never read by the live path, which always uses class
   defaults.
@@ -259,12 +300,20 @@ verdicts are in `docs/research/_lens6_verdicts.json`.
 
 - The legacy crypto engine and entry/exit classes were removed in commit 82931a40
   (2026-06-16); they can be read with `git show 82931a40^:<path>`.
-- **Live exit differs from tested exit (code-visible).** The removed live engine
-  (82931a40^, crypto_execution_engine.py near lines 700-730) converted any WFO-selected
-  `fixed_sl_tp` exit into an exchange trailing stop at order placement, and placed
-  `atr_trailing` exits as a fixed trailing percent computed from the ATR at entry, while
-  the backtest's `AtrTrailingExit` recomputed the stop from ATR on every bar (82931a40^,
-  indicators/strategies.py line 1047 onward). Verdict for the trailing-stop row: no.
+- **Universal trailing stops: the code does what the inventory claim says, but live
+  exits differ from the backtested exits (verdict: partly).** The removed live engine
+  (82931a40^, src/ggTrader/core/crypto_execution_engine.py lines 713-731) places an
+  exchange trailing stop on every buy and converts older WFO selections of `fixed_sl_tp`
+  into trailing stops at placement, as the inventory row states. Two live-versus-backtest
+  differences follow. First, coins whose WFO winner was `fixed_sl_tp` were backtested
+  with a fixed stop and take-profit but traded live with a trailing stop. Second,
+  `atr_trailing` exits are placed as a fixed trailing amount: the stop percent comes
+  from the entry-time ATR and is turned into an absolute offset at placement
+  (crypto_execution_engine.py:518-536, `trailingAmount`). The backtest moves the stop
+  every bar as peak high minus multiplier x that bar's ATR, ratcheting up only. I
+  verified this from git history: 82931a40^, src/ggTrader/indicators/signals.py:18-63,
+  `_atr_trailing_stop_long_ohlc_touch_2d_numba`, called from `AtrTrailingExit`
+  (82931a40^, src/ggTrader/indicators/strategies.py:1047 onward).
 - All other crypto rows: unverifiable, prose only. The one raw artifact found
   (`results/research/research_20260511_193048/wfo_stats_snapshot.json`) was not opened by
   this lens.

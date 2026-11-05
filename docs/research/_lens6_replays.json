@@ -188,7 +188,7 @@
    ]
   },
   "match": true,
-  "notes": "Hand rule re-derived from docs/research/briefs/2026-10-19-production-replica-audit.md s3 and docs/changelog.md 2026-06-18/06-23 entries; RSI hand version uses textbook Wilder seeding (SMA of first 14 changes) while the code uses pandas ewm(adjust=False) seeded on the first change; with >400 warm-up bars this produced no difference. Code result from EnsembleSignal(LabConfig(min_history_bars=60))._generate_signals(close, volume), i.e. live defaults, no PIT mask (all 10 names are long-standing members). 18 entry events and every exit event agree, 0 mismatched cells.",
+  "notes": "Hand rule from docs/research/briefs/2026-10-19-production-replica-audit.md s3 and docs/changelog.md (2026-06-18, 06-23). Where that wording is ambiguous, the hand code follows the code's reading: crossing events rather than levels ('touch the band', 'RSI < 30'); the MACD divergence proxy (close at its 20-bar low while the histogram is above its 20-bar low, bullish only); the MACD warm-up mask at row 55; vbb volume > 2.0 x 20-day mean. The replay therefore tests the arithmetic, not the interpretation of the specification. Coverage: 10 names over 3 months. RSI by hand uses textbook Wilder seeding (SMA of the first 14 changes); the code uses pandas ewm(adjust=False) seeded on the first change; no difference after >400 warm-up bars. Code result: EnsembleSignal(LabConfig(min_history_bars=60))._generate_signals(close, volume), live defaults, no PIT mask (all 10 names are long-standing members). 18 entry events and every exit event agree; 0 mismatched cells.",
   "commands": [
    "scripts/run_capped.sh python /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/replay.py /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/replays_raw.json  (script: hand re-implementations in plain Python loops; data from SELECT-only read-only psycopg2 session on ohlcv, venue=yfinance, interval=1d)"
   ],
@@ -568,7 +568,7 @@
    ]
   },
   "match": true,
-  "notes": "Hand rule: close crosses below lower band (prev close >= prev lower, close < lower) to enter; close crosses up through the 20-day mean to exit. Changelog wording is 'enter on lower band touch, exit at middle band'; the code implements a crossing event, which the hand replay also used. 21 entry events and all exits agree.",
+  "notes": "Changelog wording is 'enter on lower band touch, exit at middle band'. The hand code follows the code's reading, a crossing event: prev close >= prev lower band and close < lower band to enter; close crossing up through the 20-day mean to exit. The replay tests arithmetic, not that interpretation. Coverage: 10 names over 3 months. 21 entry events and all exits agree.",
   "commands": [
    "scripts/run_capped.sh python /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/replay.py /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/replays_raw.json  (script: hand re-implementations in plain Python loops; data from SELECT-only read-only psycopg2 session on ohlcv, venue=yfinance, interval=1d)"
   ],
@@ -672,7 +672,7 @@
    }
   ],
   "match": true,
-  "notes": "Hand rule: score = close[t-21]/close[t-252]-1 (12-1 momentum) on each symbol's own non-missing bars, top 5 by score. Code: CrossSectionalMomentum.select (momentum.py:30-60). Top-5 lists identical at all three month-ends; code's to_targets puts the weights on the first bar after asof (no same-bar use).",
+  "notes": "Hand rule: score = close[t-21]/close[t-252]-1 (12-1 momentum) on each symbol's own non-missing bars, top 5 by score. Code: CrossSectionalMomentum.select (momentum.py:30-60). Top-5 lists identical at all three month-ends; code's to_targets puts the weights on the first bar after asof (no same-bar use). Scope note: where the written description is ambiguous, the hand code follows the code's reading, so this replay tests arithmetic, not the specification's interpretation.",
   "commands": [
    "scripts/run_capped.sh python /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/replay.py /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/replays_raw.json  (script: hand re-implementations in plain Python loops; data from SELECT-only read-only psycopg2 session on ohlcv, venue=yfinance, interval=1d)"
   ]
@@ -725,7 +725,7 @@
    ]
   },
   "match": true,
-  "notes": "Hand rule from the strategy docstring / Hartley-Schwarz frozen rule: enter at close of 4th-to-last trading day, exit at close of last trading day; the final month is skipped only when the slice ends before its last business day. Six months, identical dates.",
+  "notes": "Hand rule from the strategy docstring / Hartley-Schwarz frozen rule: enter at close of 4th-to-last trading day, exit at close of last trading day; the final month is skipped only when the slice ends before its last business day. Six months, identical dates. Scope note: where the written description is ambiguous, the hand code follows the code's reading, so this replay tests arithmetic, not the specification's interpretation.",
   "commands": [
    "scripts/run_capped.sh python /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/replay.py /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/replays_raw.json  (script: hand re-implementations in plain Python loops; data from SELECT-only read-only psycopg2 session on ohlcv, venue=yfinance, interval=1d)"
   ]
