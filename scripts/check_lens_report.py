@@ -23,7 +23,7 @@ BANNED_PHRASES = (
     "we recommend deploying",
     "open an IRA",
 )
-REPO_PATH_RE = re.compile(r"`((?:docs|src|scripts|tests|results)/[^`\s]*)`")
+REPO_PATH_RE = re.compile(r"`((?:docs|src|scripts|tests|results|research)/[^`\s]*)`")
 LINE_SUFFIX_RE = re.compile(r":\d+(?:-\d+)?$")
 GLOB_CHARS = set("*?[]{}")
 H2_RE = re.compile(r"^##\s+(.*?)\s*$")

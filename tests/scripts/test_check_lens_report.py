@@ -81,3 +81,22 @@ def test_paths_only_skips_heading_rules(tmp_path: Path) -> None:
     problems = check_report(report, tmp_path, paths_only=True)
     assert all("heading" not in p.lower() for p in problems)
     assert any("docs/missing.md" in p for p in problems)
+
+
+def test_research_path_that_exists_passes(tmp_path: Path) -> None:
+    (tmp_path / "research").mkdir()
+    (tmp_path / "research" / "x.md").write_text("x")
+    report = _write(tmp_path, _report(extra="See `research/x.md` for the study.\n"))
+    assert check_report(report, tmp_path) == []
+
+
+def test_missing_research_path_fails_and_moved_csv_is_not_consulted(tmp_path: Path) -> None:
+    (tmp_path / "research").mkdir()
+    (tmp_path / "research" / "real.md").write_text("x")
+    # A move map naming the missing path must not rescue a stale citation.
+    (tmp_path / "research" / "MOVED.csv").write_text(
+        "old_path,new_path\nresearch/missing.md,research/real.md\n"
+    )
+    report = _write(tmp_path, _report(extra="Cites `research/missing.md` here.\n"))
+    problems = check_report(report, tmp_path)
+    assert any("research/missing.md" in p for p in problems)

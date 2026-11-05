@@ -11,5 +11,6 @@ results/
 logs/
 data/
 docs/
+research/
 *.md
 !pyproject.toml
