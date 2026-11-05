@@ -7,10 +7,13 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import posixpath
 import re
+import stat
 import subprocess
 import sys
+import tempfile
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
@@ -84,13 +87,24 @@ PATH_CHAR_CLASS = r"A-Za-z0-9_\-./"
 PATH_RUN = re.compile(rf"[{PATH_CHAR_CLASS}]*")
 # An old-tree path token in code; the lookbehind stops a match inside a longer word.
 CODE_TOKEN = re.compile(rf"(?<![A-Za-z0-9_\-])docs/research[{PATH_CHAR_CLASS}]*")
-# A whole code span that is a citation: docs/research/<path> with an optional :N or :N-M.
-CITATION = re.compile(rf"^(docs/research/[{PATH_CHAR_CLASS}]+?)(:\d+(?:-\d+)?)?$")
-# Inline link or image target: `](target "title")`; only the target group is rewritten.
-INLINE_LINK = re.compile(
-    r"\]\((?P<lead>[ \t]*)(?P<target><[^<>\n]*>|[^\s()<>]+)"
-    r"(?P<title>[ \t]+(?:\"[^\"\n]*\"|'[^'\n]*'))?(?P<trail>[ \t]*)\)"
+# A whole code span that is a citation: docs/research/<path> with an optional line suffix,
+# which may list several ranges (`:12`, `:12-20`, `:27-42, 360-403`).
+CITATION = re.compile(
+    rf"^(docs/research/[{PATH_CHAR_CLASS}]+?)(:\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*)?$"
 )
+# Inline link or image target: `](target "title")`; only the target group is rewritten.
+# The target may hold one level of balanced parentheses; the title may be "", '' or ().
+INLINE_LINK = re.compile(
+    r"\]\((?P<lead>[ \t]*)(?P<target><[^<>\n]*>|(?:[^\s()<>]|\([^\s()<>]*\))+)"
+    r"(?P<title>[ \t]+(?:\"[^\"\n]*\"|'[^'\n]*'|\([^()\n]*\)))?(?P<trail>[ \t]*)\)"
+)
+# Reference-style link definition `[label]: target "title"` (footnotes `[^n]:` excluded).
+REF_DEFINITION = re.compile(
+    r"^(?P<indent> {0,3})\[(?!\^)(?P<label>[^\]\n]+)\]:[ \t]*(?P<target><[^<>\n]*>|\S+)"
+    r"(?P<rest>(?:[ \t]+(?:\"[^\"\n]*\"|'[^'\n]*'|\([^()\n]*\)))?[ \t]*\r?)$"
+)
+# Any link opener `](` with a rough target, to report forms INLINE_LINK cannot parse.
+LINK_OPENER = re.compile(r"\]\(\s*<?([^\s)>]*)")
 # A fence opener: three or more backticks or tildes, optionally indented (list items).
 FENCE_OPEN = re.compile(r"^[ \t]*(`{3,}|~{3,})(.*)$")
 GLOB_CHARS = frozenset("*?[")
@@ -111,6 +125,10 @@ REASON_FORMAT = "format string"
 REASON_BASE_PATH = "base path"
 REASON_SPLIT = "split path construction"
 REASON_PARENT = "parent arithmetic"
+REASON_FENCED = "fenced code"
+REASON_UNSUPPORTED = "unsupported link form"
+STATUS_OK = "ok"
+STATUS_FAILED = "failed"
 
 
 @dataclass(frozen=True)
@@ -467,7 +485,7 @@ def _classify(
     core = line[start:end].rstrip(".")
     nxt = line[end : end + 1]
     if code and nxt in FORMAT_NEXT_CHARS and nxt:
-        if FSTRING_START.search(line) or ".format(" in line or nxt == "%":
+        if FSTRING_START.search(line) or ".format(" in line or nxt == "%" or core in mapping:
             return REASON_FORMAT
     if nxt and (nxt in GLOB_CHARS or nxt in TEMPLATE_CHARS):
         return REASON_GLOB
@@ -583,6 +601,7 @@ def _rewrite_link_target(
     if not target or target.startswith("#") or URL_SCHEME.match(target):
         return raw, None
     path, sep, fragment = target.partition("#")
+    path, qsep, query = path.partition("?")
     if not path:
         return raw, None
     lookup = unquote(path)
@@ -592,9 +611,12 @@ def _rewrite_link_target(
     )
     mapped = resolved in mapping
     under_old = resolved == OLD_ROOT or resolved.startswith(f"{OLD_ROOT}/")
-    reason = None if mapped or not under_old else _path_reason(resolved, key_dirs)
+    if not mapped and under_old:
+        # Unmapped old-tree target: report it and keep the raw text, so no new
+        # `docs/research` literal is ever introduced by a recomputed link.
+        return raw, _path_reason(resolved, key_dirs)
     if not mapped and old_dir == new_dir:
-        return raw, reason
+        return raw, None
     if not mapped and exists is not None and not absolute:
         here = posixpath.normpath(posixpath.join(new_dir, lookup))
         old_ok = not _escapes_root(resolved) and exists(resolved)
@@ -606,8 +628,39 @@ def _rewrite_link_target(
         new_path += "/"
     if lookup != path:
         new_path = quote(new_path, safe="/-._~")
-    new_target = new_path + (sep + fragment if sep else "")
-    return (f"<{new_target}>" if angle else new_target), reason
+    new_target = new_path + (qsep + query) + (sep + fragment if sep else "")
+    return (f"<{new_target}>" if angle else new_target), None
+
+
+def _unsupported_links(
+    piece: str,
+    parsed_starts: set[int],
+    old_dir: str,
+    new_dir: str,
+) -> list[int]:
+    """Return positions of `](` link openers INLINE_LINK could not parse but that matter.
+
+    A form matters when its rough target resolves under the old tree, or when the file moves
+    and the target is a relative path (it would need recomputing).
+    """
+    found: list[int] = []
+    for match in LINK_OPENER.finditer(piece):
+        if match.start() in parsed_starts:
+            continue
+        target = match.group(1)
+        if not target or target.startswith("#") or URL_SCHEME.match(target):
+            continue
+        path = unquote(target.split("#", 1)[0].split("?", 1)[0])
+        if not path:
+            continue
+        absolute = path.startswith("/")
+        resolved = posixpath.normpath(
+            path.lstrip("/") if absolute else posixpath.join(old_dir, path)
+        )
+        under_old = resolved == OLD_ROOT or resolved.startswith(f"{OLD_ROOT}/")
+        if under_old or OLD_ROOT in target or (old_dir != new_dir and not absolute):
+            found.append(match.start())
+    return found
 
 
 def _rewrite_markdown_counted(
@@ -625,45 +678,61 @@ def _rewrite_markdown_counted(
     unresolved: list[Unresolved] = []
     count = 0
     fence: tuple[str, int] | None = None
+
+    def _note(number: int, line: str, start: int, reason: str) -> None:
+        unresolved.append(Unresolved("", number, _snippet(line, start), reason))
+
+    def _swap_target(match: re.Match[str], number: int, line: str) -> str:
+        """Return the match text with its `target` group recomputed (or unchanged)."""
+        nonlocal count
+        raw = match.group("target")
+        new_raw, reason = _rewrite_link_target(raw, old_dir, new_dir, mapping, key_dirs, exists)
+        # A literal old path in `raw` is reported by the final scan; avoid a duplicate.
+        if reason is not None and OLD_ROOT not in raw:
+            _note(number, line, match.start(), reason)
+        if new_raw == raw:
+            return match.group(0)
+        count += 1
+        start, end = match.span("target")
+        base = match.start()
+        whole = match.group(0)
+        return whole[: start - base] + new_raw + whole[end - base :]
+
     for number, line in enumerate(text.split("\n"), start=1):
+        if fence is None:
+            fence = _fence_opener(line)
+            opened = fence is not None
+        else:
+            opened = False
         if fence is not None:
-            if _fence_closes(line, fence):
+            # Fenced code is never modified, but old-tree mentions are listed for review.
+            for start in _old_mentions(line):
+                _note(number, line, start, REASON_FENCED)
+            if not opened and _fence_closes(line, fence):
                 fence = None
             out.append(line)
             continue
-        fence = _fence_opener(line)
-        if fence is not None:
-            out.append(line)
-            continue
-        pieces: list[str] = []
-        for is_code, piece in _code_span_segments(line):
-            if is_code:
-                new_piece = _rewrite_citation(piece, mapping)
-                count += new_piece != piece
-                pieces.append(new_piece)
-                continue
-
-            def _link(match: re.Match[str]) -> str:
-                nonlocal count
-                raw = match.group("target")
-                new_raw, reason = _rewrite_link_target(
-                    raw, old_dir, new_dir, mapping, key_dirs, exists
+        definition = REF_DEFINITION.match(line)
+        if definition:
+            new_line = _swap_target(definition, number, line)
+        else:
+            pieces: list[str] = []
+            for is_code, piece in _code_span_segments(line):
+                if is_code:
+                    new_piece = _rewrite_citation(piece, mapping)
+                    count += new_piece != piece
+                    pieces.append(new_piece)
+                    continue
+                parsed = {m.start() for m in INLINE_LINK.finditer(piece)}
+                for start in _unsupported_links(piece, parsed, old_dir, new_dir):
+                    _note(number, line, start, REASON_UNSUPPORTED)
+                pieces.append(
+                    INLINE_LINK.sub(lambda m, n=number, ln=line: _swap_target(m, n, ln), piece)
                 )
-                if reason is not None and OLD_ROOT not in new_raw:
-                    unresolved.append(Unresolved("", number, _snippet(line, match.start()), reason))
-                if new_raw == raw:
-                    return match.group(0)
-                count += 1
-                start, end = match.span("target")
-                base = match.start()
-                whole = match.group(0)
-                return whole[: start - base] + new_raw + whole[end - base :]
-
-            pieces.append(INLINE_LINK.sub(_link, piece))
-        new_line = "".join(pieces)
+            new_line = "".join(pieces)
         for start in _old_mentions(new_line):
             reason = _classify(new_line, start, mapping, key_dirs, code=False)
-            unresolved.append(Unresolved("", number, _snippet(new_line, start), reason))
+            _note(number, new_line, start, reason)
         out.append(new_line)
     return "\n".join(out), unresolved, count
 
@@ -710,7 +779,8 @@ def _rewrite_code_counted(text: str, mapping: dict[str, str]) -> tuple[str, list
             nonlocal count
             token = match.group(0)
             core = token.rstrip(".")
-            if core not in mapping:
+            # A mapped path followed by `{` or `%` continues at run time: flag, never edit.
+            if core not in mapping or line[match.end() : match.end() + 1] in FORMAT_NEXT_CHARS:
                 return token
             count += 1
             return mapping[core] + token[len(core) :]
@@ -863,6 +933,34 @@ def _repo_exists(root: Path) -> Callable[[str], bool]:
     return _exists
 
 
+def write_atomic(path: Path, data: bytes) -> None:
+    """Replace a file's bytes atomically, keeping its permission bits.
+
+    The data goes to a temporary file in the same directory, is flushed to disk, and is
+    then moved over the original with `os.replace`, so a crash leaves either the old or the
+    new bytes, never a partial file.
+
+    Args:
+        path: Existing file to replace.
+        data: New contents.
+
+    Raises:
+        OSError: If writing or replacing fails (the temporary file is removed).
+    """
+    mode = stat.S_IMODE(path.stat().st_mode)
+    handle, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(handle, "wb") as tmp:
+            tmp.write(data)
+            tmp.flush()
+            os.fsync(tmp.fileno())
+        os.chmod(tmp_name, mode)
+        os.replace(tmp_name, path)
+    except BaseException:
+        Path(tmp_name).unlink(missing_ok=True)
+        raise
+
+
 def run_rewrite(
     scope: str,
     rows: list[ManifestRow],
@@ -872,6 +970,11 @@ def run_rewrite(
 ) -> dict[str, Any]:
     """Rewrite one scope (or report what would change) and return the report dict.
 
+    Every target is read and rewritten in memory first. A pre-flight check then fails the
+    run, before anything is written, when a file is missing, unreadable, not UTF-8, frozen,
+    or (outside moved-markdown) inside the research tree. Only then are changed files
+    written, each atomically. A dry run performs the same checks and writes nothing.
+
     Args:
         scope: One of SCOPES.
         rows: Manifest rows; the mapping is current_path -> proposed_path.
@@ -880,11 +983,7 @@ def run_rewrite(
         excludes: Extra paths to leave alone.
 
     Returns:
-        The JSON-serializable report.
-
-    Raises:
-        RuntimeError: If a write would touch a frozen file or the research tree outside
-            the moved-markdown scope (a bug guard; never expected).
+        The JSON-serializable report; `status` is "ok" or "failed" with `error` text.
     """
     mapping = {r.current_path: r.proposed_path for r in rows}
     frozen = _frozen_paths(rows)
@@ -893,10 +992,20 @@ def run_rewrite(
     changed: list[dict[str, Any]] = []
     unresolved: list[dict[str, Any]] = []
     undecodable: list[str] = []
+    unreadable: list[str] = []
+    protected: list[str] = []
+    pending: list[tuple[str, str]] = []
     for target in targets:
-        file_path = root / target.path
+        if target.path in frozen or (scope != "moved-markdown" and _in_research_tree(target.path)):
+            protected.append(target.path)
+            continue
         try:
-            text = file_path.read_bytes().decode("utf-8")
+            data = (root / target.path).read_bytes()
+        except OSError as exc:
+            unreadable.append(f"{target.path}: {exc.strerror or exc}")
+            continue
+        try:
+            text = data.decode("utf-8")
         except UnicodeDecodeError:
             undecodable.append(target.path)
             continue
@@ -907,46 +1016,74 @@ def run_rewrite(
                 text, target.old_file, target.new_file, mapping, exists
             )
         unresolved.extend(asdict(replace(u, file=target.path)) for u in found)
-        if new_text == text:
-            continue
-        changed.append({"file": target.path, "replacements": count})
-        if dry_run:
-            continue
-        if target.path in frozen or (scope != "moved-markdown" and _in_research_tree(target.path)):
-            raise RuntimeError(f"refusing to write protected file {target.path}")
-        file_path.write_bytes(new_text.encode("utf-8"))
+        if new_text != text:
+            changed.append({"file": target.path, "replacements": count})
+            pending.append((target.path, new_text))
+    problems = (
+        [f"missing: {p}" for p in missing]
+        + [f"unreadable: {p}" for p in unreadable]
+        + [f"not UTF-8: {p}" for p in undecodable]
+        + [f"protected (frozen or research tree): {p}" for p in protected]
+    )
+    written: list[str] = []
+    error = ""
+    if problems:
+        error = "pre-flight failed, nothing written: " + "; ".join(sorted(problems))
+    elif not dry_run:
+        for rel, new_text in sorted(pending):
+            try:
+                write_atomic(root / rel, new_text.encode("utf-8"))
+            except OSError as exc:
+                error = f"write failed for {rel}: {exc}; already written: {len(written)} files"
+                break
+            written.append(rel)
     return {
         "scope": scope,
         "dry_run": dry_run,
+        "status": STATUS_FAILED if error else STATUS_OK,
+        "error": error,
         "changed": sorted(changed, key=lambda c: c["file"]),
+        "written": written,
         "unresolved": sorted(
             unresolved, key=lambda u: (u["file"], u["line"], u["text"], u["reason"])
         ),
         "skipped_frozen": sum(r.frozen for r in rows) if scope == "moved-markdown" else 0,
         "excluded": sorted(excluded),
         "skipped_undecodable": sorted(undecodable),
+        "skipped_unreadable": sorted(unreadable),
         "skipped_missing": sorted(missing),
     }
 
 
 def _cmd_rewrite(args: argparse.Namespace) -> int:
-    """Run `rewrite`: rewrite one scope (or dry-run it) and write the JSON report."""
-    rows = load_manifest(Path(args.manifest))
-    report = run_rewrite(args.scope, rows, Path(args.root), args.dry_run, args.exclude or [])
+    """Run `rewrite`: rewrite one scope (or dry-run it) and always write the JSON report."""
+    try:
+        rows = load_manifest(Path(args.manifest))
+        report = run_rewrite(args.scope, rows, Path(args.root), args.dry_run, args.exclude or [])
+    except Exception as exc:  # noqa: BLE001 - any failure must still produce a report
+        report = {
+            "scope": args.scope,
+            "dry_run": args.dry_run,
+            "status": STATUS_FAILED,
+            "error": f"{type(exc).__name__}: {exc}",
+            "changed": [],
+            "written": [],
+            "unresolved": [],
+        }
     text = json.dumps(report, indent=2, sort_keys=True) + "\n"
     Path(args.report).write_text(text, encoding="utf-8")
     reasons = Counter(u["reason"] for u in report["unresolved"])
     mode = "DRY-RUN" if args.dry_run else "WROTE"
     print(
-        f"{mode} scope={args.scope} changed={len(report['changed'])} files "
+        f"{mode} scope={args.scope} status={report['status']} "
+        f"changed={len(report['changed'])} files written={len(report['written'])} "
         f"replacements={sum(c['replacements'] for c in report['changed'])} "
         f"unresolved={len(report['unresolved'])} {dict(sorted(reasons.items()))}"
     )
-    for rel in report["skipped_undecodable"]:
-        print(f"WARN not UTF-8, skipped: {rel}")
-    for rel in report["skipped_missing"]:
-        print(f"FAIL missing file: {rel}")
-    return 1 if report["skipped_missing"] else 0
+    if report["status"] != STATUS_OK:
+        print(f"FAIL {report['error']}")
+        return 1
+    return 0
 
 
 def current_git_head(root: Path = REPO_ROOT) -> str:

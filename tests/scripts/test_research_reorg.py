@@ -406,7 +406,12 @@ def test_fenced_code_untouched() -> None:
         "after `docs/research/_a_results.json`",
         "after `research/allocation/a-study/_a_results.json`",
     )
-    assert unresolved == []
+    # Fenced mentions are listed for review (lines 2, 4 and 8) but never modified.
+    assert [(u.line, u.reason) for u in unresolved] == [
+        (2, "fenced code"),
+        (4, "fenced code"),
+        (8, "fenced code"),
+    ]
 
 
 def test_link_fragment_and_title_preserved() -> None:
@@ -468,7 +473,6 @@ def _git_tree(tmp_path: Path) -> Path:
     ):
         _write(root, rel, LINKY.replace("../roadmap.md", "../../roadmap.md"))
     _write(root, "docs/keep-out.md", LINKY)
-    _write(root, "docs/binary.md", b"\xff\xfe docs/research/2026-01-01-a.md\n")
     (root / "CLAUDE.md").symlink_to("AGENTS.md")
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
     subprocess.run(["git", "add", "-A"], cwd=root, check=True)
@@ -592,7 +596,7 @@ def test_always_excluded_files_not_processed(tmp_path: Path) -> None:
     # Untracked and git-ignored scratch is never in a scope.
     assert after[".claude/skills/x-workspace/out.md"] == before[".claude/skills/x-workspace/out.md"]
     assert after["docs/untracked.md"] == before["docs/untracked.md"]
-    assert fixed["skipped_undecodable"] == ["docs/binary.md"]
+    assert fixed["status"] == code["status"] == "ok"
     reported = {u["file"] for r in (fixed, code) for u in r["unresolved"]}
     assert not reported & (set(always) | {"docs/keep-out.md", "scripts/research_reorg.py"})
 
@@ -634,3 +638,199 @@ def test_moved_markdown_rerun_after_move_is_stable(tmp_path: Path) -> None:
     second = _run(root, "moved-markdown")
     assert second["changed"] == []
     assert _snapshot(root) == first
+
+
+# --- Fix round 1 (review I-1, rulings R7a-R7e) ----------------------------------------------
+
+
+def test_multi_range_line_suffix_kept() -> None:
+    text = (
+        "See `docs/research/2026-01-01-a.md:27-42, 360-403` and "
+        "`docs/research/_a_results.json:5,9-11,  20`.\n"
+    )
+    out, unresolved = rewrite_markdown(text, FIXED, FIXED, MAPPING)
+    assert out == (
+        f"See `{A_NEW}:27-42, 360-403` and "
+        "`research/allocation/a-study/_a_results.json:5,9-11,  20`.\n"
+    )
+    assert unresolved == []
+
+
+def test_mapped_token_followed_by_brace_or_percent_is_flagged_not_changed() -> None:
+    code = (
+        'A = f"docs/research/_a_results.json{suffix}"\n'
+        'B = "docs/research/_a_results.json%s" % ext\n'
+        'C = "docs/research/2026-01-01-a.md{x}".format(x=1)\n'
+    )
+    out, unresolved = rewrite_code(code, MAPPING)
+    assert out == code
+    assert [(u.line, u.reason) for u in unresolved] == [
+        (1, "format string"),
+        (2, "format string"),
+        (3, "format string"),
+    ]
+
+
+def test_complete_path_in_fstring_is_rewritten() -> None:
+    code = 'msg = f"brief docs/research/briefs/2026-01-01-b.md §6, value {v}"\n'
+    out, unresolved = rewrite_code(code, MAPPING)
+    assert out == f'msg = f"brief {B_NEW} §6, value {{v}}"\n'
+    assert unresolved == []
+
+
+def test_directory_link_left_unchanged_and_reported() -> None:
+    # Moved file: unmapped old-tree targets keep their raw text (no new literal appears).
+    text = "[briefs](briefs/) [gone](_gone.json) [tree](./)\n"
+    out, unresolved = rewrite_markdown(text, A_OLD, A_NEW, MAPPING)
+    assert out == text
+    assert [u.reason for u in unresolved] == [
+        "directory citation",
+        "not in manifest",
+        "directory citation",
+    ]
+    assert OLD not in out
+
+
+def test_link_with_query_string_handled() -> None:
+    text = "[a](briefs/2026-01-01-b.md?plain=1#L3) [r](../roadmap.md?x=1) [g](_gone.md?x=1)\n"
+    out, unresolved = rewrite_markdown(text, A_OLD, A_NEW, MAPPING)
+    assert out == (
+        "[a](../../audits/b-study/2026-01-01-b.md?plain=1#L3) "
+        "[r](../../../docs/roadmap.md?x=1) [g](_gone.md?x=1)\n"
+    )
+    assert [u.reason for u in unresolved] == ["not in manifest"]
+
+
+def test_fenced_mention_reported_not_modified() -> None:
+    text = "```bash\ncat docs/research/_a_results.json\n```\n~~~\n`docs/research/briefs/`\n~~~\n"
+    for old_file, new_file in ((FIXED, FIXED), (A_OLD, A_NEW)):
+        out, unresolved = rewrite_markdown(text, old_file, new_file, MAPPING)
+        assert out == text
+        assert [(u.line, u.reason) for u in unresolved] == [(2, "fenced code"), (5, "fenced code")]
+
+
+def test_reference_style_definition_rewritten() -> None:
+    text = (
+        '[snap]: RESEARCH_SNAPSHOT.md#roster "Snapshot"\n'
+        "  [road]: <../roadmap.md>\n"
+        "[^1]: a footnote, not a link: docs/research/2026-01-01-a.md\n"
+        "[dir]: briefs/\n"
+    )
+    out, unresolved = rewrite_markdown(text, A_OLD, A_NEW, MAPPING)
+    assert out.split("\n")[:4] == [
+        '[snap]: ../../RESEARCH_SNAPSHOT.md#roster "Snapshot"',
+        "  [road]: <../../../docs/roadmap.md>",
+        "[^1]: a footnote, not a link: docs/research/2026-01-01-a.md",
+        "[dir]: briefs/",
+    ]
+    assert [(u.line, u.reason) for u in unresolved] == [
+        (3, "prose mention"),
+        (4, "directory citation"),
+    ]
+
+
+def test_parenthesized_title_and_parens_in_path_handled() -> None:
+    text = "[r](../roadmap.md (Road map)) [w](../notes(1).md) [b](briefs/2026-01-01-b.md (t))\n"
+    out, unresolved = rewrite_markdown(text, A_OLD, A_NEW, MAPPING)
+    assert out == (
+        "[r](../../../docs/roadmap.md (Road map)) [w](../../../docs/notes(1).md)"
+        " [b](../../audits/b-study/2026-01-01-b.md (t))\n"
+    )
+    assert unresolved == []
+
+
+def test_unparseable_link_form_is_reported() -> None:
+    # Two levels of parentheses: INLINE_LINK cannot parse it, so it must be reported.
+    text = "[x](../a((b)).md) and [y](docs/research/a b.md)\n"
+    out, unresolved = rewrite_markdown(text, A_OLD, A_NEW, MAPPING)
+    assert out == text
+    reasons = [u.reason for u in unresolved]
+    assert reasons.count("unsupported link form") == 2
+    out, unresolved = rewrite_markdown("[y](research/x y.md)\n", FIXED, FIXED, MAPPING)
+    assert [u.reason for u in unresolved] == ["unsupported link form"]
+    # A file that does not move: an unparseable link outside the old tree is harmless.
+    out, unresolved = rewrite_markdown("[z](../a((b)).md)\n", FIXED, FIXED, MAPPING)
+    assert unresolved == []
+
+
+def test_preflight_failure_writes_nothing_and_still_writes_report(tmp_path: Path) -> None:
+    root = _git_tree(tmp_path)
+    _write(root, "docs/binary.md", b"\xff\xfe docs/research/2026-01-01-a.md\n")
+    _write(root, "docs/locked.md", "`docs/research/2026-01-01-a.md`\n")
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+    (root / "docs/locked.md").chmod(0)
+    before = _snapshot_readable(root)
+    report_path = tmp_path / "report.json"
+    argv = [
+        "rewrite",
+        "--manifest",
+        str(tmp_path / "manifest.csv"),
+        "--scope",
+        "fixed-markdown",
+        "--report",
+        str(report_path),
+        "--root",
+        str(root),
+    ]
+    try:
+        assert main(argv) == 1
+        report = json.loads(report_path.read_text())
+        assert report["status"] == "failed"
+        assert "docs/binary.md" in report["error"] and "docs/locked.md" in report["error"]
+        assert report["skipped_undecodable"] == ["docs/binary.md"]
+        assert [p.split(":")[0] for p in report["skipped_unreadable"]] == ["docs/locked.md"]
+        assert report["written"] == []
+        assert report["changed"]  # other files would have changed, yet none was written
+        assert _snapshot_readable(root) == before
+        # A failure before any rewrite (bad manifest) still produces a report.
+        argv[2] = str(tmp_path / "no-such-manifest.csv")
+        assert main(argv) == 1
+        report = json.loads(report_path.read_text())
+        assert report["status"] == "failed" and "FileNotFoundError" in report["error"]
+    finally:
+        (root / "docs/locked.md").chmod(0o644)
+
+
+def _snapshot_readable(root: Path) -> dict[str, bytes]:
+    return {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in root.rglob("*")
+        if p.is_file()
+        and not p.is_symlink()
+        and os.access(p, os.R_OK)
+        and ".git" not in p.relative_to(root).parts
+    }
+
+
+def test_write_is_atomic_and_preserves_mode(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import scripts.research_reorg as reorg
+
+    root = _git_tree(tmp_path)
+    target = root / "docs/roadmap.md"
+    target.chmod(0o640)
+    report = _run(root, "fixed-markdown")
+    assert report["status"] == "ok" and "docs/roadmap.md" in report["written"]
+    assert (target.stat().st_mode & 0o777) == 0o640
+    assert target.read_text() == f"# Roadmap\n[a](../{A_NEW})\n"
+    assert not list(root.rglob("*.tmp"))
+    # A failing replace leaves the original bytes and no temporary file behind.
+    _write(root, "docs/roadmap.md", "# Roadmap\n[a](research/2026-01-01-a.md)\n")
+    original = target.read_bytes()
+
+    real_replace = reorg.os.replace
+
+    def _boom(src: str, dst: object) -> None:
+        if str(dst).endswith("roadmap.md"):
+            raise OSError("disk full")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(reorg.os, "replace", _boom)
+    report_path = tmp_path / "r.json"
+    argv = ["rewrite", "--manifest", str(tmp_path / "manifest.csv"), "--scope"]
+    argv += ["fixed-markdown", "--report", str(report_path), "--root", str(root)]
+    assert main(argv) == 1
+    failed = json.loads(report_path.read_text())
+    assert failed["status"] == "failed" and "disk full" in failed["error"]
+    assert "docs/roadmap.md" not in failed["written"]
+    assert target.read_bytes() == original
+    assert not list(root.rglob("*.tmp"))
