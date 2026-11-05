@@ -99,9 +99,14 @@ starting hypotheses, not conclusions, and each lens states in advance what evide
 overturn each hypothesis it touches.
 
 1. No real stock-picking edge over SPY was found. Sound tests mostly returned NOs.
-   *Qualifier:* the production-replica results file's own verdict is `INCONCLUSIVE`, stage
-   `stopped`, reason `holdout:tainted_trade:primary`, with no holdout arm completed
-   (`docs/research/_production_replica_results.json`). The audit graded it "Reliable NO,
+   *Qualifier:* the production-replica results file's top-level verdict is `INCONCLUSIVE`,
+   stage `stopped`, reason `holdout:tainted_trade:primary`, while its `closure` block says
+   NO-GO (stage `pretax_fail`, holdout INCONCLUSIVE, live replication UNVERIFIED)
+   (`docs/research/_production_replica_results.json`). The holdout PRIMARY arm did complete
+   (non-citable, tainted); only its four sensitivity arms never ran. *Correction 2026-11-04:*
+   an earlier version of this paragraph said no holdout arm completed; Lens 7 found that
+   wording came from the results file's `audit_stop.holdout` string and the FOMC amendment,
+   which describe an earlier stopped attempt. The audit graded the replica "Reliable NO,
    high trust"; Lens 2 decides which is right.
 2. The live account is about 84% SPY, 5% cash, and 3 stocks at about 3.3% each. A stock
    sleeve of about 10% cannot move the account much, so "marginal versus SPY" may be partly
