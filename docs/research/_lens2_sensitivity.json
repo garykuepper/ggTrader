@@ -1,6 +1,8 @@
 {
  "spec_commit": "a5fe547b",
- "classification_rules": "Lens 2 classification rules, fixed 2026-11-04 before any row was classified. Inputs are the committed upstream lens outputs only; no result value chooses a class except through these rules.\n\nR1 Verdict type, from the inventory verdict text through a fixed vocabulary: NO (a measured test reported fail, no edge, underperformance, did not reproduce, or no alternative passed); GO (a measured test reported pass, validated, beat, keep, shipped or done on evidence, or a model claim supported); TEST-INCONCLUSIVE (the test's own verdict is inconclusive or invalid); STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix and audit labels). Every STATUS and TEST-INCONCLUSIVE row is classed inconclusive; STATUS rows are counted separately because they are not edge tests.\n\nR2 Data condition (Lens 1). Each contamination item gets a direction from a fixed table with evidence: anchor_leak, pit_universe, universe survivorship, ML-gate training leakage and event pre-entry returns favour the strategy (look-ahead or survivorship); spy_duplicates is unclear (it deflated strategy and SPY Sharpe alike); dsr_units, day_shift and tape identity faults are unknown. The condition is met for a NO if the tape was clean or every item favours the strategy (it lost despite the help), and for a GO only if the tape was clean. Lens 1 'unknown' with no items, and crypto rows (Lens 8 owns them), do not meet it.\n\nR3 Code condition (Lens 6). Met if Lens 6 says yes; if Lens 6 has no row or is unverifiable but Lens 7 independently recomputed the tested statistic from frozen raw inputs; or if Lens 6 says partly and the mismatch is outside the verdict's declared scope, logged as a named exception. Not met if Lens 6 is partly (otherwise), no, unverifiable or absent.\n\nR4 Recompute condition (Lens 7). Met if Lens 7 match is yes, or the row has no raw artifact and its claim is prose only (flagged as such). Not met for no, partial or cannot_locate.\n\nR5 Power condition (Lens 9), NO rows only. The effect a NO is used to rule out is the row's own pre-registered economic bar in pp/yr (+1.0 for the replica, momentum replays and French screens); if none, the owner's 2x-SPY target gap over the row's window from Lens 9 (target_required_cagr_gap_pp). Met only if Lens 9's MDE at t >= 3 (80% power) is known and at or below that effect. An MDE that Lens 9 could not compute means power is not established.\n\nR6 Classes. NO rows: 'unreliable NO (flawed test)' if Lens 6 says no and the row's claim or headline names the later-voided 1.12 baseline as its comparator, or if Lens 7 says the numbers do not recompute; otherwise 'reliable NO' if R2-R5 are all met; otherwise 'inconclusive', listing every unmet condition. GO rows: 'unreliable GO' if any contamination item favours the strategy, Lens 6 says no, or Lens 7 says no; otherwise 'reliable GO' if the tape was clean, R3 and R4 are met and the bar was pre-registered (Lens 7 status pre-registered or amended); otherwise 'inconclusive'.\n\nR7 'Rules out effects larger than' is Lens 9's MDE at t >= 3 in pp/yr where Lens 9 computed one, else 'unknown'. It is reported for every row, whatever its class, so that no NO is read as 'no edge of any size'.\n\nLogged exception E1 (made before classification): the production replica's Lens 6 'partly' (t-1 signal, t-close fill versus the live partial bar) is treated as outside the recorded verdict's scope, because closure.scope is 'historical_daily_bar_model' and the parity amendment narrowed the question to a prior-completed-bar model. This exception changes no class: the replica fails R2 and R5 in any case.\n",
+ "classification_rules": "Lens 2 classification rules, fixed 2026-11-04 before any row was classified. Inputs are the committed upstream lens outputs only; no result value chooses a class except through these rules.\n\nR1 Verdict type, from the inventory verdict text through a fixed vocabulary: NO (a measured test reported fail, no edge, underperformance, did not reproduce, or no alternative passed); GO (a measured test reported pass, validated, beat, keep, shipped or done on evidence, or a model claim supported); TEST-INCONCLUSIVE (the test's own verdict is inconclusive or invalid); STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix and audit labels). Every STATUS and TEST-INCONCLUSIVE row is classed inconclusive; STATUS rows are counted separately because they are not edge tests.\n\nR2 Data condition (Lens 1). Each contamination item gets a direction from a fixed table with evidence: anchor_leak, pit_universe, universe survivorship, ML-gate training leakage and event pre-entry returns favour the strategy (look-ahead or survivorship); spy_duplicates is unclear (it deflated strategy and SPY Sharpe alike); dsr_units, day_shift and tape identity faults are unknown. The condition is met for a NO if the tape was clean or every item favours the strategy (it lost despite the help), and for a GO only if the tape was clean. Lens 1 'unknown' with no items, and crypto rows (Lens 8 owns them), do not meet it.\n\nR3 Code condition (Lens 6). Met if Lens 6 says yes; if Lens 6 has no row or is unverifiable but Lens 7 independently recomputed the tested statistic from frozen raw inputs; or if Lens 6 says partly and the mismatch is outside the verdict's declared scope, logged as a named exception. Not met if Lens 6 is partly (otherwise), no, unverifiable or absent.\n\nR4 Recompute condition (Lens 7). Met if Lens 7 match is yes, or the row has no raw artifact and its claim is prose only (flagged as such). Not met for no, partial or cannot_locate.\n\nR5 Power condition (Lens 9), NO rows only. The effect a NO is used to rule out is the row's own pre-registered economic bar in pp/yr (+1.0 for the replica, momentum replays and French screens); if none, the owner's 2x-SPY target gap over the row's window from Lens 9 (target_required_cagr_gap_pp). Met only if Lens 9's MDE at t >= 3 (80% power) is known and at or below that effect. An MDE that Lens 9 could not compute means power is not established.\n\nR6 Classes. NO rows: 'unreliable NO (flawed test)' if Lens 6 says no and the row's claim or headline names the later-voided 1.12 baseline as its comparator, or if Lens 7 says the numbers do not recompute; otherwise 'reliable NO' if R2-R5 are all met; otherwise 'inconclusive', listing every unmet condition. GO rows: 'unreliable GO' if any contamination item favours the strategy, Lens 6 says no, or Lens 7 says no; otherwise 'reliable GO' if the tape was clean, R3 and R4 are met and the bar was pre-registered (Lens 7 status pre-registered or amended); otherwise 'inconclusive'.\n\nR7 'Rules out effects larger than' is Lens 9's MDE at t >= 3 in pp/yr where Lens 9 computed one, else 'unknown'. It is reported for every row, whatever its class, so that no NO is read as 'no edge of any size'.\n\nLogged exception E1 (made before classification): the production replica's Lens 6 'partly' (t-1 signal, t-close fill versus the live partial bar) is treated as outside the recorded verdict's scope, because closure.scope is 'historical_daily_bar_model' and the parity amendment narrowed the question to a prior-completed-bar model. This exception changes no class: the replica fails R2 and R5 in any case.",
+ "classification_rules_known_limitations_post_hoc": "Asymmetry: R5 requires a NO to show power, while R6 asks a GO for no t-statistic, no power and no check beyond its own bar. A23, the cross-asset 80/20, its 2007-2011 holdout and the synthetic gate study each fail only the code check and would become 'reliable GO' if Lens 6 examined their code, despite having no t-statistic (and, for the 80/20, despite raw CAGR trailing SPY). Rule consequence: R6 needs Lens 6 'no' AND a named 1.12 comparator for 'unreliable NO', so stocks-ensemble-kelly-2026-07 (Lens 6 'no', no named comparator) stays inconclusive.",
+ "status_note": "verdict_type STATUS rows (42) are status labels, not tests; they are classed inconclusive by rule R1. Count tests with verdict_type in {NO, GO, TEST-INCONCLUSIVE} (53 + 16 + 3 = 72); do not read class == 'inconclusive' over all 114 rows as 103 inconclusive tests.",
  "classifications": [
   {
    "id": "stocks-a23-static-leverage",
@@ -2452,7 +2454,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "unresolved; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-11-02-accruals-feasibility.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2469,7 +2471,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Library implemented, unvalidated; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-11-02-after-tax-lot-engine-requirements.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2486,7 +2488,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Infeasible; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2503,7 +2505,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Infeasible; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2520,7 +2522,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "CORRECTED; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-09-28-live-indicator-warmup.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2537,7 +2539,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Beat SPY in WFO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2554,7 +2556,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2571,7 +2573,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2605,7 +2607,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-07-19-congress-trades-nogo.md:53: \"max-leverage 1.0`)\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2622,7 +2624,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Inactive; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"| `conviction_bb` | Shipped, no independent current GO | Conviction sizing; no dedicated modern validation | [Roadmap](../roadmap.md) |\" (source: docs/research/RESEARCH_SNAPSHOT.md line 122)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2656,7 +2658,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "untriaged; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2673,7 +2675,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2707,7 +2709,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "matches SPY, no alpha; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_research_phase_2026-06-18.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2724,7 +2726,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Soft NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/RESEARCH_SNAPSHOT.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2741,7 +2743,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-06-28-alpha-optimization-execution-plan.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2775,7 +2777,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"**Notable fixes**: Kelly position sizing closed NO-GO; a pairs-cache bug that\" (source: docs/changelog.md, section 2026-06-27 to 2026-08-17 (summary, Notable fixes))",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2809,7 +2811,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Validated; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2826,7 +2828,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2843,7 +2845,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Validated; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2860,7 +2862,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "failed; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/roadmap.md:87: \"1.0x leverage, the SP500+MidCap40\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"HONEST NEGATIVE: under real gates the 3-way inverse-vol blend (avg 1.6x lev) = CAGR 14.08%/Sharpe 1.05/DD -10.6%, does NOT beat SP500 gated core (16.35%/1.12/-11.0%).\" (source: /home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_diversification_correlation_2026-06-27.md (line 26))",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2877,7 +2879,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "rejected on intake; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -2945,7 +2947,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3115,7 +3117,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "downgraded; low priority; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3132,7 +3134,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "approved; bar: A standard, not a result. (source: _lens7_recompute.json preregistration, status not applicable; brief docs/research/briefs/2026-10-23-forward-paper-standard.md)",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/briefs/2026-10-23-forward-paper-standard.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3166,7 +3168,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO (PROVISIONAL); no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-24-headline-sentiment-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3217,7 +3219,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Rejected as a standalone strategy; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/roadmap.md:87: \"1.0x leverage, the SP500+MidCap40\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3234,7 +3236,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-17-index-deletion-fade-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3268,7 +3270,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-07-19-insider-cluster-buy-nogo.md:61: \"max-leverage 1.0`)\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3302,7 +3304,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "untriaged; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3336,7 +3338,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-10-24-intraday-replication-source-audit.md:13: \"4x leverage and assumed costs,\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"Table 3 distinguishes three strategies: opposite-band stop (6.2% annualized, Sharpe 0.61); current-band/VWAP stop (9.7%, 1.24); and dynamic sizing (19.6%, 1.33).\" (source: docs/research/2026-10-24-intraday-trading-feasibility.md, section 2 'Zarattini-Aziz-Barbon: SPY noise bands')",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3353,7 +3355,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "closed NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/roadmap.md:87: \"1.0x leverage, the SP500+MidCap40\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3370,7 +3372,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-07-16-leveraged-index-rotation-nogo.md:10: \"3x leveraged-long ETF, its inve\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"Breadth-driven leveraged/inverse ETF rotation (Sharpe -0.14 to -0.37 vs SPY, MaxDD -80% to -89%, regime-halted almost every fold).\" (source: docs/research/briefs/2026-09-28-cross-asset-sleeve.md, 'Don't re-propose' (lines 267-270))",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3387,7 +3389,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-16-leveraged-trend-following-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; source report states: \"Long-only leveraged-ETF trend filter + vol-overlay (Sharpe 0.40-0.62, loses to just buying and holding the same ETF in every universe tested).\" (source: docs/research/briefs/2026-09-28-cross-asset-sleeve.md, 'Don't re-propose' (lines 268-271))",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3421,7 +3423,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"**Stock sleeve capped at ~10%.** New `MAX_POSITIONS` env override\" (source: docs/changelog.md, section 2026-09-28, 'Stock sleeve capped at ~10%.')",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3438,7 +3440,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_strategy_audit_2026-10-19.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3489,7 +3491,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Shipped; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/roadmap.md:87: \"1.0x leverage, the SP500+MidCap40\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3506,7 +3508,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-17-max-effect-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3523,7 +3525,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Researching; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/roadmap.md:87: \"1.0x leverage, the SP500+MidCap40\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3540,7 +3542,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3557,7 +3559,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3642,7 +3644,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3659,7 +3661,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "rejected; SP500 stays the core; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_diversification_correlation_2026-06-27.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3710,7 +3712,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "RESOLVED; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3727,7 +3729,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Infeasible; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3744,7 +3746,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Rejected; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/roadmap.md:87: \"1.0x leverage, the SP500+MidCap40\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3761,7 +3763,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-17-pairs-stat-arb-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3778,7 +3780,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_paper_recon_and_gate_fix_2026-06-27.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3795,7 +3797,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "not demonstrated clean; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-11-02-paper-freeze-readiness.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3812,7 +3814,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3829,7 +3831,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-07-17-pead-nogo.md:51: \"max-leverage 1.0`)\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3965,7 +3967,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "PAUSED (not GO/NO-GO); no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-25-strategy-implementation-audit.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3982,7 +3984,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Component; independent edge unverified; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/RESEARCH_SNAPSHOT.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -3999,7 +4001,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-17-short-interest-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4016,7 +4018,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-19-short-volume-ratio-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4033,7 +4035,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4101,7 +4103,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "RECOMMENDED; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/archive/sp500_equity_strategy_research.md:73: \"position_pct` caps individual position siz\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"**Observation:** Higher position sizing increases drawdown (-18%) without proportional return gain. 2% sizing is better.\" (source: docs/archive/sp500_equity_strategy_research.md, line 224 (4.4 Trial 4))",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4118,7 +4120,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4135,7 +4137,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/briefs/2026-09-28-cross-asset-sleeve.md:129: \"max-leverage 1.0`. The default of 2.0 has\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4152,7 +4154,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Direction sound; absolute Sharpe understated ~29%; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-25-strategy-implementation-audit.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4169,7 +4171,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4186,7 +4188,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Done; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/roadmap.md:87: \"1.0x leverage, the SP500+MidCap40\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"Increased trade size per signal from 2% to 3% of cash.\" (source: docs/roadmap.md, section 1 Glance table row '3% Trade Size (Position Sizing)' (line 79))",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4203,7 +4205,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/roadmap.md:87: \"1.0x leverage, the SP500+MidCap40\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4220,7 +4222,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-08-19-anchor-fix-reproduction.md:23: \"max_leverage=1.0`), validated 2026-07-13\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"The live production configuration is the **3-sleeve leverage-realistic\" (source: docs/research/2026-08-19-anchor-fix-reproduction.md §2 and §5)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4237,7 +4239,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4254,7 +4256,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "recommend not queuing; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4271,7 +4273,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "design only; not authorized; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-11-02-two-symbol-sweep-design.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4288,7 +4290,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Historical NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/RESEARCH_SNAPSHOT.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; source report states: \"| VIX entry throttling | Historical NO-GO; distinct from sizing | [Optimization plan](2026-06-28-alpha-optimization-execution-plan.md) |\" (source: docs/research/RESEARCH_SNAPSHOT.md line 157)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4305,7 +4307,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "untriaged (shortlist); no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4322,7 +4324,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Component; independent edge unverified; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/RESEARCH_SNAPSHOT.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4339,7 +4341,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Best = core+macd+vbb (5-voter, drop MTF); no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_voter_reconcile_2026-06-24.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4356,7 +4358,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "SUPERSEDED; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-08-18-wfo-anchor-leakage-fix.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4373,7 +4375,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-11-02-wfo-fallback-semantics.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4424,7 +4426,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4441,7 +4443,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "clear NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4458,7 +4460,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no risk-adjusted edge; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4492,7 +4494,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-20-commodity-trend-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4509,7 +4511,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "untriaged; contested pending direct re-read; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4543,7 +4545,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-07-20-fomc-drift-nogo.md:194: \"position size (33% vs the 3% default) scaled CAGR\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4560,7 +4562,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-20-fx-hedge-overlay-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4730,7 +4732,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Infeasible or blocked for most candidates; B1 and B4 data-feasible but gated on crypto dormancy; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-25-strategy-implementation-audit.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4900,7 +4902,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-20-treasury-curve-nogo.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4917,7 +4919,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "On hold; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/archive/roadmap-pre-lab.md:244: \"Position size must respect funding-rate response to d\"",
+   "exposure_and_leverage": "no raw artifact; source report states: \"**It has never traded — ROOT CAUSE FOUND (2026-06-04): a sizing floor blocks every entry.**\" (source: /home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_binanceus_live_status_2026-06-04.md (line 14))",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4934,7 +4936,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "reverted; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4951,7 +4953,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Do not build — watch-and-revisit only; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4968,7 +4970,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "disabled; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -4985,7 +4987,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no deployable edge; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/archive/edge_search_report_2026-06-08.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5002,7 +5004,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/2026-07-06-crypto-execution-venues.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5019,7 +5021,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "directionally credible but not numerically trustworthy; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/archive/phase4_funding_carry.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5087,7 +5089,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "modestly profitable; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5104,7 +5106,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5121,7 +5123,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "Infeasible; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:105: \"3x leveraged ETFs will amplify\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5138,7 +5140,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/archive/pipeline_run_history.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5155,7 +5157,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5172,7 +5174,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "parked (infeasible); no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5189,7 +5191,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5206,7 +5208,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5223,7 +5225,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "untriaged (literature only); no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (docs/research/WEB_RESEARCH_CANDIDATES.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5240,7 +5242,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5257,7 +5259,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "defer (90-day); no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5325,7 +5327,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "NO-OP; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5342,7 +5344,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5359,7 +5361,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "from report docs/changelog.md:1194: \"position size proportional to distance below BB band.\"",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   },
   {
@@ -5393,7 +5395,7 @@
    "power_note": "no raw artifact",
    "original_verdict_and_bar": "no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None')",
    "artifact_and_keys": "no raw artifact",
-   "exposure_and_leverage": "not recorded in source report (/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/project_strategies_april2026.md searched for leverage/position size)",
+   "exposure_and_leverage": "no raw artifact; not stated in source report (row's own inventory quotes searched)",
    "se_method_and_quantity": "none reported"
   }
  ],
@@ -5707,7 +5709,7 @@
   "simpler_test_would_differ_shown_from_artifact": [
    {
     "id": "stocks-momentum-french-screen",
-    "finding": "A1 single-test p (big 0.001135 <= 0.00135) would pass a non-Holm t>=3 bar; Holm step 1 (0.000675) rejects. Overall verdict unchanged because A2 fails for both groups (+0.08 / +0.20 pp/yr vs +1.0).",
+    "finding": "A1 single-test p (big 0.001135 <= 0.00135) would pass a non-Holm t>=3 bar; it does not pass Holm step 1 (0.000675; holm.big false). Overall verdict unchanged because A2 fails for both groups (+0.08 / +0.20 pp/yr vs +1.0).",
     "keys": "groups.big.full_p, groups.small.full_p, holm.*, groups.*.post_cagr_diff_pp"
    },
    {
@@ -5810,7 +5812,7 @@
    "date": "2026-10-19",
    "commit": "09f9f401",
    "change": "DSR units fix",
-   "direction": "much tighter (gate needs in-sample Sharpe near 2.5 per Phase 0; anchor in 17/17 momentum folds)",
+   "direction": "much tighter (anchor deployed in 17/17 corrected momentum folds, docs/research/_wfo_fold_attribution_results.json)",
    "affects": "every run_wfo row before 2026-10-19 (Lens 1 dsr_units tag, 51 rows)"
   },
   {
