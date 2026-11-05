@@ -2,9 +2,10 @@
 
 **Date:** 2026-11-05 · **Branch:** `investigation/root-cause-2026-11-04` (not merged, not pushed) ·
 **Type:** synthesis of nine reviewed lenses; diagnosis only, no recommendations · **Design:**
-`docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` · **Status:** Task 14
-step 1 (synthesis). The independent challenge (step 2) has not run yet. Phase 2 re-runs were not
-run, by the owner's decision of 2026-11-05.
+`docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` · **Status:** Task 14,
+revised after the independent challenge (`docs/research/2026-11-04-root-cause-challenge.md`);
+every objection is resolved in section 9. Phase 2 re-runs were not run, by the owner's decision of
+2026-11-05.
 
 **Abbreviations, expanded once.** SPY = SPDR S&P 500 ETF Trust, the benchmark. ETF = exchange-traded
 fund. TR = total return (price plus dividends reinvested). CAGR = compound annual growth rate.
@@ -23,9 +24,10 @@ testing several ideas at once. GO / NO-GO = the project's pass / fail labels. SS
 Ultra S&P 500, a fund that targets 2x SPY's daily move. A23 = the owner-adopted 70% SPY / 30% SSO
 allocation study. LETF = leveraged or inverse ETF. FOMC = Federal Open Market Committee (the US
 Fed's rate meetings). IEF, TLT = 7-10 year and 20+ year Treasury bond ETFs. GLD = gold ETF.
-PDBC = commodity ETF. RSP = equal-weight S&P 500 ETF. BTC, ETH = bitcoin, ether. IBIT = iShares
-Bitcoin Trust ETF. DB = the project's TimescaleDB database. EOD = end of day. PT / ET = US
-Pacific / Eastern time. P2-nn = a numbered Phase 2 re-run item from the Phase 1 checkpoint.
+PDBC = commodity ETF. MDY = SPDR S&P MidCap 400 ETF. RSP = equal-weight S&P 500 ETF. BTC, ETH =
+bitcoin, ether. IBIT = iShares Bitcoin Trust ETF. DB = the project's TimescaleDB database. EOD =
+end of day. PT / ET = US Pacific / Eastern time. P2-nn = a numbered Phase 2 re-run item from the
+Phase 1 checkpoint.
 
 ## 1. One-page summary
 
@@ -34,127 +36,152 @@ the same period, measured as total return, before tax first and after tax beside
 (`docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md:10-16`). Why has the
 research not come close, and what is the most the evidence supports?
 
-**The answer in plain words.** Nothing in the record reliably shows an edge over SPY, and
-nothing reliably shows there is none. Of 114 results with a verdict, 0 are reliable (no reliable
-NO and no reliable GO); 9 GO and 2 NO results are unreliable, and 103 are inconclusive
-(`docs/research/2026-11-04-lens2-verdict-audit.md:29-50`). "Inconclusive" means the tests were
-too weak, too contaminated or too poorly recorded to decide, not that they found nothing.
+**The answer in plain words.** Two answers, because there are two questions.
+- *For the owner's 2x target with the design that was built and traded* (about 85% SPY plus a
+  small stock sleeve), the evidence is negative. The production replica (the live rules re-run on
+  history) was able to see a whole-account excess of 2x-SPY size in both windows it ran (it would
+  detect about 4.2 pp/yr; the target needed 9.57 and 6.14) and returned -0.64 and +1.00 pp/yr
+  (`docs/research/2026-11-04-lens9-power-and-regime.md:396-399`). One caveat is unmeasured: it
+  traded a stock with wrong prices (PARA) three times.
+- *For stock picking itself*, the evidence does not decide. There are 72 measured tests: 0
+  reliable, 9 unreliable GO, 2 unreliable NO, 58 inconclusive and 3 that stopped on their own
+  terms; 42 further rows are status labels, not tests
+  (`docs/research/2026-11-04-lens2-verdict-audit.md:29-50`). "Inconclusive" means the test could
+  not decide, not that it found nothing. No test shows an edge, and none rules out a small one
+  (1 to 4 pp/yr).
 
-**The measured maximum.** Over 2021-2026 the target needs **9.57 pp/yr** more than SPY; over
-longer windows it needs much less (3.54 pp/yr over 2006-2026, 0.77 over 1927-2026), because
-doubling a large cumulative return adds less per year the longer it compounds
-(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:36-43`). The only measured results
-that reached their own window's gap were leverage (a fund holding 2x SPY, picked after the fact,
-+4.15 pp/yr over 2006-2026 with a -84.8% drawdown) and momentum before its 1993 publication. No
-stock-picking result after 1994 reached its gap; the largest 2021-2026 stock-picking estimate,
-+4.37 pp/yr, has a 95% CI from -7 to +16 (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:77-83, 307-320`).
-Leverage adds market exposure, not skill.
+**The measured maximum.** The target needs 9.57 pp/yr over 2021-2026 but only 3.54 over 2006-2026
+and 0.77 over 1927-2026, because doubling a large cumulative return adds less per year the longer
+it compounds (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:36-43`). The only results
+that reached their window's gap were the largest leverage tested (a 2x-SPY fund, +4.15 pp/yr over
+2006-2026, -84.8% at its worst) and momentum before its 1993 publication. Leverage is exposure,
+not skill: at that window's funding cost, the same exposure financed at T-bill rates would have
+earned more than the leveraged fund did. After 1994, registered stock-picking results ran from
+-0.62 to +0.83 pp/yr; the largest 2021-2026 estimate, +4.37, has a CI from -7 to +16
+(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:77-83, 296-320`).
 
-**The biggest causes, ranked** (section 3 gives evidence and confidence):
-1. The target is large next to every measured stock-picking effect (post-1994: +0.08 to +0.83 pp/yr).
-2. The tested and live book is about 85% SPY with about 9% in stocks, so it cannot stray far
-   from SPY in either direction.
-3. The early "beat SPY" results came from bugs and leaks that favoured the strategy, and the
-   live design was chosen on them.
-4. The tests could not tell a small edge from zero, and the walk-forward gates often tested a
-   fallback instead of the idea.
-5. The live paper shortfall (-3.76 pp since 06-24) is mostly idle cash and broker quirks, and
-   live does not run the configuration any backtest measured.
+**The biggest causes**, ranked by judgement (section 3 explains how; no cause's share is measured):
+1. The target is large next to every measured stock-picking effect.
+2. The tested and live book is about 85% SPY with about 9% in stocks, so it cannot stray far from SPY.
+3. The early "beat SPY" results came from bugs and leaks that favoured the strategy; they caused
+   false optimism and chose the live design, not the shortfall itself.
+4. The tests could not tell a small stock-picking edge from zero.
+5. The paper shortfall (-3.76 pp at the trader's own run-time prices, -4.57 on Alpaca's end-of-day
+   equity) is mostly idle cash and broker quirks, and live does not run any tested configuration.
 6. The search stayed narrow: large-cap, long-only, mostly one family of signals.
 
-**What is solid.** Today's price data no longer shows the five known bugs; every headline with a
-raw file recomputes; the signal code does what it says on replay; the paper accounting reconciles.
+**What is solid.** The five known data bugs are gone; every headline checked against its raw file
+matched; the signal code does what it says; the paper accounting reconciles.
 
-**What is unknown.** Whether any edge of 1 to 4 pp/yr exists; how much each bug moved each old
-result; how the live-versus-backtest differences change returns; 29 re-runs that could settle
-parts of this were not run.
+**What is unknown.** Whether a 1 to 4 pp/yr edge exists; PARA's exact effect; how live-versus-test
+differences change returns; 29 re-runs that could settle parts were not run.
 
 **What this report does not do.** It makes no recommendation about trading, strategies,
 deployments, the paper account or the account type, and no forecast.
 
 No second model family reviewed this work: the owner chose Claude only. The review process
-instead used independent re-derivation by fresh agents that recomputed figures without the
-author's reasoning.
+instead used independent re-derivation by fresh agents, including a challenger that checked 40
+claims against raw files and the DB without seeing the author's reasoning.
 
 ## 2. Answers to the owner's questions
 
-**Q1. Is there any edge over SPY in the stock work?** The evidence does not settle this, in either
-direction. No stock result is a reliable GO, and none is a reliable NO
-(`docs/research/2026-11-04-lens2-verdict-audit.md:40-50`). The strongest NO, the 2026-10-19
-production replica (the live rules re-run on 2021-2026), lost by 0.64 pp/yr (t -0.69), but it
-could only have detected a whole-account excess above about 4.2 pp/yr, and it traded one
-misidentified security (PARA) whose effect is unmeasured
-(`docs/research/2026-11-04-lens2-verdict-audit.md:73-94`). Because stocks were only 9.37% of that
-book, the same test could detect only a stock-sleeve excess above about 45 pp/yr
+**Q1. Is there any edge over SPY in the stock work?** For the design that was built (mostly SPY, a
+3-name sleeve), the record shows no 2x-sized effect: the replica could have detected one at
+whole-account level in both windows and found -0.64 pp/yr (2021-2026, t -0.69) and +1.00
+(2010-2020 holdout, t 0.69, not citable because of bad prices)
+(`docs/research/2026-11-04-lens9-power-and-regime.md:396-399`). Against a passive book with the
+same mix of SPY, stocks and cash it was +0.26 pp/yr (t 0.20), and +1.85 (t 1.57) in the holdout;
+running it with same-day fills, 3 or 10 bp costs or no cash reserve gave -0.42, -0.57, -0.83 and
+-0.83 (`docs/research/_production_replica_results.json`, `windows.primary.arms.*.excess_vs_spy`
+and `excess_vs_exposure_matched`). So the stock picks were neither clearly helpful nor harmful.
+For stock picking itself, the evidence does not settle it: stocks were only 9.37% of that book,
+so the same test could only see a sleeve excess above about 45 pp/yr
 (`docs/research/2026-11-04-lens9-power-and-regime.md:49-54`). The long-history French-library
-screens (survivorship-free data, 1927 or 1963 to 2026) are the best-powered tests; after 1994
-their best large-cap results are +0.08 to +0.83 pp/yr against the market
-(`docs/research/2026-11-04-lens2-verdict-audit.md:52-58`). Momentum did beat the market before
-1994 (t 3.56 for big stocks), then faded and turned negative after 2013
-(`docs/research/2026-11-04-lens9-power-and-regime.md:520-528`). In plain terms: no edge has been
-shown, and a small one (1 to 4 pp/yr) has not been ruled out.
+screens found momentum over 1927-2026 at t 3.05 (big stocks) and 3.11 (small), above a single t
+of 3 but just short of the registered two-test correction; after 1994 the registered results run
+from -0.62 to +0.83 pp/yr against the market, and momentum turned negative after 2013
+(`docs/research/2026-11-04-lens2-verdict-audit.md:56-58, 938-943`;
+`docs/research/2026-11-04-lens9-power-and-regime.md:520-528`). No edge has been shown; a small
+one (1 to 4 pp/yr) has not been ruled out.
 
-**Q2. What is limiting the live account's return versus SPY?** From 2026-06-24 to 11-04 the paper
-account returned +1.07% against SPY's total return of +4.84%, a shortfall of 3.76 pp on the
-broker's own figures (`docs/research/2026-11-04-lens3-live-parity.md:185-194`). Of that, idle cash
-before the SPY cash sweep cost about 2.46 pp, the stock picks 0.88 pp, the SPY sleeve 0.15 pp and
-other items 0.29 pp (an estimate, `docs/research/2026-11-04-lens3-live-parity.md:34-50`). About
-0.85 pp of the stock loss is one broker artifact: Alpaca's paper account never applied MNST's
-2-for-1 split, so a sale credited half the value. Leaving that out, the stock picks netted about
-zero over the period: up 1.8 pp early, down 3.3 pp in the July-September blend era, up 1.6 pp
+**Q2. What is limiting the live account's return versus SPY?** From 2026-06-24 the paper account
+trailed SPY's total return. The size depends on which value is used
+(`docs/research/2026-11-04-lens3-live-parity.md:25-33, 185-194`):
+- **-3.76 pp** (+1.07% vs +4.84%, to 11-04) using the broker value the trader read at run time
+  (cash plus shares times price, about 15:45 ET);
+- **-4.57 pp** (-1.48% vs +3.09%, to the 11-03 close) using Alpaca's own end-of-day equity series;
+  part of the 0.81 pp difference rests on an unproven hypothesis that Alpaca values the
+  untradable AVB holding near zero at the close;
+- **-3.45 pp** using the value the trader stores, which adds back dividends the broker never paid.
+
+On the run-time basis, idle cash before the SPY cash sweep cost about 2.46 pp, the stock picks
+0.88 pp, the SPY sleeve 0.15 pp and other items 0.29 pp (an estimate,
+`docs/research/2026-11-04-lens3-live-parity.md:34-50`). About 0.85 pp of the stock loss is one
+broker artifact: Alpaca's paper account never applied MNST's 2-for-1 split. Without it, the stock
+picks netted about zero: up 1.8 pp early, down 3.3 pp in the July-September blend era, up 1.6 pp
 since the configuration was frozen (`docs/research/2026-11-04-lens3-live-parity.md:255-271`).
-Today the book is about 85% SPY, 5% cash and 3 stock slots at 3.3% each, so it tracks SPY closely
-by construction (`docs/research/2026-11-04-lens3-live-parity.md:244-253`). Detecting a 10 pp/yr
-stock-sleeve edge from paper trading alone would take about 23 to 40 years
+Today the book is about 85% SPY, 5% cash and 3 stock slots at 3.3% each, so it tracks SPY by
+construction (`docs/research/2026-11-04-lens3-live-parity.md:244-253`). Detecting a 10 pp/yr
+sleeve edge from paper trading alone would take about 23 to 40 years
 (`docs/research/2026-11-04-lens3-live-parity.md:56-60`).
 
 **Q3. What is the measured maximum, and what would 2x SPY require?** The requirement depends on
-the window: 9.57 pp/yr over 2021-2026 (SPY +108.60%, target +217.21%), 3.54 over 2006-2026, 2.34
-over 1994-2026 and 0.77 over 1927-2026 (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:157-176`).
-The highest figure that passes Lens 4's soundness tiers is a 100% SSO book (2x SPY) at +4.15 pp/yr
-over 2006-2026 against SPY's true total return, 1.17 times that window's 3.55 pp/yr gap; it was
-picked after seeing five leverage arms, has no t-statistic, holds only at that window's 1.64%
-average funding cost, fell 84.8% at its worst, and trailed SPY in 37.5% of 10-year windows
-(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:58-75`). The registered 1.3x arm (the
-A23 mix) measured +1.61 pp/yr, falling to +0.81 (+0.80 after tax) with funding 2.5 points higher,
-near today's bill rates (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:245-247`).
-For stock picking, the highest figure after 1994 is +0.83 pp/yr (0.35 of the 2.34 gap), and on
-2021-2026 it is momentum's +4.37 pp/yr (0.46 of the gap, CI -7.07 to +16.05)
-(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:315-320`). Leverage multiplies SPY's
-exposure and its drawdowns; it is not stock-picking skill. After tax, a book whose gains are all
-short-term needs +2.42 pp/yr (24%/15% brackets) or +5.05 pp/yr (37%/20%) before tax just to tie
-SPY held and taxed once (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:84-89`).
+the window: 9.57 pp/yr over 2021-2026, 9.54 over 2022-2026, 3.54 over 2006-2026 (3.55 with a
+one-day-different SPY starting close), 2.34 over 1994-2026 and 0.77 over 1927-2026
+(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:157-183`). Leverage, on one basis
+(each arm against SPY's true total return, 2006-2026, at that window's 1.64% average T-bill
+rate): 1.3x (the registered A23 arm) +1.32 pp/yr, 1.5x +2.37, 2.0x +4.15; with funding 1.5 and 2.5
+points higher, the 1.3x arm falls to +0.87 and +0.52. On the A23 study's own basis the same arms
+read +1.61, +2.66, +4.44, +1.16 and +0.81
+(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:245-249, 266-281`). The 2.0x arm is the
+largest exposure tested, not a ceiling of skill: it was picked after seeing five arms, has no
+t-statistic, fell 84.8% at its worst and trailed SPY in 37.5% of rolling 10-year windows (that
+rolling series reaches back into synthetic pre-2006 data). The same file shows that 1.3x or 1.5x
+SPY exposure financed at T-bill rates would have earned 13.94% or 15.83% a year, more than the SSO
+books' 12.71% or 13.76% (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:294-305`). For
+stock picking, the highest registered figure after 1994 is +0.83 pp/yr (0.35 of the 2.34 gap); on
+2021-2026 it is momentum's +4.37 pp/yr (0.46 of the 9.54 gap), whose 95% CI of -7.07 to +16.05 is
+on the arithmetic mean excess, not the CAGR gap
+(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:315-320`). After tax, a book whose gains
+are all short-term needs +2.42 pp/yr (24%/15% brackets) or +5.05 pp/yr (37%/20%) before tax just to
+tie SPY held and taxed once (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:84-89`).
 
 **Q4. How reliable is each past NO-GO?** None is reliable: of 53 NO results, 0 are reliable, 2 are
 unreliable (judged against the 1.12 Sharpe baseline that later failed to reproduce) and 51 are
 inconclusive (`docs/research/2026-11-04-lens2-verdict-audit.md:967-971`). A NO counts as reliable
 only if its data are clean, its code was checked, its numbers recompute and it had the power to
 see the effect it was meant to rule out; power fails in 51 of the 53
-(`docs/research/2026-11-04-lens2-verdict-audit.md:181-191, 967-971`). What the NOs do rule out
-is narrow: the replica rules out a whole-account excess above about 4.2 pp/yr (if PARA proves
-immaterial); the momentum replay rules out only an excess above about 22.7 pp/yr; the FOMC and
-month-end Treasury tests rule out calendar effects above about 2.4 and 4.9 pp/yr in derived,
-non-SPY units; for every other NO the size is unknown (`docs/research/2026-11-04-lens2-verdict-audit.md:972-977`).
-The six strongest NOs each fail one condition only (`docs/research/2026-11-04-lens2-verdict-audit.md:52-61`).
-They all point the same way, and no test shows an edge, but none can be read as "no edge of the
-size it was meant to test".
+(`docs/research/2026-11-04-lens2-verdict-audit.md:181-191, 967-971`). The power test uses each
+study's own pass bar where it had one (usually +1.0 pp/yr), which is stricter than the owner's
+2x gap; measured against the 2x gap, the replica had enough power (Q1). What the NOs rule out: the
+replica, a whole-account excess above about 4.2 pp/yr (if PARA proves immaterial); the momentum
+replay, only an excess above about 22.7 pp/yr; the FOMC and month-end Treasury tests, calendar
+effects above about 2.4 and 4.9 pp/yr in derived, non-SPY units; for every other NO the size is
+unknown (`docs/research/2026-11-04-lens2-verdict-audit.md:972-977`). The six strongest NOs each
+fail one condition only (`docs/research/2026-11-04-lens2-verdict-audit.md:52-61`). They all point
+the same way and no test shows an edge.
 
 **Q5. Did anything beat buy-and-hold in crypto?** Not over any three-year window. Every crypto
-portfolio with a recoverable record lost to holding BTC over its three-year range, by 5 to 44 pp
-a year (`docs/research/2026-11-04-lens8-crypto.md:31-42`). The headline 48.46% (against BTC
--21.34%) is real in its file, but it is an in-sample replay in one year when BTC fell, on price
-data later replaced, with coins chosen by 2026 trading volume; BTC exposure was low (beta about
-0.26) and the leftover gain was not significant (t 1.51)
-(`docs/research/2026-11-04-lens8-crypto.md:43-49`). The only out-of-sample stretch (about seven
-months) lost 9 to 19% while BTC fell 42% (`docs/research/2026-11-04-lens8-crypto.md:224-237`).
-Live crypto left no usable record: 0 trades in the database (`docs/research/2026-11-04-lens8-crypto.md:442-461`).
+portfolio with a recoverable record lost to holding BTC over its three-year range, by 5 to 44 pp a
+year; the same runs beat ETH in four of five cases, because ETH itself returned between -8% and
++22% over those three years (`docs/research/2026-11-04-lens8-crypto.md:206-219, 538-545`). The
+headline 48.46% is real in its file, but it is an in-sample replay in one year when BTC fell
+(-21.34% as that report stated; -17.46% on today's price data), on data later replaced, with
+coins chosen by 2026 trading volume; BTC exposure was low (beta about 0.26) and the leftover gain
+was not significant (t 1.51) (`docs/research/2026-11-04-lens8-crypto.md:43-49`). In the only
+out-of-sample stretch (about seven months) the two books lost 9% and 19% while BTC fell 42%, so
+they beat BTC by about 23 to 33 pp there; their low BTC exposure (beta 0.10 and 0.20) fits that,
+and the leftover was not significant (t 0.43 and -0.44)
+(`docs/research/2026-11-04-lens8-crypto.md:224-237`). Live crypto left no usable record: 0 trades
+in the database (`docs/research/2026-11-04-lens8-crypto.md:442-461`).
 
 **Q6. What was done right and can be relied on?**
 - The five known data and code bugs are fixed: no weekend bars, no duplicate days, one SPY row
   per date (`docs/research/2026-11-04-lens1-backtest-validity.md:21-24, 97-120`).
-- Every headline with a raw results file was checked: 5 recomputed from raw data to the stored
-  precision, 27 read directly, 1 labelling mismatch (position sizing) and no numerical
-  disagreement (`docs/research/2026-11-04-lens7-research-accuracy.md:20-25, 136-138`).
+- Of the 41 rows with a raw results file, 5 were recomputed from raw data to the stored
+  precision and 27 read directly; all matched apart from one labelling mismatch (position
+  sizing). Nine were not re-checked and seven could not be located in their file
+  (`docs/research/2026-11-04-lens7-research-accuracy.md:20-25, 112-138`).
 - The signal code does what it says: four strategies hand-replayed on real prices with 0
   mismatched buy or sell dates (`docs/research/2026-11-04-lens6-implementation-correctness.md:18-27`).
 - 11 of 14 academic citations checked say what the reports say; none misquotes a number
@@ -214,8 +241,16 @@ existed before 2026-06-20 (`docs/research/2026-11-04-phase1-checkpoint.md:272-27
 
 Each item says what is **confirmed** (measured or read from code, data or a broker record) and
 what is **inference** (a reading of the evidence). Confidence is high, medium or low, with the
-reason. The rank within each group is by how much of the "marginal versus SPY" outcome the item
-can explain; across groups, the summary's list gives the overall order.
+reason.
+
+**How the ranking was made.** It is the author's judgement, not a measurement: no item's share of
+the shortfall versus SPY was measured, and several effects are unknown (A1, B1, B5, C6). Items are
+ordered by how directly each bears on the owner's 2x question, using the measured facts each one
+rests on. Three cautions: C1 (the target is large) is a property of the target, not a defect;
+C1 and C3 overlap, because with a 9% sleeve the book's construction rather than the size of any
+effect is the binding limit; and A1's leaks favoured the strategy, so they explain false
+optimism and the choice of live design, not results trailing SPY. The confidence labels apply
+to each item's facts, not to its rank.
 
 ### A. Method and process errors in the research
 
@@ -230,22 +265,30 @@ fell: core Sharpe 0.99 to 0.59 after the PIT fix; 1.12 did not reproduce (0.97)
 (`docs/research/2026-11-04-lens2-verdict-audit.md:920-924`). The live ensemble, 3% sizing and the
 blend were adopted on these numbers (`docs/research/2026-11-04-lens6-implementation-correctness.md:199-208`).
 Confidence: **high** that these results are unreliable; **unknown** how much each bug contributed.
+This explains why the project believed it was ahead, not why results trail SPY.
 *Phase 0 qualified:* the "corrected" 0.59 itself predates the DSR fix, which changes which
 settings each fold uses and so its returns; and "the five bugs alone caused the drop from 1.12" is
 not confirmed (`docs/research/2026-11-04-lens1-backtest-validity.md:357-370`).
 
-**A2. The tests could not tell a small edge, or for the stock sleeve even a large one, from zero.**
-Confirmed. Power fails in 51 of 53 NO results (`docs/research/2026-11-04-lens2-verdict-audit.md:967-971`).
-Only 8 of 144 rows have what is needed to compute a detectable effect; the replica's is 4.24 pp/yr
-at whole-account level (about 45 pp/yr for its stock sleeve), and momentum's 22.66 pp/yr
-(`docs/research/2026-11-04-lens9-power-and-regime.md:23-57`). The walk-forward gates often replaced
-the idea with a fallback: after the DSR fix the momentum re-run used the fallback in 17 of 17 folds,
-and in a synthetic model the circuit breaker halts 87.5% of runs even for a strategy with a true
-Sharpe of 1.0 (`docs/research/2026-11-04-lens2-verdict-audit.md:757-774`). In the two cases where
-an artifact let the gate be removed, the verdict did not change; for the other 48 gated results it
-is unknown (`docs/research/2026-11-04-lens2-verdict-audit.md:831-845`). Confidence: **high** for the
-computed rows; **unknown** for the 103 rows with no raw file. *Phase 0 qualified:* "t of 3 needs an
-IR near 1.3" holds only at 50% power; at 80% power it is 1.62 to 1.68
+**A2. The tests could not tell a small stock-picking edge from zero.** Confirmed. Power fails in 51
+of 53 NO results, measured against each study's own bar
+(`docs/research/2026-11-04-lens2-verdict-audit.md:967-971`). Only 8 of 144 rows have what is needed
+to compute a detectable effect; the replica's is 4.24 pp/yr at whole-account level (enough for the
+2x gap, but about 45 pp/yr for its stock sleeve), and momentum's 22.66 pp/yr
+(`docs/research/2026-11-04-lens9-power-and-regime.md:23-57`). The French screens span up to a
+century but, measured against the owner's post-1994 gap of 2.34 pp/yr, their indicative
+detectable effect after 1994 is about 4.4 pp/yr, so for the 2x question they are less powerful than
+the replica (`docs/research/2026-11-04-lens2-verdict-audit.md:63-71`). The walk-forward gates often
+deployed a fallback: after the DSR fix the momentum replay used it in 17 of 17 folds; for that
+replay the fallback was the plain 12-1 momentum rule holding 50 names, so its +4.37 pp/yr measures
+plain momentum rather than a stand-in (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:238`).
+In a synthetic model where the gates always pass and the true Sharpe is 1.0, 87.5% of runs are
+halted at least once, about a third of folds use the fallback and about half of runs end halted
+(`docs/research/2026-11-04-lens2-verdict-audit.md:757-766`). Where an artifact let the gate be
+removed (two cases), the verdict did not change; for the other 48 gated results it is unknown
+(`docs/research/2026-11-04-lens2-verdict-audit.md:831-845`). Confidence: **high** for the computed
+rows; **unknown** for the 103 rows with no raw file. *Phase 0 qualified:* "t of 3 needs an IR near
+1.3" holds only at 50% power; at 80% power it is 1.62 to 1.68
 (`docs/research/2026-11-04-lens9-power-and-regime.md:58-67`).
 
 **A3. Pass bars and records arrived late.** Confirmed. Nothing committed before 2026-09-10 sets a
@@ -264,9 +307,11 @@ families; with zero true edge, at least one false t of 2 "win" is 81% likely acr
 tests, while a t of 3 bar keeps it near 9% (`docs/research/2026-11-04-lens2-verdict-audit.md:692-706`).
 Most bars had no significance test at all ("Sharpe above SPY's", "beat 1.12"), and the SPY
 yardstick itself moved from Sharpe 0.58 to 0.78 to 0.91 as data and definitions changed
-(`docs/research/2026-11-04-lens2-verdict-audit.md:707-716, 886-888`). Two GO calls used Sharpe while
-raw CAGR trailed SPY (the cross-asset 80/20 trailed by 1.09 pp/yr)
-(`docs/research/2026-11-04-lens2-verdict-audit.md:217-224`). Confidence: **medium** that this
+(`docs/research/2026-11-04-lens2-verdict-audit.md:707-716, 886-888`). One GO call, the cross-asset
+80/20 book, rested on Sharpe while its raw CAGR trailed SPY by 1.09 pp/yr (2021-2026; 1.07 over
+2016-2026); the core+SPY KEEP tied SPY's CAGR (12.963% vs 12.959%)
+(`docs/research/2026-11-04-lens2-verdict-audit.md:217-224`;
+`docs/research/2026-11-04-lens7-research-accuracy.md:161`). Confidence: **medium** that this
 explains the early optimism; it does not explain the later NOs.
 
 **A5. The search stayed narrow.** Confirmed as a description of coverage; its role as a cause is
@@ -292,28 +337,32 @@ six facts (`docs/research/2026-11-04-phase1-checkpoint.md:188-200`;
 6. The saved account value includes a dividend accrual, and the next day's 3% daily-loss halt
    starts from that inflated value, so the halt fires at about 2.7% real loss.
 
-The replica does model items 4 and 5 and the live risk rules, but not the same-day fill
-(`docs/research/2026-11-04-lens6-implementation-correctness.md:144-148`). Confidence: **high** that
-the differences exist; the effect on returns is **unknown** (P2-14).
+The replica models items 4 and 5 and the live risk rules, but not the same-day fill
+(`docs/research/2026-11-04-lens6-implementation-correctness.md:144-148`). Its same-day-fill arm
+(signals and fills on the signal day's close, the nearest available approximation) gave -0.42
+pp/yr against -0.64 for next-day fills (`docs/research/_production_replica_results.json`,
+`windows.primary.arms.lag0.excess_vs_spy.cagr_diff_pp`). Confidence: **high** that the differences
+exist; the effect of the unfinished bar on returns is **unknown** (P2-14).
 
 **B2. The dividend accrual and the broker's missing cash flows.** Confirmed. The daily gap between
 the saved value and cash plus positions equals the code's cumulative dividend accrual, $320.24
 from 10-30 onward (`docs/research/2026-11-04-lens3-live-parity.md:16-24`). The gap-equals-accrual
 part comes from code and the DB, which are not independent of each other; the independent part is
 the broker record: Alpaca's paper account has never credited a dividend, split, merger, interest
-or any other cash flow since its $100,000 funding (`docs/research/2026-11-04-lens3-live-parity.md:286-311`).
+or any other cash flow since its $100,000 funding journal in 2024 (`docs/research/2026-11-04-lens3-live-parity.md:286-311`).
 Two accrual rows are over-stated by $5.86 in total (AEP $5.76, SPY $0.10). Confidence: **high**.
 *Phase 0 hypothesis 6 confirmed.*
 
-**B3. Most of the paper shortfall is cash and broker artifacts, not stock picks.** Measured;
-the split by component is an estimate. Idle cash cost about 2.46 of the 3.76 pp; broker artifacts
-about 1.0 pp (MNST split 0.85, uncredited SPY dividend 0.15); the blend-era stock picks lost about
-3.3 pp over July-September but the other eras gained, so the picks net about zero without MNST
-(`docs/research/2026-11-04-lens3-live-parity.md:34-50, 255-271`). Confidence: **medium-high**.
-*Phase 0 hypothesis 5 qualified:* its era figures (-1.9 / -2.6 / +1.4 pp) reproduce only with its
-own method (stored value against SPY price); on the broker's figures against SPY total return they
-are -3.02 / -2.28 / +1.60, so the first era is overturned under its own pre-written rule
-(`docs/research/2026-11-04-lens3-live-parity.md:77-83, 223-228`).
+**B3. Most of the paper shortfall is cash and broker artifacts, not stock picks.** Measured on the
+run-time broker value; the split by component is an estimate. Idle cash cost about 2.46 of the
+3.76 pp; broker artifacts about 1.0 pp (MNST split 0.85, uncredited SPY dividend 0.15); the
+blend-era stock picks lost about 3.3 pp over July-September but the other eras gained, so the picks
+net about zero without MNST (`docs/research/2026-11-04-lens3-live-parity.md:34-50, 255-271`). On
+Alpaca's end-of-day equity the total shortfall is larger, -4.57 pp (Q2). Confidence:
+**medium-high**. *Phase 0 hypothesis 5 qualified:* its era figures (-1.9 / -2.6 / +1.4 pp)
+reproduce only with its own method (stored value against SPY price); on the run-time broker value
+against SPY total return they are -3.02 / -2.28 / +1.60, so the first era is overturned under its
+own pre-written rule (`docs/research/2026-11-04-lens3-live-parity.md:77-83, 223-228`).
 
 **B4. Operational events.** Confirmed. The trader ran in dry-run by mistake from 07-15 to 07-30 and
 placed no orders; 44 orders filled at the next day's open, costing about 47 bp (about $290,
@@ -332,7 +381,11 @@ data have 5,595 daily moves of 40% or more, so there is no clean holdout
 (`docs/research/2026-11-04-lens1-backtest-validity.md:36-52`). The unfinished 12:45 PT bar is
 overwritten later only by accident, because one stale symbol pulls every refresh back to 08-11
 (`docs/research/2026-11-04-lens6-implementation-correctness.md:256-268`). Live signals read this
-same table. Confidence: **high** that the faults exist; **low** on their size.
+same table. On PARA's size: the independent challenger estimates, by inference and not by
+measurement, that three long-only round trips capped at about 5% of the account could have cost at
+most about 2.9 pp/yr over 5.25 years, far less than the 7-9 pp/yr distance to the target
+(`docs/research/2026-11-04-root-cause-challenge.md:41-43`). Confidence: **high** that the faults
+exist; **low** on their size.
 
 **B6. Crypto-specific faults.** Confirmed. 43.7% of the Binance.US 4-hour bars are copies of Kraken
 bars; delisted Binance.US coins were deleted; coins were chosen by trading volume at run time and
@@ -351,11 +404,12 @@ is 3.5 to 6.5 pp/yr (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:
 Confidence: **high**. *Phase 0 hypothesis 7 qualified.*
 
 **C2. Every measured stock-picking effect is small next to the gap.** Measured. After 1994 the
-registered French screens give +0.08 to +0.83 pp/yr against a 2.34 gap; 2021-2026 momentum gives
-+4.37 against 9.54 with a CI that includes both zero and the full target
-(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:47-55`). The fading after 1994 and again
-after 2008 or 2013 is visible in long data, so it is not just a 2021-2026 quirk
-(`docs/research/2026-11-04-lens9-power-and-regime.md:515-544`). Published stock anomalies lose about
+registered French screens give -0.62 to +0.83 pp/yr against a 2.34 gap, and after 2008 or 2013
+several sub-periods are negative (down to -0.97 for big-stock and -3.34 for small-stock
+momentum); 2021-2026 momentum gives +4.37 against the 9.54 gap of its 2022-2026 test window, with a
+CI that includes both zero and the full target
+(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:47-55`;
+`docs/research/2026-11-04-lens9-power-and-regime.md:515-544`). Published stock anomalies lose about
 58% of their return after publication on average (McLean and Pontiff, 2016), and the project's own
 screens show that shape (`docs/research/2026-11-04-lens5-coverage-gaps.md:58-60`). Confidence:
 **high** that measured effects are small; **not established** that effects are absent.
@@ -366,11 +420,12 @@ screens show that shape (`docs/research/2026-11-04-lens5-coverage-gaps.md:58-60`
 *Phase 0 hypothesis 2 consistent* (`docs/research/2026-11-04-phase1-checkpoint.md:779`). Whether
 sizing or selection is the bottleneck is unknown (P2-17 not run).
 
-**C4. What reached the gap was exposure, not skill.** Measured. Only leverage (the post-hoc 2.0x
-SSO arm over 2006-2026, -84.8% drawdown, at that window's funding) and pre-1994 momentum reached
-their window's gap; no stock-picking result after 1994 did
-(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:77-83`). In the century study the 30%
-SSO arm fell 91.4% in 1929-32 and the 1x base arm 84.6%
+**C4. What reached the gap was exposure, not skill.** Measured. Only the largest leverage tested
+(the post-hoc 2.0x SSO arm over 2006-2026, -84.8% drawdown, at that window's funding) and pre-1994
+momentum reached their window's gap; no stock-picking result after 1994 did
+(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:77-83`). The leveraged-fund books
+earned less than the same exposure financed at T-bill rates (Q3), so what they show is exposure
+minus cost. In the century study the 30% SSO arm fell 91.4% in 1929-32 and the 1x base arm 84.6%
 (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:294-305`). The leverage rows reach
 Lens 4's Tier B only through a judgement exception for unreviewed code
 (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:205-211`). Confidence: **medium**.
@@ -387,11 +442,13 @@ the only cross-decade check (the replica's 2010-2020 holdout) is not citable
 (`docs/research/2026-11-04-lens9-power-and-regime.md:567-579`). Confidence: **medium** that the
 window matters; **unknown** in which direction.
 
-**C7. Crypto: no evidence of beating BTC.** Measured on recovered files and today's data. No
-three-year window beat BTC; wins appear only in trailing 12-month windows when BTC fell 17-40%,
-mostly in-sample. "Fees dominate" is supported as "costs matter at this turnover", but its headline
-comparison changed four things at once (`docs/research/2026-11-04-lens8-crypto.md:31-42, 60-64`).
-Confidence: **high** that there is no evidence of beating BTC; **medium** on the fee finding.
+**C7. Crypto: no evidence of beating BTC over three years.** Measured on recovered files and
+today's data. No three-year window beat BTC; wins appear only in trailing 12-month windows when
+BTC fell 17-40%, mostly in-sample, and in a seven-month out-of-sample stretch where low BTC
+exposure fits the result. "Fees dominate" is supported as "costs matter at this turnover", but its
+headline comparison changed four things at once (`docs/research/2026-11-04-lens8-crypto.md:31-42, 60-64`).
+Confidence: **high** that there is no evidence of beating BTC over three years; **medium** on the
+fee finding.
 
 ### Phase 0 hypotheses: what the lenses did to them
 
@@ -401,11 +458,11 @@ lenses tested it (`docs/research/2026-11-04-phase1-checkpoint.md:776-784`,
 
 | Phase 0 claim | Outcome |
 |---|---|
-| Replica is a "Reliable NO, high trust" | Overturned: inconclusive (MDE 4.24 above its 1.0 bar; PARA traded unflagged) |
+| Replica is a "Reliable NO, high trust" | Overturned: inconclusive (MDE 4.24 above its 1.0 bar; PARA traded unflagged); against the 2x gap it was adequately powered |
 | Live book about 84% SPY; sleeve too small to move the account | Consistent (replica 85.33% SPY, 9.37% stocks; sleeve-scale MDE about 45 pp/yr) |
 | Early beat-SPY figures came from five bugs; corrected core is 0.59 | Partly: 0.59 predates the DSR fix; "five bugs alone" not confirmed |
 | WFO NO-GOs are weak; bars unreachable on five years | Confirmed; "IR near 1.3" partly overturned (1.62-1.68 at 80% power) |
-| Paper shortfall mostly configuration churn (-1.9 / -2.6 / +1.4) | Qualified: -3.02 / -2.28 / +1.60 on broker figures; idle cash is the largest part |
+| Paper shortfall mostly configuration churn (-1.9 / -2.6 / +1.4) | Qualified: -3.02 / -2.28 / +1.60 on the run-time broker value; idle cash is the largest part |
 | Snapshot excess fits the dividend add-back | Confirmed |
 | 2x SPY out of reach; "+10 to +15 pp needed" | Qualified: 9.57 pp/yr on 2021-2026, 0.77 to 3.54 on longer windows |
 | French screens, FOMC, month-end, PIT core, ic/kelly, LETF timing "Reliable NO" | Each overturned to inconclusive (power, code check, DSR timing or survivorship) |
@@ -415,11 +472,12 @@ lenses tested it (`docs/research/2026-11-04-phase1-checkpoint.md:776-784`,
 ## 4. Traffic-light trust table
 
 **How the lights were set** (from the lens classifications, not re-judged here): **green** = Lens 2
-"reliable" and recomputed by Lens 7; **red** = Lens 2 "unreliable", or a claim Lens 6 found the code
-does not support; **yellow** = a raw results file exists and was recomputed or read (Lens 3, 7 or 8)
-but Lens 2 classes it inconclusive or gives no class; **grey** = no raw results file (prose only) or
-no result yet. The table groups the 144 inventory rows (`docs/research/_investigation_inventory.json`)
-into 35 lines; per-row states are in the lens JSON files listed in section 9.
+"reliable" and recomputed by Lens 7; **red** = Lens 2 "unreliable", or Lens 6 found the code at run
+time did not match the test's specification ("no"); **yellow** = a raw results file exists and was
+recomputed or read (Lens 3, 7 or 8) but Lens 2 classes it inconclusive or gives no class; **grey** =
+no raw results file (prose only) or no result yet. The table groups the 144 inventory rows
+(`docs/research/_investigation_inventory.json`) into 36 lines; per-row states are in the lens JSON
+files listed in section 10.
 
 **There are no green rows**, because Lens 2 found 0 reliable results. Yellow is not "found nothing":
 it means the number is real but the test could not decide. Where Lens 2 or Lens 9 computed it, the
@@ -428,51 +486,54 @@ Lens 9 MDE at t of 3); everywhere else that size is unknown.
 
 | # | Result | What was claimed | Light | Why, in one sentence | What would change this | Citation |
 |---|---|---|---|---|---|---|
-| 1 | Production replica, primary window 2021-2026 | The live rules lose to SPY: 14.19% vs 14.83% a year, t -0.69 | yellow | Numbers recompute exactly, but it can only rule out a whole-account excess above about 4.2 pp/yr (sleeve about 45) and it traded the misidentified PARA. | PARA shown immaterial (P2-16) clears the data condition; power would still keep it inconclusive. | `docs/research/2026-11-04-lens2-verdict-audit.md:360-403` |
-| 2 | Replica holdout 2010-2020 | +1.00 pp/yr vs SPY, t 0.69 | yellow | It ran but stopped on tainted trades, so its own verdict is inconclusive and it is not citable. | A clean, identity-checked 2010-2020 tape (P2-28). | `docs/research/2026-11-04-lens7-research-accuracy.md:32-42` |
+| 1 | Production replica, primary window 2021-2026 | The live rules lose to SPY: 14.19% vs 14.83% a year, t -0.69 | yellow | Numbers recompute exactly and it could see a 2x-sized whole-account effect, but it rules out only a whole-account excess above about 4.2 pp/yr (sleeve about 45), not its own +1.0 bar, and it traded the misidentified PARA; exposure-matched +0.26, same-day fills -0.42. | PARA shown immaterial (P2-16) clears the data condition; power against the +1.0 bar would still keep it inconclusive. | `docs/research/2026-11-04-lens2-verdict-audit.md:360-403` |
+| 2 | Replica holdout 2010-2020 | +1.00 pp/yr vs SPY, t 0.69 (exposure-matched +1.85, t 1.57) | yellow | It ran but stopped on tainted trades, so its own verdict is inconclusive and it is not citable. | A clean, identity-checked 2010-2020 tape (P2-28). | `docs/research/2026-11-04-lens7-research-accuracy.md:32-42` |
 | 3 | Replica live-parity check | 10 of 32 live orders reproduced | yellow | The figure is in its file, but the question was narrowed to a prior-day-bar model after the result, so exact replication is "unverified". | An archive of each live run's inputs (P2-29). | `docs/research/2026-11-04-lens7-research-accuracy.md:219-222` |
 | 4 | S&P 500 core PIT walk-forward (with ensemble_ic and ensemble_kelly) | Core Sharpe 0.59 vs SPY 0.78; ic 0.41, kelly 0.50 | yellow | Read from file, but it predates the DSR fix, which changes which settings each fold used, and stores no t-statistic. | Re-run on current code with a stored excess series (P2-19). | `docs/research/2026-11-04-lens2-verdict-audit.md:1067` |
 | 5 | June-July "beat SPY" headlines (1.12, 0.84, 1.14, 16.2% CAGR, 5-voter, Bollinger, MACD) | The ensemble beat SPY out of sample | red | Built with an anchor leak and a universe leak that favour the strategy, no raw file and no pre-set bar. | Nothing short of new tests; the 1.12 window cannot be recovered. | `docs/research/2026-11-04-lens2-verdict-audit.md:46` |
-| 6 | August corrected-tape core, Sharpe 0.99 ("Live Core") | The core still beat SPY after the tape fix | red | Unreliable GO: it predates the PIT fix that cut it to 0.59, and its code did not match the honest test. | Already superseded by row 4. | `docs/research/2026-11-04-lens2-verdict-audit.md:315` |
-| 7 | August anchor-fix reproduction 0.97 and blend revert 0.69 | 1.12 did not reproduce; blend underperforms | yellow | Read from file, but both predate the PIT and DSR fixes and store no t-statistic. | Re-runs on current code (part of P2-19 / P2-26). | `docs/research/2026-11-04-lens2-verdict-audit.md:290, 314` |
-| 8 | Core+SPY blend "KEEP" | Sharpe 0.80 vs SPY 0.78 | red | It measured walk-forward-picked settings that live does not run, and 0.02 of Sharpe has no significance test. | Not changeable by re-reading; would need a test of the live settings. | `docs/research/2026-11-04-lens2-verdict-audit.md:256, 1077` |
+| 6 | August-September pre-PIT re-baselines (corrected-tape core 0.99 "Live Core", anchor-fix reproduction 0.97, blend reproduction 0.68, pre-PIT ic/kelly 0.61 / 34% CAGR) | The core still beat SPY after the tape fix; 1.12 did not reproduce | red | Each predates the PIT fix that cut the core to 0.59, and Lens 6 found the code at run time did not match an honest test. | Already superseded by row 4. | `docs/research/2026-11-04-lens2-verdict-audit.md:279, 314, 315` |
+| 7 | Blend-to-core revert comparison | Blend Sharpe 0.69 vs SPY 0.78 | yellow | Read from file and code matches, but it predates the DSR fix and stores no t-statistic. | Re-run on current code (P2-26). | `docs/research/2026-11-04-lens2-verdict-audit.md:290` |
+| 8 | Core+SPY blend "KEEP" | Sharpe 0.80 vs SPY 0.78 (CAGR 12.963% vs 12.959%) | red | It measured walk-forward-picked settings that live does not run, and 0.02 of Sharpe has no significance test. | Not changeable by re-reading; would need a test of the live settings. | `docs/research/2026-11-04-lens2-verdict-audit.md:256, 1077` |
 | 9 | SPY cash sweep (live) | Putting idle cash into SPY | grey | No raw backtest file; on paper it tracked SPY's price with about zero error apart from one uncredited dividend. | A stored backtest of the sweep rule. | `docs/research/2026-11-04-lens3-live-parity.md:326` |
-| 10 | Paper account vs SPY, 06-24 to 11-04 | Paper trails SPY | yellow | Recomputed by Lens 3 from the DB and Alpaca: -3.76 pp, mostly idle cash and broker artifacts; the frozen-era +1.60 pp is noise. | Months to decades more paper data; detection of a 10 pp/yr sleeve edge takes 23-40 years. | `docs/research/2026-11-04-lens3-live-parity.md:185-194` |
+| 10 | Paper account vs SPY, 06-24 to 11-04 | Paper trails SPY | yellow | Recomputed by Lens 3 from the DB and Alpaca: -3.76 pp at run-time broker value, -4.57 on Alpaca's end-of-day equity, mostly idle cash and broker artifacts; the frozen-era +1.60 pp is noise. | Months to decades more paper data; a 10 pp/yr sleeve edge takes 23-40 years to detect. | `docs/research/2026-11-04-lens3-live-parity.md:185-194` |
 | 11 | "Live runs what was tested" (live defaults, 3% sizing "matches" live) | The paper trader runs the backtested strategy | red | Lens 6 found different settings, bar, fill moment, position cap and sizing base. | Not a test result; the differences are in code. | `docs/research/2026-11-04-lens6-implementation-correctness.md:236-252` |
-| 12 | Ensemble levers judged against 1.12 (ensemble_ic June, Nasdaq-100 core) | Each lost to the 1.12 baseline | red | Unreliable NO: the yardstick was the 1.12 figure that later failed to reproduce, and the code did not match. | New tests against a valid comparator. | `docs/research/2026-11-04-lens2-verdict-audit.md:43, 944-947` |
-| 13 | Other ensemble levers (exit rules, trailing stops, VIX throttle, six-indicator, weekly RSI, conviction and Kelly sizing, ML entry gate, position-sizing regimes) | Each failed to improve the ensemble | grey | No raw file (position sizing's reported number comes from an earlier run with no file), pre-fix data, no power figure. | Re-runs on current code (P2-26). | `docs/research/2026-11-04-lens7-research-accuracy.md:125` |
-| 14 | Momentum S&P 500 replay (xs_momentum; dual_momentum is identical) | NO-GO: +4.37 pp/yr, t 0.76 | yellow | Clean data and checked code, but it rules out only an excess above about 22.7 pp/yr, and the fallback ran in 17 of 17 folds. | Far more data or a lower-noise book; no listed re-run settles power. | `docs/research/2026-11-04-lens2-verdict-audit.md:59, 839` |
+| 12 | Ensemble levers whose code did not match (ensemble_ic June, Nasdaq-100 core, Kelly sizing July) | Each failed to beat the baseline | red | Lens 6 "no"; two were judged against the 1.12 figure that later failed to reproduce (Lens 2 unreliable NO); Kelly July has no named comparator, so Lens 2 left it inconclusive. | New tests on current code against a valid comparator. | `docs/research/2026-11-04-lens2-verdict-audit.md:43, 225-228, 944-947` |
+| 13 | Other ensemble levers (exit rules, trailing stops, VIX throttle, six-indicator, weekly RSI, conviction sizing, ML entry gate, position-sizing regimes) | Each failed to improve the ensemble | grey | No raw file (position sizing's reported number comes from an earlier run with no file), pre-fix data, no power figure. | Re-runs on current code (P2-26). | `docs/research/2026-11-04-lens7-research-accuracy.md:125` |
+| 14 | Momentum S&P 500 replay (xs_momentum; dual_momentum is identical) | NO-GO: +4.37 pp/yr, t 0.76 | yellow | Clean data and checked code; every fold ran plain 12-1 top-50 momentum (the fallback), and it rules out only an excess above about 22.7 pp/yr. | Far more data or a lower-noise book; no listed re-run settles power. | `docs/research/2026-11-04-lens2-verdict-audit.md:59, 839` |
 | 15 | Early momentum (June 2026) | +126.0% vs SPY +104.5% total return, lower Sharpe | grey | Prose only: no raw file, pre-fix machinery. | A pinned re-run with a stored result. | `docs/research/2026-11-04-lens7-research-accuracy.md:177-178` |
-| 16 | French momentum screen (1927-2026) | NO-GO: post-1994 +0.08 / +0.20 pp/yr | yellow | Clean, independently recomputed, but the file stores t and not the mean excess, so power is not established; bar committed with the results. | Storing the mean excess (P2-02); indicative MDE about 2.5 pp/yr even over 99 years. | `docs/research/2026-11-04-lens2-verdict-audit.md:57, 63-71` |
-| 17 | Factor screen (profitability, value, investment, value plus momentum) | NO-GO: best t 1.34; post-1994 at most +0.83 pp/yr | yellow | Clean and recomputed to 1e-12; only power is not established. | P2-02. | `docs/research/2026-11-04-lens2-verdict-audit.md:56` |
+| 16 | French momentum screen (1927-2026) | NO-GO: full-window t 3.05 / 3.11 just short of the two-test correction; post-1994 +0.08 / +0.20 pp/yr | yellow | Clean, independently recomputed, but the file stores t and not the mean excess, so power is not established; bar committed with the results. | Storing the mean excess (P2-02); indicative MDE about 2.5 pp/yr over 99 years and 4.4 after 1994. | `docs/research/2026-11-04-lens2-verdict-audit.md:57, 63-71` |
+| 17 | Factor screen (profitability, value, investment, value plus momentum) | NO-GO: best t 1.34; post-1994 -0.62 to +0.83 pp/yr | yellow | Clean and recomputed to 1e-12; only power is not established. | P2-02. | `docs/research/2026-11-04-lens2-verdict-audit.md:56` |
 | 18 | Net issuance screen | NO-GO: t 0.26, +0.48 pp/yr since 1994 | yellow | Same as the factor screen: only power is not established. | P2-02. | `docs/research/2026-11-04-lens2-verdict-audit.md:58` |
 | 19 | July event studies (earnings drift, insider buying, congress trades, short interest, short volume, index deletions, headline sentiment) | All NO-GO | grey | No raw files, no pre-set bars, a one-day date shift of unknown direction and the old DSR bug. | P2-11 (direction), P2-25 (re-runs on corrected data). | `docs/research/2026-11-04-lens2-verdict-audit.md:1072` |
-| 20 | Other July stock studies and sleeves (MAX effect, idiosyncratic volatility, overnight gap, EMA cross, monthly tournament, pairs trading, MidCap 400, diversification sleeves) | NO-GO or not deployable | grey | No raw files, pre-fix data, code unexamined or partly matched, current-list (survivorship) universes for MidCap. | Pinned re-runs on current code (P2-25, P2-26). | `docs/research/2026-11-04-lens5-coverage-gaps.md:306` |
-| 21 | Leveraged-ETF rotation and trend timing | NO-GO | grey | No raw files; a survivorship error that favoured the strategy plus unknown-direction items. | Re-runs on current code. | `docs/research/2026-11-04-lens2-verdict-audit.md:1078` |
-| 22 | A23 static leverage, 70% SPY / 30% SSO (and the A24 trend rider) | After tax 12.00% vs SPY 10.40% a year, 2006-2026 | yellow | Clean data and read from file, but no t-statistic and code unexamined; the margin is +0.80 pp/yr at today-like funding, below its own +1.0 bar. A23 itself is outside this investigation's scope. | A code check; P2-18 for funding records. | `docs/research/2026-11-04-lens2-verdict-audit.md:1071` |
-| 23 | Century leverage study (1926-2026) | Keep 30% in a 2x fund; after tax +1.24 pp/yr | yellow | Read from file on clean data, no t-statistic; the 30% arm fell 91.4% in 1929-32. | A stored excess series (P2-22). | `docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:250` |
-| 24 | Sanity-check shortlist (turn of month, volatility-managed SPY, threshold and rebalancing tilts) | Small Sharpe improvements on quick checks | grey | One-off checks, no raw file, never registered tests. | Registered tests with stored results. | `docs/research/2026-11-04-lens2-verdict-audit.md:257, 285, 322, 325` |
-| 25 | WFO policy synthetic study | The circuit breaker halts 87.5% of runs even with true Sharpe 1.0 | yellow | Pre-registered and read from file; the code was not examined and it models gates as coin flips. | A code check of the simulator. | `docs/research/2026-11-04-lens2-verdict-audit.md:757-766` |
-| 26 | Pre-FOMC Treasury drift, corrected event study | NO-GO: day-clustered t 0.98 | yellow | Clean data and power adequate in derived units (MDE about 2.37 pp/yr, not an SPY excess); only the code check is missing. | P2-10 would make it the first reliable NO if the code matches. | `docs/research/2026-11-04-lens2-verdict-audit.md:60` |
-| 27 | Month-end Treasury overlay | NO-GO: funded from SPY it trailed SPY by 0.08 pp/yr | yellow | The non-walk-forward test also failed, but the walk-forward predates the DSR fix (direction unknown); MDE about 4.94 pp/yr derived. | P2-03 on current code. | `docs/research/2026-11-04-lens2-verdict-audit.md:61, 837` |
-| 28 | Cross-asset 80/20 (SPY plus TLT, GLD, PDBC), its 2007-2011 holdout and trend arm | Shadow GO on Sharpe 0.973 vs 0.896 | yellow | The GO rests on Sharpe with no significance test while raw CAGR trailed SPY by 1.09 pp/yr; holdout +3.08 pp/yr only in a crisis window. | A code check would make it "reliable GO" under Lens 2's rules, which ask a GO for no power test. | `docs/research/2026-11-04-lens2-verdict-audit.md:217-224, 1070` |
-| 29 | July cross-asset studies (FOMC walk-forward, Treasury curve, currency hedge, commodity trend) | All NO-GO | grey | No raw files, pre-fix data, code unexamined. | Pinned re-runs on current code. | `docs/research/2026-11-04-lens2-verdict-audit.md:333-343` |
-| 30 | Intraday SPY rule (prospective observer) | No claim yet | grey | Results do not exist; the observer runs from 2026-10-30 to 2027-11-03 and was not read. | Its own results when they exist. | `docs/research/2026-11-04-lens5-coverage-gaps.md:315` |
-| 31 | Crypto Kraken walk-forward runs (48.46% vs BTC -21.34%; April runs) | Beat BTC | yellow | The figure re-derives from the stored equity curve, but it is an in-sample replay in one falling-BTC year with hindsight coin choice; each run lost to BTC over three years. | Not repairable: the data it used were wiped. | `docs/research/2026-11-04-lens8-crypto.md:97-156` |
-| 32 | Crypto edge search 2026-06-08 | No deployable edge: +13.8% vs BTC +38.8% | yellow | Files located and benchmarks recomputed by Lens 8; Lens 7 has not recomputed them; universe survivorship and copied Binance.US bars. | P2-13. | `docs/research/2026-11-04-lens8-crypto.md:206-237` |
-| 33 | Crypto textbook reset and fees | 36 gate passes frictionless, 0 at realistic fees | yellow | Gate counts recount from logs, but the inventory pointed at the wrong run and no portfolio formed even at zero cost. | P2-13, P2-27. | `docs/research/2026-11-04-lens8-crypto.md:356-392` |
-| 34 | IBIT overnight versus daytime returns | Overnight +186% vs daytime -43% | yellow | Main figures match their file; the later split is prose only; MDE 59-73 pp/yr derived. | Not a strategy test; no listed re-run. | `docs/research/2026-11-04-lens7-research-accuracy.md:127`; `docs/research/2026-11-04-lens9-power-and-regime.md:403` |
-| 35 | Crypto live trading, funding carry, March pipeline runs and literature-only ideas | "Modestly profitable" (+$9.88), carry +0.45%, others untested | grey | Prose only: trade records and scripts deleted, 0 trades in the DB, carry results not reproducible from files. | P2-12, P2-27 (carry inputs and code still exist). | `docs/research/2026-11-04-lens8-crypto.md:396-413, 442-461` |
+| 20 | Other July stock studies and sleeves (MAX effect, idiosyncratic volatility, overnight gap, EMA cross, monthly tournament, pairs trading, diversification sleeves) | NO-GO or not deployable | grey | No raw files, pre-fix data, code unexamined or partly matched. | Pinned re-runs on current code (P2-25, P2-26). | `docs/research/2026-11-04-lens5-coverage-gaps.md:306` |
+| 21 | MidCap 400 reversion | 15.0% CAGR / Sharpe 1.08 vs MDY 9.1% / 0.40 ("Researching") | red | Lens 6 "no"; current-list (survivorship) universe and pre-fix leaks; Lens 2 typed it a status label, so it is not counted as a GO, although it carried a measured claim. | New tests on a PIT mid-cap universe. | `docs/research/2026-11-04-lens2-verdict-audit.md:293` |
+| 22 | Leveraged-ETF rotation and trend timing | NO-GO | grey | No raw files; a survivorship error that favoured the strategy plus unknown-direction items. | Re-runs on current code. | `docs/research/2026-11-04-lens2-verdict-audit.md:1078` |
+| 23 | A23 static leverage, 70% SPY / 30% SSO (and the A24 trend rider) | After tax 12.00% vs SPY 10.40% a year, 2006-2026 | yellow | Clean data and read from file, but no t-statistic and code unexamined; +1.32 pp/yr against SPY's true total return at the window's funding, +0.52 at today-like funding, and below the same exposure financed at T-bill rates. A23 itself is outside this investigation's scope. | A code check; P2-18 for funding records. | `docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:245-247, 294-305` |
+| 24 | Century leverage study (1926-2026) | Keep 30% in a 2x fund; after tax +1.24 pp/yr | yellow | Read from file on clean data, no t-statistic; the 30% arm fell 91.4% in 1929-32. | A stored excess series (P2-22). | `docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:250` |
+| 25 | Sanity-check shortlist (turn of month, volatility-managed SPY, threshold and rebalancing tilts) | Small Sharpe improvements on quick checks | grey | One-off checks, no raw file, never registered tests. | Registered tests with stored results. | `docs/research/2026-11-04-lens2-verdict-audit.md:257, 285, 322, 325` |
+| 26 | WFO policy synthetic study | The circuit breaker halts at least once in 87.5% of runs even with gates always passing and true Sharpe 1.0 | yellow | Pre-registered and read from file; the code was not examined and it models gates as coin flips. | A code check of the simulator. | `docs/research/2026-11-04-lens2-verdict-audit.md:757-766` |
+| 27 | Pre-FOMC Treasury drift, corrected event study | NO-GO: day-clustered net t 0.98 (gross 2.26) | yellow | Clean data and power adequate in derived units (MDE about 2.37 pp/yr, not an SPY excess); the code check is missing, and the NO depends on its 10 bp round-trip cost, the stock default: at 2 bp the net t would be about 2.0, still below 3. | P2-10 would make it the first reliable NO if the code matches. | `docs/research/2026-11-04-lens2-verdict-audit.md:60`; `docs/research/2026-07-20-fomc-drift-nogo.md:179-181` |
+| 28 | Month-end Treasury overlay | NO-GO: funded from SPY it trailed SPY by 0.08 pp/yr | yellow | The non-walk-forward test also failed, but the walk-forward predates the DSR fix (direction unknown); MDE about 4.94 pp/yr derived. | P2-03 on current code. | `docs/research/2026-11-04-lens2-verdict-audit.md:61, 837` |
+| 29 | Cross-asset 80/20 (SPY plus TLT, GLD, PDBC), its 2007-2011 holdout and trend arm | Shadow GO on Sharpe 0.973 vs 0.896 | yellow | The GO rests on Sharpe with no significance test while raw CAGR trailed SPY by 1.09 pp/yr; holdout +3.08 pp/yr only in a crisis window. | A code check would make it "reliable GO" under Lens 2's rules, which ask a GO for no power test. | `docs/research/2026-11-04-lens2-verdict-audit.md:217-224, 1070` |
+| 30 | July cross-asset studies (FOMC walk-forward, Treasury curve, currency hedge, commodity trend) | All NO-GO | grey | No raw files, pre-fix data, code unexamined. | Pinned re-runs on current code. | `docs/research/2026-11-04-lens2-verdict-audit.md:333-343` |
+| 31 | Intraday SPY rule (prospective observer) | No claim yet | grey | Results do not exist; the observer runs from 2026-10-30 to 2027-11-03 and was not read. | Its own results when they exist. | `docs/research/2026-11-04-lens5-coverage-gaps.md:315` |
+| 32 | Crypto Kraken walk-forward runs (48.46% vs BTC -21.34%; April runs) | Beat BTC | yellow | The figure re-derives from the stored equity curve, but it is an in-sample replay in one falling-BTC year with hindsight coin choice; each run lost to BTC over three years. | Not repairable: the data it used were wiped. | `docs/research/2026-11-04-lens8-crypto.md:97-156` |
+| 33 | Crypto edge search 2026-06-08 | No deployable edge: +13.8% vs BTC +38.8% | yellow | Files located and benchmarks recomputed by Lens 8; Lens 7 has not recomputed them; universe survivorship and copied Binance.US bars. | P2-13. | `docs/research/2026-11-04-lens8-crypto.md:206-237` |
+| 34 | Crypto textbook reset and fees | 36 gate passes frictionless, 0 at realistic fees | yellow | Gate counts recount from logs, but the inventory pointed at the wrong run and no portfolio formed even at zero cost. | P2-13, P2-27. | `docs/research/2026-11-04-lens8-crypto.md:356-392` |
+| 35 | IBIT overnight versus daytime returns | Overnight +186% vs daytime -43% | yellow | Main figures match their file; the later split is prose only; MDE 59-73 pp/yr derived. | Not a strategy test; no listed re-run. | `docs/research/2026-11-04-lens7-research-accuracy.md:127`; `docs/research/2026-11-04-lens9-power-and-regime.md:403` |
+| 36 | Crypto live trading, funding carry, March pipeline runs and literature-only ideas | "Modestly profitable" (+$9.88), carry +0.45%, others untested | grey | Prose only: trade records and scripts deleted, 0 trades in the DB, carry results not reproducible from files. | P2-12, P2-27 (carry inputs and code still exist). | `docs/research/2026-11-04-lens8-crypto.md:396-413, 442-461` |
 
-**Count of lights:** green 0, yellow 20, red 5, grey 10 (35 lines).
+**Count of lights:** green 0, yellow 20, red 6, grey 10 (36 lines).
 
 ## 5. What the live account is and does
 
 **Composition.** In the frozen configuration since 2026-09-30 the paper book averaged about 85%
 SPY (Phase 0 said 84%), 5% cash and about 10% in stocks: at most 3 stock positions at 3.3% of
 account value each, plus the untradable AVB holding and some names carried over
-(`docs/research/2026-11-04-lens3-live-parity.md:114-117, 244-253`). The account started at about
-$102,000 (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:392`).
+(`docs/research/2026-11-04-lens3-live-parity.md:114-117, 244-253`). The account was funded with
+$100,000 in 2024; its first snapshot in this period, on 2026-06-24, was about $102,459
+(`docs/research/2026-11-04-lens3-live-parity.md:286-294`;
+`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:392`).
 
 **What that means for stock picking.** With about 9% in stocks, a stock edge has little room to
 show. The replica of the same design could detect only a stock-sleeve excess of about 45 pp/yr
@@ -480,19 +541,19 @@ show. The replica of the same design could detect only a stock-sleeve excess of 
 On paper, a 10 pp/yr sleeve edge would take 23 to 40 years to detect; over three months the
 smallest detectable sleeve edge is about 96 to 126 pp/yr (`docs/research/2026-11-04-lens3-live-parity.md:351-361`).
 
-**Paper result by era** (account on the broker's own figures against SPY total return)
-(`docs/research/2026-11-04-lens3-live-parity.md:185-194`):
+**Paper result by era** (run-time broker value against SPY total return; the end-of-day column
+uses Alpaca's own equity series) (`docs/research/2026-11-04-lens3-live-parity.md:185-194`):
 
-| Era | Dates | What ran | Shortfall vs SPY |
-|---|---|---|---|
-| E1 | 06-24 to 07-15 | Core ensemble, 60-68% idle cash | -1.21 pp |
-| E2 | 07-15 to 07-30 | Accidental dry run, no orders | +1.90 pp |
-| E3 | 07-30 to 08-21 | Three-sleeve blend, no sweep | -3.71 pp |
-| E4 | 08-21 to 09-22 | Blend plus SPY cash sweep | -2.26 pp |
-| E5 | 09-22 to 09-28 | Core revert plus sweep | +0.21 pp |
-| E6 | 09-28 to 09-30 | Catch-up exits, manual liquidations | -0.27 pp |
-| E7 | 09-30 to 11-04 | Frozen configuration | +1.60 pp |
-| All | 06-24 to 11-04 | | -3.76 pp |
+| Era | Dates | What ran | Shortfall, run-time value | Shortfall, Alpaca EOD |
+|---|---|---|---|---|
+| E1 | 06-24 to 07-15 | Core ensemble, 60-68% idle cash | -1.21 pp | -1.29 pp |
+| E2 | 07-15 to 07-30 | Accidental dry run, no orders | +1.90 pp | +1.55 pp |
+| E3 | 07-30 to 08-21 | Three-sleeve blend, no sweep | -3.71 pp | -3.95 pp |
+| E4 | 08-21 to 09-22 | Blend plus SPY cash sweep | -2.26 pp | -2.33 pp |
+| E5 | 09-22 to 09-28 | Core revert plus sweep | +0.21 pp | +0.17 pp |
+| E6 | 09-28 to 09-30 | Catch-up exits, manual liquidations | -0.27 pp | -0.19 pp |
+| E7 | 09-30 to 11-04 | Frozen configuration | +1.60 pp | +1.40 pp (to 11-03) |
+| All | 06-24 to 11-04 | | -3.76 pp | -4.57 pp (to 11-03) |
 
 The frozen era's +1.60 pp came from five weeks of a 3-name sleeve; its t of 2.14 was found after
 choosing among several era cuts, and over the whole period the sleeve's t is 0.73, so Lens 3
@@ -518,13 +579,17 @@ checkpoint ran twelve scripts with `--help` to read their options. One of them,
 loading prices through the cached loader, which writes to the DB
 (`docs/research/2026-11-04-phase1-checkpoint.md:31-39`). The investigation's read-only rule was
 broken.
-- **What changed:** 19 rows of the `symbol_inception` table were rewritten at 23:48:18 PST for
-  APC, ARES, CAM, CSRA, CZR, EMC, GDDY, LITE, NE, PARA, PCL, POM, QRVO, SBNY, SEDG, SPLS, STI, VEEV
-  and XYZ, and each symbol's full price history was re-downloaded and written over (up to 31,967
-  daily rows on today's dividend-adjustment basis) (`docs/research/2026-11-04-phase1-checkpoint.md:40-55`).
-  A later review note qualifies the 31,967: counted from the recorded first dates for CSRA, PARA,
-  QRVO and SBNY, the figure is 27,579, so "up to" is the right reading
-  (`.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md:135`).
+- **What changed (re-verified by SELECT on 2026-11-05):** 19 rows of the `symbol_inception` table
+  carry the write time 23:48:18 PST, for APC, ARES, CAM, CSRA, CZR, EMC, GDDY, LITE, NE, PARA,
+  PCL, POM, QRVO, SBNY, SEDG, SPLS, STI, VEEV and XYZ; no row in that table is later. The 19
+  symbols hold 31,967 daily price rows (`docs/research/2026-11-04-phase1-checkpoint.md:40-55`), but
+  not all of them were rewritten: CSRA, PARA, QRVO and SBNY still hold 4,388 rows dated before
+  their newly recorded first date (598, 492, 2,922 and 376), so at most 27,579 rows were rewritten
+  (`docs/research/2026-11-04-root-cause-challenge.md:91`). Those four series show a price-level jump
+  at that date (PARA from 51.21 to 3,506.70 on 2021-02-12; SBNY, CSRA and QRVO also jump).
+- **The PARA and SBNY jumps predate the incident.** The 2026-08-20 backup table shows the same kind
+  of jump for PARA (51.21 to 101,500, about 29 times larger than today's) and the same post-jump
+  SBNY prices. The incident did not create these breaks, but the data still carry them.
 - **A lens figure changed:** PARA's maximum close in its index window is now 3,935.11 against
   113,900 measured by Lens 1; the high points shrank by the same factor (28.9) but the low end did
   not, so it is not a uniform rescaling. PARA is still the wrong security, but the PARA figures in
@@ -534,47 +599,46 @@ broken.
   or `results/`; no order, container, observer or broker call; the guard snapshot; and SBNY's
   cited ratio, which still reproduces. No lens cites a price, volume or return for the other 17
   symbols (`docs/research/2026-11-04-phase1-checkpoint.md:61-82`).
-- **Unknown:** other price rows refreshed in the same minutes cannot be identified, because the
-  price table keeps no write time; and five of the 19 (ARES, GDDY, LITE, VEEV, XYZ) are current
-  index members inside the live signal window. ARES was traded on paper, last on 2026-10-22.
-  Whether the rewrite changes any live signal was not compared
+- **The five current index members (ARES, GDDY, LITE, VEEV, XYZ), checked against the backup:** a
+  SELECT-only comparison with the 2026-08-20 backup table shows their daily closes match through
+  2026-08-20, with price ratios of 0.9895 to 1.0001 and daily-return differences of at most 0.35
+  pp. **Still unknown:** their bars after 2026-08-20, which include the ARES paper trade bought
+  10-15 and sold 10-22, and any other price rows refreshed in the same minutes, which cannot be
+  identified because the price table keeps no write time
   (`docs/research/2026-11-04-phase1-checkpoint.md:56-60, 100-105`).
 - **The first check covered the wrong symbols.** The lead's first "bars unchanged" check used SPY,
   HAS and VZ, none of which is among the 19. The review found this and the checkpoint was
-  corrected (`docs/research/2026-11-04-phase1-checkpoint.md:84-87`;
-  `.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md:132`).
-- **Owner decision (2026-11-05):** leave the 19 symbols as they are and document them; no restore
-  (`.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md:137`). A new rule followed:
-  no agent runs a script it has not read, and no script is run to see its help
-  (`.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md:130`).
+  corrected (`docs/research/2026-11-04-phase1-checkpoint.md:84-87`).
+- **Owner decision (2026-11-05):** leave the 19 symbols as they are and document them; no restore.
+  A new rule followed: no agent runs a script it has not read, and no script is run to see its
+  help. (Source: the task ledger, which is gitignored; see section 8.)
 
 **Phase 0 claims corrected.** Section 3's table lists them. The Phase 0 audit remains an unreviewed
 document and is not evidence for anything in this report.
 
 **Earlier incorrect statements corrected during review** (each found by a reviewer and fixed before
-the lens was accepted; `.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md`):
+the lens was accepted; recorded in the gitignored task ledger):
 - The design spec said no holdout arm of the replica completed. The primary holdout arm did complete
   (non-citable); only its four sensitivity arms never ran. The wording came from the results file's
   own `audit_stop.holdout` string and an amendment that describe an earlier stopped attempt; the spec
   was corrected (`docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md:104-110`;
   `docs/research/2026-11-04-lens7-research-accuracy.md:32-42`).
 - Lens 7 first said no per-study pass bar existed before 2026-09-24; a 2026-09-10 audit has success
-  criteria (ledger line 81).
-- Lens 1 first said 16 index members had no prices; two map to existing tickers, so it is 14
-  (ledger line 75).
+  criteria.
+- Lens 1 first said 16 index members had no prices; two map to existing tickers, so it is 14.
 - Lens 6 first described the dividend add-back as affecting the reported value only; it also feeds
-  the daily-loss halt (ledger line 68).
-- Lens 3 first misdated and misattributed an end-of-day offset (from 08-18, AVB alone fits)
-  (ledger line 88).
+  the daily-loss halt.
+- Lens 3 first misdated and misattributed an end-of-day offset (from 08-18, AVB alone fits).
 - Lens 9 first called month-end Treasury "not computable"; it has a Welch t, and its detectable
   effect is now computed; Lens 9 also overstated what the replica could detect before scaling to
-  the stock sleeve (ledger line 96).
+  the stock sleeve.
 - Lens 2 first filled an "exposure" column for about 47 rows with text from other rows
   (`docs/research/2026-11-04-lens2-verdict-audit.md:1146-1156`).
 - Lens 4 first mixed two bases in its headline (1.25x instead of 1.17x for the 2.0x arm) and left
-  out the funding-rate condition (ledger line 117).
-- Lens 5 first over-scoped its one "evidence against" row; Lens 8 first overstated "all in-sample"
-  (ledger lines 110, 124).
+  out the funding-rate condition.
+- Lens 5 first over-scoped its one "evidence against" row; Lens 8 first overstated "all in-sample".
+- This synthesis's first version had three wrong claims and several framing faults, found by the
+  independent challenge and resolved in section 9.
 
 **The usage-limit interruption.** One Opus dispatch for Lens 5 hit the five-hour usage limit at
 about 21:50 PST on 2026-11-04 and was retried after the 22:20 reset; nothing was lost
@@ -588,8 +652,9 @@ about 21:50 PST on 2026-11-04 and was retried after the 22:20 reset; nothing was
   independently (for example Lens 2's classes were reproduced 113 of 114 by an independent
   classifier, and Lens 8's BTC beta was matched by an independent reviewer)
   (`docs/research/2026-11-04-lens2-verdict-audit.md:1162-1166`; `docs/research/2026-11-04-lens8-crypto.md:142-147`).
-  Fresh Claude agents reviewing Claude work are not fully independent. The step-2 challenger has not
-  run yet.
+  The classifier reproduction checks that the rules were applied as written, not that the rules are
+  sound; Lens 2's rules and classes arrived in one commit. The challenger is also a Claude agent, so
+  it is not model-independent either.
 - **Recomputation was partial.** Of the 41 rows with a raw file, 5 were recomputed from raw data, 27
   read and checked from the file, and 9 taken from an extraction pass without a re-check
   (`docs/research/2026-11-04-lens7-research-accuracy.md:112-117`).
@@ -603,26 +668,31 @@ about 21:50 PST on 2026-11-04 and was retried after the 22:20 reset; nothing was
   "unknown, re-run not run".
 - **The 19 rewritten symbols** make Phase 1 evidence on those symbols not exactly reproducible from
   the DB (section 6).
-- **Lens rules contain judgements.** Lens 2's classification rules ask a NO to prove power but do not
-  ask a GO for a t-statistic; four GO results fail only the code check
-  (`docs/research/2026-11-04-lens2-verdict-audit.md:214-228`). Lens 4 admitted the leverage and
-  cross-asset rows to Tier B by a stated exception; rejecting it empties those ceilings
-  (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:205-211`).
+- **Lens rules contain judgements.** Lens 2's power rule tests a NO against its own pass bar where it
+  has one and against the 2x gap only where it does not, so rows without a bar face an easier test.
+  The rules ask a NO to prove power but do not ask a GO for a t-statistic; four GO results fail only
+  the code check (`docs/research/2026-11-04-lens2-verdict-audit.md:181-191, 214-228`). Rule R1 typed
+  some measured claims as status labels (for example MidCap 400 reversion), which keeps them out of
+  the GO count. Lens 4 admitted the leverage and cross-asset rows to Tier B by a stated exception;
+  rejecting it empties those ceilings (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:205-211`).
 - **What a fresh reader can reproduce.** `scripts/lens2_build.py` rebuilds Lens 2's classifications
   exactly from committed files (it also reads one gitignored crypto results file)
-  (`docs/research/2026-11-04-lens2-verdict-audit.md:1111-1117`;
-  `.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md:105`). The other lenses' query and
-  build scripts live only in the session scratchpad
+  (`docs/research/2026-11-04-lens2-verdict-audit.md:1111-1117`). The other lenses' query and build
+  scripts, and the challenger's, live only in the session scratchpad
   (/tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/), which is
   not in the repository; a fresh reader has the committed JSON outputs and the methods described in
-  each report's Verification section, not the scripts.
+  each report's Verification section, not the scripts. The task ledger that records review rounds
+  and owner decisions is gitignored, so those items cannot be checked from the repository.
 - **Crypto rows** were classified from upstream inputs; Lens 8 found artifacts the other lenses
   treated as missing, but no crypto class changes under the written rules
   (`docs/research/2026-11-04-lens8-crypto.md:503-513`).
 
 ## 8. Owner decisions recorded and still open
 
-**Recorded (2026-11-05)** (`.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md:137-139`):
+The task ledger (`.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md`) is gitignored,
+so this section is the committed record of the decisions; the owner is the authority on them.
+
+**Recorded (2026-11-05):**
 - Phase 2: none of the 29 items is run.
 - Decision 0 (allowing re-runs to write to the price cache): no.
 - The 19 rewritten symbols: left as they are and documented; no restore.
@@ -630,9 +700,9 @@ about 21:50 PST on 2026-11-04 and was retried after the 22:20 reset; nothing was
 - The changelog entry and the research-snapshot update wait until the owner accepts this synthesis.
 
 **Still open** (listed, not advised on):
-- Whether to accept this synthesis after the step-2 challenge is resolved.
+- Whether to accept this synthesis, now that the challenge objections are resolved (section 9).
 - Whether and when to merge the investigation branch; it is not merged and not pushed, and a merge
-  changes one line of the guard baseline (`.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md:47`).
+  changes one line of the guard baseline.
 - The changelog and snapshot updates after acceptance; `docs/next_steps.md` is not changed without
   the owner.
 - A23 funding and tax-character records (P2-18) sit outside this investigation's scope; A23 has a
@@ -640,10 +710,48 @@ about 21:50 PST on 2026-11-04 and was retried after the 22:20 reset; nothing was
 - Whether any P2 item is wanted later.
 - Deferred minor review notes in the ledger (wording and labelling items, none changing a class).
 
-## 9. Index of evidence
+## 9. Challenge and resolutions
 
-Commits from `git log --oneline -- <file>` (newest first). Review rounds from the ledger
-`.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md` (not tracked in git).
+An independent fresh Opus agent, given the raw results, the inventory and this report's claims but
+not the author's reasoning, argued the opposite case and checked 40 claims: 20 confirmed, 16
+confirmed with a caveat, 3 wrong, 1 not checked. It raised 0 Critical, 7 Important and 12 Minor
+objections, and concluded that the headline numbers hold but the first version was too lenient on
+the owner's 2x question and mislabelled the paper shortfall
+(`docs/research/2026-11-04-root-cause-challenge.md:55-59, 109, 238-249`). Each objection below is
+numbered as in the challenge file. Before fixing, the author re-checked the challenger's evidence
+against the raw artifacts and, where it involved the DB, with SELECT-only queries.
+
+| # | Objection (short) | Disposition | What was done, and the evidence |
+|---|---|---|---|
+| 1 | "103 inconclusive" includes 42 status labels | **Fixed** | Summary now splits 72 tests (0 reliable, 9 unreliable GO, 2 unreliable NO, 58 inconclusive, 3 stopped on own terms) from 42 status labels; counts re-tallied from `docs/research/_lens2_sensitivity.json` (`verdict_type`: 53 NO, 16 GO, 3 test-inconclusive, 42 status). MidCap 400 reversion is now its own red row (21) and the R1 typing is disclosed in section 7. Lens 2's counts were not changed, because this report does not re-classify. |
+| 2 | Headline too symmetric on the 2x question | **Fixed** (PARA bound left as inference) | Summary, Q1 and Q4 now state that the replica could detect a 2x-sized whole-account effect in both windows (4.24 vs 9.57; 4.22 vs 6.14) and found -0.64 and +1.00. The French screens are no longer called best-powered for the target (indicative 4.4 pp/yr after 1994 vs a 2.34 gap). The challenger's PARA bound (at most about 2.9 pp/yr) is quoted in B5 as its inference; it was not measured. |
+| 3 | Paper shortfall mislabelled; -4.57 omitted | **Fixed** | Q2, B3, section 5 and row 10 now give each basis: -3.76 run-time broker value, -4.57 Alpaca end-of-day equity (to 11-03), -3.45 stored value (`docs/research/2026-11-04-lens3-live-parity.md:185-194`), with the AVB hypothesis caveat. |
+| 4 | Leverage bases mixed; beta-matched figures omitted | **Fixed** | Q3 now gives all arms on one basis (true SPY TR: 1.3x +1.32, 1.5x +2.37, 2.0x +4.15; +0.87 / +0.52 at higher funding) and on the artifact basis beside it; adds beta-matched 13.94% / 15.83% vs 12.71% / 13.76% (`docs/research/_static_leverage_aftertax_results.json`, `beta_matched_pretax_cagr`, read by the author); notes the rolling 10-year series reaches into pre-2006 synthetic data (worst windows end 2009, so they start in 1999); calls 2.0x "the largest exposure tested". |
+| 5 | Cross-group ranking asserted, not derived | **Fixed** | Section 3 now opens with how the ranking was made, says it is judgement, that no share is measured, that C1 and C3 overlap and that A1 explains false optimism rather than the shortfall; summary list marked "ranked by judgement". |
+| 6 | Replica robustness and exposure-matched results omitted | **Fixed, with one partial disagreement** | Q1, B1 and rows 1-2 now cite lag-0 -0.42, cost3 -0.57, cost10 -0.83, cash0 -0.83, exposure-matched +0.26 (t 0.20) and holdout +1.85 (t 1.57), all read from `docs/research/_production_replica_results.json`. Disagree with "the -0.64 is mostly the 5% cash reserve": the zero-cash arm is worse (-0.83), so the cash reserve alone does not explain it; the report says the picks were neither clearly helpful nor harmful, matching the exposure-matched figure. |
+| 7 | Incident imprecise for four symbols; part of the unknown checkable | **Fixed** | Re-verified by SELECT: 4,388 older rows for CSRA/PARA/QRVO/SBNY (598/492/2,922/376), PARA jump 51.21 to 3,506.70, the same jump (to 101,500) in the 2026-08-20 backup, and the five current members matching the backup through 2026-08-20 (ratios 0.9895-1.0001, daily-return differences up to 0.35 pp). Section 6 rewritten; bars after 08-20 remain unknown. Ledger citations removed from section 6 and the ledger's gitignored status stated in sections 7 and 8. |
+| 8 | Sharpe-only GO calls trailing SPY: one, not two | **Fixed** | A4 now names only the cross-asset 80/20 (trails by 1.09 pp/yr); the KEEP blend tied SPY's CAGR (12.963% vs 12.959%). |
+| 9 | Lights inconsistent with the stated rule | **Fixed** | Red now means Lens 2 unreliable or Lens 6 "no". The 0.97 anchor-fix reproduction, 0.68 blend reproduction and pre-PIT ic/kelly join red row 6; the blend revert (Lens 6 "yes") stays yellow as row 7; Kelly July (Lens 6 "no") moved to red row 12; MidCap 400 (Lens 6 "no") is red row 21. Count now 0 / 20 / 6 / 10. |
+| 10 | Summary range omits negatives | **Fixed** | Summary, Q1, C2 and row 17 now give -0.62 to +0.83 after 1994, and the post-2008/2013 negatives in C2. |
+| 11 | "Every headline with a raw file recomputes" contradicts section 7 | **Fixed** | Summary and Q6 now say every headline checked matched; 9 were not re-checked and 7 could not be located. |
+| 12 | Momentum fallback framing | **Fixed** | A2 and row 14 now say the fallback in all 17 folds was plain 12-1 top-50 momentum, so +4.37 measures plain momentum (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:238`). |
+| 13 | Full-century momentum test not reported | **Fixed** | Q1 and row 16 now give t 3.05 and 3.11 over 1927-2026 (p 0.0011 and 0.0009 in `docs/research/_momentum_french_screen_results.json`, read by the author), just short of the registered two-test correction. |
+| 14 | FOMC NO depends on its cost assumption | **Fixed** | Row 27 now states the 10 bp round-trip cost (the stock default) and that at 2 bp the net t would be about 2.0. Checked from `docs/research/_fomc_clustered_event_study_20261020.json`: gross minus net mean difference is exactly 0.0010; SE = 0.0017678 / 2.2576; (0.0017678 - 0.0002) / SE = 2.00. |
+| 15 | Crypto framing omits results that cut the other way | **Fixed** | Q5 now says the runs beat ETH in four of five full windows, the out-of-sample stretch beat BTC by about 23 to 33 pp with low beta, and that -21.34% is the report's own BTC figure (-17.46% on today's tape) (`docs/research/2026-11-04-lens8-crypto.md:206-237`). |
+| 16 | 87.5% halt rate needs its definition | **Fixed** | A2 and row 26 now say "halted at least once, with gates always passing", plus about a third of folds on the fallback and about half of runs ending halted (`docs/research/2026-11-04-lens2-verdict-audit.md:760-761`). |
+| 17 | Small internal inconsistencies | **Fixed** | Q3 explains 3.54 vs 3.55 (one-day-different SPY starting close, `docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:182-183`); C2 labels 9.54 as the 2022-2026 test window; section 5 separates the $100,000 funding in 2024 from the about $102,459 first snapshot in this period. |
+| 18 | Limits honest, with one qualifier | **Fixed** | Section 7 now says the 113-of-114 reproduction checks rule application, not rule soundness, and that the challenger is also a Claude agent. |
+| 19 | Owner constraints respected | **No change needed** | The challenger found no recommendation, retirement or shutdown advice, account-type suggestion or banned phrase; the revised text was re-checked with the report checker. |
+
+Totals: 18 fixed (one of them with a partial disagreement, objection 6), 1 needing no change
+(objection 19), 0 left unresolved. What remains genuinely uncertain after the challenge is listed
+in section 1 ("What is unknown") and section 7; the challenger's list agrees
+(`docs/research/2026-11-04-root-cause-challenge.md:264-267`).
+
+## 10. Index of evidence
+
+Commits from `git log --oneline -- <file>` (newest first). Review rounds from the gitignored task
+ledger `.superpowers/sdd/2026-11-04-root-cause-investigation/progress.md`.
 
 | Evidence | File(s) | Commits | Review rounds |
 |---|---|---|---|
@@ -662,3 +770,5 @@ Commits from `git log --oneline -- <file>` (newest first). Review rounds from th
 | Lens 8 crypto | `docs/research/2026-11-04-lens8-crypto.md`, `docs/research/_lens8_tape_checks.json` | 392158e5, 6f5b0725 | 1 review (Sonnet), 1 fix round, clean |
 | Lens 9 power and regime | `docs/research/2026-11-04-lens9-power-and-regime.md`, `docs/research/_lens9_power.json` | 7fe1ceb4, 21664be7 | 1 review, 1 fix round, clean |
 | Phase 1 checkpoint (incident, P2 list) | `docs/research/2026-11-04-phase1-checkpoint.md` | b195ccc0 (incident correction and errata), 47fabb39 | 1 review (Sonnet), 1 fix round, clean |
+| This synthesis | `docs/research/2026-11-04-root-cause-investigation.md` | e4362512 (first version); this revision | challenged once (next row) |
+| Independent challenge | `docs/research/2026-11-04-root-cause-challenge.md` | 965d78c0 | fresh Opus agent, evidence and claims only |
