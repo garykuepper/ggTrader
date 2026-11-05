@@ -1,0 +1,1113 @@
+{
+ "target": {
+  "definition": "spec section 1: target raw total return = 2 x SPY raw total return over the same window; target CAGR = (1 + 2R)^(1/years) - 1; required gap = target CAGR - SPY CAGR (pp/yr, CAGR gap)",
+  "windows": [
+   {
+    "window": "primary_2021-01-31_2026-04-30",
+    "source": "docs/research/_lens9_power.json regime.targets_2x_spy_total_return",
+    "spy_total_return": 108.60302112770164,
+    "target_total_return": 217.20604225540328,
+    "spy_cagr": 15.054698502276832,
+    "target_cagr": 24.62965468037128,
+    "gap_pp_per_yr": 9.57495617809445,
+    "years": 5.242984257357974,
+    "comparator": "SPY (yfinance auto_adjust)"
+   },
+   {
+    "window": "wfo_oos_2022-01-31_2026-04-30",
+    "source": "docs/research/_lens9_power.json regime.targets_2x_spy_total_return",
+    "spy_total_return": 69.32775805649665,
+    "target_total_return": 138.6555161129933,
+    "spy_cagr": 13.213621715042434,
+    "target_cagr": 22.7495816290753,
+    "gap_pp_per_yr": 9.535959914032867,
+    "years": 4.243668720054757,
+    "comparator": "SPY (yfinance auto_adjust)"
+   },
+   {
+    "window": "holdout_2010-01-31_2020-12-31",
+    "source": "docs/research/_lens9_power.json regime.targets_2x_spy_total_return",
+    "spy_total_return": 333.16654262257674,
+    "target_total_return": 666.3330852451535,
+    "spy_cagr": 14.373155784648572,
+    "target_cagr": 20.509615401322122,
+    "gap_pp_per_yr": 6.13645961667355,
+    "years": 10.915811088295689,
+    "comparator": "SPY (yfinance auto_adjust)"
+   },
+   {
+    "window": "a23_2006-06-21_2026-09-29",
+    "source": "docs/research/_lens9_power.json regime.targets_2x_spy_total_return",
+    "spy_total_return": 785.0197369606883,
+    "target_total_return": 1570.0394739213766,
+    "spy_cagr": 11.354621675214393,
+    "target_cagr": 14.897539358714273,
+    "gap_pp_per_yr": 3.54291768349988,
+    "years": 20.27378507871321,
+    "comparator": "SPY (yfinance auto_adjust)"
+   },
+   {
+    "window": "fomc_2012-01-01_2026-04-30",
+    "source": "docs/research/_lens9_power.json regime.targets_2x_spy_total_return",
+    "spy_total_return": 635.1691679191232,
+    "target_total_return": 1270.3383358382464,
+    "spy_cagr": 14.940111463986018,
+    "target_cagr": 20.04599342677058,
+    "gap_pp_per_yr": 5.1058819627845615,
+    "years": 14.327173169062286,
+    "comparator": "SPY (yfinance auto_adjust)"
+   },
+   {
+    "window": "ibit_2024-01-11_2026-10-23",
+    "source": "docs/research/_lens9_power.json regime.targets_2x_spy_total_return",
+    "spy_total_return": 64.76119689160376,
+    "target_total_return": 129.52239378320752,
+    "spy_cagr": 19.662734610237067,
+    "target_cagr": 34.80807291001111,
+    "gap_pp_per_yr": 15.145338299774046,
+    "years": 2.7816563997262147,
+    "comparator": "SPY (yfinance auto_adjust)"
+   },
+   {
+    "window": "french_mkt_1927-01_2026-04",
+    "source": "docs/research/_lens9_power.json regime.targets_2x_spy_total_return",
+    "spy_total_return": 1679583.8894202593,
+    "target_total_return": 3359167.7788405186,
+    "spy_cagr": 10.289926649606972,
+    "target_cagr": 11.06218696054908,
+    "gap_pp_per_yr": 0.7722603109421087,
+    "years": 99.33333333333333,
+    "comparator": "Fama-French Mkt-RF + RF, not SPY"
+   },
+   {
+    "window": "french_mkt_1963-07_2026-04",
+    "source": "docs/research/_lens9_power.json regime.targets_2x_spy_total_return",
+    "spy_total_return": 63837.51685176503,
+    "target_total_return": 127675.03370353006,
+    "spy_cagr": 10.829133532457424,
+    "target_cagr": 12.057120659850407,
+    "gap_pp_per_yr": 1.227987127392982,
+    "years": 62.833333333333336,
+    "comparator": "Fama-French Mkt-RF + RF, not SPY"
+   },
+   {
+    "window": "french_mkt_1994-01_2026-04",
+    "source": "docs/research/_lens9_power.json regime.targets_2x_spy_total_return",
+    "spy_total_return": 2712.1957590666943,
+    "target_total_return": 5424.391518133389,
+    "spy_cagr": 10.870458035924656,
+    "target_cagr": 13.210077077033278,
+    "gap_pp_per_yr": 2.3396190411086213,
+    "years": 32.333333333333336,
+    "comparator": "Fama-French Mkt-RF + RF, not SPY"
+   },
+   {
+    "window": "2021-01-31..2026-04-30",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": 108.60305827201837,
+    "target_total_return": 217.20611654403675,
+    "spy_cagr": 15.037870063583192,
+    "target_cagr": 24.601034933942188,
+    "gap_pp_per_yr": 9.563164870358998,
+    "years": 5.248459958932238,
+    "start_close": "2021-01-29",
+    "end_close": "2026-04-30"
+   },
+   {
+    "window": "2022-01-31..2026-04-30",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": 72.37753417058643,
+    "target_total_return": 144.75506834117286,
+    "spy_cagr": 13.662676029271248,
+    "target_cagr": 23.4314382615737,
+    "gap_pp_per_yr": 9.768762232302453,
+    "years": 4.251882272416153,
+    "start_close": "2022-01-28",
+    "end_close": "2026-04-30"
+   },
+   {
+    "window": "2010-01-31..2020-12-31",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": 333.1665394574685,
+    "target_total_return": 666.333078914937,
+    "spy_cagr": 14.365454848463767,
+    "target_cagr": 20.498343740739998,
+    "gap_pp_per_yr": 6.132888892276234,
+    "years": 10.921286789869953,
+    "start_close": "2010-01-29",
+    "end_close": "2020-12-31"
+   },
+   {
+    "window": "2012-01-01..2026-04-30",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": 635.1691679191232,
+    "target_total_return": 1270.3383358382464,
+    "spy_cagr": 14.933997250187625,
+    "target_cagr": 20.03761435926663,
+    "gap_pp_per_yr": 5.103617109079006,
+    "years": 14.33264887063655,
+    "start_close": "2011-12-30",
+    "end_close": "2026-04-30"
+   },
+   {
+    "window": "2016-01-04..2026-04-30",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": 317.0567384344608,
+    "target_total_return": 634.1134768689216,
+    "spy_cagr": 14.825612076912975,
+    "target_cagr": 21.286173004202546,
+    "gap_pp_per_yr": 6.460560927289571,
+    "years": 10.329911019849419,
+    "start_close": "2015-12-31",
+    "end_close": "2026-04-30"
+   },
+   {
+    "window": "2007-06-01..2011-02-28",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": -5.881261747131217,
+    "target_total_return": -11.762523494262433,
+    "spy_cagr": -1.6041533120579987,
+    "target_cagr": -3.2835806152346603,
+    "gap_pp_per_yr": -1.6794273031766616,
+    "years": 3.7481177275838466,
+    "start_close": "2007-05-31",
+    "end_close": "2011-02-28"
+   },
+   {
+    "window": "2006-06-21..2026-09-29",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": 791.5819065666265,
+    "target_total_return": 1583.163813133253,
+    "spy_cagr": 11.393581318129154,
+    "target_cagr": 14.93975015215856,
+    "gap_pp_per_yr": 3.546168834029406,
+    "years": 20.27652292950034,
+    "start_close": "2006-06-20",
+    "end_close": "2026-09-29"
+   },
+   {
+    "window": "1993-02-01..2006-06-20",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": 256.34199922353355,
+    "target_total_return": 512.6839984470671,
+    "spy_cagr": 9.956457995284707,
+    "target_cagr": 14.498884801285051,
+    "gap_pp_per_yr": 4.542426806000344,
+    "years": 13.388090349075975,
+    "start_close": "1993-01-29",
+    "end_close": "2006-06-20"
+   },
+   {
+    "window": "1993-02-01..2026-09-29",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": 3077.0807905748134,
+    "target_total_return": 6154.161581149627,
+    "spy_cagr": 10.819815312385206,
+    "target_cagr": 13.07193167678542,
+    "gap_pp_per_yr": 2.252116364400214,
+    "years": 33.66461327857632,
+    "start_close": "1993-01-29",
+    "end_close": "2026-09-29"
+   },
+   {
+    "window": "2026-06-24..2026-11-03",
+    "source": "Lens 4 recompute: SPY yfinance auto_adjust=True (dividend-adjusted)",
+    "spy_total_return": 3.08666889700675,
+    "target_total_return": 6.1733377940135,
+    "spy_cagr": 8.706936924704634,
+    "target_cagr": 17.881252486824483,
+    "gap_pp_per_yr": 9.174315562119851,
+    "years": 0.36413415468856947,
+    "start_close": "2026-06-23",
+    "end_close": "2026-11-03"
+   },
+   {
+    "window": "french 1926-07..2026-06 (century window)",
+    "source": "Lens 4 recompute: Ken French F-F_Research_Data_Factors (Mkt-RF + RF), frozen scratch copy; not SPY",
+    "spy_total_return": 1922351.4926686748,
+    "target_total_return": 3844702.9853373496,
+    "spy_cagr": 10.366826227154169,
+    "target_cagr": 11.134459306838874,
+    "gap_pp_per_yr": 0.7676330796847042,
+    "years": 100.0,
+    "start_close": null,
+    "end_close": null
+   },
+   {
+    "window": "french 1927-01..2026-04",
+    "source": "Lens 4 recompute: Ken French F-F_Research_Data_Factors (Mkt-RF + RF), frozen scratch copy; not SPY",
+    "spy_total_return": 1679583.8894202719,
+    "target_total_return": 3359167.7788405437,
+    "spy_cagr": 10.289926649606972,
+    "target_cagr": 11.06218696054908,
+    "gap_pp_per_yr": 0.7722603109421078,
+    "years": 99.33333333333333,
+    "start_close": null,
+    "end_close": null
+   },
+   {
+    "window": "french 1927-01..1993-12",
+    "source": "Lens 4 recompute: Ken French F-F_Research_Data_Factors (Mkt-RF + RF), frozen scratch copy; not SPY",
+    "spy_total_return": 59628.554955851345,
+    "target_total_return": 119257.10991170269,
+    "spy_cagr": 10.010858126287259,
+    "target_cagr": 11.153491441680895,
+    "gap_pp_per_yr": 1.1426333153936374,
+    "years": 67.0,
+    "start_close": null,
+    "end_close": null
+   },
+   {
+    "window": "french 1963-07..2026-04",
+    "source": "Lens 4 recompute: Ken French F-F_Research_Data_Factors (Mkt-RF + RF), frozen scratch copy; not SPY",
+    "spy_total_return": 63837.516851765045,
+    "target_total_return": 127675.03370353009,
+    "spy_cagr": 10.829133532457424,
+    "target_cagr": 12.057120659850407,
+    "gap_pp_per_yr": 1.227987127392982,
+    "years": 62.833333333333336,
+    "start_close": null,
+    "end_close": null
+   },
+   {
+    "window": "french 1963-07..1993-12",
+    "source": "Lens 4 recompute: Ken French F-F_Research_Data_Factors (Mkt-RF + RF), frozen scratch copy; not SPY",
+    "spy_total_return": 2173.579875996421,
+    "target_total_return": 4347.159751992842,
+    "spy_cagr": 10.78534186171165,
+    "target_cagr": 13.249292976815429,
+    "gap_pp_per_yr": 2.4639511151037796,
+    "years": 30.5,
+    "start_close": null,
+    "end_close": null
+   },
+   {
+    "window": "french 1994-01..2026-04",
+    "source": "Lens 4 recompute: Ken French F-F_Research_Data_Factors (Mkt-RF + RF), frozen scratch copy; not SPY",
+    "spy_total_return": 2712.1957590666952,
+    "target_total_return": 5424.3915181333905,
+    "spy_cagr": 10.870458035924656,
+    "target_cagr": 13.210077077033278,
+    "gap_pp_per_yr": 2.3396190411086204,
+    "years": 32.333333333333336,
+    "start_close": null,
+    "end_close": null
+   },
+   {
+    "window": "french 2013-01..2026-04",
+    "source": "Lens 4 recompute: Ken French F-F_Research_Data_Factors (Mkt-RF + RF), frozen scratch copy; not SPY",
+    "spy_total_return": 528.9748424056478,
+    "target_total_return": 1057.9496848112956,
+    "spy_cagr": 14.788266045974453,
+    "target_cagr": 20.164650228699777,
+    "gap_pp_per_yr": 5.3763841827253245,
+    "years": 13.333333333333334,
+    "start_close": null,
+    "end_close": null
+   }
+  ],
+  "sources": [
+   "docs/research/_lens9_power.json",
+   "yfinance SPY auto_adjust=True (Lens 4 run 2026-11-04)",
+   "Ken French F-F_Research_Data_Factors (frozen copy, Lens 9 scratch)"
+  ],
+  "convention_note": "Lens 4 uses the last close before the window start; Lens 9 used the same for 2021-01-31 (close 2021-01-29) and both agree there (108.60%). They differ on 2022-01-31 (Lens 9 69.33%, gap 9.54; Lens 4 72.38%, gap 9.77) and 2006-06-21 (785.02% vs 791.58%), a one-day start-close difference. The 2007-06-01..2011-02-28 window has a negative SPY total return (-5.88%), so 2 x SPY is a larger loss and the definition gives a target below SPY."
+ },
+ "tiers": {
+  "written_before_table": true,
+  "A": "Lens 2 class 'reliable' (reliable NO or reliable GO).",
+  "B": "Lens 2 class not 'unreliable'; Lens 1 tape clean, or every contamination item favours the strategy; Lens 7 recompute yes; Lens 6 code match yes, or Lens 2 R3 met (statistic independently recomputed), or code unverifiable but irrelevant to the figure (exception L4-X1).",
+  "C": "everything else; listed for reference, excluded from the ceiling.",
+  "exceptions": {
+   "L4-X1": "Static fixed-weight books with no signal (stocks-a23-static-leverage, stocks-century-leverage, cross-asset-static-80-20-sleeve, cross-asset-sleeve-holdout-2007-2011): Lens 6 has no row or is unverifiable; admitted to Tier B because the figure is a fixed-weight rebalance on a clean tape, recomputed by Lens 7, with no signal timing that code review would test. This is a Lens 4 judgement; a reader who rejects it moves these rows to Tier C, which empties the leverage and cross-asset ceilings.",
+   "L4-X2": "Non-primary arms and diagnostic sub-windows from a Tier B artifact (A23 2.0x/1.5x arms, momentum/factor pre-1994 sub-periods) inherit the artifact's tier but were not the registered test; flagged 'non-registered' and the highest of several arms is a selected maximum (post hoc)."
+  },
+  "lens2_effect": "Lens 2 found 0 reliable NO and 0 reliable GO among 72 test rows, and 9 unreliable GO. Tier A is therefore empty; every ceiling figure below is Tier B at best, and all 9 GO headlines that once showed an excess over SPY (1.12/1.14 Sharpe, 16-19% CAGR) are Tier C."
+ },
+ "ceiling": [
+  {
+   "approach": "SPY sweep sleeve (core + idle-cash SPY)",
+   "inventory_ids": [
+    "stocks-core-spy-blend-keep",
+    "stocks-cash-sweep-live",
+    "stocks-two-symbol-sweep-design"
+   ],
+   "best_id": "stocks-core-spy-blend-keep/live_k1.0",
+   "best_value_pp_per_yr": 0.0,
+   "value_kind": "cagr_gap",
+   "tier": "C (Lens 2 unreliable GO)",
+   "window": "2021-01-31..2026-04-30",
+   "gap_pp_per_yr": 9.57495617809445,
+   "exposure": "mean SPY weight 0.874; core idle 92.41%",
+   "leverage": "1.0",
+   "costs": "per artifact driver",
+   "regime": "2021-2026 single bull-dominated regime (Lens 9)",
+   "pretax": 0.0,
+   "aftertax": "not in artifact",
+   "status": "no Tier A/B figure; ceiling for this approach: none sound",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 0.0
+  },
+  {
+   "approach": "Ensemble / reversion stock selection",
+   "inventory_ids": [
+    "stocks-production-replica",
+    "stocks-production-replica-holdout-2010-2020",
+    "stocks-sp500-core-pit-rebaseline",
+    "stocks-ensemble-ic-pit",
+    "stocks-ensemble-kelly-pit",
+    "stocks-sp500-core-corrected-tape-rebaseline",
+    "stocks-ensemble-ndh-baseline-1-12",
+    "stocks-ensemble-wfo-validated-2026-06-20",
+    "stocks-voter-ablation-5-voter",
+    "stocks-three-pct-position-size",
+    "stocks-bb-reversion",
+    "stocks-macd-divergence",
+    "stocks-overnight-gap",
+    "stocks-mtf-reversion"
+   ],
+   "best_id": "stocks-production-replica/primary",
+   "best_value_pp_per_yr": -0.6423052484052931,
+   "value_kind": "cagr_gap",
+   "ci95": "[-2.93, 1.40] pp/yr on arithmetic mean excess (-0.76), NW(5), not on the CAGR gap",
+   "tier": "C (Lens 1 tape identity PARA, direction unknown)",
+   "window": "2021-01-31..2026-04-30",
+   "gap_pp_per_yr": 9.57495617809445,
+   "exposure": "stocks 9.37%, SPY 85.33%, cash 5.30%",
+   "leverage": "1.0",
+   "costs": "stocks 5 bp, SPY 1 bp per side",
+   "regime": "2021-2026",
+   "pretax": -0.6423052484052931,
+   "aftertax": "not run (closure.after_tax)",
+   "status": "no Tier A/B figure; reference only. Holdout 2010-2020 +1.00 CAGR gap, CI [-1.40, 2.91] on +0.76 arithmetic, not citable",
+   "times_fits_in_gap": -0.067
+  },
+  {
+   "approach": "Momentum (S&P 500 replay)",
+   "inventory_ids": [
+    "stocks-xs-momentum-corrected-replay",
+    "stocks-dual-momentum",
+    "stocks-xs-momentum-2026-06"
+   ],
+   "best_id": "stocks-xs-momentum-corrected-replay/xs_momentum",
+   "best_value_pp_per_yr": 4.367394388771185,
+   "value_kind": "cagr_gap",
+   "ci95": "[-7.07, 16.05] pp/yr on arithmetic mean excess (4.49), NW(5), t 0.76; not on the CAGR gap",
+   "tier": "B",
+   "window": "2021-01-31..2026-04-30 (OOS span 2022-01-31..2026-04-30, n_obs 1064)",
+   "gap_pp_per_yr": 9.535959914032867,
+   "exposure": "100% stocks, top-N momentum (anchor top_n 50 deployed 17/17 folds)",
+   "leverage": "not recorded in artifact",
+   "costs": "not recorded in artifact",
+   "regime": "2022-2026 OOS",
+   "pretax": 4.367394388771185,
+   "aftertax": "not in artifact",
+   "status": "Tier B; MDE t>=3 22.66 pp/yr, so the estimate is noise-dominated",
+   "times_fits_in_gap": 0.458
+  },
+  {
+   "approach": "Momentum (French Big, registered post-1994 window)",
+   "inventory_ids": [
+    "stocks-momentum-french-screen"
+   ],
+   "best_id": "stocks-momentum-french-screen/small/A2",
+   "best_value_pp_per_yr": 0.19755054092145535,
+   "value_kind": "cagr_gap",
+   "tier": "B",
+   "window": "1994-01..2026-04",
+   "gap_pp_per_yr": 2.3396190411086204,
+   "exposure": "value-weighted French winners portfolio (Big +0.08, Small +0.20)",
+   "leverage": "1.0",
+   "costs": "haircut 1%/yr Big, 3%/yr Small (brief assumption)",
+   "regime": "post-publication",
+   "pretax": 0.19755054092145535,
+   "aftertax": "not in artifact",
+   "status": "Tier B; comparator French market, not SPY",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 0.084
+  },
+  {
+   "approach": "Momentum (French, pre-1994 diagnostic)",
+   "inventory_ids": [
+    "stocks-momentum-french-screen"
+   ],
+   "best_id": "stocks-momentum-french-screen/small/diag 1927-01..1993-12",
+   "best_value_pp_per_yr": 4.771227797876852,
+   "value_kind": "cagr_gap",
+   "tier": "B (L4-X2 non-registered sub-window)",
+   "window": "1927-01..1993-12",
+   "gap_pp_per_yr": 1.1426333153936374,
+   "exposure": "Small winners (Big: +3.12, t 3.56)",
+   "leverage": "1.0",
+   "costs": "haircut 3%/yr Small, 1%/yr Big",
+   "regime": "pre-publication (Jegadeesh-Titman 1993)",
+   "pretax": 4.771227797876852,
+   "aftertax": "not in artifact",
+   "status": "largest Tier B stock-selection figure; the sub-period after it (2013-2026) is -3.34 (Small) / -0.97 (Big)",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 4.176
+  },
+  {
+   "approach": "Factor tilts (value, quality, investment, value+momentum)",
+   "inventory_ids": [
+    "stocks-factor-screen-h1-h4",
+    "stocks-family-scope-review",
+    "stocks-idio-vol",
+    "stocks-max-effect"
+   ],
+   "best_id": "stocks-factor-screen-h1-h4/H1/A2",
+   "best_value_pp_per_yr": 0.8266746061754343,
+   "value_kind": "cagr_gap",
+   "tier": "B",
+   "window": "1994-01..2026-04",
+   "gap_pp_per_yr": 2.3396190411086204,
+   "exposure": "French BIG HiOP portfolio",
+   "leverage": "1.0",
+   "costs": "haircut 1%/yr base",
+   "regime": "post-1994",
+   "pretax": 0.8266746061754343,
+   "aftertax": "not in artifact",
+   "status": "Tier B; pre-1994 diagnostic best H2 BIG HiBM 1963-07..1993-12 +2.76 (gap 2.46 over that window)",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 0.353
+  },
+  {
+   "approach": "Net issuance",
+   "inventory_ids": [
+    "stocks-net-issuance-screen"
+   ],
+   "best_id": "stocks-net-issuance-screen/H1/A2",
+   "best_value_pp_per_yr": 0.48223480592343576,
+   "value_kind": "cagr_gap",
+   "tier": "B",
+   "window": "1994-01..2026-04",
+   "gap_pp_per_yr": 2.3396190411086204,
+   "exposure": "French BIG NegNI",
+   "leverage": "1.0",
+   "costs": "haircut 1%/yr base",
+   "regime": "post-1994 (2009-2026: -0.93)",
+   "pretax": 0.48223480592343576,
+   "aftertax": "not in artifact",
+   "status": "Tier B",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 0.206
+  },
+  {
+   "approach": "Event / calendar",
+   "inventory_ids": [
+    "cross-asset-fomc-drift-corrected-harness",
+    "cross-asset-fomc-drift-wfo",
+    "cross-asset-month-end-treasury",
+    "stocks-turn-of-month-rotation",
+    "stocks-pead",
+    "stocks-index-deletion-fade",
+    "stocks-insider-cluster-buy",
+    "stocks-congress-trades"
+   ],
+   "best_id": "cross-asset-month-end-treasury/portfolio/pinned/1bp",
+   "best_value_pp_per_yr": -0.08,
+   "value_kind": "cagr_gap",
+   "tier": "C (DSR-units item, direction unknown)",
+   "window": "2021-01-31..2026-04-30",
+   "gap_pp_per_yr": 9.57495617809445,
+   "exposure": "80% SPY + 20% rotating SPY->IEF last 3 days",
+   "leverage": "1.0",
+   "costs": "1 bp",
+   "regime": "2021-2026",
+   "pretax": -0.08,
+   "aftertax": "not in artifact",
+   "status": "no Tier A/B figure versus SPY. FOMC corrected harness (clean, code unverifiable -> C) t 0.98; DERIVED +0.61 pp/yr event effect is not an SPY excess",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": -0.008
+  },
+  {
+   "approach": "Cross-asset (static 80/20 SPY + TLT/GLD/PDBC)",
+   "inventory_ids": [
+    "cross-asset-static-80-20-sleeve",
+    "cross-asset-sleeve-holdout-2007-2011",
+    "cross-asset-sleeve-trend-arm",
+    "cross-asset-treasury-curve",
+    "cross-asset-fx-hedge-overlay",
+    "cross-asset-commodity-trend"
+   ],
+   "best_id": "cross-asset-sleeve-holdout-2007-2011/1bp",
+   "best_value_pp_per_yr": 3.0781,
+   "value_kind": "cagr_gap",
+   "tier": "B (L4-X1)",
+   "window": "2007-06-01..2011-02-28",
+   "gap_pp_per_yr": -1.6794273031766616,
+   "exposure": "80% SPY / 20% TLT,GLD,DBC",
+   "leverage": "1.0",
+   "costs": "1 bp per side",
+   "regime": "GFC holdout (SPY total return negative)",
+   "pretax": 3.0781,
+   "aftertax": "not in artifact",
+   "status": "target degenerate here (2 x a negative return is below SPY); full windows: 2016-2026 -1.07, 2021-2026 -1.09",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": null
+  },
+  {
+   "approach": "Static leverage on SPY via SSO (2.0x)",
+   "inventory_ids": [
+    "stocks-a23-static-leverage",
+    "stocks-a24-sleeve-trend-rider"
+   ],
+   "best_id": "stocks-a23-static-leverage/main_real_sso/static 2.0x (SSO) no rebalance",
+   "best_value_pp_per_yr": 4.44,
+   "value_kind": "cagr_gap",
+   "tier": "B (L4-X1, L4-X2 non-registered arm)",
+   "window": "2006-06-21..2026-09-29",
+   "gap_pp_per_yr": 3.54291768349988,
+   "exposure": "static 2.0x (SSO) no rebalance",
+   "leverage": "2.0x",
+   "costs": "1 bp per side; SSO expense inside fund",
+   "regime": "2006-2026 incl. 2008 and 2020",
+   "pretax": 4.44,
+   "aftertax": {
+    "24/15": 4.29,
+    "40.8/23.8": 4.26
+   },
+   "max_drawdown": {
+    "arm": -0.8482,
+    "SPY": -0.5534
+   },
+   "status": "leverage multiplies beta and drawdown; not alpha. Synthetic 1993-2006 holdout and stitched 1993-2026 in ruled_out/notes",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 1.253
+  },
+  {
+   "approach": "Static leverage on SPY via SSO (1.5x)",
+   "inventory_ids": [
+    "stocks-a23-static-leverage",
+    "stocks-a24-sleeve-trend-rider"
+   ],
+   "best_id": "stocks-a23-static-leverage/main_real_sso/static 1.5x (50/50) band 10pp",
+   "best_value_pp_per_yr": 2.66,
+   "value_kind": "cagr_gap",
+   "tier": "B (L4-X1, L4-X2 non-registered arm)",
+   "window": "2006-06-21..2026-09-29",
+   "gap_pp_per_yr": 3.54291768349988,
+   "exposure": "static 1.5x (50/50) band 10pp",
+   "leverage": "1.5x",
+   "costs": "1 bp per side; SSO expense inside fund",
+   "regime": "2006-2026 incl. 2008 and 2020",
+   "pretax": 2.66,
+   "aftertax": {
+    "24/15": 2.58,
+    "40.8/23.8": 2.52
+   },
+   "max_drawdown": {
+    "arm": -0.7264,
+    "SPY": -0.5534
+   },
+   "status": "leverage multiplies beta and drawdown; not alpha. Synthetic 1993-2006 holdout and stitched 1993-2026 in ruled_out/notes",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 0.751
+  },
+  {
+   "approach": "Static leverage on SPY via SSO (1.3x (A23 registered arm))",
+   "inventory_ids": [
+    "stocks-a23-static-leverage",
+    "stocks-a24-sleeve-trend-rider"
+   ],
+   "best_id": "stocks-a23-static-leverage/main_real_sso/static 1.3x (70/30) band 8pp",
+   "best_value_pp_per_yr": 1.61,
+   "value_kind": "cagr_gap",
+   "tier": "B (L4-X1)",
+   "window": "2006-06-21..2026-09-29",
+   "gap_pp_per_yr": 3.54291768349988,
+   "exposure": "static 1.3x (70/30) band 8pp",
+   "leverage": "1.3x",
+   "costs": "1 bp per side; SSO expense inside fund",
+   "regime": "2006-2026 incl. 2008 and 2020",
+   "pretax": 1.61,
+   "aftertax": {
+    "24/15": 1.6,
+    "40.8/23.8": 1.55
+   },
+   "max_drawdown": {
+    "arm": -0.6639,
+    "SPY": -0.5534
+   },
+   "status": "leverage multiplies beta and drawdown; not alpha. Synthetic 1993-2006 holdout and stitched 1993-2026 in ruled_out/notes",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 0.454
+  },
+  {
+   "approach": "Century leverage (30% SSO-like 2x fund, synthetic)",
+   "inventory_ids": [
+    "stocks-century-leverage"
+   ],
+   "best_id": "stocks-century-leverage/30/full",
+   "best_value_pp_per_yr": 1.24,
+   "value_kind": "cagr_gap (after-tax only)",
+   "tier": "B (L4-X1)",
+   "window": "1926-07-01..2026-06-30",
+   "gap_pp_per_yr": 0.7676330796847042,
+   "exposure": "30% 2x fund / 70% market",
+   "leverage": "1.30x",
+   "costs": "0.84% fund fee, fitted spread",
+   "regime": "1926-2026 incl. 1929-32",
+   "pretax": "not in artifact (after-tax only)",
+   "aftertax": {
+    "24/15": 1.24
+   },
+   "max_drawdown": {
+    "arm": -0.9141219352840759,
+    "0% arm": -0.8459901962670137
+   },
+   "ruin_flag": true,
+   "status": "after-tax CAGR gap compared against a pre-tax target gap: different bases, shown side by side only",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 1.615
+  },
+  {
+   "approach": "Century leverage (60% SSO-like 2x fund, synthetic)",
+   "inventory_ids": [
+    "stocks-century-leverage"
+   ],
+   "best_id": "stocks-century-leverage/60/full",
+   "best_value_pp_per_yr": 2.1289,
+   "value_kind": "cagr_gap (after-tax only)",
+   "tier": "B (L4-X1, L4-X2 non-kept arm)",
+   "window": "1926-07-01..2026-06-30",
+   "gap_pp_per_yr": 0.7676330796847042,
+   "exposure": "60% 2x fund / 40% market",
+   "leverage": "1.60x",
+   "costs": "0.84% fund fee, fitted spread",
+   "regime": "1926-2026 incl. 1929-32",
+   "pretax": "not in artifact (after-tax only)",
+   "aftertax": {
+    "24/15": 2.1289
+   },
+   "max_drawdown": {
+    "arm": -0.9572792926562317,
+    "0% arm": -0.8459901962670137
+   },
+   "ruin_flag": true,
+   "status": "after-tax CAGR gap compared against a pre-tax target gap: different bases, shown side by side only",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": 2.773
+  },
+  {
+   "approach": "Leveraged-ETF timing (rotation, trend)",
+   "inventory_ids": [
+    "stocks-leveraged-rotation",
+    "stocks-leveraged-trend"
+   ],
+   "best_id": null,
+   "best_value_pp_per_yr": null,
+   "value_kind": "n/a",
+   "tier": "C (no raw artifact; pre-fix tape)",
+   "window": "n/a",
+   "gap_pp_per_yr": null,
+   "exposure": "n/a",
+   "leverage": "2x/3x ETFs",
+   "costs": "n/a",
+   "regime": "n/a",
+   "pretax": "no raw artifact",
+   "aftertax": "no raw artifact",
+   "status": "no Tier A/B figure",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": null
+  },
+  {
+   "approach": "Crypto",
+   "inventory_ids": [
+    "crypto-*"
+   ],
+   "best_id": null,
+   "best_value_pp_per_yr": null,
+   "value_kind": "n/a",
+   "tier": "pointer: Lens 8 (report not yet in repo at commit time)",
+   "window": "n/a",
+   "gap_pp_per_yr": null,
+   "exposure": "n/a",
+   "leverage": "n/a",
+   "costs": "n/a",
+   "regime": "n/a",
+   "pretax": "n/a",
+   "aftertax": "n/a",
+   "status": "not examined by Lens 4; Lens 2 classes all crypto rows inconclusive with Lens 8 owning tape/benchmark (BTC/ETH, not SPY)",
+   "ci95": "not computable from artifact",
+   "times_fits_in_gap": null
+  }
+ ],
+ "ruled_out": [
+  {
+   "lever": "breadth",
+   "status": "tested badly / inconclusive; not ruled out at the size a test could detect",
+   "evidence": [
+    "Lens 5 gap table: micro caps never tested; small-cap selection tested badly (200-name snapshot); cross-asset breadth tested, inconclusive (no t-statistic); weekly cross-sectional never tested; international equity exposure never tested",
+    "Lens 2: no reliable NO in any breadth row"
+   ]
+  },
+  {
+   "lever": "leverage",
+   "status": "tested; measured, not ruled out (measured results exist on clean tape, no t-statistic)",
+   "evidence": [
+    "A23 artifact: 1.3x +1.61, 1.5x +2.66, 2.0x +4.44 pp/yr pre-tax CAGR gap over 2006-2026; max drawdown -66.4%/-72.6%/-84.8% vs SPY -55.3%",
+    "Synthetic 1993-2006 holdout: 2.0x +1.28 vs target gap 4.54; stitched 1993-2026: 2.0x +3.18 vs gap 2.25",
+    "Century: 30% arm +1.24 after-tax vs 0% arm, max drawdown -91.4% (ruin flag true); 60% +2.13, -95.7%",
+    "LETF timing (rotation/trend): tested badly per Lens 2 conditions (no artifact, pre-fix tape)"
+   ]
+  },
+  {
+   "lever": "concentration",
+   "status": "tested badly (Lens 5)",
+   "evidence": [
+    "xs_momentum top_n 10 arm never deployed OOS (anchor top_n 50 in 17/17 folds)",
+    "live/replica book: 3 names at ~3.3% each, 9.37% stock exposure, so few names but small total weight"
+   ]
+  },
+  {
+   "lever": "long-short",
+   "status": "tested, inconclusive; not ruled out at the size a test could detect",
+   "evidence": [
+    "pairs stat-arb and short-volume-ratio books: Lens 2 inconclusive, pre-fix tape, no raw artifacts, no borrow-fee model",
+    "no MDE computable"
+   ]
+  }
+ ],
+ "firms": [
+  {
+   "claim": "Fundamental Law: IR is approximately IC times the square root of breadth",
+   "source_url": "https://www.omscs-notes.com/machine-learning-trading/fundamental-law-active-portfolio-management/",
+   "quote": "The information coefficient (IC) is the correlation of the manager's forecast to actual returns.",
+   "verified": "fetched 2026-11-04 (WebFetch extraction)"
+  },
+  {
+   "claim": "Breadth = number of trading opportunities per year",
+   "source_url": "https://www.omscs-notes.com/machine-learning-trading/fundamental-law-active-portfolio-management/",
+   "quote": "Breadth represents the number of trading opportunities an investor encounters per year.",
+   "verified": "fetched 2026-11-04 (WebFetch extraction)"
+  },
+  {
+   "claim": "Breadth means independent opportunities",
+   "source_url": "https://www.robeco.com/en-int/insights/2018/04/fundamental-law-of-active-management-shows-way-to-higher-information-ratio",
+   "quote": "The second variable is breadth; the number of independent investment opportunities.",
+   "verified": "fetched 2026-11-04 (WebFetch extraction)"
+  },
+  {
+   "claim": "IC and breadth are not independent in practice",
+   "source_url": "https://www.newfrontieradvisors.com/media/1180/information-ratio-of-factor-based-alpha.pdf",
+   "quote": "IC and breadth are not generally independent and the information ratio may or may not increase with increasing breadth.",
+   "verified": "search-engine snippet only (not fetched)"
+  },
+  {
+   "claim": "Medallion reported returns (secondary source)",
+   "source_url": "https://en.wikipedia.org/wiki/Renaissance_Technologies",
+   "quote": "From 1994 through mid-2014, it averaged a 71.8% annual return, before fees.",
+   "verified": "fetched 2026-11-04; secondary source citing Bloomberg"
+  },
+  {
+   "claim": "Medallion closed to outside investors",
+   "source_url": "https://en.wikipedia.org/wiki/Renaissance_Technologies",
+   "quote": "The fund has been closed to outside investors since 1993 and is available only to current and past employees and their families.",
+   "verified": "fetched 2026-11-04; secondary source"
+  },
+  {
+   "claim": "Medallion size held near $10bn despite high returns (capacity)",
+   "source_url": "https://www.institutionalinvestor.com/article/2bswymr8cih3jeaslxc00/portfolio/famed-medallion-fund-stretches-explanation-to-the-limit-professor-claims",
+   "quote": "despite the fact that Medallion reported annual net returns above 29 percent every year between 2010 and 2018, the fund's assets under management stayed at about $10 billion throughout that period.",
+   "verified": "search-engine snippet only (not fetched)"
+  },
+  {
+   "claim": "Medallion profits mostly short-term (tax)",
+   "source_url": "https://www.accountingtoday.com/articles/renaissance-hedge-fund-ends-no-fee-investment-perk-after-irs-complaints",
+   "quote": "Medallion primarily generates short-term profits that are subject to much higher taxes than long-term gains",
+   "verified": "search-engine snippet only (not fetched)"
+  },
+  {
+   "claim": "Renaissance's outside funds trail Medallion",
+   "source_url": "https://en.wikipedia.org/wiki/Renaissance_Technologies",
+   "quote": "RIEF has historically trailed the firm's better-known Medallion fund",
+   "verified": "fetched 2026-11-04; secondary source"
+  },
+  {
+   "claim": "Data and infrastructure at scale",
+   "source_url": "https://en.wikipedia.org/wiki/Renaissance_Technologies",
+   "quote": "staff tap data in its petabyte-scale data warehouse to assess statistical probabilities for the direction of securities prices in any given market.",
+   "verified": "fetched 2026-11-04; secondary source"
+  },
+  {
+   "claim": "Multi-manager pod structure",
+   "source_url": "https://en.wikipedia.org/wiki/Millennium_Management",
+   "quote": "platform model of investing made up of approximately 280 investment teams",
+   "verified": "fetched 2026-11-04 (WebFetch extraction); secondary source"
+  },
+  {
+   "claim": "Institutional financing and leverage via prime brokers",
+   "source_url": "https://en.wikipedia.org/wiki/Prime_brokerage",
+   "quote": "Prime brokers facilitate hedge fund leverage, primarily through loans secured by the long positions of their clients.",
+   "verified": "fetched 2026-11-04 (WebFetch extraction)"
+  },
+  {
+   "claim": "Trading costs and capacity at scale",
+   "source_url": "https://www.aqr.com/Insights/Research/Working-Paper/Trading-Costs-of-Asset-Pricing-Anomalies",
+   "quote": "our trading cost estimates are many times smaller and our fund sizes are more than an order of magnitude larger than those claimed in the literature.",
+   "verified": "fetched 2026-11-04 (WebFetch extraction)"
+  },
+  {
+   "claim": "Owner's broker: margin rate and leverage limits",
+   "source_url": "https://docs.alpaca.markets/us/docs/margin-and-short-selling",
+   "quote": "In order to trade on margin or sell short, you must have $2,000 or more account equity.",
+   "verified": "fetched 2026-11-04 (WebFetch extraction); page also states 5.00% elite / 6.50% non-elite annual margin rate and 2x overnight buying power"
+  }
+ ],
+ "after_tax": {
+  "label": "DERIVED",
+  "source": "paper_trades (SELECT only; amount = filled_qty x filled_price, src/ggTrader/paper/trader.py:201-202), stock round trips paired FIFO by symbol, SPY sweep excluded",
+  "paper_round_trips": {
+   "n_trips": 74,
+   "n_short": 74,
+   "n_long": 0,
+   "gross_gain": 5130.927295276611,
+   "gross_loss": -4358.534288669855,
+   "net_gain": 772.3930066067559,
+   "short_term_net": 772.3930066067559,
+   "hold_days_median": 26,
+   "hold_days_max": 92,
+   "hold_days_mean": 30.10810810810811,
+   "cost_total": 126647.63000872146,
+   "unmatched_sells": [],
+   "first_date": "2026-06-24",
+   "last_date": "2026-11-04",
+   "still_open_excluded": true
+  },
+  "paper_tax_by_bracket": {
+   "24/15": {
+    "tax_if_all_short": 185.3743215856214,
+    "aftertax_net": 587.0186850211345,
+    "retained_share_short": 0.76,
+    "retained_share_if_long": 0.85
+   },
+   "37/20": {
+    "tax_if_all_short": 285.7854124444997,
+    "aftertax_net": 486.6075941622562,
+    "retained_share_short": 0.63,
+    "retained_share_if_long": 0.8
+   },
+   "40.8/23.8": {
+    "tax_if_all_short": 315.13634669555637,
+    "aftertax_net": 457.2566599111995,
+    "retained_share_short": 0.5920000000000001,
+    "retained_share_if_long": 0.762
+   }
+  },
+  "short_term_share_of_realized_gains": 1.0,
+  "replica": "docs/research/_production_replica_results.json holds trade_counts only (no holding periods or per-trade gains); no result claimed",
+  "stylised_books": {
+   "2021-01-31..2026-04-30|24/15": {
+    "spy_pretax_cagr_pct": 15.054699999999999,
+    "spy_aftertax_cagr_pct": 13.284134635903877,
+    "years": 5.242984,
+    "breakeven_pretax_edge_pp": 2.4244245209261606,
+    "rows": [
+     {
+      "pretax_edge_pp": 0.0,
+      "book_aftertax_gap_pp": -1.8425626359038771,
+      "share_survives": null
+     },
+     {
+      "pretax_edge_pp": 1.0,
+      "book_aftertax_gap_pp": -1.082562635903872,
+      "share_survives": -1.082562635903872
+     },
+     {
+      "pretax_edge_pp": 4.37,
+      "book_aftertax_gap_pp": 1.4786373640961248,
+      "share_survives": 0.3383609528824084
+     },
+     {
+      "pretax_edge_pp": 9.569999999999999,
+      "book_aftertax_gap_pp": 5.430637364096125,
+      "share_survives": 0.5674647193412878
+     },
+     {
+      "pretax_edge_pp": 3.55,
+      "book_aftertax_gap_pp": 0.8554373640961233,
+      "share_survives": 0.24096827157637277
+     }
+    ]
+   },
+   "2021-01-31..2026-04-30|37/20": {
+    "spy_pretax_cagr_pct": 15.054699999999999,
+    "spy_aftertax_cagr_pct": 12.66695178386923,
+    "years": 5.242984,
+    "breakeven_pretax_edge_pp": 5.051572672808316,
+    "rows": [
+     {
+      "pretax_edge_pp": 0.0,
+      "book_aftertax_gap_pp": -3.1824907838692296,
+      "share_survives": null
+     },
+     {
+      "pretax_edge_pp": 1.0,
+      "book_aftertax_gap_pp": -2.5524907838692323,
+      "share_survives": -2.5524907838692323
+     },
+     {
+      "pretax_edge_pp": 4.37,
+      "book_aftertax_gap_pp": -0.42939078386923235,
+      "share_survives": -0.09825876061080831
+     },
+     {
+      "pretax_edge_pp": 9.569999999999999,
+      "book_aftertax_gap_pp": 2.84660921613078,
+      "share_survives": 0.2974513287492978
+     },
+     {
+      "pretax_edge_pp": 3.55,
+      "book_aftertax_gap_pp": -0.9459907838692327,
+      "share_survives": -0.26647627714626276
+     }
+    ]
+   },
+   "2021-01-31..2026-04-30|40.8/23.8": {
+    "spy_pretax_cagr_pct": 15.054699999999999,
+    "spy_aftertax_cagr_pct": 12.188111664662227,
+    "years": 5.242984,
+    "breakeven_pretax_edge_pp": 5.533326460578092,
+    "rows": [
+     {
+      "pretax_edge_pp": 0.0,
+      "book_aftertax_gap_pp": -3.2757292646622194,
+      "share_survives": null
+     },
+     {
+      "pretax_edge_pp": 1.0,
+      "book_aftertax_gap_pp": -2.683729264662227,
+      "share_survives": -2.683729264662227
+     },
+     {
+      "pretax_edge_pp": 4.37,
+      "book_aftertax_gap_pp": -0.6886892646622345,
+      "share_survives": -0.15759479740554563
+     },
+     {
+      "pretax_edge_pp": 9.569999999999999,
+      "book_aftertax_gap_pp": 2.38971073533778,
+      "share_survives": 0.24970854078764684
+     },
+     {
+      "pretax_edge_pp": 3.55,
+      "book_aftertax_gap_pp": -1.174129264662227,
+      "share_survives": -0.3307406379330217
+     }
+    ]
+   },
+   "2006-06-21..2026-09-29|24/15": {
+    "spy_pretax_cagr_pct": 11.35462,
+    "spy_aftertax_cagr_pct": 10.573175030074179,
+    "years": 20.273785,
+    "breakeven_pretax_edge_pp": 2.557452407992343,
+    "rows": [
+     {
+      "pretax_edge_pp": 0.0,
+      "book_aftertax_gap_pp": -1.9436638300741826,
+      "share_survives": null
+     },
+     {
+      "pretax_edge_pp": 1.0,
+      "book_aftertax_gap_pp": -1.1836638300741775,
+      "share_survives": -1.1836638300741775
+     },
+     {
+      "pretax_edge_pp": 4.37,
+      "book_aftertax_gap_pp": 1.3775361699258193,
+      "share_survives": 0.31522566817524467
+     },
+     {
+      "pretax_edge_pp": 9.569999999999999,
+      "book_aftertax_gap_pp": 5.329536169925819,
+      "share_survives": 0.5569003312357178
+     },
+     {
+      "pretax_edge_pp": 3.55,
+      "book_aftertax_gap_pp": 0.7543361699258178,
+      "share_survives": 0.2124890619509346
+     }
+    ]
+   },
+   "2006-06-21..2026-09-29|37/20": {
+    "spy_pretax_cagr_pct": 11.35462,
+    "spy_aftertax_cagr_pct": 10.287146278117643,
+    "years": 20.273785,
+    "breakeven_pretax_edge_pp": 4.974183616059749,
+    "rows": [
+     {
+      "pretax_edge_pp": 0.0,
+      "book_aftertax_gap_pp": -3.133735678117633,
+      "share_survives": null
+     },
+     {
+      "pretax_edge_pp": 1.0,
+      "book_aftertax_gap_pp": -2.5037356781176356,
+      "share_survives": -2.5037356781176356
+     },
+     {
+      "pretax_edge_pp": 4.37,
+      "book_aftertax_gap_pp": -0.38063567811763566,
+      "share_survives": -0.08710198583927589
+     },
+     {
+      "pretax_edge_pp": 9.569999999999999,
+      "book_aftertax_gap_pp": 2.8953643218823544,
+      "share_survives": 0.30254590615280613
+     },
+     {
+      "pretax_edge_pp": 3.55,
+      "book_aftertax_gap_pp": -0.897235678117636,
+      "share_survives": -0.2527424445401792
+     }
+    ]
+   },
+   "2006-06-21..2026-09-29|40.8/23.8": {
+    "spy_pretax_cagr_pct": 11.35462,
+    "spy_aftertax_cagr_pct": 10.059783783915321,
+    "years": 20.273785,
+    "breakeven_pretax_edge_pp": 5.6382580133704705,
+    "rows": [
+     {
+      "pretax_edge_pp": 0.0,
+      "book_aftertax_gap_pp": -3.337848743915317,
+      "share_survives": null
+     },
+     {
+      "pretax_edge_pp": 1.0,
+      "book_aftertax_gap_pp": -2.7458487439153245,
+      "share_survives": -2.7458487439153245
+     },
+     {
+      "pretax_edge_pp": 4.37,
+      "book_aftertax_gap_pp": -0.7508087439153099,
+      "share_survives": -0.17180978121631804
+     },
+     {
+      "pretax_edge_pp": 9.569999999999999,
+      "book_aftertax_gap_pp": 2.3275912560846823,
+      "share_survives": 0.2432174771248362
+     },
+     {
+      "pretax_edge_pp": 3.55,
+      "book_aftertax_gap_pp": -1.2362487439153247,
+      "share_survives": -0.3482390827930492
+     }
+    ]
+   }
+  },
+  "stylised_assumptions": [
+   "book realizes all gains each year at the short-term rate (mean hold 30 days observed)",
+   "SPY held to window end, gain taxed once at the long-term rate",
+   "dividend taxes ignored for both (favours SPY's after-tax figure slightly)",
+   "constant annual returns; losses offset within the year"
+  ],
+  "brackets": {
+   "24/15": "24% short / 15% long",
+   "37/20": "37% / 20% (task brief)",
+   "40.8/23.8": "37%+3.8% / 20%+3.8% (A23 artifact brackets)"
+  }
+ },
+ "generated": "Lens 4, 2026-11-04; read-only; no backtest re-run"
+}
