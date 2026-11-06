@@ -134,7 +134,8 @@ STATUS_FAILED = "failed"
 # --- Move and verify constants ---
 PYCACHE_DIR = "__pycache__"
 VERIFY_STAGES: tuple[str, ...] = ("moved", "rewritten", "final")
-IMPLEMENTED_STAGES = frozenset({"moved"})
+IMPLEMENTED_STAGES = frozenset({"moved", "rewritten"})
+REWRITABLE_SUFFIX = ".md"
 
 
 @dataclass(frozen=True)
@@ -1210,23 +1211,27 @@ def _files_under(base: Path, root: Path) -> list[str]:
     )
 
 
-def verify_moved(rows: list[ManifestRow], ledger: dict[str, Any], root: Path) -> list[str]:
-    """Check the tree right after the move-only step.
+def _verify_tree(
+    rows: list[ManifestRow],
+    ledger: dict[str, Any],
+    root: Path,
+    allowed_changes: frozenset[str] | None,
+) -> list[str]:
+    """Shared tree checks for the `moved` and `rewritten` gates.
 
-    Checks: every destination exists and matches its ledger sha256 (all files, frozen or
-    not); the number of files under research/ equals the number of manifest rows; no
-    destination is deeper than research/<category>/<study>/<file>; nothing is tracked
-    under docs/research; and no untracked file is left there (`__pycache__` is ignored).
-
-    Args:
-        rows: Manifest rows.
-        ledger: The pre-move ledger (`files` entries keyed by `current_path`).
-        root: Repository root.
-
-    Returns:
-        Problem descriptions; an empty list means the gate passes.
+    A destination whose sha256 differs from the ledger is a problem unless its proposed
+    path is in `allowed_changes` and its row is a non-frozen file. `moved` passes None, so
+    every byte must match.
     """
     problems: list[str] = []
+    allowed = allowed_changes or frozenset()
+    by_proposed = {r.proposed_path: r for r in rows}
+    for listed in sorted(allowed):
+        row = by_proposed.get(listed)
+        if row is None:
+            problems.append(f"listed in the rewrite manifest but not in manifest: {listed}")
+        elif row.frozen or PurePosixPath(listed).suffix != REWRITABLE_SUFFIX:
+            problems.append(f"cannot be rewritten (frozen or not Markdown): {listed}")
     entries = {e["current_path"]: e for e in ledger.get("files", [])}
     if len(entries) != len(rows):
         problems.append(f"ledger has {len(entries)} files but the manifest has {len(rows)} rows")
@@ -1243,7 +1248,12 @@ def verify_moved(rows: list[ManifestRow], ledger: dict[str, Any], root: Path) ->
         if not dest.is_file():
             problems.append(f"missing destination: {row.proposed_path}")
         elif entry is not None and sha256_file(dest) != entry["sha256"]:
-            problems.append(f"sha256 differs from ledger: {row.proposed_path}")
+            if row.frozen:
+                problems.append(f"sha256 differs from ledger (frozen file): {row.proposed_path}")
+            elif allowed_changes is None:
+                problems.append(f"sha256 differs from ledger: {row.proposed_path}")
+            elif row.proposed_path not in allowed:
+                problems.append(f"unlisted change: {row.proposed_path}")
         if (
             not row.proposed_path.startswith(f"{NEW_ROOT}/")
             or len(PurePosixPath(row.proposed_path).parts) > MAX_COMPONENTS
@@ -1265,6 +1275,64 @@ def verify_moved(rows: list[ManifestRow], ledger: dict[str, Any], root: Path) ->
         if p not in tracked_set
     )
     return problems
+
+
+def verify_moved(rows: list[ManifestRow], ledger: dict[str, Any], root: Path) -> list[str]:
+    """Check the tree right after the move-only step.
+
+    Checks: every destination exists and matches its ledger sha256 (all files, frozen or
+    not); the number of files under research/ equals the number of manifest rows; no
+    destination is deeper than research/<category>/<study>/<file>; nothing is tracked
+    under docs/research; and no untracked file is left there (`__pycache__` is ignored).
+
+    Args:
+        rows: Manifest rows.
+        ledger: The pre-move ledger (`files` entries keyed by `current_path`).
+        root: Repository root.
+
+    Returns:
+        Problem descriptions; an empty list means the gate passes.
+    """
+    return _verify_tree(rows, ledger, root, None)
+
+
+def verify_rewritten(
+    rows: list[ManifestRow],
+    ledger: dict[str, Any],
+    root: Path,
+    rewrite_listed: set[str] | frozenset[str],
+) -> list[str]:
+    """Check the tree after the reference rewrite of the mutable Markdown.
+
+    Same checks as `verify_moved`, except a destination may differ from its ledger sha256
+    when its proposed path is listed in the rewrite manifest. A frozen or pinned file must
+    still match exactly even if listed, and a listed path that is unknown, frozen or not
+    Markdown is itself a problem.
+
+    Args:
+        rows: Manifest rows.
+        ledger: The pre-move ledger.
+        root: Repository root.
+        rewrite_listed: Proposed paths the rewrite manifest says were edited.
+
+    Returns:
+        Problem descriptions; an empty list means the gate passes.
+    """
+    return _verify_tree(rows, ledger, root, frozenset(rewrite_listed))
+
+
+def load_rewrite_manifest(path: Path) -> set[str]:
+    """Read the rewrite manifest: proposed paths of the edited files.
+
+    Accepts `{"files": [path, ...]}`, a bare list of paths, or the `rewrite` report shape
+    (`{"changed": [{"file": path, ...}, ...]}`).
+    """
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, list):
+        return {str(p) for p in data}
+    if "files" in data:
+        return {str(p) for p in data["files"]}
+    return {str(c["file"]) for c in data.get("changed", [])}
 
 
 def _cmd_move(args: argparse.Namespace) -> int:
@@ -1293,13 +1361,23 @@ def _cmd_verify(args: argparse.Namespace) -> int:
         return 1
     rows = load_manifest(Path(args.manifest))
     ledger = json.loads(Path(args.ledger).read_text(encoding="utf-8"))
-    problems = verify_moved(rows, ledger, Path(args.root))
+    root = Path(args.root)
+    if args.stage == "rewritten":
+        if not args.rewrite_manifest:
+            print("FAIL --rewrite-manifest is required for stage rewritten")
+            return 1
+        listed = load_rewrite_manifest(Path(args.rewrite_manifest))
+        problems = verify_rewritten(rows, ledger, root, listed)
+        summary = f"{len(rows)} files checked, {len(listed)} listed edits"
+    else:
+        problems = verify_moved(rows, ledger, root)
+        summary = f"{len(rows)} files byte-identical to the ledger"
     for problem in problems:
         print(f"PROBLEM {problem}")
     if problems:
         print(f"FAIL stage={args.stage} {len(problems)} problems")
         return 1
-    print(f"OK stage={args.stage} {len(rows)} files byte-identical to the ledger")
+    print(f"OK stage={args.stage} {summary}")
     return 0
 
 
@@ -1377,6 +1455,10 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--stage", required=True, choices=VERIFY_STAGES, help="Gate to check.")
     verify.add_argument("--manifest", required=True, help="Path to the manifest CSV.")
     verify.add_argument("--ledger", required=True, help="Path to the pre-move ledger JSON.")
+    verify.add_argument(
+        "--rewrite-manifest",
+        help="JSON listing the edited files (required for --stage rewritten).",
+    )
     verify.add_argument(
         "--root", default=str(REPO_ROOT), help="Repository root (default: this repository)."
     )

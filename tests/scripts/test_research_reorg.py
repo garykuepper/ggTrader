@@ -19,12 +19,14 @@ from scripts.research_reorg import (
     build_ledger,
     check_manifest,
     load_manifest,
+    load_rewrite_manifest,
     main,
     remove_leftover_dirs,
     rewrite_code,
     rewrite_markdown,
     sha256_file,
     verify_moved,
+    verify_rewritten,
 )
 
 OLD = "docs/research/"
@@ -1030,5 +1032,112 @@ def test_main_move_and_verify_cli(tmp_path: Path, capsys) -> None:  # type: igno
     assert main(["move", *common]) == 0
     assert main(verify) == 0
     assert "OK" in capsys.readouterr().out
-    assert main(["verify", "--stage", "rewritten", *common, "--ledger", str(ledger_path)]) == 1
+    assert main(["verify", "--stage", "final", *common, "--ledger", str(ledger_path)]) == 1
     assert "stage not implemented" in capsys.readouterr().out
+
+
+# --- verify --stage rewritten ------------------------------------------------------------------
+
+PINNED_OLD = sorted(PINNED_PATHS)[0]
+PINNED_NEW = "research/audits/pinned/" + PINNED_OLD.rsplit("/", 1)[-1]
+
+
+def _rewritten_repo(tmp_path: Path) -> tuple[Path, list[ManifestRow], dict]:  # type: ignore[type-arg]
+    """Moved repo whose rows also include a pinned markdown file."""
+    root = tmp_path / "repo"
+    _write(root, BRIEF_OLD, "# brief\nregistered before the run\n")
+    _write(root, JSON_OLD, '{"sharpe": 0.8}\n')
+    _write(root, REPORT_OLD, "# report\nsee docs/research/x.md\n")
+    _write(root, PINNED_OLD, "# pinned\nsee docs/research/x.md\n")
+    _git(root, "init", "-q")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-q", "-m", "initial")
+    rows = [
+        _row(JSON_OLD, JSON_NEW, "result"),
+        _row(REPORT_OLD, REPORT_NEW),
+        _row(BRIEF_OLD, BRIEF_NEW, "brief"),
+        _row(PINNED_OLD, PINNED_NEW),
+    ]
+    ledger = build_ledger(rows, root, "test-head")
+    apply_moves(rows, root, dry_run=False)
+    return root, rows, ledger
+
+
+def test_verify_rewritten_passes_when_bytes_still_match_ledger(tmp_path: Path) -> None:
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    assert verify_rewritten(rows, ledger, root, set()) == []
+
+
+def test_verify_rewritten_flags_unlisted_change(tmp_path: Path) -> None:
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    (root / REPORT_NEW).write_text("# report\nsee research/x.md\n")
+    problems = verify_rewritten(rows, ledger, root, set())
+    assert any("unlisted change" in p and REPORT_NEW in p for p in problems)
+
+
+def test_verify_rewritten_allows_change_listed_in_rewrite_manifest(tmp_path: Path) -> None:
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    (root / REPORT_NEW).write_text("# report\nsee research/x.md\n")
+    assert verify_rewritten(rows, ledger, root, {REPORT_NEW}) == []
+
+
+def test_verify_rewritten_flags_frozen_change_even_when_listed(tmp_path: Path) -> None:
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    (root / JSON_NEW).write_text('{"sharpe":0.8}\n')
+    problems = verify_rewritten(rows, ledger, root, {JSON_NEW})
+    assert any("frozen" in p and JSON_NEW in p for p in problems)
+
+
+def test_verify_rewritten_flags_pinned_change_even_when_listed(tmp_path: Path) -> None:
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    (root / PINNED_NEW).write_text("# pinned\nsee research/x.md\n")
+    problems = verify_rewritten(rows, ledger, root, {PINNED_NEW})
+    assert any("frozen" in p and PINNED_NEW in p for p in problems)
+
+
+def test_verify_rewritten_flags_listed_path_that_must_not_change(tmp_path: Path) -> None:
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    problems = verify_rewritten(rows, ledger, root, {JSON_NEW, PINNED_NEW, "research/ghost.md"})
+    assert any("cannot be rewritten" in p and JSON_NEW in p for p in problems)
+    assert any("cannot be rewritten" in p and PINNED_NEW in p for p in problems)
+    assert any("not in manifest" in p and "research/ghost.md" in p for p in problems)
+
+
+def test_verify_rewritten_flags_missing_and_extra_files(tmp_path: Path) -> None:
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    (root / BRIEF_NEW).unlink()
+    _write(root, "research/allocation/century-leverage/extra.md", "new\n")
+    problems = verify_rewritten(rows, ledger, root, set())
+    assert any("missing destination" in p and BRIEF_NEW in p for p in problems)
+    assert any("extra.md" in p for p in problems)
+
+
+def test_load_rewrite_manifest_accepts_files_list_and_report_shape(tmp_path: Path) -> None:
+    files = tmp_path / "files.json"
+    files.write_text(json.dumps({"files": ["research/a.md", "research/b.md"]}))
+    report = tmp_path / "report.json"
+    report.write_text(json.dumps({"changed": [{"file": "research/c.md", "replacements": 2}]}))
+    assert load_rewrite_manifest(files) == {"research/a.md", "research/b.md"}
+    assert load_rewrite_manifest(report) == {"research/c.md"}
+
+
+def test_main_verify_rewritten_cli(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        + "".join(f'"{r.current_path}","{r.proposed_path}","","{r.kind}",""\n' for r in rows)
+    )
+    ledger_path = tmp_path / "ledger.json"
+    ledger_path.write_text(json.dumps(ledger))
+    listing = tmp_path / "rewrite.json"
+    listing.write_text(json.dumps({"files": []}))
+    argv = ["verify", "--stage", "rewritten", "--manifest", str(manifest), "--root", str(root)]
+    argv += ["--ledger", str(ledger_path), "--rewrite-manifest", str(listing)]
+    assert main(argv) == 0
+    (root / REPORT_NEW).write_text("# report\nsee research/x.md\n")
+    assert main(argv) == 1
+    assert f"PROBLEM unlisted change: {REPORT_NEW}" in capsys.readouterr().out
+    listing.write_text(json.dumps({"files": [REPORT_NEW]}))
+    assert main(argv) == 0
+    assert main(argv[:-2]) == 1  # --rewrite-manifest is required for this stage
