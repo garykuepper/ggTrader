@@ -1,0 +1,24 @@
+{
+  "window": [
+    "2024-01-11",
+    "2026-10-23"
+  ],
+  "n_days": 699,
+  "close_to_close": 0.7258730954894105,
+  "intraday_open_to_close": -0.42501626052082786,
+  "overnight_all": 1.8608694378125312,
+  "overnight_weeknight": 1.113090246898503,
+  "overnight_weekend_or_holiday": 0.35387943889835466,
+  "n_weeknight": 543,
+  "n_weekend": 155,
+  "mean_bp": {
+    "intraday": -7.917217707457896,
+    "weeknight": 13.778111381919638,
+    "weekend": 19.546718053565854
+  },
+  "t_stat": {
+    "intraday": -1.0529667546117771,
+    "weeknight": 1.649583111313697,
+    "weekend": 0.7099546877580178
+  }
+}

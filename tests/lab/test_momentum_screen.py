@@ -294,6 +294,6 @@ def test_driver_download_only_and_offline_output(
     result = json.loads(out.read_text())
     assert downloads == [[driver.SIZE_MOM_FILE, driver.FACTORS_FILE]]
     assert result["provenance"] == manifest
-    assert result["brief"] == "docs/research/briefs/2026-10-20-momentum-retest.md"
+    assert result["brief"] == "research/stock-signals/momentum/2026-10-20-momentum-retest.md"
     assert result["runtime_sec"] >= 0
     assert result["pass"] == {"big": False, "small": False}

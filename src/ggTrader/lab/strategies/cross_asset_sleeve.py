@@ -1,5 +1,5 @@
 """SPY + cross-asset sleeve -- RESEARCH_SNAPSHOT.md §6 Tier 1 #1, brief
-docs/research/briefs/2026-09-28-cross-asset-sleeve.md.
+research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md.
 
 Hold (1 - sleeve_weight) in SPY and sleeve_weight split equally across
 long-duration Treasuries (TLT), gold (GLD) and a broad commodity fund

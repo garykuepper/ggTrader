@@ -56,9 +56,9 @@ bash cron wrappers, `~/scripts/notify.py` for Telegram.
 **Files:**
 - Add: `docs/superpowers/plans/2026-09-11-paper-trading-remediation.md` (untracked)
 - Modify (already edited, uncommitted): `docs/next_steps.md`,
-  `docs/research/RESEARCH_SNAPSHOT.md`,
-  `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`,
-  `docs/research/prompts/web-strategy-research-prompt.md`
+  `research/RESEARCH_SNAPSHOT.md`,
+  `research/prompts/local-implementation-prompt-TEMPLATE.md`,
+  `research/prompts/web-strategy-research-prompt.md`
 
 **Interfaces:** none.
 
@@ -71,9 +71,9 @@ If anything else appears, stop and ask.
 - [ ] **Step 2: Commit**
 
 ```bash
-git add docs/next_steps.md docs/research/RESEARCH_SNAPSHOT.md \
-  docs/research/prompts/local-implementation-prompt-TEMPLATE.md \
-  docs/research/prompts/web-strategy-research-prompt.md \
+git add docs/next_steps.md research/RESEARCH_SNAPSHOT.md \
+  research/prompts/local-implementation-prompt-TEMPLATE.md \
+  research/prompts/web-strategy-research-prompt.md \
   docs/superpowers/plans/2026-09-11-paper-trading-remediation.md
 git commit -m "docs: 2026-09-10 active step, snapshot regen, and the 09-11 remediation plan
 

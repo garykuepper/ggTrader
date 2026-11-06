@@ -1,0 +1,636 @@
+{
+ "source_table": "docs/research/2026-11-04-root-cause-investigation.md section 4",
+ "inventory": "docs/research/_investigation_inventory.json",
+ "built_by": "scratchpad t14fix/build_map.py (session scratchpad, not committed)",
+ "n_inventory_rows": 144,
+ "n_shown": 95,
+ "n_not_shown": 49,
+ "table_lines": 36,
+ "rows": [
+  {
+   "id": "stocks-a23-static-leverage",
+   "table_line": 23
+  },
+  {
+   "id": "stocks-a24-sleeve-trend-rider",
+   "table_line": 23
+  },
+  {
+   "id": "stocks-accruals-feasibility",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "stocks-after-tax-lot-engine",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "stocks-analyst-revisions",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "stocks-anomaly-driven-demand",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "stocks-avb-eqr-merger-holding",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "stocks-bb-reversion",
+   "table_line": 5
+  },
+  {
+   "id": "stocks-cash-sweep-live",
+   "table_line": 9
+  },
+  {
+   "id": "stocks-catastrophe-stop",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "stocks-century-leverage",
+   "table_line": 24
+  },
+  {
+   "id": "stocks-congress-trades",
+   "table_line": 19
+  },
+  {
+   "id": "stocks-conviction-bb",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-core-spy-blend-keep",
+   "table_line": 8
+  },
+  {
+   "id": "stocks-daily-threshold-tilt",
+   "table_line": 25
+  },
+  {
+   "id": "stocks-dsr-gate-correction",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "stocks-dual-momentum",
+   "table_line": 14
+  },
+  {
+   "id": "stocks-ema-cross",
+   "table_line": 20
+  },
+  {
+   "id": "stocks-ensemble-conviction",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-ensemble-ic-2026-06-28",
+   "table_line": 12
+  },
+  {
+   "id": "stocks-ensemble-ic-pit",
+   "table_line": 4
+  },
+  {
+   "id": "stocks-ensemble-kelly-2026-07",
+   "table_line": 12
+  },
+  {
+   "id": "stocks-ensemble-kelly-pit",
+   "table_line": 4
+  },
+  {
+   "id": "stocks-ensemble-ndh-baseline-1-12",
+   "table_line": 5
+  },
+  {
+   "id": "stocks-ensemble-paper-deployment",
+   "table_line": 5
+  },
+  {
+   "id": "stocks-ensemble-wfo-validated-2026-06-20",
+   "table_line": 5
+  },
+  {
+   "id": "stocks-equity-diversification-sleeves",
+   "table_line": 20
+  },
+  {
+   "id": "stocks-equity-pre-fomc-drift-intake",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "stocks-event-audit-readiness-decision",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "stocks-event-evidence-resolution-workbook",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "stocks-event-timing-audit-decision",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "stocks-exit-rule-sweep",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-factor-screen-h1-h4",
+   "table_line": 17
+  },
+  {
+   "id": "stocks-family-scope-review",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "stocks-form-144-inversion",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "stocks-forward-paper-standard",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "stocks-free-data-stock-feasibility",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "stocks-headline-sentiment",
+   "table_line": 19
+  },
+  {
+   "id": "stocks-ic-kelly-rebaseline-pre-pit",
+   "table_line": 6
+  },
+  {
+   "id": "stocks-idio-vol",
+   "table_line": 20
+  },
+  {
+   "id": "stocks-index-deletion-fade",
+   "table_line": 19
+  },
+  {
+   "id": "stocks-insider-acceptance-time-diagnostic",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "stocks-insider-cluster-buy",
+   "table_line": 19
+  },
+  {
+   "id": "stocks-insider-identity-inventory",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "stocks-institutional-rebalancing-tilt",
+   "table_line": 25
+  },
+  {
+   "id": "stocks-intraday-feasibility",
+   "table_line": 31
+  },
+  {
+   "id": "stocks-intraday-replication-source-audit",
+   "table_line": 31
+  },
+  {
+   "id": "stocks-july-research-program-summary",
+   "table_line": 19
+  },
+  {
+   "id": "stocks-leveraged-rotation",
+   "table_line": 22
+  },
+  {
+   "id": "stocks-leveraged-trend",
+   "table_line": 22
+  },
+  {
+   "id": "stocks-live-ensemble-defaults-vs-pit-picks",
+   "table_line": 11
+  },
+  {
+   "id": "stocks-live-exit-parity",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "stocks-live-paper-performance-vs-spy",
+   "table_line": 10
+  },
+  {
+   "id": "stocks-live-revert-blend-to-core",
+   "table_line": 7
+  },
+  {
+   "id": "stocks-live-signal-lookback-365d",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "stocks-macd-divergence",
+   "table_line": 5
+  },
+  {
+   "id": "stocks-max-effect",
+   "table_line": 20
+  },
+  {
+   "id": "stocks-midcap400-reversion",
+   "table_line": 21
+  },
+  {
+   "id": "stocks-ml-entry-gate-falsified",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-ml-feature-gate-deploy",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-momentum-french-screen",
+   "table_line": 16
+  },
+  {
+   "id": "stocks-mtf-reversion",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-nasdaq100-single-core",
+   "table_line": 12
+  },
+  {
+   "id": "stocks-net-issuance-screen",
+   "table_line": 18
+  },
+  {
+   "id": "stocks-ohlcv-day-shift",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "stocks-option-iv-skew",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "stocks-overnight-gap",
+   "table_line": 20
+  },
+  {
+   "id": "stocks-pairs-stat-arb",
+   "table_line": 20
+  },
+  {
+   "id": "stocks-paper-cron-1245",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "stocks-paper-freeze-readiness",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "stocks-paper-sell-fill-wait",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "stocks-pead",
+   "table_line": 19
+  },
+  {
+   "id": "stocks-position-sizing-regimes",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-production-replica",
+   "table_line": 1
+  },
+  {
+   "id": "stocks-production-replica-holdout-2010-2020",
+   "table_line": 2
+  },
+  {
+   "id": "stocks-production-replica-live-parity",
+   "table_line": 3
+  },
+  {
+   "id": "stocks-research-process-audit",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "stocks-retail-attention",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "stocks-rsi-reversion",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "stocks-short-interest",
+   "table_line": 19
+  },
+  {
+   "id": "stocks-short-volume-ratio",
+   "table_line": 19
+  },
+  {
+   "id": "stocks-six-indicator-ensemble",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-sp500-core-anchor-fix-reproduction",
+   "table_line": 6
+  },
+  {
+   "id": "stocks-sp500-core-corrected-tape-rebaseline",
+   "table_line": 6
+  },
+  {
+   "id": "stocks-sp500-core-pit-rebaseline",
+   "table_line": 4
+  },
+  {
+   "id": "stocks-sp500-equity-research-doc-trials",
+   "table_line": null,
+   "not_shown_reason": "superseded document or legacy run"
+  },
+  {
+   "id": "stocks-split-dividend-corrections",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "stocks-spy-benchmark-pinned-window",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "stocks-spy-duplicate-rows",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "stocks-stability-aware-live-params",
+   "table_line": 11
+  },
+  {
+   "id": "stocks-three-pct-position-size",
+   "table_line": 5
+  },
+  {
+   "id": "stocks-three-sleeve-blend-1-14",
+   "table_line": 5
+  },
+  {
+   "id": "stocks-three-sleeve-blend-reproduction",
+   "table_line": 6
+  },
+  {
+   "id": "stocks-trailing-stops",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-turn-of-month-rotation",
+   "table_line": 25
+  },
+  {
+   "id": "stocks-two-symbol-sweep-design",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "stocks-vix-entry-throttling",
+   "table_line": 13
+  },
+  {
+   "id": "stocks-vol-managed-spy",
+   "table_line": 25
+  },
+  {
+   "id": "stocks-volume-bb-reversion",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "stocks-voter-ablation-5-voter",
+   "table_line": 5
+  },
+  {
+   "id": "stocks-wfo-anchor-leakage-fix",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "stocks-wfo-fallback-semantics",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "stocks-wfo-fold-attribution",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "stocks-wfo-policy-synthetic",
+   "table_line": 26
+  },
+  {
+   "id": "stocks-wfo-research-run-2026-05-02",
+   "table_line": null,
+   "not_shown_reason": "superseded document or legacy run"
+  },
+  {
+   "id": "stocks-wfo-tournament-sp500-monthly",
+   "table_line": 20
+  },
+  {
+   "id": "stocks-xs-momentum-2026-06",
+   "table_line": 15
+  },
+  {
+   "id": "stocks-xs-momentum-corrected-replay",
+   "table_line": 14
+  },
+  {
+   "id": "cross-asset-commodity-trend",
+   "table_line": 30
+  },
+  {
+   "id": "cross-asset-etf-implied-fx-expectations",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "cross-asset-fomc-drift-corrected-harness",
+   "table_line": 27
+  },
+  {
+   "id": "cross-asset-fomc-drift-wfo",
+   "table_line": 30
+  },
+  {
+   "id": "cross-asset-fx-hedge-overlay",
+   "table_line": 30
+  },
+  {
+   "id": "cross-asset-month-end-treasury",
+   "table_line": 28
+  },
+  {
+   "id": "cross-asset-on-deck-candidate-feasibility",
+   "table_line": null,
+   "not_shown_reason": "proposal"
+  },
+  {
+   "id": "cross-asset-sleeve-holdout-2007-2011",
+   "table_line": 29
+  },
+  {
+   "id": "cross-asset-sleeve-trend-arm",
+   "table_line": 29
+  },
+  {
+   "id": "cross-asset-static-80-20-sleeve",
+   "table_line": 29
+  },
+  {
+   "id": "cross-asset-treasury-curve",
+   "table_line": 30
+  },
+  {
+   "id": "crypto-binance-us-live-trader",
+   "table_line": 36
+  },
+  {
+   "id": "crypto-config-tweaks-reverted-2026-04-02",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "crypto-defi-tokenized-equity-arb",
+   "table_line": 36
+  },
+  {
+   "id": "crypto-diversity-cap-disabled-2026-05-07",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "crypto-edge-search-2026-06-08",
+   "table_line": 33
+  },
+  {
+   "id": "crypto-execution-venue-fees",
+   "table_line": 34
+  },
+  {
+   "id": "crypto-funding-carry-phase4",
+   "table_line": 36
+  },
+  {
+   "id": "crypto-ibit-overnight-session",
+   "table_line": 35
+  },
+  {
+   "id": "crypto-kraken-live-bot-pnl",
+   "table_line": 36
+  },
+  {
+   "id": "crypto-live-ohlcv-tz-bug",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "crypto-perp-funding-carry-candidate",
+   "table_line": 36
+  },
+  {
+   "id": "crypto-pipeline-runs-2026-03",
+   "table_line": 36
+  },
+  {
+   "id": "crypto-regime-filters",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "crypto-spot-etf-flow-persistence",
+   "table_line": 36
+  },
+  {
+   "id": "crypto-strategy-usage-analyzer-2026-05-07",
+   "table_line": null,
+   "not_shown_reason": "infrastructure fix"
+  },
+  {
+   "id": "crypto-trade-frequency-gate-2026-05-07",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "crypto-tsmom-btc",
+   "table_line": 36
+  },
+  {
+   "id": "crypto-universal-trailing-stops",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "crypto-venue-migration-path-d",
+   "table_line": null,
+   "not_shown_reason": "operation"
+  },
+  {
+   "id": "crypto-web-research-batch-2026-10-25",
+   "table_line": 36
+  },
+  {
+   "id": "crypto-wfo-overfitting-param-stability",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  },
+  {
+   "id": "crypto-wfo-recalibration-2026-05-01",
+   "table_line": 32
+  },
+  {
+   "id": "crypto-wfo-research-snapshots-kraken",
+   "table_line": 32
+  },
+  {
+   "id": "crypto-wfo-textbook-reset",
+   "table_line": 34
+  },
+  {
+   "id": "crypto-wfo-tournament-robustness",
+   "table_line": null,
+   "not_shown_reason": "status label"
+  }
+ ]
+}

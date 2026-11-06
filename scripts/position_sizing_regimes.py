@@ -19,8 +19,8 @@ strategy's normal to_targets(), which includes the PIT eligibility_mask
 added in commit 2eafab1) and the SAME `combine_sleeves` inverse-vol /
 target-vol blend + `curve_stats` used everywhere else in the lab.
 
-Method note (labeled per the report's limitation, see docs/research/
-2026-08-19-position-sizing-regimes.md Sec 1): this is a SINGLE long backtest
+Method note (labeled per the report's limitation, see research/paper-system/
+position-sizing/2026-08-19-position-sizing-regimes.md Sec 1): this is a SINGLE long backtest
 window over fixed, default EnsembleSignal params -- not a full gated WFO with
 per-fold combo selection. A full 3-sleeve WFO (48 combos x ~17 folds x 3
 sleeves, each fold also recomputing the leak-fixed expanding-window anchor)

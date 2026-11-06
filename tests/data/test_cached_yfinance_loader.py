@@ -366,7 +366,8 @@ class TestCacheToDbRoundTripDate:
 class TestKnownInceptions:
     """`symbol_inception.first_date` is timestamptz, so psycopg returns aware
     datetimes; `pd.Timestamp(aware, tz="UTC")` raised and the lookup silently
-    returned {} (docs/research/2026-09-28-live-indicator-warmup.md §4.B)."""
+    returned {}
+    (research/paper-system/indicator-warmup/2026-09-28-live-indicator-warmup.md §4.B)."""
 
     def _lookup(self, rows):
         import datetime as dt  # noqa: F401  (rows built by callers)

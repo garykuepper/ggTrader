@@ -4,7 +4,8 @@ Lot-level tax accounting (short/long-term by holding period, distributions, HIFO
 long-term-first sells, tax paid the following April from the portfolio, terminal
 liquidation), band rebalancing checked at month-end and traded on the next bar, a
 labelled synthetic SSO for 1993-2006 calibrated on the real-SSO overlap, and the A24
-monthly-SMA sleeve rider. Brief: docs/research/briefs/2026-09-30-static-fractional-leverage.md.
+monthly-SMA sleeve rider. Brief:
+research/allocation/static-leverage/2026-09-30-static-fractional-leverage-brief.md.
 
 Not a vectorbt/WFO run: lot accounting needs a stateful loop, and the brief's bar is
 after-tax wealth vs SPY, not the lab's Sharpe gate.
@@ -27,7 +28,7 @@ from ggTrader.lab.a23_rebalance import COST_BPS, Book, Lot, _trade_to  # noqa: E
 from ggTrader.lab.fred_data import load_fred_series, parse_fred_csv  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT_JSON = ROOT / "docs" / "research" / "_static_leverage_aftertax_results.json"
+OUT_JSON = ROOT / "research/allocation/static-leverage/_static_leverage_aftertax_results.json"
 
 SSO_INCEPTION = pd.Timestamp("2006-06-21")  # first yfinance bar
 SSO_ER = 0.0088

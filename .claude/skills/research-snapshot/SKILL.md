@@ -1,16 +1,16 @@
 ---
 name: research-snapshot
-description: Regenerate the ggTrader strategy-research snapshot (docs/research/RESEARCH_SNAPSHOT.md) and the ggTrader-context sections of the two research prompt templates (docs/research/prompts/web-strategy-research-prompt.md, docs/research/prompts/local-implementation-prompt-TEMPLATE.md) from source of truth, or answer "what have we tried" questions from that snapshot. Use whenever the user says "create a snapshot", "snapshot", "update/refresh the research snapshot", "regenerate the research prompts", "sync the research docs", or has just closed a research arc (GO or NO-GO report committed) and the roster needs to catch up. Also use for "what have we tried", "has X been tested", "summarize research history" — read the snapshot and answer, regenerating only if it's stale or the user asks.
+description: Regenerate the ggTrader strategy-research snapshot (research/RESEARCH_SNAPSHOT.md) and the ggTrader-context sections of the two research prompt templates (research/prompts/web-strategy-research-prompt.md, research/prompts/local-implementation-prompt-TEMPLATE.md) from source of truth, or answer "what have we tried" questions from that snapshot. Use whenever the user says "create a snapshot", "snapshot", "update/refresh the research snapshot", "regenerate the research prompts", "sync the research docs", or has just closed a research arc (GO or NO-GO report committed) and the roster needs to catch up. Also use for "what have we tried", "has X been tested", "summarize research history" — read the snapshot and answer, regenerating only if it's stale or the user asks.
 ---
 
 # Research Snapshot Generator
 
 Keeps three living documents in sync with the repo's actual research record:
 
-- `docs/research/RESEARCH_SNAPSHOT.md` — the verdict roster and current bar.
-- `docs/research/prompts/local-implementation-prompt-TEMPLATE.md` — its
+- `research/RESEARCH_SNAPSHOT.md` — the verdict roster and current bar.
+- `research/prompts/local-implementation-prompt-TEMPLATE.md` — its
   ggTrader-context sections.
-- `docs/research/prompts/web-strategy-research-prompt.md` — its
+- `research/prompts/web-strategy-research-prompt.md` — its
   ggTrader-context sections.
 
 They exist because hand-maintained docs rot: `docs/roadmap.md` stopped
@@ -21,7 +21,7 @@ Outputs are overwritten in place; git history is the record.
 This project separates two research jobs, and so does this skill:
 - **Discovery** (external, no repo access): the web prompt is pasted into a
   web-research tool. Its findings land in
-  `docs/research/WEB_RESEARCH_CANDIDATES.md`, an accumulating backlog that
+  `research/WEB_RESEARCH_CANDIDATES.md`, an accumulating backlog that
   the `research-prompts` skill merges. **This skill never regenerates that
   file**; it only reads it.
 - **Implementation** (local, full repo): the local template drives one
@@ -39,9 +39,9 @@ question.
 **Update mode** — decide full vs incremental:
 
 ```bash
-ANCHOR=$(git log -1 --format=%h -- docs/research/RESEARCH_SNAPSHOT.md)
+ANCHOR=$(git log -1 --format=%h -- research/RESEARCH_SNAPSHOT.md)
 git log --oneline $ANCHOR..HEAD
-git status --short docs/research src/ggTrader/lab/strategies docs/next_steps.md
+git status --short research src/ggTrader/lab/strategies docs/next_steps.md
 ```
 
 Also check whether the snapshot itself has uncommitted edits. If it does, an
@@ -70,8 +70,11 @@ anything in §1/§5 whose claim could have moved.
 
 1. `docs/next_steps.md` and `docs/roadmap.md`: the stated state. Note
    explicitly if either lags what you find below.
-2. Every `docs/research/*.md` (skip `TEMPLATE-research-report.md`,
-   `WEB_RESEARCH_CANDIDATES.md`, `prompts/`, `briefs/`). Each is an
+2. Every report `.md` under `research/<category>/<study>/` (skip the root files
+   `README.md`, `RESEARCH_INDEX.md`, `RESEARCH_SNAPSHOT.md`,
+   `TEMPLATE-research-report.md`, `WEB_RESEARCH_CANDIDATES.md`, `prompts/`, and
+   briefs: `*-brief.md`, plus older briefs that kept plain names, listed as
+   `brief` rows in `docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv`). Each is an
    authoritative, verdicted arc; summarize with its real numbers.
 3. `STRATEGY_REGISTRY` in `src/ggTrader/lab/strategies/__init__.py`. Classify
    every entry GO / NO-GO / ambiguous with a citation. If a verdict traces

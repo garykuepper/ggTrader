@@ -16,11 +16,11 @@ work is sound — the point is that the agreement is checked.
 
 ## Gather
 
-- The report (`docs/research/<date>-<slug>[-nogo].md`) and, if the user
+- The report (`research/<category>/<study>/<date>-<slug>[-nogo].md`) and, if the user
   pasted a summary, the summary itself — they can disagree.
-- The brief it ran from (`docs/research/briefs/`), whose **pre-registered
+- The brief it ran from (`research/<category>/<study>/<date>-<slug>-brief.md`, older briefs kept their plain names), whose **pre-registered
   design and pass bar** are the standard.
-- The raw results JSON (`docs/research/_<slug>_results.json`) and the driver
+- The raw results JSON (`research/<category>/<study>/_<slug>_results.json`) and the driver
   (`scripts/<slug>_wfo.py`).
 - The code diff: `git status -s` and `git diff --stat` (work may be
   uncommitted), plus the new strategy file.
@@ -32,7 +32,7 @@ Work through these; skip any that can't apply and say why.
 1. **Numbers match the artifact.** Every headline figure against the JSON:
    ```bash
    .venv/bin/python .claude/skills/research-report-review/scripts/flatten_results.py \
-       docs/research/_<slug>_results.json sharpe max_dd cagr
+       research/<category>/<study>/_<slug>_results.json sharpe max_dd cagr
    ```
 2. **Verdict follows the pre-registered bar as written.** Compare criterion
    by criterion. Watch for a bar quietly reinterpreted, a criterion dropped,
@@ -40,7 +40,7 @@ Work through these; skip any that can't apply and say why.
    extras (e.g. a bootstrap CI) are welcome as *context*, labeled as such.
 3. **Holdout contamination.** For any window called unseen, search earlier
    artifacts for runs that already covered it:
-   `docs/research/artifacts-*/sanity_checks_output.txt`, earlier briefs and
+   `research/*/artifacts-*/sanity_checks_output.txt`, earlier briefs and
    reports. If a sanity check saw it, it isn't a holdout.
 4. **Post-hoc choices.** Instruments, legs, parameters or windows changed
    after seeing results? A leg that looks like a drag in-sample (e.g. TLT in

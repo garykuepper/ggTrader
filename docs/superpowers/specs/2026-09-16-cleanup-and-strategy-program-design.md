@@ -48,7 +48,7 @@ date:
 | MaxDD | SPY -22.1% (i.e. shallower) |
 | Sharpe | core 0.99 (at or above) |
 
-Reference numbers: `docs/research/_rebaseline_corrected_tape_20260822.json`
+Reference numbers: `research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json`
 (core 0.99 / 8.0% / -7.65%, 12/17 gates; SPY 0.78 / 12.79% / -22.09%).
 
 ## 3. Structure: two parallel tracks, one shared gate
@@ -163,10 +163,10 @@ except for import paths. Every DB call keeps the fail-soft pattern.
 ### 6.0 Conventions for every run
 
 - `--eval-start 2021-01-31 --eval-end 2026-04-30 --max-leverage 1.0`.
-- Raw results to JSON in `docs/research/`, next to a dated report from
-  `docs/research/TEMPLATE-research-report.md`.
+- Raw results to JSON in `research/`, next to a dated report from
+  `research/TEMPLATE-research-report.md`.
 - Judged against §2. Anything short is a written NO-GO.
-- Regenerate `docs/research/RESEARCH_SNAPSHOT.md` with the
+- Regenerate `research/RESEARCH_SNAPSHOT.md` with the
   `research-snapshot` skill after each report.
 
 ### 6.1 Step 0 — tape restore (blocks everything else)
@@ -239,7 +239,7 @@ script under `scripts/`, and tests together, so nothing orphaned remains.
   and test, which is the cost being shed.
 - Git tag `pre-prune-2026-09` on the last commit with everything present;
   one line in `RESEARCH_SNAPSHOT.md` §5 records the tag.
-- Research reports and JSON artifacts under `docs/research/` untouched.
+- Research reports and JSON artifacts under `research/` untouched.
 - Database tables from the backfills stay (never-delete-data rule).
 - Update `docs/cli_reference.md`, `docs/architecture.md`, `AGENTS.md`
   registry count, and `docs/changelog.md`.
@@ -259,7 +259,7 @@ script under `scripts/`, and tests together, so nothing orphaned remains.
 
 - Crypto path (parked by decision).
 - Any candidate in the do-not-retry register
-  (`docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
+  (`research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
   §6), including `ensemble_kelly`.
 - Leverage above 1.0.
 - Restoring the 20.8 missing MNST shares broker-side (accept and document

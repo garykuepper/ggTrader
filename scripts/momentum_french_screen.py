@@ -17,8 +17,8 @@ from ggTrader.lab.momentum_screen import screen
 from ggTrader.utils.paths import find_project_root
 
 PROJECT_ROOT = find_project_root()
-BRIEF = "docs/research/briefs/2026-10-20-momentum-retest.md"
-DEFAULT_OUT = PROJECT_ROOT / "docs" / "research" / "_momentum_french_screen_results.json"
+BRIEF = "research/stock-signals/momentum/2026-10-20-momentum-retest.md"
+DEFAULT_OUT = PROJECT_ROOT / "research/stock-signals/momentum/_momentum_french_screen_results.json"
 
 
 def main() -> None:

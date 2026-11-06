@@ -1,7 +1,7 @@
 """Research script: Regime P vs Regime F sizing, through the GATED WFO harness.
 
 Companion to `scripts/position_sizing_regimes.py` (single-window comparison,
-see docs/research/2026-08-19-position-sizing-regimes.md). That report could
+see research/paper-system/position-sizing/2026-08-19-position-sizing-regimes.md). That report could
 not reproduce the validated headline (Sharpe 1.14 / MaxDD -5.39%), because
 the headline comes from the full gated walk-forward
 (`ggTrader.lab.wfo.run_wfo` / `ggTrader.lab.blend.run_blend`): per-fold combo
@@ -71,7 +71,7 @@ SLEEVE_STRATEGY = "ensemble"
 POSITION_PCT = 0.033  # matches live RiskGuard.position_pct (risk.py)
 
 # Production overlay params (src/ggTrader/paper/overlay.py,
-# docs/research/RESEARCH_SNAPSHOT.md:21-29). Passed EXPLICITLY to every
+# research/RESEARCH_SNAPSHOT.md:21-29). Passed EXPLICITLY to every
 # run_blend() call below -- do NOT rely on run_blend's own defaults, which
 # are research-only (target_vol=0.068, window=60, but max_leverage=2.0, see
 # ggTrader.lab.blend.run_blend). That 2.0 default silently doubled the
@@ -424,7 +424,9 @@ if __name__ == "__main__":
     p.add_argument("--n-jobs", type=int, default=3)
     p.add_argument(
         "--out",
-        default=str(REPO_ROOT / "docs" / "research" / "_position_sizing_wfo_results.json"),
+        default=str(
+            REPO_ROOT / "research/paper-system/position-sizing/_position_sizing_wfo_results.json"
+        ),
     )
     args = p.parse_args()
 

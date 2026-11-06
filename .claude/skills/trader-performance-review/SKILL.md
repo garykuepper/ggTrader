@@ -17,7 +17,7 @@ is real money within ~3 months, so rank recommendations by deployability.
 ## 1. Context before numbers
 
 Read, briefly: `docs/next_steps.md` (active items), the top of
-`docs/changelog.md`, and `docs/research/RESEARCH_SNAPSHOT.md` §1 (the
+`docs/changelog.md`, and `research/RESEARCH_SNAPSHOT.md` §1 (the
 backtested bar: SPY's pinned-window Sharpe and the deployed construction's).
 `next_steps.md` also lists actions **already queued** — manual liquidations,
 pending config flips, fixes awaiting their first run. Don't recommend
@@ -91,7 +91,7 @@ differs from the backtest.
 The static 80% SPY + 20% TLT/GLD/PDBC paper shadow since 2026-09-29, rebased
 to live NAV. Report it beside live and SPY. It is read-only apart from its
 daily CSV, which goes to `results/` (git-ignored), so it is safe to run. Skip if the 2007–2011 holdout
-withdrew the GO (check `docs/research/` for the holdout report).
+withdrew the GO (check `research/allocation/cross-asset-sleeve/` for the holdout report).
 
 ## 5. Recommendations
 
@@ -108,7 +108,7 @@ Give the **top 3** recommendations, each with:
 
 Where research is needed, point at the `research-prompts` skill (the owner
 runs three external LLMs for discovery) and name the backlog entries
-(`docs/research/WEB_RESEARCH_CANDIDATES.md`) or snapshot §6 items that fit.
+(`research/WEB_RESEARCH_CANDIDATES.md`) or snapshot §6 items that fit.
 
 ## Output
 

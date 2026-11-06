@@ -14,16 +14,34 @@ This document serves as the consolidated source of truth for all AI assistants (
   prompts, and handoffs. Preserve honest NO-GO findings and production freezes;
   neither authorizes a shutdown or an account change.
 
-## Delegation preference (2026-10-22)
+## Delegation preference (2026-11-04)
 
-- Use agy Gemini Flash only for simple, bounded tasks with specified inputs and
-  mechanically checkable outputs, such as extracting a named field or checking
-  an exact link. Verify its output before use.
-- Use Codex for evidence synthesis, audit conclusions, research plans, protocol
-  decisions, code changes and reviews. Do not delegate these complex tasks to Flash.
-- Also available (owner, 2026-10-23): agy **Gemini Argon** (more capable than Flash; suitable
-  for independent reviews and second opinions alongside Codex) and the **Hermes** agent on
-  DeepSeek Flash (simple, bounded tasks only, the same as Flash). Verify their outputs before use.
+**Claude only, for now** (owner instruction; revisit when the owner says so).
+
+- **Check quota before writing any delegation plan.** The agent cannot see plan usage
+  or remaining quota, so ask the owner for current headroom (or have them check the
+  Claude usage settings) and size the plan to it: number of subagents, which phases
+  run, and where to pause. Report usage after each phase so the owner can stop early.
+  If quota is unknown, say so in the plan and default to the smaller, phased version.
+- **Sonnet** (`claude-sonnet-5-5`) is the main orchestrator.
+- **Opus** (`claude-opus-5-5`) takes critical tasks: trust and verdict judgments, audit
+  conclusions, implementation-correctness review, protocol decisions, root-cause ranking
+  and final synthesis.
+- **Haiku** (`claude-haiku-5-5`) takes easy and bulk tasks: extracting numbers from
+  reports and JSON, inventories, listing and cross-referencing, file-by-file reads. Give
+  it the objective, relevant context, constraints and expected verification.
+- A stronger model independently checks Haiku's work (a sample of each batch, plus
+  every figure that reaches a report) before reliance or integration. Opus reviewing
+  Opus is not independent: give the challenger a fresh context with only the evidence
+  and the claims, and state the limitation in the report.
+- The lead remains responsible for final decisions. Keep private account records out of
+  delegate prompts.
+
+*Superseded 2026-11-04 (kept for history):* the 2026-10-22 preference used agy Gemini
+Flash for bulk and batch work (generous quota), Codex for final synthesis, audit
+conclusions, protocol decisions, code changes and reviews, Gemini Argon for second
+opinions, and DeepSeek Flash via Pi for simple bounded tasks. Do not use those unless
+the owner re-enables them.
 
 ## Role
 
@@ -61,10 +79,10 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
   * **Research command** (if you do want the container): `docker compose run --rm ggtrader_live python ggt.py lab --strategy <name>`
   * **Database connectivity**: Inside Docker, the TimescaleDB connection string uses `host.docker.internal:5433`. On the host, use `localhost:5433`.
 * **Lab Run Workflow**:
-  1. **Strategy Selection**: Choose a strategy from `STRATEGY_REGISTRY` in `src/ggTrader/lab/strategies/__init__.py` — **38 entries** as of 2026-10-19, so read the registry rather than trusting any list written here. `ensemble` is the deployed live strategy. Most of the rest are closed NO-GO research; check `docs/research/RESEARCH_SNAPSHOT.md` before spending a run on one.
+  1. **Strategy Selection**: Choose a strategy from `STRATEGY_REGISTRY` in `src/ggTrader/lab/strategies/__init__.py` — **38 entries** as of 2026-10-19, so read the registry rather than trusting any list written here. `ensemble` is the deployed live strategy. Most of the rest are closed NO-GO research; check `research/RESEARCH_SNAPSHOT.md` before spending a run on one.
   2. **Universe Selection**: The lab auto-generates the trading universe for the eval period — SP500 constituents for equities (sourced from `data/universe/sp500_constituents_history.csv.gz`), or top-volume coins for crypto.
   3. **Walk-Forward Execution**: Overlapping monthly folds run in-memory using vectorbt. Each fold trains on historical data (in-sample) and validates on held-out future data (out-of-sample).
-  4. **Persistence**: `lab_runs` stores run metadata (strategy, config, timestamps); per-fold and per-sweep detail goes to `lab_plans` / `lab_returns` / `lab_equity` / `lab_summary` / `lab_sweeps` / `lab_sweep_combos`. The harness itself writes nothing to disk — but research **drivers** under `scripts/` do record their results as JSON (e.g. `scripts/anchor_fix_reproduction_wfo.py` → `docs/research/_anchor_fix_reproduction_results.json`), and any new driver should do the same so a cited number has a raw artifact behind it.
+  4. **Persistence**: `lab_runs` stores run metadata (strategy, config, timestamps); per-fold and per-sweep detail goes to `lab_plans` / `lab_returns` / `lab_equity` / `lab_summary` / `lab_sweeps` / `lab_sweep_combos`. The harness itself writes nothing to disk — but research **drivers** under `scripts/` do record their results as JSON (e.g. `scripts/anchor_fix_reproduction_wfo.py` → `research/audits/rebaseline/_anchor_fix_reproduction_results.json`), and any new driver should do the same so a cited number has a raw artifact behind it.
 * **Strategy Parameters**:
   * Use `--top-n` to control universe size (`lab/cli.py:70`, default 50 for **both** markets — it is not market-conditional).
   * Use `--lookback` to set momentum calculation window (default 252 days).
@@ -157,7 +175,7 @@ first, since several research reports cite log files by name.
 ## 5. Documentation Standards
 
 * **Single Source of Truth**: Core architectural changes (e.g., database transitions, new CLI commands) must be reflected across all documentation in `docs/` and `README.md`.
-* **Where docs live**: supplemental documentation belongs in `docs/`, linked with relative paths so it resolves both on disk and on GitHub. Point-in-time documents (snapshots, one-off reports) go to `docs/archive/` once superseded.
+* **Where docs live**: research reports and their artifacts live in the top-level `research/` directory, one folder per study (`research/<category>/<study>/`; the one exception is `research/audits/root-cause-2026-11-04/`, which has more than 30 files and groups them into sub-folders named for what they are), with dated filenames `<YYYY-MM-DD>-<slug>[-nogo].md`. Pick the category with the ordered placement test in `docs/superpowers/specs/2026-11-05-research-reorganization-and-consolidation-design.md` section 5: the first matching test wins, and a document that touches two categories gets cross-links, never a second copy. `docs/` holds architecture, the CLI reference, the changelog, the roadmap, next steps, the working task list, installation notes, examples, `superpowers/` specs and plans, and `archive/`; new research reports do not go there, linked with relative paths so it resolves both on disk and on GitHub. Point-in-time documents (snapshots, one-off reports) go to `docs/archive/` once superseded.
 * **Periodic review**: after any major refactor, audit the docs and purge references to deleted modules, archived scripts, and removed commands. This is not optional housekeeping — stale instructions actively mislead. The 2026-08-21 audit found `AGENTS.md` itself asserting a `lab_periods` table that has never existed and denying the existence of the live trading path, and four separate competing ruleset files naming symbols deleted months earlier.
 * **Changelog**: Add an entry to `docs/changelog.md` whenever strategies, data sources, or lab infrastructure changes. Include what changed, why, and research results if available.
 * **CLI Reference**: Keep `docs/cli_reference.md` synchronized with actual `ggt` commands and flags. Document `ggt lab`, `ggt db`, and `ggt paper` subcommands.
@@ -170,8 +188,8 @@ These are the most actively maintained docs in the repo and the ones to read
 
 * **`docs/next_steps.md`** — the current worklist, deliberately only 1–2 steps deep. Start here.
 * **`docs/roadmap.md`** — long-form history and the strategy status table.
-* **`docs/research/RESEARCH_SNAPSHOT.md`** — the roster of everything tried and its verdict. Regenerate it with the `research-snapshot` skill rather than hand-editing; it drifts otherwise.
-* **`docs/research/<YYYY-MM-DD>-<slug>[-nogo].md`** — one report per closed study, following `docs/research/TEMPLATE-research-report.md`. `WEB_RESEARCH_CANDIDATES.md` is the accumulating backlog of untried ideas.
+* **`research/RESEARCH_SNAPSHOT.md`** — the roster of everything tried and its verdict. Regenerate it with the `research-snapshot` skill rather than hand-editing; it drifts otherwise.
+* **`research/<category>/<study>/<YYYY-MM-DD>-<slug>[-nogo].md`** — one report per closed study, following `research/TEMPLATE-research-report.md`. `research/WEB_RESEARCH_CANDIDATES.md` is the accumulating backlog of untried ideas.
 
 ### Research process rules — these are hard-won, do not skip
 

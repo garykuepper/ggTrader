@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-28
 **Status:** Approved (brainstorm) — pending spec review
-**Source:** Rank 1 of `docs/research/2026-06-28-alpha-optimization-execution-plan.md`
+**Source:** Rank 1 of `research/programme/initial-research-plan/2026-06-28-alpha-optimization-execution-plan.md`
 
 ## Goal
 

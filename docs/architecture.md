@@ -316,7 +316,7 @@ The standalone script delegates to one CLI. This path uses explicit read-only
 SELECTs for metadata/bar existence, never schema loaders or execution code.
 Offline evidence and fixture tests precede collection/code review. Details and
 remaining input requirements are in the
-[implementation handoff](research/event-timing-audit-implementation.md).
+[implementation handoff](../research/audits/event-timing/event-timing-audit-implementation.md).
 
 ## Intraday metadata preflight
 

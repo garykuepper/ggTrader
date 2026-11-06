@@ -181,7 +181,7 @@ dates within each universe's own run).
 - `scripts/leveraged_rotation_research.py` orchestration script (loads
   combined OHLCV per universe, runs `run_wfo()` with the fixed `universe_fn`,
   prints/persists a summary table across all 3 universes × 2 leverage tiers).
-- One research report (following `docs/research/TEMPLATE`'s standard
+- One research report (following `research/TEMPLATE`'s standard
   6-section structure) covering all three universes and both leverage
   tiers, with a GO/NO-GO verdict per universe and a combined verdict.
 - A `roadmap.md` entry recording the result, win or lose — this project's

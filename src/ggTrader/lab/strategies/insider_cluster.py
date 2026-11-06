@@ -37,7 +37,7 @@ def cluster_events(
     members -- the moment the cluster actually became visible to the
     public. Keying the event off the trade date instead gave a median
     2-day lookahead (p95 5 days) across the 783,982 stored Form 4 rows;
-    see `docs/research/2026-07-25-strategy-implementation-audit.md` §2.1B.
+    see `research/audits/implementation/2026-07-25-strategy-implementation-audit.md` §2.1B.
     The sibling ``congress_trades`` strategy already applies the same
     filing-date discipline.
     """

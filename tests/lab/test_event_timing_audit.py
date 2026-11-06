@@ -1213,7 +1213,7 @@ def test_zero_evidence_runner_never_measures_pass_and_keeps_smoke_output_partial
     assert not report["audit_meta"]["complete"]
     assert all(len(s["selected_keys"]) <= 2 for s in report["samples"].values())
     with pytest.raises(ValueError, match="/tmp"):
-        EventTimingAuditRunner(smoke=True, output_file=Path("docs/research/final.json"))
+        EventTimingAuditRunner(smoke=True, output_file=Path("research/final.json"))
 
 
 def test_absent_plan_and_joint_owners_are_inventoried_without_new_filters(cluster_lots):
@@ -2376,13 +2376,14 @@ def test_round2_completed_bounded_audit_can_publish_unresolved(reconstructed_run
 
     runner = reconstructed_runner
     monkeypatch.setattr(audit, "ROOT", runner.output_file.parent)
-    runner.output_file = audit.ROOT / "docs/research/_event_timing_audit.json"
+    runner.output_file = audit.ROOT / "research/audits/event-timing/_event_timing_audit.json"
     runner.offline = False  # Transport stays offline; no endpoint is invoked.
     report = runner.run()
     assert report["audit_meta"]["complete"]
     assert report["pead"]["status"] == "UNRESOLVED"
     assert runner.output_file.exists()
-    assert (audit.ROOT / "docs/research/2026-10-21-event-timing-audit-report.md").exists()
+    report_md = "research/audits/event-timing/2026-10-21-event-timing-audit-report.md"
+    assert (audit.ROOT / report_md).exists()
 
 
 def test_round2_decisive_exclusion_does_not_require_positive_dimensions(raw_cache):
@@ -3039,7 +3040,7 @@ def test_amendment_uniform_population_and_separate_matrices(amendment_runner):
         report["audit_meta"]["approved_amendment"]["sha256"]
         == hashlib.sha256(
             Path(
-                "docs/research/briefs/2026-10-22-event-timing-source-conflict-proposal.md"
+                "research/audits/event-timing/2026-10-22-event-timing-source-conflict-proposal.md"
             ).read_bytes()
         ).hexdigest()
     )

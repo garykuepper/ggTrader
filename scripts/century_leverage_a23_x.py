@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from ggTrader.lab.fred_data import parse_fred_csv  # noqa: E402
 
 INPUTS = ROOT / "data" / "external" / "a23_inputs"
-GATE = ROOT / "docs" / "research" / "_century_leverage_a23_gate.json"
+GATE = ROOT / "research/allocation/century-leverage/_century_leverage_a23_gate.json"
 
 
 def main() -> None:

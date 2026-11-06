@@ -197,7 +197,7 @@ Strategies are divided into two types:
 core. The remaining 24 are research candidates that were built, walk-forward
 tested, and **closed NO-GO**. They still run, but none beat the deployed
 config and they are not maintained. Check
-`docs/research/RESEARCH_SNAPSHOT.md` for each verdict before spending a run
+`research/RESEARCH_SNAPSHOT.md` for each verdict before spending a run
 on one — and note the caveat there about event-date studies having been
 measured on a day-shifted tape.
 
@@ -458,8 +458,8 @@ frozen inputs. DB SELECTs and external collection require separate explicit
 paused after the recorded HTTP 403; the already-authorized contact does not
 clear that stop. The approved offline amendment still needs fresh code review.
 See the
-[implementation handoff](research/event-timing-audit-implementation.md). A completed bounded
-`--network` run can explicitly select `--output docs/research/_event_timing_audit.json`
+[implementation handoff](../research/audits/event-timing/event-timing-audit-implementation.md). A completed bounded
+`--network` run can explicitly select `--output research/audits/event-timing/_event_timing_audit.json`
 to publish the registered JSON/Markdown, including honest UNRESOLVED results.
 Smoke, offline and runtime-interrupted work remain partial. Byte references alone
 do not validate semantic facts; see the field-review contract in the handoff.

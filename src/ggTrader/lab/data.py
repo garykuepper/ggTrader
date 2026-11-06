@@ -204,7 +204,7 @@ def collapse_daily_duplicates(wide: pd.DataFrame) -> pd.DataFrame:
     ~1/sqrt(2) (measured: AAPL buy-and-hold 0.848 vs 1.187 clean; CAGR and
     MaxDD unaffected, as they read endpoints and the drawdown path rather
     than per-row statistics). See
-    `docs/research/2026-07-25-strategy-implementation-audit.md` §2.0.
+    `research/audits/implementation/2026-07-25-strategy-implementation-audit.md` §2.0.
 
     The two conventions are offset by one session, so they cannot be
     merged by date -- that would align SPY's Friday close against every
@@ -273,7 +273,7 @@ def rebalance_dates(
     Previously this returned *only* month-ends, so a weight-strategy window
     had no decision at all until the first month-end -- up to ~1 month spent
     in pure cash at the start of every fold (item 12,
-    docs/research/2026-08-18-wfo-anchor-leakage-fix.md). Prepending the
+    research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md). Prepending the
     window's first trading day gives a decision immediately at (or right
     after) window start while keeping full causality: like every other
     rebalance date, its target takes effect on the first bar *after* it, and

@@ -14,8 +14,8 @@ from ggTrader.lab.net_issuance_screen import (
 from ggTrader.utils.paths import find_project_root
 
 PROJECT_ROOT = find_project_root()
-BRIEF = "docs/research/briefs/2026-10-23-net-issuance-screen.md"
-DEFAULT_OUT = PROJECT_ROOT / "docs" / "research" / "_net_issuance_screen_results.json"
+BRIEF = "research/stock-signals/net-issuance/2026-10-23-net-issuance-screen.md"
+DEFAULT_OUT = PROJECT_ROOT / "research/stock-signals/net-issuance/_net_issuance_screen_results.json"
 
 
 def main() -> None:

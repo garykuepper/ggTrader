@@ -1,0 +1,1766 @@
+{
+ "report": "docs/research/2026-11-04-lens3-live-parity.md",
+ "generated": "2026-11-04",
+ "sources": {
+  "db": "paper_snapshots, paper_trades, paper_dividend_accruals, paper_pending_orders, ohlcv (SPY) - SELECT only",
+  "alpaca": "read-only MCP: get_account_info (paper account confirmed; identifier not recorded), get_account_activities_by_type DIV after 2026-05-01, get_account_activities non_trade_activity after 2026-08-15, get_portfolio_history 1D 2026-06-20..2026-11-04, get_all_positions, get_orders status=all 2026-06-20..2026-11-04, get_stock_bars SPY 1Day/1Min feed=iex",
+  "yfinance": "SPY and traded-symbol daily closes and SPY dividends via yfinance (free)"
+ },
+ "value_bases": {
+  "V": "paper_snapshots.portfolio_value as stored: broker value + split correction + cumulative dividend accrual (trader.py:1045-1056)",
+  "B": "cash + sum(position market_value) from the snapshot: V minus the accrual (split-corrected positions)",
+  "U": "cash + sum(qty * current_price): broker-consistent at run time (no accrual, no split correction). Primary basis for era returns.",
+  "EOD": "Alpaca portfolio history 1D equity (end of day); cross-check, close-aligned"
+ },
+ "era_boundaries": [
+  {
+   "id": "E1",
+   "name": "Core ensemble, 3.3% sizing, ~60-68% idle cash",
+   "start": "2026-06-24",
+   "end": "2026-07-15",
+   "evidence": [
+    "08252f3c 2026-06-20 feat(paper): CLI command, Docker integration, and cron wrapper",
+    "first paper_snapshots row run_date 2026-06-24 (all cash, 102459.43)",
+    "memory project_beat_spy_exposure_2026-06-24 (live position_pct 0.033)"
+   ]
+  },
+  {
+   "id": "E2",
+   "name": "Unintended dry-run freeze: blend wired, cron not passing --live, no orders",
+   "start": "2026-07-15",
+   "end": "2026-07-30",
+   "evidence": [
+    "08414ff6 / 19e4a066 2026-07-13 blend wired + --live flag",
+    "58d4a03f 2026-07-29 fix(paper): flip cron wrapper to --live, end unintended dry-run freeze",
+    "paper_trades: no rows between run_date 2026-07-15 and 2026-07-30; snapshot cash constant 66267.89",
+    "docs/changelog.md 2026-06-27 -> 2026-08-17 summary (two-week dry-run window)"
+   ]
+  },
+  {
+   "id": "E3",
+   "name": "3-sleeve blend live, no cash sweep",
+   "start": "2026-07-30",
+   "end": "2026-08-21",
+   "evidence": [
+    "paper_trades run_date 2026-07-30: 16 buys (~$1K each, sleeve sizing); Alpaca orders submitted 07-31 08:00Z filled at the 07-31 open",
+    "docs/changelog.md 2026-08-22 (later): sweep first run 2026-08-24"
+   ]
+  },
+  {
+   "id": "E4",
+   "name": "Blend + SPY cash sweep (5% reserve)",
+   "start": "2026-08-21",
+   "end": "2026-09-22",
+   "evidence": [
+    "docs/changelog.md 2026-08-22 (later): CASH_SWEEP_ENABLED=true",
+    "paper_trades 2026-08-24 BUY SPY reason cash_sweep ~$58K",
+    "memory project_ops_rollout_2026-08-22"
+   ]
+  },
+  {
+   "id": "E5",
+   "name": "Standalone SP500 core revert + sweep",
+   "start": "2026-09-22",
+   "end": "2026-09-28",
+   "evidence": [
+    "d4b69340 feat(paper): revert live trading from 3-sleeve blend to standalone SP500 core",
+    "memory project_core_revert_deployed_2026-09-22 (deployed ~23:00 PT 09-22; 09-23 run crashed, 833125e5; first core run 09-24)"
+   ]
+  },
+  {
+   "id": "E6",
+   "name": "Missed-exit catch-up, 3-name cap, manual legacy/orphan liquidations, 365-day lookback deploy",
+   "start": "2026-09-28",
+   "end": "2026-09-30",
+   "evidence": [
+    "fe5c4a72 2026-09-28 16:51 PT fix(paper): catch up missed crossover exits; cap stock sleeve via MAX_POSITIONS",
+    "17b0971f 2026-09-28 21:33 PT 365-day lookback, untradable holdings skipped; deployed 2026-09-29 ~17:15 PT (docs/changelog.md 2026-09-29)",
+    "paper_trades 2026-09-29: 15 manual_legacy_liquidation + 4 manual_orphan_liquidation sells (orders submitted 08:01Z, filled at the open) + 6 strategy exits"
+   ]
+  },
+  {
+   "id": "E7",
+   "name": "Frozen configuration",
+   "start": "2026-09-30",
+   "end": "2026-11-04",
+   "evidence": [
+    "memory project_deploy_365d_2026-09-29 (config frozen ~3 months from the 09-30 run)",
+    "docs/research/2026-11-02-paper-freeze-readiness.md"
+   ]
+  }
+ ],
+ "era_returns_fine": [
+  {
+   "era": "E1 core, 3.3% sizing, ~60% cash",
+   "start": "2026-06-24",
+   "end": "2026-07-15",
+   "acct_U": 1.567,
+   "acct_B": 1.567,
+   "acct_V": 1.567,
+   "spy_tr_snap": 2.78,
+   "spy_px_snap": 2.78,
+   "shortfall_pp_U": -1.21,
+   "shortfall_pp_B": -1.21,
+   "shortfall_pp_V": -1.21,
+   "eod_dates": [
+    "2026-06-23",
+    "2026-07-15"
+   ],
+   "acct_eod": 1.607,
+   "spy_tr_close_yf": 2.894,
+   "spy_tr_close_iex": 2.883,
+   "shortfall_pp_eod": -1.29
+  },
+  {
+   "era": "E2 unintended dry-run freeze (blend wired, no orders)",
+   "start": "2026-07-15",
+   "end": "2026-07-30",
+   "acct_U": 0.271,
+   "acct_B": 0.271,
+   "acct_V": 0.271,
+   "spy_tr_snap": -1.629,
+   "spy_px_snap": -1.629,
+   "shortfall_pp_U": 1.9,
+   "shortfall_pp_B": 1.9,
+   "shortfall_pp_V": 1.9,
+   "eod_dates": [
+    "2026-07-15",
+    "2026-07-30"
+   ],
+   "acct_eod": -0.186,
+   "spy_tr_close_yf": -1.738,
+   "spy_tr_close_iex": -1.741,
+   "shortfall_pp_eod": 1.55
+  },
+  {
+   "era": "E3 3-sleeve blend live, no sweep",
+   "start": "2026-07-30",
+   "end": "2026-08-21",
+   "acct_U": -0.372,
+   "acct_B": 0.583,
+   "acct_V": 0.654,
+   "spy_tr_snap": 3.342,
+   "spy_px_snap": 3.342,
+   "shortfall_pp_U": -3.71,
+   "shortfall_pp_B": -2.76,
+   "shortfall_pp_V": -2.69,
+   "eod_dates": [
+    "2026-07-30",
+    "2026-08-21"
+   ],
+   "acct_eod": -0.711,
+   "spy_tr_close_yf": 3.24,
+   "spy_tr_close_iex": 3.237,
+   "shortfall_pp_eod": -3.95
+  },
+  {
+   "era": "E4 blend + SPY cash sweep",
+   "start": "2026-08-21",
+   "end": "2026-09-22",
+   "acct_U": -0.943,
+   "acct_B": -1.003,
+   "acct_V": -0.945,
+   "spy_tr_snap": 1.313,
+   "spy_px_snap": 1.062,
+   "shortfall_pp_U": -2.26,
+   "shortfall_pp_B": -2.32,
+   "shortfall_pp_V": -2.26,
+   "eod_dates": [
+    "2026-08-21",
+    "2026-09-22"
+   ],
+   "acct_eod": -1.078,
+   "spy_tr_close_yf": 1.251,
+   "spy_tr_close_iex": 1.269,
+   "shortfall_pp_eod": -2.33
+  },
+  {
+   "era": "E5 core revert + sweep",
+   "start": "2026-09-22",
+   "end": "2026-09-28",
+   "acct_U": -0.954,
+   "acct_B": -0.996,
+   "acct_V": -0.992,
+   "spy_tr_snap": -1.164,
+   "spy_px_snap": -1.164,
+   "shortfall_pp_U": 0.21,
+   "shortfall_pp_B": 0.17,
+   "shortfall_pp_V": 0.17,
+   "eod_dates": [
+    "2026-09-22",
+    "2026-09-28"
+   ],
+   "acct_eod": -0.836,
+   "spy_tr_close_yf": -1.005,
+   "spy_tr_close_iex": -1.028,
+   "shortfall_pp_eod": 0.17
+  },
+  {
+   "era": "E6 exit catch-up + manual liquidations",
+   "start": "2026-09-28",
+   "end": "2026-09-30",
+   "acct_U": -0.261,
+   "acct_B": -1.106,
+   "acct_V": -1.094,
+   "spy_tr_snap": 0.004,
+   "spy_px_snap": 0.004,
+   "shortfall_pp_U": -0.27,
+   "shortfall_pp_B": -1.11,
+   "shortfall_pp_V": -1.1,
+   "eod_dates": [
+    "2026-09-28",
+    "2026-09-30"
+   ],
+   "acct_eod": -0.579,
+   "spy_tr_close_yf": -0.389,
+   "spy_tr_close_iex": -0.412,
+   "shortfall_pp_eod": -0.19
+  },
+  {
+   "era": "E7 frozen config",
+   "start": "2026-09-30",
+   "end": "2026-11-04",
+   "acct_U": 1.799,
+   "acct_B": 1.799,
+   "acct_V": 1.965,
+   "spy_tr_snap": 0.199,
+   "spy_px_snap": 0.199,
+   "shortfall_pp_U": 1.6,
+   "shortfall_pp_B": 1.6,
+   "shortfall_pp_V": 1.77,
+   "eod_dates": [
+    "2026-09-30",
+    "2026-11-03"
+   ],
+   "acct_eod": 0.318,
+   "spy_tr_close_yf": -1.086,
+   "spy_tr_close_iex": -1.044,
+   "shortfall_pp_eod": 1.4
+  }
+ ],
+ "era_returns_phase0_boundaries": [
+  {
+   "era": "P1 06-24 to 08-21",
+   "start": "2026-06-24",
+   "end": "2026-08-21",
+   "acct_U": 1.463,
+   "acct_B": 2.436,
+   "acct_V": 2.508,
+   "spy_tr_snap": 4.485,
+   "spy_px_snap": 4.485,
+   "shortfall_pp_U": -3.02,
+   "shortfall_pp_B": -2.05,
+   "shortfall_pp_V": -1.98,
+   "eod_dates": [
+    "2026-06-23",
+    "2026-08-21"
+   ],
+   "acct_eod": 0.696,
+   "spy_tr_close_yf": 4.381,
+   "spy_tr_close_iex": 4.365,
+   "shortfall_pp_eod": -3.69
+  },
+  {
+   "era": "P2 08-21 to 09-30",
+   "start": "2026-08-21",
+   "end": "2026-09-30",
+   "acct_U": -2.145,
+   "acct_B": -3.074,
+   "acct_V": -3.001,
+   "spy_tr_snap": 0.137,
+   "spy_px_snap": -0.111,
+   "shortfall_pp_U": -2.28,
+   "shortfall_pp_B": -3.21,
+   "shortfall_pp_V": -3.14,
+   "eod_dates": [
+    "2026-08-21",
+    "2026-09-30"
+   ],
+   "acct_eod": -2.473,
+   "spy_tr_close_yf": -0.157,
+   "spy_tr_close_iex": -0.184,
+   "shortfall_pp_eod": -2.32
+  },
+  {
+   "era": "P3 09-30 to 11-04",
+   "start": "2026-09-30",
+   "end": "2026-11-04",
+   "acct_U": 1.799,
+   "acct_B": 1.799,
+   "acct_V": 1.965,
+   "spy_tr_snap": 0.199,
+   "spy_px_snap": 0.199,
+   "shortfall_pp_U": 1.6,
+   "shortfall_pp_B": 1.6,
+   "shortfall_pp_V": 1.77,
+   "eod_dates": [
+    "2026-09-30",
+    "2026-11-03"
+   ],
+   "acct_eod": 0.318,
+   "spy_tr_close_yf": -1.086,
+   "spy_tr_close_iex": -1.044,
+   "shortfall_pp_eod": 1.4
+  },
+  {
+   "era": "All 06-24 to 11-04",
+   "start": "2026-06-24",
+   "end": "2026-11-04",
+   "acct_U": 1.073,
+   "acct_B": 1.073,
+   "acct_V": 1.386,
+   "spy_tr_snap": 4.836,
+   "spy_px_snap": 4.576,
+   "shortfall_pp_U": -3.76,
+   "shortfall_pp_B": -3.76,
+   "shortfall_pp_V": -3.45,
+   "eod_dates": [
+    "2026-06-23",
+    "2026-11-03"
+   ],
+   "acct_eod": -1.482,
+   "spy_tr_close_yf": 3.086,
+   "spy_tr_close_iex": 3.085,
+   "shortfall_pp_eod": -4.57
+  }
+ ],
+ "phase0_hypotheses": {
+  "claimed_pp": [
+   -1.9,
+   -2.6,
+   1.4
+  ],
+  "reproduced_method": "stored value V (with accrual and split correction) at the ~15:45 ET snapshot vs SPY price from the ohlcv tape at daily closes, including the partial 2026-11-04 bar and the 08-25..09-17 dividend-adjustment seam",
+  "reproduction_pp": {
+   "P1": -1.92,
+   "P2": -2.6,
+   "P3": 1.37,
+   "all_06_24_to_11_04": -3.24
+  },
+  "reproduction_detail": "V: +2.508/-3.001/+1.965/+1.386 %; ohlcv SPY close (06-24 733.24, 11-04 partial 767.17): +4.430/-0.404/+0.596/+4.628 %",
+  "corrected_pp_U_vs_SPY_TR": [
+   -3.02,
+   -2.28,
+   1.6
+  ],
+  "corrected_pp_EOD_vs_SPY_TR": [
+   -3.69,
+   -2.32,
+   1.4
+  ]
+ },
+ "decomposition_B_basis_estimate": {
+  "method": "Between consecutive snapshots: stock and SPY-sleeve P&L = qty_t*(price_t+1 - price_t), or sale proceeds minus start value if sold; cash earns 0 (no INT activity at Alpaca). Excess of each component = P&L - start_value * SPY total return over the interval; summed over the era and divided by the era's starting B (arithmetic, not compounded). SPY return uses snapshot SPY price when held (from 2026-08-24), else yfinance close-to-close (estimate).",
+  "fine": [
+   {
+    "era": "E1 core, 3.3% sizing, ~60% cash",
+    "start": "2026-06-24",
+    "end": "2026-07-15",
+    "intervals": 14,
+    "avg_weight_cash": 0.682,
+    "avg_weight_stock": 0.318,
+    "avg_weight_spy_sweep": 0.0,
+    "cash_drag_pp": -2.08,
+    "stock_sleeve_excess_pp": 0.87,
+    "sweep_sleeve_excess_pp": 0.0,
+    "residual_pp": -0.12,
+    "sum_pp": -1.33,
+    "est_spy_intervals": 14
+   },
+   {
+    "era": "E2 unintended dry-run freeze (blend wired, no orders)",
+    "start": "2026-07-15",
+    "end": "2026-07-30",
+    "intervals": 10,
+    "avg_weight_cash": 0.638,
+    "avg_weight_stock": 0.362,
+    "avg_weight_spy_sweep": 0.0,
+    "cash_drag_pp": 1.11,
+    "stock_sleeve_excess_pp": 0.9,
+    "sweep_sleeve_excess_pp": 0.0,
+    "residual_pp": -0.0,
+    "sum_pp": 2.01,
+    "est_spy_intervals": 10
+   },
+   {
+    "era": "E3 3-sleeve blend live, no sweep",
+    "start": "2026-07-30",
+    "end": "2026-08-21",
+    "intervals": 16,
+    "avg_weight_cash": 0.566,
+    "avg_weight_stock": 0.434,
+    "avg_weight_spy_sweep": 0.0,
+    "cash_drag_pp": -1.61,
+    "stock_sleeve_excess_pp": -0.99,
+    "sweep_sleeve_excess_pp": 0.0,
+    "residual_pp": -0.02,
+    "sum_pp": -2.63,
+    "est_spy_intervals": 16
+   },
+   {
+    "era": "E4 blend + SPY cash sweep",
+    "start": "2026-08-21",
+    "end": "2026-09-22",
+    "intervals": 20,
+    "avg_weight_cash": 0.077,
+    "avg_weight_stock": 0.356,
+    "avg_weight_spy_sweep": 0.567,
+    "cash_drag_pp": 0.09,
+    "stock_sleeve_excess_pp": -2.33,
+    "sweep_sleeve_excess_pp": -0.15,
+    "residual_pp": -0.01,
+    "sum_pp": -2.4,
+    "est_spy_intervals": 1
+   },
+   {
+    "era": "E5 core revert + sweep",
+    "start": "2026-09-22",
+    "end": "2026-09-28",
+    "intervals": 3,
+    "avg_weight_cash": 0.05,
+    "avg_weight_stock": 0.337,
+    "avg_weight_spy_sweep": 0.613,
+    "cash_drag_pp": 0.06,
+    "stock_sleeve_excess_pp": 0.12,
+    "sweep_sleeve_excess_pp": -0.0,
+    "residual_pp": -0.01,
+    "sum_pp": 0.17,
+    "est_spy_intervals": 0
+   },
+   {
+    "era": "E6 exit catch-up + manual liquidations",
+    "start": "2026-09-28",
+    "end": "2026-09-30",
+    "intervals": 2,
+    "avg_weight_cash": 0.05,
+    "avg_weight_stock": 0.221,
+    "avg_weight_spy_sweep": 0.729,
+    "cash_drag_pp": -0.0,
+    "stock_sleeve_excess_pp": -0.98,
+    "sweep_sleeve_excess_pp": 0.0,
+    "residual_pp": -0.12,
+    "sum_pp": -1.11,
+    "est_spy_intervals": 0
+   },
+   {
+    "era": "E7 frozen config",
+    "start": "2026-09-30",
+    "end": "2026-11-04",
+    "intervals": 25,
+    "avg_weight_cash": 0.051,
+    "avg_weight_stock": 0.099,
+    "avg_weight_spy_sweep": 0.85,
+    "cash_drag_pp": -0.01,
+    "stock_sleeve_excess_pp": 1.61,
+    "sweep_sleeve_excess_pp": -0.0,
+    "residual_pp": -0.01,
+    "sum_pp": 1.59,
+    "est_spy_intervals": 0
+   }
+  ],
+  "phase0": [
+   {
+    "era": "P1 06-24 to 08-21",
+    "start": "2026-06-24",
+    "end": "2026-08-21",
+    "intervals": 40,
+    "avg_weight_cash": 0.625,
+    "avg_weight_stock": 0.375,
+    "avg_weight_spy_sweep": 0.0,
+    "cash_drag_pp": -2.6,
+    "stock_sleeve_excess_pp": 0.78,
+    "sweep_sleeve_excess_pp": 0.0,
+    "residual_pp": -0.14,
+    "sum_pp": -1.97,
+    "est_spy_intervals": 40
+   },
+   {
+    "era": "P2 08-21 to 09-30",
+    "start": "2026-08-21",
+    "end": "2026-09-30",
+    "intervals": 25,
+    "avg_weight_cash": 0.072,
+    "avg_weight_stock": 0.343,
+    "avg_weight_spy_sweep": 0.585,
+    "cash_drag_pp": 0.15,
+    "stock_sleeve_excess_pp": -3.18,
+    "sweep_sleeve_excess_pp": -0.15,
+    "residual_pp": -0.14,
+    "sum_pp": -3.32,
+    "est_spy_intervals": 1
+   },
+   {
+    "era": "P3 09-30 to 11-04",
+    "start": "2026-09-30",
+    "end": "2026-11-04",
+    "intervals": 25,
+    "avg_weight_cash": 0.051,
+    "avg_weight_stock": 0.099,
+    "avg_weight_spy_sweep": 0.85,
+    "cash_drag_pp": -0.01,
+    "stock_sleeve_excess_pp": 1.61,
+    "sweep_sleeve_excess_pp": -0.0,
+    "residual_pp": -0.01,
+    "sum_pp": 1.59,
+    "est_spy_intervals": 0
+   },
+   {
+    "era": "All 06-24 to 11-04",
+    "start": "2026-06-24",
+    "end": "2026-11-04",
+    "intervals": 90,
+    "avg_weight_cash": 0.312,
+    "avg_weight_stock": 0.29,
+    "avg_weight_spy_sweep": 0.399,
+    "cash_drag_pp": -2.46,
+    "stock_sleeve_excess_pp": -0.88,
+    "sweep_sleeve_excess_pp": -0.15,
+    "residual_pp": -0.29,
+    "sum_pp": -3.78,
+    "est_spy_intervals": 41
+   }
+  ]
+ },
+ "snapshot_gap": {
+  "definition": "V - (cash + sum position market_value), daily from 2026-08-19",
+  "series": [
+   {
+    "date": "2026-08-19",
+    "snapshot_gap": 0.0,
+    "accrual_cumulative": 0,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 988.51,
+    "eod_minus_U": -799.26
+   },
+   {
+    "date": "2026-08-20",
+    "snapshot_gap": 74.11,
+    "accrual_cumulative": 74.06,
+    "residual": 0.05,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 990.28,
+    "eod_minus_U": -741.36
+   },
+   {
+    "date": "2026-08-21",
+    "snapshot_gap": 74.06,
+    "accrual_cumulative": 74.06,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 996.93,
+    "eod_minus_U": -785.33
+   },
+   {
+    "date": "2026-08-24",
+    "snapshot_gap": 74.06,
+    "accrual_cumulative": 74.06,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 1012.74,
+    "eod_minus_U": -748.98
+   },
+   {
+    "date": "2026-08-25",
+    "snapshot_gap": 74.06,
+    "accrual_cumulative": 74.06,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 1015.14,
+    "eod_minus_U": -725.42
+   },
+   {
+    "date": "2026-08-26",
+    "snapshot_gap": 74.06,
+    "accrual_cumulative": 74.06,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 1002.34,
+    "eod_minus_U": -834.52
+   },
+   {
+    "date": "2026-08-27",
+    "snapshot_gap": 74.06,
+    "accrual_cumulative": 74.06,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 973.94,
+    "eod_minus_U": -752.01
+   },
+   {
+    "date": "2026-08-28",
+    "snapshot_gap": 74.06,
+    "accrual_cumulative": 74.06,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 973.84,
+    "eod_minus_U": -733.84
+   },
+   {
+    "date": "2026-08-31",
+    "snapshot_gap": 74.06,
+    "accrual_cumulative": 74.06,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 956.36,
+    "eod_minus_U": -738.89
+   },
+   {
+    "date": "2026-09-01",
+    "snapshot_gap": 74.06,
+    "accrual_cumulative": 74.06,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 936.6,
+    "eod_minus_U": -723.6
+   },
+   {
+    "date": "2026-09-02",
+    "snapshot_gap": 104.71,
+    "accrual_cumulative": 104.61,
+    "residual": 0.1,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 923.29,
+    "eod_minus_U": -758.32
+   },
+   {
+    "date": "2026-09-03",
+    "snapshot_gap": 105.51,
+    "accrual_cumulative": 105.5,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 920.37,
+    "eod_minus_U": -781.05
+   },
+   {
+    "date": "2026-09-04",
+    "snapshot_gap": 105.5,
+    "accrual_cumulative": 105.5,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 914.65,
+    "eod_minus_U": -791.44
+   },
+   {
+    "date": "2026-09-08",
+    "snapshot_gap": 106.2,
+    "accrual_cumulative": 105.5,
+    "residual": 0.69,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 898.22,
+    "eod_minus_U": -884.17
+   },
+   {
+    "date": "2026-09-09",
+    "snapshot_gap": 105.6,
+    "accrual_cumulative": 105.5,
+    "residual": 0.1,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 886.15,
+    "eod_minus_U": -791.49
+   },
+   {
+    "date": "2026-09-10",
+    "snapshot_gap": 124.82,
+    "accrual_cumulative": 124.82,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 898.32,
+    "eod_minus_U": -728.83
+   },
+   {
+    "date": "2026-09-11",
+    "snapshot_gap": 124.82,
+    "accrual_cumulative": 124.82,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 904.25,
+    "eod_minus_U": -841.52
+   },
+   {
+    "date": "2026-09-14",
+    "snapshot_gap": 124.82,
+    "accrual_cumulative": 124.82,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 917.77,
+    "eod_minus_U": -829.93
+   },
+   {
+    "date": "2026-09-15",
+    "snapshot_gap": 134.74,
+    "accrual_cumulative": 134.74,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 933.06,
+    "eod_minus_U": -689.15
+   },
+   {
+    "date": "2026-09-17",
+    "snapshot_gap": 134.74,
+    "accrual_cumulative": 134.74,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 926.3,
+    "eod_minus_U": -810.3
+   },
+   {
+    "date": "2026-09-18",
+    "snapshot_gap": 135.57,
+    "accrual_cumulative": 134.74,
+    "residual": 0.84,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 932.34,
+    "eod_minus_U": -731.97
+   },
+   {
+    "date": "2026-09-21",
+    "snapshot_gap": 134.59,
+    "accrual_cumulative": 134.74,
+    "residual": -0.15,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 923.18,
+    "eod_minus_U": -857.59
+   },
+   {
+    "date": "2026-09-22",
+    "snapshot_gap": 134.74,
+    "accrual_cumulative": 134.74,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 924.43,
+    "eod_minus_U": -916.62
+   },
+   {
+    "date": "2026-09-24",
+    "snapshot_gap": 134.73,
+    "accrual_cumulative": 134.74,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 888.54,
+    "eod_minus_U": -841.62
+   },
+   {
+    "date": "2026-09-25",
+    "snapshot_gap": 137.91,
+    "accrual_cumulative": 137.97,
+    "residual": -0.06,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 896.03,
+    "eod_minus_U": -787.67
+   },
+   {
+    "date": "2026-09-28",
+    "snapshot_gap": 137.97,
+    "accrual_cumulative": 137.97,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 871.59,
+    "eod_minus_U": -787.65
+   },
+   {
+    "date": "2026-09-29",
+    "snapshot_gap": 135.67,
+    "accrual_cumulative": 137.97,
+    "residual": -2.3,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 0.0,
+    "eod_minus_U": -726.65
+   },
+   {
+    "date": "2026-09-30",
+    "snapshot_gap": 148.72,
+    "accrual_cumulative": 148.72,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -1107.36
+   },
+   {
+    "date": "2026-10-01",
+    "snapshot_gap": 155.35,
+    "accrual_cumulative": 156.49,
+    "residual": -1.14,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -797.37
+   },
+   {
+    "date": "2026-10-02",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -791.98
+   },
+   {
+    "date": "2026-10-05",
+    "snapshot_gap": 157.64,
+    "accrual_cumulative": 156.49,
+    "residual": 1.15,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 0.0,
+    "eod_minus_U": -801.81
+   },
+   {
+    "date": "2026-10-06",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -781.66
+   },
+   {
+    "date": "2026-10-07",
+    "snapshot_gap": 156.48,
+    "accrual_cumulative": 156.49,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -751.05
+   },
+   {
+    "date": "2026-10-08",
+    "snapshot_gap": 157.4,
+    "accrual_cumulative": 156.49,
+    "residual": 0.91,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -678.44
+   },
+   {
+    "date": "2026-10-09",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 0.0,
+    "eod_minus_U": -787.17
+   },
+   {
+    "date": "2026-10-12",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -742.89
+   },
+   {
+    "date": "2026-10-13",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -792.03
+   },
+   {
+    "date": "2026-10-14",
+    "snapshot_gap": 157.05,
+    "accrual_cumulative": 156.49,
+    "residual": 0.56,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -607.85
+   },
+   {
+    "date": "2026-10-15",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 0.0,
+    "eod_minus_U": -807.27
+   },
+   {
+    "date": "2026-10-16",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -605.1
+   },
+   {
+    "date": "2026-10-19",
+    "snapshot_gap": 157.05,
+    "accrual_cumulative": 156.49,
+    "residual": 0.56,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -922.91
+   },
+   {
+    "date": "2026-10-20",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -701.74
+   },
+   {
+    "date": "2026-10-21",
+    "snapshot_gap": 155.93,
+    "accrual_cumulative": 156.49,
+    "residual": -0.56,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -759.4
+   },
+   {
+    "date": "2026-10-22",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 0.0,
+    "eod_minus_U": -456.3
+   },
+   {
+    "date": "2026-10-23",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -768.48
+   },
+   {
+    "date": "2026-10-26",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": 0.0,
+    "eod_minus_U": -763.46
+   },
+   {
+    "date": "2026-10-27",
+    "snapshot_gap": 156.49,
+    "accrual_cumulative": 156.49,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -942.38
+   },
+   {
+    "date": "2026-10-28",
+    "snapshot_gap": 155.17,
+    "accrual_cumulative": 156.49,
+    "residual": -1.32,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -613.57
+   },
+   {
+    "date": "2026-10-29",
+    "snapshot_gap": 163.08,
+    "accrual_cumulative": 156.49,
+    "residual": 6.59,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -607.69
+   },
+   {
+    "date": "2026-10-30",
+    "snapshot_gap": 320.24,
+    "accrual_cumulative": 320.24,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -464.06
+   },
+   {
+    "date": "2026-11-02",
+    "snapshot_gap": 320.24,
+    "accrual_cumulative": 320.24,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -940.01
+   },
+   {
+    "date": "2026-11-03",
+    "snapshot_gap": 320.24,
+    "accrual_cumulative": 320.24,
+    "residual": -0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": -748.1
+   },
+   {
+    "date": "2026-11-04",
+    "snapshot_gap": 320.24,
+    "accrual_cumulative": 320.24,
+    "residual": 0.0,
+    "alpaca_div_credited_cumulative": 0.0,
+    "split_correction": -0.0,
+    "eod_minus_U": null
+   }
+  ],
+  "accrual_rows": [
+   {
+    "symbol": "MPWR",
+    "ex_date": "2026-06-30",
+    "rate": 2.0,
+    "qty": 2.523238805,
+    "amount": 5.0465,
+    "created_at": "2026-08-19 18:44:38.531725-07:00"
+   },
+   {
+    "symbol": "VZ",
+    "ex_date": "2026-07-10",
+    "rate": 0.7075,
+    "qty": 77.049714937,
+    "amount": 54.5127,
+    "created_at": "2026-08-19 18:44:38.550262-07:00"
+   },
+   {
+    "symbol": "PNR",
+    "ex_date": "2026-07-24",
+    "rate": 0.27,
+    "qty": 53.708163903,
+    "amount": 14.5012,
+    "created_at": "2026-08-19 18:44:38.548384-07:00"
+   },
+   {
+    "symbol": "AEP",
+    "ex_date": "2026-08-10",
+    "rate": 0.95,
+    "qty": 6.066992266,
+    "amount": 5.7636,
+    "created_at": "2026-09-10 12:47:06.646996-07:00"
+   },
+   {
+    "symbol": "AGCO",
+    "ex_date": "2026-08-14",
+    "rate": 0.3,
+    "qty": 9.64217191,
+    "amount": 2.8927,
+    "created_at": "2026-09-15 12:46:00.819928-07:00"
+   },
+   {
+    "symbol": "HAS",
+    "ex_date": "2026-08-19",
+    "rate": 0.7,
+    "qty": 43.646937989,
+    "amount": 30.5529,
+    "created_at": "2026-09-02 12:47:00.549287-07:00"
+   },
+   {
+    "symbol": "CNP",
+    "ex_date": "2026-08-20",
+    "rate": 0.24,
+    "qty": 21.375328083,
+    "amount": 5.1301,
+    "created_at": "2026-09-10 12:47:06.652996-07:00"
+   },
+   {
+    "symbol": "MAR",
+    "ex_date": "2026-08-20",
+    "rate": 0.73,
+    "qty": 2.12639096,
+    "amount": 1.5523,
+    "created_at": "2026-09-30 12:46:10.088597-07:00"
+   },
+   {
+    "symbol": "WWD",
+    "ex_date": "2026-08-20",
+    "rate": 0.32,
+    "qty": 2.783586191,
+    "amount": 0.8907,
+    "created_at": "2026-09-03 12:46:05.751295-07:00"
+   },
+   {
+    "symbol": "HLT",
+    "ex_date": "2026-08-21",
+    "rate": 0.15,
+    "qty": 10.713110137,
+    "amount": 1.607,
+    "created_at": "2026-09-30 12:46:10.084170-07:00"
+   },
+   {
+    "symbol": "WLK",
+    "ex_date": "2026-08-25",
+    "rate": 0.533,
+    "qty": 14.195368421,
+    "amount": 7.5661,
+    "created_at": "2026-09-10 12:47:06.661186-07:00"
+   },
+   {
+    "symbol": "H",
+    "ex_date": "2026-08-27",
+    "rate": 0.15,
+    "qty": 5.699937758,
+    "amount": 0.855,
+    "created_at": "2026-09-10 12:47:06.657992-07:00"
+   },
+   {
+    "symbol": "NKE",
+    "ex_date": "2026-09-01",
+    "rate": 0.41,
+    "qty": 18.95122574,
+    "amount": 7.77,
+    "created_at": "2026-10-01 12:45:39.303783-07:00"
+   },
+   {
+    "symbol": "EXC",
+    "ex_date": "2026-09-04",
+    "rate": 0.42,
+    "qty": 16.729382604,
+    "amount": 7.0263,
+    "created_at": "2026-09-15 12:46:00.826112-07:00"
+   },
+   {
+    "symbol": "AEE",
+    "ex_date": "2026-09-08",
+    "rate": 0.75,
+    "qty": 8.290429346,
+    "amount": 6.2178,
+    "created_at": "2026-09-30 12:46:10.074476-07:00"
+   },
+   {
+    "symbol": "WM",
+    "ex_date": "2026-09-11",
+    "rate": 0.945,
+    "qty": 3.41744991,
+    "amount": 3.2295,
+    "created_at": "2026-09-25 12:46:09.817837-07:00"
+   },
+   {
+    "symbol": "SPY",
+    "ex_date": "2026-09-18",
+    "rate": 1.888834,
+    "qty": 83.167569873,
+    "amount": 157.0897,
+    "created_at": "2026-10-30 12:46:10.203117-07:00"
+   },
+   {
+    "symbol": "AVGO",
+    "ex_date": "2026-09-21",
+    "rate": 0.65,
+    "qty": 2.115024441,
+    "amount": 1.3748,
+    "created_at": "2026-09-30 12:46:10.079963-07:00"
+   },
+   {
+    "symbol": "GL",
+    "ex_date": "2026-10-05",
+    "rate": 0.33,
+    "qty": 20.187873,
+    "amount": 6.662,
+    "created_at": "2026-10-30 12:46:10.199578-07:00"
+   }
+  ],
+  "accrual_total": 320.24,
+  "alpaca_div_activities": [],
+  "alpaca_div_query": "get_account_activities_by_type(activity_type=DIV, after=2026-05-01) -> result []",
+  "alpaca_non_trade_types_seen_since_2026_08_15": [
+   "FEE (REG, TAF, CAT)"
+  ],
+  "max_abs_residual": 6.59,
+  "accrual_errors_found": [
+   {
+    "symbol": "AEP",
+    "ex_date": "2026-08-10",
+    "amount": 5.76,
+    "note": "bought in the 2026-08-10 run (after the ex-date open); not held the day before ex-date"
+   },
+   {
+    "symbol": "SPY",
+    "ex_date": "2026-09-18",
+    "amount": 0.1,
+    "note": "0.051 shares added by the 09-18 sweep after the ex-date open"
+   }
+  ],
+  "alpaca_activity_recheck_fix_round": {
+   "query": "get_account_activities(activity_types=[DIV,DIVCGL,DIVCGS,DIVFEE,DIVFT,DIVNRA,DIVROC,DIVTW,DIVTXEX,CGD,SPLIT,MA,REORG,REO,NC,SPIN,JNLC,JNLS,INT,CSD,CSW], after=2024-06-01)",
+   "result": "one entry: JNLC 2024-06-21 net_amount 100000 (initial funding); nothing else"
+  },
+  "accrual_errors_unchecked": "mirror case: a holding sold in an ex-date run would be missed (dividend_check.py:55-76); not searched"
+ },
+ "broker_eod_offset": {
+  "description": "Alpaca EOD equity minus snapshot U (cash + qty*current_price, the broker's own value), same date",
+  "series": [
+   [
+    "2026-06-24",
+    0.0
+   ],
+   [
+    "2026-06-25",
+    -8.32
+   ],
+   [
+    "2026-06-26",
+    32.17
+   ],
+   [
+    "2026-06-29",
+    28.97
+   ],
+   [
+    "2026-06-30",
+    -27.4
+   ],
+   [
+    "2026-07-01",
+    -147.35
+   ],
+   [
+    "2026-07-02",
+    -0.0
+   ],
+   [
+    "2026-07-06",
+    -139.76
+   ],
+   [
+    "2026-07-07",
+    17.02
+   ],
+   [
+    "2026-07-08",
+    2.41
+   ],
+   [
+    "2026-07-09",
+    -51.44
+   ],
+   [
+    "2026-07-10",
+    -106.42
+   ],
+   [
+    "2026-07-13",
+    -92.54
+   ],
+   [
+    "2026-07-14",
+    -15.46
+   ],
+   [
+    "2026-07-15",
+    41.18
+   ],
+   [
+    "2026-07-16",
+    176.7
+   ],
+   [
+    "2026-07-17",
+    -1.75
+   ],
+   [
+    "2026-07-20",
+    -77.56
+   ],
+   [
+    "2026-07-21",
+    68.71
+   ],
+   [
+    "2026-07-22",
+    -4.72
+   ],
+   [
+    "2026-07-23",
+    144.98
+   ],
+   [
+    "2026-07-24",
+    20.35
+   ],
+   [
+    "2026-07-27",
+    59.18
+   ],
+   [
+    "2026-07-28",
+    -50.93
+   ],
+   [
+    "2026-07-30",
+    -434.91
+   ],
+   [
+    "2026-07-31",
+    -183.24
+   ],
+   [
+    "2026-08-03",
+    2.37
+   ],
+   [
+    "2026-08-04",
+    -93.09
+   ],
+   [
+    "2026-08-05",
+    -43.9
+   ],
+   [
+    "2026-08-06",
+    81.85
+   ],
+   [
+    "2026-08-07",
+    -36.9
+   ],
+   [
+    "2026-08-10",
+    -49.17
+   ],
+   [
+    "2026-08-11",
+    27.7
+   ],
+   [
+    "2026-08-12",
+    -84.13
+   ],
+   [
+    "2026-08-13",
+    6.52
+   ],
+   [
+    "2026-08-14",
+    48.19
+   ],
+   [
+    "2026-08-17",
+    -61.67
+   ],
+   [
+    "2026-08-18",
+    -831.37
+   ],
+   [
+    "2026-08-19",
+    -799.26
+   ],
+   [
+    "2026-08-20",
+    -741.36
+   ],
+   [
+    "2026-08-21",
+    -785.33
+   ],
+   [
+    "2026-08-24",
+    -748.98
+   ],
+   [
+    "2026-08-25",
+    -725.42
+   ],
+   [
+    "2026-08-26",
+    -834.52
+   ],
+   [
+    "2026-08-27",
+    -752.01
+   ],
+   [
+    "2026-08-28",
+    -733.84
+   ],
+   [
+    "2026-08-31",
+    -738.89
+   ],
+   [
+    "2026-09-01",
+    -723.6
+   ],
+   [
+    "2026-09-02",
+    -758.32
+   ],
+   [
+    "2026-09-03",
+    -781.05
+   ],
+   [
+    "2026-09-04",
+    -791.44
+   ],
+   [
+    "2026-09-08",
+    -884.17
+   ],
+   [
+    "2026-09-09",
+    -791.49
+   ],
+   [
+    "2026-09-10",
+    -728.83
+   ],
+   [
+    "2026-09-11",
+    -841.52
+   ],
+   [
+    "2026-09-14",
+    -829.93
+   ],
+   [
+    "2026-09-15",
+    -689.15
+   ],
+   [
+    "2026-09-17",
+    -810.3
+   ],
+   [
+    "2026-09-18",
+    -731.97
+   ],
+   [
+    "2026-09-21",
+    -857.59
+   ],
+   [
+    "2026-09-22",
+    -916.62
+   ],
+   [
+    "2026-09-24",
+    -841.62
+   ],
+   [
+    "2026-09-25",
+    -787.67
+   ],
+   [
+    "2026-09-28",
+    -787.65
+   ],
+   [
+    "2026-09-29",
+    -726.65
+   ],
+   [
+    "2026-09-30",
+    -1107.36
+   ],
+   [
+    "2026-10-01",
+    -797.37
+   ],
+   [
+    "2026-10-02",
+    -791.98
+   ],
+   [
+    "2026-10-05",
+    -801.81
+   ],
+   [
+    "2026-10-06",
+    -781.66
+   ],
+   [
+    "2026-10-07",
+    -751.05
+   ],
+   [
+    "2026-10-08",
+    -678.44
+   ],
+   [
+    "2026-10-09",
+    -787.17
+   ],
+   [
+    "2026-10-12",
+    -742.89
+   ],
+   [
+    "2026-10-13",
+    -792.03
+   ],
+   [
+    "2026-10-14",
+    -607.85
+   ],
+   [
+    "2026-10-15",
+    -807.27
+   ],
+   [
+    "2026-10-16",
+    -605.1
+   ],
+   [
+    "2026-10-19",
+    -922.91
+   ],
+   [
+    "2026-10-20",
+    -701.74
+   ],
+   [
+    "2026-10-21",
+    -759.4
+   ],
+   [
+    "2026-10-22",
+    -456.3
+   ],
+   [
+    "2026-10-23",
+    -768.48
+   ],
+   [
+    "2026-10-26",
+    -763.46
+   ],
+   [
+    "2026-10-27",
+    -942.38
+   ],
+   [
+    "2026-10-28",
+    -613.57
+   ],
+   [
+    "2026-10-29",
+    -607.69
+   ],
+   [
+    "2026-10-30",
+    -464.06
+   ],
+   [
+    "2026-11-02",
+    -940.01
+   ],
+   [
+    "2026-11-03",
+    -748.1
+   ]
+  ],
+  "explanation": "Unproven mechanism. Before 08-11: -435..+177 (15:45 ET snapshot vs close). 08-11..08-17: -84..+48 (about 0). From 2026-08-18: -456..-1107, mostly near -750 (-748.10 on 11-03). AVB alone fits: about $746 holding, price frozen at 184.06 since 08-17, hypothesised to be valued at about zero in EOD while intraday portfolio_value includes it. MNST does not contribute: U already carries MNST at the broker's unsplit qty. Measured against stored value V instead, the offset is -613..-1976, because V adds the MNST split correction (about $1,000 until 09-28) and the dividend accrual ($74-$320)."
+ },
+ "fills": {
+  "definition": "cost in basis points vs the reference close, positive = worse for the trader",
+  "pre_close_stocks": {
+   "n": 106,
+   "mean_cost_bp": 2.5,
+   "sd_bp": 38.7,
+   "notional_weighted_cost_bp": 0.3,
+   "notional": 201070
+  },
+  "pre_close_spy": {
+   "n": 52,
+   "mean_cost_bp": -1.9,
+   "sd_bp": 11.6,
+   "notional_weighted_cost_bp": -0.2,
+   "notional": 172967
+  },
+  "next_open_vs_prior_close": {
+   "n": 44,
+   "mean_cost_bp": 47.4,
+   "sd_bp": 132.2,
+   "notional_weighted_cost_bp": 47.3,
+   "notional": 61166
+  }
+ },
+ "position_counts_ex_spy": {
+  "E1 core, 3.3% sizing, ~60% cash": {
+   "min": 0,
+   "max": 13,
+   "mean": 9.7
+  },
+  "E2 unintended dry-run freeze (blend wired, no orders)": {
+   "min": 11,
+   "max": 11,
+   "mean": 11
+  },
+  "E3 3-sleeve blend live, no sweep": {
+   "min": 11,
+   "max": 30,
+   "mean": 28.5
+  },
+  "E4 blend + SPY cash sweep": {
+   "min": 30,
+   "max": 30,
+   "mean": 30
+  },
+  "E5 core revert + sweep": {
+   "min": 30,
+   "max": 30,
+   "mean": 30
+  },
+  "E6 exit catch-up + manual liquidations": {
+   "min": 5,
+   "max": 30,
+   "mean": 13.3
+  },
+  "E7 frozen config": {
+   "min": 4,
+   "max": 5,
+   "mean": 4.3
+  }
+ },
+ "trades_by_reason": {
+  "BUY:strategy": [
+   79,
+   137573
+  ],
+  "SELL:strategy": [
+   54,
+   112746
+  ],
+  "BUY:cash_sweep": [
+   20,
+   129984
+  ],
+  "SELL:cash_sweep": [
+   32,
+   42983
+  ],
+  "SELL:catastrophe_stop": [
+   1,
+   755
+  ],
+  "SELL:manual_orphan_liquidation": [
+   4,
+   3560
+  ],
+  "SELL:manual_legacy_liquidation": [
+   15,
+   10358
+  ]
+ },
+ "detectable_effect": {
+  "formula": "N_days = 252 * ((z_0.975 + z_0.80) * sigma_ann / X)^2, z sum = 2.8016",
+  "assumptions": [
+   "daily active returns iid, approximately normal",
+   "two-sided alpha 0.05, power 0.80",
+   "sigma from realized sleeve active return vs SPY total return between snapshots",
+   "sleeve ~10% of account, 3 names; X is the sleeve's own excess over SPY per year",
+   "account-level effect = sleeve effect * 0.10"
+  ],
+  "sleeve_sigma": {
+   "frozen 09-30 to 11-04": {
+    "n_days": 25,
+    "sd_daily_sleeve": 0.014198361699210453,
+    "sd_daily_active": 0.014137135909888751,
+    "sd_ann_active": 0.22442007520971882,
+    "mean_daily_active": 0.006049008288350122
+   },
+   "core era 09-22 to 11-04": {
+    "n_days": 30,
+    "sd_daily_sleeve": 0.014748507020414636,
+    "sd_daily_active": 0.014376526028950998,
+    "sd_ann_active": 0.2282202755379079,
+    "mean_daily_active": 0.004036833579259576
+   },
+   "all 06-24 to 11-04": {
+    "n_days": 89,
+    "sd_daily_sleeve": 0.010964026744184919,
+    "sd_daily_active": 0.010799501635083126,
+    "sd_ann_active": 0.17143677365919224,
+    "mean_daily_active": 0.0008397779984134317
+   }
+  },
+  "t_stats": {
+   "frozen 09-30 to 11-04": {
+    "t": 2.13940374022963
+   },
+   "core era 09-22 to 11-04": {
+    "t": 1.5379687747945614
+   },
+   "all 06-24 to 11-04": {
+    "t": 0.7335940175620514
+   }
+  },
+  "table": [
+   {
+    "X_pp_per_year_sleeve": 1,
+    "days_frozen_sd": 996166,
+    "years_frozen_sd": 3953.0,
+    "days_alltime_sd": 581321,
+    "years_alltime_sd": 2306.8,
+    "days_if_X_is_account_level": 9962
+   },
+   {
+    "X_pp_per_year_sleeve": 2,
+    "days_frozen_sd": 249041,
+    "years_frozen_sd": 988.3,
+    "days_alltime_sd": 145330,
+    "years_alltime_sd": 576.7,
+    "days_if_X_is_account_level": 2490
+   },
+   {
+    "X_pp_per_year_sleeve": 5,
+    "days_frozen_sd": 39847,
+    "years_frozen_sd": 158.1,
+    "days_alltime_sd": 23253,
+    "years_alltime_sd": 92.3,
+    "days_if_X_is_account_level": 398
+   },
+   {
+    "X_pp_per_year_sleeve": 10,
+    "days_frozen_sd": 9962,
+    "years_frozen_sd": 39.5,
+    "days_alltime_sd": 5813,
+    "years_alltime_sd": 23.1,
+    "days_if_X_is_account_level": 100
+   }
+  ],
+  "account_level_sigma_ann_frozen": 0.02593665511090919,
+  "account_level_days": {
+   "0.1": 1330565,
+   "0.2": 332641,
+   "0.5": 53223,
+   "1": 13306
+  }
+ },
+ "confirmed": {
+  "snapshot_gap_equals_dividend_accrual": {
+   "value": true,
+   "sources": [
+    "paper_dividend_accruals cumulative sum vs snapshot gap: |residual| <= $6.59 on every day 08-20..11-04, 0.00 on most",
+    "code: trader.py:1051-1056 adds dividend_info['total'] to the persisted value"
+   ],
+   "independence_note": "DB accrual table and the persisted value share one writer (trader.py:1056); not independent sources"
+  },
+  "broker_never_credited_dividends": {
+   "value": true,
+   "sources": [
+    "Alpaca DIV activities: empty since 2026-05-01",
+    "Alpaca non-trade activities since 2026-08-15: FEE only",
+    "Alpaca live account cash equals snapshot cash on 2026-11-04 (5177.86), so no dividend cash reached the account (single-day check)",
+    "fix-round re-check: 21 activity types since 2024-06-01 return only the 2024-06-21 funding JNLC"
+   ]
+  },
+  "phase0_era_figures_reproduced": {
+   "value": true,
+   "sources": [
+    "snapshot V + ohlcv tape reproduces -1.92 / -2.60 / +1.37 pp and the +1.39% vs +4.63% headline"
+   ],
+   "caveat": "the method is not broker-consistent and not total return; corrected figures differ"
+  },
+  "phase0_era_figures_survive_correction": {
+   "value": false,
+   "sources": [
+    "U vs SPY TR: -3.02 / -2.28 / +1.60",
+    "Alpaca EOD vs SPY TR: -3.69 / -2.32 / +1.40 (P3 to 11-03 close)"
+   ],
+   "per_era": {
+    "P1": "overturned: moves 1.10 pp (-1.92 -> -3.02 U); U vs EOD differ 0.67 pp",
+    "P2": "survives: moves 0.32 pp (-2.60 -> -2.28)",
+    "P3": "survives: moves 0.23 pp (+1.37 -> +1.60)"
+   }
+  }
+ }
+}

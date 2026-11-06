@@ -1,0 +1,1498 @@
+{
+ "generated": "2026-11-04",
+ "lens": 8,
+ "read_only": true,
+ "tape": {
+  "duplicates": {
+   "unique_key": "ohlcv_pkey UNIQUE (timestamp, symbol, interval, venue) makes exact-key duplicates impossible",
+   "symbol_days_with_more_than_one_1d_bar": {
+    "kraken_spot": 0,
+    "binanceus_spot": 0,
+    "scope": "all -USD symbols, interval 1d, both crypto venues"
+   },
+   "symbol_days_with_more_than_six_4h_bars": {
+    "kraken_spot": 0,
+    "binanceus_spot": 0
+   },
+   "cross_venue_clone": {
+    "binanceus_4h_bars": 216818,
+    "bars_with_kraken_bar_at_same_timestamp": 171621,
+    "bars_with_identical_open_close_volume_to_kraken": 94721,
+    "share_identical_pct": 43.7,
+    "symbols_with_identical_bars": 48,
+    "identical_span": "2023-01-01..2026-06-02",
+    "btc_eth_identical_by_quarter": "0% 2023Q1-Q2, 86% 2023Q3, 100% 2023Q4-2024Q4, 55% 2025Q1, ~0% after",
+    "source": "scripts/backfill_binanceus_from_kraken.py at 82931a40^ (clones kraken_spot candles into binanceus_spot)"
+   },
+   "cross_venue_divergence": {
+    "binanceus_4h_bars_differing_gt_5pct_from_kraken": 2442,
+    "symbols": 29,
+    "btc_eth_episode": "2023-06..2023-07, Binance.US up to 20% below Kraken (max Kraken/BUS-1 = 25.4%)"
+   }
+  },
+  "hour_of_day": {
+   "1d_bars": {
+    "kraken_spot": {
+     "00:00": 332069,
+     "other": 0
+    },
+    "binanceus_spot": {
+     "00:00": 53845,
+     "other": 0
+    }
+   },
+   "4h_offgrid_bars": {
+    "kraken_spot": 0,
+    "binanceus_spot": 0,
+    "definition": "hour mod 4 != 0 or minute != 0"
+   },
+   "1h_offgrid_btc_eth_kraken": 0,
+   "label_check_vs_yfinance": {
+    "BTC-USD": {
+     "kraken_lag0_median_abs_diff_pct": 0.018,
+     "kraken_lag_plus_minus_1_pct": 1.17,
+     "binanceus_lag0_pct": 0.034,
+     "binanceus_lag1_pct": 1.24
+    },
+    "ETH-USD": {
+     "kraken_lag0_pct": 0.021,
+     "kraken_lag1_pct": 1.53,
+     "binanceus_lag0_pct": 0.04,
+     "binanceus_lag1_pct": 1.67
+    },
+    "verdict": "daily labels align with yfinance at lag 0: no day shift in the current tape"
+   },
+   "1d_vs_4h_internal": "1d close equals the 20:00 4h close for 100% (Kraken) / 99.76% (Binance.US) of days; shifting one day raises the median gap to ~1.2%",
+   "history": "2026-03-08..2026-05-05 tz-aware writer shift (~346 off-grid 4h bars per symbol) fixed by wiping 1.7M 4h rows and re-importing (docs/changelog.md:2058-2068). Runs dated before 2026-05-05 used the pre-fix tape, which no longer exists.",
+   "pre_repair_contamination": {
+    "source": "docs/changelog.md:2058-2068 (bars shifted 7h from 2026-03-08; ~346 off-grid 4h bars per symbol by early May; repaired 2026-05-05)",
+    "method": "calendar overlap of each window with 2026-03-08..2026-05-05; bars = days x 6",
+    "windows": {
+     "0401 full 2023-04-01..2026-03-31": {
+      "days": 24,
+      "of": 1096,
+      "pct": 2.2,
+      "bars_4h": 144
+     },
+     "0401 YTD 2025-04-02..2026-04-02": {
+      "days": 26,
+      "of": 366,
+      "pct": 7.1,
+      "bars_4h": 156
+     },
+     "0402 full 2023-04-03..2026-04-02": {
+      "days": 26,
+      "of": 1096,
+      "pct": 2.4,
+      "bars_4h": 156
+     },
+     "0402 YTD 2025-04-03..2026-04-02": {
+      "days": 26,
+      "of": 365,
+      "pct": 7.1,
+      "bars_4h": 156
+     },
+     "0501 full 2023-05-01..2026-04-30": {
+      "days": 54,
+      "of": 1096,
+      "pct": 4.9,
+      "bars_4h": 324
+     },
+     "0501 YTD 2025-05-01..2026-05-01": {
+      "days": 55,
+      "of": 366,
+      "pct": 15.0,
+      "bars_4h": 330
+     }
+    },
+    "caveat": "changelog attributes earlier phantom ADA gaps (ending 2025-04-01 and 2025-11-29) to the same shift; extent for other symbols unknown",
+    "btc_three_year_comparison": "not materially affected: mostly pre-shift data, stated BTC within 0.1-2.7 pp of clean tape after costs"
+   }
+  },
+  "gaps": {
+   "per_symbol_1d": {
+    "binanceus_spot": {
+     "n_symbols": 53,
+     "venue_last_bar": "2026-06-08 00:00:00",
+     "n_symbols_with_any_gap": 21,
+     "n_symbols_missing_gt_5pct": 9,
+     "total_missing_bars": 2839,
+     "n_start_after_2023_01_31": 6,
+     "n_end_more_than_30d_before_venue_last_bar": 26
+    },
+    "kraken_spot": {
+     "n_symbols": 623,
+     "venue_last_bar": "2025-12-31 00:00:00",
+     "n_symbols_with_any_gap": 179,
+     "n_symbols_missing_gt_5pct": 85,
+     "total_missing_bars": 7382,
+     "n_start_after_2023_01_31": 421,
+     "n_end_more_than_30d_before_venue_last_bar": 48
+    }
+   },
+   "per_symbol_4h": {
+    "binanceus_spot": {
+     "n_symbols": 77,
+     "venue_last_bar": "2026-06-08 16:00:00",
+     "n_symbols_with_any_gap": 51,
+     "n_symbols_missing_gt_5pct": 27,
+     "total_missing_bars": 161856,
+     "n_start_after_2023_01_31": 30,
+     "n_end_more_than_30d_before_venue_last_bar": 0
+    },
+    "kraken_spot": {
+     "n_symbols": 161,
+     "venue_last_bar": "2026-06-08 16:00:00",
+     "n_symbols_with_any_gap": 102,
+     "n_symbols_missing_gt_5pct": 60,
+     "total_missing_bars": 10744,
+     "n_start_after_2023_01_31": 136,
+     "n_end_more_than_30d_before_venue_last_bar": 37
+    }
+   },
+   "sample_1d": {
+    "TRX-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1096,
+      "expected": 1096,
+      "missing": 0
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01",
+      "last": "2026-06-07",
+      "bars": 1149,
+      "expected": 1254,
+      "missing": 105
+     }
+    },
+    "XRP-USD": {
+     "binanceus_spot": {
+      "first": "2023-01-01",
+      "last": "2026-06-07",
+      "bars": 1254,
+      "expected": 1254,
+      "missing": 0
+     },
+     "kraken_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1096,
+      "expected": 1096,
+      "missing": 0
+     }
+    },
+    "PEPE-USD": {
+     "kraken_spot": {
+      "first": "2023-05-16",
+      "last": "2025-12-31",
+      "bars": 961,
+      "expected": 961,
+      "missing": 0
+     },
+     "binanceus_spot": {
+      "first": "2023-05-16",
+      "last": "2026-06-07",
+      "bars": 1119,
+      "expected": 1119,
+      "missing": 0
+     }
+    },
+    "ZEC-USD": {
+     "binanceus_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1096,
+      "expected": 1096,
+      "missing": 0
+     },
+     "kraken_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1096,
+      "expected": 1096,
+      "missing": 0
+     }
+    },
+    "SUI-USD": {
+     "binanceus_spot": {
+      "first": "2023-05-03",
+      "last": "2026-06-07",
+      "bars": 1132,
+      "expected": 1132,
+      "missing": 0
+     },
+     "kraken_spot": {
+      "first": "2023-05-03",
+      "last": "2025-12-31",
+      "bars": 974,
+      "expected": 974,
+      "missing": 0
+     }
+    },
+    "DOGE-USD": {
+     "binanceus_spot": {
+      "first": "2023-01-01",
+      "last": "2026-06-07",
+      "bars": 1254,
+      "expected": 1254,
+      "missing": 0
+     },
+     "kraken_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1096,
+      "expected": 1096,
+      "missing": 0
+     }
+    },
+    "ETH-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1096,
+      "expected": 1096,
+      "missing": 0
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01",
+      "last": "2026-06-07",
+      "bars": 1254,
+      "expected": 1254,
+      "missing": 0
+     }
+    },
+    "LINK-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1096,
+      "expected": 1096,
+      "missing": 0
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01",
+      "last": "2026-06-07",
+      "bars": 1254,
+      "expected": 1254,
+      "missing": 0
+     }
+    },
+    "SOL-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1096,
+      "expected": 1096,
+      "missing": 0
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01",
+      "last": "2026-06-07",
+      "bars": 1254,
+      "expected": 1254,
+      "missing": 0
+     }
+    },
+    "ADA-USD": {
+     "kraken_spot": {
+      "first": "2023-07-01",
+      "last": "2025-09-30",
+      "bars": 733,
+      "expected": 823,
+      "missing": 90
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01",
+      "last": "2026-06-07",
+      "bars": 1205,
+      "expected": 1254,
+      "missing": 49
+     }
+    },
+    "BTC-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1095,
+      "expected": 1096,
+      "missing": 1
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01",
+      "last": "2026-06-07",
+      "bars": 1253,
+      "expected": 1254,
+      "missing": 1
+     }
+    },
+    "XMR-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01",
+      "last": "2025-12-31",
+      "bars": 1096,
+      "expected": 1096,
+      "missing": 0
+     }
+    }
+   },
+   "sample_4h": {
+    "LINK-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7511,
+      "expected": 7529,
+      "missing": 18
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7527,
+      "expected": 7529,
+      "missing": 2
+     }
+    },
+    "TRX-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7461,
+      "expected": 7529,
+      "missing": 68
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7526,
+      "expected": 7529,
+      "missing": 3
+     }
+    },
+    "PEPE-USD": {
+     "binanceus_spot": {
+      "first": "2023-05-16 12:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 6714,
+      "expected": 6716,
+      "missing": 2
+     },
+     "kraken_spot": {
+      "first": "2023-05-16 12:00:00",
+      "last": "2026-06-08 00:00:00",
+      "bars": 6686,
+      "expected": 6712,
+      "missing": 26
+     }
+    },
+    "XRP-USD": {
+     "binanceus_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7527,
+      "expected": 7529,
+      "missing": 2
+     },
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7454,
+      "expected": 7529,
+      "missing": 75
+     }
+    },
+    "SOL-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7454,
+      "expected": 7529,
+      "missing": 75
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7527,
+      "expected": 7529,
+      "missing": 2
+     }
+    },
+    "ZEC-USD": {
+     "binanceus_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-05-31 00:00:00",
+      "bars": 7398,
+      "expected": 7477,
+      "missing": 79
+     },
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7436,
+      "expected": 7529,
+      "missing": 93
+     }
+    },
+    "SUI-USD": {
+     "binanceus_spot": {
+      "first": "2023-05-03 12:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 6782,
+      "expected": 6794,
+      "missing": 12
+     },
+     "kraken_spot": {
+      "first": "2023-05-03 12:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 6709,
+      "expected": 6794,
+      "missing": 85
+     }
+    },
+    "ADA-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7521,
+      "expected": 7529,
+      "missing": 8
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7527,
+      "expected": 7529,
+      "missing": 2
+     }
+    },
+    "BTC-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7526,
+      "expected": 7529,
+      "missing": 3
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7527,
+      "expected": 7529,
+      "missing": 2
+     }
+    },
+    "DOGE-USD": {
+     "binanceus_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7528,
+      "expected": 7529,
+      "missing": 1
+     },
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7527,
+      "expected": 7529,
+      "missing": 2
+     }
+    },
+    "ETH-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7465,
+      "expected": 7529,
+      "missing": 64
+     },
+     "binanceus_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7527,
+      "expected": 7529,
+      "missing": 2
+     }
+    },
+    "XMR-USD": {
+     "kraken_spot": {
+      "first": "2023-01-01 00:00:00",
+      "last": "2026-06-08 16:00:00",
+      "bars": 7404,
+      "expected": 7529,
+      "missing": 125
+     }
+    }
+   },
+   "btc_eth_missing": {
+    "1d": "BTC both venues miss 2024-03-31; ETH none",
+    "4h": "BTC 2-3 single bars; ETH Kraken 64 bars incl. a 52-bar run in 2026-05; ETH Binance.US 2 bars"
+   }
+  },
+  "symbol_normalization": {
+   "legacy_prefixed_-USD_symbols_present": 0,
+   "query": "split_part(symbol,'-',1) in (XXBT,XBT,XETH,XXDG,XDG,XLTC,XXLM,XXMR,XXRP,XZEC,XETC,XMLN,XREP), intervals 1d/4h/1h",
+   "unsplit_xbt_pair_codes": {
+    "symbols": [
+     "XBTCHF",
+     "XBTDAI",
+     "XBTEURC",
+     "XBTEUROP",
+     "XBTUSD1",
+     "XBTUSDQ",
+     "XBTUSDR"
+    ],
+    "rows": 71383,
+    "note": "non-USD or stablecoin-quoted; not matched by -USD universe queries"
+   },
+   "other_unsplit_pair_codes": [
+    "ETHCHF",
+    "ETHDAI",
+    "ETHEURC",
+    "ETHEUROP",
+    "ETHUSD1",
+    "EURCHF",
+    "JITOSOLSOL",
+    "KSMDOT",
+    "LSSOLSOL",
+    "MATICPOL",
+    "PUMPSOL",
+    "SOLEURC",
+    "SOLUSD1",
+    "TRXUSDD",
+    "USDCCHF",
+    "USDCHF",
+    "USDTCHF"
+   ],
+   "bare_base_symbols_no_quote": {
+    "kraken_spot_4h_symbols": 52,
+    "rows": 38153,
+    "span": "2025-11-24..2026-04-01",
+    "binanceus_spot_4h": "BTC 2 rows 2023-01-04..05"
+   },
+   "equity_tickers_stored_under_kraken_spot_1d": {
+    "symbols": 102,
+    "rows": 25783
+   },
+   "ranker_code": "82931a40^:scripts/update_universe_ccxt.py applies SYMBOL_MAPPING to the ccxt base before ranking (line 127); ccxt already returns unified BTC/DOGE codes, so it is a no-op in practice. 82931a40^:src/ggTrader/data/core/venue_listings.py:63-65 does the same for listings.",
+   "verdict": "normalized for the -USD research universe; un-normalized and malformed rows exist outside it"
+  },
+  "survivorship": {
+   "universe_construction": "live ccxt tickers at run time, filtered to the venue listings snapshot taken at run time, ranked by current 24h or 7d/30d volume, then backtested over the previous ~3 years (82931a40^:scripts/update_universe_ccxt.py:95-200). Not point-in-time.",
+   "examples": "research_20260501_010648 universe includes PENGU, FARTCOIN, HYPE, TRUMP, MON, RAVE (all ranked by 2026 volume); the 2023 window cannot contain coins that later died",
+   "tape_1d": {
+    "binanceus_spot": {
+     "n_symbols": 53,
+     "venue_last_bar": "2026-06-08 00:00:00",
+     "n_symbols_with_any_gap": 21,
+     "n_symbols_missing_gt_5pct": 9,
+     "total_missing_bars": 2839,
+     "n_start_after_2023_01_31": 6,
+     "n_end_more_than_30d_before_venue_last_bar": 26
+    },
+    "kraken_spot": {
+     "n_symbols": 623,
+     "venue_last_bar": "2025-12-31 00:00:00",
+     "n_symbols_with_any_gap": 179,
+     "n_symbols_missing_gt_5pct": 85,
+     "total_missing_bars": 7382,
+     "n_start_after_2023_01_31": 421,
+     "n_end_more_than_30d_before_venue_last_bar": 48
+    }
+   },
+   "tape_4h": {
+    "binanceus_spot": {
+     "n_symbols": 77,
+     "venue_last_bar": "2026-06-08 16:00:00",
+     "n_symbols_with_any_gap": 51,
+     "n_symbols_missing_gt_5pct": 27,
+     "total_missing_bars": 161856,
+     "n_start_after_2023_01_31": 30,
+     "n_end_more_than_30d_before_venue_last_bar": 0
+    },
+    "kraken_spot": {
+     "n_symbols": 161,
+     "venue_last_bar": "2026-06-08 16:00:00",
+     "n_symbols_with_any_gap": 102,
+     "n_symbols_missing_gt_5pct": 60,
+     "total_missing_bars": 10744,
+     "n_start_after_2023_01_31": 136,
+     "n_end_more_than_30d_before_venue_last_bar": 37
+    }
+   },
+   "deleted_delisted_symbols": "9 Binance.US symbols (MATIC, FTM, EOS, WAVES, ONT, XNO, MKR, KSHIB, KDA; ~15k rows) deleted 2026-06-07 (memory project_venue_availability_registry_2026-06-07); 0 of 77 Binance.US 4h symbols now end early",
+   "verdict": "survivorship-biased (current-listing, current-volume selection; delisted Binance.US history deleted)"
+  },
+  "coverage": {
+   "by_venue_interval": [
+    [
+     "binanceus_spot",
+     "1d",
+     53,
+     53845,
+     "2023-01-01 00:00:00",
+     "2026-06-08 00:00:00"
+    ],
+    [
+     "binanceus_spot",
+     "4h",
+     77,
+     216818,
+     "2023-01-01 00:00:00",
+     "2026-06-08 16:00:00"
+    ],
+    [
+     "kraken_spot",
+     "12h",
+     623,
+     657825,
+     "2023-01-01 00:00:00",
+     "2025-12-31 12:00:00"
+    ],
+    [
+     "kraken_spot",
+     "1d",
+     623,
+     332069,
+     "2023-01-01 00:00:00",
+     "2025-12-31 00:00:00"
+    ],
+    [
+     "kraken_spot",
+     "1h",
+     623,
+     6277557,
+     "2023-01-01 00:00:00",
+     "2026-05-18 01:00:00"
+    ],
+    [
+     "kraken_spot",
+     "4h",
+     161,
+     278347,
+     "2023-01-01 00:00:00",
+     "2026-06-08 16:00:00"
+    ],
+    [
+     "kraken_spot",
+     "30m",
+     537,
+     8235649
+    ]
+   ],
+   "btc_usd": "binanceus 1d/4h 2023-01-01..2026-06-08; kraken 1d/12h to 2025-12-31, 1h to 2026-05-18, 4h to 2026-06-08, 1m/5m/15m to 2025-12-31",
+   "distinct_-USD_symbols_with_1d": 627,
+   "bad_prices_1d": {
+    "null_or_nonpositive_close": 0,
+    "high_lt_low": 0
+   },
+   "perp_and_funding": {
+    "funding_rates_PF_XBTUSD": {
+     "rows": 8816,
+     "span": "2025-05-15..2026-05-18"
+    },
+    "perp_ohlcv_PF_XBTUSD_1h": {
+     "rows": 36400,
+     "span": "2022-03-23..2026-05-18"
+    }
+   }
+  }
+ },
+ "benchmark_comparison": [
+  {
+   "id": "crypto-wfo-research-snapshots-kraken",
+   "run": "research_20260401_225306 full range (Kraken)",
+   "window": "2023-04-01..2026-03-31",
+   "strategy_return_stated_pct": 52.66,
+   "basis": "in-sample replay of WFO-selected params over the whole WFO range; net of 0.4%+0.3%/side; not out-of-sample",
+   "btc_buy_hold_pct": 138.95,
+   "eth_buy_hold_pct": 15.15,
+   "btc_buy_hold_yfinance_pct": 140.16,
+   "eth_buy_hold_yfinance_pct": 16.03,
+   "btc_stated_in_report_pct": 133.63,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": 0.379,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 0.639,
+   "diff_pp_total_vs_btc": -86.29,
+   "diff_pp_total_vs_eth": 37.51,
+   "diff_pp_per_yr_vs_btc": -18.56,
+   "beats_btc": false,
+   "beats_eth": true,
+   "beta": null,
+   "alpha": null,
+   "status": "computed (artifact local, gitignored)",
+   "note": "",
+   "in_sample": "yes"
+  },
+  {
+   "id": "crypto-wfo-research-snapshots-kraken",
+   "run": "research_20260401_225306 YTD (Kraken)",
+   "window": "2025-04-02..2026-04-02",
+   "strategy_return_stated_pct": 27.38,
+   "basis": "trailing-12-month replay inside the WFO range; coin and parameter selection used this window; net of costs",
+   "btc_buy_hold_pct": -20.9,
+   "eth_buy_hold_pct": 9.65,
+   "btc_buy_hold_yfinance_pct": -18.91,
+   "eth_buy_hold_yfinance_pct": 14.57,
+   "btc_stated_in_report_pct": -22.31,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": null,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 1.61,
+   "diff_pp_total_vs_btc": 48.28,
+   "diff_pp_total_vs_eth": 17.73,
+   "diff_pp_per_yr_vs_btc": 48.31,
+   "beats_btc": true,
+   "beats_eth": true,
+   "beta": 0.166,
+   "alpha": {
+    "alpha_ann_simple_pct_365": 28.25,
+    "alpha_t": 1.53,
+    "r2": 0.129,
+    "n_days": 365,
+    "beta_se": 0.023,
+    "beta_matched_btc_cash_total_pct": -2.2,
+    "regression": "daily strategy returns (combined YTD equity curve extracted from plots/combined_portfolio_ytd_dashboard.html) on daily BTC returns from the same venue tape; OLS with intercept"
+   },
+   "status": "computed",
+   "note": "",
+   "in_sample": "yes"
+  },
+  {
+   "id": "crypto-wfo-research-snapshots-kraken",
+   "run": "research_20260402_123248 full range (Kraken, deployed 2026-04-02)",
+   "window": "2023-04-03..2026-04-02",
+   "strategy_return_stated_pct": 53.89,
+   "basis": "in-sample replay over WFO range; net of 0.4%+0.3%/side",
+   "btc_buy_hold_pct": 140.97,
+   "eth_buy_hold_pct": 15.65,
+   "btc_buy_hold_yfinance_pct": 140.69,
+   "eth_buy_hold_yfinance_pct": 13.62,
+   "btc_stated_in_report_pct": 136.55,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": 0.382,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 0.639,
+   "diff_pp_total_vs_btc": -87.08,
+   "diff_pp_total_vs_eth": 38.24,
+   "diff_pp_per_yr_vs_btc": -18.63,
+   "beats_btc": false,
+   "beats_eth": true,
+   "beta": null,
+   "alpha": null,
+   "status": "computed",
+   "note": "",
+   "in_sample": "yes"
+  },
+  {
+   "id": "crypto-wfo-research-snapshots-kraken",
+   "run": "research_20260402_123248 YTD (Kraken, deployed)",
+   "window": "2025-04-03..2026-04-02",
+   "strategy_return_stated_pct": -10.65,
+   "basis": "trailing-12-month replay inside the WFO range; net of costs",
+   "btc_buy_hold_pct": -19.88,
+   "eth_buy_hold_pct": 12.78,
+   "btc_buy_hold_yfinance_pct": -19.51,
+   "eth_buy_hold_yfinance_pct": 13.29,
+   "btc_stated_in_report_pct": -20.89,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": null,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 1.115,
+   "diff_pp_total_vs_btc": 9.23,
+   "diff_pp_total_vs_eth": -23.43,
+   "diff_pp_per_yr_vs_btc": 9.26,
+   "beats_btc": true,
+   "beats_eth": false,
+   "beta": 0.416,
+   "alpha": {
+    "alpha_ann_simple_pct_365": -1.26,
+    "alpha_t": -0.05,
+    "r2": 0.331,
+    "n_days": 364,
+    "beta_se": 0.031,
+    "beta_matched_btc_cash_total_pct": -6.62,
+    "regression": "daily strategy returns (combined YTD equity curve extracted from plots/combined_portfolio_ytd_dashboard.html) on daily BTC returns from the same venue tape; OLS with intercept"
+   },
+   "status": "computed",
+   "note": "",
+   "in_sample": "yes"
+  },
+  {
+   "id": "crypto-wfo-recalibration-2026-05-01",
+   "run": "research_20260501_010648 full range (Kraken, promoted to live)",
+   "window": "2023-05-01..2026-04-30",
+   "strategy_return_stated_pct": 137.6,
+   "basis": "in-sample replay over WFO range; net of 0.4%+0.3%/side",
+   "btc_buy_hold_pct": 167.09,
+   "eth_buy_hold_pct": 22.22,
+   "btc_buy_hold_yfinance_pct": 171.63,
+   "eth_buy_hold_yfinance_pct": 23.16,
+   "btc_stated_in_report_pct": 162.02,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": 0.824,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 0.89,
+   "diff_pp_total_vs_btc": -29.49,
+   "diff_pp_total_vs_eth": 115.38,
+   "diff_pp_per_yr_vs_btc": -5.31,
+   "beats_btc": false,
+   "beats_eth": true,
+   "beta": null,
+   "alpha": null,
+   "status": "computed",
+   "note": "",
+   "in_sample": "yes"
+  },
+  {
+   "id": "crypto-wfo-recalibration-2026-05-01",
+   "run": "research_20260501_010648 YTD (Kraken; the 48.46% headline)",
+   "window": "2025-05-01..2026-05-01",
+   "strategy_return_stated_pct": 48.4,
+   "basis": "headline is labelled CAGR but is the trailing-12-month total return (48.40% total, 48.46% CAGR); window lies inside WFO folds 5-8 used to pick coins and parameters, so in-sample; net of costs",
+   "btc_buy_hold_pct": -17.46,
+   "eth_buy_hold_pct": 26.97,
+   "btc_buy_hold_yfinance_pct": -18.98,
+   "eth_buy_hold_yfinance_pct": 24.79,
+   "btc_stated_in_report_pct": -21.32,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": null,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 1.798,
+   "diff_pp_total_vs_btc": 65.86,
+   "diff_pp_total_vs_eth": 21.43,
+   "diff_pp_per_yr_vs_btc": 65.91,
+   "beats_btc": true,
+   "beats_eth": true,
+   "beta": "0.263-0.314 (alignment-sensitive)",
+   "alpha": {
+    "alpha_ann_simple_pct_365": 50.14,
+    "alpha_t": 1.51,
+    "r2": 0.1,
+    "n_days": 365,
+    "beta_se": 0.041,
+    "beta_matched_btc_cash_total_pct": -4.01,
+    "regression": "daily strategy returns (combined YTD equity curve extracted from plots/combined_portfolio_ytd_dashboard.html) on daily BTC returns from the same venue tape; OLS with intercept",
+    "beta_alternative": {
+     "beta": 0.314,
+     "alpha_ann_simple_pct_365": 50.37,
+     "alpha_t": 1.56,
+     "method": "BTC daily last bar taken directly from the tape (basket.py); independent reviewer: 0.314, s.e. 0.040"
+    },
+    "bucketing": "primary: BTC reindexed (ffill) to the equity curve 4h timestamps, last bar per UTC day, simple daily returns, OLS with intercept"
+   },
+   "status": "computed",
+   "note": "Adding an equal-weight basket of the run universe as a second regressor: alpha 42.0%/yr simple, t 1.39, R2 0.26 (scratch basket.py).",
+   "in_sample": "yes",
+   "stated_vs_tape_note": "stated BTC -21.32% vs tape -17.46% gross (~-18.6% net, gap ~2.7 pp); aligning the start bar to the curve first point 2025-05-01 12:00 gives -20.1% gross, ~-21.2% net"
+  },
+  {
+   "id": "crypto-edge-search-2026-06-08",
+   "run": "research_20260608_083103 run 2 full range (Binance.US tape, 0.02%+0.3%/side)",
+   "window": "2023-06-09..2026-06-08",
+   "strategy_return_stated_pct": 47.32,
+   "basis": "replay over WFO range, net of costs; in-sample to ~2025-11-01, then the 20% holdout",
+   "btc_buy_hold_pct": 141.94,
+   "eth_buy_hold_pct": -6.85,
+   "btc_buy_hold_yfinance_pct": 138.25,
+   "eth_buy_hold_yfinance_pct": -8.16,
+   "btc_stated_in_report_pct": 167.21,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": 0.333,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 0.609,
+   "diff_pp_total_vs_btc": -94.62,
+   "diff_pp_total_vs_eth": 54.17,
+   "diff_pp_per_yr_vs_btc": -20.48,
+   "beats_btc": false,
+   "beats_eth": true,
+   "beta": null,
+   "alpha": null,
+   "status": "computed; stated BTC differs from tape",
+   "note": "Stated BTC +167.21% and max drawdown -49.89% match the Binance.US tape only if the series ends near 2026-06-01 (tape: +169.71%, DD -49.82%), not the stated 2026-06-08 (+141.94%, DD -51.66%).",
+   "in_sample": "partly (holdout 2025-11-01..2026-06-08)"
+  },
+  {
+   "id": "crypto-edge-search-2026-06-08",
+   "run": "research_20260608_083103 run 2 YTD",
+   "window": "2025-06-08..2026-06-08",
+   "strategy_return_stated_pct": 3.38,
+   "basis": "trailing-12-month replay, net of costs; 2025-06-08..2025-11-01 (~5 months) inside WFO folds 9-10 (in-sample), 2025-11-01..2026-06-08 (~7 months) is the 20% holdout (out of sample for selection)",
+   "btc_buy_hold_pct": -39.09,
+   "eth_buy_hold_pct": -32.23,
+   "btc_buy_hold_yfinance_pct": -40.36,
+   "eth_buy_hold_yfinance_pct": -32.68,
+   "btc_stated_in_report_pct": -33.06,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": null,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 1.697,
+   "diff_pp_total_vs_btc": 42.47,
+   "diff_pp_total_vs_eth": 35.61,
+   "diff_pp_per_yr_vs_btc": 42.49,
+   "beats_btc": true,
+   "beats_eth": true,
+   "beta": 0.104,
+   "alpha": {
+    "alpha_ann_simple_pct_365": 11.01,
+    "alpha_t": 0.43,
+    "r2": 0.029,
+    "n_days": 365,
+    "beta_se": 0.032,
+    "beta_matched_btc_cash_total_pct": -4.29,
+    "regression": "daily strategy returns (combined YTD equity curve extracted from plots/combined_portfolio_ytd_dashboard.html) on daily BTC returns from the same venue tape; OLS with intercept"
+   },
+   "status": "computed",
+   "note": "",
+   "in_sample": "partly (about 5 of 12 months)"
+  },
+  {
+   "id": "crypto-edge-search-2026-06-08",
+   "run": "research_20260608_093714 run 3 full range (Kraken tape, 0.25%+0.3%/side)",
+   "window": "2023-06-09..2026-06-08",
+   "strategy_return_stated_pct": -27.13,
+   "basis": "replay over WFO range, net of costs; in-sample to ~2025-11-01, then the 20% holdout",
+   "btc_buy_hold_pct": 139.93,
+   "eth_buy_hold_pct": -8.07,
+   "btc_buy_hold_yfinance_pct": 138.25,
+   "eth_buy_hold_yfinance_pct": -8.16,
+   "btc_stated_in_report_pct": 128.86,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": -0.194,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0; negative here because the strategy lost money (-27.13%) while BTC gained (+139.93%)",
+   "growth_factor_ratio_vs_btc": 0.304,
+   "diff_pp_total_vs_btc": -167.06,
+   "diff_pp_total_vs_eth": -19.06,
+   "diff_pp_per_yr_vs_btc": -43.92,
+   "beats_btc": false,
+   "beats_eth": false,
+   "beta": null,
+   "alpha": null,
+   "status": "computed; stated BTC differs from tape",
+   "note": "",
+   "in_sample": "partly (holdout 2025-11-01..2026-06-08)"
+  },
+  {
+   "id": "crypto-edge-search-2026-06-08",
+   "run": "research_20260608_093714 run 3 YTD",
+   "window": "2025-06-08..2026-06-08",
+   "strategy_return_stated_pct": -21.15,
+   "basis": "trailing-12-month replay, net of costs; 2025-06-08..2025-11-01 (~5 months) inside WFO folds 9-10 (in-sample), 2025-11-01..2026-06-08 (~7 months) is the 20% holdout (out of sample for selection)",
+   "btc_buy_hold_pct": -39.77,
+   "eth_buy_hold_pct": -32.76,
+   "btc_buy_hold_yfinance_pct": -40.36,
+   "eth_buy_hold_yfinance_pct": -32.68,
+   "btc_stated_in_report_pct": -40.67,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": null,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 1.309,
+   "diff_pp_total_vs_btc": 18.62,
+   "diff_pp_total_vs_eth": 11.61,
+   "diff_pp_per_yr_vs_btc": 18.63,
+   "beats_btc": true,
+   "beats_eth": true,
+   "beta": 0.195,
+   "alpha": {
+    "alpha_ann_simple_pct_365": -11.72,
+    "alpha_t": -0.44,
+    "r2": 0.089,
+    "n_days": 365,
+    "beta_se": 0.033,
+    "beta_matched_btc_cash_total_pct": -8.13,
+    "regression": "daily strategy returns (combined YTD equity curve extracted from plots/combined_portfolio_ytd_dashboard.html) on daily BTC returns from the same venue tape; OLS with intercept"
+   },
+   "status": "computed",
+   "note": "",
+   "in_sample": "partly (about 5 of 12 months)"
+  },
+  {
+   "id": "crypto-funding-carry-phase4",
+   "run": "FundingCarryBTC A (real funding, Kraken PF_XBTUSD)",
+   "window": "2025-05-15..2026-05-15",
+   "strategy_return_stated_pct": 0.45,
+   "basis": "delta-neutral long spot / short perp; prose only (report in docs/archive), no raw result file; return basis of the engine not verified",
+   "btc_buy_hold_pct": -23.09,
+   "eth_buy_hold_pct": -10.36,
+   "btc_buy_hold_yfinance_pct": -23.79,
+   "eth_buy_hold_yfinance_pct": -12.7,
+   "btc_stated_in_report_pct": null,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": null,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 1.306,
+   "diff_pp_total_vs_btc": 23.54,
+   "diff_pp_total_vs_eth": 10.81,
+   "diff_pp_per_yr_vs_btc": 23.55,
+   "beats_btc": true,
+   "beats_eth": true,
+   "beta": null,
+   "alpha": null,
+   "status": "benchmark computed; strategy figure prose only",
+   "note": "Market-neutral by design; a BTC beta near zero is expected but not computable (no return series kept)."
+  },
+  {
+   "id": "crypto-funding-carry-phase4",
+   "run": "FundingCarryBTC B (basis proxy)",
+   "window": "2023-01-01..2025-05-15",
+   "strategy_return_stated_pct": 3.45,
+   "basis": "proxy signal; author says do not quote; prose only",
+   "btc_buy_hold_pct": 528.0,
+   "eth_buy_hold_pct": 113.62,
+   "btc_buy_hold_yfinance_pct": 524.02,
+   "eth_buy_hold_yfinance_pct": 112.07,
+   "btc_stated_in_report_pct": null,
+   "benchmark_series": "TimescaleDB ohlcv 4h close, first..last bar in window, gross of costs (venue in run field); yfinance BTC-USD/ETH-USD daily close as cross-check",
+   "ratio": 0.007,
+   "ratio_note": "strategy cumulative / BTC cumulative (spec section 1); null when BTC return <= 0",
+   "growth_factor_ratio_vs_btc": 0.165,
+   "diff_pp_total_vs_btc": -524.55,
+   "diff_pp_total_vs_eth": -110.17,
+   "diff_pp_per_yr_vs_btc": -115.8,
+   "beats_btc": false,
+   "beats_eth": false,
+   "beta": null,
+   "alpha": null,
+   "status": "benchmark computed; strategy figure prose only",
+   "note": ""
+  },
+  {
+   "id": "crypto-pipeline-runs-2026-03",
+   "run": "28 automated pipeline runs 2026-03-21..23",
+   "window": "unpinned (symbols files named 2023-01-01..2025-12-31; per-run windows not recorded)",
+   "strategy_return_stated_pct": null,
+   "basis": "each run vs equal-weight buy-and-hold of its own coin list",
+   "btc_buy_hold_pct": null,
+   "eth_buy_hold_pct": null,
+   "ratio": null,
+   "beta": null,
+   "alpha": null,
+   "status": "not computable (window unpinned, artifacts not located)",
+   "note": "docs/archive/pipeline_run_history.md: 28 of 29 Excess CAGR lines are negative (the 29th is a template line); BTC-only run +4.15% total vs 74% buy-and-hold CAGR."
+  },
+  {
+   "id": "crypto-kraken-live-bot-pnl",
+   "run": "Kraken live bot, about 2026-04-01..04-06",
+   "window": "about 5 days to 2026-04-06 (exact start not stated)",
+   "strategy_return_stated_pct": null,
+   "basis": "dollar realized PnL (+$9.88), capital injected mid-window; no return basis",
+   "btc_buy_hold_pct": 1.8,
+   "eth_buy_hold_pct": 2.03,
+   "ratio": null,
+   "beta": null,
+   "alpha": null,
+   "status": "not computable (dollar figure, capital changed, trade records deleted)",
+   "note": "BTC/ETH figures are Kraken tape 2026-03-31..2026-04-06 for context only."
+  },
+  {
+   "id": "crypto-wfo-textbook-reset",
+   "run": "research_20260511_* (7 coins)",
+   "window": "2023-05-02..2026-05-01",
+   "strategy_return_stated_pct": null,
+   "basis": "gate pass counts, no portfolio formed (0 coins in every variant)",
+   "btc_buy_hold_pct": null,
+   "eth_buy_hold_pct": null,
+   "ratio": null,
+   "beta": null,
+   "alpha": null,
+   "status": "not computable (no portfolio return)"
+  },
+  {
+   "id": "crypto-edge-search-2026-06-08",
+   "run": "holdout split of edge run 2/3 YTD curves",
+   "window": "2025-06-08..2025-11-01 (IS) and 2025-11-01..2026-06-08 (holdout)",
+   "rows": [
+    {
+     "run": "edge run 2",
+     "part": "IS",
+     "strategy_pct": 14.24,
+     "btc_pct": 4.08,
+     "eth_pct": 54.65
+    },
+    {
+     "run": "edge run 2",
+     "part": "holdout OOS",
+     "strategy_pct": -9.44,
+     "btc_pct": -41.94,
+     "eth_pct": -55.95
+    },
+    {
+     "run": "edge run 3",
+     "part": "IS",
+     "strategy_pct": -2.75,
+     "btc_pct": 4.03,
+     "eth_pct": 54.21
+    },
+    {
+     "run": "edge run 3",
+     "part": "holdout OOS",
+     "strategy_pct": -18.92,
+     "btc_pct": -42.3,
+     "eth_pct": -56.21
+    }
+   ],
+   "status": "computed from extracted equity curves and venue tape; holdout per docs/archive/edge_search_report_2026-06-08.md:28-38"
+  }
+ ],
+ "annualization": {
+  "current_lab": {
+   "file": "src/ggTrader/lab/metrics.py",
+   "lines": "10-29",
+   "convention": "TRADING_DAYS_PER_YEAR=252 for vol, Sharpe, Sortino; CAGR uses calendar days/365.25",
+   "distortion_on_daily_7day_series": {
+    "sharpe_multiplier_reported_over_correct": 0.8309,
+    "correct_over_reported": 1.2035,
+    "vol_same_factor": true,
+    "cagr": "unaffected"
+   },
+   "crypto_config": "src/ggTrader/lab/data.py:38-52 CRYPTO_BASE_CONFIG FREQ 1d, BENCHMARK_SYMBOL BTC",
+   "crypto_lab_runs_in_db": [
+    {
+     "run_id": "xs_momentum_8a792c5c",
+     "market": "crypto",
+     "eval": "2023-01-01..2023-12-31",
+     "params": "FEES 0, SLIPPAGE 0.0005, BENCHMARK_SYMBOL SPY",
+     "cited_in_docs": false
+    }
+   ]
+  },
+  "legacy_pipeline": {
+   "file": "82931a40^:src/ggTrader/core/metrics.py:11-14",
+   "convention": "vbt year_freq '365 days' / bar freq (4h -> 2190 periods)",
+   "check": "recomputed Sharpe from extracted 4h YTD equity curves with sqrt(2190): 1.2438 vs stated 1.2378 (0501), -0.2318 vs -0.2317 (0402), 0.2607 vs 0.2577 (0608 run2), 1.2830 vs 1.2827 (0401)"
+  },
+  "rows": {
+   "crypto-wfo-research-snapshots-kraken": "does not affect",
+   "crypto-wfo-recalibration-2026-05-01": "does not affect",
+   "crypto-edge-search-2026-06-08": "does not affect",
+   "crypto-pipeline-runs-2026-03": "does not affect (same legacy vbt path; inferred, not recomputed)",
+   "crypto-wfo-textbook-reset": "does not affect (legacy vbt path)",
+   "crypto-funding-carry-phase4": "unknown (separate Phase 4 engine; Sharpe convention not checked)",
+   "crypto-ibit-overnight-session": "does not affect (total returns only)",
+   "lab xs_momentum_8a792c5c": "affects if its data were 7-day; uncited"
+  }
+ },
+ "crypto_rows": [
+  {
+   "id": "crypto-binance-us-live-trader",
+   "lens2_class": "inconclusive",
+   "lens6": "unverifiable",
+   "lens1": "unknown",
+   "lens8_note": "Never placed a live order: orders table holds 1 dry-run row, trades 0. Blocked by sizing floor until 2026-06-04, -2015 IP crash loop 2026-06-03, breaker tripped 2026-06-04. No return evidence."
+  },
+  {
+   "id": "crypto-config-tweaks-reverted-2026-04-02",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Prose only; no BTC benchmark; the 2026-04-02 run family artifacts exist locally but the reverted variants were not identified."
+  },
+  {
+   "id": "crypto-defi-tokenized-equity-arb",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Literature/watch item; never tested."
+  },
+  {
+   "id": "crypto-diversity-cap-disabled-2026-05-07",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Configuration change; no performance claim to benchmark."
+  },
+  {
+   "id": "crypto-edge-search-2026-06-08",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Raw run dirs exist locally (gitignored). Lost to BTC on full range (47.32% vs 141.94% tape). 'Fees dominate' comparison is confounded (different universe, venue tape, coins; slippage 0.3%/side constant). Binance.US tape is 43.7% Kraken-cloned. Stated BTC benchmark disagrees with tape for the stated window. YTD wins are ~7/12 holdout: OOS the books lost 9-19% vs BTC -42% (low beta, t 0.43/-0.44)."
+  },
+  {
+   "id": "crypto-execution-venue-fees",
+   "lens2_class": null,
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Memo dated 2026-07-06, after the edge search; fee inputs consistent with the runs (Kraken 0.25/0.40, Binance.US 0/0.02) but the runs also charged 0.3%/side slippage that the memo does not set."
+  },
+  {
+   "id": "crypto-funding-carry-phase4",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Tested (long spot / short PF_XBTUSD), prose only. Funding and perp data still in DB (funding_rates 8,816 rows; perp_ohlcv 36,400 rows); code at 82931a40^. +0.45% vs BTC -23.09% over the same year; delta-neutral, so the comparison is not like-for-like."
+  },
+  {
+   "id": "crypto-ibit-overnight-session",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Descriptive ETF split, not a crypto tape study; tape integrity not relevant."
+  },
+  {
+   "id": "crypto-kraken-live-bot-pnl",
+   "lens2_class": "inconclusive",
+   "lens6": "unverifiable",
+   "lens1": "unknown",
+   "lens8_note": "Dollar figure over ~5 days with a capital injection; trade CSVs and script deleted; not computable as a return."
+  },
+  {
+   "id": "crypto-live-ohlcv-tz-bug",
+   "lens2_class": null,
+   "lens6": "unverifiable",
+   "lens1": "unknown",
+   "lens8_note": "Confirmed fixed in current tape: 0 off-grid 4h bars, 1d labels match yfinance at lag 0. Runs before 2026-05-05 used the corrupted tape, which was wiped."
+  },
+  {
+   "id": "crypto-perp-funding-carry-candidate",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Infeasibility based on ~1 year of Kraken funding history; DB has 2025-05-15..2026-05-18 funding."
+  },
+  {
+   "id": "crypto-pipeline-runs-2026-03",
+   "lens2_class": null,
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "28 runs all below equal-weight buy-and-hold; windows unpinned; artifacts (pipeline_* dirs) not located under results/."
+  },
+  {
+   "id": "crypto-regime-filters",
+   "lens2_class": null,
+   "lens6": "unverifiable",
+   "lens1": "unknown",
+   "lens8_note": "Live behaviour item; explains entry droughts; no benchmarkable return."
+  },
+  {
+   "id": "crypto-spot-etf-flow-persistence",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Never tested (data infeasible)."
+  },
+  {
+   "id": "crypto-strategy-usage-analyzer-2026-05-07",
+   "lens2_class": null,
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Tooling count; no benchmarkable return."
+  },
+  {
+   "id": "crypto-trade-frequency-gate-2026-05-07",
+   "lens2_class": null,
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Gate change; no benchmarkable return."
+  },
+  {
+   "id": "crypto-tsmom-btc",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Literature only; never tested in this repo."
+  },
+  {
+   "id": "crypto-universal-trailing-stops",
+   "lens2_class": null,
+   "lens6": "partly",
+   "lens1": "unknown",
+   "lens8_note": "Live execution rule; Lens 6 'partly'; no live return evidence to compare."
+  },
+  {
+   "id": "crypto-venue-migration-path-d",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Decision rested on the textbook reset frictionless passers and a 0.04% round-trip claim that omits the 0.3%/side slippage the backtests charge; 22 combos never traded live."
+  },
+  {
+   "id": "crypto-web-research-batch-2026-10-25",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "Literature candidates; not tested."
+  },
+  {
+   "id": "crypto-wfo-overfitting-param-stability",
+   "lens2_class": "inconclusive",
+   "lens6": null,
+   "lens1": "unknown",
+   "lens8_note": "NO-OP knob test; no benchmarkable return."
+  },
+  {
+   "id": "crypto-wfo-recalibration-2026-05-01",
+   "lens2_class": null,
+   "lens6": "unverifiable",
+   "lens1": "unknown",
+   "lens8_note": "Artifact exists locally (results/research/archive/research_20260501_010648). The 48.46% is a trailing-12-month in-sample replay (window inside WFO folds used for selection), on the pre-2026-05-05 tz-corrupted tape, with a current-volume universe. Beat BTC and ETH raw in that window; lost to BTC on the 3-year range (137.60% vs 167.09%). BTC beta 0.26-0.31 (alignment-sensitive); residual alpha t 1.51-1.56. Time-shifted bars cover ~15% of the YTD window."
+  },
+  {
+   "id": "crypto-wfo-research-snapshots-kraken",
+   "lens2_class": null,
+   "lens6": "unverifiable",
+   "lens1": "unknown",
+   "lens8_note": "2026-04-02 deployed run: artifact exists locally. Lost to BTC on the 3-year range (53.89% vs 140.97%); YTD -10.65% beat BTC -19.88% but lost to ETH +12.78%. Beta 0.42, alpha ~0. Pre-fix tape."
+  },
+  {
+   "id": "crypto-wfo-textbook-reset",
+   "lens2_class": "inconclusive",
+   "lens6": "unverifiable",
+   "lens1": "unknown",
+   "lens8_note": "Inventory raw artifact research_20260511_193048 is the frictionless run (FEES 0, SLIPPAGE 0); the realistic-fee run is research_20260511_162755 (0.4%+0.3%). Gate pass counts 36/14/13/0 by cost confirmed from worker logs."
+  },
+  {
+   "id": "crypto-wfo-tournament-robustness",
+   "lens2_class": null,
+   "lens6": "unverifiable",
+   "lens1": "unknown",
+   "lens8_note": "Selection statistic only; no benchmarkable return."
+  }
+ ],
+ "live_evidence": {
+  "tables": {
+   "orders": {
+    "rows": 1,
+    "detail": "1 dry-run buy 2026-06-05 (run_id LIVE, order_id dry_run*)"
+   },
+   "trades": {
+    "rows": 0
+   },
+   "live_balance_snapshots": {
+    "rows": 4681,
+    "span": "2026-05-23..2026-06-10",
+    "snapshots_with_positions": {
+     "0": 3151,
+     "1": 1,
+     "2": 1529
+    },
+    "balances_recorded_here": false
+   },
+   "live_positions_snapshot": {
+    "rows": 4681,
+    "circuit_breaker_true": 211,
+    "breaker_span": "2026-06-04 23:18 PT..2026-06-05 16:57 PT"
+   },
+   "kraken_ledger": {
+    "deposit": 9,
+    "withdrawal": 8,
+    "span": "2025-04-14..2026-06-06",
+    "amounts_recorded_here": false
+   },
+   "equity_curves": {
+    "rows": 0
+   },
+   "system_state.live_trader_state_updated": "2026-06-16",
+   "local_files": "data/live holds only dashboard/; Kraken-era CSVs (position_closes, trade_log) not present"
+  },
+  "events": [
+   "2026-04-06 Kraken: +$9.88 realized over 5 days, 24 round trips, 5W/19L (docs/changelog.md:2389); script deleted",
+   "~2026-04-14..05-05 Kraken: ~3 weeks of zero entries (sizing not wired after refactor; docs/changelog.md 2026-05-05)",
+   "2026-05-06: 17 days of zero entries, BTC regime gate sole blocker for 19/22 coins (docs/changelog.md 2026-05-06)",
+   "2026-05-23: live on Binance.US with legacy params; never placed a live order",
+   "2026-06-03: -2015 IP allowlist crash loop, ~372 restarts (memory note)",
+   "2026-06-04: sizing floor found (MAX_POSITION_PCT 0.10 -> 0.25; docs/changelog.md:1552); circuit breaker tripped -11.04%",
+   "2026-06-16: legacy engines removed (82931a40); crypto intentionally off"
+  ],
+  "verdict": "No live crypto return record exists in the database. The only realized-PnL figure (+$9.88, Kraken) is prose; its records and script are gone."
+ },
+ "fees": {
+  "controlled_textbook_sweep_7_coins_231_combos": {
+   "0+0 (research_20260511_193048)": 36,
+   "0.2%+0.3%/side (research_20260511_214219)": 14,
+   "0.25%+0.3%/side (research_20260512_091940)": 13,
+   "0.4%+0.3%/side (research_20260511_162755)": 0,
+   "unit": "aggregate-gate PASS lines in worker logs; 0 coins survived the full cascade in every variant"
+  },
+  "edge_search": {
+   "run1_binanceus_top11": {
+    "fees": 0.0002,
+    "slippage": 0.003,
+    "gate_pass": "13/300",
+    "cascade": 0
+   },
+   "run2_binanceus_all51": {
+    "fees": 0.0002,
+    "slippage": 0.003,
+    "round_trip_pct": 0.64,
+    "gate_pass": "22/1462",
+    "cascade": 2,
+    "trades": 167
+   },
+   "run3_kraken_top100": {
+    "fees": 0.0025,
+    "slippage": 0.003,
+    "round_trip_pct": 1.1,
+    "gate_pass": "13/2904",
+    "cascade": 2,
+    "trades": 172
+   }
+  },
+  "kraken_era_runs": {
+   "fees": 0.004,
+   "slippage": 0.003,
+   "round_trip_pct": 1.4
+  }
+ },
+ "scratch": "/tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/l8/",
+ "stated_vs_tape_btc_after_costs_pp": {
+  "range": "0.1-2.7 (Kraken runs; largest is 05-01 YTD, alignment-explained)",
+  "run2": "167.21 stated vs 141.94 tape (unexplained; fits series ending ~2026-06-01)",
+  "run3": "128.86 stated vs 139.93 tape"
+ },
+ "upstream_implications": {
+  "located_artifacts": {
+   "crypto-wfo-recalibration-2026-05-01": [
+    "results/research/archive/research_20260501_010648"
+   ],
+   "crypto-wfo-research-snapshots-kraken": [
+    "results/research/archive/research_20260402_123248",
+    "results/research/archive/research_20260401_225306"
+   ],
+   "crypto-edge-search-2026-06-08": [
+    "results/research/research_20260607_215008",
+    "results/research/research_20260608_083103",
+    "results/research/research_20260608_093714"
+   ],
+   "possibly_unopened": "results/research/archive/research_20260507_*..20260509_* for the 05-07..05-09 configuration rows"
+  },
+  "inventory_raw_artifact_pointers": {
+   "checked": 3,
+   "mis_pointed": [
+    {
+     "id": "crypto-wfo-textbook-reset",
+     "cited": "results/research/research_20260511_193048/wfo_stats_snapshot.json",
+     "is": "frictionless run (FEES 0, SLIPPAGE 0; 36 gate passes)",
+     "claim_needs": "results/research/research_20260511_162755 (0.4%+0.3%/side; 0 passes)"
+    }
+   ],
+   "correct": [
+    "crypto-ibit-overnight-session",
+    "crypto-web-research-batch-2026-10-25"
+   ],
+   "null_but_artifact_exists": [
+    "crypto-wfo-recalibration-2026-05-01",
+    "crypto-wfo-research-snapshots-kraken",
+    "crypto-edge-search-2026-06-08"
+   ]
+  },
+  "lens6": "spec_matches_code may stay unverifiable (code removed); evidence text \"Run artifacts not found in results/\" is wrong for crypto-wfo-recalibration-2026-05-01; numbers verified: 05-01 YTD 48.40% from curve, four Sharpes within 0.006, stored fees/slippage, gate-pass counts 36/14/13/0 and 13/22/13",
+  "lens7": {
+   "status_could_change": [
+    "crypto-wfo-recalibration-2026-05-01",
+    "crypto-wfo-research-snapshots-kraken",
+    "crypto-edge-search-2026-06-08",
+    "crypto-wfo-textbook-reset"
+   ],
+   "possibly": [
+    "crypto-diversity-cap-disabled-2026-05-07",
+    "crypto-trade-frequency-gate-2026-05-07",
+    "crypto-strategy-usage-analyzer-2026-05-07",
+    "crypto-wfo-overfitting-param-stability"
+   ]
+  },
+  "lens2": "no class change under written rules: R2 excludes crypto and Lens 8 items are mixed-direction (survivorship favours strategy; cross-venue copying unknown); R3 and R5 unmet; R4 for edge-search moves from prose-only (met) to artifact-not-recomputed (unmet); GO rows stay inconclusive; no R6 unreliable NO because strategy figures recompute",
+  "lens1": "tape_state stays unknown for all crypto rows; attachable items: day_shift on pre-2026-05-05 rows (7-15% of trailing windows, 2-5% of 3-year windows); tape identity fault (cross-venue copies) and deleted delisted symbols for edge-search Binance.US runs; universe survivorship for all universe-ranked rows"
+ }
+}

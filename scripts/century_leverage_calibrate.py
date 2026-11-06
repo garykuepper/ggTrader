@@ -17,7 +17,7 @@ from ggTrader.lab.century_leverage import FRENCH_FILE, checked_file, load_french
 
 INPUTS = ROOT / "data" / "external" / "a23_inputs"
 FRENCH = ROOT / "data" / "external" / "french"
-CALIBRATION = ROOT / "docs" / "research" / "_century_leverage_calibration.json"
+CALIBRATION = ROOT / "research/allocation/century-leverage/_century_leverage_calibration.json"
 
 
 def main() -> None:

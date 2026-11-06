@@ -43,7 +43,7 @@ Strategies are split into two kinds:
 The registry holds **36** strategies in total — the rest are closed NO-GO
 research kept for reproducibility. See
 [CLI Reference](docs/cli_reference.md) for the full list and
-[Research Snapshot](docs/research/RESEARCH_SNAPSHOT.md) for each verdict.
+[Research Snapshot](research/RESEARCH_SNAPSHOT.md) for each verdict.
 
 ---
 
@@ -127,7 +127,8 @@ The prospective observer is separate from that closed study and production paper
 For a deeper dive, check out our detailed guides:
 - [**Next Steps**](docs/next_steps.md) — The current worklist. Start here if you are picking up work.
 - [**Roadmap**](docs/roadmap.md) — Goals, strategy status table, and project history.
-- [**Research Snapshot**](docs/research/RESEARCH_SNAPSHOT.md) — Every strategy tried and its verdict.
+- [**Research Snapshot**](research/RESEARCH_SNAPSHOT.md) — Every strategy tried and its verdict.
+- [**Research**](research/README.md) — Where research reports live and how to find a study (moved from docs/research on 2026-11-05).
 - [**Installation Guide**](docs/installation.md) — How to set up Python, TimescaleDB, and Docker.
 - [**CLI Reference**](docs/cli_reference.md) — A breakdown of all commands, flags, and parameters.
 - [**Architecture Guide**](docs/architecture.md) — How the codebase is built, how data flows, and how the simulation works.
@@ -140,7 +141,7 @@ For a deeper dive, check out our detailed guides:
 
 MIT. See [LICENSE](LICENSE).
 
-The [event-timing audit utility](docs/research/event-timing-audit-implementation.md)
+The [event-timing audit utility](research/audits/event-timing/event-timing-audit-implementation.md)
 provides offline evidence replay and guarded read-only collection for the
 registered PEAD/insider timing study. It computes no returns; full collection
 remains blocked pending code review and an authorized contact.

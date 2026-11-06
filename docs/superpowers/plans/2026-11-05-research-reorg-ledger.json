@@ -1,0 +1,1477 @@
+{
+  "existing_dead_links": [
+    {
+      "file": "docs/research/2026-10-22-event-evidence-resolution-workbook.md",
+      "line": 175,
+      "link": "/tmp/event-timing-vendor-evidence-review.md"
+    }
+  ],
+  "files": [
+    {
+      "current_path": "docs/research/_anchor_fix_reproduction_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/rebaseline/_anchor_fix_reproduction_results.json",
+      "sha256": "0ae9bfcfdfbce86490f4d55ef70a6c45fda8935a3f8604220fe2130af5132f1e",
+      "size": 11090
+    },
+    {
+      "current_path": "docs/research/_audit_reruns_20261019.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/production-replica/_audit_reruns_20261019.json",
+      "sha256": "51f142ac12ad892e613bdf53acd03e93e2eeb2c96e937ce04f4ea414a627fc96",
+      "size": 63463
+    },
+    {
+      "current_path": "docs/research/_century_leverage_a23_gate.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/century-leverage/_century_leverage_a23_gate.json",
+      "sha256": "10ad332d0584869da6ccfc63baefc566455463607652a381f256252622a8f292",
+      "size": 1224
+    },
+    {
+      "current_path": "docs/research/_century_leverage_calibration.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/century-leverage/_century_leverage_calibration.json",
+      "sha256": "31097310882bfa310ac7af52b05e07e30cf16a7527612d7b1c2a45782e2f1d9c",
+      "size": 1450
+    },
+    {
+      "current_path": "docs/research/_century_leverage_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/century-leverage/_century_leverage_results.json",
+      "sha256": "de65979d145eb8484bfd734cb6299fa8b72bc66254dc2b37d6c166906ce11b81",
+      "size": 1367457
+    },
+    {
+      "current_path": "docs/research/_core_spy_blend_20260924.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/core-spy-blend/_core_spy_blend_20260924.json",
+      "sha256": "a204443bc5c4715d90e73a77e37647ca06f416585115161f0ae2d071ad7e8f66",
+      "size": 1873
+    },
+    {
+      "current_path": "docs/research/_core_spy_blend_curves_20260924.csv",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/core-spy-blend/_core_spy_blend_curves_20260924.csv",
+      "sha256": "d2908b4baa6ee0fc0cf0d4056dfac59e82aa103e2171f1b681d5ed6b672b15a8",
+      "size": 79845
+    },
+    {
+      "current_path": "docs/research/_cost_charter_acquisition.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/_cost_charter_acquisition.json",
+      "sha256": "899841d95c04e2e4033687f3d98dae4c5efc06409f13af93239a5ed9c1d49482",
+      "size": 1593
+    },
+    {
+      "current_path": "docs/research/_cost_charter_comparison_results.json",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/_cost_charter_comparison_results.json",
+      "sha256": "949b510f223c2bec16ae45a0b634a9503af5d4670626561e340160cfeb3ca0f7",
+      "size": 6705
+    },
+    {
+      "current_path": "docs/research/_cross_asset_sleeve_holdout_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_holdout_results.json",
+      "sha256": "0be461ae55f885da55860e61daf50064a4fc5054e9accd220949771dff83316b",
+      "size": 5588
+    },
+    {
+      "current_path": "docs/research/_cross_asset_sleeve_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json",
+      "sha256": "761248fcd3b730e5de98ec42c4573ed4155e1fa638bd31a32e7ccbd765f99f78",
+      "size": 63481
+    },
+    {
+      "current_path": "docs/research/_event_audit_connected_metadata.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/_event_audit_connected_metadata.json",
+      "sha256": "9563e9d4372112084fbb3bb27787d6d466b030a9ca63d391a0cd051d5920fbec",
+      "size": 5808
+    },
+    {
+      "current_path": "docs/research/_event_audit_detector_provenance.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/_event_audit_detector_provenance.json",
+      "sha256": "710de53ebd7020ab42e2e8deec4f2e5cac36f94f1fa094d73690f25a283edcfd",
+      "size": 154579
+    },
+    {
+      "current_path": "docs/research/_event_audit_metadata_inputs.json",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/_event_audit_metadata_inputs.json",
+      "sha256": "431e57a194f5a59d2458816aa53578703cda3c2a8d35f71d0f4084d324da4977",
+      "size": 31509
+    },
+    {
+      "current_path": "docs/research/_event_audit_operational_bar_counts.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/_event_audit_operational_bar_counts.json",
+      "sha256": "afb858523e4ea88f32c30d1c380487005d88413f6479d86d65e14becb94f1bc9",
+      "size": 11458
+    },
+    {
+      "current_path": "docs/research/_event_audit_readiness_decision.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/_event_audit_readiness_decision.json",
+      "sha256": "f422784b03753b97f72d41df5eaf0cfd3d7e90df90d4def0275bfd8f8f851d30",
+      "size": 10170
+    },
+    {
+      "current_path": "docs/research/_event_evidence_export_file_search.json",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/_event_evidence_export_file_search.json",
+      "sha256": "cd47add9644a3abd67ac4b2f9943a5675959ed9c8b30c46a8f30b9b65dcd070a",
+      "size": 1756
+    },
+    {
+      "current_path": "docs/research/_event_evidence_resolution_workbook.json",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/_event_evidence_resolution_workbook.json",
+      "sha256": "6f0bc21ffa53182c7fb2501cec3e8d7dad1e385fbd22fdde0c4789137cc352d9",
+      "size": 416450
+    },
+    {
+      "current_path": "docs/research/_event_source_search_ledger.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/_event_source_search_ledger.json",
+      "sha256": "ee3446818558ffe98d3515e07d274e859b1d81b9721235128b24044a73f9c887",
+      "size": 47206
+    },
+    {
+      "current_path": "docs/research/_factor_screen_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/factor-screen/_factor_screen_results.json",
+      "sha256": "22e95c7c5e9feb3598971a0de91703ec8991886b0685b530e4a08be66dd668de",
+      "size": 14909
+    },
+    {
+      "current_path": "docs/research/_family_scope_extraction.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/feasibility/_family_scope_extraction.json",
+      "sha256": "aa46bd46d520c87581d4f623d8bc597ff7039466e135f4df7897eedbdd5b403d",
+      "size": 10167
+    },
+    {
+      "current_path": "docs/research/_fomc_clustered_event_study_20261020.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/production-replica/_fomc_clustered_event_study_20261020.json",
+      "sha256": "5334f8cd0434599e1221de56a12646da4a479aa0a8a50287bb39c4150ea4b067",
+      "size": 1443
+    },
+    {
+      "current_path": "docs/research/_free_data_feasibility_matrix.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/feasibility/_free_data_feasibility_matrix.json",
+      "sha256": "ae617c9f6cdd900c8af2338b02c624328b8142eedf256354549c9548ac006cba",
+      "size": 44610
+    },
+    {
+      "current_path": "docs/research/_ic_kelly_rebaseline_20260923.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/rebaseline/_ic_kelly_rebaseline_20260923.json",
+      "sha256": "14b5ede9e388422d1fe2b03e27afb2d6b4dae8cf55bee899ece813b2af802af0",
+      "size": 37131
+    },
+    {
+      "current_path": "docs/research/_insider_acceptance_diagnostic.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/_insider_acceptance_diagnostic.json",
+      "sha256": "a5d0a37292bb356f327ffb580e6dd133fcc7a4e675d6eda333505f1273c91b02",
+      "size": 39771
+    },
+    {
+      "current_path": "docs/research/_insider_identity_inventory_acquisition.json",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/_insider_identity_inventory_acquisition.json",
+      "sha256": "9fc4b2ac910c6df00e0aa38e8de1c25b2f83996b6327a561df0c940757363c34",
+      "size": 43796
+    },
+    {
+      "current_path": "docs/research/_insider_identity_inventory_resolution_results.json",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/_insider_identity_inventory_resolution_results.json",
+      "sha256": "faf738b0078fdd31ee57ae96a249214c0aff2c3825dea5fbff34cf962970fa0a",
+      "size": 49728
+    },
+    {
+      "current_path": "docs/research/_insider_predecessor_acquisition.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/_insider_predecessor_acquisition.json",
+      "sha256": "3e0bb9fe726e3dc59ee5be971ce6a0b8e81ec5e55869f0d50d777917772fc584",
+      "size": 1212
+    },
+    {
+      "current_path": "docs/research/_insider_predecessor_comparison.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/_insider_predecessor_comparison.json",
+      "sha256": "08ec0476387ff987b212b82c629f7e19654ae107fdc314870155b24a3ff45f19",
+      "size": 14284
+    },
+    {
+      "current_path": "docs/research/_intraday_benchmark_verification.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_benchmark_verification.json",
+      "sha256": "a18c9346682c16852443d3e4cb5d2c5f161928c8c8a117bd1ab2392c06b180a3",
+      "size": 452728
+    },
+    {
+      "current_path": "docs/research/_intraday_flash_doc_check_2026-10-25.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_flash_doc_check_2026-10-25.json",
+      "sha256": "edc99c189de6564cbc4f76051ebcf944789c949ecbcb54521f79156b9b3c0c03",
+      "size": 2855
+    },
+    {
+      "current_path": "docs/research/_intraday_full_text_verification_2026-10-25.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_full_text_verification_2026-10-25.json",
+      "sha256": "7f55350e6a7a1b1043c8bf070468b455b4bcf6018fb4d88668d06c646514a46f",
+      "size": 5343
+    },
+    {
+      "current_path": "docs/research/_intraday_source_verification.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_source_verification.json",
+      "sha256": "bb6349de0c8f71f1c3eadc7e5ba3b7dbd4771f9867991b882146a32d11573143",
+      "size": 7158
+    },
+    {
+      "current_path": "docs/research/_investigation_guard_baseline_2026-11-04.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/_investigation_guard_baseline_2026-11-04.txt",
+      "sha256": "439847f989c6071d9940a63708de5ed0abd8487630dfec0591bcaf3ec0575817",
+      "size": 1092
+    },
+    {
+      "current_path": "docs/research/_investigation_inventory.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+      "sha256": "41016de273f2b150f90c700883217ebd73e2c53489d643e91a30ce46badb2fc2",
+      "size": 276947
+    },
+    {
+      "current_path": "docs/research/_lens1_tape_state.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json",
+      "sha256": "2e91a259e375846da7b7ed0e06ce400a40b67488509b997306d07f5ceda5bf8e",
+      "size": 59777
+    },
+    {
+      "current_path": "docs/research/_lens2_sensitivity.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "sha256": "390da943e4ad9d62ddf6976ad1448837fe802e593bd67dae708c5577c78fe348",
+      "size": 339416
+    },
+    {
+      "current_path": "docs/research/_lens3_snapshot_gap.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens3_snapshot_gap.json",
+      "sha256": "a3565869b3291412e6d5f2c458969124e19c85854c0fe78e3f4e1dbc00468532",
+      "size": 40981
+    },
+    {
+      "current_path": "docs/research/_lens4_ceiling.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens4_ceiling.json",
+      "sha256": "6e395c2c1a801421cfacb9b78acf5f8cff9b596f54dbf7ab3fb9c0bba1f3805c",
+      "size": 49031
+    },
+    {
+      "current_path": "docs/research/_lens5_coverage_matrix.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens5_coverage_matrix.json",
+      "sha256": "49c3f8711f1cc67a3dbe28b70c22df94d9af901e052411304ebc24a9eed1fdf6",
+      "size": 240961
+    },
+    {
+      "current_path": "docs/research/_lens6_replays.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens6_replays.json",
+      "sha256": "2836bf2997a56b2cad022e4bfb5bbd4031afb2a58638f7955ec1628a64a88fec",
+      "size": 19992
+    },
+    {
+      "current_path": "docs/research/_lens6_verdicts.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json",
+      "sha256": "f55938b3781d337810a4421993fb94a6d25656e4c2037c1317ce16458b78ca78",
+      "size": 29976
+    },
+    {
+      "current_path": "docs/research/_lens7_recompute.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+      "sha256": "3a08d22d5cdf347e28336b5de78d831b583cdbe8fc7b1cd035823d6fd6dae5c6",
+      "size": 93715
+    },
+    {
+      "current_path": "docs/research/_lens8_tape_checks.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens8_tape_checks.json",
+      "sha256": "b635068d3e007d36e42fe3e34a6449e1289e1017c001dd83c6d7dda3c614f6a4",
+      "size": 51242
+    },
+    {
+      "current_path": "docs/research/_lens9_power.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens9_power.json",
+      "sha256": "18f31ee91996cb3aba21f21cad8e3a6ece5bb68e5a9263c214f79f5572195d78",
+      "size": 151088
+    },
+    {
+      "current_path": "docs/research/_live_indicator_warmup_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/paper-system/indicator-warmup/_live_indicator_warmup_results.json",
+      "sha256": "000c495b3768c99dfb6bee55f603a8d9f39b5d361c0c0fbf08793b3d0e1f621c",
+      "size": 19914
+    },
+    {
+      "current_path": "docs/research/_momentum_french_screen_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/momentum/_momentum_french_screen_results.json",
+      "sha256": "9db15f482eb3fad0adbf2aa36c16d78621db1d02a9620f0a6fe0b36e9d413b00",
+      "size": 4167
+    },
+    {
+      "current_path": "docs/research/_month_end_treasury_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/month-end-treasury/_month_end_treasury_results.json",
+      "sha256": "35f1c1b0780357d05e259075b5513e96133666c369fb56bb26c61d28574926bd",
+      "size": 36108
+    },
+    {
+      "current_path": "docs/research/_net_issuance_screen_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/net-issuance/_net_issuance_screen_results.json",
+      "sha256": "949272f2513d6cfc8775a65473625a8d83ea0662c02ab5456a66510a7534c7aa",
+      "size": 6294
+    },
+    {
+      "current_path": "docs/research/_pit_rebaseline_20260923.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/rebaseline/_pit_rebaseline_20260923.json",
+      "sha256": "1714e02b61f3af04f082fc24265610f7ea9632a5001a7dbce3c03a394e5bf24c",
+      "size": 37077
+    },
+    {
+      "current_path": "docs/research/_position_sizing_wfo_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/paper-system/position-sizing/_position_sizing_wfo_results.json",
+      "sha256": "1c05e0dde88ac9f2278b622e2fbd0ca5d5212817187fa75f3575027bc0dd82fb",
+      "size": 2329
+    },
+    {
+      "current_path": "docs/research/_production_replica_curves.csv",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/production-replica/_production_replica_curves.csv",
+      "sha256": "5934e81c0e078282397abb47972e924f32d2aa53c4c19aa366a6a7dde8609e42",
+      "size": 1438592
+    },
+    {
+      "current_path": "docs/research/_production_replica_results.json",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/production-replica/_production_replica_results.json",
+      "sha256": "95c00309be1b03d62443028f3f2c64fc738752997b7972d2420a75316b0f8d0b",
+      "size": 543257
+    },
+    {
+      "current_path": "docs/research/_rebaseline_corrected_tape_20260822.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json",
+      "sha256": "5e50d50ea0ea2134fc1cf49e6fcb654897e9ac3da4c57f6f9f91fdf9d61aa34c",
+      "size": 11086
+    },
+    {
+      "current_path": "docs/research/_replica_parity_20261019.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/production-replica/_replica_parity_20261019.json",
+      "sha256": "a041329f711ba15967999cbbe578a618e534a61fac1875f74ebd44cc2fc1039e",
+      "size": 188377
+    },
+    {
+      "current_path": "docs/research/_research_process_audit_ledger.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/research-process/_research_process_audit_ledger.json",
+      "sha256": "3245bcdc2c89743b4b4c4bcd705dc683a73029a93c2d85a885a2ecef5c9669ca",
+      "size": 215178
+    },
+    {
+      "current_path": "docs/research/_static_leverage_aftertax_dist_bounds.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/static-leverage/_static_leverage_aftertax_dist_bounds.json",
+      "sha256": "273b3888065ed0ca2524eb6df725f4b95f2de29f4fa257399815df8ab46bc4d6",
+      "size": 14868
+    },
+    {
+      "current_path": "docs/research/_static_leverage_aftertax_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/static-leverage/_static_leverage_aftertax_results.json",
+      "sha256": "985bf9f675fb9aa1c1f47289b9f82665be45e615407e55ebc7f9a804a02116f0",
+      "size": 47723
+    },
+    {
+      "current_path": "docs/research/_static_leverage_aftertax_rf_plus0.015.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.015.json",
+      "sha256": "1345e2b633977312b1de60f8d163e4076b111bd3b70a623ff385fb5d3b968a12",
+      "size": 6627
+    },
+    {
+      "current_path": "docs/research/_static_leverage_aftertax_rf_plus0.025.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.025.json",
+      "sha256": "94a5458e38a57d500bb5357c445d1b98b9e3c2d42b85e49e14778ad68e470d00",
+      "size": 6624
+    },
+    {
+      "current_path": "docs/research/_synthesis_inventory_map.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/_synthesis_inventory_map.json",
+      "sha256": "4b394d1ee50303f61227ade4c600aab8de5047e0433a06e7c101f5db8a692e1f",
+      "size": 12566
+    },
+    {
+      "current_path": "docs/research/_wfo_fold_attribution_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/programme/wfo-methods/_wfo_fold_attribution_results.json",
+      "sha256": "3a509e103d84842e4b7e1340e32a301faceba297b8f74fcd538f3cd8828626f2",
+      "size": 8740
+    },
+    {
+      "current_path": "docs/research/_wfo_policy_synthetic_results.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/programme/wfo-methods/_wfo_policy_synthetic_results.json",
+      "sha256": "84b051b29219fe3d0df8c90c54f81079523272b2214cfb15d13effb0c834a349",
+      "size": 22582
+    },
+    {
+      "current_path": "docs/research/2026-06-28-alpha-optimization-execution-plan.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/programme/initial-research-plan/2026-06-28-alpha-optimization-execution-plan.md",
+      "sha256": "1436a4e7ba2e4e3ed196a1a96ea96fc26b79eadaded4988d7de6c8711ebc8dd8",
+      "size": 15628
+    },
+    {
+      "current_path": "docs/research/2026-07-06-crypto-execution-venues.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/crypto/execution-venues/2026-07-06-crypto-execution-venues.md",
+      "sha256": "c552c62d722dbfa79d6e44657ca0554af403d650294706ac84708cf69891a26a",
+      "size": 3992
+    },
+    {
+      "current_path": "docs/research/2026-07-16-leveraged-index-rotation-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md",
+      "sha256": "dc540c3ebdf32412235afc5e28bf74a4262077cbf5fbfb10be6a2088379d1138",
+      "size": 9217
+    },
+    {
+      "current_path": "docs/research/2026-07-16-leveraged-trend-following-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/leveraged-trend/2026-07-16-leveraged-trend-following-nogo.md",
+      "sha256": "4a35ec338ad6b92b2c8cb4ba403153a2d2d7dcf103426ba631a997530dc53398",
+      "size": 8434
+    },
+    {
+      "current_path": "docs/research/2026-07-17-index-deletion-fade-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/index-deletion/2026-07-17-index-deletion-fade-nogo.md",
+      "sha256": "b1e2c1bf5b1756c1458327772129c2e84fba23259cd049edea4bc35a061f8553",
+      "size": 7422
+    },
+    {
+      "current_path": "docs/research/2026-07-17-max-effect-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/max-effect/2026-07-17-max-effect-nogo.md",
+      "sha256": "e7928c133d65091bfbb1b67f76e70bea2efdb291302b823426eac908bd6fd423",
+      "size": 6733
+    },
+    {
+      "current_path": "docs/research/2026-07-17-pairs-stat-arb-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/pairs-stat-arb/2026-07-17-pairs-stat-arb-nogo.md",
+      "sha256": "2b2689850542c7459cf79d802a0275373186a1c48cb8c620e6d1c1ad6f059a50",
+      "size": 14971
+    },
+    {
+      "current_path": "docs/research/2026-07-17-pead-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/pead/2026-07-17-pead-nogo.md",
+      "sha256": "d614608ee5e63585c93487169642fb1887317ea77934ea0c07324f378f103981",
+      "size": 7978
+    },
+    {
+      "current_path": "docs/research/2026-07-17-short-interest-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/short-interest/2026-07-17-short-interest-nogo.md",
+      "sha256": "9fa78b48ed86d8dee7e50305f1b6826fb2f817a0596a0c90e501fc726a88b6ed",
+      "size": 7501
+    },
+    {
+      "current_path": "docs/research/2026-07-19-congress-trades-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/congress-trades/2026-07-19-congress-trades-nogo.md",
+      "sha256": "4674cd2970ce564bcc796120b1b7b505b408c9627e68cbe7ed9d1b8e20dc8cdc",
+      "size": 8241
+    },
+    {
+      "current_path": "docs/research/2026-07-19-insider-cluster-buy-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/insider-cluster/2026-07-19-insider-cluster-buy-nogo.md",
+      "sha256": "c754571cbefdad264bf5d1d7375150b857eced034cb5b5738f976c2e068b8ba5",
+      "size": 8101
+    },
+    {
+      "current_path": "docs/research/2026-07-19-short-volume-ratio-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/short-volume/2026-07-19-short-volume-ratio-nogo.md",
+      "sha256": "8a5fb41d23face8e9b7ac61c12857aedf6b7b9789541f0d8e6d1f30fa34e2846",
+      "size": 6105
+    },
+    {
+      "current_path": "docs/research/2026-07-20-commodity-trend-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/commodity-trend/2026-07-20-commodity-trend-nogo.md",
+      "sha256": "785043b70cad1c3e85af6282c4fd6db65a3c93d418f18c18c706834c63fe2c01",
+      "size": 7114
+    },
+    {
+      "current_path": "docs/research/2026-07-20-fomc-drift-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/fomc-drift/2026-07-20-fomc-drift-nogo.md",
+      "sha256": "4bc74fe2bcb6268d74d495581e3c28ae5ad541d6c140a1dca627e08e1f62966e",
+      "size": 11421
+    },
+    {
+      "current_path": "docs/research/2026-07-20-fx-hedge-overlay-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/fx-hedge/2026-07-20-fx-hedge-overlay-nogo.md",
+      "sha256": "8253bf4ecee1cb882153ebd321145e4300e9646f67793a066c181c3714ba105b",
+      "size": 9282
+    },
+    {
+      "current_path": "docs/research/2026-07-20-treasury-curve-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/treasury-curve/2026-07-20-treasury-curve-nogo.md",
+      "sha256": "1d6f779ac619a5e6fee49b65a6a4a167f71e0d3dfe5b320c86e98bef3334cd2d",
+      "size": 6370
+    },
+    {
+      "current_path": "docs/research/2026-07-24-headline-sentiment-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/headline-sentiment/2026-07-24-headline-sentiment-nogo.md",
+      "sha256": "074e48e2b92424b2616b9c58d3bb12d195374b0faa2895ceb8ccf174d98093bd",
+      "size": 12795
+    },
+    {
+      "current_path": "docs/research/2026-07-25-strategy-implementation-audit.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/implementation/2026-07-25-strategy-implementation-audit.md",
+      "sha256": "0855bec92f0634af703945eef9f0e4c0519c72e14213c726c925a5706f25fa78",
+      "size": 28513
+    },
+    {
+      "current_path": "docs/research/2026-08-18-wfo-anchor-leakage-fix.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md",
+      "sha256": "30269c68c8fdd95e7b3cc509239c1418bead719f199bcc3f5af7940b28a9062f",
+      "size": 10610
+    },
+    {
+      "current_path": "docs/research/2026-08-19-anchor-fix-reproduction.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md",
+      "sha256": "77e66546798d90902dd9289700dfb23b77deac982603d32d156c778f764c9ebb",
+      "size": 18283
+    },
+    {
+      "current_path": "docs/research/2026-08-19-position-sizing-regimes.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/paper-system/position-sizing/2026-08-19-position-sizing-regimes.md",
+      "sha256": "ecb515fd1c7d570de02a0d03f353626cbab7d560a6a4b2f5b09237fc33e7f4c8",
+      "size": 17615
+    },
+    {
+      "current_path": "docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+      "sha256": "089cf2b1480acb30133c1a150ac4c9dfe7c66029ccfb89c38585c71dd1969a1a",
+      "size": 23879
+    },
+    {
+      "current_path": "docs/research/2026-09-23-ic-kelly-rebaseline-invalid.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/rebaseline/2026-09-23-ic-kelly-rebaseline-invalid.md",
+      "sha256": "b56c84b1c60c8c464b05f9b115bfe6a582d831964a82891cccbe2a896b81e092",
+      "size": 6275
+    },
+    {
+      "current_path": "docs/research/2026-09-23-pit-rebaseline-core-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md",
+      "sha256": "549cac435fdbb6f342c2b50f50277c303c8de31b5d2e5d9e70c85465f686ca76",
+      "size": 5673
+    },
+    {
+      "current_path": "docs/research/2026-09-24-core-spy-blend-keep.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md",
+      "sha256": "ef991a0cd3d49126564a2d2afa63bfb3eaa1bd6c2ef048068a217e1a737531c1",
+      "size": 6665
+    },
+    {
+      "current_path": "docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve-nogo.md",
+      "sha256": "08dd6cc97c51e81d6da5e45c466acefa6b6ed6d56ae974218c97ba9fabd8fa36",
+      "size": 9050
+    },
+    {
+      "current_path": "docs/research/2026-09-28-cross-asset-sleeve.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md",
+      "sha256": "9d337b1292ed76712ea84e3a7afcd275ae30ee55cd21de137a5a6bd9b9213711",
+      "size": 17328
+    },
+    {
+      "current_path": "docs/research/2026-09-28-live-indicator-warmup.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/paper-system/indicator-warmup/2026-09-28-live-indicator-warmup.md",
+      "sha256": "176347d196b00dec1dfe621f5f55e85d68c6f9ccf15688bec1cf1466c6655c3f",
+      "size": 10233
+    },
+    {
+      "current_path": "docs/research/2026-09-30-static-fractional-leverage.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md",
+      "sha256": "41ac4881eda408a422970d5a22e98e62f85776ea0e14a20464bbdc780fce6301",
+      "size": 19899
+    },
+    {
+      "current_path": "docs/research/2026-10-19-production-replica-audit-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+      "sha256": "1b2a60f4de6704ae601239a6dc4a024591cc8fd169c125621e6cec90d25a1156",
+      "size": 18725
+    },
+    {
+      "current_path": "docs/research/2026-10-20-momentum-french-screen-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md",
+      "sha256": "8b173b39082734e3f4770b80636c999cd774a688cf02c2f7e07ece1a9bcdc0a7",
+      "size": 16844
+    },
+    {
+      "current_path": "docs/research/2026-10-21-factor-screen-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md",
+      "sha256": "69e40dbb63faf3a703b3ac64e788d2784d9ce4a28b5ddb023dfff8f636874a80",
+      "size": 29172
+    },
+    {
+      "current_path": "docs/research/2026-10-22-event-audit-readiness-decision.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/2026-10-22-event-audit-readiness-decision.md",
+      "sha256": "76bac720c0411acd19cba994df083a703610a409f0cbb8552b303f1c810b6a04",
+      "size": 6459
+    },
+    {
+      "current_path": "docs/research/2026-10-22-event-evidence-resolution-workbook.md",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/2026-10-22-event-evidence-resolution-workbook.md",
+      "sha256": "72a81f9c77e0333ed26355e468b2415af327dc24d6309bb6441a1fa62fa6bb0c",
+      "size": 37883
+    },
+    {
+      "current_path": "docs/research/2026-10-23-century-leverage.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/century-leverage/2026-10-23-century-leverage.md",
+      "sha256": "6787ec626b6dc1c3f9fc90b0102803f58d24ad26c65ffb4c257b80966709d0a1",
+      "size": 17478
+    },
+    {
+      "current_path": "docs/research/2026-10-23-event-timing-audit-decision.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/2026-10-23-event-timing-audit-decision.md",
+      "sha256": "0697b11ab48530f859b4273f1af3a2ad3fd8b3adcc6ee3192021d6f0e4958ac1",
+      "size": 24272
+    },
+    {
+      "current_path": "docs/research/2026-10-23-net-issuance-screen-nogo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/net-issuance/2026-10-23-net-issuance-screen-nogo.md",
+      "sha256": "9f42d9485fca7eb11c9838fd683f60c461fea6d48a35eb4ad81b5ca606ec89ea",
+      "size": 10026
+    },
+    {
+      "current_path": "docs/research/2026-10-24-intraday-replication-source-audit.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-24-intraday-replication-source-audit.md",
+      "sha256": "a36da982e359c156c38cc849c44df87c350b5f4e258272174bc051c1e950264e",
+      "size": 9875
+    },
+    {
+      "current_path": "docs/research/2026-10-24-intraday-trading-feasibility.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-24-intraday-trading-feasibility.md",
+      "sha256": "d1a2605531443c8445cfb5bf0e1ee515bbf6ccc854a8fdb477747b855c78a90c",
+      "size": 16726
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-preflight-delegation.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-preflight-delegation.md",
+      "sha256": "bb93468cfde8cd67f39fce27a9cae58cfebae70595e3ad6e49db8b081610502f",
+      "size": 6479
+    },
+    {
+      "current_path": "docs/research/2026-11-01-research-process-audit.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/research-process/2026-11-01-research-process-audit.md",
+      "sha256": "2d362b94c2523b6364f3cf22692ed3837ae996681f427bb3525bedd86d672a3f",
+      "size": 34228
+    },
+    {
+      "current_path": "docs/research/2026-11-02-accruals-feasibility.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md",
+      "sha256": "522a31f4bd8c3378638bbca0404cdba4ac4360fa8b3a3696cfca216b335ebcfb",
+      "size": 7069
+    },
+    {
+      "current_path": "docs/research/2026-11-02-after-tax-lot-engine-requirements.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/paper-system/tax-lots/2026-11-02-after-tax-lot-engine-requirements.md",
+      "sha256": "45846e319a5ce1849bda0b2a92b82fd0e647ec043047dd9b83e98610a037609f",
+      "size": 14615
+    },
+    {
+      "current_path": "docs/research/2026-11-02-family-scope-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/feasibility/2026-11-02-family-scope-review.md",
+      "sha256": "6e6f703b9ed8385c95cff28242d6e5cec573a7f1004e57b44a08ba3e714db7dd",
+      "size": 7518
+    },
+    {
+      "current_path": "docs/research/2026-11-02-free-data-stock-feasibility.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md",
+      "sha256": "8caea9cebc890ef0b57c5b5261e7c4752b83cbfced74fa02891d84ce296cca8d",
+      "size": 9856
+    },
+    {
+      "current_path": "docs/research/2026-11-02-paper-freeze-readiness.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md",
+      "sha256": "3f863b36bce6bd9caa642e942e48e3104c3e1070f311be482a9a86197587bbff",
+      "size": 9099
+    },
+    {
+      "current_path": "docs/research/2026-11-02-two-symbol-sweep-design.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md",
+      "sha256": "591c98a477cf69195b731674479b403cf977c59a36080caea112b1be144d9cfd",
+      "size": 6383
+    },
+    {
+      "current_path": "docs/research/2026-11-02-wfo-fallback-semantics.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md",
+      "sha256": "2c152af749cbb3aa802e9afd8b9a4f989aaf28bf8970eafa7c20b80ab960d950",
+      "size": 8281
+    },
+    {
+      "current_path": "docs/research/2026-11-02-wfo-fold-attribution.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/programme/wfo-methods/2026-11-02-wfo-fold-attribution.md",
+      "sha256": "275e59ca4c4036d5c6103d487dae83fd1c289b476e1f60ff9af65f4743493ab2",
+      "size": 8900
+    },
+    {
+      "current_path": "docs/research/2026-11-02-wfo-policy-synthetic.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md",
+      "sha256": "99be90830a6ab1796f57507ba9b9880f0744f8894884d6d296fc206f902983da",
+      "size": 9464
+    },
+    {
+      "current_path": "docs/research/2026-11-04-investigation-inventory.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md",
+      "sha256": "203aac84f924c83145999dd6d2100286c6a5d9371cf0847d7bbed28d08c1be63",
+      "size": 43318
+    },
+    {
+      "current_path": "docs/research/2026-11-04-investigation-ledger.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-ledger.md",
+      "sha256": "c3b68917b715cdaede620f8c2957d32a2b1c794252e5f2733e3bb7258894f6da",
+      "size": 27495
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens1-backtest-validity.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+      "sha256": "1032c7a23dcf622eae393e2cec22c3ba138f13c5bbe7b3e8b78100c9cb551a3d",
+      "size": 33799
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens2-sensitivity-spec.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md",
+      "sha256": "1b61a1ddc474c4700ddea4bc5163fbe2bbf7ab13c0ab535926d22a2c3654e738",
+      "size": 30198
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens2-verdict-audit.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+      "sha256": "5d45ffed8a912b2316f6f16d843688bca133df5ff4b46c707e04bdb970c60c77",
+      "size": 256076
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens3-live-parity.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens3-live-parity.md",
+      "sha256": "aab45a025317c6dab539f6757805374ec3a337a120bf8301ae713cdb0045c865",
+      "size": 31965
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens4-feasibility-and-ceiling.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md",
+      "sha256": "5095fc0f880929527039a4f553f026e04271ebc7199ba3d8f3b6f8e9db001668",
+      "size": 52001
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens5-coverage-gaps.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md",
+      "sha256": "1a2a302ca8626f61087aca92e56cd7c561a779e927c73b9d41ba6acd10e877fa",
+      "size": 56685
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens6-implementation-correctness.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md",
+      "sha256": "26f24ae498f203bba96326812432a3aed2403e5c4f9880a98e1d8ca162d83439",
+      "size": 31010
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens7-research-accuracy.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md",
+      "sha256": "092f2e2c100a02569fc209593bc878f3d7b72556811311c4a80792c861b0e97a",
+      "size": 31031
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens8-crypto.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+      "sha256": "ccef1b946f333d42d249bb8efd336f42f9329d839629bcfdc7b44206381259cd",
+      "size": 52484
+    },
+    {
+      "current_path": "docs/research/2026-11-04-lens9-power-and-regime.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+      "sha256": "4b5a3592ede0fb5462df75d873d2c00a63a8ab44d13f35f36c9c72bd2297491a",
+      "size": 77114
+    },
+    {
+      "current_path": "docs/research/2026-11-04-phase0-trust-audit.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md",
+      "sha256": "c3f25c4b020610316dc5227fb9be0b406562be4789ac34bba5974ceee01a0c7e",
+      "size": 9970
+    },
+    {
+      "current_path": "docs/research/2026-11-04-phase1-checkpoint.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/findings/2026-11-04-phase1-checkpoint.md",
+      "sha256": "dc229d4a1384da9bd167cd1a3300bfdecba479cd782929682aa2f7025da4fdeb",
+      "size": 69066
+    },
+    {
+      "current_path": "docs/research/2026-11-04-root-cause-challenge.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-challenge.md",
+      "sha256": "2ec970b5d1370aa0f67f8819f9ce1fb7c11c34d3fa0deebaa7e27eff38b11f09",
+      "size": 26864
+    },
+    {
+      "current_path": "docs/research/2026-11-04-root-cause-investigation.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md",
+      "sha256": "9f11af08baa6425c76712c76a1813acfe0026ea46bb1e7894c304c7b4a6ba46d",
+      "size": 78725
+    },
+    {
+      "current_path": "docs/research/2026-11-05-argon-review-verification.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-review-verification.md",
+      "sha256": "8287f9306f29495a7c1a6ec5f895ae73a65e94ac6b42e45b797407b91cef34e9",
+      "size": 26769
+    },
+    {
+      "current_path": "docs/research/2026-11-05-argon-synthesis-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-synthesis-review.md",
+      "sha256": "1ad1cd102d0667c6c902a47f99a1786c0cc274428de6ef56c35903f94560a1ae",
+      "size": 36547
+    },
+    {
+      "current_path": "docs/research/2026-11-05-senior-quant-direction-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-senior-quant-direction-review.md",
+      "sha256": "58f5c6c3e82cb7e619b95e8ddc74409194267c5dc1756cd77cae1e3f79cebd09",
+      "size": 18226
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md",
+      "sha256": "d58adf1330815dc2306ffb897cfb0899f4dcce17d0ac9e6adea6baf6252110ed",
+      "size": 17506
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-09-09-perf-review/ggtrader_review_artifacts_20260909.tgz",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/audits/artifacts-2026-09-09-perf-review/ggtrader_review_artifacts_20260909.tgz",
+      "sha256": "a94cfe93f8ffea48f7479b48a9066dfb436401aeeb06503f3d1709556579bf47",
+      "size": 15378
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-09-23-web-batch/sanity_checks_output.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/artifacts-2026-09-23-web-batch/sanity_checks_output.txt",
+      "sha256": "ff74f1125c46ecdae8c9dbc81c7f108058104f470d7155a7e38afa17000a5980",
+      "size": 2352
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-09-23-web-batch/sanity_checks.py",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/artifacts-2026-09-23-web-batch/sanity_checks.py",
+      "sha256": "73d975da0e44f486e3eaf9bb20c680913301dc30fc52520015874e6b9bad6a79",
+      "size": 4439
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-09-28-web-batch/sanity_checks_output.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/artifacts-2026-09-28-web-batch/sanity_checks_output.txt",
+      "sha256": "30ac0348f255e51ff7683c5287dc39f5d26e5ac13ac301e1e5335049388cf656",
+      "size": 2118
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-09-28-web-batch/sanity_checks.py",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/artifacts-2026-09-28-web-batch/sanity_checks.py",
+      "sha256": "4793d12cb9e8400be1959cb3879ecff056e20409fc3e4397b0ea175a5aaf4fda",
+      "size": 4189
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-09-30-web-batch/leveraged_spy_sanity.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/artifacts-2026-09-30-web-batch/leveraged_spy_sanity.json",
+      "sha256": "001539b5d9ee14385751881a13a123b3401f44f248a771aa68049d0240949e92",
+      "size": 2383
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-09-30-web-batch/leveraged_spy_sanity.py",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/allocation/artifacts-2026-09-30-web-batch/leveraged_spy_sanity.py",
+      "sha256": "b5572812cbaf471eb3a7af2843b5a7ceaf841b7abb7dd569f883882de6925e12",
+      "size": 5038
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json",
+      "sha256": "687ee132bc5017f66f746842f60f908c93c911da277666504d71f4f59b0c79ea",
+      "size": 596
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.py",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.py",
+      "sha256": "5359a02d1da2a3511c3936c7190388a09e6bf702efeddd8b2abc68602491c11e",
+      "size": 2000
+    },
+    {
+      "current_path": "docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve.md",
+      "sha256": "d02a3ee41ebce0c0013f7c78b1cd1da865e8d8dbe90b59abde21a673375d6d9d",
+      "size": 21067
+    },
+    {
+      "current_path": "docs/research/briefs/2026-09-28-cross-asset-sleeve-holdout.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-holdout.md",
+      "sha256": "2ce50a357ef89cc7f5a8ef171e18b24e51cc8a33359b0ae4f4c977ce32592140",
+      "size": 1940
+    },
+    {
+      "current_path": "docs/research/briefs/2026-09-28-cross-asset-sleeve.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md",
+      "sha256": "2b7ca5825b1261578e4dc602e3125b2908b3b880c25c6bd73943f666c2d022e0",
+      "size": 23200
+    },
+    {
+      "current_path": "docs/research/briefs/2026-09-30-static-fractional-leverage.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/static-leverage/2026-09-30-static-fractional-leverage-brief.md",
+      "sha256": "db9c4b43463126b7ff02838eb757c9c736d099c1b43f31acd1cd22b352d7c0dc",
+      "size": 24547
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-19-production-replica-audit.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/production-replica/2026-10-19-production-replica-audit.md",
+      "sha256": "877442e8a026142d6d3b765e3dc3c6f2f2e48a41c9a999b8e6564dc8baf779d1",
+      "size": 9062
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-19-production-replica-closure-amendment.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/production-replica/2026-10-19-production-replica-closure-amendment.md",
+      "sha256": "cac0ce2b15bb1eb3efd32c69cf999ecfeda7ae2755b3001e6239f0ad1fa9b3c5",
+      "size": 4357
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-19-production-replica-fomc-timing-amendment.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/production-replica/2026-10-19-production-replica-fomc-timing-amendment.md",
+      "sha256": "54ef2efbbea2133dfe2770b01ee87de8507e90c0856b79fe57c494125701f1ac",
+      "size": 2459
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-19-production-replica-parity-amendment.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/production-replica/2026-10-19-production-replica-parity-amendment.md",
+      "sha256": "696aa737538be385ca764a92410a43d98700f2b7264b84462931a1fe1134aad7",
+      "size": 4229
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-20-factor-screen.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/factor-screen/2026-10-20-factor-screen.md",
+      "sha256": "7897fb1e76429142ef766b3a6217568129dbceb75373176cbd094790cf0e0102",
+      "size": 16876
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-20-momentum-retest.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/momentum/2026-10-20-momentum-retest.md",
+      "sha256": "80e3430d72c6585fcb95b309e2fa888bcd41ad32b08aac8945aac3d3aabbd65a",
+      "size": 18907
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-21-event-timing-audit-sources.md",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/2026-10-21-event-timing-audit-sources.md",
+      "sha256": "6f6660201a5b99e8799dd6252051c7dd724f36d216539cb0c7207c9f7d29e070",
+      "size": 3310
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-21-event-timing-audit.md",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/2026-10-21-event-timing-audit.md",
+      "sha256": "4272da4069bb33640c0b2d7f621cb27969d97fa5d97f424d1b7ce01a9ad7d904",
+      "size": 42180
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-22-cost-charter-batch.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/2026-10-22-cost-charter-batch.md",
+      "sha256": "feeb0e897d74b6044302e11132c5bee65606cefe951a569ad5779db1940f6aaf",
+      "size": 3631
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-22-event-timing-source-conflict-proposal.md",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/2026-10-22-event-timing-source-conflict-proposal.md",
+      "sha256": "a8d1cee1f4c2226d7eda0f28bbbcfc156ae1d55d94a5a0fef9354917bef9297d",
+      "size": 7198
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-22-identity-inventory-resolution-batch.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/2026-10-22-identity-inventory-resolution-batch.md",
+      "sha256": "c7f79306f38583011c158d9bd162edf61d8686e629edd3ac9fe6a998313f8965",
+      "size": 6329
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-22-insider-predecessor-batch.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/2026-10-22-insider-predecessor-batch.md",
+      "sha256": "f3b53c917a0b2ceb6ea3fd7184213b1fcfa5d6a67b49ce502db02ab3f7124f2a",
+      "size": 4098
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-22-three-document-restart.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/2026-10-22-three-document-restart.md",
+      "sha256": "2454eed4bc450bc115f3eb734d16cec982a8a4d7aaaef8edad620214c63c46fb",
+      "size": 4825
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-23-century-leverage-ruling-r1.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/century-leverage/2026-10-23-century-leverage-ruling-r1.md",
+      "sha256": "6d616de89291f57fcf616fceee55cfc3239fe98955da55cd8b83bb106f861649",
+      "size": 1498
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-23-century-leverage-ruling-r2.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/century-leverage/2026-10-23-century-leverage-ruling-r2.md",
+      "sha256": "8d04c2bc8fedb1116bdbdf22b6f5988817d997630ff46e3f70680800c09f85eb",
+      "size": 1187
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-23-century-leverage.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/allocation/century-leverage/2026-10-23-century-leverage-brief.md",
+      "sha256": "48a2dc4136d11aef3e4ca3b55f141b514ae3cb2d4ee54c7ea5afef0a569cf2f0",
+      "size": 14479
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-23-forward-paper-standard.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/programme/evidence-standard/2026-10-23-forward-paper-standard.md",
+      "sha256": "15eef8fdea814a4b0d6b6b4b5c1ef85b15c3dec6e812014e51fc8d2b233b6564",
+      "size": 19390
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-23-insider-acceptance-time-amendment.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/audits/event-timing/2026-10-23-insider-acceptance-time-amendment.md",
+      "sha256": "7a7eaa291bfcb8c093a54c47840ad6e49800ad4cb893d21f114d8db9df72fe25",
+      "size": 8688
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-23-net-issuance-screen.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/stock-signals/net-issuance/2026-10-23-net-issuance-screen.md",
+      "sha256": "40da78275ca0fa9923b5a02a0737b53f43c6adb9ee9c540db4a66fa0b72b52bb",
+      "size": 14424
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-24-intraday-feasibility.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-24-intraday-feasibility.md",
+      "sha256": "51162768ea497c242f0c199baf7e2a0f79a62a85071c8f6ff85fd06b670eaec3",
+      "size": 25080
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-25-intraday-stage0a-contract.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md",
+      "sha256": "cbb7354a17b54ab6e4ae4d5086f7950aaedf2c96eb9580676c20dc91a149e7f6",
+      "size": 6895
+    },
+    {
+      "current_path": "docs/research/event-timing-audit-implementation.md",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/audits/event-timing/event-timing-audit-implementation.md",
+      "sha256": "0c8d9cfd911defe0f4d3216da3c8bd158155f47532a7e5cffb07fdd19d24510e",
+      "size": 91698
+    },
+    {
+      "current_path": "docs/research/prompts/local-implementation-prompt-TEMPLATE.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/prompts/local-implementation-prompt-TEMPLATE.md",
+      "sha256": "79ef6349a509971de1f4611551446e44ad7491b91ed8057eff45601b0dfda6d8",
+      "size": 17067
+    },
+    {
+      "current_path": "docs/research/prompts/web-strategy-research-prompt.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/prompts/web-strategy-research-prompt.md",
+      "sha256": "1920933290274ffbbc9392cfbe03a9b7145f1ddd999c38544b6b8f378d56ce14",
+      "size": 18882
+    },
+    {
+      "current_path": "docs/research/RESEARCH_INDEX.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/RESEARCH_INDEX.md",
+      "sha256": "06b920ce48eae669fb232e48b9fe5c9653fa65b929349e5a384b8ec6e83bdbb5",
+      "size": 14877
+    },
+    {
+      "current_path": "docs/research/RESEARCH_SNAPSHOT.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/RESEARCH_SNAPSHOT.md",
+      "sha256": "fdd830ccfbadbaece14554424c9752edae0a57d771260a7982a10ce3ba996a69",
+      "size": 30481
+    },
+    {
+      "current_path": "docs/research/TEMPLATE-research-report.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/TEMPLATE-research-report.md",
+      "sha256": "a402ccbc9814d93d9c9e9a6ddd93a47be509dbbc67adb719be5124335f61df64",
+      "size": 3839
+    },
+    {
+      "current_path": "docs/research/WEB_RESEARCH_CANDIDATES.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/WEB_RESEARCH_CANDIDATES.md",
+      "sha256": "f434f6f1b04a7798cfd969f6629300f3de94a10de215a01cc072743702a36c67",
+      "size": 185038
+    }
+  ],
+  "inbound_references": {
+    ".claude/skills/daily-trader-check/SKILL.md": 2,
+    ".claude/skills/research-prompts/SKILL.md": 14,
+    ".claude/skills/research-report-review/SKILL.md": 5,
+    ".claude/skills/research-report-review/scripts/flatten_results.py": 1,
+    ".claude/skills/research-snapshot/SKILL.md": 10,
+    ".claude/skills/trader-performance-review/SKILL.md": 3,
+    "AGENTS.md": 5,
+    "README.md": 3,
+    "docs/archive/next-steps-history-2026-11-03.md": 37,
+    "docs/changelog.md": 27,
+    "docs/cli_reference.md": 2,
+    "docs/roadmap.md": 37,
+    "docs/superpowers/plans/2026-07-14-leveraged-index-rotation.md": 1,
+    "docs/superpowers/plans/2026-09-11-paper-trading-remediation.md": 11,
+    "docs/superpowers/plans/2026-09-16-ops-track-and-tape-restore.md": 6,
+    "docs/superpowers/plans/2026-10-19-production-replica-audit.md": 28,
+    "docs/superpowers/plans/2026-10-20-momentum-retest.md": 29,
+    "docs/superpowers/plans/2026-10-21-insider-evidence-next-steps.md": 3,
+    "docs/superpowers/plans/2026-10-22-complete-event-feasibility-audit.md": 2,
+    "docs/superpowers/plans/2026-10-22-event-evidence-resolution.md": 5,
+    "docs/superpowers/plans/2026-10-22-next-evidence-actions.md": 2,
+    "docs/superpowers/plans/2026-10-23-resolve-event-audit.md": 3,
+    "docs/superpowers/plans/2026-11-01-research-process-audit.md": 4,
+    "docs/superpowers/plans/2026-11-02-paper-evidence-and-accruals-follow-up.md": 16,
+    "docs/superpowers/plans/2026-11-02-research-followups-master.md": 12,
+    "docs/superpowers/plans/2026-11-02-research-reliability-next-steps.md": 13,
+    "docs/superpowers/plans/2026-11-04-root-cause-investigation.md": 34,
+    "docs/superpowers/specs/2026-06-28-ensemble-ic-weighted-voting-design.md": 1,
+    "docs/superpowers/specs/2026-07-14-leveraged-index-rotation-design.md": 1,
+    "docs/superpowers/specs/2026-09-16-cleanup-and-strategy-program-design.md": 6,
+    "docs/superpowers/specs/2026-11-01-research-process-audit-design.md": 1,
+    "docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md": 7,
+    "scripts/anchor_fix_reproduction_wfo.py": 2,
+    "scripts/audit_reruns_wfo.py": 1,
+    "scripts/core_spy_blend.py": 3,
+    "scripts/cross_asset_sleeve_wfo.py": 4,
+    "scripts/factor_french_screen.py": 1,
+    "scripts/ic_kelly_rebaseline_wfo.py": 2,
+    "scripts/lens2_build.py": 41,
+    "scripts/leveraged_trend_research.py": 1,
+    "scripts/live_indicator_warmup.py": 2,
+    "scripts/momentum_french_screen.py": 1,
+    "scripts/month_end_treasury_wfo.py": 2,
+    "scripts/net_issuance_screen.py": 1,
+    "scripts/pairs_stat_arb_research.py": 1,
+    "scripts/position_sizing_regimes.py": 1,
+    "scripts/position_sizing_wfo.py": 2,
+    "scripts/production_replica_audit.py": 3,
+    "scripts/replica_parity_check.py": 1,
+    "scripts/run_position_sizing_wfo_scheduled.sh": 2,
+    "scripts/shadow_cross_asset.py": 1,
+    "scripts/static_leverage_aftertax.py": 1,
+    "scripts/wfo_fold_attribution.py": 3,
+    "scripts/wfo_policy_synthetic.py": 1,
+    "src/ggTrader/lab/data.py": 2,
+    "src/ggTrader/lab/event_timing_audit.py": 9,
+    "src/ggTrader/lab/strategies/cross_asset_sleeve.py": 1,
+    "src/ggTrader/lab/strategies/insider_cluster.py": 1,
+    "src/ggTrader/lab/strategies/leveraged_trend.py": 1,
+    "src/ggTrader/lab/strategies/pairs_stat_arb.py": 1,
+    "src/ggTrader/lab/wfo.py": 1,
+    "src/ggTrader/paper/cash_sweep.py": 1,
+    "src/ggTrader/paper/signal_runner.py": 2,
+    "tests/data/test_cached_yfinance_loader.py": 1,
+    "tests/lab/test_data.py": 1,
+    "tests/lab/test_ensemble.py": 1,
+    "tests/lab/test_event_timing_audit.py": 4,
+    "tests/lab/test_momentum_screen.py": 1,
+    "tests/lab/test_wfo.py": 3,
+    "tests/paper/test_signal_runner.py": 1,
+    "tests/scripts/test_leveraged_rotation_research.py": 1
+  },
+  "source_revision": "e4fca023a01943e84e0c70430efa147639b2c223"
+}

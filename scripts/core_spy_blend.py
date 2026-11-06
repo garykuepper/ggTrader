@@ -1,7 +1,7 @@
 """Does the live construction (SP500 core + idle cash swept into SPY) beat SPY?
 
 The PIT core scores Sharpe 0.59 / CAGR 3.1% vs SPY 0.78 / 13.0%
-(docs/research/2026-09-23-pit-rebaseline-core-nogo.md), but that curve holds
+(research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md), but that curve holds
 idle cash at 0%. Live, idle cash above a 5% reserve is swept into SPY, so the
 deployed book is core positions + SPY. This measures that book directly.
 
@@ -30,8 +30,8 @@ from pathlib import Path
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = REPO_ROOT / "docs/research/_core_spy_blend_20260924.json"
-CURVES = REPO_ROOT / "docs/research/_core_spy_blend_curves_20260924.csv"
+DEFAULT_OUT = REPO_ROOT / "research/allocation/core-spy-blend/_core_spy_blend_20260924.json"
+CURVES = REPO_ROOT / "research/allocation/core-spy-blend/_core_spy_blend_curves_20260924.csv"
 EVAL_START = "2021-01-31"
 EVAL_END = "2026-04-30"
 RESERVE = 0.05

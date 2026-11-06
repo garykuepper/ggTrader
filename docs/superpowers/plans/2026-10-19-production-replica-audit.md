@@ -22,7 +22,7 @@ three parts:
 tape is read through the existing `load_ohlcv`. Tests use pytest via `scripts/run_tests.sh`,
 and code is checked with ruff.
 
-**Spec:** `docs/research/briefs/2026-10-19-production-replica-audit.md` (the brief). Read it
+**Spec:** `research/audits/production-replica/2026-10-19-production-replica-audit.md` (the brief). Read it
 first. Its §4 pass bar and §3 design values are binding.
 
 ## Global Constraints
@@ -61,7 +61,7 @@ first. Its §4 pass bar and §3 design values are binding.
   - Cash earns T-bills (FRED `TB3MS`), with a 0% sensitivity run.
   - The signal lag is 1 bar, with a lag-0 diagnostic run.
 - **Artifacts.** Every number you cite must come from a JSON a driver writes under
-  `docs/research/`. Drivers checkpoint after each unit of work and support `--help`.
+  `research/`. Drivers checkpoint after each unit of work and support `--help`.
 - **Tests and lint.** Run tests only through `scripts/run_tests.sh`. Code must pass
   `ruff check` and `ruff format` (line length 100).
 - **Git.**
@@ -91,7 +91,7 @@ first. Its §4 pass bar and §3 design values are binding.
 ### Task 1: Pre-register the brief
 
 **Files:**
-- Commit: `docs/research/briefs/2026-10-19-production-replica-audit.md`
+- Commit: `research/audits/production-replica/2026-10-19-production-replica-audit.md`
 - Commit: `docs/superpowers/plans/2026-10-19-production-replica-audit.md`
 
 - [ ] **Step 1: Get owner sign-off on every *(planner's call)* item in the brief.** Edit the brief
@@ -105,7 +105,7 @@ git switch -c audit/production-replica
 - [ ] **Step 3: Commit the two documents**
 
 ```bash
-git add docs/research/briefs/2026-10-19-production-replica-audit.md \
+git add research/audits/production-replica/2026-10-19-production-replica-audit.md \
         docs/superpowers/plans/2026-10-19-production-replica-audit.md
 git commit -m "research(audit): pre-register production-replica audit brief and plan"
 ```
@@ -528,7 +528,7 @@ git commit -m "feat(lab): event-loop replica of the live trader's portfolio rule
 - Modify: `src/ggTrader/lab/replica.py` (add `SignalPanel` and `build_signal_panel`)
 - Create: `scripts/replica_parity_check.py`
 - Test: `tests/lab/test_replica.py` (add one test)
-- Output: `docs/research/_replica_parity_<YYYYMMDD>.json`, dated by the run date
+- Output: `research/audits/production-replica/_replica_parity_<YYYYMMDD>.json`, dated by the run date
 
 **Interfaces:**
 - Produces `class SignalPanel(NamedTuple)` with fields `close: pd.DataFrame`,
@@ -592,7 +592,7 @@ Expected: PASS.
     explained.
 - [ ] **Step 5: Run the parity check**
 
-Run: `.venv/bin/python scripts/replica_parity_check.py --since 2026-09-29 --out docs/research/_replica_parity_$(date +%Y%m%d).json`
+Run: `.venv/bin/python scripts/replica_parity_check.py --since 2026-09-29 --out research/audits/production-replica/_replica_parity_$(date +%Y%m%d).json`
 Expected: 100% of strategy orders explained. That is the brief's stop condition.
 - Below 100%, investigate each unexplained order and write the cause into the JSON's `notes`.
 - Fix a replica bug if that's the cause.
@@ -603,7 +603,7 @@ Expected: 100% of strategy orders explained. That is the brief's stop condition.
 
 ```bash
 git add src/ggTrader/lab/replica.py tests/lab/test_replica.py scripts/replica_parity_check.py \
-        docs/research/_replica_parity_*.json
+        research/audits/production-replica/_replica_parity_*.json
 git commit -m "research(audit): signal panel + replica parity check against live orders"
 ```
 
@@ -614,8 +614,8 @@ git commit -m "research(audit): signal panel + replica parity check against live
 **Files:**
 - Create: `scripts/production_replica_audit.py`
 - Test: `tests/scripts/test_production_replica_audit.py`
-- Output: `docs/research/_production_replica_results.json`
-- Output: `docs/research/_production_replica_curves.csv`
+- Output: `research/audits/production-replica/_production_replica_results.json`
+- Output: `research/audits/production-replica/_production_replica_curves.csv`
 
 **Interfaces:**
 - **Consumes:** `build_signal_panel` and `run_replica` (Tasks 4–5), and `excess_stats` and
@@ -738,7 +738,7 @@ and `verdict`. If it crashes, re-run the same command; it resumes from the check
 
 ```bash
 git add scripts/production_replica_audit.py tests/scripts/test_production_replica_audit.py \
-        docs/research/_production_replica_results.json docs/research/_production_replica_curves.csv
+        research/audits/production-replica/_production_replica_results.json research/audits/production-replica/_production_replica_curves.csv
 git commit -m "research(audit): production-replica runs, primary + holdout, pre-registered verdict"
 ```
 
@@ -795,7 +795,7 @@ Expected: PASS.
 ```bash
 git add src/ggTrader/lab/tax.py src/ggTrader/lab/replica.py \
         scripts/static_leverage_aftertax.py scripts/production_replica_audit.py \
-        tests/lab/test_tax.py docs/research/_production_replica_results.json
+        tests/lab/test_tax.py research/audits/production-replica/_production_replica_results.json
 git commit -m "research(audit): after-tax replay for the production replica"
 ```
 
@@ -809,7 +809,7 @@ git commit -m "research(audit): after-tax replay for the production replica"
 - Modify: `scripts/anchor_fix_reproduction_wfo.py:93` (`run_core`)
 - Create: `scripts/audit_reruns_wfo.py`
 - Test: `tests/lab/test_fomc_drift.py` (add one test)
-- Output: `docs/research/_audit_reruns_<YYYYMMDD>.json`
+- Output: `research/audits/production-replica/_audit_reruns_<YYYYMMDD>.json`
 
 **Interfaces:**
 - **Produces** `run_core(eval_start: str, eval_end: str, strategy: str = CORE_STRATEGY,
@@ -863,7 +863,7 @@ minutes per strategy.
 
 ```bash
 git add scripts/anchor_fix_reproduction_wfo.py scripts/audit_reruns_wfo.py \
-        tests/lab/test_fomc_drift.py docs/research/_audit_reruns_*.json
+        tests/lab/test_fomc_drift.py research/audits/production-replica/_audit_reruns_*.json
 git commit -m "research(audit): momentum + fomc_drift re-runs on corrected harness"
 ```
 
@@ -875,8 +875,8 @@ git commit -m "research(audit): momentum + fomc_drift re-runs on corrected harne
 - Modify: `scripts/static_leverage_aftertax.py`, at `Book.distributions` (:189-196), `run`
   (:235) and `main` (:357)
 - Test: `tests/scripts/test_static_leverage_aftertax.py`
-- Output: `docs/research/_static_leverage_aftertax_dist_bounds.json`
-- Modify: `docs/research/2026-09-30-static-fractional-leverage.md` (add a dated addendum)
+- Output: `research/allocation/static-leverage/_static_leverage_aftertax_dist_bounds.json`
+- Modify: `research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md` (add a dated addendum)
 - Modify: `docs/next_steps.md` (one line under the A23 "Rate clause")
 
 **Interfaces:**
@@ -919,7 +919,7 @@ Expected: the 70/30 after-tax CAGR and SPY's after-tax CAGR at 24/15 equal the v
 
 - [ ] **Step 5: Bounds run at today's bills**
 
-Run: `.venv/bin/python scripts/static_leverage_aftertax.py --main-only --rf-offset 0.025 --sso-dist-tax st --bil-dist-tax st --out docs/research/_static_leverage_aftertax_dist_bounds.json`
+Run: `.venv/bin/python scripts/static_leverage_aftertax.py --main-only --rf-offset 0.025 --sso-dist-tax st --bil-dist-tax st --out research/allocation/static-leverage/_static_leverage_aftertax_dist_bounds.json`
 Expected: a new after-tax margin at +2.5 pt bills. Compare it with the +0.80 pt/yr from
 `_static_leverage_aftertax_rf_plus0.025.json`.
 
@@ -933,8 +933,8 @@ Expected: a new after-tax margin at +2.5 pt bills. Compare it with the +0.80 pt/
 
 ```bash
 git add scripts/static_leverage_aftertax.py tests/scripts/test_static_leverage_aftertax.py \
-        docs/research/_static_leverage_aftertax_dist_bounds.json \
-        docs/research/2026-09-30-static-fractional-leverage.md docs/next_steps.md
+        research/allocation/static-leverage/_static_leverage_aftertax_dist_bounds.json \
+        research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md docs/next_steps.md
 git commit -m "research(A23): bound after-tax margin with distributions taxed as ordinary income"
 ```
 
@@ -943,13 +943,13 @@ git commit -m "research(A23): bound after-tax margin with distributions taxed as
 ### Task 10: Report, record corrections and snapshot
 
 **Files:**
-- Create: `docs/research/<run-date>-production-replica-audit[-nogo].md`. Use the `-nogo`
+- Create: `research/audits/production-replica/<run-date>-production-replica-audit[-nogo].md`. Use the `-nogo`
   suffix if the verdict is NO-GO.
 - Modify, adding a dated "Correction (2026-10-xx)" note only and leaving the body untouched:
-  - `docs/research/2026-08-19-anchor-fix-reproduction.md`: the 1.14 run was pinned to the
+  - `research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md`: the 1.14 run was pinned to the
     re-run's window, so eval-end drift did not cause the 1.14→0.68 drop. Point to the 08-18
     fixes instead, and label this as inferred.
-  - `docs/research/2026-09-24-core-spy-blend-keep.md`: KEEP tested walk-forward-picked
+  - `research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md`: KEEP tested walk-forward-picked
     parameters and same-close fills, not the live config. This report supersedes it.
 - Modify:
   - `docs/next_steps.md`: the freeze-lift recommendation from brief §5, marked as the owner's
@@ -957,9 +957,9 @@ git commit -m "research(A23): bound after-tax margin with distributions taxed as
   - `docs/changelog.md`: an entry for the replica, the significance helpers and the audit.
   - `AGENTS.md`: the strategy registry count line, "36 entries as of 2026-08-21", becomes the
     current count and date.
-- Regenerate: `docs/research/RESEARCH_SNAPSHOT.md`, using the `research-snapshot` skill.
+- Regenerate: `research/RESEARCH_SNAPSHOT.md`, using the `research-snapshot` skill.
 
-- [ ] **Step 1: Write the report** following `docs/research/TEMPLATE-research-report.md`, all
+- [ ] **Step 1: Write the report** following `research/TEMPLATE-research-report.md`, all
   six sections.
   - Every number must cite a JSON key: `_production_replica_results.json`, the parity JSON,
     `_audit_reruns_*.json` or the bounds JSON.
@@ -985,8 +985,8 @@ Expected: all pass.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add docs/research/*production-replica-audit*.md docs/research/2026-08-19-anchor-fix-reproduction.md \
-        docs/research/2026-09-24-core-spy-blend-keep.md docs/next_steps.md docs/changelog.md \
-        AGENTS.md docs/research/RESEARCH_SNAPSHOT.md
+git add research/audits/production-replica/*production-replica-audit*.md research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md \
+        research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md docs/next_steps.md docs/changelog.md \
+        AGENTS.md research/RESEARCH_SNAPSHOT.md
 git commit -m "research(audit): production-replica audit report + record corrections"
 ```

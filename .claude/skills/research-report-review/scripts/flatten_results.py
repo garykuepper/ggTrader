@@ -1,7 +1,7 @@
 """Print every numeric leaf of a research results JSON, filtered by keyword.
 
 Use it to check a report's or summary's quoted numbers against the raw
-artifact: `flatten_results.py docs/research/_x_results.json sharpe max_dd`.
+artifact: `flatten_results.py research/<category>/<study>/_x_results.json sharpe max_dd`.
 """
 
 import argparse

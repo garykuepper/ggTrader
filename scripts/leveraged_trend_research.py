@@ -3,7 +3,7 @@ leveraged-ETF strategy against real ETF price history, plus a naive
 buy-and-hold-the-leveraged-ETF baseline for comparison. See
 src/ggTrader/lab/strategies/leveraged_trend.py and the closed
 breadth-driven rotation arc at
-docs/research/2026-07-16-leveraged-index-rotation-nogo.md.
+research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md.
 """
 
 from __future__ import annotations

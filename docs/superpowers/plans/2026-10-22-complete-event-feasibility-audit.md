@@ -16,9 +16,9 @@ engine, guessed source history or manually forced completion flag.
 **Tech stack:** Existing audit CLI and Python modules, read-only PostgreSQL
 connector, immutable raw cache, existing reconstruction/tests and JSON/Markdown.
 
-**Spec:** [Approved audit](../../research/briefs/2026-10-21-event-timing-audit.md),
-[source manifest](../../research/briefs/2026-10-21-event-timing-audit-sources.md),
-[approved date-only amendment](../../research/briefs/2026-10-22-event-timing-source-conflict-proposal.md).
+**Spec:** [Approved audit](../../../research/audits/event-timing/2026-10-21-event-timing-audit.md),
+[source manifest](../../../research/audits/event-timing/2026-10-21-event-timing-audit-sources.md),
+[approved date-only amendment](../../../research/audits/event-timing/2026-10-22-event-timing-source-conflict-proposal.md).
 
 ## Finish line and boundaries
 
@@ -189,8 +189,8 @@ relevant route criteria and common-window assessments have supported disposition
 
 ## Task 5: Execute, review and publish the registered audit
 
-**Final outputs:** `docs/research/_event_timing_audit.json` and
-`docs/research/2026-10-21-event-timing-audit-report.md`.
+**Final outputs:** `research/audits/event-timing/_event_timing_audit.json` and
+`research/audits/event-timing/2026-10-21-event-timing-audit-report.md`.
 
 - [ ] Freeze the exact executable input/metadata/acquisition package and command.
   Complete any required capped fixture tests and source verification before use.

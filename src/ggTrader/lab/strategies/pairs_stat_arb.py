@@ -5,7 +5,7 @@ spread reverts after diverging. The first market-neutral (simultaneous
 long+short) construction in this lab -- every prior strategy is long-only
 directional. v1 uses a naive 1:1 log-price spread (no beta-hedging) and
 does NOT model short-borrow/margin-interest costs; see
-docs/research/RESEARCH_SNAPSHOT.md and the eventual dated research report
+research/RESEARCH_SNAPSHOT.md and the eventual dated research report
 for those disclosures.
 """
 

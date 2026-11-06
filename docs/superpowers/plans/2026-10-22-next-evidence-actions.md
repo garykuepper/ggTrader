@@ -14,15 +14,15 @@ source-bound metadata snapshots. Make no new ingestion framework or parallel aud
 **Tech stack:** Read-only PostgreSQL, existing Python audit and tests, immutable
 JSON/raw evidence and Markdown reporting.
 
-**Spec:** [Approved audit](../../research/briefs/2026-10-21-event-timing-audit.md),
-[source manifest](../../research/briefs/2026-10-21-event-timing-audit-sources.md),
-[date-only amendment](../../research/briefs/2026-10-22-event-timing-source-conflict-proposal.md),
-[accepted workbook](../../research/2026-10-22-event-evidence-resolution-workbook.md).
+**Spec:** [Approved audit](../../../research/audits/event-timing/2026-10-21-event-timing-audit.md),
+[source manifest](../../../research/audits/event-timing/2026-10-21-event-timing-audit-sources.md),
+[date-only amendment](../../../research/audits/event-timing/2026-10-22-event-timing-source-conflict-proposal.md),
+[accepted workbook](../../../research/audits/event-timing/2026-10-22-event-evidence-resolution-workbook.md).
 
 ## Starting point
 
 - Read-only connector works. Schema and two venue-pinned daily-bar counts are
-  [recorded](../../research/_event_audit_connected_metadata.json). The earlier
+  [recorded](../../../research/audits/event-timing/_event_audit_connected_metadata.json). The earlier
   failed direct-process lookup is not a database-access blocker.
 - Two COST charters and their comparison passed independent review. Do not
   chase more charter exhibits unless a specific mapping assertion needs them.
@@ -63,8 +63,8 @@ cannot pass population gates or certify a qualifying five-year window.
 
 ## Task 1: Recover database metadata and identify exact source dependencies
 
-**Files:** Create `docs/research/_event_audit_metadata_inputs.json`; append the
-findings to `docs/research/event-timing-audit-implementation.md`.
+**Files:** Create `research/audits/event-timing/_event_audit_metadata_inputs.json`; append the
+findings to `research/audits/event-timing/event-timing-audit-implementation.md`.
 **Consumes:** Working connector and actual database schema.
 **Produces:** Query/source receipts, inventory counts and exact candidate IDs.
 

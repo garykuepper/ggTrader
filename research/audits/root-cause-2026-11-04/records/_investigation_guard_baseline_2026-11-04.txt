@@ -1,0 +1,19 @@
+== observer worktree ==
+path: /home/flynn/.t3/worktrees/ggTrader/research-intraday-stage0a
+HEAD: 58919c098bb5680a8ec2df4b2490a76ebfe6a4b6
+branch: research/intraday-stage0a
+== observer timers ==
+ggtrader-intraday-observer-recover.timer is-enabled: enabled
+ggtrader-intraday-observer-recover unit sha256: 432a3353701354fcba815381ea2e780b22fdff8c72396738453ed0eab9187573
+ggtrader-intraday-observer-inputs.timer is-enabled: enabled
+ggtrader-intraday-observer-inputs unit sha256: 6578a96ef5ff853cfe4a56805334828dc37fd522940006e11693e08437cd7806
+ggtrader-intraday-observer-decide.timer is-enabled: enabled
+ggtrader-intraday-observer-decide unit sha256: 016196c8281b8ca8e3390ecc410ca8fbd57471038f21714b37f6e61ad1af0345
+ggtrader-intraday-observer-archive.timer is-enabled: enabled
+ggtrader-intraday-observer-archive unit sha256: 3c8c2a4850731c785bcfe9387b244d03da06ce62d71c259edee005e389dfe6f8
+== container ==
+ggtrader_live ghcr.io/garykuepper/ggtrader:latest running
+== main checkout ==
+git status --short data/:
+  ?? data/external/event_timing_audit/
+main: 1e419c27ceb956c66806e0a654264daf6f7defa0

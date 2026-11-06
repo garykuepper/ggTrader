@@ -53,7 +53,7 @@ def test_ensemble_no_entries_before_symbol_eligibility_start():
     trade before the rebalance date it first appears in `plans`.
 
     Regression test for the item-11 PIT-eligibility-masking fix
-    (docs/research/2026-08-18-wfo-anchor-leakage-fix.md, ensemble.py to_targets).
+    (research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md, ensemble.py to_targets).
     """
     cfg = LabConfig(min_history_bars=20)
     strat = EnsembleSignal(cfg, min_agree=1)

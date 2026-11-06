@@ -60,7 +60,7 @@ class TestRunUniverse:
         """Regression test: membership must be the union over [eval_start, eval_end],
         not `pd.Timestamp.now()` -- the latter is survivorship-biased for a
         historical backtest and non-reproducible run-to-run. See
-        docs/research/2026-08-18-wfo-anchor-leakage-fix.md and the
+        research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md and the
         commit-18a4cc2 revert this test protects against re-introducing.
         """
         import pandas as pd

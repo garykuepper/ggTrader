@@ -1,6 +1,7 @@
 """Cross-asset sleeve: frozen static/trend arms, reported diagnostics, lookback WFO.
 
-Pre-registered in docs/research/briefs/2026-09-28-cross-asset-sleeve.md before
+Pre-registered in
+research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md before
 any run:
   1. static arm: 80% SPY + 20% equal-weight TLT/GLD/PDBC, month-end rebalance,
      1 bp/side, on the pinned window, 2016-01 -> 2026-04, and calendar 2022.
@@ -41,7 +42,7 @@ from ggTrader.lab.sweep import build_grid
 from ggTrader.lab.wfo import generate_folds, run_wfo
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = REPO_ROOT / "docs/research/_cross_asset_sleeve_results.json"
+DEFAULT_OUT = REPO_ROOT / "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json"
 
 EVAL_START = "2021-01-31"
 EVAL_END = "2026-04-30"
@@ -59,7 +60,8 @@ WINDOWS = {
     # The span the WFO's OOS curve (and the snapshot's SPY 0.78 / core+SPY 0.80) covers.
     "wfo_oos": (str(_FOLDS[0].test_start.date()), EVAL_END),
 }
-CORE_SPY_SWEEP_SHARPE = 0.80  # docs/research/2026-09-24-core-spy-blend-keep.md, not re-run
+# research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md, not re-run
+CORE_SPY_SWEEP_SHARPE = 0.80
 COSTS_BP = [1, 3]
 
 
@@ -318,13 +320,17 @@ def verdict(out: dict) -> dict:
     }
 
 
-HOLDOUT_OUT = REPO_ROOT / "docs/research/_cross_asset_sleeve_holdout_results.json"
+HOLDOUT_OUT = (
+    REPO_ROOT / "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_holdout_results.json"
+)
 HOLDOUT_WINDOW = ("2007-06-01", "2011-02-28")
 HOLDOUT_LEGS = ("TLT", "GLD", "DBC")
 
 
 def run_holdout(out_path: Path) -> dict:
-    """Pre-registered unseen-data holdout (briefs/2026-09-28-cross-asset-sleeve-holdout.md).
+    """Pre-registered unseen-data holdout.
+
+    Brief: research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-holdout.md.
 
     TLT/GLD/BIL/DBC have no 2007-2011 rows in ``ohlcv``, so prices come straight
     from yfinance (auto_adjust, same basis as the DB tape) rather than

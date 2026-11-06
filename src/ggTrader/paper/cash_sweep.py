@@ -70,7 +70,7 @@ def buy_trigger_pct() -> float:
     small daily surplus doesn't round-trip a buy every session (observed:
     15 sweep trades / $82.4K notional across 12 sessions,
     ~$5.5K/day churning against the reserve -- see
-    docs/research/artifacts-2026-09-09-perf-review/). Default 8%."""
+    research/audits/artifacts-2026-09-09-perf-review/). Default 8%."""
     raw = os.environ.get(_BUY_TRIGGER_ENV_VAR, "").strip()
     return float(raw) if raw else DEFAULT_BUY_TRIGGER_PCT
 
