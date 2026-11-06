@@ -7,7 +7,7 @@
 - The reading reports name the checks and rounds. They never number them. This sheet maps each name to its file.
 - The original reports keep their numbers because they are the record. Their file names carry the numbers, so the numbers for checks and rounds appear only in the File column of sections 4 and 5 and in code spans in section 6.
 - A dash in a Source column means the term is common usage and no report defines it. Every other row was checked against the cited line.
-- The forward-paper standard is approved by the owner: its status line says so (`standard:3`), and so does the note opening its conflicts section (`standard:224`). An older "draft" sentence survives in its section 1 (`standard:40`). Approval adopts the standard only: each idea still needs its own approved brief before any run (`standard:288`). The consolidated review's "draft" (`consol:28`) is out of date.
+- The forward-paper standard is approved by the owner: its status line says so (`standard:3`), and so does the note opening its conflicts section (`standard:224`). An older "draft" sentence survives in its section 1 (`standard:40`). Approval adopts the standard only: each idea still needs its own approved brief before any run (`standard:288`).
 
 I have read all of it so you do not have to read all of it. Start with the Abbreviations table when a three-letter word stops you.
 
@@ -82,7 +82,7 @@ Rows are alphabetical within each group. DSR builds on the Sharpe ratio, which i
 |---|---|---|---|
 | 12-1 momentum | Buy the stocks that rose most over the past year, skipping the latest month. | The momentum replay returned +4.37 pp/yr with a CI that includes zero. | `synth:37-38` |
 | BB, RSI, EMA, MACD | Four price-pattern indicators: Bollinger Bands, relative strength index, exponential moving average, moving-average convergence/divergence. | Four of the five voters in the live ensemble. | `code:13-14`, `code:155` |
-| EDGAR | The American Securities and Exchange Commission's public filings database. | The Argon review proposed it, but no EDGAR ingestion exists here. | `consol:35`, `verify:63` |
+| EDGAR | The American Securities and Exchange Commission's public filings database. | The Argon review proposed it, but no EDGAR ingestion exists here. | `consol:176`, `verify:63` |
 | Fama-French | Eugene Fama and Kenneth French, finance professors whose factor research defines the market, value, profitability and investment portfolios published in the French data library. | The long-history screens compare against the Fama-French market. | `accuracy:192`, `verdicts:486` |
 | FOMC | Federal Open Market Committee: the American central bank's interest-rate meetings. | The pre-FOMC Treasury study is the one area tested with evidence against, with caveats. | `synth:25-26`, `coverage:41-46` |
 | French data | Free, survivorship-free American stock portfolio returns back to 1926, published by Professor Kenneth French. | It allows long-history tests (1963 and 1927) without paid data. | `synth:38-39` |
@@ -90,19 +90,19 @@ Rows are alphabetical within each group. DSR builds on the Sharpe ratio, which i
 | Mkt-RF, RF | Mkt-RF is the stock market's return above the risk-free rate, RF, the one-month T-bill return. Their sum is the market return. | The French market comparator is Mkt-RF plus RF. | `verdicts:486`, `power:164` |
 | PEAD | Post-earnings-announcement drift: a stock tends to keep moving the way its earnings surprise pointed, for weeks after the report. | The one small-cap stock-picking arm tested was PEAD on a partial list of 200 names. | `coverage:22`, `coverage:35-36` |
 | Shiller | Long-run American stock and dividend data compiled by Professor Shiller, used in the century study, a long-history test of static leverage. | The frozen copy's dividends end 2026-06. | `audit0:42`, `accuracy:200`, `checkpoint:663` |
-| vbb | The volume-confirmed Bollinger voter, the fifth voter in the live ensemble. | The 5-voter set is the live default. | `code:14`, `consol:31` |
+| vbb | The volume-confirmed Bollinger voter, the fifth voter in the live ensemble. | The 5-voter set is the live default. | `code:14`, `consol:147` |
 
 ### Names and codes
 
 | Term | Plain meaning | Why it matters here | Source |
 |---|---|---|---|
-| agy | The Antigravity agent harness: a program that runs automated agents. | It ran the Argon review. | `consol:32` |
+| agy | The Antigravity agent harness: a program that runs automated agents. | It ran the Argon review. | `consol:21` |
 | Alpaca activity codes | About 25 activity codes of Alpaca, the paper account's broker: `DIV` and variants for dividends, `SPLIT`, `MA`, `REORG`, `REO`, `NC`, `SPIN`, `INT`, `CSD`, `CSW`, `JNLC`, `JNLS`, `FEE`, `REG`, `TAF`, `CAT`. | A search of the dividend, split, merger, interest and journal codes since 2024-06-01 returned only the $100,000 funding journal. The broker never credited a dividend. | `parity:21-26`, `parity:291-296` |
 | Argon | The Gemini 4 Argon model, run through agy. | It wrote one of the two frontier-model reviews. The review carries a banner marking it as unverified model output. | `verify:3` |
 | EQR | Equity Residential's stock ticker (public fact, not named in the reports). AvalonBay (AVB) merged into it, so the AVB holding cannot be traded. | AVB's stored prices have copied EQR's since 2026-07-20. The held position was $746, 0.7% of the account. | `parity:330`, `clean:47` |
 | French portfolio names | Labels for stock portfolios sorted by a trait: profitability `HiOP`, cheapness `HiBM`, low investment `LoINV`, prior return `HiPRIOR`, share issuance `HiNI` and `NegNI` (net buybacks), size `BIG` and `SMALL`. | Used in the factor, momentum and net issuance screens. `BIG` `NegNI` returned t 0.26. | `coverage:305`, `ceiling:242`, `synth:534` |
-| MNST, AVB | Stock ticker symbols for Monster Beverage and AvalonBay. | The broker never applied MNST's 2-for-1 split (-0.85 pp of the paper shortfall). AVB's price series has been EQR's since 2026-07-20. | `consol:33`, `parity:45-46`, `clean:47` |
-| Opus | The Claude Opus model. | It wrote the other frontier-model review, the senior-quant direction review. | `consol:40` |
+| MNST, AVB | Stock ticker symbols for Monster Beverage and AvalonBay. | The broker never applied MNST's 2-for-1 split (-0.85 pp of the paper shortfall). AVB's price series has been EQR's since 2026-07-20. | `consol:54`, `consol:86`, `parity:45-46`, `clean:47` |
+| Opus | The Claude Opus model. | It wrote the other frontier-model review, the senior-quant direction review. | `consol:11` |
 | PARA | A ticker whose stored prices belong to a different security for its whole S&P 500 membership. | The production replica traded it 3 times, and its effect is unmeasured. | `clean:37-44` |
 | Ticker symbols | Short exchange codes for a listed stock or fund, such as `AAPL`, `VZ` and `HAS` (Hasbro). Kraken, a crypto exchange, writes BTC as `XBT` in pair codes such as `XBTUSD`. | About 120 stock tickers and 40 crypto pair codes appear across the reports. Binance.US is another crypto exchange. | `CLAUDE.md` |
 
@@ -110,7 +110,7 @@ Rows are alphabetical within each group. DSR builds on the Sharpe ratio, which i
 
 | Term | Plain meaning | Why it matters here | Source |
 |---|---|---|---|
-| GO, NO-GO | The project's pass and fail labels for a test. | A NO-GO is a result, not a reason to stop the work. | `synth:23`, `consol:155` |
+| GO, NO-GO | The project's pass and fail labels for a test. | A NO-GO is a result, not a reason to stop the work. | `synth:23`, `consol:79` |
 | inconclusive | The test could not decide because at least one condition fails or is unknown. It does not mean the test found nothing. | 51 NO rows, 7 GO rows, 3 tests with their own inconclusive verdict and 42 status labels. | `verdicts:44-49`, `synth:60-62` |
 | NO | A measured test reported fail, no edge, underperformance or did not reproduce. | The Verdict Trust check classed 53 NO test verdicts. | `verdicts:181` |
 | reliable GO | A GO with a clean tape, checked code, a recomputed number and a pass bar set in advance. | None of the 16 GO test verdicts qualifies. | `verdicts:191` |
@@ -236,16 +236,16 @@ The reading reports use the names in the second column. The original files use t
 | `A1-A27`, `B1-B15` | research-backlog idea ids | Idea ids in the web-research backlog: `A1` to `A27` and `B1` to `B15`. A10 is the month-end Treasury sleeve, A12 a month-end SPY-to-IEF tilt, A14 a turn-of-month rotation. A23 and A24 are the leverage studies. | `backlog:586`, `backlog:1041`, `backlog:3038`, `backlog:1605`, `backlog:1665`, `backlog:1731`, `backlog:2567`, `backlog:2628` |
 | `C`, `C*`, `W`, `NC` | challenge result codes | Confirmed, confirmed with caveat, wrong, not checked. | `challenge:63-64` |
 | `claim N` | a claim in the Argon verification | Row N of the claim check table. | `verify:43-47` |
-| `Decisions 1-12` | the owner decision list | One list in the consolidated review: accept the synthesis, changelog entry, any re-run item, research copy of the price table, input archive, daily-loss halt base, storage for downloads, yearly research budget, leverage figures, one benchmark, sweep tax churn, reopening closed NO-GOs. | `consol:217-232` |
+| `Decisions 1-13` | the owner decision list | One list in the consolidated review: accept the synthesis, changelog entry, any re-run item, research copy of the price table, input archive, daily-loss halt base, storage for downloads, yearly research budget, leverage figures, one benchmark, sweep tax churn, reopening closed NO-GOs, deferred minor review notes. | `consol:113-131` |
 | `E1-E7` | account eras | Paper account stretches split at each configuration change: core ensemble (06-24 to 07-15), accidental dry run (to 07-30), 3-sleeve blend (to 08-21), blend plus SPY sweep (to 09-22), S&P 500 core plus sweep (to 09-28), missed-exit catch-up (to 09-30), frozen (to 11-04). | `parity:171-180` |
 | `F1`, `F2` and `N1`, `N2` | falsifiers | Each check wrote its own set before reading evidence. The same code means different things in different reports. | `coverage:556` |
 | `H1-H7` | the Early Trust Audit's seven hypotheses | Stock-trust hypotheses tested by the later checks. | `synth:476` |
 | `H4a`, `H4b`, `H4c` | the ceiling hypotheses | H4a: the best long-only large-cap effects after 1994 are +0.1 to +0.8 pp/yr. H4b: +10 to +15 pp/yr is needed. H4c: 2x SPY is out of reach without leverage or a much larger effect. The Ceiling check confirmed H4a on its own terms, overturned H4b as a general statement and confirmed H4c for leverage and pre-publication momentum. | `ceiling:96-122` |
 | `L4-X1`, `L4-X2` | the two Ceiling check exceptions | X1: fixed-weight books whose code was never examined. X2: non-registered arms and sub-windows. | `ceiling:205`, `ceiling:212` |
-| `Options 1-3` | the consolidated review's three options | 1: paper-trader measurement and parity. 2: funding-honest leverage figures for the 2027-09-30 A23 review. 3: one pre-registered long-history stock screen (accruals). | `consol:152-196` |
+| `Options 1-3` | the consolidated review's three options | 1: paper-trader measurement and parity. 2: funding-honest leverage figures for the 2027-09-30 A23 review. 3: one pre-registered long-history stock screen (accruals). | `consol:77-111` |
 | `Q1-Q7` | the owner's seven questions | Edge over SPY, what limits live return, the measured maximum, reliability of each NO-GO, crypto, what holds up, what is still unknown. | `synth:105-221` |
 | `R1-R7` | the Verdict Trust check's seven classification rules | Fixed before any row was classified: verdict type, data condition, code condition, recompute, power, classes, rules-out size. | `verdicts:179-193` |
-| `Rank 1-5`, `rec N` | recommendation ranks | The Argon review ranks five directions, and the Opus review numbers its recommendations. | `argon:64-113`, `consol:157` |
+| `Rank 1-5`, `rec N` | recommendation ranks | The Argon review ranks five directions, and the Opus review numbers its recommendations. | `argon:64-113`, `consol:81` |
 | `STATUS`, `TEST-INCONCLUSIVE` | verdict types | STATUS is a feasibility, design or operations label. TEST-INCONCLUSIVE is a test whose own verdict is inconclusive or invalid. | `verdicts:181` |
 | `Syn` | the synthesis | The challenge file's short name for the synthesis file. | `challenge:63` |
 | `Tier A`, `Tier B`, `Tier C` | soundness grades | A: reliable. B: the number recomputes on clean data, but nothing proves it is statistically real. C: everything else, listed but not used for the ceiling. | `ceiling:194-201`, `synth:40-41` |
