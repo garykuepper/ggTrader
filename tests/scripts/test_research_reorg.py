@@ -9,6 +9,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -1547,7 +1548,8 @@ def _also_map_tree(tmp_path: Path) -> tuple[Path, Path, Path]:
         "`docs/research/2026-01-01-a.md`\n",
     )
     # The reorg already moved these two: only their new homes exist.
-    _write(root, A_NEW, "# A\n")
+    # A_NEW holds a rewritable citation: were also-map rows targets, it would be rewritten.
+    _write(root, A_NEW, "# A\n`docs/research/briefs/2026-01-01-b.md`\n")
     _write(root, B_NEW, "# B\n")
     _git(root, "init", "-q")
     _git(root, "add", "-A")
@@ -1561,6 +1563,8 @@ def _also_map_tree(tmp_path: Path) -> tuple[Path, Path, Path]:
         "current_path,proposed_path,folder,kind,notes\n"
         f'"{A_OLD}","{A_NEW}","","report",""\n'
         f'"{B_OLD}","{B_NEW}","","brief",""\n'
+        # Never existed at this path or its destination: a target would be reported missing.
+        f'"{OLD}2026-01-01-gone.md","research/x/y/2026-01-01-gone.md","","report",""\n'
     )
     return root, manifest, also
 
@@ -1596,7 +1600,7 @@ def test_rewrite_also_map_resolves_links_to_already_moved_files(tmp_path: Path) 
     assert report["status"] == "ok" and report["unresolved"] == []
     assert [c["file"] for c in report["changed"]] == [branch_old]
     assert report["changed"][0]["replacements"] == 3
-    assert report["also_map_rows"] == 2
+    assert report["also_map_rows"] == 3
     assert (root / branch_old).read_text() == (
         "# Branch\n"
         "[a](../../allocation/a-study/2026-01-01-a.md) [b](../../audits/b-study/2026-01-01-b.md)\n"
@@ -1640,16 +1644,15 @@ def test_rewrite_also_map_rows_are_never_targets(tmp_path: Path) -> None:
 def _branch_final_repo(tmp_path: Path) -> tuple[Path, list[ManifestRow], dict]:  # type: ignore[type-arg]
     """Finished one-pinned-file tree that also holds a tracked file the manifest does not list."""
     root, rows, ledger = _final_repo(tmp_path)
-    for extra in (
-        "research/allocation/other-study/2026-03-03-main-report.md",
-        "research/deep/a/b/c/main-artifact.json",  # deeper than the cap: main's problem, not ours
-    ):
-        _write(root, extra, "from the reorganization\n")
-        _git(root, "add", extra)
+    extra = "research/allocation/other-study/2026-03-03-main-report.md"
+    _write(root, extra, "from the reorganization\n")
+    _git(root, "add", extra)
     return root, rows, ledger
 
 
-def _branch_modes(root: Path, rows: list[ManifestRow], ledger: dict, *, branch: bool):  # type: ignore[no-untyped-def,type-arg]
+def _branch_modes(
+    root: Path, rows: list[ManifestRow], ledger: dict[str, Any], *, branch: bool
+) -> dict[str, list[str]]:
     listed = {REPORT_NEW}
     (root / REPORT_NEW).write_text("# report\nedited\n")
     return {
@@ -1770,3 +1773,30 @@ def test_verify_without_branch_mode_unchanged(tmp_path: Path, capsys) -> None:  
     assert "files under research/" in capsys.readouterr().out
     assert main([*argv, "--branch-mode"]) == 0
     assert "OK stage=moved" in capsys.readouterr().out
+
+
+def test_verify_branch_mode_still_flags_a_tracked_file_that_is_too_deep(tmp_path: Path) -> None:
+    root, rows, ledger = _branch_final_repo(tmp_path)
+    deep = "research/intraday/spy-momentum-feasibility/sub/deeper/stray.md"
+    _write(root, deep, "x\n")
+    _git(root, "add", deep)
+    problems = verify_final(rows, ledger, root, set(), expected_pinned=1, branch_mode=True)
+    assert any("deeper than" in p and deep in p for p in problems)
+    # It is the depth that is flagged, not the file being outside the manifest.
+    assert not any("unexpected" in p for p in problems)
+
+
+def test_rewrite_also_map_refuses_duplicate_and_colliding_rows(tmp_path: Path) -> None:
+    root, manifest, also = _also_map_tree(tmp_path)
+    rows = load_manifest(manifest)
+    extra = load_manifest(also)
+    with pytest.raises(ValueError, match="also-map: duplicate current_path"):
+        run_rewrite("moved-markdown", rows, root, True, [], also_map=[*extra, extra[0]])
+    # Another path sent to a destination the manifest already uses would merge two files.
+    collide = _row(f"{OLD}2026-01-01-other.md", rows[0].proposed_path)
+    with pytest.raises(ValueError, match="also-map: proposed_path .* already used"):
+        run_rewrite("moved-markdown", rows, root, True, [], also_map=[*extra, collide])
+    # Two also-map rows may not share a destination either.
+    twin = _row(f"{OLD}2026-01-01-twin.md", extra[0].proposed_path)
+    with pytest.raises(ValueError, match="also-map: proposed_path .* already used"):
+        run_rewrite("moved-markdown", rows, root, True, [], also_map=[*extra, twin])

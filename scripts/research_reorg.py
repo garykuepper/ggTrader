@@ -1066,6 +1066,35 @@ def write_atomic(path: Path, data: bytes) -> None:
         raise
 
 
+def _merge_also_map(
+    mapping: dict[str, str], rows: list[ManifestRow], also_map: list[ManifestRow]
+) -> None:
+    """Add the also-map rows to `mapping`, refusing rows that would corrupt it.
+
+    Raises:
+        ValueError: On a repeated current_path within the also-map, a path the manifest sends
+            elsewhere, or a destination already used by a different path.
+    """
+    owner = {r.proposed_path: r.current_path for r in rows}
+    seen: set[str] = set()
+    for extra in also_map:
+        if extra.current_path in seen:
+            raise ValueError(f"also-map: duplicate current_path {extra.current_path}")
+        seen.add(extra.current_path)
+        if mapping.get(extra.current_path, extra.proposed_path) != extra.proposed_path:
+            raise ValueError(
+                f"also-map row contradicts the manifest: {extra.current_path} -> "
+                f"{extra.proposed_path} (manifest {mapping[extra.current_path]})"
+            )
+        other = owner.setdefault(extra.proposed_path, extra.current_path)
+        if other != extra.current_path:
+            raise ValueError(
+                f"also-map: proposed_path {extra.proposed_path} already used by {other} "
+                f"(also-map row {extra.current_path})"
+            )
+        mapping[extra.current_path] = extra.proposed_path
+
+
 def run_rewrite(
     scope: str,
     rows: list[ManifestRow],
@@ -1099,12 +1128,7 @@ def run_rewrite(
         ValueError: If an also-map row sends a path somewhere other than the manifest does.
     """
     mapping = {r.current_path: r.proposed_path for r in rows}
-    for extra in also_map or ():
-        if mapping.setdefault(extra.current_path, extra.proposed_path) != extra.proposed_path:
-            raise ValueError(
-                f"also-map row contradicts the manifest: {extra.current_path} -> "
-                f"{extra.proposed_path} (manifest {mapping[extra.current_path]})"
-            )
+    _merge_also_map(mapping, rows, also_map or [])
     frozen = _frozen_paths(rows)
     exists = _repo_exists(root)
     targets, excluded, missing = scope_targets(scope, rows, root, excludes)
@@ -1353,6 +1377,8 @@ def _verify_tree(
     In branch mode the manifest lists only the branch's files, so research/ legitimately holds
     others: the file-count and unexpected-file checks are skipped, and every per-row check
     (destination exists, digest, listed edits, depth) and the docs/research checks stay.
+    Files outside the manifest are not checked; pair it with a non-branch verify --stage
+    final on the union manifest and ledger.
     """
     problems: list[str] = []
     allowed = allowed_changes or frozenset()
@@ -1502,7 +1528,9 @@ def verify_final(
         branch_mode: True when the manifest covers only a branch's files. Skips the checks
             that assume the manifest is all of research/ (the unexpected-tracked-file check
             and, via `_verify_tree`, the file counts), and replaces "docs/research is gone"
-            with "no file at all is left under docs/research" (an empty folder is allowed).
+            with "no file at all is left under docs/research". An empty folder passes, and so
+            does one holding only `__pycache__`, which `_files_under` ignores. The depth
+            rule still covers every tracked file under research/.
 
     Returns:
         Problem descriptions; an empty list means the gate passes.
@@ -1517,9 +1545,7 @@ def verify_final(
         if row.proposed_path not in tracked:
             problems.append(f"destination not tracked: {row.proposed_path}")
     for path in sorted(tracked):
-        if branch_mode and path not in counts:
-            continue  # another branch's file: its depth is that branch's gate
-        if path not in counts and not _matches_allow_new(path, allow_new):
+        if path not in counts and not branch_mode and not _matches_allow_new(path, allow_new):
             problems.append(f"unexpected tracked file under {NEW_ROOT}/: {path}")
         if len(PurePosixPath(path).parts) > _depth_limit(path, allow_deeper):
             problems.append(f"tracked file deeper than research/<category>/<study>/<file>: {path}")
@@ -1807,7 +1833,9 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "The manifest lists only a branch's files, not all of research/: skip the "
             "whole-tree count and unexpected-file checks (all stages); keep the per-row "
-            "checks, the pinned digests and the rule that nothing is left under docs/research."
+            "checks, the pinned digests and the rule that nothing is left under docs/research. "
+            "Files outside the manifest are not checked; pair it with a non-branch verify "
+            "--stage final on the union manifest and ledger."
         ),
     )
     verify.add_argument(
