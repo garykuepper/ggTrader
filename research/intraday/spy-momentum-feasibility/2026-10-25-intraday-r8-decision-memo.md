@@ -2,7 +2,7 @@
 
 **Status: DRAFT, UNAPPROVED.** This memo proposes one protocol for r8 of the
 [intraday brief](2026-10-24-intraday-feasibility.md). Until the owner approves it, r7, the
-[approved forward-paper standard](2026-10-23-forward-paper-standard.md), the
+[approved forward-paper standard](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md), the
 [Stage 0A contract](2026-10-25-intraday-stage0a-contract.md) and the worklist are unchanged.
 Stage 0A stays closed **unresolved**. No network request, price inspection, pull, signal,
 return, shadow or order is authorized by this draft. The recommendations are not accepted
@@ -11,12 +11,12 @@ until the owner marks the approval block.
 The owner constraints are fixed and not reopened: one long-only SPY rule, no borrowing or
 shorting, free data only, a taxable account and the production freeze.
 
-Evidence: [Opus assessment](../2026-10-25-intraday-opus-review-assessment.md),
-[proposal verification](../2026-10-25-intraday-opus-proposal-verification.md),
-[estimates verification](../2026-10-25-intraday-opus-estimates-verification.md),
-[Argon assessment](../2026-10-25-intraday-argon-review-assessment.md),
-[Stage 0A coverage](../2026-10-25-intraday-stage0a-coverage.md),
-[checked r7 fields](../_intraday_r8_field_check_2026-10-25.json).
+Evidence: [Opus assessment](2026-10-25-intraday-opus-review-assessment.md),
+[proposal verification](2026-10-25-intraday-opus-proposal-verification.md),
+[estimates verification](2026-10-25-intraday-opus-estimates-verification.md),
+[Argon assessment](2026-10-25-intraday-argon-review-assessment.md),
+[Stage 0A coverage](2026-10-25-intraday-stage0a-coverage.md),
+[checked r7 fields](_intraday_r8_field_check_2026-10-25.json).
 
 ## Carried forward from r7 (unchanged)
 

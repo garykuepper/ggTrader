@@ -2,7 +2,7 @@
 
 Opus 5.5 returned **NEEDS FIXES**, not an approval, on the first draft. Parent
 checked its findings against the brief/plan and resolved them in the proposed
-[concrete protocol](briefs/2026-10-25-intraday-prospective-observation.md).
+[concrete protocol](2026-10-25-intraday-prospective-observation.md).
 No second reviewer verdict is claimed. No code or observation was started.
 
 ## Findings and resolutions

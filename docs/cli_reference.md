@@ -19,7 +19,7 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 `intraday_observe.py` is a standalone research recorder and hypothetical journal.
 It does not submit orders or use the production paper account. The standalone observer and its four user timers were activated on October 27, 2026.
-First observation is October 30; see the [activation record](research/2026-10-27-intraday-observer-activation.md). Independent review findings were
+First observation is October 30; see the [activation record](../research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md). Independent review findings were
 corrected and regression-tested; the final full capped suite passes.
 
 Safe offline commands:
@@ -62,12 +62,12 @@ The calendar-aware timer entry point is:
 It accepts `--stage recover|inputs|decide|archive` and `--state-dir PATH`;
 non-session and out-of-study dates are no-ops, except final next-session recovery.
 Do not run stages against live state before the separate activation approval.
-Read [current readiness evidence](research/2026-10-26-intraday-observer-readiness.md)
+Read [current readiness evidence](../research/intraday/spy-momentum-prospective-observer/2026-10-26-intraday-observer-readiness.md)
 for verified source samples and remaining evidence limitations.
 The issuer importer supports `--date-format mdy` and `--col-cusip CUSIP` for
 State Street's multi-fund workbook. Missing identity mapping or capital-gain
 columns keep the comparison incomplete; blank gains are not converted to zero.
-See the [prospective protocol](research/briefs/2026-10-25-intraday-prospective-observation.md).
+See the [prospective protocol](../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md).
 
 ## Intraday Stage 0A coverage probe
 
@@ -79,9 +79,9 @@ PYTHONPATH=src .venv/bin/python scripts/intraday_coverage_probe.py
 The standalone research script uses inherited `APCA_API_KEY_ID` and
 `APCA_API_SECRET_KEY` credentials for read-only paper-calendar and market-data
 requests. It does not load `.env`. Its fixed SPY sample, rate limits and evidence
-rules are defined in the [Stage 0A contract](research/briefs/2026-10-25-intraday-stage0a-contract.md).
+rules are defined in the [Stage 0A contract](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md).
 It stores timestamps, volumes, auction venues and response hashes, discarding
-prices. The default artifact is `docs/research/_intraday_probe.json`; `--output`
+prices. The default artifact is `research/intraday/spy-momentum-feasibility/_intraday_probe.json`; `--output`
 selects a different artifact path. Existing artifacts are never overwritten.
 The hard request deadline uses Linux main-thread signals; run this as a standalone
 CLI rather than from a background Python thread.
@@ -95,9 +95,9 @@ Stage 0B and strategy backtesting require their separate authorization.
 .venv/bin/python scripts/intraday_momentum_research.py plan
 ```
 
-The standalone script implements the [approved r8 proxy protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md).
+The standalone script implements the [approved r8 proxy protocol](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md).
 The historical r8 study is now closed UNRESOLVED (data); do not re-pull or score
-its frozen dataset. See the [completed investigation](research/2026-10-25-intraday-gap-investigation.md).
+its frozen dataset. See the [completed investigation](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md).
 The commands below describe the preserved implementation, not permission to reopen it.
 Help, no command and `plan` need no credentials, network or writes. Approval 1
 covers mocked implementation only; real collection and candidate scoring require
@@ -112,8 +112,8 @@ rehashes inputs and claims the collection directory before computing. Existing
 results and a claimed study cannot be overwritten or rescored by changing the
 output path. A crash after claiming remains refused, preserving the audit trail.
 
-Default validation/result paths are `docs/research/_intraday_momentum_validation.json`
-and `docs/research/_intraday_momentum_results.json`. The default collection input
+Default validation/result paths are `research/intraday/spy-momentum-feasibility/_intraday_momentum_validation.json`
+and `research/intraday/spy-momentum-feasibility/_intraday_momentum_results.json`. The default collection input
 is `data/external/intraday_momentum_r8`; credentials are inherited through
 `APCA_API_KEY_ID` / `APCA_API_SECRET_KEY`, never read from `.env` by this CLI.
 The HTTP deadline uses Linux main-thread signals. The exact future source

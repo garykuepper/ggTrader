@@ -8,8 +8,8 @@
 
 **Tech stack:** Existing Python environment and observer CLI; proposed user-level systemd timers. No new database, container, subscription or broker order integration.
 
-**Spec:** [Prospective observation protocol](../../research/briefs/2026-10-25-intraday-prospective-observation.md).
-**Baseline:** [Completed build](../../research/2026-10-25-intraday-observer-build.md), code `4ab01d1`, documented in `8ea98fc`; 1,857 tests passed at that build, 118 observer tests, clean Ruff and a synthetic rehearsal. Recheck repository status before execution; these are recorded results, not a fresh test claim.
+**Spec:** [Prospective observation protocol](../../../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md).
+**Baseline:** [Completed build](../../../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-observer-build.md), code `4ab01d1`, documented in `8ea98fc`; 1,857 tests passed at that build, 118 observer tests, clean Ruff and a synthetic rehearsal. Recheck repository status before execution; these are recorded results, not a fresh test claim.
 
 ## The plan in everyday language
 
@@ -51,7 +51,7 @@ no task is dispatched or executed by this amendment.
 ## Task 1: Verify the real source without starting a study
 
 **Owner:** Parent. **Flash:** extract exact fields from specified saved responses or issuer documents; parent verifies them.
-**Outputs:** `docs/research/2026-10-26-intraday-observer-readiness.md` and `_intraday_observer_readiness_preflight.json`; separate original source snapshots under a dated readiness artifact folder, outside r8 and outside a live study ledger.
+**Outputs:** `research/intraday/spy-momentum-prospective-observer/2026-10-26-intraday-observer-readiness.md` and `_intraday_observer_readiness_preflight.json`; separate original source snapshots under a dated readiness artifact folder, outside r8 and outside a live study ledger.
 
 - [x] Record source URLs, request count, exact parameters, UTC request/receipt times, status codes, payload hashes, code/runtime identities and elapsed times. Retain source payloads without headers or credentials.
 - [x] Check the official paper-calendar GET against the offline NYSE schedule for the proposed observation span, including early closes and the bootstrap anchor. A mismatch blocks readiness; do not choose the more convenient calendar.
@@ -109,4 +109,4 @@ The first 20 registered slots test operational reliability. Monthly reports are 
 
 Do not recreate the recorder, rerun the closed historical study or commission another general strategy review. Start at Task 1, record evidence, and progress to the concrete activation package. If a required source/readiness check is unresolved, report that precise blocker and preserve the work already completed.
 
-Preparation completed with parent disposition of Opus findings in [the readiness report](../../research/2026-10-26-intraday-observer-readiness.md). Actual live manifest/readiness creation is reserved for the staged activation procedure; no fabricated pre-init hash.
+Preparation completed with parent disposition of Opus findings in [the readiness report](../../../research/intraday/spy-momentum-prospective-observer/2026-10-26-intraday-observer-readiness.md). Actual live manifest/readiness creation is reserved for the staged activation procedure; no fabricated pre-init hash.

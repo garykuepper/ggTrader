@@ -14,7 +14,7 @@ A dedicated runtime snapshot and temporary release/clock probes were prepared an
 Parent verified real-source samples with **12 of 20 allowed direct GET attempts**,
 plus one Alpaca documentation-connector discovery. Requests disable automatic
 redirects/retries. Exact original bodies, parameters, receipt times, counts and hashes
-are preserved in [the request ledger](artifacts-2026-10-26-intraday-readiness/requests.json).
+are preserved in [the request ledger](../artifacts-2026-10-26-intraday-readiness/requests.json).
 Flash mechanically confirmed these saved fields with no mismatches; parent independently
 computed the schema/timestamp/hash checks. No strategy signals or returns were calculated
 from the real sampled prices.
@@ -66,8 +66,8 @@ Final code/package commit: **`280d4a0edc00f1b4b23ba7bbe8dd80432877b36f`**.
 [unit checks](_intraday_observer_unit_verification.json),
 [runtime snapshot](_intraday_observer_runtime_snapshot.json),
 [release rehearsal](_intraday_observer_release_verification.json),
-[year-sized measurement](artifacts-2026-10-26-intraday-readiness/runtime_bench_252.json)
-and [final full-suite log](artifacts-2026-10-26-intraday-readiness/full-tests-final.txt)
+[year-sized measurement](../artifacts-2026-10-26-intraday-readiness/runtime_bench_252.json)
+and [final full-suite log](../artifacts-2026-10-26-intraday-readiness/full-tests-final.txt)
 preserve the evidence. Earlier 1,887-test worktree results remain historical.
 
 ## What Opus found and what changed
@@ -93,7 +93,7 @@ finding, ruling and retained limit. No second Opus approval is claimed.
 
 [The proposal](_intraday_observer_activation_proposal.json) fixes the code, runtime,
 source calendar, delay, four daily jobs and proposed storage paths.
-[The runbook](../../deploy/intraday_observer/OPERATOR_RUNBOOK.md) contains the exact
+[The runbook](../../../deploy/intraday_observer/OPERATOR_RUNBOOK.md) contains the exact
 staged installation/init/readiness/activation/disable procedure.
 
 For New York activation on **October 26, 2026**, the calendar gives:

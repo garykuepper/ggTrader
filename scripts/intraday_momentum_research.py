@@ -16,8 +16,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 DEFAULT_COLLECTION = PROJECT_ROOT / "data/external/intraday_momentum_r8"
-DEFAULT_VALIDATION = PROJECT_ROOT / "docs/research/_intraday_momentum_validation.json"
-DEFAULT_RESULT = PROJECT_ROOT / "docs/research/_intraday_momentum_results.json"
+STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"
+DEFAULT_VALIDATION = STUDY_DIR / "_intraday_momentum_validation.json"
+DEFAULT_RESULT = STUDY_DIR / "_intraday_momentum_results.json"
 
 
 def build_parser() -> argparse.ArgumentParser:

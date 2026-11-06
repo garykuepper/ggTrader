@@ -34,7 +34,7 @@ The draft gate uses five-lag Bartlett Newey–West. Its uncertainty depends on s
 
 For equal positive full-year gains under the draft's year-end 24% debit, `R_pre = 0.03/0.76 = 3.947368%`. Dividing by 252 gives the **linear approximation** 1.566416 bp/session: 3.132832 bp net/trade, 5.132832 bp gross/trade at 50% frequency. Under a different, constant-daily-compounding construction, the daily rate is `(1+R_pre)^(1/252)−1 = 1.536408 bp`. This explains Opus's rounded comparison without asserting equivalence between A1 and A2.
 
-The actual [draft tax ledger](briefs/2026-10-24-intraday-feasibility.md) multiplies annual wealth factors `1 + R_y − 0.24·max(R_y,0)`, taxes the terminal partial year and annualizes by elapsed time. Variable returns, losing years, compounding and tax debits prevent a general `pretax CAGR = after-tax CAGR/0.76` identity. A2 therefore cannot be reduced to one exact unconditional daily mean without a return-path model.
+The actual [draft tax ledger](2026-10-24-intraday-feasibility.md) multiplies annual wealth factors `1 + R_y − 0.24·max(R_y,0)`, taxes the terminal partial year and annualizes by elapsed time. Variable returns, losing years, compounding and tax debits prevent a general `pretax CAGR = after-tax CAGR/0.76` identity. A2 therefore cannot be reduced to one exact unconditional daily mean without a return-path model.
 
 ## F1: “under two years” needs a strong benchmark assumption
 
@@ -48,7 +48,7 @@ For illustrative smooth growth, sleeve CAGR 3% and benchmark CAGR `b` on the **s
 | 12% | 1.940 | 2.00 years |
 | 15% | 1.475 | 1.50 years |
 
-A continuous crossing before two years requires `b > 11.7192%`; a breach by the aligned 1.75-year check requires `b ≥ 13.0236%`. Real quarter-end timing and return paths matter; terminal CAGR alone cannot establish the first breach. These benchmark CAGRs are **illustrative external assumptions**, not forecasts or historical measurements. Opus's “in most rising markets” probability claim is **unsupported**. The mismatch between standalone and SPY-relative hurdles remains real; this calculation changes neither standard. [Existing forward standard](briefs/2026-10-23-forward-paper-standard.md).
+A continuous crossing before two years requires `b > 11.7192%`; a breach by the aligned 1.75-year check requires `b ≥ 13.0236%`. Real quarter-end timing and return paths matter; terminal CAGR alone cannot establish the first breach. These benchmark CAGRs are **illustrative external assumptions**, not forecasts or historical measurements. Opus's “in most rising markets” probability claim is **unsupported**. The mismatch between standalone and SPY-relative hurdles remains real; this calculation changes neither standard. [Existing forward standard](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md).
 
 ## F9: approximately 100 pages describes regular-session page equivalents
 

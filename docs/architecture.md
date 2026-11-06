@@ -325,7 +325,7 @@ remaining input requirements are in the
 manifest against Alpaca SIP and IEX bars and SIP auction metadata. It uses only
 read-only HTTP requests and atomic JSON checkpoints, with no database,
 strategy registry, simulation or paper-trader integration. Prices are discarded
-before persistence. See the [Stage 0A contract](research/briefs/2026-10-25-intraday-stage0a-contract.md)
+before persistence. See the [Stage 0A contract](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md)
 for request bounds and the limits of its sampled-coverage conclusion.
 
 ## Intraday r8 research pipeline
@@ -341,7 +341,7 @@ Validation checks every required endpoint independently of the signal and binds
 its PASS artifact to actual protocol, code, calendar and data hashes. Scoring
 rehashes/revalidates those identities and claims the collection directory before
 calculating returns. The original metadata-only Stage 0A code/artifact stays
-separate. See the [r8 protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md)
+separate. See the [r8 protocol](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md)
 and [CLI reference](cli_reference.md) for the current authorization boundary.
 
 
@@ -366,5 +366,5 @@ dispatches the same core stages; standalone user timers are defined in
 separate read-only snapshot; only fetching units receive a private persistent
 credential file under the owner-approved activation. Corrupt evidence yields unresolved diagnostics
 without statistics, and cannot be waived by resume.
-See the [protocol](research/briefs/2026-10-25-intraday-prospective-observation.md)
+See the [protocol](../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md)
 and [CLI reference](cli_reference.md#prospective-intraday-practice-journal).

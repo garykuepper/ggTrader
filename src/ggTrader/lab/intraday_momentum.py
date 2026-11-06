@@ -54,14 +54,13 @@ from ggTrader.lab.intraday_probe import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-PROTOCOL_PATH = PROJECT_ROOT / "docs/research/briefs/2026-10-25-intraday-feasibility-r8.md"
+STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"
+PROTOCOL_PATH = STUDY_DIR / "2026-10-25-intraday-feasibility-r8.md"
 # SHA256 of the whole approved r8 file; any edit must be a deliberate, re-approved code change.
 PROTOCOL_SHA256 = "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85"
 # Bounded human review of documented vendor adjustment changes (r8 D4.3). Local, non-price
 # evidence: it cannot prove that no undocumented change exists.
-VENDOR_REVIEW_PATH = (
-    PROJECT_ROOT / "docs/research/_intraday_r8_vendor_adjustment_review_2026-10-25.json"
-)
+VENDOR_REVIEW_PATH = STUDY_DIR / "_intraday_r8_vendor_adjustment_review_2026-10-25.json"
 VENDOR_REVIEW_SCHEMA = "intraday_r8_vendor_adjustment_review"
 CODE_FILES = (
     "src/ggTrader/lab/intraday_momentum.py",

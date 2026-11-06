@@ -71,5 +71,5 @@ is silently guessed to create a completed comparison.
 
 Full-year runtime and real source outage/retry behavior are not measured by the
 small rehearsal. Optional revision commands consume the same daily request budget
-as required captures and are not scheduled by this build. See the [CLI guide](../cli_reference.md#prospective-intraday-practice-journal)
-and [protocol](briefs/2026-10-25-intraday-prospective-observation.md).
+as required captures and are not scheduled by this build. See the [CLI guide](../../../docs/cli_reference.md#prospective-intraday-practice-journal)
+and [protocol](2026-10-25-intraday-prospective-observation.md).

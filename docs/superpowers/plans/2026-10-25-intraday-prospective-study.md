@@ -8,7 +8,7 @@
 
 **Tech stack:** Existing Python environment, requests, pandas, existing calendar and safe GET/checkpoint helpers. No new service, database or dependency is proposed.
 
-**Spec:** Task 1 produces the candidate-specific prospective brief. Historical context: [r8](../../research/briefs/2026-10-25-intraday-feasibility-r8.md), [completed gap investigation](../../research/2026-10-25-intraday-gap-investigation.md), [existing forward standard](../../research/briefs/2026-10-23-forward-paper-standard.md).
+**Spec:** Task 1 produces the candidate-specific prospective brief. Historical context: [r8](../../../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md), [completed gap investigation](../../../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md), [existing forward standard](../../../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md).
 
 ## Status and scope
 
@@ -52,7 +52,7 @@ design before it begins; 252 observations cannot be advertised as replacing r8.
 ## Task 1: Freeze the prospective protocol
 
 **Owner:** Parent drafts; Claude Opus reviews statistical and protocol decisions.
-**File:** Create `docs/research/briefs/2026-10-25-intraday-prospective-observation.md`.
+**File:** Create `research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md`.
 
 - [ ] Register the same single signal: 09:59 close divided by the immediately
   preceding official-session closing minute, minus one; long only if positive.
@@ -184,6 +184,6 @@ owner protocol approval before Task 2 implementation.
 Owner said "ok build it" after the plain-language explanation. Sonnet implemented
 in937e487; parent reproduced/corrected the eight Important review findings in
 4ab01d1. Focused tests118passed and offline rehearsal completed. Final full suite
-passed1,857tests (30deselected); see the [build record](../../research/2026-10-25-intraday-observer-build.md)
+passed1,857tests (30deselected); see the [build record](../../../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-observer-build.md)
 for final evidence. Task3 real-source preflight/activation and Task4 prospective
 observation remain unperformed. No timer or broker integration was installed.

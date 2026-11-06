@@ -50,6 +50,6 @@ count is claimed for that service. No further network access is planned.
 ## Completion
 
 All five tasks completed. Final findings and delegate IDs are in
-[the investigation report](../2026-10-25-intraday-gap-investigation.md).
+[the investigation report](2026-10-25-intraday-gap-investigation.md).
 Ten Alpaca GETs and one workbook GET, no retries, plus seven reserved public
 lookup slots: 18 of 30 allocated. No repair, scoring or further request planned.

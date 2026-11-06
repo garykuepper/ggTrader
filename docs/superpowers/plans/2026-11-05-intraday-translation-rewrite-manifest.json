@@ -1,0 +1,24 @@
+{
+  "description": "Non-frozen Markdown files in the 74 moved intraday files that the 2026-11-05 intraday translation edited (reference rewrite; three also carry the hand-edited _intraday_momentum_results.json path). Read by verify --stage rewritten and final --branch-mode.",
+  "scope": "moved-markdown",
+  "tool_replacements": 56,
+  "hand_edited": [
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-argon-review.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-implementation.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-validation-unresolved.md"
+  ],
+  "files": [
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation-plan.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-opus-estimates-verification.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-opus-proposal-verification.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-argon-review.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-decision-memo.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-implementation.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-validation-unresolved.md",
+    "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-coverage.md",
+    "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-observer-build.md",
+    "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-protocol-review.md",
+    "research/intraday/spy-momentum-prospective-observer/2026-10-26-intraday-observer-readiness.md"
+  ]
+}

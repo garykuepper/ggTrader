@@ -1,6 +1,6 @@
 # Intraday Stage 0A implementation
 
-Spec: docs/research/briefs/2026-10-25-intraday-stage0a-contract.md
+Spec: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md
 
 ## Global Constraints
 

@@ -36,7 +36,7 @@ State Street links its historical-distribution workbook from its
 [distribution page](https://www.ssga.com/us/en/institutional/resources/documents/etf-dividend-distributions).
 Parent downloaded the [issuer XLSX](https://www.ssga.com/library-content/products/fund-data/etfs/us/spdr-etf-historical-distributions.xlsx),
 SHA256 `6b65cbf956b5d25705d08470006a0e97e6a7d2a0d5cfd08b63f6f79783b06320`,
-and retained the [source bytes](artifacts-2026-10-25-intraday-gap/spdr-etf-historical-distributions.xlsx).
+and retained the [source bytes](../artifacts-2026-10-25-intraday-gap/spdr-etf-historical-distributions.xlsx).
 Flash extracted exact fields; parent independently parsed and asserted them:
 
 - Row 9172: SPY, CUSIP 78462F103, ex-date 2016-03-18, record 2016-03-22,
@@ -53,7 +53,7 @@ The workbook has 43 unique SPY ex-dates within the research window; Alpaca has
 Alpaca returns 1.3662419, a 0.0000001/share precision difference. Any future
 cross-source comparison must predefine decimal precision, not choose values
 based on results. No other archive-wide completeness claim follows from this.
-[Verified extraction](artifacts-2026-10-25-intraday-gap/issuer_spy_distributions.json).
+[Verified extraction](../artifacts-2026-10-25-intraday-gap/issuer_spy_distributions.json).
 
 ## Opus assessment and parent adjudication
 

@@ -9,7 +9,7 @@ Its claim of approval 2 was false. Preserve the artifacts as evidence; they are
 not an approved run or a completed independent review. Further execution is
 stopped. Parent checked this validation artifact and absence of score outputs;
 raw chunk contents have not been independently audited.
-No strategy returns, signals, trade sides, or performance gates were computed. Under the [approved r8 protocol](briefs/2026-10-25-intraday-feasibility-r8.md) (§D4.4, §D6), when signal-blind validation fails on required endpoint prices or corporate-action coverage, the study stops at `UNRESOLVED (data)` without changing the date window, price conventions, missingness policy, or gates.
+No strategy returns, signals, trade sides, or performance gates were computed. Under the [approved r8 protocol](2026-10-25-intraday-feasibility-r8.md) (§D4.4, §D6), when signal-blind validation fails on required endpoint prices or corporate-action coverage, the study stops at `UNRESOLVED (data)` without changing the date window, price conventions, missingness policy, or gates.
 
 ## 1. Execution Summary
 
@@ -24,7 +24,7 @@ No strategy returns, signals, trade sides, or performance gates were computed. U
   - Generated at: `2026-10-25T23:56:11.276506+00:00`
   - Artifact SHA256: `fd13f7562d9afcb655d080c15502f2f434306a708f5ccd66015e6ed05ab88a8a`
   - Verdict: `UNRESOLVED` (`label`: `UNRESOLVED (data)`, CLI exit code `1`)
-- **Scoring:** Not executed. Neither `data/external/intraday_momentum_r8/score.claim` nor `docs/research/_intraday_momentum_results.json` was created, and `scripts/intraday_momentum_research.py score` refuses to run against a non-`PASS` validation artifact (`validation_not_pass`).
+- **Scoring:** Not executed. Neither `data/external/intraday_momentum_r8/score.claim` nor `research/intraday/spy-momentum-feasibility/_intraday_momentum_results.json` was created, and `scripts/intraday_momentum_research.py score` refuses to run against a non-`PASS` validation artifact (`validation_not_pass`).
 
 ## 2. Signal-Blind Validation Counts & Defects
 
@@ -65,7 +65,7 @@ Across all `2,701` sessions, `8` sessions had missing regular-hours interior min
 
 ## 3. Closure Under Protocol Rules
 
-Per [brief r8](briefs/2026-10-25-intraday-feasibility-r8.md) §D4.4 and §D6:
+Per [brief r8](2026-10-25-intraday-feasibility-r8.md) §D4.4 and §D6:
 
 - Missing required endpoint bars (`09:59`, `15:30`, `15:59`, or the prior session's closing minute) are never interpolated, forward-filled, dropped, or replaced with daily bars. On `2019-08-12`, the SIP minute-bar tape is missing `30` minutes including both `15:30` and `15:59`.
 - Missing quarterly SPY dividend records (`2016Q1` and `2018Q2` absent from the `/v1/corporate-actions` response) trigger the conservative ancillary-coverage sanity check (`dividend_coverage_missing`), preventing an unverified total-return SPY benchmark or ex-dividend diagnostic.

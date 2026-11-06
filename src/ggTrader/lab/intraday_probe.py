@@ -32,10 +32,11 @@ TIMESTAMP = re.compile(
 VENUE = re.compile(r"[A-Z0-9]{1,4}\Z")
 MINUTE_NS = 60_000_000_000
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_OUTPUT = PROJECT_ROOT / "docs/research/_intraday_probe.json"
+STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"
+DEFAULT_OUTPUT = STUDY_DIR / "_intraday_probe.json"
 DOCUMENTS = {
-    "strategy_brief": PROJECT_ROOT / "docs/research/briefs/2026-10-24-intraday-feasibility.md",
-    "contract": PROJECT_ROOT / "docs/research/briefs/2026-10-25-intraday-stage0a-contract.md",
+    "strategy_brief": STUDY_DIR / "2026-10-24-intraday-feasibility.md",
+    "contract": STUDY_DIR / "2026-10-25-intraday-stage0a-contract.md",
 }
 SUCCESS = {"nonempty_success", "empty_success"}
 

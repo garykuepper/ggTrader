@@ -8,12 +8,12 @@ and the calendar.
 
 Hermes agent supervision (DeepSeek Flash, job `39172df68638`) is scheduled weekdays
 at 14:00 Pacific, saving local reports: first recordings, daily health, weekly calendar, checkpoint and final review.
-See [schedule record](research/_intraday_observer_agent_schedule.json). The T3 schedule is disabled to avoid duplicate runs. Scheduling did not execute
+See [schedule record](../research/intraday/spy-momentum-prospective-observer/_intraday_observer_agent_schedule.json). The T3 schedule is disabled to avoid duplicate runs. Scheduling did not execute
 the checks; the host and Hermes gateway must be available.
 
 The automatic hypothetical journal is activated. All four standalone timers are
 enabled/active; installed-service no-op checks and ledger integrity pass. See
-[activation record](research/2026-10-27-intraday-observer-activation.md).
+[activation record](../research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md).
 
 1. Verify the October 29 anchor archive and October 30 first inputs, decision and
    archive. Check durable timestamps, source references and integrity; preserve

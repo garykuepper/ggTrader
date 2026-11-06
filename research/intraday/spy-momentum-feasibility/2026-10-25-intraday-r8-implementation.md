@@ -4,7 +4,7 @@
 No candidate price/return analysis or actual r8 collection was performed. This is infrastructure
 verification, not a strategy GO/NO-GO. The owner approved protocol finalization
 and mocked implementation by saying "Continue" after the r8 memo's approval
-question. The [approved protocol](briefs/2026-10-25-intraday-feasibility-r8.md)
+question. The [approved protocol](2026-10-25-intraday-feasibility-r8.md)
 remains unchanged; the original Stage 0A verdict remains unresolved.
 
 ## What was built
@@ -89,7 +89,7 @@ page and a bounded run. Credentials are inherited and never logged; redirects,
 ambient proxy configuration and dotenv loading are disabled.
 
 After collection, run one signal-blind validation. Only a matching PASS permits
-one automatic score into `docs/research/_intraday_momentum_results.json` and its
+one automatic score into `research/intraday/spy-momentum-feasibility/_intraday_momentum_results.json` and its
 Markdown report. Otherwise record UNRESOLVED (data), without changing the window,
 price convention, missingness policy or gates. No shadow, order, production
 change, live allocation or discretionary re-score is part of approval 2.

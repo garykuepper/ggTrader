@@ -106,7 +106,7 @@
   date registration before init: first observation October 30, slot-20 checkpoint
   November 30, final slot November 3, 2027. No orders or production configuration
   changes. Real scheduled collection remains to be verified.
-  [Activation record](research/2026-10-27-intraday-observer-activation.md).
+  [Activation record](../research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md).
 
 ## 2026-10-26
 
@@ -119,7 +119,7 @@
   creation, dedicated frozen runtime, health/calendar procedures and safe unresolved
   integrity reporting. Dedicated runtime: 1,889 full-suite tests plus one additional
   integration test pass; 151 unique observer tests. Owner activation approval pending.
-  [Readiness evidence](research/2026-10-26-intraday-observer-readiness.md).
+  [Readiness evidence](../research/intraday/spy-momentum-prospective-observer/2026-10-26-intraday-observer-readiness.md).
 
 ## 2026-10-25
 
@@ -128,18 +128,18 @@
   and a three-session demonstration. Parent corrected eight Important Opus findings
   covering checkpoint halts, late writes, retrospective amendments, readiness and
   source integrity. 118 focused tests and 1,857 full-suite tests pass; Ruff clean.
-  No source collection, scheduler or orders activated. [Build record](research/2026-10-25-intraday-observer-build.md).
+  No source collection, scheduler or orders activated. [Build record](../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-observer-build.md).
 
 - **Intraday data-gap investigation completed:** reproduced vendor omissions with
   exact response hashes, narrow requests and metadata-only SIP trades/control.
   Independently verified issuer distributions (43 versus Alpaca 41); retained
   source workbook and JSON evidence. Sonnet/Flash/Opus tasks completed. r8 remains
-  UNRESOLVED (data), with no repair or score. [Report](research/2026-10-25-intraday-gap-investigation.md).
+  UNRESOLVED (data), with no repair or score. [Report](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md).
 
 - **Owner-authorized parent r8 takeover:** independently verified 132 chunk hashes
   and missing endpoint/dividend metadata; reran signal-blind validation, reproducing
   UNRESOLVED (data). No further collection or scoring. See the
-  [parent verification](research/_intraday_r8_parent_verification.json).
+  [parent verification](../research/intraday/spy-momentum-feasibility/_intraday_r8_parent_verification.json).
 
 - **Intraday r8 delegation scope violation; approval 2 was NOT granted.**
   A read-only Argon review instead executed collection and validation and edited
@@ -148,21 +148,21 @@
   132-request frozen SIP collection into `data/external/intraday_momentum_r8`
   (263 pages in 263 HTTP 200 GET attempts; `data_manifest_sha256`
   `110f8f8161179b56650a7486a416f2cb61b92554a4f7e12fa93435f1192e9237`).
-  Signal-blind validation ([`_intraday_momentum_validation.json`](research/_intraday_momentum_validation.json))
+  Signal-blind validation ([`_intraday_momentum_validation.json`](../research/intraday/spy-momentum-feasibility/_intraday_momentum_validation.json))
   returned `UNRESOLVED (data)` on four defects: missing required `15:30` and
   `15:59` SPY minute bars on `2019-08-12` (`endpoint_missing:entry_1530:2019-08-12`,
   `endpoint_missing:close:2019-08-12`) and missing quarterly cash-dividend
   records in `2016Q1` and `2018Q2` (`dividend_coverage_missing:2016Q1`,
   `dividend_coverage_missing:2018Q2`). Per r8 §D4.4/§D6, the study closes
   without scoring, date edits, endpoint substitution or production changes.
-  [Closure report](research/2026-10-25-intraday-r8-validation-unresolved.md).
+  [Closure report](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-validation-unresolved.md).
 
 - **Intraday r8 mocked research pipeline.** Added isolated resumable GET
   collection, signal-blind validation and a hash-bound single-shot scorer.
   Corrected zero-variance statistics, session omission, corporate-action handling
   and runtime/vendor-review identity checks; synthetic tests and scoped review
   pass. Historical collection/scoring remain pending approval 2.
-  [Implementation record](research/2026-10-25-intraday-r8-implementation.md).
+  [Implementation record](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-implementation.md).
   Final benchmark-overflow regression and scoped review are closed; the corrected
   code passes 1,739 capped-suite tests. The execution manifest is ready for
   approval 2, with vendor-history limits explicitly recorded.
@@ -171,20 +171,20 @@
   finalization and mocked implementation: fixed January 5, 2016–September 30,
   2026 proxy screen, early-close anchors and signal-blind endpoint validation.
   Historical collection/scoring remain pending approval 2; production unchanged.
-  [Protocol](research/briefs/2026-10-25-intraday-feasibility-r8.md).
+  [Protocol](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md).
 
 - **Opus plan-review verification.** Reproduced conditional power/cost/page
   estimates and verified the auction schema failure against an identical
   metadata-only response. Corrected the omitted-field conjecture to a null/list
   mismatch; identified the whole-share CLS sales-contact caveat. No price work,
   strategy evaluation or protocol changes.
-  [Verification](research/2026-10-25-intraday-opus-proposal-verification.md).
+  [Verification](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-opus-proposal-verification.md).
 
 - **Intraday Stage 0A metadata probe.** Added a bounded, read-only SPY coverage
   tool with atomic evidence and mocked tests. All 20 SIP sample sessions had
   complete regular grids, but the required 2015-12-31 prior-close input was
   empty; stage and auction branch remain unresolved. No backtest or production
-  change. [Results](research/2026-10-25-intraday-stage0a-coverage.md).
+  change. [Results](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-coverage.md).
 
 - **Intraday paper-access follow-up.** Verified the author-linked final Gao
   journal PDF and the Delgado/Demirev registry abstracts. Closed the final-paper

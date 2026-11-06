@@ -4,7 +4,7 @@ Stage 0A execution is complete. Its registered bar conclusion is **unresolved**,
 and the auction branch is **auction_branch_unresolved**. This is a data-preflight
 finding, not a strategy GO/NO-GO. No strategy returns were computed.
 
-The [fixed contract](briefs/2026-10-25-intraday-stage0a-contract.md) authorized
+The [fixed contract](2026-10-25-intraday-stage0a-contract.md) authorized
 metadata only. The [raw artifact](_intraday_probe.json) records the calendar,
 frozen sample/request manifest, whitelisted metadata, response hashes and
 per-request outcomes. It was generated at `2026-10-25T18:34:14.285190+00:00`

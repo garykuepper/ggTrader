@@ -204,7 +204,8 @@ def test_review_real_issuer_workbook_selects_only_spy(tmp_path):
     ob, _, _ = make_observer(tmp_path)
     source = (
         ROOT
-        / "docs/research/artifacts-2026-10-25-intraday-gap/spdr-etf-historical-distributions.xlsx"
+        / "research/intraday/artifacts-2026-10-25-intraday-gap"
+        / "spdr-etf-historical-distributions.xlsx"
     )
     record = ob.ingest_distributions(
         source,

@@ -16,7 +16,7 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=PROJECT_ROOT / "docs/research/_intraday_probe.json",
+        default=PROJECT_ROOT / "research/intraday/spy-momentum-feasibility/_intraday_probe.json",
         help="New JSON artifact path; existing results are never overwritten",
     )
     args = parser.parse_args()

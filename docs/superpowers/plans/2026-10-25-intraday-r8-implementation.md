@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python, requests, pandas/numpy, statsmodels HAC, existing yfinance only for free ancillary corporate-action/benchmark inputs if needed. New dependencies recorded before installation.
 
-**Spec:** docs/research/briefs/2026-10-25-intraday-feasibility-r8.md
+**Spec:** research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md
 
 ## Global Constraints
 

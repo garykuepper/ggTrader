@@ -9,7 +9,7 @@ No revised protocol or order was executed.
 ## Auction error: cause confirmed, wording corrected
 
 A supplementary request was frozen in the
-[verification manifest](briefs/2026-10-25-intraday-opus-verification-manifest.md)
+[verification manifest](2026-10-25-intraday-opus-verification-manifest.md)
 before fetching. One authenticated GET reproduced the failed January 4, 2016
 closing-only request. HTTP 200, no pagination continuation; no other
 authenticated endpoint was accessed. The
