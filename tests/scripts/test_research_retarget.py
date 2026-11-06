@@ -108,6 +108,9 @@ def test_relative_link_from_moved_file_to_unmoved_file_gains_one_level() -> None
     new_text, unresolved = rewrite_text(text, f"{S}/a.md", f"{S}/sub/a.md", SUB_MAP)
     assert new_text == "[c](../c.md) ![img](../img/x.png) [same](z.md) [top](../../README.md)\n"
     assert unresolved == []
+    # A link-looking string inside an inline code span is not a link.
+    span, _ = rewrite_text("Write `[a](a.md)` here.\n", f"{S}/a.md", f"{S}/sub/a.md", SUB_MAP)
+    assert span == "Write `[a](a.md)` here.\n"
 
 
 def test_relative_link_between_two_moved_files_in_different_subfolders() -> None:
@@ -136,13 +139,13 @@ def test_two_readme_files_do_not_collide() -> None:
     assert moved == "[study](../README.md) [root](../../../README.md)\n"
 
 
-def test_anchor_and_title_preserved() -> None:
+def test_anchor_preserved() -> None:
     text = '[x](b.md#sec-1 "Title here") [y](<b.md#a>)\n'
     new_text, _ = rewrite_text(text, f"{S}/index.md", f"{S}/index.md", SUB_MAP)
     assert new_text == '[x](sub/b.md#sec-1 "Title here") [y](<sub/b.md#a>)\n'
 
 
-def test_fenced_code_mentions_are_not_rewritten() -> None:
+def test_fenced_code_mentions_are_reported_not_rewritten() -> None:
     text = "\n".join(
         [
             f"Intro {S}/a.md here.",
@@ -191,6 +194,17 @@ def test_reference_style_and_html_links_are_reported_not_guessed() -> None:
         (1, "reference-style or html link"),
         (2, "reference-style or html link"),
     ]
+
+
+def test_link_from_moved_file_to_old_tree_target_is_reported() -> None:
+    text = "[old](../../../docs/research/gone.md)\n"
+    new_text, unresolved = rewrite_text(text, f"{S}/a.md", f"{S}/sub/a.md", SUB_MAP)
+    assert new_text == text
+    assert [(u.line, u.reason) for u in unresolved] == [(1, "not in manifest")]
+    # An unmoved file's old-tree link is not this tool's business.
+    same, none = rewrite_text(text, f"{S}/index.md", f"{S}/index.md", SUB_MAP)
+    assert same == text
+    assert none == []
 
 
 # --- check_moves / apply_moves ------------------------------------------------------------
@@ -379,7 +393,7 @@ def test_verify_accepts_pure_move(tmp_path: Path) -> None:
     assert verify_moved_tree(rows, before, set(), root) == []
 
 
-def test_verify_flags_changed_moved_file(tmp_path: Path) -> None:
+def test_verify_moved_tree_flags_changed_moved_file(tmp_path: Path) -> None:
     root, rows, before = _moved_repo(tmp_path)
     (root / S / "sub" / "a.md").write_text("A changed\n")
     assert verify_moved_tree(rows, before, set(), root) == [
@@ -388,7 +402,7 @@ def test_verify_flags_changed_moved_file(tmp_path: Path) -> None:
     assert verify_moved_tree(rows, before, {f"{S}/sub/a.md"}, root) == []
 
 
-def test_verify_flags_unlisted_edit(tmp_path: Path) -> None:
+def test_verify_moved_tree_flags_unlisted_edit(tmp_path: Path) -> None:
     root, rows, before = _moved_repo(tmp_path)
     (root / "docs/other.md").write_text("edited\n")
     (root / "docs/new.md").write_text("new\n")
@@ -460,7 +474,7 @@ def _manifest_files(root: Path) -> tuple[Path, Path, Path]:
     return manifest, ledger, rewrite
 
 
-def test_update_manifest_rewrites_proposed_paths_and_is_idempotent(tmp_path: Path) -> None:
+def test_update_manifest_rewrites_proposed_paths(tmp_path: Path) -> None:
     root = tmp_path
     manifest, ledger, rewrite = _manifest_files(root)
     rows = _rows((f"{S}/a.md", f"{S}/sub/a.md"))
@@ -530,3 +544,133 @@ def test_cli_check_and_snapshot_round_trip(
         main(["check", "--moves", str(bad), "--root", str(root), "--allow-deeper", "audits/s"]) == 1
     )
     assert "PROBLEM basename changed" in capsys.readouterr().out
+
+
+# --- review fixes -------------------------------------------------------------------------
+
+CONSOLIDATED = "research/audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md"
+CONSOLIDATED_NEW = CONSOLIDATED.replace("root-cause-2026-11-04/", "root-cause-2026-11-04/reviews/")
+
+
+def test_update_manifest_skips_allow_new_file_without_row(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    manifest, ledger, rewrite = _manifest_files(tmp_path)
+    rows = _rows((f"{S}/a.md", f"{S}/sub/a.md"), (CONSOLIDATED, CONSOLIDATED_NEW))
+    counts = update_manifest(rows, manifest, ledger, rewrite)
+    assert counts["unlisted"] == 1
+    assert counts["manifest"] == 1
+    assert f"NOTE unlisted allow-new move: {CONSOLIDATED} -> {CONSOLIDATED_NEW}" in (
+        capsys.readouterr().out
+    )
+    assert f'"{S}/sub/a.md"' in manifest.read_text()
+    snapshot = (manifest.read_bytes(), ledger.read_bytes(), rewrite.read_bytes())
+    update_manifest(rows, manifest, ledger, rewrite)
+    assert (manifest.read_bytes(), ledger.read_bytes(), rewrite.read_bytes()) == snapshot
+    # Only the allow-new list excuses a missing row: a stray destination is still refused.
+    stray = _rows((CONSOLIDATED, f"{S}/sub/{CONSOLIDATED.rsplit('/', 1)[1]}"))
+    with pytest.raises(ValueError, match="no manifest row"):
+        update_manifest(stray, manifest, ledger, rewrite)
+
+
+def test_tracked_moves_csv_elsewhere_is_never_rewritten(tmp_path: Path) -> None:
+    csv_text = f"old_path,new_path\n{S}/a.md,{S}/sub/a.md\n"
+    files = {
+        f"{S}/a.md": "# A\n",
+        "docs/superpowers/plans/2026-11-05-research-subfolders-moves.csv": csv_text,
+        "other/stray.csv": csv_text,
+        "other/plain.csv": f"x,y\n{S}/a.md,1\n",
+    }
+    root = _make_repo(tmp_path, files)
+    rows = _rows((f"{S}/a.md", f"{S}/sub/a.md"))
+    apply_moves(rows, root, False, DEEPER)
+    result = run_rewrite(root, rows, False, None)
+    assert (root / "other/stray.csv").read_text() == csv_text
+    assert (
+        root / "docs/superpowers/plans/2026-11-05-research-subfolders-moves.csv"
+    ).read_text() == (csv_text)
+    assert (root / "other/plain.csv").read_text() == f"x,y\n{S}/sub/a.md,1\n"
+    assert "other/stray.csv" in result["excluded"]
+    assert "docs/superpowers/plans/2026-11-05-research-subfolders-moves.csv" in result["excluded"]
+
+
+def _failing_second_mv(monkeypatch: pytest.MonkeyPatch, fail_dest: str) -> None:
+    real_run = subprocess.run
+
+    def fake_run(cmd: list[str], *args: object, **kwargs: object) -> object:
+        if cmd[:3] == ["git", "mv", "--"] and cmd[4] == fail_dest:
+            raise subprocess.CalledProcessError(1, cmd, stderr="simulated failure")
+        return real_run(cmd, *args, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr("scripts.research_retarget.subprocess.run", fake_run)
+
+
+def test_apply_moves_undoes_completed_moves_when_one_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _make_repo(tmp_path, {f"{S}/a.md": "A\n", f"{S}/b.md": "B\n"})
+    rows = _rows((f"{S}/a.md", f"{S}/sub/a.md"), (f"{S}/b.md", f"{S}/sub/b.md"))
+    _failing_second_mv(monkeypatch, f"{S}/sub/b.md")
+    with pytest.raises(MoveRefusedError, match=f"git mv {S}/b.md -> {S}/sub/b.md failed") as exc:
+        apply_moves(rows, root, False, DEEPER)
+    assert "undid 1 completed moves" in str(exc.value)
+    assert _git(root, "status", "--porcelain") == ""
+    assert (root / S / "a.md").read_text() == "A\n"
+    assert not (root / S / "sub").exists()
+
+
+def test_cli_move_failure_exits_one_with_recovery_hint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _make_repo(tmp_path, {f"{S}/a.md": "A\n", f"{S}/b.md": "B\n"})
+    moves = _write_moves(root, [(f"{S}/a.md", f"{S}/sub/a.md"), (f"{S}/b.md", f"{S}/sub/b.md")])
+    _failing_second_mv(monkeypatch, f"{S}/sub/b.md")
+    argv = ["move", "--moves", str(moves), "--root", str(root), "--allow-deeper", "audits/s"]
+    assert main(argv) == 1
+    assert "git status" in capsys.readouterr().err
+
+
+def test_cli_reports_bad_input_without_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _make_repo(tmp_path, {f"{S}/a.md": "A\n"})
+    bad = tmp_path / "bad.csv"
+    bad.write_text("old,new\nx,y\n")
+    assert main(["check", "--moves", str(bad), "--root", str(root)]) == 1
+    assert "FAIL" in capsys.readouterr().err
+    moves = _write_moves(root, [(f"{S}/a.md", f"{S}/sub/a.md")])
+    missing = str(tmp_path / "nope.csv")
+    assert main(["rewrite", "--moves", str(moves), "--root", str(root), "--manifest", missing]) == 1
+    err = capsys.readouterr().err
+    assert err.startswith("FAIL ") and "nope.csv" in err
+
+
+def test_cli_verify_notes_allowed_frozen_path(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, rows, before = _moved_repo(tmp_path)
+    moves = _write_moves(tmp_path, [(r.old, r.new) for r in rows])
+    before_json = tmp_path / "before.json"
+    before_json.write_text(json.dumps(before))
+    rewrite_json = tmp_path / "rewrite.json"
+    rewrite_json.write_text(json.dumps({"files": [], "hand_edited": []}))
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text("current_path,proposed_path,folder,kind,notes\n")
+    (root / "research" / "MOVED.csv").write_text("old_path,new_path,renamed\n")
+    argv = [
+        "verify",
+        "--moves",
+        str(moves),
+        "--root",
+        str(root),
+        "--before",
+        str(before_json),
+        "--rewrite-manifest",
+        str(rewrite_json),
+        "--manifest",
+        str(manifest),
+        "--allow",
+        "research/MOVED.csv",
+    ]
+    assert main(argv) == 0
+    assert "NOTE allowed frozen path: research/MOVED.csv" in capsys.readouterr().out

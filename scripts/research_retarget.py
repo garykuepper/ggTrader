@@ -44,6 +44,8 @@ URL_SCHEME = reorg.URL_SCHEME
 MOVE_COLUMNS = ("old_path", "new_path")
 DEFAULT_MANIFEST = "docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv"
 PLAN_PATH = "docs/superpowers/plans/2026-11-05-research-readability-and-subfolders.md"
+MOVES_CSV = "docs/superpowers/plans/2026-11-05-research-subfolders-moves.csv"
+MOVES_HEADER = ",".join(MOVE_COLUMNS)
 SELF_PATHS = frozenset({"scripts/research_retarget.py", "tests/scripts/test_research_retarget.py"})
 # Never rewritten: working notes, the price data and generated results.
 EXCLUDED_PREFIXES: tuple[str, ...] = (".superpowers/", "data/", "results/")
@@ -192,20 +194,56 @@ def apply_moves(
         for old, new in pairs:
             print(f"PLAN {old} -> {new}")
         return pairs
+    created: list[Path] = []
     for done, (old, new) in enumerate(pairs):
-        (root / new).parent.mkdir(parents=True, exist_ok=True)
+        parent = (root / new).parent
+        missing = [p for p in (parent, *parent.parents) if not p.exists() and root in p.parents]
+        parent.mkdir(parents=True, exist_ok=True)
+        created.extend(missing)
         try:
             subprocess.run(
                 ["git", "mv", "--", old, new], cwd=root, check=True, capture_output=True, text=True
             )
         except subprocess.CalledProcessError as exc:
-            print(
-                f"FAIL git mv {old} -> {new} after {done} of {len(pairs)} moves: "
-                f"{exc.stderr.strip()}",
-                file=sys.stderr,
+            undone, stuck = _undo_moves(pairs[:done], root, created)
+            hint = (
+                f"undid {undone} completed moves"
+                if not stuck
+                else f"could not undo {len(stuck)} moves ({'; '.join(stuck)}); "
+                "move them back by hand"
             )
-            raise
+            message = (
+                f"git mv {old} -> {new} failed after {done} of {len(pairs)} moves "
+                f"({(exc.stderr or '').strip()}); {hint}; check `git status` before retrying"
+            )
+            raise MoveRefusedError(message) from exc
     return pairs
+
+
+def _undo_moves(
+    done: list[tuple[str, str]], root: Path, created: list[Path]
+) -> tuple[int, list[str]]:
+    """Reverse completed moves (last first) and drop the folders this run created.
+
+    Returns:
+        (moves undone, descriptions of moves that could not be undone).
+    """
+    undone = 0
+    stuck: list[str] = []
+    for old, new in reversed(done):
+        try:
+            subprocess.run(
+                ["git", "mv", "--", new, old], cwd=root, check=True, capture_output=True, text=True
+            )
+            undone += 1
+        except subprocess.CalledProcessError:
+            stuck.append(f"{new} -> {old}")
+    for folder in created:
+        try:
+            folder.rmdir()
+        except OSError:
+            pass  # not empty or already gone: leave it, nothing was lost
+    return undone, stuck
 
 
 # --- Text rewriting -----------------------------------------------------------------------
@@ -278,10 +316,13 @@ def _rewrite_markdown_text(
     def _note(number: int, line: str, start: int, reason: str) -> None:
         unresolved.append(Unresolved("", number, _snippet(line, start), reason))
 
-    def _retarget(match: re.Match[str]) -> str:
+    def _retarget(match: re.Match[str], number: int, line: str) -> str:
         nonlocal count
         raw = match.group("target")
-        new_raw, _ = _rewrite_link_target(raw, old_dir, new_dir, mapping, frozenset(), exists)
+        new_raw, reason = _rewrite_link_target(raw, old_dir, new_dir, mapping, frozenset(), exists)
+        # Only a moved file's dead old-tree link matters here: it cannot be recomputed.
+        if reason is not None and old_dir != new_dir:
+            _note(number, line, match.start(), reason)
         if new_raw == raw:
             return match.group(0)
         count += 1
@@ -311,7 +352,7 @@ def _rewrite_markdown_text(
             gap, found = _rewrite_tokens(piece[cursor:start], matcher, mapping)
             count += found
             pieces.append(gap)
-            pieces.append(_retarget(match) if kind == "link" else piece[start:end])
+            pieces.append(_retarget(match, number, line) if kind == "link" else piece[start:end])
             cursor = end
         gap, found = _rewrite_tokens(piece[cursor:], matcher, mapping)
         count += found
@@ -438,7 +479,7 @@ def _skip_reason(final: str, current: str, extra: list[str]) -> str | None:
         if (
             reorg._is_reorg_own_file(path)
             or path in SELF_PATHS
-            or path == PLAN_PATH
+            or path in (PLAN_PATH, MOVES_CSV)
             or path.startswith(EXCLUDED_PREFIXES)
             or reorg._is_rewrite_excluded(path, extra)
         ):
@@ -507,6 +548,9 @@ def run_rewrite(
             text = data.decode("utf-8")
         except UnicodeDecodeError:
             undecodable.append(final)
+            continue
+        if text.split("\n", 1)[0].rstrip("\r") == MOVES_HEADER:
+            excluded.append(final)  # any moves CSV describes old paths on purpose
             continue
         new_text, found, count = _rewrite_text_counted(text, file_old, final, mapping, exists)
         unresolved.extend(asdict(replace(u, file=final)) for u in found)
@@ -674,6 +718,11 @@ def _map_paths(paths: list[str], mapping: dict[str, str]) -> list[str]:
     return sorted(mapped) if paths == sorted(paths) else mapped
 
 
+def _is_allow_new(path: str) -> bool:
+    """Return True when a path is one the first-generation verify allows without a row."""
+    return reorg._matches_allow_new(path, reorg.DEFAULT_ALLOW_NEW)
+
+
 def update_manifest(
     rows: list[MoveRow],
     manifest: Path,
@@ -693,11 +742,13 @@ def update_manifest(
         rewrite_manifest: Optional first-generation rewrite manifest JSON.
 
     Returns:
-        Counts of updated rows: `manifest`, `ledger`, `rewrite_manifest`.
+        Counts: updated rows (`manifest`, `ledger`, `rewrite_manifest`) and `unlisted`
+        (allow-new moves that never had a manifest row and were skipped).
 
     Raises:
         ValueError: If a move's old path is neither the `proposed_path` of exactly one row
-            nor already the new path (a stale or conflicting row), or the header differs.
+            nor already the new path (a stale or conflicting row), unless both paths match the
+            first-generation allow-new list; or the header differs.
     """
     mapping = {r.old: r.new for r in rows}
     with manifest.open(newline="", encoding="utf-8") as handle:
@@ -708,13 +759,19 @@ def update_manifest(
     proposed_col, folder_col = header.index("proposed_path"), header.index("folder")
     errors: list[str] = []
     updates = 0
+    unlisted = 0
     for move in rows:
         hits = [r for r in body if r[proposed_col] == move.old]
         done = [r for r in body if r[proposed_col] == move.new]
         if len(hits) > 1:
             errors.append(f"{len(hits)} manifest rows have proposed_path {move.old}")
         elif not hits and not done:
-            errors.append(f"no manifest row has proposed_path {move.old} (move to {move.new})")
+            if _is_allow_new(move.old) and _is_allow_new(move.new):
+                # Added after the first-generation manifest, so it never had a row.
+                print(f"NOTE unlisted allow-new move: {move.old} -> {move.new}")
+                unlisted += 1
+            else:
+                errors.append(f"no manifest row has proposed_path {move.old} (move to {move.new})")
         for row in hits:
             row[proposed_col] = move.new
             row[folder_col] = posixpath.dirname(move.new)
@@ -725,7 +782,7 @@ def update_manifest(
     # The first-generation file leaves its header bare and quotes every data field.
     csv.writer(buffer, lineterminator="\n").writerow(header)
     csv.writer(buffer, quoting=csv.QUOTE_ALL, lineterminator="\n").writerows(body)
-    counts = {"manifest": updates, "ledger": 0, "rewrite_manifest": 0}
+    counts = {"manifest": updates, "ledger": 0, "rewrite_manifest": 0, "unlisted": unlisted}
     _write_if_changed(manifest, buffer.getvalue())
     if ledger is not None:
         data = json.loads(ledger.read_text(encoding="utf-8"))
@@ -748,6 +805,7 @@ def update_manifest(
 
 
 def _root(args: argparse.Namespace) -> Path:
+    """Return the resolved repository root from `--root`."""
     return Path(args.root).resolve()
 
 
@@ -760,10 +818,12 @@ def _rel_to_root(path: Path, root: Path) -> str | None:
 
 
 def _allow_deeper(args: argparse.Namespace) -> tuple[str, ...]:
+    """Return the default deeper study folders plus any `--allow-deeper` values."""
     return (*DEFAULT_ALLOW_DEEPER, *(args.allow_deeper or ()))
 
 
 def _cmd_check(args: argparse.Namespace) -> int:
+    """Run `check`: print every problem and return 1 if there is any."""
     rows = load_moves(Path(args.moves))
     problems = check_moves(rows, set(reorg.git_tracked_files(_root(args))), _allow_deeper(args))
     for problem in problems:
@@ -776,6 +836,7 @@ def _cmd_check(args: argparse.Namespace) -> int:
 
 
 def _cmd_move(args: argparse.Namespace) -> int:
+    """Run `move`: `git mv` every file, or print the plan with `--dry-run`."""
     rows = load_moves(Path(args.moves))
     try:
         pairs = apply_moves(rows, _root(args), args.dry_run, _allow_deeper(args))
@@ -787,6 +848,7 @@ def _cmd_move(args: argparse.Namespace) -> int:
 
 
 def _cmd_rewrite(args: argparse.Namespace) -> int:
+    """Run `rewrite`: retarget references, write the report and the rewrite manifest."""
     root = _root(args)
     moves = Path(args.moves)
     rows = load_moves(moves)
@@ -815,6 +877,7 @@ def _cmd_rewrite(args: argparse.Namespace) -> int:
 
 
 def _cmd_snapshot(args: argparse.Namespace) -> int:
+    """Run `snapshot`: write the sha256 of every file about to move."""
     rows = load_moves(Path(args.moves))
     before = snapshot_moves(rows, _root(args))
     out = Path(args.out)
@@ -825,21 +888,25 @@ def _cmd_snapshot(args: argparse.Namespace) -> int:
 
 
 def _cmd_verify(args: argparse.Namespace) -> int:
+    """Run `verify`: check the moved and rewritten tree, print each problem."""
     root = _root(args)
     rows = load_moves(Path(args.moves))
     before = json.loads(Path(args.before).read_text(encoding="utf-8"))
     rewrite_files = reorg.load_rewrite_manifest(Path(args.rewrite_manifest))
     manifest = Path(args.manifest) if args.manifest else root / DEFAULT_MANIFEST
-    mapping = {r.old: r.new for r in rows}
+    frozen = _frozen_set(manifest, {r.old: r.new for r in rows})
     problems = verify_moved_tree(
         rows,
         before,
         rewrite_files,
         root,
         base=args.base,
-        frozen=_frozen_set(manifest, mapping),
+        frozen=frozen,
         allow=args.allow or (),
     )
+    for path in args.allow or ():
+        if _is_frozen(path, frozen):
+            print(f"NOTE allowed frozen path: {path}")
     for problem in problems:
         print(f"PROBLEM {problem}")
     if problems:
@@ -850,6 +917,7 @@ def _cmd_verify(args: argparse.Namespace) -> int:
 
 
 def _cmd_update_manifest(args: argparse.Namespace) -> int:
+    """Run `update-manifest`: point the first-generation records at the new paths."""
     rows = load_moves(Path(args.moves))
     try:
         counts = update_manifest(
@@ -866,6 +934,7 @@ def _cmd_update_manifest(args: argparse.Namespace) -> int:
 
 
 def _add_common(parser: argparse.ArgumentParser, moves: bool = True) -> None:
+    """Add `--moves` (optional) and `--root` to a subcommand parser."""
     if moves:
         parser.add_argument("--moves", required=True, help="Moves CSV (old_path,new_path).")
     parser.add_argument(
@@ -874,6 +943,7 @@ def _add_common(parser: argparse.ArgumentParser, moves: bool = True) -> None:
 
 
 def _add_deeper(parser: argparse.ArgumentParser) -> None:
+    """Add the repeatable `--allow-deeper` option to a subcommand parser."""
     parser.add_argument(
         "--allow-deeper",
         action="append",
@@ -951,7 +1021,11 @@ def main(argv: list[str] | None = None) -> int:
         Process exit code.
     """
     args = build_parser().parse_args(argv)
-    return int(args.func(args))
+    try:
+        return int(args.func(args))
+    except (ValueError, OSError, subprocess.CalledProcessError) as exc:
+        print(f"FAIL {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
