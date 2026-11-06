@@ -563,14 +563,13 @@ CONSOLIDATED_NEW = CONSOLIDATED.replace("root-cause-2026-11-04/", "root-cause-20
 def test_update_manifest_skips_allow_new_file_without_row(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # The pre-move allow-list entry is removed at the end of the reorganization; only the
-    # destination entry may decide the skip.
+    # The pre-move allow-list entry was removed with the sub-folder move; the filter keeps
+    # the test independent of it, so only the destination entry may decide the skip.
     only_new = tuple(
         p
         for p in DEFAULT_ALLOW_NEW
         if p != "audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md"
     )
-    assert only_new != DEFAULT_ALLOW_NEW
     monkeypatch.setattr("scripts.research_reorg.DEFAULT_ALLOW_NEW", only_new)
     manifest, ledger, rewrite = _manifest_files(tmp_path)
     rows = _rows((f"{S}/a.md", f"{S}/sub/a.md"), (CONSOLIDATED, CONSOLIDATED_NEW))

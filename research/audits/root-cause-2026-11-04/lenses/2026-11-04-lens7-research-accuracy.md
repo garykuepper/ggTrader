@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-04 · **Branch:** `investigation/root-cause-2026-11-04` · **Status:**
 diagnosis only, read-only. No recommendations. · **Raw artifact:**
-[`research/audits/root-cause-2026-11-04/_lens7_recompute.json`](_lens7_recompute.json)
+[`research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json`](_lens7_recompute.json)
 
 **Terms.** WFO = walk-forward optimization. OOS = out-of-sample. CAGR = compound annual
 growth rate. NW t = Newey-West t-statistic (a t-stat that allows for correlated returns).
@@ -38,7 +38,7 @@ Findings that matter for the owner's question (raw return of 2x SPY):
    the FOMC amendment (`research/audits/production-replica/2026-10-19-production-replica-fomc-timing-amendment.md:16-17`).
    All three describe an earlier attempt stopped with SIGTERM. The Phase 0 audit does not
    use that wording; it calls the holdout "unusable because of bad price data"
-   (`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:71-72`). Even taken at face value, the
+   (`research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md:71-72`). Even taken at face value, the
    completed arm fails the t ≥ 3 bar.
 3. **The production-replica verdict was reached under an amended rule.** The original
    brief said no verdict could be issued while live parity was below 100% or while an
@@ -58,7 +58,7 @@ Findings that matter for the owner's question (raw return of 2x SPY):
 ## Falsifiers
 
 Written before I opened any evidence. These are the Phase 0 ratings this lens touches
-(`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md`, trust table), and what would overturn
+(`research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md`, trust table), and what would overturn
 each one.
 
 | Phase 0 rating touched | What would overturn it |

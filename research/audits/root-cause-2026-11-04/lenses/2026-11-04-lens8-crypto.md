@@ -6,12 +6,12 @@
 Crypto is parked by the owner's choice; that is not treated as a defect here. This lens
 says what was tried, what the evidence shows and what is unknown. It does not propose
 strategies or say what to try.
-**Raw results:** `research/audits/root-cause-2026-11-04/_lens8_tape_checks.json` (tape counts, benchmark table,
+**Raw results:** `research/audits/root-cause-2026-11-04/lenses/_lens8_tape_checks.json` (tape counts, benchmark table,
 annualization, all 25 crypto inventory rows, live-evidence counts).
-**Inputs:** inventory `research/audits/root-cause-2026-11-04/_investigation_inventory.json` (25 `crypto-` rows); Lens 1
-`research/audits/root-cause-2026-11-04/_lens1_tape_state.json` (deferred crypto tape checks to this lens); Lens 2
-`research/audits/root-cause-2026-11-04/_lens2_sensitivity.json`; Lens 6 `research/audits/root-cause-2026-11-04/_lens6_verdicts.json`; Lens 9
-`research/audits/root-cause-2026-11-04/_lens9_power.json`; Lens 5 `research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md`;
+**Inputs:** inventory `research/audits/root-cause-2026-11-04/records/_investigation_inventory.json` (25 `crypto-` rows); Lens 1
+`research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json` (deferred crypto tape checks to this lens); Lens 2
+`research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json`; Lens 6 `research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json`; Lens 9
+`research/audits/root-cause-2026-11-04/lenses/_lens9_power.json`; Lens 5 `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md`;
 an unreviewed Haiku history pull (32 studies, used as leads and checked where relied on);
 `docs/archive/edge_search_report_2026-06-08.md`; `docs/changelog.md`; git tree at
 `82931a40^` (the commit before the 2026-06-16 removal); the local, gitignored run folders
@@ -160,7 +160,7 @@ It does not support "beat BTC".
 
 All 25 inventory crypto rows plus the Haiku pull, reconciled. Lens columns come from the
 committed upstream files. In the Lens 2 column, "inconclusive" for STATUS rows is a label, not a
-test result (`research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` status_note); "absent" means the row is not
+test result (`research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json` status_note); "absent" means the row is not
 in that file. In the Lens 1 column, every crypto row is "unknown" because Lens 1 deferred crypto
 tape state to this lens. "Local artifact" means a gitignored run folder exists under
 `results/research/`.
@@ -279,7 +279,7 @@ the "lost to BTC" outcome.
 ## Tape integrity
 
 All queries are SELECT-only on `ohlcv`, restricted to `venue in ('kraken_spot','binanceus_spot')`
-and the named intervals. Counts are in `research/audits/root-cause-2026-11-04/_lens8_tape_checks.json` under `tape`.
+and the named intervals. Counts are in `research/audits/root-cause-2026-11-04/lenses/_lens8_tape_checks.json` under `tape`.
 
 **Coverage.** `-USD` symbols with daily bars: 627 (623 Kraken, 53 Binance.US). Kraken 1d, 12h and
 1h end 2025-12-31 / 2026-05-18; Kraken 4h (161 symbols) and Binance.US 4h (77) end 2026-06-08 16:00;
@@ -483,7 +483,7 @@ for a claim about the realistic-fee run (`research_20260511_162755`, 0 passes). 
 pointers (`research/crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json`) are
 correct. Three rows have a null pointer although an artifact exists (the three rows above).
 
-**Lens 6** (`research/audits/root-cause-2026-11-04/_lens6_verdicts.json`). spec_matches_code can stay "unverifiable" for
+**Lens 6** (`research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json`). spec_matches_code can stay "unverifiable" for
 crypto-wfo-recalibration-2026-05-01 and crypto-wfo-research-snapshots-kraken because the code was
 removed and was not compared with a spec here. Its evidence text "Run artifacts not found in
 results/" is wrong for the recalibration row. The numbers-true question is now answerable, and
@@ -492,7 +492,7 @@ for the 04-01, 04-02, 05-01 and edge run-2 "YTD" curves within 0.006; stored fee
 per run; and gate-pass counts 36/14/13/0 and 13/22/13 from worker logs. Not verified: the
 full-range combined returns (only per-worker curves are stored).
 
-**Lens 7** (`research/audits/root-cause-2026-11-04/_lens7_recompute.json`). Rows whose prose-only or cannot-locate status
+**Lens 7** (`research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json`). Rows whose prose-only or cannot-locate status
 could change, because a raw artifact exists: crypto-wfo-recalibration-2026-05-01,
 crypto-wfo-research-snapshots-kraken, crypto-edge-search-2026-06-08 (now prose-only) and
 crypto-wfo-textbook-reset (now cannot_locate; the gate counts recompute from the logs of
@@ -502,7 +502,7 @@ crypto-strategy-usage-analyzer-2026-05-07 and crypto-wfo-overfitting-param-stabi
 folders of those dates exist, not opened). One recompute discrepancy relates to a benchmark,
 not a strategy figure: the run-2 BTC benchmark (+167.21% stated vs +141.94% tape).
 
-**Lens 2** (`research/audits/root-cause-2026-11-04/_lens2_sensitivity.json`). No crypto row's class would change under
+**Lens 2** (`research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json`). No crypto row's class would change under
 its written rules. R2 states that crypto rows do not meet the data condition, and Lens 8's
 findings would not meet it either: the NO rows (crypto-edge-search-2026-06-08,
 crypto-wfo-textbook-reset) carry universe survivorship, which favours the strategy, but also
@@ -514,7 +514,7 @@ artifact that Lens 7 has not recomputed (not met until it does). That does not c
 no universe-survivorship item applies (BTC only, live), and R3/R4 remain unmet, so they stay
 inconclusive. No row becomes "unreliable NO" by R6: the strategy figures recompute.
 
-**Lens 1** (`research/audits/root-cause-2026-11-04/_lens1_tape_state.json`). All crypto rows are "unknown" there. On
+**Lens 1** (`research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json`). All crypto rows are "unknown" there. On
 Lens 8's evidence:
 - Rows run between 2026-03-08 and 2026-05-05 (crypto-wfo-research-snapshots-kraken 04-01/04-02,
   crypto-config-tweaks-reverted-2026-04-02, crypto-wfo-recalibration-2026-05-01,

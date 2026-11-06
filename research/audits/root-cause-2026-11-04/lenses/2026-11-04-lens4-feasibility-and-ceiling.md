@@ -7,15 +7,15 @@ including the "Measured ceiling" bullet; target definition in section 1). No
 recommendations, no strategies, no forecasts. Every figure below is a measured value from a
 committed artifact, or a labelled DERIVED value computed here from such an artifact or from
 free public data.
-**Raw results:** `research/audits/root-cause-2026-11-04/_lens4_ceiling.json`.
-**Upstream inputs (committed, reviewed):** inventory `research/audits/root-cause-2026-11-04/_investigation_inventory.json`;
-Lens 2 `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` and
-`research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md` under the fixed spec
-`research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md`; Lens 1 `research/audits/root-cause-2026-11-04/_lens1_tape_state.json`;
-Lens 3 `research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json`; Lens 5
-`research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md` and `research/audits/root-cause-2026-11-04/_lens5_coverage_matrix.json`;
-Lens 6 `research/audits/root-cause-2026-11-04/_lens6_verdicts.json`; Lens 7 `research/audits/root-cause-2026-11-04/_lens7_recompute.json`;
-Lens 9 `research/audits/root-cause-2026-11-04/_lens9_power.json` and `research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md`.
+**Raw results:** `research/audits/root-cause-2026-11-04/lenses/_lens4_ceiling.json`.
+**Upstream inputs (committed, reviewed):** inventory `research/audits/root-cause-2026-11-04/records/_investigation_inventory.json`;
+Lens 2 `research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json` and
+`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md` under the fixed spec
+`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md`; Lens 1 `research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json`;
+Lens 3 `research/audits/root-cause-2026-11-04/lenses/_lens3_snapshot_gap.json`; Lens 5
+`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md` and `research/audits/root-cause-2026-11-04/lenses/_lens5_coverage_matrix.json`;
+Lens 6 `research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json`; Lens 7 `research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json`;
+Lens 9 `research/audits/root-cause-2026-11-04/lenses/_lens9_power.json` and `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md`.
 
 Abbreviations, expanded once: SPY = SPDR S&P 500 ETF Trust; TR = total return (price plus
 dividends reinvested); CAGR = compound annual growth rate; pp = percentage points; bp = basis
@@ -39,7 +39,7 @@ French = Kenneth French data library.
    over 1927-2026** (French market). Because the target doubles a cumulative return, the
    longer the window the smaller the annual gap it implies. Phase 0's "+10 to +15 pp/yr needed"
    is close only for 5-year windows (9.5 to 9.8 pp/yr on 2021-2026 and 2022-2026), and Lens 9's
-   2.8-year IBIT window (15.15 pp/yr, `research/audits/root-cause-2026-11-04/_lens9_power.json`) is the only window
+   2.8-year IBIT window (15.15 pp/yr, `research/audits/root-cause-2026-11-04/lenses/_lens9_power.json`) is the only window
    inside 10-15; every longer window is much smaller. Section "Target arithmetic".
 2. **Tier A is empty.** Lens 2 classed 0 of 72 test rows reliable (0 reliable NO, 0 reliable
    GO) and 9 GO rows unreliable. Every ceiling figure below is Tier B at most, and all the
@@ -91,7 +91,7 @@ French = Kenneth French data library.
 ## Falsifiers
 
 Written before opening any ceiling figure. Phase 0 hypotheses under test
-(`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md`; spec section 4, hypothesis 7):
+(`research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md`; spec section 4, hypothesis 7):
 
 - **H4a, "the best long-only large-cap effects after 1994 are +0.1 to +0.8 pp/yr".**
   Overturned if any Tier A/B large-cap stock-selection row with a post-1994 window shows a
@@ -126,7 +126,7 @@ observed or is attainable, and how it survives the other lenses:
 
 | claim | figure | source | survives? |
 |---|---|---|---|
-| Early "beat SPY" ensemble WFO (Sharpe 1.12, CAGR about 16-19%) | CAGR 16.3% (1.12 baseline) and 18.8% (2026-06-20 WFO) in prose; no raw artifact | `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` classifications for `stocks-ensemble-ndh-baseline-1-12`, `stocks-ensemble-wfo-validated-2026-06-20`, `stocks-three-sleeve-blend-1-14` | **No.** Lens 2 unreliable GO (anchor leak, PIT universe leak, SPY duplicates, day shift); no raw artifact; Lens 6 mismatch. Tier C. |
+| Early "beat SPY" ensemble WFO (Sharpe 1.12, CAGR about 16-19%) | CAGR 16.3% (1.12 baseline) and 18.8% (2026-06-20 WFO) in prose; no raw artifact | `research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json` classifications for `stocks-ensemble-ndh-baseline-1-12`, `stocks-ensemble-wfo-validated-2026-06-20`, `stocks-three-sleeve-blend-1-14` | **No.** Lens 2 unreliable GO (anchor leak, PIT universe leak, SPY duplicates, day shift); no raw artifact; Lens 6 mismatch. Tier C. |
 | ensemble_ic / ensemble_kelly pre-PIT | 33.95% / 38.24% CAGR | `research/audits/rebaseline/_ic_kelly_rebaseline_20260923.json` via Lens 2 sub-rows | **No.** Same strategies with PIT membership: 3.33% / 6.28% (`research/audits/rebaseline/_pit_rebaseline_20260923.json`). The difference is the universe leak. Tier C. |
 | Production replica holdout 2010-2020 | +1.00 pp/yr CAGR gap; exposure-matched +1.85 (t 1.57) | `research/audits/production-replica/_production_replica_results.json` `windows.holdout.arms.primary.excess_vs_spy`, `excess_vs_exposure_matched` | **Weakly.** Not citable (`windows.holdout.citable=False`, tainted trades); t 0.69; Lens 1 tape identity unknown. Tier C. |
 | xs_momentum corrected replay | +4.37 pp/yr CAGR gap; arithmetic +4.49, t 0.76 | `research/audits/production-replica/_audit_reruns_20261019.json` `xs_momentum.excess_stats` | **As a point estimate, yes; as evidence, weak.** Clean tape, Lens 6 match, Lens 7 recompute yes: Tier B. CI [-7.07, 16.05]; MDE at t >= 3 is 22.66 pp/yr (Lens 9), so the test could not distinguish +4.37 from zero or from +15. |
@@ -175,7 +175,7 @@ with the same start-close convention: R = +108.60%, gap 9.56 (Y = 5.248 by calen
 | 2024-01-11..2026-10-23 (IBIT session split; SPY for scale only, crypto benchmark is not SPY) | Lens 9 | +64.76% | +129.52% | 19.66 | 34.81 | 15.15 (2.78 years) |
 | 2026-06-24..2026-11-03 (paper account, for scale only) | Lens 4 | +3.09% | +6.18% | 8.71 | 17.88 | 9.17 (0.36 years) |
 
-Sources: Lens 9 rows from `research/audits/root-cause-2026-11-04/_lens9_power.json` `regime.targets_2x_spy_total_return`;
+Sources: Lens 9 rows from `research/audits/root-cause-2026-11-04/lenses/_lens9_power.json` `regime.targets_2x_spy_total_return`;
 Lens 4 rows recomputed from yfinance SPY with `auto_adjust=True` (dividend-adjusted closes,
 last close before the window start to last close on or before the end) and from the frozen
 French `F-F_Research_Data_Factors` monthly file (Mkt-RF + RF), the same copy Lens 9 used.
@@ -190,7 +190,7 @@ adds less per year the longer the compounding runs.
 ## Soundness tiers
 
 Written before building the ceiling table. Inputs are Lens 2's per-row conditions
-(`research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` `classifications[].data_condition`,
+(`research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json` `classifications[].data_condition`,
 `code_condition`, `recompute_condition`, `class`).
 
 - **Tier A:** Lens 2 class `reliable` (reliable NO or reliable GO).
@@ -327,7 +327,7 @@ an MDE at or below the size in question), "not tested", "tested badly" (Lens 5 c
 
 | lever | status in this project | evidence |
 |---|---|---|
-| Breadth (more independent bets: more names, small/micro caps, more asset classes, faster cadence) | **Not ruled out at any size.** Micro caps, weekly cross-sectional rebalancing and international equity exposure: not tested. Small-cap stock selection and fundamentals at small-cap scale: tested badly. Cross-asset breadth and French Small screens: tested, inconclusive. | Lens 5 gap table (`research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md`, section "Gap table"); Lens 2: no reliable NO in any of these rows. |
+| Breadth (more independent bets: more names, small/micro caps, more asset classes, faster cadence) | **Not ruled out at any size.** Micro caps, weekly cross-sectional rebalancing and international equity exposure: not tested. Small-cap stock selection and fundamentals at small-cap scale: tested badly. Cross-asset breadth and French Small screens: tested, inconclusive. | Lens 5 gap table (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md`, section "Gap table"); Lens 2: no reliable NO in any of these rows. |
 | Leverage (more than 1x SPY) | **Not ruled out; measured.** Static leverage tested on a clean tape with recomputed numbers but no t-statistic (Lens 2 inconclusive, power not established). LETF timing (rotation, trend): tested, inconclusive on a pre-fix tape with no raw artifact. | `research/allocation/static-leverage/_static_leverage_aftertax_results.json`; `research/allocation/century-leverage/_century_leverage_results.json`; Lens 2 classes for `stocks-a23-static-leverage`, `stocks-century-leverage`, `stocks-leveraged-rotation`, `stocks-leveraged-trend`. |
 | Concentration (few names at large weights) | **Tested badly.** The only concentrated arm (xs_momentum top_n 10) was never deployed OOS; the live/replica book holds 3 names at about 3.3% each (9.37% total). | Lens 5 gap table, row "Concentration"; `research/audits/production-replica/_production_replica_results.json` `mean_exposure`. |
 | Long-short / shorting | **Tested, inconclusive; not ruled out (no MDE computable).** Pairs and short-volume-ratio books on a pre-fix tape, no borrow-fee model, no raw artifacts. | Lens 5 gap table, row "Long-short"; Lens 2 classes for `stocks-pairs-stat-arb`, `stocks-short-volume-ratio`. |
@@ -499,10 +499,10 @@ loses almost nothing to tax (1.3x: +1.61 pre-tax, +1.60 after tax at 24/15;
 
 Commands run (all read-only; repo code only through the capped runner):
 
-- `python3` key dumps of `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` (114 classifications, 182
+- `python3` key dumps of `research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json` (114 classifications, 182
   sensitivity rows; class counts inconclusive 103, unreliable GO 9, unreliable NO 2),
-  `research/audits/root-cause-2026-11-04/_lens9_power.json` (`regime.targets_2x_spy_total_return`),
-  `research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json`, `research/audits/root-cause-2026-11-04/_lens5_coverage_matrix.json`,
+  `research/audits/root-cause-2026-11-04/lenses/_lens9_power.json` (`regime.targets_2x_spy_total_return`),
+  `research/audits/root-cause-2026-11-04/lenses/_lens3_snapshot_gap.json`, `research/audits/root-cause-2026-11-04/lenses/_lens5_coverage_matrix.json`,
   the inventory (144 rows), and the artifacts named in the ceiling table.
 - Spot recomputes from raw artifacts: replica `excess_vs_spy` (cagr_diff -0.6423, ann_excess
   -0.7620, t -0.6898; CI [-2.93, 1.40]); xs_momentum (cagr_diff 4.3674, ann_excess 4.4856, t
@@ -517,7 +517,7 @@ Commands run (all read-only; repo code only through the capped runner):
   BUY, 106 SELL; 52 SPY sweep rows).
 - `python3 -I <scratch>/l4/trips.py` (FIFO pairing) and
   `scripts/run_capped.sh .venv/bin/python -I <scratch>/l4/aftertax.py` (derived tables).
-- `python3 -I <scratch>/l4/build_json.py` writes `research/audits/root-cause-2026-11-04/_lens4_ceiling.json`.
+- `python3 -I <scratch>/l4/build_json.py` writes `research/audits/root-cause-2026-11-04/lenses/_lens4_ceiling.json`.
 - Fix round 1: listed `windows.main_real_sso` keys in both funding-sensitivity artifacts
   (SPY, 1.25x, 1.3x only); read `rolling_10y_pretax_vs_spy` (2.0x: share 0.375, worst
   -0.1256 ending 2009-03-09; 1.3x: 0.238, -0.0329, 2009-03-02); read the tax-payment step in

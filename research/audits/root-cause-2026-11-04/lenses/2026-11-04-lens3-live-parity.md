@@ -4,7 +4,7 @@
 **Scope:** read-only diagnosis. No recommendations, fixes or deployments. This lens supplies
 evidence to the owner's paper-parity plan (`docs/working_task_list.md`, Priority 1). It does
 not write or replace that plan.
-**Raw results:** `research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json`.
+**Raw results:** `research/audits/root-cause-2026-11-04/lenses/_lens3_snapshot_gap.json`.
 
 Abbreviations, expanded once: WFO = walk-forward optimization (the lab's backtest harness);
 OOS = out of sample; TR = total return (dividends reinvested); pp = percentage points;
@@ -63,10 +63,10 @@ TimescaleDB database; SD = standard deviation; MDE = minimum detectable effect.
 ## Falsifiers
 
 Written before running the Lens 3 queries. Lens 6 had already reported that the code and
-DB match for the gap (`research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md`), so
+DB match for the gap (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md`), so
 H-gap was partly supported in advance.
 
-- **H-era (Phase 0 item 8, `research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:75-77`):** the
+- **H-era (Phase 0 item 8, `research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md:75-77`):** the
   paper shortfall vs SPY by era is -1.9 pp (06-24 to 08-21), -2.6 pp (08-21 to 09-30) and
   +1.4 pp (09-30 to 11-04). Each of these would overturn it:
   - Recomputed on a broker-consistent value against SPY total return over the same
@@ -85,7 +85,7 @@ H-gap was partly supported in advance.
 - **H-era-cause ("most paper shortfall is config churn, not signal"):** overturned if the
   decomposition puts most of the shortfall in the stock sleeve's own picks rather than in
   idle cash, broker artifacts and transition events.
-- **H-gap (Phase 0, `research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:114-115`):** "snapshot
+- **H-gap (Phase 0, `research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md:114-115`):** "snapshot
   value exceeds cash plus positions by $135-$320 every day from 09-15 to 11-04; fits the
   dividend add-back but is not proven to be the only cause." Each of these would overturn
   it:
@@ -102,7 +102,7 @@ This is the strongest evidence that live paper trading tracks the backtested str
 
 - **Rule code is right.** Lens 6 hand-computed the live-default ensemble on 10 symbols for
   March to May 2025. The code's entries and exits match exactly (the first record in
-  `research/audits/root-cause-2026-11-04/_lens6_replays.json`, `hand_result == code_result`).
+  `research/audits/root-cause-2026-11-04/lenses/_lens6_replays.json`, `hand_result == code_result`).
 - **Price-level parity at the fill.** The WFO fills at the signal bar's close. Live fills
   about 14-15 minutes before the close, and on average at that close:
   - stocks: +2.5 bp mean, +0.3 bp notional-weighted (n = 106);
@@ -152,7 +152,7 @@ The `ohlcv` tape is not used for SPY return, because of a seam. SPY bars for 08-
 09-17 are dividend-adjusted (×0.99752 vs yfinance raw), while the surrounding bars are
 raw. Across 08-21 to 09-30 the tape therefore yields price return (-0.404%), not total
 return (-0.157%). This is the Lens 1 mixed-adjustment pattern
-(`research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md`).
+(`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md`).
 
 **DB caveats.**
 - Rows before 08-22 had their `run_date` shifted +1 day by the 2026-08-22 migration. The
@@ -314,7 +314,7 @@ cumulative accrual at the snapshot's `created_at`, the residual, the Alpaca DIV 
 ## Unmodelled behaviours
 
 This builds on Lens 6's parity table (rows 1-15 in
-`research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md`). Figures are measured
+`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md`). Figures are measured
 unless marked "estimate".
 
 | # | Behaviour | Modelled by WFO? | Paper evidence (this lens) |

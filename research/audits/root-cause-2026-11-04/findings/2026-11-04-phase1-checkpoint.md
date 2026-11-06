@@ -25,7 +25,7 @@ judgement about any strategy. It does not recommend strategies, deployments or w
 ## Guard check and an incident during this task
 
 - **Guard check (plan Task 12, step 1).** The lead ran `scripts/guard_snapshot.sh` before this
-  task and found no difference from `research/audits/root-cause-2026-11-04/_investigation_guard_baseline_2026-11-04.txt`.
+  task and found no difference from `research/audits/root-cause-2026-11-04/records/_investigation_guard_baseline_2026-11-04.txt`.
   I re-ran it after the incident below (2026-11-04 23:5x PST): still no difference (intraday
   observer timers, observer worktree HEAD, `ggtrader_live` container state, `data/` git status).
 - **Incident (my error; reported, not hidden; corrected after review on 2026-11-05).** To read
@@ -35,7 +35,7 @@ judgement about any strategy. It does not recommend strategies, deployments or w
   it. Its body calls `load_ohlcv` from a warm-up start 700 calendar days before 2015-06-01 (400 bars x
   1.6 + 60 days; its log shows fetches starting 2013-07-01) to "today" (`scripts/pead_correlation_check.py:25-39`), and
   `load_ohlcv` reads and writes through the database cache loader (`src/ggTrader/lab/data.py:57-110`;
-  Lens 6 noted the writes at `research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md:347-348`).
+  Lens 6 noted the writes at `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md:347-348`).
 
   **What it wrote (established with SELECT-only queries):**
   - **It definitely wrote to the database.** The `symbol_inception` table carries a write
@@ -54,7 +54,7 @@ judgement about any strategy. It does not recommend strategies, deployments or w
     basis. The 12:45 PT production run's incremental refresh does not rewrite whole histories, so
     this was not the same kind of write the cron makes daily.
     Erratum 2026-11-05: at most 27,579 rows were rewritten; 4,388 older rows for CSRA, PARA, QRVO
-    and SBNY were not (see `research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md`, section 6).
+    and SBNY were not (see `research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`, section 6).
   - **Other rewrites cannot be ruled out or sized.** PostgreSQL's table statistics show every
     `ohlcv` chunk from 2026-07-22 to 2026-11-04 auto-analyzed between 23:48:57 and 23:49:09 PST.
     That fits the loader's incremental refresh (from about 2026-08-11 for other symbols, because
@@ -67,8 +67,8 @@ judgement about any strategy. It does not recommend strategies, deployments or w
   **A lens figure did change: PARA.**
   - Lens 1 measured PARA closes from 72.20 to 113,900 over its S&P 500 membership
     (2022-02-17 to 2025-07-23), near $100,000 through 2023 Q3, about 25,700 in 2024 Q1 and about
-    42 in 2025 Q3, median volume 9 (`research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md:37-41, 208-210`).
-    Lens 2 quotes the same figures (`research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md:381`).
+    42 in 2025 Q3, median volume 9 (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md:37-41, 208-210`).
+    Lens 2 quotes the same figures (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md:381`).
   - The database now shows, over the same membership window: maximum close 3,935.11, minimum
     5.96, median volume 8. Quarterly maxima are about 3,386-3,935 from 2022 Q1 to 2023 Q4,
     887.9 in 2024 Q1 and 57.6 in 2025 Q3. The two highest reference points both shrank by the
@@ -80,7 +80,7 @@ judgement about any strategy. It does not recommend strategies, deployments or w
   - **The other 18 symbols:** I searched every lens report, the Phase 0 audit, the inventory report
     and the lens JSON files for each symbol. Only SBNY is cited, in Lens 1's list of members whose
     maximum/minimum close exceeds 50x in 2021-01-31..2026-04-30
-    (`research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md:414-416`); the database still reproduces
+    (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md:414-416`); the database still reproduces
     that (ratio 766). No lens cites a price, volume or return for the other 17.
 
   **My earlier check did not test the affected set.** The first version of this section said "no
@@ -115,7 +115,7 @@ judgement about any strategy. It does not recommend strategies, deployments or w
 
 Method: a script in the session scratchpad,
 /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/t12/coverage.py,
-loads the 144 inventory ids from `research/audits/root-cause-2026-11-04/_investigation_inventory.json` and searches each
+loads the 144 inventory ids from `research/audits/root-cause-2026-11-04/records/_investigation_inventory.json` and searches each
 lens report and each lens JSON for the exact id string. It also checks that every inventory row
 with a verdict has a Lens 2 class. Output:
 /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/t12/coverage_out.json.
@@ -134,7 +134,7 @@ with a verdict has a Lens 2 class. Output:
 
 No id is missing, so no id needed a fallback "unverifiable, prose only" label to count as
 covered. Lenses 3 and 6 never cite ids by name in their reports (Lens 6 writes its 90 verdicts
-to `research/audits/root-cause-2026-11-04/_lens6_verdicts.json`; Lens 3 is about the live account, not inventory rows).
+to `research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json`; Lens 3 is about the live account, not inventory rows).
 The 40 rows mentioned only in the Lens 2 and Lens 9 tables are still classified there and in
 the Lens 1, 5 and 7 JSON files. Coverage is complete under success criterion 1 of design
 section 8 in this sense: every row has a classification or an "unknown, with reason" from each
@@ -154,7 +154,7 @@ is "taken from prose".
 
 Lens 8 (crypto) adds pointers, not new classes: it located gitignored run folders for three
 crypto rows the upstream lenses treated as artifact-less, and found one inventory pointer
-aimed at the wrong run (`research/audits/root-cause-2026-11-04/2026-11-04-lens8-crypto.md:463-530`). It states that no
+aimed at the wrong run (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md:463-530`). It states that no
 crypto row's Lens 2 class would change under the written rules (lines 499-509).
 
 ## 2. Lens status table
@@ -164,19 +164,19 @@ Review rounds come from the ledger in the SDD workspace
 lens took one review, one fix round and one re-review that came back clean. "Unknown items"
 counts the ❓ lines in each report's Done checklist.
 
-*Added 2026-11-05:* the ledger is now also committed as `research/audits/root-cause-2026-11-04/2026-11-04-investigation-ledger.md`.
+*Added 2026-11-05:* the ledger is now also committed as `research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-ledger.md`.
 
 | Lens | Report | Commits (add, correction) | Review rounds | Done status | Unknown items |
 |---|---|---|---|---|---|
-| 1 Backtest validity | `research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md` | 77cecdab, 6576811e | 2 (1 fix round) | Done by the design's rule: every question answered or marked unknown with a cheapest test. Unknown: adjustment-seam extent beyond VZ and SPY; PARA's effect on the replica and core; day-shift direction per July event study (lines 464-485) | 3 |
-| 2 Verdict audit | `research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md` | 1b6c60d6, 3dfacd83 | 2 (1 fix round) | Done. Unknown: whether strict bars rejected small real effects (no SE or MDE for most rows); how much each of 18 revisions moved each verdict; PARA's effect; simpler-test outcome for 48 gated rows; crypto rows inconclusive on data (lines 1168-1191) | 5 |
-| 3 Live parity | `research/audits/root-cause-2026-11-04/2026-11-04-lens3-live-parity.md` | c145d1ed, a825594b | 2 (1 fix round) | Done. Unknown: partial-bar signal parity; Alpaca's EOD valuation of AVB; rejected orders outside 09-25 (lines 469-482) | 3 |
-| 4 Feasibility and ceiling | `research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md` | bad6d855, 18cac0da | 2 (1 fix round) | Done. Unknown: crypto ceiling (Lens 8 was not yet committed; it now is, 392158e5); confidence intervals for leverage, cross-asset, French-screen and century rows; replica after-tax (lines 545-564) | 3 |
-| 5 Coverage gaps | `research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md` | e14494e2, 9769a79d | 2 (1 fix round; Sonnet review) | Done. Unknown: external crowding per family; crypto detail (deferred to Lens 8, now committed) (lines 554-567) | 2 |
-| 6 Implementation correctness | `research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md` | 36acba57, 659e3417 | 2 (1 fix round) | Done. Unknown: code-versus-spec for 17 rows not reached; size of the return effect of live-versus-backtest differences (lines 369-392) | 2 |
-| 7 Research accuracy | `research/audits/root-cause-2026-11-04/2026-11-04-lens7-research-accuracy.md` | debcfaaa, cc6cb579 (plus lead spec correction 5cf88940) | 2 (1 fix round) | Done. Unknown: 103 prose-only rows; two minor citations; pre-registration before 2026-09-10 (lines 353-367) | 3 |
-| 8 Crypto | `research/audits/root-cause-2026-11-04/2026-11-04-lens8-crypto.md` | 6f5b0725, 392158e5 | 2 (1 fix round; Sonnet review) | Done. Unknown: full-range BTC beta; funding-carry Sharpe convention; cause of the run-2 BTC benchmark mismatch; April-May runs not reproducible (tape wiped) (lines 625-638) | 4 |
-| 9 Power and regime | `research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md` | 21664be7, 7fe1ceb4 | 2 (1 fix round) | Done. Unknown: MDE for 33 rows whose artifact lacks a t-statistic or mean excess; whether 2021-2026 verdicts hold in another regime (lines 638-650) | 2 |
+| 1 Backtest validity | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md` | 77cecdab, 6576811e | 2 (1 fix round) | Done by the design's rule: every question answered or marked unknown with a cheapest test. Unknown: adjustment-seam extent beyond VZ and SPY; PARA's effect on the replica and core; day-shift direction per July event study (lines 464-485) | 3 |
+| 2 Verdict audit | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md` | 1b6c60d6, 3dfacd83 | 2 (1 fix round) | Done. Unknown: whether strict bars rejected small real effects (no SE or MDE for most rows); how much each of 18 revisions moved each verdict; PARA's effect; simpler-test outcome for 48 gated rows; crypto rows inconclusive on data (lines 1168-1191) | 5 |
+| 3 Live parity | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens3-live-parity.md` | c145d1ed, a825594b | 2 (1 fix round) | Done. Unknown: partial-bar signal parity; Alpaca's EOD valuation of AVB; rejected orders outside 09-25 (lines 469-482) | 3 |
+| 4 Feasibility and ceiling | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md` | bad6d855, 18cac0da | 2 (1 fix round) | Done. Unknown: crypto ceiling (Lens 8 was not yet committed; it now is, 392158e5); confidence intervals for leverage, cross-asset, French-screen and century rows; replica after-tax (lines 545-564) | 3 |
+| 5 Coverage gaps | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md` | e14494e2, 9769a79d | 2 (1 fix round; Sonnet review) | Done. Unknown: external crowding per family; crypto detail (deferred to Lens 8, now committed) (lines 554-567) | 2 |
+| 6 Implementation correctness | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md` | 36acba57, 659e3417 | 2 (1 fix round) | Done. Unknown: code-versus-spec for 17 rows not reached; size of the return effect of live-versus-backtest differences (lines 369-392) | 2 |
+| 7 Research accuracy | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md` | debcfaaa, cc6cb579 (plus lead spec correction 5cf88940) | 2 (1 fix round) | Done. Unknown: 103 prose-only rows; two minor citations; pre-registration before 2026-09-10 (lines 353-367) | 3 |
+| 8 Crypto | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md` | 6f5b0725, 392158e5 | 2 (1 fix round; Sonnet review) | Done. Unknown: full-range BTC beta; funding-carry Sharpe convention; cause of the run-2 BTC benchmark mismatch; April-May runs not reproducible (tape wiped) (lines 625-638) | 4 |
+| 9 Power and regime | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md` | 21664be7, 7fe1ceb4 | 2 (1 fix round) | Done. Unknown: MDE for 33 rows whose artifact lacks a t-statistic or mean excess; whether 2021-2026 verdicts hold in another regime (lines 638-650) | 2 |
 
 Total unknown items across the nine Done checklists: **27**. Two of them (Lens 4 and Lens 5
 crypto) are now answerable by reading Lens 8 and need no re-run. One (April-May crypto runs) no
@@ -193,7 +193,7 @@ review and seven after the Lens 3 review; the ledger records the count, not the 
 
 From Lens 6:
 - The paper trader runs parameter values that no backtest fold ever picked (two are outside the
-  search grid) (`research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md:31-33`).
+  search grid) (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md:31-33`).
 - It computes signals at 12:45 PT from today's unfinished price bar (lines 34-46).
 - It fills on the same day, about 15 minutes before the close. The walk-forward backtests fill at
   that day's final close and the replica fills a day later (lines 34-46, table row 2 at line 239).
@@ -206,7 +206,7 @@ From Lens 6:
 From Lens 3:
 - The gap between the snapshot value and cash plus positions equals the code's dividend accrual
   ($320.24 since 10-30), and Alpaca's paper account never paid any of those dividends
-  (`research/audits/root-cause-2026-11-04/2026-11-04-lens3-live-parity.md:16-24`).
+  (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens3-live-parity.md:16-24`).
 - Two accrual rows are over-stated by $5.86 in total (AEP $5.76, SPY $0.10) (lines 22-24, 295-300).
 - Alpaca paper never applied MNST's 2-for-1 split, so the 09-29 sale credited half the
   position's value, about -0.85 pp of the account (lines 44-46).
@@ -219,7 +219,7 @@ From Lens 3:
 
 | # | Finding, plain language | Where | Owner decision needed to look further? |
 |---|---|---|---|
-| 1 | The S&P 500 member PARA is the wrong security in the price table for its whole membership (prices up to 113,900, median volume 9 shares, as measured before the 2026-11-04 incident; not reproducible from the database now, see the incident section). The replica, which Lens 2 classes inconclusive (formerly rated by Phase 0 as the most trusted stock result), bought and sold it 3 times and its taint check did not flag it. Effect on the result: not measured. | `research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md:37-41, 208-214` | Yes: measuring it needs a replica re-run (P2-16) |
+| 1 | The S&P 500 member PARA is the wrong security in the price table for its whole membership (prices up to 113,900, median volume 9 shares, as measured before the 2026-11-04 incident; not reproducible from the database now, see the incident section). The replica, which Lens 2 classes inconclusive (formerly rated by Phase 0 as the most trusted stock result), bought and sold it 3 times and its taint check did not flag it. Effect on the result: not measured. | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md:37-41, 208-214` | Yes: measuring it needs a replica re-run (P2-16) |
 | 2 | Stored prices mix dividend-adjustment levels. The price cache never re-adjusts older bars, so where a later download overlaps an earlier one a dividend shows up as a fake one-day move (VZ: -1.7% on 2026-07-20 against -0.2% in yfinance; SPY bars through 07-24 sit 0.25% high). Live signals read this same table, so a fake move can reach a live indicator. How many such seams exist was not measured. | Lens 1 lines 42-46, 238-254, 330-332 | No for a read-only count (P2-09); any repair is outside this investigation |
 | 3 | In the price table AVB has carried EQR's price since 2026-07-20. | Lens 1 lines 47, 218-219 | Noted only |
 | 4 | 14 index members in 2021-2026 have no prices in the table (for example ABC, ANTM, VIAC), so those member-days are missing from every stock backtest. | Lens 1 lines 48-50, 220-229 | Noted only |
@@ -233,13 +233,13 @@ From Lens 3:
 | 12 | 44 orders filled at the next day's open (after-close runs before 06-27 and on 07-30, and the 09-29 manual liquidations), costing about 47 bp against the prior close (estimate). Three trading days had no run (07-29, 09-16, 09-23). | Lens 3 lines 50-54, table rows 3 and 7 (lines 323, 327) | Noted only |
 | 13 | Rejected orders do not appear in Alpaca's order history (all 212 listed orders are filled), so rejections cannot be counted from the broker. | Lens 3 table row 13 | No for a log count (P2-07) |
 | 14 | The dividend accrual takes share counts from the ex-date snapshot, so a holding sold in an ex-date run would be missed. Nobody has checked whether that happened. | Lens 3 lines 456-458 | No for a read-only check (P2-08) |
-| 15 | 43.7% of the "Binance.US" 4-hour crypto bars are copies of Kraken bars (a legacy backfill script cloned them), so that tape mixes two venues. | `research/audits/root-cause-2026-11-04/2026-11-04-lens8-crypto.md:52-53, 288-298` | Noted only |
+| 15 | 43.7% of the "Binance.US" 4-hour crypto bars are copies of Kraken bars (a legacy backfill script cloned them), so that tape mixes two venues. | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md:52-53, 288-298` | Noted only |
 | 16 | Delisted Binance.US coins were deleted from the table on 2026-06-07, and the coin universe was picked by current trading volume, so crypto backtests carry survivorship bias. | Lens 8 lines 327-339 | Noted only |
 | 17 | About 100 stock tickers (AAPL, SPY and others), 52 coin symbols without a quote currency and 7 un-split `XBT` pair codes sit under the crypto venue labels. They do not enter a `-USD` universe. | Lens 8 lines 54-55, 316-326 | Noted only |
 | 18 | The current lab annualizes crypto Sharpe with 252 days, which understates a 7-day crypto Sharpe by a factor of 0.83. No published crypto figure is affected. | Lens 8 lines 56-59 | Noted only |
 | 19 | The crypto live tables hold 1-2 positions from 2026-06-04 with no matching order rows; their origin is not established. | Lens 8 lines 442-450 | Noted only (crypto is intentionally off) |
 | 20 | One inventory pointer is wrong: the crypto "textbook reset" row points to the zero-fee run, not the realistic-fee run its claim is about. | Lens 8 lines 478-481 | Noted only |
-| 21 | The position-sizing report's number comes from an earlier run with no raw file; the raw file's numbers were never reported. | `research/audits/root-cause-2026-11-04/2026-11-04-lens7-research-accuracy.md:20-22` (summary table) | Noted only |
+| 21 | The position-sizing report's number comes from an earlier run with no raw file; the raw file's numbers were never reported. | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md:20-22` (summary table) | Noted only |
 
 ## 4. Unknowns that only a re-run or more data could settle (proposed Phase 2 list)
 
@@ -276,8 +276,8 @@ depend on each other.
 **Not settleable by any re-run** (listed so they are not mistaken for gaps in this list): the
 window behind the 1.12 Sharpe (it used "now" as its end date); the 2026-07-13 raw output behind
 1.14; the April-May 2026 crypto runs (their tape was wiped and re-imported on 2026-05-05;
-`research/audits/root-cause-2026-11-04/2026-11-04-lens8-crypto.md:636`); whether SPY's stray rows existed before
-2026-06-20 (the table has no write timestamps; `research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md:454-455`).
+`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md:636`); whether SPY's stray rows existed before
+2026-06-20 (the table has no write timestamps; `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md:454-455`).
 
 ### Summary table
 
@@ -322,7 +322,7 @@ runtime, memory, data, what it could change and in which direction, what result 
 nothing, the owner flag, and a pre-registration draft ready to commit before running.
 
 **P2-01. Regime split of per-fold returns (partial check).**
-- Unknown: whether 2021-2026 WFO verdicts depend on 2022 (`research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md:571-579, 648`).
+- Unknown: whether 2021-2026 WFO verdicts depend on 2022 (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md:571-579, 648`).
 - Method: read-only Python over the committed artifacts that hold `fold_rows`
   (`research/audits/rebaseline/_pit_rebaseline_20260923.json`, `research/audits/production-replica/_audit_reruns_20261019.json`,
   `research/programme/wfo-methods/_wfo_fold_attribution_results.json`); split OOS fold returns into folds ending
@@ -383,7 +383,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 
 **P2-04. 2.0x SSO arm at higher funding cost.**
 - Unknown: the 2.0x arm's gap holds only at the window's 1.64% average funding; no sensitivity run
-  exists (`research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md:58-75`).
+  exists (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md:58-75`).
 - Method: `scripts/run_capped.sh .venv/bin/python scripts/static_leverage_aftertax.py --frozen-inputs data/external/a23_inputs --main-only --rf-offset 0.025 --arms "SPY buy-and-hold,static 2.0x (SSO) no rebalance" --out <new file>`,
   and the same with `--rf-offset 0.015`.
 - Window/config: driver defaults 2006-06-21 to 2026-09-29, spread 0.75%; no lab max-leverage
@@ -413,7 +413,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 
 **P2-06. French top-decile big-cap momentum after 1994.**
 - Unknown: whether a concentrated big-cap momentum portfolio differs from the top-30% proxy the
-  screen used (`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:35, 108`; Lens 2 line 58).
+  screen used (`research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md:35, 108`; Lens 2 line 58).
 - Method: the frozen file `6_Portfolios_ME_Prior_12_2` has no decile split. A free French
   library file with size-by-momentum quintiles or momentum deciles would need downloading and
   freezing with a checksum, then the registered post-1994 calculation run on it. Driver would
@@ -468,7 +468,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
   DB/yfinance close ratio larger than 0.1%? Use: Lens 1 tape state only."
 
 **P2-10. Code check of the corrected FOMC event study.**
-- Unknown: Lens 6 did not reach it (`research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md:321-335`);
+- Unknown: Lens 6 did not reach it (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md:321-335`);
   it is that row's only failing Lens 2 condition (Lens 2 lines 60 and 335).
 - Method: read `scripts/fomc_clustered_event_study.py` and the strategy code against its method
   section and brief; hand-replay one month on three symbols with the Lens 6 replay pattern
@@ -581,7 +581,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 
 **P2-17. Stock sleeve versus equal-weight S&P 500 (RSP).**
 - Unknown: whether sizing or selection limits the sleeve (Phase 0 hypothesis 2;
-  `research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:106`).
+  `research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md:106`).
 - Method: compare the sleeve return series from P2-16 with RSP total return (free yfinance), NW t
   on the daily difference. Driver would need writing (short).
 - Window: 2021-01-31 to 2026-04-30. Runtime: 15-30 min after P2-16. Memory: unknown, small (capped at 6 GB, as in the rules above).
@@ -654,7 +654,7 @@ nothing, the owner flag, and a pre-registration draft ready to commit before run
 **P2-22. Stored excess series for the remaining artifacts without a t-statistic.**
 - Unknown: Lens 9's 33 "not computable" rows minus those in P2-02 and P2-19 (core+SPY blend,
   cross-asset sleeve and holdout, A23 arms, century leverage and others named in
-  `research/audits/root-cause-2026-11-04/_lens9_power.json`); Lens 4's missing confidence intervals.
+  `research/audits/root-cause-2026-11-04/lenses/_lens9_power.json`); Lens 4's missing confidence intervals.
 - Method: re-run each driver to a new file with a stored monthly excess series and NW t:
   `scripts/core_spy_blend.py --rerun --out <new file>` (a linear k-scaled blend of the PIT core
   and SPY with a 5% cash reserve, `scripts/core_spy_blend.py:1-24`; it has no max-leverage
@@ -779,7 +779,7 @@ hypothesis, **and** no lens raised an unknown that could change a verdict. Neith
 
 | Phase 0 hypothesis | Phase 1 result |
 |---|---|
-| 1. No real stock-picking edge; replica "Reliable NO, high trust" | Not confirmed as rated. Lens 2: replica inconclusive (MDE 4.24 > 1.0 bar; PARA traded unflagged); 0 reliable NOs in the whole record (`research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md:27-42, 360-403`) |
+| 1. No real stock-picking edge; replica "Reliable NO, high trust" | Not confirmed as rated. Lens 2: replica inconclusive (MDE 4.24 > 1.0 bar; PARA traded unflagged); 0 reliable NOs in the whole record (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md:27-42, 360-403`) |
 | 2. Live book about 84% SPY; sleeve too small to move it | Consistent: replica 85.33% SPY, 9.37% stocks (Lens 2 line 373); sleeve-scale MDE about 45 pp/yr (Lens 9 lines 49-54) |
 | 3. Early beat-SPY figures from five bugs; corrected 0.59 | Partly: the bug signatures are gone, but 0.59 itself predates the DSR (deflated Sharpe ratio significance gate) units fix, which changes OOS returns too; "five bugs alone" not confirmed (Lens 1 lines 357-370) |
 | 4. WFO NO-GOs weak; pass bars unreachable on five years | "Unreachable" confirmed; "t >= 3 needs IR near 1.3" partly overturned (1.62-1.68 at 80% power) (Lens 9 lines 58-66) |

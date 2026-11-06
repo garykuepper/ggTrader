@@ -1,7 +1,7 @@
 # Independent challenge of the root-cause synthesis
 
 **Date:** 2026-11-05 · **Branch:** `investigation/root-cause-2026-11-04` · **Type:** adversarial
-review (Task 14 step 2) of `research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md`. Diagnosis only:
+review (Task 14 step 2) of `research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`. Diagnosis only:
 this document makes no recommendation about trading, strategies, deployments, the paper account or
 the account type, and no forecast.
 
@@ -60,13 +60,13 @@ depends on a cost assumption. None of these moves a result toward the 2x target.
 
 ## 2. Claim audit table
 
-"Syn" = `research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md`. Result codes: **C** confirmed,
+"Syn" = `research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`. Result codes: **C** confirmed,
 **C\*** confirmed with caveat, **W** wrong, **NC** not checked.
 
 | # | Claim | Where | Checked against | Result | Discrepancy |
 |---|---|---|---|---|---|
-| 1 | 114 verdict rows: 0 reliable, 9 unreliable GO, 2 unreliable NO, 103 inconclusive | Syn:38-40 | `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` `classifications[].class` tally | C\* | Counts exact. But 42 of the 103 are STATUS labels and 3 are tests whose own verdict was inconclusive. Of 72 measured tests: 58 inconclusive (51 NO, 7 GO), 9 unreliable GO, 2 unreliable NO, 3 own-inconclusive |
-| 2 | 2x target gap 9.57 pp/yr (2021-2026), 3.54 (2006-2026), 0.77 (1927-2026) | Syn:43-45 | `research/audits/root-cause-2026-11-04/_lens4_ceiling.json` `target.windows`; DB SPY closes 343.6255 (2021-01-29), 716.8133 (2026-04-30), 86.1470 (2006-06-20), 764.2000 (2026-09-29) | C | DB recompute: TR 108.60%, gap 9.56 (calendar-day years); 2006-2026 gap 3.54 |
+| 1 | 114 verdict rows: 0 reliable, 9 unreliable GO, 2 unreliable NO, 103 inconclusive | Syn:38-40 | `research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json` `classifications[].class` tally | C\* | Counts exact. But 42 of the 103 are STATUS labels and 3 are tests whose own verdict was inconclusive. Of 72 measured tests: 58 inconclusive (51 NO, 7 GO), 9 unreliable GO, 2 unreliable NO, 3 own-inconclusive |
+| 2 | 2x target gap 9.57 pp/yr (2021-2026), 3.54 (2006-2026), 0.77 (1927-2026) | Syn:43-45 | `research/audits/root-cause-2026-11-04/lenses/_lens4_ceiling.json` `target.windows`; DB SPY closes 343.6255 (2021-01-29), 716.8133 (2026-04-30), 86.1470 (2006-06-20), 764.2000 (2026-09-29) | C | DB recompute: TR 108.60%, gap 9.56 (calendar-day years); 2006-2026 gap 3.54 |
 | 3 | 2.0x SSO +4.15 pp/yr, 1.17x the 3.55 gap, −84.8% drawdown | Syn:47-48, 114-118 | `research/allocation/static-leverage/_static_leverage_aftertax_results.json` `windows.main_real_sso["static 2.0x (SSO) no rebalance"]["24/15"]`: pre_tax_cagr 0.1554, max_dd −0.8482; SPY TR 11.39 | C\* | 15.54 − 11.39 = 4.15. The arm's "pre-tax" CAGR is net of the annual tax paid from NAV, so 4.15 is a lower bound on a like-for-like pre-tax gap |
 | 4 | 2.0x arm trailed SPY in 37.5% of 10-year windows | Syn:118 | same file, `rolling_10y_pretax_vs_spy` | C\* | 0.375 confirmed. Worst window ends 2009-03-09 and SPY's worst ends 2003-01-31, so the rolling series reaches into the synthetic pre-2006 stitch, not only 2006-2026 |
 | 5 | Registered 1.3x arm +1.61, falling to +0.81 (+0.80 after tax) | Syn:119-120 | artifact 12.71 − 11.10; `research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.025.json` 11.91 − 11.10, after tax 11.2 − 10.4 | C\* | Numbers are on the artifact basis, while #3 is on the consistent basis. On the consistent basis they are +1.32 and +0.52 (Lens 4 table). The paragraph mixes bases |
@@ -78,12 +78,12 @@ depends on a cost assumption. None of these moves a result toward the 2x target.
 | 11 | Replica 85.33% SPY, 9.37% stocks | Syn:405 | `mean_exposure` | C | 0.8533 / 0.0937 / cash 0.0530 |
 | 12 | Gap would need about +102 pp/yr from the sleeve | Syn:363-365 | 9.57 / 0.0937 | C | 102.1 |
 | 13 | Momentum pre-1994 t 3.56 (big); negative after 2013 | Syn:92-94 | `groups.big.diag` | C | t 3.556; 2013-2026 −0.97 (big), −3.34 (small) |
-| 14 | Paper +1.07% vs SPY TR +4.84%, −3.76 pp "on the broker's own figures" | Syn:97-99 | `research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json` `era_returns_phase0_boundaries` (All) | W (label) | Numbers are the U basis (snapshot cash + qty × price at run time). Alpaca's own EOD equity gives −1.48% vs +3.09% = −4.57 pp (to 11-03 close) |
+| 14 | Paper +1.07% vs SPY TR +4.84%, −3.76 pp "on the broker's own figures" | Syn:97-99 | `research/audits/root-cause-2026-11-04/lenses/_lens3_snapshot_gap.json` `era_returns_phase0_boundaries` (All) | W (label) | Numbers are the U basis (snapshot cash + qty × price at run time). Alpaca's own EOD equity gives −1.48% vs +3.09% = −4.57 pp (to 11-03 close) |
 | 15 | Idle cash −2.46, stocks −0.88, sweep −0.15, other −0.29 | Syn:100-101 | same file, `decomposition_B_basis_estimate.fine` | C | Era cash-drag terms sum to about −2.44; labelled an estimate in the synthesis |
 | 16 | 74 closed stock round trips, all short-term, median 25.5 days | Syn:378-379 | my SELECT on `paper_trades` (SPY excluded, FIFO by symbol) | C | 74 trips, median 25.5, max 92, all ≤ 365 days |
-| 17 | Break-even +2.42 (24/15) / +5.05 (37/20); +1.0 becomes −1.08 / −2.55 | Syn:124-126, 380-381 | `research/audits/root-cause-2026-11-04/_lens4_ceiling.json` `after_tax.stylised_books` | C | 2.4244 / 5.0516; −1.0826 / −2.5525. Stylised model (all gains realised short-term yearly) |
+| 17 | Break-even +2.42 (24/15) / +5.05 (37/20); +1.0 becomes −1.08 / −2.55 | Syn:124-126, 380-381 | `research/audits/root-cause-2026-11-04/lenses/_lens4_ceiling.json` `after_tax.stylised_books` | C | 2.4244 / 5.0516; −1.0826 / −2.5525. Stylised model (all gains realised short-term yearly) |
 | 18 | Core PIT Sharpe 0.59 vs SPY 0.78; 0.99 and 0.97 earlier | Syn:229-230, 434 | `research/audits/rebaseline/_pit_rebaseline_20260923.json`, `research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json`, `research/audits/rebaseline/_anchor_fix_reproduction_results.json` | C | 0.5922 / 0.7792; 0.9914; 0.9712 |
-| 19 | Every crypto portfolio lost to BTC over three years, by 5 to 44 pp/yr | Syn:142-144 | `research/audits/root-cause-2026-11-04/_lens8_tape_checks.json` `benchmark_comparison` | C\* | −5.31, −18.56, −18.63, −20.48; run 3 computed −43.9. The same runs beat ETH in 4 of 5 (by 37.5 to 115.4 pp total), which the synthesis omits |
+| 19 | Every crypto portfolio lost to BTC over three years, by 5 to 44 pp/yr | Syn:142-144 | `research/audits/root-cause-2026-11-04/lenses/_lens8_tape_checks.json` `benchmark_comparison` | C\* | −5.31, −18.56, −18.63, −20.48; run 3 computed −43.9. The same runs beat ETH in 4 of 5 (by 37.5 to 115.4 pp total), which the synthesis omits |
 | 20 | Headline 48.46% vs BTC −21.34%; beta about 0.26; t 1.51 | Syn:145-148 | same, 2026-05-01 YTD row | C\* | −21.34 is the report's own BTC figure; the tape gives −17.46 and yfinance −18.98. Beta 0.263-0.314; alpha t 1.51 |
 | 21 | OOS stretch lost 9-19% while BTC fell 42% | Syn:148-149 | same, holdout split rows | C\* | −9.44 / −18.92 vs BTC −41.94 / −42.30, so it beat BTC by 23 to 33 pp in that stretch. The synthesis does not say so |
 | 22 | Live crypto: 0 trades in the DB | Syn:150 | SELECT count(*) on `trades` / `orders` | C | 0 trades, 1 order |
@@ -96,8 +96,8 @@ depends on a cost assumption. None of these moves a result toward the 2x target.
 | 29 | Momentum re-run used the fallback in 17 of 17 folds | Syn:242-243 | `xs_momentum.gate_pass_str` 0/17, `dsr_gate_passes` 0 | C\* | The anchor was 12-1 momentum, top 50 (Lens 4), so the fallback is the canonical idea |
 | 30 | Circuit breaker halts 87.5% of runs at true Sharpe 1.0 | Syn:243-244 | `research/programme/wfo-methods/_wfo_policy_synthetic_results.json` `cells["1.0\|1.0\|legacy"]` | C\* | 0.875 is "ever halted at least once" with gates always passing. Halted-fold share is 0.34; runs ending halted 0.50 |
 | 31 | Lights: 20 yellow, 5 red, 10 grey | Syn:467 | table recount | C\* | The count is exact. Row 7 should be red under the stated rule (see objection 9) |
-| 32 | 33/72 one family; 44/51 large-cap; 65/72 long-only | Syn:273-274 | `research/audits/root-cause-2026-11-04/_lens5_coverage_matrix.json` rows | C | 65 long; 44 large of 51 single-stock; 33 is the Lens 2 family count (17 mean-reversion + 10 sizing/exit + ensemble rows) |
-| 33 | "Every headline with a raw file recomputes" / "was checked" | Syn:65-66, 155-157 | `research/audits/root-cause-2026-11-04/2026-11-04-lens7-research-accuracy.md:108-117`; Syn:593-595 | C\* | 5 recomputed + 27 read = 32 of 41. Nine were never re-checked (Syn §7 says so), and two cannot be located (dual momentum, crypto textbook) |
+| 32 | 33/72 one family; 44/51 large-cap; 65/72 long-only | Syn:273-274 | `research/audits/root-cause-2026-11-04/lenses/_lens5_coverage_matrix.json` rows | C | 65 long; 44 large of 51 single-stock; 33 is the Lens 2 family count (17 mean-reversion + 10 sizing/exit + ensemble rows) |
+| 33 | "Every headline with a raw file recomputes" / "was checked" | Syn:65-66, 155-157 | `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md:108-117`; Syn:593-595 | C\* | 5 recomputed + 27 read = 32 of 41. Nine were never re-checked (Syn §7 says so), and two cannot be located (dual momentum, crypto textbook) |
 | 34 | 44 orders at next open, about 47 bp | Syn:319 | `_lens3_snapshot_gap.json` `fills.next_open_vs_prior_close` | C | n 44, 47.4 bp |
 | 35 | Frozen-era sleeve t 2.14; whole-period t 0.73 | Syn:497-498 | `detectable_effect.t_stats` | C | 2.139 / 0.734 |
 | 36 | FOMC t fell from 1.57 to 0.98 | Syn:165 | `research/audits/production-replica/_fomc_clustered_event_study_20261020.json` | C\* | Net t 1.572 → 0.981. Gross clustered t 2.26 (significant). Net subtracts 10 bp per event |
@@ -122,7 +122,7 @@ error I found reverses the synthesis's direction of travel.
    which a plain reader applies to all 103. Of the 72 measured tests, 58 are inconclusive. The
    same R1 typing put measured claims under STATUS, for example MidCap 400 reversion ("Researching",
    15.0%/1.08 vs MDY 9.1%/0.40, `live_deployed: true` in
-   `research/audits/root-cause-2026-11-04/_investigation_inventory.json`). Under R6 that row would be an unreliable GO. So
+   `research/audits/root-cause-2026-11-04/records/_investigation_inventory.json`). Under R6 that row would be an unreliable GO. So
    the GO count is also understated by at least one in substance.
 
 2. **On the owner's actual question, the headline is too symmetric.** "Nothing reliably shows
@@ -147,7 +147,7 @@ error I found reverses the synthesis's direction of travel.
 
 4. **The leverage paragraph mixes bases and omits evidence that supports "exposure, not
    skill".** Q3 sets +4.15 (consistent basis) next to +1.61 and +0.81 (artifact basis). On one
-   basis the 1.3x arm is +1.32 and +0.52 (`research/audits/root-cause-2026-11-04/_lens4_ceiling.json`). Lens 4 corrected
+   basis the 1.3x arm is +1.32 and +0.52 (`research/audits/root-cause-2026-11-04/lenses/_lens4_ceiling.json`). Lens 4 corrected
    this mixing once (Syn:574-575), and the synthesis reintroduces it. The 37.5% rolling-window
    figure reaches into synthetic pre-2006 data. The artifact also holds
    `beta_matched_pretax_cagr` at the window's 1.64% T-bill rate: 13.94% for 1.3x and 15.83% for
@@ -200,7 +200,7 @@ error I found reverses the synthesis's direction of travel.
    KEEP blend ties it, and the 80/20 holdout beats it.
 9. **Lights inconsistent with the stated rule.** Section 4 defines red as including "a claim Lens
    6 found the code does not support". Row 7 includes the anchor-fix reproduction, which has Lens 6
-   `spec_matches_code: "no"` (`research/audits/root-cause-2026-11-04/_lens6_verdicts.json`), so it should be red or split.
+   `spec_matches_code: "no"` (`research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json`), so it should be red or split.
    Row 13 bundles `stocks-ensemble-kelly-2026-07` (Lens 6 "no") under grey.
 10. **Summary range omits negatives** (line 54; claim 7). Post-1994 registered results include
     −0.62 and −0.56, and post-2008 or post-2013 results go to −0.93, −0.97 and −3.34. That makes

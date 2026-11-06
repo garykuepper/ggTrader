@@ -4,8 +4,8 @@
 **Scope:** read-only diagnosis for the root-cause investigation
 (`docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md`, section 5, Lens 9).
 No recommendations, fixes or deployments.
-**Raw results:** `research/audits/root-cause-2026-11-04/_lens9_power.json` (all 144 inventory ids, once each).
-**Binding method:** `research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md` sections 4 (column 11)
+**Raw results:** `research/audits/root-cause-2026-11-04/lenses/_lens9_power.json` (all 144 inventory ids, once each).
+**Binding method:** `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md` sections 4 (column 11)
 and 9 (field map). Lens 2 and Lens 9 use the same standard error per row.
 
 Abbreviations, expanded once: SE = standard error; MDE = minimum detectable effect (the
@@ -80,7 +80,7 @@ Treasury bill; Holm = the Holm step-down correction for testing several hypothes
 ## Falsifiers
 
 Written before any MDE or regime statistic was computed. They apply to the two Phase 0
-hypotheses on power (`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:67-68`, and
+hypotheses on power (`research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md:67-68`, and
 hypothesis 4 of the spec's section 4).
 
 - **H-IR ("t >= 3 needs IR near 1.3").** Overturned if the IR implied by the artifacts' own
@@ -159,7 +159,7 @@ the French market), so long-sample power does not carry over to the owner's hori
   sleeve-scale figure (book MDE / mean stock exposure) is a linear ILLUSTRATION only.
 - **SPY TR** from yfinance `auto_adjust=True` closes (dividend-adjusted), downloaded
   2026-11-04, not from the DB tape, which has adjustment seams (Lens 1:
-  `research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md`). The replica artifact's own SPY CAGR
+  `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md`). The replica artifact's own SPY CAGR
   for the same window is 14.83% (DB tape), against 15.05% from yfinance.
 - **French market** = `Mkt-RF + RF` from the frozen archive
   `F-F_Research_Data_Factors_CSV.zip` under `data/external/french/` (read only), parsed with
@@ -337,7 +337,7 @@ Row notes:
 - xs_momentum and dual_momentum: `{key}.excess_stats.*` in
   `research/audits/production-replica/_audit_reruns_20261019.json`. The 1,064 daily returns are the OOS fold span
   (first test fold 2022-01-31). Lens 7 found the dual_momentum block identical to the
-  xs_momentum block (`research/audits/root-cause-2026-11-04/_lens7_recompute.json`).
+  xs_momentum block (`research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json`).
 - FOMC: `net.mean_diff` / `net.t_stat` (Welch t on day-averaged returns,
   `src/ggTrader/lab/event_study.py:84-99`; clustering in
   `scripts/fomc_clustered_event_study.py:93-104`). The bar is net event t >= 3.0 and WFE >= 0.50
@@ -391,7 +391,7 @@ years): SPY TR R = +108.60%. Target TR = 2 x 108.60 = +217.21%. Target CAGR =
 | 1927-01..2026-04 (momentum A1) | French market | 10.29% | 11.06% | 0.77 |
 
 Source: `regime.summary` and `regime.targets_2x_spy_total_return` in
-`research/audits/root-cause-2026-11-04/_lens9_power.json`.
+`research/audits/root-cause-2026-11-04/lenses/_lens9_power.json`.
 
 | Test | MDE t>=3 / t>=2 (pp/yr) | Required gap | Could detect target-sized effect? | Measured effect |
 |---|---|---|---|---|
@@ -431,7 +431,7 @@ What the table says:
 
 Independent-returns approximation, kept separate from the per-row MDEs because it uses TE
 as sigma: years = ((bar + 0.8416) x sigma / X)^2. Full grid in
-`years_to_detect_iid_scenarios` in `research/audits/root-cause-2026-11-04/_lens9_power.json`.
+`years_to_detect_iid_scenarios` in `research/audits/root-cause-2026-11-04/lenses/_lens9_power.json`.
 
 | sigma (source) | X = 1 pp/yr | X = 2 | X = 5 | X = 10 |
 |---|---|---|---|---|
@@ -442,7 +442,7 @@ as sigma: years = ((bar + 0.8416) x sigma / X)^2. Full grid in
 | 2.59%, account level frozen (Lens 3) | 54 / 99 | 14 / 25 | 2.2 / 4.0 | 0.5 / 1.0 |
 
 **Cross-check against Lens 3** (`detectable_effect.table` in
-`research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json`): Lens 3 uses z = 1.96 + 0.8416 = 2.8016. For the
+`research/audits/root-cause-2026-11-04/lenses/_lens3_snapshot_gap.json`): Lens 3 uses z = 1.96 + 0.8416 = 2.8016. For the
 frozen sleeve at X = 10 pp/yr: 252 x (2.8016 x 0.22442 / 0.10)^2 = 9,962 days = 39.5
 years. Lens 9's grid recomputes 39.5 years with the same z (`years_lens3_z2.8016`).
 Lens 3's figure reproduces. With the spec's t >= 2 bar (2 + 0.8416 = 2.8416) it is 40.7
@@ -613,7 +613,7 @@ Commands (scratch scripts are in the session scratchpad under `l9/`. All Python 
   those fields are dropped from the JSON.
 - `l9/french.py`: frozen `F-F_Research_Data_Factors_CSV.zip`, 1,202 months 1926-07..2026-08,
   read only. Output: 10 bear episodes, 24 of 99 negative years.
-- `l9/build.py`: writes `research/audits/root-cause-2026-11-04/_lens9_power.json`. Asserts 144 rows and 144
+- `l9/build.py`: writes `research/audits/root-cause-2026-11-04/lenses/_lens9_power.json`. Asserts 144 rows and 144
   unique ids. Status counts: computed 8, not computable 33, no raw artifact 103.
 - Hand check of month-end: (7.8577 - (-1.9328)) / 2.7516 = 3.558 bp. x 3.8416 = 13.67 bp/day.
   x 36.14 days = 4.94 pp/yr.

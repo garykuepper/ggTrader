@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-04 · **Status:** fixed before use · **Investigation:**
 `docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` (sections 1, 2, 5
-Lens 2, and 11 items 5 and 7) · **Inventory:** `research/audits/root-cause-2026-11-04/_investigation_inventory.json`
+Lens 2, and 11 items 5 and 7) · **Inventory:** `research/audits/root-cause-2026-11-04/records/_investigation_inventory.json`
 
 ## 1. Purpose and status
 

@@ -3,7 +3,7 @@
 **Date:** 2026-11-04 · **Lens:** 6 of the root-cause investigation
 (`docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md`) · **Type:** read-only
 diagnosis, no fixes and no recommendations · **Raw artifacts:**
-`research/audits/root-cause-2026-11-04/_lens6_replays.json` (hand replays), `research/audits/root-cause-2026-11-04/_lens6_verdicts.json`
+`research/audits/root-cause-2026-11-04/lenses/_lens6_replays.json` (hand replays), `research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json`
 (one verdict per inventory row)
 
 Abbreviations, expanded once: WFO = walk-forward optimization (re-pick parameters on a
@@ -120,7 +120,7 @@ The strongest case that the implementation is sound:
   the code uses a different seed). They reproduced the repo's entry and exit dates
   exactly on real prices: ensemble (live defaults, 10 names, 2025-03-01 to 2025-05-30),
   bb_reversion (same names and window), 12-1 momentum (20 names, 3 month-ends) and
-  month-end Treasury (6 months). See `research/audits/root-cause-2026-11-04/_lens6_replays.json`. Limit: where
+  month-end Treasury (6 months). See `research/audits/root-cause-2026-11-04/lenses/_lens6_replays.json`. Limit: where
   the written rule is ambiguous (crossings rather than levels, the MACD divergence proxy,
   the row-55 warm-up mask), the hand code adopted the code's reading. These replays
   therefore test the arithmetic, not the interpretation of the specification.
@@ -169,7 +169,7 @@ lookbacks, rebalance timing, PIT data use)?**
   and cheapest test under Rows not examined).
 
 **Q2. Does a hand replay of a small window agree with the code?** **Yes, 4 of 4
-strategies, 0 mismatches** (`research/audits/root-cause-2026-11-04/_lens6_replays.json`), on the arithmetic.
+strategies, 0 mismatches** (`research/audits/root-cause-2026-11-04/lenses/_lens6_replays.json`), on the arithmetic.
 The hand code followed the code's reading of ambiguous wording, so this does not settle
 the interpretation question in Q1. Coverage: 10 names over 3 months for the daily
 signals. A synthetic check of
@@ -294,7 +294,7 @@ out-of-sample specification, so they are marked "no" (or "partly" where the rule
 right and only the harness era is the issue). Gate counts before 2026-10-19 also predate
 the DSR units fix 09f9f40. The 2026-06-20 "validated" ensemble was the 3-voter version
 (changelog 2026-06-18), not today's 5-voter default (`ensemble.py:37-39`). Row-by-row
-verdicts are in `research/audits/root-cause-2026-11-04/_lens6_verdicts.json`.
+verdicts are in `research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json`.
 
 ## Crypto
 
@@ -389,4 +389,4 @@ environment; Alpaca's dividend records; the 17 rows listed above; crypto rules.
 - [x] ✅ Q6 Phase 0 code/parity claims: four confirmed, two left to Lens 3
 - [x] ✅ Dividend snapshot gap mechanism: answered from code and DB; broker side left to
   Lens 3
-- [x] ✅ Verdicts written for all 90 rows (`research/audits/root-cause-2026-11-04/_lens6_verdicts.json`)
+- [x] ✅ Verdicts written for all 90 rows (`research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json`)

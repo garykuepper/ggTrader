@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12 (repo `.venv`), pytest via `scripts/run_tests.sh` only, `systemd-run --user --scope`, Claude subagents (`claude-sonnet-5-5`, `claude-opus-5-5`, `claude-haiku-5-5`), markdown reports under `research/`.
 
-**Spec:** `docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` (approved 2026-11-04). Starting evidence: `research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md` (unreviewed).
+**Spec:** `docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` (approved 2026-11-04). Starting evidence: `research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md` (unreviewed).
 
 ## Global Constraints
 
@@ -82,7 +82,7 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 
 - [ ] **Step 1: Implement** the script (bash, read-only commands only).
 - [ ] **Step 2: Verify determinism.** Run twice into two files: `scripts/guard_snapshot.sh /tmp/claude-1000/-home-flynn-ggTrader/47577f2e-9398-4897-a14d-c38613eb3a47/scratchpad/g1.txt` then `.../g2.txt`; `diff g1.txt g2.txt`. Expected: no output.
-- [ ] **Step 3: Record the baseline** to `research/audits/root-cause-2026-11-04/_investigation_guard_baseline_2026-11-04.txt`.
+- [ ] **Step 3: Record the baseline** to `research/audits/root-cause-2026-11-04/records/_investigation_guard_baseline_2026-11-04.txt`.
 - [ ] **Step 4: Commit** `feat(scripts): add guard snapshot for investigation off-limits state`.
 
 ---
@@ -90,8 +90,8 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 4: Inventory (Phase 1a)
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-investigation-inventory.md`
-- Create: `research/audits/root-cause-2026-11-04/_investigation_inventory.json`
+- Create: `research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md`
+- Create: `research/audits/root-cause-2026-11-04/records/_investigation_inventory.json`
 
 **Interfaces:**
 - Consumes: `research/RESEARCH_SNAPSHOT.md`, `research/RESEARCH_INDEX.md`, `docs/roadmap.md`, `docs/changelog.md`, `docs/research/*.md`, `docs/research/_*.json`, the Phase 0 audit, the auto-memory index at `/home/flynn/.claude/projects/-home-flynn-ggTrader/memory/MEMORY.md` (including the 2026-10-20 triage note), and crypto-era docs (roadmap, changelog, `docs/archive/`).
@@ -108,7 +108,7 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 5: Lens 2 sensitivity-table specification
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md`
 
 **Interfaces:**
 - Produces: a fixed specification Lens 2 must follow. Columns: result id, raw CAGR gap vs SPY total return in pp/yr, 95% confidence interval, t-statistic, verdict at t of at least 3, verdict at t of at least 2, power note. States: exploratory only, no verdict changes on the looser bar alone, SPY comparator is total return, and the windows used. Must be committed before any Lens 2 work opens a result.
@@ -121,9 +121,9 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 6: Lenses 6 and 1 (implementation correctness, backtest validity)
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md`
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md`
-- Create: `research/audits/root-cause-2026-11-04/_lens6_replays.json`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/_lens6_replays.json`
 
 **Interfaces:**
 - Consumes: inventory (Task 4); `src/ggTrader/lab/strategies/`, `src/ggTrader/lab/` (harness, wfo, gates, simulate, metrics), `src/ggTrader/paper/`, the research briefs, git history.
@@ -141,8 +141,8 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 7: Lens 7 (research accuracy)
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens7-research-accuracy.md`
-- Create: `research/audits/root-cause-2026-11-04/_lens7_recompute.json`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json`
 
 **Interfaces:**
 - Consumes: inventory rows, raw results JSONs, lens 6 verdicts.
@@ -159,8 +159,8 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 8: Lens 3 (live versus backtest parity)
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens3-live-parity.md`
-- Create: `research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens3-live-parity.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/_lens3_snapshot_gap.json`
 
 **Interfaces:**
 - Consumes: DB tables `paper_trades`, `paper_snapshots`, `ohlcv` (SELECT only), Alpaca account-activity reads (DIV), `src/ggTrader/paper/trader.py:1051-1056`, `research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md`.
@@ -176,8 +176,8 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 9: Lens 2 (verdict audit)
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md`
-- Create: `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json`
 
 **Interfaces:**
 - Consumes: Task 5 spec, inventory, Task 6 and Task 7 outputs.
@@ -193,9 +193,9 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 10: Lenses 4, 5, 9 (feasibility and ceiling, coverage, power and regime)
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md`
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md`
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md`
 
 **Interfaces:**
 - Consumes: inventory, Lens 2 classifications (for Lens 4 ceiling), `WEB_RESEARCH_CANDIDATES.md`, intraday readiness documents (read-only).
@@ -211,8 +211,8 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 11: Lens 8 (crypto)
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-lens8-crypto.md`
-- Create: `research/audits/root-cause-2026-11-04/_lens8_tape_checks.json`
+- Create: `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md`
+- Create: `research/audits/root-cause-2026-11-04/lenses/_lens8_tape_checks.json`
 
 **Interfaces:**
 - Consumes: crypto docs and git history before the 2026-06-16 removal, `docs/archive/`, the 2026-06-08 edge-search report, `research/audits/research-process/2026-11-01-research-process-audit.md`, TimescaleDB `ohlcv` (SELECT only, about 648 `-USD` symbols).
@@ -228,7 +228,7 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 12: Phase 1 checkpoint and re-run proposal
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-phase1-checkpoint.md`
+- Create: `research/audits/root-cause-2026-11-04/findings/2026-11-04-phase1-checkpoint.md`
 
 **Interfaces:**
 - Consumes: all lens reports, the guard baseline (Task 3).
@@ -260,15 +260,15 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 14: Synthesis, challenge, and owner summary
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md`
-- Create: `research/audits/root-cause-2026-11-04/2026-11-04-root-cause-challenge.md`
+- Create: `research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`
+- Create: `research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-challenge.md`
 - Modify: `docs/changelog.md`, `research/RESEARCH_SNAPSHOT.md` (via the `research-snapshot` skill)
 
 **Interfaces:**
 - Consumes: all lens reports and Phase 2 results.
 - Produces: the synthesis in plain language, containing a one-page summary; a traffic-light trust table (one sentence per row, "what would change this" column); the ranked root causes in the three groups (method and process, implementation and live parity, evidence negative or target structurally hard) with citations; the measured ceiling; what is sound; what is unknown; the fixed 5 to 7 owner questions with answers; an explicit statement that no second model family reviewed it.
 
-- [ ] **Step 1: Opus writes** the synthesis, then runs `.venv/bin/python scripts/check_lens_report.py --paths-only research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md`. Expected: exit 0.
+- [ ] **Step 1: Opus writes** the synthesis, then runs `.venv/bin/python scripts/check_lens_report.py --paths-only research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`. Expected: exit 0.
 - [ ] **Step 2: Fresh Opus challenger** receives only the raw results, the inventory and the claims (not the reasoning), is told to argue the opposite case, and writes `...-root-cause-challenge.md`. Lead resolves each objection in the synthesis or records it as unresolved.
 - [ ] **Step 3: Final guard diff** against the baseline. Expected: no difference.
 - [ ] **Step 4: Update** `docs/changelog.md` and regenerate the snapshot with the `research-snapshot` skill. Do not change `docs/next_steps.md` without the owner.

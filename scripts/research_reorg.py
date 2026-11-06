@@ -155,8 +155,6 @@ DEFAULT_ALLOW_NEW: tuple[str, ...] = (
     "audits/root-cause-2026-11-04/reference-sheet.md",
     "audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md",
     "audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md",
-    # Pre-move home of the consolidated review; the final reorganization step removes it.
-    "audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md",
 )
 REWRITABLE_SUFFIX = ".md"
 

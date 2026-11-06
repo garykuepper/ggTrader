@@ -8,7 +8,7 @@ Writes only the paths given with --out-json and --md-dir.
 Classification rules are the fixed text in RULES_TEXT; the verdict-type vocabularies, the
 contamination-direction table, the 1.12-comparator pattern and the column-14 logic are module
 constants below. Sensitivity columns follow
-research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md.
+research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md.
 """
 
 import argparse
@@ -21,11 +21,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 #: Lens inputs (repo-relative), each at its own location in the root-cause audit folder.
-INVENTORY_JSON = "research/audits/root-cause-2026-11-04/_investigation_inventory.json"
-LENS1_JSON = "research/audits/root-cause-2026-11-04/_lens1_tape_state.json"
-LENS6_JSON = "research/audits/root-cause-2026-11-04/_lens6_verdicts.json"
-LENS7_JSON = "research/audits/root-cause-2026-11-04/_lens7_recompute.json"
-LENS9_JSON = "research/audits/root-cause-2026-11-04/_lens9_power.json"
+INVENTORY_JSON = "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json"
+LENS1_JSON = "research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json"
+LENS6_JSON = "research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json"
+LENS7_JSON = "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json"
+LENS9_JSON = "research/audits/root-cause-2026-11-04/lenses/_lens9_power.json"
 #: Screen results read directly by build() for the multiple-testing section.
 FACTOR_SCREEN_JSON = "research/stock-signals/factor-screen/_factor_screen_results.json"
 MOMENTUM_SCREEN_JSON = "research/stock-signals/momentum/_momentum_french_screen_results.json"

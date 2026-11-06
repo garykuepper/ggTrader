@@ -92,7 +92,7 @@ every finding must be explained in plain language with its evidence.
 
 A read-only audit by a senior-quant Opus agent covered stocks only. The full report,
 including its trust table and the re-run costs, is saved at
-[`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md`](../../../research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md)
+[`research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md`](../../../research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md)
 (unreviewed subagent output; some entries are marked "prose", meaning not recomputed). An
 independent Opus review of this spec found the audit leans one way in places. These are
 starting hypotheses, not conclusions, and each lens states in advance what evidence would
@@ -256,7 +256,7 @@ the cheapest test that would settle it.
 
 1. **Phase 0 (done):** the senior-quant trust audit, stocks only.
 2. **Phase 1a - inventory and foundations (read-only):** first task is a committed
-   inventory file (`research/audits/root-cause-2026-11-04/2026-11-04-investigation-inventory.md`) listing every
+   inventory file (`research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md`) listing every
    material result, strategy and study with its source. "Material" means it carries a
    headline number, a verdict, or a live deployment decision. Coverage in section 8 is
    measured against this file. In parallel, Lens 1 and Lens 6 start for the results whose
@@ -284,7 +284,7 @@ raises an unknown that could change a verdict, Phase 2 is skipped and the lead s
 - The inventory file (Phase 1a).
 - One report per lens under `research/`, following the repository research-report
   template, with raw JSON artifacts for anything re-run.
-- A synthesis report: `research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md`, written in
+- A synthesis report: `research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`, written in
   plain language, with abbreviations expanded, containing:
   - a one-page summary;
   - a traffic-light trust table with one plain sentence per row and a "what would change

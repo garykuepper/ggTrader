@@ -2,12 +2,12 @@
 
 **Erratum 2026-11-04 (after review):** PARA price figures quoted in this report were measured
 before an accidental database refresh at 23:48 PST; they are not reproducible from the database
-now (see `research/audits/root-cause-2026-11-04/2026-11-04-phase1-checkpoint.md`, section on the incident).
+now (see `research/audits/root-cause-2026-11-04/findings/2026-11-04-phase1-checkpoint.md`, section on the incident).
 
 **Date:** 2026-11-04 · **Branch:** `investigation/root-cause-2026-11-04` · **Type:** diagnosis
 only (read-only; no re-runs of strategies) · **Spec:**
 `docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` (section 5, Lens 1)
-· **Per-row output:** `research/audits/root-cause-2026-11-04/_lens1_tape_state.json` (144 rows)
+· **Per-row output:** `research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json` (144 rows)
 
 Abbreviations, expanded once: WFO = walk-forward optimization (train on a past window, test
 on the next, repeat); OOS = out-of-sample; PIT = point-in-time (only using index
@@ -27,7 +27,7 @@ table in TimescaleDB that every stock backtest reads.
    unknowns are design notes, operations changes or crypto, which have no stock backtest).
    Every WFO result run before 2026-10-19 predates the DSR units fix. That includes the
    "corrected" core figure (Sharpe 0.59 vs SPY 0.78, 2026-09-23). Phase 0 already said its
-   "17/17 gates" count predates the fix (`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:30`).
+   "17/17 gates" count predates the fix (`research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md:30`).
    What Lens 1 adds is that the fix also changes which parameters each fold deploys: a
    failed DSR check makes the fold run on the anchor parameters (`gates_passed = ndh_passed
    and dsr_passed`, then `deploy_params = anchor.params`, lines 726-733 of
@@ -68,7 +68,7 @@ table in TimescaleDB that every stock backtest reads.
 ## Falsifiers
 
 Written as overturn conditions for each Phase 0 hypothesis this lens touches
-(`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md`; spec section 4). They were drafted at
+(`research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md`; spec section 4). They were drafted at
 the start of the work, before the database queries were run; some prior reading of the
 memory notes and changelog had already happened, so they are not fully blind.
 
@@ -140,7 +140,7 @@ security identity (PARA), adjustment seams, or the DSR timing of every WFO figur
 
 ### (a) For every headline number, which fixes did it predate?
 
-The full per-row answer is in `research/audits/root-cause-2026-11-04/_lens1_tape_state.json`. Rules:
+The full per-row answer is in `research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json`. Rules:
 
 - **contaminated:** the run date is earlier than a fix that affects its kind of result.
 - **clean:** evidence shows it ran after every relevant fix.
@@ -362,7 +362,7 @@ Lens 1 ran no crypto checks; Lens 8 owns them.
     behind them.
   - The "corrected" 0.59 is not fully corrected: it predates 09f9f40. Phase 0 already
     noted that its "17/17 gates" count predates the fix
-    (`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:30`). What Lens 1 adds is that a
+    (`research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md:30`). What Lens 1 adds is that a
     failed DSR check deploys the anchor parameters for that fold (lines 726-733 of
     `src/ggTrader/lab/wfo.py` at 09f9f40). So 0.59's out-of-sample returns would also
     change under the corrected gate, not only its gate count.
@@ -464,7 +464,7 @@ Commands and key outputs:
 ## Done checklist
 
 - ✅ Fix timeline (five fixes plus three extras), with commits and dates.
-- ✅ (a) Fixes each headline predates: all 144 rows in `research/audits/root-cause-2026-11-04/_lens1_tape_state.json`
+- ✅ (a) Fixes each headline predates: all 144 rows in `research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json`
   (55 contaminated / 18 clean / 71 unknown, each with a reason).
 - ✅ (b) Tape: duplicates, stamp hour, weekdays, gaps, partial bars and identity checked
   today.

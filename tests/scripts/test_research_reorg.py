@@ -1287,8 +1287,9 @@ def test_verify_final_default_allow_new_lists_reading_documents() -> None:
         f"{base}/reference-sheet.md",
         f"{base}/findings/2026-11-05-findings-plain-english.md",
         f"{base}/reviews/2026-11-05-direction-reviews-consolidated.md",
-        f"{base}/2026-11-05-direction-reviews-consolidated.md",  # until the final move
     }
+    # The pre-move home of the consolidated review was dropped once the sub-folder move landed.
+    assert f"{base}/2026-11-05-direction-reviews-consolidated.md" not in DEFAULT_ALLOW_NEW
 
 
 def test_main_verify_final_allow_deeper_cli(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]

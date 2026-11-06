@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-04  
 **Branch:** investigation/root-cause-2026-11-04  
-**Data:** `research/audits/root-cause-2026-11-04/_investigation_inventory.json` (this page is rendered from it by a script; edit the JSON, not this table).
+**Data:** `research/audits/root-cause-2026-11-04/records/_investigation_inventory.json` (this page is rendered from it by a script; edit the JSON, not this table).
 
 ## Definition of material
 
@@ -35,7 +35,7 @@ Check: 667 contributing + 4 dropped = 671 = raw rows in.
 - **lens_owners** follow the rules in the task brief, applied by pattern matching over each row's name and headline numbers; Lens 5 is on every row. They are a routing aid, not a judgment.
 - **Known extraction caveats:** some verdict words were inferred by the extractor from prose rather than stated as a label (for example "matches SPY, no alpha"); several sources cite artifacts by bare filename (for example `_pit_rebaseline_20260923.json`), which were resolved under `research/`; two extracted artifact paths do not exist and are recorded in `notes`; one snapshot row was extracted under A24 but its figure belongs to A23 and was reassigned; one brief row recorded a planned re-run parameter as a headline and is flagged in `notes`. Real-money crypto account balance figures in two raw rows were redacted.
 - **Review fix round 1:** 14 sources were added by hand from the cited files (marked `added_in_fix_round` in the JSON); several verdict and headline fields were corrected to the source's own label, with the extractor's paraphrase moved to `notes`; three rows were split out of merged rows; one row (crypto execution venue fees) was added.
-- **Phase 0 audit not used:** `research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md` is unreviewed and was not used as a source of rows.
+- **Phase 0 audit not used:** `research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md` is unreviewed and was not used as a source of rows.
 - **Verification:** every `source_report`, every contributing source path and every `raw_artifact` exists; every contributing quote was found in its cited file; headline numbers were checked against their source file, and 20 rows were re-opened by hand. Details are in the task report.
 
 ## Dropped as immaterial

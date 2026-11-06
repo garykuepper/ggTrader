@@ -275,7 +275,7 @@
       "current_path": "docs/research/_investigation_guard_baseline_2026-11-04.txt",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_investigation_guard_baseline_2026-11-04.txt",
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/_investigation_guard_baseline_2026-11-04.txt",
       "sha256": "439847f989c6071d9940a63708de5ed0abd8487630dfec0591bcaf3ec0575817",
       "size": 1092
     },
@@ -283,7 +283,7 @@
       "current_path": "docs/research/_investigation_inventory.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_investigation_inventory.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
       "sha256": "41016de273f2b150f90c700883217ebd73e2c53489d643e91a30ce46badb2fc2",
       "size": 276947
     },
@@ -291,7 +291,7 @@
       "current_path": "docs/research/_lens1_tape_state.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens1_tape_state.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json",
       "sha256": "2e91a259e375846da7b7ed0e06ce400a40b67488509b997306d07f5ceda5bf8e",
       "size": 59777
     },
@@ -299,7 +299,7 @@
       "current_path": "docs/research/_lens2_sensitivity.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens2_sensitivity.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
       "sha256": "390da943e4ad9d62ddf6976ad1448837fe802e593bd67dae708c5577c78fe348",
       "size": 339416
     },
@@ -307,7 +307,7 @@
       "current_path": "docs/research/_lens3_snapshot_gap.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens3_snapshot_gap.json",
       "sha256": "a3565869b3291412e6d5f2c458969124e19c85854c0fe78e3f4e1dbc00468532",
       "size": 40981
     },
@@ -315,7 +315,7 @@
       "current_path": "docs/research/_lens4_ceiling.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens4_ceiling.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens4_ceiling.json",
       "sha256": "6e395c2c1a801421cfacb9b78acf5f8cff9b596f54dbf7ab3fb9c0bba1f3805c",
       "size": 49031
     },
@@ -323,7 +323,7 @@
       "current_path": "docs/research/_lens5_coverage_matrix.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens5_coverage_matrix.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens5_coverage_matrix.json",
       "sha256": "49c3f8711f1cc67a3dbe28b70c22df94d9af901e052411304ebc24a9eed1fdf6",
       "size": 240961
     },
@@ -331,7 +331,7 @@
       "current_path": "docs/research/_lens6_replays.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens6_replays.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens6_replays.json",
       "sha256": "2836bf2997a56b2cad022e4bfb5bbd4031afb2a58638f7955ec1628a64a88fec",
       "size": 19992
     },
@@ -339,7 +339,7 @@
       "current_path": "docs/research/_lens6_verdicts.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens6_verdicts.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens6_verdicts.json",
       "sha256": "f55938b3781d337810a4421993fb94a6d25656e4c2037c1317ce16458b78ca78",
       "size": 29976
     },
@@ -347,7 +347,7 @@
       "current_path": "docs/research/_lens7_recompute.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens7_recompute.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
       "sha256": "3a08d22d5cdf347e28336b5de78d831b583cdbe8fc7b1cd035823d6fd6dae5c6",
       "size": 93715
     },
@@ -355,7 +355,7 @@
       "current_path": "docs/research/_lens8_tape_checks.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens8_tape_checks.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens8_tape_checks.json",
       "sha256": "b635068d3e007d36e42fe3e34a6449e1289e1017c001dd83c6d7dda3c614f6a4",
       "size": 51242
     },
@@ -363,7 +363,7 @@
       "current_path": "docs/research/_lens9_power.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_lens9_power.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/_lens9_power.json",
       "sha256": "18f31ee91996cb3aba21f21cad8e3a6ece5bb68e5a9263c214f79f5572195d78",
       "size": 151088
     },
@@ -491,7 +491,7 @@
       "current_path": "docs/research/_synthesis_inventory_map.json",
       "frozen": true,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/_synthesis_inventory_map.json",
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/_synthesis_inventory_map.json",
       "sha256": "4b394d1ee50303f61227ade4c600aab8de5047e0433a06e7c101f5db8a692e1f",
       "size": 12566
     },
@@ -915,7 +915,7 @@
       "current_path": "docs/research/2026-11-04-investigation-inventory.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-investigation-inventory.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md",
       "sha256": "203aac84f924c83145999dd6d2100286c6a5d9371cf0847d7bbed28d08c1be63",
       "size": 43318
     },
@@ -923,7 +923,7 @@
       "current_path": "docs/research/2026-11-04-investigation-ledger.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-investigation-ledger.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-ledger.md",
       "sha256": "c3b68917b715cdaede620f8c2957d32a2b1c794252e5f2733e3bb7258894f6da",
       "size": 27495
     },
@@ -931,7 +931,7 @@
       "current_path": "docs/research/2026-11-04-lens1-backtest-validity.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
       "sha256": "1032c7a23dcf622eae393e2cec22c3ba138f13c5bbe7b3e8b78100c9cb551a3d",
       "size": 33799
     },
@@ -939,7 +939,7 @@
       "current_path": "docs/research/2026-11-04-lens2-sensitivity-spec.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md",
       "sha256": "1b61a1ddc474c4700ddea4bc5163fbe2bbf7ab13c0ab535926d22a2c3654e738",
       "size": 30198
     },
@@ -947,7 +947,7 @@
       "current_path": "docs/research/2026-11-04-lens2-verdict-audit.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
       "sha256": "5d45ffed8a912b2316f6f16d843688bca133df5ff4b46c707e04bdb970c60c77",
       "size": 256076
     },
@@ -955,7 +955,7 @@
       "current_path": "docs/research/2026-11-04-lens3-live-parity.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens3-live-parity.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens3-live-parity.md",
       "sha256": "aab45a025317c6dab539f6757805374ec3a337a120bf8301ae713cdb0045c865",
       "size": 31965
     },
@@ -963,7 +963,7 @@
       "current_path": "docs/research/2026-11-04-lens4-feasibility-and-ceiling.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md",
       "sha256": "5095fc0f880929527039a4f553f026e04271ebc7199ba3d8f3b6f8e9db001668",
       "size": 52001
     },
@@ -971,7 +971,7 @@
       "current_path": "docs/research/2026-11-04-lens5-coverage-gaps.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md",
       "sha256": "1a2a302ca8626f61087aca92e56cd7c561a779e927c73b9d41ba6acd10e877fa",
       "size": 56685
     },
@@ -979,7 +979,7 @@
       "current_path": "docs/research/2026-11-04-lens6-implementation-correctness.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md",
       "sha256": "26f24ae498f203bba96326812432a3aed2403e5c4f9880a98e1d8ca162d83439",
       "size": 31010
     },
@@ -987,7 +987,7 @@
       "current_path": "docs/research/2026-11-04-lens7-research-accuracy.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens7-research-accuracy.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md",
       "sha256": "092f2e2c100a02569fc209593bc878f3d7b72556811311c4a80792c861b0e97a",
       "size": 31031
     },
@@ -995,7 +995,7 @@
       "current_path": "docs/research/2026-11-04-lens8-crypto.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens8-crypto.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
       "sha256": "ccef1b946f333d42d249bb8efd336f42f9329d839629bcfdc7b44206381259cd",
       "size": 52484
     },
@@ -1003,7 +1003,7 @@
       "current_path": "docs/research/2026-11-04-lens9-power-and-regime.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
       "sha256": "4b5a3592ede0fb5462df75d873d2c00a63a8ab44d13f35f36c9c72bd2297491a",
       "size": 77114
     },
@@ -1011,7 +1011,7 @@
       "current_path": "docs/research/2026-11-04-phase0-trust-audit.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md",
       "sha256": "c3f25c4b020610316dc5227fb9be0b406562be4789ac34bba5974ceee01a0c7e",
       "size": 9970
     },
@@ -1019,7 +1019,7 @@
       "current_path": "docs/research/2026-11-04-phase1-checkpoint.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-phase1-checkpoint.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/findings/2026-11-04-phase1-checkpoint.md",
       "sha256": "dc229d4a1384da9bd167cd1a3300bfdecba479cd782929682aa2f7025da4fdeb",
       "size": 69066
     },
@@ -1027,7 +1027,7 @@
       "current_path": "docs/research/2026-11-04-root-cause-challenge.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-root-cause-challenge.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-challenge.md",
       "sha256": "2ec970b5d1370aa0f67f8819f9ce1fb7c11c34d3fa0deebaa7e27eff38b11f09",
       "size": 26864
     },
@@ -1035,7 +1035,7 @@
       "current_path": "docs/research/2026-11-04-root-cause-investigation.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md",
       "sha256": "9f11af08baa6425c76712c76a1813acfe0026ea46bb1e7894c304c7b4a6ba46d",
       "size": 78725
     },
@@ -1043,7 +1043,7 @@
       "current_path": "docs/research/2026-11-05-argon-review-verification.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-05-argon-review-verification.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-review-verification.md",
       "sha256": "8287f9306f29495a7c1a6ec5f895ae73a65e94ac6b42e45b797407b91cef34e9",
       "size": 26769
     },
@@ -1051,7 +1051,7 @@
       "current_path": "docs/research/2026-11-05-argon-synthesis-review.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-05-argon-synthesis-review.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-synthesis-review.md",
       "sha256": "1ad1cd102d0667c6c902a47f99a1786c0cc274428de6ef56c35903f94560a1ae",
       "size": 36547
     },
@@ -1059,7 +1059,7 @@
       "current_path": "docs/research/2026-11-05-senior-quant-direction-review.md",
       "frozen": false,
       "pinned": false,
-      "proposed_path": "research/audits/root-cause-2026-11-04/2026-11-05-senior-quant-direction-review.md",
+      "proposed_path": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-senior-quant-direction-review.md",
       "sha256": "58f5c6c3e82cb7e619b95e8ddc74409194267c5dc1756cd77cae1e3f79cebd09",
       "size": 18226
     },

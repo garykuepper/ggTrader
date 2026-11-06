@@ -37,20 +37,20 @@ record.
 
 ## 1. Sources and status
 
-**Opus review**: `research/audits/root-cause-2026-11-04/2026-11-05-senior-quant-direction-review.md`
+**Opus review**: `research/audits/root-cause-2026-11-04/reviews/2026-11-05-senior-quant-direction-review.md`
 - Author: Claude Opus, single reviewer, read-only (`senior-quant-direction-review.md:258-264`).
 - Status: reliable as a single review; its own estimates are labelled "(my estimate)" and are unmeasured (`senior-quant-direction-review.md:17-18`, `senior-quant-direction-review.md:259-261`, `senior-quant-direction-review.md:70`).
 
-**Argon review**: `research/audits/root-cause-2026-11-04/2026-11-05-argon-synthesis-review.md`
+**Argon review**: `research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-synthesis-review.md`
 - Author: Gemini 4 Argon via agy (`argon-review-verification.md:3`); did not read the Opus review (`argon-synthesis-review.md:165`).
 - Status: **unverified as written.** 43 of 105 citations are broken or unsupported (`argon-review-verification.md:10`); several specifics are invented (`argon-review-verification.md:13`).
 
-**Verification**: `research/audits/root-cause-2026-11-04/2026-11-05-argon-review-verification.md`
+**Verification**: `research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-review-verification.md`
 - Author: Claude Sonnet, did not read the Opus review (`argon-review-verification.md:3`).
 - Status: states which Argon items survive (`argon-review-verification.md:90-105`).
 
-Both reviews assess the synthesis (`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md`)
-and its challenge (`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-challenge.md`). Below, an Argon
+Both reviews assess the synthesis (`research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`)
+and its challenge (`research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-challenge.md`). Below, an Argon
 statement is used only where the verification marks it as surviving or corrects it; the corrected
 form is the one shown. Anything else is labelled **not verified**.
 
@@ -62,7 +62,7 @@ form is the one shown. Anything else is labelled **not verified**.
 | Paper-trader reliability | First priority: measure the partial bar, propose an input archive and a broker-based halt base, document MNST/AVB as broker artifacts, leave the cap, sizing and parameters alone (`senior-quant-direction-review.md:93-111`) | A parity and tax-hygiene patch, a dated freeze and a clock reset (`argon-synthesis-review.md:76-86`) | Divergences real (Lens 6 rows 1, 4, 8, 14); "recovers 0.85-1.00 pp/yr" wrong; freeze and reset dates invented (`argon-review-verification.md:99`, `argon-review-verification.md:54`) | differ (patch vs measure first); Argon specifics dropped |
 | The 29 unrun Phase 2 checks | No-database items first; defer price-table writers (`senior-quant-direction-review.md:113-123`) | Same intent, but wrong item numbers and a non-existent `write_db` guard (`argon-synthesis-review.md:67-68`) | Intent matches Decision 0; ids mislabelled; no guard exists (`argon-review-verification.md:97`, `argon-review-verification.md:74-84`) | agree on intent; Argon ids dropped |
 | Stock-picking power | "Undecided" at 1 to 4 pp/yr, not at 2x; detecting +1.0 pp/yr at TE 6.5% needs about 620 years (Opus estimate, not verified) (`senior-quant-direction-review.md:54-59`, `senior-quant-direction-review.md:126-136`) | Re-power with a 1994-2026 concentrated sleeve; +1.5 to +4.0 pp/yr; 15-25% chance of t ≥ 3 (`argon-synthesis-review.md:88-99`) | sqrt(T) arithmetic verified; payoff odds dropped (about 1% to 9%); free-data plan fails (`argon-review-verification.md:57`, `argon-review-verification.md:100-101`) | differ |
-| Momentum replay (+4.37 pp/yr) | Not addressed | Gates rejected 17 of 17 folds, so the +4.37 pp/yr (t 0.76, 95% interval -7.07 to +16.05 on the arithmetic mean excess; not significant) is the plain 12-1 momentum anchor (`argon-synthesis-review.md:51`; `research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md:238`) | Survives; the cited commit hashes are wrong (`argon-review-verification.md:49`, `argon-review-verification.md:93`) | Argon-only (survives; hashes wrong) |
+| Momentum replay (+4.37 pp/yr) | Not addressed | Gates rejected 17 of 17 folds, so the +4.37 pp/yr (t 0.76, 95% interval -7.07 to +16.05 on the arithmetic mean excess; not significant) is the plain 12-1 momentum anchor (`argon-synthesis-review.md:51`; `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md:238`) | Survives; the cited commit hashes are wrong (`argon-review-verification.md:49`, `argon-review-verification.md:93`) | Argon-only (survives; hashes wrong) |
 | Gated-WFO machinery | Lens 2's rules came in one commit; other rules could create a few reliable NOs, not a GO (`senior-quant-direction-review.md:85-89`) | The synthesis's "biggest blind spot" (`argon-synthesis-review.md:50-53`) | Survives, but it is already the synthesis's position; synthetic-model caveat (`argon-review-verification.md:92`) | differ in weight |
 | Leverage | Exposure, not skill; 2.0x at today-like funding about +1.65 pp/yr (Opus estimate, not verified); drawdowns of 66% to 85% in-window and over 90% in a 1929-style decline; the 2.0x arm fell 84.8%; no allocation advice (`senior-quant-direction-review.md:61-70`, `senior-quant-direction-review.md:148-162`) | Same framing; 2.0x "+1.5 to +2.5" (`argon-synthesis-review.md:106-108`) | 1.3x figures verified; 1.3x funding-adjusted margin +0.52 pp/yr with A23 in force; 2.0x is inference, "about +1.7, unmeasured" (`argon-review-verification.md:58-59`, `argon-review-verification.md:127`) | agree |
 | Tax | After-tax as the primary metric for short-holding designs (`senior-quant-direction-review.md:178-179`); annual rebalancing realizes fewer short-term gains (inference, `senior-quant-direction-review.md:140-143`) | 52 SPY sweep trades churn a taxable account; holds over 366 days cut the hurdle (`argon-synthesis-review.md:48`, `argon-synthesis-review.md:92`) | Trade count verified; wash-sale harm unestablished; "1-2 pp/yr" unsourced; holding-period saving about 1.9 to 4.3 pp/yr; a separate bill-ETF or drift-band sweep is an untested option for the unfrozen shadow design (`argon-review-verification.md:50`, `argon-review-verification.md:102`, `argon-review-verification.md:95`, `argon-review-verification.md:123`) | Argon-only (sweep, corrected); agree in kind (holding period) |
