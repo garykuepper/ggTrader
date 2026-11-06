@@ -85,6 +85,10 @@ REWRITE_EXCLUDED_PREFIXES: tuple[str, ...] = (
     "docs/superpowers/plans/2026-11-05-research-reorganization",
     "docs/superpowers/specs/2026-11-05-research-reorganization",
 )
+# Never rewritten either: byte-restored so its sha256 equals the digest a frozen workbook recorded.
+REWRITE_EXCLUDED_PATHS = frozenset(
+    {"docs/superpowers/plans/2026-10-22-event-evidence-resolution.md"}
+)
 # Characters a repo path is made of; a token is the longest run of these.
 PATH_CHAR_CLASS = r"A-Za-z0-9_\-./"
 PATH_RUN = re.compile(rf"[{PATH_CHAR_CLASS}]*")
@@ -878,7 +882,11 @@ def git_tracked_files(root: Path) -> list[str]:
 
 def _is_rewrite_excluded(rel: str, excludes: list[str]) -> bool:
     """Return True for always-excluded reorganization files and `--exclude` matches."""
-    if rel in REORG_SELF_PATHS or rel.startswith(REWRITE_EXCLUDED_PREFIXES):
+    if (
+        rel in REORG_SELF_PATHS
+        or rel in REWRITE_EXCLUDED_PATHS
+        or rel.startswith(REWRITE_EXCLUDED_PREFIXES)
+    ):
         return True
     return any(rel == e.rstrip("/") or rel.startswith(e.rstrip("/") + "/") for e in excludes)
 

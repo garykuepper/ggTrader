@@ -614,6 +614,24 @@ def test_always_excluded_files_not_processed(tmp_path: Path) -> None:
     assert not reported & (set(always) | {"docs/keep-out.md", "scripts/research_reorg.py"})
 
 
+def test_recorded_hash_plan_is_never_rewritten(tmp_path: Path) -> None:
+    """The plan file restored to its recorded sha256 must stay byte-identical in every scope."""
+    root = _git_tree(tmp_path)
+    plan = "docs/superpowers/plans/2026-10-22-event-evidence-resolution.md"
+    _write(
+        root, plan, "see `docs/research/2026-01-01-a.md` and [a](../../research/2026-01-01-a.md)\n"
+    )
+    subprocess.run(["git", "add", plan], cwd=root, check=True)
+    before = (root / plan).read_bytes()
+    reports = [_run(root, scope, "--dry-run") for scope in ("fixed-markdown", "code")]
+    assert plan in reports[0]["excluded"]
+    for report in reports:
+        assert plan not in {c["file"] for c in report["changed"]}
+        assert plan not in {u["file"] for u in report["unresolved"]}
+    _run(root, "fixed-markdown")
+    assert (root / plan).read_bytes() == before
+
+
 def test_dry_run_writes_nothing(tmp_path: Path) -> None:
     root = _git_tree(tmp_path)
     before = _snapshot(root)

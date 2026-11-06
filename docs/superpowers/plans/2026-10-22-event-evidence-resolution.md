@@ -21,9 +21,9 @@ reviewed inputs afterwards. No new ingestion framework or return detector.
 **Tech stack:** Existing Python environment, SEC JSON/XML/HTML, existing audit
 metadata/export contracts and Markdown/JSON evidence artifacts.
 
-**Spec:** [Approved audit](../../../research/audits/event-timing/2026-10-21-event-timing-audit.md),
-[source manifest](../../../research/audits/event-timing/2026-10-21-event-timing-audit-sources.md),
-[approved filing-date amendment](../../../research/audits/event-timing/2026-10-22-event-timing-source-conflict-proposal.md).
+**Spec:** [Approved audit](../../research/briefs/2026-10-21-event-timing-audit.md),
+[source manifest](../../research/briefs/2026-10-21-event-timing-audit-sources.md),
+[approved filing-date amendment](../../research/briefs/2026-10-22-event-timing-source-conflict-proposal.md).
 This plan extends the earlier insider evidence plan; completed collection and
 collector reviews are not repeated.
 
@@ -66,16 +66,16 @@ collector reviews are not repeated.
 ## Files and ownership
 
 - Plan/controller: this file, `docs/next_steps.md` and the durable
-  `research/audits/event-timing/event-timing-audit-implementation.md` remain Codex-owned.
-- Flash creates only `research/audits/event-timing/2026-10-22-event-evidence-resolution-workbook.md`
-  and `research/audits/event-timing/_event_evidence_resolution_workbook.json` during the initial pass.
+  `docs/research/event-timing-audit-implementation.md` remain Codex-owned.
+- Flash creates only `docs/research/2026-10-22-event-evidence-resolution-workbook.md`
+  and `docs/research/_event_evidence_resolution_workbook.json` during the initial pass.
   Scratch analysis may live in `/tmp`; no operational-cache writes.
 - Read existing `event_timing_audit.py`, `event_timing_sources.py`,
   `event_timing_reconstruction.py` under `src/ggTrader/lab/`, the reviewed
   artifacts `_insider_identity_inventory_acquisition.json` and
   `_insider_identity_inventory_resolution_results.json`, and relevant raw caches.
-- Final controller deliverables remain `research/audits/event-timing/_event_timing_audit.json`
-  and `research/audits/event-timing/2026-10-21-event-timing-audit-report.md`, following the registered
+- Final controller deliverables remain `docs/research/_event_timing_audit.json`
+  and `docs/research/2026-10-21-event-timing-audit-report.md`, following the registered
   audit schema. Never overwrite them with a partial operational workbook.
 - Runtime code changes are conditional on a reproduced defect, not a prerequisite.
   Flash proposes them; Codex owns implementation, targeted tests and review.
