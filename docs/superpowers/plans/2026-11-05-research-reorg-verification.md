@@ -390,3 +390,74 @@ All run in the worktree after the records were written, with `PYTHONPATH=<worktr
 ### 10.6 Scripts tests after the final edit
 
 `scripts/run_tests.sh tests/scripts -q`: 299 passed in 9.2 s, run after the recipe corrections and this record were written.
+
+### 10.7 After merging into main
+
+Read this before merging `translate/intraday-stage0a` into `main`, and again after.
+
+**The gate for `main` changes.** Once the branch is merged, `main`'s own documented final gate (`main`'s manifest, ledger and rewrite manifest alone, with the seven `--require-new` paths) reports `FAIL stage=final 149 problems`. That is by design, not damage: it is the 74 intraday files, each reported twice (`unexpected file` and `unexpected tracked file under research/`), plus one count line (`248 files under research/ (excluding 11 allowed new) but 174 manifest rows`). It was run in this worktree and gave exactly that: 74 + 74 + 1 = 149. From then on the gate for `main` is the union gate: union manifest = `main`'s 174 rows plus the 74 branch rows, union ledger = both ledgers' `files` joined, union rewrite manifest = both `files` and both `hand_edited` joined. Expected line: `OK stage=final 248 manifest files, 81 listed edits, 259 tracked files under research/`, with the same seven `--require-new` paths.
+
+The branch manifest quotes its header fields and `main`'s does not, so join the CSVs by reading them as CSV, not by joining the text. This snippet (standard library only, run from the repository root, reads the six committed files from the working tree) writes the three union files into the directory you give it:
+
+```python
+"""Write the union manifest, ledger and rewrite manifest into the directory argv[1]."""
+import csv
+import json
+import sys
+from pathlib import Path
+
+P = Path("docs/superpowers/plans")
+out = Path(sys.argv[1])
+out.mkdir(parents=True, exist_ok=True)
+MAIN, BRANCH = "2026-11-05-research-reorg-", "2026-11-05-intraday-translation-"
+
+# Read the CSVs as CSV: the branch file quotes its header, main's does not.
+rows = []
+for prefix in (MAIN, BRANCH):
+    with open(P / (prefix + "manifest.csv"), newline="") as f:
+        header, *body = csv.reader(f)
+        rows += body
+with open(out / "union-manifest.csv", "w", newline="") as f:
+    writer = csv.writer(f, quoting=csv.QUOTE_ALL, lineterminator="\n")
+    writer.writerows([header, *rows])
+
+
+def join(name: str, keys: list[str]) -> dict:
+    """Return main's JSON file with the branch file's lists appended."""
+    main, branch = (json.loads((P / (p + name)).read_text()) for p in (MAIN, BRANCH))
+    for key in keys:
+        main[key] += branch[key]
+    return main
+
+
+ledger = join("ledger.json", ["files"])
+rewrite = join("rewrite-manifest.json", ["files", "hand_edited"])
+(out / "union-ledger.json").write_text(json.dumps(ledger, indent=2))
+(out / "union-rewrite.json").write_text(json.dumps(rewrite, indent=2))
+print("wrote", *sorted(p.name for p in out.iterdir()))
+```
+
+Run it, then verify (`PY` is the project Python; the output below was produced in this worktree on 2026-11-06):
+
+```
+$PY union.py /tmp/union
+$PY scripts/research_reorg.py verify --stage final \
+  --manifest /tmp/union/union-manifest.csv --ledger /tmp/union/union-ledger.json \
+  --rewrite-manifest /tmp/union/union-rewrite.json \
+  --require-new README.md --require-new MOVED.csv \
+  --require-new audits/root-cause-2026-11-04/README.md \
+  --require-new audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md \
+  --require-new audits/root-cause-2026-11-04/reference-sheet.md \
+  --require-new audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md \
+  --require-new audits/root-cause-2026-11-04/2026-11-05-executive-summary.md
+wrote union-ledger.json union-manifest.csv union-rewrite.json
+OK stage=final 248 manifest files, 81 listed edits, 259 tracked files under research/
+```
+
+Other facts for the merge, found by the reviewers:
+
+- **(a) Production Docker image.** The branch adds `statsmodels` (unpinned) to `pyproject.toml`. `.dockerignore` excludes `research/`, `docs/` and `*.md` but not `deploy/`, `scripts/`, `src/` or `tests/`, so the next image build installs `statsmodels` and carries the intraday code as unused files. The paper trader's imports do not touch them. Use the normal deploy steps (the `ggtrader-deploy` skill) before pulling a new image into the live container.
+- **(b) Merge with `git merge --no-ff`.** The merge commit `fc93fa0c` has the original branch tip (`58919c09`) as its first parent. `--no-ff` keeps the translation visible as one merge commit even if `main` has not moved and a fast-forward would be possible.
+- **(c) Remove the untracked old plan copy first.** The main checkout holds an untracked copy of `docs/superpowers/plans/2026-11-05-intraday-branch-translation.md`; the branch tracks the same path, so the merge would stop with "untracked working tree file would be overwritten".
+- **(d) Later commits on the original branch.** Any commit added to `research/intraday-stage0a` after `58919c09` must be merged into the translate branch with `git -c merge.directoryRenames=false merge research/intraday-stage0a` and translated the same way (new files into `research/intraday/`, references rewritten, ledger and records extended). Do not merge it straight into `main`: its files would land under the old research folder.
+- **(e) Folder size (optional).** `research/intraday/spy-momentum-feasibility` now holds 39 files, above the README's "about 30" threshold for grouping files into sub-folders. Left as it is; grouping them is optional and would need a new manifest round.
