@@ -1,6 +1,6 @@
 # Two frontier-model reviews of the root-cause investigation: both say the built design cannot reach 2x
 
-**Date:** 2026-11-05. **Type:** editorial comparison of two direction reviews. It adds no computation and no new evidence. **Status:** reading edition. The originals stay as written and are the sources of record.
+**Date:** 2026-11-05. **Type:** editorial comparison of two direction reviews. It adds no computation and no new evidence. **Status:** reading edition. The originals stay as written and are the sources of record. The synthesis was accepted by the owner on 2026-11-05, and the originals keep the earlier status.
 
 This page reports what Claude Opus and a Gemini model (Argon) recommend after reading the investigation, and which parts of the weaker review survived checking. It makes no recommendation of its own. Where this page derived something itself, the text says "derived".
 
@@ -16,7 +16,7 @@ In this page 2x means twice SPY's total return over the same period, SPY is the 
 > - Verification: 43 of 105 citations broken or unsupported. Numbers tracing to a check report hold. Its dates, item numbers, hashes and payoff odds do not.
 > - They agree the built design cannot reach 2x and no-database re-runs come first. Both read one synthesis, so agreement is not independent evidence.
 > - They differ on stock picking (Argon's +1.5 to +4.0 pp/yr and its odds, both dropped by the verification) and on patching versus measuring the trader.
-> - This page recommends nothing. The owner holds 13 decisions, each with a default that stays in force until answered.
+> - This page recommends nothing. The owner accepted the synthesis (decision 1) and decision 2 is done. Decisions 3 to 13 keep their defaults until answered.
 
 ## 1. What each reviewer recommends (Opus: one careful unverified review. Argon: checked, much of it wrong)
 
@@ -276,12 +276,12 @@ Opus's schedule for the three options (`senior-quant-direction-review.md:185-209
 
 ## 5. Owner decisions: 13 items, one list, each with a default
 
-> **Takeaway:** All 13 decisions carry a default that holds until the owner answers, and under those defaults no re-run item runs.
+> **Takeaway:** Decision 1 is accepted and decision 2 is done. Decisions 3 to 13 carry a default that holds until the owner answers, and under those defaults no re-run item runs.
 
 | # | Decision | Default | What it unlocks |
 |---|---|---|---|
-| 1 | Accept the synthesis (`senior-quant-direction-review.md:219`, `root-cause-investigation.md:736`) | Open, nothing changes | Decision 2 |
-| 2 | Changelog entry and research-snapshot update (`root-cause-investigation.md:733`, `root-cause-investigation.md:739-740`) | Wait for decision 1 | Updated roster |
+| 1 | Accept the synthesis (`senior-quant-direction-review.md:219`, `root-cause-investigation.md:736`). **Status: Accepted 2026-11-05** | Open, nothing changes | Decision 2 |
+| 2 | Changelog entry and research-snapshot update (`root-cause-investigation.md:733`, `root-cause-investigation.md:739-740`). **Status: Done 2026-11-05** | Wait for decision 1 | Updated roster |
 | 3 | Any Optional Re-run List item, including the seven that need no database (`senior-quant-direction-review.md:220`, `root-cause-investigation.md:743`) | None run (`root-cause-investigation.md:729`) | Options 1 to 3 beyond paperwork |
 | 4 | A separate research copy of the price table, instead of the no-writes rule (`senior-quant-direction-review.md:221`) | The no-writes rule stays (`root-cause-investigation.md:730`) | The deferred price-table writers (`senior-quant-direction-review.md:120-122`) |
 | 5 | Input-archive proposal for the frozen trader (`senior-quant-direction-review.md:222`) | No live change | A per-run input archive (`senior-quant-direction-review.md:101`) |
@@ -312,10 +312,10 @@ From the verification, about Argon:
 
 From the synthesis, about Opus:
 
-- Opus's decision "accept and merge the synthesis" (`senior-quant-direction-review.md:219`) is partly overtaken.
+- Opus's decision "accept and merge the synthesis" (`senior-quant-direction-review.md:219`) is overtaken.
   - The synthesis records a note "added 2026-11-05 after the merge" (`root-cause-investigation.md:725-726`), although its open list still says not merged (`root-cause-investigation.md:737`).
   - The first version of the synthesis is on main as `e4362512` (`root-cause-investigation.md:808`).
-  - Acceptance is still open (`root-cause-investigation.md:736`).
+  - Acceptance was open when the synthesis was written (`root-cause-investigation.md:736`). It was accepted by the owner on 2026-11-05, and the synthesis keeps the earlier status.
 - Opus's lists of items to run (`senior-quant-direction-review.md:190`) sit against the recorded decisions: no Optional Re-run List item is run and the no-writes rule is in force (`root-cause-investigation.md:729-730`). They are options for the owner, not approved work.
 - Opus's "near-zero funding costs" (`senior-quant-direction-review.md:82-83`) has the same flaw. Its own bottom line gives 1.64% (`senior-quant-direction-review.md:26`).
 

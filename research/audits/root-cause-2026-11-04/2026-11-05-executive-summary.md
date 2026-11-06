@@ -1,6 +1,6 @@
 # Executive summary: why the research has not doubled SPY
 
-**Date:** 2026-11-05. **One-page summary of the [plain-English findings](findings/2026-11-05-findings-plain-english.md) and the [direction review](reviews/2026-11-05-direction-reviews-consolidated.md). The originals stay as the record.** Terms: [reference sheet](reference-sheet.md).
+**Date:** 2026-11-05. **One-page summary of the [plain-English findings](findings/2026-11-05-findings-plain-english.md) and the [direction review](reviews/2026-11-05-direction-reviews-consolidated.md). The originals stay as the record.** The synthesis was accepted by the owner on 2026-11-05, and the originals keep the earlier status. Terms: [reference sheet](reference-sheet.md).
 
 SPY is the fund that tracks the S&P 500. 2x means twice SPY's total return (price change plus reinvested dividends). pp/yr means percentage points a year.
 
@@ -12,7 +12,7 @@ SPY is the fund that tracks the S&P 500. 2x means twice SPY's total return (pric
 > - After tax: a book that sells within a year needs about +2.42 pp/yr before tax (24%/15% brackets) just to tie SPY over 2021-2026.
 > - Opus (unverified): measure the paper trader first, then no-write re-runs, then a small long-history screen budget with pre-set pass bars, best case about +1 pp/yr.
 > - Argon is unverified as written: of its specifics, only numbers that trace to a check hold. Both call leverage your risk decision.
-> - You hold 13 decisions, starting with whether to accept the synthesis. Defaults until you answer: no re-runs, no live-trader change, the 2027-09-30 leverage review on existing figures.
+> - You accepted the synthesis on 2026-11-05 and decision 2 is done. Decisions 3 to 13 remain. Defaults until you answer: no re-runs, no live-trader change, the 2027-09-30 leverage review on existing figures.
 
 ## The five-minute version
 
@@ -76,7 +76,7 @@ Seven of the 13. Each default holds until you answer.
 
 | # | Decision | Default |
 |---|---|---|
-| 1 | Accept the synthesis | Open, nothing changes |
+| 1 | Accept the synthesis. **Accepted 2026-11-05** | Open, nothing changes |
 | 3 | Any Optional Re-run List item, including the seven that need no database | None run |
 | 4 | A separate research copy of the price table, instead of the no-writes rule | The no-writes rule stays |
 | 5 | Input-archive proposal for the frozen trader | No live change |

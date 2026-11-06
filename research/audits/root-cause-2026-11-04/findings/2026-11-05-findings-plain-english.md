@@ -260,7 +260,7 @@ Source: synthesis sections 2, 6, 7 and 9 (`research/audits/root-cause-2026-11-04
 
 ## 6. Owner decisions
 
-> **Takeaway:** Six decisions are recorded, including no re-runs and no restore of the 19 symbols. Five are open, starting with whether to accept the synthesis.
+> **Takeaway:** Eight decisions are recorded, including the owner's acceptance of the synthesis, no re-runs and no restore of the 19 symbols. Three are open.
 
 | Status | Decision |
 |---|---|
@@ -270,8 +270,8 @@ Source: synthesis sections 2, 6, 7 and 9 (`research/audits/root-cause-2026-11-04
 | ✅ Recorded 2026-11-05 | The investigation branch has been merged. A later note in the synthesis records it, superseding the "not merged" line. |
 | ✅ Recorded 2026-11-05 | The changelog entry and the research-snapshot update wait until the owner accepts the synthesis. |
 | ✅ Recorded 2026-11-05 | A new rule: no agent runs a script it has not read, and no script is run to see its help. |
-| ⚠️ Open | Whether to accept the synthesis, now that the challenge objections are resolved. |
-| ⚠️ Open | The changelog and snapshot updates after acceptance. `docs/next_steps.md` is not changed without the owner. |
+| ✅ Recorded 2026-11-05 | The synthesis was accepted by the owner on 2026-11-05. The originals keep the earlier status: the synthesis still lists acceptance as open, which was true when it was written. |
+| ✅ Recorded 2026-11-05 | The changelog entry and the research-snapshot update are done. `docs/next_steps.md` is not changed without the owner. |
 | ⚠️ Open | Funding and tax-character records for A23 (the owner-adopted 70% SPY / 30% SSO allocation) sit outside this investigation's scope. It has a scheduled review on 2027-09-30. |
 | ⚠️ Open | Whether any Optional Re-run List item is wanted later. |
 | ⚠️ Open | Deferred minor review notes in the ledger (wording and labelling items, none changing a class). |
