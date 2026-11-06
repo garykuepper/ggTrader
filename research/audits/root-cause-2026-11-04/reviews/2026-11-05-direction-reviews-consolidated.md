@@ -10,11 +10,12 @@ In this page 2x means twice SPY's total return over the same period, SPY is the 
 
 > **The short version**
 >
-> - Opus (one review, unverified): the built design cannot reach 2x. Fix paper-trader trust first, run cheap no-write re-runs, then one small stock screen.
-> - Opus on stocks and leverage: a long-history screen has a best case of about +1 pp/yr (its unverified judgement). Leverage is the owner's risk decision.
-> - Argon, unverified as written: 43 of 105 citations broken or unsupported. Direction survived on machinery, tax holding periods, leverage, crypto. Most specifics did not.
+> - Opus (one review, unverified): the built design cannot reach 2x. Fix paper-trader trust first, run cheap no-write re-runs, then a small pre-registered long-history screen budget.
+> - Opus also: that budget's best case is about +1 pp/yr (unverified judgement). Leverage is the owner's risk decision, with dollar drawdown tolerance first.
+> - Argon (unverified as written): fix the test machinery and run safe re-runs, then trader parity, then a concentrated long-hold stock sleeve. Leverage is the owner's.
+> - Verification: 43 of 105 citations broken or unsupported. Numbers tracing to a check report hold. Its dates, item numbers, hashes and payoff odds do not.
 > - They agree the built design cannot reach 2x and no-database re-runs come first. Both read one synthesis, so agreement is not independent evidence.
-> - They differ on stock picking (Argon expects +1.5 to +4.0 pp/yr, odds dropped by the verification) and on patching the trader versus measuring first.
+> - They differ on stock picking (Argon's +1.5 to +4.0 pp/yr and its odds, both dropped by the verification) and on patching versus measuring the trader.
 > - This page recommends nothing. The owner holds 13 decisions, each with a default that stays in force until answered.
 
 ## 1. What each reviewer recommends (Opus: one careful unverified review. Argon: checked, much of it wrong)
@@ -53,7 +54,7 @@ Both reviews assess the synthesis (`research/audits/root-cause-2026-11-04/findin
 
 - Leverage is a risk decision for the owner, not a strategy. It makes no allocation recommendation (`senior-quant-direction-review.md:148-162`).
 - The owner's drawdown tolerance in dollars comes first.
-- It asks for the 2.0x funding re-run (`P2-04`) and the funding and tax records item (`P2-18`) before the scheduled 2027-09-30 review of A23 (the owner-adopted 70% SPY / 30% SSO allocation), so that review sees funding-honest figures (`senior-quant-direction-review.md:160-161`).
+- It asks for the 2.0x funding re-run (`P2-04`) and the funding and tax records item (`P2-18`) before the scheduled 2027-09-30 review of A23 (the owner-adopted 70% SPY / 30% SSO allocation, where SSO is a fund that targets twice SPY's daily move), so that review sees funding-honest figures (`senior-quant-direction-review.md:160-161`).
 
 **It names the synthesis's most likely error:**
 
@@ -91,12 +92,12 @@ Three of the four return as owner decisions in section 5 (decisions 4, 8 and 10)
 2. Paper-trader reliability, with a staged parity proposal (parity: live matches the test). **Corrected.**
    - The divergences are real.
    - The payoff figure is wrong, and the freeze and clock-reset dates are invented.
-3. Re-power stock picking on free data with a concentrated, low-turnover, long-hold sleeve. **Corrected**, with its odds **Dropped**.
+3. Re-power stock picking on free data with a concentrated, low-turnover, long-hold sleeve. **Corrected**, with its payoff and odds **Dropped**.
    - The free-data plan fails.
    - Only the long-hold tax direction survives.
 4. Leverage framed strictly as the owner's risk decision. **Survives.**
 5. Park small caps, long-short, crypto and options. Leave the intraday observer running. **Survives** as judgement.
-   - Its observer facts are **Dropped**.
+   - Its observer facts are shown wrong (section 8).
 
 ### The verification
 
@@ -104,8 +105,7 @@ The verification (`research/audits/root-cause-2026-11-04/reviews/2026-11-05-argo
 
 - **Survives:**
   - The weak spot in the gated walk-forward machinery (walk-forward optimization, WFO: pick settings on a past window, test on the next unseen one, repeat), though the synthesis already holds that position.
-  - The finding that +4.37 pp/yr is the plain 12-1 momentum anchor (12-1 momentum: buy the stocks that rose most over the past year, skipping the latest month).
-  - The anchor is the fixed fallback setting a fold runs when its gates reject the tuned one.
+  - The finding that +4.37 pp/yr is the plain 12-1 momentum anchor (12-1 momentum: buy the stocks that rose most over the past year, skipping the latest month). The anchor is the fixed fallback setting a fold runs when its gates reject the tuned one.
   - The long-hold tax direction.
   - The leverage framing.
   - "Park" for crypto, small caps, long-short and options, as Argon's judgement.
@@ -126,7 +126,7 @@ The verification's rule: trust Argon's numbers that trace to a check report, and
 
 ## 2. Where they agree: five points, none of them new
 
-> **Takeaway:** Opus and Argon agree on five points: the built design cannot reach 2x, more exposure is the only measured route to a much larger raw return, and parity and no-database re-runs come first.
+> **Takeaway:** Opus and Argon agree on five points: the built design cannot reach 2x, more exposure (a risk decision for the owner) is the only measured route to a much larger raw return, parity and no-database re-runs come first, and crypto spot is not worth time.
 
 - The built design cannot reach 2x, and no post-1994 stock-picking result comes close (`senior-quant-direction-review.md:22-24`).
   - Argon's matching claim, that the production replica (the live rules re-run on history) was powered against 2x, is verified (`argon-review-verification.md:64`).
@@ -141,11 +141,11 @@ The verification's rule: trust Argon's numbers that trace to a check report, and
 
 Agreement between two readers of one document is a lower bar than it sounds. See Limits.
 
-## 3. Where they differ and what settles it
+## 3. Where they differ: the checked evidence sits closer to Opus
 
 > **Takeaway:** The checked evidence sits closer to Opus on stock-picking prospects and on the trader, and the gated walk-forward machinery is a real limit but not a demonstrated cause.
 
-**Stock-picking prospects.** Argon expects +1.5 to +4.0 pp/yr from a concentrated, low-turnover sleeve. The verification drops the odds.
+**Stock-picking prospects.** Argon expects +1.5 to +4.0 pp/yr from a concentrated, low-turnover sleeve. The verification drops both the payoff and its odds.
 
 - With Argon's own MDE (minimum detectable effect: the smallest true effect a test finds 80% of the time at its pass bar) of 9.1 pp/yr, the chance of a t of at least 3 is about 1% at +1.5 and 9% at +4.0 (`argon-review-verification.md:101`).
   - A t-statistic is an effect divided by its standard error, and 3 is the usual bar for "probably not luck".
@@ -321,7 +321,7 @@ From the synthesis, about Opus:
 
 ## 7. Side by side: what each says, and what the verification did to Argon
 
-> **Takeaway:** The reviewers agree on the 2x verdict, leverage and crypto, differ on the trader, stock-picking power, the gated machinery's weight and partial-bar volume, and only Argon raises the momentum replay and sweep tax churn.
+> **Takeaway:** The reviewers agree on the 2x verdict, re-run order, leverage, crypto and leaving the intraday observer running. They differ on the trader, stock-picking power, the gated machinery's weight and partial-bar volume. Only Argon raises the momentum replay and sweep tax churn.
 
 Each row gives Opus's position, Argon's position (unverified), the verification's disposition of Argon's position and whether the reviewers agree. Dispositions are **Survives**, **Corrected**, **Dropped** or **Not verified**.
 
@@ -330,7 +330,7 @@ Each row gives Opus's position, Argon's position (unverified), the verification'
 | Topic | Opus | Argon (unverified) | Verification | Status |
 |---|---|---|---|---|
 | 2x with the built design (about 85% SPY) | Negative, high confidence. The replica could detect 4.24 pp/yr against gaps of 9.57 and 6.14 (`senior-quant-direction-review.md:37-45`) | Same: the replica was well powered against 2x (`argon-synthesis-review.md:32`) | **Survives.** True, but already in the Test Power check and the synthesis (`argon-review-verification.md:64`) | ✅ Agree |
-| Paper-trader reliability | First priority: measure the partial bar, propose an input archive and a broker-based halt base, document MNST and AVB as broker artifacts, leave the cap, sizing and parameters alone (`senior-quant-direction-review.md:93-111`) | A parity and tax-hygiene patch, a dated freeze and a clock reset (`argon-synthesis-review.md:76-86`) | **Corrected.** Divergences are real. "Recovers 0.85-1.00 pp/yr" is wrong. Freeze and reset dates **Dropped** as invented (`argon-review-verification.md:99`, `argon-review-verification.md:54`) | ⚠️ Differ: patch versus measure first |
+| Paper-trader reliability | First priority: measure the partial bar, propose an input archive and a broker-based halt base, document MNST and AVB as broker artifacts, leave the cap, sizing and parameters alone (`senior-quant-direction-review.md:93-111`) | A parity and tax-hygiene patch, a dated freeze and a clock reset (`argon-synthesis-review.md:76-86`) | **Corrected.** Divergences are real. "Recovers 0.85-1.00 pp/yr" is wrong. Freeze and reset dates invented (`argon-review-verification.md:99`, `argon-review-verification.md:54`) | ⚠️ Differ: patch versus measure first |
 | The 29 unrun re-run items | No-database items first, defer price-table writers (`senior-quant-direction-review.md:113-123`) | Same intent, but wrong item numbers and a non-existent `write_db` guard (`argon-synthesis-review.md:67-68`) | **Corrected.** Intent matches the no-writes rule. Ids mislabelled. No guard exists (`argon-review-verification.md:97`, `argon-review-verification.md:74-84`) | ✅ Agree on intent. Argon ids dropped |
 | Stock-picking power | "Undecided" at 1 to 4 pp/yr, not at 2x. Detecting +1.0 pp/yr at TE 6.5% needs about 620 years (Opus estimate, not verified) (`senior-quant-direction-review.md:54-59`, `senior-quant-direction-review.md:126-136`) | Re-power with a 1994-2026 concentrated sleeve. +1.5 to +4.0 pp/yr, 15-25% chance of t at least 3 (`argon-synthesis-review.md:88-99`) | Square-root-of-time arithmetic **Survives**. Payoff odds **Dropped** (about 1% to 9%). The data plan is **Corrected**, and it fails (`argon-review-verification.md:57`, `argon-review-verification.md:100-101`) | ⚠️ Differ |
 | Momentum replay (+4.37 pp/yr) | Not addressed | Gates rejected 17 of 17 folds, so +4.37 pp/yr is the plain 12-1 momentum anchor (`argon-synthesis-review.md:51`) | **Survives.** The cited commit hashes are wrong (`argon-review-verification.md:49`, `argon-review-verification.md:93`) | Argon only |
@@ -349,9 +349,9 @@ Each row gives Opus's position, Argon's position (unverified), the verification'
 | Tax | After-tax as the primary metric for short-holding designs (`senior-quant-direction-review.md:178-179`). Annual rebalancing realizes fewer short-term gains (inference, `senior-quant-direction-review.md:140-143`) | 52 SPY sweep trades churn a taxable account. Holds over 366 days cut the hurdle (`argon-synthesis-review.md:48`, `argon-synthesis-review.md:92`) | Sweep churn **Corrected**: trade count verified, wash-sale harm unestablished, "1-2 pp/yr" unsourced. Holding-period direction **Survives**, saving about 1.9 to 4.3 pp/yr (`argon-review-verification.md:50`, `argon-review-verification.md:102`, `argon-review-verification.md:123`) | Argon only for the sweep. Agree in kind on holding period |
 | Partial-bar volume | Measure it (`P2-14`) (`senior-quant-direction-review.md:99-100`) | Partial volume suppresses entries of vbb. Proposes a code change (`argon-synthesis-review.md:56`, `argon-synthesis-review.md:80`) | **Corrected.** Direction plausible, 24-28% of volume missing in two samples, effect unmeasured (`argon-review-verification.md:62`) | ⚠️ Differ. Argon's direction plausible, unmeasured |
 | Crypto | Did not beat BTC (bitcoin) over three years (`senior-quant-direction-review.md:78-79`). Spot strategies "not worth time" (`senior-quant-direction-review.md:214-215`). Beyond spot and options, low (`senior-quant-direction-review.md:171-173`) | Park active crypto (`argon-synthesis-review.md:116`) | **Survives** as judgement. Figures verified (`argon-review-verification.md:60`) | ✅ Agree |
-| Intraday | Let the observer finish, do not read early. Its rule holds SPY about 30 minutes a day, so even a positive result is small in raw-return terms (`senior-quant-direction-review.md:164-167`) | Leave it running. Dates, timer and trade count stated (`argon-synthesis-review.md:114`) | Action **Survives**. Facts **Dropped**: the window is 2026-10-30 to 2027-11-03, there are four timers, and "0 completed trades" is unsourced (`argon-review-verification.md:61`) | ✅ Agree on action |
+| Intraday | Let the observer finish, do not read early. Its rule holds SPY about 30 minutes a day, so even a positive result is small in raw-return terms (`senior-quant-direction-review.md:164-167`) | Leave it running. Dates, timer and trade count stated (`argon-synthesis-review.md:114`) | Action **Survives**. Facts shown wrong: the window is 2026-10-30 to 2027-11-03, there are four timers, and "0 completed trades" is unsourced (`argon-review-verification.md:61`) | ✅ Agree on action |
 
-- **Leverage:** with funding 2.5 points higher, the 1.3x arm's margin is +0.52 pp/yr before tax against SPY's true total return. On the A23 study's own basis it is +0.81 before tax and +0.80 after tax at the 24%/15% brackets (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md:247`, `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md:290`).
+- **Leverage (the verified 1.3x figures):** with funding 2.5 points higher, the 1.3x arm's margin is +0.52 pp/yr before tax against SPY's true total return. On the A23 study's own basis it is +0.81 before tax and +0.80 after tax at the 24%/15% brackets (`research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md:247`, `research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md:290`).
 - **Tax:** a wash sale is a loss disallowed because the same fund was rebought within 30 days.
 - **Partial-bar volume:** vbb is the volume-confirmed Bollinger voter, one of five in the live ensemble.
 
@@ -372,9 +372,7 @@ A separate bill-ETF or drift-band sweep is an untested option for the unfrozen s
 
 ## 8. What to ignore in the Argon review
 
-> **Takeaway:** Eleven Argon items are dropped or shown wrong by the verification, including its re-run item numbers, its invented dates and its payoff odds.
-
-Eleven items, each dropped or shown wrong by the verification (`argon-review-verification.md:117`):
+> **Takeaway:** Eleven Argon items are dropped or shown wrong by the verification, including its re-run item numbers, its invented dates and its payoff odds (`argon-review-verification.md:117`).
 
 - Its re-run item numbers and "skip the remaining 17 items" (`argon-review-verification.md:74-82`).
 - The `write_db=False` guard, `fetch_tiingo_ohlcv`, `refresh_universe_history` and the 166,431-row incident (`argon-review-verification.md:53`, `argon-review-verification.md:63`).
