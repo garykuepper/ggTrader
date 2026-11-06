@@ -98,6 +98,15 @@ The nine checks, one report each, except the Verdict Trust check, which has a me
 | [`_synthesis_inventory_map.json`](records/_synthesis_inventory_map.json) | Map from the synthesis tables to inventory rows. |
 | [`_investigation_guard_baseline_2026-11-04.txt`](records/_investigation_guard_baseline_2026-11-04.txt) | A snapshot of the intraday-observer test copy, its timers, the live container and the main checkout, taken before the work started to show the live system was not touched. |
 
+### `figures/`
+
+| File | What it is |
+|---|---|
+| [`gap-vs-measured.png`](figures/gap-vs-measured.png) | Chart: the gap 2x needs in four windows beside the best measured result. |
+| [`verdict-trust.png`](figures/verdict-trust.png) | Chart: the 72 measured tests by trust class. |
+| [`paper-shortfall.png`](figures/paper-shortfall.png) | Chart: the paper shortfall against SPY and its two stated parts. |
+| [`options-at-a-glance.png`](figures/options-at-a-glance.png) | Chart: each option's question, cheapest step and stop gate. Built by `scripts/root_cause_figures.py`. |
+
 ## Reading the raw files
 
 The JSON and text files are historical evidence. Treat them as read-only. To reproduce the Verdict Trust check's classifications, run `scripts/lens2_build.py --out-json <a scratch path>` and compare the result with `lenses/_lens2_sensitivity.json`. The other checks' scripts were not kept in the repository, and the synthesis (section 7) says what a fresh reader can and cannot reproduce.
