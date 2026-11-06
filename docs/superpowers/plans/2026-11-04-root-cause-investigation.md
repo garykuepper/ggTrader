@@ -244,7 +244,7 @@ Required headings in every lens report (exact text, level 2): `## Falsifiers`, `
 ### Task 13: Phase 2 re-runs (only for items the owner approves)
 
 **Files:**
-- Create: `docs/research/2026-11-04-phase2-rerun-<slug>.md` and `docs/research/_phase2_<slug>_results.json` per approved item.
+- Create: `research/audits/root-cause-2026-11-04/2026-11-04-phase2-rerun-<slug>.md` and `research/audits/root-cause-2026-11-04/_phase2_<slug>_results.json` per approved item.
 
 **Interfaces:**
 - Consumes: `scripts/run_capped.sh`; existing drivers in `scripts/*_wfo.py` and the factor/momentum screen scripts; pinned windows from the original runs.

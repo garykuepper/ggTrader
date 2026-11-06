@@ -497,8 +497,8 @@ git commit -m "feat(lab): tax-aware momentum replay (rules B/T) and taxed buy-an
 **Files:**
 - Create: `scripts/momentum_retest_phase2.py`
 - Test: `tests/scripts/test_momentum_retest_phase2.py`
-- Output: `docs/research/_momentum_phase2_results.json` and `docs/research/_momentum_phase2_curves.csv`.
-- Create: `docs/research/<YYYY-MM-DD>-momentum-phase2[-nogo].md`
+- Output: `research/stock-signals/momentum/_momentum_phase2_results.json` and `research/stock-signals/momentum/_momentum_phase2_curves.csv`.
+- Create: `research/stock-signals/momentum/<YYYY-MM-DD>-momentum-phase2[-nogo].md`
 - Modify: `research/RESEARCH_SNAPSHOT.md`, `docs/next_steps.md` and `docs/changelog.md`.
 
 **Interfaces:**
@@ -542,7 +542,7 @@ git commit -m "feat(lab): tax-aware momentum replay (rules B/T) and taxed buy-an
 - [ ] **Step 7: Commit.**
 
 ```bash
-git add scripts/momentum_retest_phase2.py tests/scripts/test_momentum_retest_phase2.py docs/research/_momentum_phase2_results.json docs/research/_momentum_phase2_curves.csv docs/research/*momentum-phase2*.md research/RESEARCH_SNAPSHOT.md docs/next_steps.md docs/changelog.md
+git add scripts/momentum_retest_phase2.py tests/scripts/test_momentum_retest_phase2.py research/stock-signals/momentum/_momentum_phase2_results.json research/stock-signals/momentum/_momentum_phase2_curves.csv research/stock-signals/momentum/*momentum-phase2*.md research/RESEARCH_SNAPSHOT.md docs/next_steps.md docs/changelog.md
 git commit -m "research(momentum): Phase 2 after-tax replay vs SPY/MTUM"
 ```
 
