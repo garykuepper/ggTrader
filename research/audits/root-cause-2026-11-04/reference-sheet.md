@@ -98,7 +98,7 @@ Rows are alphabetical within each group. DSR builds on the Sharpe ratio, which i
 |---|---|---|---|
 | agy | The Antigravity agent harness: a program that runs automated agents. | It ran the Argon review. | `consol:32` |
 | Alpaca activity codes | About 25 activity codes of Alpaca, the paper account's broker: `DIV` and variants for dividends, `SPLIT`, `MA`, `REORG`, `REO`, `NC`, `SPIN`, `INT`, `CSD`, `CSW`, `JNLC`, `JNLS`, `FEE`, `REG`, `TAF`, `CAT`. | A search of the dividend, split, merger, interest and journal codes since 2024-06-01 returned only the $100,000 funding journal. The broker never credited a dividend. | `parity:21-26`, `parity:291-296` |
-| Argon | The Gemini 4 Argon model, run through agy. | It wrote one of the two frontier-model reviews. The review carries an UNVERIFIED banner. | `verify:3` |
+| Argon | The Gemini 4 Argon model, run through agy. | It wrote one of the two frontier-model reviews. The review carries a banner marking it as unverified model output. | `verify:3` |
 | EQR | Equity Residential's stock ticker (public fact, not named in the reports). AvalonBay (AVB) merged into it, so the AVB holding cannot be traded. | AVB's stored prices have copied EQR's since 2026-07-20. The held position was $746, 0.7% of the account. | `parity:330`, `clean:47` |
 | French portfolio names | Labels for stock portfolios sorted by a trait: profitability `HiOP`, cheapness `HiBM`, low investment `LoINV`, prior return `HiPRIOR`, share issuance `HiNI` and `NegNI` (net buybacks), size `BIG` and `SMALL`. | Used in the factor, momentum and net issuance screens. `BIG` `NegNI` returned t 0.26. | `coverage:305`, `ceiling:242`, `synth:534` |
 | MNST, AVB | Stock ticker symbols for Monster Beverage and AvalonBay. | The broker never applied MNST's 2-for-1 split (-0.85 pp of the paper shortfall). AVB's price series has been EQR's since 2026-07-20. | `consol:33`, `parity:45-46`, `clean:47` |
@@ -232,7 +232,7 @@ The reading reports use the names in the second column. The original files use t
 |---|---|---|---|
 | `30-day`, `90-day`, `180-day gate` | Argon's day checkpoints | Argon's own checkpoints, unrelated to the four Opus checkpoints above. | `argon:128-140` |
 | `A1-A5`, `B1-B6`, `C1-C7` | ranked root-cause items | A: method and process errors in the research. B: implementation and live-parity errors. C: the evidence is negative or the target is structurally hard. | `synth:278`, `synth:349`, `synth:420` |
-| `A1-A27`, `B1-B15` | research-backlog idea ids | Idea ids in the web-research backlog: A1 to A27 and B1 to B15. A10 is the month-end Treasury sleeve, A12 a month-end SPY-to-IEF tilt, A14 a turn-of-month rotation. A23 and A24 are the leverage studies. | `backlog:586`, `backlog:1041`, `backlog:3038`, `backlog:1605`, `backlog:1665`, `backlog:1731`, `backlog:2567`, `backlog:2628` |
+| `A1-A27`, `B1-B15` | research-backlog idea ids | Idea ids in the web-research backlog: `A1` to `A27` and `B1` to `B15`. A10 is the month-end Treasury sleeve, A12 a month-end SPY-to-IEF tilt, A14 a turn-of-month rotation. A23 and A24 are the leverage studies. | `backlog:586`, `backlog:1041`, `backlog:3038`, `backlog:1605`, `backlog:1665`, `backlog:1731`, `backlog:2567`, `backlog:2628` |
 | `C`, `C*`, `W`, `NC` | challenge result codes | Confirmed, confirmed with caveat, wrong, not checked. | `challenge:63-64` |
 | `claim N` | a claim in the Argon verification | Row N of the claim check table. | `verify:43-47` |
 | `Decisions 1-12` | the owner decision list | One list in the consolidated review: accept the synthesis, changelog entry, any re-run item, research copy of the price table, input archive, daily-loss halt base, storage for downloads, yearly research budget, leverage figures, one benchmark, sweep tax churn, reopening closed NO-GOs. | `consol:217-232` |
@@ -253,7 +253,7 @@ The reading reports use the names in the second column. The original files use t
 
 | Label | First meaning | Second meaning |
 |---|---|---|
-| `B1` | Root-cause item: live does not run the configuration any backtest measured | The forward shadow test, and backlog idea B1 (a stablecoin stress signal) |
+| `B1` | Root-cause item: live does not run the configuration any backtest measured | The forward shadow test, and backlog idea `B1` (a stablecoin stress signal) |
 | `A1`, `A2` | Root-cause items, and idea ids in the research backlog | The two halves of a long-history test: A1 significance, A2 size since 1994 |
 | `H1-H4` | Hypotheses from the Early Trust Audit | Hypotheses in the factor screen |
 | `F1` | A falsifier in one check | A different falsifier in each other check |
