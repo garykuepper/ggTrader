@@ -186,7 +186,7 @@ live change; see "What you must produce".
 `argparse`, a `main()`, and JSON checkpointing per window/arm. Raw results
 go to `research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json`. Run tests through
 `scripts/run_tests.sh`, and write the report to
-`docs/research/<date>-cross-asset-sleeve[-nogo].md` per the template.
+`research/<category>/<study>/<YYYY-MM-DD>-cross-asset-sleeve[-nogo].md` per the template.
 
 ---
 
@@ -392,7 +392,7 @@ Full roster with citations: `research/RESEARCH_SNAPSHOT.md` §2.
 
 ## What you must produce
 
-A dated research report at `docs/research/<date>-<slug>.md`, following
+A dated research report at `research/<category>/<study>/<YYYY-MM-DD>-<slug>.md`, following
 `research/TEMPLATE-research-report.md`'s structure — GO or NO-GO either
 way, honest OOS numbers, every quantitative claim measured-or-labeled
 unvalidated. **Do not modify live trading code, config, or deployed

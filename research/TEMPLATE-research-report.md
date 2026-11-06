@@ -13,7 +13,7 @@ TEMPLATE NOTES (delete before publishing):
 - Verify data/infra assertions against the actual DB/repo before stating them.
 - Each §3 direction must be executable under the CURRENT operational constraints
   (account size, available data). Non-executable ideas are parked in §6, not ranked.
-- Save published reports as docs/research/<YYYY-MM-DD>-<slug>.md
+- Save published reports as research/<category>/<study>/<YYYY-MM-DD>-<slug>.md
 -->
 
 ## 1. Executive Summary & Core Engine Audit

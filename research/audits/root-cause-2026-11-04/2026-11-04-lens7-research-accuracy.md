@@ -22,7 +22,7 @@ each verdict reached under a pass bar set before the result was known.
 | Are the headline numbers true? | Yes for every headline that has a raw file. I recomputed five of them from raw data with my own code (production replica, its holdout, momentum, factor and net-issuance screens) and they match to the stored precision. I read 27 more directly from their files. One mismatch (position sizing) is a labelling problem: the report's number comes from a different, earlier run that has no raw file. |
 | How much has no raw file? | 103 of 144 inventory rows (72%) are prose only. These include most of the "beat SPY" history (1.12, 1.14, 0.84 Sharpe), the July event-study NO-GOs, the live paper-versus-SPY figure, and all crypto results except one IBIT file. |
 | Do the academic sources say what the reports say? | 11 of 14 citations checked against free sources say what the reports say. One (the "profitability and investment were introduced 2013 to 2015" framing) is only partly accurate. Two were not examined. |
-| Were pass bars set first? | For the October studies, mostly yes: 18 rows pre-registered, 4 amended, 1 late (momentum). The `docs/research/briefs/` folder starts on 2026-09-24. The 2026-09-10 strategy audit (`083afc7d`) is the earliest committed source of per-study "Success Criteria". Nothing earlier than 2026-09-10 has a committed per-study bar. 48 verdict rows have no brief, including all July NO-GOs and every early "beat SPY" claim. |
+| Were pass bars set first? | For the October studies, mostly yes: 18 rows pre-registered, 4 amended, 1 late (momentum). The former research briefs folder (dissolved in the 2026-11-05 reorganization; each brief now sits in its study folder) starts on 2026-09-24. The 2026-09-10 strategy audit (`083afc7d`) is the earliest committed source of per-study "Success Criteria". Nothing earlier than 2026-09-10 has a committed per-study bar. 48 verdict rows have no brief, including all July NO-GOs and every early "beat SPY" claim. |
 
 Findings that matter for the owner's question (raw return of 2x SPY):
 
@@ -243,7 +243,7 @@ Small caveats:
   to 0.98. That is the conservative direction, and both fail the registered bar of net
   t ≥ 3 and WFE ≥ 0.50 (WFE was 0.24).
 
-**No brief found (48 verdict rows).** The `docs/research/briefs/` directory begins
+**No brief found (48 verdict rows).** The former research briefs folder (dissolved in the 2026-11-05 reorganization) begins
 2026-09-24 (first file `664cadee`). The earliest committed per-study criteria are the
 "Success Criteria" items in the 2026-09-10 strategy audit
 (`research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md:183-212`,

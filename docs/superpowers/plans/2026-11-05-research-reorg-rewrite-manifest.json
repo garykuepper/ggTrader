@@ -3,15 +3,23 @@
   "scope": "moved-markdown",
   "tool_replacements": 1246,
   "hand_edited": [
+    "research/TEMPLATE-research-report.md",
     "research/WEB_RESEARCH_CANDIDATES.md",
     "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md",
     "research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve.md",
+    "research/allocation/static-leverage/2026-09-30-static-fractional-leverage-brief.md",
     "research/audits/root-cause-2026-11-04/2026-11-04-investigation-inventory.md",
-    "research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md"
+    "research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md",
+    "research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md",
+    "research/audits/root-cause-2026-11-04/2026-11-04-lens7-research-accuracy.md",
+    "research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md",
+    "research/audits/root-cause-2026-11-04/2026-11-05-argon-synthesis-review.md",
+    "research/prompts/local-implementation-prompt-TEMPLATE.md"
   ],
   "files": [
     "research/RESEARCH_INDEX.md",
     "research/RESEARCH_SNAPSHOT.md",
+    "research/TEMPLATE-research-report.md",
     "research/WEB_RESEARCH_CANDIDATES.md",
     "research/allocation/century-leverage/2026-10-23-century-leverage-brief.md",
     "research/allocation/century-leverage/2026-10-23-century-leverage-ruling-r1.md",

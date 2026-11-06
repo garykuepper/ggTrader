@@ -20,7 +20,7 @@ file when they're resolved (see Status below).
    "Candidate Strategy" section, queue a concrete step in
    `docs/next_steps.md`, and update this entry's status to `queued`.
 5. Once implemented and WFO-tested (GO or NO-GO), mark the entry `resolved`
-   with a link to its `docs/research/<date>-<slug>.md` report — the next
+   with a link to its `research/<category>/<study>/<YYYY-MM-DD>-<slug>.md` report — the next
    `research-snapshot` skill run will pick it up into `RESEARCH_SNAPSHOT.md`'s
    roster, and it can be removed from this backlog at that point.
 

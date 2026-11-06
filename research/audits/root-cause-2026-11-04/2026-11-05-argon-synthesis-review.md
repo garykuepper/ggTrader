@@ -1,4 +1,4 @@
-> **Status 2026-11-05: UNVERIFIED model output, kept unmodified below this note.** Written by gemini-4-argon (agy) and
+> **Status 2026-11-05: UNVERIFIED model output, kept unmodified below this note, except path-only reference rewrites of 2026-11-05 listed in `docs/superpowers/plans/2026-11-05-research-reorg-rewrite-manifest.json`.** Written by gemini-4-argon (agy) and
 > then audited by a Claude reviewer: of 105 backticked citations, 43 are broken or unsupported, and several specifics are
 > invented (a "166,431-row" rewrite, freeze and clock dates, P2 item numbers, a data plan that cannot run). Do not rely on
 > this file without the correction in `research/audits/root-cause-2026-11-04/2026-11-05-argon-review-verification.md`, which lists what survives.
