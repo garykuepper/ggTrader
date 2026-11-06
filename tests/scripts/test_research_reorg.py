@@ -25,6 +25,7 @@ from scripts.research_reorg import (
     rewrite_code,
     rewrite_markdown,
     sha256_file,
+    verify_final,
     verify_moved,
     verify_rewritten,
 )
@@ -1032,8 +1033,9 @@ def test_main_move_and_verify_cli(tmp_path: Path, capsys) -> None:  # type: igno
     assert main(["move", *common]) == 0
     assert main(verify) == 0
     assert "OK" in capsys.readouterr().out
-    assert main(["verify", "--stage", "final", *common, "--ledger", str(ledger_path)]) == 1
-    assert "stage not implemented" in capsys.readouterr().out
+    final = ["verify", "--stage", "final", *common, "--ledger", str(ledger_path)]
+    assert main(final) == 1  # the rewrite manifest is required for the final gate
+    assert "--rewrite-manifest is required" in capsys.readouterr().out
 
 
 # --- verify --stage rewritten ------------------------------------------------------------------
@@ -1141,3 +1143,118 @@ def test_main_verify_rewritten_cli(tmp_path: Path, capsys) -> None:  # type: ign
     listing.write_text(json.dumps({"files": [REPORT_NEW]}))
     assert main(argv) == 0
     assert main(argv[:-2]) == 1  # --rewrite-manifest is required for this stage
+
+
+# --- verify --stage final ----------------------------------------------------------------------
+
+
+def _final_repo(tmp_path: Path) -> tuple[Path, list[ManifestRow], dict]:  # type: ignore[type-arg]
+    """Rewritten-stage repo with the emptied docs/research folders removed, as `move` does."""
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    remove_leftover_dirs(root)
+    return root, rows, ledger
+
+
+def _final(root: Path, rows: list[ManifestRow], ledger: dict, **kw) -> list[str]:  # type: ignore[type-arg,no-untyped-def]
+    """Run verify_final on a one-pinned-file fixture (production expects twelve)."""
+    kw.setdefault("expected_pinned", 1)
+    return verify_final(rows, ledger, root, set(), **kw)
+
+
+def test_verify_final_passes_clean_tree_and_allows_new_files(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    assert _final(root, rows, ledger) == []
+    _write(root, "research/README.md", "# index\n")
+    _git(root, "add", "research/README.md")
+    assert _final(root, rows, ledger) == []  # default allow-list
+    _write(root, "research/audits/new-study/notes.md", "x\n")
+    _git(root, "add", "research/audits/new-study/notes.md")
+    problems = _final(root, rows, ledger)
+    assert any("unexpected tracked file" in p and "new-study/notes.md" in p for p in problems)
+    assert _final(root, rows, ledger, allow_new=("README.md", "audits/new-study/*")) == []
+
+
+def test_verify_final_flags_docs_research_leftover(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    _write(root, f"{OLD}stray.md", "left behind\n")
+    _git(root, "add", f"{OLD}stray.md")
+    problems = _final(root, rows, ledger)
+    assert any("tracked" in p and f"{OLD}stray.md" in p for p in problems)
+    assert any(p == "docs/research still exists" for p in problems)
+
+
+def test_verify_final_flags_empty_docs_research_directory(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    (root / OLD / "empty").mkdir(parents=True)
+    assert "docs/research still exists" in _final(root, rows, ledger)
+
+
+def test_verify_final_flags_missing_destination(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    _git(root, "rm", "-q", "-f", BRIEF_NEW)
+    problems = _final(root, rows, ledger)
+    assert any("missing destination" in p and BRIEF_NEW in p for p in problems)
+    assert any("destination not tracked" in p and BRIEF_NEW in p for p in problems)
+
+
+def test_verify_final_flags_duplicate_proposed_path(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    dup = [*rows, _row(f"{OLD}other.md", REPORT_NEW)]
+    problems = _final(root, dup, ledger)
+    assert any("duplicate proposed path" in p and REPORT_NEW in p for p in problems)
+
+
+def test_verify_final_flags_tracked_file_too_deep(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    deep = "research/allocation/century-leverage/sub/notes.md"
+    _write(root, deep, "x\n")
+    _git(root, "add", deep)
+    problems = _final(root, rows, ledger, allow_new=("*",))
+    assert any("deeper than" in p and deep in p for p in problems)
+
+
+def test_verify_final_accepts_artifact_package_as_study_folder(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    pkg = "research/crypto/artifacts-2026-10-25-crypto-web-batch/_run.json"
+    _write(root, pkg, "{}\n")
+    _git(root, "add", pkg)
+    assert _final(root, rows, ledger, allow_new=("crypto/artifacts-*/*",)) == []
+
+
+def test_verify_final_flags_pinned_digest_change(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    (root / PINNED_NEW).write_text("# pinned\nsee research/x.md\n")
+    problems = verify_final(rows, ledger, root, {PINNED_NEW}, expected_pinned=1)
+    assert any("pinned digest differs" in p and PINNED_NEW in p for p in problems)
+
+
+def test_verify_final_flags_wrong_pinned_count(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    problems = verify_final(rows, ledger, root, set())  # production expects twelve
+    assert any("1 pinned rows in the manifest, expected 12" in p for p in problems)
+
+
+def test_verify_final_flags_unlisted_change_and_untracked_extra(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    (root / REPORT_NEW).write_text("# report\nsee research/x.md\n")
+    _write(root, "research/allocation/century-leverage/extra.md", "new\n")  # untracked
+    problems = _final(root, rows, ledger)
+    assert any("unlisted change" in p and REPORT_NEW in p for p in problems)
+    assert any("unexpected file" in p and "extra.md" in p for p in problems)
+
+
+def test_main_verify_final_cli(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    root, rows, ledger = _final_repo(tmp_path)
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        + "".join(f'"{r.current_path}","{r.proposed_path}","","{r.kind}",""\n' for r in rows)
+    )
+    ledger_path = tmp_path / "ledger.json"
+    ledger_path.write_text(json.dumps(ledger))
+    listing = tmp_path / "rewrite.json"
+    listing.write_text(json.dumps({"files": []}))
+    argv = ["verify", "--stage", "final", "--manifest", str(manifest), "--root", str(root)]
+    argv += ["--ledger", str(ledger_path), "--rewrite-manifest", str(listing)]
+    assert main(argv) == 1  # the fixture has one pinned row, production expects twelve
+    assert "expected 12" in capsys.readouterr().out

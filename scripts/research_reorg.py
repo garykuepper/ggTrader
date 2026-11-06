@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import fnmatch
 import hashlib
 import json
 import os
@@ -134,7 +135,15 @@ STATUS_FAILED = "failed"
 # --- Move and verify constants ---
 PYCACHE_DIR = "__pycache__"
 VERIFY_STAGES: tuple[str, ...] = ("moved", "rewritten", "final")
-IMPLEMENTED_STAGES = frozenset({"moved", "rewritten"})
+IMPLEMENTED_STAGES = frozenset(VERIFY_STAGES)
+# New (non-manifest) files `verify --stage final` accepts under research/, relative to research/
+# and matched with fnmatch (so `*` also crosses `/`). Later tasks add their own via --allow-new.
+DEFAULT_ALLOW_NEW: tuple[str, ...] = (
+    "README.md",
+    "MOVED.csv",
+    "audits/root-cause-2026-11-04/README.md",
+    "audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md",
+)
 REWRITABLE_SUFFIX = ".md"
 
 
@@ -282,8 +291,24 @@ def tracked_research_files(root: Path = REPO_ROOT) -> set[str]:
     Raises:
         subprocess.CalledProcessError: If git fails.
     """
+    return tracked_files_under(OLD_ROOT, root)
+
+
+def tracked_files_under(prefix: str, root: Path = REPO_ROOT) -> set[str]:
+    """List files git tracks (index) under `prefix` using read-only git.
+
+    Args:
+        prefix: Repo-relative folder, e.g. `research`.
+        root: Repository root to run git in.
+
+    Returns:
+        Repo-relative POSIX paths.
+
+    Raises:
+        subprocess.CalledProcessError: If git fails.
+    """
     out = subprocess.run(
-        ["git", "ls-files", OLD_ROOT],
+        ["git", "ls-files", prefix],
         cwd=root,
         check=True,
         capture_output=True,
@@ -1211,17 +1236,25 @@ def _files_under(base: Path, root: Path) -> list[str]:
     )
 
 
+def _matches_allow_new(path: str, allow_new: tuple[str, ...]) -> bool:
+    """Return True when a repo-relative path under research/ matches an allow-new pattern."""
+    inside = path.removeprefix(f"{NEW_ROOT}/")
+    return any(fnmatch.fnmatchcase(inside, p.removeprefix(f"{NEW_ROOT}/")) for p in allow_new)
+
+
 def _verify_tree(
     rows: list[ManifestRow],
     ledger: dict[str, Any],
     root: Path,
     allowed_changes: frozenset[str] | None,
+    allow_new: tuple[str, ...] = (),
 ) -> list[str]:
-    """Shared tree checks for the `moved` and `rewritten` gates.
+    """Shared tree checks for the `moved`, `rewritten` and `final` gates.
 
     A destination whose sha256 differs from the ledger is a problem unless its proposed
     path is in `allowed_changes` and its row is a non-frozen file. `moved` passes None, so
-    every byte must match.
+    every byte must match. Files under research/ that are not manifest destinations are a
+    problem unless they match an `allow_new` pattern (only the `final` gate passes any).
     """
     problems: list[str] = []
     allowed = allowed_changes or frozenset()
@@ -1262,10 +1295,18 @@ def _verify_tree(
                 f"depth exceeds research/<category>/<study>/<file>: {row.proposed_path}"
             )
     on_disk = _files_under(root / NEW_ROOT, root)
-    if len(on_disk) != len(rows):
-        problems.append(f"{len(on_disk)} files under {NEW_ROOT}/ but {len(rows)} manifest rows")
     expected = {r.proposed_path for r in rows}
-    problems.extend(f"unexpected file under {NEW_ROOT}/: {p}" for p in on_disk if p not in expected)
+    allowed_extra = {p for p in on_disk if p not in expected and _matches_allow_new(p, allow_new)}
+    if len(on_disk) - len(allowed_extra) != len(rows):
+        problems.append(
+            f"{len(on_disk) - len(allowed_extra)} files under {NEW_ROOT}/ (excluding "
+            f"{len(allowed_extra)} allowed new) but {len(rows)} manifest rows"
+        )
+    problems.extend(
+        f"unexpected file under {NEW_ROOT}/: {p}"
+        for p in on_disk
+        if p not in expected and p not in allowed_extra
+    )
     tracked = sorted(tracked_research_files(root))
     problems.extend(f"still tracked under {OLD_ROOT}: {p}" for p in tracked)
     tracked_set = set(tracked)
@@ -1321,6 +1362,64 @@ def verify_rewritten(
     return _verify_tree(rows, ledger, root, frozenset(rewrite_listed))
 
 
+def verify_final(
+    rows: list[ManifestRow],
+    ledger: dict[str, Any],
+    root: Path,
+    rewrite_listed: set[str] | frozenset[str],
+    allow_new: tuple[str, ...] = DEFAULT_ALLOW_NEW,
+    expected_pinned: int = len(PINNED_PATHS),
+) -> list[str]:
+    """Check the finished tree: everything `verify_rewritten` checks, plus tracked-file rules.
+
+    Extra checks: no duplicate proposed paths; every destination is tracked; the tracked
+    files under research/ are exactly the manifest destinations plus files matching
+    `allow_new`; no tracked file is deeper than research/<category>/<study>/<file> (the
+    `artifacts-*` packages are study folders, so they share the limit); the pinned files
+    still match their ledger digests; nothing is tracked under docs/research and the folder
+    itself is gone.
+
+    Args:
+        rows: Manifest rows.
+        ledger: The pre-move ledger.
+        root: Repository root.
+        rewrite_listed: Proposed paths the rewrite manifest says were edited.
+        allow_new: Patterns (relative to research/, fnmatch) for files added after the move.
+        expected_pinned: How many pinned rows the manifest must carry (twelve in production).
+
+    Returns:
+        Problem descriptions; an empty list means the gate passes.
+    """
+    problems = _verify_tree(rows, ledger, root, frozenset(rewrite_listed), allow_new)
+    counts = Counter(r.proposed_path for r in rows)
+    problems.extend(f"duplicate proposed path: {p}" for p, n in sorted(counts.items()) if n > 1)
+    tracked = tracked_files_under(NEW_ROOT, root)
+    for row in rows:
+        if row.proposed_path not in tracked:
+            problems.append(f"destination not tracked: {row.proposed_path}")
+    for path in sorted(tracked):
+        if path not in counts and not _matches_allow_new(path, allow_new):
+            problems.append(f"unexpected tracked file under {NEW_ROOT}/: {path}")
+        if len(PurePosixPath(path).parts) > MAX_COMPONENTS:
+            problems.append(f"tracked file deeper than research/<category>/<study>/<file>: {path}")
+    pinned_rows = [r for r in rows if r.pinned]
+    if len(pinned_rows) != expected_pinned:
+        problems.append(
+            f"{len(pinned_rows)} pinned rows in the manifest, expected {expected_pinned}"
+        )
+    entries = {e["current_path"]: e for e in ledger.get("files", [])}
+    for row in pinned_rows:
+        entry = entries.get(row.current_path)
+        dest = root / row.proposed_path
+        if entry is None or not entry.get("pinned"):
+            problems.append(f"ledger does not mark this file pinned: {row.current_path}")
+        elif dest.is_file() and sha256_file(dest) != entry["sha256"]:
+            problems.append(f"pinned digest differs from ledger: {row.proposed_path}")
+    if (root / OLD_ROOT).exists():
+        problems.append(f"{OLD_ROOT} still exists")
+    return problems
+
+
 def load_rewrite_manifest(path: Path) -> set[str]:
     """Read the rewrite manifest: proposed paths of the edited files.
 
@@ -1362,13 +1461,21 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     rows = load_manifest(Path(args.manifest))
     ledger = json.loads(Path(args.ledger).read_text(encoding="utf-8"))
     root = Path(args.root)
-    if args.stage == "rewritten":
+    if args.stage in ("rewritten", "final"):
         if not args.rewrite_manifest:
-            print("FAIL --rewrite-manifest is required for stage rewritten")
+            print(f"FAIL --rewrite-manifest is required for stage {args.stage}")
             return 1
         listed = load_rewrite_manifest(Path(args.rewrite_manifest))
-        problems = verify_rewritten(rows, ledger, root, listed)
-        summary = f"{len(rows)} files checked, {len(listed)} listed edits"
+        if args.stage == "final":
+            allow_new = (*DEFAULT_ALLOW_NEW, *(args.allow_new or ()))
+            problems = verify_final(rows, ledger, root, listed, allow_new)
+            summary = (
+                f"{len(rows)} manifest files, {len(listed)} listed edits, "
+                f"{len(tracked_files_under(NEW_ROOT, root))} tracked files under {NEW_ROOT}/"
+            )
+        else:
+            problems = verify_rewritten(rows, ledger, root, listed)
+            summary = f"{len(rows)} files checked, {len(listed)} listed edits"
     else:
         problems = verify_moved(rows, ledger, root)
         summary = f"{len(rows)} files byte-identical to the ledger"
@@ -1457,7 +1564,16 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--ledger", required=True, help="Path to the pre-move ledger JSON.")
     verify.add_argument(
         "--rewrite-manifest",
-        help="JSON listing the edited files (required for --stage rewritten).",
+        help="JSON listing the edited files (required for --stage rewritten and final).",
+    )
+    verify.add_argument(
+        "--allow-new",
+        action="append",
+        metavar="PATTERN",
+        help=(
+            "Extra file pattern allowed under research/ for --stage final (relative to "
+            "research/, fnmatch; repeatable). Adds to the defaults: " + ", ".join(DEFAULT_ALLOW_NEW)
+        ),
     )
     verify.add_argument(
         "--root", default=str(REPO_ROOT), help="Repository root (default: this repository)."
