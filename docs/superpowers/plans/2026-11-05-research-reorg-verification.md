@@ -284,3 +284,22 @@ Scripts: `SP/linkcheck.py` (every `research/...` token, inline link, reference d
 | **Total** | **2,974** | **66** | 2,193 under `research/` (46 files) + 781 elsewhere (20 files) |
 
 The new changelog entry avoids the literal old path and adds no hit. This section adds one (the `git grep` command above), so with it the tree holds 2,975 hits in 66 files and this record's own count is 17. The table counts the tree before this section, as 7.2 and 7.6 did, and this record's own count shifts whenever it is edited.
+
+## 9. Executive summary pass
+
+Dated 2026-11-05, visual-reports plan Task 5 (`docs/superpowers/plans/2026-11-05-research-visual-reports.md`), the visual-reports branch. Figures were recomputed on the tree at commit `70b20f24` (the executive summary) plus the uncommitted edits of this task (the folder README, the index, the research README, the changelog and this record). The comparison base for links is `7e66b5ba`, the tip of `main` when the branch was cut. `SP` is the session scratch directory.
+
+| Gate | Command | Result |
+|---|---|---|
+| verify final | `.venv/bin/python scripts/research_reorg.py verify --stage final --manifest $M --ledger $L --rewrite-manifest $R` with seven `--require-new` paths: `README.md`, `MOVED.csv`, the folder `README.md`, the consolidated review, the reference sheet, the plain-English findings and `audits/root-cause-2026-11-04/2026-11-05-executive-summary.md` | exit 0: `OK stage=final 174 manifest files, 68 listed edits, 185 tracked files under research/` (174 plus 11 allow-listed new files: the 7 paths above and the 4 figures) |
+| figure traceability | `scripts/run_tests.sh -q tests/scripts/test_root_cause_figures.py` | 16 passed |
+| lint, scan rules on | `.venv/bin/python scripts/check_reading_edition.py <file> --sheet research/audits/root-cause-2026-11-04/reference-sheet.md --sources <every .md under findings/ lenses/ reviews/ records/> research/WEB_RESEARCH_CANDIDATES.md research/programme/evidence-standard/2026-10-23-forward-paper-standard.md --max-words <cap>` | all exit 0. Summary: 792 counted words, cap 800. Folder `README.md`: 605, cap 1400. Findings: 3,167, cap 4300. Consolidated review: 4,087, cap 4200. Reference sheet (`--no-scan-rules`, no standard in the sources): 542, cap 9000. The summary's images and image links resolve from its folder. |
+| paths only | `scripts/check_lens_report.py --paths-only <file>` | exit 0 for the summary, the folder `README.md`, `research/README.md` and `research/RESEARCH_INDEX.md`. `docs/changelog.md` exits 1 with 41 dead historical paths, the same 41 at `HEAD` before this task (the new bullet adds none). |
+| full suite | `scripts/run_tests.sh -q` | 1770 passed, 30 deselected, 1 warning, 288.63 s, exit 0 (1731 at section 8) |
+| ruff | `.venv/bin/ruff check .` and `.venv/bin/ruff format --check .` | `All checks passed!`; 289 files already formatted |
+| frozen and pinned digests | for each of the 174 ledger rows, `git show HEAD:<proposed_path> \| sha256sum` against the ledger sha256 | 78/78 frozen match, 12/12 pinned match, 106/174 of all files match (the other 68 are the listed Markdown edits of the first reorganization), as in section 8 |
+| working tree | `git status --short` | only the pre-existing untracked `data/external/event_timing_audit/` |
+
+### 9.1 Relative links, base `7e66b5ba` against this tree
+
+Scripts: `SP/linkcheck.py` and `SP/linkdelta.py`, read before use, run with an identity move map because nothing moved. Occurrences: 2,451 at the base, 2,476 on the tree before this section and 2,481 with it. Index-matched delta (final run, with this section): 0 links broken in mutable files, 0 in frozen files, 0 newly resolving. Net dead occurrences, counted per file with directory tokens left out: 264 at the base and 264 now, and the set of dead (file, token) pairs is identical. The 25 added occurrences before this section all resolve: 8 in the summary, 8 in the visual-reports plan, 2 in the index, 2 in the folder `README.md`, 1 in the research `README.md`, 3 in the findings and 1 in the consolidated review (the last two from earlier tasks). This section adds 5 resolving occurrences to this record. It names no dead path, so the dead count does not move.

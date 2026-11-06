@@ -4,13 +4,14 @@
 
 This folder holds the investigation into why the project's stock and crypto research has not beaten SPY by much. SPY is the fund that tracks the S&P 500, and it is the benchmark. The investigation is diagnosis only. It makes no recommendation about trading, strategies, deployments, the paper account or the account type.
 
-It ran nine separate checks on the existing record, wrote one synthesis, ran an independent challenge against that synthesis and then collected two direction reviews, one from Claude Opus and one from Google's Gemini model Argon. This page is a route into the evidence, not another summary. Nine checks and two reviews is a lot of paper, so it picks three documents to read.
+It ran nine separate checks on the existing record, wrote one synthesis, ran an independent challenge against that synthesis and then collected two direction reviews, one from Claude Opus and one from Google's Gemini model Argon. This page is a route into the evidence, not another summary. Nine checks and two reviews is a lot of paper, so it picks four documents to read.
 
 ## Read in this order
 
-1. [Findings in plain English](findings/2026-11-05-findings-plain-english.md): the reading edition of the synthesis. It answers the owner's seven questions and ranks the causes, with every term defined where it first appears.
-2. [Consolidated direction review](reviews/2026-11-05-direction-reviews-consolidated.md): what the two frontier models recommend, which parts of the weaker review survived checking, the owner's open decisions and at most three next-step options.
-3. [Reference sheet](reference-sheet.md): open it when a word stops you. It defines every abbreviation and label, and maps each check and round name to its file.
+1. [Executive summary](2026-11-05-executive-summary.md): one page on the findings, what the two models recommend, the decisions that matter and the limits. Start here.
+2. [Findings in plain English](findings/2026-11-05-findings-plain-english.md): the reading edition of the synthesis. It answers the owner's seven questions and ranks the causes, with every term defined where it first appears.
+3. [Consolidated direction review](reviews/2026-11-05-direction-reviews-consolidated.md): what the two frontier models recommend, which parts of the weaker review survived checking, the owner's open decisions and at most three next-step options.
+4. [Reference sheet](reference-sheet.md): open it when a word stops you. It defines every abbreviation and label, and maps each check and round name to its file.
 
 The other files are the sources of record. They keep their original wording and their lens, phase and gate numbers, because the numbers are part of the record. The reference sheet maps each name to its file.
 
@@ -18,7 +19,8 @@ The other files are the sources of record. They keep their original wording and 
 
 - **The Optional Re-run List was not run.** It holds 29 items, ordered cheapest first, and sits in the [Main Evidence Round checkpoint](findings/2026-11-04-phase1-checkpoint.md). The owner decided on 2026-11-05 to run none of them. Every question they would settle is "unknown, re-run not run", not "passed".
 - **The Argon review is unverified model output.** Of its 105 citations, 43 are broken or unsupported, and several specifics are invented. Read it only through the [verification](reviews/2026-11-05-argon-review-verification.md), which lists what survives. The consolidated review uses only the verified parts.
-- **The price history of 19 symbols was rewritten by accident.** An accidental database refresh on 2026-11-04 rewrote the stored prices for 19 symbols. The owner chose to leave them as they are, so the investigation's price evidence on those symbols is not exactly reproducible. The Backtest Cleanliness check and the Verdict Trust check carry an erratum, and the checkpoint records the incident.
+- **The price history of 19 symbols was rewritten by accident.** An accidental database refresh on 2026-11-04 rewrote the stored prices for 19 symbols. The owner chose to leave them as they are, so the investigation's price evidence on those symbols is not exactly reproducible.
+  - The Backtest Cleanliness check and the Verdict Trust check carry an erratum, and the checkpoint records the incident.
 
 The investigation ran in three rounds, named here the way the reference sheet names them:
 
@@ -37,6 +39,7 @@ Every file in the folder is listed once. The file names keep their numbers, so e
 | File | What it is |
 |---|---|
 | `README.md` | This page. |
+| [`2026-11-05-executive-summary.md`](2026-11-05-executive-summary.md) | One-page summary of the plain-English findings and the direction review. Start here. |
 | [`reference-sheet.md`](reference-sheet.md) | Plain meanings for every abbreviation, check name, round name and label, with the file each one points to. |
 
 ### `findings/`

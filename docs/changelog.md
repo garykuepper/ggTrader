@@ -2,6 +2,7 @@
 
 ## 2026-11-05
 
+- **Charts, scan-ability rules, reformatted reports and an executive summary for the root-cause reading documents (no strategy, live-code, verdict or number change).** Four charts built by `scripts/root_cause_figures.py` from numbers traced to cited source lines sit in the `figures/` sub-folder of the root-cause study folder. `scripts/check_reading_edition.py` now also enforces short paragraphs, list items and table cells and checks that every image has alt text and exists. The plain-English findings and the consolidated direction review were reformatted with the same content, and a one-page `2026-11-05-executive-summary.md` now starts the reading route in the folder `README.md`.
 - **Root-cause sub-folders and plain-English reading editions (no strategy, live-code, verdict or number change).**
   - 33 files in `research/audits/root-cause-2026-11-04/` moved into four sub-folders as
     git renames at 100% similarity (bytes unchanged): `findings/` (4), `lenses/` (20),
