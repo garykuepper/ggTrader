@@ -2,6 +2,37 @@
 
 ## 2026-11-05
 
+- **Root-cause sub-folders and plain-English reading editions (no strategy, live-code, verdict or number change).**
+  - 33 files in `research/audits/root-cause-2026-11-04/` moved into four sub-folders as
+    git renames at 100% similarity (bytes unchanged): `findings/` (4), `lenses/` (20),
+    `reviews/` (4) and `records/` (5). `README.md` stays at the folder root. References
+    were retargeted in 26 files (559 replacements, 0 unresolved) and in the first
+    reorganization's manifest, ledger and rewrite manifest. Frozen files were not edited.
+  - New reading documents, beside the originals, which stay as the record:
+    `reference-sheet.md` (abbreviations, the nine check names, the three round names and
+    other labels), `findings/2026-11-05-findings-plain-english.md`, a rewrite of
+    `reviews/2026-11-05-direction-reviews-consolidated.md` (same path in its sub-folder),
+    and a rewritten folder `README.md` with a reading route and one table per sub-folder.
+    `research/README.md` and `research/RESEARCH_INDEX.md` link to them.
+  - New tools: `scripts/research_retarget.py` (check, move, rewrite, snapshot, verify and
+    update-manifest for the second move) and `scripts/check_reading_edition.py` (lint for
+    the reading documents: banned punctuation, numbered check and round labels, terms
+    missing from the sheet, figures not found in the sources, word cap), both with tests.
+    `scripts/research_reorg.py` gained an allowance for one extra folder level in this
+    one study folder.
+  - `ruff.toml` now excludes `research/`, with `force-exclude`, so the Claude ruff hook and
+    the pre-commit hook leave frozen research artifacts alone.
+  - Hash drift: `docs/superpowers/plans/2026-10-22-event-evidence-resolution.md` was
+    restored to its original bytes, so its sha256 matches the digest recorded in a frozen
+    workbook again (test `tests/scripts/test_recorded_hashes.py`).
+    `scripts/production_replica_audit.py` was annotated, not restored. The register is in
+    the verification record.
+  - Two point-in-time documents moved to `docs/archive/`:
+    `2026-07-06_strategy_recommendations.md` and `quant_strategy_research_report.md`.
+  - Gate results with commands are in section 8 of
+    `docs/superpowers/plans/2026-11-05-research-reorg-verification.md`.
+  [Index](../research/RESEARCH_INDEX.md).
+
 - **Research reorganization (no strategy, live-code, verdict or number change).**
   - 174 files moved from `docs/research/` to a top-level `research/` directory as git
     renames (history preserved), grouped into 8 category folders (`allocation`, `audits`,

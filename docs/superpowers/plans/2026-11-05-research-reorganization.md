@@ -135,7 +135,7 @@ Uncovered failure modes most likely to bite, each pinned to a test in the owning
 - [ ] **Step 1:** For each script, read it fully first (no execution). From the manifest decide the destination of every file it reads or writes; edit the constants, CLI defaults, help text and docstrings accordingly. Keep behavior otherwise identical.
 - [ ] **Step 2:** Add or extend a test per changed script that asserts its default output and input paths exist as manifest destinations (file or parent folder), without running the script's computation (import-only or argument-parser-only; if a script runs on import, do not import it: assert on the source text instead). Name: `test_default_paths_point_into_research_tree`.
 - [ ] **Step 3:** Run `scripts/run_tests.sh tests/scripts -q`; expect PASS. `ruff check .` / `ruff format --check .` clean (do not format frozen `.py` artifacts under `research/`).
-- [ ] **Step 4:** Reproduction check for Lens 2: run `python scripts/lens2_build.py --out-json <scratch>/lens2.json --md-dir <scratch>/md` after reading it to confirm it writes only to those paths, then compare the `classifications` list (id, class, rules-out size, verdict type) with the committed `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json`. Expected: identical on those fields. Do not regenerate the committed JSON.
+- [ ] **Step 4:** Reproduction check for Lens 2: run `python scripts/lens2_build.py --out-json <scratch>/lens2.json --md-dir <scratch>/md` after reading it to confirm it writes only to those paths, then compare the `classifications` list (id, class, rules-out size, verdict type) with the committed `research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json`. Expected: identical on those fields. Do not regenerate the committed JSON.
 - [ ] **Step 5:** Commit: `refactor: point research drivers at per-study research/ locations`.
 
 ### Task 8: Rewrite instructions, skills and fixed docs
@@ -175,7 +175,7 @@ Uncovered failure modes most likely to bite, each pinned to a test in the owning
 
 - [ ] **Step 1:** Run `verify --stage final` (extend `verify`: file count, no unmapped, no duplicate, depth, pinned digests, nothing under `docs/research`). Expected: exit 0.
 - [ ] **Step 2:** `grep -rIn "docs/research" --exclude-dir=.git --exclude-dir=.venv --exclude-dir=results --exclude-dir=data .` and categorize every survivor in the verification document as frozen provenance, historical citation, spec/plan text, or known prior defect. Expected: no uncategorized survivor.
-- [ ] **Step 3:** Run `scripts/guard_snapshot.sh` to a scratch file and diff against `research/audits/root-cause-2026-11-04/_investigation_guard_baseline_2026-11-04.txt`. Expected: only the `main:` hash line differs, or nothing.
+- [ ] **Step 3:** Run `scripts/guard_snapshot.sh` to a scratch file and diff against `research/audits/root-cause-2026-11-04/records/_investigation_guard_baseline_2026-11-04.txt`. Expected: only the `main:` hash line differs, or nothing.
 - [ ] **Step 4:** Docker content check by inspection: `git ls-files research | wc -l` and confirm `.dockerignore` contains `research/` and keeps `!pyproject.toml`; do not build.
 - [ ] **Step 5:** Run the full suite `scripts/run_tests.sh -q`; `ruff check .`; `ruff format --check .`. Expected: all green.
 - [ ] **Step 6:** Write the verification document with each gate's command and result; commit: `docs: record research reorganization verification`.
@@ -200,7 +200,7 @@ Uncovered failure modes most likely to bite, each pinned to a test in the owning
 ### Task 12: Consolidated direction review and pointers
 
 **Files:**
-- Create: `research/audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md`
+- Create: `research/audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md`
 - Modify: top of `.../2026-11-05-senior-quant-direction-review.md` and `.../2026-11-05-argon-synthesis-review.md` (one dated pointer line each; update the Argon banner's verification path)
 
 **Interfaces:**

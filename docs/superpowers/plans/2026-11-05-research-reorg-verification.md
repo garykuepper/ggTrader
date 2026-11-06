@@ -7,7 +7,7 @@ This record is **re-run in Task 14**. Tasks 11 and 12 (not Task 13, which create
 ```
 --require-new README.md --require-new MOVED.csv \
 --require-new audits/root-cause-2026-11-04/README.md \
---require-new audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md
+--require-new audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md
 ```
 
 `--require-new` fails with `required new file missing` (not on disk) or `required new file not tracked` (on disk, not in the git index).
@@ -98,7 +98,7 @@ No survivor remains in `AGENTS.md`, `CLAUDE.md`, `.claude/`, `src/`, or any driv
 
 ## 3. Guard snapshot
 
-`scripts/guard_snapshot.sh` was read in full first: it runs only `git rev-parse/log/status`, `systemctl --user is-enabled/cat` and `docker ps -a --filter`; no network, no database access, no orders, nothing started, stopped or edited. Run to a scratch file and diffed against `research/audits/root-cause-2026-11-04/_investigation_guard_baseline_2026-11-04.txt`:
+`scripts/guard_snapshot.sh` was read in full first: it runs only `git rev-parse/log/status`, `systemctl --user is-enabled/cat` and `docker ps -a --filter`; no network, no database access, no orders, nothing started, stopped or edited. Run to a scratch file and diffed against `research/audits/root-cause-2026-11-04/records/_investigation_guard_baseline_2026-11-04.txt`:
 
 ```
 19c19
@@ -129,7 +129,7 @@ Command, per tracked Markdown file (102 files): `.venv/bin/python scripts/check_
 | `research/audits/event-timing/event-timing-audit-implementation.md` (frozen, pinned) | `docs/research/briefs/2026-10-21-event-timing-audit-sources.md` and `.../2026-10-21-event-timing-audit.md` (lines 405, 447) | caused by the move, unfixable (frozen) |
 | same file | `research/event-timing-audit` (lines 6, 323, 559, 805) | branch-name false positive, pre-existing |
 | `research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md` | `src/ggTrader/lab/retail_attention.py` | pre-existing |
-| `research/audits/root-cause-2026-11-04/2026-11-05-argon-synthesis-review.md` | 7 invented paths (`research/a06_production_replica.py`, `src/ggtrader/core/tax_lots.py`, five `docs/research/2026-11-04-lens*.md` that never existed) | pre-existing, kept as written |
+| `research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-synthesis-review.md` | 7 invented paths (`research/a06_production_replica.py`, `src/ggtrader/core/tax_lots.py`, five `docs/research/2026-11-04-lens*.md` that never existed) | pre-existing, kept as written |
 | `research/intraday/spy-momentum-feasibility/2026-10-24-intraday-feasibility.md` | `_intraday_probe.json`, `_intraday_momentum_results.json` (never created) | pre-existing |
 | `research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md` | `_intraday_probe.json`, `intraday_probe.py`, `intraday_coverage_probe.py`, `test_intraday_probe.py` (never created) | pre-existing |
 
@@ -155,7 +155,7 @@ Re-run on the tree at `138b18ea` (Tasks 1 to 13 applied), after the whole-branch
 
 | Gate | Command | Result |
 |---|---|---|
-| verify final | `verify --stage final --manifest $M --ledger $L --rewrite-manifest $R --require-new README.md --require-new MOVED.csv --require-new audits/root-cause-2026-11-04/README.md --require-new audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md` | exit 0: `OK stage=final 174 manifest files, 68 listed edits, 178 tracked files under research/` (174 + the 4 allow-listed new files) |
+| verify final | `verify --stage final --manifest $M --ledger $L --rewrite-manifest $R --require-new README.md --require-new MOVED.csv --require-new audits/root-cause-2026-11-04/README.md --require-new audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md` | exit 0: `OK stage=final 174 manifest files, 68 listed edits, 178 tracked files under research/` (174 + the 4 allow-listed new files) |
 | verify rewritten | same without `--require-new`, `--stage rewritten` | exit 1, 5 problems: `178 files under research/ (excluding 0 allowed new) but 174 manifest rows` and 4 `unexpected file under research/` (`MOVED.csv`, `README.md`, the consolidated review, the root-cause `README.md`). By design: this stage has no allow-list. It was valid only until Tasks 11/12 added files; the summary-table row above is corrected. |
 | verify moved | same with `--stage moved` (no rewrite manifest) | exit 1, 73 problems: 68 `sha256 differs from ledger` + the same 1 count problem + the same 4 unexpected files; the `NOTE` line names `--stage rewritten` or `final`. The earlier table said "exactly 68"; that held only before Tasks 11/12. |
 | checker | `scripts/check_lens_report.py --paths-only` on each of the 105 tracked `research/**/*.md` | 12 fail, the same 12 files as the table in section 5. Section 5 covered 102 files; the 3 added since (`research/README.md`, the root-cause `README.md` and the consolidated review) all pass. `README.md` at the repo root passes; `AGENTS.md` fails on one citation, the placeholder `research/<category>/<study>/` (forward-looking template text in the "Where docs live" rule; the same class as the five placeholder files in section 5). |
@@ -229,3 +229,58 @@ Dated change record. Register rows 1 and 2 in 7.5 now read "restored (decision D
 | **Total** | **2,971** | **66** | 2,193 under `research/` (46 files) + 778 elsewhere (20 files) |
 
 Reconciliation with 7.2 (2,952 in 62 files at `138b18ea`): +6 hits in this record (10 to 16), +4 in the readability plan, +3 in `README.md` and `docs/changelog.md` = 2,965 in 65 files at `fd84580d`; this change then adds 6 more. Section 2's no-survivor sentence was amended in place to name these three hits, which are deliberate (they tell a reader where the folder went) and are not live paths. This record's own hit count shifts again whenever it is edited.
+
+## 8. Sub-folder and readability pass
+
+Dated 2026-11-05, readability plan Task 14 (`docs/superpowers/plans/2026-11-05-research-readability-and-subfolders.md`), branch `research/readability-and-subfolders`. Every figure was recomputed on the tree at `645c2bf3` (the README and index commit) plus the uncommitted edits of this task, not copied from the task reports. `M`, `L`, `R` are as defined above. `SP` is the session scratch directory for the link scripts and the clone used for the Task 8 check.
+
+Stale paths in this record were corrected in place: the `--require-new` path of the consolidated review (the command at the top and the verify final row in 7.1) now names `reviews/`, the guard baseline in section 3 names `records/`, and the Argon review in the section 5 table names `reviews/`. The same path-only edit was made in the reorganization plan (lines 138, 178 and 203) and the design spec (line 130). Eight lines changed in the three files, and nothing else in them.
+
+### 8.1 Gate results
+
+| Gate | Command | Result |
+|---|---|---|
+| verify final | `.venv/bin/python scripts/research_reorg.py verify --stage final --manifest $M --ledger $L --rewrite-manifest $R --require-new README.md --require-new MOVED.csv --require-new audits/root-cause-2026-11-04/README.md --require-new audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md --require-new audits/root-cause-2026-11-04/reference-sheet.md --require-new audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md` | exit 0: `OK stage=final 174 manifest files, 68 listed edits, 180 tracked files under research/` (174 + the 6 allow-listed new files) |
+| verify rewritten and moved | same command with `--stage rewritten` and with `--stage moved` | **Obsolete, read `--stage final` instead.** Neither has an allow-list for new files. `rewritten`: exit 1, 7 problems (the count line, `180 files under research/ (excluding 0 allowed new) but 174 manifest rows`, plus 6 `unexpected file under research/`). `moved`: exit 1, 75 problems (68 `sha256 differs from ledger`, the same count line, the same 6 unexpected files). The ledger and manifests now carry the sub-folder paths, so no problem line is about layout. |
+| retarget verify | `.venv/bin/python scripts/research_retarget.py verify --moves docs/superpowers/plans/2026-11-05-research-subfolders-moves.csv --root <clone at fca2ac82> --before $SP/t8-before.json --base f4b3ba1e^ --rewrite-manifest $SP/t8-rewrite-manifest.json --manifest <clone>/$M` plus `--allow` for 8 paths | exit 0: `OK 33 moved files, 26 rewritten files`. Run on a local clone at `fca2ac82` (the Task 8 tree), because the live tree has moved on. The 8 allowed paths are the 5 bookkeeping files named in the Task 8 report (manifest, ledger, rewrite manifest, moves CSV, `research/MOVED.csv`) and the 3 hand-edited files (`scripts/research_reorg.py`, `tests/scripts/test_research_reorg.py`, `tests/scripts/test_research_retarget.py`). Without the 3 hand-edited paths the run exits 1 with 3 problems. |
+| move and rewrite counts | `git diff -M --name-status f4b3ba1e^ f4b3ba1e`; `research_retarget.py rewrite --moves ... --root <clone at f4b3ba1e> --dry-run --report $SP/t14-rewrite-dry.json` | 33 renames, all `R100` (lenses 20, records 5, findings 4, reviews 4). Rewrite dry run on the move-only tree: 26 files, 559 replacements, 0 unresolved, 126 excluded of which 79 frozen. Same as Task 8. |
+| frozen and pinned digests | independent script: for each of the 174 ledger rows, `git show HEAD:<proposed_path> \| sha256sum` against the ledger sha256 | 78/78 frozen match, 12/12 pinned match, 106/174 of all files match (the other 68 are the 68 listed Markdown edits of the first reorganization). `HEAD` is `645c2bf3`. |
+| lint, four reading documents | `.venv/bin/python scripts/check_reading_edition.py <file> --sheet research/audits/root-cause-2026-11-04/reference-sheet.md --sources <every .md under findings/ lenses/ reviews/ records/> research/WEB_RESEARCH_CANDIDATES.md research/programme/evidence-standard/2026-10-23-forward-paper-standard.md --max-words <cap>` | all four exit 0. `README.md`: 586 counted words, cap 1400. `findings/2026-11-05-findings-plain-english.md`: 2,878, cap 3000 (ruling P5). `reviews/2026-11-05-direction-reviews-consolidated.md`: 3,478, cap 3500 (ruling P6). `reference-sheet.md`: 542, cap 100000 (no cap in practice). The count is the lint's own measure of prose, which leaves out tables, code spans and fences. Each file excludes itself from its sources. |
+| checker | `scripts/check_lens_report.py --paths-only <file>` on each of the 107 tracked `research/**/*.md` | 12 fail, the same 12 files as section 5 (5 placeholder files, 3 frozen move-caused, the `research/event-timing-audit` branch-name false positive, 4 pre-existing): `WEB_RESEARCH_CANDIDATES.md`, the three allocation briefs and reports (`cross-asset-sleeve-brief`, `month-end-treasury-sleeve`, `static-fractional-leverage-brief`), `ggtrader_paper_review_20260909.md`, the comprehensive audit, `2026-10-21-event-timing-audit.md`, `event-timing-audit-implementation.md`, the Argon synthesis review (now under `reviews/`), `2026-10-24-intraday-feasibility.md`, `2026-10-25-intraday-stage0a-contract.md` and `local-implementation-prompt-TEMPLATE.md`. The 2 files added since section 7 (the reference sheet and the plain-English findings) pass. So do the rewritten README, the rewritten consolidated review, `research/README.md` and `RESEARCH_INDEX.md`. |
+| full suite | `scripts/run_tests.sh -q` | 1731 passed, 30 deselected, 1 warning, 292.87 s, exit 0 (1694 at Task 8, 1633 at section 7). No exit 137. |
+| ruff | `.venv/bin/ruff check .` and `.venv/bin/ruff format --check .` | `All checks passed!`; 287 files already formatted (285 at section 7). |
+| working tree | `git status --short` | only the pre-existing untracked `data/external/event_timing_audit/` |
+
+`research_retarget.py verify` counts every untracked file as a change, so on the live checkout it needs one `--allow` per file under `data/external/event_timing_audit/` (370 files). That is parked for the final fix wave. The clone avoids it.
+
+### 8.2 Relative links, base `2678a493` against this tree
+
+Scripts: `SP/linkcheck.py` (every `research/...` token, inline link, reference definition and HTML `href` in tracked Markdown, resolved against the file's directory) and `SP/linkdelta.py`. Occurrences: 2,367 at the base, 2,434 now.
+
+- **Frozen files: 0 newly broken links.** The 19 dead links in 4 frozen event-timing files (section 7.3) are unchanged.
+- **First-reorganization documents: 6 links fixed.** Six tokens (this record's guard baseline and Argon review paths, plan lines 138, 178 and 203, spec line 130) were the only newly broken links the sub-folder move caused. They resolve again.
+- **Net dead occurrences, counted per file** (directory tokens ending in `/` left out, because the script cannot resolve them): 216 at the base, 225 before this section was written. The difference is 9 and it is all in four older or new plan files. This section itself names four branch names that the script reads as paths (`research/readability-and-subfolders` twice, `research/event-timing-audit`, `research/momentum-retest`), which adds 4 dead tokens to this record (6 to 10) and makes 229 with it:
+
+| File | Base to now | Why |
+|---|---|---|
+| `docs/superpowers/plans/2026-10-20-momentum-retest.md` | 1 to 5 | Task 5 retargeted four output paths (`_momentum_phase2_results.json` and `_momentum_phase2_curves.csv`, in a step and a command block) to the new folder. They are planned outputs that were never created, so they were dead before and are dead now under a new name. The old text did not count as a `research/` token. The one at the base is the branch name `research/momentum-retest`. |
+| `docs/superpowers/plans/2026-10-22-event-evidence-resolution.md` | 2 to 3 | The file was restored to its original bytes (7.6), so its three relative links to the old folder are dead again. The two dead output tokens it had at the base no longer match the `research/` pattern. |
+| `docs/superpowers/plans/2026-11-04-root-cause-investigation.md` | 0 to 2 | Line 247 names two template output paths (`.../2026-11-04-phase2-rerun-<slug>.md` and `.../_phase2_...`) for work that was not run. Task 5 gave them the folder's current prefix. |
+| `docs/superpowers/plans/2026-11-05-research-readability-and-subfolders.md` | 0 to 2 | New file. Both are the branch name `research/readability-and-subfolders`. |
+
+### 8.3 Survivors of the old research folder name
+
+`git grep -I -n "docs/research"` over tracked files at `645c2bf3` plus the uncommitted edits, before this section was written: **2,974 hits in 66 files** (7.6: 2,971 in 66). No live survivor. The change is +7 in `tests/scripts/test_research_retarget.py` (new, fixture text for the second-move tool), -3 in `docs/superpowers/plans/2026-10-20-momentum-retest.md` (Task 5) and -1 in `docs/superpowers/plans/2026-11-04-root-cause-investigation.md` (Task 5).
+
+| Category | Hits | Files | Change since 7.6 |
+|---|---:|---:|---|
+| Frozen provenance | 1,794 | 27 | none |
+| Historical citation | 225 | 18 | none |
+| Navigation resolver (`research/MOVED.csv`) | 174 | 1 | none |
+| Spec/plan text: this reorganization (ledger 175, manifest 174, mapping draft 174, branch additions 82, tool tests 65, the second-move tool tests 7, tool 26, plan 16, branch recipe 16, this record 16, spec 9, `test_driver_default_paths.py` 3) | 763 | 12 | +7 hits and +1 file (the second-move tool tests) |
+| Spec/plan text: older plans (restored plan 5, paper-trading remediation 3, root-cause investigation 1, followups master 1, reliability next steps 1) | 11 | 5 | momentum retest plan out (-3, -1 file), root-cause plan -1 |
+| Spec/plan text: the readability-and-sub-folders plan | 4 | 1 | none |
+| Descriptive mention of the move (`README.md` 1, `docs/changelog.md` 2) | 3 | 2 | none |
+| **Total** | **2,974** | **66** | 2,193 under `research/` (46 files) + 781 elsewhere (20 files) |
+
+The new changelog entry avoids the literal old path and adds no hit. This section adds one (the `git grep` command above), so with it the tree holds 2,975 hits in 66 files and this record's own count is 17. The table counts the tree before this section, as 7.2 and 7.6 did, and this record's own count shifts whenever it is edited.
