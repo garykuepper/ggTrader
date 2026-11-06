@@ -91,6 +91,11 @@ replay (`research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.
 must improve SPY + sleeve over SPY alone **with the sleeve funded out of SPY**,
 because the live book has no idle cash, and the lab's cash leg earns 0%.
 
+**Standard for a future stock candidate.** Part A needs a long free-history test with
+Holm-corrected t of at least 3 and at least +1.0 pt/yr net since 1994. B0 is a kill-only
+replay, B1 a forward shadow book of at least 18 months, and real money needs six months
+of clean paper trading first (`research/programme/evidence-standard/2026-10-23-forward-paper-standard.md`).
+
 **Do not cite** void historical figures — 0.99 / 8.0% (2026-08-22, inflated by
 non-member days), 1.12 / 16.3% (void historical claim; never reproduced under a
 pinned window), void historical "gates 17/17", or historical KEEP 0.80 vs 0.78
