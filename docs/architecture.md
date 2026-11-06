@@ -317,3 +317,54 @@ SELECTs for metadata/bar existence, never schema loaders or execution code.
 Offline evidence and fixture tests precede collection/code review. Details and
 remaining input requirements are in the
 [implementation handoff](../research/audits/event-timing/event-timing-audit-implementation.md).
+
+## Intraday metadata preflight
+
+`lab/intraday_probe.py` is an isolated research utility, invoked through
+`scripts/intraday_coverage_probe.py`. It checks a frozen SPY calendar/sample
+manifest against Alpaca SIP and IEX bars and SIP auction metadata. It uses only
+read-only HTTP requests and atomic JSON checkpoints, with no database,
+strategy registry, simulation or paper-trader integration. Prices are discarded
+before persistence. See the [Stage 0A contract](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md)
+for request bounds and the limits of its sampled-coverage conclusion.
+
+## Intraday r8 research pipeline
+
+`lab/intraday_momentum.py` owns the frozen protocol identity, dataset validation,
+pure research calculations and write-once evidence. `lab/intraday_momentum_data.py`
+collects complete, hashed, immutable request chunks and atomically checkpoints
+progress for resumption. `scripts/intraday_momentum_research.py` exposes standalone
+`plan`, `collect`, `validate` and `score` commands. It has no strategy-registry,
+vectorbt, database or production-paper integration.
+
+Validation checks every required endpoint independently of the signal and binds
+its PASS artifact to actual protocol, code, calendar and data hashes. Scoring
+rehashes/revalidates those identities and claims the collection directory before
+calculating returns. The original metadata-only Stage 0A code/artifact stays
+separate. See the [r8 protocol](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md)
+and [CLI reference](cli_reference.md) for the current authorization boundary.
+
+
+## Prospective intraday observer
+
+`lab/intraday_observer.py` owns an isolated file-based observer, hypothetical
+accounting, calendar slots and append-only source/decision evidence.
+`scripts/intraday_observe.py` exposes manual commands; it is not a `ggt paper`
+subcommand. Safe helpers are reused from `intraday_probe.py`; the historical r8
+scorer and production broker path are not imported or modified.
+
+Each state directory contains an immutable manifest, raw source payloads,
+hash-chained records, exclusive stage claims and a shared per-date GET budget.
+Offline rehearsal uses a synthetic transport and simulated clock. No scheduling
+or real data collection is enabled by installation/import. Timely stages require a durable publication-completion record; interrupted writes
+cannot become completed decisions. Activation requires a manifest-bound readiness
+artifact. Real-source sample access and the documented fifteen-minute restriction
+have been checked; future availability and actual intraday publication latency
+are not guaranteed. The calendar-aware `scripts/intraday_observer_job.py` wrapper
+dispatches the same core stages; standalone user timers are defined in
+`deploy/intraday_observer/` and were separately installed on October 27, 2026. The deployed runtime is a
+separate read-only snapshot; only fetching units receive a private persistent
+credential file under the owner-approved activation. Corrupt evidence yields unresolved diagnostics
+without statistics, and cannot be waived by resume.
+See the [protocol](../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md)
+and [CLI reference](cli_reference.md#prospective-intraday-practice-journal).

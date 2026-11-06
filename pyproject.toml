@@ -32,6 +32,8 @@ dependencies = [
     "scikit-learn",
     "seaborn",
     "sqlalchemy",
+    # Newey-West HAC t statistic for the intraday r8 study's A1 gate.
+    "statsmodels",
     "ta",
     "tabulate",
     "tqdm",

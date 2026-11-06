@@ -1,0 +1,74 @@
+{
+  "ancillary_coverage": {
+    "corporate_actions": "One all-types SPY request, process_date filtered from anchor-31d to last+31d (default data_quality=complete). Actions are placed by their documented ex_date or effective_date, never by process_date. Cash dividends and capital-gains distributions (sum of the long/short-term legs provided) are reinvested by the benchmark and flattened by the ex-distribution diagnostic; same-date payouts of the two types add. A same-ticker name change (old and new symbol both SPY) changes no valuation and is counted as non-gating metadata. Other non-cash SPY actions that cannot be placed, or that take effect in the window, are UNRESOLVED as unsupported valuations.",
+    "dividend_quarter_presence": "Every window quarter must show a cash-dividend ex-date (SPY pays quarterly per its issuer). This is a conservative coverage sanity check only.",
+    "limitations": [
+      "Alpaca documents no guarantee on corporate-action creation or processing delay, so the 31-day process_date margin is not a completeness bound.",
+      "Quarter presence cannot prove that every historical action was returned; an absent split in the response is not certified absence.",
+      "Vendor adjustment changes have no machine-readable feed. The review record is a bounded human documentation review; it does not prove that no undocumented change exists.",
+      "A cash payout with a missing or empty currency is assumed to be USD (the vendor documents empty as USD, n/a or unknown); SPY is a USD fund and the payout feeds only the non-gating benchmark diagnostic. Such records are counted; any other currency is UNRESOLVED, never converted."
+    ],
+    "vendor_adjustment_review": "Collection, PASS and scoring require the hash-bound local review record at VENDOR_REVIEW_PATH (status reviewed, SPY, window and protocol hash bound, no known unresolved changes); its SHA256 is in the manifest and the validation identities."
+  },
+  "counts": {
+    "calendar_sessions": 2701,
+    "capital_gains_distributions_in_window": 0,
+    "cash_dividends_in_window": 41,
+    "cash_payouts_currency_assumed_usd": 41,
+    "chunks_complete": 132,
+    "chunks_expected": 132,
+    "daily_bars": 2701,
+    "half_day_sessions": 21,
+    "minute_bars": 2155686,
+    "same_ticker_name_changes_non_gating": 0,
+    "scored_sessions": 2679
+  },
+  "defects": [
+    "dividend_coverage_missing:2016Q1",
+    "dividend_coverage_missing:2018Q2",
+    "endpoint_missing:close:2019-08-12",
+    "endpoint_missing:entry_1530:2019-08-12"
+  ],
+  "diagnostics": {
+    "interior_gaps_by_session": {
+      "2016-02-02": 9,
+      "2019-08-12": 30,
+      "2020-03-09": 14,
+      "2020-03-12": 14,
+      "2020-03-16": 14,
+      "2020-03-18": 14,
+      "2021-05-05": 5,
+      "2023-06-05": 4
+    },
+    "interior_missing_minutes_total": 104,
+    "misaligned_bars": 0,
+    "sessions_with_interior_gaps": 8
+  },
+  "identities": {
+    "code_sha256": "f0b85690f6a571603da6eba83d51d92ccb6f57668663c5540741bea8ec085517",
+    "data_manifest_sha256": "110f8f8161179b56650a7486a416f2cb61b92554a4f7e12fa93435f1192e9237",
+    "manifest_sha256": "b29587ddc8e657fd3a40f055aa831030e4c50e5cdf0bf7c15b19fb0fb1a1a60f",
+    "protocol_sha256": "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85",
+    "runtime": {
+      "numpy": "2.2.6",
+      "pandas": "2.3.3",
+      "pandas_market_calendars": "5.5.0",
+      "python": "3.12.3",
+      "requests": "2.33.1",
+      "statsmodels": "0.15.0"
+    },
+    "vendor_review_sha256": "86403609990ac3ecbad924d68e746a95749fc5f2dbc51895a5e66b990698f549"
+  },
+  "label": "UNRESOLVED (data)",
+  "offline_calendar": {
+    "calendar": "NYSE",
+    "library": "pandas_market_calendars",
+    "schedule_sha256": "b008e2291715ac730b6f69b8c4543c635eb5a53c77048876ad04679419e9a82c",
+    "sessions": 2701,
+    "version": "5.5.0"
+  },
+  "run_utc": "2026-10-25T23:56:11.276506+00:00",
+  "schema": "intraday_momentum_r8_validation",
+  "status": "UNRESOLVED",
+  "version": 1
+}

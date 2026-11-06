@@ -1,0 +1,68 @@
+running pytest under MemoryMax=8G (no swap)
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+______ test_review_corrupt_evidence_cannot_produce_performance_statistics ______
+
+tmp_path = PosixPath('/tmp/pytest-of-flynn/pytest-1484/test_review_corrupt_evidence_c0')
+
+    def test_review_corrupt_evidence_cannot_produce_performance_statistics(tmp_path):
+        ob, clock, _ = active(tmp_path)
+        record = archive_day(ob, clock, ANCHOR_DAY)
+        (ob.dir / record["body"]["fetch"]["attempts"][0]["raw_path"]).unlink()
+>       report = ob.report()
+                 ^^^^^^^^^^^
+
+tests/lab/test_intraday_observer.py:193:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <ggTrader.lab.intraday_observer.Observer object at 0x7ee0568e8aa0>
+
+    def report(self) -> dict:
+        """Descriptive report of everything recorded; counts, faults and unknowns, no verdicts."""
+        if self.verify_chain():
+>           raise BindingMismatch("ledger_integrity")
+E           ggTrader.lab.intraday_observer.BindingMismatch: ledger_integrity
+
+src/ggTrader/lab/intraday_observer.py:1620: BindingMismatch
+________ test_readiness_review_init_prints_the_hash_activation_consumes ________
+
+tmp_path = PosixPath('/tmp/pytest-of-flynn/pytest-1484/test_readiness_review_init_pri0')
+capsys = <_pytest.capture.CaptureFixture object at 0x7ee04e42aba0>
+
+    def test_readiness_review_init_prints_the_hash_activation_consumes(tmp_path, capsys):
+        args = init_args(tmp_path)
+        state = tmp_path / "cli-state"
+        argv = ["init", "--state-dir", str(state), "--activation-date", ACTIVATION,
+                "--official-calendar", str(args["official_calendar_file"]),
+                "--protocol-file", str(args["protocol_file"]),
+                "--protocol-sha256", args["protocol_sha256"], "--source-delay-seconds", "900"]
+        assert obs.main(argv) == 0
+        printed = json.loads(capsys.readouterr().out)
+>       assert printed["manifest_sha256"] == hashlib.sha256((state / "manifest.json").read_bytes()).hexdigest()
+E       AssertionError: assert '7856ccac433f...4c6c72850eaec' == '9d5aa1664b8c...eb5f26d89f205'
+E
+E         - 9d5aa1664b8cd4ab00db7043d97dbc4247c9a86b457dde6a32aeb5f26d89f205
+E         + 7856ccac433fe832377146a5835536577d2264484bafa8026a74c6c72850eaec
+
+tests/lab/test_intraday_observer.py:2336: AssertionError
+_________ test_readiness_review_resume_cannot_waive_current_corruption _________
+
+tmp_path = PosixPath('/tmp/pytest-of-flynn/pytest-1484/test_readiness_review_resume_c0')
+
+    def test_readiness_review_resume_cannot_waive_current_corruption(tmp_path):
+        ob, clock, _ = active(tmp_path)
+        record = archive_day(ob, clock, ANCHOR_DAY)
+        raw = ob.dir / record["body"]["fetch"]["attempts"][0]["raw_path"]
+        original = raw.read_bytes()
+        raw.write_bytes(b"corrupted")
+        clock.set(DAY1, "10:00:00")
+        before = len(ob.records())
+>       with pytest.raises(obs.BindingMismatch, match="ledger_integrity"):
+E       Failed: DID NOT RAISE <class 'ggTrader.lab.intraday_observer.BindingMismatch'>
+
+tests/lab/test_intraday_observer.py:2347: Failed
+=========================== short test summary info ============================
+FAILED tests/lab/test_intraday_observer.py::test_review_corrupt_evidence_cannot_produce_performance_statistics
+FAILED tests/lab/test_intraday_observer.py::test_readiness_review_init_prints_the_hash_activation_consumes
+FAILED tests/lab/test_intraday_observer.py::test_readiness_review_resume_cannot_waive_current_corruption
+3 failed, 147 deselected in 2.34s

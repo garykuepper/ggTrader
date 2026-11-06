@@ -1,0 +1,13 @@
+# DRAFT: no Persistent catch-up and no randomized delay. Not approved for activation.
+[Unit]
+Description=ggTrader intraday observer input timer
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 15:20:00 America/New_York
+AccuracySec=1s
+RandomizedDelaySec=0
+Persistent=false
+Unit=ggtrader-intraday-observer-inputs.service
+
+[Install]
+WantedBy=timers.target

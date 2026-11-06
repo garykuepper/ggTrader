@@ -1,0 +1,21 @@
+{
+  "authorization": "Owner said: so you execute instead. Authorizes parent takeover now; does not retroactively authorize child execution.",
+  "chunk_hash_mismatches": [],
+  "chunks_verified": 132,
+  "direct_metadata_check": {
+    "close_1559_present": false,
+    "date": "2019-08-12",
+    "dividends_2016Q1": 0,
+    "dividends_2018Q2": 0,
+    "entry_1530_present": false,
+    "regular_minute_bars": 360
+  },
+  "new_network_requests": 0,
+  "pages": 263,
+  "run_utc": "2026-10-26T00:08:07.276645+00:00",
+  "schema": "intraday_r8_parent_verification",
+  "scoring_executed": false,
+  "status": "UNRESOLVED (data)",
+  "validation_matches_child_except_timestamp": true,
+  "validation_sha256": "4ab00dec65cf0327168c900b40dac923d7bccced7fdf411ca7dcfb72f3596019"
+}

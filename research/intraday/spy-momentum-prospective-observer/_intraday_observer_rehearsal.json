@@ -1,0 +1,246 @@
+{
+  "as_of_utc": "2026-12-02T22:00:00Z",
+  "benchmark": {
+    "cagr": null,
+    "distribution_dates_reinvested": null,
+    "price_only": {
+      "note": "price return only; excludes distributions; not a comparison basis",
+      "wealth_end": 103000.0
+    },
+    "reasons": [
+      "no_distribution_schedule"
+    ],
+    "status": "incomplete",
+    "through_date": "2026-12-02",
+    "total_return_wealth_end": null
+  },
+  "calendar": {
+    "amendments": [],
+    "anchor_date": "2026-11-27",
+    "checkpoint_date": "2026-12-29",
+    "early_closes_registered": [
+      "2026-11-27",
+      "2026-12-24",
+      "2027-11-26"
+    ],
+    "first_date": "2026-11-30",
+    "last_date": "2027-12-02"
+  },
+  "distributions": [],
+  "evidence_note": "Timestamps are local host evidence only; decisions are not independently witnessed.",
+  "faults": [],
+  "fixed_rule": {
+    "complete": false,
+    "ex_distribution_flat_sensitivity": {
+      "reason": "no_distribution_schedule",
+      "status": "unavailable"
+    },
+    "gaps": [],
+    "note": "Needs a timely signal and a valuation for every full session.",
+    "partial_through": "2026-12-02",
+    "statistics": {
+      "base": {
+        "after_tax": {
+          "annual": [],
+          "terminal_accrual": 179.72988469743333,
+          "unknown_from": null,
+          "wealth_end": 100748.87451957264,
+          "wealth_end_after_terminal": 100569.1446348752
+        },
+        "cagr_after_tax": 0.5137370903168663,
+        "cagr_pretax": 0.7246336244129119,
+        "losing_streak": 0,
+        "max_drawdown": 0.0,
+        "mean_bp": 24.915928729120296,
+        "nw5_t": 5.997099042745295,
+        "pretax": {
+          "unknown_from": null,
+          "wealth_end": 100748.87451957264
+        },
+        "tax_drag_wealth": 179.72988469742995,
+        "worst_month": 0.003698635477582979
+      },
+      "break_even_cost_per_side": 0.0019686946546840223,
+      "counts": {
+        "flat": 1,
+        "long": 2,
+        "sessions": 3
+      },
+      "gross": {
+        "after_tax": {
+          "annual": [],
+          "terminal_accrual": 189.36672363480326,
+          "unknown_from": null,
+          "wealth_end": 100789.02801514501,
+          "wealth_end_after_terminal": 100599.66129151022
+        },
+        "cagr_after_tax": 0.5476604209379747,
+        "cagr_pretax": 0.7755725539862246,
+        "losing_streak": 0,
+        "max_drawdown": 0.0,
+        "mean_bp": 26.249262062453628,
+        "nw5_t": 5.997386078907367,
+        "pretax": {
+          "unknown_from": null,
+          "wealth_end": 100789.02801514501
+        },
+        "tax_drag_wealth": 189.36672363479738,
+        "worst_month": 0.003898635477582957
+      },
+      "stress": {
+        "after_tax": {
+          "annual": [],
+          "terminal_accrual": 170.0949657600634,
+          "unknown_from": null,
+          "wealth_end": 100708.72902400026,
+          "wealth_end_after_terminal": 100538.6340582402
+        },
+        "cagr_after_tax": 0.4805539109015655,
+        "cagr_pretax": 0.675146351448324,
+        "losing_streak": 0,
+        "max_drawdown": 0.0,
+        "mean_bp": 23.58259539578696,
+        "nw5_t": 5.996762008720876,
+        "pretax": {
+          "unknown_from": null,
+          "wealth_end": 100708.72902400026
+        },
+        "tax_drag_wealth": 170.09496576005768,
+        "worst_month": 0.003498635477583001
+      },
+      "through_date": "2026-12-02"
+    }
+  },
+  "identity": {
+    "activated": true,
+    "bindings": {
+      "code": "ce5fe89aa17a88152b1f52ef7bb9471b43e926992438fa0e1d543f9472a802ef",
+      "manifest": "33ce51825ecf2e5ba37c2bdadb1535921e84ed89c20b67b5baccd0dae082c6bb",
+      "protocol": "9fdaa7ad2cfc8bf323e0c3c82146fc867f25330e87d35ad3bb403f41b6961752",
+      "runtime": "b08690abaa89ec89f5f37da1cd98164f8810080d5e1d78c23aac6a5cc4fb451c"
+    },
+    "manifest_sha256": "33ce51825ecf2e5ba37c2bdadb1535921e84ed89c20b67b5baccd0dae082c6bb",
+    "mode": "rehearsal",
+    "readiness_sha256": null,
+    "source_delay_seconds": 900,
+    "source_delay_verified": false,
+    "source_preflight": "synthetic_only",
+    "state_dir": "/tmp/ggtrader-observer-final-rehearsal/state"
+  },
+  "integrity": {
+    "problems": [],
+    "records": 21,
+    "stray_raw_files": []
+  },
+  "observer": {
+    "halting_faults": [],
+    "note": "Hypothetical positions only; faults and halts leave the observer flat.",
+    "statistics": {
+      "base": {
+        "after_tax": {
+          "annual": [],
+          "terminal_accrual": 179.72988469743333,
+          "unknown_from": null,
+          "wealth_end": 100748.87451957264,
+          "wealth_end_after_terminal": 100569.1446348752
+        },
+        "cagr_after_tax": 0.5137370903168663,
+        "cagr_pretax": 0.7246336244129119,
+        "losing_streak": 0,
+        "max_drawdown": 0.0,
+        "mean_bp": 24.915928729120296,
+        "nw5_t": 5.997099042745295,
+        "pretax": {
+          "unknown_from": null,
+          "wealth_end": 100748.87451957264
+        },
+        "tax_drag_wealth": 179.72988469742995,
+        "worst_month": 0.003698635477582979
+      },
+      "break_even_cost_per_side": 0.0019686946546840223,
+      "counts": {
+        "flat": 1,
+        "long": 2,
+        "sessions": 3
+      },
+      "gross": {
+        "after_tax": {
+          "annual": [],
+          "terminal_accrual": 189.36672363480326,
+          "unknown_from": null,
+          "wealth_end": 100789.02801514501,
+          "wealth_end_after_terminal": 100599.66129151022
+        },
+        "cagr_after_tax": 0.5476604209379747,
+        "cagr_pretax": 0.7755725539862246,
+        "losing_streak": 0,
+        "max_drawdown": 0.0,
+        "mean_bp": 26.249262062453628,
+        "nw5_t": 5.997386078907367,
+        "pretax": {
+          "unknown_from": null,
+          "wealth_end": 100789.02801514501
+        },
+        "tax_drag_wealth": 189.36672363479738,
+        "worst_month": 0.003898635477582957
+      },
+      "stress": {
+        "after_tax": {
+          "annual": [],
+          "terminal_accrual": 170.0949657600634,
+          "unknown_from": null,
+          "wealth_end": 100708.72902400026,
+          "wealth_end_after_terminal": 100538.6340582402
+        },
+        "cagr_after_tax": 0.4805539109015655,
+        "cagr_pretax": 0.675146351448324,
+        "losing_streak": 0,
+        "max_drawdown": 0.0,
+        "mean_bp": 23.58259539578696,
+        "nw5_t": 5.996762008720876,
+        "pretax": {
+          "unknown_from": null,
+          "wealth_end": 100708.72902400026
+        },
+        "tax_drag_wealth": 170.09496576005768,
+        "worst_month": 0.003498635477583001
+      },
+      "through_date": "2026-12-02"
+    },
+    "through_date": "2026-12-02"
+  },
+  "operational": {
+    "archives_on_time": 3,
+    "checkpoint": {
+      "conditions_met": null,
+      "date": "2026-12-29",
+      "failures": [],
+      "reached": false,
+      "slot": 20
+    },
+    "decisions_timely_valid": 3,
+    "inputs_usable": 3,
+    "late_captures": 0
+  },
+  "schema": "intraday_observer_report",
+  "slots": {
+    "early_close": 0,
+    "exchange_closed": 0,
+    "flat": 1,
+    "future": 249,
+    "halted_no_position": 0,
+    "long": 2,
+    "no_timely_decision": 0,
+    "registered": 252,
+    "started_full_sessions": 3,
+    "valuation": {
+      "future": 249,
+      "late_capture": 0,
+      "ok": 3,
+      "pending": 0,
+      "unresolved": 0
+    }
+  },
+  "tax_policy": "24% of positive yearly net P&L after costs, no loss benefit; a proxy.",
+  "version": 1
+}

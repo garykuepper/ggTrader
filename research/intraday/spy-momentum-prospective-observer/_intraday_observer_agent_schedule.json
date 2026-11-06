@@ -1,0 +1,39 @@
+{
+  "title": "Intraday diary supervision",
+  "enabled": true,
+  "schedule": {
+    "kind": "cron",
+    "expr": "0 14 * * 1-5",
+    "display": "0 14 * * 1-5"
+  },
+  "timezone": "America/Los_Angeles",
+  "nextRunAtAtCreation": "2026-10-29T21:00:00.000Z",
+  "boundThreadId": null,
+  "scope": [
+    "first anchor/observation checks",
+    "daily timer, missing-stage and integrity health checks",
+    "weekly bounded calendar comparison",
+    "slot-20 review after valuation grace",
+    "monthly descriptive summaries",
+    "final report after final recovery grace"
+  ],
+  "executed_during_scheduling": false,
+  "limits": [
+    "Machine and Hermes gateway must be available.",
+    "Does not place orders, backfill decisions, amend frozen evidence or resume halts.",
+    "Reports are local Hermes cron output and study/operator_checks; no external messaging configured.",
+    "First cron execution not yet verified."
+  ],
+  "previous_t3_scheduled_task": {
+    "scheduledTaskId": "scheduled-task:command:mcp:9afa075d-d4b1-4dfb-ba2c-cb4d83ff88fa:schedule-task:intraday-observer-daily-agent-supervision-2026-10-29-r1",
+    "enabled": false
+  },
+  "scheduler": "Hermes cron",
+  "hermes_job_id": "39172df68638",
+  "model": "deepseek-flash",
+  "provider": "litellm",
+  "delivery": "local",
+  "nextRunAtAtMigration": "2026-10-29T14:00:00-07:00",
+  "executed_during_migration": false,
+  "creation_method": "Supported hermes cron create CLI with cross-process job-store locking; gateway not restarted; no manual jobs.json edits."
+}

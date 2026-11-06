@@ -14,11 +14,12 @@
 #   scripts/run_tests.sh                    # full suite
 #   scripts/run_tests.sh tests/paper -q     # any pytest args
 #   GGT_TEST_MEM_MAX=4G scripts/run_tests.sh
+#   GGT_TEST_PYTHON=/absolute/frozen/venv/bin/python scripts/run_tests.sh tests/lab -q
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MEM_MAX="${GGT_TEST_MEM_MAX:-8G}"
-PYTHON="$REPO/.venv/bin/python"
+PYTHON="${GGT_TEST_PYTHON:-$REPO/.venv/bin/python}"
 
 if [[ ! -x "$PYTHON" ]]; then
     echo "error: no venv interpreter at $PYTHON" >&2

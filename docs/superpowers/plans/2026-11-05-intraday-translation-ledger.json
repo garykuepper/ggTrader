@@ -1,0 +1,788 @@
+{
+  "existing_dead_links": [
+    {
+      "file": "docs/research/2026-10-25-intraday-opus-estimates-verification.md",
+      "line": 11,
+      "link": "_intraday_full_text_verification_2026-10-25.json"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-opus-estimates-verification.md",
+      "line": 37,
+      "link": "briefs/2026-10-24-intraday-feasibility.md"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-opus-estimates-verification.md",
+      "line": 51,
+      "link": "briefs/2026-10-23-forward-paper-standard.md"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 13,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L39-L74"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 13,
+      "link": "2026-10-24-intraday-trading-feasibility.md#L58-L68"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 15,
+      "link": "briefs/2026-10-23-forward-paper-standard.md"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 24,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L92-L93"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 24,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L93"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 24,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L117"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 24,
+      "link": "briefs/2026-10-23-forward-paper-standard.md"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 25,
+      "link": "briefs/2026-10-23-forward-paper-standard.md#L139-L153"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 26,
+      "link": "briefs/2026-10-23-forward-paper-standard.md#L99-L108"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 26,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L54"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 27,
+      "link": "briefs/2026-10-23-forward-paper-standard.md#L3"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 27,
+      "link": "briefs/2026-10-23-forward-paper-standard.md#L40"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 28,
+      "link": "briefs/2026-10-23-forward-paper-standard.md#L196"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 32,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L45-L47"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 32,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L139-L145"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 38,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L67"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 39,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L62-L67"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 50,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L123"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 50,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L125"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 58,
+      "link": "briefs/2026-10-25-intraday-stage0a-contract.md#L36"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 58,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L69"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 64,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L133"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 64,
+      "link": "briefs/2026-10-23-forward-paper-standard.md#L20-L21"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 71,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L89-L91"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 72,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L73"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "line": 72,
+      "link": "briefs/2026-10-24-intraday-feasibility.md#L134"
+    },
+    {
+      "file": "docs/research/2026-10-25-intraday-stage0a-coverage.md",
+      "line": 7,
+      "link": "briefs/2026-10-25-intraday-stage0a-contract.md"
+    },
+    {
+      "file": "docs/research/briefs/2026-10-25-intraday-r8-decision-memo.md",
+      "line": 4,
+      "link": "2026-10-24-intraday-feasibility.md"
+    },
+    {
+      "file": "docs/research/briefs/2026-10-25-intraday-r8-decision-memo.md",
+      "line": 5,
+      "link": "2026-10-23-forward-paper-standard.md"
+    },
+    {
+      "file": "docs/research/briefs/2026-10-25-intraday-r8-decision-memo.md",
+      "line": 6,
+      "link": "2026-10-25-intraday-stage0a-contract.md"
+    }
+  ],
+  "files": [
+    {
+      "current_path": "docs/research/2026-10-25-intraday-argon-review-assessment.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-argon-review-assessment.md",
+      "sha256": "29783fe1911a7e32ab3ce20b26f422ec3c60d38feb058db6c987b6da69bd4431",
+      "size": 5682
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-gap-investigation.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md",
+      "sha256": "db1a2b5ab1ecc51a7b37706bd792f9579dece39c29573035269e032cb40fe69b",
+      "size": 7340
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-observer-build.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-observer-build.md",
+      "sha256": "c818afe3d9dab91bbeb8a84d9d38f7ef2c028fadcb3327ccdcbdf57976e08129",
+      "size": 4165
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-observer-code-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-observer-code-review.md",
+      "sha256": "302e9cc376ea861b589a4061201215884a234c9c8f39e57c4da8ad0a0f6992d5",
+      "size": 4321
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-opus-estimates-verification.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-opus-estimates-verification.md",
+      "sha256": "c3c1b152977ac83e5b9830f4b0fd7c23281b1539cbb7579c68415a52e2edb7dc",
+      "size": 9426
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-opus-proposal-verification.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-opus-proposal-verification.md",
+      "sha256": "f1567796d52a2997f79da2112d2795d3b676bffd9afb25e3eee520a21f6c09ce",
+      "size": 6622
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-opus-review-assessment.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-opus-review-assessment.md",
+      "sha256": "de8b90f569b16e09d1afef2f443b1f52c65e62a3cb12b24cae085d0cbc874379",
+      "size": 4643
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-overall-plan-argon-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-argon-review.md",
+      "sha256": "8fa4661cae20c2ffd3f6937208defe56bfa7fe0a99b1a7c86bfd025ddde94f41",
+      "size": 30505
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-overall-plan-opus-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-opus-review.md",
+      "sha256": "a43e0fe54fed83fe9b83dcde723eb897a2b1227fbcc0ca9cc0963bed038a4d3d",
+      "size": 13506
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-prospective-protocol-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-protocol-review.md",
+      "sha256": "712d563c31659472a7ece6c5ff1739215ee377b23b16fe9c543a06da0a86ccdd",
+      "size": 3661
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-r8-final-branch-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-final-branch-review.md",
+      "sha256": "1662f769972a58e433b00b0a8bf4b05ee3c3481ee8da617f5ebc0c6142df842c",
+      "size": 2379
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-r8-final-fix-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-final-fix-review.md",
+      "sha256": "ebcc2b233fdb48d3b77c45574d4673aa2c48f4795a5b79debd29a4e026119b1a",
+      "size": 1175
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-r8-fix-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-fix-review.md",
+      "sha256": "0863893d3a2a713cdc52c57122a8d7f72497343ddf8a62d897f9ef1d5614bd53",
+      "size": 6012
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-r8-implementation.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-implementation.md",
+      "sha256": "6a7350aaf6be88e819db528b5e9e90ff4080a4437123da783dd4e98c69196457",
+      "size": 7927
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-r8-task-review.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-task-review.md",
+      "sha256": "b9ef127d53a29e4ad941d6bacb817e83fbde8258ba84d37750ccd9738541d70f",
+      "size": 10144
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-r8-validation-unresolved.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-validation-unresolved.md",
+      "sha256": "549b3bafd161adab0edf48b795fa668f6ac644bcf966884e02fbdbf2a8215c38",
+      "size": 6627
+    },
+    {
+      "current_path": "docs/research/2026-10-25-intraday-stage0a-coverage.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-coverage.md",
+      "sha256": "d910e83569f4cf7bf693fd70c99bd79524edd97571fdd12e63d83fae37866374",
+      "size": 5353
+    },
+    {
+      "current_path": "docs/research/2026-10-26-intraday-observer-readiness.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/2026-10-26-intraday-observer-readiness.md",
+      "sha256": "4288f708a39baac926752102cbe23432157593c95a3134a91e22cbdf02f9d4d6",
+      "size": 8311
+    },
+    {
+      "current_path": "docs/research/2026-10-26-intraday-observer-review-disposition.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/2026-10-26-intraday-observer-review-disposition.md",
+      "sha256": "be1dd60d067a0f4eee8abd7d41e81a58e14345d6ed54f6c9ba814b9053c280f4",
+      "size": 5780
+    },
+    {
+      "current_path": "docs/research/2026-10-27-intraday-observer-activation.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md",
+      "sha256": "465291bfeb6f311ee155da05c0222ce61a97818dff1a3fed02c5969be56805d2",
+      "size": 3424
+    },
+    {
+      "current_path": "docs/research/_intraday_momentum_validation.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_momentum_validation.json",
+      "sha256": "fd13f7562d9afcb655d080c15502f2f434306a708f5ccd66015e6ed05ab88a8a",
+      "size": 3972
+    },
+    {
+      "current_path": "docs/research/_intraday_momentum_validation_parent.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_momentum_validation_parent.json",
+      "sha256": "4ab00dec65cf0327168c900b40dac923d7bccced7fdf411ca7dcfb72f3596019",
+      "size": 3972
+    },
+    {
+      "current_path": "docs/research/_intraday_observer_activation_proposal.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/_intraday_observer_activation_proposal.json",
+      "sha256": "447c3136465a4a4551560c2a62933195a59e45a4d50d702db4fd02f4bba110b7",
+      "size": 49585
+    },
+    {
+      "current_path": "docs/research/_intraday_observer_activation_verification.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/_intraday_observer_activation_verification.json",
+      "sha256": "0f1c95842042134a55080b056c6bf4647038498e72a8df9e6df37d2592c21c24",
+      "size": 5266
+    },
+    {
+      "current_path": "docs/research/_intraday_observer_agent_schedule.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/_intraday_observer_agent_schedule.json",
+      "sha256": "0ac76ac292b42d2f45ad0cb4418ea686376f4c99351ca5123bb71080f298c2fc",
+      "size": 1515
+    },
+    {
+      "current_path": "docs/research/_intraday_observer_build_verification.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/_intraday_observer_build_verification.json",
+      "sha256": "e93aecedd999a9422ead33f640f2edc95e809d3b672a44900b3c832eecf9edb8",
+      "size": 1771
+    },
+    {
+      "current_path": "docs/research/_intraday_observer_readiness_preflight.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/_intraday_observer_readiness_preflight.json",
+      "sha256": "4d99f1f3abf4c553b185999028ac4100bedd96fff59360dc397e321ec8ecf646",
+      "size": 51334
+    },
+    {
+      "current_path": "docs/research/_intraday_observer_rehearsal.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/_intraday_observer_rehearsal.json",
+      "sha256": "71ef91c9d70417744882a5ff174650b1cd129a855b859da90eb547fb1edf1018",
+      "size": 7415
+    },
+    {
+      "current_path": "docs/research/_intraday_observer_release_verification.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/_intraday_observer_release_verification.json",
+      "sha256": "f47cc6d96c29a379d57e9377b9288db7058390fae997a4f7e0077b1eb267a022",
+      "size": 1449
+    },
+    {
+      "current_path": "docs/research/_intraday_observer_runtime_snapshot.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/_intraday_observer_runtime_snapshot.json",
+      "sha256": "2f9544df55a97e654df1d026da8cb4591b79c4edb92706b10c75d9a9466f8cde",
+      "size": 5567
+    },
+    {
+      "current_path": "docs/research/_intraday_observer_unit_verification.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/_intraday_observer_unit_verification.json",
+      "sha256": "2477eaf1f9704945ac2c9480056bf4ee3417b44e282beac64e02749302bf2640",
+      "size": 1618
+    },
+    {
+      "current_path": "docs/research/_intraday_opus_auction_verification_2026-10-25.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_opus_auction_verification_2026-10-25.json",
+      "sha256": "e786a4ac6ebecc7238f6773969222e78a91f946c54d61f78932890638ea50ee6",
+      "size": 1522
+    },
+    {
+      "current_path": "docs/research/_intraday_opus_estimates_verification_2026-10-25.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_opus_estimates_verification_2026-10-25.json",
+      "sha256": "92caeaf01a947423928077b3ea089920768b20dcff70516859c59fa90f2cb476",
+      "size": 23991
+    },
+    {
+      "current_path": "docs/research/_intraday_probe.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_probe.json",
+      "sha256": "10703eb0bc71c435577941740014b0cbeeaf2276696205a5b2ae08b6ab972bd2",
+      "size": 1285061
+    },
+    {
+      "current_path": "docs/research/_intraday_r8_execution_preflight_2026-10-25.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_r8_execution_preflight_2026-10-25.json",
+      "sha256": "08c0f9bd7f6fcaefcab201a8f28e96c404c50607ea5807b4672c34f1cd0fe587",
+      "size": 63540
+    },
+    {
+      "current_path": "docs/research/_intraday_r8_field_check_2026-10-25.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_r8_field_check_2026-10-25.json",
+      "sha256": "dc7f4d212d409b371205ed83272fc17163fb50d67a87732b0a9a4a2d13640f02",
+      "size": 4392
+    },
+    {
+      "current_path": "docs/research/_intraday_r8_gap_investigation.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_r8_gap_investigation.json",
+      "sha256": "d35f4951d14bdcf87b505d0243f654b133f312b7cf3070821905737eda2d6976",
+      "size": 6261
+    },
+    {
+      "current_path": "docs/research/_intraday_r8_gap_trade_existence.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_r8_gap_trade_existence.json",
+      "sha256": "caf69461d29029b25f832f6b183bbb4bb2fc3527872eaf61560ba205e82f7775",
+      "size": 12653
+    },
+    {
+      "current_path": "docs/research/_intraday_r8_parent_verification.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_r8_parent_verification.json",
+      "sha256": "31a3957107f74f49c0e91cbf70019862153dc7017236c7cf25642b04d74d3db1",
+      "size": 758
+    },
+    {
+      "current_path": "docs/research/_intraday_r8_vendor_adjustment_review_2026-10-25.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_r8_vendor_adjustment_review_2026-10-25.json",
+      "sha256": "86403609990ac3ecbad924d68e746a95749fc5f2dbc51895a5e66b990698f549",
+      "size": 2400
+    },
+    {
+      "current_path": "docs/research/_intraday_schema_verification_2026-10-25.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/_intraday_schema_verification_2026-10-25.json",
+      "sha256": "da3babc27e7d89d10034913adf8df0d7f8c70ce0230488fdab15afd7edf2b019",
+      "size": 1421
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-25-intraday-gap/issuer_spy_distributions.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-25-intraday-gap/issuer_spy_distributions.json",
+      "sha256": "c1f69cb19d3012b3af5a616284f2f8c3aadd317138e0c7c0ca70687b9bc5a68f",
+      "size": 11209
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-25-intraday-gap/spdr-etf-historical-distributions.xlsx",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-25-intraday-gap/spdr-etf-historical-distributions.xlsx",
+      "sha256": "6b65cbf956b5d25705d08470006a0e97e6a7d2a0d5cfd08b63f6f79783b06320",
+      "size": 581216
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/bars_2026-10-23.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/bars_2026-10-23.bin",
+      "sha256": "377303be844f3b22aa06632405b1b70364290d7538bfdc37c23ce438ecdca5a3",
+      "size": 42243
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/bars_2026-10-26.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/bars_2026-10-26.bin",
+      "sha256": "e1dfef7fc572af8b5dc883bfd2d4e8e77dbc2e4e182a6ebf0a5a0a85ec9c2e74",
+      "size": 42168
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/bars_reference.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/bars_reference.bin",
+      "sha256": "b7966bf001f162fdad6f7a6f009e744eb70e7a6a6d9330de7846a7c5133af939",
+      "size": 342536
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/calendar_comparison.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/calendar_comparison.json",
+      "sha256": "3bf124066d0110b42d520ce1d3f7d281249fe580154ddcd1c2e252e102ff5795",
+      "size": 41093
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/delay_probe_16m.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/delay_probe_16m.bin",
+      "sha256": "c700148960d500511ad0040f8b1c3c6ebbac07572176aff49cfc66b69eec9aee",
+      "size": 34
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/delay_probe_5m.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/delay_probe_5m.bin",
+      "sha256": "6371e1154e20fcef8e643d6787b18eceadff0ac8b760effeaa525ad59c000785",
+      "size": 68
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/early_close_anchor.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/early_close_anchor.bin",
+      "sha256": "4205b8c08a3d4373cb3a1c6462cc0b643ad1b33df9e1af8abe905e800313dea3",
+      "size": 148
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/full-tests-final.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/full-tests-final.txt",
+      "sha256": "fb185cd8bce47bc1eadb75c6333c0bcd2c5baa8ece17feb9b232ab0184394f7b",
+      "size": 10202
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/market_data_docs.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/market_data_docs.bin",
+      "sha256": "558217ed86ae87040e87764c5da9789aee385aa5ddcfcf9ef85df563350950e9",
+      "size": 64
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/market_data_docs_canonical.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/market_data_docs_canonical.bin",
+      "sha256": "b7b75815b551c93944b6b465fb65071f6c1f636a2c08537eba1c0069a3cc07ff",
+      "size": 479561
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/market_data_docs_canonical.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/market_data_docs_canonical.txt",
+      "sha256": "47ce569930f2477adce456cb4415054a13cdc5f9312ef1edd6b0bc71f4c52c00",
+      "size": 6021
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/market_data_faq.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/market_data_faq.bin",
+      "sha256": "225ebda597356ac2839a08fa7e597df8f19f74cbcb949f83488e08a568393f0b",
+      "size": 616277
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/market_data_faq.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/market_data_faq.txt",
+      "sha256": "503d7c292f5e96958428541cc49a8e0d0810f5c760fc3c006e229aa9bf01fa29",
+      "size": 21866
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/official_calendar.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/official_calendar.bin",
+      "sha256": "4493cd2e7735aede915971860d48191437d91e2bfb917be33f559970a3e74bfb",
+      "size": 41797
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/preceding_anchor.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/preceding_anchor.bin",
+      "sha256": "1872d4b5c53d444285d4e765c656fd5030d0b84759db1032edc82a1a3d325242",
+      "size": 151
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/requests.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/requests.json",
+      "sha256": "701d2c1e5ee6bae17b29ed718cbaea0304f07c64fe4da73d409879505c612376",
+      "size": 6858
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/review-green.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/review-green.txt",
+      "sha256": "c052adae50cb1ed85ca9afa8a37cdd48cdd45498b14c57e73c2e3f154fa54969",
+      "size": 158
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/review-red.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/review-red.txt",
+      "sha256": "72641ba9d3db8503e525958e8766385336d794c21da6eb5f05d5dbc8269281c4",
+      "size": 3688
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/runbook-integration.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/runbook-integration.txt",
+      "sha256": "871d747e6562aecb98e138c6cba39b70be421b440e2018335d775b2b971ccd42",
+      "size": 158
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/runtime_bench.py",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/runtime_bench.py",
+      "sha256": "cec297ca81d2d6407d7b85fecb40e4326e91c947cc1fae6dff53dead330a854e",
+      "size": 8900
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/runtime_bench_252.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/runtime_bench_252.json",
+      "sha256": "c614e67c39de7af1bb108bb2b44a40d0e67a61651df73d01da4f2504a0ac17ff",
+      "size": 1727
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/sonnet-report.md",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/sonnet-report.md",
+      "sha256": "65c692fd893477e1d19837d3a5683956ead061d467ec3c8d9cef4855ddf85ed6",
+      "size": 11249
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/spy_issuer_page.bin",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/spy_issuer_page.bin",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/spy_issuer_page.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/spy_issuer_page.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "current_path": "docs/research/artifacts-2026-10-26-intraday-readiness/unactivated-proposal-2026-10-26.json",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/artifacts-2026-10-26-intraday-readiness/unactivated-proposal-2026-10-26.json",
+      "sha256": "b47d41b825824ef625f8862028b94f6bb8f6115dc4dde2f3f52a0531be9f8496",
+      "size": 49217
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-25-intraday-feasibility-r8.md",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md",
+      "sha256": "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85",
+      "size": 15897
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-25-intraday-gap-investigation-plan.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation-plan.md",
+      "sha256": "b147180f9f33cb38664b19157af025b75fdb06d1f12a983d21bae29fa890e57a",
+      "size": 3072
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-25-intraday-opus-verification-manifest.md",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-opus-verification-manifest.md",
+      "sha256": "58d8f8c17ec7b3218cb6e7e07fb99e46c7d7ad23d83f74a89035df90bbd8df0d",
+      "size": 1860
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-25-intraday-prospective-observation.md",
+      "frozen": true,
+      "pinned": true,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md",
+      "sha256": "bf6f66a412baf9d47ed76cd1d0797b4a4f3ef7deb1ae8d44ade4a581abd633a8",
+      "size": 17541
+    },
+    {
+      "current_path": "docs/research/briefs/2026-10-25-intraday-r8-decision-memo.md",
+      "frozen": false,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-decision-memo.md",
+      "sha256": "3579a7e895c7e53225b6460816b5f5caed142ccf406926f07d2d1300878755c8",
+      "size": 16525
+    },
+    {
+      "current_path": "docs/research/intraday-observer-hermes-supervision-prompt.txt",
+      "frozen": true,
+      "pinned": false,
+      "proposed_path": "research/intraday/spy-momentum-prospective-observer/intraday-observer-hermes-supervision-prompt.txt",
+      "sha256": "0810a7c71cdc27d6d909b6d82853fe773981203e1d1a76206a2a016a58365c36",
+      "size": 4259
+    }
+  ],
+  "inbound_references": {
+    "README.md": 3,
+    "docs/changelog.md": 2,
+    "docs/cli_reference.md": 3,
+    "docs/superpowers/plans/2026-09-11-paper-trading-remediation.md": 3,
+    "docs/superpowers/plans/2026-10-22-event-evidence-resolution.md": 5,
+    "docs/superpowers/plans/2026-10-25-intraday-prospective-study.md": 1,
+    "docs/superpowers/plans/2026-10-25-intraday-r8-implementation.md": 1,
+    "docs/superpowers/plans/2026-10-25-intraday-stage0a.md": 1,
+    "docs/superpowers/plans/2026-10-26-intraday-observer-readiness.md": 1,
+    "docs/superpowers/plans/2026-11-02-research-followups-master.md": 1,
+    "docs/superpowers/plans/2026-11-02-research-reliability-next-steps.md": 2,
+    "docs/superpowers/plans/2026-11-04-root-cause-investigation.md": 2,
+    "docs/superpowers/plans/2026-11-05-intraday-branch-translation.md": 4,
+    "docs/superpowers/plans/2026-11-05-intraday-translation-manifest.csv": 74,
+    "docs/superpowers/plans/2026-11-05-research-readability-and-subfolders.md": 4,
+    "scripts/intraday_coverage_probe.py": 1,
+    "scripts/intraday_momentum_research.py": 2,
+    "src/ggTrader/lab/intraday_momentum.py": 2,
+    "src/ggTrader/lab/intraday_probe.py": 3,
+    "tests/lab/test_intraday_observer.py": 1,
+    "tests/scripts/test_driver_default_paths.py": 3,
+    "tests/scripts/test_research_retarget.py": 7
+  },
+  "source_revision": "5a64dfdfb9d2651b7069a6b2e7719980d238ac8c"
+}

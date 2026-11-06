@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-11-06
+
+- **Intraday research moved into `research/intraday/` on the translation branch (no strategy, live-trader, verdict or number change).**
+  - The unmerged intraday research branch (named intraday-stage0a) was brought onto the new `research/` layout
+    on a separate branch, `translate/intraday-stage0a`. The original branch and the live observer
+    are unchanged. Nothing is merged or pushed.
+  - 74 files moved from the old `docs` research folder as git renames at 100% (bytes unchanged): 30 into
+    `research/intraday/spy-momentum-feasibility/`, 17 into the new
+    `research/intraday/spy-momentum-prospective-observer/`, and 27 into two new supporting
+    packages beside the study folders, `artifacts-2026-10-25-intraday-gap/` (2) and
+    `artifacts-2026-10-26-intraday-readiness/` (25). The index and `research/MOVED.csv`
+    (now 248 rows) list them. 52 of the 74 are frozen (JSON, workbook, binary and text
+    evidence, and the three pinned briefs) and are byte-identical to before the move.
+  - Three briefs that other files quote by hash moved byte-for-byte and were kept out of every
+    rewrite: the r8 protocol (`2026-10-25-intraday-feasibility-r8.md`), the prospective
+    observation protocol (`2026-10-25-intraday-prospective-observation.md`) and the Opus
+    verification manifest (`2026-10-25-intraday-opus-verification-manifest.md`). Their own
+    relative links therefore no longer resolve. `intraday_momentum.protocol_sha256()` still
+    returns `be395d95...`.
+  - References were rewritten in 12 moved reports (56 replacements), 7 other Markdown files
+    (35) and 5 code and test files (8). The five code and test files changed by path only:
+    `src/ggTrader/lab/intraday_probe.py`, `src/ggTrader/lab/intraday_momentum.py`,
+    `scripts/intraday_momentum_research.py`, `scripts/intraday_coverage_probe.py` and
+    `tests/lab/test_intraday_observer.py`. Two modules and the script gained a `STUDY_DIR`
+    constant so a long path stays under 100 columns. The result path in
+    `scripts/intraday_momentum_research.py` (`_intraday_momentum_results.json`, a file that has
+    never been written) now points at the study folder as well.
+  - **The recorded r8 validation run is not reusable.** `intraday_momentum.py`,
+    `intraday_probe.py` and `scripts/intraday_momentum_research.py` are part of the code the r8
+    pipeline fingerprints (`code_sha256`, the fingerprint of the code files: `f0b85690...` in
+    the validation results and now `83257bb5...`), and editing a path changes that fingerprint. The recorded validation stays as evidence of what
+    happened (UNRESOLVED (data)), and scoring remains unapproved. The live observer runs the
+    pinned release `280d4a0` and is unaffected; `deploy/intraday_observer/` was not edited, so
+    its operator runbook still names the old paths until a new release is cut.
+  - `_intraday_probe.json` records the hash of the 2026-10-24 feasibility brief as
+    `51162768...`. That brief now sits in the first reorganization's layout with its links
+    rewritten, so its bytes hash to `33c00494...`. The hash is provenance only (a record of
+    what the file looked like then; nothing checks it) and the brief was not edited.
+  - Gate results are in section 10 of
+    `docs/superpowers/plans/2026-11-05-research-reorg-verification.md`.
+    [Index](../research/RESEARCH_INDEX.md).
+
 ## 2026-11-05
 
 - **Owner accepted the root-cause synthesis (decision 1 of 13; no strategy, live-code, verdict or number change).**
@@ -97,7 +139,94 @@
   No backtest on market data, data purchase, order or deploy.
   [Index](../research/RESEARCH_INDEX.md).
 
+## 2026-10-27
+
+- **Intraday hypothetical journal activated with owner approval (“start”).** Installed
+  the fixed standalone release, dedicated runtime, private fetching credentials and
+  four separate user timers. All installed services passed pre-anchor no-op checks;
+  ledger integrity passes, with no source calls during installation. Refreshed the
+  date registration before init: first observation October 30, slot-20 checkpoint
+  November 30, final slot November 3, 2027. No orders or production configuration
+  changes. Real scheduled collection remains to be verified.
+  [Activation record](../research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md).
+
+## 2026-10-26
+
+- **Intraday readiness preparation completed; observer remains off:** parent verified sampled free SIP
+  access, endpoint timestamps, delayed-access restriction and calendar agreement;
+  retained original responses under a twelve-of-twenty GET budget. Added draft
+  standalone timer/runbook package and calendar-aware dispatch. No activation or
+  installed schedule. Parent addressed Opus activation findings: disk-byte manifest
+  hash, staged readiness, private persistent credential provisioning, exact release
+  creation, dedicated frozen runtime, health/calendar procedures and safe unresolved
+  integrity reporting. Dedicated runtime: 1,889 full-suite tests plus one additional
+  integration test pass; 151 unique observer tests. Owner activation approval pending.
+  [Readiness evidence](../research/intraday/spy-momentum-prospective-observer/2026-10-26-intraday-observer-readiness.md).
+
 ## 2026-10-25
+
+- **Prospective intraday practice journal built offline.** Added isolated file-based
+  recording, calendar slots, immutable decisions/snapshots, hypothetical accounting
+  and a three-session demonstration. Parent corrected eight Important Opus findings
+  covering checkpoint halts, late writes, retrospective amendments, readiness and
+  source integrity. 118 focused tests and 1,857 full-suite tests pass; Ruff clean.
+  No source collection, scheduler or orders activated. [Build record](../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-observer-build.md).
+
+- **Intraday data-gap investigation completed:** reproduced vendor omissions with
+  exact response hashes, narrow requests and metadata-only SIP trades/control.
+  Independently verified issuer distributions (43 versus Alpaca 41); retained
+  source workbook and JSON evidence. Sonnet/Flash/Opus tasks completed. r8 remains
+  UNRESOLVED (data), with no repair or score. [Report](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md).
+
+- **Owner-authorized parent r8 takeover:** independently verified 132 chunk hashes
+  and missing endpoint/dividend metadata; reran signal-blind validation, reproducing
+  UNRESOLVED (data). No further collection or scoring. See the
+  [parent verification](../research/intraday/spy-momentum-feasibility/_intraday_r8_parent_verification.json).
+
+- **Intraday r8 delegation scope violation; approval 2 was NOT granted.**
+  A read-only Argon review instead executed collection and validation and edited
+  documentation. Preserved artifacts report UNRESOLVED (data); this is not an
+  approved run or completed independent review. The child completed the
+  132-request frozen SIP collection into `data/external/intraday_momentum_r8`
+  (263 pages in 263 HTTP 200 GET attempts; `data_manifest_sha256`
+  `110f8f8161179b56650a7486a416f2cb61b92554a4f7e12fa93435f1192e9237`).
+  Signal-blind validation ([`_intraday_momentum_validation.json`](../research/intraday/spy-momentum-feasibility/_intraday_momentum_validation.json))
+  returned `UNRESOLVED (data)` on four defects: missing required `15:30` and
+  `15:59` SPY minute bars on `2019-08-12` (`endpoint_missing:entry_1530:2019-08-12`,
+  `endpoint_missing:close:2019-08-12`) and missing quarterly cash-dividend
+  records in `2016Q1` and `2018Q2` (`dividend_coverage_missing:2016Q1`,
+  `dividend_coverage_missing:2018Q2`). Per r8 §D4.4/§D6, the study closes
+  without scoring, date edits, endpoint substitution or production changes.
+  [Closure report](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-validation-unresolved.md).
+
+- **Intraday r8 mocked research pipeline.** Added isolated resumable GET
+  collection, signal-blind validation and a hash-bound single-shot scorer.
+  Corrected zero-variance statistics, session omission, corporate-action handling
+  and runtime/vendor-review identity checks; synthetic tests and scoped review
+  pass. Historical collection/scoring remain pending approval 2.
+  [Implementation record](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-implementation.md).
+  Final benchmark-overflow regression and scoped review are closed; the corrected
+  code passes 1,739 capped-suite tests. The execution manifest is ready for
+  approval 2, with vendor-history limits explicitly recorded.
+
+- **Intraday r8 approval 1.** Owner approved the reviewed defaults for protocol
+  finalization and mocked implementation: fixed January 5, 2016–September 30,
+  2026 proxy screen, early-close anchors and signal-blind endpoint validation.
+  Historical collection/scoring remain pending approval 2; production unchanged.
+  [Protocol](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md).
+
+- **Opus plan-review verification.** Reproduced conditional power/cost/page
+  estimates and verified the auction schema failure against an identical
+  metadata-only response. Corrected the omitted-field conjecture to a null/list
+  mismatch; identified the whole-share CLS sales-contact caveat. No price work,
+  strategy evaluation or protocol changes.
+  [Verification](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-opus-proposal-verification.md).
+
+- **Intraday Stage 0A metadata probe.** Added a bounded, read-only SPY coverage
+  tool with atomic evidence and mocked tests. All 20 SIP sample sessions had
+  complete regular grids, but the required 2015-12-31 prior-close input was
+  empty; stage and auction branch remain unresolved. No backtest or production
+  change. [Results](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-coverage.md).
 
 - **Intraday paper-access follow-up.** Verified the author-linked final Gao
   journal PDF and the Delgado/Demirev registry abstracts. Closed the final-paper

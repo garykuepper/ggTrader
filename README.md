@@ -113,6 +113,17 @@ src/ggTrader/
 
 ## Documentation
 
+The prospective intraday practice journal is activated as an isolated automatic
+recorder. First observation: October 30, 2026; operational checkpoint: November 30.
+It records hypothetical SPY positions and places no orders. See the
+[activation record](research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md) and
+[operator commands](docs/cli_reference.md#prospective-intraday-practice-journal).
+
+Historical intraday r8 is closed as **UNRESOLVED (data)** after parent-verified
+collection and signal-blind validation found missing endpoint bars. No score was
+computed. See the [validation report](research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-validation-unresolved.md).
+The prospective observer is separate from that closed study and production paper trading.
+
 For a deeper dive, check out our detailed guides:
 - [**Next Steps**](docs/next_steps.md) — The current worklist. Start here if you are picking up work.
 - [**Roadmap**](docs/roadmap.md) — Goals, strategy status table, and project history.

@@ -1,0 +1,2117 @@
+{
+  "schema": "intraday_observer_activation_proposal",
+  "status": "preparation_verified_awaiting_owner_activation_approval",
+  "activated": false,
+  "release_commit": "280d4a0edc00f1b4b23ba7bbe8dd80432877b36f",
+  "release_root": "/home/flynn/.local/share/ggtrader/intraday-observer/releases/280d4a0edc00f1b4b23ba7bbe8dd80432877b36f",
+  "state_dir": "/home/flynn/.local/share/ggtrader/intraday-observer/studies/spy-prospective-2026-10-26-280d4a0",
+  "python": "/home/flynn/.local/share/ggtrader/intraday-observer/runtimes/366f9247c65e0a38/bin/python",
+  "interpreter_binary_sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f",
+  "runtime": {
+    "python": "3.12.3",
+    "requests": "2.33.1",
+    "pandas_market_calendars": "5.5.0",
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "statsmodels": "0.15.0",
+    "sha256": "b08690abaa89ec89f5f37da1cd98164f8810080d5e1d78c23aac6a5cc4fb451c"
+  },
+  "code": {
+    "files": {
+      "src/ggTrader/lab/intraday_observer.py": "9e8cd65078db5444f9c430ea9aa2c7934f00ac227178b8748741d7a2e90aa59a",
+      "scripts/intraday_observe.py": "69715c6d9f014ede21bd11fc0dd0d2f21eafad854fab5d963b1fdc021be43904",
+      "scripts/intraday_observer_job.py": "dfbd779c790532a9575b03f1738dc2e9891082b6b3eb3c8f88076c25d65689b9",
+      "src/ggTrader/lab/intraday_probe.py": "632e183faf4f7c8d1950e97b7da838866547edf75ba657e82da262c03945f3de"
+    },
+    "sha256": "f0320a3efca513da012aaabf7977bb29ce7ee2619c1fe4210562314f518ce4f2"
+  },
+  "protocol_file": "/home/flynn/.local/share/ggtrader/intraday-observer/releases/280d4a0edc00f1b4b23ba7bbe8dd80432877b36f/docs/research/briefs/2026-10-25-intraday-prospective-observation.md",
+  "protocol_sha256": "bf6f66a412baf9d47ed76cd1d0797b4a4f3ef7deb1ae8d44ade4a581abd633a8",
+  "calendar_snapshot_sha256": "4493cd2e7735aede915971860d48191437d91e2bfb917be33f559970a3e74bfb",
+  "source_delay_seconds": 900,
+  "calendar": {
+    "source": "offline_nyse_calendar",
+    "library_version": "5.5.0",
+    "official_agreement": "agrees_with_offline_nyse_5_5_0",
+    "activation_date": "2026-10-26",
+    "first_date": "2026-10-29",
+    "checkpoint_date": "2026-11-25",
+    "last_date": "2027-11-02",
+    "anchor_date": "2026-10-28",
+    "post_window_next_session": "2027-11-03",
+    "early_closes": [
+      "2026-11-27",
+      "2026-12-24"
+    ],
+    "year_end_sessions": [
+      "2026-12-31"
+    ],
+    "slot_dates_sha256": "f430d8158a19a021a71e4deba154324680efafcf31c9e23dcfb16967af3683c5",
+    "schedule_sha256": "ef81ea0dc0959b9861d4b765256779ff729a68c57199bcb250dfb59a462c985b",
+    "sessions": [
+      {
+        "date": "2026-10-28",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": null
+      },
+      {
+        "date": "2026-10-29",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 1
+      },
+      {
+        "date": "2026-10-30",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 2
+      },
+      {
+        "date": "2026-11-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 3
+      },
+      {
+        "date": "2026-11-03",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 4
+      },
+      {
+        "date": "2026-11-04",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 5
+      },
+      {
+        "date": "2026-11-05",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 6
+      },
+      {
+        "date": "2026-11-06",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 7
+      },
+      {
+        "date": "2026-11-09",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 8
+      },
+      {
+        "date": "2026-11-10",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 9
+      },
+      {
+        "date": "2026-11-11",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 10
+      },
+      {
+        "date": "2026-11-12",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 11
+      },
+      {
+        "date": "2026-11-13",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 12
+      },
+      {
+        "date": "2026-11-16",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 13
+      },
+      {
+        "date": "2026-11-17",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 14
+      },
+      {
+        "date": "2026-11-18",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 15
+      },
+      {
+        "date": "2026-11-19",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 16
+      },
+      {
+        "date": "2026-11-20",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 17
+      },
+      {
+        "date": "2026-11-23",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 18
+      },
+      {
+        "date": "2026-11-24",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 19
+      },
+      {
+        "date": "2026-11-25",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 20
+      },
+      {
+        "date": "2026-11-27",
+        "kind": "early_close",
+        "open": "09:30",
+        "close": "13:00",
+        "close_minute": "12:59",
+        "slot": null
+      },
+      {
+        "date": "2026-11-30",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 21
+      },
+      {
+        "date": "2026-12-01",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 22
+      },
+      {
+        "date": "2026-12-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 23
+      },
+      {
+        "date": "2026-12-03",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 24
+      },
+      {
+        "date": "2026-12-04",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 25
+      },
+      {
+        "date": "2026-12-07",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 26
+      },
+      {
+        "date": "2026-12-08",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 27
+      },
+      {
+        "date": "2026-12-09",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 28
+      },
+      {
+        "date": "2026-12-10",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 29
+      },
+      {
+        "date": "2026-12-11",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 30
+      },
+      {
+        "date": "2026-12-14",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 31
+      },
+      {
+        "date": "2026-12-15",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 32
+      },
+      {
+        "date": "2026-12-16",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 33
+      },
+      {
+        "date": "2026-12-17",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 34
+      },
+      {
+        "date": "2026-12-18",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 35
+      },
+      {
+        "date": "2026-12-21",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 36
+      },
+      {
+        "date": "2026-12-22",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 37
+      },
+      {
+        "date": "2026-12-23",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 38
+      },
+      {
+        "date": "2026-12-24",
+        "kind": "early_close",
+        "open": "09:30",
+        "close": "13:00",
+        "close_minute": "12:59",
+        "slot": null
+      },
+      {
+        "date": "2026-12-28",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 39
+      },
+      {
+        "date": "2026-12-29",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 40
+      },
+      {
+        "date": "2026-12-30",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 41
+      },
+      {
+        "date": "2026-12-31",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 42
+      },
+      {
+        "date": "2027-01-04",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 43
+      },
+      {
+        "date": "2027-01-05",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 44
+      },
+      {
+        "date": "2027-01-06",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 45
+      },
+      {
+        "date": "2027-01-07",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 46
+      },
+      {
+        "date": "2027-01-08",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 47
+      },
+      {
+        "date": "2027-01-11",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 48
+      },
+      {
+        "date": "2027-01-12",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 49
+      },
+      {
+        "date": "2027-01-13",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 50
+      },
+      {
+        "date": "2027-01-14",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 51
+      },
+      {
+        "date": "2027-01-15",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 52
+      },
+      {
+        "date": "2027-01-19",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 53
+      },
+      {
+        "date": "2027-01-20",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 54
+      },
+      {
+        "date": "2027-01-21",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 55
+      },
+      {
+        "date": "2027-01-22",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 56
+      },
+      {
+        "date": "2027-01-25",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 57
+      },
+      {
+        "date": "2027-01-26",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 58
+      },
+      {
+        "date": "2027-01-27",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 59
+      },
+      {
+        "date": "2027-01-28",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 60
+      },
+      {
+        "date": "2027-01-29",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 61
+      },
+      {
+        "date": "2027-02-01",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 62
+      },
+      {
+        "date": "2027-02-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 63
+      },
+      {
+        "date": "2027-02-03",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 64
+      },
+      {
+        "date": "2027-02-04",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 65
+      },
+      {
+        "date": "2027-02-05",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 66
+      },
+      {
+        "date": "2027-02-08",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 67
+      },
+      {
+        "date": "2027-02-09",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 68
+      },
+      {
+        "date": "2027-02-10",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 69
+      },
+      {
+        "date": "2027-02-11",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 70
+      },
+      {
+        "date": "2027-02-12",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 71
+      },
+      {
+        "date": "2027-02-16",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 72
+      },
+      {
+        "date": "2027-02-17",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 73
+      },
+      {
+        "date": "2027-02-18",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 74
+      },
+      {
+        "date": "2027-02-19",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 75
+      },
+      {
+        "date": "2027-02-22",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 76
+      },
+      {
+        "date": "2027-02-23",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 77
+      },
+      {
+        "date": "2027-02-24",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 78
+      },
+      {
+        "date": "2027-02-25",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 79
+      },
+      {
+        "date": "2027-02-26",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 80
+      },
+      {
+        "date": "2027-03-01",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 81
+      },
+      {
+        "date": "2027-03-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 82
+      },
+      {
+        "date": "2027-03-03",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 83
+      },
+      {
+        "date": "2027-03-04",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 84
+      },
+      {
+        "date": "2027-03-05",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 85
+      },
+      {
+        "date": "2027-03-08",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 86
+      },
+      {
+        "date": "2027-03-09",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 87
+      },
+      {
+        "date": "2027-03-10",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 88
+      },
+      {
+        "date": "2027-03-11",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 89
+      },
+      {
+        "date": "2027-03-12",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 90
+      },
+      {
+        "date": "2027-03-15",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 91
+      },
+      {
+        "date": "2027-03-16",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 92
+      },
+      {
+        "date": "2027-03-17",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 93
+      },
+      {
+        "date": "2027-03-18",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 94
+      },
+      {
+        "date": "2027-03-19",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 95
+      },
+      {
+        "date": "2027-03-22",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 96
+      },
+      {
+        "date": "2027-03-23",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 97
+      },
+      {
+        "date": "2027-03-24",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 98
+      },
+      {
+        "date": "2027-03-25",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 99
+      },
+      {
+        "date": "2027-03-29",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 100
+      },
+      {
+        "date": "2027-03-30",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 101
+      },
+      {
+        "date": "2027-03-31",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 102
+      },
+      {
+        "date": "2027-04-01",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 103
+      },
+      {
+        "date": "2027-04-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 104
+      },
+      {
+        "date": "2027-04-05",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 105
+      },
+      {
+        "date": "2027-04-06",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 106
+      },
+      {
+        "date": "2027-04-07",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 107
+      },
+      {
+        "date": "2027-04-08",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 108
+      },
+      {
+        "date": "2027-04-09",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 109
+      },
+      {
+        "date": "2027-04-12",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 110
+      },
+      {
+        "date": "2027-04-13",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 111
+      },
+      {
+        "date": "2027-04-14",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 112
+      },
+      {
+        "date": "2027-04-15",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 113
+      },
+      {
+        "date": "2027-04-16",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 114
+      },
+      {
+        "date": "2027-04-19",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 115
+      },
+      {
+        "date": "2027-04-20",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 116
+      },
+      {
+        "date": "2027-04-21",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 117
+      },
+      {
+        "date": "2027-04-22",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 118
+      },
+      {
+        "date": "2027-04-23",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 119
+      },
+      {
+        "date": "2027-04-26",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 120
+      },
+      {
+        "date": "2027-04-27",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 121
+      },
+      {
+        "date": "2027-04-28",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 122
+      },
+      {
+        "date": "2027-04-29",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 123
+      },
+      {
+        "date": "2027-04-30",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 124
+      },
+      {
+        "date": "2027-05-03",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 125
+      },
+      {
+        "date": "2027-05-04",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 126
+      },
+      {
+        "date": "2027-05-05",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 127
+      },
+      {
+        "date": "2027-05-06",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 128
+      },
+      {
+        "date": "2027-05-07",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 129
+      },
+      {
+        "date": "2027-05-10",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 130
+      },
+      {
+        "date": "2027-05-11",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 131
+      },
+      {
+        "date": "2027-05-12",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 132
+      },
+      {
+        "date": "2027-05-13",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 133
+      },
+      {
+        "date": "2027-05-14",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 134
+      },
+      {
+        "date": "2027-05-17",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 135
+      },
+      {
+        "date": "2027-05-18",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 136
+      },
+      {
+        "date": "2027-05-19",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 137
+      },
+      {
+        "date": "2027-05-20",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 138
+      },
+      {
+        "date": "2027-05-21",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 139
+      },
+      {
+        "date": "2027-05-24",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 140
+      },
+      {
+        "date": "2027-05-25",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 141
+      },
+      {
+        "date": "2027-05-26",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 142
+      },
+      {
+        "date": "2027-05-27",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 143
+      },
+      {
+        "date": "2027-05-28",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 144
+      },
+      {
+        "date": "2027-06-01",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 145
+      },
+      {
+        "date": "2027-06-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 146
+      },
+      {
+        "date": "2027-06-03",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 147
+      },
+      {
+        "date": "2027-06-04",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 148
+      },
+      {
+        "date": "2027-06-07",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 149
+      },
+      {
+        "date": "2027-06-08",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 150
+      },
+      {
+        "date": "2027-06-09",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 151
+      },
+      {
+        "date": "2027-06-10",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 152
+      },
+      {
+        "date": "2027-06-11",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 153
+      },
+      {
+        "date": "2027-06-14",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 154
+      },
+      {
+        "date": "2027-06-15",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 155
+      },
+      {
+        "date": "2027-06-16",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 156
+      },
+      {
+        "date": "2027-06-17",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 157
+      },
+      {
+        "date": "2027-06-21",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 158
+      },
+      {
+        "date": "2027-06-22",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 159
+      },
+      {
+        "date": "2027-06-23",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 160
+      },
+      {
+        "date": "2027-06-24",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 161
+      },
+      {
+        "date": "2027-06-25",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 162
+      },
+      {
+        "date": "2027-06-28",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 163
+      },
+      {
+        "date": "2027-06-29",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 164
+      },
+      {
+        "date": "2027-06-30",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 165
+      },
+      {
+        "date": "2027-07-01",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 166
+      },
+      {
+        "date": "2027-07-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 167
+      },
+      {
+        "date": "2027-07-06",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 168
+      },
+      {
+        "date": "2027-07-07",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 169
+      },
+      {
+        "date": "2027-07-08",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 170
+      },
+      {
+        "date": "2027-07-09",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 171
+      },
+      {
+        "date": "2027-07-12",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 172
+      },
+      {
+        "date": "2027-07-13",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 173
+      },
+      {
+        "date": "2027-07-14",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 174
+      },
+      {
+        "date": "2027-07-15",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 175
+      },
+      {
+        "date": "2027-07-16",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 176
+      },
+      {
+        "date": "2027-07-19",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 177
+      },
+      {
+        "date": "2027-07-20",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 178
+      },
+      {
+        "date": "2027-07-21",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 179
+      },
+      {
+        "date": "2027-07-22",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 180
+      },
+      {
+        "date": "2027-07-23",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 181
+      },
+      {
+        "date": "2027-07-26",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 182
+      },
+      {
+        "date": "2027-07-27",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 183
+      },
+      {
+        "date": "2027-07-28",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 184
+      },
+      {
+        "date": "2027-07-29",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 185
+      },
+      {
+        "date": "2027-07-30",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 186
+      },
+      {
+        "date": "2027-08-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 187
+      },
+      {
+        "date": "2027-08-03",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 188
+      },
+      {
+        "date": "2027-08-04",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 189
+      },
+      {
+        "date": "2027-08-05",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 190
+      },
+      {
+        "date": "2027-08-06",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 191
+      },
+      {
+        "date": "2027-08-09",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 192
+      },
+      {
+        "date": "2027-08-10",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 193
+      },
+      {
+        "date": "2027-08-11",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 194
+      },
+      {
+        "date": "2027-08-12",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 195
+      },
+      {
+        "date": "2027-08-13",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 196
+      },
+      {
+        "date": "2027-08-16",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 197
+      },
+      {
+        "date": "2027-08-17",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 198
+      },
+      {
+        "date": "2027-08-18",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 199
+      },
+      {
+        "date": "2027-08-19",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 200
+      },
+      {
+        "date": "2027-08-20",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 201
+      },
+      {
+        "date": "2027-08-23",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 202
+      },
+      {
+        "date": "2027-08-24",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 203
+      },
+      {
+        "date": "2027-08-25",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 204
+      },
+      {
+        "date": "2027-08-26",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 205
+      },
+      {
+        "date": "2027-08-27",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 206
+      },
+      {
+        "date": "2027-08-30",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 207
+      },
+      {
+        "date": "2027-08-31",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 208
+      },
+      {
+        "date": "2027-09-01",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 209
+      },
+      {
+        "date": "2027-09-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 210
+      },
+      {
+        "date": "2027-09-03",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 211
+      },
+      {
+        "date": "2027-09-07",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 212
+      },
+      {
+        "date": "2027-09-08",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 213
+      },
+      {
+        "date": "2027-09-09",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 214
+      },
+      {
+        "date": "2027-09-10",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 215
+      },
+      {
+        "date": "2027-09-13",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 216
+      },
+      {
+        "date": "2027-09-14",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 217
+      },
+      {
+        "date": "2027-09-15",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 218
+      },
+      {
+        "date": "2027-09-16",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 219
+      },
+      {
+        "date": "2027-09-17",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 220
+      },
+      {
+        "date": "2027-09-20",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 221
+      },
+      {
+        "date": "2027-09-21",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 222
+      },
+      {
+        "date": "2027-09-22",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 223
+      },
+      {
+        "date": "2027-09-23",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 224
+      },
+      {
+        "date": "2027-09-24",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 225
+      },
+      {
+        "date": "2027-09-27",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 226
+      },
+      {
+        "date": "2027-09-28",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 227
+      },
+      {
+        "date": "2027-09-29",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 228
+      },
+      {
+        "date": "2027-09-30",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 229
+      },
+      {
+        "date": "2027-10-01",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 230
+      },
+      {
+        "date": "2027-10-04",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 231
+      },
+      {
+        "date": "2027-10-05",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 232
+      },
+      {
+        "date": "2027-10-06",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 233
+      },
+      {
+        "date": "2027-10-07",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 234
+      },
+      {
+        "date": "2027-10-08",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 235
+      },
+      {
+        "date": "2027-10-11",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 236
+      },
+      {
+        "date": "2027-10-12",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 237
+      },
+      {
+        "date": "2027-10-13",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 238
+      },
+      {
+        "date": "2027-10-14",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 239
+      },
+      {
+        "date": "2027-10-15",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 240
+      },
+      {
+        "date": "2027-10-18",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 241
+      },
+      {
+        "date": "2027-10-19",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 242
+      },
+      {
+        "date": "2027-10-20",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 243
+      },
+      {
+        "date": "2027-10-21",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 244
+      },
+      {
+        "date": "2027-10-22",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 245
+      },
+      {
+        "date": "2027-10-25",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 246
+      },
+      {
+        "date": "2027-10-26",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 247
+      },
+      {
+        "date": "2027-10-27",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 248
+      },
+      {
+        "date": "2027-10-28",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 249
+      },
+      {
+        "date": "2027-10-29",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 250
+      },
+      {
+        "date": "2027-11-01",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 251
+      },
+      {
+        "date": "2027-11-02",
+        "kind": "full",
+        "open": "09:30",
+        "close": "16:00",
+        "close_minute": "15:59",
+        "slot": 252
+      }
+    ]
+  },
+  "units": {
+    "OPERATOR_RUNBOOK.md": "4ab8c9e599e9cb17edd1b4dd951672d9fa19136d3371b1ba2f2fa380bfbc6805",
+    "frozen-requirements.txt": "fa9c5818d34f3f91f64bd407ee67359e93174c77673d53d1d6cec3c6ad114587",
+    "ggtrader-intraday-observer-archive.service": "652d3989d78e48a5cfe2057fcf5e3e7b2a8d4b968138f59ed208c60041a85e1c",
+    "ggtrader-intraday-observer-archive.timer": "2eeb01f3ec355ba300a6da1502a25b0b62bb2331416214d1ef3b5bba25a24cf2",
+    "ggtrader-intraday-observer-decide.service": "1c5f1c8ce46bb2b8b95e7eed16d93589ea79742b0cf92a49675d947181a32e81",
+    "ggtrader-intraday-observer-decide.timer": "2c684f540f7fef39fdb84533458e9c845c47d0af4bdc564d74837e057734c600",
+    "ggtrader-intraday-observer-inputs.service": "a73ca28a7d5b5212f1196f630d24d4d2e6ec69b31c7917179336dac8e1db4300",
+    "ggtrader-intraday-observer-inputs.timer": "a46d71f848753414cbf0838996150125961550b480dd907499aa34914c0bd028",
+    "ggtrader-intraday-observer-recover.service": "75ec7447b9b3fba1235ea3967df032a94f36c6d66ab1e61489973c079aacb18b",
+    "ggtrader-intraday-observer-recover.timer": "b0747c7f8a685ef5b0a94c24f528421b0cf3d3baf0d2ac261a8e974e12c8fad3"
+  },
+  "approval_required": "Separate owner approval to install units, initialize matching live-mode state and activate. No services or live state prepared yet.",
+  "reprepare_if_activation_date_changes": true,
+  "readiness_attestation": "Create only after final evidence checks, bound to actual init-produced manifest at final state path; no dummy manifest hash.",
+  "limits": [
+    "Local timestamps; bar proxy fills; descriptive results only.",
+    "Distribution benchmark provisional; field semantics and future issuer completeness unresolved.",
+    "Dedicated read-only environment isolates research upgrades; host standard library/OS shared libraries remain dependencies."
+  ],
+  "preflight_sha256": "256ab45fdc78225115591a3a9e4bcef337ec53e0b63bcc6c000dc772c2fc1bd9",
+  "credentials_file": "/home/flynn/.config/ggtrader/intraday-observer.credentials",
+  "runtime_snapshot": "/home/flynn/.local/share/ggtrader/intraday-observer/runtimes/366f9247c65e0a38"
+}

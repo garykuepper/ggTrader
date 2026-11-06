@@ -1,0 +1,2189 @@
+{
+  "approval_1_active": true,
+  "approval_2_given": false,
+  "candidate_data_collected": false,
+  "code_commit": "6e89281",
+  "execution_rule": "One collection/resume against this frozen manifest, one signal-blind validation, then one automatic score only on matching PASS. Otherwise stop UNRESOLVED; no alternate outputs, data patches or new criteria.",
+  "limitations": [
+    "Corporate-action history depth and delay bound are undocumented; quarterly dividend presence is a sanity check, not completeness certification.",
+    "A split or vendor adjustment absent from supplied data/documentation can remain undetected.",
+    "Missing/empty cash-payout currency is explicitly assumed USD and counted; non-USD is unresolved.",
+    "The manual vendor-adjustment review is bounded documentation evidence, not proof that no undocumented change exists.",
+    "Page-body hashes preserve fingerprints but raw bodies are not retained; stored chunk file bytes are rehashed.",
+    "Claim is per collection directory and a crash after claim prevents retry; the approval names one directory.",
+    "Bar-price proxy performance cannot certify executable fills, MOC availability or live suitability."
+  ],
+  "limits": {
+    "attempts_per_page": 3,
+    "http_timeout_seconds": 30,
+    "maximum_run_seconds": 7200,
+    "minimum_request_start_spacing_seconds": 0.65,
+    "pages_per_logical_request": 1000,
+    "provider_retry_wait_cap_seconds": 30
+  },
+  "manifest": {
+    "code_sha256": "f0b85690f6a571603da6eba83d51d92ccb6f57668663c5540741bea8ec085517",
+    "protocol_sha256": "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85",
+    "requests": [
+      {
+        "endpoint": "https://paper-api.alpaca.markets/v2/calendar",
+        "id": "calendar",
+        "kind": "calendar",
+        "parameters": {
+          "end": "2026-09-30",
+          "start": "2016-01-04"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "daily_bars",
+        "kind": "daily_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-09-30",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-01-04",
+          "symbols": "SPY",
+          "timeframe": "1Day"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v1/corporate-actions",
+        "id": "corporate_actions",
+        "kind": "corporate_actions",
+        "parameters": {
+          "end": "2026-10-31",
+          "limit": 1000,
+          "sort": "asc",
+          "start": "2015-12-04",
+          "symbols": "SPY"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2016-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2016-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2016-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2017-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2017-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2017-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2018-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2018-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2018-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2019-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2019-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2019-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2020-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2020-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2020-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2021-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2021-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2021-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2022-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2022-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2022-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2023-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2023-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2023-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2024-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2024-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2024-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-10",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-11-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-10-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-11",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2025-12-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-11-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2025-12",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-01-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2025-12-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2026-01",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-02-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2026-01-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2026-02",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-03-01T04:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2026-02-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2026-03",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-04-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2026-03-01T05:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2026-04",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-05-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2026-04-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2026-05",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-06-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2026-05-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2026-06",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-07-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2026-06-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2026-07",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-08-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2026-07-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2026-08",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-09-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2026-08-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      },
+      {
+        "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+        "id": "minute_bars:2026-09",
+        "kind": "minute_bars",
+        "parameters": {
+          "adjustment": "raw",
+          "asof": "-",
+          "end": "2026-10-01T03:59:59Z",
+          "feed": "sip",
+          "limit": 10000,
+          "sort": "asc",
+          "start": "2026-09-01T04:00:00Z",
+          "symbols": "SPY",
+          "timeframe": "1Min"
+        }
+      }
+    ],
+    "runtime": {
+      "numpy": "2.2.6",
+      "pandas": "2.3.3",
+      "pandas_market_calendars": "5.5.0",
+      "python": "3.12.3",
+      "requests": "2.33.1",
+      "statsmodels": "0.15.0"
+    },
+    "schema": "intraday_momentum_r8_manifest",
+    "vendor_review_sha256": "86403609990ac3ecbad924d68e746a95749fc5f2dbc51895a5e66b990698f549",
+    "version": 1,
+    "window": {
+      "anchor": "2016-01-04",
+      "last": "2026-09-30"
+    }
+  },
+  "manifest_sha256": "b29587ddc8e657fd3a40f055aa831030e4c50e5cdf0bf7c15b19fb0fb1a1a60f",
+  "paths": {
+    "collection": "data/external/intraday_momentum_r8",
+    "result": "docs/research/_intraday_momentum_results.json",
+    "validation": "docs/research/_intraday_momentum_validation.json"
+  },
+  "prepared_at_utc": "2026-10-25T21:34:25.719641+00:00",
+  "request_counts": {
+    "calendar": 1,
+    "corporate_actions": 1,
+    "daily_bars": 1,
+    "minute_bars": 129
+  },
+  "schema": "intraday_r8_execution_preflight",
+  "status": "ready_for_approval_2",
+  "supersedes_prepared_manifest_sha256": "980a0ff49824a7b17825fff913f4e3324c1daab1f3c113bd34b77dcaed52388f",
+  "verification": {
+    "full_suite": {
+      "deselected": 30,
+      "exit_code": 0,
+      "log_sha256": "08f61a7860d20c897be85c4dd1d02da9119eae042cade3028dc9b749814354ea",
+      "passed": 1739,
+      "runner": "scripts/run_tests.sh",
+      "seconds": 334.53,
+      "warning": "Existing websockets.legacy dependency deprecation in headline-sentiment test",
+      "warnings": 1
+    },
+    "reviews": {
+      "codex_final": "benchmark failure fixed in 6e89281",
+      "codex_scoped_final_fix": "PASS; no new findings",
+      "opus_final_attempt": "API rate limit; no verdict",
+      "opus_scoped_fix": "PASS",
+      "opus_task": "PASS"
+    },
+    "ruff": {
+      "check": "passed",
+      "files": 277,
+      "format_check": "passed"
+    },
+    "synthetic_only": true,
+    "tested_code_commit": "6e89281"
+  },
+  "version": 1
+}

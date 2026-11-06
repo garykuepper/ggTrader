@@ -46,7 +46,9 @@ BRIEF_RENAMES = frozenset(
 BRIEF_SUFFIX = "-brief"
 BRIEFS_DIR = f"{OLD_ROOT}/briefs/"
 # Hash-pinned by other result files or checked at run time: must move byte-for-byte.
-PINNED_PATHS: tuple[str, ...] = tuple(
+# Two groups, because a manifest carries one or both: main's 174-row reorganization manifest
+# holds the first twelve, an intraday-branch manifest holds the three briefs after them.
+REORG_PINNED_PATHS: tuple[str, ...] = tuple(
     f"{OLD_ROOT}/{name}"
     for name in (
         "briefs/2026-10-21-event-timing-audit.md",
@@ -63,6 +65,18 @@ PINNED_PATHS: tuple[str, ...] = tuple(
         "_production_replica_results.json",
     )
 )
+# Quoted by hash elsewhere on the intraday branch: the r8 protocol brief, the prospective
+# observation brief and the Opus verification manifest.
+BRANCH_PINNED_PATHS: tuple[str, ...] = tuple(
+    f"{OLD_ROOT}/briefs/{name}"
+    for name in (
+        "2026-10-25-intraday-feasibility-r8.md",
+        "2026-10-25-intraday-prospective-observation.md",
+        "2026-10-25-intraday-opus-verification-manifest.md",
+    )
+)
+PINNED_GROUPS: tuple[tuple[str, ...], ...] = (REORG_PINNED_PATHS, BRANCH_PINNED_PATHS)
+PINNED_PATHS: tuple[str, ...] = REORG_PINNED_PATHS + BRANCH_PINNED_PATHS
 MANIFEST_COLUMNS = ("current_path", "proposed_path", "folder", "kind", "notes")
 HASH_CHUNK_BYTES = 1 << 20
 # Where consumers of docs/research live; docs/ is scanned minus the research tree itself.
@@ -196,14 +210,14 @@ class ManifestRow:
 
 
 def is_pinned(current_path: str) -> bool:
-    """Return True when the path is one of the twelve hash-pinned files."""
+    """Return True when the path is one of the hash-pinned files (see PINNED_PATHS)."""
     return current_path in PINNED_PATHS
 
 
 def is_frozen(current_path: str) -> bool:
     """Return True when a file must be moved byte-for-byte unchanged.
 
-    Frozen files are the pinned twelve, every machine artifact by extension, and anything
+    Frozen files are the pinned files, every machine artifact by extension, and anything
     inside an `artifacts-*` package.
     """
     path = PurePosixPath(current_path)
@@ -212,6 +226,29 @@ def is_frozen(current_path: str) -> bool:
         or path.suffix in FROZEN_EXTENSIONS
         or any(part.startswith(ARTIFACT_PREFIX) for part in path.parts[:-1])
     )
+
+
+def expected_pinned_count(rows: list[ManifestRow], branch_mode: bool = False) -> int:
+    """Return how many pinned rows a manifest must carry.
+
+    The pinned paths come in groups (`PINNED_GROUPS`) and a manifest holds a whole group or
+    none of it: main's manifest has the reorganization's twelve, a branch manifest has the
+    branch's three, and a union has all fifteen. A group with any row present is expected
+    whole, so a dropped pinned row still shows as a short count. A manifest with no pinned row
+    expects the group of its mode (the reorganization's, or the branch's in branch mode).
+
+    Args:
+        rows: Manifest rows.
+        branch_mode: True when verifying a branch-only manifest.
+
+    Returns:
+        The number of pinned rows expected.
+    """
+    present = {r.current_path for r in rows}
+    groups = [g for g in PINNED_GROUPS if present.intersection(g)]
+    if not groups:
+        groups = [BRANCH_PINNED_PATHS if branch_mode else REORG_PINNED_PATHS]
+    return sum(len(g) for g in groups)
 
 
 def load_manifest(path: Path) -> list[ManifestRow]:
@@ -1029,12 +1066,42 @@ def write_atomic(path: Path, data: bytes) -> None:
         raise
 
 
+def _merge_also_map(
+    mapping: dict[str, str], rows: list[ManifestRow], also_map: list[ManifestRow]
+) -> None:
+    """Add the also-map rows to `mapping`, refusing rows that would corrupt it.
+
+    Raises:
+        ValueError: On a repeated current_path within the also-map, a path the manifest sends
+            elsewhere, or a destination already used by a different path.
+    """
+    owner = {r.proposed_path: r.current_path for r in rows}
+    seen: set[str] = set()
+    for extra in also_map:
+        if extra.current_path in seen:
+            raise ValueError(f"also-map: duplicate current_path {extra.current_path}")
+        seen.add(extra.current_path)
+        if mapping.get(extra.current_path, extra.proposed_path) != extra.proposed_path:
+            raise ValueError(
+                f"also-map row contradicts the manifest: {extra.current_path} -> "
+                f"{extra.proposed_path} (manifest {mapping[extra.current_path]})"
+            )
+        other = owner.setdefault(extra.proposed_path, extra.current_path)
+        if other != extra.current_path:
+            raise ValueError(
+                f"also-map: proposed_path {extra.proposed_path} already used by {other} "
+                f"(also-map row {extra.current_path})"
+            )
+        mapping[extra.current_path] = extra.proposed_path
+
+
 def run_rewrite(
     scope: str,
     rows: list[ManifestRow],
     root: Path,
     dry_run: bool,
     excludes: list[str],
+    also_map: list[ManifestRow] | None = None,
 ) -> dict[str, Any]:
     """Rewrite one scope (or report what would change) and return the report dict.
 
@@ -1049,11 +1116,19 @@ def run_rewrite(
         root: Repository root.
         dry_run: When True nothing is written.
         excludes: Extra paths to leave alone.
+        also_map: Extra mapping rows (branch mode) that references are rewritten *to* but
+            that are never targets: their files are not read, rewritten, required to exist or
+            counted as frozen. They let a branch's files resolve links into files an earlier
+            reorganization already moved.
 
     Returns:
         The JSON-serializable report; `status` is "ok" or "failed" with `error` text.
+
+    Raises:
+        ValueError: If an also-map row sends a path somewhere other than the manifest does.
     """
     mapping = {r.current_path: r.proposed_path for r in rows}
+    _merge_also_map(mapping, rows, also_map or [])
     frozen = _frozen_paths(rows)
     exists = _repo_exists(root)
     targets, excluded, missing = scope_targets(scope, rows, root, excludes)
@@ -1105,7 +1180,7 @@ def run_rewrite(
                 error = f"write failed for {rel}: {exc}; already written: {len(written)} files"
                 break
             written.append(rel)
-    return {
+    report: dict[str, Any] = {
         "scope": scope,
         "dry_run": dry_run,
         "status": STATUS_FAILED if error else STATUS_OK,
@@ -1121,13 +1196,19 @@ def run_rewrite(
         "skipped_unreadable": sorted(unreadable),
         "skipped_missing": sorted(missing),
     }
+    if also_map is not None:
+        report["also_map_rows"] = len(also_map)
+    return report
 
 
 def _cmd_rewrite(args: argparse.Namespace) -> int:
     """Run `rewrite`: rewrite one scope (or dry-run it) and always write the JSON report."""
     try:
         rows = load_manifest(Path(args.manifest))
-        report = run_rewrite(args.scope, rows, Path(args.root), args.dry_run, args.exclude or [])
+        also_map = load_manifest(Path(args.also_map)) if args.also_map else None
+        report = run_rewrite(
+            args.scope, rows, Path(args.root), args.dry_run, args.exclude or [], also_map
+        )
     except Exception as exc:  # noqa: BLE001 - any failure must still produce a report
         report = {
             "scope": args.scope,
@@ -1285,6 +1366,7 @@ def _verify_tree(
     allowed_changes: frozenset[str] | None,
     allow_new: tuple[str, ...] = (),
     allow_deeper: tuple[str, ...] = DEFAULT_ALLOW_DEEPER,
+    branch_mode: bool = False,
 ) -> list[str]:
     """Shared tree checks for the `moved`, `rewritten` and `final` gates.
 
@@ -1292,6 +1374,11 @@ def _verify_tree(
     path is in `allowed_changes` and its row is a non-frozen file. `moved` passes None, so
     every byte must match. Files under research/ that are not manifest destinations are a
     problem unless they match an `allow_new` pattern (only the `final` gate passes any).
+    In branch mode the manifest lists only the branch's files, so research/ legitimately holds
+    others: the file-count and unexpected-file checks are skipped, and every per-row check
+    (destination exists, digest, listed edits, depth) and the docs/research checks stay.
+    Files outside the manifest are not checked; pair it with a non-branch verify --stage
+    final on the union manifest and ledger.
     """
     problems: list[str] = []
     allowed = allowed_changes or frozenset()
@@ -1330,19 +1417,22 @@ def _verify_tree(
             problems.append(
                 f"depth exceeds research/<category>/<study>/<file>: {row.proposed_path}"
             )
-    on_disk = _files_under(root / NEW_ROOT, root)
-    expected = {r.proposed_path for r in rows}
-    allowed_extra = {p for p in on_disk if p not in expected and _matches_allow_new(p, allow_new)}
-    if len(on_disk) - len(allowed_extra) != len(rows):
-        problems.append(
-            f"{len(on_disk) - len(allowed_extra)} files under {NEW_ROOT}/ (excluding "
-            f"{len(allowed_extra)} allowed new) but {len(rows)} manifest rows"
+    if not branch_mode:
+        on_disk = _files_under(root / NEW_ROOT, root)
+        expected = {r.proposed_path for r in rows}
+        allowed_extra = {
+            p for p in on_disk if p not in expected and _matches_allow_new(p, allow_new)
+        }
+        if len(on_disk) - len(allowed_extra) != len(rows):
+            problems.append(
+                f"{len(on_disk) - len(allowed_extra)} files under {NEW_ROOT}/ (excluding "
+                f"{len(allowed_extra)} allowed new) but {len(rows)} manifest rows"
+            )
+        problems.extend(
+            f"unexpected file under {NEW_ROOT}/: {p}"
+            for p in on_disk
+            if p not in expected and p not in allowed_extra
         )
-    problems.extend(
-        f"unexpected file under {NEW_ROOT}/: {p}"
-        for p in on_disk
-        if p not in expected and p not in allowed_extra
-    )
     tracked = sorted(tracked_research_files(root))
     problems.extend(f"still tracked under {OLD_ROOT}: {p}" for p in tracked)
     tracked_set = set(tracked)
@@ -1354,7 +1444,9 @@ def _verify_tree(
     return problems
 
 
-def verify_moved(rows: list[ManifestRow], ledger: dict[str, Any], root: Path) -> list[str]:
+def verify_moved(
+    rows: list[ManifestRow], ledger: dict[str, Any], root: Path, branch_mode: bool = False
+) -> list[str]:
     """Check the tree right after the move-only step.
 
     Checks: every destination exists and matches its ledger sha256 (all files, frozen or
@@ -1366,11 +1458,12 @@ def verify_moved(rows: list[ManifestRow], ledger: dict[str, Any], root: Path) ->
         rows: Manifest rows.
         ledger: The pre-move ledger (`files` entries keyed by `current_path`).
         root: Repository root.
+        branch_mode: True when the manifest covers only a branch's files (see `_verify_tree`).
 
     Returns:
         Problem descriptions; an empty list means the gate passes.
     """
-    return _verify_tree(rows, ledger, root, None)
+    return _verify_tree(rows, ledger, root, None, branch_mode=branch_mode)
 
 
 def verify_rewritten(
@@ -1378,6 +1471,7 @@ def verify_rewritten(
     ledger: dict[str, Any],
     root: Path,
     rewrite_listed: set[str] | frozenset[str],
+    branch_mode: bool = False,
 ) -> list[str]:
     """Check the tree after the reference rewrite of the mutable Markdown.
 
@@ -1391,11 +1485,12 @@ def verify_rewritten(
         ledger: The pre-move ledger.
         root: Repository root.
         rewrite_listed: Proposed paths the rewrite manifest says were edited.
+        branch_mode: True when the manifest covers only a branch's files (see `_verify_tree`).
 
     Returns:
         Problem descriptions; an empty list means the gate passes.
     """
-    return _verify_tree(rows, ledger, root, frozenset(rewrite_listed))
+    return _verify_tree(rows, ledger, root, frozenset(rewrite_listed), branch_mode=branch_mode)
 
 
 def verify_final(
@@ -1404,9 +1499,10 @@ def verify_final(
     root: Path,
     rewrite_listed: set[str] | frozenset[str],
     allow_new: tuple[str, ...] = DEFAULT_ALLOW_NEW,
-    expected_pinned: int = len(PINNED_PATHS),
+    expected_pinned: int | None = None,
     require_new: tuple[str, ...] = (),
     allow_deeper: tuple[str, ...] = DEFAULT_ALLOW_DEEPER,
+    branch_mode: bool = False,
 ) -> list[str]:
     """Check the finished tree: everything `verify_rewritten` checks, plus tracked-file rules.
 
@@ -1424,15 +1520,24 @@ def verify_final(
         root: Repository root.
         rewrite_listed: Proposed paths the rewrite manifest says were edited.
         allow_new: Patterns (relative to research/, fnmatch) for files added after the move.
-        expected_pinned: How many pinned rows the manifest must carry (twelve in production).
+        expected_pinned: How many pinned rows the manifest must carry; None derives it from
+            the manifest with `expected_pinned_count` (twelve for main's manifest).
         require_new: Paths (relative to research/) that must exist and be tracked.
         allow_deeper: Study folders (relative to research/) whose files may sit one level
             deeper, in a sub-folder.
+        branch_mode: True when the manifest covers only a branch's files. Skips the checks
+            that assume the manifest is all of research/ (the unexpected-tracked-file check
+            and, via `_verify_tree`, the file counts), and replaces "docs/research is gone"
+            with "no file at all is left under docs/research". An empty folder passes, and so
+            does one holding only `__pycache__`, which `_files_under` ignores. The depth
+            rule still covers every tracked file under research/.
 
     Returns:
         Problem descriptions; an empty list means the gate passes.
     """
-    problems = _verify_tree(rows, ledger, root, frozenset(rewrite_listed), allow_new, allow_deeper)
+    problems = _verify_tree(
+        rows, ledger, root, frozenset(rewrite_listed), allow_new, allow_deeper, branch_mode
+    )
     counts = Counter(r.proposed_path for r in rows)
     problems.extend(f"duplicate proposed path: {p}" for p, n in sorted(counts.items()) if n > 1)
     tracked = tracked_files_under(NEW_ROOT, root)
@@ -1440,11 +1545,13 @@ def verify_final(
         if row.proposed_path not in tracked:
             problems.append(f"destination not tracked: {row.proposed_path}")
     for path in sorted(tracked):
-        if path not in counts and not _matches_allow_new(path, allow_new):
+        if path not in counts and not branch_mode and not _matches_allow_new(path, allow_new):
             problems.append(f"unexpected tracked file under {NEW_ROOT}/: {path}")
         if len(PurePosixPath(path).parts) > _depth_limit(path, allow_deeper):
             problems.append(f"tracked file deeper than research/<category>/<study>/<file>: {path}")
     pinned_rows = [r for r in rows if r.pinned]
+    if expected_pinned is None:
+        expected_pinned = expected_pinned_count(rows, branch_mode)
     if len(pinned_rows) != expected_pinned:
         problems.append(
             f"{len(pinned_rows)} pinned rows in the manifest, expected {expected_pinned}"
@@ -1463,7 +1570,7 @@ def verify_final(
             problems.append(f"required new file missing: {rel}")
         elif rel not in tracked:
             problems.append(f"required new file not tracked: {rel}")
-    if (root / OLD_ROOT).exists():
+    if (root / OLD_ROOT).exists() and not (branch_mode and not _files_under(root / OLD_ROOT, root)):
         problems.append(f"{OLD_ROOT} still exists")
     return problems
 
@@ -1523,17 +1630,20 @@ def _cmd_verify(args: argparse.Namespace) -> int:
                 allow_new,
                 require_new=require_new,
                 allow_deeper=allow_deeper,
+                branch_mode=args.branch_mode,
             )
             summary = (
                 f"{len(rows)} manifest files, {len(listed)} listed edits, "
                 f"{len(tracked_files_under(NEW_ROOT, root))} tracked files under {NEW_ROOT}/"
             )
         else:
-            problems = verify_rewritten(rows, ledger, root, listed)
+            problems = verify_rewritten(rows, ledger, root, listed, args.branch_mode)
             summary = f"{len(rows)} files checked, {len(listed)} listed edits"
     else:
-        problems = verify_moved(rows, ledger, root)
+        problems = verify_moved(rows, ledger, root, args.branch_mode)
         summary = f"{len(rows)} files byte-identical to the ledger"
+    if args.branch_mode:
+        summary += " (branch mode)"
     for problem in problems:
         print(f"PROBLEM {problem}")
     if problems:
@@ -1650,6 +1760,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Repo-relative file or directory to leave alone (repeatable).",
     )
     rewrite.add_argument(
+        "--also-map",
+        metavar="CSV",
+        help=(
+            "Extra mapping CSV (same columns as the manifest) whose rows references are "
+            "rewritten to but which are never targets: their files are not rewritten and "
+            "need not exist at current_path. For branch files that link to files an earlier "
+            "reorganization already moved."
+        ),
+    )
+    rewrite.add_argument(
         "--root", default=str(REPO_ROOT), help="Repository root (default: this repository)."
     )
     rewrite.set_defaults(func=_cmd_rewrite)
@@ -1705,6 +1825,17 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Study folder (relative to research/; repeatable) whose files may sit one level "
             "deeper, in a sub-folder. Adds to the default: " + ", ".join(DEFAULT_ALLOW_DEEPER)
+        ),
+    )
+    verify.add_argument(
+        "--branch-mode",
+        action="store_true",
+        help=(
+            "The manifest lists only a branch's files, not all of research/: skip the "
+            "whole-tree count and unexpected-file checks (all stages); keep the per-row "
+            "checks, the pinned digests and the rule that nothing is left under docs/research. "
+            "Files outside the manifest are not checked; pair it with a non-branch verify "
+            "--stage final on the union manifest and ledger."
         ),
     )
     verify.add_argument(

@@ -1,0 +1,230 @@
+{
+  "automatic_retries": 0,
+  "http_GET_attempts": 7,
+  "requests": [
+    {
+      "body_sha256": "dba9053bc530592b170e11196e4b36f982ab34d2733411a5a99e8746d49fcb5a",
+      "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+      "label": "exact_month",
+      "page": 1,
+      "parameters": {
+        "adjustment": "raw",
+        "asof": "-",
+        "end": "2019-09-01T03:59:59Z",
+        "feed": "sip",
+        "limit": 10000,
+        "sort": "asc",
+        "start": "2019-08-01T04:00:00Z",
+        "symbols": "SPY",
+        "timeframe": "1Min"
+      },
+      "status": 200
+    },
+    {
+      "body_sha256": "fc9fc1a21f122cc7de54f8ebd2ff5c2f51e36f87b828af1cab68481ad1b1c29e",
+      "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+      "label": "exact_month",
+      "page": 2,
+      "parameters": {
+        "adjustment": "raw",
+        "asof": "-",
+        "end": "2019-09-01T03:59:59Z",
+        "feed": "sip",
+        "limit": 10000,
+        "sort": "asc",
+        "start": "2019-08-01T04:00:00Z",
+        "symbols": "SPY",
+        "timeframe": "1Min"
+      },
+      "status": 200
+    },
+    {
+      "body_sha256": "f6594034c2c58ed958f38a99624f71b61d59b9f0cceb7aa8a63864182d006c51",
+      "endpoint": "https://data.alpaca.markets/v1/corporate-actions",
+      "label": "exact_corporate_actions",
+      "page": 1,
+      "parameters": {
+        "end": "2026-10-31",
+        "limit": 1000,
+        "sort": "asc",
+        "start": "2015-12-04",
+        "symbols": "SPY"
+      },
+      "status": 200
+    },
+    {
+      "body_sha256": "912acb8707ab5f2f437dbbed46d83e6a21cc5d838773ec7fd6a41ea8e612d162",
+      "endpoint": "https://data.alpaca.markets/v2/stocks/bars",
+      "label": "narrow_day",
+      "page": 1,
+      "parameters": {
+        "adjustment": "raw",
+        "asof": "-",
+        "end": "2019-08-12T20:00:00Z",
+        "feed": "sip",
+        "limit": 10000,
+        "sort": "asc",
+        "start": "2019-08-12T13:30:00Z",
+        "symbols": "SPY",
+        "timeframe": "1Min"
+      },
+      "status": 200
+    },
+    {
+      "body_sha256": "fea17f17380b7eb24c760478974fddd2b3525612ac6076eb0b5bc5ab078d3b08",
+      "endpoint": "https://data.alpaca.markets/v1/corporate-actions",
+      "label": "dividend_2016Q1",
+      "page": 1,
+      "parameters": {
+        "end": "2016-03-31",
+        "limit": 1000,
+        "sort": "asc",
+        "start": "2016-03-01",
+        "symbols": "SPY"
+      },
+      "status": 200
+    },
+    {
+      "body_sha256": "fea17f17380b7eb24c760478974fddd2b3525612ac6076eb0b5bc5ab078d3b08",
+      "endpoint": "https://data.alpaca.markets/v1/corporate-actions",
+      "label": "dividend_2018Q2",
+      "page": 1,
+      "parameters": {
+        "end": "2018-06-30",
+        "limit": 1000,
+        "sort": "asc",
+        "start": "2018-06-01",
+        "symbols": "SPY"
+      },
+      "status": 200
+    },
+    {
+      "body_sha256": "c8653264e48b6cfd8e0ee80f876ed19a2e7f79a821f0b9114293118dabb1ae69",
+      "endpoint": "https://data.alpaca.markets/v1/corporate-actions",
+      "label": "dividend_control",
+      "page": 1,
+      "parameters": {
+        "end": "2016-06-30",
+        "limit": 1000,
+        "sort": "asc",
+        "start": "2016-06-01",
+        "symbols": "SPY"
+      },
+      "status": 200
+    }
+  ],
+  "results": [
+    {
+      "body_hashes": [
+        "dba9053bc530592b170e11196e4b36f982ab34d2733411a5a99e8746d49fcb5a",
+        "fc9fc1a21f122cc7de54f8ebd2ff5c2f51e36f87b828af1cab68481ad1b1c29e"
+      ],
+      "close_1559_present": false,
+      "complete": true,
+      "entry_1530_present": false,
+      "label": "exact_month",
+      "matches_original_page_hashes": true,
+      "records": 17577,
+      "regular_bars_20190812": 360
+    },
+    {
+      "body_hashes": [
+        "f6594034c2c58ed958f38a99624f71b61d59b9f0cceb7aa8a63864182d006c51"
+      ],
+      "cash_dividend_ex_dates": [
+        "2016-06-17",
+        "2016-09-16",
+        "2016-12-16",
+        "2017-03-17",
+        "2017-06-16",
+        "2017-09-15",
+        "2017-12-15",
+        "2018-03-16",
+        "2018-09-21",
+        "2018-12-21",
+        "2019-03-15",
+        "2019-06-21",
+        "2019-09-20",
+        "2019-12-20",
+        "2020-03-20",
+        "2020-06-19",
+        "2020-09-18",
+        "2020-12-18",
+        "2021-03-19",
+        "2021-06-18",
+        "2021-09-17",
+        "2021-12-17",
+        "2022-03-18",
+        "2022-06-17",
+        "2022-09-16",
+        "2022-12-16",
+        "2023-03-17",
+        "2023-06-16",
+        "2023-09-15",
+        "2023-12-15",
+        "2024-03-15",
+        "2024-06-21",
+        "2024-09-20",
+        "2024-12-20",
+        "2025-03-21",
+        "2025-06-20",
+        "2025-09-19",
+        "2025-12-19",
+        "2026-03-20",
+        "2026-06-18",
+        "2026-09-18"
+      ],
+      "complete": true,
+      "label": "exact_corporate_actions",
+      "matches_original_page_hashes": true,
+      "records": 41
+    },
+    {
+      "body_hashes": [
+        "912acb8707ab5f2f437dbbed46d83e6a21cc5d838773ec7fd6a41ea8e612d162"
+      ],
+      "close_1559_present": false,
+      "complete": true,
+      "entry_1530_present": false,
+      "label": "narrow_day",
+      "matches_original_page_hashes": false,
+      "records": 360,
+      "regular_bars_20190812": 360
+    },
+    {
+      "body_hashes": [
+        "fea17f17380b7eb24c760478974fddd2b3525612ac6076eb0b5bc5ab078d3b08"
+      ],
+      "cash_dividend_ex_dates": [],
+      "complete": true,
+      "label": "dividend_2016Q1",
+      "matches_original_page_hashes": false,
+      "records": 0
+    },
+    {
+      "body_hashes": [
+        "fea17f17380b7eb24c760478974fddd2b3525612ac6076eb0b5bc5ab078d3b08"
+      ],
+      "cash_dividend_ex_dates": [],
+      "complete": true,
+      "label": "dividend_2018Q2",
+      "matches_original_page_hashes": false,
+      "records": 0
+    },
+    {
+      "body_hashes": [
+        "c8653264e48b6cfd8e0ee80f876ed19a2e7f79a821f0b9114293118dabb1ae69"
+      ],
+      "cash_dividend_ex_dates": [
+        "2016-06-17"
+      ],
+      "complete": true,
+      "label": "dividend_control",
+      "matches_original_page_hashes": false,
+      "records": 1
+    }
+  ],
+  "run_utc": "2026-10-26T01:15:58.389857+00:00",
+  "schema": "intraday_gap_investigation_v1",
+  "scope": "investigation_only_no_repairs_no_signals_no_scoring"
+}

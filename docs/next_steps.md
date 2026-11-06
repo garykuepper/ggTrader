@@ -4,6 +4,27 @@ The next two tasks are plans. Neither authorizes a return test or a production c
 The [working task list](working_task_list.md) contains dependencies, open decisions,
 and the calendar.
 
+## Intraday: verify first actual recordings (activated 2026-10-27)
+
+Hermes agent supervision (DeepSeek Flash, job `39172df68638`) is scheduled weekdays
+at 14:00 Pacific, saving local reports: first recordings, daily health, weekly calendar, checkpoint and final review.
+See [schedule record](../research/intraday/spy-momentum-prospective-observer/_intraday_observer_agent_schedule.json). The T3 schedule is disabled to avoid duplicate runs. Scheduling did not execute
+the checks; the host and Hermes gateway must be available.
+
+The automatic hypothetical journal is activated. All four standalone timers are
+enabled/active; installed-service no-op checks and ledger integrity pass. See
+[activation record](../research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md).
+
+1. Verify the October 29 anchor archive and October 30 first inputs, decision and
+   archive. Check durable timestamps, source references and integrity; preserve
+   faults and never backfill a missed decision. Perform the daily local health check.
+2. At slot 20, November 30, 2026, review operational reliability under the frozen
+   checkpoint rules. The final slot is November 3, 2027; no performance pass is implied.
+
+The journal uses an isolated fixed release and dedicated runtime, not the paper
+account. No production cron, Docker, DB, account positions or broker orders changed.
+Historical r8 remains UNRESOLVED (data). The dividend comparison stays provisional.
+
 ## Current research decision (2026-10-23)
 
 1. **Plan paper parity and forward evidence.** Resolve how to treat the persistent
