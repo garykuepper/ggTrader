@@ -9,7 +9,7 @@
 Candidate A10 (Hartley & Schwarz, *"Predictable End-of-Month Treasury Returns"*,
 SSRN 3440417) holds a Treasury ETF only over the last 3 trading days of each
 month and holds cash otherwise. It was tested exactly as the brief
-(`docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md`) fixed it
+(`research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve.md`) fixed it
 before any run. There were three tests: the frozen paper rule on IEF, a
 12-combo walk-forward optimization (WFO), and a deployable overlay that moves
 20% of a SPY holding into IEF for those 3 days.
@@ -42,7 +42,7 @@ pre-FOMC Treasury drift (A7), and all equity cross-sectional sleeves (see
 
 ## 2. Quantitative Performance Context
 
-Raw results: `docs/research/_month_end_treasury_results.json`. Driver:
+Raw results: `research/allocation/month-end-treasury/_month_end_treasury_results.json`. Driver:
 `scripts/month_end_treasury_wfo.py`. Pinned window 2021-01-31 → 2026-04-30.
 `SIGNAL_POSITION_SIZE` 1.0 (the sleeve is fully invested on its days), no
 leverage, and cash earns 0.

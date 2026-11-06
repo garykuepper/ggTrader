@@ -10,7 +10,7 @@ URL or change routing. The first new 403/429 stops all requests in this batch.
 ## Frozen scope and evidence
 
 Exact URLs, source inventory references and the raw incident are in
-[the acquisition artifact](../_insider_identity_inventory_acquisition.json).
+[the acquisition artifact](_insider_identity_inventory_acquisition.json).
 The parent independently checked all 53 cached raw hashes. Northrop historical
 page 001 has 2,000 rows, matching its count, but its row 0 accession
 `0001225208-17-005319` has filing date 2017-03-02 outside the root descriptor's
@@ -100,5 +100,5 @@ were verified individually and every parent file remained unchanged.
 Child cache: `data/external/event_timing_audit/identity-inventory-we_55vr8/`.
 The exclusive claim is retained. This batch's authorization is consumed; no
 further requests are queued. The exact observations and outcome references are
-in [the results artifact](../_insider_identity_inventory_resolution_results.json).
+in [the results artifact](_insider_identity_inventory_resolution_results.json).
 Documentary findings and unresolved requirements are recorded in the handoff.

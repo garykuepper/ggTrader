@@ -4,11 +4,11 @@
 **Date:** 2026-11-02
 **Status:** Documentary review of **definitions only**. It uses no returns, Sharpe ratios, correlations or result files. It changes no recorded verdict, recommends no candidate, and authorizes no test. Machine-readable fields: `family_scope_review` on rows S02–S08 and S13 of [`_free_data_feasibility_matrix.json`](_free_data_feasibility_matrix.json). Extracted definitions: [`_family_scope_extraction.json`](_family_scope_extraction.json).
 
-Terms: **NO-GO** = a specified test failed its registered bar. **Part A** = the long free-history test in the [forward-paper standard](briefs/2026-10-23-forward-paper-standard.md). **Sort variable** = the characteristic used to form portfolios. **Sibling construction** = a portfolio built on a different variable that targets the same economic channel.
+Terms: **NO-GO** = a specified test failed its registered bar. **Part A** = the long free-history test in the [forward-paper standard](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md). **Sort variable** = the characteristic used to form portfolios. **Sibling construction** = a portfolio built on a different variable that targets the same economic channel.
 
 ## 1. Question and rule
 
-[`RESEARCH_INDEX.md`](RESEARCH_INDEX.md) says a NO-GO "applies to that test and its data, not automatically to every related idea." Eight feasibility rows overlap closed families. For each, did the closed report's registered hypotheses or scope statement plausibly cover it?
+[`RESEARCH_INDEX.md`](../../RESEARCH_INDEX.md) says a NO-GO "applies to that test and its data, not automatically to every related idea." Eight feasibility rows overlap closed families. For each, did the closed report's registered hypotheses or scope statement plausibly cover it?
 
 Outcome classes, fixed before the reviews:
 

@@ -29,13 +29,13 @@ negative findings below remain meaningful within their documented scope.
 ### Verified concerns and their limits
 
 1. **Walk-forward tests can principally measure fallback.** Failed gates or
-   a halt deploy anchor parameters, not necessarily cash ([wfo.py](../../src/ggTrader/lab/wfo.py)).
+   a halt deploy anchor parameters, not necessarily cash ([wfo.py](../../../src/ggTrader/lab/wfo.py)).
    The corrected momentum replay used anchors in 17/17 folds; its DSR gate
    required roughly 2.5 in-sample Sharpe in the documented setup. Thus that
    result evaluates the complete gate/fallback policy, not independently a
    successful adaptive-optimization procedure. This does not establish the
    ungated strategy succeeds. The separately registered French screen bypasses
-   that WFO gate and also fails its bars. [Audit correction](2026-10-19-production-replica-audit-nogo.md#correction-2026-10-20).
+   that WFO gate and also fails its bars. [Audit correction](../production-replica/2026-10-19-production-replica-audit-nogo.md#correction-2026-10-20).
 2. **Pairs tested a specific simplified construction.** The report documents
    monthly same-sector, 1:1 spread selection; the implementation applies ranking
    and capacity/shared-symbol exclusions after adding held pairs, so its stated
@@ -43,8 +43,8 @@ negative findings below remain meaningful within their documented scope.
    omits data identity, and the report documents an A/B comparison polluted by
    a cached result. A corrected rerun remained negative, but its unexpectedly
    unchanged OOS results are an acknowledged open anomaly. These observations do
-   not establish that a daily or hedged alternative is profitable. [Code](../../src/ggTrader/lab/strategies/pairs_stat_arb.py),
-   [report §§6–7](2026-07-17-pairs-stat-arb-nogo.md).
+   not establish that a daily or hedged alternative is profitable. [Code](../../../src/ggTrader/lab/strategies/pairs_stat_arb.py),
+   [report §§6–7](../../stock-signals/pairs-stat-arb/2026-07-17-pairs-stat-arb-nogo.md).
 3. **Long-history screens use proxies and assumed costs.** The French momentum
    screen's large/small value-weighted portfolios are not the project's exact
    equal-weight S&P 500 top-N rules. Big and Small failed the registered Holm
@@ -52,8 +52,8 @@ negative findings below remain meaningful within their documented scope.
    actual reported post-1994 excesses are +0.08 and +0.20 pt/year. These are
    meaningful negative screen results; no tax-lot backtest of the precise stock
    implementation follows from them. Haircuts are policy assumptions, not
-   measured account-specific execution costs. [Momentum report](2026-10-20-momentum-french-screen-nogo.md),
-   [factor report](2026-10-21-factor-screen-nogo.md).
+   measured account-specific execution costs. [Momentum report](../../stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md),
+   [factor report](../../stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md).
 4. **The production replica answers a portfolio-model question.** Primary
    2021-01-31–2026-04-30 CAGR was 14.19% vs SPY 14.83%, excess −0.64
    percentage point/year, NW t −0.69. Mean stock exposure was 9.37%; the
@@ -61,21 +61,21 @@ negative findings below remain meaningful within their documented scope.
    fixed-rule model NO-GO stands; neither number proves a small selection effect
    impossible. The older holdout stopped for price/identity artifacts and is
    non-citable; exact live parity remains unverified, with 10/32 orders explained
-   under a denominator including 19 manual liquidations. [Replica audit](2026-10-19-production-replica-audit-nogo.md),
-   [results](_production_replica_results.json), [parity](_replica_parity_20261019.json).
+   under a denominator including 19 manual liquidations. [Replica audit](../production-replica/2026-10-19-production-replica-audit-nogo.md),
+   [results](../production-replica/_production_replica_results.json), [parity](../production-replica/_replica_parity_20261019.json).
 5. **Event observations must use the independent event as the unit.** The FOMC
    gross/net t statistics 3.619/1.572 used three ETF observations per date; the
    corrected 113-date clustered gross/net statistics are 2.258/0.981. The net
    result fails the stated evidence bar; that does not prove gross alpha is zero.
-   [Corrected artifact](_fomc_clustered_event_study_20261020.json),
-   [audit correction](2026-10-19-production-replica-audit-nogo.md#correction-2026-10-20).
+   [Corrected artifact](../production-replica/_fomc_clustered_event_study_20261020.json),
+   [audit correction](../production-replica/2026-10-19-production-replica-audit-nogo.md#correction-2026-10-20).
 6. **Crypto annualization is a traceable risk, not yet a demonstrated bad
    historical verdict.** `curve_stats` uses 252 for annual volatility, Sharpe
    and Sortino while CAGR uses elapsed calendar days. General WFO paths call it.
    A complete seven-day crypto series needs a matching annualization convention;
    this review has not established the input calendar or a historical crypto
-   result using that path. [Metrics](../../src/ggTrader/lab/metrics.py),
-   [WFO](../../src/ggTrader/lab/wfo.py).
+   result using that path. [Metrics](../../../src/ggTrader/lab/metrics.py),
+   [WFO](../../../src/ggTrader/lab/wfo.py).
 
 ## Coverage and provenance
 
@@ -87,7 +87,7 @@ independent strategy or that all distinct claims within each report were
 assessed. The initial 38 registry rows preserve source statuses from the
 2026-10-23 snapshot and require individual source verification. The candidate
 register contains older headings outside the six date-labelled batches; those
-remain accessible in [the register](WEB_RESEARCH_CANDIDATES.md) but are not yet
+remain accessible in [the register](../../WEB_RESEARCH_CANDIDATES.md) but are not yet
 individually reconciled. The ledger inventories 27 archive Markdown files; a targeted source review covers
 the three legacy stock and crypto studies discussed below. Exhaustive archive
 claim assessment and TimescaleDB run-table inventory, untracked
@@ -99,7 +99,7 @@ revision; this is a file count, not a measure of independent evidence. Some
 studies have raw JSON and a defined frozen protocol; older studies and the
 historical 1.12 baseline have incomplete or unrecoverable provenance. A
 missing source, exact sample, benchmark, costs or data vintage is unknown, not
-an implied pass. [Anchor reproduction](2026-08-19-anchor-fix-reproduction.md).
+an implied pass. [Anchor reproduction](../rebaseline/2026-08-19-anchor-fix-reproduction.md).
 
 ## Shared machinery and chronology
 
@@ -109,8 +109,8 @@ an implied pass. [Anchor reproduction](2026-08-19-anchor-fix-reproduction.md).
 | PIT membership | `c9d1abe` added historical membership to signal sweeps. | Predating the change is a dependency flag, not proof of a particular quantified bias. Correct membership alone does not establish correct historical security identity. |
 | DSR units | `09f9f40` corrected annual-vs-period Sharpe and kurtosis; prior gate counts cannot establish corrected DSR passage. | The 17/17 corrected-momentum anchor finding is documented; do not generalize it to every run. |
 | FOMC timing/unit | Timing correction `7320c1d` and day clustering change event inference. | Apply the later artifact, not the obsolete unclustered headline. |
-| WFE reporting | [compute_wfe](../../src/ggTrader/lab/wfo.py) returns `None` when IS Sharpe < 0.4. | `n/a` WFE alone is not proof of a flat OOS book; it cannot resolve the pairs rerun anomaly by itself. |
-| Crypto frequency | [curve_stats](../../src/ggTrader/lab/metrics.py) assumes 252 observations per year for volatility-based statistics. | Actual seven-day crypto call path and historical impact unresolved; total return and calendar CAGR have different calculations. |
+| WFE reporting | [compute_wfe](../../../src/ggTrader/lab/wfo.py) returns `None` when IS Sharpe < 0.4. | `n/a` WFE alone is not proof of a flat OOS book; it cannot resolve the pairs rerun anomaly by itself. |
+| Crypto frequency | [curve_stats](../../../src/ggTrader/lab/metrics.py) assumes 252 observations per year for volatility-based statistics. | Actual seven-day crypto call path and historical impact unresolved; total return and calendar CAGR have different calculations. |
 
 A properly constructed synthetic control could introduce a known, fixed
 signal and negative/no-signal counterpart into a deterministic tape, checking
@@ -126,12 +126,12 @@ by this report.
 
 ### Pairs: implementation and historical data
 
-**Question and rule.** The [study](2026-07-17-pairs-stat-arb-nogo.md) tests
+**Question and rule.** The [study](../../stock-signals/pairs-stat-arb/2026-07-17-pairs-stat-arb-nogo.md) tests
 same-sector S&P 500 pairs selected on 126-day return correlation, with a
 1:1 log-price spread and monthly portfolio decisions. Its 54-combination WFO
 sweeps entry/exit levels, pair count and one/two-month minimum holds. This is a
 deliberately simplified variant, not an established replication of Gatev or a
-cointegration test. Inspecting [pairs code](../../src/ggTrader/lab/strategies/pairs_stat_arb.py)
+cointegration test. Inspecting [pairs code](../../../src/ggTrader/lab/strategies/pairs_stat_arb.py)
 confirms the cache excludes the input frame and that current ranking and symbol
 exclusions can remove a previously held pair despite its hold floor. Whether
 that happened in the historic run is unknown.
@@ -148,8 +148,8 @@ for this tested policy; it cannot validate or reject all pairs methods.
 
 ### Momentum: analogue versus exact rules
 
-**Question and rule.** [Brief](briefs/2026-10-20-momentum-retest.md) registers
-French Big/Small HiPRIOR long-history idea screens; [implementation](../../src/ggTrader/lab/strategies/momentum.py)
+**Question and rule.** [Brief](../../stock-signals/momentum/2026-10-20-momentum-retest.md) registers
+French Big/Small HiPRIOR long-history idea screens; [implementation](../../../src/ggTrader/lab/strategies/momentum.py)
 selects an eligible top-N stock book. The proxy has a different universe,
 weighting and selection breadth. The two groups and their Holm family were
 frozen; the source data are not a fresh independent forward period after
@@ -159,7 +159,7 @@ publication. The later French source description confirms its breakpoints.
 and 3.108 fail the registered Holm step-down despite individually exceeding
 3; independently post-1994 net CAGR differences +0.08 and +0.20 pt/year fail
 +1.0. Haircuts are 1%/year Big and 3%/year Small, not observed execution or
-tax-lot costs ([raw JSON](_momentum_french_screen_results.json)). The
+tax-lot costs ([raw JSON](../../stock-signals/momentum/_momentum_french_screen_results.json)). The
 shorter corrected WFO replay's xs/dual +4.367 pp/year against SPY and t 0.761
 is favorable in point estimate but inconclusive and used anchors in all 17
 folds; the two return streams were identical, not two confirmations. These
@@ -168,7 +168,7 @@ nor point estimates statistically exclude every practically useful version.
 
 ### Fixed-rule production replica: portfolio, parity and coverage
 
-**Question and rule.** [The brief](briefs/2026-10-19-production-replica-audit.md)
+**Question and rule.** [The brief](../production-replica/2026-10-19-production-replica-audit.md)
 and its amendments test prior-completed-bar decisions, fixed production-like
 defaults, 5 bp/side stocks, 1 bp/side SPY sweep and accrued cash, not WFO-picked
 parameters. The normalized adjusted-close SPY benchmark excludes separately
@@ -189,11 +189,11 @@ or that its estimate excludes all worthwhile positive skill exceed the source.
 
 ### FOMC: event clock and evidence unit
 
-The [original implementation](2026-07-20-fomc-drift-nogo.md) uses the signals
+The [original implementation](../../allocation/fomc-drift/2026-07-20-fomc-drift-nogo.md) uses the signals
 path for 0–3-day Treasury holding windows, so a blanket claim that all tested
 strategies were forced to monthly cadence is false. The original report's
-calendar-date matching issue was fixed; the later [timing correction](briefs/2026-10-19-production-replica-fomc-timing-amendment.md)
-removed pre-entry returns, and the [clustered artifact](_fomc_clustered_event_study_20261020.json)
+calendar-date matching issue was fixed; the later [timing correction](../production-replica/2026-10-19-production-replica-fomc-timing-amendment.md)
+removed pre-entry returns, and the [clustered artifact](../production-replica/_fomc_clustered_event_study_20261020.json)
 uses 113 common event dates. Gross t 2.258 and net t 0.981 are not the
 unclustered 3.619/1.572. The net hypothesis failed on the corrected calculation;
 the point estimate and gross result should not be represented as proof of zero
@@ -234,7 +234,7 @@ strategy. Full-paper access via the requested page returned 403.
    stopped tests prevent a reliable answer. A hypothetical retest is not an
    owner authorization or evidence of an edge.
 
-The current [forward standard](briefs/2026-10-23-forward-paper-standard.md)
+The current [forward standard](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md)
 uses a registered Part A family/significance and +1 pt/year modern economic
 bar; B0 is a kill-only replay, and B1 is at least 18 months of forward shadow
 with after-tax accounting. Its short B1 record is a reality check, explicitly
@@ -250,13 +250,13 @@ search conducted across studies.
 
 ## Earlier archived research: stock and crypto
 
-The registry is not the entire history. The archived [S&P 500 research](../archive/sp500_equity_strategy_research.md)
+The registry is not the entire history. The archived [S&P 500 research](../../../docs/archive/sp500_equity_strategy_research.md)
 explicitly invalidates its own Sharpe 2.15 headline because of full-period
 selection, overlapping parameter selection, current-constituent survivorship
 and replay/indicator bugs. It is a positive-control mirage, not evidence that
 the system once demonstrated deployable alpha.
 
-The legacy [crypto edge search](../archive/edge_search_report_2026-06-08.md)
+The legacy [crypto edge search](../../../docs/archive/edge_search_report_2026-06-08.md)
 compares per-coin WFO searches, venues and fee assumptions. The all-51
 Binance.US run reported +13.8% CAGR vs BTC +38.8%; a Kraken maker-fee run
 reported −10.0%. These runs do not isolate fees alone: the universes and
@@ -268,7 +268,7 @@ tracked by Git; the exact evaluation windows and raw contents were not
 independently reconstructed. This is evidence about the legacy tests, not a verdict on every
 crypto signal.
 
-The archived [funding-carry study](../archive/phase4_funding_carry.md) reports
+The archived [funding-carry study](../../../docs/archive/phase4_funding_carry.md) reports
 one year of actual Kraken funding, +0.45% net return and eight trades; older
 periods use a basis proxy. Its own overlap audit finds correlation 0.983 but
 **zero matching entry/exit events**, so high correlation does not establish
@@ -284,17 +284,17 @@ individual registry names. These are not independent, equally powered tests.
 
 | Family | Existing evidence / decision | Audit interpretation and strongest qualification |
 |---|---|---|
-| Ensemble and variants | [PIT rebaseline](2026-09-23-pit-rebaseline-core-nogo.md) reports core Sharpe 0.59 vs SPY 0.78; IC 0.41 and Kelly 0.50. The [fixed-rule replica](2026-10-19-production-replica-audit-nogo.md) separately fails its registered primary. | Negative comparisons apply to different constructions and samples; the old selected-parameter core is not the deployed fixed-rule book. None proves all voter-level effects absent. |
-| Momentum | [French screen](2026-10-20-momentum-french-screen-nogo.md) fails both registered A1 and A2 for both groups. | Registered screen NO-GO stands; proxy and cost-haircut assumptions limit conclusions about exact top-N rules. The apparent short-window WFO uplift has low precision and is not independent validation. |
-| Profitability, value, investment, combo | [Factor screen](2026-10-21-factor-screen-nogo.md) fails Holm and modern hurdle for all four; H1 is +0.83 point/year net vs market while H2 is −0.62. | Results are for broad French portfolios and assumed costs, not a proof all related stock rules lack useful effects. Do not call H1's +0.83 negative. |
-| Net issuance | [Screen](2026-10-23-net-issuance-screen-nogo.md) has long-only A1 t 0.26 and A2 +0.48 pt/year, failing its bars. | A heavy-issuer short-side diagnostic is a different exposure; neither it nor the long-only failure validates a usable taxable long-only strategy. |
-| Event and information signals | [PEAD](2026-07-17-pead-nogo.md), [insider](2026-07-19-insider-cluster-buy-nogo.md), [Congress](2026-07-19-congress-trades-nogo.md), [short interest](2026-07-17-short-interest-nogo.md), and [short volume](2026-07-19-short-volume-ratio-nogo.md) report historical NO-GOs. | Historical price and timing limitations matter; the [later event decision](2026-10-23-event-timing-audit-decision.md) leaves PEAD and insider feasibility unresolved and parked. Positive or negative effect of any individual data repair is not automatically known. |
-| Headline sentiment | [Report](2026-07-24-headline-sentiment-nogo.md) is provisional with three usable folds. | Negative performance is real for the tested sample; the limited history cannot by itself settle the broad sentiment mechanism. |
-| Calendar and macro | [FOMC correction](2026-10-19-production-replica-audit-nogo.md#correction-2026-10-20) shows net clustered t 0.981; [month-end Treasury](2026-09-24-month-end-treasury-sleeve-nogo.md) fails when financed out of SPY. | A gross event premium and a funded-sleeve improvement are distinct. The displaced asset, event-day dependence and costs must match the question. |
-| Leveraged timing | [Rotation](2026-07-16-leveraged-index-rotation-nogo.md) and [trend](2026-07-16-leveraged-trend-following-nogo.md) report NO-GO across three universes. | Six registry names are two mechanisms over three universes, not six unrelated experiments. Historical gates, static comparators, drawdown and persistent halts must be retained. |
-| Macro approximations | [Treasury curve](2026-07-20-treasury-curve-nogo.md), [FX hedge](2026-07-20-fx-hedge-overlay-nogo.md) and [commodity trend](2026-07-20-commodity-trend-nogo.md) record historical NO-GOs. | The curve report expressly calls its three-ETF design an approximation of a four-factor source; failure of that construction is not a replication failure of the source model. |
-| Cross-asset and static leverage | [80/20](2026-09-28-cross-asset-sleeve.md) static shadow-only GO under its own bar; [A23/A24](2026-09-30-static-fractional-leverage.md) records an owner allocation decision and timing rider NO-GO. | These are allocation/risk tradeoffs, not stock-selection validations; their different objectives help explain why their evaluation differs from a stock-alpha hurdle. Existing owner decisions are not reopened. |
-| Crypto | [Candidate register](WEB_RESEARCH_CANDIDATES.md) and [IBIT artifact](artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json) contain feasibility and descriptive material. | Neither a cited paper nor an ETF overnight split establishes a tradable, after-cost crypto strategy; venue, calendar and taxation must be matched to actual ownership and trading. |
+| Ensemble and variants | [PIT rebaseline](../rebaseline/2026-09-23-pit-rebaseline-core-nogo.md) reports core Sharpe 0.59 vs SPY 0.78; IC 0.41 and Kelly 0.50. The [fixed-rule replica](../production-replica/2026-10-19-production-replica-audit-nogo.md) separately fails its registered primary. | Negative comparisons apply to different constructions and samples; the old selected-parameter core is not the deployed fixed-rule book. None proves all voter-level effects absent. |
+| Momentum | [French screen](../../stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md) fails both registered A1 and A2 for both groups. | Registered screen NO-GO stands; proxy and cost-haircut assumptions limit conclusions about exact top-N rules. The apparent short-window WFO uplift has low precision and is not independent validation. |
+| Profitability, value, investment, combo | [Factor screen](../../stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md) fails Holm and modern hurdle for all four; H1 is +0.83 point/year net vs market while H2 is −0.62. | Results are for broad French portfolios and assumed costs, not a proof all related stock rules lack useful effects. Do not call H1's +0.83 negative. |
+| Net issuance | [Screen](../../stock-signals/net-issuance/2026-10-23-net-issuance-screen-nogo.md) has long-only A1 t 0.26 and A2 +0.48 pt/year, failing its bars. | A heavy-issuer short-side diagnostic is a different exposure; neither it nor the long-only failure validates a usable taxable long-only strategy. |
+| Event and information signals | [PEAD](../../stock-signals/pead/2026-07-17-pead-nogo.md), [insider](../../stock-signals/insider-cluster/2026-07-19-insider-cluster-buy-nogo.md), [Congress](../../stock-signals/congress-trades/2026-07-19-congress-trades-nogo.md), [short interest](../../stock-signals/short-interest/2026-07-17-short-interest-nogo.md), and [short volume](../../stock-signals/short-volume/2026-07-19-short-volume-ratio-nogo.md) report historical NO-GOs. | Historical price and timing limitations matter; the [later event decision](../event-timing/2026-10-23-event-timing-audit-decision.md) leaves PEAD and insider feasibility unresolved and parked. Positive or negative effect of any individual data repair is not automatically known. |
+| Headline sentiment | [Report](../../stock-signals/headline-sentiment/2026-07-24-headline-sentiment-nogo.md) is provisional with three usable folds. | Negative performance is real for the tested sample; the limited history cannot by itself settle the broad sentiment mechanism. |
+| Calendar and macro | [FOMC correction](../production-replica/2026-10-19-production-replica-audit-nogo.md#correction-2026-10-20) shows net clustered t 0.981; [month-end Treasury](../../allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve-nogo.md) fails when financed out of SPY. | A gross event premium and a funded-sleeve improvement are distinct. The displaced asset, event-day dependence and costs must match the question. |
+| Leveraged timing | [Rotation](../../allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md) and [trend](../../allocation/leveraged-trend/2026-07-16-leveraged-trend-following-nogo.md) report NO-GO across three universes. | Six registry names are two mechanisms over three universes, not six unrelated experiments. Historical gates, static comparators, drawdown and persistent halts must be retained. |
+| Macro approximations | [Treasury curve](../../allocation/treasury-curve/2026-07-20-treasury-curve-nogo.md), [FX hedge](../../allocation/fx-hedge/2026-07-20-fx-hedge-overlay-nogo.md) and [commodity trend](../../allocation/commodity-trend/2026-07-20-commodity-trend-nogo.md) record historical NO-GOs. | The curve report expressly calls its three-ETF design an approximation of a four-factor source; failure of that construction is not a replication failure of the source model. |
+| Cross-asset and static leverage | [80/20](../../allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md) static shadow-only GO under its own bar; [A23/A24](../../allocation/static-leverage/2026-09-30-static-fractional-leverage.md) records an owner allocation decision and timing rider NO-GO. | These are allocation/risk tradeoffs, not stock-selection validations; their different objectives help explain why their evaluation differs from a stock-alpha hurdle. Existing owner decisions are not reopened. |
+| Crypto | [Candidate register](../../WEB_RESEARCH_CANDIDATES.md) and [IBIT artifact](../../crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json) contain feasibility and descriptive material. | Neither a cited paper nor an ETF overnight split establishes a tradable, after-cost crypto strategy; venue, calendar and taxation must be matched to actual ownership and trading. |
 
 ## Judgment of NO-GO criteria and future alternatives
 
@@ -338,15 +338,15 @@ select a favorable subperiod after observing it.
 
 ## Documentary contradictions to retain as caveats
 
-The [older roadmap](../roadmap.md) presents 1.12 as a validated core and
+The [older roadmap](../../../docs/roadmap.md) presents 1.12 as a validated core and
 suggests the daily equity book is nearly exhausted. The later [anchor
-reproduction](2026-08-19-anchor-fix-reproduction.md) says that headline's
-window cannot be recovered, and the [current snapshot](RESEARCH_SNAPSHOT.md)
+reproduction](../rebaseline/2026-08-19-anchor-fix-reproduction.md) says that headline's
+window cannot be recovered, and the [current snapshot](../../RESEARCH_SNAPSHOT.md)
 sets a narrower fixed-model NO-GO. Old gate counts predate the DSR correction.
 The old roadmap's industry-wide interpretation does not follow from those
 tests. Historical documents are not rewritten here.
 
-The [MAX report](2026-07-17-max-effect-nogo.md) attributes different results
+The [MAX report](../../stock-signals/max-effect/2026-07-17-max-effect-nogo.md) attributes different results
 from runs minutes apart to an unpinned `now().date()` evaluation end. A drifting
 end date is a real reproducibility risk across dates, but a date-only value
 does not explain a same-day change by itself; the specific discrepancy remains
@@ -356,7 +356,7 @@ its own, prove a prospective blend must underperform. The reported standalone
 unfavorable for that historical construction, subject to its tape and window
 caveats.
 
-The [short-volume report](2026-07-19-short-volume-ratio-nogo.md) openly says
+The [short-volume report](../../stock-signals/short-volume/2026-07-19-short-volume-ratio-nogo.md) openly says
 its FINRA total short-volume proxy omits the paper's liquidity-supplying vs
 demanding decomposition. Its reported 1.1% CAGR and 0.21 Sharpe in a
 long/short book do not test that decomposition. SPY provides market context,
@@ -385,10 +385,10 @@ borrow and financing details require separate verification.
   relabeled untouched holdouts.
 - **Crypto:** investigate exact data calendars, market/venue eligibility,
   costs, outages and tax accounting before interpreting a metric or transfer of
-  a stock decision rule. The IBIT [sanity-check result](artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json)
+  a stock decision rule. The IBIT [sanity-check result](../../crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json)
   is descriptive, not an executable WFO or after-tax result.
 - **Event data:** PEAD and insider source feasibility remain unresolved and
-  parked under the [owner decision](../next_steps.md). The canonical audit was
+  parked under the [owner decision](../../../docs/next_steps.md). The canonical audit was
   not completed; neither a new verdict nor renewed acquisition is implied.
 
 ## How follow-ups could be evaluated
@@ -427,14 +427,14 @@ full texts were not examined. The source-paper-to-code comparison is detailed
 for the representative cases, while other entries carry narrower documentary
 assessments. Proposed prospective power analyses and synthetic controls are
 not empirical results. No claim that all NO-GOs deserve or do not deserve a
-second test follows from this audit. The [execution plan](../superpowers/plans/2026-11-01-research-process-audit.md)
+second test follows from this audit. The [execution plan](../../../docs/superpowers/plans/2026-11-01-research-process-audit.md)
 records the work and the authorization boundaries.
 
 ## Addendum (2026-11-02): fold attribution and follow-ups
 
 This addendum adds pointers only; no verdict or classification above changed.
 
-- The "walk-forward tests can principally measure fallback" concern now has counts from saved fold records: `xs_momentum` and `dual_momentum` replays deployed the anchor in 17/17 folds and `fomc_drift` in 47/53; the PIT `ensemble_ic` run did in 15/17, and the winner was deployed in most folds of the other runs reviewed. See [fold attribution](2026-11-02-wfo-fold-attribution.md). Pre- and post-DSR-fix runs are kept separate.
-- Current fallback/halt behavior is specified and pinned by tests in [fallback semantics](2026-11-02-wfo-fallback-semantics.md); intended behavior is still an owner decision.
-- The free-data direction question is inventoried, without a recommendation, in [free-data stock feasibility](2026-11-02-free-data-stock-feasibility.md). The B0/B1 accounting prerequisite is in [after-tax lot engine requirements](2026-11-02-after-tax-lot-engine-requirements.md).
+- The "walk-forward tests can principally measure fallback" concern now has counts from saved fold records: `xs_momentum` and `dual_momentum` replays deployed the anchor in 17/17 folds and `fomc_drift` in 47/53; the PIT `ensemble_ic` run did in 15/17, and the winner was deployed in most folds of the other runs reviewed. See [fold attribution](../../programme/wfo-methods/2026-11-02-wfo-fold-attribution.md). Pre- and post-DSR-fix runs are kept separate.
+- Current fallback/halt behavior is specified and pinned by tests in [fallback semantics](../../programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md); intended behavior is still an owner decision.
+- The free-data direction question is inventoried, without a recommendation, in [free-data stock feasibility](../../stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md). The B0/B1 accounting prerequisite is in [after-tax lot engine requirements](../../paper-system/tax-lots/2026-11-02-after-tax-lot-engine-requirements.md).
 

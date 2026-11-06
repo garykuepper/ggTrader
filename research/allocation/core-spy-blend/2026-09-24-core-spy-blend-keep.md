@@ -8,7 +8,7 @@
 
 The point-in-time (PIT) re-baseline showed the SP500 core loses to SPY on its
 own: Sharpe 0.59 / CAGR 3.1% vs 0.78 / 13.0%
-(`docs/research/2026-09-23-pit-rebaseline-core-nogo.md`). That curve holds
+(`research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md`). That curve holds
 idle cash at 0%. The live book doesn't. Idle cash above a 5% reserve is swept
 into SPY, so what is deployed is core positions plus SPY. This study measures
 that book directly, to answer the owner's open question from `next_steps.md`
@@ -45,8 +45,8 @@ makes it sound:
 
 ## 2. Quantitative Performance Context
 
-Raw results: `docs/research/_core_spy_blend_20260924.json`. Daily curves:
-`docs/research/_core_spy_blend_curves_20260924.csv`. Driver:
+Raw results: `research/allocation/core-spy-blend/_core_spy_blend_20260924.json`. Daily curves:
+`research/allocation/core-spy-blend/_core_spy_blend_curves_20260924.csv`. Driver:
 `scripts/core_spy_blend.py`. Metrics cover the WFO OOS span (2022-01 →
 2026-04) at lab default costs, with cash earning 0.
 
@@ -131,7 +131,7 @@ the one that fails, which is why Rank 1 comes before any sizing decision.
 
 KEEP tested walk-forward-selected ensemble parameters and same-close fills,
 not the live fixed-default portfolio and its prior-completed-bar decision model.
-The [production-rule audit](2026-10-19-production-replica-audit-nogo.md)
+The [production-rule audit](../../audits/production-replica/2026-10-19-production-replica-audit-nogo.md)
 supersedes this KEEP inference for that specified daily-bar model: NO-GO on the
 primary return/significance bars. Exact historical live replication remains
 UNVERIFIED, and the stopped older holdout remains INCONCLUSIVE. No live change

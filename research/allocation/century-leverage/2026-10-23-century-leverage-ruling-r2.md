@@ -1,6 +1,6 @@
 # Ruling r2: century leverage end date (senior quant, 2026-10-23)
 
-This ruling amends the [approved brief](2026-10-23-century-leverage.md) §2 and §5 on one point,
+This ruling amends the [approved brief](2026-10-23-century-leverage-brief.md) §2 and §5 on one point,
 forced by the data. It was made before any study result was computed. No other number or rule
 changes.
 

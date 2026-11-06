@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-04 · **Status:** fixed before use · **Investigation:**
 `docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` (sections 1, 2, 5
-Lens 2, and 11 items 5 and 7) · **Inventory:** `docs/research/_investigation_inventory.json`
+Lens 2, and 11 items 5 and 7) · **Inventory:** `research/audits/root-cause-2026-11-04/_investigation_inventory.json`
 
 ## 1. Purpose and status
 
@@ -31,8 +31,8 @@ contains and how each cell is computed.
   list their key names and value types (section 9). Selections in section 9 were taken
   from the pass-bar, decision-rule and key-naming text of briefs and reports. Result
   values were visible in these sources while doing so: sections 1 and 7 of
-  `docs/research/2026-09-30-static-fractional-leverage.md`; the k = 1 table rows of
-  `docs/research/2026-09-24-core-spy-blend-keep.md`; and the module docstring of
+  `research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md`; the k = 1 table rows of
+  `research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md`; and the module docstring of
   `scripts/core_spy_blend.py`, which quotes a PIT core versus SPY headline. None of
   them drove a selection or shaped a rule.
 
@@ -329,10 +329,10 @@ step that decided it), and the exact key that feeds each column. Selections were
 made from brief and report text (pass-bar sections, decision rules, key names), not
 from result values.
 
-### `docs/research/_production_replica_results.json`
+### `research/audits/production-replica/_production_replica_results.json`
 
 - Inventory rows: `stocks-production-replica`, `stocks-production-replica-holdout-2010-2020`.
-- Selection (step 1): `docs/research/briefs/2026-10-19-production-replica-audit.md` §4
+- Selection (step 1): `research/audits/production-replica/2026-10-19-production-replica-audit.md` §4
   judges GO "on both windows, in the primary arm". Arm: `primary` only (lag0, cost3,
   cost10 and cash0 are not rows). Windows: `stocks-production-replica` uses
   `windows.primary`; `stocks-production-replica-holdout-2010-2020` uses
@@ -362,10 +362,10 @@ from result values.
   windows, primary arm; after-tax >= +1.0 pt/yr at 24/15 only if those pass). Verdict
   fields: `verdict.verdict`, `closure.verdict`, `windows.<w>.arms.primary.pretax_pass`.
 
-### `docs/research/_momentum_french_screen_results.json`
+### `research/stock-signals/momentum/_momentum_french_screen_results.json`
 
 - Inventory row: `stocks-momentum-french-screen`.
-- Selection (step 1): `docs/research/briefs/2026-10-20-momentum-retest.md` §5
+- Selection (step 1): `research/stock-signals/momentum/2026-10-20-momentum-retest.md` §5
   pre-registers two hypotheses, Big and Small. Groups: one sub-row each for `big` and
   `small`. Not rows: `size_matched.*`, `diag[i]` (subperiods), `stress.*` (all listed
   as diagnostics, not pass criteria, in §5).
@@ -387,10 +387,10 @@ from result values.
 - Column 12: brief §3 and §5 (A1 Holm at family-wise one-sided p = 0.00135; A2 >= +1.0
   pt/yr; pass needs both). Verdict fields: `pass.<g>`, `holm.<g>`.
 
-### `docs/research/_factor_screen_results.json`
+### `research/stock-signals/factor-screen/_factor_screen_results.json`
 
 - Inventory row: `stocks-factor-screen-h1-h4`.
-- Selection (step 1): `docs/research/briefs/2026-10-20-factor-screen.md` §4
+- Selection (step 1): `research/stock-signals/factor-screen/2026-10-20-factor-screen.md` §4
   pre-registers exactly four hypotheses, all Big. One sub-row per hypothesis H1, H2,
   H3, H4. `small_cap_diagnostics.*` is excluded from the family (brief §4) and is not a
   row.
@@ -413,11 +413,11 @@ from result values.
   `inputs.A2_bar_pp`. Verdict fields: `hypotheses.<g>.A1.pass_holm`,
   `hypotheses.<g>.A2.pass`, `hypotheses.<g>.overall_pass`.
 
-### `docs/research/_core_spy_blend_20260924.json`
+### `research/allocation/core-spy-blend/_core_spy_blend_20260924.json`
 
 - Inventory row: `stocks-core-spy-blend-keep`.
 - Selection (step 1): the decision rule pre-registered in
-  `docs/research/2026-09-24-core-spy-blend-keep.md` §1 and in the driver docstring of
+  `research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md` §1 and in the driver docstring of
   `scripts/core_spy_blend.py` judges KEEP on k = 1. Arm: `live_k1.0` only
   (`core_alone`, `live_k0.0`, `live_k0.5`, `live_k1.5` are not rows).
 - Column 2: `meta.eval_start`, `meta.eval_end`.
@@ -430,7 +430,7 @@ from result values.
 - Column 12: report §1 decision rule (Sharpe above SPY and max drawdown no worse;
   no t or CAGR bar). Verdict field: `decision`.
 
-### `docs/research/_pit_rebaseline_20260923.json`
+### `research/audits/rebaseline/_pit_rebaseline_20260923.json`
 
 - Inventory rows: `stocks-sp500-core-pit-rebaseline` → key `ensemble`;
   `stocks-ensemble-ic-pit` → `ensemble_ic`; `stocks-ensemble-kelly-pit` →
@@ -451,13 +451,13 @@ from result values.
   precedence. Verdict fields: `<s>.verdict.go`, `<s>.n_gate_pass`.
 
 
-### `docs/research/_static_leverage_aftertax_results.json`
+### `research/allocation/static-leverage/_static_leverage_aftertax_results.json`
 
 - Inventory rows: `stocks-a23-static-leverage` → arm
   `static 1.3x (70/30) band 8pp`; `stocks-a24-sleeve-trend-rider` → arm
   `A24 rider: 60 SPY + 40 sleeve (10m SMA +/-2%)`. SPY: `SPY buy-and-hold`.
 - Selection (step 1): the pre-registered pass bar in
-  `docs/research/briefs/2026-09-30-static-fractional-leverage.md` (A23 section,
+  `research/allocation/static-leverage/2026-09-30-static-fractional-leverage-brief.md` (A23 section,
   "Pre-registered pass bar" and "Tax engine" bullets) names **two windows** (the real-SSO
   2006-07 → 2026-09 window and the synthetic 1993 → 2006 holdout) and says to report
   **two brackets** (24% ST / 15% LT and 37%+3.8% ST / 20%+3.8% LT), with neither marked

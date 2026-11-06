@@ -21,7 +21,7 @@ diagnostics, not proof of what live saw. ALL's prior-day broker mark also produc
 its exit; a broker mark is not an archived yfinance input.
 
 Evidence and raw replay inputs are in
-[`_replica_parity_20261019.json`](../_replica_parity_20261019.json), keys
+[`_replica_parity_20261019.json`](_replica_parity_20261019.json), keys
 `orders`, `explained_pct`, `notes`, and `investigation`. Backup checks are recorded
 under `investigation.backup_check`. The available backup configuration and local
 dumps do not supply these decision-time inputs.

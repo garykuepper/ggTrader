@@ -15,13 +15,13 @@ Terms used: **WFO** = walk-forward optimization (train on a window, deploy on th
 - `gates_pass_anchor`: gates passed but the anchor was still deployed. By `wfo.py:731` this implies the system was halted **entering** that fold.
 - `gates_pass_winner`: gates passed and the training winner was deployed.
 
-*Observation.* The 13 runs in 7 artifacts split into two groups by when each artifact entered Git relative to the DSR fix (`09f9f40`, 2026-10-19): ten were committed before it (old gate for certain) and three, all from `_audit_reruns_20261019.json`, after it (a corrected harness is documented for them in the [production-rule audit](2026-10-19-production-replica-audit-nogo.md); Git alone does not prove it). Three runs are dominated by anchor deployment: `xs_momentum` and `dual_momentum` (17/17 anchor, corrected harness documented) and `fomc_drift` (47/53 anchor, corrected harness documented); in the pre-fix group, PIT `ensemble_ic` deployed the anchor in 15/17 folds. Most other pre-fix runs deployed the winner in a majority of folds. Everything pre-fix reflects the density gate only, because the uncorrected DSR gate passed almost everything (`docs/changelog.md`, "Lab DSR correction").
+*Observation.* The 13 runs in 7 artifacts split into two groups by when each artifact entered Git relative to the DSR fix (`09f9f40`, 2026-10-19): ten were committed before it (old gate for certain) and three, all from `_audit_reruns_20261019.json`, after it (a corrected harness is documented for them in the [production-rule audit](../../audits/production-replica/2026-10-19-production-replica-audit-nogo.md); Git alone does not prove it). Three runs are dominated by anchor deployment: `xs_momentum` and `dual_momentum` (17/17 anchor, corrected harness documented) and `fomc_drift` (47/53 anchor, corrected harness documented); in the pre-fix group, PIT `ensemble_ic` deployed the anchor in 15/17 folds. Most other pre-fix runs deployed the winner in a majority of folds. Everything pre-fix reflects the density gate only, because the uncorrected DSR gate passed almost everything (`docs/changelog.md`, "Lab DSR correction").
 
 *What this does not show.* It does not show what the undeployed winner would have earned, and it does not make any strategy succeed or fail. Already-closed verdicts stand; this report only states which part of the pipeline each saved run exercised.
 
 ## 2. Quantitative Performance Context: fold attribution
 
-Counts are from `docs/research/_wfo_fold_attribution_results.json`, produced by `scripts/wfo_fold_attribution.py` from existing artifacts (`runs[*].summary`). "Anchor" = `gate_fail + gates_pass_anchor`. "Regime" is inferred from Git commit history of the artifact (a commit time bounds, but does not prove, the gate version used by the run).
+Counts are from `research/programme/wfo-methods/_wfo_fold_attribution_results.json`, produced by `scripts/wfo_fold_attribution.py` from existing artifacts (`runs[*].summary`). "Anchor" = `gate_fail + gates_pass_anchor`. "Regime" is inferred from Git commit history of the artifact (a commit time bounds, but does not prove, the gate version used by the run).
 
 | Artifact : run | Folds | gate_fail | gates_pass_anchor | gates_pass_winner | Anchor folds | Regime |
 |---|---:|---:|---:|---:|---:|---|
@@ -55,11 +55,11 @@ None selected here. Bounded documentary and engineering follow-ups that this att
 
 ## 4. Completed & Closed Research Arcs (Do NOT Re-Propose)
 
-No arc is reopened. For orientation, these closed studies relied on runs with the following anchor shares (observation, not a verdict change): `xs_momentum` and `dual_momentum` replays (100% anchor); `ensemble_ic` PIT rebaseline (88%); `fomc_drift` WFO (89%). Their NO-GO status was decided by their registered bars; for momentum, the separately registered French long-history screen does not use this harness and also failed its bars ([momentum report](2026-10-20-momentum-french-screen-nogo.md)).
+No arc is reopened. For orientation, these closed studies relied on runs with the following anchor shares (observation, not a verdict change): `xs_momentum` and `dual_momentum` replays (100% anchor); `ensemble_ic` PIT rebaseline (88%); `fomc_drift` WFO (89%). Their NO-GO status was decided by their registered bars; for momentum, the separately registered French long-history screen does not use this harness and also failed its bars ([momentum report](../../stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md)).
 
 ## 5. Operational Roadmap: Recommended First Action
 
-**Keep this record as a reference and use it at gate G1.** Decide whether the audit report's WFO caveats ([audit §Verified concerns](2026-11-01-research-process-audit.md)) need a dated addendum citing these counts. No production or paper-trading change follows from this report.
+**Keep this record as a reference and use it at gate G1.** Decide whether the audit report's WFO caveats ([audit §Verified concerns](../../audits/research-process/2026-11-01-research-process-audit.md)) need a dated addendum citing these counts. No production or paper-trading change follows from this report.
 
 ## 6. Contrarian Evaluation & Parked Research
 

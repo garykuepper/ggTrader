@@ -5,13 +5,13 @@
 (`docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md`, section 5, Lens 5).
 This lens lists what the project's record contains and lacks. It does not propose
 strategies, rank options or say what to try.
-**Raw results:** `docs/research/_lens5_coverage_matrix.json` (all 144 inventory ids, once each,
+**Raw results:** `research/audits/root-cause-2026-11-04/_lens5_coverage_matrix.json` (all 144 inventory ids, once each,
 plus the gap table, hypothesis sourcing and the registry cross-check).
-**Inputs:** inventory `docs/research/_investigation_inventory.json`; Lens 1
-`docs/research/_lens1_tape_state.json`; Lens 2 `docs/research/_lens2_sensitivity.json` and
-`docs/research/2026-11-04-lens2-verdict-audit.md`; Lens 6 `docs/research/_lens6_verdicts.json`;
-Lens 9 `docs/research/_lens9_power.json`; an unreviewed Haiku extraction of coverage fields
-(treated as leads, see Verification). Phase 0 (`docs/research/2026-11-04-phase0-trust-audit.md`)
+**Inputs:** inventory `research/audits/root-cause-2026-11-04/_investigation_inventory.json`; Lens 1
+`research/audits/root-cause-2026-11-04/_lens1_tape_state.json`; Lens 2 `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` and
+`research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md`; Lens 6 `research/audits/root-cause-2026-11-04/_lens6_verdicts.json`;
+Lens 9 `research/audits/root-cause-2026-11-04/_lens9_power.json`; an unreviewed Haiku extraction of coverage fields
+(treated as leads, see Verification). Phase 0 (`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md`)
 is unreviewed and used only as a source of hypotheses. Lens 8 (crypto) had not been committed
 when this was written; crypto rows here are pointers to it.
 
@@ -62,7 +62,7 @@ index, moving-average convergence/divergence, exponential moving average (techni
    one daily decision before the close, 1.0x and no futures, and excludes ideas that need
    institutional scale or capacity; it puts small-cap indices and developed-market international
    equities in scope. No line asks specifically for capacity-limited, concentrated or micro-cap
-   ideas (`docs/research/prompts/web-strategy-research-prompt.md:184-205`). That this shaped
+   ideas (`research/prompts/web-strategy-research-prompt.md:184-205`). That this shaped
    which hypotheses arrived is this lens's inference, not something the record states.
 
 ## Falsifiers
@@ -78,7 +78,7 @@ narrower, than the inventory suggests, and the result.
 - **F2 (broader):** web-batch candidates marked untriaged were in fact run in the batch artifact
   folders. Checked: the four artifact folders hold sanity checks for A10 (later run as a
   measured test), A12, A14, B5, the cross-asset sleeve, UUP/UDN buy-and-hold context, static
-  SPY/SSO mixes and IBIT (`docs/research/artifacts-2026-09-28-web-batch/sanity_checks_output.txt`).
+  SPY/SSO mixes and IBIT (`research/allocation/artifacts-2026-09-28-web-batch/sanity_checks_output.txt`).
   Partly met: three untriaged entries (A12, A14, B5) and one parked bullet (crypto session)
   gained only a sanity check, none a measured test.
 - **F3 (broader):** the Russell 2000 or MidCap 400 universes are full and point-in-time. Checked:
@@ -107,15 +107,15 @@ The strongest case that coverage was broad:
   crypto perpetual funding and a spot-bitcoin ETF (coverage matrix below).
 - **Long histories, not just 2021-2026.** The momentum, factor and net-issuance screens use 63 to
   100 years of survivorship-free French portfolios, including Small portfolios
-  (`docs/research/RESEARCH_SNAPSHOT.md:163-167`); the century leverage study covers 1926-2026.
+  (`research/RESEARCH_SNAPSHOT.md:163-167`); the century leverage study covers 1926-2026.
 - **The project moved off its crowded core on purpose.** From July 2026 the research prompt
   asked for other asset classes, geographies and horizons, saying another U.S. large/mid-cap
-  sort was unlikely to help (`docs/research/prompts/web-strategy-research-prompt.md:123-127`).
+  sort was unlikely to help (`research/prompts/web-strategy-research-prompt.md:123-127`).
   Cross-asset, Treasury calendar, FX-hedge, commodity, leverage and crypto rows followed.
 - **Hypotheses were screened, not just collected.** Later web batches checked every citation
   (none fabricated) and rejected 14 candidates on intake, several because the record already
   held a measured result or the effect had decayed
-  (`docs/research/WEB_RESEARCH_CANDIDATES.md:1546-1556`, `docs/research/WEB_RESEARCH_CANDIDATES.md:1587-1598`).
+  (`research/WEB_RESEARCH_CANDIDATES.md:1546-1556`, `research/WEB_RESEARCH_CANDIDATES.md:1587-1598`).
 - **Some short and market-neutral exposure was tested** (pairs, short-volume ratio, inverse-ETF
   rotation, crypto carry).
 
@@ -274,7 +274,7 @@ What the matrix shows:
   the only intraday rows are feasibility and source audits.
 - **Data:** 56 of 72 measured tests use daily price bars only; 6 use free alternative data; 4 use
   French portfolios; no test uses stock-level point-in-time fundamentals (none are available,
-  `docs/research/RESEARCH_SNAPSHOT.md:236-238`), options data or intraday bars.
+  `research/RESEARCH_SNAPSHOT.md:236-238`), options data or intraday bars.
 - **Sizing:** the most common style is small fixed slots of about 3% per name (23 tests); the
   rest are quintile or top-N equal weights, static weights, volatility targets, and Kelly or
   conviction scaling within the same small-slot framework.
@@ -343,7 +343,7 @@ The research prompt describes the account as unable to use futures, spot FX or l
 one daily decision, and excludes ideas that only work at institutional scale or capacity. It
 puts small-cap indices and international equities in scope but does not ask specifically for
 ideas that use the account's small size
-(`docs/research/prompts/web-strategy-research-prompt.md:184-205`). Whether that shaped the
+(`research/prompts/web-strategy-research-prompt.md:184-205`). Whether that shaped the
 candidates is an inference of this lens.
 
 ## Hypothesis sourcing
@@ -352,7 +352,7 @@ candidates is an inference of this lens.
 
 Counting rule: each measured inventory row gets one channel. "Published (direct)" = the study's
 own brief anchors on a named paper and it did not arrive through a web batch; "LLM/web batch" =
-it arrived through a batch in `docs/research/WEB_RESEARCH_CANDIDATES.md` (most cite papers);
+it arrived through a batch in `research/WEB_RESEARCH_CANDIDATES.md` (most cite papers);
 "practitioner" = technical-analysis indicators; "internal" = the project's own observation or a
 lever on an existing strategy.
 
@@ -366,7 +366,7 @@ lever on an existing strategy.
 
 Every web batch was produced by running the project's prompt in an LLM research tool (Gemini,
 ChatGPT deep research, Claude web research) and pasting the results back
-(`docs/research/WEB_RESEARCH_CANDIDATES.md:9-25`, `docs/research/WEB_RESEARCH_CANDIDATES.md:1536-1545`, `docs/research/WEB_RESEARCH_CANDIDATES.md:2068-2075`, `docs/research/WEB_RESEARCH_CANDIDATES.md:2446-2456`, `docs/research/WEB_RESEARCH_CANDIDATES.md:2808-2815`).
+(`research/WEB_RESEARCH_CANDIDATES.md:9-25`, `research/WEB_RESEARCH_CANDIDATES.md:1536-1545`, `research/WEB_RESEARCH_CANDIDATES.md:2068-2075`, `research/WEB_RESEARCH_CANDIDATES.md:2446-2456`, `research/WEB_RESEARCH_CANDIDATES.md:2808-2815`).
 The ensemble voters' origin is not stated in the record; "practitioner" is this lens's label for
 standard technical indicators.
 
@@ -374,7 +374,7 @@ standard technical indicators.
 
 Counting rule: an entry is a numbered heading (1-14, A1-A27, B1-B15, C1-C11) or a parked bullet
 under a "D. Parked" or "Parked this batch" heading; C-items are methods, not trading hypotheses;
-summary lines at `docs/research/WEB_RESEARCH_CANDIDATES.md:3173-3180` are not entries. "Run" = a
+summary lines at `research/WEB_RESEARCH_CANDIDATES.md:3173-3180` are not entries. "Run" = a
 measured test exists (an inventory row with a measured verdict type, or a registry strategy with
 a report). "Sanity check" = a one-off pandas check in a batch artifact folder.
 
@@ -391,7 +391,7 @@ a report). "Sanity check" = a one-off pandas check in a batch artifact folder.
 So 62 of 82 trading hypotheses (37 + 25) were never run; 15 were. A further 14 candidates were
 rejected on intake in the four later batches (2 + 4 + 6 + 2). The 2026-07-16 batch was itself
 scoped away from technical signals because "the technical-signal category was already
-exhausted" (`docs/research/WEB_RESEARCH_CANDIDATES.md:36-40`). The 2026-10-20 strategy triage
+exhausted" (`research/WEB_RESEARCH_CANDIDATES.md:36-40`). The 2026-10-20 strategy triage
 (32 flawed-test, 8 untested, 4 clean NO) is not in the repository (spec section 4), so it was not
 used.
 
@@ -413,18 +413,18 @@ used.
   Whether each is among McLean and Pontiff's 97 is **unverified** (appendix not read). The other 10 are
   Treasury, commodity, FX, calendar or crypto effects.
 - **The record's own decay measurements:** momentum Small t 3.38 (1927-1993), 1.11 (1994-2012),
-  -0.77 (2013-2026) (`docs/research/2026-10-20-momentum-french-screen-nogo.md:83-90`); SMALL
+  -0.77 (2013-2026) (`research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md:83-90`); SMALL
   factor portfolios -6.3 to -6.8 pp/yr after 2013
-  (`docs/research/2026-10-21-factor-screen-nogo.md:131-135`); PEAD reported gone in non-microcap
+  (`research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md:131-135`); PEAD reported gone in non-microcap
   stocks by 2006 and pre-FOMC equity drift gone after 2015, both as cited
-  (`docs/research/WEB_RESEARCH_CANDIDATES.md:398-403`, `docs/research/WEB_RESEARCH_CANDIDATES.md:1593-1598`); fast trend Sharpe 0.84 to
-  0.12 after 2009, as cited (`docs/research/WEB_RESEARCH_CANDIDATES.md:2165`); the IBIT
+  (`research/WEB_RESEARCH_CANDIDATES.md:398-403`, `research/WEB_RESEARCH_CANDIDATES.md:1593-1598`); fast trend Sharpe 0.84 to
+  0.12 after 2009, as cited (`research/WEB_RESEARCH_CANDIDATES.md:2165`); the IBIT
   overnight pattern reversed after a dedicated ETF launched
-  (`docs/research/WEB_RESEARCH_CANDIDATES.md:1336-1345`).
+  (`research/WEB_RESEARCH_CANDIDATES.md:1336-1345`).
 - **Where the published effects are said to live:** the record notes that the cited effect
   concentrates in small or illiquid names outside the tested S&P 500 universe for short interest
-  (`docs/research/WEB_RESEARCH_CANDIDATES.md:126-130`,
-  `docs/research/2026-07-17-short-interest-nogo.md:53`) and for PEAD (lines 398-403). McLean and
+  (`research/WEB_RESEARCH_CANDIDATES.md:126-130`,
+  `research/stock-signals/short-interest/2026-07-17-short-interest-nogo.md:53`) and for PEAD (lines 398-403). McLean and
   Pontiff's abstract says predictor returns are higher in stocks with high idiosyncratic risk
   and low liquidity.
 
@@ -433,12 +433,12 @@ used.
 - **Within the project:** 33 of 72 measured tests are the ensemble/reversion family or its levers
   (Lens 2 `multiple_testing.families`); 44 of 51 single-stock tests are large-cap only. Nine
   consecutive equity diversification sleeves failed
-  (`docs/research/briefs/2026-09-28-cross-asset-sleeve.md:308`); the PEAD and idio_vol return
+  (`research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md:308`); the PEAD and idio_vol return
   streams had 0.42 and 0.45 correlation to the core
-  (`docs/research/2026-07-17-pead-nogo.md:62-65`).
+  (`research/stock-signals/pead/2026-07-17-pead-nogo.md:62-65`).
 - **Outside the project (crowding by other traders):** the record asserts but does not measure
   that technical signals on this universe are "close to fully arbitraged"
-  (`docs/research/prompts/web-strategy-research-prompt.md:170-172`). No crowding measure was
+  (`research/prompts/web-strategy-research-prompt.md:170-172`). No crowding measure was
   computed for any family; the one crowding-flow candidate (anomaly-driven demand) was
   infeasible. Family-level crowding is **unknown** beyond McLean and Pontiff's general finding.
 
@@ -522,7 +522,7 @@ Commands run (all read-only):
   quotes only and is not counted (`verified: false`).
 - Haiku check on those 41 rows (369 fields): 99 were null and were filled by this lens; among
   non-null fields one error was found and corrected (leveraged rotation horizon is monthly
-  breadth, `docs/research/2026-07-16-leveraged-index-rotation-nogo.md:11`); no market-cap or
+  breadth, `research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md:11`); no market-cap or
   direction value contradicted its source.
 - Registry: parsed `src/ggTrader/lab/strategies/__init__.py:56-95` (38 names) and asserted each
   maps to an inventory id.

@@ -3,7 +3,7 @@
 **Date:** 2026-09-10  
 **Author:** Senior Quantitative Analyst / Antigravity CLI  
 **Status:** Canonical Strategy Review & Research Roadmap  
-**File Location:** `docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
+**File Location:** `research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
 
 ---
 

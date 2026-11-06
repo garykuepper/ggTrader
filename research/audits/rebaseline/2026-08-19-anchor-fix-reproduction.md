@@ -12,7 +12,7 @@ plateau-robustness gate and a DSR (deflated Sharpe ratio) gate to each fold's
 in-sample winner before deploying it out-of-sample; a fold that fails either
 gate, or trades while the regime-halt circuit breaker is tripped, deploys a
 defensive "anchor" combo instead. On 2026-08-18 a leak was fixed
-(commit `2eafab1`, `docs/research/2026-08-18-wfo-anchor-leakage-fix.md`):
+(commit `2eafab1`, `research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md`):
 previously the anchor was fit once on the *entire* eval window before the
 fold loop started, so a fold's defensive fallback could be chosen with
 knowledge of price action years past that fold's own test window. The fix
@@ -27,7 +27,7 @@ report does not touch or recommend touching the live trader.** Layered
 beneath it is the **5-voter `EnsembleSignal` SP500 core**, cited everywhere
 in this project's history as OOS Sharpe **1.12** / CAGR **16.3%** / MaxDD
 **-11.0%** vs. SPY 0.58, 17-fold walk-forward, gates **16/17**
-(`docs/research/RESEARCH_SNAPSHOT.md:21`). This is the single most-cited
+(`research/RESEARCH_SNAPSHOT.md:21`). This is the single most-cited
 number in the project — it is the bar every one of nine diversification-
 sleeve candidates was measured and rejected against, and the number the
 July-13 leverage-realistic blend headline is itself benchmarked against.
@@ -194,7 +194,7 @@ falsified, pairs-stat-arb NO-GO, IC-weighted voting NO-GO, exit-rule sweep
 NO-GO, Kelly sizing NO-GO, and the nine rejected diversification-sleeve
 candidates PEAD/insider-cluster-buy/congress-trades/short-interest/
 short-volume-ratio/max-effect/index-deletion-fade/idio-vol/VIX-throttling)
-stand unchanged in direction — see `docs/research/RESEARCH_SNAPSHOT.md`.
+stand unchanged in direction — see `research/RESEARCH_SNAPSHOT.md`.
 **What changes is the confidence in the specific numeric bar (1.12 /
 16.3% / -11.0%) those nine candidates were measured against — see §5.**
 
@@ -290,5 +290,5 @@ expanding-window anchor selection, are the relevant explanation to investigate;
 this causal attribution is **inferred**, not an isolated controlled measurement
 of each fix. Data vintage and other simultaneous changes must not be assigned
 invented contributions. The body above is preserved as the original record.
-The [production-rule audit](2026-10-19-production-replica-audit-nogo.md) also
+The [production-rule audit](../production-replica/2026-10-19-production-replica-audit-nogo.md) also
 supersedes old gate-pass counts as DSR evidence after the statistical unit fix.

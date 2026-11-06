@@ -16,7 +16,7 @@
 > window). None of this changes this report's own conclusion — the anchor
 > leak is real and fixed, and is a separate bug from the ones above — but do
 > not cite the 1.12/1.14/0.58–0.65 figures below as current. See
-> `docs/research/2026-08-19-anchor-fix-reproduction.md`.
+> `research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md`.
 
 ## 1. Executive Summary & Core Engine Audit
 
@@ -106,7 +106,7 @@ This report doesn't reopen or reject any strategy-level arc. It is an
 engineering-correctness fix to the WFO harness itself. All prior strategy
 verdicts (ensemble SP500 core GO, leveraged rotation NO-GO, leveraged trend
 NO-GO, ML gate falsified, pairs-stat-arb NO-GO, IC-weighted voting NO-GO,
-exit-rule sweep NO-GO) stand unchanged — see `docs/research/RESEARCH_SNAPSHOT.md`.
+exit-rule sweep NO-GO) stand unchanged — see `research/RESEARCH_SNAPSHOT.md`.
 
 ## 5. Operational Roadmap: Recommended First Action
 

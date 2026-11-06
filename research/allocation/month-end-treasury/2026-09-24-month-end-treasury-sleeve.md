@@ -7,8 +7,8 @@ refreshed before relying on the "don't re-propose" list below.
 
 **This is a template, not a ready-to-run prompt.** Fill in the "Candidate
 Strategy" section below with one specific idea — pulled from
-`docs/research/WEB_RESEARCH_CANDIDATES.md` (externally-sourced) or
-`docs/research/RESEARCH_SNAPSHOT.md` §6 (internally-derived) — before
+`research/WEB_RESEARCH_CANDIDATES.md` (externally-sourced) or
+`research/RESEARCH_SNAPSHOT.md` §6 (internally-derived) — before
 handing this to an agent. This prompt is for a **Claude Code session with
 full repo access** (Read/Bash/Edit/etc.), not a web-research tool — see
 `web-strategy-research-prompt.md` for the separate discovery-stage prompt
@@ -19,7 +19,7 @@ full repo access** (Read/Bash/Edit/etc.), not a web-research tool — see
 ## Candidate Strategy — A10 month-end Treasury duration sleeve
 
 **Brief written:** 2026-09-24, by the `research-prompts` skill (Mode C).
-**Backlog entry:** `docs/research/WEB_RESEARCH_CANDIDATES.md`, 2026-09-23
+**Backlog entry:** `research/WEB_RESEARCH_CANDIDATES.md`, 2026-09-23
 batch, **A10** (copied verbatim below).
 
 > ### A10. Month-end Treasury duration sleeve (IEF/TLT, last 3 trading days)
@@ -67,7 +67,7 @@ pinned lab window (2021-02 → 2026-04) is entirely post-publication.
 **Known feasibility notes** (pre-filled so you don't rediscover them):
 
 - **Prior sanity check, not a WFO result**
-  (`docs/research/artifacts-2026-09-23-web-batch/`). Daily closes, cash
+  (`research/allocation/artifacts-2026-09-23-web-batch/`). Daily closes, cash
   earning 0, 1 bp/side:
   - IEF last-3-days: Sharpe 0.96, +2.6%/yr, MaxDD -2.2% at 14% exposure
     (2021-02 → 2026-04), against IEF buy-and-hold at -1.6%/yr.
@@ -165,7 +165,7 @@ live change; see "What you must produce".
 
 **Driver and artifacts:** write `scripts/month_end_treasury_wfo.py` with
 `argparse`, a `main()`, JSON checkpointing per window, and raw results to
-`docs/research/_month_end_treasury_results.json`. Run the tests through
+`research/allocation/month-end-treasury/_month_end_treasury_results.json`. Run the tests through
 `scripts/run_tests.sh`.
 
 ---
@@ -202,7 +202,7 @@ under point-in-time (PIT) index membership.
 ema_cross + macd_divergence + volume_bb_reversion), flat 3.3% sizing, 1.0x
 leverage, same window, PIT membership mask on: **OOS Sharpe 0.59 | CAGR 3.1%
 | MaxDD -5.3%**, gates 17/17
-(`docs/research/2026-09-23-pit-rebaseline-core-nogo.md`). A low-drawdown
+(`research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md`). A low-drawdown
 sleeve, not an index-beater. This is what the live paper account trades.
 
 **Do not cite** the earlier core figures — 0.99 / 8.0% (2026-08-22, inflated
@@ -291,7 +291,7 @@ avoiding the exact instance:
   *depth* (not just a free current-snapshot endpoint) before scoping any
   engineering work around a new data source.
 
-Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
+Full roster with citations: `research/RESEARCH_SNAPSHOT.md` §2.
 
 ## Constraints
 
@@ -321,7 +321,7 @@ Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
 - **Bad bars**: there is no price-bar sanity filter yet. If a result hinges
   on a few extreme days, check them — the 2026-09-23 Kelly run's 38% CAGR
   was one SIVB post-failure bar ($0.0013 → $0.11).
-- Full methodology lessons: `docs/research/RESEARCH_SNAPSHOT.md` §3.
+- Full methodology lessons: `research/RESEARCH_SNAPSHOT.md` §3.
 - **If the candidate came from `WEB_RESEARCH_CANDIDATES.md`'s cross-asset
   register, apply its "Minimum validation standard" checklist on top of
   this project's usual WFO/NDH/DSR gate**, since a source existing and
@@ -352,7 +352,7 @@ Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
 ## What you must produce
 
 A dated research report at `docs/research/<date>-<slug>.md`, following
-`docs/research/TEMPLATE-research-report.md`'s structure — GO or NO-GO either
+`research/TEMPLATE-research-report.md`'s structure — GO or NO-GO either
 way, honest OOS numbers, every quantitative claim measured-or-labeled
 unvalidated. **Do not modify live trading code, config, or deployed
 strategy weights** — that requires a separate, explicit ask from the user

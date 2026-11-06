@@ -40,7 +40,7 @@
 
 ## 2. Quantitative Performance Context
 
-- **Raw results:** `docs/research/_live_indicator_warmup_results.json`.
+- **Raw results:** `research/paper-system/indicator-warmup/_live_indicator_warmup_results.json`.
 - **Driver:** `scripts/live_indicator_warmup.py`.
 - **Ensemble:** `EnsembleSignal` defaults, the same object live builds: 5 voters,
   `min_agree` 2, RSI exit independent.

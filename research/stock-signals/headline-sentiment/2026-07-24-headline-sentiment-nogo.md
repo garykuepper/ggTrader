@@ -6,7 +6,7 @@
 **Audience:** Principal Engineering Team & Quantitative Research Collaborators
 
 > **⚠️ AMENDMENT (2026-07-25) — this verdict is provisional, not settled.**
-> The implementation audit (`docs/research/2026-07-25-strategy-implementation-audit.md`)
+> The implementation audit (`research/audits/implementation/2026-07-25-strategy-implementation-audit.md`)
 > found three independent reasons this test is underpowered, none of them a
 > code defect:
 >

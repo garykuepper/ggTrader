@@ -6,7 +6,7 @@ file search. Codex prepares and interprets this two-document slice. No broader
 collection, vendor research, DB work or protocol amendment is included.
 
 Exact inputs and source-workbook hash:
-[acquisition JSON](../_cost_charter_acquisition.json). Targets are the 2015 and
+[acquisition JSON](_cost_charter_acquisition.json). Targets are the 2015 and
 2022 charter hrefs already verified in the accepted workbook. They are not cached.
 
 Runner `/tmp/cost_charters_batch.py` minimally adapts the twice-reviewed prior
@@ -49,7 +49,7 @@ the unchanged first 79 reservations and unchanged parent files were verified.
 Child cache: `data/external/event_timing_audit/cost-charters-h1kbl362/`.
 The persistent claim remains; this two-request authorization is consumed.
 
-[Comparison evidence](../_cost_charter_comparison_results.json) records the
+[Comparison evidence](_cost_charter_comparison_results.json) records the
 base restatement and appended Article II amendment separately. It supplies no
 unverified legal effective date or continuous security identity. Fresh independent offline
 documentary review is CLEAN: source clauses, date bindings, markup, all 81 raw

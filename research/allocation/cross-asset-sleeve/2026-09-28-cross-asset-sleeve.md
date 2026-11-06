@@ -10,7 +10,7 @@ This candidate is `RESEARCH_SNAPSHOT.md` §6 Tier 1 #1. It holds 80% SPY and
 20% split equally across long Treasuries (TLT), gold (GLD) and a broad
 commodity fund (PDBC), rebalanced at every month-end close. Two arms were
 tested exactly as the brief
-(`docs/research/briefs/2026-09-28-cross-asset-sleeve.md`) fixed them before
+(`research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md`) fixed them before
 any run:
 
 - **Static:** the sleeve is always held.
@@ -64,7 +64,7 @@ cross-sectional sleeves (`RESEARCH_SNAPSHOT.md` §2).
 
 ## 2. Quantitative Performance Context
 
-Raw results are in `docs/research/_cross_asset_sleeve_results.json`, produced
+Raw results are in `research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json`, produced
 by the driver `scripts/cross_asset_sleeve_wfo.py`.
 
 - **Method.**
@@ -117,8 +117,8 @@ by the driver `scripts/cross_asset_sleeve_wfo.py`.
 
 ### Holdout: 2007-06-01 → 2011-02-28 (unseen data, pre-registered)
 
-- **Pre-registration:** `docs/research/briefs/2026-09-28-cross-asset-sleeve-holdout.md`.
-- **Raw results:** `docs/research/_cross_asset_sleeve_holdout_results.json`.
+- **Pre-registration:** `research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-holdout.md`.
+- **Raw results:** `research/allocation/cross-asset-sleeve/_cross_asset_sleeve_holdout_results.json`.
 - **Run with:** `scripts/cross_asset_sleeve_wfo.py --holdout`.
 - **Rule:** the static rule with DBC in place of PDBC.
 - **Prices:** yfinance `auto_adjust`, fetched at run time, because `ohlcv`
@@ -226,7 +226,7 @@ data, which this study doesn't have (§6).
 **Mechanism.** Re-run the frozen static rule with DBC in place of PDBC (the
 two tracked identically where they overlap in the 2026-09-28 sanity check).
 The rule and pass bar are frozen in
-`docs/research/briefs/2026-09-28-cross-asset-sleeve-holdout.md`.
+`research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-holdout.md`.
 
 **Why this window only.** The 2026-09-28 sanity check already scored the
 static book with DBC from 2011-03 on (0.89 vs SPY 0.84). So 2011–2015 is

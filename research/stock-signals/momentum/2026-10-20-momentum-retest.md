@@ -27,7 +27,7 @@ bar, and changing any of them needs a new dated brief.
   parity-freeze lift (about 2026-12-29), then as a small real-money pilot.
 - **Context.** The deployed ensemble stock picks are a NO-GO and retire at the
   freeze lift whatever this study finds
-  (`docs/research/2026-10-19-production-replica-audit-nogo.md`).
+  (`research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md`).
 - **Not affected.** The owner's A23 allocation (70/30 SPY/SSO) is a separate
   decision and does not change.
 

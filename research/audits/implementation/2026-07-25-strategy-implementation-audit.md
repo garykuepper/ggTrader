@@ -27,7 +27,7 @@ because of a data-integrity bug in how the SPY benchmark is loaded (§2.0).**
 The single most important sanity check is a positive control — *does this
 harness ever say yes?* It does: the deployed 5-voter `EnsembleSignal` core
 passes at OOS Sharpe **1.12** with gates **16/17**, and the live 3-sleeve blend
-at **1.14** (`docs/research/RESEARCH_SNAPSHOT.md` §1). The harness
+at **1.14** (`research/RESEARCH_SNAPSHOT.md` §1). The harness
 discriminates; it is not a reject-everything machine, which is the failure mode
 that would have invalidated every verdict at once.
 

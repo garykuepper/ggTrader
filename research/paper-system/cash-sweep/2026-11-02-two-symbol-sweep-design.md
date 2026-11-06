@@ -1,12 +1,12 @@
 # Two-symbol cash-sweep design
 
-**Status: design and future test plan only.** No paper code, configuration, order, or deployment is authorized here. The [A23 report](2026-09-30-static-fractional-leverage.md) and [worklist](../working_task_list.md) specify a 70/30 SPY/SSO target, a 22–38% SSO band and month-end checks with trades the next day when outside the band; the advisory helper describes cash-first funding and highest-basis long-term lots. The documented initial real-money staging is 10% of intended capital. Confirm the applicable book and instruments before implementation.
+**Status: design and future test plan only.** No paper code, configuration, order, or deployment is authorized here. The [A23 report](../../allocation/static-leverage/2026-09-30-static-fractional-leverage.md) and [worklist](../../../docs/working_task_list.md) specify a 70/30 SPY/SSO target, a 22–38% SSO band and month-end checks with trades the next day when outside the band; the advisory helper describes cash-first funding and highest-basis long-term lots. The documented initial real-money staging is 10% of intended capital. Confirm the applicable book and instruments before implementation.
 
 ## Interaction with stock-sleeve cash
 
 Proposed invariant: a real stock-sleeve cash requirement is handled as a liquidity event, not silently as an extra monthly band rebalance. Preserve sufficient cash to meet already committed obligations and avoid unapproved shorting or leverage. Whether and how the sweep supplies an intramonth shortfall, instrument/lot priority, reserves, partial fills and fallback behavior remain **open decisions**; the existing band rule alone does not determine them. No tax-lot choice is presumed executable until broker capabilities and available long-term lots are checked.
 
-Use fresh, timestamped prices and reconciled broker positions. Missing or stale prices, uncertain order state, and insufficient eligible lots must surface an operator decision or safe stop rather than silently assume a fill. The proposed design must be reconciled with [freeze readiness](2026-11-02-paper-freeze-readiness.md), actual funding, broker support and the registered strategy before a future implementation.
+Use fresh, timestamped prices and reconciled broker positions. Missing or stale prices, uncertain order state, and insufficient eligible lots must surface an operator decision or safe stop rather than silently assume a fill. The proposed design must be reconciled with [freeze readiness](../observation-readiness/2026-11-02-paper-freeze-readiness.md), actual funding, broker support and the registered strategy before a future implementation.
 
 ## Scenarios for a future implementation
 
@@ -32,12 +32,12 @@ A future test suite must also cover simultaneous stock exits and sweep orders, p
    the monthly band rule.
 3. The owner's real taxable A23 allocation and offline CSV advisory helper are
    separate. Actual funding and real broker are unverified. Under the
-   [forward-paper standard](briefs/2026-10-23-forward-paper-standard.md), any
+   [forward-paper standard](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md), any
    separately approved future real stock pilot uses the SPY/VOO core, not the
    A23 SSO leg. No real stock-purchase path is authorized by this document.
 
 The helper measures SSO as `SSO/(SPY+SSO)`, excluding cash and other positions
-([implementation](../../src/ggTrader/lab/a23_rebalance.py)); using whole paper
+([implementation](../../../src/ggTrader/lab/a23_rebalance.py)); using whole paper
 NAV would be a different rule. Its lot ordering prefers long-term lots and
 then highest basis, but it can propose short-term fallback with a warning; it
 is not an LT-only enforcement mechanism. The inspected paper broker adapter
@@ -65,7 +65,7 @@ is also open.
 | New cash or a stock exit | Keep contribution allocation separate from a scheduled band sale; the paper contribution policy remains open. |
 
 These controls are proposals, not descriptions of verified production behavior.
-The [parity reconciliation](2026-11-02-paper-freeze-readiness.md) does not
+The [parity reconciliation](../observation-readiness/2026-11-02-paper-freeze-readiness.md) does not
 establish that they have operated in live paper sessions.
 
 A future implementation spec must also define how both sweep symbols are

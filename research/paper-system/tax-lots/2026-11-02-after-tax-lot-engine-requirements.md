@@ -4,7 +4,7 @@
 **Date:** 2026-11-02
 **Status:** Sections 1–5 are the original requirements specification and gap analysis, dated as a historical snapshot (written before any engine existed; the only tax-lot code then was `Book`). A standalone library, `TaxLotBook`, was implemented afterwards; see section 6 for current status. No tax validity is asserted.
 
-Terms: **B0** = kill-only replay on the clean 2021-01-31 → 2026-04-30 tape; **B1** = forward shadow book (≥ 18 months). **ST/LT** = short-/long-term capital-gain treatment. **HIFO** = highest-basis-first lot sales. **Wash sale** = a loss on a sale disallowed when substantially identical shares are bought within 30 days before or after, with the loss added to the replacement lot's basis and holding period. **PIT** = point-in-time. Source of requirements: [forward-paper standard §§3, 4, 6](briefs/2026-10-23-forward-paper-standard.md).
+Terms: **B0** = kill-only replay on the clean 2021-01-31 → 2026-04-30 tape; **B1** = forward shadow book (≥ 18 months). **ST/LT** = short-/long-term capital-gain treatment. **HIFO** = highest-basis-first lot sales. **Wash sale** = a loss on a sale disallowed when substantially identical shares are bought within 30 days before or after, with the loss added to the replacement lot's basis and holding period. **PIT** = point-in-time. Source of requirements: [forward-paper standard §§3, 4, 6](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md).
 
 ## 1. Why this is a prerequisite
 

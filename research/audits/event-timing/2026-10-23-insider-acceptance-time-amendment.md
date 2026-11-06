@@ -1,7 +1,7 @@
 # DRAFT amendment: insider acceptance-timestamp source
 
 **Status: DRAFT — owner approval required; not implemented in the audit runner.**
-Prepared 2026-10-23 under [resolution plan Task 1](../../superpowers/plans/2026-10-23-resolve-event-audit.md).
+Prepared 2026-10-23 under [resolution plan Task 1](../../../docs/superpowers/plans/2026-10-23-resolve-event-audit.md).
 This proposes a change to [audit brief §8 A2/A8](2026-10-21-event-timing-audit.md),
 not a reinterpretation of its existing approval. The
 [approved date-only amendment](2026-10-22-event-timing-source-conflict-proposal.md)
@@ -9,7 +9,7 @@ continues to govern its separate representation.
 
 ## Reproduced evidence
 
-The [raw diagnostic artifact](../_insider_acceptance_diagnostic.json) records every
+The [raw diagnostic artifact](_insider_acceptance_diagnostic.json) records every
 cached API/header pair, issuer CIK, accession, raw-response URL, cache filename and
 SHA-256. It reads the existing `insider-predecessor-bnz1mn22/MANIFEST.json`, SHA-256
 `07d63f70d44280066c71aa099b27f8309cbf272c9dc965eba988b7dbbe39c83e`, under

@@ -8,7 +8,7 @@ This is identification evidence, not a proved original/amendment lot linkage.
 
 The single frozen URL is
 `https://www.sec.gov/Archives/edgar/data/1133421/000122520818003052/0001225208-18-003052.txt`.
-The [request JSON](../_insider_predecessor_acquisition.json) binds the accepted
+The [request JSON](_insider_predecessor_acquisition.json) binds the accepted
 workbook and newly recorded DB query snapshot. No other candidate or primary
 XML fallback is included. If the full response lacks usable XML/header evidence,
 retain it and the unresolved linkage rather than silently expanding collection.
@@ -51,7 +51,7 @@ SEC ledger to 82, zero Yahoo, 105.33867007261142 cumulative seconds. All 82 raw
 hashes, unchanged parent files and first 81 reservations were verified. Child:
 `data/external/event_timing_audit/insider-predecessor-bnz1mn22/`. Claim is consumed.
 
-[Raw comparison](../_insider_predecessor_comparison.json) corroborates the exact
+[Raw comparison](_insider_predecessor_comparison.json) corroborates the exact
 F-lot correction, 8,576 to 8,532 shares, and identifies the unchanged repeated M
 lot by identical raw fingerprint. No purchase lot or full-ledger replacement is
 inferred. Both documents' dates/owner/issuer and amendment footnote 2 are retained.

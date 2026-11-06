@@ -3,7 +3,7 @@
 **Date:** 2026-11-04 · **Author:** senior-quant Opus subagent (read-only), saved by the lead
 **Status:** UNREVIEWED subagent output. Items marked "prose" were taken from reports, not
 recomputed. The independent second-model review in Phase 3 of the
-[investigation design](../superpowers/specs/2026-11-04-root-cause-investigation-design.md)
+[investigation design](../../../docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md)
 has not happened yet. Crypto was not covered.
 
 ## Bottom line

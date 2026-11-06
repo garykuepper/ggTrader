@@ -7,8 +7,8 @@ refreshed before relying on the "don't re-propose" list below.
 
 **Filled brief (2026-09-30) — ready to hand to a Claude Code session.** Original note: Fill in the "Candidate
 Strategy" section below with one specific idea — pulled from
-`docs/research/WEB_RESEARCH_CANDIDATES.md` (externally-sourced) or
-`docs/research/RESEARCH_SNAPSHOT.md` §6 (internally-derived) — before
+`research/WEB_RESEARCH_CANDIDATES.md` (externally-sourced) or
+`research/RESEARCH_SNAPSHOT.md` §6 (internally-derived) — before
 handing this to an agent. This prompt is for a **Claude Code session with
 full repo access** (Read/Bash/Edit/etc.), not a web-research tool — see
 `web-strategy-research-prompt.md` for the separate discovery-stage prompt
@@ -26,7 +26,7 @@ an alpha claim: Sharpe is expected to be at or below SPY's, so the lab's
 Sharpe-vs-SPY gate does **not** decide it. The deliverable is the honest
 number the owner needs to decide the drawdown appetite.
 
-**Backlog entry (verbatim, `docs/research/WEB_RESEARCH_CANDIDATES.md`, batch 2026-09-30):**
+**Backlog entry (verbatim, `research/WEB_RESEARCH_CANDIDATES.md`, batch 2026-09-30):**
 
 ### A23. Static fractional leverage: SPY + SSO at ~1.3–1.5x with band rebalancing
 
@@ -92,7 +92,7 @@ this candidate is an owner risk-appetite decision, not a lab GO/NO-GO.
 **Known feasibility notes** (pre-filled so you don't rediscover them):
 
 - **Windows already seen — cannot serve as holdout.** The sanity check
-  (`docs/research/artifacts-2026-09-30-web-batch/leveraged_spy_sanity.py`,
+  (`research/allocation/artifacts-2026-09-30-web-batch/leveraged_spy_sanity.py`,
   raw output beside it) ran 2006-07-01 → 2026-09-29 on real SSO, pre-tax,
   daily-rebalanced static mixes, next-close execution, and split it into
   2006-07..2012 / 2013..2019 / 2020..2026-09. Results: SPY 11.3% CAGR /
@@ -210,12 +210,12 @@ ema_cross + macd_divergence + volume_bb_reversion), 3% of remaining cash per ent
 portfolio), 1.0x
 leverage, same window, PIT membership mask on: **OOS Sharpe 0.59 | CAGR 3.1%
 | MaxDD -5.3%**, gates 17/17
-(`docs/research/2026-09-23-pit-rebaseline-core-nogo.md`). A low-drawdown
+(`research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md`). A low-drawdown
 sleeve, not an index-beater, and ~92% cash on average in the backtest.
 
 **Deployed construction — core + idle cash swept into SPY (5% reserve):**
 **Sharpe 0.80 | CAGR 13.0% | MaxDD -20.7%** at the backtest's ~8% stock
-exposure (`docs/research/2026-09-24-core-spy-blend-keep.md`). That ties SPY;
+exposure (`research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md`). That ties SPY;
 it doesn't beat it. The live account runs ~32% in stocks on fixed-default
 parameters, which has not been validated.
 
@@ -319,7 +319,7 @@ avoiding the exact instance:
   *depth* (not just a free current-snapshot endpoint) before scoping any
   engineering work around a new data source.
 
-Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
+Full roster with citations: `research/RESEARCH_SNAPSHOT.md` §2.
 
 ## Constraints
 
@@ -349,7 +349,7 @@ Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
 - **Bad bars**: there is no price-bar sanity filter yet. If a result hinges
   on a few extreme days, check them — the 2026-09-23 Kelly run's 38% CAGR
   was one SIVB post-failure bar ($0.0013 → $0.11).
-- Full methodology lessons: `docs/research/RESEARCH_SNAPSHOT.md` §3.
+- Full methodology lessons: `research/RESEARCH_SNAPSHOT.md` §3.
 - **If the candidate came from `WEB_RESEARCH_CANDIDATES.md`'s cross-asset
   register, apply its "Minimum validation standard" checklist on top of
   this project's usual WFO/NDH/DSR gate**, since a source existing and
@@ -380,7 +380,7 @@ Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
 ## What you must produce
 
 A dated research report at `docs/research/<date>-<slug>.md`, following
-`docs/research/TEMPLATE-research-report.md`'s structure — GO or NO-GO either
+`research/TEMPLATE-research-report.md`'s structure — GO or NO-GO either
 way, honest OOS numbers, every quantitative claim measured-or-labeled
 unvalidated. **Do not modify live trading code, config, or deployed
 strategy weights** — that requires a separate, explicit ask from the user

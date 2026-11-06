@@ -4,8 +4,8 @@
 **Scope:** read-only diagnosis for the root-cause investigation
 (`docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md`, section 5, Lens 9).
 No recommendations, fixes or deployments.
-**Raw results:** `docs/research/_lens9_power.json` (all 144 inventory ids, once each).
-**Binding method:** `docs/research/2026-11-04-lens2-sensitivity-spec.md` sections 4 (column 11)
+**Raw results:** `research/audits/root-cause-2026-11-04/_lens9_power.json` (all 144 inventory ids, once each).
+**Binding method:** `research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md` sections 4 (column 11)
 and 9 (field map). Lens 2 and Lens 9 use the same standard error per row.
 
 Abbreviations, expanded once: SE = standard error; MDE = minimum detectable effect (the
@@ -80,7 +80,7 @@ Treasury bill; Holm = the Holm step-down correction for testing several hypothes
 ## Falsifiers
 
 Written before any MDE or regime statistic was computed. They apply to the two Phase 0
-hypotheses on power (`docs/research/2026-11-04-phase0-trust-audit.md:67-68`, and
+hypotheses on power (`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:67-68`, and
 hypothesis 4 of the spec's section 4).
 
 - **H-IR ("t >= 3 needs IR near 1.3").** Overturned if the IR implied by the artifacts' own
@@ -114,14 +114,14 @@ The strongest evidence that the tests had adequate power:
   4.24 pp/yr at t >= 3, under half the 9.57 pp/yr the 2 x SPY target needs over the same
   window. The noncentrality at 9.57 pp/yr is 8.7 SE (power about 100%). At +5 pp/yr power
   is 94% (`windows.primary.arms.primary.excess_vs_spy.*` in
-  `docs/research/_production_replica_results.json`). The 2010-2020 holdout had the same
+  `research/audits/production-replica/_production_replica_results.json`). The 2010-2020 holdout had the same
   MDE (4.22 pp/yr) on a second decade. That run is not citable because of tainted trades.
   **Limit:** this is a property of a book that is about 85% SPY and 9.4% stocks. The replica
   is strong evidence against a target-sized *book-level* excess in that construction. It is
   not a test of whether stock picking can reach 2 x SPY. At sleeve scale (an ILLUSTRATION,
   book MDE divided by stock exposure) the MDE is about 45 pp/yr at t >= 3 (33 at t >= 2).
 - **The long-history screens had long samples.** The factor screen's A1 test uses 754
-  months (`inputs.common_window.n_months` in `docs/research/_factor_screen_results.json`),
+  months (`inputs.common_window.n_months` in `research/stock-signals/factor-screen/_factor_screen_results.json`),
   and momentum A1 runs 1927-01..2026-04. Momentum's observed t (3.05 big, 3.11 small) is
   0.79 and 0.81 of the t needed for 80% power at t >= 3, so those tests could resolve
   effects close to the size they found. The factor hypotheses' t of 0.13 to 1.34 are 3% to
@@ -159,7 +159,7 @@ the French market), so long-sample power does not carry over to the owner's hori
   sleeve-scale figure (book MDE / mean stock exposure) is a linear ILLUSTRATION only.
 - **SPY TR** from yfinance `auto_adjust=True` closes (dividend-adjusted), downloaded
   2026-11-04, not from the DB tape, which has adjustment seams (Lens 1:
-  `docs/research/2026-11-04-lens1-backtest-validity.md`). The replica artifact's own SPY CAGR
+  `research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md`). The replica artifact's own SPY CAGR
   for the same window is 14.83% (DB tape), against 15.05% from yfinance.
 - **French market** = `Mkt-RF + RF` from the frozen archive
   `F-F_Research_Data_Factors_CSV.zip` under `data/external/french/` (read only), parsed with
@@ -335,13 +335,13 @@ Row notes:
   computed for power only. Its result is not citable: `verdict.reasons =
   ['holdout:tainted_trade:primary']` and `closure.holdout = 'INCONCLUSIVE'`.
 - xs_momentum and dual_momentum: `{key}.excess_stats.*` in
-  `docs/research/_audit_reruns_20261019.json`. The 1,064 daily returns are the OOS fold span
+  `research/audits/production-replica/_audit_reruns_20261019.json`. The 1,064 daily returns are the OOS fold span
   (first test fold 2022-01-31). Lens 7 found the dual_momentum block identical to the
-  xs_momentum block (`docs/research/_lens7_recompute.json`).
+  xs_momentum block (`research/audits/root-cause-2026-11-04/_lens7_recompute.json`).
 - FOMC: `net.mean_diff` / `net.t_stat` (Welch t on day-averaged returns,
   `src/ggTrader/lab/event_study.py:84-99`; clustering in
   `scripts/fomc_clustered_event_study.py:93-104`). The bar is net event t >= 3.0 and WFE >= 0.50
-  (`docs/research/briefs/2026-10-19-production-replica-audit.md:149-152`). The observed net
+  (`research/audits/production-replica/2026-10-19-production-replica-audit.md:149-152`). The observed net
   effect is 7.68 bp per event.
 - Month-end Treasury: `primary.{pinned,post_pub}.{1,3,5}bp.{mean_ret_invested_day_bp,
   mean_ret_other_days_bp,welch_t_invested_vs_other,exposure_pct,n_trades}`.
@@ -357,15 +357,15 @@ Row notes:
   - **Overlap and fold dependence:** not stated in the artifact. The invested days are
     three consecutive trading days a month, and Welch treats them as independent.
   - **Not an SPY excess, and not the brief's pass criterion.** The bar was Sharpe, yearly,
-    WFO and portfolio checks (`docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md:151-161`).
+    WFO and portfolio checks (`research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve.md:151-161`).
 - IBIT: t = mean / sd x sqrt(n), independent returns
-  (`docs/research/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.py:45-46`). There
+  (`research/crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.py:45-46`). There
   is no pre-registered bar. The verdict names "overnight", but `overnight_all` has no t, so
   one sub-row is reported per session type (spec 2.1, step 3). `n_weeknight` + `n_weekend`
   = 698, against `n_days` = 699 (the intraday sub-row). The artifact does not say which
   session lacks an overnight pair.
 - Momentum bar: Holm across two hypotheses; the stronger needs about t >= 3.2
-  (`docs/research/briefs/2026-10-20-momentum-retest.md:112-115`). Observed t as a fraction
+  (`research/stock-signals/momentum/2026-10-20-momentum-retest.md:112-115`). Observed t as a fraction
   of the MDE at that bar: big 0.76, small 0.77.
 
 ## Ceiling comparison
@@ -391,7 +391,7 @@ years): SPY TR R = +108.60%. Target TR = 2 x 108.60 = +217.21%. Target CAGR =
 | 1927-01..2026-04 (momentum A1) | French market | 10.29% | 11.06% | 0.77 |
 
 Source: `regime.summary` and `regime.targets_2x_spy_total_return` in
-`docs/research/_lens9_power.json`.
+`research/audits/root-cause-2026-11-04/_lens9_power.json`.
 
 | Test | MDE t>=3 / t>=2 (pp/yr) | Required gap | Could detect target-sized effect? | Measured effect |
 |---|---|---|---|---|
@@ -431,7 +431,7 @@ What the table says:
 
 Independent-returns approximation, kept separate from the per-row MDEs because it uses TE
 as sigma: years = ((bar + 0.8416) x sigma / X)^2. Full grid in
-`years_to_detect_iid_scenarios` in `docs/research/_lens9_power.json`.
+`years_to_detect_iid_scenarios` in `research/audits/root-cause-2026-11-04/_lens9_power.json`.
 
 | sigma (source) | X = 1 pp/yr | X = 2 | X = 5 | X = 10 |
 |---|---|---|---|---|
@@ -442,7 +442,7 @@ as sigma: years = ((bar + 0.8416) x sigma / X)^2. Full grid in
 | 2.59%, account level frozen (Lens 3) | 54 / 99 | 14 / 25 | 2.2 / 4.0 | 0.5 / 1.0 |
 
 **Cross-check against Lens 3** (`detectable_effect.table` in
-`docs/research/_lens3_snapshot_gap.json`): Lens 3 uses z = 1.96 + 0.8416 = 2.8016. For the
+`research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json`): Lens 3 uses z = 1.96 + 0.8416 = 2.8016. For the
 frozen sleeve at X = 10 pp/yr: 252 x (2.8016 x 0.22442 / 0.10)^2 = 9,962 days = 39.5
 years. Lens 9's grid recomputes 39.5 years with the same z (`years_lens3_z2.8016`).
 Lens 3's figure reproduces. With the spec's t >= 2 bar (2 + 0.8416 = 2.8416) it is 40.7
@@ -528,13 +528,13 @@ Point estimates are mixed, not uniformly negative:
 | Net issuance H1 | t 0.12, +0.23 pp | t 0.90, +2.02 pp | t -1.24, -0.93 pp |
 
 Sources:
-- momentum: `groups.{g}.diag` in `docs/research/_momentum_french_screen_results.json`,
+- momentum: `groups.{g}.diag` in `research/stock-signals/momentum/_momentum_french_screen_results.json`,
   subperiods 1927-1993, 1994-2012 and 2013-2026;
 - factor: `hypotheses.{g}.diagnostics.subperiods` in
-  `docs/research/_factor_screen_results.json`, subperiods 1963-1993, 1994-2012 and
+  `research/stock-signals/factor-screen/_factor_screen_results.json`, subperiods 1963-1993, 1994-2012 and
   2013-2026;
 - net issuance: `H1.diagnostics.subperiods` in
-  `docs/research/_net_issuance_screen_results.json`, subperiods 1963-1993, 1994-2008 and
+  `research/stock-signals/net-issuance/_net_issuance_screen_results.json`, subperiods 1963-1993, 1994-2008 and
   2009-2026.
 
 The pp figures are CAGR differences. The fading is visible from 1994 and again after
@@ -613,7 +613,7 @@ Commands (scratch scripts are in the session scratchpad under `l9/`. All Python 
   those fields are dropped from the JSON.
 - `l9/french.py`: frozen `F-F_Research_Data_Factors_CSV.zip`, 1,202 months 1926-07..2026-08,
   read only. Output: 10 bear episodes, 24 of 99 negative years.
-- `l9/build.py`: writes `docs/research/_lens9_power.json`. Asserts 144 rows and 144
+- `l9/build.py`: writes `research/audits/root-cause-2026-11-04/_lens9_power.json`. Asserts 144 rows and 144
   unique ids. Status counts: computed 8, not computable 33, no raw artifact 103.
 - Hand check of month-end: (7.8577 - (-1.9328)) / 2.7516 = 3.558 bp. x 3.8416 = 13.67 bp/day.
   x 36.14 days = 4.94 pp/yr.

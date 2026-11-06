@@ -1,6 +1,6 @@
 # Ruling r1: century leverage A23 reproduction gate (senior quant, 2026-10-23)
 
-This ruling interprets the [approved brief](2026-10-23-century-leverage.md) §8. It changes no
+This ruling interprets the [approved brief](2026-10-23-century-leverage-brief.md) §8. It changes no
 number or rule.
 
 **Finding.** The unmodified A23 driver no longer reproduces

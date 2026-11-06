@@ -10,7 +10,7 @@
 company-size group passes: `pass.big = false`, `pass.small = false`, and `next`
 records that exact closure in the [final results JSON](_momentum_french_screen_results.json).
 The verdict follows the “Neither size passes” row of the
-[registered brief §5](briefs/2026-10-20-momentum-retest.md), with the costs and
+[registered brief §5](2026-10-20-momentum-retest.md), with the costs and
 decisions in §11 unchanged. Phase 2 is not executed; Phases 2–5 are cancelled.
 A pass would have authorized more research only, never deployment.
 
@@ -35,7 +35,7 @@ This is an independent-data historical screen, not a walk-forward out-of-sample
 (OOS) test of our stock rules. The benchmark is the French market total return,
 not the SPDR S&P 500 exchange-traded fund (SPY). It supplies no new SPY-relative
 or after-tax implementation result. The
-[production-replica audit](2026-10-19-production-replica-audit-nogo.md) remains
+[production-replica audit](../../audits/production-replica/2026-10-19-production-replica-audit-nogo.md) remains
 the separate closure of the deployed stock-picking construction. No validated
 stock-trading candidate remains.
 
@@ -44,7 +44,7 @@ stock-trading candidate remains.
 All measured figures below come from the
 [final JSON](_momentum_french_screen_results.json); each cell names its key.
 Registered windows, costs and thresholds come from
-[brief §§5 and 11](briefs/2026-10-20-momentum-retest.md), not estimated turnover.
+[brief §§5 and 11](2026-10-20-momentum-retest.md), not estimated turnover.
 The full window is 1927-01 through 2026-04; the post-publication window is
 1994-01 through 2026-04. Newey-West uses 12 monthly lags. Base annual haircuts
 are Big 1% and Small 3%; stress haircuts are Big 2% and Small 6%. The haircut is
@@ -57,7 +57,7 @@ risk-free return. Big HiPRIOR is an analogue for large-cap winners, not an S&P
 500 or top-50 replication. Source download times and checksums are recorded at
 `provenance['6_Portfolios_ME_Prior_12_2_CSV.zip']` and
 `provenance['F-F_Research_Data_Factors_CSV.zip']`. The archives and
-[manifest](../../data/external/french/MANIFEST.json) were committed before the
+[manifest](../../../data/external/french/MANIFEST.json) were committed before the
 screen in `357acf0`; the initial screen is `61ccf59`. Checksums and complete
 registered monthly coverage were verified without downloading replacements.
 Final-review diagnostics were regenerated offline from those same bytes;
@@ -215,12 +215,12 @@ the remaining research lead: `holm.big = false`, `holm.small = false`,
 `pass.big = false`, `pass.small = false`. A2 fails for both groups regardless
 of the multiple-testing result. `xs_momentum` and `dual_momentum` were the same
 portfolio in the corrected replay, not independent supporting evidence
-([brief §§2 and 4](briefs/2026-10-20-momentum-retest.md)). The French screen is
+([brief §§2 and 4](2026-10-20-momentum-retest.md)). The French screen is
 an idea-level test, not a rerun of those exact rules. Its closure does not
 claim momentum never existed; it rejects further work under the registered bar.
 
 **Deployed stock picks — CLOSED NO-GO.** The
-[production-replica audit](2026-10-19-production-replica-audit-nogo.md) remains
+[production-replica audit](../../audits/production-replica/2026-10-19-production-replica-audit-nogo.md) remains
 the authority for that separate result. This report supplies no new live-parity
 claim and does not rehabilitate the stopped older-price holdout.
 
@@ -234,7 +234,7 @@ claim and does not rehabilitate the stopped older-price holdout.
 
 The next owner decision is unchanged: at the freeze lift, about 2026-12-29,
 retire the stock picks so only the SPY sweep remains in the stock-trading path
-([next steps](../next_steps.md), [brief §§1 and 8](briefs/2026-10-20-momentum-retest.md)).
+([next steps](../../../docs/next_steps.md), [brief §§1 and 8](2026-10-20-momentum-retest.md)).
 This is a future owner action. Production remains frozen; this study changes
 research code and documentation only. The owner's separate A23 allocation is unchanged.
 
@@ -252,9 +252,9 @@ public earnings-availability timing; insider and congressional signals require
 historical filing-availability timing rather than the underlying transaction
 date. Until those repairs exist and are audited, there is no clean timing
 claim and no new performance verdict. Their historical reports remain caveated:
-[PEAD](2026-07-17-pead-nogo.md),
-[insider](2026-07-19-insider-cluster-buy-nogo.md),
-[congressional](2026-07-19-congress-trades-nogo.md).
+[PEAD](../pead/2026-07-17-pead-nogo.md),
+[insider](../insider-cluster/2026-07-19-insider-cluster-buy-nogo.md),
+[congressional](../congress-trades/2026-07-19-congress-trades-nogo.md).
 
 The screen does not measure turnover, investor taxes, sector concentration
 or our exact trading rules. It reports the worst rolling relative windows,

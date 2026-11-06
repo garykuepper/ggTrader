@@ -3,10 +3,10 @@
 **Classification:** Internal Quantitative Research & Engineering Strategy
 **Date:** 2026-10-19
 **Audience:** Flynn and research collaborators
-**Brief:** [original pre-registration](briefs/2026-10-19-production-replica-audit.md),
-with approved [daily-bar scope](briefs/2026-10-19-production-replica-parity-amendment.md),
-[event-timing correction](briefs/2026-10-19-production-replica-fomc-timing-amendment.md),
-and [primary-failure closure](briefs/2026-10-19-production-replica-closure-amendment.md).
+**Brief:** [original pre-registration](2026-10-19-production-replica-audit.md),
+with approved [daily-bar scope](2026-10-19-production-replica-parity-amendment.md),
+[event-timing correction](2026-10-19-production-replica-fomc-timing-amendment.md),
+and [primary-failure closure](2026-10-19-production-replica-closure-amendment.md).
 
 ## 1. Executive Summary & Core Engine Audit
 
@@ -28,7 +28,7 @@ daily-bar study therefore answers a narrower model question and cannot measure
 the edge of the unreconstructed live path. Sources:
 [`_replica_parity_20261019.json`](_replica_parity_20261019.json),
 `explained_orders`, `strategy_orders`, `explained_pct`, `notes`, `investigation`;
-the [parity amendment](briefs/2026-10-19-production-replica-parity-amendment.md).
+the [parity amendment](2026-10-19-production-replica-parity-amendment.md).
 
 The replica uses fixed default ensemble votes, prior-completed-bar signals,
 portfolio-value sizing, a position cap, catch-up exits, catastrophe stops and the
@@ -47,7 +47,7 @@ The engine retains a preceding lag/valuation bar. Stock fills cost 5 bp/side,
 with 3 and 10 bp sensitivities; sweep fills cost 1 bp/side. Cash accrues cached
 TB3MS. SPY buy-and-hold is the normalized adjusted-close curve; isolated benchmark
 entry/liquidation fees are not separately deducted. Constants and windows are
-fixed by the [brief](briefs/2026-10-19-production-replica-audit.md) and driver.
+fixed by the [brief](2026-10-19-production-replica-audit.md) and driver.
 
 | Arm | CAGR | Sharpe | Max drawdown | Excess CAGR over SPY, pp/year | NW t |
 |---|---:|---:|---:|---:|---:|
@@ -105,7 +105,7 @@ Red Hat agreement before the 2018-10-29 artifact bar (the trade was 2018-10-30).
 Those dates are recorded in `.tainted_trades`; the announcement is
 independently documented in [IBM's release](https://uk.newsroom.ibm.com/2018-10-28-IBM-To-Acquire-Red-Hat-Completely-Changing-The-Cloud-Landscape-And-Becoming-Worlds-1-Hybrid-Cloud-Provider);
 it does not independently validate each cached price. Review findings and their
-status are recorded in the [closure amendment](briefs/2026-10-19-production-replica-closure-amendment.md).
+status are recorded in the [closure amendment](2026-10-19-production-replica-closure-amendment.md).
 
 The registered detector treats missing fresh comparisons as artifacts, checks
 only trade proximity, shares Yahoo as a comparison source, and misses changes
@@ -147,7 +147,7 @@ a **+0.80 point/year** margin. All-ordinary SSO/BIL treatment gives **11.17%**
 versus **10.40%**, or **+0.77 point/year**. Both miss A23's original +1.0 bar.
 At the upper modeled bracket, the margin changes from **+0.79 to +0.72 point**.
 Sources: `_static_leverage_aftertax_rf_plus0.025.json` and
-[`_static_leverage_aftertax_dist_bounds.json`](_static_leverage_aftertax_dist_bounds.json),
+[`_static_leverage_aftertax_dist_bounds.json`](../../allocation/static-leverage/_static_leverage_aftertax_dist_bounds.json),
 `windows.main_real_sso['static 1.3x (70/30) band 8pp'][<24/15|40.8/23.8>].after_tax_cagr`
 minus `['SPY buy-and-hold'][same bracket].after_tax_cagr`; new artifact `dist_tax`.
 These are modeled endpoints, not reconstructed annual tax character. This
@@ -160,7 +160,7 @@ by `calibration.overlap`. Calibration changes the pre-inception synthetic series
 outside this real-SSO window. Exact default main-row reproduction and identical
 SPY results supply checks against drift in the reported comparison.
 The separate A23 owner allocation and exit terms remain unchanged. See its
-[dated addendum](2026-09-30-static-fractional-leverage.md).
+[dated addendum](../../allocation/static-leverage/2026-09-30-static-fractional-leverage.md).
 
 ## 3. Actionable Research Directions
 
@@ -197,10 +197,10 @@ Past gate counts are void as evidence of DSR validation. Commit `7320c1d`
 corrects event-return attribution after the registered test exposed the error.
 The original failure log is preserved by `audit_stop` in the replica JSON.
 
-The old [anchor reproduction](2026-08-19-anchor-fix-reproduction.md) receives a
+The old [anchor reproduction](../rebaseline/2026-08-19-anchor-fix-reproduction.md) receives a
 dated correction: the blend window was pinned, so eval-end drift does not
 explain its drop. Attribution to the earlier harness fixes remains inferred.
-The [KEEP report](2026-09-24-core-spy-blend-keep.md) receives a scope correction;
+The [KEEP report](../../allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md) receives a scope correction;
 its selected-parameter, same-close construction is not this fixed-rule replay.
 
 ## 5. Operational Roadmap: Recommended First Action
@@ -252,7 +252,7 @@ allocation and the separate cross-asset shadow retain their own rules.
 ## Correction (2026-10-20)
 
 This dated addendum records corrections resulting from the pre-registered
-momentum re-test specification (`docs/research/briefs/2026-10-20-momentum-retest.md`,
+momentum re-test specification (`research/stock-signals/momentum/2026-10-20-momentum-retest.md`,
 §4, items 1–4) and the Task 1 day-clustered event study. The historical report
 body above remains intact.
 
@@ -279,7 +279,7 @@ body above remains intact.
    shared announcement dates.
    Task 1 recomputed the event study with returns clustered by meeting date over
    the registered window (2012-01-01 to 2026-04-30) for `pair: entry_1_hold_0`.
-   Source: `docs/research/_fomc_clustered_event_study_20261020.json`:
+   Source: `research/audits/production-replica/_fomc_clustered_event_study_20261020.json`:
    - `n_event_dates`: 113
    - `gross.t_stat`: 2.258 (`gross.p_value` = 0.0258)
    - `net.t_stat`: 0.981 (`net.p_value` = 0.3288; `significant` = false)
@@ -292,4 +292,4 @@ body above remains intact.
    Prompt templates have been regenerated following `.claude/skills/research-snapshot/SKILL.md`
    to remove superseded claims (such as historical KEEP 0.80 vs 0.78, void "gates 17/17",
    or 1.12 / 16.3%). Momentum is subject to a pre-registered two-part re-test
-   protocol detailed in `docs/research/briefs/2026-10-20-momentum-retest.md`.
+   protocol detailed in `research/stock-signals/momentum/2026-10-20-momentum-retest.md`.

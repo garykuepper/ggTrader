@@ -8,7 +8,7 @@ file when they're resolved (see Status below).
 
 ## How this file gets updated
 
-1. Run `docs/research/prompts/web-strategy-research-prompt.md` in a
+1. Run `research/prompts/web-strategy-research-prompt.md` in a
    web-research tool (Google Gemini or Claude's web-UI research feature).
 2. Paste the results back into this session.
 3. Ask to "merge these into the web research candidates" (the
@@ -16,7 +16,7 @@ file when they're resolved (see Status below).
    against existing entries (by mechanism, not just name) and append
    genuinely new ones below, each with a status.
 4. When a candidate is picked to actually build, copy its entry into
-   `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`'s
+   `research/prompts/local-implementation-prompt-TEMPLATE.md`'s
    "Candidate Strategy" section, queue a concrete step in
    `docs/next_steps.md`, and update this entry's status to `queued`.
 5. Once implemented and WFO-tested (GO or NO-GO), mark the entry `resolved`
@@ -69,7 +69,7 @@ mid-investigation outside either list (untracked `pairs_stat_arb.py` +
 unverified, pairwise-correlation missing).
 
 ### 1. Insider cluster-buying signal (SEC Form 4) — RESOLVED, NO-GO (2026-07-19)
-`docs/research/2026-07-19-insider-cluster-buy-nogo.md`. The highest-effort
+`research/stock-signals/insider-cluster/2026-07-19-insider-cluster-buy-nogo.md`. The highest-effort
 candidate built this session — full SEC EDGAR Form 4 pipeline
 (`form4_data.py`), 833,158 transaction rows across 764 SP500 symbols since
 2015, ~24-hour rate-limited backfill. Initial long-window SP500 test
@@ -106,7 +106,7 @@ Bollinger/RSI/EMA/MACD ensemble and to the already-rejected price-momentum
 test.
 
 ### 3. Hard-to-borrow / short-interest signal — RESOLVED, NO-GO (2026-07-17, free-data cut)
-`docs/research/2026-07-17-short-interest-nogo.md`. Built as `short_interest`
+`research/stock-signals/short-interest/2026-07-17-short-interest-nogo.md`. Built as `short_interest`
 strategy on a new FINRA consolidated-short-interest data pipeline
 (`src/ggTrader/lab/short_interest_data.py`, 86,793-row backfill, 150
 settlement dates 2020-04 through present). WFO (SP500, 20 folds): OOS
@@ -182,7 +182,7 @@ already integrated. Differs from prior work: market-neutral carry, not
 directional timing — first candidate with no price-direction bet at all.
 
 ### 5. Informed liquidity-supplying short sellers ("stealthy shorts") — RESOLVED, NO-GO (2026-07-19)
-`docs/research/2026-07-19-short-volume-ratio-nogo.md`. Built as
+`research/stock-signals/short-volume/2026-07-19-short-volume-ratio-nogo.md`. Built as
 `short_volume_ratio`, the free-data-only cut (plain trailing short-volume
 ratio, no liquidity-demand/supply decomposition — that needs
 transaction-level tick data this project doesn't have). New FINRA daily
@@ -297,7 +297,7 @@ gate used price/volume features; this one is an alternative-data signal
 about who's trading).
 
 ### 9. Congressional (STOCK Act) trade disclosures — RESOLVED, NO-GO (2026-07-19)
-`docs/research/2026-07-19-congress-trades-nogo.md`. Built House-only
+`research/stock-signals/congress-trades/2026-07-19-congress-trades-nogo.md`. Built House-only
 (Senate's efdsearch.senate.gov needs a stateful CSRF session, not
 attempted) — `house_ptr_data.py`, 41,443 rows across 7,578 PTR filings
 2015-2026. **This was the strongest long-window standalone result of the
@@ -343,7 +343,7 @@ standardized data landscape. **Do not build — watch-and-revisit only**
 until a dedicated source-check is done.
 
 ### 11. MAX effect / lottery-demand anomaly (avoid or fade high-MAX stocks) — RESOLVED, NO-GO (2026-07-17)
-`docs/research/2026-07-17-max-effect-nogo.md`. Built as `max_effect`
+`research/stock-signals/max-effect/2026-07-17-max-effect-nogo.md`. Built as `max_effect`
 strategy (`src/ggTrader/lab/strategies/max_effect.py`), 6-combo WFO, SP500,
 2015-present: OOS Sharpe 0.39-0.45 vs SPY 0.76-0.88 (healthy WFE 0.84-0.97,
 gate pass 31/42 — not an overfitting rejection, a genuine "too weak to
@@ -371,7 +371,7 @@ degraded/been re-explained in newer literature; treat as a portfolio tilt
 to test cautiously, not a standalone strategy.
 
 ### 12. Post-earnings-announcement drift (PEAD), lower-coverage names only — RESOLVED, NO-GO (2026-07-17)
-`docs/research/2026-07-17-pead-nogo.md`. Built as `pead` strategy on a new
+`research/stock-signals/pead/2026-07-17-pead-nogo.md`. Built as `pead` strategy on a new
 yfinance earnings-surprise pipeline (`earnings_surprise_data.py`, 62,552
 rows, 949 symbols). **Important methodological result, not just a
 rejection**: an initial long-window (2015-2026) SP500 test looked
@@ -411,7 +411,7 @@ already traded here — worth testing with real skepticism, probably only
 worthwhile extended into smaller-cap/lower-coverage names.
 
 ### 13. S&P 500 index-reconstitution deletion overshoot (fade the deletion) — RESOLVED, NO-GO (2026-07-17)
-`docs/research/2026-07-17-index-deletion-fade-nogo.md`. Zero new data
+`research/stock-signals/index-deletion/2026-07-17-index-deletion-fade-nogo.md`. Zero new data
 infrastructure needed — built directly on the already-maintained
 point-in-time SP500 membership history
 (`ggTrader.data.core.index_constituents`). WFO (SP500, 42 folds): OOS
@@ -596,7 +596,7 @@ strategy against static hedge-ratio baselines on the same instruments
 0.66 and static 100%-hedged's 0.73 — **the dynamic strategy underperforms
 every static alternative tested**, not an eval-window or overfitting
 rejection (WFE 1.10, healthy). Full report:
-`docs/research/2026-07-20-fx-hedge-overlay-nogo.md`.
+`research/allocation/fx-hedge/2026-07-20-fx-hedge-overlay-nogo.md`.
 
 **Mechanism.** Vary the hedge ratio on international equity/bond exposure
 using carry, PPP-value, and trend signals instead of a static
@@ -629,7 +629,7 @@ rule once actually built and tested against the paper's own benchmark
 (static hedging), which is exactly the kind of gap this register's
 "Rule correspondence" rating exists to flag as a risk, not a guarantee.
 
-**Status: resolved, NO-GO. See `docs/research/2026-07-20-fx-hedge-overlay-nogo.md`.**
+**Status: resolved, NO-GO. See `research/allocation/fx-hedge/2026-07-20-fx-hedge-overlay-nogo.md`.**
 
 ---
 
@@ -695,7 +695,7 @@ regime filter. 50-fold WFO: OOS Sharpe 0.13 vs SPY 0.74, MaxDD -37.0%
 (worse than SPY's -33.7%), gate pass 54%, aggregate WFE undefined, regime
 halt active despite 82% fold-stability for the recommended combo — the
 vol-regime filter did not prevent a deeper-than-equity drawdown. Full
-report: `docs/research/2026-07-20-commodity-trend-nogo.md`.
+report: `research/allocation/commodity-trend/2026-07-20-commodity-trend-nogo.md`.
 
 **Mechanism.** Cross-sectional 12-1 month momentum across a liquid
 commodity ETF/futures universe, with a volatility-regime filter to avoid
@@ -717,7 +717,7 @@ trend reasonably well.
 adaptation. **Implementation class:** Retail-feasible via ETFs.
 **Validation stage:** Walk-forward OOS (rejected).
 
-**Status: resolved, NO-GO. See `docs/research/2026-07-20-commodity-trend-nogo.md`.**
+**Status: resolved, NO-GO. See `research/allocation/commodity-trend/2026-07-20-commodity-trend-nogo.md`.**
 
 ---
 
@@ -770,7 +770,7 @@ weak, but the decisive test (per A1's lesson) compared it against static
 duration baselines: **static 100% SHY beats the dynamic strategy on every
 metric** (Sharpe 0.90 vs 0.19, CAGR 1.5% vs 0.8%, MaxDD -5.7% vs -8.2%) —
 the same "dynamic loses to static" pattern as A1. Full report:
-`docs/research/2026-07-20-treasury-curve-nogo.md`.
+`research/allocation/treasury-curve/2026-07-20-treasury-curve-nogo.md`.
 
 **Mechanism.** Curve-factor positioning (steepener/flattener, relative
 value across duration buckets, roll-down) using investable, non-
@@ -805,7 +805,7 @@ full model; Retail for the explicitly-labeled approximation. **Validation
 stage:** Walk-forward OOS (approximation rejected; full model untested).
 
 **Status: resolved, NO-GO (approximation only). See
-`docs/research/2026-07-20-treasury-curve-nogo.md`.**
+`research/allocation/treasury-curve/2026-07-20-treasury-curve-nogo.md`.**
 
 ---
 
@@ -881,7 +881,7 @@ Sharpe 0.10, WFE 0.44 (below this project's 0.50 overfitting floor),
 regime halt active (winning combo unstable, selected in only 14/54
 folds). Not an eval-window or data-quality artifact — a genuine "no
 exploitable drift in this implementation" result. Full report:
-`docs/research/2026-07-20-fomc-drift-nogo.md`.
+`research/allocation/fomc-drift/2026-07-20-fomc-drift-nogo.md`.
 
 **Mechanism.** Long TLT/IEF/EDV on the day before scheduled FOMC meetings,
 exit at or around the announcement.
@@ -938,7 +938,7 @@ entry at `SIGNAL_POSITION_SIZE` = 3% of cash, so its "0.45% total return,
 essentially flat" is mostly a sizing artifact. Its Sharpe (0.10) is the
 number to compare. Set the size to 1.0 in the retest.
 
-**Status: resolved, NO-GO. See `docs/research/2026-07-20-fomc-drift-nogo.md`.**
+**Status: resolved, NO-GO. See `research/allocation/fomc-drift/2026-07-20-fomc-drift-nogo.md`.**
 
 ---
 
@@ -983,7 +983,7 @@ data confirmed feasible (Alpaca `/news`, 0-day publish lag by design), a
 50-symbol/2-year midcap400 pilot backfilled and scored (7,975 headlines,
 real score variance), but WFO OOS Sharpe 0.25 vs SPY 1.14, aggregate WFE
 0.02 (target ≥ 0.50) — the in-sample edge does not survive out of sample.
-Full report: `docs/research/2026-07-24-headline-sentiment-nogo.md`.
+Full report: `research/stock-signals/headline-sentiment/2026-07-24-headline-sentiment-nogo.md`.
 
 ---
 
@@ -1336,7 +1336,7 @@ stronger source or a tightly-scoped falsification test.**
   *Additional source (batch 2026-10-25):* Mazur & Polyzos, *JAI* 27(4),
   2025 (verified) report that most BTC price appreciation happens outside
   ETF trading hours, a return claim rather than an activity claim. **Sanity
-  check, not WFO** (`docs/research/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.py`):
+  check, not WFO** (`research/crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.py`):
   on IBIT from 2024-01-11 to 2026-10-23, close-to-open returned +186% and
   open-to-close −43%. The overnight gain is not a weekend artifact:
   weeknights alone returned +111% (t 1.65) and weekends +35% (t 0.71).
@@ -1441,18 +1441,18 @@ stronger source or a tightly-scoped falsification test.**
 1. ~~Dynamic FX hedge overlay (A1)~~ — **built and tested, REJECTED
    2026-07-20**: underperforms every static hedge baseline on the same
    instruments (the paper's actual claim). See
-   `docs/research/2026-07-20-fx-hedge-overlay-nogo.md`.
+   `research/allocation/fx-hedge/2026-07-20-fx-hedge-overlay-nogo.md`.
 2. ~~Pre-FOMC Treasury drift replication (A7)~~ — **built and tested,
    REJECTED 2026-07-20**: OOS total return 0.45% over 13.5 years
    (essentially flat), WFE below the overfitting floor, regime halt
-   active. See `docs/research/2026-07-20-fomc-drift-nogo.md`.
+   active. See `research/allocation/fomc-drift/2026-07-20-fomc-drift-nogo.md`.
 3. ~~Commodity trend (A3)~~ — **built and tested, REJECTED 2026-07-20**:
    OOS Sharpe 0.13 vs SPY 0.74, MaxDD -37.0% (worse than SPY), regime halt
-   active. See `docs/research/2026-07-20-commodity-trend-nogo.md`.
+   active. See `research/allocation/commodity-trend/2026-07-20-commodity-trend-nogo.md`.
 4. ~~Simplified Treasury curve relative value (A5)~~ — **built and
    tested, REJECTED 2026-07-20**: dynamic curve-regime timing loses to
    static 100% SHY on every metric (Sharpe 0.90 vs 0.19). See
-   `docs/research/2026-07-20-treasury-curve-nogo.md`.
+   `research/allocation/treasury-curve/2026-07-20-treasury-curve-nogo.md`.
 5. **LLM headline drift (A8), only with credible point-in-time data —
    now next up.**
 6. Stablecoin stress as a risk overlay (B1)
@@ -1557,7 +1557,7 @@ definition was confirmed).
 **Quick sanity checks, not WFO results.** Simple timing rules on one
 instrument were checked with plain pandas on adjusted daily closes, cash
 earning 0 and 1 bp per side. Script and output:
-`docs/research/artifacts-2026-09-23-web-batch/`. These Sharpes use raw
+`research/allocation/artifacts-2026-09-23-web-batch/`. These Sharpes use raw
 daily returns without a risk-free rate, which puts SPY at 0.91 on the
 pinned window. **Compare them with each other, not with the snapshot's
 0.78.**
@@ -1588,7 +1588,7 @@ pinned window. **Compare them with each other, not with the snapshot's
 - *Sovereign duration timing via term spread and real yields* (Ilmanen, JF
   1995, a real paper). Same mechanism as **A5 Treasury term-structure
   factors**, closed NO-GO: static SHY beat the curve-slope rotation, 0.90 vs
-  0.19 Sharpe (`docs/research/2026-07-20-treasury-curve-nogo.md`). A
+  0.19 Sharpe (`research/allocation/treasury-curve/2026-07-20-treasury-curve-nogo.md`). A
   stronger citation doesn't change a measured result.
 - *Equity pre-FOMC drift / FOMC even-week cycle* (Cieslak, Morse &
   Vissing-Jorgensen, JF 74(5), 2201–2248, 2019). Refuted out of sample by
@@ -1632,7 +1632,7 @@ adaptation (cash Treasuries → ETFs; the paper finds the best risk/reward at
 class:** Retail. **Validation stage:** Literature only; the quick sanity
 check was positive on both windows (see the table above).
 
-**Status: CLOSED NO-GO (2026-09-24)** — `docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md`. Standalone premium held OOS (frozen IEF rule Sharpe 0.96 at 1 bp), but the SPY-funded overlay added nothing (0.909 vs 0.896, worse MaxDD) and the WFO halted with winner stability 5/17.
+**Status: CLOSED NO-GO (2026-09-24)** — `research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve-nogo.md`. Standalone premium held OOS (frozen IEF rule Sharpe 0.96 at 1 bp), but the SPY-funded overlay added nothing (0.909 vs 0.896, worse MaxDD) and the WFO halted with winner stability 5/17.
 
 ### A11. Pre-Treasury-Refunding-Announcement long TLT
 
@@ -2109,7 +2109,7 @@ against full text or abstracts:
 **Unverified:** Han–Kang–Ryu's claim that the short side loses money (full text blocked), and the Bitcoin MVRV sources (parked, not checked).
 
 **Quick sanity checks, not WFO results.** Script and output are in
-`docs/research/artifacts-2026-09-28-web-batch/`. They use yfinance adjusted
+`research/allocation/artifacts-2026-09-28-web-batch/`. They use yfinance adjusted
 closes, 1 bp per side, cash at 0, and raw daily Sharpe (SPY scores 0.91 on
 the pinned window), so compare rows with each other only.
 
@@ -2164,7 +2164,7 @@ notional, so every leg has to be tradable **and fractionable**.
   - Hurst, Ooi & Pedersen, *"A Century of Evidence on Trend-Following Investing,"* *JPM* 44(1), 15–29 (2017), SSRN 2993026.
   - Kurth, Eisler, Rej & Bouchaud, arXiv 2607.01550 (Jul 2026), verified against Table 1. Fast trend (EWM-5-20) fell from Sharpe 0.84 to 0.12 after 2009; slow trend (EWM-50-200) went from 0.70 to 0.40, both ±~0.25. "Trend has effectively vanished for IDX and FXR, while YLD and CMD show no appreciable degradation."
   - Use a single pre-registered slow lookback, and see the sanity check above.
-  - **Status: tested 2026-09-28 — static arm GO (shadow only), trend arm adds nothing** → `docs/research/2026-09-28-cross-asset-sleeve.md`. Move to the snapshot roster on the next `research-snapshot` run.
+  - **Status: tested 2026-09-28 — static arm GO (shadow only), trend arm adds nothing** → `research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md`. Move to the snapshot roster on the next `research-snapshot` run.
 - *Global Equity Dual Momentum (SPY/VEU/AGG/BIL)* → §6 **Tier 1 #2**, already folded on 2026-09-23. Nothing new.
 
 **Rejected on intake:**
@@ -2516,7 +2516,7 @@ the scale. SPY buy-and-hold is itself taxed on dividends (~1.5%/yr at
 qualified rates); the benchmark must be an *after-tax* SPY wealth path.
 
 **Quick sanity check, not a WFO result.**
-`docs/research/artifacts-2026-09-30-web-batch/leveraged_spy_sanity.py`
+`research/allocation/artifacts-2026-09-30-web-batch/leveraged_spy_sanity.py`
 (output `.json` beside it): real SSO, dividend-adjusted, 2006-07-01 →
 2026-09-29, signal on close t, trade at close t+1, pre-tax, static mixes
 daily-rebalanced (idealized):
@@ -2545,7 +2545,7 @@ and slow-sleeve arms are the only ones worth a brief.
 **Rejected on intake:**
 - **Whole-book 200-day LRS (SSO ↔ T-bills, daily)** — the exact
   mechanism of the closed `leveraged_trend_*` arc
-  (`docs/research/2026-07-16-leveraged-trend-following-nogo.md`: SMA gate
+  (`research/allocation/leveraged-trend/2026-07-16-leveraged-trend-following-nogo.md`: SMA gate
   to cash + vol overlay on 2x/3x, lost to own buy-and-hold and SPY on
   2019–2026). Report 2 itself labels it "not new." Its verified evidence
   table is kept under A24 as the literature anchor.
@@ -2623,7 +2623,7 @@ terminal wealth above after-tax SPY by ≥1 pt/yr with the lot-level engine
 of C8; MaxDD acknowledged as ≥1.3× SPY's; Sharpe will be *below* SPY —
 this candidate is an owner risk-appetite decision, not a lab GO/NO-GO.
 
-**Status: RESOLVED 2026-09-30 — GO for owner decision (`docs/research/2026-09-30-static-fractional-leverage.md`): 70/30 SPY/SSO after-tax CAGR 12.00% vs SPY 10.40% (+1.6 pt, 24/15; +1.55 at 40.8/23.8) on real SSO 2006–2026, +0.6 pt on the synthetic 1993–2006 holdout; MaxDD −66% vs −55%; Sharpe 0.61 < 0.64; behind SPY in 24% of rolling 10y windows. An allocation, not an edge.**
+**Status: RESOLVED 2026-09-30 — GO for owner decision (`research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md`): 70/30 SPY/SSO after-tax CAGR 12.00% vs SPY 10.40% (+1.6 pt, 24/15; +1.55 at 40.8/23.8) on real SSO 2006–2026, +0.6 pt on the synthetic 1993–2006 holdout; MaxDD −66% vs −55%; Sharpe 0.61 < 0.64; behind SPY in 24% of rolling 10y windows. An allocation, not an edge.**
 
 ### A24. Core-satellite slow trend on the leverage sleeve only (off-state = SPY, not cash)
 
@@ -2891,7 +2891,7 @@ Rul. 2023-14).
 - **Crypto session directionality** (2026-07-19 batch, deprioritized
   bullet): new return-based source (Mazur & Polyzos, above). See the
   dated note appended there, with this session's IBIT sanity check
-  (`docs/research/artifacts-2026-10-25-crypto-web-batch/`).
+  (`research/crypto/artifacts-2026-10-25-crypto-web-batch/`).
 - **#4 crypto funding-rate carry:** data note appended. Binance public
   dumps hold funding from 2020-01, which matters for B14 (signal use
   only).

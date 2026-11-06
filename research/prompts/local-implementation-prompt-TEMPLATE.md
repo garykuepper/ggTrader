@@ -7,8 +7,8 @@ refreshed before relying on the "don't re-propose" list below.
 
 **This is a template, not a ready-to-run prompt.** Fill in the "Candidate
 Strategy" section below with one specific idea — pulled from
-`docs/research/WEB_RESEARCH_CANDIDATES.md` (externally-sourced) or
-`docs/research/RESEARCH_SNAPSHOT.md` §6 (internally-derived) — before
+`research/WEB_RESEARCH_CANDIDATES.md` (externally-sourced) or
+`research/RESEARCH_SNAPSHOT.md` §6 (internally-derived) — before
 handing this to an agent. This prompt is for a **Claude Code session with
 full repo access** (Read/Bash/Edit/etc.), not a web-research tool — see
 `web-strategy-research-prompt.md` for the separate discovery-stage prompt
@@ -63,7 +63,7 @@ evaluated over the exact same span).
 **Production-rule replica (2026-10-19 daily-bar audit): NO-GO.**
 CAGR 14.19% vs SPY 14.83%, excess −0.64 pt/yr, Newey-West t = −0.69
 (Sharpe 0.925 vs SPY 0.903, MaxDD −21.44% vs −24.50%;
-`docs/research/2026-10-19-production-replica-audit-nogo.md`). Live operations
+`research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md`). Live operations
 remain frozen. Focus on research and paper-trading reliability. The owner has
 explicitly ruled out recommendations to retire the sleeve or use retirement
 accounts; the account is taxable only. See the standing owner instructions in
@@ -74,18 +74,18 @@ OOS Sharpe 0.59 | CAGR 3.1% | MaxDD -5.3%, void historical "gates 17/17"
 (the DSR gate bug fix in `09f9f40` voided historical gate passes; no
 corrected-gate count exists for the core; with one-year folds and a 12-setting
 grid, the corrected gate requires an in-sample Sharpe of roughly 2.5 to pass;
-`docs/research/2026-09-23-pit-rebaseline-core-nogo.md`).
+`research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md`).
 
 **Historical KEEP blend (core + SPY sweep):**
 The historical claim of Sharpe 0.80 vs 0.78
-(`docs/research/2026-09-24-core-spy-blend-keep.md`) is **void and superseded**
+(`research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md`) is **void and superseded**
 by the 2026-10-19 production-replica audit NO-GO.
 
 **Momentum research closed NO-GO (2026-10-20):**
 The century-long French screen failed both the Holm significance test (A1)
 and the post-publication return test (A2) for both company-size groups.
 No paid data will be bought; Phases 2–5 are cancelled, including the after-tax
-replay (`docs/research/2026-10-20-momentum-french-screen-nogo.md`).
+replay (`research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md`).
 
 **How to judge a candidate.** A standalone strategy must beat SPY. A sleeve
 must improve SPY + sleeve over SPY alone **with the sleeve funded out of SPY**,
@@ -104,7 +104,7 @@ avoiding the exact instance:
 - **Production-rule daily-bar replica NO-GO (2026-10-19).** The exact daily-bar
   replica with fixed defaults and cash sweep failed to beat SPY (14.19% vs
   14.83%, excess −0.64 pt/yr, NW t = −0.69; audit report
-  `docs/research/2026-10-19-production-replica-audit-nogo.md`). This finding
+  `research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md`). This finding
   establishes no validated edge; it does not queue a retirement decision.
 
 - **Survivorship leakage made the reversion core look like it beat SPY.**
@@ -124,13 +124,13 @@ avoiding the exact instance:
   the day before. An exact day-clustered event study across 113 FOMC dates
   yields gross t = 2.258, net t = 0.981 (fails statistical significance
   after transaction costs; unclustered 3.619 / 1.572 counted days 3x;
-  `docs/research/_fomc_clustered_event_study_20261020.json`).
+  `research/audits/production-replica/_fomc_clustered_event_study_20261020.json`).
 
 - **Deflated Sharpe Ratio (DSR) gate power limits.** Under 1-year training
   folds and a 12-combo grid, the corrected DSR gate needs an in-sample Sharpe
   of roughly 2.5 to pass, so walk-forward OOS results mostly reflect per-fold
   anchor results. Gate rejections stand as a power constraint, not proof of
-  no edge (`docs/research/briefs/2026-10-20-momentum-retest.md`, §4, item 2).
+  no edge (`research/stock-signals/momentum/2026-10-20-momentum-retest.md`, §4, item 2).
 
 - **Signal-strength-as-timing doesn't survive real cost/decay.** ML entry
   gate (LightGBM P(up) — proved anti-predictive, falsified 3 separate ways).
@@ -163,7 +163,7 @@ avoiding the exact instance:
   French screen is **NO-GO**: neither size passes Holm (A1), and post-1994
   net excess CAGR of Big +0.08 / Small +0.20 pt/yr fails the +1.0 bar (A2).
   No paid data will be bought; Phases 2–5, including the after-tax replay,
-  are cancelled (`docs/research/2026-10-20-momentum-french-screen-nogo.md`).
+  are cancelled (`research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md`).
 
 - **Blunt regime gates on entries don't help** — VIX-level regime throttling
   rejected. (Different from vol-aware *sizing*, which is structurally sound
@@ -212,7 +212,7 @@ avoiding the exact instance:
   *depth* (not just a free current-snapshot endpoint) before scoping any
   engineering work around a new data source.
 
-Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
+Full roster with citations: `research/RESEARCH_SNAPSHOT.md` §2.
 
 ## Constraints
 
@@ -249,7 +249,7 @@ Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
 - **Bad bars**: there is no price-bar sanity filter yet. If a result hinges
   on a few extreme days, check them — the 2026-09-23 Kelly run's 38% CAGR
   was one SIVB post-failure bar ($0.0013 → $0.11).
-- Full methodology lessons: `docs/research/RESEARCH_SNAPSHOT.md` §3.
+- Full methodology lessons: `research/RESEARCH_SNAPSHOT.md` §3.
 - **If the candidate came from `WEB_RESEARCH_CANDIDATES.md`'s cross-asset
   register, apply its "Minimum validation standard" checklist on top of
   this project's usual WFO/NDH/DSR gate**, since a source existing and
@@ -280,7 +280,7 @@ Full roster with citations: `docs/research/RESEARCH_SNAPSHOT.md` §2.
 ## What you must produce
 
 A dated research report at `docs/research/<date>-<slug>.md`, following
-`docs/research/TEMPLATE-research-report.md`'s structure — GO or NO-GO either
+`research/TEMPLATE-research-report.md`'s structure — GO or NO-GO either
 way, honest OOS numbers, every quantitative claim measured-or-labeled
 unvalidated. **Do not modify live trading code, config, or deployed
 strategy weights** — that requires a separate, explicit ask from the user

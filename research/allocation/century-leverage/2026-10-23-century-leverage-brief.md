@@ -118,7 +118,7 @@ the A23 engine's other known simplifications: SSO distributions default to
 long-term/qualified rates, federal tax only, no $3,000 ordinary-loss offset,
 and approximate wash-sale handling. Do not change the existing engine's
 results while adapting it. First attempt to reproduce the committed
-[`_static_leverage_aftertax_results.json`](../_static_leverage_aftertax_results.json)
+[`_static_leverage_aftertax_results.json`](../static-leverage/_static_leverage_aftertax_results.json)
 from the unmodified A23 driver and its original input identities; if the
 mutable yfinance inputs have changed, report the mismatch and stop rather
 than silently updating the committed artifact.
@@ -149,7 +149,7 @@ inside the frozen data. Compute each as a fresh equal-capital tax-lot
 simulation with terminal liquidation and matched start/end dates;
 include the worst-window dates. Preserve unrounded values for all gates.
 Store raw results and provenance in
-`docs/research/_century_leverage_results.json`, then write a report that
+`research/allocation/century-leverage/_century_leverage_results.json`, then write a report that
 shows every arm, era, and failure plainly. No result exists at draft time.
 
 ## 6. Pre-registered recommendation rule for the 2027 review
@@ -169,7 +169,7 @@ after-tax terminal wealth under this fixed rule; do not use diagnostics to
 rescue a failed gate. This is advice for a dated review only, not automatic
 authorization to trade or an intra-year exit.
 
-**A23 authority conflict, unresolved:** [`docs/next_steps.md`](../../next_steps.md)
+**A23 authority conflict, unresolved:** [`docs/next_steps.md`](../../../docs/next_steps.md)
 currently permits only hold, rebalance to band, or step down to 100% SPY at
 the annual review; it does **not** permit changing the SSO target to 15%,
 45%, or 60%. The registered research rule above could recommend those

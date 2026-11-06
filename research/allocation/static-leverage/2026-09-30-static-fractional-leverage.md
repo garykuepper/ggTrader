@@ -4,8 +4,8 @@
 **Date:** 2026-09-30
 **Audience:** Owner (real-money allocation decision) & Quantitative Research Collaborators
 **Owner decision (2026-09-30 21:04 PT): ADOPT 1.3x**, with the funding-cost result known; terms in `docs/next_steps.md` REAL-MONEY PLAN.
-**Brief:** `docs/research/briefs/2026-09-30-static-fractional-leverage.md` (backlog A23, batch 2026-09-30)
-**Driver / raw results:** `scripts/static_leverage_aftertax.py` → `docs/research/_static_leverage_aftertax_results.json`
+**Brief:** `research/allocation/static-leverage/2026-09-30-static-fractional-leverage-brief.md` (backlog A23, batch 2026-09-30)
+**Driver / raw results:** `scripts/static_leverage_aftertax.py` → `research/allocation/static-leverage/_static_leverage_aftertax_results.json`
 
 ## 1. Executive Summary & Core Engine Audit
 
@@ -192,10 +192,10 @@ report touches live code.
   leverage-sleeve trend switch must beat **this report's static 1.3x after-tax
   numbers**, not SPY.
 - **Whole-book 200-day SSO↔T-bill rotation (Gayed–Bilello LRS)** — duplicate of
-  `leveraged_trend_*` (`docs/research/2026-07-16-leveraged-trend-following-nogo.md`,
+  `leveraged_trend_*` (`research/allocation/leveraged-trend/2026-07-16-leveraged-trend-following-nogo.md`,
   NO-GO vs own buy-and-hold); rejected on intake in the 2026-09-30 batch.
 - **Breadth-driven leveraged rotation** —
-  `docs/research/2026-07-16-leveraged-index-rotation-nogo.md`, NO-GO.
+  `research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md`, NO-GO.
 - **VIX-level entry gate** — NO-GO (2026-06-28); **VIX/VIX3M gate** stays low
   (B6): 2022 failure mode, ~10 switches/yr, unsourced performance claims.
 - **RSI(2) / short-hold reversion on LETFs** — rejected on intake: every gain
@@ -272,12 +272,12 @@ report touches live code.
 As registered in Task 9 of the production replica audit plan (`docs/superpowers/plans/2026-10-19-production-replica-audit.md`), this study measures the sensitivity of the static 70/30 SPY/SSO after-tax margin to fund distribution tax character under elevated financing costs. The evaluation window is unchanged at **2006-06-21 → 2026-09-29** (20.24 years, real SSO). The historical +2.5 percentage point funding offset (`--rf-offset 0.025`, modeling ~4.1% bills versus the 1.64% sample historical average) is a pre-registered scenario to reflect current financing costs, not a new live measurement of current market bill rates.
 
 **Baseline Reproduction:**
-The driver (`scripts/static_leverage_aftertax.py`) with default all-long-term (`lt`) distribution taxation reproduces the committed main-performance numbers in `docs/research/_static_leverage_aftertax_results.json` exactly: 12.00% after-tax CAGR for 70/30 versus 10.40% for SPY buy-and-hold at the primary 24%/15% bracket.
+The driver (`scripts/static_leverage_aftertax.py`) with default all-long-term (`lt`) distribution taxation reproduces the committed main-performance numbers in `research/allocation/static-leverage/_static_leverage_aftertax_results.json` exactly: 12.00% after-tax CAGR for 70/30 versus 10.40% for SPY buy-and-hold at the primary 24%/15% bracket.
 
 **Raw Artifacts & Exact Keys:**
 
-- Baseline (+2.5 pp bills, default all-LT distributions): `docs/research/_static_leverage_aftertax_rf_plus0.025.json`
-- Distribution bounds (+2.5 pp bills, all-ordinary distributions): `docs/research/_static_leverage_aftertax_dist_bounds.json`
+- Baseline (+2.5 pp bills, default all-LT distributions): `research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.025.json`
+- Distribution bounds (+2.5 pp bills, all-ordinary distributions): `research/allocation/static-leverage/_static_leverage_aftertax_dist_bounds.json`
   - Generated via: `scripts/static_leverage_aftertax.py --main-only --rf-offset 0.025 --sso-dist-tax st --bil-dist-tax st --out docs/research/_static_leverage_aftertax_dist_bounds.json`
   - The artifact records this model assumption in top-level key `dist_tax: {"SSO": "st", "BIL": "st"}`.
 - Evaluated under key `windows.main_real_sso["static 1.3x (70/30) band 8pp"]` versus `windows.main_real_sso["SPY buy-and-hold"]`.

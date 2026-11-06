@@ -17,7 +17,7 @@
 
 ## 1. The question, and the decision it feeds
 
-- **Question.** Do any classic long-only stock factors (other than momentum, closed NO-GO in [`docs/research/2026-10-20-momentum-french-screen-nogo.md`](../2026-10-20-momentum-french-screen-nogo.md)) still beat the market after costs since 1994, by enough to justify a paid-data test of an S&P 500 version for the owner's taxable stock-trading path?
+- **Question.** Do any classic long-only stock factors (other than momentum, closed NO-GO in [`research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md`](../momentum/2026-10-20-momentum-french-screen-nogo.md)) still beat the market after costs since 1994, by enough to justify a paid-data test of an S&P 500 version for the owner's taxable stock-trading path?
 - **Decision fed.** Whether to write a Phase 2 brief (paid survivorship-free data, exact rules, after-tax) for a passing factor.
 - **Owner context.** Taxable account only. The owner wants an active stock-trading path with greater gains and accepts bigger swings.
 - **Not affected.** The owner's core A23 allocation (70/30 SPY/SSO) is a separate decision and does not change.
@@ -130,7 +130,7 @@ Computation must stop immediately, and no verdict may be rendered, if any of the
 ## 10. Scope and boundaries
 
 - **Code modifications:** New code is restricted strictly to `src/ggTrader/lab/` and `scripts/` (generalizing the existing momentum screen rather than duplicating it).
-- **Output artifact:** Results must be written to `docs/research/_factor_screen_results.json`.
+- **Output artifact:** Results must be written to `research/stock-signals/factor-screen/_factor_screen_results.json`.
 - **Untouchable paths:** Never touch `src/ggTrader/paper/`, `src/ggTrader/data/live/`, `.env`, or Docker files.
 - **Research boundaries:**
   - No parameter search, tuning, or factor definition modifications after viewing data.

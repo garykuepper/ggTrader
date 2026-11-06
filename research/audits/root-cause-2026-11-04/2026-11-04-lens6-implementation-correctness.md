@@ -3,7 +3,7 @@
 **Date:** 2026-11-04 · **Lens:** 6 of the root-cause investigation
 (`docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md`) · **Type:** read-only
 diagnosis, no fixes and no recommendations · **Raw artifacts:**
-`docs/research/_lens6_replays.json` (hand replays), `docs/research/_lens6_verdicts.json`
+`research/audits/root-cause-2026-11-04/_lens6_replays.json` (hand replays), `research/audits/root-cause-2026-11-04/_lens6_verdicts.json`
 (one verdict per inventory row)
 
 Abbreviations, expanded once: WFO = walk-forward optimization (re-pick parameters on a
@@ -36,11 +36,11 @@ MACD = moving-average convergence/divergence; vbb = volume-confirmed Bollinger v
      trade at the **same day's final close**, and the 2026-10-19 production replica trades
      **one day later** than the signal. Neither matches live. This is not new: the
      original replica brief assumed live uses the prior completed bar
-     (`docs/research/briefs/2026-10-19-production-replica-audit.md:38-39`), and the
+     (`research/audits/production-replica/2026-10-19-production-replica-audit.md:38-39`), and the
      project already conceded on 2026-10-19 that this assumption does not hold. The
      parity amendment says the loader "can include a same-session daily bar" and does
      not guarantee the prior completed close
-     (`docs/research/briefs/2026-10-19-production-replica-parity-amendment.md:29-31`),
+     (`research/audits/production-replica/2026-10-19-production-replica-parity-amendment.md:29-31`),
      and it narrows the replica's question to a prior-completed-bar model (lines
      38-42). Lens 6 confirms the amendment from the code, today's run log and the
      database.
@@ -105,7 +105,7 @@ from the scratch note made at the start; outcome added after the arrow).
   later at the close; live fills about 15 minutes before the close of the signal day.**
 - **F7 (live params = PIT WFO picks).** The inventory row says live defaults were never
   selected. Overturned if the live values equal any fold's pick in
-  `docs/research/_pit_rebaseline_20260923.json`. → **Not overturned**: no fold picked them.
+  `research/audits/rebaseline/_pit_rebaseline_20260923.json`. → **Not overturned**: no fold picked them.
 - **F8 (crypto).** Crypto code was removed 2026-06-16; verifiable only if git history
   still holds the strategy code and the result artifacts. → **Code recoverable from git
   (commit 82931a40's parent), artifacts mostly absent**: crypto rows stay unverifiable,
@@ -120,7 +120,7 @@ The strongest case that the implementation is sound:
   the code uses a different seed). They reproduced the repo's entry and exit dates
   exactly on real prices: ensemble (live defaults, 10 names, 2025-03-01 to 2025-05-30),
   bb_reversion (same names and window), 12-1 momentum (20 names, 3 month-ends) and
-  month-end Treasury (6 months). See `docs/research/_lens6_replays.json`. Limit: where
+  month-end Treasury (6 months). See `research/audits/root-cause-2026-11-04/_lens6_replays.json`. Limit: where
   the written rule is ambiguous (crossings rather than levels, the MACD divergence proxy,
   the row-55 warm-up mask), the hand code adopted the code's reading. These replays
   therefore test the arithmetic, not the interpretation of the specification.
@@ -169,7 +169,7 @@ lookbacks, rebalance timing, PIT data use)?**
   and cheapest test under Rows not examined).
 
 **Q2. Does a hand replay of a small window agree with the code?** **Yes, 4 of 4
-strategies, 0 mismatches** (`docs/research/_lens6_replays.json`), on the arithmetic.
+strategies, 0 mismatches** (`research/audits/root-cause-2026-11-04/_lens6_replays.json`), on the arithmetic.
 The hand code followed the code's reading of ambiguous wording, so this does not settle
 the interpretation question in Q1. Coverage: 10 names over 3 months for the daily
 signals. A synthetic check of
@@ -203,7 +203,7 @@ Cheapest test to go further: check out 82931a40's parent in a scratch worktree a
 | Live signals come from a partial bar at 12:45 PT | Confirmed (code, run log, DB bar) |
 | `max_positions 3`, `position_pct 0.033` | Confirmed (`.env`, `src/ggTrader/paper/risk.py:17-18`) |
 | Snapshot includes about $320 of dividends added back (`trader.py:1050-1055`) | Cause confirmed (code + DB: gap = accrual total $320.24). Also feeds the next run's daily-loss day-start. Defect judgement and broker side left to Lens 3 |
-| Replica uses next-bar fills | Confirmed. It is not what live does (live is same-day); the project already conceded this in the 2026-10-19 parity amendment (`docs/research/briefs/2026-10-19-production-replica-parity-amendment.md:29-42`) |
+| Replica uses next-bar fills | Confirmed. It is not what live does (live is same-day); the project already conceded this in the 2026-10-19 parity amendment (`research/audits/production-replica/2026-10-19-production-replica-parity-amendment.md:29-42`) |
 | 10/32 orders explained; no decision inputs archived | Not checked by Lens 6 (Lens 3) |
 | Live ensemble, 3% sizing and blend were adopted on phantom numbers | Confirmed for the code side: those numbers came from code with the anchor and PIT defects |
 
@@ -211,7 +211,7 @@ Cheapest test to go further: check out 82931a40's parent in a scratch worktree a
 
 | Strategy | Spec source | Code location | Rules compared | Match | Evidence |
 |---|---|---|---|---|---|
-| ensemble (live) | `docs/research/briefs/2026-10-19-production-replica-audit.md` §3; `docs/changelog.md` 2026-06-18, 06-23 | `src/ggTrader/lab/strategies/ensemble.py:67-209` | voters, vote thresholds, all lookbacks, exit rule, PIT mask | yes | Hand replay 0 mismatches; wording gaps listed in Q1 |
+| ensemble (live) | `research/audits/production-replica/2026-10-19-production-replica-audit.md` §3; `docs/changelog.md` 2026-06-18, 06-23 | `src/ggTrader/lab/strategies/ensemble.py:67-209` | voters, vote thresholds, all lookbacks, exit rule, PIT mask | yes | Hand replay 0 mismatches; wording gaps listed in Q1 |
 | bb_reversion | `docs/changelog.md` 2026-06-18 | `src/ggTrader/lab/strategies/signals.py:318-356`, `indicators.py:67-81` | BB 20/2.0 cross below, exit at mean | yes (rules) | Hand replay 0 mismatches; "touch" vs cross wording |
 | rsi_reversion | `docs/changelog.md` 2026-06-18 | `indicators.py:118-138` | RSI 14, 30 entry, 50 exit | yes | Inside ensemble replay |
 | volume_bb_reversion | `docs/changelog.md` 2026-06-23 | `indicators.py:237-263` | BB cross + volume > 2x 20-day mean | yes | Inside ensemble replay |
@@ -219,13 +219,13 @@ Cheapest test to go further: check out 82931a40's parent in a scratch worktree a
 | macd_divergence | `docs/changelog.md` 2026-06-23 | `indicators.py:182-212` | divergence definition, exit | partly | Bullish only; loose divergence proxy; frame-level warm-up mask |
 | mtf_reversion | `docs/changelog.md` 2026-06-23 | `indicators.py:281-324` | weekly RSI timing | yes (rules) | Week-end labels, forward-filled; no lookahead |
 | ensemble_conviction | `docs/changelog.md` 2026-06-22 | `ensemble.py:280-441` | 1%-4% sizing by strength | yes | Read |
-| ensemble_ic | `docs/research/2026-09-23-pit-rebaseline-core-nogo.md` | `src/ggTrader/lab/strategies/ic_weights.py:44-87` | IC leak guard | yes | Read; causal |
+| ensemble_ic | `research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md` | `src/ggTrader/lab/strategies/ic_weights.py:44-87` | IC leak guard | yes | Read; causal |
 | ensemble_kelly | same | `src/ggTrader/lab/kelly.py:84-175` | Kelly causality | yes | Read; causal |
-| xs_momentum / dual_momentum | `docs/research/2026-10-19-production-replica-audit-nogo.md` | `src/ggTrader/lab/strategies/momentum.py:13-85` | 12-1 score, top-N, next-bar targets, absolute filter | yes | Hand replay 3/3 month-ends identical |
-| month_end_treasury | `docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md` | `src/ggTrader/lab/strategies/month_end_treasury.py:80-114` | entry/exit calendar | yes | Hand replay 6/6 months |
+| xs_momentum / dual_momentum | `research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md` | `src/ggTrader/lab/strategies/momentum.py:13-85` | 12-1 score, top-N, next-bar targets, absolute filter | yes | Hand replay 3/3 month-ends identical |
+| month_end_treasury | `research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve-nogo.md` | `src/ggTrader/lab/strategies/month_end_treasury.py:80-114` | entry/exit calendar | yes | Hand replay 6/6 months |
 | overnight_gap | `docs/roadmap.md` (strategy table) | `indicators.py:84-115` | fill moment | partly | Gap known at the open, filled at the close |
-| pead / insider_cluster_buy / congress_trades / short_interest / short_volume_ratio / headline_sentiment / index_deletion_fade | their 2026-07 NO-GO reports under `docs/research/` | `src/ggTrader/lab/strategies/pead.py:45-90`, `insider_cluster.py:36-61`, `congress_trades.py:31-34`, `short_interest.py:40-59`, `short_volume_ratio.py:82-89`, `headline_sentiment.py:64-100`, `index_deletion.py:84-127` | PIT availability gates only | partly | Gates exist in current code; not replayed; event dates in July runs sat on the day-shifted tape (Lens 1) |
-| production replica | `docs/research/briefs/2026-10-19-production-replica-audit.md` §3 | `src/ggTrader/lab/replica.py:35-290` | rules vs live | partly | Rules match live; timing does not, as the 2026-10-19 parity amendment already states (lines 29-31) |
+| pead / insider_cluster_buy / congress_trades / short_interest / short_volume_ratio / headline_sentiment / index_deletion_fade | their 2026-07 NO-GO reports under `research/` | `src/ggTrader/lab/strategies/pead.py:45-90`, `insider_cluster.py:36-61`, `congress_trades.py:31-34`, `short_interest.py:40-59`, `short_volume_ratio.py:82-89`, `headline_sentiment.py:64-100`, `index_deletion.py:84-127` | PIT availability gates only | partly | Gates exist in current code; not replayed; event dates in July runs sat on the day-shifted tape (Lens 1) |
+| production replica | `research/audits/production-replica/2026-10-19-production-replica-audit.md` §3 | `src/ggTrader/lab/replica.py:35-290` | rules vs live | partly | Rules match live; timing does not, as the 2026-10-19 parity amendment already states (lines 29-31) |
 | crypto entries/exits | `docs/archive/roadmap-pre-lab.md` | removed; 82931a40 parent | see Crypto | unverifiable / partly | Code in git only |
 
 ## Live path vs backtest
@@ -294,7 +294,7 @@ out-of-sample specification, so they are marked "no" (or "partly" where the rule
 right and only the harness era is the issue). Gate counts before 2026-10-19 also predate
 the DSR units fix 09f9f40. The 2026-06-20 "validated" ensemble was the 3-voter version
 (changelog 2026-06-18), not today's 5-voter default (`ensemble.py:37-39`). Row-by-row
-verdicts are in `docs/research/_lens6_verdicts.json`.
+verdicts are in `research/audits/root-cause-2026-11-04/_lens6_verdicts.json`.
 
 ## Crypto
 
@@ -389,4 +389,4 @@ environment; Alpaca's dividend records; the 17 rows listed above; crypto rules.
 - [x] ✅ Q6 Phase 0 code/parity claims: four confirmed, two left to Lens 3
 - [x] ✅ Dividend snapshot gap mechanism: answered from code and DB; broker side left to
   Lens 3
-- [x] ✅ Verdicts written for all 90 rows (`docs/research/_lens6_verdicts.json`)
+- [x] ✅ Verdicts written for all 90 rows (`research/audits/root-cause-2026-11-04/_lens6_verdicts.json`)

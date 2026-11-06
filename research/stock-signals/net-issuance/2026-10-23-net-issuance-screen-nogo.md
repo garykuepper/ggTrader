@@ -15,7 +15,7 @@ registered bars of **t ≥ 3.0** and **p ≤ 0.00135** (`inputs.A1_t_bar`,
 (`H1.A2.cagr_diff_pp`), below **+1.0 pt/yr** (`inputs.A2_bar_pp`). Both gate flags
 and the overall flag are false (`H1.A1.pass`, `H1.A2.pass`, `H1.overall_pass`).
 There is one confirmatory hypothesis, so no within-screen Holm adjustment
-([registered brief §4](briefs/2026-10-23-net-issuance-screen.md)).
+([registered brief §4](2026-10-23-net-issuance-screen.md)).
 
 The useful diagnostic runs in the opposite direction: heavy issuers, `BIG HiNI`,
 lag the French market at the base haircut, with full-window **t = −3.20** and
@@ -35,7 +35,7 @@ existing decisions.
 ## 2. Quantitative Performance Context
 
 All measured figures below come from the [results JSON](_net_issuance_screen_results.json).
-The registered [brief §§3–7](briefs/2026-10-23-net-issuance-screen.md) defines the
+The registered [brief §§3–7](2026-10-23-net-issuance-screen.md) defines the
 series, gates, and diagnostics. The full window is **1963-07–2026-04, 754 months**
 (`inputs.full_window.start`, `.end`, `.n_months`); A2 is
 **1994-01–2026-04, 388 months** (`inputs.A2_window.start`, `.end`, `.n_months`);
@@ -102,7 +102,7 @@ The univariate `< 0 ` portfolio includes small caps
 (`univariate_repurchasers.includes_small_caps`: true). French separates
 `NegNI` and `ZeroNI` from the five issuer quintiles; `BIG LoNI` is still an
 issuer bucket, not the registered repurchaser leg
-([brief §11](briefs/2026-10-23-net-issuance-screen.md)). The shape is not
+([brief §11](2026-10-23-net-issuance-screen.md)). The shape is not
 monotone: `ME5 NI3` has positive diagnostic returns, while `BIG HiNI` has a
 large deficit. Neither observation licenses a new confirmatory test here.
 
@@ -122,7 +122,7 @@ after earlier screens is not covered by the single-test error rate.
 ## 3. Actionable Research Directions
 
 **No net-issuance candidate advances.** H1 failed both gates, so the approved
-[forward-paper B0/B1 standard](briefs/2026-10-23-forward-paper-standard.md)
+[forward-paper B0/B1 standard](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md)
 has no candidate to evaluate from this screen. The `BIG HiNI` result suggests
 the academic issuance spread is driven by heavy issuers lagging; it does not
 establish a usable long-only market-beating leg. Keep the existing paper
@@ -136,14 +136,14 @@ registered thresholds. Do not promote a favorable NI diagnostic or change the
 window after seeing these results.
 
 **Momentum and four classic factors — CLOSED NO-GO.** Their separate registered
-screens found no qualifying long-only candidate: [momentum](2026-10-20-momentum-french-screen-nogo.md)
-and [factors](2026-10-21-factor-screen-nogo.md). Their prior decisions are not
+screens found no qualifying long-only candidate: [momentum](../momentum/2026-10-20-momentum-french-screen-nogo.md)
+and [factors](../factor-screen/2026-10-21-factor-screen-nogo.md). Their prior decisions are not
 reopened by this NI diagnostic.
 
 ## 5. Operational Roadmap: Recommended First Action
 
 **Record the NO-GO in the research snapshot, worklist, and changelog.** The
-registered [brief §8](briefs/2026-10-23-net-issuance-screen.md) requires closure
+registered [brief §8](2026-10-23-net-issuance-screen.md) requires closure
 when either gate fails; both failed here. This documentation does not authorize
 a return rerun, a production change, a broker order, or real capital. Paper
 observation and the current production freeze continue under their own rules.

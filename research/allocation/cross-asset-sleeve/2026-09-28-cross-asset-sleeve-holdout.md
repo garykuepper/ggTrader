@@ -1,7 +1,7 @@
 # Pre-registration: cross-asset sleeve, unseen-data holdout (2007-06 → 2011-02)
 
 **Frozen:** 2026-09-28, before any run on this window. Parent study:
-`docs/research/2026-09-28-cross-asset-sleeve.md` (static arm GO, shadow only).
+`research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md` (static arm GO, shadow only).
 
 ## Why this window, and why it is weak evidence
 

@@ -2,15 +2,15 @@
 
 **Erratum 2026-11-04 (after review):** PARA price figures quoted in this report were measured
 before an accidental database refresh at 23:48 PST; they are not reproducible from the database
-now (see `docs/research/2026-11-04-phase1-checkpoint.md`, section on the incident).
+now (see `research/audits/root-cause-2026-11-04/2026-11-04-phase1-checkpoint.md`, section on the incident).
 
 **Date:** 2026-11-04 · **Branch:** `investigation/root-cause-2026-11-04` · **Type:** diagnosis
 only (read-only; no re-runs, no verdict changes, no recommendations) · **Spec:**
 `docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` (section 5, Lens 2;
 section 11, items 5 and 7) · **Binding table spec:**
-`docs/research/2026-11-04-lens2-sensitivity-spec.md`, last commit `a5fe547b`
+`research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md`, last commit `a5fe547b`
 (2026-11-04 17:38), committed before any Lens 2 work · **Raw output:**
-`docs/research/_lens2_sensitivity.json`
+`research/audits/root-cause-2026-11-04/_lens2_sensitivity.json`
 
 Abbreviations, expanded once: WFO = walk-forward optimization (fit on a past window, test on
 the next, repeat); OOS = out-of-sample; IS = in-sample; PIT = point-in-time (index membership
@@ -123,7 +123,7 @@ below.
 Written before the classification rules were applied to any row. Upstream lens outputs had
 already been read (they are this lens's inputs), so these are not blind to them. Each line
 says what would overturn, or confirm, the Phase 0 trust rating
-(`docs/research/2026-11-04-phase0-trust-audit.md`, trust table) that this lens touches.
+(`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md`, trust table) that this lens touches.
 
 - **Production replica, "Reliable NO, high trust".**
   - Overturned (downgraded) if any tape fault of unknown direction touched its trades.
@@ -173,7 +173,7 @@ How these came out is in "Questions and answers" (Phase 0 ratings, tested).
 ## Classification rules
 
 Fixed on 2026-11-04 before any row was classified. The same text is stored at
-`classification_rules` in `docs/research/_lens2_sensitivity.json`, and the rules were applied
+`classification_rules` in `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json`, and the rules were applied
 by one script (see Verification).
 
 Lens 2 classification rules, fixed 2026-11-04 before any row was classified. Inputs are the committed upstream lens outputs only; no result value chooses a class except through these rules.
@@ -197,18 +197,18 @@ The direction table behind R2 cites evidence for each entry:
 | Contamination item (Lens 1 tag) | Direction | Evidence |
 |---|---|---|
 | `anchor_leak` | favours strategy | The anchor fallback was fitted on the full evaluation span: lookahead in the fallback parameters (Lens 1 fix timeline row 3; `2eafab1`). |
-| `pit_universe` | favours strategy | 14.1% of core entries fell on non-member days (Lens 1 row 4). Core Sharpe fell from 0.9914 to 0.5922 after `c9d1abe` (`docs/research/_rebaseline_corrected_tape_20260822.json` `core.sharpe` vs `docs/research/_pit_rebaseline_20260923.json` `ensemble.sharpe`). |
+| `pit_universe` | favours strategy | 14.1% of core entries fell on non-member days (Lens 1 row 4). Core Sharpe fell from 0.9914 to 0.5922 after `c9d1abe` (`research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json` `core.sharpe` vs `research/audits/rebaseline/_pit_rebaseline_20260923.json` `ensemble.sharpe`). |
 | `universe_survivorship (2eafab1)` | favours strategy | Today's index membership was applied to the past (Lens 1). |
 | `train_gate_membership_purge (2eafab1)` | favours the ML gate under test | Membership and purge gap were missing in gate training, so labels leaked (Lens 1). |
 | `event_pre_entry_returns (7320c1d)` | favours strategy | Returns from before entry were counted, and those cannot be earned (Lens 1 extra row). |
-| `spy_duplicates` | unclear | Duplicate SPY rows deflated strategy and SPY Sharpe alike (`docs/research/2026-11-04-lens1-backtest-validity.md`, Phase 0 hypotheses section). |
+| `spy_duplicates` | unclear | Duplicate SPY rows deflated strategy and SPY Sharpe alike (`research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md`, Phase 0 hypotheses section). |
 | `dsr_units` | unknown | A failed DSR check deploys the anchor (`src/ggTrader/lab/wfo.py:747-752`), so the fix changes OOS returns. The direction was never measured. |
 | `day_shift` | unknown | Depends on each study's join. Lens 1 could not confirm lookahead versus delay. |
 | `tape_identity` (PARA, 2010-2020, AVB) | unknown | Unmeasured. |
 
 Logged exception E1 (the only one): the replica's Lens 6 "partly" was treated as outside its
 verdict's declared scope, because `closure.scope` is `historical_daily_bar_model` and
-`docs/research/briefs/2026-10-19-production-replica-parity-amendment.md` lines 38-42 narrow
+`research/audits/production-replica/2026-10-19-production-replica-parity-amendment.md` lines 38-42 narrow
 the question. E1 changes no class; the replica fails R2 and R5 in any case.
 
 **Known limitations of these rules** (recorded in review fix round 1, post hoc; no rule and no
@@ -232,10 +232,10 @@ class changed; also stored as `classification_rules_known_limitations_post_hoc` 
 All 114 rows with a verdict, in inventory order. The columns give the evidence from each
 upstream lens:
 
-- Lens 1: `docs/research/_lens1_tape_state.json` (tape state, contamination tags);
-- Lens 6: `docs/research/_lens6_verdicts.json` (`spec_matches_code`);
-- Lens 7: `docs/research/_lens7_recompute.json` (pre-registration status and recompute match);
-- Lens 9: `docs/research/_lens9_power.json` (status and MDE).
+- Lens 1: `research/audits/root-cause-2026-11-04/_lens1_tape_state.json` (tape state, contamination tags);
+- Lens 6: `research/audits/root-cause-2026-11-04/_lens6_verdicts.json` (`spec_matches_code`);
+- Lens 7: `research/audits/root-cause-2026-11-04/_lens7_recompute.json` (pre-registration status and recompute match);
+- Lens 9: `research/audits/root-cause-2026-11-04/_lens9_power.json` (status and MDE).
 
 "Rules out larger than" is Lens 9's MDE at t >= 3, 80% power, in pp/yr of annualized mean
 excess. It is not a CAGR bound and not a bound on any edge size where it reads "unknown".
@@ -359,7 +359,7 @@ excess. It is not a CAGR bound and not a bound on any edge size where it reads "
 
 ### The production-replica conflict
 
-Facts, all from `docs/research/_production_replica_results.json` unless stated:
+Facts, all from `research/audits/production-replica/_production_replica_results.json` unless stated:
 
 - **Top-level verdict:** `verdict.verdict` = INCONCLUSIVE, `stage` = stopped, `reasons` =
   [`holdout:tainted_trade:primary`].
@@ -367,7 +367,7 @@ Facts, all from `docs/research/_production_replica_results.json` unless stated:
   window fails both registered pre-tax bars; the stopped holdout cannot rescue it.",
   `holdout` = INCONCLUSIVE, `live_replication` = UNVERIFIED, `after_tax` = "Not run: primary
   pre-tax bar failed."
-- **Recording rule:** `docs/research/briefs/2026-10-19-production-replica-closure-amendment.md`
+- **Recording rule:** `research/audits/production-replica/2026-10-19-production-replica-closure-amendment.md`
   keeps the raw top-level verdict and adds the closure; Lens 7 records three amendments.
 - **Primary arm:** CAGR 14.19% vs SPY 14.83%, `cagr_diff_pp` -0.64, NW t -0.69, `n_obs` 1,317,
   `pretax_pass` false. Mean exposure: 9.37% stocks, 85.33% SPY, 5.30% cash. Against an
@@ -379,7 +379,7 @@ Facts, all from `docs/research/_production_replica_results.json` unless stated:
 - **PARA:** the primary arm traded PARA 3 buys and 3 sells (`windows.primary.arms.primary.trade_counts`).
   `tainted_trades` is empty. The tape's PARA series is a different security, with closes
   from 72.20 to 113,900 and median volume 9 shares
-  (`docs/research/2026-11-04-lens1-backtest-validity.md`, Summary 3).
+  (`research/audits/root-cause-2026-11-04/2026-11-04-lens1-backtest-validity.md`, Summary 3).
 
 Resolution:
 
@@ -409,7 +409,7 @@ Spec commit: `a5fe547b`.
 
 How to read it:
 
-- The table follows `docs/research/2026-11-04-lens2-sensitivity-spec.md` sections 2 to 9
+- The table follows `research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md` sections 2 to 9
   exactly. It has one row per inventory row (all 144, including the 30 without a verdict,
   per spec section 2), in inventory order, and sub-rows only where the spec's selection rules
   (section 2.1) or one-window rule (section 2.2) require them: 182 rows in all.
@@ -463,7 +463,7 @@ Notes needed to read it:
 | stocks-catastrophe-stop | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
 | stocks-century-leverage/30/full | 1926-07-01..2026-06-30 | not computable from artifact (missing: pre-tax CAGR; scenarios.*.30.full holds after_tax_cagr only) | comparator: 0% arm (Ken French value-weighted all-US market), not SPY; not computable from artifact (missing: pre-tax CAGR) | not computable from artifact (missing: pre-tax CAGR) | not computable from artifact (missing: t-statistic) | not computable from artifact (missing: t-statistic) | not computable from artifact (missing: t-statistic) | not computable from artifact (missing: t-statistic) | comparator: 0% arm on the Ken French all-US market (provenance.market_proxy), not SPY; 30% minus 0% after-tax CAGR, full window: 0.84%\|24/15\|wash=False\|shiller: 1.24; 0.84%\|24/15\|wash=True\|shiller: 1.19; 0.84%\|40.8/23.8\|wash=False\|shiller: 1.24; 0.84%\|40.8/23.8\|wash=True\|shiller: 1.18 | not computable from artifact (missing: t-statistic) | keep 30%; bar: Brief section 6 mechanical rule on static 2x-fund weights (keep 30% unless an alternative passes every condition). (source: _lens7_recompute.json preregistration, status amended; brief docs/research/briefs/2026-10-23-century-leverage.md) (selection: brief docs/research/briefs/2026-10-23-century-leverage.md §6, primary 24/15, wash=False, 0.84% fee, Shiller distributions; arm 30 = the kept arm) | docs/research/_century_leverage_results.json; scenarios.<scenario>.30.full.{window,after_tax_cagr}; scenarios.<scenario>.0.full.after_tax_cagr; provenance.market_proxy; recommendation_rule.proposal | arm 30 = 30% SSO (2x fund) / 70% 1x market, band ±8 pp (brief); arm 0 = 1x buy-and-hold | none reported |
 | stocks-congress-trades | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
-| stocks-conviction-bb | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | Inactive; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable') | no raw artifact | no raw artifact; source report states: "\| `conviction_bb` \| Shipped, no independent current GO \| Conviction sizing; no dedicated modern validation \| [Roadmap](../roadmap.md) \|" (source: docs/research/RESEARCH_SNAPSHOT.md line 122) | none reported |
+| stocks-conviction-bb | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | Inactive; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable') | no raw artifact | no raw artifact; source report states: "\| `conviction_bb` \| Shipped, no independent current GO \| Conviction sizing; no dedicated modern validation \| [Roadmap](../../../docs/roadmap.md) \|" (source: docs/research/RESEARCH_SNAPSHOT.md line 122) | none reported |
 | stocks-core-spy-blend-keep/live_k1.0 | 2021-01-31..2026-04-30 | 12.96 | 12.96 (TR basis: Lens 1 finding, tape closes are yfinance auto_adjust=True (src/ggTrader/data/live/yfinance_loader.py:66); adjustment seams per Lens 1 §(b)) | 0.00 | not computable from artifact (missing: t-statistic) | not computable from artifact (missing: t-statistic) | not computable from artifact (missing: t-statistic) | not computable from artifact (missing: t-statistic) | not computable from artifact (no after-tax fields) | not computable from artifact (missing: t-statistic) | KEEP; bar: report §1 decision rule (k=1 Sharpe above SPY and MaxDD no worse; no t or CAGR bar), docs/research/2026-09-24-core-spy-blend-keep.md; artifact decision=KEEP; Lens 7: no earlier committed copy of the rule | docs/research/_core_spy_blend_20260924.json; meta.eval_start; meta.eval_end; live_k1.0.cagr_pct; spy.cagr_pct; live_k1.0.mean_spy_weight; core_idle_mean_pct; meta.reserve; decision | live_k1.0.mean_spy_weight=0.8740; core_idle_mean_pct=92.41; meta.reserve=0.05 | none reported |
 | stocks-daily-threshold-tilt | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | untriaged; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
 | stocks-dsr-gate-correction | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no verdict recorded in inventory; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'None') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
@@ -561,7 +561,7 @@ Notes needed to read it:
 | stocks-trailing-stops | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
 | stocks-turn-of-month-rotation | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | recommend not queuing; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
 | stocks-two-symbol-sweep-design | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | design only; not authorized; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
-| stocks-vix-entry-throttling | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | Historical NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found') | no raw artifact | no raw artifact; source report states: "\| VIX entry throttling \| Historical NO-GO; distinct from sizing \| [Optimization plan](2026-06-28-alpha-optimization-execution-plan.md) \|" (source: docs/research/RESEARCH_SNAPSHOT.md line 157) | none reported |
+| stocks-vix-entry-throttling | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | Historical NO-GO; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found') | no raw artifact | no raw artifact; source report states: "\| VIX entry throttling \| Historical NO-GO; distinct from sizing \| [Optimization plan](../../programme/initial-research-plan/2026-06-28-alpha-optimization-execution-plan.md) \|" (source: docs/research/RESEARCH_SNAPSHOT.md line 157) | none reported |
 | stocks-vol-managed-spy | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | untriaged (shortlist); no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
 | stocks-volume-bb-reversion | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | Component; independent edge unverified; no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'not applicable') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
 | stocks-voter-ablation-5-voter | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | no raw artifact | Best = core+macd+vbb (5-voter, drop MTF); no pre-registered bar found (looked in: docs/research/briefs/, the 2026-09-10 audit, source report; Lens 7 status 'no brief found') | no raw artifact | no raw artifact; not stated in source report (row's own inventory quotes searched) | none reported |
@@ -667,7 +667,7 @@ What the table shows, read across rows (exploratory; no verdict changes):
 - Registered multi-hypothesis rows add their extra hypotheses: the factor screen's 4 add 3;
   momentum's 2 groups add 1.
 - Parameter search inside a WFO (for example 48 combos x 17 folds for the ensemble,
-  `docs/research/_rebaseline_corrected_tape_20260822.json` `core.table`) is not counted. The
+  `research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json` `core.table`) is not counted. The
   DSR gate is meant to deflate for it.
 - Git is a cross-check only. The repository has 1,093 commits; 32 subjects contain "NO-GO".
   CLAUDE.md gives the strategy registry as 38 entries.
@@ -712,26 +712,26 @@ What this means for a "win" in this project:
   For the GO rows the cross-asset artifact gives an outside check: its post-hoc bootstrap puts
   P(book Sharpe > SPY) at 0.898 for the pinned window and 0.9925 for the long one
   (`post_hoc.pinned.p_book_sharpe_gt_spy`, `post_hoc.long.p_book_sharpe_gt_spy` in
-  `docs/research/_cross_asset_sleeve_results.json`). The CI on the pinned Sharpe difference
+  `research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json`). The CI on the pinned Sharpe difference
   spans zero.
 
 **Holm and other thresholds the studies actually used** (from the artifacts):
 
 - **Factor screen.** `inputs.holm_alpha` = 0.00135 across four hypotheses. The per-rank
   thresholds are H4 0.0003375, H2 0.00045, H3 0.000675 and H1 0.00135
-  (`hypotheses.*.A1.holm_threshold`, `docs/research/_factor_screen_results.json`).
+  (`hypotheses.*.A1.holm_threshold`, `research/stock-signals/factor-screen/_factor_screen_results.json`).
 - **Momentum screen.** Family-wise one-sided p 0.00135 across two groups: first step 0.000675,
-  second 0.00135 (brief `docs/research/briefs/2026-10-20-momentum-retest.md` section 5).
+  second 0.00135 (brief `research/stock-signals/momentum/2026-10-20-momentum-retest.md` section 5).
   Artifact `groups.big.full_p` = 0.001135 and `groups.small.full_p` = 0.000942; `holm.big`
   and `holm.small` are false. Each p is below the single-test 0.00135, but neither is below
   the first Holm step. Here multiple-testing control decided A1. A2 failed anyway.
 - **Net issuance.** A single test (`inputs.A1_p_bar` = 0.00135, `A1_t_bar` = 3.0); no Holm.
 - **Replica, momentum reruns and FOMC.** t >= 3 with no family correction across them, even
   though all were run on 2026-10-19/20 under one brief
-  (`docs/research/briefs/2026-10-19-production-replica-audit.md`).
+  (`research/audits/production-replica/2026-10-19-production-replica-audit.md`).
 - **Within-family Holm is not project-wide control.** No study corrected for the earlier
   families. The 2026-11-01 process audit says the same
-  (`docs/research/2026-11-01-research-process-audit.md`, the judgment-of-criteria section,
+  (`research/audits/research-process/2026-11-01-research-process-audit.md`, the judgment-of-criteria section,
   "treating within-family Holm correction as control of all search conducted across
   studies").
 
@@ -754,7 +754,7 @@ What this means for a "win" in this project:
   and WFE is at least 0.5 (`src/ggTrader/lab/wfo.py:128-165`; changed from 2 consecutive in
   `d3d0c875`).
 
-**Synthetic evidence** (`docs/research/2026-11-02-wfo-policy-synthetic.md` sections 5.1 to
+**Synthetic evidence** (`research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md` sections 5.1 to
 5.4; it models the breaker bookkeeping with Bernoulli gates, not the real NDH/DSR):
 
 - At a true Sharpe of 1.0 with gates always passing, P(at least one halt) is **0.875**. The
@@ -768,9 +768,9 @@ What this means for a "win" in this project:
 **Saved real runs:**
 
 - After the DSR fix, xs_momentum and dual_momentum passed 0/17 gates (anchor in every fold);
-  FOMC passed 11 of 53 folds (`docs/research/_wfo_fold_attribution_results.json`).
+  FOMC passed 11 of 53 folds (`research/programme/wfo-methods/_wfo_fold_attribution_results.json`).
 - The month-end WFO halted with 8 anchor folds (`wfo.halted_any`, `wfo.n_used_anchor` in
-  `docs/research/_month_end_treasury_results.json`).
+  `research/allocation/month-end-treasury/_month_end_treasury_results.json`).
 - The pre-fix PIT core shows 17/17 gate passes. That count is void (Lens 1).
 
 **Verdict rows resting on a gated WFO.** The rule: a test row whose Lens 1 tags include
@@ -890,7 +890,7 @@ How much did this freedom shape the verdicts? Measured in the artifacts:
   2026-10-19 bars became t >= 3 plus +1.0 pp/yr. Of the 53 NO rows, 12 are pre-registered
   (9), amended (2) or pre-registered-late (1); 38 have no brief. Of the 16 GO rows, 4 are
   pre-registered and 9 have no brief (`preregistration[*].status` in
-  `docs/research/_lens7_recompute.json`).
+  `research/audits/root-cause-2026-11-04/_lens7_recompute.json`).
 - **Amendments after partial results.**
   - Replica parity amendment `a89f31c2`, 4 minutes after the 10/32 result (Lens 7).
   - Factor hypotheses chosen after the momentum result was known (Lens 7).
@@ -962,7 +962,7 @@ How much did this freedom shape the verdicts? Measured in the artifacts:
 ### 1. For each NO-GO, was the test able to detect an edge, and which NOs are reliable, unreliable or inconclusive?
 
 **Answered.** The per-row answer is the classification table above and `classifications` in
-`docs/research/_lens2_sensitivity.json`.
+`research/audits/root-cause-2026-11-04/_lens2_sensitivity.json`.
 
 - Of 53 NO rows: 0 reliable, 2 unreliable (flawed test), 51 inconclusive.
 - Power is the most common failing condition. It is not established, or not adequate, in 51
@@ -1092,7 +1092,7 @@ t-statistic behind any of them. The rules were fixed beforehand, so no class was
   - The replica holdout is non-citable (`windows.holdout.citable` false).
 - **H7 counter-evidence (momentum size-matched t 3.72 / 5.18).**
   - These compare winners with the same-size market segment. The brief lists that as a
-    diagnostic, not the pass comparator (`docs/research/briefs/2026-10-20-momentum-retest.md`
+    diagnostic, not the pass comparator (`research/stock-signals/momentum/2026-10-20-momentum-retest.md`
     lines 120-125).
   - The owner's comparator (SPY, or the market) is what A1 and A2 use.
   - The market-comparator subperiods put the strength before 1994: big 1927-1993 t 3.56,
@@ -1137,7 +1137,7 @@ t-statistic behind any of them. The rules were fixed beforehand, so no class was
 - code-match labels (Lens 6);
 - recompute matches and pre-registration status (Lens 7);
 - MDE status (Lens 9);
-- the synthetic halt rates (`docs/research/2026-11-02-wfo-policy-synthetic.md`).
+- the synthetic halt rates (`research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md`).
 
 **Unverified or judgment-based:**
 

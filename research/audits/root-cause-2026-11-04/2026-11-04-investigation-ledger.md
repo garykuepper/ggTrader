@@ -4,7 +4,7 @@ Copy of the working ledger kept during the root-cause investigation (2026-11-04 
 2026-11-05 so that the citations in the synthesis and the checkpoint stay verifiable after the scratch workspace
 was removed. It records task completions, review rounds, deferred minor findings, the owner's decisions
 and the lead's rulings (R0 to R27). It is a working log, not a deliverable: wording is terse and some
-entries are superseded by later ones. The synthesis (`docs/research/2026-11-04-root-cause-investigation.md`)
+entries are superseded by later ones. The synthesis (`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md`)
 is the committed record of conclusions.
 
 ---

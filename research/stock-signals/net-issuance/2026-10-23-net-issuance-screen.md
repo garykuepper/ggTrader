@@ -10,12 +10,12 @@
 - *Newey-West (NW) t-stat* measures mean monthly excess return relative to a standard error allowing serial correlation and changing variance. A one-sided asymptotic-normal p-value is not the probability that the idea is true.
 - *CAGR* is compound annual growth rate. *pt/yr* is the percentage-point difference between two CAGRs.
 - *PIT* (point-in-time) means using membership and information available at each historical decision date. *Survivorship-free* includes firms that later disappeared.
-- *Part A* screens the idea on long academic portfolio history. Under the [approved forward-paper standard](2026-10-23-forward-paper-standard.md), *Part B* is B0 (a free, kill-only replay) followed by B1 (a free forward shadow study), subject to a separate approved candidate brief.
+- *Part A* screens the idea on long academic portfolio history. Under the [approved forward-paper standard](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md), *Part B* is B0 (a free, kill-only replay) followed by B1 (a free forward shadow study), subject to a separate approved candidate brief.
 
 ## 1. The question, and the decision it feeds
 
 - **Question.** Does the biggest-size-quintile, lowest-net-issuance-quintile French portfolio beat the French market after a fixed cost haircut, with both long-history statistical significance and at least +1.0 pt/yr net CAGR advantage since 1994?
-- **Decision fed.** Whether this single candidate may proceed to a separately registered B0 and then B1 under the [forward-paper standard](2026-10-23-forward-paper-standard.md). A Part A pass authorizes research only, not deployment or capital.
+- **Decision fed.** Whether this single candidate may proceed to a separately registered B0 and then B1 under the [forward-paper standard](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md). A Part A pass authorizes research only, not deployment or capital.
 - **Owner context.** The account is taxable only. The owner wants a stock-picking path with greater gains and accepts larger swings. Existing production paper trading and its freeze continue under their own rules.
 
 ## 2. Why: prior evidence and data limits
@@ -74,7 +74,7 @@ Report these for interpretation, **never as pass criteria**. A weak post-publica
 | Part A result | Next step |
 |---|---|
 | H1 fails A1 or A2 | Close this net-issuance screen **NO-GO**. Publish the failed gate(s) and diagnostics, use **free data only**, and propose the next research step. |
-| H1 passes both | Write a separate fixed-rules candidate brief, then **B0** (free PIT 2021-01-31 → 2026-04-30 kill-only after-tax replay) and, only if B0 does not kill and evidence is complete, **B1** (at least 18 months of free forward shadow evidence) under the [approved standard](2026-10-23-forward-paper-standard.md). **No paid data ever.** |
+| H1 passes both | Write a separate fixed-rules candidate brief, then **B0** (free PIT 2021-01-31 → 2026-04-30 kill-only after-tax replay) and, only if B0 does not kill and evidence is complete, **B1** (at least 18 months of free forward shadow evidence) under the [approved standard](../../programme/evidence-standard/2026-10-23-forward-paper-standard.md). **No paid data ever.** |
 
 Passing Part A permits further research only. It does not authorize a production change, a broker order, or real capital. B0/B1 require their own frozen implementation, cost, tax, and evidence rules before any run.
 
@@ -85,7 +85,7 @@ Stop before any verdict if an archive is absent from `MANIFEST.json`, a SHA-256 
 ## 10. Scope and boundaries
 
 - **This task:** this brief only. No return calculation, result JSON, source archive freeze, test run, or production change before owner approval.
-- **Later approved implementation:** new code only under `src/ggTrader/lab/` and `scripts/`, reusing `factor_screen` and `french_data`; raw JSON results to `docs/research/_net_issuance_screen_results.json` next to the report.
+- **Later approved implementation:** new code only under `src/ggTrader/lab/` and `scripts/`, reusing `factor_screen` and `french_data`; raw JSON results to `research/stock-signals/net-issuance/_net_issuance_screen_results.json` next to the report.
 - **Untouchable paths:** never touch `src/ggTrader/paper/`, `src/ggTrader/data/live/`, `.env`, or Docker files. No paid dataset or subscription at any phase. No parameter search, post-result hypothesis swap, or retrofit of the haircut or window.
 
 ## 11. Calls made by the senior quant (owner to check)
@@ -95,5 +95,5 @@ Stop before any verdict if an archive is absent from `MANIFEST.json`, a SHA-256 
 3. **Industry momentum excluded:** the momentum family is closed NO-GO, and industry momentum would require constructing a new signal rather than selecting a ready long-only French cell.
 4. **Other literature candidates excluded:** accruals, E/P, CF/P, D/P, long-term and short-term reversal, and BAB are outside this brief because the reviewed evidence points to short-leg dependence, overlap with the closed value family, high turnover, or leverage. Their exclusion is a scope choice, not a new measured NO-GO for each.
 5. **Source-label choice, resolved by the senior quant:** H1 is `BIG NegNI`. French ranks positive net issuers into quintiles and keeps net repurchasers (`NegNI`) and zero issuers (`ZeroNI`) in separate buckets, so `BIG LoNI` firms are still net issuers. The published long-side idea is that firms shrinking their share count outperform, which is `NegNI`. Both buckets have complete data for all 754 months, 1963-07 → 2026-04; this was checked from the missing-value codes only, with no returns viewed. `BIG LoNI` is a diagnostic. No post-result substitution.
-6. **Forward-standard text conflict, unresolved in its source:** its status and [`docs/next_steps.md`](../../next_steps.md) say owner-approved on 2026-10-23, but its §§1, 8, and 9 still call the replacement a draft or proposed. This brief follows the approved B0/B1 path as instructed and does not silently edit that source or treat its stale draft wording as authority for paid data.
+6. **Forward-standard text conflict, unresolved in its source:** its status and [`docs/next_steps.md`](../../../docs/next_steps.md) say owner-approved on 2026-10-23, but its §§1, 8, and 9 still call the replacement a draft or proposed. This brief follows the approved B0/B1 path as instructed and does not silently edit that source or treat its stale draft wording as authority for paid data.
 7. **B1 stop-boundary conflict, unresolved in its source:** the forward standard's §5 writes the quarterly breach condition as relative wealth **`< -0.15`**, which excludes equality, while the same section and §8 resolution R5 say **15% or more behind** breaches, which includes equality. This does not affect Part A. A later B1 candidate brief must reconcile the operator before its rules are frozen; no B1 verdict should rest on that ambiguity.

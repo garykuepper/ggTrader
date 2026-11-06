@@ -7,15 +7,15 @@ including the "Measured ceiling" bullet; target definition in section 1). No
 recommendations, no strategies, no forecasts. Every figure below is a measured value from a
 committed artifact, or a labelled DERIVED value computed here from such an artifact or from
 free public data.
-**Raw results:** `docs/research/_lens4_ceiling.json`.
-**Upstream inputs (committed, reviewed):** inventory `docs/research/_investigation_inventory.json`;
-Lens 2 `docs/research/_lens2_sensitivity.json` and
-`docs/research/2026-11-04-lens2-verdict-audit.md` under the fixed spec
-`docs/research/2026-11-04-lens2-sensitivity-spec.md`; Lens 1 `docs/research/_lens1_tape_state.json`;
-Lens 3 `docs/research/_lens3_snapshot_gap.json`; Lens 5
-`docs/research/2026-11-04-lens5-coverage-gaps.md` and `docs/research/_lens5_coverage_matrix.json`;
-Lens 6 `docs/research/_lens6_verdicts.json`; Lens 7 `docs/research/_lens7_recompute.json`;
-Lens 9 `docs/research/_lens9_power.json` and `docs/research/2026-11-04-lens9-power-and-regime.md`.
+**Raw results:** `research/audits/root-cause-2026-11-04/_lens4_ceiling.json`.
+**Upstream inputs (committed, reviewed):** inventory `research/audits/root-cause-2026-11-04/_investigation_inventory.json`;
+Lens 2 `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` and
+`research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md` under the fixed spec
+`research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md`; Lens 1 `research/audits/root-cause-2026-11-04/_lens1_tape_state.json`;
+Lens 3 `research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json`; Lens 5
+`research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md` and `research/audits/root-cause-2026-11-04/_lens5_coverage_matrix.json`;
+Lens 6 `research/audits/root-cause-2026-11-04/_lens6_verdicts.json`; Lens 7 `research/audits/root-cause-2026-11-04/_lens7_recompute.json`;
+Lens 9 `research/audits/root-cause-2026-11-04/_lens9_power.json` and `research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md`.
 
 Abbreviations, expanded once: SPY = SPDR S&P 500 ETF Trust; TR = total return (price plus
 dividends reinvested); CAGR = compound annual growth rate; pp = percentage points; bp = basis
@@ -39,7 +39,7 @@ French = Kenneth French data library.
    over 1927-2026** (French market). Because the target doubles a cumulative return, the
    longer the window the smaller the annual gap it implies. Phase 0's "+10 to +15 pp/yr needed"
    is close only for 5-year windows (9.5 to 9.8 pp/yr on 2021-2026 and 2022-2026), and Lens 9's
-   2.8-year IBIT window (15.15 pp/yr, `docs/research/_lens9_power.json`) is the only window
+   2.8-year IBIT window (15.15 pp/yr, `research/audits/root-cause-2026-11-04/_lens9_power.json`) is the only window
    inside 10-15; every longer window is much smaller. Section "Target arithmetic".
 2. **Tier A is empty.** Lens 2 classed 0 of 72 test rows reliable (0 reliable NO, 0 reliable
    GO) and 9 GO rows unreliable. Every ceiling figure below is Tier B at most, and all the
@@ -58,7 +58,7 @@ French = Kenneth French data library.
    - Static leverage (A23 artifact, 2006-2026, T-bill funding averaging 1.64% in the window):
      registered 1.3x arm **+1.61** pp/yr on the artifact's basis, falling to **+0.81 (+0.80
      after tax)** when funding is set 2.5 points higher (about today's 4.1% bills;
-     `docs/research/_static_leverage_aftertax_rf_plus0.025.json`). The 2.0x SSO arm measured
+     `research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.025.json`). The 2.0x SSO arm measured
      **+4.44 pp/yr on the artifact's basis** (its SPY comparator, 11.10%, is NAV after the
      artifact's annual tax payments) and **+4.15 on one consistent basis** (15.54% against
      SPY's true total-return CAGR of 11.39%), which is **1.17 times** the 3.55 pp/yr gap on
@@ -91,7 +91,7 @@ French = Kenneth French data library.
 ## Falsifiers
 
 Written before opening any ceiling figure. Phase 0 hypotheses under test
-(`docs/research/2026-11-04-phase0-trust-audit.md`; spec section 4, hypothesis 7):
+(`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md`; spec section 4, hypothesis 7):
 
 - **H4a, "the best long-only large-cap effects after 1994 are +0.1 to +0.8 pp/yr".**
   Overturned if any Tier A/B large-cap stock-selection row with a post-1994 window shows a
@@ -126,15 +126,15 @@ observed or is attainable, and how it survives the other lenses:
 
 | claim | figure | source | survives? |
 |---|---|---|---|
-| Early "beat SPY" ensemble WFO (Sharpe 1.12, CAGR about 16-19%) | CAGR 16.3% (1.12 baseline) and 18.8% (2026-06-20 WFO) in prose; no raw artifact | `docs/research/_lens2_sensitivity.json` classifications for `stocks-ensemble-ndh-baseline-1-12`, `stocks-ensemble-wfo-validated-2026-06-20`, `stocks-three-sleeve-blend-1-14` | **No.** Lens 2 unreliable GO (anchor leak, PIT universe leak, SPY duplicates, day shift); no raw artifact; Lens 6 mismatch. Tier C. |
-| ensemble_ic / ensemble_kelly pre-PIT | 33.95% / 38.24% CAGR | `docs/research/_ic_kelly_rebaseline_20260923.json` via Lens 2 sub-rows | **No.** Same strategies with PIT membership: 3.33% / 6.28% (`docs/research/_pit_rebaseline_20260923.json`). The difference is the universe leak. Tier C. |
-| Production replica holdout 2010-2020 | +1.00 pp/yr CAGR gap; exposure-matched +1.85 (t 1.57) | `docs/research/_production_replica_results.json` `windows.holdout.arms.primary.excess_vs_spy`, `excess_vs_exposure_matched` | **Weakly.** Not citable (`windows.holdout.citable=False`, tainted trades); t 0.69; Lens 1 tape identity unknown. Tier C. |
-| xs_momentum corrected replay | +4.37 pp/yr CAGR gap; arithmetic +4.49, t 0.76 | `docs/research/_audit_reruns_20261019.json` `xs_momentum.excess_stats` | **As a point estimate, yes; as evidence, weak.** Clean tape, Lens 6 match, Lens 7 recompute yes: Tier B. CI [-7.07, 16.05]; MDE at t >= 3 is 22.66 pp/yr (Lens 9), so the test could not distinguish +4.37 from zero or from +15. |
-| French momentum before 1994 | Big +3.12 pp/yr (t 3.56), Small +4.77 (t 3.38); size-matched full window +3.66 (t 3.72) / +5.14 (t 5.18) | `docs/research/_momentum_french_screen_results.json` `groups.<g>.diag[0]`, `groups.<g>.size_matched` | **In its window, yes; later, no.** Clean French data, statistic recomputed (Lens 7): Tier B. The same groups are +0.78/+2.60 in 1994-2012 and -0.97/-3.34 in 2013-2026; registered post-1994 A2 +0.08/+0.20. The size-matched comparator is the same-size portfolio, not the market or SPY, so it is not a raw-over-SPY figure. |
-| Static 2x leverage | 2.0x SSO +4.44 pp/yr over 2006-2026 on the artifact's basis (+4.15 against true SPY TR), above that window's 3.54-3.55 gap | `docs/research/_static_leverage_aftertax_results.json` `windows.main_real_sso` | **Measured, but weakly placed.** Picked after the fact as the best of five leverage arms (registered arm: 1.3x, +1.61, and +0.81 at 2.5 points higher funding per `docs/research/_static_leverage_aftertax_rf_plus0.025.json`); no t-statistic or CI; Tier B only by a Lens 4 judgement exception; no funding-sensitivity run, so conditional on the window's 1.64% average bills; maximum drawdown -84.8%; behind SPY in 37.5% of rolling 10-year windows; synthetic 1993-2006 holdout +1.28 (below its 4.54 gap). |
-| Century leverage | 60% arm +2.13 pp/yr after tax over 100 years | `docs/research/_century_leverage_results.json` `scenarios` | **Measured, Tier B (L4-X1).** After-tax only, so not comparable with the pre-tax 0.77 gap; ruin flag true for 30% and above; max drawdown -91.4% (30%) to -95.7% (60%), and -84.6% for the 1x base arm. |
-| Cross-asset 80/20 in the 2007-2011 holdout | +3.08 pp/yr | `docs/research/_cross_asset_sleeve_holdout_results.json` | **Only in a crisis window.** -1.07 over 2016-2026, -1.09 over 2021-2026 (`docs/research/_cross_asset_sleeve_results.json`). |
-| Month-end Treasury rule | Welch t 2.75 on invested days | `docs/research/_month_end_treasury_results.json` | **Not as an SPY excess.** SPY-funded portfolio -0.08 pp/yr; Lens 1 DSR-units item of unknown direction. Tier C. |
+| Early "beat SPY" ensemble WFO (Sharpe 1.12, CAGR about 16-19%) | CAGR 16.3% (1.12 baseline) and 18.8% (2026-06-20 WFO) in prose; no raw artifact | `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` classifications for `stocks-ensemble-ndh-baseline-1-12`, `stocks-ensemble-wfo-validated-2026-06-20`, `stocks-three-sleeve-blend-1-14` | **No.** Lens 2 unreliable GO (anchor leak, PIT universe leak, SPY duplicates, day shift); no raw artifact; Lens 6 mismatch. Tier C. |
+| ensemble_ic / ensemble_kelly pre-PIT | 33.95% / 38.24% CAGR | `research/audits/rebaseline/_ic_kelly_rebaseline_20260923.json` via Lens 2 sub-rows | **No.** Same strategies with PIT membership: 3.33% / 6.28% (`research/audits/rebaseline/_pit_rebaseline_20260923.json`). The difference is the universe leak. Tier C. |
+| Production replica holdout 2010-2020 | +1.00 pp/yr CAGR gap; exposure-matched +1.85 (t 1.57) | `research/audits/production-replica/_production_replica_results.json` `windows.holdout.arms.primary.excess_vs_spy`, `excess_vs_exposure_matched` | **Weakly.** Not citable (`windows.holdout.citable=False`, tainted trades); t 0.69; Lens 1 tape identity unknown. Tier C. |
+| xs_momentum corrected replay | +4.37 pp/yr CAGR gap; arithmetic +4.49, t 0.76 | `research/audits/production-replica/_audit_reruns_20261019.json` `xs_momentum.excess_stats` | **As a point estimate, yes; as evidence, weak.** Clean tape, Lens 6 match, Lens 7 recompute yes: Tier B. CI [-7.07, 16.05]; MDE at t >= 3 is 22.66 pp/yr (Lens 9), so the test could not distinguish +4.37 from zero or from +15. |
+| French momentum before 1994 | Big +3.12 pp/yr (t 3.56), Small +4.77 (t 3.38); size-matched full window +3.66 (t 3.72) / +5.14 (t 5.18) | `research/stock-signals/momentum/_momentum_french_screen_results.json` `groups.<g>.diag[0]`, `groups.<g>.size_matched` | **In its window, yes; later, no.** Clean French data, statistic recomputed (Lens 7): Tier B. The same groups are +0.78/+2.60 in 1994-2012 and -0.97/-3.34 in 2013-2026; registered post-1994 A2 +0.08/+0.20. The size-matched comparator is the same-size portfolio, not the market or SPY, so it is not a raw-over-SPY figure. |
+| Static 2x leverage | 2.0x SSO +4.44 pp/yr over 2006-2026 on the artifact's basis (+4.15 against true SPY TR), above that window's 3.54-3.55 gap | `research/allocation/static-leverage/_static_leverage_aftertax_results.json` `windows.main_real_sso` | **Measured, but weakly placed.** Picked after the fact as the best of five leverage arms (registered arm: 1.3x, +1.61, and +0.81 at 2.5 points higher funding per `research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.025.json`); no t-statistic or CI; Tier B only by a Lens 4 judgement exception; no funding-sensitivity run, so conditional on the window's 1.64% average bills; maximum drawdown -84.8%; behind SPY in 37.5% of rolling 10-year windows; synthetic 1993-2006 holdout +1.28 (below its 4.54 gap). |
+| Century leverage | 60% arm +2.13 pp/yr after tax over 100 years | `research/allocation/century-leverage/_century_leverage_results.json` `scenarios` | **Measured, Tier B (L4-X1).** After-tax only, so not comparable with the pre-tax 0.77 gap; ruin flag true for 30% and above; max drawdown -91.4% (30%) to -95.7% (60%), and -84.6% for the 1x base arm. |
+| Cross-asset 80/20 in the 2007-2011 holdout | +3.08 pp/yr | `research/allocation/cross-asset-sleeve/_cross_asset_sleeve_holdout_results.json` | **Only in a crisis window.** -1.07 over 2016-2026, -1.09 over 2021-2026 (`research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json`). |
+| Month-end Treasury rule | Welch t 2.75 on invested days | `research/allocation/month-end-treasury/_month_end_treasury_results.json` | **Not as an SPY excess.** SPY-funded portfolio -0.08 pp/yr; Lens 1 DSR-units item of unknown direction. Tier C. |
 | Crypto (Kraken live bot "profitable", funding carry +0.45%) | prose | inventory rows `crypto-kraken-live-bot-pnl`, `crypto-funding-carry-phase4` | **Not examined here.** No raw artifacts; benchmark is BTC/ETH, not SPY; Lens 8 owns it. |
 
 Does the steelman hold up? A large raw excess over SPY was **observed** on sound-enough
@@ -175,7 +175,7 @@ with the same start-close convention: R = +108.60%, gap 9.56 (Y = 5.248 by calen
 | 2024-01-11..2026-10-23 (IBIT session split; SPY for scale only, crypto benchmark is not SPY) | Lens 9 | +64.76% | +129.52% | 19.66 | 34.81 | 15.15 (2.78 years) |
 | 2026-06-24..2026-11-03 (paper account, for scale only) | Lens 4 | +3.09% | +6.18% | 8.71 | 17.88 | 9.17 (0.36 years) |
 
-Sources: Lens 9 rows from `docs/research/_lens9_power.json` `regime.targets_2x_spy_total_return`;
+Sources: Lens 9 rows from `research/audits/root-cause-2026-11-04/_lens9_power.json` `regime.targets_2x_spy_total_return`;
 Lens 4 rows recomputed from yfinance SPY with `auto_adjust=True` (dividend-adjusted closes,
 last close before the window start to last close on or before the end) and from the frozen
 French `F-F_Research_Data_Factors` monthly file (Mkt-RF + RF), the same copy Lens 9 used.
@@ -190,7 +190,7 @@ adds less per year the longer the compounding runs.
 ## Soundness tiers
 
 Written before building the ceiling table. Inputs are Lens 2's per-row conditions
-(`docs/research/_lens2_sensitivity.json` `classifications[].data_condition`,
+(`research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` `classifications[].data_condition`,
 `code_condition`, `recompute_condition`, `class`).
 
 - **Tier A:** Lens 2 class `reliable` (reliable NO or reliable GO).
@@ -243,8 +243,8 @@ that the t-statistic tests, per the fixed spec, and is **not** an interval on th
 | Event/calendar (`cross-asset-month-end-treasury`, `cross-asset-fomc-drift-corrected-harness`, `cross-asset-fomc-drift-wfo`, `stocks-turn-of-month-rotation`, `stocks-pead`, `stocks-index-deletion-fade`, `stocks-insider-cluster-buy`, `stocks-congress-trades`) | `cross-asset-month-end-treasury/portfolio/pinned/1bp` | -0.08 (CAGR gap) | not computable from artifact | **C** | 2021-01-31..2026-04-30 | 9.57 | -0.01 | 80% SPY + 20% rotating SPY->IEF / 1.0 | 1 bp | 2021-2026 | -0.08 | not in artifact |
 | Cross-asset 80/20 (`cross-asset-static-80-20-sleeve`, `cross-asset-sleeve-holdout-2007-2011`, `cross-asset-sleeve-trend-arm`, `cross-asset-treasury-curve`, `cross-asset-fx-hedge-overlay`, `cross-asset-commodity-trend`) | `cross-asset-sleeve-holdout-2007-2011/1bp` | +3.08 (CAGR gap) | not computable from artifact | **B** (L4-X1) | 2007-06-01..2011-02-28 | -1.68 (degenerate) | n/a | 80% SPY, 20% TLT/GLD/DBC / 1.0 | 1 bp | GFC holdout | +3.08 | not in artifact |
 | Static leverage, A23 registered arm (`stocks-a23-static-leverage`) | `.../main_real_sso/static 1.3x` | +1.61 artifact basis; +1.32 consistent basis (CAGR gap) | not computable from artifact | **B** (L4-X1) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.45 / 0.37 | 70/30 SPY/SSO / 1.3x | 1 bp/side + SSO fee | 2006-2026 incl. 2008, 2020; **T-bill funding averaged 1.64%** | +1.61 (artifact "pre-tax" label) | 24/15 +1.60; 40.8/23.8 +1.55 |
-| Static leverage 1.3x, funding +1.5 points (`docs/research/_static_leverage_aftertax_rf_plus0.015.json`) | `.../static 1.3x` | +1.16 artifact basis; +0.87 consistent basis | not computable from artifact | **B** (L4-X1) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.33 / 0.24 | 70/30 / 1.3x | as above | **funding about 3.1% (1.64% + 1.5)** | +1.16 (artifact label) | 24/15 +1.13; 40.8/23.8 +1.10 |
-| Static leverage 1.3x, funding +2.5 points (`docs/research/_static_leverage_aftertax_rf_plus0.025.json`) | `.../static 1.3x` | +0.81 artifact basis; +0.52 consistent basis | not computable from artifact | **B** (L4-X1) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.23 / 0.15 | 70/30 / 1.3x | as above | **funding about 4.1% (1.64% + 2.5), near today's bills** | +0.81 (artifact label) | 24/15 +0.80; 40.8/23.8 +0.79 |
+| Static leverage 1.3x, funding +1.5 points (`research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.015.json`) | `.../static 1.3x` | +1.16 artifact basis; +0.87 consistent basis | not computable from artifact | **B** (L4-X1) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.33 / 0.24 | 70/30 / 1.3x | as above | **funding about 3.1% (1.64% + 1.5)** | +1.16 (artifact label) | 24/15 +1.13; 40.8/23.8 +1.10 |
+| Static leverage 1.3x, funding +2.5 points (`research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.025.json`) | `.../static 1.3x` | +0.81 artifact basis; +0.52 consistent basis | not computable from artifact | **B** (L4-X1) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.23 / 0.15 | 70/30 / 1.3x | as above | **funding about 4.1% (1.64% + 2.5), near today's bills** | +0.81 (artifact label) | 24/15 +0.80; 40.8/23.8 +0.79 |
 | Static leverage 1.5x | `.../static 1.5x (50/50)` | +2.66 artifact basis; +2.37 consistent basis | not computable from artifact | **B** (L4-X1, X2) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | 0.75 / 0.67 | 50/50 SPY/SSO / 1.5x | as above | **funding 1.64% only; no funding-sensitivity run for this arm** | +2.66 (artifact label) | 24/15 +2.58; 40.8/23.8 +2.52 |
 | Static leverage 2.0x (post-hoc pick, best of five leverage arms) | `.../static 2.0x (SSO) no rebalance` | **+4.44 artifact basis; +4.15 consistent basis** | not computable from artifact | **B** (L4-X1, X2) | 2006-06-21..2026-09-29 | 3.54 / 3.55 | **1.25 / 1.17** | 100% SSO / 2.0x | as above | **funding 1.64% only; no funding-sensitivity run for this arm**; max DD -84.8%; behind SPY in 37.5% of rolling 10-year windows | +4.44 (artifact label) | 24/15 +4.29; 40.8/23.8 +4.26 |
 | Century leverage 30% (`stocks-century-leverage`) | `.../30/full` | +1.24 (after-tax CAGR gap vs French market) | not computable from artifact | **B** (L4-X1) | 1926-07-01..2026-06-30 | 0.77 (pre-tax) | not computed (basis mismatch: after-tax value, pre-tax gap) | 30% 2x fund / 1.30x | 0.84% fund fee, spread fitted to SSO over 2006-2026 | 1926-2026 incl. 1929-32; funding = French T-bill rate per day | not in artifact | 24/15 +1.24 |
@@ -254,7 +254,7 @@ that the t-statistic tests, per the fixed spec, and is **not** an interval on th
 
 Key paths: replica `windows.primary.arms.primary.excess_vs_spy.{cagr_diff_pp,ann_excess_pct,t_stat}`
 and `mean_exposure.*`; xs_momentum `xs_momentum.excess_stats.*` in
-`docs/research/_audit_reruns_20261019.json`; French `groups.<g>.post_cagr_diff_pp`,
+`research/audits/production-replica/_audit_reruns_20261019.json`; French `groups.<g>.post_cagr_diff_pp`,
 `groups.<g>.diag[0]`, `hypotheses.H1.A2.cagr_diff_pp`, `H1.A2.cagr_diff_pp`; A23
 `windows.main_real_sso.<arm>.<bracket>.{pre_tax_cagr,after_tax_cagr,max_dd}`; century
 `scenarios["0.84%|24/15|wash=False|shiller"].<arm>.full.{after_tax_cagr,max_drawdown,ruin}`;
@@ -281,11 +281,11 @@ a tax-free return. Two bases are shown and never mixed in one number:
   consistent basis; gap 4.54 (0.21 on the consistent basis).
 
 **Funding.** The 2006-2026 window's T-bills averaged 1.64%
-(`beta_matched_pretax_cagr.rf_ann` in `docs/research/_static_leverage_aftertax_results.json`);
+(`beta_matched_pretax_cagr.rf_ann` in `research/allocation/static-leverage/_static_leverage_aftertax_results.json`);
 the A23 report treats funding as the headline condition
-(`docs/research/2026-09-30-static-fractional-leverage.md:20-25`, `:116-131`). The two
-funding-sensitivity artifacts present, `docs/research/_static_leverage_aftertax_rf_plus0.015.json`
-and `docs/research/_static_leverage_aftertax_rf_plus0.025.json`, contain only the SPY,
+(`research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md:20-25`, `:116-131`). The two
+funding-sensitivity artifacts present, `research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.015.json`
+and `research/allocation/static-leverage/_static_leverage_aftertax_rf_plus0.025.json`, contain only the SPY,
 1.25x and 1.3x arms (verified by listing `windows.main_real_sso` keys). For the 1.3x arm they
 give +1.16 and +0.81 on the artifact basis (after tax at 24/15: +1.13 and +0.80). **No funding
 run exists for the 1.5x or 2.0x arms**, so their figures hold only at the window's 1.64%
@@ -327,9 +327,9 @@ an MDE at or below the size in question), "not tested", "tested badly" (Lens 5 c
 
 | lever | status in this project | evidence |
 |---|---|---|
-| Breadth (more independent bets: more names, small/micro caps, more asset classes, faster cadence) | **Not ruled out at any size.** Micro caps, weekly cross-sectional rebalancing and international equity exposure: not tested. Small-cap stock selection and fundamentals at small-cap scale: tested badly. Cross-asset breadth and French Small screens: tested, inconclusive. | Lens 5 gap table (`docs/research/2026-11-04-lens5-coverage-gaps.md`, section "Gap table"); Lens 2: no reliable NO in any of these rows. |
-| Leverage (more than 1x SPY) | **Not ruled out; measured.** Static leverage tested on a clean tape with recomputed numbers but no t-statistic (Lens 2 inconclusive, power not established). LETF timing (rotation, trend): tested, inconclusive on a pre-fix tape with no raw artifact. | `docs/research/_static_leverage_aftertax_results.json`; `docs/research/_century_leverage_results.json`; Lens 2 classes for `stocks-a23-static-leverage`, `stocks-century-leverage`, `stocks-leveraged-rotation`, `stocks-leveraged-trend`. |
-| Concentration (few names at large weights) | **Tested badly.** The only concentrated arm (xs_momentum top_n 10) was never deployed OOS; the live/replica book holds 3 names at about 3.3% each (9.37% total). | Lens 5 gap table, row "Concentration"; `docs/research/_production_replica_results.json` `mean_exposure`. |
+| Breadth (more independent bets: more names, small/micro caps, more asset classes, faster cadence) | **Not ruled out at any size.** Micro caps, weekly cross-sectional rebalancing and international equity exposure: not tested. Small-cap stock selection and fundamentals at small-cap scale: tested badly. Cross-asset breadth and French Small screens: tested, inconclusive. | Lens 5 gap table (`research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md`, section "Gap table"); Lens 2: no reliable NO in any of these rows. |
+| Leverage (more than 1x SPY) | **Not ruled out; measured.** Static leverage tested on a clean tape with recomputed numbers but no t-statistic (Lens 2 inconclusive, power not established). LETF timing (rotation, trend): tested, inconclusive on a pre-fix tape with no raw artifact. | `research/allocation/static-leverage/_static_leverage_aftertax_results.json`; `research/allocation/century-leverage/_century_leverage_results.json`; Lens 2 classes for `stocks-a23-static-leverage`, `stocks-century-leverage`, `stocks-leveraged-rotation`, `stocks-leveraged-trend`. |
+| Concentration (few names at large weights) | **Tested badly.** The only concentrated arm (xs_momentum top_n 10) was never deployed OOS; the live/replica book holds 3 names at about 3.3% each (9.37% total). | Lens 5 gap table, row "Concentration"; `research/audits/production-replica/_production_replica_results.json` `mean_exposure`. |
 | Long-short / shorting | **Tested, inconclusive; not ruled out (no MDE computable).** Pairs and short-volume-ratio books on a pre-fix tape, no borrow-fee model, no raw artifacts. | Lens 5 gap table, row "Long-short"; Lens 2 classes for `stocks-pairs-stat-arb`, `stocks-short-volume-ratio`. |
 
 No lever is "ruled out at the size the test could detect": that wording needs a reliable NO
@@ -391,7 +391,7 @@ Fund-return claims are secondary-source claims, not audited figures.
 |---|---|
 | Capacity: returns fall as assets grow (Medallion held near $10bn; AQR break-even sizes) | **No** at the owner's size: a paper account of about $102K (Lens 3 `era_boundaries`, first snapshot 102,459.43). The record has not used this: micro caps never tested, small-cap selection tested badly (Lens 5). |
 | Breadth from thousands of independent bets | **Limited by the setup:** 3 positions at about 3.3% (replica `config.risk.max_positions=3`, `position_pct=0.033`), one daily decision at 12:45 PT, monthly rebalance for weights strategies (`src/ggTrader/lab/data.py:266-271` per Lens 5). |
-| Cheap financing through prime brokers | **Not available in the same form:** retail margin at 5.00-6.50% a year and 2x overnight (Alpaca docs, above); the leverage tested in this project used SSO, a 2x fund, not margin (`docs/research/_static_leverage_aftertax_results.json`). |
+| Cheap financing through prime brokers | **Not available in the same form:** retail margin at 5.00-6.50% a year and 2x overnight (Alpaca docs, above); the leverage tested in this project used SSO, a 2x fund, not margin (`research/allocation/static-leverage/_static_leverage_aftertax_results.json`). |
 | Trading costs | Commission-free at Alpaca; measured paper fill cost +2.5 bp mean before the close for stocks, -1.9 bp for SPY (Lens 3 `fills`); backtests charged 5 bp stocks, 1 bp SPY (replica config). |
 | Tax: short-term gains taxed at higher rates | **Applies:** taxable account only (owner instruction, `CLAUDE.md`); 74 of 74 closed paper round trips were short-term (section "After-tax short-holding check"). Medallion's own short-term profile is reported above. |
 | Proprietary data and infrastructure | **Applies as a constraint:** free data only (owner instruction); analyst revisions, option chains and anomaly-demand data listed infeasible without paid feeds (inventory rows `stocks-analyst-revisions`, `stocks-option-iv-skew`, `stocks-anomaly-driven-demand`). |
@@ -450,7 +450,7 @@ realizes gains, all short-term so far given the account's age. Those 52 SPY swee
 outside the 74-round-trip check above, and the account's total tax drag is not computed here. Cross-check against an
 artifact that has after-tax fields: the A23 study, which mostly holds rather than trades,
 loses almost nothing to tax (1.3x: +1.61 pre-tax, +1.60 after tax at 24/15;
-`docs/research/_static_leverage_aftertax_results.json`).
+`research/allocation/static-leverage/_static_leverage_aftertax_results.json`).
 
 ## Questions and answers
 
@@ -499,10 +499,10 @@ loses almost nothing to tax (1.3x: +1.61 pre-tax, +1.60 after tax at 24/15;
 
 Commands run (all read-only; repo code only through the capped runner):
 
-- `python3` key dumps of `docs/research/_lens2_sensitivity.json` (114 classifications, 182
+- `python3` key dumps of `research/audits/root-cause-2026-11-04/_lens2_sensitivity.json` (114 classifications, 182
   sensitivity rows; class counts inconclusive 103, unreliable GO 9, unreliable NO 2),
-  `docs/research/_lens9_power.json` (`regime.targets_2x_spy_total_return`),
-  `docs/research/_lens3_snapshot_gap.json`, `docs/research/_lens5_coverage_matrix.json`,
+  `research/audits/root-cause-2026-11-04/_lens9_power.json` (`regime.targets_2x_spy_total_return`),
+  `research/audits/root-cause-2026-11-04/_lens3_snapshot_gap.json`, `research/audits/root-cause-2026-11-04/_lens5_coverage_matrix.json`,
   the inventory (144 rows), and the artifacts named in the ceiling table.
 - Spot recomputes from raw artifacts: replica `excess_vs_spy` (cagr_diff -0.6423, ann_excess
   -0.7620, t -0.6898; CI [-2.93, 1.40]); xs_momentum (cagr_diff 4.3674, ann_excess 4.4856, t
@@ -517,7 +517,7 @@ Commands run (all read-only; repo code only through the capped runner):
   BUY, 106 SELL; 52 SPY sweep rows).
 - `python3 -I <scratch>/l4/trips.py` (FIFO pairing) and
   `scripts/run_capped.sh .venv/bin/python -I <scratch>/l4/aftertax.py` (derived tables).
-- `python3 -I <scratch>/l4/build_json.py` writes `docs/research/_lens4_ceiling.json`.
+- `python3 -I <scratch>/l4/build_json.py` writes `research/audits/root-cause-2026-11-04/_lens4_ceiling.json`.
 - Fix round 1: listed `windows.main_real_sso` keys in both funding-sensitivity artifacts
   (SPY, 1.25x, 1.3x only); read `rolling_10y_pretax_vs_spy` (2.0x: share 0.375, worst
   -0.1256 ending 2009-03-09; 1.3x: 0.238, -0.0329, 2009-03-02); read the tax-payment step in

@@ -1,6 +1,6 @@
 # Paper-trading freeze readiness
 
-**Status:** Evidence framework, not a clearance or deployment authorization. The existing observation window began with the 2026-09-29 deploy; the earliest possible review is approximately 2026-12-29, subject to confirmation of the start and any parity reset. See [current rules](../next_steps.md) and the [working task list](../working_task_list.md).
+**Status:** Evidence framework, not a clearance or deployment authorization. The existing observation window began with the 2026-09-29 deploy; the earliest possible review is approximately 2026-12-29, subject to confirmation of the start and any parity reset. See [current rules](../../../docs/next_steps.md) and the [working task list](../../../docs/working_task_list.md).
 
 ## Qualification and evidence
 
@@ -13,7 +13,7 @@ For each trading session, the person responsible for paper operations should rec
 | No orphan or untradable holdings | Broker positions, tradability and signal/position reconciliation | Each session; missing broker state is unknown |
 | Shadow weights and rebalances follow the rule | Timestamped shadow decisions, target weights, rule version, prices and shadow book records | Each scheduled decision and session-level exception review; unavailable shadow inputs are unknown |
 
-Database rows alone do not establish expected signals, broker completeness or the rule in effect. Preserve dated evidence and reconciliation outputs. The [historical audit artifact](_replica_parity_20261019.json) does not establish exact historical live parity; absence of decision inputs and cleanup orders should not be treated as a signal failure or as proof of successful replication.
+Database rows alone do not establish expected signals, broker completeness or the rule in effect. Preserve dated evidence and reconciliation outputs. The [historical audit artifact](../../audits/production-replica/_replica_parity_20261019.json) does not establish exact historical live parity; absence of decision inputs and cleanup orders should not be treated as a signal failure or as proof of successful replication.
 
 ## Incident ledger
 
@@ -28,8 +28,8 @@ investigation and cannot be counted as clean without evidence.
 - [ ] Verify current SSO fund expenses, waiver status and closure risk from current fund documents; the prior waiver expiry is not evidence of present terms.
 - [ ] Obtain actual SSO distribution tax character and compare with the modeled bounds; retain sources and mark unresolved items.
 - [ ] Establish and test an operator-readable rollback plan, including previous image/configuration and broker reconciliation.
-- [ ] Before any separately authorized deployment, verify the documented push, published image build, `docker compose pull`, and `docker compose up -d` sequence and confirm the deployed image. See [project deployment guidance](../../AGENTS.md).
-- [ ] Review the [sweep design](2026-11-02-two-symbol-sweep-design.md) and its unresolved decisions. A completed checklist is not itself authorization to change production.
+- [ ] Before any separately authorized deployment, verify the documented push, published image build, `docker compose pull`, and `docker compose up -d` sequence and confirm the deployed image. See [project deployment guidance](../../../AGENTS.md).
+- [ ] Review the [sweep design](../cash-sweep/2026-11-02-two-symbol-sweep-design.md) and its unresolved decisions. A completed checklist is not itself authorization to change production.
 
 ## Image provenance recorded before integration push
 
@@ -63,9 +63,9 @@ published account data.
 | Criterion | 2026-09-30 through 2026-11-02 | Evidence and limits |
 |---|---|---|
 | Position cap | Unknown per session | Daily snapshots exist, but the contemporaneous effective configuration and complete broker reconciliation were not independently established. The deployment record expected four tradable stock names against a cap of three on 2026-09-30, pending natural exits; verify the actual runtime configuration and whether that transition met the literal criterion. The deployed code excludes broker-untradable holdings from its strategy count; that does not decide the written criterion. |
-| No missed exits | Unknown per session | Expected decision-time signals and original bars were not established for each day. [Historical audit](_replica_parity_20261019.json) leaves one October sell and one October buy unverified, and covers orders only through 2026-10-19. Replaying revised data cannot prove original decisions. |
-| No orphan or untradable holdings | Incident / unresolved persistent condition | All 24 snapshots contained AVB, and all 24 daily logs recorded its exclusion as untradable. The broker-frozen holding was documented before the window ([history](../archive/next-steps-history-2026-11-03.md)). Its presence conflicts with the literal no-untradable-holdings criterion, although deployed code excludes it from strategy slots and sells. This is one persistent condition, not an inference of 24 separate reset decisions. |
-| Shadow weights and rebalances | Unknown per session | The nearby [worklist](../next_steps.md) describes a static cross-asset shadow; the separate prospective B1 stock shadow is a different book. The CSV `results/shadow_cross_asset.csv` contains rows only through 2026-10-16 and is recomputed/overwritten by `scripts/shadow_cross_asset.py`; it is not a contemporaneous decision archive. Confirm which book the criterion covers and obtain underlying decision evidence before classifying. |
+| No missed exits | Unknown per session | Expected decision-time signals and original bars were not established for each day. [Historical audit](../../audits/production-replica/_replica_parity_20261019.json) leaves one October sell and one October buy unverified, and covers orders only through 2026-10-19. Replaying revised data cannot prove original decisions. |
+| No orphan or untradable holdings | Incident / unresolved persistent condition | All 24 snapshots contained AVB, and all 24 daily logs recorded its exclusion as untradable. The broker-frozen holding was documented before the window ([history](../../../docs/archive/next-steps-history-2026-11-03.md)). Its presence conflicts with the literal no-untradable-holdings criterion, although deployed code excludes it from strategy slots and sells. This is one persistent condition, not an inference of 24 separate reset decisions. |
+| Shadow weights and rebalances | Unknown per session | The nearby [worklist](../../../docs/next_steps.md) describes a static cross-asset shadow; the separate prospective B1 stock shadow is a different book. The CSV `results/shadow_cross_asset.csv` contains rows only through 2026-10-16 and is recomputed/overwritten by `scripts/shadow_cross_asset.py`; it is not a contemporaneous decision archive. Confirm which book the criterion covers and obtain underlying decision evidence before classifying. |
 
 Sessions audited (all 2026): Sep 30; Oct 1, 2, 5–9, 12–16, 19–23, 26–30; Nov 2. Each has the criterion dispositions in the table; ranges here contain weekdays only.
 
@@ -81,7 +81,7 @@ ongoing observation.
 
 | Detected | Condition | Evidence | Reset disposition | Earliest review |
 |---|---|---|---|---|
-| 2026-09-30 (first observed post-deploy session) | Persistent broker-frozen AVB; documented before deploy and observed in every post-deploy snapshot/log in this audit | Local logs and `paper_snapshots`; [pre-deploy history](../archive/next-steps-history-2026-11-03.md) | Unresolved: written criterion and deployed exclusion conflict. No exception or restart decision is inferred. | Unknown until the condition and qualifying start are adjudicated. |
+| 2026-09-30 (first observed post-deploy session) | Persistent broker-frozen AVB; documented before deploy and observed in every post-deploy snapshot/log in this audit | Local logs and `paper_snapshots`; [pre-deploy history](../../../docs/archive/next-steps-history-2026-11-03.md) | Unresolved: written criterion and deployed exclusion conflict. No exception or restart decision is inferred. | Unknown until the condition and qualifying start are adjudicated. |
 
 The deployed code checks the broker market clock and normally skips when closed,
 but treats clock errors as market open. A 12:45 PT cron can occur after an

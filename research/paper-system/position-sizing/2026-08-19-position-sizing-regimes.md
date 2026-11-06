@@ -67,7 +67,7 @@ behaves live — a blocked signal is skipped, not queued).
 This closes out the position-sizing-mismatch investigation opened in the
 task background. It does not reopen any of the twelve closed equity-research
 arcs (ML gate, exit-rule sweep, IC-weighted voting, Kelly sizing, etc. — see
-`docs/research/RESEARCH_SNAPSHOT.md` §4) — this is a sizing-mechanism study
+`research/RESEARCH_SNAPSHOT.md` §4) — this is a sizing-mechanism study
 on the already-validated `EnsembleSignal` entries/exits, not a new signal.
 
 ## 2. Quantitative Performance Context
@@ -182,7 +182,7 @@ This report doesn't reopen or reject any strategy-level lever. All twelve
 closed equity-book arcs (ML gate, exit-rule sweep, IC-weighted voting,
 Kelly sizing, overnight-gap, idio_vol, PEAD, insider-cluster-buy,
 congress-trades, short-interest, short-volume-ratio, index-deletion-fade,
-max-effect — see `docs/research/RESEARCH_SNAPSHOT.md` §4) stand unchanged.
+max-effect — see `research/RESEARCH_SNAPSHOT.md` §4) stand unchanged.
 This is purely a sizing-*mechanism* study layered on the already-validated
 `EnsembleSignal` entries/exits.
 
@@ -255,7 +255,7 @@ wall-clock is ~max(per-config time), not the sum. Scheduled to launch at
 13:15 PT 2026-08-19 (30 min after the 12:45 PT paper-trade cron, so it
 doesn't contend for CPU with the live fill) via
 `scripts/run_position_sizing_wfo_scheduled.sh`; results land in
-`docs/research/_position_sizing_wfo_results.json` and a Telegram summary on
+`research/paper-system/position-sizing/_position_sizing_wfo_results.json` and a Telegram summary on
 completion or failure. Because this reduced construction uses one sleeve
 and 6 folds, its Regime P number is **not** a replacement for the full
 3-sleeve/17-fold 1.14/-5.39% headline -- it is a first, honest, anchor-fixed

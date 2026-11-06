@@ -2,8 +2,8 @@
 
 **Date:** 2026-11-05 · **Type:** review plus recommendation (the owner asked for a direction; the
 investigation itself was diagnosis only) · **Reviews:**
-`docs/research/2026-11-04-root-cause-investigation.md` ("the synthesis") and
-`docs/research/2026-11-04-root-cause-challenge.md` ("the challenge").
+`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md` ("the synthesis") and
+`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-challenge.md` ("the challenge").
 
 **Abbreviations.** SPY = SPDR S&P 500 ETF (the benchmark). TR = total return (dividends
 reinvested). pp/yr = percentage points a year. MDE = minimum detectable effect (smallest true
@@ -35,31 +35,31 @@ the owner, not a research finding to act on.
 **(1) Whole-account 2x for the built design is negative: agree, high confidence.** The
 production replica was powered for a 2x-sized effect at whole-account level (MDE 4.24 pp/yr
 against gaps of 9.57 and 6.14) and returned -0.64 and +1.00
-(`docs/research/2026-11-04-root-cause-investigation.md:52-58`;
-`docs/research/2026-11-04-lens9-power-and-regime.md:34-47`). The challenge rightly called the
+(`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md:52-58`;
+`research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md:34-47`). The challenge rightly called the
 first draft too symmetric on this point and the synthesis fixed it
-(`docs/research/2026-11-04-root-cause-challenge.md:38-59`). PARA cannot plausibly close a 7 to
+(`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-challenge.md:38-59`). PARA cannot plausibly close a 7 to
 9 pp/yr distance (challenger's bound of about 2.9 pp/yr, an inference;
-`docs/research/2026-11-04-root-cause-investigation.md:398-411`).
+`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md:398-411`).
 
 **(2) Stock picking is "undecided": agree with the label, push back on the reading.** Two
 discounts:
 - *"Power fails in 51 of 53" mostly means "power could not be computed".* Rule R5 counts a
-  missing MDE as failing (`docs/research/2026-11-04-lens2-verdict-audit.md:189`), and only 8 of
-  144 rows had the inputs for an MDE (`docs/research/2026-11-04-lens9-power-and-regime.md:23-33`).
+  missing MDE as failing (`research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md:189`), and only 8 of
+  144 rows had the inputs for an MDE (`research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md:23-33`).
   So most of the 51 are "unknown power, usually no raw file", not "demonstrably weak". The
   conclusion survives, but it is a statement about record-keeping as much as about power.
 - *"Undecided" overstates how open the 2x question is for stock picking.* The required effect
   is far outside every measured one: after 1994 the registered screens run from -0.62 to +0.83
   pp/yr against a 2.34 gap; post-2013 momentum is negative
-  (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:47-55`). Published anomalies lose
-  about 58% after publication (`docs/research/2026-11-04-lens5-coverage-gaps.md:57-60`).
+  (`research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md:47-55`). Published anomalies lose
+  about 58% after publication (`research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md:57-60`).
   Undecided at 1 to 4 pp/yr, yes; undecided at the 2x size, no.
 
 **(3) Measured ceiling, only leverage reaches the gap: agree it is exposure, discount the
 size.** The 2.0x arm was a post-hoc pick of five, has no t-statistic, fell 84.8%, and was
 measured only at 1.64% average funding with no funding run
-(`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:58-75, 283-292`). On the
+(`research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md:58-75, 283-292`). On the
 synthetic 1993-2006 holdout the same arm made +0.96 against a 4.54 gap (lines 72-73). With
 funding 2.5 points higher (about today's bills), the 1.3x arm fell from +1.32 to +0.52
 (lines 245-247). **(my estimate)** Charging the 2.0x arm the same 2.5 points on its one unit of
@@ -68,21 +68,21 @@ linear rule on the 1.3x arm (1.32 - 0.3 x 2.5 = 0.57) lands close to its measure
 estimate is plausible but unmeasured; P2-04 would measure it in minutes.
 
 **(4) Live is not what was backtested: agree, confirmed in code.** Six differences
-(`docs/research/2026-11-04-lens6-implementation-correctness.md:238-251`). Note the replica
+(`research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md:238-251`). Note the replica
 already models the cap, alphabetical fill and 3.3% sizing with live defaults (same table), so
 the replica, not the WFO runs, is the relevant evidence for the live design. The unmodelled
 items are the partial bar and the halt base.
 
 **(5) Crypto did not beat BTC over three years: agree.** The out-of-sample wins were low-beta
-books in a falling market (`docs/research/2026-11-04-lens8-crypto.md:31-49`).
+books in a falling market (`research/audits/root-cause-2026-11-04/2026-11-04-lens8-crypto.md:31-49`).
 
 **Single most likely way the synthesis is wrong:** the leverage ceiling is read as more
 reachable than it is going forward, because the one window that "reaches the gap" had near-zero
 funding costs. It matters a lot: leverage is the only route the synthesis says reaches the
 target, and it is the route with ruin risk (century study 30% arm -91.4%, 1x base -84.6%;
-`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:294-305`). A second, smaller risk:
+`research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md:294-305`). A second, smaller risk:
 Lens 2's rules and classes came in one commit and the reproduction checked application, not
-soundness (`docs/research/2026-11-04-root-cause-investigation.md:679-687`). I do not think
+soundness (`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md:679-687`). I do not think
 different rules would create a reliable GO; they could create a few reliable NOs, which would
 not change the direction.
 
@@ -90,12 +90,12 @@ not change the direction.
 
 **1. Paper-trading reliability and parity (first).**
 - *Evidence:* the paper shortfall is mostly idle cash and broker artifacts, not picks
-  (`docs/research/2026-11-04-lens3-live-parity.md:35-51`); the daily-loss halt fires at about
+  (`research/audits/root-cause-2026-11-04/2026-11-04-lens3-live-parity.md:35-51`); the daily-loss halt fires at about
   2.7% because the saved value includes an uncredited dividend accrual
-  (`docs/research/2026-11-04-lens6-implementation-correctness.md:57-68`); partial bars leave
+  (`research/audits/root-cause-2026-11-04/2026-11-04-lens6-implementation-correctness.md:57-68`); partial bars leave
   the research tape only by accident of a stale symbol (lines 256-268).
 - *Order:* (a) **measure** the partial-bar effect read-only (P2-14, about 1 hour, reads
-  yfinance directly; `docs/research/2026-11-04-phase1-checkpoint.md:527-540`); (b)
+  yfinance directly; `research/audits/root-cause-2026-11-04/2026-11-04-phase1-checkpoint.md:527-540`); (b)
   **propose** an input archive per run (P2-29, lines 762-771), which is already the next step in
   `docs/next_steps.md:9-17`; (c) **propose** computing the daily-loss halt from the broker
   value; (d) document MNST and AVB as paper-broker artifacts in attribution (P2-05, 15 minutes
@@ -106,12 +106,12 @@ not change the direction.
   deploy checks. *Needs:* owner decisions on (b) and (c). *Kill:* none; stop at "parity
   measured and archived". *Will not tell us:* whether there is alpha. A 10 pp/yr sleeve edge
   takes 23 to 40 years to detect on paper
-  (`docs/research/2026-11-04-lens3-live-parity.md:57-61`).
+  (`research/audits/root-cause-2026-11-04/2026-11-04-lens3-live-parity.md:57-61`).
 
 **2. The cheap Phase 2 items with no price-cache writes.**
 - *Run:* P2-04 (2.0x at higher funding; minutes, frozen inputs, no DB), P2-02 (MDE of the French
   screens; minutes, offline), P2-01 (regime split from committed JSON), P2-05, P2-07, P2-08
-  (parity reads) and P2-14 above (`docs/research/2026-11-04-phase1-checkpoint.md:284-316`).
+  (parity reads) and P2-14 above (`research/audits/root-cause-2026-11-04/2026-11-04-phase1-checkpoint.md:284-316`).
   Under 4 hours in total by the checkpoint's own costs.
 - *Why these:* P2-04 decides whether leverage still "reaches the gap" at today-like funding;
   P2-02 decides whether the forward-paper standard's Part A can resolve a +1.0 bar at all.
@@ -122,31 +122,31 @@ not change the direction.
 
 **3. Re-powering stock picking: only as long-history, portfolio-level screens.**
 - *Arithmetic:* MDE is about 3.84 x TE / sqrt(years) (the multiplier the challenge reproduced,
-  `docs/research/2026-11-04-root-cause-challenge.md:76`). With Lens 2's indicative TE of 6 to 7%
-  (`docs/research/2026-11-04-lens2-verdict-audit.md:63-71`), **(my estimate)** detecting +1.0
+  `research/audits/root-cause-2026-11-04/2026-11-04-root-cause-challenge.md:76`). With Lens 2's indicative TE of 6 to 7%
+  (`research/audits/root-cause-2026-11-04/2026-11-04-lens2-verdict-audit.md:63-71`), **(my estimate)** detecting +1.0
   pp/yr at TE 6.5% needs (3.84 x 6.5 / 1.0)^2 = about 620 years; detecting the 2.34 post-1994
   gap needs about 114 years. A concentrated stock-level book is worse: the momentum replay's
   TE of 12.44% gave an MDE of 22.66 pp/yr on five years
-  (`docs/research/2026-11-04-lens9-power-and-regime.md:38`).
+  (`research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md:38`).
 - *What this means:* no free-data design can "decide" a 1 to 4 pp/yr edge. Part A's t of 3
-  (`docs/research/briefs/2026-10-23-forward-paper-standard.md:48-50`) acts in practice as an
+  (`research/programme/evidence-standard/2026-10-23-forward-paper-standard.md:48-50`) acts in practice as an
   effect-size bar of roughly 2.5 to 4.4 pp/yr; a pass would imply a large effect, a fail is
   uninformative below that.
-- *Recommendation:* keep the accruals screen plan (`docs/research/2026-11-02-accruals-feasibility.md:34-53`)
+- *Recommendation:* keep the accruals screen plan (`research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md:34-53`)
   as the one active candidate, single hypothesis, registered before returns, and accept that its
   best realistic outcome is about +1 pp/yr, not 2x. If P2-02 shows the French design cannot
   resolve its bar, say so in the brief before running. Annual-rebalanced portfolios also realize
   fewer short-term gains than the 25-day ensemble trades
-  (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:84-89`); that tax point is my
+  (`research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md:84-89`); that tax point is my
   inference, not measured.
 - *Cost:* hours each. *Kill:* fails Part A, or B0 below -1.0 pp/yr after tax
-  (`docs/research/briefs/2026-10-23-forward-paper-standard.md:80-84`). *Will not tell us:*
+  (`research/programme/evidence-standard/2026-10-23-forward-paper-standard.md:80-84`). *Will not tell us:*
   anything about 2x.
 
 **4. Exposure and leverage: present it as a risk decision, not a strategy.**
 - *Evidence:* 1.3x +1.32 (window funding) and +0.52 (funding +2.5); 1.5x +2.37 and 2.0x
   +4.15 only at 1.64% funding; T-bill-financed exposure beat SSO (13.94% vs 12.71% at 1.3x)
-  (`docs/research/2026-11-04-lens4-feasibility-and-ceiling.md:245-249, 294-305`). Century study:
+  (`research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md:245-249, 294-305`). Century study:
   30% SSO -91.4% in 1929-32 with the ruin flag; 15% avoids it at 0.54 pp/yr after-tax cost
   (`docs/next_steps.md:50-53`).
 - *Payoff:* positive in expectation only if stocks beat the funding rate by enough to cover
@@ -160,12 +160,12 @@ not change the direction.
   drawdown tolerance in dollars. *Will not tell us:* the future equity premium.
 
 **5. Other areas, ranked.** (a) **Intraday observer:** free, already running to 2027-11-03,
-descriptive only (`docs/research/2026-11-04-lens5-coverage-gaps.md:315`); let it finish, do
+descriptive only (`research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md:315`); let it finish, do
 not read early. Its rule holds SPY about 30 minutes a day, so even a positive result is small
 in raw-return terms. (b) **Concentration:** P2-06 (about 15 minutes after a free download,
-needs a storage decision; `docs/research/2026-11-04-phase1-checkpoint.md:414-430`) is the one
+needs a storage decision; `research/audits/root-cause-2026-11-04/2026-11-04-phase1-checkpoint.md:414-430`) is the one
 cheap look. (c) **Small or micro caps:** a PIT, survivorship-free stock-level universe is not
-available free (`docs/research/2026-11-04-lens5-coverage-gaps.md:30-47`); not worth effort.
+available free (`research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md:30-47`); not worth effort.
 (d) **Long-short:** lowers market exposure, so it works against a raw-return target unless
 levered; low. (e) **Crypto beyond spot, options:** owner has crypto parked, the crypto tape is
 contaminated, and no free options history was found; low.
@@ -173,18 +173,18 @@ contaminated, and no free options history was found; low.
 **6. What I would put first that the synthesis does not.** (a) One benchmark everywhere: SPY
 TR against Alpaca's end-of-day equity, plus an exposure-matched SPY/cash book, so the 5% cash
 reserve (about 0.9 pp/yr) is not mistaken for stock-picking loss
-(`docs/research/2026-11-04-root-cause-investigation.md:105-117`). (b) After-tax as the primary
+(`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md:105-117`). (b) After-tax as the primary
 metric for any short-holding design. (c) A fixed yearly research budget (number of registered
 hypotheses, Holm across them), since 72 tests at a t of 2 bar make a false win 81% likely
-(`docs/research/2026-11-04-root-cause-investigation.md:328-330`). (d) Give research a separate
+(`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md:328-330`). (d) Give research a separate
 copy of the price table so Decision 0 stops blocking re-runs and no script can write to the
-table live signals read (`docs/research/2026-11-04-root-cause-investigation.md:604-644`).
+table live signals read (`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md:604-644`).
 
 ## 30/90/180-day sequence with gates
 
 **Days 0-30.**
 1. Owner decides on accepting and merging the synthesis
-   (`docs/research/2026-11-04-root-cause-investigation.md:735-744`).
+   (`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md:735-744`).
 2. Register and run P2-04, P2-02, P2-01, P2-05, P2-07, P2-08, P2-14 (no DB writes).
    *Gate A:* if P2-04 puts 2.0x at today-like funding below the 2006-2026 gap, record that no
    tested exposure level reaches 2x at current rates. *Gate B:* if P2-14 finds partial-bar and
@@ -207,9 +207,9 @@ table live signals read (`docs/research/2026-11-04-root-cause-investigation.md:6
    unspent rather than open a new family by default.
 
 **Not worth time:** more RSI/Bollinger ensemble levers (33 of 72 tests already;
-`docs/research/2026-11-04-lens5-coverage-gaps.md:48-53`); P2-25 and P2-26 (5 to tens of hours,
+`research/audits/root-cause-2026-11-04/2026-11-04-lens5-coverage-gaps.md:48-53`); P2-25 and P2-26 (5 to tens of hours,
 cannot reach decisive power); the 2010-2020 holdout rebuild (days, survivorship risk;
-`docs/research/2026-11-04-phase1-checkpoint.md:748-760`); paper trading as alpha evidence;
+`research/audits/root-cause-2026-11-04/2026-11-04-phase1-checkpoint.md:748-760`); paper trading as alpha evidence;
 crypto spot strategies.
 
 ## Decisions for the owner
@@ -259,4 +259,4 @@ figure is from committed reports and artifacts, and the estimates above are mine
 unmeasured. I read the synthesis, the challenge, the checkpoint's Phase 2 list and targeted
 sections of Lenses 2 to 9, not every lens line. The tax remarks on rebalancing frequency are
 inference. Owner decisions recorded only in the ledger copy
-(`docs/research/2026-11-04-investigation-ledger.md`) were not re-verified.
+(`research/audits/root-cause-2026-11-04/2026-11-04-investigation-ledger.md`) were not re-verified.

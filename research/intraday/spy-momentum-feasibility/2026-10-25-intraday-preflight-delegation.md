@@ -1,6 +1,6 @@
 # Intraday preflight: delegation and review
 
-Date: 2026-10-25. Status: documentation/design review complete; implementation and authenticated probes not started. The [r7 brief](briefs/2026-10-24-intraday-feasibility.md) remains unapproved. This note does not approve its window or gates.
+Date: 2026-10-25. Status: documentation/design review complete; implementation and authenticated probes not started. The [r7 brief](2026-10-24-intraday-feasibility.md) remains unapproved. This note does not approve its window or gates.
 
 ## Completed delegation
 
@@ -36,4 +36,4 @@ Mocked checks should cover deterministic month selection, DST and half-days; mul
 
 ## Next action and boundary
 
-Finalize the small Stage 0A contract, then implement/review it before seeking approval to execute the concrete metadata probe. The separate execution approval comes from the [brief's §3/§10 boundary](briefs/2026-10-24-intraday-feasibility.md), not from a need to re-approve delegation. No additional broad literature search is required for that preflight work. No return test, broker change or production change follows from this note.
+Finalize the small Stage 0A contract, then implement/review it before seeking approval to execute the concrete metadata probe. The separate execution approval comes from the [brief's §3/§10 boundary](2026-10-24-intraday-feasibility.md), not from a need to re-approve delegation. No additional broad literature search is required for that preflight work. No return test, broker change or production change follows from this note.

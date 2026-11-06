@@ -2,12 +2,12 @@
 
 **Erratum 2026-11-04 (after review):** PARA price figures quoted in this report were measured
 before an accidental database refresh at 23:48 PST; they are not reproducible from the database
-now (see `docs/research/2026-11-04-phase1-checkpoint.md`, section on the incident).
+now (see `research/audits/root-cause-2026-11-04/2026-11-04-phase1-checkpoint.md`, section on the incident).
 
 **Date:** 2026-11-04 · **Branch:** `investigation/root-cause-2026-11-04` · **Type:** diagnosis
 only (read-only; no re-runs of strategies) · **Spec:**
 `docs/superpowers/specs/2026-11-04-root-cause-investigation-design.md` (section 5, Lens 1)
-· **Per-row output:** `docs/research/_lens1_tape_state.json` (144 rows)
+· **Per-row output:** `research/audits/root-cause-2026-11-04/_lens1_tape_state.json` (144 rows)
 
 Abbreviations, expanded once: WFO = walk-forward optimization (train on a past window, test
 on the next, repeat); OOS = out-of-sample; PIT = point-in-time (only using index
@@ -27,7 +27,7 @@ table in TimescaleDB that every stock backtest reads.
    unknowns are design notes, operations changes or crypto, which have no stock backtest).
    Every WFO result run before 2026-10-19 predates the DSR units fix. That includes the
    "corrected" core figure (Sharpe 0.59 vs SPY 0.78, 2026-09-23). Phase 0 already said its
-   "17/17 gates" count predates the fix (`docs/research/2026-11-04-phase0-trust-audit.md:30`).
+   "17/17 gates" count predates the fix (`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:30`).
    What Lens 1 adds is that the fix also changes which parameters each fold deploys: a
    failed DSR check makes the fold run on the anchor parameters (`gates_passed = ndh_passed
    and dsr_passed`, then `deploy_params = anchor.params`, lines 726-733 of
@@ -68,7 +68,7 @@ table in TimescaleDB that every stock backtest reads.
 ## Falsifiers
 
 Written as overturn conditions for each Phase 0 hypothesis this lens touches
-(`docs/research/2026-11-04-phase0-trust-audit.md`; spec section 4). They were drafted at
+(`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md`; spec section 4). They were drafted at
 the start of the work, before the database queries were run; some prior reading of the
 memory notes and changelog had already happened, so they are not fully blind.
 
@@ -106,7 +106,7 @@ The strongest evidence that the corrected pipeline's numbers are sound:
 - **Benchmark agreement.**
   - The corrected SPY Sharpe stated in ef4e15f (0.914, 2021-2026) agrees with an
     independent plain-pandas check, 0.91 on 2021-02 to 2026-04
-    (`docs/research/WEB_RESEARCH_CANDIDATES.md:1557-1567`).
+    (`research/WEB_RESEARCH_CANDIDATES.md:1557-1567`).
   - DB SPY closes for 2026-10-29 to 11-03 equal yfinance's final closes exactly.
 - **The fixes are traceable.** Each fix has a commit with regression tests that fail on
   the old code (ef4e15f, 1b9b7f5, 2eafab1, c9d1abe, 09f9f40). The tape migration kept
@@ -129,7 +129,7 @@ security identity (PARA), adjustment seams, or the DSR timing of every WFO figur
 |---|---|---|---|---|
 | 1 | OHLCV day-shift (tz-aware write into the naive-UTC `timestamp` column; every equity bar stamped one calendar day early) | Bar labels only. Returns from one bar to the next were unchanged. Every join to a real-world date was off by one day: FOMC, earnings, Form 4, congress, index changes, ex-dates, short volume. SPY was the one symbol that mixed two alignments | Data migrated 2026-08-20 (5,678,783 rows, one transaction); writer fix ef4e15f, 2026-08-21 10:32 | Commit message ef4e15f; `src/ggTrader/data/live/cached_yfinance_loader.py:225-233`; memory note `project_ohlcv_day_shift_rootcause_2026-08-20`; backup table present |
 | 2 | SPY duplicate rows (826 stray 04:00/05:00 SPY rows, 2022-12-27 to 2026-06-08) | Any lab run that loaded universe + SPY into one frame over 2023 onward: a NaN row for every real row. Both strategy and SPY Sharpe were deflated by about 1/√2 | Research-side collapse 1b9b7f5, 2026-07-25; database rows dropped in the 2026-08-20 migration (ef4e15f message) | Commit messages 1b9b7f5 and ef4e15f; memory note `project_spy_duplicate_rows_rootcause_2026-08-19`. Strays existed by about 2026-06-20: the cited SPY 0.58 matches the contaminated stored 0.571 |
-| 3 | WFO anchor leak (the anchor fallback was fitted on the full evaluation span) | Every `run_wfo` result: the anchor and NDH/DSR gates were in the fold loop from 2026-06-17 (fa8ec4b5, be405aae). The same commit also added PIT `eligibility_mask` on `to_targets`, a 5-row purge for `train_gate.py`, and reversed the leveraged-rotation universe | 2eafab1, 2026-08-18 22:10 | `git show 2eafab18`; `docs/research/2026-08-18-wfo-anchor-leakage-fix.md` |
+| 3 | WFO anchor leak (the anchor fallback was fitted on the full evaluation span) | Every `run_wfo` result: the anchor and NDH/DSR gates were in the fold loop from 2026-06-17 (fa8ec4b5, be405aae). The same commit also added PIT `eligibility_mask` on `to_targets`, a 5-row purge for `train_gate.py`, and reversed the leveraged-rotation universe | 2eafab1, 2026-08-18 22:10 | `git show 2eafab18`; `research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md` |
 | 4 | PIT universe leak in signal-strategy sweeps (no membership mask; 14.1% of core entries fell on non-member days) | Signal strategies on index universes through `run_wfo`/`run_sweep`. Weight strategies were already PIT | c9d1abe, 2026-09-23 05:33 | `git show c9d1abe9`; `src/ggTrader/lab/sweep.py`; memory note `project_wfo_pit_membership_gap_2026-09-23` |
 | 5 | DSR units (annualized Sharpe compared with per-day thresholds; "passed almost everything") | Every `run_wfo` fold decision: selected parameters versus anchor fallback. So OOS returns as well as gate counts | 09f9f40, 2026-10-19 16:04 | `git show 09f9f401` (changelog entry and the `observed_sr_annual` change in `src/ggTrader/lab/wfo.py`) |
 | extra | Event studies counted pre-entry returns | FOMC and other event-study statistics | 7320c1d, 2026-10-19 17:22 | `git show 7320c1d6` |
@@ -140,7 +140,7 @@ security identity (PARA), adjustment seams, or the DSR timing of every WFO figur
 
 ### (a) For every headline number, which fixes did it predate?
 
-The full per-row answer is in `docs/research/_lens1_tape_state.json`. Rules:
+The full per-row answer is in `research/audits/root-cause-2026-11-04/_lens1_tape_state.json`. Rules:
 
 - **contaminated:** the run date is earlier than a fix that affects its kind of result.
 - **clean:** evidence shows it ran after every relevant fix.
@@ -164,7 +164,7 @@ By group:
 | 2026-10-19 onward replays, French-data screens, A23/A24, Shiller century study, 09-23 sanity checks, cross-asset holdout | `stocks-xs-momentum-corrected-replay`, `stocks-factor-screen-h1-h4` | None of the five (clean), except the replica rows, marked unknown for tape identity (part b). The cross-asset static 80/20 (2026-09-28) is also clean |
 
 Two cross-asset rows share one results file,
-`docs/research/_cross_asset_sleeve_results.json`, but are classified differently:
+`research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json`, but are classified differently:
 
 - `cross-asset-static-80-20-sleeve` is clean. Its headline is the pinned static figure
   (Sharpe 0.973 vs SPY 0.896), a fixed-weight backtest run on 2026-09-28 after the tape
@@ -210,7 +210,7 @@ fix, not the WFO anchor or PIT fixes.
     S&P 500 member 2022-02-17 to 2025-07-23 in
     `data/universe/sp500_constituents_history.csv.gz`, so PIT masking admits it.
   - **PARA in the replica:** the production replica's primary arm traded it 3 buys and
-    3 sells (`docs/research/_production_replica_results.json`, key
+    3 sells (`research/audits/production-replica/_production_replica_results.json`, key
     `windows.primary.arms.primary.trade_counts`), and `tainted_trades` is empty.
   - **SIVB:** shows garbage bars after its failure, for example $0.0013 to $0.07. Its
     membership ends before them (last listed 2023-01-04), so PIT runs after c9d1abe mask
@@ -258,7 +258,7 @@ fix, not the WFO anchor or PIT fixes.
 - SPY's tape is now single-convention.
 - Different reports quote different SPY Sharpe values because they measure different
   things: 0.78 over the WFO's out-of-sample span; 0.90/0.91 over the full pinned window
-  with no risk-free rate (`docs/research/WEB_RESEARCH_CANDIDATES.md:1560-1567`); 0.914
+  with no risk-free rate (`research/WEB_RESEARCH_CANDIDATES.md:1560-1567`); 0.914
   (ef4e15f). Lens 2 has to match the definitions before comparing results.
 - Backtests use total-return SPY, while some paper comparisons used SPY price return
   (see d).
@@ -271,7 +271,7 @@ fix, not the WFO anchor or PIT fixes.
 - Weight strategies were PIT from the start; signal strategies are PIT only from c9d1abe.
 - There is no PIT MidCap 400 membership (inventory row `stocks-midcap400-reversion`).
 - The 2010-2020 holdout tape has identity faults (TIE, MEE, CPWR), and the replica
-  stopped itself on them (`docs/research/2026-10-19-production-replica-audit-nogo.md`,
+  stopped itself on them (`research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md`,
   lines 91-106).
 
 **Fills and costs:**
@@ -281,7 +281,7 @@ fix, not the WFO anchor or PIT fixes.
 - The replica fills at the next close (lag 1, `src/ggTrader/lab/replica.py:178-179`).
 - Live trades from a partial 12:45 PT bar.
 - Costs are 5 bp per side with zero fees for stock WFO, from the
-  `docs/research/_month_end_treasury_results.json` meta.
+  `research/allocation/month-end-treasury/_month_end_treasury_results.json` meta.
 - Cross-asset and A23 use 1 bp per side; the replica tests 3 and 10 bp sensitivities.
 - No commissions are modelled, matching Alpaca's commission-free stock trades. Lens 3
   owns the live versus same-close difference.
@@ -362,7 +362,7 @@ Lens 1 ran no crypto checks; Lens 8 owns them.
     behind them.
   - The "corrected" 0.59 is not fully corrected: it predates 09f9f40. Phase 0 already
     noted that its "17/17 gates" count predates the fix
-    (`docs/research/2026-11-04-phase0-trust-audit.md:30`). What Lens 1 adds is that a
+    (`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md:30`). What Lens 1 adds is that a
     failed DSR check deploys the anchor parameters for that fold (lines 726-733 of
     `src/ggTrader/lab/wfo.py` at 09f9f40). So 0.59's out-of-sample returns would also
     change under the corrected gate, not only its gate count.
@@ -457,14 +457,14 @@ Commands and key outputs:
   Cheapest test: read each strategy's event join (about 10 minutes per strategy).
 - Whether the code that generated the 2026-10-19 re-runs included 09f9f40. This is
   documented in prose; Git does not prove it, as
-  `docs/research/_wfo_fold_attribution_results.json` notes.
+  `research/programme/wfo-methods/_wfo_fold_attribution_results.json` notes.
 - Partial bars written between 2026-06-20 and 2026-08-10 for symbols other than VZ/SPY.
 - The 2026-07-13 raw output behind 1.14.
 
 ## Done checklist
 
 - ✅ Fix timeline (five fixes plus three extras), with commits and dates.
-- ✅ (a) Fixes each headline predates: all 144 rows in `docs/research/_lens1_tape_state.json`
+- ✅ (a) Fixes each headline predates: all 144 rows in `research/audits/root-cause-2026-11-04/_lens1_tape_state.json`
   (55 contaminated / 18 clean / 71 unknown, each with a reason).
 - ✅ (b) Tape: duplicates, stamp hour, weekdays, gaps, partial bars and identity checked
   today.

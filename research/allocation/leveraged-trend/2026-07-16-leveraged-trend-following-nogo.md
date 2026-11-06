@@ -7,7 +7,7 @@
 ## 1. Executive Summary & Core Engine Audit
 
 Following the NO-GO on breadth-driven leveraged/inverse rotation
-(`docs/research/2026-07-16-leveraged-index-rotation-nogo.md`), this report tests a
+(`research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md`), this report tests a
 deliberately simpler design: `src/ggTrader/lab/strategies/leveraged_trend.py`
 holds one universe's leveraged-long ETF (2x or 3x — SSO/UPRO for SP500,
 QLD/TQQQ for Nasdaq100, UWM/TNA for Russell2000) when the underlying,
@@ -90,7 +90,7 @@ footnote) — the rejection is about the trend-timing mechanism's opportunity
 cost, not an implementation bug.
 
 **B. Breadth-driven leveraged/inverse index rotation (all 3 universes) —
-REJECTED 2026-07-16** (`docs/research/2026-07-16-leveraged-index-rotation-nogo.md`).
+REJECTED 2026-07-16** (`research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md`).
 Separate, earlier-closed arc — OOS Sharpe -0.14 to -0.37 vs SPY, MaxDD -80%
 to -89%, persistent regime halt. Not superseded by (A); both leveraged-ETF
 timing approaches tried so far have failed, for different reasons (breadth

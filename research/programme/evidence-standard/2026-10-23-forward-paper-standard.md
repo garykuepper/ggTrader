@@ -30,7 +30,7 @@
 
 - **Question.** With paid data permanently ruled out, what free forward evidence
   could test a future stock candidate that has already passed Part A?
-- **Reason for this dated brief.** The [owner decision of 2026-10-23](../../next_steps.md#current-research-decision-2026-10-23)
+- **Reason for this dated brief.** The [owner decision of 2026-10-23](../../../docs/next_steps.md#current-research-decision-2026-10-23)
   says no paid dataset or subscription, now or later. The old Part B replay on
   paid 2000–2020 data is therefore unreachable as written.
 - **Proposed replacement.** For all **future stock candidates**, replace that
@@ -48,13 +48,13 @@
 
 The idea must pass on long free history (for example, Ken French): **t ≥ 3 with
 Holm across the family, plus ≥ +1.0 pt/yr net since 1994**, exactly as in the
-[momentum brief §3 and §5](2026-10-20-momentum-retest.md#3-the-standard-two-parts-owner-delegated-2026-10-20).
+[momentum brief §3 and §5](../../stock-signals/momentum/2026-10-20-momentum-retest.md#3-the-standard-two-parts-owner-delegated-2026-10-20).
 
 This shorthand does not replace the registered calculation. Momentum §5 uses
 base-cost monthly excess returns, NW with 12 lags, and Holm at the family-wise
 one-sided level 0.00135; individual Holm hurdles can exceed t = 3. Its A2 is the
 CAGR difference after the cost haircut over 1994-01 → 2026-04, **not after tax**.
-The [factor brief §6](2026-10-20-factor-screen.md#6-tests-significance-a1-and-since-1994-economic-persistence-a2)
+The [factor brief §6](../../stock-signals/factor-screen/2026-10-20-factor-screen.md#6-tests-significance-a1-and-since-1994-economic-persistence-a2)
 likewise requires both significance and since-1994 economic persistence.
 
 A future candidate must register its family, long-history source, fixed windows,
@@ -161,7 +161,7 @@ The following proposed controls make those fixed terms auditable:
 ## 6. Taxable accounting: prerequisites, not a flat tax haircut
 
 B0 and B1 need a tested multi-stock lot engine before a verdict is possible.
-The [momentum brief §2 and §6](2026-10-20-momentum-retest.md#6-phase-2-what-do-costs-and-taxes-take-from-our-version-can-only-kill)
+The [momentum brief §2 and §6](../../stock-signals/momentum/2026-10-20-momentum-retest.md#6-phase-2-what-do-costs-and-taxes-take-from-our-version-can-only-kill)
 warn that the existing three-ETF Book's backward-only wash-sale approximation
 is insufficient. This document builds no engine and asserts no tax validation.
 
@@ -207,7 +207,7 @@ briefs must reconcile these details before day 1:
 ## 7. After a B1 pass: cite the existing capital terms
 
 Real money is only under the owner-approved
-[momentum brief §8](2026-10-20-momentum-retest.md#8-phases-45-paper-trading-and-real-money-terms-fixed-now):
+[momentum brief §8](../../stock-signals/momentum/2026-10-20-momentum-retest.md#8-phases-45-paper-trading-and-real-money-terms-fixed-now):
 **5% pilot, 10% maximum, quarterly review, stop at 15% behind SPY**. Read its
 full conditions: funding from the SPY/VOO core, never A23's SSO leg; 6 months of
 clean broker paper before the pilot; 18 months clean paper plus 12 months of

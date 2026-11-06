@@ -13,7 +13,7 @@ including its separately approved filing-date-only representation.
 
 **Park both event-signal studies with the present evidence; no data purchase is
 justified by a requirement-complete documented path.** This is a data-feasibility
-decision under the [registered brief §5 and §8](briefs/2026-10-21-event-timing-audit.md),
+decision under the [registered brief §5 and §8](2026-10-21-event-timing-audit.md),
 not a new strategy-performance rejection. No common qualifying five-complete-year
 window is established for either signal. Unresolved vendor evidence prevents
 **NO VERIFIED PATH** under A10; priced execution-price components alone cannot
@@ -21,7 +21,7 @@ support **PAID—DOCUMENTED PATH**. The existing paper observation and productio
 freeze continue under the standing owner instructions.
 
 This memo implements Task 3 of the
-[resolution plan](../superpowers/plans/2026-10-23-resolve-event-audit.md).
+[resolution plan](../../../docs/superpowers/plans/2026-10-23-resolve-event-audit.md).
 Its inputs are the accepted
 [workbook](2026-10-22-event-evidence-resolution-workbook.md),
 [subsequent connected metadata and predecessor review](event-timing-audit-implementation.md#metadata-slice-cleared-exact-predecessor-acquired-and-compared),
@@ -30,7 +30,7 @@ the new [timestamp diagnostic](_insider_acceptance_diagnostic.json) and
 about unavailable DB access, an unfetched predecessor, and only 24 timestamp
 pairs are superseded by those later observations. Annual qualification is not.
 
-The [Task 1 source amendment](briefs/2026-10-23-insider-acceptance-time-amendment.md)
+The [Task 1 source amendment](2026-10-23-insider-acceptance-time-amendment.md)
 is **DRAFT**. The offline diagnostic reproduces **25/25** header-consistent
 pairs and **9/25** API-inconsistent pairs under its stated New York filing-hour
 and same-filing-date tests. All **25/25** have the twice-absolute-offset
@@ -106,8 +106,8 @@ approved audit input.
 | A6(a) historical identity | ≥95% dated issuer/class/ticker/CIK/vendor-security validity. Charter observations and a linked amendment lot cannot establish the population map. R7 expressly supplies current names/symbols rather than historical names; stable asset IDs alone do not fill the CIK link. | UNVERIFIED |
 | A6(b) inventory / I3 | ≥95% of resolved units have complete Form 4/4-A lists; verified empty months count. NOC page001 has one filing dated 2017-03-02 beyond its 2017-03-01 descriptor. [Strict boundary predicate](2026-10-22-event-evidence-resolution-workbook.md#2-noc-inventory-incident) still FAILs; interval completeness and annual retrieval coverage remain unknown. No tolerance or waiver applied. | FAIL (local strict inventory check); annual coverage UNVERIFIED |
 | A2/A8 original timestamps / I1 | Same-event API/header receipt agreement within one minute, otherwise retained conflict/quarantine. All 25 [cached diagnostic pairs](_insider_acceptance_diagnostic.json) remain conflicting under the existing interpretation. This is a failed reconciliation, not a demonstrated dissemination clock or population-wide timing rate. | FAIL (25 cached comparisons); annual timing UNVERIFIED |
-| Approved filing-date-only timing / I1 | Exact corroborating API/header filing dates, uniform population representation, first NYSE close strictly after that date, no extra buffer; all other quarantines retained. [Approved amendment](briefs/2026-10-22-event-timing-source-conflict-proposal.md) remains binding. Cached corroboration supports convention diagnostics; full source-bound population execution/annual timing is not established. | UNVERIFIED annually |
-| Proposed header timing / I1 | [DRAFT Task 1](briefs/2026-10-23-insider-acceptance-time-amendment.md) would add a uniform separate header-clock representation with A1 buffer. Its 25/25 consistency diagnostic is not authority to change A2/A8. It neither rescinds the approved date-only candidate nor clears original quarantines. | UNVERIFIED; owner gate pending |
+| Approved filing-date-only timing / I1 | Exact corroborating API/header filing dates, uniform population representation, first NYSE close strictly after that date, no extra buffer; all other quarantines retained. [Approved amendment](2026-10-22-event-timing-source-conflict-proposal.md) remains binding. Cached corroboration supports convention diagnostics; full source-bound population execution/annual timing is not established. | UNVERIFIED annually |
+| Proposed header timing / I1 | [DRAFT Task 1](2026-10-23-insider-acceptance-time-amendment.md) would add a uniform separate header-clock representation with A1 buffer. Its 25/25 consistency diagnostic is not authority to change A2/A8. It neither rescinds the approved date-only candidate nor clears original quarantines. | UNVERIFIED; owner gate pending |
 | Dissemination / I1 | Acceptance is distinct from publication. No supported historical dissemination instant/bound is established by [R9 retained evidence](_event_source_search_ledger.json). Date-only convention compliance is not publication certification. | UNVERIFIED for all representations |
 | Raw owners/lots/duplicates / I2 | Retain every reporting owner, roles/related entities, security classes, transaction codes and distinct lots; reconcile stored collisions/overwrites against raw sources. [Workbook](2026-10-22-event-evidence-resolution-workbook.md#4-ownership-reconstruction-timing-and-qualification) is a partial cache diagnostic, with no purchase-cluster demonstration. Stored parser/PK defects are Phase 2 build requirements, not proof that raw reconstruction is impossible. | UNVERIFIED annually |
 | Amendments / I2 | Source-supported corrections apply only at their own availability, without replacing earlier history. [Reviewed specific link](_insider_predecessor_comparison.json) corroborates one F-lot share correction; it is not population amendment ingestion or a purchase-cluster replay. Repeated element identity does not establish unchanged referenced footnotes. | UNVERIFIED annually |
@@ -218,7 +218,7 @@ or common qualifying window established.
 
 **Owner choice for insider: PARK; do not buy data on this evidence.** Status is
 UNRESOLVED for both currently approved representations. Separately, approve or
-reject the [DRAFT header-source amendment](briefs/2026-10-23-insider-acceptance-time-amendment.md).
+reject the [DRAFT header-source amendment](2026-10-23-insider-acceptance-time-amendment.md).
 Its unresolved SEC documentation citation is explicit. Approval would authorize
 a convention decision, not annual feasibility or Phase 2; no implementation is
 performed in this branch's resolution work.
@@ -245,7 +245,7 @@ the SEC-documentation citation and owner decision for Task 1. No further
 collection or protocol change is pursued to resolve them here.
 
 The registered `_event_timing_audit.json` and original final report are **not
-written**. The [runner completion guard](../../src/ggTrader/lab/event_timing_audit.py)
+written**. The [runner completion guard](../../../src/ggTrader/lab/event_timing_audit.py)
 at `AuditRunner.run` rejects canonical publication for smoke/offline/interrupted
 work; completion requires a nonsmoke, nonoffline bounded registered execution
 within its deadline. This task performs documentary synthesis, not that run.
