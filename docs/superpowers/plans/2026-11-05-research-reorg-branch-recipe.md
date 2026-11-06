@@ -160,8 +160,8 @@ remove or detach the worktree first, with the owner's agreement.
   them). Alternative: put the 17 observer files in `spy-momentum-feasibility` (47 files).
 - **D5 (other hash drift on `main`, outside both branches).** The reorg already changed the
   bytes of `docs/superpowers/plans/2026-10-22-event-evidence-resolution.md` (9cc5c1a4... to
-  ef8ff7af...; recorded in `_event_evidence_resolution_workbook.json` and
-  `_event_audit_detector_provenance.json`) and of `scripts/production_replica_audit.py`
+  ef8ff7af...; recorded in `_event_evidence_resolution_workbook.json`, which is the only
+  file that holds it) and of `scripts/production_replica_audit.py`
   (9d179ca4... to 7e0ac01f...; recorded as `producer.sha256` in
   `_event_audit_detector_provenance.json`). Both are provenance in frozen evidence; a full sweep
   is scheduled in the final review.
