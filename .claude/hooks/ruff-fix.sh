@@ -22,6 +22,8 @@ esac
 
 RUFF="$REPO/.venv/bin/ruff"
 [ -x "$RUFF" ] || RUFF=ruff
+# Run from the repo root so ruff.toml (force-exclude) applies whatever the session cwd is.
+cd "$REPO" || exit 0
 
 "$RUFF" check --fix --quiet "$path" 2>&1 || true
 "$RUFF" format --quiet "$path" 2>&1 || true

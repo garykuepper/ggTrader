@@ -35,10 +35,13 @@ def test_ruff_force_excludes_research_python_files() -> None:
     files = _tracked_research_python()
     assert len(files) >= 4, f"expected at least 4 tracked research .py files, got {files}"
     for rel in files:
-        check = _ruff(["check", "--force-exclude", rel], ROOT)
+        # No CLI --force-exclude: ruff.toml itself must do the work.
+        check = _ruff(["check", rel], ROOT)
         assert check.returncode == 0, (rel, check.stdout, check.stderr)
-        fmt = _ruff(["format", "--check", "--force-exclude", rel], ROOT)
+        assert "No Python files found" in check.stderr, rel
+        fmt = _ruff(["format", "--check", rel], ROOT)
         assert fmt.returncode == 0, (rel, fmt.stdout, fmt.stderr)
+        assert "No Python files found" in fmt.stderr, rel
         assert "would reformat" not in fmt.stdout + fmt.stderr, rel
 
 

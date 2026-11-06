@@ -87,6 +87,8 @@ def test_check_manifest_respects_allow_deeper() -> None:
     assert any("depth" in p for p in check_manifest(other, tracked))
     too_deep = [_row(f"{OLD}x.md", "research/audits/root-cause-2026-11-04/lenses/a/x.md")]
     assert any("depth" in p for p in check_manifest(too_deep, tracked))
+    sibling = [_row(f"{OLD}x.md", "research/audits/root-cause-2026-11-04-evil/lenses/x.md")]
+    assert any("depth" in p for p in check_manifest(sibling, tracked))
 
 
 def test_check_manifest_flags_unlisted_basename_change() -> None:
@@ -1311,9 +1313,10 @@ def test_main_verify_final_allow_deeper_cli(tmp_path: Path, capsys) -> None:  # 
     argv += ["--allow-new", "allocation/century-leverage/sub/*"]
     assert main(argv) == 1
     assert "tracked file deeper than" in capsys.readouterr().out
-    main([*argv, "--allow-deeper", "allocation/century-leverage"])
+    rc = main([*argv, "--allow-deeper", "allocation/century-leverage"])
     out = capsys.readouterr().out
     assert "deeper than" not in out
+    assert rc == 1 and out.count("PROBLEM") == 1 and "pinned rows in the manifest" in out
 
 
 def test_verify_final_accepts_artifact_package_as_study_folder(tmp_path: Path) -> None:
