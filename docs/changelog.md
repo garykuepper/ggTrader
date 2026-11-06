@@ -2,6 +2,29 @@
 
 ## 2026-11-05
 
+- **Owner accepted the root-cause synthesis (decision 1 of 13; no strategy, live-code, verdict or number change).**
+  - The owner accepted `research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`
+    on 2026-11-05. That unlocks decision 2, this changelog entry and the refresh of
+    `research/RESEARCH_SNAPSHOT.md` and the two research prompt templates. The investigation is
+    a diagnosis only. It changed no strategy, trader, data or verdict.
+  - What it concluded (SPY is the fund that tracks the S&P 500, 2x is twice its total return,
+    pp/yr is percentage points a year):
+    - The built design shows no 2x-sized effect, and its test could have seen one (the effect of
+      PARA, a stock stored with another security's prices, is unmeasured). Negative.
+    - Stock picking itself is undecided: none of 72 measured tests is reliable, none shows an
+      edge, and none rules out 1 to 4 pp/yr.
+    - The ceiling: only 2x leverage (worst fall -84.8%) and momentum before 1994 reached their
+      window's gap. Leverage is exposure, not skill.
+  - Decisions 3 to 13 keep their defaults: no Optional Re-run List item is run, the
+    no-writes rule on the price table stays, the paper trader stays frozen and nothing else is
+    started. The 2027-09-30 review of A23, the owner-adopted 70/30 SPY/SSO allocation, is unchanged.
+  - Read in this order: the
+    [executive summary](../research/audits/root-cause-2026-11-04/2026-11-05-executive-summary.md),
+    the [findings](../research/audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md)
+    and the [recommendations document](../research/audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md).
+    The originals keep the status they had when written.
+  [Index](../research/RESEARCH_INDEX.md).
+
 - **Charts, scan-ability rules, reformatted reports and an executive summary for the root-cause reading documents (no strategy, live-code, verdict or number change).** Four charts built by `scripts/root_cause_figures.py` from numbers traced to cited source lines sit in the `figures/` sub-folder of the root-cause study folder. `scripts/check_reading_edition.py` now also enforces short paragraphs, list items and table cells and checks that every image has alt text and exists. The plain-English findings and the consolidated direction review were reformatted with the same content, and a one-page `2026-11-05-executive-summary.md` now starts the reading route in the folder `README.md`.
 - **Root-cause sub-folders and plain-English reading editions (no strategy, live-code, verdict or number change).**
   - 33 files in `research/audits/root-cause-2026-11-04/` moved into four sub-folders as
