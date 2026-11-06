@@ -13,15 +13,18 @@ from pathlib import Path
 import pytest
 
 from scripts.research_reorg import (
+    BRANCH_PINNED_PATHS,
     DEFAULT_ALLOW_NEW,
     DEFAULT_REWRITE_MANIFEST,
     PINNED_PATHS,
+    REORG_PINNED_PATHS,
     ManifestRow,
     MoveRefusedError,
     Unresolved,
     apply_moves,
     build_ledger,
     check_manifest,
+    expected_pinned_count,
     load_manifest,
     load_rewrite_manifest,
     main,
@@ -29,6 +32,7 @@ from scripts.research_reorg import (
     remove_leftover_dirs,
     rewrite_code,
     rewrite_markdown,
+    run_rewrite,
     sha256_file,
     verify_final,
     verify_moved,
@@ -142,10 +146,11 @@ def test_frozen_flag_rules() -> None:
     assert not plain.frozen and not plain.pinned
 
 
-def test_pinned_paths_are_twelve_prefixed() -> None:
-    assert len(PINNED_PATHS) == 12
-    assert len(set(PINNED_PATHS)) == 12
+def test_pinned_paths_are_fifteen_prefixed() -> None:
+    assert len(PINNED_PATHS) == 15
+    assert len(set(PINNED_PATHS)) == 15
     assert all(p.startswith(OLD) for p in PINNED_PATHS)
+    assert len(REORG_PINNED_PATHS) == 12 and len(BRANCH_PINNED_PATHS) == 3
 
 
 def test_load_manifest_reads_csv_and_computes_flags(tmp_path: Path) -> None:
@@ -226,7 +231,7 @@ def test_ledger_has_entry_per_manifest_row_with_digest(tmp_path: Path) -> None:
     json.dumps(ledger)  # must be serializable as-is
 
 
-def test_ledger_records_pinned_flag_for_twelve_paths(tmp_path: Path) -> None:
+def test_ledger_records_pinned_flag_for_every_pinned_path(tmp_path: Path) -> None:
     rows = []
     for rel in PINNED_PATHS:
         _write(tmp_path, rel, rel)
@@ -236,7 +241,7 @@ def test_ledger_records_pinned_flag_for_twelve_paths(tmp_path: Path) -> None:
     ledger = build_ledger(rows, tmp_path, "abc")
     pinned = [f["current_path"] for f in ledger["files"] if f["pinned"]]
     assert sorted(pinned) == sorted(PINNED_PATHS)
-    assert len(pinned) == 12
+    assert len(pinned) == len(PINNED_PATHS)
     assert all(f["frozen"] for f in ledger["files"] if f["pinned"])
 
 
@@ -1492,3 +1497,276 @@ def test_moved_csv_covers_every_manifest_row_and_marks_three_renames(
     assert main(["moved-csv", "--manifest", str(manifest), "--out", str(out)]) == 0
     assert out.read_bytes() == first
     assert "5 rows" in capsys.readouterr().out
+
+
+# --- branch mode: pinned intraday briefs, --also-map and verify --branch-mode -----------------
+
+INTRADAY_BRIEFS = (
+    f"{OLD}briefs/2026-10-25-intraday-feasibility-r8.md",
+    f"{OLD}briefs/2026-10-25-intraday-prospective-observation.md",
+    f"{OLD}briefs/2026-10-25-intraday-opus-verification-manifest.md",
+)
+
+
+def test_pinned_paths_include_the_three_intraday_briefs() -> None:
+    assert set(BRANCH_PINNED_PATHS) == set(INTRADAY_BRIEFS)
+    assert set(INTRADAY_BRIEFS) <= set(PINNED_PATHS)
+    assert PINNED_PATHS == (*REORG_PINNED_PATHS, *BRANCH_PINNED_PATHS)
+    assert PINNED_PATHS[0] == f"{OLD}briefs/2026-10-21-event-timing-audit.md"
+    for brief in INTRADAY_BRIEFS:
+        row = _row(brief, "research/intraday/spy-momentum-feasibility/x.md", "brief")
+        assert row.pinned and row.frozen
+    # Only the three: a sibling brief that no document quotes by hash stays mutable.
+    sibling = _row(f"{OLD}briefs/2026-10-25-intraday-r8-decision-memo.md", "research/i/s/m.md")
+    assert not sibling.pinned and not sibling.frozen
+
+
+def test_expected_pinned_count_follows_the_pinned_groups_in_the_manifest() -> None:
+    reorg = [_row(p, f"research/audits/e/{Path(p).name}") for p in REORG_PINNED_PATHS]
+    branch = [_row(p, f"research/intraday/s/{Path(p).name}") for p in BRANCH_PINNED_PATHS]
+    plain = [_row(f"{OLD}plain.md", "research/allocation/s/plain.md")]
+    assert expected_pinned_count([*reorg, *plain]) == 12  # main's manifest: unchanged
+    assert expected_pinned_count([*branch, *plain]) == 3  # the branch manifest
+    assert expected_pinned_count([*reorg, *branch, *plain]) == len(PINNED_PATHS) == 15
+    # A dropped pinned row still shows: the group is expected whole.
+    assert expected_pinned_count(reorg[1:]) == 12
+    assert expected_pinned_count(branch[:2]) == 3
+    # A manifest with no pinned row at all expects its mode's group, never zero.
+    assert expected_pinned_count(plain) == 12
+    assert expected_pinned_count(plain, branch_mode=True) == 3
+
+
+def _also_map_tree(tmp_path: Path) -> tuple[Path, Path, Path]:
+    """Branch-style repo: one branch report to move, links into files the reorg already moved."""
+    root = tmp_path / "repo"
+    branch_old = f"{OLD}2026-02-02-branch.md"
+    _write(
+        root,
+        branch_old,
+        "# Branch\n[a](2026-01-01-a.md) [b](briefs/2026-01-01-b.md)\n"
+        "`docs/research/2026-01-01-a.md`\n",
+    )
+    # The reorg already moved these two: only their new homes exist.
+    _write(root, A_NEW, "# A\n")
+    _write(root, B_NEW, "# B\n")
+    _git(root, "init", "-q")
+    _git(root, "add", "-A")
+    manifest = tmp_path / "branch-manifest.csv"
+    manifest.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        f'"{branch_old}","research/intraday/study/2026-02-02-branch.md","","report",""\n'
+    )
+    also = tmp_path / "reorg-manifest.csv"
+    also.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        f'"{A_OLD}","{A_NEW}","","report",""\n'
+        f'"{B_OLD}","{B_NEW}","","brief",""\n'
+    )
+    return root, manifest, also
+
+
+def _rewrite_argv(root: Path, manifest: Path, report: Path, *extra: str) -> list[str]:
+    return [
+        "rewrite",
+        "--manifest",
+        str(manifest),
+        "--scope",
+        "moved-markdown",
+        "--report",
+        str(report),
+        "--root",
+        str(root),
+        *extra,
+    ]
+
+
+def test_rewrite_also_map_resolves_links_to_already_moved_files(tmp_path: Path) -> None:
+    root, manifest, also = _also_map_tree(tmp_path)
+    branch_old = f"{OLD}2026-02-02-branch.md"
+    # Without --also-map the links into the reorganized files cannot be resolved.
+    bare = tmp_path / "bare.json"
+    assert main(_rewrite_argv(root, manifest, bare, "--dry-run")) == 0
+    unresolved = json.loads(bare.read_text())["unresolved"]
+    assert {u["reason"] for u in unresolved} == {"not in manifest"}
+    assert unresolved  # the control is not vacuous
+    # With it, links and the citation point at the new homes, from the branch file's new place.
+    report_path = tmp_path / "also.json"
+    assert main(_rewrite_argv(root, manifest, report_path, "--also-map", str(also))) == 0
+    report = json.loads(report_path.read_text())
+    assert report["status"] == "ok" and report["unresolved"] == []
+    assert [c["file"] for c in report["changed"]] == [branch_old]
+    assert report["changed"][0]["replacements"] == 3
+    assert report["also_map_rows"] == 2
+    assert (root / branch_old).read_text() == (
+        "# Branch\n"
+        "[a](../../allocation/a-study/2026-01-01-a.md) [b](../../audits/b-study/2026-01-01-b.md)\n"
+        f"`{A_NEW}`\n"
+    )
+
+
+def test_rewrite_also_map_rows_are_never_targets(tmp_path: Path) -> None:
+    root, manifest, also = _also_map_tree(tmp_path)
+    # A file still sitting at an also-map row's current path is neither read nor written.
+    _write(root, A_OLD, "# A, still old\n[x](../roadmap.md) `docs/research/2026-01-01-a.md`\n")
+    _git(root, "add", "-A")
+    before = _snapshot(root)
+    rows = load_manifest(manifest)
+    extra = load_manifest(also)
+    for scope in ("moved-markdown", "fixed-markdown", "code"):
+        out = run_rewrite(scope, rows, root, True, [], also_map=extra)
+        assert out["status"] == "ok"
+        touched = {c["file"] for c in out["changed"]} | set(out["skipped_missing"])
+        assert not touched & {A_OLD, B_OLD, A_NEW, B_NEW}, scope
+    # B_OLD does not exist at all: an also-map row is never reported as a missing target.
+    moved = run_rewrite("moved-markdown", rows, root, False, [], also_map=extra)
+    assert moved["skipped_missing"] == [] and moved["skipped_frozen"] == 0
+    after = _snapshot(root)
+    assert {k for k in after if after[k] != before.get(k)} == {f"{OLD}2026-02-02-branch.md"}
+    assert after[A_OLD] == before[A_OLD] and after[A_NEW] == before[A_NEW]
+    # A row that sends a manifest path somewhere else is refused rather than silently winning.
+    clash = _row(rows[0].current_path, "research/elsewhere/branch.md")
+    with pytest.raises(ValueError, match="also-map row contradicts"):
+        run_rewrite("moved-markdown", rows, root, True, [], also_map=[clash])
+    report_path = tmp_path / "clash.json"
+    clash_csv = tmp_path / "clash.csv"
+    clash_csv.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        f'"{clash.current_path}","{clash.proposed_path}","","report",""\n'
+    )
+    assert main(_rewrite_argv(root, manifest, report_path, "--also-map", str(clash_csv))) == 1
+    assert json.loads(report_path.read_text())["status"] == "failed"
+
+
+def _branch_final_repo(tmp_path: Path) -> tuple[Path, list[ManifestRow], dict]:  # type: ignore[type-arg]
+    """Finished one-pinned-file tree that also holds a tracked file the manifest does not list."""
+    root, rows, ledger = _final_repo(tmp_path)
+    for extra in (
+        "research/allocation/other-study/2026-03-03-main-report.md",
+        "research/deep/a/b/c/main-artifact.json",  # deeper than the cap: main's problem, not ours
+    ):
+        _write(root, extra, "from the reorganization\n")
+        _git(root, "add", extra)
+    return root, rows, ledger
+
+
+def _branch_modes(root: Path, rows: list[ManifestRow], ledger: dict, *, branch: bool):  # type: ignore[no-untyped-def,type-arg]
+    listed = {REPORT_NEW}
+    (root / REPORT_NEW).write_text("# report\nedited\n")
+    return {
+        "moved": verify_moved(rows, ledger, root, branch_mode=branch),
+        "rewritten": verify_rewritten(rows, ledger, root, listed, branch_mode=branch),
+        "final": verify_final(rows, ledger, root, listed, expected_pinned=1, branch_mode=branch),
+    }
+
+
+def test_verify_branch_mode_skips_whole_tree_counts(tmp_path: Path) -> None:
+    root, rows, ledger = _branch_final_repo(tmp_path)
+    plain = _branch_modes(root, rows, ledger, branch=False)
+    # Not in branch mode, the extra files break the "manifest rows are all of research/" counts.
+    assert any("files under research/" in p for p in plain["moved"])
+    assert any("unexpected file under research/" in p for p in plain["rewritten"])
+    assert any("unexpected tracked file under research/" in p for p in plain["final"])
+    # In branch mode the manifest is only the branch rows: none of those checks apply.
+    # (The moved gate still sees the report edit as a byte change: that one is real.)
+    modes = _branch_modes(root, rows, ledger, branch=True)
+    assert modes["rewritten"] == [] and modes["final"] == []
+    assert modes["moved"] == [f"sha256 differs from ledger: {REPORT_NEW}"]
+
+
+def test_verify_branch_mode_still_checks_the_branch_rows(tmp_path: Path) -> None:
+    root, rows, ledger = _branch_final_repo(tmp_path)
+
+    def final(**kw):  # type: ignore[no-untyped-def]
+        return verify_final(rows, ledger, root, set(), expected_pinned=1, branch_mode=True, **kw)
+
+    assert final() == []
+    (root / PINNED_NEW).write_text("# pinned\nchanged\n")
+    assert any("sha256 differs" in p and PINNED_NEW in p for p in final())
+    (root / PINNED_NEW).write_text("# pinned\nsee docs/research/x.md\n")
+    assert final() == []
+    (root / REPORT_NEW).write_text("# report\nunlisted\n")
+    assert any("unlisted change" in p for p in final())
+    _git(root, "checkout", "--", REPORT_NEW)
+    _git(root, "rm", "-q", "-f", BRIEF_NEW)
+    problems = final()
+    assert any("missing destination" in p and BRIEF_NEW in p for p in problems)
+    assert any("destination not tracked" in p and BRIEF_NEW in p for p in problems)
+    dup = [*rows, _row(f"{OLD}other.md", REPORT_NEW)]
+    assert any(
+        "duplicate proposed path" in p
+        for p in verify_final(dup, ledger, root, set(), expected_pinned=1, branch_mode=True)
+    )
+    deep = [_row(JSON_OLD, "research/a/b/c/d/x.json", "result"), *rows[1:]]
+    deep_ledger = _ledger_with_destinations(ledger, deep)
+    assert any(
+        "depth" in p
+        for p in verify_final(deep, deep_ledger, root, set(), expected_pinned=1, branch_mode=True)
+    )
+    _write(root, f"{OLD}stray.md", "left behind\n")
+    _git(root, "add", f"{OLD}stray.md")
+    assert any(f"{OLD}stray.md" in p for p in final())
+
+
+def _ledger_with_destinations(ledger: dict, rows: list[ManifestRow]) -> dict:  # type: ignore[type-arg]
+    """Copy a ledger, re-pointing entries at changed destinations (for the depth probe)."""
+    out = json.loads(json.dumps(ledger))
+    dest = {r.current_path: r.proposed_path for r in rows}
+    for entry in out["files"]:
+        entry["proposed_path"] = dest[entry["current_path"]]
+    return out
+
+
+def test_verify_final_branch_mode_derives_the_pinned_count_from_the_manifest(
+    tmp_path: Path,
+) -> None:
+    root, rows, ledger = _branch_final_repo(tmp_path)
+    # The fixture's single pinned row belongs to the reorganization's twelve, so the derived
+    # count is twelve in either mode (and 1 found is flagged); it is never the full fifteen.
+    problems = verify_final(rows, ledger, root, set(), branch_mode=True)
+    assert any("1 pinned rows in the manifest, expected 12" in p for p in problems)
+
+
+def test_verify_without_branch_mode_unchanged(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    root, rows, ledger = _branch_final_repo(tmp_path)
+    # The three gates give the same answers with the flag spelled out as False or left off.
+    for kwargs in ({}, {"branch_mode": False}):
+        assert any("files under research/" in p for p in verify_moved(rows, ledger, root, **kwargs))
+        assert any(
+            "unexpected file under research/" in p
+            for p in verify_rewritten(rows, ledger, root, set(), **kwargs)
+        )
+        problems = verify_final(rows, ledger, root, set(), expected_pinned=1, **kwargs)
+        assert any("unexpected tracked file under research/" in p for p in problems)
+    # A clean tree passes both ways, and docs/research must still be gone without the flag.
+    clean_root, clean_rows, clean_ledger = _final_repo(tmp_path / "clean")
+    for flag in (False, True):
+        assert (
+            verify_final(
+                clean_rows, clean_ledger, clean_root, set(), expected_pinned=1, branch_mode=flag
+            )
+            == []
+        )
+    (clean_root / OLD / "empty").mkdir(parents=True)
+    assert "docs/research still exists" in _final(clean_root, clean_rows, clean_ledger)
+    # Branch mode accepts an empty leftover folder, but any file left in it is still a problem.
+    args = (clean_rows, clean_ledger, clean_root, set())
+    assert verify_final(*args, expected_pinned=1, branch_mode=True) == []
+    _write(clean_root, f"{OLD}stray.md", "left behind\n")
+    assert any(
+        f"{OLD}stray.md" in p and "untracked" in p
+        for p in verify_final(*args, expected_pinned=1, branch_mode=True)
+    )
+    # CLI: the flag exists and is off by default.
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        + "".join(f'"{r.current_path}","{r.proposed_path}","","{r.kind}",""\n' for r in rows)
+    )
+    ledger_path = tmp_path / "ledger.json"
+    ledger_path.write_text(json.dumps(ledger))
+    argv = ["verify", "--stage", "moved", "--manifest", str(manifest), "--root", str(root)]
+    argv += ["--ledger", str(ledger_path)]
+    assert main(argv) == 1
+    assert "files under research/" in capsys.readouterr().out
+    assert main([*argv, "--branch-mode"]) == 0
+    assert "OK stage=moved" in capsys.readouterr().out
