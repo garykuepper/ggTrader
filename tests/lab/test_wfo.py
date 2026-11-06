@@ -354,7 +354,7 @@ def test_sweep_fold_weights_no_rebalance_dates_returns_empty():
 def test_sweep_fold_weights_window_start_gets_a_decision():
     """A multi-bar window that spans less than a full month must still get a
     decision at window start -- not sit in cash until the next month-end
-    (item 12, docs/research/2026-08-18-wfo-anchor-leakage-fix.md)."""
+    (item 12, research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md)."""
     from ggTrader.lab.wfo import _sweep_fold_weights
 
     symbols = ["X", "Y"]
@@ -1006,7 +1006,7 @@ def test_run_wfo_anchor_fallback_on_gate_failure():
 def test_run_wfo_anchor_fit_per_fold_no_future_data(monkeypatch):
     """Anchor set must be recomputed per fold on data up to that fold's
     train_end only -- never on the full sample. Regression test for the
-    anchor-leakage bug (docs/research/2026-08-18-wfo-anchor-leakage-fix.md).
+    anchor-leakage bug (research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md).
     """
     import ggTrader.lab.wfo as wfo_mod
 
@@ -1337,7 +1337,7 @@ def test_run_wfo_signal_entries_respect_universe_fn():
 
 # ── characterization tests: pin CURRENT fallback/halt semantics ────────
 # These document behavior only. Whether the behavior is intended is an open owner
-# decision (docs/research/2026-11-02-wfo-fallback-semantics.md); a failing test
+# decision (research/programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md); a failing test
 # here means the doc misread the code or the code changed.
 
 

@@ -25,7 +25,7 @@ def test_rebalance_dates_are_month_ends_excluding_last():
     # Monday) -- item 12 fix: a decision must exist at/immediately after
     # window start, not just at the first month-end, or the fold starts in
     # pure cash for up to a month. See
-    # docs/research/2026-08-18-wfo-anchor-leakage-fix.md.
+    # research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md.
     assert dates[0] == pd.Timestamp("2021-02-01", tz="UTC")
     assert [d.strftime("%Y-%m") for d in dates] == [
         "2021-02",

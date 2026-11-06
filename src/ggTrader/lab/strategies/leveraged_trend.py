@@ -4,7 +4,7 @@ Holds a universe's leveraged-long ETF (2x or 3x) when its underlying,
 unleveraged index is above its trailing SMA; otherwise sits in cash. No
 inverse leg -- the breadth-driven long/inverse/cash design in
 leveraged_rotation.py was WFO-validated NO-GO (see
-docs/research/2026-07-16-leveraged-index-rotation-nogo.md); this is a
+research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md); this is a
 deliberately simpler, decoupled arc.
 """
 

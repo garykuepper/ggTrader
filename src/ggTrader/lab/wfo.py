@@ -1012,7 +1012,7 @@ def format_wfo_table(
         # `composite_score(test_metrics)[0]` over a single-combo list, and
         # min-max normalizing one element always yields 0.0 -- so this
         # column printed a constant 0.00 in every table ever rendered.
-        # See docs/research/2026-07-25-strategy-implementation-audit.md §2.1A.
+        # See research/audits/implementation/2026-07-25-strategy-implementation-audit.md §2.1A.
         # Both columns are Sharpe so the adjacent WFE (= OOS/IS Sharpe) can
         # be verified by eye; `train_score` is a composite rank on a
         # different scale and would silently mix units.

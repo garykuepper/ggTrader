@@ -63,7 +63,7 @@ def generate_signals(universe: str = "sp500", lookback_days: int = 365) -> dict:
     ``lookback_days=365`` (~252 bars) lets EMA-50/MACD/RSI seeds wash out, so
     signals match the backtest's long-history indicators (0 mismatches over
     125 sessions vs 4.0% of entries / 3.4% of exits at 120 days;
-    docs/research/2026-09-28-live-indicator-warmup.md).
+    research/paper-system/indicator-warmup/2026-09-28-live-indicator-warmup.md).
 
     Returns dict with keys: buys (list[str]), sells (list[str]),
     as_of (str date), universe_size (int).
@@ -179,7 +179,7 @@ def generate_core_signals() -> dict:
 
     Deployed 2026-09 in place of the 3-sleeve blend: the corrected-tape
     pinned-window re-baseline
-    (`docs/research/_rebaseline_corrected_tape_20260822.json`) shows the
+    (`research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json`) shows the
     blend underperforming this standalone core (Sharpe 0.69 vs 0.99, third
     independent confirmation) -- see `docs/next_steps.md`. Kept alongside
     `generate_blended_signals` (not deleted) since the blend's WFO/research

@@ -44,10 +44,10 @@ ROOT = Path(__file__).resolve().parents[3]
 MEMBERSHIP_FILE = ROOT / "data/universe/sp500_constituents_history.csv.gz"
 RUSSELL_SNAPSHOT_FILE = ROOT / "data/universe/russell2000_tickers_snapshot_2026-06-09.txt"
 CACHE_DIR = ROOT / "data/external/event_timing_audit"
-SOURCE_MANIFEST = ROOT / "docs/research/briefs/2026-10-21-event-timing-audit-sources.md"
-BRIEF = ROOT / "docs/research/briefs/2026-10-21-event-timing-audit.md"
+SOURCE_MANIFEST = ROOT / "research/audits/event-timing/2026-10-21-event-timing-audit-sources.md"
+BRIEF = ROOT / "research/audits/event-timing/2026-10-21-event-timing-audit.md"
 APPROVED_AMENDMENT = (
-    ROOT / "docs/research/briefs/2026-10-22-event-timing-source-conflict-proposal.md"
+    ROOT / "research/audits/event-timing/2026-10-22-event-timing-source-conflict-proposal.md"
 )
 FILING_DATE_ONLY = "insider_filing_date_only"
 CUTOFF = datetime.date(2026, 4, 30)
@@ -1518,7 +1518,7 @@ class EventTimingAuditRunner:
         )
         if smoke and not self.output_file.resolve().is_relative_to(Path("/tmp")):
             raise ValueError("Incomplete smoke output must stay in /tmp")
-        canonical = ROOT / "docs/research/_event_timing_audit.json"
+        canonical = ROOT / "research/audits/event-timing/_event_timing_audit.json"
         if self.output_file.suffix != ".json" or (
             not self.output_file.resolve().is_relative_to(Path("/tmp"))
             and self.output_file.resolve() != canonical
@@ -3169,8 +3169,8 @@ class EventTimingAuditRunner:
             ],
             "historical_exposure": {
                 "sources": [
-                    "docs/research/2026-07-25-strategy-implementation-audit.md",
-                    "docs/research/briefs/2026-10-20-momentum-retest.md",
+                    "research/audits/implementation/2026-07-25-strategy-implementation-audit.md",
+                    "research/stock-signals/momentum/2026-10-20-momentum-retest.md",
                 ],
                 "transaction_date_lookahead": "documented stored implementation exposure",
                 "signal_sweep_membership_fix": "weight strategies: demonstrated "
@@ -3208,14 +3208,14 @@ class EventTimingAuditRunner:
                 )
             )
         )
-        canonical = ROOT / "docs/research/_event_timing_audit.json"
+        canonical = ROOT / "research/audits/event-timing/_event_timing_audit.json"
         if self.output_file.resolve() == canonical and not results["audit_meta"]["complete"]:
             raise ValueError(
                 "Smoke/offline/interrupted work cannot publish the canonical audit artifact"
             )
         atomic_json(self.output_file, results)
         report_file = (
-            ROOT / "docs/research/2026-10-21-event-timing-audit-report.md"
+            ROOT / "research/audits/event-timing/2026-10-21-event-timing-audit-report.md"
             if self.output_file.resolve() == canonical
             else self.output_file.with_suffix(".md")
         )
@@ -3304,8 +3304,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         type=Path,
-        help="/tmp partial JSON, or docs/research/_event_timing_audit.json for completed "
-        "bounded --network work (UNRESOLVED allowed); Markdown is written alongside",
+        help="/tmp partial JSON, or research/audits/event-timing/_event_timing_audit.json "
+        "for completed bounded --network work (UNRESOLVED allowed); Markdown is written alongside",
     )
     parser.add_argument(
         "--evidence", type=Path, help="Checksummed event-timing-evidence-v1 input JSON"
