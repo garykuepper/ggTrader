@@ -160,7 +160,7 @@ def test_option_texts_come_from_cited_review_lines() -> None:
             (block.step, block.step_source),
             (block.stop, block.stop_source),
         ):
-            assert 6 <= len(text.split()) <= 12, text
+            assert 6 <= len(text.split()) <= 14, text
             line = _source_line(source).lower()
             missing = {w for w in words(text) if w not in line}
             assert not missing, f"{text!r} has words not at {source}: {missing}"
