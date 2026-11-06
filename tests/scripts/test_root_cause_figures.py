@@ -41,14 +41,24 @@ def _appears(value: float, line: str) -> bool:
 def _point_problems(point: Point) -> list[str]:
     """Why a point is not traceable to its cited line, or an empty list."""
     line = _source_line(point.source)
+    matches = [
+        m
+        for m in NUMBER.finditer(line)
+        if float(m.group(1)) == abs(point.value)
+        and (point.value == 0 or line[: m.start()].endswith(("-", "\u2212")) == (point.value < 0))
+    ]
+    if not matches:
+        return [f"value {point.value} not stated with its sign at {point.source}"]
     problems = []
-    if not _appears(point.value, line):
-        problems.append(f"value {point.value} not stated with its sign at {point.source}")
-    problems.extend(
-        f"window {span} in the label is not on {point.source}"
-        for span in YEAR_SPAN.findall(point.label)
-        if span not in line
-    )
+    for span in YEAR_SPAN.findall(point.label):
+        if span not in line:
+            problems.append(f"window {span} in the label is not on {point.source}")
+            continue
+        # The window that follows the number must be the labelled one, so a number cannot be
+        # paired with another window on the same line.
+        following = [YEAR_SPAN.search(line, m.end()) for m in matches]
+        if span not in {f.group(0) for f in following if f}:
+            problems.append(f"{point.value} is not followed by {span} at {point.source}")
     return problems
 
 
@@ -104,6 +114,16 @@ def test_mutation_other_number_on_the_same_line_is_caught_by_the_window() -> Non
     assert any("1927-2026" in problem for problem in _point_problems(on_shared_line))
     wrong_value = _mutated(point, value=2.34)
     assert _point_problems(wrong_value)
+
+
+def test_mutation_number_paired_with_another_window_on_its_line_is_caught() -> None:
+    point = _point("gap 2x needs, 2006-2026")
+    assert not _point_problems(point)
+    # SYNTHESIS:67 holds 9.57 (2021-2026) and 3.54 (2006-2026): swapping the values must fail.
+    assert _point_problems(_mutated(point, value=9.57))
+    other = _point("gap 2x needs, 2021-2026")
+    assert not _point_problems(other)
+    assert _point_problems(_mutated(other, label="gap 2x needs, 2006-2026"))
 
 
 def test_mutation_wrong_window_is_caught() -> None:

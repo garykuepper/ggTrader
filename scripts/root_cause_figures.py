@@ -15,7 +15,6 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -43,6 +42,14 @@ VERMILLION = "#D55E00"
 GREY = "#7A8088"
 NEED_FILL = "#E5E7EB"
 NEED_EDGE = "#4B5563"
+
+# Benchmark each gap row is measured against, drawn under its window label.
+BENCHMARK_TAGS = {
+    "2021-2026": "vs SPY\ntotal return",
+    "2006-2026": "vs SPY\ntotal return",
+    "1994-2026": "vs French\nmarket index",
+    "1927-2026": "vs French\nmarket index",
+}
 
 FONT = 10.5  # points; 10 pt or more keeps text near 15 px at 900 px display width
 FONT_SMALL = 10.0
@@ -291,11 +298,17 @@ def _draw_gap(out: Path) -> None:
         )
         ax.text(need + 0.35, y + need_dy, f"{need:.2f}", va="center", fontsize=FONT, color=INK)
         ax.text(
-            -8.7, y, window, va="center", ha="right", fontsize=FONT, color=INK, fontweight="bold"
-        )
+            -8.7, y + 0.12, window, va="center", ha="right", fontsize=FONT, color=INK,
+            fontweight="bold",
+        )  # fmt: skip
+        ax.text(
+            -8.7, y - 0.06, BENCHMARK_TAGS[window], va="top", ha="right", fontsize=FONT_SMALL,
+            color=MUTED, linespacing=1.2,
+        )  # fmt: skip
 
     # 2021-2026 row: momentum bar with its interval whisker and a one-line interval label
     mom = v("momentum replay, OOS 2022-2026")
+    mom_gap = v("gap 2x needs, 2022-2026 (momentum window)")
     lo, hi = v("momentum interval low"), v("momentum interval high")
     y0 = base(0) + got_dy
     ax.barh(y0, mom, height, color=BLUE, zorder=3)
@@ -303,13 +316,13 @@ def _draw_gap(out: Path) -> None:
     for end in (lo, hi):
         ax.plot([end, end], [y0 - 0.61, y0 - 0.49], color=INK, linewidth=1.3, zorder=3)
     ax.text(
-        mom + 0.35, y0 + 0.12, f"+{mom:.2f} momentum replay (tested 2022-2026),\nshort of the gap",
+        mom + 0.35, y0 + 0.12,
+        f"+{mom:.2f} momentum replay (tested 2022-2026),\nshort of its {mom_gap:.2f} gap",
         va="top", fontsize=FONT, color=INK, linespacing=1.2,
     )  # fmt: skip
     ax.text(
-        lo, y0 - 0.62, f"95% interval on the arithmetic mean: {lo:.2f} to +{hi:.2f}",
+        0.35, y0 - 0.62, f"95% interval on the arithmetic mean: {lo:.2f} to +{hi:.2f}",
         va="top", ha="left", fontsize=FONT_SMALL, color=MUTED,
-        bbox={"facecolor": SURFACE, "edgecolor": "none", "pad": 1.0}, zorder=5,
     )  # fmt: skip
 
     # 2006-2026 row: 2x leverage reaches its gap, with the drawdown caveat beside it
@@ -332,7 +345,7 @@ def _draw_gap(out: Path) -> None:
     low = v("stock-picking results after 1994, low")
     high = v("stock-picking results after 1994, high")
     y2 = base(2) + got_dy
-    ax.plot([low, high], [y2, y2], color=BLUE, linewidth=7, solid_capstyle="butt", zorder=3)
+    ax.barh(y2, high - low, height, left=low, color="white", edgecolor=BLUE, linewidth=2, zorder=3)
     ax.text(
         low - 0.5, y2, "range of registered\nscreens after 1994",
         va="center", ha="right", fontsize=FONT, color=INK, linespacing=1.3,
@@ -349,14 +362,16 @@ def _draw_gap(out: Path) -> None:
 
     ax.axvline(0, color=INK, linewidth=1.0, zorder=4)
     ax.set_xlim(-9, 19)
-    ax.set_ylim(-0.6, 5.2)
+    ax.set_ylim(-0.85, 5.2)
     ax.set_yticks([])
     ax.set_xticks([-5, 0, 5, 10, 15])
     ax.set_xlabel("percentage points per year", fontsize=FONT_SMALL, color=MUTED)
     handles = [
         Rectangle((0, 0), 1, 1, facecolor=NEED_FILL, edgecolor=NEED_EDGE, label="gap 2x needs"),
         Rectangle((0, 0), 1, 1, facecolor=BLUE, label="best measured result"),
-        Line2D([0], [0], color=BLUE, linewidth=7, solid_capstyle="butt", label="range"),
+        Rectangle(
+            (0, 0), 1, 1, facecolor="white", edgecolor=BLUE, linewidth=2, label="range of results"
+        ),
     ]
     ax.legend(
         handles=handles, loc="lower right", frameon=False, fontsize=FONT_SMALL, labelcolor=INK,
@@ -502,7 +517,8 @@ def _draw_options(out: Path) -> None:
         for (heading, y), body in zip(headings, (block.question, block.step, block.stop)):
             ax.text(x + 0.012, y, heading, fontsize=FONT_SMALL - 0.5, color=MUTED,
                     va="center", fontweight="bold")  # fmt: skip
-            ax.text(x + 0.012, y - 0.03, _wrap(body, 29), fontsize=FONT, color=INK, va="top",
+            width = 26 if heading == "STOP GATE" else 28  # keeps a margin from the column edge
+            ax.text(x + 0.012, y - 0.03, _wrap(body, width), fontsize=FONT, color=INK, va="top",
                     linespacing=1.35)  # fmt: skip
     fig.savefig(out, dpi=DPI, facecolor=SURFACE)
     plt.close(fig)
