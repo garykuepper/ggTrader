@@ -208,7 +208,7 @@ Proposed descriptive names (the sheet and every reading document use these, neve
 
 ### Task 13: Consolidated direction review, revised (Sonnet)
 
-**Files:** Modify `research/audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md` in place (already in the rewrite manifest scope; add it to `hand_edited`).
+**Files:** Modify `research/audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md` in place (an allowed-new file with no manifest row: do not add it to the rewrite manifest).
 
 **Interfaces:** Keeps the required elements of spec 8.3 and the owner's reading goal: what each frontier model recommends, where they agree and differ, which Argon claims survived verification, at most three ranked options (question, cheapest step, prerequisites, falsifier, stop gate), one owner-decision list with defaults, and a "what to ignore" list.
 
