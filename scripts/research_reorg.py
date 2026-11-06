@@ -7,6 +7,7 @@ import argparse
 import csv
 import fnmatch
 import hashlib
+import io
 import json
 import os
 import posixpath
@@ -1517,6 +1518,38 @@ def _cmd_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
+MOVED_COLUMNS = ("old_path", "new_path", "renamed")
+
+
+def moved_csv_text(rows: list[ManifestRow]) -> str:
+    """Render the MOVED.csv navigation table: one row per manifest row, sorted by old path.
+
+    `renamed` is `yes` only when the basename changed (the three `-brief` renames).
+    The table is for navigation only; it never rescues a path that is missing on disk.
+
+    Args:
+        rows: Manifest rows.
+
+    Returns:
+        CSV text with LF line endings, identical for any input order.
+    """
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, lineterminator="\n")
+    writer.writerow(MOVED_COLUMNS)
+    for row in sorted(rows, key=lambda r: (r.current_path, r.proposed_path)):
+        changed = PurePosixPath(row.current_path).name != PurePosixPath(row.proposed_path).name
+        writer.writerow((row.current_path, row.proposed_path, "yes" if changed else "no"))
+    return buffer.getvalue()
+
+
+def _cmd_moved_csv(args: argparse.Namespace) -> int:
+    """Run `moved-csv`: write the old-path to new-path table."""
+    rows = load_manifest(Path(args.manifest))
+    Path(args.out).write_text(moved_csv_text(rows), encoding="utf-8", newline="")
+    print(f"OK moved-csv {len(rows)} rows")
+    return 0
+
+
 def _cmd_manifest_check(args: argparse.Namespace) -> int:
     """Run `manifest-check`: print problems and return 1 if any."""
     rows = load_manifest(Path(args.manifest))
@@ -1570,6 +1603,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--root", default=str(REPO_ROOT), help="Repository root (default: this repository)."
     )
     move.set_defaults(func=_cmd_move)
+    moved = sub.add_parser("moved-csv", help="Write research/MOVED.csv (old path, new path).")
+    moved.add_argument("--manifest", required=True, help="Path to the manifest CSV.")
+    moved.add_argument("--out", required=True, help="Path of the CSV to write.")
+    moved.set_defaults(func=_cmd_moved_csv)
     verify = sub.add_parser("verify", help="Check one stage's gate (exit 1 on any problem).")
     verify.add_argument(
         "--stage",

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
+import io
 import json
 import os
 import subprocess
@@ -22,6 +24,7 @@ from scripts.research_reorg import (
     load_manifest,
     load_rewrite_manifest,
     main,
+    moved_csv_text,
     remove_leftover_dirs,
     rewrite_code,
     rewrite_markdown,
@@ -1332,3 +1335,52 @@ def test_main_verify_moved_failure_notes_existing_rewrite_manifest(tmp_path: Pat
     out = capsys.readouterr().out
     assert out.count("NOTE ") == 1
     assert "only valid before the rewrite" in out
+
+
+def test_moved_csv_covers_every_manifest_row_and_marks_three_renames(
+    tmp_path: Path,
+    capsys,  # type: ignore[no-untyped-def]
+) -> None:
+    rows = [
+        _row(f"{OLD}z.md", "research/allocation/s1/z.md"),
+        _row(
+            f"{OLD}briefs/2026-10-23-century-leverage.md",
+            "research/allocation/c/2026-10-23-century-leverage-brief.md",
+            "brief",
+        ),
+        _row(
+            f"{OLD}briefs/2026-09-28-cross-asset-sleeve.md",
+            "research/allocation/x/2026-09-28-cross-asset-sleeve-brief.md",
+            "brief",
+        ),
+        _row(
+            f"{OLD}briefs/2026-09-30-static-fractional-leverage.md",
+            "research/allocation/s/2026-09-30-static-fractional-leverage-brief.md",
+            "brief",
+        ),
+        _row(f"{OLD}a, odd.md", "research/allocation/s1/a, odd.md"),
+    ]
+    text = moved_csv_text(rows)
+    parsed = list(csv.DictReader(io.StringIO(text)))
+    assert list(parsed[0]) == ["old_path", "new_path", "renamed"]
+    assert len(parsed) == len(rows)
+    assert {r["old_path"] for r in parsed} == {r.current_path for r in rows}
+    assert [r["old_path"] for r in parsed] == sorted(r["old_path"] for r in parsed)
+    assert sum(r["renamed"] == "yes" for r in parsed) == 3
+    assert all(r["renamed"] in ("yes", "no") for r in parsed)
+    odd = next(r for r in parsed if r["old_path"].endswith("a, odd.md"))
+    assert odd["new_path"] == "research/allocation/s1/a, odd.md" and odd["renamed"] == "no"
+    assert moved_csv_text(list(reversed(rows))) == text
+
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        + "".join(f'"{r.current_path}","{r.proposed_path}","","{r.kind}",""\n' for r in rows)
+    )
+    out = tmp_path / "MOVED.csv"
+    assert main(["moved-csv", "--manifest", str(manifest), "--out", str(out)]) == 0
+    first = out.read_bytes()
+    assert first.decode("utf-8") == text
+    assert main(["moved-csv", "--manifest", str(manifest), "--out", str(out)]) == 0
+    assert out.read_bytes() == first
+    assert "5 rows" in capsys.readouterr().out
