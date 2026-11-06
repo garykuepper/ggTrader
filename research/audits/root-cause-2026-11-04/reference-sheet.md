@@ -82,7 +82,7 @@ Rows are alphabetical within each group. DSR builds on the Sharpe ratio, which i
 |---|---|---|---|
 | 12-1 momentum | Buy the stocks that rose most over the past year, skipping the latest month. | The momentum replay returned +4.37 pp/yr with a CI that includes zero. | `synth:37-38` |
 | BB, RSI, EMA, MACD | Four price-pattern indicators: Bollinger Bands, relative strength index, exponential moving average, moving-average convergence/divergence. | Four of the five voters in the live ensemble. | `code:13-14`, `code:155` |
-| EDGAR | The American Securities and Exchange Commission's public filings database. | The Argon review proposed it, but no EDGAR ingestion exists here. | `consol:384`, `verify:63` |
+| EDGAR | The American Securities and Exchange Commission's public filings database. | The Argon review proposed it, but no EDGAR ingestion exists here. | `consol:382`, `verify:63` |
 | Fama-French | Eugene Fama and Kenneth French, finance professors whose factor research defines the market, value, profitability and investment portfolios published in the French data library. | The long-history screens compare against the Fama-French market. | `accuracy:192`, `verdicts:486` |
 | FOMC | Federal Open Market Committee: the American central bank's interest-rate meetings. | The pre-FOMC Treasury study is the one area tested with evidence against, with caveats. | `synth:25-26`, `coverage:41-46` |
 | French data | Free, survivorship-free American stock portfolio returns back to 1926, published by Professor Kenneth French. | It allows long-history tests (1963 and 1927) without paid data. | `synth:38-39` |
@@ -96,13 +96,13 @@ Rows are alphabetical within each group. DSR builds on the Sharpe ratio, which i
 
 | Term | Plain meaning | Why it matters here | Source |
 |---|---|---|---|
-| agy | The Antigravity agent harness: a program that runs automated agents. | It ran the Argon review. | `consol:82` |
+| agy | The Antigravity agent harness: a program that runs automated agents. | It ran the Argon review. | `consol:83` |
 | Alpaca activity codes | About 25 activity codes of Alpaca, the paper account's broker: `DIV` and variants for dividends, `SPLIT`, `MA`, `REORG`, `REO`, `NC`, `SPIN`, `INT`, `CSD`, `CSW`, `JNLC`, `JNLS`, `FEE`, `REG`, `TAF`, `CAT`. | A search of the dividend, split, merger, interest and journal codes since 2024-06-01 returned only the $100,000 funding journal. The broker never credited a dividend. | `parity:21-26`, `parity:291-296` |
 | Argon | The Gemini 4 Argon model, run through agy. | It wrote one of the two frontier-model reviews. The review carries a banner marking it as unverified model output. | `verify:3` |
 | EQR | Equity Residential's stock ticker (public fact, not named in the reports). AvalonBay (AVB) merged into it, so the AVB holding cannot be traded. | AVB's stored prices have copied EQR's since 2026-07-20. The held position was $746, 0.7% of the account. | `parity:330`, `clean:47` |
 | French portfolio names | Labels for stock portfolios sorted by a trait: profitability `HiOP`, cheapness `HiBM`, low investment `LoINV`, prior return `HiPRIOR`, share issuance `HiNI` and `NegNI` (net buybacks), size `BIG` and `SMALL`. | Used in the factor, momentum and net issuance screens. `BIG` `NegNI` returned t 0.26. | `coverage:305`, `ceiling:242`, `synth:534` |
 | MNST, AVB | Stock ticker symbols for Monster Beverage and AvalonBay. | The broker never applied MNST's 2-for-1 split (-0.85 pp of the paper shortfall). AVB's price series has been EQR's since 2026-07-20. | `consol:174`, `consol:205`, `parity:45-46`, `clean:47` |
-| Opus | The Claude Opus model. | It wrote the other frontier-model review, the senior-quant direction review. | `consol:31` |
+| Opus | The Claude Opus model. | It wrote the other frontier-model review, the senior-quant direction review. | `consol:32` |
 | PARA | A ticker whose stored prices belong to a different security for its whole S&P 500 membership. | The production replica traded it 3 times, and its effect is unmeasured. | `clean:37-44` |
 | Ticker symbols | Short exchange codes for a listed stock or fund, such as `AAPL`, `VZ` and `HAS` (Hasbro). Kraken, a crypto exchange, writes BTC as `XBT` in pair codes such as `XBTUSD`. | About 120 stock tickers and 40 crypto pair codes appear across the reports. Binance.US is another crypto exchange. | `CLAUDE.md` |
 
