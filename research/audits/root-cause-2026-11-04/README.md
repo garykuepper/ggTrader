@@ -1,6 +1,6 @@
 # Root-cause investigation, 2026-11-04: start here
 
-This folder holds the investigation into why the project's stock and crypto research has not beaten SPY (the S&P 500 index fund used as the benchmark) by much. It is diagnosis only: nine checks ("lenses") on the existing record, one synthesis, an independent challenge and two direction reviews. This page is a route into the evidence, not another summary.
+This folder holds the investigation into why the project's stock and crypto research has not beaten SPY (the S&P 500 index fund used as the benchmark) by much. It is diagnosis only: nine checks ("lenses"; together they are Phase 1, the main part of the investigation) on the existing record, one synthesis, an independent challenge and two direction reviews (one written by Claude Opus, one by Google's Gemini 4 Argon). This page is a route into the evidence, not another summary.
 
 ## Read in this order
 
@@ -10,11 +10,13 @@ This folder holds the investigation into why the project's stock and crypto rese
 
 ## What was and was not done
 
-- **Phase 2 re-runs were not performed.** The 29 proposed re-run items (P2-01 to P2-29 in the [Phase 1 checkpoint](2026-11-04-phase1-checkpoint.md)) were never run, by the owner's decision of 2026-11-05. Every question they would settle is "unknown, re-run not run", not "passed".
+- **Phase 2 re-runs were not performed.** Phase 2 is the optional re-run list at the end of the first investigation phase. Its 29 items (P2-01 to P2-29 in the [Phase 1 checkpoint](2026-11-04-phase1-checkpoint.md)) were never run, by the owner's decision of 2026-11-05. Every question they would settle is "unknown, re-run not run", not "passed".
 - **The Argon review is unverified as written.** It is output from a different model family (Gemini 4 Argon). Of its 105 path citations, 43 are broken or unsupported, and several specifics are invented. Read it only together with the [verification](2026-11-05-argon-review-verification.md), which lists what survives. The consolidated review uses only the verified parts.
 - **Phase 1 evidence on 19 price series is not exactly reproducible.** An accidental database refresh rewrote price history for 19 symbols on 2026-11-04. The [Phase 1 checkpoint](2026-11-04-phase1-checkpoint.md) records the incident, and Lens 1 and Lens 2 carry an erratum.
 
 ## Files
+
+NO-GO means a test failed its pre-set standard; the tape is the project's stored price history.
 
 ### Summary
 
@@ -53,20 +55,20 @@ This folder holds the investigation into why the project's stock and crypto rese
 
 | File | What it is |
 |---|---|
-| [2026-11-04-investigation-inventory.md](2026-11-04-investigation-inventory.md) | Inventory of the 144 material results every lens covers, rendered from the inventory JSON. |
+| [2026-11-04-investigation-inventory.md](2026-11-04-investigation-inventory.md) | Inventory of the 144 material results (every result that could change a verdict) that every lens covers, rendered from the inventory JSON. |
 | [2026-11-04-investigation-ledger.md](2026-11-04-investigation-ledger.md) | Copy of the working ledger: task completions, review rounds, owner decisions and rulings. A working log, not a deliverable. |
 | [_investigation_inventory.json](_investigation_inventory.json) | Source data for the inventory page (144 rows). |
 | [_synthesis_inventory_map.json](_synthesis_inventory_map.json) | Map from the synthesis tables to inventory rows. |
-| [_investigation_guard_baseline_2026-11-04.txt](_investigation_guard_baseline_2026-11-04.txt) | Snapshot of the observer worktree, observer timers, container and main checkout taken before the work, to show later that live parts were untouched. |
+| [_investigation_guard_baseline_2026-11-04.txt](_investigation_guard_baseline_2026-11-04.txt) | Snapshot of the intraday-observer test copy, its timers, the live container and the main checkout, taken before the work started to prove the live system was not touched. |
 | [_lens1_tape_state.json](_lens1_tape_state.json) | Lens 1 price-tape state for each inventory row. |
 | [_lens2_sensitivity.json](_lens2_sensitivity.json) | Lens 2 classification rules and the classification of every result. |
 | [_lens3_snapshot_gap.json](_lens3_snapshot_gap.json) | Lens 3 live-account snapshot and return comparison by era. |
 | [_lens4_ceiling.json](_lens4_ceiling.json) | Lens 4 target, tiers and measured ceiling. |
 | [_lens5_coverage_matrix.json](_lens5_coverage_matrix.json) | Lens 5 coverage classification of all 144 rows. |
-| [_lens6_replays.json](_lens6_replays.json) | Lens 6 hand replays of six implementations. |
-| [_lens6_verdicts.json](_lens6_verdicts.json) | Lens 6 code-correctness verdict per inventory row. |
+| [_lens6_replays.json](_lens6_replays.json) | Lens 6 hand replays: four strategies, one variant and one synthetic check of backtest fill semantics. |
+| [_lens6_verdicts.json](_lens6_verdicts.json) | Lens 6 code-correctness verdicts for 90 inventory rows; 33 are marked unverifiable. |
 | [_lens7_recompute.json](_lens7_recompute.json) | Lens 7 recomputed figures and the academic claims it checked. |
 | [_lens8_tape_checks.json](_lens8_tape_checks.json) | Lens 8 crypto tape checks, benchmark comparison and annualization. |
-| [_lens9_power.json](_lens9_power.json) | Lens 9 power results for the rows where a detectable effect could be computed. |
+| [_lens9_power.json](_lens9_power.json) | Lens 9 power result for each of the 144 rows; where a detectable effect could not be computed the row says so. |
 
 Raw JSON and text files here are historical evidence: treat them as read-only. To reproduce Lens 2's classifications, run `scripts/lens2_build.py`; the other lenses' scripts were not kept in the repository (the synthesis, section 7, says what a fresh reader can and cannot reproduce).
