@@ -7,7 +7,8 @@ absent and the crypto-wfo-textbook-reset sensitivity row reads "listed path miss
 Writes only the paths given with --out-json and --md-dir.
 Classification rules are the fixed text in RULES_TEXT; the verdict-type vocabularies, the
 contamination-direction table, the 1.12-comparator pattern and the column-14 logic are module
-constants below. Sensitivity columns follow docs/research/2026-11-04-lens2-sensitivity-spec.md.
+constants below. Sensitivity columns follow
+research/audits/root-cause-2026-11-04/2026-11-04-lens2-sensitivity-spec.md.
 """
 
 import argparse
@@ -19,7 +20,110 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-R = ROOT / "docs/research"
+#: Lens inputs (repo-relative), each at its own location in the root-cause audit folder.
+INVENTORY_JSON = "research/audits/root-cause-2026-11-04/_investigation_inventory.json"
+LENS1_JSON = "research/audits/root-cause-2026-11-04/_lens1_tape_state.json"
+LENS6_JSON = "research/audits/root-cause-2026-11-04/_lens6_verdicts.json"
+LENS7_JSON = "research/audits/root-cause-2026-11-04/_lens7_recompute.json"
+LENS9_JSON = "research/audits/root-cause-2026-11-04/_lens9_power.json"
+#: Screen results read directly by build() for the multiple-testing section.
+FACTOR_SCREEN_JSON = "research/stock-signals/factor-screen/_factor_screen_results.json"
+MOMENTUM_SCREEN_JSON = "research/stock-signals/momentum/_momentum_french_screen_results.json"
+NET_ISSUANCE_JSON = "research/stock-signals/net-issuance/_net_issuance_screen_results.json"
+#: Current location of each raw artifact the inventory names, keyed by file name. The inventory
+#: is a frozen artifact and still lists the pre-2026-11-05 paths (before the move to research/),
+#: so sens_rows_for() resolves each listed path to its study folder through this table.
+ARTIFACT_LOCATIONS: dict[str, str] = {
+    "_anchor_fix_reproduction_results.json": (
+        "research/audits/rebaseline/_anchor_fix_reproduction_results.json"
+    ),
+    "_audit_reruns_20261019.json": "research/audits/production-replica/_audit_reruns_20261019.json",
+    "_century_leverage_results.json": (
+        "research/allocation/century-leverage/_century_leverage_results.json"
+    ),
+    "_core_spy_blend_20260924.json": (
+        "research/allocation/core-spy-blend/_core_spy_blend_20260924.json"
+    ),
+    "_cross_asset_sleeve_holdout_results.json": (
+        "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_holdout_results.json"
+    ),
+    "_cross_asset_sleeve_results.json": (
+        "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json"
+    ),
+    "_event_audit_readiness_decision.json": (
+        "research/audits/event-timing/_event_audit_readiness_decision.json"
+    ),
+    "_event_evidence_export_file_search.json": (
+        "research/audits/event-timing/_event_evidence_export_file_search.json"
+    ),
+    "_event_evidence_resolution_workbook.json": (
+        "research/audits/event-timing/_event_evidence_resolution_workbook.json"
+    ),
+    "_factor_screen_results.json": (
+        "research/stock-signals/factor-screen/_factor_screen_results.json"
+    ),
+    "_family_scope_extraction.json": (
+        "research/stock-signals/feasibility/_family_scope_extraction.json"
+    ),
+    "_fomc_clustered_event_study_20261020.json": (
+        "research/audits/production-replica/_fomc_clustered_event_study_20261020.json"
+    ),
+    "_free_data_feasibility_matrix.json": (
+        "research/stock-signals/feasibility/_free_data_feasibility_matrix.json"
+    ),
+    "_ic_kelly_rebaseline_20260923.json": (
+        "research/audits/rebaseline/_ic_kelly_rebaseline_20260923.json"
+    ),
+    "_insider_acceptance_diagnostic.json": (
+        "research/audits/event-timing/_insider_acceptance_diagnostic.json"
+    ),
+    "_insider_identity_inventory_resolution_results.json": (
+        "research/audits/event-timing/_insider_identity_inventory_resolution_results.json"
+    ),
+    "_intraday_benchmark_verification.json": (
+        "research/intraday/spy-momentum-feasibility/_intraday_benchmark_verification.json"
+    ),
+    "_live_indicator_warmup_results.json": (
+        "research/paper-system/indicator-warmup/_live_indicator_warmup_results.json"
+    ),
+    "_momentum_french_screen_results.json": (
+        "research/stock-signals/momentum/_momentum_french_screen_results.json"
+    ),
+    "_month_end_treasury_results.json": (
+        "research/allocation/month-end-treasury/_month_end_treasury_results.json"
+    ),
+    "_net_issuance_screen_results.json": (
+        "research/stock-signals/net-issuance/_net_issuance_screen_results.json"
+    ),
+    "_pit_rebaseline_20260923.json": "research/audits/rebaseline/_pit_rebaseline_20260923.json",
+    "_position_sizing_wfo_results.json": (
+        "research/paper-system/position-sizing/_position_sizing_wfo_results.json"
+    ),
+    "_production_replica_results.json": (
+        "research/audits/production-replica/_production_replica_results.json"
+    ),
+    "_rebaseline_corrected_tape_20260822.json": (
+        "research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json"
+    ),
+    "_replica_parity_20261019.json": (
+        "research/audits/production-replica/_replica_parity_20261019.json"
+    ),
+    "_research_process_audit_ledger.json": (
+        "research/audits/research-process/_research_process_audit_ledger.json"
+    ),
+    "_static_leverage_aftertax_results.json": (
+        "research/allocation/static-leverage/_static_leverage_aftertax_results.json"
+    ),
+    "_wfo_fold_attribution_results.json": (
+        "research/programme/wfo-methods/_wfo_fold_attribution_results.json"
+    ),
+    "_wfo_policy_synthetic_results.json": (
+        "research/programme/wfo-methods/_wfo_policy_synthetic_results.json"
+    ),
+    "ibit_overnight_split.json": (
+        "research/crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json"
+    ),
+}
 SPEC_COMMIT = "a5fe547b"
 
 #: Fixed classification rules, verbatim as written before any row was classified.
@@ -131,14 +235,14 @@ def load(p: str) -> Any:
 
 def load_inputs() -> None:
     """Populate the module-level input tables from the committed lens outputs."""
-    inv.extend(load("docs/research/_investigation_inventory.json"))
-    L1.update({r["id"]: r for r in load("docs/research/_lens1_tape_state.json")})
-    L6.update({r["id"]: r for r in load("docs/research/_lens6_verdicts.json")})
-    l7 = load("docs/research/_lens7_recompute.json")
+    inv.extend(load(INVENTORY_JSON))
+    L1.update({r["id"]: r for r in load(LENS1_JSON)})
+    L6.update({r["id"]: r for r in load(LENS6_JSON)})
+    l7 = load(LENS7_JSON)
     for r in l7["recompute"]:
         L7rc.setdefault(r["id"], []).append(r)
     L7pr.update({r["id"]: r for r in l7["preregistration"]})
-    L9.update({r["id"]: r for r in load("docs/research/_lens9_power.json")["rows"]})
+    L9.update({r["id"]: r for r in load(LENS9_JSON)["rows"]})
 
 
 # ---------------------------------------------------------------------------
@@ -489,7 +593,7 @@ def bar_text(i, verdict):
             f"{st}; brief {p.get('brief')})"
         )
     return (
-        f"{verdict}; no pre-registered bar found (looked in: docs/research/briefs/, the "
+        f"{verdict}; no pre-registered bar found (looked in: the study briefs, the "
         f"2026-09-10 audit, source report; Lens 7 status '{st}')"
     )
 
@@ -526,15 +630,16 @@ def sens_rows_for(r):
         return [
             dict(zip(COLS, [i] + [NRA] * 10 + [bar, NRA, expo_from_sources(r), "none reported"]))
         ]
-    p = ROOT / art
+    loc = ARTIFACT_LOCATIONS.get(Path(art).name, art)
+    p = ROOT / loc
     if not p.exists():
-        m = f"no raw artifact (listed path missing: {art})"
+        m = f"no raw artifact (listed path missing: {loc})"
         return [dict(zip(COLS, [i] + [m] * 10 + [bar, m, expo_from_sources(r), "none reported"]))]
     d = json.loads(p.read_text())
-    h = HANDLERS.get(art)
+    h = HANDLERS.get(loc)
     if h is None:
-        return [generic_row(i, art, d, bar)]
-    return h(i, art, d, bar, r)
+        return [generic_row(i, loc, d, bar)]
+    return h(i, loc, d, bar, r)
 
 
 #: Column 14 for rows without a raw artifact (spec section 2.2: "from the source report where it
@@ -690,8 +795,8 @@ def h_century(i, art, d, bar, r):
             None,
             None,
             after,
-            bar
-            + " (selection: brief docs/research/briefs/2026-10-23-century-leverage.md §6, primary "
+            bar + " (selection: brief "
+            "research/allocation/century-leverage/2026-10-23-century-leverage-brief.md §6, primary "
             "24/15, wash=False, 0.84% fee, Shiller distributions; arm 30 = the kept arm)",
             keys,
             "arm 30 = 30% SSO (2x fund) / 70% 1x market, band ±8 pp (brief); arm 0 = 1x "
@@ -719,7 +824,8 @@ def h_core_spy(i, art, d, bar, r):
             AT_NONE,
             f"{r['verdict']}; bar: report §1 decision rule (k=1 Sharpe above SPY and MaxDD no "
             "worse; "
-            f"no t or CAGR bar), docs/research/2026-09-24-core-spy-blend-keep.md; artifact "
+            "no t or CAGR bar), "
+            "research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md; artifact "
             f"decision={d['decision']}; Lens 7: no earlier committed copy of the rule",
             keys,
             f"live_k1.0.mean_spy_weight={A['mean_spy_weight']:.4f}; core_idle_mean_pct="
@@ -741,7 +847,7 @@ def h_reruns(i, art, d, bar, r):
     b = (
         f"{r['verdict']}; bar: t >= {E['t_bar']} and CAGR gap >= +{E['cagr_bar_pp']} pp/yr "
         f"({key}.excess_stats.t_bar, .cagr_bar_pp; brief "
-        f"docs/research/briefs/2026-10-19-production-replica-audit.md §6); artifact "
+        f"research/audits/production-replica/2026-10-19-production-replica-audit.md §6); artifact "
         f"{key}.verdict={S['verdict']}"
     )
     return [
@@ -773,7 +879,8 @@ def h_netiss(i, art, d, bar, r):
         f"{r['verdict']}; bar: A1 NW(12) t >= {inp['A1_t_bar']} and one-sided p <= "
         f"{inp['A1_p_bar']} "
         f"(single test) AND A2 >= +{inp['A2_bar_pp']} pp/yr (inputs.*; brief "
-        f"docs/research/briefs/2026-10-23-net-issuance-screen.md); verdict fields H1.A1.pass="
+        "research/stock-signals/net-issuance/2026-10-23-net-issuance-screen.md); "
+        "verdict fields H1.A1.pass="
         f"{H['A1']['pass']}, H1.A2.pass={H['A2']['pass']}, H1.overall_pass={H['overall_pass']}"
     )
     fw, aw = inp["full_window"], inp["A2_window"]
@@ -847,7 +954,8 @@ def h_factor(i, art, d, bar, r):
         b = (
             f"{r['verdict']}; bar: A1 Holm across four at one-sided alpha {inp['holm_alpha']} "
             f"(this hypothesis' Holm threshold {H['A1']['holm_threshold']}) AND A2 >= "
-            f"+{inp['A2_bar_pp']} pp/yr (brief docs/research/briefs/2026-10-20-factor-screen.md "
+            f"+{inp['A2_bar_pp']} pp/yr (brief "
+            "research/stock-signals/factor-screen/2026-10-20-factor-screen.md "
             "§6); "
             f"pass_holm={H['A1']['pass_holm']}, A2.pass={H['A2']['pass']}, "
             f"overall_pass={H['overall_pass']}"
@@ -914,7 +1022,7 @@ def h_momentum(i, art, d, bar, r):
     rows = []
     w1, w2 = "1927-01..2026-04", "1994-01..2026-04"
     note = (
-        " (window from brief docs/research/briefs/2026-10-20-momentum-retest.md §5; not "
+        " (window from brief research/stock-signals/momentum/2026-10-20-momentum-retest.md §5; not "
         "stored in artifact)"
     )
     pre = "comparator: Fama-French market (Mkt-RF + RF, brief §5), not SPY; "
@@ -1166,7 +1274,7 @@ def h_replica(i, art, d, bar, r):
     b = (
         f"{r['verdict']}; bar: NW(5) t >= 3.0 AND CAGR gap >= +1.0 pp/yr before tax, both "
         f"windows, primary arm; after-tax >= +1.0 pp/yr at 24/15 only if those pass (brief "
-        "docs/research/briefs/2026-10-19-production-replica-audit.md §4); artifact "
+        "research/audits/production-replica/2026-10-19-production-replica-audit.md §4); artifact "
         "verdict.verdict="
         f"{d['verdict']['verdict']} (reasons {d['verdict']['reasons']}), closure.verdict="
         f"{d['closure']['verdict']} (stage {d['closure']['stage']}), windows.{w}.arms.primary."
@@ -1271,7 +1379,8 @@ def h_monthend(i, art, d, bar, r):
     rows = []
     P = d["primary"]
     vb = (
-        f"{r['verdict']}; bar: brief docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md "
+        f"{r['verdict']}; bar: brief "
+        "research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve.md "
         f"pass bar criteria 1-5 (Sharpe/return/yearly, post-2019 positive, WFO gates >= 12/17 "
         f"no halt stable >= 8/17, portfolio Sharpe > SPY with MaxDD no worse, criteria 1 and 4 "
         f"at 3 bp; no t bar); artifact verdict.checks={json.dumps(d['verdict']['checks'])}"
@@ -1397,8 +1506,8 @@ def h_xasset(i, art, d, bar, r):
         ]
         arm = "static"
         b = (
-            bar
-            + "; selection: step 1 (brief docs/research/briefs/2026-09-28-cross-asset-sleeve.md "
+            bar + "; selection: step 1 (brief "
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md "
             "pass bar names pinned, 2016-2026 and 2022 windows at the primary 1 bp, and pinned and "
             "2016-2026 at 3 bp); artifact verdict.static_checks="
             + json.dumps(d["verdict"]["static_checks"])
@@ -1543,7 +1652,7 @@ def h_ibit(i, art, d, bar, r):
                         f"{art}; window; mean_bp.{s}; t_stat.{s}; n_days; n_weeknight; n_weekend",
                         "not recorded in artifact",
                         "artifact's own statistic: mean/std*sqrt(n) per session type "
-                        "(docs/research/artifacts-2026-10-25-crypto-web-batch/"
+                        "(research/crypto/artifacts-2026-10-25-crypto-web-batch/"
                         "ibit_overnight_split.py:45-46), iid; "
                         "tested quantity: mean IBIT session return in bp, absolute; overlap/fold "
                         "dependence: not stated",
@@ -1585,24 +1694,24 @@ def h_crypto_snap(i, art, d, bar, r):
 
 
 HANDLERS = {
-    "docs/research/_static_leverage_aftertax_results.json": h_static,
-    "docs/research/_century_leverage_results.json": h_century,
-    "docs/research/_core_spy_blend_20260924.json": h_core_spy,
-    "docs/research/_audit_reruns_20261019.json": h_reruns,
-    "docs/research/_net_issuance_screen_results.json": h_netiss,
-    "docs/research/_factor_screen_results.json": h_factor,
-    "docs/research/_momentum_french_screen_results.json": h_momentum,
-    "docs/research/_pit_rebaseline_20260923.json": h_pit,
-    "docs/research/_anchor_fix_reproduction_results.json": h_anchorfix,
-    "docs/research/_rebaseline_corrected_tape_20260822.json": h_rebase,
-    "docs/research/_ic_kelly_rebaseline_20260923.json": h_ickelly,
-    "docs/research/_position_sizing_wfo_results.json": h_possize,
-    "docs/research/_production_replica_results.json": h_replica,
-    "docs/research/_fomc_clustered_event_study_20261020.json": h_fomc,
-    "docs/research/_month_end_treasury_results.json": h_monthend,
-    "docs/research/_cross_asset_sleeve_results.json": h_xasset,
-    "docs/research/_cross_asset_sleeve_holdout_results.json": h_holdout,
-    "docs/research/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json": h_ibit,
+    "research/allocation/static-leverage/_static_leverage_aftertax_results.json": h_static,
+    "research/allocation/century-leverage/_century_leverage_results.json": h_century,
+    "research/allocation/core-spy-blend/_core_spy_blend_20260924.json": h_core_spy,
+    "research/audits/production-replica/_audit_reruns_20261019.json": h_reruns,
+    "research/stock-signals/net-issuance/_net_issuance_screen_results.json": h_netiss,
+    "research/stock-signals/factor-screen/_factor_screen_results.json": h_factor,
+    "research/stock-signals/momentum/_momentum_french_screen_results.json": h_momentum,
+    "research/audits/rebaseline/_pit_rebaseline_20260923.json": h_pit,
+    "research/audits/rebaseline/_anchor_fix_reproduction_results.json": h_anchorfix,
+    "research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json": h_rebase,
+    "research/audits/rebaseline/_ic_kelly_rebaseline_20260923.json": h_ickelly,
+    "research/paper-system/position-sizing/_position_sizing_wfo_results.json": h_possize,
+    "research/audits/production-replica/_production_replica_results.json": h_replica,
+    "research/audits/production-replica/_fomc_clustered_event_study_20261020.json": h_fomc,
+    "research/allocation/month-end-treasury/_month_end_treasury_results.json": h_monthend,
+    "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json": h_xasset,
+    "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_holdout_results.json": h_holdout,
+    "research/crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json": h_ibit,
     "results/research/research_20260511_193048/wfo_stats_snapshot.json": h_crypto_snap,
 }
 
@@ -1741,7 +1850,7 @@ RESEARCHER_FREEDOM: list[dict[str, str]] = [
     },
     {
         "date": "2026-07 (July studies)",
-        "commit": "docs/research/prompts/local-implementation-prompt-TEMPLATE.md",
+        "commit": "research/prompts/local-implementation-prompt-TEMPLATE.md",
         "change": "comparator for July studies = the prompt's 'Current baseline -- the bar to "
         "beat' "
         "(Lens 7), not a per-study pre-registered bar",
@@ -1783,7 +1892,7 @@ RESEARCHER_FREEDOM: list[dict[str, str]] = [
         "change": "DSR units fix",
         "direction": "much "
         "tighter (anchor deployed in 17/17 corrected momentum folds, "
-        "docs/research/_wfo_fold_attribution_results.json)",
+        "research/programme/wfo-methods/_wfo_fold_attribution_results.json)",
         "affects": "every run_wfo row before 2026-10-19 (Lens 1 dsr_units tag, 51 rows)",
     },
     {
@@ -1860,9 +1969,9 @@ def build(out_json: Path, md_dir: Path | None) -> dict[str, Any]:
     for c in tests:
         fam.setdefault(family(c["id"]), []).append(c["id"])
 
-    fd = json.loads((R / "_factor_screen_results.json").read_text())
-    md = json.loads((R / "_momentum_french_screen_results.json").read_text())
-    nd = json.loads((R / "_net_issuance_screen_results.json").read_text())
+    fd = load(FACTOR_SCREEN_JSON)
+    md = load(MOMENTUM_SCREEN_JSON)
+    nd = load(NET_ISSUANCE_JSON)
     n_tests = len(tests)
     n_hyp_extra = 3 + 1  # factor 4 hyps counted as 1 row (+3), momentum 2 groups as 1 row (+1)
     multiple_testing = {
@@ -1894,7 +2003,7 @@ def build(out_json: Path, md_dir: Path | None) -> dict[str, Any]:
                 "per_rank_thresholds": {
                     g: fd["hypotheses"][g]["A1"]["holm_threshold"] for g in fd["hypotheses"]
                 },
-                "source": "docs/research/_factor_screen_results.json",
+                "source": "research/stock-signals/factor-screen/_factor_screen_results.json",
             },
             "momentum_screen": {
                 "family_wise_one_sided_p": 0.00135,
@@ -1902,7 +2011,7 @@ def build(out_json: Path, md_dir: Path | None) -> dict[str, Any]:
                 "second_step": 0.00135,
                 "full_p": {g: md["groups"][g]["full_p"] for g in md["groups"]},
                 "holm": md["holm"],
-                "source": "brief docs/research/briefs/2026-10-20-momentum-retest.md §5; "
+                "source": "brief research/stock-signals/momentum/2026-10-20-momentum-retest.md §5; "
                 "_momentum_french_screen_results.json groups.*.full_p, holm.*",
             },
             "net_issuance": {
@@ -1948,7 +2057,7 @@ def build(out_json: Path, md_dir: Path | None) -> dict[str, Any]:
             "anchor_share_mu1.0_pgate1.0": 0.341,
             "anchor_share_mu1.0_pgate0.3": 0.868,
             "runs_ending_halted_mu1.0_pgate1.0": 0.496,
-            "source": "docs/research/2026-11-02-wfo-policy-synthetic.md §5.1-5.3; "
+            "source": "research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md §5.1-5.3; "
             "_wfo_policy_synthetic_results.json",
             "limits": "synthetic; real NDH/DSR not modelled; 2.0 OOS Sharpe s.d.",
         },

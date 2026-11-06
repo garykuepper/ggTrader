@@ -17,8 +17,8 @@ from ggTrader.lab.french_data import (
 from ggTrader.utils.paths import find_project_root
 
 PROJECT_ROOT = find_project_root()
-BRIEF = "docs/research/briefs/2026-10-20-factor-screen.md"
-DEFAULT_OUT = PROJECT_ROOT / "docs" / "research" / "_factor_screen_results.json"
+BRIEF = "research/stock-signals/factor-screen/2026-10-20-factor-screen.md"
+DEFAULT_OUT = PROJECT_ROOT / "research/stock-signals/factor-screen/_factor_screen_results.json"
 
 
 def main() -> None:

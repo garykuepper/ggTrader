@@ -89,7 +89,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         default=None,
-        help="Path to output JSON file (default: docs/research/_audit_reruns_<YYYYMMDD>.json).",
+        help=(
+            "Path to output JSON file "
+            "(default: research/audits/production-replica/_audit_reruns_<YYYYMMDD>.json)."
+        ),
     )
     parser.add_argument(
         "--force",
@@ -351,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
 
     today_str = datetime.now(timezone.utc).strftime("%Y%m%d")
     output_path = args.output or (
-        REPO_ROOT / "docs" / "research" / f"_audit_reruns_{today_str}.json"
+        REPO_ROOT / "research/audits/production-replica" / f"_audit_reruns_{today_str}.json"
     )
 
     results: dict[str, Any] = {}

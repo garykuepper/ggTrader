@@ -1,6 +1,6 @@
 """A10 month-end Treasury sleeve: frozen-rule test, 12-combo WFO, SPY-overlay portfolio.
 
-Pre-registered in docs/research/briefs/2026-09-24-month-end-treasury-sleeve.md
+Pre-registered in research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve.md
 before any run:
   1. primary: IEF, last 3 trading days (enter at the close of the 4th-to-last
      trading day, exit at the close of the last), SIGNAL_POSITION_SIZE 1.0,
@@ -39,7 +39,7 @@ from ggTrader.lab.sweep import build_grid
 from ggTrader.lab.wfo import run_wfo
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = REPO_ROOT / "docs/research/_month_end_treasury_results.json"
+DEFAULT_OUT = REPO_ROOT / "research/allocation/month-end-treasury/_month_end_treasury_results.json"
 
 EVAL_START = "2021-01-31"
 EVAL_END = "2026-04-30"

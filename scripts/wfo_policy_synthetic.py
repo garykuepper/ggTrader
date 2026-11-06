@@ -22,7 +22,9 @@ def main() -> None:
     """Run and save the preregistered grid."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--out", type=Path, default=ROOT / "docs/research/_wfo_policy_synthetic_results.json"
+        "--out",
+        type=Path,
+        default=ROOT / "research/programme/wfo-methods/_wfo_policy_synthetic_results.json",
     )
     parser.add_argument("--reps", type=int, default=5000)
     parser.add_argument("--seed", type=int, default=20261102)

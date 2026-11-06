@@ -42,7 +42,9 @@ from ggTrader.lab.strategy import LabConfig  # noqa: E402
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse command line arguments."""
-    default_out = REPO_ROOT / "docs" / "research" / "_fomc_clustered_event_study_20261020.json"
+    default_out = (
+        REPO_ROOT / "research/audits/production-replica/_fomc_clustered_event_study_20261020.json"
+    )
     parser = argparse.ArgumentParser(
         description="Day-clustered FOMC drift event study on the treasury ETF universe."
     )
@@ -104,7 +106,7 @@ def run_clustered_study() -> dict[str, Any]:
     event_net, nonevent_net = split_event_returns_by_date(net_returns, mask)
     net_res = event_study_test(event_net, nonevent_net)
 
-    ref_path = REPO_ROOT / "docs" / "research" / "_audit_reruns_20261019.json"
+    ref_path = REPO_ROOT / "research/audits/production-replica/_audit_reruns_20261019.json"
     with open(ref_path, "r", encoding="utf-8") as f:
         ref_json = json.load(f)
     unclustered_ref = ref_json["fomc_drift"]["primary_event_study"]

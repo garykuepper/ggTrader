@@ -2,7 +2,8 @@
 # Sleeps until 13:15 PT (15 min after the 12:45 PT paper_trade.sh cron job),
 # then runs the reduced-budget gated-WFO position-sizing regime comparison.
 # Launched fully detached (setsid + disown) so it survives the parent shell
-# ending; see docs/research/2026-08-19-position-sizing-regimes.md and
+# ending; see
+# research/paper-system/position-sizing/2026-08-19-position-sizing-regimes.md and
 # scripts/position_sizing_wfo.py for context/method.
 set -euo pipefail
 
@@ -31,4 +32,4 @@ exec env PYTHONPATH=src .venv/bin/python scripts/position_sizing_wfo.py \
     --eval-start 2023-10-30 \
     --eval-end 2026-04-30 \
     --n-jobs 3 \
-    --out docs/research/_position_sizing_wfo_results.json
+    --out research/paper-system/position-sizing/_position_sizing_wfo_results.json

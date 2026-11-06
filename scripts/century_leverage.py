@@ -31,8 +31,9 @@ from ggTrader.lab.century_leverage import (  # noqa: E402
     simulate,
 )
 
-OUTPUT = ROOT / "docs" / "research" / "_century_leverage_results.json"
-CALIBRATION = ROOT / "docs" / "research" / "_century_leverage_calibration.json"
+CENTURY_DIR = ROOT / "research/allocation/century-leverage"
+OUTPUT = CENTURY_DIR / "_century_leverage_results.json"
+CALIBRATION = CENTURY_DIR / "_century_leverage_calibration.json"
 FRENCH_DIR = ROOT / "data" / "external" / "french"
 SHILLER_DIR = ROOT / "data" / "external" / "shiller"
 A23_DIR = ROOT / "data" / "external" / "a23_inputs"

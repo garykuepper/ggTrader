@@ -1,8 +1,8 @@
 """Research script: does the validated SP500-core baseline (OOS Sharpe 1.12 /
 CAGR 16.3% / MaxDD -11.0% vs SPY 0.58, 17-fold, gates 16/17 --
-docs/research/RESEARCH_SNAPSHOT.md:21) still reproduce now that the
+research/RESEARCH_SNAPSHOT.md:21) still reproduce now that the
 per-fold expanding-anchor leak fix (commit 2eafab1,
-docs/research/2026-08-18-wfo-anchor-leakage-fix.md) is in?
+research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md) is in?
 
 Configuration match, and how it was determined
 ------------------------------------------------
@@ -401,7 +401,7 @@ if __name__ == "__main__":
     p.add_argument("--skip-blend", action="store_true", default=False)
     p.add_argument(
         "--out",
-        default=str(REPO_ROOT / "docs" / "research" / "_anchor_fix_reproduction_results.json"),
+        default=str(REPO_ROOT / "research/audits/rebaseline/_anchor_fix_reproduction_results.json"),
     )
     args = p.parse_args()
 

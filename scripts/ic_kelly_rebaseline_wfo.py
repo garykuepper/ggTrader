@@ -1,7 +1,7 @@
 """Re-run `ensemble_ic` and `ensemble_kelly` against the corrected-tape core.
 
 Both were rejected only against the phantom 1.12 baseline (real: 0.99,
-docs/research/_rebaseline_corrected_tape_20260822.json). This runs each
+research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json). This runs each
 through the identical pinned setup as that re-baseline (`run_core` from
 `anchor_fix_reproduction_wfo.py`: sp500, 17 folds, 2021-01-31 -> 2026-04-30,
 full grid, gated WFO), plus `ensemble` itself as a same-night control so a
@@ -30,7 +30,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from anchor_fix_reproduction_wfo import EVAL_END, EVAL_START, run_core  # noqa: E402
 
-DEFAULT_OUT = REPO_ROOT / "docs/research/_ic_kelly_rebaseline_20260923.json"
+DEFAULT_OUT = REPO_ROOT / "research/audits/rebaseline/_ic_kelly_rebaseline_20260923.json"
 STRATEGIES = ["ensemble", "ensemble_ic", "ensemble_kelly"]
 MIN_SHARPE = 1.05
 MIN_MAX_DD_PCT = -10.0

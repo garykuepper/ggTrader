@@ -14,7 +14,7 @@ reference is computed once: every indicator is causal, so its value at d
 depends only on bars <= d.
 
 Read-only against the DB except for whatever `load_ohlcv` itself backfills.
-Results -> docs/research/_live_indicator_warmup_results.json.
+Results -> research/paper-system/indicator-warmup/_live_indicator_warmup_results.json.
 """
 
 from __future__ import annotations
@@ -41,7 +41,9 @@ from ggTrader.lab.strategies.indicators import (
 from ggTrader.lab.strategy import LabConfig
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = REPO_ROOT / "docs/research/_live_indicator_warmup_results.json"
+DEFAULT_OUT = (
+    REPO_ROOT / "research/paper-system/indicator-warmup/_live_indicator_warmup_results.json"
+)
 
 REF_START = "2016-01-01"
 EVAL_START = "2026-03-30"

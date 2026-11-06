@@ -2,7 +2,7 @@
 
 The static book (80% SPY + TLT/GLD/PDBC, monthly rebalance) passed its
 pre-registered bar as a paper-shadow GO only
-(docs/research/2026-09-28-cross-asset-sleeve.md). This recomputes that book
+(research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md). This recomputes that book
 from prices since SHADOW_START on every run -- no state, nothing persisted
 except the price top-up -- and prints it beside the live paper account and
 SPY buy-and-hold, all rebased to the live NAV on SHADOW_START.

@@ -3,7 +3,7 @@ mean-reversion strategy against the full SP500 universe, plus a
 market-neutrality check (OOS return correlation/beta to SPY) since that is
 the strategy's actual design goal, not just Sharpe. See
 src/ggTrader/lab/strategies/pairs_stat_arb.py and
-docs/research/RESEARCH_SNAPSHOT.md §6 Rank 1.
+research/RESEARCH_SNAPSHOT.md §6 Rank 1.
 
 Known, deliberate v1 simplifications (see the eventual research report):
 no short-borrow-fee/margin-interest cost modeling, same-sector-only pair

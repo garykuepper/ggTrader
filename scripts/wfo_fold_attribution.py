@@ -1,6 +1,7 @@
 """Attribute saved WFO fold records to gate failure, anchor fallback or winner deployment.
 
-Reads only existing result JSON under docs/research/; reruns nothing.
+Reads only existing result JSON under research/ (per-study folders, see ARTIFACT_PATHS);
+reruns nothing.
 """
 
 from __future__ import annotations
@@ -18,8 +19,28 @@ if str(PROJECT_ROOT / "src") not in sys.path:
 
 from ggTrader.lab.wfo_attribution import regime_from_ancestry, summarize_run  # noqa: E402
 
-RESEARCH_DIR = PROJECT_ROOT / "docs" / "research"
-DEFAULT_OUT = RESEARCH_DIR / "_wfo_fold_attribution_results.json"
+#: Repo-relative location of each source artifact, keyed by the file name used in RUN_SOURCES
+#: and in the output's ``file`` field. Each study keeps its results in its own folder.
+ARTIFACT_PATHS: Dict[str, str] = {
+    "_anchor_fix_reproduction_results.json": (
+        "research/audits/rebaseline/_anchor_fix_reproduction_results.json"
+    ),
+    "_audit_reruns_20261019.json": "research/audits/production-replica/_audit_reruns_20261019.json",
+    "_cross_asset_sleeve_results.json": (
+        "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json"
+    ),
+    "_ic_kelly_rebaseline_20260923.json": (
+        "research/audits/rebaseline/_ic_kelly_rebaseline_20260923.json"
+    ),
+    "_month_end_treasury_results.json": (
+        "research/allocation/month-end-treasury/_month_end_treasury_results.json"
+    ),
+    "_pit_rebaseline_20260923.json": "research/audits/rebaseline/_pit_rebaseline_20260923.json",
+    "_rebaseline_corrected_tape_20260822.json": (
+        "research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json"
+    ),
+}
+DEFAULT_OUT = PROJECT_ROOT / "research/programme/wfo-methods/_wfo_fold_attribution_results.json"
 #: Commit that corrected the DSR gate (committed 2026-10-19T16:04:44-07:00).
 DSR_FIX_COMMIT = "09f9f40"
 
@@ -66,7 +87,7 @@ def _is_ancestor(ancestor: str, descendant: str) -> Optional[bool]:
 DOCUMENTED_GATE_VERSION: Dict[Tuple[str, str], Dict[str, str]] = {
     ("_audit_reruns_20261019.json", key): {
         "gate_version": "corrected harness (DSR fix 09f9f40)",
-        "source": "docs/research/2026-10-19-production-replica-audit-nogo.md "
+        "source": "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md "
         "('Momentum and FOMC corrected-harness reruns')",
     }
     for key in ("xs_momentum", "dual_momentum", "fomc_drift")
@@ -80,7 +101,9 @@ def artifact_regime(rel_path: str) -> Dict[str, Any]:
     file entered Git, not which gate generated the run, so it is reported as
     ``committed_after_fix`` (see ``regime_from_ancestry``).
     """
-    log = _git("log", "--format=%H", "--follow", "--", rel_path)
+    # --diff-filter=r drops pure-rename commits (the 2026-11-05 move into research/), so
+    # moving a file does not count as a new commit and the regime label stays as it was.
+    log = _git("log", "--format=%H", "--follow", "--diff-filter=r", "--", rel_path)
     commits = log.splitlines() if log else []
     if not commits:
         return {"regime": "unknown", "basis": "artifact has no git history", "commits": []}
@@ -110,20 +133,20 @@ def _dig(obj: Any, path: Tuple[str, ...]) -> Any:
     return obj
 
 
-def build_results(research_dir: Path = RESEARCH_DIR) -> Dict[str, Any]:
+def build_results(project_root: Path = PROJECT_ROOT) -> Dict[str, Any]:
     """Build the attribution results object for every configured run."""
     runs: List[Dict[str, Any]] = []
     for filename, path in RUN_SOURCES:
         run: Dict[str, Any] = {"file": filename, "json_path": "/".join(path)}
         try:
-            rows = _dig(json.loads((research_dir / filename).read_text()), path)
+            rows = _dig(json.loads((project_root / ARTIFACT_PATHS[filename]).read_text()), path)
         except (OSError, KeyError, json.JSONDecodeError) as exc:
             run["error"] = f"{type(exc).__name__}: {exc}"
             runs.append(run)
             continue
         run["summary"] = summarize_run(rows)
         run["has_halted_field"] = bool(rows) and all("halted" in r for r in rows)
-        run.update(artifact_regime(f"docs/research/{filename}"))
+        run.update(artifact_regime(ARTIFACT_PATHS[filename]))
         documented = DOCUMENTED_GATE_VERSION.get((filename, path[0]))
         if documented:
             run["documented_gate_version"] = documented

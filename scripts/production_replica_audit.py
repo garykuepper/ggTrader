@@ -33,9 +33,9 @@ ARMS = {
     "cost10": {"stock_cost_bps": 10.0},
     "cash0": {},
 }
-DEFAULT_OUT = ROOT / "docs/research/_production_replica_results.json"
-DEFAULT_CURVES = ROOT / "docs/research/_production_replica_curves.csv"
-AMENDMENT = "docs/research/briefs/2026-10-19-production-replica-parity-amendment.md"
+DEFAULT_OUT = ROOT / "research/audits/production-replica/_production_replica_results.json"
+DEFAULT_CURVES = ROOT / "research/audits/production-replica/_production_replica_curves.csv"
+AMENDMENT = "research/audits/production-replica/2026-10-19-production-replica-parity-amendment.md"
 LOG = logging.getLogger(__name__)
 
 

@@ -106,7 +106,9 @@ def main() -> None:
     args = parser.parse_args()
     since = pd.Timestamp(args.since, tz="UTC")
     today = pd.Timestamp.now(tz="UTC").normalize()
-    out = args.out or ROOT / "docs/research" / f"_replica_parity_{today:%Y%m%d}.json"
+    out = args.out or (
+        ROOT / "research/audits/production-replica" / f"_replica_parity_{today:%Y%m%d}.json"
+    )
     # A read-only transaction protects the live tables even if this script changes later.
     with get_engine().connect().execution_options(postgresql_readonly=True) as conn:
         reasons = conn.execute(text("SELECT DISTINCT reason FROM paper_trades ORDER BY reason"))
