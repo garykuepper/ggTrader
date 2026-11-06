@@ -75,7 +75,7 @@ collector reviews are not repeated.
   artifacts `_insider_identity_inventory_acquisition.json` and
   `_insider_identity_inventory_resolution_results.json`, and relevant raw caches.
 - Final controller deliverables remain `research/audits/event-timing/_event_timing_audit.json`
-  and `docs/research/2026-10-21-event-timing-audit-report.md`, following the registered
+  and `research/audits/event-timing/2026-10-21-event-timing-audit-report.md`, following the registered
   audit schema. Never overwrite them with a partial operational workbook.
 - Runtime code changes are conditional on a reproduced defect, not a prerequisite.
   Flash proposes them; Codex owns implementation, targeted tests and review.

@@ -35,7 +35,7 @@
 - Update `docs/next_steps.md`: only the next one or two actions and link to this plan.
 - Preserve `data/external/event_timing_audit/`: raw responses, manifests, accounting and checkpoints. Store new raw evidence there only under the reviewed acquisition plan.
 - Conditional code changes only: `src/ggTrader/lab/event_timing_sources.py`, `event_timing_audit.py`, `event_timing_reconstruction.py`, and `tests/lab/test_event_timing_audit.py`. Reuse current interfaces. No new module or dependency is planned.
-- Final audit deliverables remain `research/audits/event-timing/_event_timing_audit.json` and `docs/research/2026-10-21-event-timing-audit-report.md`; intermediate examples stay explicitly partial, with reports under `/tmp` and raw evidence retained.
+- Final audit deliverables remain `research/audits/event-timing/_event_timing_audit.json` and `research/audits/event-timing/2026-10-21-event-timing-audit-report.md`; intermediate examples stay explicitly partial, with reports under `/tmp` and raw evidence retained.
 
 ## Review focus
 

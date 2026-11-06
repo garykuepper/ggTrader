@@ -190,7 +190,7 @@ relevant route criteria and common-window assessments have supported disposition
 ## Task 5: Execute, review and publish the registered audit
 
 **Final outputs:** `research/audits/event-timing/_event_timing_audit.json` and
-`docs/research/2026-10-21-event-timing-audit-report.md`.
+`research/audits/event-timing/2026-10-21-event-timing-audit-report.md`.
 
 - [ ] Freeze the exact executable input/metadata/acquisition package and command.
   Complete any required capped fixture tests and source verification before use.

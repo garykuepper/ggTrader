@@ -33,7 +33,7 @@ core beat SPY until it was regenerated.
 cd /home/flynn/ggTrader
 grep -m1 'Last full regeneration' research/RESEARCH_SNAPSHOT.md
 grep -m1 'last synced' research/prompts/web-strategy-research-prompt.md
-find research -name '20*.md' -not -path 'research/prompts/*' | sed 's#.*/##' | sort | tail -3      # newest closed arcs
+find research -name '20*.md' -not -path 'research/prompts/*' -not -name '*-brief.md' | sed 's#.*/##' | sort | tail -3      # newest closed arcs
 git log -5 --format='%h %ad %s' --date=short -- research src/ggTrader/lab/strategies
 ```
 

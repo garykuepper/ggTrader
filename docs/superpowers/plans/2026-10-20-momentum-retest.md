@@ -290,7 +290,7 @@ git commit -m "research(momentum): Phase 1 French size x momentum screen"
 ### Task 5: Phase 1 report and gate decision
 
 **Files:**
-- Create: `docs/research/<YYYY-MM-DD>-momentum-french-screen[-nogo].md`, following `research/TEMPLATE-research-report.md`.
+- Create: `research/stock-signals/momentum/<YYYY-MM-DD>-momentum-french-screen[-nogo].md`, following `research/TEMPLATE-research-report.md`.
 - Modify: `research/RESEARCH_SNAPSHOT.md` (the `xs_momentum` row), `docs/next_steps.md` and `docs/changelog.md`.
 
 **Required content:**

@@ -45,8 +45,8 @@ Child task briefs must be self-contained (no parent history): include the goal, 
 |---|---|
 | WP1 | `.gitignore`; PR operations |
 | WP2 | `src/ggTrader/lab/wfo.py`, `tests/lab/test_wfo.py`, `research/programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md` |
-| WP3 | `src/ggTrader/lab/wfo_policy_synthetic.py`, `scripts/wfo_policy_synthetic.py`, `tests/lab/test_wfo_policy_synthetic.py`, `docs/research/2026-11-0*-wfo-policy-synthetic.md`, `research/programme/wfo-methods/_wfo_policy_synthetic_results.json` |
-| WP4 | `docs/research/2026-11-0*-family-scope-review.md`, `research/stock-signals/feasibility/_family_scope_extraction.json`, `research/stock-signals/feasibility/_free_data_feasibility_matrix.json` (additive fields only) |
+| WP3 | `src/ggTrader/lab/wfo_policy_synthetic.py`, `scripts/wfo_policy_synthetic.py`, `tests/lab/test_wfo_policy_synthetic.py`, `research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md`, `research/programme/wfo-methods/_wfo_policy_synthetic_results.json` |
+| WP4 | `research/stock-signals/feasibility/2026-11-02-family-scope-review.md`, `research/stock-signals/feasibility/_family_scope_extraction.json`, `research/stock-signals/feasibility/_free_data_feasibility_matrix.json` (additive fields only) |
 | WP5 | `src/ggTrader/lab/tax_lots.py`, `tests/lab/test_tax_lots.py`, `research/paper-system/tax-lots/2026-11-02-after-tax-lot-engine-requirements.md` (status column only) |
 | WP6 | `research/RESEARCH_SNAPSHOT.md` and the two prompt templates (via the skill) |
 | WP7 | review notes under `docs/research/2026-11-0*-independent-review-of-followups.md` only |
