@@ -1,5 +1,5 @@
 {
-  "description": "Non-frozen Markdown files edited by the Task 9 reference rewrite (proposed paths under research/). Read by verify --stage rewritten.",
+  "description": "Non-frozen Markdown files edited by the Task 9 reference rewrite and the Task 12 reading-copy pointer lines (proposed paths under research/). Read by verify --stage rewritten.",
   "scope": "moved-markdown",
   "tool_replacements": 1246,
   "hand_edited": [
@@ -14,6 +14,7 @@
     "research/audits/root-cause-2026-11-04/2026-11-04-lens7-research-accuracy.md",
     "research/audits/root-cause-2026-11-04/2026-11-04-lens9-power-and-regime.md",
     "research/audits/root-cause-2026-11-04/2026-11-05-argon-synthesis-review.md",
+    "research/audits/root-cause-2026-11-04/2026-11-05-senior-quant-direction-review.md",
     "research/prompts/local-implementation-prompt-TEMPLATE.md"
   ],
   "files": [

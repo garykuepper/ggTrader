@@ -1,3 +1,5 @@
+> Reading copy: see 2026-11-05-direction-reviews-consolidated.md
+
 # Senior quant direction review of the root-cause investigation
 
 **Date:** 2026-11-05 · **Type:** review plus recommendation (the owner asked for a direction; the
