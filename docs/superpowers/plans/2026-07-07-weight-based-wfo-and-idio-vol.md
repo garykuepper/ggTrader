@@ -6,7 +6,7 @@
 weight-based strategies (`target_kind="weights"`) get real NDH/DSR-gated
 walk-forward verdicts, validated against the existing `xs_momentum`/
 `dual_momentum` strategies. (Phase B) Build Candidate B from
-`docs/2026-07-06_strategy_recommendations.md` — Cross-Sectional Idiosyncratic
+`docs/archive/2026-07-06_strategy_recommendations.md` — Cross-Sectional Idiosyncratic
 Volatility (`idio_vol`) — as a new weight-based lab strategy, and get its
 first honest full-SP500 WFO verdict now that the harness supports it.
 

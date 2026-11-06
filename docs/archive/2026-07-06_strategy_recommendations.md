@@ -2,7 +2,7 @@
 
 Reviewed as a senior quant/PM against the actual codebase (`wfo.py`, `gates.py`,
 `simulate.py`, `ensemble.py`, `ensemble_ic.py`, `ic_weights.py`, `data.py`,
-`roadmap.md`, git log) — not just the stack description. A prior draft of this
+`../roadmap.md`, git log) — not just the stack description. A prior draft of this
 document made some generic or incorrect claims about the gating mechanics and
 proposed a strategy the data layer can't support; this version corrects those
 against source.
@@ -69,7 +69,7 @@ against source.
 
 ## 2. What to Avoid (Gap Analysis)
 
-Every item below is already closed, with fold-level evidence in `roadmap.md` —
+Every item below is already closed, with fold-level evidence in `../roadmap.md` —
 re-researching any of them wastes time the team doesn't need to spend:
 
 - **More price-derived technical voters** (Stochastic, Keltner, Ichimoku) — same

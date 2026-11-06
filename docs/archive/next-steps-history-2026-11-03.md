@@ -1077,7 +1077,7 @@ and two smaller bugs were found and fixed 2026-07-25 — see
 
 **Queued next (2026-07-28): Rank 1 cross-asset trend sleeve
 (TLT/GLD/DBC).** A new external research deliverable,
-`docs/quant_strategy_research_report.md` (12 ranked candidates across FX,
+`docs/archive/quant_strategy_research_report.md` (12 ranked candidates across FX,
 Treasuries, commodities, intl equities, crypto), converges independently
 with `RESEARCH_SNAPSHOT.md` §6 on the same pick: a long-only trend/
 momentum overlay on liquid non-leveraged ETFs (TLT for duration, GLD/DBC

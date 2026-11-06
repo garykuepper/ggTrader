@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement Candidate A from `docs/2026-07-06_strategy_recommendations.md` — an
+**Goal:** Implement Candidate A from `docs/archive/2026-07-06_strategy_recommendations.md` — an
 overnight-gap reversion signal strategy (`overnight_gap`) — as a new lab strategy that
 plugs into the existing signal-strategy registry, WFO harness, and NDH/DSR gates with
 zero changes to `simulate.py`, `wfo.py`, or `gates.py`.
@@ -645,7 +645,7 @@ git commit -m "docs(roadmap): note overnight_gap smoke-run wiring confirmed"
 
 ## Follow-on Roadmap (not part of this plan — scope for future plans)
 
-Per `docs/2026-07-06_strategy_recommendations.md` §4, once Candidate A (this plan)
+Per `docs/archive/2026-07-06_strategy_recommendations.md` §4, once Candidate A (this plan)
 validates through a full WFO research pass (multiple SP500 folds, NDH/DSR gate
 pass-rate, comparison against the 1.12 Sharpe baseline — a research task, not a coding
 task, run via the same `ggt lab --wfo` harness with the full param grid from
