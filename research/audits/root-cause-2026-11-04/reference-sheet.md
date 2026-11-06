@@ -150,7 +150,7 @@ Some of these words mean two things. Section 6 lists the repeat offenders.
 | holdout | Data kept aside and not used to choose settings, then used for a final check. The replica's 2010-2020 holdout is not citable because of bad prices. | `accuracy:32-37` |
 | hurdle | A minimum result an idea must clear, such as the kill-only replay's -1.0 pp/yr after tax. | `standard:80-86` |
 | idle cash | Cash not invested. Before the SPY sweep it cost 2.46 pp of the 3.76 pp paper shortfall. | `parity:38-41` |
-| leak | Information a test used that it should not have had, which flatters the result. Two favoured the strategy: the anchor leak (anchor settings fitted on the whole test span) and the universe leak (14.1% of entries on days the stock was not in the index). | `synth:280-285`, `clean:132-133` |
+| leak | Information a test used that it should not have had. Two favoured the strategy here: the anchor leak and the universe leak (14.1% of entries on days the stock was not in the index). | `synth:280-285`, `clean:132-133` |
 | leverage | Holding more market exposure than your cash, by borrowing or through a fund like SSO. 1.3x means 1.3 dollars of market per dollar. | - |
 | lookahead | A test that uses information not yet available at the decision time. | `clean:93` |
 | multiple testing | Testing many ideas raises the chance that one passes by luck. Under zero edge, 72 tests at t of at least 2 give about 1.6 false wins. | `verdicts:96-101` |
