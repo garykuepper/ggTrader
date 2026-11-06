@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from scripts.research_reorg import (
+    DEFAULT_REWRITE_MANIFEST,
     PINNED_PATHS,
     ManifestRow,
     MoveRefusedError,
@@ -1258,3 +1259,76 @@ def test_main_verify_final_cli(tmp_path: Path, capsys) -> None:  # type: ignore[
     argv += ["--ledger", str(ledger_path), "--rewrite-manifest", str(listing)]
     assert main(argv) == 1  # the fixture has one pinned row, production expects twelve
     assert "expected 12" in capsys.readouterr().out
+
+
+def test_verify_final_flags_destination_on_disk_but_untracked(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    _git(root, "rm", "-q", "--cached", BRIEF_NEW)
+    problems = _final(root, rows, ledger)
+    assert any("destination not tracked" in p and BRIEF_NEW in p for p in problems)
+    assert not any("missing destination" in p for p in problems)
+
+
+def test_verify_final_flags_ledger_entry_not_marked_pinned(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    for entry in ledger["files"]:
+        if entry["current_path"] == PINNED_OLD:
+            entry["pinned"] = False
+    problems = _final(root, rows, ledger)
+    assert any("ledger does not mark this file pinned" in p and PINNED_OLD in p for p in problems)
+
+
+def test_verify_final_require_new_flags_missing_and_untracked(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    required = ("README.md", "MOVED.csv")
+    problems = _final(root, rows, ledger, require_new=required)
+    assert any("required new file missing" in p and "README.md" in p for p in problems)
+    assert any("required new file missing" in p and "MOVED.csv" in p for p in problems)
+    _write(root, "research/README.md", "# index\n")  # on disk, not added to git
+    problems = _final(root, rows, ledger, require_new=required)
+    assert any("required new file not tracked" in p and "README.md" in p for p in problems)
+    _git(root, "add", "research/README.md")
+    _write(root, "research/MOVED.csv", "a,b\n")
+    _git(root, "add", "research/MOVED.csv")
+    assert _final(root, rows, ledger, require_new=required) == []
+
+
+def test_main_verify_final_require_new_cli(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    root, rows, ledger = _final_repo(tmp_path)
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        + "".join(f'"{r.current_path}","{r.proposed_path}","","{r.kind}",""\n' for r in rows)
+    )
+    ledger_path = tmp_path / "ledger.json"
+    ledger_path.write_text(json.dumps(ledger))
+    listing = tmp_path / "rewrite.json"
+    listing.write_text(json.dumps({"files": []}))
+    argv = ["verify", "--stage", "final", "--manifest", str(manifest), "--root", str(root)]
+    argv += ["--ledger", str(ledger_path), "--rewrite-manifest", str(listing)]
+    # Production expects twelve pinned rows, so this fixture always fails that one check;
+    # the assertion is on the require-new problem lines only.
+    assert main([*argv, "--require-new", "README.md"]) == 1
+    out = capsys.readouterr().out
+    assert "PROBLEM required new file missing: research/README.md" in out
+
+
+def test_main_verify_moved_failure_notes_existing_rewrite_manifest(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    root, rows, ledger = _rewritten_repo(tmp_path)
+    (root / REPORT_NEW).write_text("# report\nsee research/x.md\n")
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        + "".join(f'"{r.current_path}","{r.proposed_path}","","{r.kind}",""\n' for r in rows)
+    )
+    ledger_path = tmp_path / "ledger.json"
+    ledger_path.write_text(json.dumps(ledger))
+    argv = ["verify", "--stage", "moved", "--manifest", str(manifest), "--root", str(root)]
+    argv += ["--ledger", str(ledger_path)]
+    assert main(argv) == 1
+    assert "NOTE" not in capsys.readouterr().out
+    _write(root, DEFAULT_REWRITE_MANIFEST, '{"files": []}\n')
+    assert main(argv) == 1  # the exit code does not change
+    out = capsys.readouterr().out
+    assert out.count("NOTE ") == 1
+    assert "only valid before the rewrite" in out

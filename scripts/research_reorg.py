@@ -135,7 +135,8 @@ STATUS_FAILED = "failed"
 # --- Move and verify constants ---
 PYCACHE_DIR = "__pycache__"
 VERIFY_STAGES: tuple[str, ...] = ("moved", "rewritten", "final")
-IMPLEMENTED_STAGES = frozenset(VERIFY_STAGES)
+# The rewrite manifest Task 9 wrote; its presence means the tree is past the move-only step.
+DEFAULT_REWRITE_MANIFEST = "docs/superpowers/plans/2026-11-05-research-reorg-rewrite-manifest.json"
 # New (non-manifest) files `verify --stage final` accepts under research/, relative to research/
 # and matched with fnmatch (so `*` also crosses `/`). Later tasks add their own via --allow-new.
 DEFAULT_ALLOW_NEW: tuple[str, ...] = (
@@ -1369,6 +1370,7 @@ def verify_final(
     rewrite_listed: set[str] | frozenset[str],
     allow_new: tuple[str, ...] = DEFAULT_ALLOW_NEW,
     expected_pinned: int = len(PINNED_PATHS),
+    require_new: tuple[str, ...] = (),
 ) -> list[str]:
     """Check the finished tree: everything `verify_rewritten` checks, plus tracked-file rules.
 
@@ -1386,6 +1388,7 @@ def verify_final(
         rewrite_listed: Proposed paths the rewrite manifest says were edited.
         allow_new: Patterns (relative to research/, fnmatch) for files added after the move.
         expected_pinned: How many pinned rows the manifest must carry (twelve in production).
+        require_new: Paths (relative to research/) that must exist and be tracked.
 
     Returns:
         Problem descriptions; an empty list means the gate passes.
@@ -1415,6 +1418,12 @@ def verify_final(
             problems.append(f"ledger does not mark this file pinned: {row.current_path}")
         elif dest.is_file() and sha256_file(dest) != entry["sha256"]:
             problems.append(f"pinned digest differs from ledger: {row.proposed_path}")
+    for required in require_new:
+        rel = f"{NEW_ROOT}/{required.removeprefix(f'{NEW_ROOT}/')}"
+        if not (root / rel).is_file():
+            problems.append(f"required new file missing: {rel}")
+        elif rel not in tracked:
+            problems.append(f"required new file not tracked: {rel}")
     if (root / OLD_ROOT).exists():
         problems.append(f"{OLD_ROOT} still exists")
     return problems
@@ -1455,9 +1464,6 @@ def _cmd_move(args: argparse.Namespace) -> int:
 
 def _cmd_verify(args: argparse.Namespace) -> int:
     """Run `verify`: check one stage's gate and print problems one per line."""
-    if args.stage not in IMPLEMENTED_STAGES:
-        print(f"FAIL stage not implemented: {args.stage}")
-        return 1
     rows = load_manifest(Path(args.manifest))
     ledger = json.loads(Path(args.ledger).read_text(encoding="utf-8"))
     root = Path(args.root)
@@ -1468,7 +1474,8 @@ def _cmd_verify(args: argparse.Namespace) -> int:
         listed = load_rewrite_manifest(Path(args.rewrite_manifest))
         if args.stage == "final":
             allow_new = (*DEFAULT_ALLOW_NEW, *(args.allow_new or ()))
-            problems = verify_final(rows, ledger, root, listed, allow_new)
+            require_new = tuple(args.require_new or ())
+            problems = verify_final(rows, ledger, root, listed, allow_new, require_new=require_new)
             summary = (
                 f"{len(rows)} manifest files, {len(listed)} listed edits, "
                 f"{len(tracked_files_under(NEW_ROOT, root))} tracked files under {NEW_ROOT}/"
@@ -1483,6 +1490,11 @@ def _cmd_verify(args: argparse.Namespace) -> int:
         print(f"PROBLEM {problem}")
     if problems:
         print(f"FAIL stage={args.stage} {len(problems)} problems")
+        if args.stage == "moved" and (root / DEFAULT_REWRITE_MANIFEST).is_file():
+            print(
+                "NOTE stage moved is only valid before the rewrite step; a rewrite manifest "
+                f"exists at {DEFAULT_REWRITE_MANIFEST}, so use --stage rewritten or final."
+            )
         return 1
     print(f"OK stage={args.stage} {summary}")
     return 0
@@ -1559,12 +1571,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     move.set_defaults(func=_cmd_move)
     verify = sub.add_parser("verify", help="Check one stage's gate (exit 1 on any problem).")
-    verify.add_argument("--stage", required=True, choices=VERIFY_STAGES, help="Gate to check.")
+    verify.add_argument(
+        "--stage",
+        required=True,
+        choices=VERIFY_STAGES,
+        help=(
+            "Gate to check: moved (valid only before the rewrite step), rewritten or "
+            "final (valid after it)."
+        ),
+    )
     verify.add_argument("--manifest", required=True, help="Path to the manifest CSV.")
     verify.add_argument("--ledger", required=True, help="Path to the pre-move ledger JSON.")
     verify.add_argument(
         "--rewrite-manifest",
         help="JSON listing the edited files (required for --stage rewritten and final).",
+    )
+    verify.add_argument(
+        "--require-new",
+        action="append",
+        metavar="PATH",
+        help=(
+            "File under research/ (relative path) that must exist and be tracked; "
+            "for --stage final, repeatable."
+        ),
     )
     verify.add_argument(
         "--allow-new",

@@ -1,8 +1,16 @@
 # Research reorganization: verification record
 
-Date: 2026-11-05. Branch `reorg/research-top-level`. Tool commit `70d37120` (`verify --stage final`); every result below was taken on the tree at that commit (Tasks 1-9 applied).
+Date: 2026-11-05. Branch `reorg/research-top-level`. Tool commit `70d37120` (`verify --stage final`), tightened by fix round 1 (the commit `fix(scripts): tighten verify final gate and verification doc`). Results below were taken on the tree at `70d37120` (Tasks 1-9 applied) and, for the gate, tests and ruff, re-taken after fix round 1.
 
-This record is **re-run in Task 14**, after Tasks 11-13 add the research README, `MOVED.csv`, the consolidated direction-review report and the investigation README. Those four files are the default allow-list of `verify --stage final` (`DEFAULT_ALLOW_NEW` in `scripts/research_reorg.py`); any other new file needs `--allow-new <pattern>` (fnmatch, relative to `research/`, repeatable). Until Tasks 11/12 run, the allow-list entries simply do not exist yet, which the gate accepts.
+This record is **re-run in Task 14**. Tasks 11 and 12 (not Task 13, which creates nothing under `research/`) add the research README, `MOVED.csv`, the consolidated direction-review report and the investigation README. Those four files are the default allow-list of `verify --stage final` (`DEFAULT_ALLOW_NEW` in `scripts/research_reorg.py`); any other new file needs `--allow-new <pattern>` (fnmatch, relative to `research/`, repeatable). Until Tasks 11/12 run, the allow-list entries simply do not exist yet, which the allow-list accepts. To make their presence mandatory, Task 14 re-runs the final gate with:
+
+```
+--require-new README.md --require-new MOVED.csv \
+--require-new audits/root-cause-2026-11-04/README.md \
+--require-new audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md
+```
+
+`--require-new` fails with `required new file missing` (not on disk) or `required new file not tracked` (on disk, not in the git index).
 
 Paths used below: `M` = `docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv`, `L` = `docs/superpowers/plans/2026-11-05-research-reorg-ledger.json`, `R` = `docs/superpowers/plans/2026-11-05-research-reorg-rewrite-manifest.json`.
 
@@ -12,12 +20,13 @@ Paths used below: `M` = `docs/superpowers/plans/2026-11-05-research-reorg-manife
 |---|---|---|
 | verify final | `.venv/bin/python scripts/research_reorg.py verify --stage final --manifest $M --ledger $L --rewrite-manifest $R` | exit 0: `OK stage=final 174 manifest files, 68 listed edits, 174 tracked files under research/` |
 | verify rewritten | same with `--stage rewritten` | exit 0: `OK stage=rewritten 174 files checked, 68 listed edits` |
-| verify moved | same with `--stage moved` (no rewrite manifest) | exit 1 by design after Task 9: exactly 68 `sha256 differs from ledger` lines, one per rewritten Markdown file. `moved` is only valid before the rewrite. |
+| verify moved | same with `--stage moved` (no rewrite manifest) | exit 1 by design after Task 9: exactly 68 `sha256 differs from ledger` lines, one per rewritten Markdown file, followed by one `NOTE` line (the exit code is unchanged). `moved` is only valid before the rewrite. |
 | frozen digests | independent: `git show HEAD:<path>` piped to sha256 per ledger entry | 78/78 frozen match, 12/12 pinned match; 106/174 of all files match, the other 68 are exactly the 68 listed edits (174 - 106) |
-| survivors | grep below | 2,670 hits in 58 files, 0 uncategorized |
+| survivors | `git grep -I -n "docs/research"` (tracked files) | 2,670 hits in 58 files before this record was written (2,679 in 59 with its first version), 0 uncategorized; shifts when this record is re-committed (section 2) |
 | guard snapshot | `scripts/guard_snapshot.sh <scratch>` vs baseline | only the `main:` line differs |
 | Docker | inspection | `research/` and `*.md` excluded, `!pyproject.toml` kept; the 174 tracked files under `research/` stay out of the image context |
-| full suite | `scripts/run_tests.sh -q` | 1627 passed, 30 deselected, 1 warning, 294 s, no exit 137 |
+| full suite | `scripts/run_tests.sh -q` (at `70d37120`) | 1627 passed, 30 deselected, 1 warning, 294 s, no exit 137 |
+| fix round 1 | `scripts/run_tests.sh tests/scripts -q` | 151 passed |
 | ruff | `.venv/bin/ruff check .` and `.venv/bin/ruff format --check .` | all checks passed; 285 files already formatted |
 | checker | `scripts/check_lens_report.py --paths-only` on 102 tracked `research/**/*.md` | 12 files fail, all classified, none uncategorized |
 
@@ -30,21 +39,32 @@ Implementation: `verify_final()` in `scripts/research_reorg.py`, built test-firs
 - tracked files under `research/` = manifest destinations plus files matching the allow-list; anything else is `unexpected tracked file`;
 - no tracked file deeper than `research/<category>/<study>/<file>` (4 path components). The five `artifacts-*` packages are study folders by spec section 4, so they share the same limit; the manifest has 174 rows (4 at depth 2, 2 at depth 3, 168 at depth 4) and none deeper;
 - exactly 12 pinned rows, each marked pinned in the ledger and equal to its ledger digest (`pinned digest differs from ledger`);
-- the `docs/research` folder is gone, not only untracked.
+- the `docs/research` folder is gone, not only untracked;
+- optional `--require-new PATH` (repeatable, relative to `research/`): each must exist and be tracked.
+
+`verify --stage moved` is only valid before the rewrite step (the CLI help says so); when it fails and the rewrite manifest exists at its default path, it prints one `NOTE` line saying to use `--stage rewritten` or `final` (exit code unchanged). The unreachable "stage not implemented" branch and `IMPLEMENTED_STAGES` were removed.
 
 Every failure prints `PROBLEM <reason>: <path>` and the run exits 1.
 
-Tests (11 new in `tests/scripts/test_research_reorg.py`, 81 pass in the file): `test_verify_final_passes_clean_tree_and_allows_new_files`, `test_verify_final_flags_docs_research_leftover`, `test_verify_final_flags_empty_docs_research_directory`, `test_verify_final_flags_missing_destination`, `test_verify_final_flags_duplicate_proposed_path`, `test_verify_final_flags_tracked_file_too_deep`, `test_verify_final_accepts_artifact_package_as_study_folder`, `test_verify_final_flags_pinned_digest_change`, `test_verify_final_flags_wrong_pinned_count`, `test_verify_final_flags_unlisted_change_and_untracked_extra`, `test_main_verify_final_cli`.
+Tests (16 new in `tests/scripts/test_research_reorg.py`, 86 pass in the file): `test_verify_final_passes_clean_tree_and_allows_new_files`, `test_verify_final_flags_docs_research_leftover`, `test_verify_final_flags_empty_docs_research_directory`, `test_verify_final_flags_missing_destination`, `test_verify_final_flags_duplicate_proposed_path`, `test_verify_final_flags_tracked_file_too_deep`, `test_verify_final_accepts_artifact_package_as_study_folder`, `test_verify_final_flags_pinned_digest_change`, `test_verify_final_flags_wrong_pinned_count`, `test_verify_final_flags_unlisted_change_and_untracked_extra`, `test_main_verify_final_cli`, and from fix round 1 `test_verify_final_flags_destination_on_disk_but_untracked`, `test_verify_final_flags_ledger_entry_not_marked_pinned`, `test_verify_final_require_new_flags_missing_and_untracked`, `test_main_verify_final_require_new_cli`, `test_main_verify_moved_failure_notes_existing_rewrite_manifest`.
 
 ## 2. Survivors of `docs/research`
 
-Command (exact; run from the repo root, saved to a scratch file, classified mechanically by path and line rules, then spot-checked):
+Scope: **tracked files only**. Command (exact, run from the repo root; it does not depend on `.gitignore` handling or on shell aliases):
 
 ```
-grep -rIn "docs/research" --exclude-dir=.git --exclude-dir=.venv --exclude-dir=results --exclude-dir=data --exclude-dir=.superpowers --exclude-dir=node_modules --exclude-dir=__pycache__ --exclude-dir=.ruff_cache --exclude-dir=.pytest_cache .
+git grep -I -n "docs/research"
 ```
 
-Total: **2,670 line hits in 58 files. Uncategorized: 0.** (Counted before this record was written; this file names the old path throughout and is itself spec/plan text.)
+The interactive shell's `grep` is a wrapper that skips gitignored files, so a plain `grep -r` does not reproduce a fixed count; with GNU `command grep -rIn` (excluding `.git`, `.venv`, `results`, `data`, `.superpowers` and cache directories) the scan finds 3,014 hits in 118 files. The extra 335 hits in 59 files are gitignored scratch and out of scope: 311 hits in 47 files under `.claude/skills/*-workspace/` (skill eval scratch, five workspace folders), 5 hits in 3 files under `logs/`, and 19 hits in 9 files under `.remember/`. No tracked file is in the 335.
+
+Counts:
+
+- **Before this record was written (tool commit `70d37120`): 2,670 hits in 58 files, uncategorized 0.** The tables below use these numbers.
+- At `6143691e` (this record's first version) `git grep` gave 2,679 hits in 59 files: the 2,670/58 plus the record's own 9 hits.
+- This record names the old path throughout, so it is itself spec/plan text and every re-run after it is committed counts its own hits in the spec/plan category (the count changes with every edit of this document). Task 14's re-run will therefore read higher by the document's own hits, with 0 uncategorized.
+
+Classification used a throwaway script (path and line rules) over the `git grep` output, then spot-checks.
 
 | Category | Hits | Files | What it is |
 |---|---:|---:|---|
@@ -118,10 +138,11 @@ Totals: 5 placeholder files (the placeholder is this reorganization's own forwar
 ## 6. Known limits
 
 - `verify_rewritten` (and so `final`) enforces "explicitly listed", not "reference-only": it proves that no unlisted file changed, not that a listed file changed only in its paths. Reference-only was proven separately by the independent token checker at the Task 9 review (1,254 tokens, 0 unexplained).
-- The lens2 table keeps about 155 old-path mentions (Task 9's count of unresolved prose mentions; a current grep shows 184 table lines and 275 mentions in that file) as a mirror of the frozen `_lens2_*.json`, which cannot change, so the table is deliberately left as written.
+- The lens2 table keeps about 155 old-path mentions (Task 9's count of unresolved prose mentions; a current count is 275 mentions in 184 table lines, 276 in 185 lines file-wide) as a mirror of the frozen `_lens2_*.json`, which cannot change, so the table is deliberately left as written.
 - Argon's invented paths are retained: that review is kept as written with its unverified-claims banner.
 - Recorded gate commands, ledger entries and `briefs/` directory citations stay as written (ruling R14); the dissolved folder has no successor path.
 - `verify --stage moved` is only valid right after the move step; after the rewrite it correctly fails with the 68 listed Markdown differences.
 - The allow-list matches by pattern, so an unexpected file that happens to match an allowed pattern would pass; the defaults are exact paths.
 - The `ruff.toml` exclusion for frozen `.py` artifacts under `research/` was left unchanged (ruling R8d, out of spec scope); a repo-wide `ruff format .` could rewrite them. Optional owner follow-up. Today `ruff format --check .` passes (285 files already formatted).
-- Results reflect commit `70d37120`; Task 14 repeats `verify --stage final` (with the Task 11-13 files present), the survivors grep, the checker table and the guard diff.
+- Survivor counts in section 2 shift whenever this document, the tool tests or any other file with old-path text is committed; the figures are for the stated commits.
+- Results reflect commit `70d37120` (gate, tests and ruff also re-run after fix round 1); Task 14 repeats `verify --stage final` with the `--require-new` flags above once Tasks 11 and 12 have added their files, plus the survivors grep (`git grep`), the checker table and the guard diff.
