@@ -5,15 +5,15 @@
 > **The short version**
 >
 > - The question: why has the research not come close to twice SPY's return? SPY is the fund that tracks the S&P 500.
-> - The answer: the built design shows no 2x-sized effect, and its test could have seen one. Stock picking itself is undecided.
-> - The ceiling: only 2x leverage and momentum before 1994 reached their window's gap. Leverage is exposure, not skill.
-> - The main cause: the target is large and the book is about 85% SPY, so it cannot stray far from SPY.
-> - What is unknown: whether stock picking has a small edge (none of 72 tests is reliable) and how much each cause contributed.
-> - After tax: a book that sells within a year needs about +2.42 percentage points a year before tax to tie SPY over 2021-2026.
+> - The answer: the built design shows no 2x-sized effect, and its test could have seen one (PARA's effect unmeasured). Stock picking itself is undecided.
+> - The ceiling: only 2x leverage (worst fall -84.8%) and momentum before 1994 reached their window's gap. Leverage is exposure, not skill.
+> - Top causes, ranked by judgement with no share measured: a large target, and a book about 85% SPY that cannot stray far.
+> - What is unknown: whether stock picking has a 1 to 4 pp/yr edge (none of 72 tests is reliable) and how much each cause contributed.
+> - After tax: a book that sells within a year needs about +2.42 percentage points a year before tax (24%/15% brackets) just to tie SPY after tax over 2021-2026.
 
 ## 1. The question and the short answer
 
-> **Takeaway:** The built design shows no 2x-sized effect and its test could have seen one, while stock picking itself is undecided.
+> **Takeaway:** Negative for the built design, undecided for stock picking, and nothing in crypto beat holding BTC over any three-year window.
 
 - The owner asked why the research has not come close to twice SPY's total return over the same period (pre-tax first, after-tax beside it) and what the evidence says is the most reachable.
 - SPY is a fund that tracks the S&P 500 and is the benchmark.
@@ -37,11 +37,11 @@ In short: the target is large, the book is built to track SPY, the measured effe
 
 Source: synthesis section 1 (`research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`).
 
-## 2. What the evidence says, by topic
+## 2. What the evidence says: small effects, none reliable
 
-> **Takeaway:** The replica trailed SPY by 0.64 pp/yr, no stock-picking test is reliable, and only leverage and pre-1994 momentum reached their window's gap.
+> **Takeaway:** The replica's 2021-2026 result, -0.64 pp/yr against SPY (t -0.69), cannot be told from zero. No stock-picking test is reliable. Only 2x leverage (exposure, not skill) and pre-1994 momentum reached their window's gap.
 
-### The built design against 2x
+### The built design: -0.64 pp/yr against a 9.57 gap
 
 - The replica's primary window ran 2021-2026 and returned 14.19% a year against 14.83% for SPY, so -0.64 pp/yr, with a t of -0.69.
   - The t-statistic is an effect divided by its standard error, and 2 or 3 is the usual bar for "probably not luck".
@@ -63,7 +63,7 @@ Source: synthesis section 1 (`research/audits/root-cause-2026-11-04/findings/202
 
 ![One stacked bar of 72 measured tests: 0 reliable, 11 unreliable, 58 inconclusive, 3 stopped on their own terms](../figures/verdict-trust.png)
 
-*Source: the Verdict Trust check. Inconclusive means the test could not decide, not that it found nothing. The 42 status-label rows are not tests and are not plotted.*
+*Source: the Verdict Trust check. The 42 status-label rows are not tests and are not plotted.*
 
 - Of 53 NO results, none is a reliable NO, and power fails in 51.
 - The momentum replay (buy the stocks that rose most over the past year, skipping the latest month) rules out only an excess above about 22.7 pp/yr.
@@ -89,10 +89,10 @@ Source: synthesis section 1 (`research/audits/root-cause-2026-11-04/findings/202
 
 ![Bars of the gap that doubling the benchmark needs for four windows, beside the best measured result for each](../figures/gap-vs-measured.png)
 
-*Source: the Ceiling check. Percentage points a year beyond SPY or the French market index, so the benchmark differs by row. Leverage is exposure, not skill, and its figure holds only at the window's funding rate.*
+*Source: the Ceiling check. Percentage points a year beyond SPY or the French market index, so the benchmark differs by row. Leverage is exposure, not skill, and its figure holds only at the window's funding rate. Momentum before 1994, which also reached its gap, is not plotted.*
 
 - Only two things reached their window's gap.
-  - The first is the 2.0x SSO arm (a fund that targets twice SPY's daily move): +4.15 pp/yr over 2006-2026, with a worst fall of -84.8%.
+  - The first is the 2.0x SSO arm (a fund that targets twice SPY's daily move): +4.15 pp/yr over 2006-2026, with a worst fall of -84.8% against SPY's -55.3%.
     - It was picked after seeing five arms, has no t-statistic and was measured only at that window's 1.64% average T-bill rate.
     - It counts as usable evidence only through the Ceiling check's stated judgement that unreviewed code does not matter for a fixed-weight book. Reject that judgement and the leverage ceiling is empty.
   - The second is momentum before 1994, which is the period before publication and which reverses after 2013.
@@ -113,7 +113,7 @@ Source: synthesis sections 2 and 3 (`research/audits/root-cause-2026-11-04/findi
 
 ## 3. Why the target was missed
 
-> **Takeaway:** Six causes are ranked by judgement, and no cause's share of the shortfall was measured.
+> **Takeaway:** The top two causes are arithmetic about the target and the book. Early leaks explain false optimism, not the shortfall.
 
 - The ranking is the author's judgement. No cause's share of the shortfall was measured, and several effects are unknown.
 - Causes one and two overlap, because with a sleeve this small the book's construction is the binding limit.
@@ -156,7 +156,7 @@ Source: synthesis section 3 (`research/audits/root-cause-2026-11-04/findings/202
 
 ## 4. What is solid, what is wrong and what is unknown
 
-> **Takeaway:** The known bugs are fixed, but price-data faults remain and live runs a configuration no backtest measured.
+> **Takeaway:** The five known data and code bugs are fixed, but other price-data faults remain unfixed and live runs a configuration no backtest measured.
 
 ### Solid
 
@@ -196,13 +196,14 @@ Live does not run the configuration any backtest measured:
 The replica copies the 3-stock cap, the 3.3% sizing and the live risk rules, but not the same-day fill:
 
 - Its same-day-fill variant gave -0.42 pp/yr against -0.64.
-- These differences exist with high confidence. How much they change returns is unknown.
 
-### The live account's shortfall
+The four live-versus-backtest differences above exist with high confidence. How much they change returns is unknown.
+
+### The live account's shortfall: 3.76 to 4.57 pp in total
 
 From 2026-06-24 the paper account, held at the broker Alpaca, trailed SPY's total return on two bases:
 
-| Basis | Paper account | SPY | Shortfall |
+| Basis | Paper account (total) | SPY (total) | Shortfall (total) |
 |---|---|---|---|
 | Broker value the trader read at run time (to 11-04) | +1.07% | +4.84% | 3.76 pp |
 | Alpaca's own end-of-day equity (to the 11-03 close) | -1.48% | +3.09% | 4.57 pp |
@@ -259,7 +260,7 @@ Source: synthesis sections 2, 6, 7 and 9 (`research/audits/root-cause-2026-11-04
 
 ## 6. Owner decisions
 
-> **Takeaway:** Recorded decisions are listed first and the open ones after, with no advice given on the open ones.
+> **Takeaway:** Six decisions are recorded, including no re-runs and no restore of the 19 symbols. Five are open, starting with whether to accept the synthesis.
 
 | Status | Decision |
 |---|---|
@@ -275,7 +276,7 @@ Source: synthesis sections 2, 6, 7 and 9 (`research/audits/root-cause-2026-11-04
 | ⚠️ Open | Whether any Optional Re-run List item is wanted later. |
 | ⚠️ Open | Deferred minor review notes in the ledger (wording and labelling items, none changing a class). |
 
-The open items are listed in the synthesis, not advised on.
+No advice is given on the open items.
 
 Source: synthesis sections 6 and 8 (`research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`).
 
