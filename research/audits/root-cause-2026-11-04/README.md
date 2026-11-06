@@ -26,7 +26,7 @@ The investigation ran in three rounds, named here the way the reference sheet na
 - **Main Evidence Round:** an inventory of 144 results, then the nine checks.
 - **Synthesis and Independent Challenge:** the write-up, then a second reader who argued the opposite case.
 
-The Optional Re-run List was proposed after the Main Evidence Round and never ran. NO-GO means a test failed its pre-set standard. The tape is the project's stored price history.
+The Optional Re-run List was proposed after the Main Evidence Round and never ran. NO-GO means a test failed its pre-set standard.
 
 ## The folder map
 
@@ -89,7 +89,7 @@ The nine checks, one report each, except the Verdict Trust check, which has a me
 
 | File | What it is |
 |---|---|
-| [`2026-11-04-investigation-inventory.md`](records/2026-11-04-investigation-inventory.md) | The 144 material results (every result that could change a verdict) that all nine checks cover, rendered from the inventory JSON. |
+| [`2026-11-04-investigation-inventory.md`](records/2026-11-04-investigation-inventory.md) | The 144 material results (every result that could change a verdict) that all nine checks cover, first rendered from the inventory JSON, now kept by hand (do not re-render it). |
 | [`2026-11-04-investigation-ledger.md`](records/2026-11-04-investigation-ledger.md) | A copy of the working ledger: task completions, review rounds, owner decisions and rulings. A working log, not a deliverable. |
 | [`_investigation_inventory.json`](records/_investigation_inventory.json) | Source data for the inventory page, 144 rows. |
 | [`_synthesis_inventory_map.json`](records/_synthesis_inventory_map.json) | Map from the synthesis tables to inventory rows. |
@@ -97,4 +97,4 @@ The nine checks, one report each, except the Verdict Trust check, which has a me
 
 ## Reading the raw files
 
-The JSON and text files are historical evidence. Treat them as read-only. To reproduce the Verdict Trust check's classifications, run `scripts/lens2_build.py`. The other checks' scripts were not kept in the repository, and the synthesis (section 7) says what a fresh reader can and cannot reproduce.
+The JSON and text files are historical evidence. Treat them as read-only. To reproduce the Verdict Trust check's classifications, run `scripts/lens2_build.py --out-json <a scratch path>` and compare the result with `lenses/_lens2_sensitivity.json`. The other checks' scripts were not kept in the repository, and the synthesis (section 7) says what a fresh reader can and cannot reproduce.
