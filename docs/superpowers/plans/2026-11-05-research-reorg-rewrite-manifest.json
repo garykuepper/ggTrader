@@ -4,6 +4,7 @@
   "tool_replacements": 1246,
   "hand_edited": [
     "research/RESEARCH_INDEX.md",
+    "research/RESEARCH_SNAPSHOT.md",
     "research/TEMPLATE-research-report.md",
     "research/WEB_RESEARCH_CANDIDATES.md",
     "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md",
@@ -16,7 +17,8 @@
     "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md",
     "research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-synthesis-review.md",
     "research/audits/root-cause-2026-11-04/reviews/2026-11-05-senior-quant-direction-review.md",
-    "research/prompts/local-implementation-prompt-TEMPLATE.md"
+    "research/prompts/local-implementation-prompt-TEMPLATE.md",
+    "research/prompts/web-strategy-research-prompt.md"
   ],
   "files": [
     "research/RESEARCH_INDEX.md",
@@ -78,6 +80,7 @@
     "research/programme/evidence-standard/2026-10-23-forward-paper-standard.md",
     "research/programme/wfo-methods/2026-11-02-wfo-fold-attribution.md",
     "research/prompts/local-implementation-prompt-TEMPLATE.md",
+    "research/prompts/web-strategy-research-prompt.md",
     "research/stock-signals/factor-screen/2026-10-20-factor-screen.md",
     "research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md",
     "research/stock-signals/feasibility/2026-11-02-family-scope-review.md",

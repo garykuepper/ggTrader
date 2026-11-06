@@ -8,7 +8,7 @@ anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
 Refresh the context below from the current research record whenever it is
-materially out of date — last synced 2026-11-02 (no web-facing context changed).
+materially out of date — last synced 2026-11-05 (one plain-language lesson added about tests that cannot see small effects).
 
 ---
 
@@ -135,6 +135,15 @@ without a genuinely different mechanism:**
   one asset may simply overlap with a premium the index already collects on
   the same days.** Say which days your idea is invested, and why the index
   wouldn't already earn the same thing then.
+- **Tests that cannot tell a small effect from zero.** Our book is about 85% an
+  S&P 500 ETF and 9% individual stocks, so it cannot stray far from the index, and
+  its stock part could only detect an excess above about 45 percentage points a
+  year. Of 72 earlier tests none is reliable and none shows an edge, but none rules
+  out an edge of 1 to 4 percentage points a year. Doubling the index's total return
+  is not within reach of stock selection on this evidence. Only 2x leverage (more
+  market exposure, not skill) and momentum before 1994 reached the gap. So say what
+  size of effect your idea claims, and whether free data over a long history could
+  resolve an effect that small.
 - Four other ideas were investigated and found to require data we can't
   access affordably: analyst-estimate-revision momentum, a firm-
   characteristics rebalancing-flow signal keyed to an academic database
