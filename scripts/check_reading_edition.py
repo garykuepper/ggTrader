@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lint a plain-English reading edition for banned punctuation, labels, terms and numbers."""
+"""Lint a plain-English reading edition: punctuation, labels, terms, numbers, scan-ability."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import sys
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import unquote
 
 # Tests import this module as `scripts.check_reading_edition`; the CLI runs it from scripts/.
 try:
@@ -53,6 +54,15 @@ WORD_RE = re.compile(r"[A-Za-z0-9][\w'’%.&-]*")
 FILE_COLUMN_HEADERS = frozenset({"file", "files", "file name"})
 LABEL_ADVICE = "use the reference-sheet name, or a code span when citing an id"
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+# Scan-ability limits: a reader should be able to skim, so prose blocks stay short.
+MAX_PARAGRAPH_WORDS = 70
+MAX_LIST_ITEM_WORDS = 60
+HEADING_RE = re.compile(r"^\s{0,3}#{1,6}(?:\s|$)")
+LIST_ITEM_RE = re.compile(r"^(\s*)(?:[-*+]|\d+[.)])\s+")
+BLOCKQUOTE_RE = re.compile(r"^\s{0,3}>[> ]*")
+RULE_RE = re.compile(r"^\s{0,3}([-*_])(?:\s*\1){2,}\s*$")
+IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(\s*(<[^>]*>|[^)\s]*)(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)")
+REMOTE_IMAGE_RE = re.compile(r"^(?:https?:)?//", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -266,6 +276,85 @@ def _check_numbers(line: _Line, plain: frozenset[str], percent: frozenset[str]) 
     return found
 
 
+def _block_words(text: str) -> int:
+    """Count words the way the word cap does: code spans and link targets are not words."""
+    return len(WORD_RE.findall(LINK_TARGET_RE.sub(" ", text)))
+
+
+def _check_scan_blocks(lines: list[_Line], max_paragraph_words: int) -> list[tuple[int, str]]:
+    """Report prose paragraphs, list items and blockquote callouts that are too long.
+
+    Args:
+        lines: Parsed lines of one file.
+        max_paragraph_words: Word limit for a paragraph or a blockquote callout. A list item
+            is held to the smaller of this and `MAX_LIST_ITEM_WORDS`.
+
+    Returns:
+        (line number, detail) pairs, one per oversized block, at the block's first line.
+    """
+    list_limit = min(MAX_LIST_ITEM_WORDS, max_paragraph_words)
+    found: list[tuple[int, str]] = []
+    block: tuple[str, int, int] | None = None  # (kind, first line number, words so far)
+    previous = 0
+
+    def flush() -> None:
+        nonlocal block
+        if block is not None:
+            kind, start, words = block
+            limit = {"list item": list_limit}.get(kind, max_paragraph_words)
+            if words > limit:
+                found.append((start, f"{kind} has {words} words, over the limit of {limit}"))
+        block = None
+
+    for line in lines:
+        # A gap in line numbers means a fence or table separator sat between the lines.
+        if line.kind != "prose" or line.number != previous + 1:
+            flush()
+        previous = line.number
+        if line.kind != "prose":
+            continue
+        text = line.text
+        if not text.strip() or HEADING_RE.match(text) or RULE_RE.match(text):
+            flush()
+            continue
+        item = LIST_ITEM_RE.match(text)
+        quote = BLOCKQUOTE_RE.match(text)
+        if quote:
+            body = text[quote.end() :]
+            if block is None or block[0] != "blockquote callout":
+                flush()
+                block = ("blockquote callout", line.number, 0)
+        elif item:
+            flush()
+            body = text[item.end() :]
+            block = ("list item", line.number, 0)
+        else:
+            body = text
+            if block is None:
+                block = ("paragraph", line.number, 0)
+        kind, start, words = block
+        block = (kind, start, words + _block_words(body))
+    flush()
+    return found
+
+
+def _check_images(line: _Line, directory: Path, repo_root: Path) -> list[str]:
+    """Report images with no alt text, remote images and images whose file is missing."""
+    found: list[str] = []
+    for match in IMAGE_RE.finditer(line.text):
+        alt, target = match.group(1), match.group(2).strip("<>")
+        if not alt.strip():
+            found.append(f"image `{target}` has no alt text")
+        if REMOTE_IMAGE_RE.match(target):
+            found.append(f"remote image `{target}`: reports must be self-contained")
+            continue
+        local = unquote(re.split(r"[?#]", target, maxsplit=1)[0])
+        base = repo_root if local.startswith("/") else directory
+        if not local or not (base / local.lstrip("/")).is_file():
+            found.append(f"image file not found: {target or '(empty path)'}")
+    return found
+
+
 def check_file(
     path: Path,
     sheet_terms: set[str],
@@ -273,6 +362,8 @@ def check_file(
     max_words: int | None = None,
     ignore_terms: frozenset[str] = DEFAULT_IGNORE,
     root: Path | None = None,
+    max_paragraph_words: int | None = MAX_PARAGRAPH_WORDS,
+    scan_rules: bool = True,
 ) -> list[str]:
     """Lint one reading-edition file and return its problems.
 
@@ -283,6 +374,9 @@ def check_file(
         max_words: Optional cap on prose words outside tables, code and front matter.
         ignore_terms: Capitalised tokens that need no definition.
         root: Repository root for resolving cited paths (default: the current directory).
+        max_paragraph_words: Word limit for a prose paragraph or blockquote callout (list items
+            get at most 60); `None` switches the long-paragraph rule off.
+        scan_rules: When false, skip the scan-ability rules (long paragraphs and images).
 
     Returns:
         Problem strings of the form `<path>:<line>: <rule>: <detail>`.
@@ -308,8 +402,18 @@ def check_file(
             if "<" not in missing and missing not in missing_seen:
                 missing_seen.add(missing)
                 problems.append(f"{prefix}: missing-path: {missing}")
+        if scan_rules and line.kind in ("prose", "table"):
+            problems += [
+                f"{prefix}: image: {d}"
+                for d in _check_images(line, Path(path).resolve().parent, repo_root)
+            ]
         if line.kind == "prose":
-            words += len(WORD_RE.findall(LINK_TARGET_RE.sub(" ", line.text)))
+            words += _block_words(line.text)
+    if scan_rules and max_paragraph_words is not None:
+        problems += [
+            f"{path}:{number}: long-paragraph: {detail}"
+            for number, detail in _check_scan_blocks(lines, max_paragraph_words)
+        ]
     if max_words is not None and words > max_words:
         problems.append(f"{path}:1: word-cap: {words} prose words exceeds the cap of {max_words}")
     return problems
@@ -340,13 +444,34 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_ROOT,
         help="repository root for cited paths (default: this repo)",
     )
+    parser.add_argument(
+        "--max-paragraph-words",
+        type=int,
+        default=MAX_PARAGRAPH_WORDS,
+        metavar="N",
+        help="longest prose paragraph or blockquote callout in words; list items get at most "
+        f"{MAX_LIST_ITEM_WORDS} (default: {MAX_PARAGRAPH_WORDS})",
+    )
+    parser.add_argument(
+        "--no-scan-rules",
+        action="store_true",
+        help="switch off the scan-ability rules (long paragraphs, images) for old documents",
+    )
     args = parser.parse_args(argv)
     problems: list[str] = []
     try:
         terms = load_sheet_terms(args.sheet)
         sources = _read_sources(args.sources)
         for file in args.files:
-            problems += check_file(file, terms, sources, args.max_words, root=args.root)
+            problems += check_file(
+                file,
+                terms,
+                sources,
+                args.max_words,
+                root=args.root,
+                max_paragraph_words=args.max_paragraph_words,
+                scan_rules=not args.no_scan_rules,
+            )
     except (OSError, UnicodeDecodeError) as exc:
         print(f"FAIL {exc}")
         return 1

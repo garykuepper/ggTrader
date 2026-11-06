@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -24,10 +25,11 @@ def _check(
     terms: set[str] | None = None,
     sources: dict[str, str] | None = None,
     max_words: int | None = None,
+    **options: Any,
 ) -> list[str]:
     path = _write(tmp_path, text)
     return check_file(
-        path, TERMS if terms is None else terms, sources or {}, max_words, root=tmp_path
+        path, TERMS if terms is None else terms, sources or {}, max_words, root=tmp_path, **options
     )
 
 
@@ -256,3 +258,145 @@ def test_us_is_ignored_and_hyphenated_tokens_check_each_part(tmp_path: Path) -> 
     assert _check(tmp_path, "The SPY-IEF pair.\n", terms={"SPY", "IEF"}) == []
     problems = _check(tmp_path, "The SPY-IEF pair.\n", terms={"SPY"})
     assert len(problems) == 1 and "`IEF`" in problems[0]
+
+
+def _words(count: int) -> str:
+    """Return `count` plain lowercase words that trip no other rule."""
+    return " ".join(["plain"] * count)
+
+
+def _wrapped(count: int, per_line: int = 12, indent: str = "") -> str:
+    """Return `count` words wrapped over several lines."""
+    words = ["plain"] * count
+    return "\n".join(indent + " ".join(words[i : i + per_line]) for i in range(0, count, per_line))
+
+
+def test_flags_paragraph_over_limit(tmp_path: Path) -> None:
+    assert _check(tmp_path, f"{_words(70)}.\n") == []
+    problems = _check(tmp_path, f"{_words(71)}.\n")
+    assert len(problems) == 1
+    assert ":1:" in problems[0] and "long-paragraph" in problems[0]
+    assert "71" in problems[0] and "70" in problems[0]
+    # A paragraph wrapped over several lines is one paragraph, reported at its first line.
+    wrapped = _check(tmp_path, f"# Title\n\n{_wrapped(71)}\n")
+    assert len(wrapped) == 1 and ":3:" in wrapped[0] and "long-paragraph" in wrapped[0]
+    # Two short paragraphs split by a blank line never add up.
+    assert _check(tmp_path, f"{_words(40)}.\n\n{_words(40)}.\n") == []
+    # Code spans and link targets are not words.
+    link = "[a](http://very/long/path/with-many/parts) "
+    assert _check(tmp_path, f"`{_words(80)}` {_words(69)} {link}\n") == []
+
+
+def test_allows_long_table_and_list_of_short_items(tmp_path: Path) -> None:
+    table = "| a | b |\n|---|---|\n" + "".join(
+        f"| {_words(10)} | {_words(10)} |\n" for _ in range(8)
+    )
+    items = "".join(f"- {_words(5)}\n" for _ in range(30))
+    numbered = "".join(f"{n}. {_words(5)}\n" for n in range(1, 21))
+    fenced = f"```\n{_words(200)}\n```\n"
+    comment = f"<!-- {_words(100)}\n{_words(100)} -->\n"
+    front = f"---\ntitle: {_words(100)}\n---\n"
+    text = f"{front}# {_words(90)}\n\n{table}\n{items}\n{numbered}\n{fenced}{comment}"
+    assert _check(tmp_path, text) == []
+    # A fenced block between two text blocks splits them into two paragraphs.
+    split = f"{_words(40)}\n```\ncode\n```\n{_words(40)}\n"
+    assert _check(tmp_path, split) == []
+
+
+def test_flags_long_list_item(tmp_path: Path) -> None:
+    assert _check(tmp_path, f"- {_words(60)}\n") == []
+    problems = _check(tmp_path, f"- {_words(61)}\n")
+    assert len(problems) == 1 and "long-paragraph" in problems[0] and "list item" in problems[0]
+    assert ":1:" in problems[0]
+    # Wrapped continuation lines count towards the item, and the item may be numbered or nested.
+    first = "- short item\n"
+    wrapped = f"{first}1. {_wrapped(30)}\n   {_wrapped(31)}\n  - {_words(5)}\n"
+    problems = _check(tmp_path, wrapped)
+    assert len(problems) == 1 and ":2:" in problems[0] and "list item" in problems[0]
+
+
+def test_flags_long_blockquote_callout(tmp_path: Path) -> None:
+    quote = "\n".join(f"> {line}" for line in _wrapped(70).split("\n"))
+    assert _check(tmp_path, quote + "\n") == []
+    long_quote = "\n".join(f"> {line}" for line in _wrapped(71).split("\n"))
+    problems = _check(tmp_path, long_quote + "\n")
+    assert len(problems) == 1 and "blockquote" in problems[0] and "71" in problems[0]
+    # Two callouts split by a blank line are counted one by one.
+    two = f"> {_words(40)}\n\n> {_words(40)}\n"
+    assert _check(tmp_path, two) == []
+    # A bare `>` line keeps one callout together.
+    joined = f"> {_words(40)}\n>\n> {_words(40)}\n"
+    assert len(_check(tmp_path, joined)) == 1
+
+
+def test_flags_image_without_alt_text(tmp_path: Path) -> None:
+    (tmp_path / "fig.png").write_bytes(b"x")
+    for empty in ("![](fig.png)", "![   ](fig.png)", '![](fig.png "A title")'):
+        problems = _check(tmp_path, f"{empty}\n")
+        assert len(problems) == 1, empty
+        assert ":1:" in problems[0] and "image" in problems[0] and "alt" in problems[0]
+
+
+def test_flags_missing_image_file(tmp_path: Path) -> None:
+    problems = _check(tmp_path, "Intro.\n\n![A chart](figures/missing.png)\n")
+    assert len(problems) == 1
+    assert ":3:" in problems[0] and "image" in problems[0] and "figures/missing.png" in problems[0]
+    # The path resolves against the file's own directory, not the working directory.
+    sub = tmp_path / "docs"
+    sub.mkdir()
+    (tmp_path / "fig.png").write_bytes(b"x")
+    nested = sub / "doc.md"
+    nested.write_text("![A chart](fig.png)\n", encoding="utf-8")
+    assert any("fig.png" in p for p in check_file(nested, TERMS, {}, root=tmp_path))
+    nested.write_text("![A chart](../fig.png)\n", encoding="utf-8")
+    assert check_file(nested, TERMS, {}, root=tmp_path) == []
+
+
+def test_flags_remote_image(tmp_path: Path) -> None:
+    for url in ("http://example.com/a.png", "https://example.com/a.png"):
+        problems = _check(tmp_path, f"![A chart]({url})\n")
+        assert len(problems) == 1
+        assert "image: remote image" in problems[0]
+
+
+def test_allows_existing_image_with_alt(tmp_path: Path) -> None:
+    (tmp_path / "figures").mkdir()
+    (tmp_path / "figures" / "gap.png").write_bytes(b"x")
+    text = (
+        "![Bars of the yearly gap](figures/gap.png)\n\n"
+        '![With a title](figures/gap.png "Gap")\n\n'
+        "A link [not an image](figures/missing.png) and `![](code.png)` are fine.\n"
+        "```\n![](fenced.png)\n```\n"
+    )
+    assert _check(tmp_path, text) == []
+
+
+def test_no_scan_rules_flag_disables_rules_7_and_8(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    text = f"{_words(90)}.\n\n- {_words(80)}\n\n![](gone.png)\n"
+    # A long paragraph, a long list item, and an image with no alt text and no file.
+    assert len(_check(tmp_path, text)) == 4
+    assert _check(tmp_path, text, scan_rules=False) == []
+    sheet = _write(tmp_path, "| Term | M |\n|---|---|\n| DSR | x |\n", "sheet.md")
+    doc = _write(tmp_path, text, "long.md")
+    base = [str(doc), "--sheet", str(sheet), "--root", str(tmp_path)]
+    assert main(base) == 1
+    assert "long-paragraph" in capsys.readouterr().out
+    assert main([*base, "--no-scan-rules"]) == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_cli_max_paragraph_words_flag(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    sheet = _write(tmp_path, "| Term | M |\n|---|---|\n| DSR | x |\n", "sheet.md")
+    doc = _write(tmp_path, f"{_words(30)}.\n", "doc.md")
+    base = [str(doc), "--sheet", str(sheet), "--root", str(tmp_path)]
+    assert main(base) == 0
+    assert main([*base, "--max-paragraph-words", "30"]) == 0
+    assert main([*base, "--max-paragraph-words", "29"]) == 1
+    out = capsys.readouterr().out
+    assert "long-paragraph" in out and "29" in out
+    with pytest.raises(SystemExit):
+        main(["--help"])
+    help_text = capsys.readouterr().out
+    assert "--max-paragraph-words" in help_text and "--no-scan-rules" in help_text
