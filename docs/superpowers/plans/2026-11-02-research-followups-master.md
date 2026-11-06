@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12 (`.venv`), pandas/numpy, pytest via `scripts/run_tests.sh`, ruff, `gh`, T3 `delegate_task`.
 
-**Spec:** [Process audit design](../specs/2026-11-01-research-process-audit-design.md); inputs [fallback semantics](../../research/2026-11-02-wfo-fallback-semantics.md), [lot-engine requirements](../../research/2026-11-02-after-tax-lot-engine-requirements.md), [feasibility inventory](../../research/2026-11-02-free-data-stock-feasibility.md), prior plan [2026-11-02-wfo-attribution-and-free-data-feasibility.md](2026-11-02-wfo-attribution-and-free-data-feasibility.md).
+**Spec:** [Process audit design](../specs/2026-11-01-research-process-audit-design.md); inputs [fallback semantics](../../../research/programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md), [lot-engine requirements](../../../research/paper-system/tax-lots/2026-11-02-after-tax-lot-engine-requirements.md), [feasibility inventory](../../../research/stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md), prior plan [2026-11-02-wfo-attribution-and-free-data-feasibility.md](2026-11-02-wfo-attribution-and-free-data-feasibility.md).
 
 ## Autonomy rules
 
@@ -44,13 +44,13 @@ Child task briefs must be self-contained (no parent history): include the goal, 
 | Package | May create/modify |
 |---|---|
 | WP1 | `.gitignore`; PR operations |
-| WP2 | `src/ggTrader/lab/wfo.py`, `tests/lab/test_wfo.py`, `docs/research/2026-11-02-wfo-fallback-semantics.md` |
-| WP3 | `src/ggTrader/lab/wfo_policy_synthetic.py`, `scripts/wfo_policy_synthetic.py`, `tests/lab/test_wfo_policy_synthetic.py`, `docs/research/2026-11-0*-wfo-policy-synthetic.md`, `docs/research/_wfo_policy_synthetic_results.json` |
-| WP4 | `docs/research/2026-11-0*-family-scope-review.md`, `docs/research/_family_scope_extraction.json`, `docs/research/_free_data_feasibility_matrix.json` (additive fields only) |
-| WP5 | `src/ggTrader/lab/tax_lots.py`, `tests/lab/test_tax_lots.py`, `docs/research/2026-11-02-after-tax-lot-engine-requirements.md` (status column only) |
-| WP6 | `docs/research/RESEARCH_SNAPSHOT.md` and the two prompt templates (via the skill) |
+| WP2 | `src/ggTrader/lab/wfo.py`, `tests/lab/test_wfo.py`, `research/programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md` |
+| WP3 | `src/ggTrader/lab/wfo_policy_synthetic.py`, `scripts/wfo_policy_synthetic.py`, `tests/lab/test_wfo_policy_synthetic.py`, `docs/research/2026-11-0*-wfo-policy-synthetic.md`, `research/programme/wfo-methods/_wfo_policy_synthetic_results.json` |
+| WP4 | `docs/research/2026-11-0*-family-scope-review.md`, `research/stock-signals/feasibility/_family_scope_extraction.json`, `research/stock-signals/feasibility/_free_data_feasibility_matrix.json` (additive fields only) |
+| WP5 | `src/ggTrader/lab/tax_lots.py`, `tests/lab/test_tax_lots.py`, `research/paper-system/tax-lots/2026-11-02-after-tax-lot-engine-requirements.md` (status column only) |
+| WP6 | `research/RESEARCH_SNAPSHOT.md` and the two prompt templates (via the skill) |
 | WP7 | review notes under `docs/research/2026-11-0*-independent-review-of-followups.md` only |
-| WP8 (parent only) | `docs/research/RESEARCH_INDEX.md`, `docs/changelog.md`, `docs/next_steps.md`, this plan's checkboxes |
+| WP8 (parent only) | `research/RESEARCH_INDEX.md`, `docs/changelog.md`, `docs/next_steps.md`, this plan's checkboxes |
 
 ## Review Focus
 
@@ -73,7 +73,7 @@ Child task briefs must be self-contained (no parent history): include the goal, 
 
 ## WP2: Opt-in WFO policy options (Terra, review Sol)
 
-**Files:** Modify `src/ggTrader/lab/wfo.py`, `tests/lab/test_wfo.py`, `docs/research/2026-11-02-wfo-fallback-semantics.md`.
+**Files:** Modify `src/ggTrader/lab/wfo.py`, `tests/lab/test_wfo.py`, `research/programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md`.
 
 **Interfaces:**
 - Produces in `wfo.py`: `@dataclass(frozen=True) class WfoPolicy` with `nan_wfe: Literal["legacy", "exclude"] = "legacy"` and `anchor_fold_wfe: Literal["legacy", "exclude_from_breaker"] = "legacy"`.
@@ -112,7 +112,7 @@ Child task briefs must be self-contained (no parent history): include the goal, 
 
 **Files:** Create the WP4 paths in the ownership table.
 
-**Interfaces:** `_family_scope_extraction.json`: `{closed_reports: [{id, path, sort_variable, universe, weighting, rebalance, hypotheses: [...], source_lines: [...]}]}` for the momentum, four-factor and net-issuance screens (reports and briefs under `docs/research/`). Matrix rows S02–S08 and S13 gain `family_scope_review: {outcome, rationale, evidence}` with `outcome ∈ {closure_applies_inferred, distinct_mechanism, undetermined}`. Recorded verdict fields must stay byte-identical.
+**Interfaces:** `_family_scope_extraction.json`: `{closed_reports: [{id, path, sort_variable, universe, weighting, rebalance, hypotheses: [...], source_lines: [...]}]}` for the momentum, four-factor and net-issuance screens (reports and briefs under `research/`). Matrix rows S02–S08 and S13 gain `family_scope_review: {outcome, rationale, evidence}` with `outcome ∈ {closure_applies_inferred, distinct_mechanism, undetermined}`. Recorded verdict fields must stay byte-identical.
 
 - [ ] **Step 1 (Pi flash, extraction only):** brief: for each closed report fill the fields above with quoted source lines; do not judge any other family. Parent verifies every field against the source line (spot check all `sort_variable` and `hypotheses` entries).
 - [ ] **Step 2 (Sol):** for each pending row compare sort variable, mechanism, universe, weighting, rebalance and registered hypotheses with the closed families using **definitions only**: no returns, no correlations. Output rationale per row, with the closed report's own scope statement quoted.

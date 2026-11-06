@@ -23,10 +23,10 @@ TimescaleDB (`ggTrader.lab.persist.get_engine`), Alpaca paper broker,
 `ggt.py lab` CLI (vectorbt-based WFO harness).
 
 **Spec:** `docs/next_steps.md` (ACTIVE STEP, 2026-09-10) and
-`docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
+`research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
 §7 (operational roadmap) and §5 (ranked research candidates); corrected
-baseline numbers: `docs/research/_rebaseline_corrected_tape_20260822.json`;
-live-ops findings: `docs/research/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md`.
+baseline numbers: `research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json`;
+live-ops findings: `research/audits/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md`.
 
 ## Global Constraints
 
@@ -689,7 +689,7 @@ def generate_core_signals() -> dict:
 
     Deployed 2026-09 in place of the 3-sleeve blend: the corrected-tape
     pinned-window re-baseline
-    (`docs/research/_rebaseline_corrected_tape_20260822.json`) shows the
+    (`research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json`) shows the
     blend underperforming this standalone core (Sharpe 0.69 vs 0.99, third
     independent confirmation) -- see `docs/next_steps.md`. Kept alongside
     `generate_blended_signals` (not deleted) since the blend's WFO/research
@@ -865,7 +865,7 @@ def buy_trigger_pct() -> float:
     small daily surplus doesn't round-trip a buy every session (observed:
     15 sweep trades / $82.4K notional across 12 sessions,
     ~$5.5K/day churning against the reserve -- see
-    docs/research/artifacts-2026-09-09-perf-review/). Default 8%."""
+    research/audits/artifacts-2026-09-09-perf-review/). Default 8%."""
     raw = os.environ.get(_BUY_TRIGGER_ENV_VAR, "").strip()
     return float(raw) if raw else DEFAULT_BUY_TRIGGER_PCT
 ```
@@ -968,12 +968,12 @@ docker compose pull ggtrader_live && docker compose up -d ggtrader_live
 - Create: `docs/research/<date>-ensemble-ic-kelly-rebaseline.md` (Task 6a)
 - Create: `docs/research/<date>-cross-asset-trend-sleeve.md` (Task 6b)
 - Create: `docs/research/<date>-xs-momentum-modern-wfo.md` (Task 6c)
-- Modify: `docs/research/RESEARCH_SNAPSHOT.md` (re-run the
+- Modify: `research/RESEARCH_SNAPSHOT.md` (re-run the
   `research-snapshot` skill after each closes)
 
 **Interfaces:** none — these are WFO research runs, not application code.
-Each follows `docs/research/TEMPLATE-research-report.md`'s structure per
-`docs/research/prompts/local-implementation-prompt-TEMPLATE.md`'s
+Each follows `research/TEMPLATE-research-report.md`'s structure per
+`research/prompts/local-implementation-prompt-TEMPLATE.md`'s
 deliverable expectations (GO or NO-GO either way, no live-config changes
 without a separate ask).
 

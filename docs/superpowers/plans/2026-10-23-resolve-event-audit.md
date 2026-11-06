@@ -4,9 +4,9 @@
 **Supersedes, for scheduling only:** [complete-event-feasibility-audit](2026-10-22-complete-event-feasibility-audit.md),
 [next-evidence-actions](2026-10-22-next-evidence-actions.md) and
 [event-evidence-resolution](2026-10-22-event-evidence-resolution.md). Their recorded evidence stands.
-**Binding rules:** [audit brief](../../research/briefs/2026-10-21-event-timing-audit.md) §8 and its
-[source manifest](../../research/briefs/2026-10-21-event-timing-audit-sources.md), plus the approved
-[source-conflict amendment](../../research/briefs/2026-10-22-event-timing-source-conflict-proposal.md).
+**Binding rules:** [audit brief](../../../research/audits/event-timing/2026-10-21-event-timing-audit.md) §8 and its
+[source manifest](../../../research/audits/event-timing/2026-10-21-event-timing-audit-sources.md), plus the approved
+[source-conflict amendment](../../../research/audits/event-timing/2026-10-22-event-timing-source-conflict-proposal.md).
 No pass bar changes.
 
 ## Why this plan
@@ -40,7 +40,7 @@ API/header pairs, the submissions-API `acceptanceDateTime` minus the full-submis
 Read as New York time, the header falls within EDGAR's 06:00–22:00 ET hours and matches the
 official filing date in 25/25 cases. Read as UTC, the API value violates one or both in 9/25.
 
-Deliverable: `docs/research/briefs/2026-10-23-insider-acceptance-time-amendment.md`, proposing
+Deliverable: `research/audits/event-timing/2026-10-23-insider-acceptance-time-amendment.md`, proposing
 that insider signal availability be the header `ACCEPTANCE-DATETIME` in America/New_York, with
 the API field recorded as a known-defective diagnostic. It must include:
 - a reproducible script under `scripts/` that regenerates the 25/25 vs 9/25 counts from the
@@ -57,7 +57,7 @@ Execute the source manifest exactly: routes R1–R9, in its order, from public d
 within its 2-hour cap. The four evidence items and the UNRESOLVED and exclusion rules apply as
 written.
 
-Deliverable: `docs/research/_event_source_search_ledger.json`, with one record per route and
+Deliverable: `research/audits/event-timing/_event_source_search_ledger.json`, with one record per route and
 evidence item. Each record holds the URL, the retrieval time, a verbatim excerpt (or "silent"),
 and PASS, EXCLUDED or UNRESOLVED. Also record the listed or quoted individual-subscriber price,
 and the history start date.
@@ -71,7 +71,7 @@ and the history start date.
 Apply brief §5 and §8 A6–A7/A10 to the accepted evidence and the Task 2 ledger, for PEAD and for
 insider separately.
 
-Deliverable: `docs/research/2026-10-23-event-timing-audit-decision.md`, following the report
+Deliverable: `research/audits/event-timing/2026-10-23-event-timing-audit-decision.md`, following the report
 template, with a requirement matrix for each signal (PASS / FAIL / UNVERIFIED and the evidence
 behind each).
 

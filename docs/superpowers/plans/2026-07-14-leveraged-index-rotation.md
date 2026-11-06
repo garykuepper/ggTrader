@@ -831,7 +831,7 @@ deliberate step:
 1. Run `python scripts/leveraged_rotation_research.py`, capturing each
    universe's `table` output (gate pass rate, per-fold winner stability,
    OOS Sharpe/CAGR/MaxDD vs. that universe's own SPY benchmark).
-2. Write a research report following `docs/research/TEMPLATE`'s 6-section
+2. Write a research report following `research/TEMPLATE`'s 6-section
    structure, covering all three universes and both leverage tiers, with a
    GO/NO-GO verdict per universe plus a combined verdict — watching
    specifically for the "winner selected in only 3/17 folds" noise tell

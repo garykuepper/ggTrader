@@ -15,7 +15,7 @@ then the highest-basis long-term lots. It never places orders and has no drawdow
 `docs/cli_reference.md`. Moving the rule into the paper trader's two-symbol sweep is a separate
 deployment after a documented freeze-readiness decision. The review date is unknown.
 
-**2026-10-23 century-leverage decision:** The [closed synthetic study](../research/2026-10-23-century-leverage.md)
+**2026-10-23 century-leverage decision:** The [closed synthetic study](../../research/allocation/century-leverage/2026-10-23-century-leverage.md)
 returns the registered **keep 30%** proposal: the 30% arm has 10.71% after-tax CAGR versus
 9.47% at 0% but trips the −90% ruin flag (−91.4% versus −84.6%); 15% avoids that flag at
 10.18%, a 0.54 point/year CAGR cost versus 30% (`_century_leverage_results.json`:
@@ -24,7 +24,7 @@ returns the registered **keep 30%** proposal: the 30% arm has 10.71% after-tax C
 Current allocation and date-based terms stay in force; queue paper-trading reliability work
 until a documented freeze-readiness decision.
 
-**2026-10-23 net-issuance decision:** [Part A closed NO-GO](../research/2026-10-23-net-issuance-screen-nogo.md).
+**2026-10-23 net-issuance decision:** [Part A closed NO-GO](../../research/stock-signals/net-issuance/2026-10-23-net-issuance-screen-nogo.md).
 Registered `BIG NegNI` fails A1 (Newey-West t 0.26, p 0.398 vs t ≥ 3.0) and A2
 (+0.48 vs +1.0 pt/yr since 1994; `_net_issuance_screen_results.json`:
 `H1.A1.t`, `H1.A1.p`, `H1.A2.cagr_diff_pp`). Heavy issuers lag, but that
@@ -34,7 +34,7 @@ discussion of direction based on available free-data evidence. Existing paper
 observation and the production freeze continue.
 
 **Standard updated 2026-10-23 (owner-approved):** the
-[forward-paper standard](../research/briefs/2026-10-23-forward-paper-standard.md) replaces the
+[forward-paper standard](../../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md) replaces the
 paid-data Part B for future stock candidates:
 - Part A is unchanged: long free history, Holm-corrected t ≥ 3, and ≥ +1.0 pt/yr net since 1994.
 - B0 is a kill-only replay on the clean 2021–2026-04 tape: kill below −1.0 pt/yr after tax vs SPY.
@@ -46,18 +46,18 @@ paid-data Part B for future stock candidates:
 
 **2026-11-03 working list:** the ranked queue, calendar,
 the priorities and dependencies are in [`working_task_list.md`](../working_task_list.md). The next two steps are:
-1. Write a paper-parity and forward-evidence plan covering the [AVB condition and evidence gaps](../research/2026-11-02-paper-freeze-readiness.md), the shadow book, qualifying start/reset and future decision-time records. The clean-window review date is unknown; no calendar date alone lifts the freeze.
-2. In parallel, write an accruals feasibility and potential-screen plan addressing [usage terms, revisions and portfolio metadata](../research/2026-11-02-accruals-feasibility.md), with registration and testing conditional on feasibility. Do not examine returns until a candidate brief is registered.
+1. Write a paper-parity and forward-evidence plan covering the [AVB condition and evidence gaps](../../research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md), the shadow book, qualifying start/reset and future decision-time records. The clean-window review date is unknown; no calendar date alone lifts the freeze.
+2. In parallel, write an accruals feasibility and potential-screen plan addressing [usage terms, revisions and portfolio metadata](../../research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md), with registration and testing conditional on feasibility. Do not examine returns until a candidate brief is registered.
 
 Plan the two-symbol paper sweep separately after the parity work clarifies the paper environment; implementation remains behind the freeze and readiness gates.
 
 The factor-scope ruling remains open and affects valuation, quality and q-factor rows, not accruals. The insider amendment may remain unapproved.
-The research-direction inputs are the [free-data feasibility inventory](../research/2026-11-02-free-data-stock-feasibility.md)
-and the [family-scope review](../research/2026-11-02-family-scope-review.md); no candidate is recommended there.
+The research-direction inputs are the [free-data feasibility inventory](../../research/stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md)
+and the [family-scope review](../../research/stock-signals/feasibility/2026-11-02-family-scope-review.md); no candidate is recommended there.
 
 The [resolution plan](../superpowers/plans/2026-10-23-resolve-event-audit.md)
 supersedes earlier event-audit scheduling. The
-[owner decision memo](../research/2026-10-23-event-timing-audit-decision.md) assigns
+[owner decision memo](../../research/audits/event-timing/2026-10-23-event-timing-audit-decision.md) assigns
 **UNRESOLVED** to PEAD and insider, separately retaining original timestamp and
 approved filing-date-only representations. **Owner decision 2026-10-23: both studies PARKED. No paid data, now or later.** The owner will
 not buy any dataset or subscription, so every route in the source manifest that needs payment is
@@ -66,13 +66,13 @@ unreachable as written. The insider header-timestamp amendment stays an unapprov
 nothing depends on it.
 
 1. Owner: approve or reject the
-   [DRAFT header-source amendment](../research/briefs/2026-10-23-insider-acceptance-time-amendment.md).
+   [DRAFT header-source amendment](../../research/audits/event-timing/2026-10-23-insider-acceptance-time-amendment.md).
    Offline results reproduce 25/25 header-consistent and 9/25 API-inconsistent
    cached pairs; the SEC documentation citation is UNVERIFIED. The runner is
    unchanged and the separate approved date-only alternative remains in force.
 2. ~~Owner: decide the memo's buy-or-park choice for each signal.~~ **Resolved 2026-10-23:
    park both; no purchase** (no paid data, now or later). The
-   [R1–R9 ledger](../research/_event_source_search_ledger.json) documents priced
+   [R1–R9 ledger](../../research/audits/event-timing/_event_source_search_ledger.json) documents priced
    execution-price components, but no requirement-complete paid combination,
    annual cost or common qualifying five-year window.
 
@@ -85,7 +85,7 @@ Source-search exhaustive completion is not claimed while relevant items remain
 unresolved. The existing SEC stop and historical accounting are preserved.
 
 Database access and the specific predecessor comparison are already recovered;
-the [durable handoff](../research/event-timing-audit-implementation.md) records them.
+the [durable handoff](../../research/audits/event-timing/event-timing-audit-implementation.md) records them.
 Paper observation and the production freeze continue under standing owner
 instructions. No return test or production change follows from this decision.
 
@@ -107,8 +107,8 @@ and paper-trading reliability; the account is taxable only.
    the event-timing/data-integrity audit for post-earnings announcement drift
    (PEAD) and insider cluster buying; its evidence work is the immediate plan
    above. This does not authorize a new return test. See the
-   [Factor screen report](../research/2026-10-21-factor-screen-nogo.md) and
-   [registered brief](../research/briefs/2026-10-20-factor-screen.md).
+   [Factor screen report](../../research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md) and
+   [registered brief](../../research/stock-signals/factor-screen/2026-10-20-factor-screen.md).
 2. **Momentum re-test closed NO-GO.** Neither size passes the registered
    French screen (`_momentum_french_screen_results.json`: `pass.big = false`,
    `pass.small = false`). Holm rejects neither; post-publication net compound
@@ -117,14 +117,14 @@ and paper-trading reliability; the account is taxable only.
    `groups.small.post_cagr_diff_pp`). No paid data and no further momentum work.
    Phase 2 is not executed; Phases 2–5 are cancelled. The stock-trading path has
    no validated candidate. See the
-   [Phase 1 report](../research/2026-10-20-momentum-french-screen-nogo.md) and
-   [registered brief](../research/briefs/2026-10-20-momentum-retest.md).
+   [Phase 1 report](../../research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md) and
+   [registered brief](../../research/stock-signals/momentum/2026-10-20-momentum-retest.md).
 3. **Deflated Sharpe Ratio (DSR) gate power note.** With one-year training folds
    and a 12-combo grid, the corrected DSR gate needs an in-sample Sharpe of
    roughly 2.5 to pass, so walk-forward out-of-sample (OOS) results are mostly
    per-fold anchor results. Gate rejections stand: low pass counts reflect low
    statistical power, not proof that there is no edge (spec:
-   `docs/research/briefs/2026-10-20-momentum-retest.md`, §4, item 2).
+   `research/stock-signals/momentum/2026-10-20-momentum-retest.md`, §4, item 2).
 4. **Continue frozen paper observation and assess reproducibility.**
    The approved historical daily-bar model is NO-GO:
    CAGR 14.19% versus SPY 14.83%, excess −0.64 pt/year, Newey-West t −0.69.
@@ -133,8 +133,8 @@ and paper-trading reliability; the account is taxable only.
    window. The qualifying start and review date remain unresolved. There is no pending retirement decision. The
    separate shadow retains its own forward rule; the owner's real-money A23
    allocation and exit terms are unchanged. See the
-   [audit report](../research/2026-10-19-production-replica-audit-nogo.md) and
-   [approved closure](../research/briefs/2026-10-19-production-replica-closure-amendment.md).
+   [audit report](../../research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md) and
+   [approved closure](../../research/audits/production-replica/2026-10-19-production-replica-closure-amendment.md).
 5. **Review the A23 distribution-tax bounds before entry**, as information for
    the existing owner decision. Earlier research/deployment notes below are
    historical; their old KEEP and outstanding-rerun statements are superseded
@@ -143,16 +143,16 @@ and paper-trading reliability; the account is taxable only.
 ## Where new strategy ideas come from (2-stage pipeline)
 
 1. **Discovery (external, no repo access)** — run
-   `docs/research/prompts/web-strategy-research-prompt.md` in a web-research
+   `research/prompts/web-strategy-research-prompt.md` in a web-research
    tool (Google Gemini or Claude's web-UI research feature). Paste the
    results back into a local session and ask to merge them into
-   `docs/research/WEB_RESEARCH_CANDIDATES.md` (an accumulating backlog, not
-   overwritten). `docs/research/RESEARCH_SNAPSHOT.md` §6 also holds a
+   `research/WEB_RESEARCH_CANDIDATES.md` (an accumulating backlog, not
+   overwritten). `research/RESEARCH_SNAPSHOT.md` §6 also holds a
    smaller set of internally-derived candidate ideas (reasoned from what's
    failed, not external research) — both are valid sources.
 2. **Implementation (local, full repo access)** — pick ONE candidate from
    either source, copy it into
-   `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`'s
+   `research/prompts/local-implementation-prompt-TEMPLATE.md`'s
    "Candidate Strategy" section, and queue a concrete step below. That
    template's prompt is what actually drives the build-and-WFO-test work in
    this repo.
@@ -193,7 +193,7 @@ money in ~3 months.
   +1.6 pt/yr on 2006–2026 history but **+0.8 pt/yr at today's ~4% bills,
   below the pre-registered +1.0 bar**, for −66% vs −55% drawdowns and a
   1-in-4 chance of a decade behind SPY
-  (`docs/research/2026-09-30-static-fractional-leverage.md`). This is an
+  (`research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md`). This is an
   allocation decision, not a lab GO; the lab's Sharpe-vs-SPY gate fails
   (0.61 vs 0.64). Terms, fixed now so they are not renegotiated at a low:
   - **Book:** 70% SPY / 30% SSO of the real-money equity allocation.
@@ -210,7 +210,7 @@ money in ~3 months.
   - **Rate clause (owner-accepted risk, not a trigger):** at ~4% bills the
     expected edge is ~+0.8 pt/yr; it rises ~0.3 pt per 1 pt fall in bills.
     Logged for the annual review, not acted on in between.
-    Distribution-tax bounds (+0.77 pt/yr ordinary vs +0.80 pt/yr LT at 24/15, +2.5 pt bills; `docs/research/_static_leverage_aftertax_dist_bounds.json`): pre-entry information for the owner; terms unchanged.
+    Distribution-tax bounds (+0.77 pt/yr ordinary vs +0.80 pt/yr LT at 24/15, +2.5 pt bills; `research/allocation/static-leverage/_static_leverage_aftertax_dist_bounds.json`): pre-entry information for the owner; terms unchanged.
   - **Fund risk:** SSO fee waiver expired 2026-09-30; a fee increase above
     ~1.0% or a fund closure is reviewed at the next annual date, or
     immediately if the fund announces closure (switch to the closest 2x
@@ -243,8 +243,8 @@ money in ~3 months.
 
 ## CLOSED (2026-10-20) — Momentum re-test NO-GO
 
-The [Phase 1 report](../research/2026-10-20-momentum-french-screen-nogo.md) closes
-momentum under the [approved brief §5](../research/briefs/2026-10-20-momentum-retest.md):
+The [Phase 1 report](../../research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md) closes
+momentum under the [approved brief §5](../../research/stock-signals/momentum/2026-10-20-momentum-retest.md):
 neither size passes (`_momentum_french_screen_results.json`: `pass`, `next`).
 No paid data; Phase 2 is not executed and Phases 2–5 are cancelled. Do not build
 the momentum tax engine or start a replacement momentum trading path under
@@ -310,7 +310,7 @@ container recreated and checked):
    membership.** Fix `c9d1abe` + PIT re-baseline: core Sharpe **0.59 /
    CAGR 3.1% / MaxDD -5.3%** vs SPY 0.78 / 13.0% / -22.1% (was 0.99 / 8.0%
    pre-fix). `ensemble_ic` (0.41) and `ensemble_kelly` (0.50) closed NO-GO.
-   See `docs/research/2026-09-23-pit-rebaseline-core-nogo.md`.
+   See `research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md`.
    **Owner decision pending:** the stock-picking sleeve is a low-drawdown
    diversifier, not an index-beater — decide whether to shrink it in favor
    of SPY (paper, so no capital at risk meanwhile). Then: re-screen
@@ -321,7 +321,7 @@ container recreated and checked):
    But funding it from SPY adds nothing, because SPY earns as much on the
    same days (overlay 0.909 vs SPY 0.896, MaxDD worse). The 12-combo WFO
    halted and its top winner held only 5/17 folds. See
-   `docs/research/2026-09-24-month-end-treasury-sleeve-nogo.md`. Parked: a
+   `research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve-nogo.md`. Parked: a
    T-bill-funded version, which needs an owner allocation decision first.
 7. **Research (2026-09-24) — core + SPY sweep blend: KEEP, but live size is
    untested.** Answers item 5 at *backtested* exposure. Core + idle cash swept
@@ -336,7 +336,7 @@ container recreated and checked):
    portfolio), but that can't produce a 4x gap. Compare live `paper_trades`
    entry and hold counts against backtest fold trades. Then re-run
    `scripts/core_spy_blend.py` at live exposure. See
-   `docs/research/2026-09-24-core-spy-blend-keep.md`.
+   `research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md`.
 8. **Ops, awaiting approval — S&P 500 constituents snapshot is stale**
    (2026-06-02): SATS was renamed ECHO on 2026-06-24, and our tape has SATS
    bars only through 2026-07-17. The fix, `download_sp500_history()`, changes
@@ -351,7 +351,7 @@ container recreated and checked):
    Verify all four filled.
 10. **Research done 2026-09-28 — SPY + 20% cross-asset sleeve: static GO
     (shadow only), trend adds nothing.** Report:
-    `docs/research/2026-09-28-cross-asset-sleeve.md`. Static 80/20
+    `research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md`. Static 80/20
     (TLT/GLD/PDBC) passes all 5 pre-registered criteria: Sharpe 0.97 vs SPY
     0.90 pinned and 0.97 vs 0.87 over 2016–26, with better MaxDD. But CAGR is
     ~1 pt *below* SPY, the pinned Sharpe gap is inside bootstrap noise
@@ -389,7 +389,7 @@ container recreated and checked):
     crosses a split or merger with mixed adjustment, re-download their full
     history, and add a daily-move sanity check (>40%, clustered by date).
     MRNA, MLI, STI and ADCT also show large jumps
-    (`docs/research/2026-09-28-live-indicator-warmup.md`).
+    (`research/paper-system/indicator-warmup/2026-09-28-live-indicator-warmup.md`).
 13. **DEPLOYED 2026-09-29 ~17:15 PT (steps 1-5 done; config now FROZEN for
     the planned 3-month parity window).** The qualifying start and review date remain
     unresolved. See the current readiness review above. Historical instruction: verify the 09-30
@@ -418,7 +418,7 @@ container recreated and checked):
 
 14. **Research DONE 2026-09-30 — static fractional leverage (A23): GO for
     owner decision; A24 sleeve rider NO-GO.** Report
-    `docs/research/2026-09-30-static-fractional-leverage.md`. 70/30 SPY/SSO,
+    `research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md`. 70/30 SPY/SSO,
     band 22–38%, month-end: after-tax 12.00% vs SPY 10.40% (+1.6 pt/yr, real
     SSO 2006–2026), +0.6 pt on synthetic 1993–2006; MaxDD −66% vs −55%; 995 vs
     884 days to recover 2008; behind SPY in 24% of rolling 10y windows (worst
@@ -436,7 +436,7 @@ container recreated and checked):
     70/30 SPY/SSO (~1.3x), no timing, band-rebalanced — an allocation, not
     an edge (+1.7 pt CAGR over SPY pre-tax on 2006–2026, MaxDD −67% vs −55%,
     trailed SPY across 2006–2012, Sharpe slightly below SPY). Brief:
-    `docs/research/briefs/2026-09-30-static-fractional-leverage.md`. It
+    `research/allocation/static-leverage/2026-09-30-static-fractional-leverage-brief.md`. It
     needs the lot-level after-tax engine (backlog C8), a synthetic
     1993–2006 holdout labelled as such, and the pre-registered bar (≥ +1
     pt/yr after-tax CAGR vs after-tax SPY on 2006–2026, not below SPY on the
@@ -469,9 +469,9 @@ reasoning record now that the work it describes is done on-branch:
 of-08-31 core revert never happened — confirmed 2026-09-11 (before this
 session's work), `trader.py` still called `generate_blended_signals()`,
 three weeks past the planned date — and the 2026-09-09 ops review
-(`docs/research/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md`)
+(`research/audits/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md`)
 plus the 2026-09-10 full-repo audit
-(`docs/research/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
+(`research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md`
 §7) found a live-data-integrity blocker that the original sequence didn't
 know about and that must go **first**, ahead of the revert:
 
@@ -488,7 +488,7 @@ below is stale as of today's book.
 
 **The re-baseline still settles the blend question independently of the
 above** — pinned 17-fold WFO (2021-01-31 → 2026-04-30) on the corrected
-tape (`docs/research/_rebaseline_corrected_tape_20260822.json`): SP500
+tape (`research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json`): SP500
 core **Sharpe 0.99 / CAGR 8.0% / MaxDD -7.7%**; 3-sleeve blend @ lev 1.0
 (live config) **0.69 / 4.8%**; SPY window-matched **0.78**. Third
 independent core-beats-blend result (June: 1.05 vs 1.12; August
@@ -542,7 +542,7 @@ Revised sequence (still one change at a time so attribution stays clean):
    `xs_momentum`/`dual_momentum` on the current lab stack (zero-cost gap
    closer, never re-tested post-rewrite). Event-date NO-GOs stay closed
    (they failed *with* a one-day lookahead advantage, see
-   `docs/research/RESEARCH_SNAPSHOT.md` §4); `fomc_drift` is the only one
+   `research/RESEARCH_SNAPSHOT.md` §4); `fomc_drift` is the only one
    whose workaround tested the outright wrong day — re-run if the compute
    is worth it. Full ranked list: `RESEARCH_SNAPSHOT.md` §6.
 
@@ -727,9 +727,9 @@ the duplicated tape.
 **The July 17 note that stood here — "reconfirmed exactly (Sharpe 1.14,
 MaxDD -5.39%) via fresh blend runs — no tooling drift" — is SUPERSEDED.**
 A pinned-window 17-fold re-run on 2026-08-19
-(`docs/research/2026-08-19-anchor-fix-reproduction.md`, driver
+(`research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md`, driver
 `scripts/anchor_fix_reproduction_wfo.py`, raw
-`docs/research/_anchor_fix_reproduction_results.json`) reproduces neither
+`research/audits/rebaseline/_anchor_fix_reproduction_results.json`) reproduces neither
 cited headline:
 
 | Config | Sharpe | CAGR | MaxDD | Gates |
@@ -866,16 +866,16 @@ third and clearest confirmation of the eval-window-drift pattern), and
 short-volume-ratio/"stealthy shorts" free-data cut (July 19, candidate #5
 — a clean "no signal at this fidelity" rejection, not an eval-window or
 overfitting one). See `roadmap.md` §3 and
-`docs/research/2026-07-16-leveraged-index-rotation-nogo.md` /
-`docs/research/2026-07-16-leveraged-trend-following-nogo.md` /
-`docs/research/2026-07-17-pairs-stat-arb-nogo.md` /
-`docs/research/2026-07-17-max-effect-nogo.md` /
-`docs/research/2026-07-17-short-interest-nogo.md` /
-`docs/research/2026-07-17-pead-nogo.md` /
-`docs/research/2026-07-17-index-deletion-fade-nogo.md` /
-`docs/research/2026-07-19-insider-cluster-buy-nogo.md` /
-`docs/research/2026-07-19-congress-trades-nogo.md` /
-`docs/research/2026-07-19-short-volume-ratio-nogo.md`.
+`research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md` /
+`research/allocation/leveraged-trend/2026-07-16-leveraged-trend-following-nogo.md` /
+`research/stock-signals/pairs-stat-arb/2026-07-17-pairs-stat-arb-nogo.md` /
+`research/stock-signals/max-effect/2026-07-17-max-effect-nogo.md` /
+`research/stock-signals/short-interest/2026-07-17-short-interest-nogo.md` /
+`research/stock-signals/pead/2026-07-17-pead-nogo.md` /
+`research/stock-signals/index-deletion/2026-07-17-index-deletion-fade-nogo.md` /
+`research/stock-signals/insider-cluster/2026-07-19-insider-cluster-buy-nogo.md` /
+`research/stock-signals/congress-trades/2026-07-19-congress-trades-nogo.md` /
+`research/stock-signals/short-volume/2026-07-19-short-volume-ratio-nogo.md`.
 
 **The eval-window-drift pattern is now confirmed three times and should be
 treated as a standing expectation, not a caveat.** PEAD (July 17) first
@@ -1003,7 +1003,7 @@ not an eval-window or overfitting rejection (WFE 1.10, healthy) — the
 signal construction just doesn't add value over doing nothing clever;
 simply staying 100% hedged was the best of the four FX configurations
 over this window. Full report:
-`docs/research/2026-07-20-fx-hedge-overlay-nogo.md`. `fred_data.py` and
+`research/allocation/fx-hedge/2026-07-20-fx-hedge-overlay-nogo.md`. `fred_data.py` and
 the `fx_hedge` universe remain reusable infrastructure for A5/A7 (both
 need FRED-adjacent macro data).
 
@@ -1022,7 +1022,7 @@ return 0.45% over 13.5 years (essentially flat)**, Sharpe 0.10, WFE 0.44
 (below the 0.50 overfitting floor), regime halt active (winning combo
 selected in only 14/54 folds) — a clean "no exploitable drift" result,
 not an eval-window or data-quality artifact. Full report:
-`docs/research/2026-07-20-fomc-drift-nogo.md`. `fomc_calendar.py` remains
+`research/allocation/fomc-drift/2026-07-20-fomc-drift-nogo.md`. `fomc_calendar.py` remains
 reusable for any future macro-calendar-timed candidate.
 
 **A3 (commodity medium-term trend) was built and tested — REJECTED
@@ -1037,7 +1037,7 @@ class). Full 50-fold WFO: OOS Sharpe 0.13 vs SPY 0.74, **MaxDD -37.0%
 specifically meant to avoid crash exposure, aggregate WFE undefined
 (`nan`), regime halt active despite 82% fold-stability for the
 recommended combo. Full report:
-`docs/research/2026-07-20-commodity-trend-nogo.md`. The `commodity_trend`
+`research/allocation/commodity-trend/2026-07-20-commodity-trend-nogo.md`. The `commodity_trend`
 universe and code remain reusable for A2 (commodity carry, same universe,
 untested) if commodity exposure is revisited — A4 (short-term basis
 reversal) is **not** ETF-approximable per the register's own note (needs
@@ -1051,14 +1051,14 @@ decisive test compared it against static duration baselines: **static
 100% SHY beats the dynamic strategy on every metric** (Sharpe 0.90 vs
 0.19, CAGR 1.5% vs 0.8%, MaxDD -5.7% vs -8.2%) — the same "dynamic loses
 to static" pattern as A1, now confirmed twice. Full report:
-`docs/research/2026-07-20-treasury-curve-nogo.md`. This closes the
+`research/allocation/treasury-curve/2026-07-20-treasury-curve-nogo.md`. This closes the
 approximation only — the paper's actual 4-factor model (needs cash
 Treasuries/STRIPS/futures) remains untested and out of reach at this
 project's current data-access tier.
 
 **A8 (headline/LLM sentiment) was built, tested, and CLOSED NO-GO
 (2026-07-24)** — provisional-confidence rejection per
-`docs/research/2026-07-24-headline-sentiment-nogo.md` (only 3 usable
+`research/stock-signals/headline-sentiment/2026-07-24-headline-sentiment-nogo.md` (only 3 usable
 folds vs. 20-54 elsewhere, direction unfavorable). This closes the first
 14-candidate + 25-candidate web-research batches: **all A-series and
 first-round B-series items are now resolved or explicitly paused** — see
@@ -1070,7 +1070,7 @@ no free NAV/premium-discount source found). None of B1-B3 started.
 
 **pairs_stat_arb was re-run on corrected data and re-confirmed NO-GO
 (2026-07-26)**, closing the book on that candidate — see
-`docs/research/2026-07-17-pairs-stat-arb-nogo.md` §7. Also: a severe
+`research/stock-signals/pairs-stat-arb/2026-07-17-pairs-stat-arb-nogo.md` §7. Also: a severe
 SPY-timestamp data bug (deflating every equity Sharpe ~29% since 2023)
 and two smaller bugs were found and fixed 2026-07-25 — see
 `RESEARCH_SNAPSHOT.md` §5 for what's now settled vs. still open there.
@@ -1091,7 +1091,7 @@ candidate available: free daily OHLCV only, reuses existing `ggt lab
 strategies prove the trend-filter mechanism works in this codebase (their
 NO-GO was leveraged-ETF decay specifically, not the trend logic — TLT/GLD/
 DBC are unleveraged). **Not yet built** — next session should copy this
-candidate into `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`
+candidate into `research/prompts/local-implementation-prompt-TEMPLATE.md`
 and run it through the standard WFO/NDH/DSR gate, same discipline as every
 prior candidate. The report's #2 (intl DM equity rotation) and #3
 (re-test `xs_momentum`/`dual_momentum` on the current lab stack, a

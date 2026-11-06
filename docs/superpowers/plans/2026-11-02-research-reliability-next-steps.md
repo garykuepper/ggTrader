@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown, Python, pandas, pytest via `scripts/run_tests.sh`, existing research artifacts.
 
-**Spec:** [Ranked working task list](../../working_task_list.md), especially A1–A4 and B1–B4; [forward-paper standard](../../research/briefs/2026-10-23-forward-paper-standard.md); [family-scope review](../../research/2026-11-02-family-scope-review.md); [A23 report](../../research/2026-09-30-static-fractional-leverage.md).
+**Spec:** [Ranked working task list](../../working_task_list.md), especially A1–A4 and B1–B4; [forward-paper standard](../../../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md); [family-scope review](../../../research/stock-signals/feasibility/2026-11-02-family-scope-review.md); [A23 report](../../../research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md).
 
 ## Global Constraints
 
@@ -29,11 +29,11 @@
 
 ## File map and execution strategy
 
-- Create `docs/research/2026-11-02-paper-freeze-readiness.md`: evidence criteria, incident ledger and pre-lift checks.
-- Create `docs/research/2026-11-02-two-symbol-sweep-design.md`: proposed cash-flow rules, unresolved decisions and scenario-based test plan, no implementation.
+- Create `research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md`: evidence criteria, incident ledger and pre-lift checks.
+- Create `research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md`: proposed cash-flow rules, unresolved decisions and scenario-based test plan, no implementation.
 - Modify `src/ggTrader/lab/tax_lots.py` and `tests/lab/test_tax_lots.py`: fix two independent wash-sale edge cases.
 - Modify `tests/lab/test_wfo.py`: repair and test its scripted helper, without changing WFO production semantics.
-- Create `docs/research/2026-11-02-accruals-feasibility.md`: source metadata and cited feasibility verdict; a separate brief and run are conditional deliverables.
+- Create `research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md`: source metadata and cited feasibility verdict; a separate brief and run are conditional deliverables.
 - Modify `docs/working_task_list.md` and `docs/next_steps.md` only after a task closes, recording evidence and the actual next actions. Preserve owner decisions as open unless explicitly supplied.
 
 **Recommendation:** Execute natively by track and obtain an independent Codex review of tax accounting, WFO regression coverage, and the research/readiness conclusions before merging. Independent tracks could be delegated in parallel if speed matters, but per-task implementer/reviewer handoffs add overhead for these small changes; paper deployment consequences and accounting correctness justify focused review. No delegation occurs merely by approving this plan.
@@ -42,20 +42,20 @@
 
 ### Task 1: Define evidence and the reset ledger
 
-**Files:** Create `docs/research/2026-11-02-paper-freeze-readiness.md`.
+**Files:** Create `research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md`.
 
 **Interfaces:** Consumes A2 and B2 in the working task list and the parity rules in `docs/next_steps.md`; produces a checklist and ledger consumed by Task 2 and the future lift review.
 
-- [ ] Read the listed specs and parity artifact `docs/research/_replica_parity_20261019.json`; distinguish historical replication uncertainty from prospective parity incidents.
+- [ ] Read the listed specs and parity artifact `research/audits/production-replica/_replica_parity_20261019.json`; distinguish historical replication uncertainty from prospective parity incidents.
 - [ ] Document the four parity criteria: stock names ≤ `MAX_POSITIONS`, no missed exits, no orphan or untradable holdings, and shadow weights/rebalances match the rule. For each identify evidence, frequency, responsible role and pass/fail/unknown disposition; identify `paper_trades` and `paper_snapshots` as evidence locations without claiming they alone prove every criterion.
 - [ ] Add a dated incident-ledger template with incident, evidence, detection date, reset decision, window start, earliest new review date and owner. Record only verified incidents; label absent evidence unknown. State any parity incident resets the clock and the starting date requires confirmation.
 - [ ] Add pre-lift checks for the SSO fee and closure risk, actual distribution tax character versus modeled bounds, rollback, and the documented build/pull/deploy sequence. Record unverified facts as outstanding rather than assuming the old waiver still applies.
 - [ ] Check document scenarios: an undocumented day stays unknown; an incident resets the start; a calendar date without evidence does not pass. Cross-check every assertion against a linked artifact and mark any unavailable source.
-- [ ] Commit the document separately: `git add docs/research/2026-11-02-paper-freeze-readiness.md && git commit -m "docs: define paper freeze readiness evidence"`.
+- [ ] Commit the document separately: `git add research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md && git commit -m "docs: define paper freeze readiness evidence"`.
 
 ### Task 2: Design the two-symbol sweep
 
-**Files:** Create `docs/research/2026-11-02-two-symbol-sweep-design.md`.
+**Files:** Create `research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md`.
 
 **Interfaces:** Consumes Task 1 and the A23 report; produces a design and test plan only, with no runtime API.
 
@@ -63,7 +63,7 @@
 - [ ] Describe proposed handling of daily stock cash needs, insufficient cash, unavailable or fractional lots, missing prices, and interrupted/rejected orders. Explicitly distinguish required sale for liquidity from scheduled band rebalancing; identify any policy not fixed by the source as an open decision, not an approved rule.
 - [ ] Write expected outcomes for five table-driven future tests: inside band, outside band at month end, mid-month stock cash shortfall, insufficient eligible long-term lots, and stale price or rejected order. For an unresolved policy, assert the implementation must stop or surface a decision rather than claim a predetermined trade.
 - [ ] Cross-check design against Task 1 and the A23 report; document conflicts and confirm it authorizes no code, configuration, orders, or deployment.
-- [ ] Commit the document separately: `git add docs/research/2026-11-02-two-symbol-sweep-design.md && git commit -m "docs: design two-symbol sweep readiness"`.
+- [ ] Commit the document separately: `git add research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md && git commit -m "docs: design two-symbol sweep readiness"`.
 
 ## Track B — Correctness (isolated from production paper trading)
 
@@ -107,7 +107,7 @@
 
 ### Task 6: Accruals source feasibility, without returns
 
-**Files:** Create `docs/research/2026-11-02-accruals-feasibility.md`.
+**Files:** Create `research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md`.
 
 **Interfaces:** Consumes S04 in the family-scope review, the free-data inventory and forward-paper standard; produces a cited `feasible`, `infeasible`, or `unresolved` finding and evidence gaps for Task 7.
 
@@ -115,11 +115,11 @@
 - [ ] Determine separately whether the published series supports the historical screen and whether stock-level point-in-time reconstruction is available; do not infer the latter from portfolio history. Cite evidence or label unknown for each field.
 - [ ] Write a feasibility verdict and any blocking facts. If a needed fact is unknown, use `unresolved`; do not turn missing documentation into a pass. State that feasibility is neither a performance result nor permission to trade.
 - [ ] Verify that every factual claim links directly to its primary source, and that no return results or candidate tuning entered this task.
-- [ ] Commit: `git add docs/research/2026-11-02-accruals-feasibility.md && git commit -m "docs: assess accruals data feasibility"`.
+- [ ] Commit: `git add research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md && git commit -m "docs: assess accruals data feasibility"`.
 
 ### Task 7: Conditional registered screen and verdict
 
-**Files:** If Task 6 is feasible, create `docs/research/briefs/2026-11-02-accruals-screen.md`, a focused driver under `scripts/`, raw JSON `docs/research/_accruals_screen_results.json`, and a dated report under `docs/research/`.
+**Files:** If Task 6 is feasible, create `docs/research/briefs/2026-11-02-accruals-screen.md`, a focused driver under `scripts/`, raw JSON `docs/research/_accruals_screen_results.json`, and a dated report under `research/`.
 
 **Interfaces:** Consumes the Task 6 feasibility finding and the forward-paper standard; produces a reproducible Part A verdict. If Task 6 is infeasible or unresolved, do not execute this task; record its blocker in Task 8.
 

@@ -12,7 +12,7 @@
 
 ## Global constraints
 
-- Read [AGENTS.md](../../../AGENTS.md), the specification, [next steps](../../next_steps.md) and the [research snapshot](../../research/RESEARCH_SNAPSHOT.md) first.
+- Read [AGENTS.md](../../../AGENTS.md), the specification, [next steps](../../next_steps.md) and the [research snapshot](../../../research/RESEARCH_SNAPSHOT.md) first.
 - Taxable account only; stocks prioritized, crypto in scope; no paid datasets or subscriptions.
 - Do not recommend retiring the stock sleeve, ending paper trading, shutting the project down or changing account type.
 - Preserve production freeze, existing NO-GOs, stopped runs, owner decisions and event-study parking.
@@ -31,9 +31,9 @@
 
 ## Files and interfaces
 
-- Create `docs/research/_research_process_audit_ledger.json`: machine-readable evidence ledger.
-- Create `docs/research/2026-11-01-research-process-audit.md`: human-readable coverage, methods, case studies and synthesis.
-- Update `docs/research/RESEARCH_INDEX.md` only to link the completed audit; do not replace historical classifications.
+- Create `research/audits/research-process/_research_process_audit_ledger.json`: machine-readable evidence ledger.
+- Create `research/audits/research-process/2026-11-01-research-process-audit.md`: human-readable coverage, methods, case studies and synthesis.
+- Update `research/RESEARCH_INDEX.md` only to link the completed audit; do not replace historical classifications.
 - JSON top-level object: `schema_version` (integer 1), `as_of` (date string), `coverage` (object with `sources`, `counts`, `exclusions`), `claims` (array), and `shared_findings` (array). Each claim has stable `id`, `family`, `kind`, `question`, `original_decision`, `decision_source`, `implementation_fidelity`, `evidence_validity`, `inference`, `follow_up`, `sources`, `dependencies`, `variants`, `limitations`, and `status_notes`. Use arrays for `sources`, `dependencies`, `variants`, `limitations`; use `unknown` for absent scalar facts and explain why in `status_notes`. Preserve specific verdicts and authority in `original_decision`/`decision_source`; audit classifications are separate.
 - Allowed `kind`: `tested`, `candidate_group`, `method`, `allocation`. Fidelity: `faithful`, `materially_changed`, `unknown`, `not_applicable`. Validity: `usable`, `qualified`, `invalid`, `unresolved`, `not_assessed`. Inference: `not_demonstrated`, `evidence_against_meaningful_effect`, `adverse_point_estimate`, `inconclusive`, `not_assessed`. Follow-up: `none_identified`, `documentary_clarification`, `bounded_technical_diagnosis`, `separate_study_proposal`.
 - Each shared finding records `id`, `observation`, `evidence`, `affected_claims`, `impact_status` (`verified`, `possible`, `unknown`), and `limitations`.
@@ -96,7 +96,7 @@
 - [x] Explain supported reasons for NO-GOs, unresolved causes, evidence that remains negative, competing explanations and their counterarguments. Do not infer market efficiency or publication-driven decay from the count of failures.
 - [x] Summarize process gaps, candidate research questions and data dependencies without choosing a strategy. If proposing different evaluation standards, describe alternatives and error tradeoffs without changing the approved standard.
 - [x] Record raw source locations, code revisions, available artifact keys and any gaps that prevent reproduction. Do not create new numerical return claims without a reproducible artifact and separately authorized computation.
-- [x] Validate JSON with `python3 -m json.tool docs/research/_research_process_audit_ledger.json >/dev/null`; check all local Markdown links resolve, `git diff --check`, and registry/report coverage against the ledger. Spot-check at least one claim per deep-dive category against primary artifacts and report exceptions.
+- [x] Validate JSON with `python3 -m json.tool research/audits/research-process/_research_process_audit_ledger.json >/dev/null`; check all local Markdown links resolve, `git diff --check`, and registry/report coverage against the ledger. Spot-check at least one claim per deep-dive category against primary artifacts and report exceptions.
 - [x] Verify no unapproved data acquisition, rerun, production change, verdict override, paid data suggestion or account-type recommendation appears in the deliverables. Link the final report from `RESEARCH_INDEX.md`; report outstanding unknowns and the scope of verification.
 
 ## Execution handoff

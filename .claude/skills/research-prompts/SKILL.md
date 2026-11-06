@@ -1,6 +1,6 @@
 ---
 name: research-prompts
-description: Run ggTrader's LLM strategy-research loop end to end — run the web-research discovery prompt through Encom's `research` command (or hand it over ready to paste if Gary asks), refreshing it first if stale, merge pasted research results into docs/research/WEB_RESEARCH_CANDIDATES.md with dedupe and citation checks, and turn a chosen candidate into a filled implementation brief. Use whenever the user wants to "do another research run", "generate the research prompt", "get the Gemini/web prompt", pastes back a strategy-research report or list of trading ideas, asks to "merge these into the candidates", or says "let's build/test candidate X" and needs the implementation prompt filled in — even if they don't name the files.
+description: Run ggTrader's LLM strategy-research loop end to end — run the web-research discovery prompt through Encom's `research` command (or hand it over ready to paste if Gary asks), refreshing it first if stale, merge pasted research results into research/WEB_RESEARCH_CANDIDATES.md with dedupe and citation checks, and turn a chosen candidate into a filled implementation brief. Use whenever the user wants to "do another research run", "generate the research prompt", "get the Gemini/web prompt", pastes back a strategy-research report or list of trading ideas, asks to "merge these into the candidates", or says "let's build/test candidate X" and needs the implementation prompt filled in — even if they don't name the files.
 ---
 
 # ggTrader research-prompt loop
@@ -9,12 +9,12 @@ New strategy ideas reach this repo through a two-stage pipeline
 (`docs/next_steps.md` "Where new strategy ideas come from"):
 
 1. **Discovery** — an external web-research LLM (Gemini / Claude web UI) runs
-   `docs/research/prompts/web-strategy-research-prompt.md`. It has no repo
+   `research/prompts/web-strategy-research-prompt.md`. It has no repo
    access; it only knows what that prompt tells it.
 2. **Ingest** — its report is pasted back here and merged into
-   `docs/research/WEB_RESEARCH_CANDIDATES.md`, an **accumulating** backlog.
+   `research/WEB_RESEARCH_CANDIDATES.md`, an **accumulating** backlog.
 3. **Implementation** — one candidate is copied into
-   `docs/research/prompts/local-implementation-prompt-TEMPLATE.md` and handed
+   `research/prompts/local-implementation-prompt-TEMPLATE.md` and handed
    to a Claude Code session that builds and WFO-tests it.
 
 This skill runs stages 1–3. It does **not** regenerate the ggTrader-context
@@ -31,10 +31,10 @@ core beat SPY until it was regenerated.
 
 ```bash
 cd /home/flynn/ggTrader
-grep -m1 'Last full regeneration' docs/research/RESEARCH_SNAPSHOT.md
-grep -m1 'last synced' docs/research/prompts/web-strategy-research-prompt.md
-ls docs/research/20*.md | sed 's#.*/##' | sort | tail -3      # newest closed arcs
-git log -5 --format='%h %ad %s' --date=short -- docs/research src/ggTrader/lab/strategies
+grep -m1 'Last full regeneration' research/RESEARCH_SNAPSHOT.md
+grep -m1 'last synced' research/prompts/web-strategy-research-prompt.md
+find research -name '20*.md' -not -path 'research/prompts/*' | sed 's#.*/##' | sort | tail -3      # newest closed arcs
+git log -5 --format='%h %ad %s' --date=short -- research src/ggTrader/lab/strategies
 ```
 
 Stale if any research report or strategy-registry change is dated after the
@@ -57,7 +57,7 @@ external agent show it.
 
 ```bash
 T=$(mktemp /tmp/ggt-research-prompt-XXXX.md)
-cp docs/research/prompts/web-strategy-research-prompt.md "$T"   # then edit "$T"
+cp research/prompts/web-strategy-research-prompt.md "$T"   # then edit "$T"
 ```
 
 **3. Run it through `research`** (Encom's research command, see the global `research` skill).
@@ -73,7 +73,7 @@ Each job writes `~/.local/state/research/jobs/<id>/report.md`, `ledger.json`, `s
 When it completes, ingest `report.md` through **Mode B** below as if it had been pasted. Treat ledger
 verdicts as the citation check: only `verified` rows count as checked, `contradicted` rows are
 rejected or re-checked, `unverified: …` rows keep that label. Save the draft as
-`docs/research/<date>-<slug>.md` plus `_<slug>_ledger.json` (copy of `ledger.json`).
+`research/<category>/<study>/<date>-<slug>.md` plus `_<slug>_ledger.json` (copy of `ledger.json`) in the same study folder.
 **Never commit automatically and never append to `WEB_RESEARCH_CANDIDATES.md` without Gary's go-ahead.**
 
 If Gary explicitly wants an outside web tool instead, hand over the prompt file as before: give the
@@ -99,7 +99,7 @@ a bullet of the 2026-07-19 batch's deprioritized list, with no heading. On
 2026-09-28 a merge added "dollar carry" as a new A21 and missed it. Before
 adding any entry, **full-text search the whole backlog** (and the snapshot)
 for the mechanism's key terms, cited authors and instruments, e.g.
-`grep -niE "dollar|carry|UUP|Lustig" docs/research/WEB_RESEARCH_CANDIDATES.md`,
+`grep -niE "dollar|carry|UUP|Lustig" research/WEB_RESEARCH_CANDIDATES.md`,
 and read every hit's context.
 
 **2. Classify each pasted candidate by mechanism, not name.** "Earnings
@@ -147,7 +147,7 @@ Source: <tool/model>, prompt synced <date>[, focus: <focus>]. <N> candidates
 pasted, <M> added, <K> rejected on intake. Citation checks: <what was
 checked, what was corrected, what was left unchecked>.
 
-**Rejected on intake:** <name> — duplicates <arc> (`docs/research/<report>.md`); ...
+**Rejected on intake:** <name> — duplicates <arc> (`research/<category>/<study>/<report>.md`); ...
 
 ### <ID>. <Name>
 
@@ -174,7 +174,7 @@ snapshot's §6 internal candidates.
 **Quick sanity checks.** For a simple timing or sleeve rule, a few lines of
 pandas on the pinned window can rule it out cheaply — label it a sanity
 check, not a WFO result. Save the script and its output to
-`docs/research/artifacts-<date>-web-batch/` (argparse + `main()`; yfinance
+`research/<category>/artifacts-<date>-web-batch/` (argparse + `main()`; yfinance
 direct is fine for symbols not in `ohlcv`). Two comparisons matter most:
 - **Fund any sleeve from SPY** and compare the book, not the sleeve alone —
   the live account has no idle cash.
@@ -199,7 +199,7 @@ collectibles). Record the result in the batch header.
 `RESEARCH_SNAPSHOT.md` §6. If it's already `queued`/`testing`/`resolved`,
 say so before doing anything — it may already have a report.
 
-**2. Write the filled brief** to `docs/research/briefs/YYYY-MM-DD-<slug>.md`:
+**2. Write the filled brief** to `research/<category>/<study>/YYYY-MM-DD-<slug>-brief.md`:
 a copy of `local-implementation-prompt-TEMPLATE.md` with the "Candidate
 Strategy" block replaced. Copy a backlog entry **verbatim** (citations,
 ratings, verification notes) so the implementer has the full trail; for an

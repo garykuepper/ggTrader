@@ -8,7 +8,7 @@
 
 **Tech Stack:** Git, Markdown, read-only broker/database records where available, Python/pytest through `scripts/run_tests.sh` for integration verification, primary-source web documentation.
 
-**Spec:** `docs/working_task_list.md` (A1, A2, A4, B1–B4); `docs/research/briefs/2026-10-23-forward-paper-standard.md`; and, after Task 1, `docs/research/2026-11-02-paper-freeze-readiness.md`, `docs/research/2026-11-02-two-symbol-sweep-design.md`, and `docs/research/2026-11-02-accruals-feasibility.md`.
+**Spec:** `docs/working_task_list.md` (A1, A2, A4, B1–B4); `research/programme/evidence-standard/2026-10-23-forward-paper-standard.md`; and, after Task 1, `research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md`, `research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md`, and `research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md`.
 
 ## Global Constraints
 
@@ -30,10 +30,10 @@
 
 ## File map and dependencies
 
-- `docs/research/2026-11-02-paper-freeze-readiness.md`: update the evidence inventory, incident ledger, unresolved gaps and readiness status; never commit raw personal records.
-- `docs/research/2026-11-02-two-symbol-sweep-design.md`: update proposed cash, order and lot scenarios, identify decisions and support future tests; no implementation.
-- `docs/research/2026-11-02-accruals-feasibility.md`: update primary-source findings, terms, revision limitations and the benchmark/cost protocol; no return values.
-- `docs/research/2026-11-02-family-scope-review.md`: append a clearly labeled recommendation only; an owner ruling goes in the factor report and family review only when actually given.
+- `research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md`: update the evidence inventory, incident ledger, unresolved gaps and readiness status; never commit raw personal records.
+- `research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md`: update proposed cash, order and lot scenarios, identify decisions and support future tests; no implementation.
+- `research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md`: update primary-source findings, terms, revision limitations and the benchmark/cost protocol; no return values.
+- `research/stock-signals/feasibility/2026-11-02-family-scope-review.md`: append a clearly labeled recommendation only; an owner ruling goes in the factor report and family review only when actually given.
 - `docs/working_task_list.md` and `docs/next_steps.md`: consolidate verified status and the next one or two actions after the reviews.
 - `docs/superpowers/plans/2026-11-02-paper-evidence-and-accruals-follow-up.md`: this execution record; do not overwrite the earlier plan.
 
@@ -67,7 +67,7 @@ Task 1 precedes Tasks 2–5. Task 2 first defines evidence, AVB and shadow scope
 
 ## Task 2: Reconstruct paper-trading evidence
 
-**Files:** Modify `docs/research/2026-11-02-paper-freeze-readiness.md`.
+**Files:** Modify `research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md`.
 
 **Interfaces:** Consumes Task 1 and the four parity criteria in the readiness document; produces a sanitized session/evidence inventory, incident ledger and `pass`, `incident`, or `unknown` classifications for Task 3 and the eventual freeze review.
 
@@ -80,11 +80,11 @@ Task 1 precedes Tasks 2–5. Task 2 first defines evidence, AVB and shadow scope
 - [ ] Record each substantiated parity incident with evidence, detection and effective restart dates, reviewer and reset rationale. If any required date or decision is unknown, leave the new eligibility date unknown; do not invent a clean window or a reviewer assignment.
 - [ ] Check three cases in the resulting ledger: an unavailable input is `unknown`; a verified incident resets the window; no incidents recorded without complete evidence does not establish a clean period.
 - [ ] Have Gemini Argon independently review the sanitized inventory and reset conclusions; lead Codex verifies each cited fact and resolves or records every material disagreement. Do not upload raw credentials or account records.
-- [ ] Commit only the sanitized report and cite evidence provenance in the commit: `git add docs/research/2026-11-02-paper-freeze-readiness.md && git commit -m "docs: reconcile paper parity evidence"`.
+- [ ] Commit only the sanitized report and cite evidence provenance in the commit: `git add research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md && git commit -m "docs: reconcile paper parity evidence"`.
 
 ## Task 3: Resolve sweep design scenarios
 
-**Files:** Modify `docs/research/2026-11-02-two-symbol-sweep-design.md`.
+**Files:** Modify `research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md`.
 
 **Interfaces:** Consumes the registered A23 rule and Task 2's evidence; produces proposed, explicitly labeled policy choices and a future implementation test matrix. It produces no runtime code.
 
@@ -94,11 +94,11 @@ Task 1 precedes Tasks 2–5. Task 2 first defines evidence, AVB and shadow scope
 - [ ] Write expected outcomes for: inside-band month end; outside-band month end; mid-month stock cash need; insufficient long-term lots; stale price; duplicate run after a partial fill. Ensure the third scenario does not assume an extra band rebalance and no scenario invents a tax-lot sale.
 - [ ] Incorporate relevant Task 2 evidence and explicitly list any production behavior that could not be established from records.
 - [ ] Obtain Gemini Argon's independent challenge; lead Codex checks each claim against the A23 report and source code, resolves or records material disagreements and leaves unapproved choices labeled proposed.
-- [ ] Commit: `git add docs/research/2026-11-02-two-symbol-sweep-design.md && git commit -m "docs: resolve sweep design scenarios"`.
+- [ ] Commit: `git add research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md && git commit -m "docs: resolve sweep design scenarios"`.
 
 ## Task 4: Resolve accruals feasibility gaps
 
-**Files:** Modify `docs/research/2026-11-02-accruals-feasibility.md`.
+**Files:** Modify `research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md`.
 
 **Interfaces:** Consumes the existing metadata review and forward-paper standard; produces `feasible`, `infeasible`, or `unresolved`, with a cited rationale and a proposed benchmark/cost approach. It consumes no return observations.
 
@@ -107,18 +107,18 @@ Task 1 precedes Tasks 2–5. Task 2 first defines evidence, AVB and shadow scope
 - [ ] Propose a specific long-only portfolio, benchmark, common date alignment and cost/turnover treatment before looking at returns. Compare the proposal to the Part A registered requirements, including Newey–West 12 lags, one-sided family-wise 0.00135 Holm procedure and the +1.0 pt/yr net CAGR criterion since 1994; distinguish methodology proposal from observed performance.
 - [ ] Assess whether a historical portfolio-level Part A screen is possible separately from stock-level B0/B1 reconstruction. Identify any blocker, uncertainty, and the minimum evidence that would change the verdict.
 - [ ] Have Gemini Argon independently check citations, point-in-time interpretation and verdict; lead Codex verifies the sources and records disagreements. Confirm no return observations were viewed.
-- [ ] Commit: `git add docs/research/2026-11-02-accruals-feasibility.md && git commit -m "docs: refine accruals feasibility assessment"`. If feasible, identify a registered brief as the next task; do not run a screen under this plan.
+- [ ] Commit: `git add research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md && git commit -m "docs: refine accruals feasibility assessment"`. If feasible, identify a registered brief as the next task; do not run a screen under this plan.
 
 ## Task 5: Prepare factor-scope recommendation
 
-**Files:** Modify `docs/research/2026-11-02-family-scope-review.md`; modify the factor report only if the owner has explicitly supplied a ruling.
+**Files:** Modify `research/stock-signals/feasibility/2026-11-02-family-scope-review.md`; modify the factor report only if the owner has explicitly supplied a ruling.
 
 **Interfaces:** Consumes the factor-screen closure and family-scope review; produces a proposed interpretation with reasons and an accurate status for S05, S07 and S08.
 
 - [ ] Compare the narrow and broad readings of “alternate factor definitions” against the registered factor hypotheses, the closure text and the definitions in the family-scope review.
 - [ ] Append a dated, clearly labeled wording-only addendum that recommends no candidate, and its practical consequences, including why S05, S07 and S08 remain undefined even under a narrow interpretation and why the ruling does not cover S04 accruals or the separate momentum closure.
 - [ ] Confirm no closed verdict is revised, no candidate becomes test-ready solely from a wording interpretation, and no owner decision is recorded without an explicit owner ruling.
-- [ ] Commit: `git add docs/research/2026-11-02-family-scope-review.md && git commit -m "docs: clarify factor scope recommendation"`.
+- [ ] Commit: `git add research/stock-signals/feasibility/2026-11-02-family-scope-review.md && git commit -m "docs: clarify factor scope recommendation"`.
 
 ## Task 6: Consolidate reviews and hand off
 

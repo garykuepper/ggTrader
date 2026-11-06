@@ -8,7 +8,7 @@
 
 **Tech stack:** Existing Python environment, SEC JSON/XML, read-only metadata queries, existing audit fixtures; Vane only for specific unresolved documentary questions.
 
-**Spec:** [Approved event-timing audit](../../research/briefs/2026-10-21-event-timing-audit.md), especially §8, and [source-search manifest](../../research/briefs/2026-10-21-event-timing-audit-sources.md). This plan implements those rules; it does not amend them.
+**Spec:** [Approved event-timing audit](../../../research/audits/event-timing/2026-10-21-event-timing-audit.md), especially §8, and [source-search manifest](../../../research/audits/event-timing/2026-10-21-event-timing-audit-sources.md). This plan implements those rules; it does not amend them.
 
 ## Global constraints
 
@@ -31,11 +31,11 @@
 
 ## Files and responsibilities
 
-- Update `docs/research/event-timing-audit-implementation.md`: durable smoke findings, source citations, operational-case evidence references, unresolved requirements and acquisition decision.
+- Update `research/audits/event-timing/event-timing-audit-implementation.md`: durable smoke findings, source citations, operational-case evidence references, unresolved requirements and acquisition decision.
 - Update `docs/next_steps.md`: only the next one or two actions and link to this plan.
 - Preserve `data/external/event_timing_audit/`: raw responses, manifests, accounting and checkpoints. Store new raw evidence there only under the reviewed acquisition plan.
 - Conditional code changes only: `src/ggTrader/lab/event_timing_sources.py`, `event_timing_audit.py`, `event_timing_reconstruction.py`, and `tests/lab/test_event_timing_audit.py`. Reuse current interfaces. No new module or dependency is planned.
-- Final audit deliverables remain `docs/research/_event_timing_audit.json` and `docs/research/2026-10-21-event-timing-audit-report.md`; intermediate examples stay explicitly partial, with reports under `/tmp` and raw evidence retained.
+- Final audit deliverables remain `research/audits/event-timing/_event_timing_audit.json` and `docs/research/2026-10-21-event-timing-audit-report.md`; intermediate examples stay explicitly partial, with reports under `/tmp` and raw evidence retained.
 
 ## Review focus
 

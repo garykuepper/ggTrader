@@ -114,11 +114,11 @@ cd /home/flynn/ggTrader && .venv/bin/python scripts/shadow_cross_asset.py 2>/dev
 ```
 
 A paper shadow of the static 80% SPY + 20% TLT/GLD/PDBC book
-(`docs/research/2026-09-28-cross-asset-sleeve.md`), recomputed from prices
+(`research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md`), recomputed from prices
 since 2026-09-29 and rebased to the live NAV that day. Report its return and
 max drawdown next to the live book and SPY. It is a comparison, not a
 position, so a gap is information, not a fault. If the 2007–2011 holdout
-(`docs/research/briefs/2026-09-28-cross-asset-sleeve-holdout.md`) comes back
+(`research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-holdout.md`) comes back
 NO-GO, drop this step.
 
 ## Output format

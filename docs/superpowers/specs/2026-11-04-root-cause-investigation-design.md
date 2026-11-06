@@ -92,7 +92,7 @@ every finding must be explained in plain language with its evidence.
 
 A read-only audit by a senior-quant Opus agent covered stocks only. The full report,
 including its trust table and the re-run costs, is saved at
-[`docs/research/2026-11-04-phase0-trust-audit.md`](../../research/2026-11-04-phase0-trust-audit.md)
+[`research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md`](../../../research/audits/root-cause-2026-11-04/2026-11-04-phase0-trust-audit.md)
 (unreviewed subagent output; some entries are marked "prose", meaning not recomputed). An
 independent Opus review of this spec found the audit leans one way in places. These are
 starting hypotheses, not conclusions, and each lens states in advance what evidence would
@@ -102,7 +102,7 @@ overturn each hypothesis it touches.
    *Qualifier:* the production-replica results file's top-level verdict is `INCONCLUSIVE`,
    stage `stopped`, reason `holdout:tainted_trade:primary`, while its `closure` block says
    NO-GO (stage `pretax_fail`, holdout INCONCLUSIVE, live replication UNVERIFIED)
-   (`docs/research/_production_replica_results.json`). The holdout PRIMARY arm did complete
+   (`research/audits/production-replica/_production_replica_results.json`). The holdout PRIMARY arm did complete
    (non-citable, tainted); only its four sensitivity arms never ran. *Correction 2026-11-04:*
    an earlier version of this paragraph said no holdout arm completed; Lens 7 found that
    wording came from the results file's `audit_stop.holdout` string and the FOMC amendment,
@@ -137,8 +137,8 @@ overturn each hypothesis it touches.
    in Lens 4 against the section 1 definition.
 
 Prior art: `docs/superpowers/specs/2026-11-01-research-process-audit-design.md`,
-`docs/research/2026-11-01-research-process-audit.md`,
-`docs/research/2026-10-19-production-replica-audit-nogo.md`. The 2026-10-20 strategy
+`research/audits/research-process/2026-11-01-research-process-audit.md`,
+`research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md`. The 2026-10-20 strategy
 triage ("49 rows: 32 flawed-test, 8 untested, 4 clean NO") exists only in the lead's private
 memory notes, not in the repo, so Phase 1 builds a committed inventory (section 6) and
 measures coverage against it. The investigation extends prior work; it does not redo it
@@ -282,7 +282,7 @@ raises an unknown that could change a verdict, Phase 2 is skipped and the lead s
 ## 7. Deliverables
 
 - The inventory file (Phase 1a).
-- One report per lens under `docs/research/`, following the repository research-report
+- One report per lens under `research/`, following the repository research-report
   template, with raw JSON artifacts for anything re-run.
 - A synthesis report: `docs/research/2026-11-xx-root-cause-investigation.md`, written in
   plain language, with abbreviations expanded, containing:

@@ -11,11 +11,11 @@
 - `french_data.py` and `momentum_screen.py` do the Phase 1 screen.
 - `taxlots.py`, `raw_history.py` and `momentum_replay.py` do the Phase 2 replay.
 
-Every driver writes a JSON artifact under `docs/research/`. Phase 2 tasks run only if Task 5 records that **Big** passed. Phases 3–5 get their own plans after their gates.
+Every driver writes a JSON artifact under `research/`. Phase 2 tasks run only if Task 5 records that **Big** passed. Phases 3–5 get their own plans after their gates.
 
 **Tech Stack:** Python 3.12, pandas, numpy, scipy, yfinance, and the existing lab helpers (`significance.newey_west_se`, `event_study`, `data.load_ohlcv`, `index_constituents.sp500_members_asof`). For the T-bill series, coverage and seam scans, reuse the helpers in `scripts/production_replica_audit.py`.
 
-**Spec:** `docs/research/briefs/2026-10-20-momentum-retest.md` (committed `eb7e4b7`). It is binding: never edit it. Any change needs a new dated brief and the owner's approval.
+**Spec:** `research/stock-signals/momentum/2026-10-20-momentum-retest.md` (committed `eb7e4b7`). It is binding: never edit it. Any change needs a new dated brief and the owner's approval.
 
 ## Global Constraints
 
@@ -87,7 +87,7 @@ Every driver writes a JSON artifact under `docs/research/`. Phase 2 tasks run on
 - Modify: `src/ggTrader/lab/event_study.py`, adding one function after `split_event_returns`.
 - Create: `scripts/fomc_clustered_event_study.py`
 - Test: `tests/lab/test_event_study.py`
-- Output: `docs/research/_fomc_clustered_event_study_20261020.json`
+- Output: `research/audits/production-replica/_fomc_clustered_event_study_20261020.json`
 
 **Interfaces:**
 - Consumes, from `scripts/audit_reruns_wfo.py`:
@@ -116,22 +116,22 @@ Every driver writes a JSON artifact under `docs/research/`. Phase 2 tasks run on
     - `universe`, `eval_start`, `eval_end`, `pair`;
     - `n_event_dates`;
     - `gross` and `net`, as `EventStudyResult._asdict()`;
-    - `unclustered_reference`, read from `docs/research/_audit_reruns_20261019.json` at `fomc_drift.primary_event_study`. Do not hardcode it.
+    - `unclustered_reference`, read from `research/audits/production-replica/_audit_reruns_20261019.json` at `fomc_drift.primary_event_study`. Do not hardcode it.
 - [ ] **Step 6: Run** `.venv/bin/python scripts/fomc_clustered_event_study.py`. Expected: the JSON is written, with `n_event_dates` between 100 and 130; it should be about 113.
 - [ ] **Step 7: Commit.**
 
 ```bash
-git add src/ggTrader/lab/event_study.py tests/lab/test_event_study.py scripts/fomc_clustered_event_study.py docs/research/_fomc_clustered_event_study_20261020.json
+git add src/ggTrader/lab/event_study.py tests/lab/test_event_study.py scripts/fomc_clustered_event_study.py research/audits/production-replica/_fomc_clustered_event_study_20261020.json
 git commit -m "research(fomc): day-clustered event t for the three-ETF universe"
 ```
 
 ### Task 2: Record fixes (docs only)
 
 **Files:**
-- Modify: `docs/research/2026-10-19-production-replica-audit-nogo.md`. Append a dated `## Correction (2026-10-20)` section and leave the existing body unchanged.
-- Modify: `docs/research/RESEARCH_SNAPSHOT.md`: the `dual_momentum` row, the `fomc_drift` row, and the DSR note in its methodology section.
+- Modify: `research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md`. Append a dated `## Correction (2026-10-20)` section and leave the existing body unchanged.
+- Modify: `research/RESEARCH_SNAPSHOT.md`: the `dual_momentum` row, the `fomc_drift` row, and the DSR note in its methodology section.
 - Modify: `docs/next_steps.md`. Add a DSR power note, and make the momentum re-test the current step with a link to the brief.
-- Modify: `docs/research/prompts/web-strategy-research-prompt.md` and `docs/research/prompts/local-implementation-prompt-TEMPLATE.md`. Regenerate their ggTrader-context sections by following `.claude/skills/research-snapshot/SKILL.md`.
+- Modify: `research/prompts/web-strategy-research-prompt.md` and `research/prompts/local-implementation-prompt-TEMPLATE.md`. Regenerate their ggTrader-context sections by following `.claude/skills/research-snapshot/SKILL.md`.
 - Modify: `docs/changelog.md`, adding a 2026-10-20 entry.
 
 **Interfaces:**
@@ -146,11 +146,11 @@ git commit -m "research(fomc): day-clustered event t for the three-ETF universe"
 - **Prompt templates:** no remaining claim of KEEP 0.80 vs 0.78 as current, "gates 17/17", or 1.12/16.3 as current. They should reflect the audit NO-GO and point to the momentum re-test brief.
 
 - [ ] **Step 1:** Make the edits above.
-- [ ] **Step 2: Verify.** `grep -nE "17/17|0\.80 vs|1\.12 / 16\.3" docs/research/prompts/*.md` should return only lines that explicitly label those figures historical or void.
+- [ ] **Step 2: Verify.** `grep -nE "17/17|0\.80 vs|1\.12 / 16\.3" research/prompts/*.md` should return only lines that explicitly label those figures historical or void.
 - [ ] **Step 3: Commit.**
 
 ```bash
-git add docs/research/2026-10-19-production-replica-audit-nogo.md docs/research/RESEARCH_SNAPSHOT.md docs/next_steps.md docs/research/prompts/web-strategy-research-prompt.md docs/research/prompts/local-implementation-prompt-TEMPLATE.md docs/changelog.md
+git add research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md research/RESEARCH_SNAPSHOT.md docs/next_steps.md research/prompts/web-strategy-research-prompt.md research/prompts/local-implementation-prompt-TEMPLATE.md docs/changelog.md
 git commit -m "docs(research): record fixes — dual momentum duplicate, DSR power, clustered FOMC t, prompts"
 ```
 
@@ -224,7 +224,7 @@ git commit -m "feat(lab): Ken French loader with frozen, checksummed files"
 - Create: `src/ggTrader/lab/momentum_screen.py`
 - Create: `scripts/momentum_french_screen.py`
 - Test: `tests/lab/test_momentum_screen.py`
-- Output: `docs/research/_momentum_french_screen_results.json`, plus the committed `data/external/french/*`.
+- Output: `research/stock-signals/momentum/_momentum_french_screen_results.json`, plus the committed `data/external/french/*`.
 
 **Interfaces:**
 - Consumes: Task 3 loaders, and `ggTrader.lab.significance.newey_west_se`.
@@ -283,15 +283,15 @@ git commit -m "feat(lab): Ken French loader with frozen, checksummed files"
 - [ ] **Step 7: Commit.**
 
 ```bash
-git add src/ggTrader/lab/momentum_screen.py tests/lab/test_momentum_screen.py scripts/momentum_french_screen.py data/external/french/ docs/research/_momentum_french_screen_results.json
+git add src/ggTrader/lab/momentum_screen.py tests/lab/test_momentum_screen.py scripts/momentum_french_screen.py data/external/french/ research/stock-signals/momentum/_momentum_french_screen_results.json
 git commit -m "research(momentum): Phase 1 French size x momentum screen"
 ```
 
 ### Task 5: Phase 1 report and gate decision
 
 **Files:**
-- Create: `docs/research/<YYYY-MM-DD>-momentum-french-screen[-nogo].md`, following `docs/research/TEMPLATE-research-report.md`.
-- Modify: `docs/research/RESEARCH_SNAPSHOT.md` (the `xs_momentum` row), `docs/next_steps.md` and `docs/changelog.md`.
+- Create: `docs/research/<YYYY-MM-DD>-momentum-french-screen[-nogo].md`, following `research/TEMPLATE-research-report.md`.
+- Modify: `research/RESEARCH_SNAPSHOT.md` (the `xs_momentum` row), `docs/next_steps.md` and `docs/changelog.md`.
 
 **Required content:**
 - Every number comes from the Task 4 JSON, cited by key:
@@ -313,7 +313,7 @@ git commit -m "research(momentum): Phase 1 French size x momentum screen"
 - [ ] **Step 4: Commit.**
 
 ```bash
-git add docs/research/*momentum-french-screen*.md docs/research/RESEARCH_SNAPSHOT.md docs/next_steps.md docs/changelog.md
+git add research/stock-signals/momentum/*momentum-french-screen*.md research/RESEARCH_SNAPSHOT.md docs/next_steps.md docs/changelog.md
 git commit -m "research(momentum): Phase 1 report and gate decision"
 ```
 
@@ -499,7 +499,7 @@ git commit -m "feat(lab): tax-aware momentum replay (rules B/T) and taxed buy-an
 - Test: `tests/scripts/test_momentum_retest_phase2.py`
 - Output: `docs/research/_momentum_phase2_results.json` and `docs/research/_momentum_phase2_curves.csv`.
 - Create: `docs/research/<YYYY-MM-DD>-momentum-phase2[-nogo].md`
-- Modify: `docs/research/RESEARCH_SNAPSHOT.md`, `docs/next_steps.md` and `docs/changelog.md`.
+- Modify: `research/RESEARCH_SNAPSHOT.md`, `docs/next_steps.md` and `docs/changelog.md`.
 
 **Interfaces:**
 - Consumes:
@@ -542,7 +542,7 @@ git commit -m "feat(lab): tax-aware momentum replay (rules B/T) and taxed buy-an
 - [ ] **Step 7: Commit.**
 
 ```bash
-git add scripts/momentum_retest_phase2.py tests/scripts/test_momentum_retest_phase2.py docs/research/_momentum_phase2_results.json docs/research/_momentum_phase2_curves.csv docs/research/*momentum-phase2*.md docs/research/RESEARCH_SNAPSHOT.md docs/next_steps.md docs/changelog.md
+git add scripts/momentum_retest_phase2.py tests/scripts/test_momentum_retest_phase2.py docs/research/_momentum_phase2_results.json docs/research/_momentum_phase2_curves.csv docs/research/*momentum-phase2*.md research/RESEARCH_SNAPSHOT.md docs/next_steps.md docs/changelog.md
 git commit -m "research(momentum): Phase 2 after-tax replay vs SPY/MTUM"
 ```
 

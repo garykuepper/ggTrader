@@ -27,8 +27,8 @@ results rather than seeking a positive verdict.
   evidence; cover crypto as a separate mechanism/data track and other assets
   when they bear on the evidence, comparison or funding leg. Distinguish
   implemented and tested work from literature-only ideas.
-- Begin with [research index](../../research/RESEARCH_INDEX.md),
-  [snapshot](../../research/RESEARCH_SNAPSHOT.md),
+- Begin with [research index](../../../research/RESEARCH_INDEX.md),
+  [snapshot](../../../research/RESEARCH_SNAPSHOT.md),
   [worklist](../../next_steps.md), original reports, briefs, amendments,
   results and code. The index is a navigation aid, not proof of completeness;
   independently reconcile registry entries, dated reports and backlog records.
@@ -78,7 +78,7 @@ and scope, not recast as positive potential.
 
 ### 1. Coverage inventory and claim ledger
 
-Create a durable, dated audit ledger under `docs/research/` with one entry per
+Create a durable, dated audit ledger under `research/` with one entry per
 material tested claim or grouped identical mechanism. Link related strategy
 variants instead of counting them as independent tests. Include literature-only
 ideas as candidates, separate from performed tests; use group entries when the

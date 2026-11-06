@@ -79,10 +79,10 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
   * **Research command** (if you do want the container): `docker compose run --rm ggtrader_live python ggt.py lab --strategy <name>`
   * **Database connectivity**: Inside Docker, the TimescaleDB connection string uses `host.docker.internal:5433`. On the host, use `localhost:5433`.
 * **Lab Run Workflow**:
-  1. **Strategy Selection**: Choose a strategy from `STRATEGY_REGISTRY` in `src/ggTrader/lab/strategies/__init__.py` — **38 entries** as of 2026-10-19, so read the registry rather than trusting any list written here. `ensemble` is the deployed live strategy. Most of the rest are closed NO-GO research; check `docs/research/RESEARCH_SNAPSHOT.md` before spending a run on one.
+  1. **Strategy Selection**: Choose a strategy from `STRATEGY_REGISTRY` in `src/ggTrader/lab/strategies/__init__.py` — **38 entries** as of 2026-10-19, so read the registry rather than trusting any list written here. `ensemble` is the deployed live strategy. Most of the rest are closed NO-GO research; check `research/RESEARCH_SNAPSHOT.md` before spending a run on one.
   2. **Universe Selection**: The lab auto-generates the trading universe for the eval period — SP500 constituents for equities (sourced from `data/universe/sp500_constituents_history.csv.gz`), or top-volume coins for crypto.
   3. **Walk-Forward Execution**: Overlapping monthly folds run in-memory using vectorbt. Each fold trains on historical data (in-sample) and validates on held-out future data (out-of-sample).
-  4. **Persistence**: `lab_runs` stores run metadata (strategy, config, timestamps); per-fold and per-sweep detail goes to `lab_plans` / `lab_returns` / `lab_equity` / `lab_summary` / `lab_sweeps` / `lab_sweep_combos`. The harness itself writes nothing to disk — but research **drivers** under `scripts/` do record their results as JSON (e.g. `scripts/anchor_fix_reproduction_wfo.py` → `docs/research/_anchor_fix_reproduction_results.json`), and any new driver should do the same so a cited number has a raw artifact behind it.
+  4. **Persistence**: `lab_runs` stores run metadata (strategy, config, timestamps); per-fold and per-sweep detail goes to `lab_plans` / `lab_returns` / `lab_equity` / `lab_summary` / `lab_sweeps` / `lab_sweep_combos`. The harness itself writes nothing to disk — but research **drivers** under `scripts/` do record their results as JSON (e.g. `scripts/anchor_fix_reproduction_wfo.py` → `research/audits/rebaseline/_anchor_fix_reproduction_results.json`), and any new driver should do the same so a cited number has a raw artifact behind it.
 * **Strategy Parameters**:
   * Use `--top-n` to control universe size (`lab/cli.py:70`, default 50 for **both** markets — it is not market-conditional).
   * Use `--lookback` to set momentum calculation window (default 252 days).
@@ -175,7 +175,7 @@ first, since several research reports cite log files by name.
 ## 5. Documentation Standards
 
 * **Single Source of Truth**: Core architectural changes (e.g., database transitions, new CLI commands) must be reflected across all documentation in `docs/` and `README.md`.
-* **Where docs live**: supplemental documentation belongs in `docs/`, linked with relative paths so it resolves both on disk and on GitHub. Point-in-time documents (snapshots, one-off reports) go to `docs/archive/` once superseded.
+* **Where docs live**: research reports and their artifacts live in the top-level `research/` directory, one folder per study (`research/<category>/<study>/`), with dated filenames `<YYYY-MM-DD>-<slug>[-nogo].md`. Pick the category with the ordered placement test in `docs/superpowers/specs/2026-11-05-research-reorganization-and-consolidation-design.md` section 5: the first matching test wins, and a document that touches two categories gets cross-links, never a second copy. `docs/` holds architecture, the CLI reference, the changelog, the roadmap, next steps, the working task list and `superpowers/` only, linked with relative paths so it resolves both on disk and on GitHub. Point-in-time documents (snapshots, one-off reports) go to `docs/archive/` once superseded.
 * **Periodic review**: after any major refactor, audit the docs and purge references to deleted modules, archived scripts, and removed commands. This is not optional housekeeping — stale instructions actively mislead. The 2026-08-21 audit found `AGENTS.md` itself asserting a `lab_periods` table that has never existed and denying the existence of the live trading path, and four separate competing ruleset files naming symbols deleted months earlier.
 * **Changelog**: Add an entry to `docs/changelog.md` whenever strategies, data sources, or lab infrastructure changes. Include what changed, why, and research results if available.
 * **CLI Reference**: Keep `docs/cli_reference.md` synchronized with actual `ggt` commands and flags. Document `ggt lab`, `ggt db`, and `ggt paper` subcommands.
@@ -188,8 +188,8 @@ These are the most actively maintained docs in the repo and the ones to read
 
 * **`docs/next_steps.md`** — the current worklist, deliberately only 1–2 steps deep. Start here.
 * **`docs/roadmap.md`** — long-form history and the strategy status table.
-* **`docs/research/RESEARCH_SNAPSHOT.md`** — the roster of everything tried and its verdict. Regenerate it with the `research-snapshot` skill rather than hand-editing; it drifts otherwise.
-* **`docs/research/<YYYY-MM-DD>-<slug>[-nogo].md`** — one report per closed study, following `docs/research/TEMPLATE-research-report.md`. `WEB_RESEARCH_CANDIDATES.md` is the accumulating backlog of untried ideas.
+* **`research/RESEARCH_SNAPSHOT.md`** — the roster of everything tried and its verdict. Regenerate it with the `research-snapshot` skill rather than hand-editing; it drifts otherwise.
+* **`research/<category>/<study>/<YYYY-MM-DD>-<slug>[-nogo].md`** — one report per closed study, following `research/TEMPLATE-research-report.md`. `research/WEB_RESEARCH_CANDIDATES.md` is the accumulating backlog of untried ideas.
 
 ### Research process rules — these are hard-won, do not skip
 
