@@ -18,7 +18,7 @@ Companion mapping: `docs/superpowers/plans/2026-11-05-research-reorg-branch-addi
 | Code citing the old path | 5 files, 9 literals (section 4) | none beyond what `main` already has |
 
 Rebase point: `main` is 42990c74 and does not contain the reorganization (branch
-`reorg/research-top-level`, tip e83257ea). The recipe applies to the tip of `main` **after**
+`reorg/research-top-level`, tip e83257ea at time of writing). The recipe applies to the tip of `main` **after**
 the reorganization merges, never to the reorg branch itself. Read-only scan commands:
 `git diff --name-status main...<branch> -- docs/research` and
 `git diff main...<branch> -U0 | grep docs/research`.
@@ -48,20 +48,20 @@ the reorganization merges, never to the reorg branch itself. Read-only scan comm
    load and pass the tool's layout rules. Then `scripts/research_reorg.py manifest-check
    --manifest <branch-manifest>` must pass: after the merge, docs/research holds exactly the
    74 added files.
-5. **Extend the tool first (separate reviewed commit).** The current tool covers only the
-   174 reorg rows, so new branch files cannot be moved or mapped without this:
+5. **Extend the tool first (separate reviewed commit). Not yet implemented.** The current tool
+   covers only the 174 reorg rows, so new branch files cannot be moved or mapped without this:
    - E1: add the three hash-pinned briefs to `PINNED_PATHS` (see D2); pinned count becomes 15.
-   - E2: `rewrite --also-map <csv>` supplies extra mapping rows (the reorg manifest) without
+   - E2: `rewrite --also-map <csv>` (does not exist yet) supplies extra mapping rows (the reorg manifest) without
      making them targets. Needed because re-running `moved-markdown` over the reorg rows would
      re-resolve already-rewritten links against their old locations.
-   - E3: a branch mode for `verify` that skips the whole-tree count checks.
+   - E3: a branch mode for `verify` (does not exist yet) that skips the whole-tree count checks.
    `fixed-markdown` and `code` scopes need no extension: pass the union manifest
    (`main` manifest rows plus branch rows).
 6. **Move.** `ledger --manifest <branch-manifest> --out <ledger>`, then `move ... --dry-run`,
    then `move`. Append the 74 pairs to `research/MOVED.csv` (the `moved-csv` subcommand writes
    a whole file, so merge by hand or use the union manifest).
 7. **Rewrite**, each with `--dry-run --report` first, then for real:
-   - `rewrite --manifest <branch-manifest> --also-map docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv --scope moved-markdown --report ...` (22 mutable reports and briefs)
+   - `rewrite --manifest <branch-manifest> --also-map docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv --scope moved-markdown --report ...` (22 mutable reports and briefs; `--also-map` is E2, does not exist yet)
    - `rewrite --manifest <union> --scope fixed-markdown --exclude deploy/intraday_observer --report ...`
    - `rewrite --manifest <union> --scope code --report ...`
    Simulated in memory on the branch's own (unmerged) text: the code scope makes 8
@@ -75,10 +75,13 @@ the reorganization merges, never to the reorg branch itself. Read-only scan comm
 
 ## 4. Edits and conflicts
 
-### Code and test edits (tool output, then wrap to 100 columns)
+### Code and test edits (tool output, then format)
 
-Each new path exceeds 100 characters after substitution, so after the tool runs, hand-wrap
-with a `STUDY_DIR` constant. F = `research/intraday/spy-momentum-feasibility`.
+F = `research/intraday/spy-momentum-feasibility`. Seven of the nine lines exceed 100 columns
+after substitution (the two `_intraday_probe.json` lines, intraday_probe.py:35 and
+intraday_coverage_probe.py:19, are 97 and need no wrap). Run `ruff format` and `ruff check`;
+the formatter cannot split a string literal, so where E501 remains introduce a `STUDY_DIR`
+constant instead.
 
 ```
 src/ggTrader/lab/intraday_probe.py:35   docs/research/_intraday_probe.json -> F/_intraday_probe.json
@@ -113,7 +116,7 @@ one directory citation in docs/changelog.md. `deploy/intraday_observer/OPERATOR_
 ## 5. Gates, momentum, rollback
 
 **Gates on the translated branch:** `git ls-files docs/research` is empty; `verify` stages
-(`moved`, `rewritten`, `final`) pass in branch mode (E3), with the 49 frozen and 3 pinned files
+(`moved`, `rewritten`, `final`) pass in branch mode (E3, does not exist yet), with the 49 frozen and 3 pinned files
 matching the ledger byte-for-byte; `scripts/run_tests.sh tests/lab/test_intraday_probe.py
 tests/lab/test_intraday_momentum.py tests/lab/test_intraday_momentum_data.py
 tests/lab/test_intraday_observer.py tests/scripts/test_research_reorg.py`, then the full suite via
@@ -129,7 +132,9 @@ is the owner's call; the 8 CSV rows exist only to document the mapping.
 **Rollback:** nothing touches the original branch or worktree until the owner agrees. To
 abandon: remove the new worktree and delete `translate/intraday-stage0a`; the backup ref and
 the original branch still point at 58919c09. After the original ref is moved, restore with
-`git branch -f research/intraday-stage0a backup/intraday-stage0a-pre-translate`.
+`git branch -f research/intraday-stage0a backup/intraday-stage0a-pre-translate`. That command
+fails while a worktree has the branch checked out and would desync that worktree if forced:
+remove or detach the worktree first, with the owner's agreement.
 
 ## 6. Decisions for the owner
 
@@ -145,11 +150,21 @@ the original branch still point at 58919c09. After the original ref is moved, re
 - **D3 (affects the reorg branch now).** `_intraday_probe.json` on the intraday branch records
   `document_hashes.strategy_brief` = 51162768... for the 2026-10-24 feasibility brief. The reorg
   rewrote that brief's links, so its bytes now hash to 33c00494.... The Stage 0A contract is
-  unchanged (cbb7354a...). Restore the original bytes in the moved brief before the reorg merges,
-  or accept and annotate the drift.
+  unchanged (cbb7354a...). The hash is provenance only: `intraday_probe.py:499` writes it and
+  nothing reads it back. Options: (a) freeze the brief byte-for-byte as a 13th pinned path
+  (`PINNED_PATHS`, the ledger and the verify expected count change; its relative links go dead);
+  (b) accept the new hash and annotate the probe's provenance in the index or MOVED notes; the
+  file itself must not be edited. Owner's decision.
 - **D4.** Three new folders: `spy-momentum-prospective-observer` (17 files), and two
   `artifacts-*` packages beside the study folders (2 and 25 files; the depth cap forbids nesting
   them). Alternative: put the 17 observer files in `spy-momentum-feasibility` (47 files).
+- **D5 (other hash drift on `main`, outside both branches).** The reorg already changed the
+  bytes of `docs/superpowers/plans/2026-10-22-event-evidence-resolution.md` (9cc5c1a4... to
+  ef8ff7af...; recorded in `_event_evidence_resolution_workbook.json` and
+  `_event_audit_detector_provenance.json`) and of `scripts/production_replica_audit.py`
+  (9d179ca4... to 7e0ac01f...; recorded as `producer.sha256` in
+  `_event_audit_detector_provenance.json`). Both are provenance in frozen evidence; a full sweep
+  is scheduled in the final review.
 
 ## 7. Branch-only paths cited (do not resolve on this checkout)
 
