@@ -201,3 +201,13 @@ Added after a fresh builder read the spec and asked seven questions. None change
 5. **What "reproduces the committed classifications" means for `lens2_build.py`.** The script is run into a scratch path and compared on the classification fields (id, class, rules-out size, verdict type) of its JSON output, not byte-for-byte; the path strings it embeds in text will legitimately differ. The committed `_lens2_sensitivity.json` stays frozen (not regenerated). The script's single research-root constant is replaced by explicit per-artifact locations.
 6. **The consolidated report adds no verification.** It restates only what the Opus review states and what the Argon verification marks as surviving. Any needed claim the verification does not cover is marked "not verified". It is one Opus drafting task, then a separate fresh-reviewer traceability check.
 7. **The two pointer lines** at the top of the Opus and Argon reviews are allowed edits and appear in the rewrite manifest. The Argon banner's path to the verification file is updated to the new path (that file is not pinned).
+
+## Addendum 2026-11-05b: sub-folders for a large study folder
+
+Added after the first reading of the finished tree showed that one study folder, `audits/root-cause-2026-11-04/`, holds more than 30 files. This is the only change to the section 3 depth rule.
+
+- A study folder with more than about 30 files may group its files one level deeper into sub-folders. Each sub-folder is named for what its files are (never for a number or a phase).
+- Only `audits/root-cause-2026-11-04/` uses this today, with the sub-folders `findings/`, `lenses/`, `reviews/` and `records/`.
+- The depth rule becomes five path components (`research/<category>/<study>/<sub-folder>/<file>`) for that prefix only. Every other study folder keeps four.
+- The placement test in section 5 is unchanged: it picks the category and the study folder, and a sub-folder is chosen inside the study folder afterwards.
+- `scripts/research_reorg.py` carries the exception as `DEFAULT_ALLOW_DEEPER`; `verify` and `manifest-check` accept `--allow-deeper PREFIX` (relative to `research/`, repeatable) to add another prefix.

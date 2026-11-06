@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from scripts.research_reorg import (
+    DEFAULT_ALLOW_NEW,
     DEFAULT_REWRITE_MANIFEST,
     PINNED_PATHS,
     ManifestRow,
@@ -73,6 +74,19 @@ def test_check_manifest_flags_depth_over_two() -> None:
     rows = [_row(f"{OLD}file.md", "research/a/b/c/file.md")]
     problems = check_manifest(rows, {f"{OLD}file.md"})
     assert any("depth" in p for p in problems)
+
+
+def test_check_manifest_respects_allow_deeper() -> None:
+    deep = "research/audits/root-cause-2026-11-04/lenses/x.md"
+    rows = [_row(f"{OLD}x.md", deep)]
+    tracked = {f"{OLD}x.md"}
+    assert any("depth" in p for p in check_manifest(rows, tracked, allow_deeper=()))
+    assert check_manifest(rows, tracked) == []  # the default allows that one prefix
+    assert check_manifest(rows, tracked, allow_deeper=("audits/root-cause-2026-11-04",)) == []
+    other = [_row(f"{OLD}x.md", "research/audits/other-study/lenses/x.md")]
+    assert any("depth" in p for p in check_manifest(other, tracked))
+    too_deep = [_row(f"{OLD}x.md", "research/audits/root-cause-2026-11-04/lenses/a/x.md")]
+    assert any("depth" in p for p in check_manifest(too_deep, tracked))
 
 
 def test_check_manifest_flags_unlisted_basename_change() -> None:
@@ -1233,6 +1247,72 @@ def test_verify_final_flags_tracked_file_too_deep(tmp_path: Path) -> None:
     _git(root, "add", deep)
     problems = _final(root, rows, ledger, allow_new=("*",))
     assert any("deeper than" in p and deep in p for p in problems)
+
+
+def test_verify_final_allows_one_extra_level_under_allow_deeper_prefix(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    deep = "research/audits/root-cause-2026-11-04/lenses/x.md"
+    _write(root, deep, "x\n")
+    _git(root, "add", deep)
+    patterns = ("audits/root-cause-2026-11-04/lenses/*",)
+    problems = _final(root, rows, ledger, allow_new=patterns, allow_deeper=())
+    assert any("deeper than" in p and deep in p for p in problems)
+    prefix = ("audits/root-cause-2026-11-04",)
+    assert _final(root, rows, ledger, allow_new=patterns, allow_deeper=prefix) == []
+    assert _final(root, rows, ledger, allow_new=patterns) == []  # default prefix
+    other = "research/audits/other-study/lenses/y.md"
+    _write(root, other, "y\n")
+    _git(root, "add", other)
+    problems = _final(root, rows, ledger, allow_new=("*",))
+    assert any("deeper than" in p and other in p for p in problems)
+
+
+def test_verify_final_still_rejects_two_extra_levels(tmp_path: Path) -> None:
+    root, rows, ledger = _final_repo(tmp_path)
+    deep = "research/audits/root-cause-2026-11-04/lenses/a/x.md"
+    _write(root, deep, "x\n")
+    _git(root, "add", deep)
+    problems = _final(
+        root, rows, ledger, allow_new=("*",), allow_deeper=("audits/root-cause-2026-11-04",)
+    )
+    assert any("deeper than" in p and deep in p for p in problems)
+
+
+def test_verify_final_default_allow_new_lists_reading_documents() -> None:
+    base = "audits/root-cause-2026-11-04"
+    assert set(DEFAULT_ALLOW_NEW) >= {
+        "README.md",
+        "MOVED.csv",
+        f"{base}/README.md",
+        f"{base}/reference-sheet.md",
+        f"{base}/findings/2026-11-05-findings-plain-english.md",
+        f"{base}/reviews/2026-11-05-direction-reviews-consolidated.md",
+        f"{base}/2026-11-05-direction-reviews-consolidated.md",  # until the final move
+    }
+
+
+def test_main_verify_final_allow_deeper_cli(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    root, rows, ledger = _final_repo(tmp_path)
+    deep = "research/allocation/century-leverage/sub/x.md"
+    _write(root, deep, "x\n")
+    _git(root, "add", deep)
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text(
+        "current_path,proposed_path,folder,kind,notes\n"
+        + "".join(f'"{r.current_path}","{r.proposed_path}","","{r.kind}",""\n' for r in rows)
+    )
+    ledger_path = tmp_path / "ledger.json"
+    ledger_path.write_text(json.dumps(ledger))
+    listing = tmp_path / "rewrite.json"
+    listing.write_text(json.dumps({"files": []}))
+    argv = ["verify", "--stage", "final", "--manifest", str(manifest), "--root", str(root)]
+    argv += ["--ledger", str(ledger_path), "--rewrite-manifest", str(listing)]
+    argv += ["--allow-new", "allocation/century-leverage/sub/*"]
+    assert main(argv) == 1
+    assert "tracked file deeper than" in capsys.readouterr().out
+    main([*argv, "--allow-deeper", "allocation/century-leverage"])
+    out = capsys.readouterr().out
+    assert "deeper than" not in out
 
 
 def test_verify_final_accepts_artifact_package_as_study_folder(tmp_path: Path) -> None:

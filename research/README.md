@@ -10,7 +10,7 @@ The newest look at the whole record is the 2026-11-04 root-cause investigation. 
 
 ## The folders
 
-Each folder holds one subfolder per study, except `prompts/`, which holds the two prompt files directly. File names are dated.
+Each folder holds one subfolder per study, except `prompts/`, which holds the two prompt files directly. File names are dated. A study folder with more than about 30 files may group them into sub-folders named for what they are; only [audits/root-cause-2026-11-04/](audits/root-cause-2026-11-04/) does.
 
 | Folder | Question it answers |
 |---|---|

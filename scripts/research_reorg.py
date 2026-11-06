@@ -29,6 +29,10 @@ OLD_ROOT = "docs/research"
 NEW_ROOT = "research"
 # research/<category>/<study>/<file> is the deepest permitted placement.
 MAX_COMPONENTS = 4
+# A large study folder may group its files one level deeper (spec addendum 2026-11-05b).
+EXTRA_COMPONENTS = 1
+# Study folders (relative to research/) that use that extra level.
+DEFAULT_ALLOW_DEEPER: tuple[str, ...] = ("audits/root-cause-2026-11-04",)
 FROZEN_EXTENSIONS = frozenset({".json", ".csv", ".txt", ".py", ".tgz"})
 ARTIFACT_PREFIX = "artifacts-"
 # The three briefs that collide with a same-named report once they share a study folder.
@@ -148,6 +152,10 @@ DEFAULT_ALLOW_NEW: tuple[str, ...] = (
     "README.md",
     "MOVED.csv",
     "audits/root-cause-2026-11-04/README.md",
+    "audits/root-cause-2026-11-04/reference-sheet.md",
+    "audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md",
+    "audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md",
+    # Pre-move home of the consolidated review; the final reorganization step removes it.
     "audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md",
 )
 REWRITABLE_SUFFIX = ".md"
@@ -245,12 +253,28 @@ def _basename_problem(row: ManifestRow) -> str | None:
     return f"basename changed without permission: {row.current_path} -> {row.proposed_path}"
 
 
-def check_manifest(rows: list[ManifestRow], tracked: set[str]) -> list[str]:
+def _depth_limit(path: str, allow_deeper: tuple[str, ...]) -> int:
+    """Return the most path components a repo-relative path under research/ may have."""
+    inside = path.removeprefix(f"{NEW_ROOT}/")
+    if path.startswith(f"{NEW_ROOT}/") and any(
+        inside.startswith(f"{prefix.strip('/')}/") for prefix in allow_deeper
+    ):
+        return MAX_COMPONENTS + EXTRA_COMPONENTS
+    return MAX_COMPONENTS
+
+
+def check_manifest(
+    rows: list[ManifestRow],
+    tracked: set[str],
+    allow_deeper: tuple[str, ...] = DEFAULT_ALLOW_DEEPER,
+) -> list[str]:
     """Check a manifest against the tracked file list and the layout rules.
 
     Args:
         rows: Parsed manifest rows.
         tracked: Every tracked file under docs/research (repo-relative, POSIX separators).
+        allow_deeper: Study folders (relative to research/) whose files may sit one level
+            deeper, in a sub-folder.
 
     Returns:
         Problem descriptions; an empty list means the manifest passes.
@@ -274,7 +298,9 @@ def check_manifest(rows: list[ManifestRow], tracked: set[str]) -> list[str]:
         seen_proposed[row.proposed_path] = row.current_path
         if not row.proposed_path.startswith(f"{NEW_ROOT}/"):
             problems.append(f"proposed_path does not start with research/: {row.proposed_path}")
-        if len(PurePosixPath(row.proposed_path).parts) > MAX_COMPONENTS:
+        if len(PurePosixPath(row.proposed_path).parts) > _depth_limit(
+            row.proposed_path, allow_deeper
+        ):
             problems.append(f"depth exceeds research/<category>/<study>/: {row.proposed_path}")
         basename = _basename_problem(row)
         if basename:
@@ -1258,6 +1284,7 @@ def _verify_tree(
     root: Path,
     allowed_changes: frozenset[str] | None,
     allow_new: tuple[str, ...] = (),
+    allow_deeper: tuple[str, ...] = DEFAULT_ALLOW_DEEPER,
 ) -> list[str]:
     """Shared tree checks for the `moved`, `rewritten` and `final` gates.
 
@@ -1297,10 +1324,9 @@ def _verify_tree(
                 problems.append(f"sha256 differs from ledger: {row.proposed_path}")
             elif row.proposed_path not in allowed:
                 problems.append(f"unlisted change: {row.proposed_path}")
-        if (
-            not row.proposed_path.startswith(f"{NEW_ROOT}/")
-            or len(PurePosixPath(row.proposed_path).parts) > MAX_COMPONENTS
-        ):
+        if not row.proposed_path.startswith(f"{NEW_ROOT}/") or len(
+            PurePosixPath(row.proposed_path).parts
+        ) > _depth_limit(row.proposed_path, allow_deeper):
             problems.append(
                 f"depth exceeds research/<category>/<study>/<file>: {row.proposed_path}"
             )
@@ -1380,13 +1406,15 @@ def verify_final(
     allow_new: tuple[str, ...] = DEFAULT_ALLOW_NEW,
     expected_pinned: int = len(PINNED_PATHS),
     require_new: tuple[str, ...] = (),
+    allow_deeper: tuple[str, ...] = DEFAULT_ALLOW_DEEPER,
 ) -> list[str]:
     """Check the finished tree: everything `verify_rewritten` checks, plus tracked-file rules.
 
     Extra checks: no duplicate proposed paths; every destination is tracked; the tracked
     files under research/ are exactly the manifest destinations plus files matching
     `allow_new`; no tracked file is deeper than research/<category>/<study>/<file> (the
-    `artifacts-*` packages are study folders, so they share the limit); the pinned files
+    `artifacts-*` packages are study folders, so they share the limit; a study folder named
+    in `allow_deeper` may add one sub-folder level); the pinned files
     still match their ledger digests; nothing is tracked under docs/research and the folder
     itself is gone.
 
@@ -1398,11 +1426,13 @@ def verify_final(
         allow_new: Patterns (relative to research/, fnmatch) for files added after the move.
         expected_pinned: How many pinned rows the manifest must carry (twelve in production).
         require_new: Paths (relative to research/) that must exist and be tracked.
+        allow_deeper: Study folders (relative to research/) whose files may sit one level
+            deeper, in a sub-folder.
 
     Returns:
         Problem descriptions; an empty list means the gate passes.
     """
-    problems = _verify_tree(rows, ledger, root, frozenset(rewrite_listed), allow_new)
+    problems = _verify_tree(rows, ledger, root, frozenset(rewrite_listed), allow_new, allow_deeper)
     counts = Counter(r.proposed_path for r in rows)
     problems.extend(f"duplicate proposed path: {p}" for p, n in sorted(counts.items()) if n > 1)
     tracked = tracked_files_under(NEW_ROOT, root)
@@ -1412,7 +1442,7 @@ def verify_final(
     for path in sorted(tracked):
         if path not in counts and not _matches_allow_new(path, allow_new):
             problems.append(f"unexpected tracked file under {NEW_ROOT}/: {path}")
-        if len(PurePosixPath(path).parts) > MAX_COMPONENTS:
+        if len(PurePosixPath(path).parts) > _depth_limit(path, allow_deeper):
             problems.append(f"tracked file deeper than research/<category>/<study>/<file>: {path}")
     pinned_rows = [r for r in rows if r.pinned]
     if len(pinned_rows) != expected_pinned:
@@ -1484,7 +1514,16 @@ def _cmd_verify(args: argparse.Namespace) -> int:
         if args.stage == "final":
             allow_new = (*DEFAULT_ALLOW_NEW, *(args.allow_new or ()))
             require_new = tuple(args.require_new or ())
-            problems = verify_final(rows, ledger, root, listed, allow_new, require_new=require_new)
+            allow_deeper = (*DEFAULT_ALLOW_DEEPER, *(args.allow_deeper or ()))
+            problems = verify_final(
+                rows,
+                ledger,
+                root,
+                listed,
+                allow_new,
+                require_new=require_new,
+                allow_deeper=allow_deeper,
+            )
             summary = (
                 f"{len(rows)} manifest files, {len(listed)} listed edits, "
                 f"{len(tracked_files_under(NEW_ROOT, root))} tracked files under {NEW_ROOT}/"
@@ -1561,7 +1600,8 @@ def _cmd_moved_csv(args: argparse.Namespace) -> int:
 def _cmd_manifest_check(args: argparse.Namespace) -> int:
     """Run `manifest-check`: print problems and return 1 if any."""
     rows = load_manifest(Path(args.manifest))
-    problems = check_manifest(rows, tracked_research_files())
+    allow_deeper = (*DEFAULT_ALLOW_DEEPER, *(args.allow_deeper or ()))
+    problems = check_manifest(rows, tracked_research_files(), allow_deeper)
     for problem in problems:
         print(f"PROBLEM {problem}")
     if problems:
@@ -1579,6 +1619,15 @@ def build_parser() -> argparse.ArgumentParser:
         "manifest-check", help="Check a manifest CSV against git ls-files docs/research."
     )
     check.add_argument("--manifest", required=True, help="Path to the manifest CSV.")
+    check.add_argument(
+        "--allow-deeper",
+        action="append",
+        metavar="PREFIX",
+        help=(
+            "Study folder (relative to research/; repeatable) whose files may sit one level "
+            "deeper, in a sub-folder. Adds to the default: " + ", ".join(DEFAULT_ALLOW_DEEPER)
+        ),
+    )
     check.set_defaults(func=_cmd_manifest_check)
     ledger = sub.add_parser("ledger", help="Write the pre-move provenance ledger (JSON).")
     ledger.add_argument("--manifest", required=True, help="Path to the manifest CSV.")
@@ -1647,6 +1696,15 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Extra file pattern allowed under research/ for --stage final (relative to "
             "research/, fnmatch; repeatable). Adds to the defaults: " + ", ".join(DEFAULT_ALLOW_NEW)
+        ),
+    )
+    verify.add_argument(
+        "--allow-deeper",
+        action="append",
+        metavar="PREFIX",
+        help=(
+            "Study folder (relative to research/; repeatable) whose files may sit one level "
+            "deeper, in a sub-folder. Adds to the default: " + ", ".join(DEFAULT_ALLOW_DEEPER)
         ),
     )
     verify.add_argument(
