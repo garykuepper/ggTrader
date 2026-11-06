@@ -259,7 +259,7 @@ Scripts: `SP/linkcheck.py` (every `research/...` token, inline link, reference d
 
 - **Frozen files: 0 newly broken links.** The 19 dead links in 4 frozen event-timing files (section 7.3) are unchanged.
 - **First-reorganization documents: 6 links fixed.** Six tokens (this record's guard baseline and Argon review paths, plan lines 138, 178 and 203, spec line 130) were the only newly broken links the sub-folder move caused. They resolve again.
-- **Net dead occurrences, counted per file** (directory tokens ending in `/` left out, because the script cannot resolve them): 216 at the base, 225 before this section was written. The difference is 9 and it is all in four older or new plan files. This section itself names four branch names that the script reads as paths (`research/readability-and-subfolders` twice, `research/event-timing-audit`, `research/momentum-retest`), which adds 4 dead tokens to this record (6 to 10) and makes 229 with it:
+- **Net dead occurrences, counted per file** (directory tokens ending in `/` left out, because the script cannot resolve them): 216 at the base, 225 before this section was written. The difference is 9 and it is all in four older or new plan files. This section itself names branch names that the link script reads as paths, so it adds dead tokens to this record. The count above is for the tree before this section, and it shifts whenever this record is edited. By file:
 
 | File | Base to now | Why |
 |---|---|---|
