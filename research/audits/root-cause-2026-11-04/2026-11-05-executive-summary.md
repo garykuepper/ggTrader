@@ -12,11 +12,13 @@ SPY is the fund that tracks the S&P 500. 2x means twice SPY's total return (pric
 > - After tax: a book that sells within a year needs about +2.42 pp/yr before tax (24%/15% brackets) just to tie SPY over 2021-2026.
 > - Opus (unverified): measure the paper trader first, then no-write re-runs, then a small long-history screen budget with pre-set pass bars, best case about +1 pp/yr.
 > - Argon is unverified as written: of its specifics, only numbers that trace to a check hold. Both call leverage your risk decision.
-> - You hold 13 decisions, each defaulting until you answer: no re-runs, no live-trader change, the 2027-09-30 leverage review on existing figures. First: accept the synthesis.
+> - You hold 13 decisions, starting with whether to accept the synthesis. Defaults until you answer: no re-runs, no live-trader change, the 2027-09-30 leverage review on existing figures.
 
 ## The five-minute version
 
-## What we found
+The detail behind each point above.
+
+### What we found
 
 - **Built design.** The replica (live rules re-run on history) returned 14.19% a year against SPY's 14.83% over 2021-2026, or -0.64 pp/yr (t -0.69, which cannot be told from zero). The Verdict Trust check still counts it inconclusive against its own +1.0 pp/yr pass bar.
 - **Power.** At whole-account level the replica could detect about 4.2 pp/yr (if PARA proves immaterial), so it answers the 2x question. At sleeve level, the stock part, it sees only above about 45 pp/yr, so stock picking stays open.
@@ -31,18 +33,18 @@ SPY is the fund that tracks the S&P 500. 2x means twice SPY's total return (pric
 
 *Source: the Ceiling check. Percentage points a year beyond SPY or the French market index, so benchmarks differ by row. Leverage is exposure, not skill, and its bar holds only at that window's 1.64% funding. Momentum before 1994, which also reached its gap, is not plotted.*
 
-## Why the target was missed
+### Why the target was missed
 
 Ranked by judgement, no share measured:
 
 1. The target is large next to every measured stock-picking effect.
-2. The book is about 85% SPY and 9% stocks, so it cannot stray far. This is arithmetic, and arithmetic takes no feedback.
+2. The book is about 85% SPY and 9% stocks, so it cannot stray far. This is arithmetic.
 3. Early "beat SPY" results came from leaks (information a test should not have had). They explain false optimism, not the shortfall.
 4. The tests could not tell a small stock-picking edge from zero.
 5. The paper shortfall is mostly idle cash and broker quirks (estimated split), and live runs no tested configuration.
 6. The search stayed narrow: large-cap, long-only, mostly one signal family.
 
-## What the two models recommend
+### What the two models recommend
 
 **Opus** (one reviewer, not verified line by line):
 
@@ -54,7 +56,7 @@ Ranked by judgement, no share measured:
 
 - 43 of 105 citations are broken or unsupported. Numbers tracing to a check report hold.
 - Survived: leverage as the owner's risk decision, the long-hold tax direction, and parking crypto, small caps, long-short and options (as judgement), and the gated walk-forward weak spot (already the synthesis's own position).
-- Corrected: re-run item numbers, commit hashes, trader-patch payoff and dates. Dropped: the concentrated sleeve's payoff and odds.
+- Shown wrong: re-run item numbers, commit hashes, the trader-patch payoff and its dates. Dropped: the concentrated sleeve's payoff and odds.
 
 **Agree:** the built design cannot reach 2x, and no-database re-runs come first. **Differ:** stock-picking prospects, and patching versus measuring the trader. The checked evidence sits closer to Opus.
 
@@ -68,7 +70,7 @@ Ranked by judgement, no share measured:
 
 *Source: the consolidated review, which frames the options from Opus's recommendations. Option 2's cheapest step is derived by that review, not by Opus.*
 
-## What you decide
+### What you decide
 
 Seven of the 13. Each default holds until you answer.
 
@@ -82,7 +84,7 @@ Seven of the 13. Each default holds until you answer.
 | 9 | Funding-honest leverage figures before the 2027-09-30 review, including A23 funding and tax records | Review on its date with existing figures |
 | 10 | One benchmark everywhere | Not adopted |
 
-## What this cannot tell you
+### What this cannot tell you
 
 - **Unmeasured and unrun.** No cause's share of the shortfall was measured. None of the 29 Optional Re-run List items was run, so their questions stay "unknown, re-run not run".
 - **Price history.** On 2026-11-04 an agent ran a script only to read its help text, and it rewrote prices for 19 symbols (at most 27,579 rows). PARA's figures in two check reports can no longer be reproduced. The owner chose to leave the symbols as they are.
