@@ -5,7 +5,7 @@
 `docs/superpowers/plans/2026-11-05-research-reorg-verification.md`). The momentum branch was
 not translated, as section 5 says. The text below is the recipe as written, with two
 corrections found while applying it (section 3 step 3 and the conflict table in section 4).
-It is applied only on the owner's separate go-ahead, after the reorganization has merged to `main`.
+It was applied on the owner's go-ahead after the reorganization merged to `main` (locally).
 Companion mapping: `docs/superpowers/plans/2026-11-05-research-reorg-branch-additions.csv`
 (82 rows: 74 intraday, 8 momentum). Facts below come from read-only git queries on
 2026-11-05; re-run the scan (section 1) before applying if either tip or `main` moved.
@@ -41,14 +41,15 @@ the reorganization merges, never to the reorg branch itself. Read-only scan comm
    (`git branch backup/intraday-stage0a-pre-translate 58919c09`; do not create it until applying).
 2. **Isolate.** Create a new branch and worktree from that tip (`translate/intraday-stage0a`).
    The original branch and worktree stay untouched until the owner agrees to move them.
-3. **Merge, do not rebase.** `git -c merge.directoryRenames=false merge main` in the new
-   worktree. Do not use a plain `git merge main`: git's default directory-rename detection sees
-   main's moves out of the old research folder, proposes moving all 74 branch files into
-   `research/audits/event-timing/`, and silently puts them in the wrong place. Reasons: the branch cites
+3. **Merge, do not rebase.** Merge rather than rebase because the branch cites
    its own commit shas as evidence (4ab01d1, 937e487, 8ea98fc, 280d4a0, the deployed release
    directory name), and a rebase would rewrite all 33. The branch modifies no existing
    docs/research file, so git's rename detection carries the moved files cleanly. Expected
-   conflicts are in the table in section 4, not in research files.
+   conflicts are in the table in section 4, not in research files. Run
+   `git -c merge.directoryRenames=false merge main` in the new worktree. Do not use a plain
+   `git merge main`: git's default directory-rename detection sees main's moves out of the old
+   research folder, proposes moving all 74 branch files into `research/audits/event-timing/`,
+   and silently puts them in the wrong place.
 4. **Build the branch-only manifest** the tool reads (`current_path, proposed_path, folder,
    kind, notes`) from the 74 intraday CSV rows: `current_path` = `branch_path`, `folder` = parent
    of `proposed_path`, `kind` = report, result, brief or artifact. Dry-checked in memory: 74 rows

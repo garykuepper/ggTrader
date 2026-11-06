@@ -29,15 +29,15 @@
     never been written) now points at the study folder as well.
   - **The recorded r8 validation run is not reusable.** `intraday_momentum.py`,
     `intraday_probe.py` and `scripts/intraday_momentum_research.py` are part of the code the r8
-    pipeline hashes (`code_sha256`, recorded as `f0b85690...` in the validation results), and
-    editing a path changes that hash. The recorded validation stays as evidence of what
+    pipeline fingerprints (`code_sha256`, the fingerprint of the code files: `f0b85690...` in
+    the validation results and now `83257bb5...`), and editing a path changes that fingerprint. The recorded validation stays as evidence of what
     happened (UNRESOLVED (data)), and scoring remains unapproved. The live observer runs the
     pinned release `280d4a0` and is unaffected; `deploy/intraday_observer/` was not edited, so
     its operator runbook still names the old paths until a new release is cut.
   - `_intraday_probe.json` records the hash of the 2026-10-24 feasibility brief as
     `51162768...`. That brief now sits in the first reorganization's layout with its links
-    rewritten, so its bytes hash to `33c00494...`. The hash is provenance only (nothing reads
-    it back) and the brief was not edited.
+    rewritten, so its bytes hash to `33c00494...`. The hash is provenance only (a record of
+    what the file looked like then; nothing checks it) and the brief was not edited.
   - Gate results are in section 10 of
     `docs/superpowers/plans/2026-11-05-research-reorg-verification.md`.
     [Index](../research/RESEARCH_INDEX.md).
