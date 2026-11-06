@@ -34,11 +34,11 @@ factor/signal research.
 ## Context: what's already been tried (don't just resurface these)
 
 The system this feeds is a systematic US-equities (and, secondarily,
-crypto) trading research lab. It already tests every candidate through a
-rigorous walk-forward-optimization framework with overfitting-detection
-gates before deploying anything, and only deploys strategies that beat a
-buy-and-hold S&P 500 benchmark on a risk-adjusted (Sharpe) basis, not just
-raw return.
+crypto) trading research lab. It tests every candidate through a rigorous
+walk-forward framework before deploying anything. A new stock idea must first pass a
+long free-history test (multiple-testing-adjusted t of at least 3 and at least +1.0
+percentage point a year net of costs since 1994), then a forward shadow book of at
+least 18 months; a better Sharpe ratio alone is not enough.
 
 **Currently deployed — and the honest bar:** A majority-vote ensemble of
 five technical indicators (Bollinger Bands, RSI, EMA crossover, MACD
@@ -92,6 +92,13 @@ without a genuinely different mechanism:**
   +0.08 percentage points per year for large companies and +0.20 for small
   companies, below the required +1.0. No paid data will be bought; Phases 2–5
   are cancelled. No after-tax replay was run. Do not re-propose momentum variants.
+- Classic stock factors and share issuance on long academic history: value (high
+  book-to-market), profitability, low investment, a value-plus-momentum combination, and
+  holding large companies that shrink their share count all failed the
+  multiple-testing-adjusted significance test and the required post-1994 net return
+  advantage (the best, profitability, earned +0.83 percentage points a year against a
+  +1.0 bar). Heavy issuers do lag, but that is a short-side effect a long-only account
+  cannot use. Do not re-propose these sorts or close variants.
 - Pre-FOMC drift on Treasuries (holding Treasury ETFs TLT, IEF, and EDV ahead of
   announcements): a day-clustered event study across 113 Federal Open Market
   Committee (FOMC) meeting dates showed gross t = 2.258, but net t = 0.981

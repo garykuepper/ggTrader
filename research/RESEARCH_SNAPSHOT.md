@@ -59,7 +59,7 @@ cash. Source: [production-rule audit](audits/production-replica/2026-10-19-produ
 `windows.primary.arms.primary.{stats,spy_stats,excess_vs_spy,mean_exposure}`.
 The root-cause investigation (accepted 2026-11-05) rates this result inconclusive
 against its own +1.0 pp/yr bar: at whole-account level it could detect about 4.2 pp/yr,
-if PARA proves immaterial. The recorded NO-GO is unchanged.
+if PARA (a ticker whose stored prices belong to a different security for its whole S&P 500 membership) proves immaterial. The recorded NO-GO is unchanged.
 [Executive summary](audits/root-cause-2026-11-04/2026-11-05-executive-summary.md).
 
 This is a **historical daily-bar model**, not a measured reconstruction of the
@@ -122,9 +122,13 @@ Deployed construction, read from code on 2026-11-05: each stock entry is sized a
 of portfolio value (`RiskConfig.position_pct`, `src/ggTrader/paper/risk.py:18` and `src/ggTrader/paper/risk.py:75`) and
 stock names are capped by `MAX_POSITIONS` (code default 30, overridden by the
 environment; the live value sits in `.env`, which this run did not read). Idle cash
-above a 5% reserve is swept into SPY (`src/ggTrader/paper/cash_sweep.py:38-39`, enabled
-by `CASH_SWEEP_ENABLED`). The lab default sizes entries at 3% of remaining cash
-(`SIGNAL_POSITION_SIZE`, `src/ggTrader/lab/simulate.py:249`). The replica models
+is swept into SPY once it exceeds 8% of portfolio value, down to a 5% reserve
+(`src/ggTrader/paper/cash_sweep.py:38-41` and `src/ggTrader/paper/cash_sweep.py:112-116`,
+enabled by `CASH_SWEEP_ENABLED`; each default can be overridden by the environment).
+The lab equity default sizes entries at 3% of remaining cash (`SIGNAL_POSITION_SIZE` in
+`STOCK_BASE_CONFIG`, `src/ggTrader/lab/data.py:29`, applied with vectorbt
+`size_type="percent"` at `src/ggTrader/lab/simulate.py:282`; the fallback at
+`src/ggTrader/lab/simulate.py:249` is 2%). The replica models
 portfolio-value sizing, a position cap, catch-up exits and catastrophe stops
 (`src/ggTrader/lab/replica.py:34`). No source file under `src/ggTrader/paper/` or
 `src/ggTrader/lab/strategies/` changed after 2026-10-19 except path references.
@@ -203,7 +207,7 @@ benchmarks. All pre-DSR-fix gate counts are void as DSR evidence.
 | Root-cause investigation: why the research has not doubled SPY (2026-11-04, accepted 2026-11-05) | Audit, diagnosis only; no verdict, strategy, trader or data change. Built design negative: no 2x-sized effect, and its test could have seen one (the effect of PARA, a stock stored with another security's prices, is unmeasured). Stock picking undecided: none of 72 measured tests is reliable, none shows an edge, none rules out 1 to 4 pp/yr. Ceiling: only 2x leverage (exposure, not skill, worst fall -84.8%) and momentum before 1994 reached their window's gap. No cause's share was measured, and none of the 29 Optional Re-run List items was run | [Executive summary](audits/root-cause-2026-11-04/2026-11-05-executive-summary.md), [findings](audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md), [synthesis](audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md) |
 | Research-process audit (2026-11-01) | Scoped documentary audit, not a trading verdict. Legitimate negative results exist, but a count of NO-GOs cannot say how many independent ideas failed: the 38 registered names include voters, variants and shared machinery. Walk-forward results can mainly measure the fallback. Original verdicts and the freeze stay in force | [Audit](audits/research-process/2026-11-01-research-process-audit.md) |
 | Accruals source feasibility (2026-11-02) | Unresolved, metadata only: published portfolio history starts 1963, but usage terms, revision behavior and a compatible benchmark and cost design are not established; no returns examined | [Feasibility review](stock-signals/feasibility/2026-11-02-accruals-feasibility.md) |
-| Paper-freeze readiness framework (2026-11-02) | Evidence framework, not a clearance: the observation window began with the 2026-09-29 deploy, earliest possible review about 2026-12-29, and an undocumented session is unknown, not clean | [Readiness](paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md) |
+| Paper-freeze readiness framework (2026-11-02) | Evidence framework, not a clearance: the window nominally began with the 2026-09-29 deploy, but its qualifying start and any reset are unresolved and it is not demonstrated clean. About 2026-12-29 is the earliest possible review date, subject to confirmation of the start and any parity reset, not an established clearance date. An undocumented session is unknown, not clean | [Readiness](paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md) |
 | Two-symbol cash-sweep design (2026-11-02) | Design and future test plan only; no paper code, configuration, order or deployment is authorized | [Design](paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md) |
 
 ## 3. What worked, structurally
@@ -314,9 +318,14 @@ freeze continue.
 - **Some legacy variants lack dedicated modern reports.** Tournament,
   conviction variants and individual voters have weaker evidence than their
   shipped/registered status suggests. Registry membership is not a GO.
-- **The full roadmap may lag.** The two research prompt templates are now
-  synchronized with the snapshot's momentum closure; the full roadmap was not
-  regenerated. Its old headline benchmarks must not override this record.
+- **The roadmap lags.** `docs/roadmap.md` is hand-maintained and was not regenerated;
+  its old headline benchmarks must not override this record. Both prompt templates
+  were regenerated with this snapshot on 2026-11-05.
+- **Live halt base and tested configuration.** The saved account value includes a
+  dividend accrual the broker never paid, so the daily-loss halt fires at about 2.7%
+  real loss, not 3%; and live runs no tested configuration. Both are recorded, not
+  fixed (decision 6 default: no live change).
+  [Findings](audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md).
 - **WFO verdicts need fold attribution.** Where most folds deployed the anchor,
   OOS Sharpe measures the gate/fallback policy. Intended semantics for winner-versus-anchor
   WFE, NaN WFE and the halt state are owner decisions (opt-in `WfoPolicy` exists, default

@@ -170,6 +170,15 @@ avoiding the exact instance:
   No paid data will be bought; Phases 2–5, including the after-tax replay,
   are cancelled (`research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md`).
 
+- **Classic factor and net-issuance screens closed NO-GO (2026-10-21, 2026-10-23).**
+  On the French long history, H1 HiOP, H2 HiBM, H3 LoINV and H4 Value+Momentum all fail
+  Holm A1 (best NW t 1.34 vs 3.40 hurdle) and the post-1994 +1.0 pt/yr A2 bar (HiOP
+  +0.83). `BIG NegNI` fails both (A1 t 0.26, A2 +0.48 pt/yr); the issuance effect is
+  short-side. Valuation, quality and q-factor variants stay `undetermined`, not closed
+  (`research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md`,
+  `research/stock-signals/net-issuance/2026-10-23-net-issuance-screen-nogo.md`,
+  `research/stock-signals/feasibility/2026-11-02-family-scope-review.md`).
+
 - **Blunt regime gates on entries don't help** — VIX-level regime throttling
   rejected. (Different from vol-aware *sizing*, which is structurally sound
   even though the blend as a whole now underperforms — the failure is
