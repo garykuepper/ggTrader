@@ -16,7 +16,10 @@ investigation ran. Part A and B0 = stages of the draft forward-paper standard
 (`research/programme/evidence-standard/2026-10-23-forward-paper-standard.md`): Part A is the
 long-history test of an idea, B0 a replay that can only kill. Gate A and Gate B = the Opus review's
 named checkpoints in its 30-day sequence. P2-nn = a numbered Phase 2 re-run item in the Phase 1
-checkpoint. vbb = the ensemble's Bollinger-band-plus-volume voter. "Decision 0" = whether re-runs may
+checkpoint. vbb = the ensemble's Bollinger-band-plus-volume voter. agy = the Antigravity agent
+harness. MNST / AVB = Monster Beverage / AvalonBay. 12-1 momentum = ranking stocks on their
+12-month return, skipping the latest month. EDGAR = the US Securities and Exchange
+Commission's public filings database. "Decision 0" = whether re-runs may
 write to the shared price table (the owner answered no). Citations below are `file:line` with the
 date prefix dropped; line numbers are as committed with this report.
 
@@ -41,7 +44,7 @@ form is the one shown. Anything else is labelled **not verified**.
 | Paper-trader reliability | First priority: measure the partial bar, propose an input archive and a broker-based halt base, document MNST/AVB as broker artifacts, leave the cap, sizing and parameters alone (`senior-quant-direction-review.md:93-111`) | A parity and tax-hygiene patch, a dated freeze and a clock reset (`argon-synthesis-review.md:76-86`) | Divergences real (Lens 6 rows 1, 4, 8, 14); "recovers 0.85-1.00 pp/yr" wrong; freeze and reset dates invented (`argon-review-verification.md:99`, `argon-review-verification.md:54`) | differ (patch vs measure first); Argon specifics dropped |
 | The 29 unrun Phase 2 checks | No-database items first; defer price-table writers (`senior-quant-direction-review.md:113-123`) | Same intent, but wrong item numbers and a non-existent `write_db` guard (`argon-synthesis-review.md:67-68`) | Intent matches Decision 0; ids mislabelled; no guard exists (`argon-review-verification.md:97`, `argon-review-verification.md:74-84`) | agree on intent; Argon ids dropped |
 | Stock-picking power | "Undecided" at 1 to 4 pp/yr, not at 2x; detecting +1.0 pp/yr at TE 6.5% needs about 620 years (Opus estimate, not verified) (`senior-quant-direction-review.md:54-59`, `senior-quant-direction-review.md:126-136`) | Re-power with a 1994-2026 concentrated sleeve; +1.5 to +4.0 pp/yr; 15-25% chance of t ≥ 3 (`argon-synthesis-review.md:88-99`) | sqrt(T) arithmetic verified; payoff odds dropped (about 1% to 9%); free-data plan fails (`argon-review-verification.md:57`, `argon-review-verification.md:100-101`) | differ |
-| Momentum replay (+4.37 pp/yr) | Not addressed | Gates rejected 17 of 17 folds, so the result is the plain 12-1 momentum anchor (`argon-synthesis-review.md:51`) | Survives; the cited commit hashes are wrong (`argon-review-verification.md:49`, `argon-review-verification.md:93`) | Argon-only (verified) |
+| Momentum replay (+4.37 pp/yr) | Not addressed | Gates rejected 17 of 17 folds, so the +4.37 pp/yr (t 0.76, 95% interval -7.07 to +16.05 on the arithmetic mean excess; not significant) is the plain 12-1 momentum anchor (`argon-synthesis-review.md:51`; `research/audits/root-cause-2026-11-04/2026-11-04-lens4-feasibility-and-ceiling.md:238`) | Survives; the cited commit hashes are wrong (`argon-review-verification.md:49`, `argon-review-verification.md:93`) | Argon-only (survives; hashes wrong) |
 | Gated-WFO machinery | Lens 2's rules came in one commit; other rules could create a few reliable NOs, not a GO (`senior-quant-direction-review.md:85-89`) | The synthesis's "biggest blind spot" (`argon-synthesis-review.md:50-53`) | Survives, but it is already the synthesis's position; synthetic-model caveat (`argon-review-verification.md:92`) | differ in weight |
 | Leverage | Exposure, not skill; 2.0x at today-like funding about +1.65 pp/yr (Opus estimate, not verified); drawdowns of 66% to 85% in-window and over 90% in a 1929-style decline; the 2.0x arm fell 84.8%; no allocation advice (`senior-quant-direction-review.md:61-70`, `senior-quant-direction-review.md:148-162`) | Same framing; 2.0x "+1.5 to +2.5" (`argon-synthesis-review.md:106-108`) | 1.3x figures verified; 1.3x funding-adjusted margin +0.52 pp/yr with A23 in force; 2.0x is inference, "about +1.7, unmeasured" (`argon-review-verification.md:58-59`, `argon-review-verification.md:127`) | agree |
 | Tax | After-tax as the primary metric for short-holding designs (`senior-quant-direction-review.md:178-179`); annual rebalancing realizes fewer short-term gains (inference, `senior-quant-direction-review.md:140-143`) | 52 SPY sweep trades churn a taxable account; holds over 366 days cut the hurdle (`argon-synthesis-review.md:48`, `argon-synthesis-review.md:92`) | Trade count verified; wash-sale harm unestablished; "1-2 pp/yr" unsourced; holding-period saving about 1.9 to 4.3 pp/yr; a separate bill-ETF or drift-band sweep is an untested option for the unfrozen shadow design (`argon-review-verification.md:50`, `argon-review-verification.md:102`, `argon-review-verification.md:95`, `argon-review-verification.md:123`) | Argon-only (sweep, corrected); agree in kind (holding period) |
@@ -146,10 +149,12 @@ risk decision, not a strategy, `senior-quant-direction-review.md:148`); option 3
 - *Prerequisites:* to measure, the owner allows P2-14 and P2-05 (read-only, about 1 hour and 15
   minutes) (`senior-quant-direction-review.md:99-104`); any live change goes through the deploy checks.
 - *Falsifier (derived by this report, not from Opus):* P2-14 finding that partial-bar and final-bar
-  decisions agree on nearly all of the 30 sessions would remove the bar choice from the proposal; it
+  decisions agree on nearly all of the 30 sessions would make the bar choice immaterial; it
   would not falsify the halt-base or archive items, which stand on other evidence. Opus's Gate B
   says only that a difference on more than a handful of sessions means the proposal must pick one
-  bar for both live and replica (`senior-quant-direction-review.md:192-194`).
+  bar for both live and replica (`senior-quant-direction-review.md:192-194`). Opus's own change
+  trigger runs the other way: "P2-14 shows large partial-bar divergence: parity moves ahead of
+  everything" (`senior-quant-direction-review.md:236`).
 - *Stop gate:* "parity measured and archived" (`senior-quant-direction-review.md:108-109`).
 
 **2. Funding-honest leverage figures for the 2027-09-30 A23 review.**
@@ -183,8 +188,11 @@ risk decision, not a strategy, `senior-quant-direction-review.md:148`); option 3
 - *Stop gate:* a Part A fail closes it; a B0 result below -1.0 pp/yr after tax is the kill
   (`senior-quant-direction-review.md:200-201`, `senior-quant-direction-review.md:144-146`).
 
-Not carried here: Opus's "not worth time" list (`senior-quant-direction-review.md:211-215`) and
-areas 5(b) to 5(d) (`senior-quant-direction-review.md:167-172`), the 51-of-53 power note
+Not carried here: Opus's "not worth time" list other than crypto spot, which is carried in
+Consensus (`senior-quant-direction-review.md:211-215`); Gate D, "below +2 pp/yr post-1994,
+concentration needs no further work" for P2-06 (`senior-quant-direction-review.md:202-203`); the
+P2-06 and small-cap change triggers (`senior-quant-direction-review.md:235`,
+`senior-quant-direction-review.md:238`); areas 5(b) to 5(d) (`senior-quant-direction-review.md:167-172`), the 51-of-53 power note
 (`senior-quant-direction-review.md:49-53`) and the note that a 10 pp/yr sleeve edge takes 23 to 40
 years to detect on paper (`senior-quant-direction-review.md:109-111`).
 
