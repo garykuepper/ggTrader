@@ -56,12 +56,19 @@ LABEL_ADVICE = "use the reference-sheet name, or a code span when citing an id"
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 # Scan-ability limits: a reader should be able to skim, so prose blocks stay short.
 MAX_PARAGRAPH_WORDS = 70
-MAX_LIST_ITEM_WORDS = 60
+MAX_LIST_ITEM_WORDS = 50
+MAX_TABLE_CELL_WORDS = 40
 HEADING_RE = re.compile(r"^\s{0,3}#{1,6}(?:\s|$)")
-LIST_ITEM_RE = re.compile(r"^(\s*)(?:[-*+]|\d+[.)])\s+")
+# A numbered marker is one or two digits, so a wrapped line that starts with a year is prose.
+LIST_ITEM_RE = re.compile(r"^(\s*)(?:[-*+]|\d{1,2}[.)])\s+(?:\[[ xX]\]\s+)?")
 BLOCKQUOTE_RE = re.compile(r"^\s{0,3}>[> ]*")
 RULE_RE = re.compile(r"^\s{0,3}([-*_])(?:\s*\1){2,}\s*$")
-IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(\s*(<[^>]*>|[^)\s]*)(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)")
+IMAGE_RE = re.compile(
+    r"!\[([^\]]*)\]\(\s*(<[^>]*>|(?:[^()\s]|\([^()\s]*\))*)"
+    r"(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)"
+)
+INLINE_ONLY_IMAGE_RE = re.compile(r"!\[[^\]]*\]\[|<img\b", re.IGNORECASE)
+DATA_URI_RE = re.compile(r"^data:", re.IGNORECASE)
 REMOTE_IMAGE_RE = re.compile(r"^(?:https?:)?//", re.IGNORECASE)
 
 
@@ -281,8 +288,16 @@ def _block_words(text: str) -> int:
     return len(WORD_RE.findall(LINK_TARGET_RE.sub(" ", text)))
 
 
+def _scan_text(line: _Line) -> str:
+    """Return the raw line with each code span reduced to one word, for the scan rules."""
+    return CODE_SPAN_RE.sub(" code ", line.raw)
+
+
 def _check_scan_blocks(lines: list[_Line], max_paragraph_words: int) -> list[tuple[int, str]]:
     """Report prose paragraphs, list items and blockquote callouts that are too long.
+
+    A blockquote callout is limited on its own prose lines. Bullets inside a callout are
+    list items, each limited individually, so a header plus a few short bullets passes.
 
     Args:
         lines: Parsed lines of one file.
@@ -292,19 +307,27 @@ def _check_scan_blocks(lines: list[_Line], max_paragraph_words: int) -> list[tup
     Returns:
         (line number, detail) pairs, one per oversized block, at the block's first line.
     """
-    list_limit = min(MAX_LIST_ITEM_WORDS, max_paragraph_words)
+    limits = {
+        "paragraph": max_paragraph_words,
+        "blockquote callout": max_paragraph_words,
+        "list item": min(MAX_LIST_ITEM_WORDS, max_paragraph_words),
+    }
     found: list[tuple[int, str]] = []
-    block: tuple[str, int, int] | None = None  # (kind, first line number, words so far)
+    # Open blocks by kind: [first line number, words so far]. A callout and one of its
+    # bullets can be open together; a paragraph or a top-level item is open alone.
+    open_blocks: dict[str, list[int]] = {}
     previous = 0
 
-    def flush() -> None:
-        nonlocal block
-        if block is not None:
-            kind, start, words = block
-            limit = {"list item": list_limit}.get(kind, max_paragraph_words)
-            if words > limit:
-                found.append((start, f"{kind} has {words} words, over the limit of {limit}"))
-        block = None
+    def flush(*kinds: str) -> None:
+        for kind in kinds or tuple(open_blocks):
+            block = open_blocks.pop(kind, None)
+            if block is not None and block[1] > limits[kind]:
+                found.append(
+                    (block[0], f"{kind} has {block[1]} words, over the limit of {limits[kind]}")
+                )
+
+    def add(kind: str, number: int, text: str) -> None:
+        open_blocks.setdefault(kind, [number, 0])[1] += _block_words(text)
 
     for line in lines:
         # A gap in line numbers means a fence or table separator sat between the lines.
@@ -313,38 +336,58 @@ def _check_scan_blocks(lines: list[_Line], max_paragraph_words: int) -> list[tup
         previous = line.number
         if line.kind != "prose":
             continue
-        text = line.text
+        text = _scan_text(line)
         if not text.strip() or HEADING_RE.match(text) or RULE_RE.match(text):
             flush()
             continue
-        item = LIST_ITEM_RE.match(text)
         quote = BLOCKQUOTE_RE.match(text)
-        if quote:
-            body = text[quote.end() :]
-            if block is None or block[0] != "blockquote callout":
-                flush()
-                block = ("blockquote callout", line.number, 0)
-        elif item:
+        body = text[quote.end() :] if quote else text
+        if quote and "blockquote callout" not in open_blocks:
             flush()
-            body = text[item.end() :]
-            block = ("list item", line.number, 0)
+            open_blocks["blockquote callout"] = [line.number, 0]
+        if quote and not body.strip():
+            flush("list item")  # a bare `>` ends a bullet but keeps the callout together
+            continue
+        item = LIST_ITEM_RE.match(body)
+        if item:
+            flush("list item", "paragraph")
+            add("list item", line.number, body[item.end() :])
+        elif "list item" in open_blocks:
+            add("list item", line.number, body)  # wrapped continuation of the bullet
+        elif "blockquote callout" in open_blocks:
+            add("blockquote callout", line.number, body)
         else:
-            body = text
-            if block is None:
-                block = ("paragraph", line.number, 0)
-        kind, start, words = block
-        block = (kind, start, words + _block_words(body))
+            add("paragraph", line.number, body)
     flush()
+    return found
+
+
+def _check_table_cells(line: _Line) -> list[str]:
+    """Report table cells that are too long to skim."""
+    if line.kind != "table":
+        return []
+    found: list[str] = []
+    for index, cell in enumerate(_split_row(_scan_text(line)), start=1):
+        words = _block_words(cell)
+        if words > MAX_TABLE_CELL_WORDS:
+            found.append(
+                f"cell {index} has {words} words, over the limit of {MAX_TABLE_CELL_WORDS}"
+            )
     return found
 
 
 def _check_images(line: _Line, directory: Path, repo_root: Path) -> list[str]:
     """Report images with no alt text, remote images and images whose file is missing."""
     found: list[str] = []
+    if INLINE_ONLY_IMAGE_RE.search(line.text):
+        found.append("use an inline ![alt](path) image")
     for match in IMAGE_RE.finditer(line.text):
         alt, target = match.group(1), match.group(2).strip("<>")
         if not alt.strip():
             found.append(f"image `{target}` has no alt text")
+        if DATA_URI_RE.match(target):
+            found.append("data URI image: link an image file next to the report")
+            continue
         if REMOTE_IMAGE_RE.match(target):
             found.append(f"remote image `{target}`: reports must be self-contained")
             continue
@@ -407,6 +450,7 @@ def check_file(
                 f"{prefix}: image: {d}"
                 for d in _check_images(line, Path(path).resolve().parent, repo_root)
             ]
+            problems += [f"{prefix}: table-cell: {d}" for d in _check_table_cells(line)]
         if line.kind == "prose":
             words += _block_words(line.text)
     if scan_rules and max_paragraph_words is not None:
@@ -416,7 +460,24 @@ def check_file(
         ]
     if max_words is not None and words > max_words:
         problems.append(f"{path}:1: word-cap: {words} prose words exceeds the cap of {max_words}")
-    return problems
+    return sorted(problems, key=_problem_line)
+
+
+def _problem_line(problem: str) -> int:
+    """Return the line number in a `<path>:<line>: <rule>: <detail>` problem string."""
+    match = re.search(r":(\d+): [a-z-]+: ", problem)
+    return int(match.group(1)) if match else 0
+
+
+def _positive_int(value: str) -> int:
+    """Parse a command-line value that must be a whole number above zero."""
+    try:
+        number = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value!r} is not a whole number") from None
+    if number < 1:
+        raise argparse.ArgumentTypeError(f"{value!r} must be at least 1")
+    return number
 
 
 def _read_sources(paths: list[Path]) -> dict[str, str]:
@@ -446,7 +507,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--max-paragraph-words",
-        type=int,
+        type=_positive_int,
         default=MAX_PARAGRAPH_WORDS,
         metavar="N",
         help="longest prose paragraph or blockquote callout in words; list items get at most "
@@ -455,7 +516,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--no-scan-rules",
         action="store_true",
-        help="switch off the scan-ability rules (long paragraphs, images) for old documents",
+        help="switch off the scan-ability rules (long paragraphs, table cells, images)",
     )
     args = parser.parse_args(argv)
     problems: list[str] = []

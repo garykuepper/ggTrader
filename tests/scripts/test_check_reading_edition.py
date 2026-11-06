@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -284,7 +285,7 @@ def test_flags_paragraph_over_limit(tmp_path: Path) -> None:
     assert _check(tmp_path, f"{_words(40)}.\n\n{_words(40)}.\n") == []
     # Code spans and link targets are not words.
     link = "[a](http://very/long/path/with-many/parts) "
-    assert _check(tmp_path, f"`{_words(80)}` {_words(69)} {link}\n") == []
+    assert _check(tmp_path, f"{_words(69)} {link}\n") == []
 
 
 def test_allows_long_table_and_list_of_short_items(tmp_path: Path) -> None:
@@ -304,13 +305,13 @@ def test_allows_long_table_and_list_of_short_items(tmp_path: Path) -> None:
 
 
 def test_flags_long_list_item(tmp_path: Path) -> None:
-    assert _check(tmp_path, f"- {_words(60)}\n") == []
-    problems = _check(tmp_path, f"- {_words(61)}\n")
+    assert _check(tmp_path, f"- {_words(50)}\n") == []
+    problems = _check(tmp_path, f"- {_words(51)}\n")
     assert len(problems) == 1 and "long-paragraph" in problems[0] and "list item" in problems[0]
     assert ":1:" in problems[0]
     # Wrapped continuation lines count towards the item, and the item may be numbered or nested.
     first = "- short item\n"
-    wrapped = f"{first}1. {_wrapped(30)}\n   {_wrapped(31)}\n  - {_words(5)}\n"
+    wrapped = f"{first}1. {_wrapped(26)}\n   {_wrapped(26)}\n  - {_words(5)}\n"
     problems = _check(tmp_path, wrapped)
     assert len(problems) == 1 and ":2:" in problems[0] and "list item" in problems[0]
 
@@ -400,3 +401,101 @@ def test_cli_max_paragraph_words_flag(tmp_path: Path, capsys: pytest.CaptureFixt
         main(["--help"])
     help_text = capsys.readouterr().out
     assert "--max-paragraph-words" in help_text and "--no-scan-rules" in help_text
+
+
+def _bullets(count: int, words: int, prefix: str = "> ") -> str:
+    return "".join(f"{prefix}- {_words(words)}\n" for _ in range(count))
+
+
+def test_callout_with_short_bullets_is_allowed(tmp_path: Path) -> None:
+    text = f"> **The short version**\n{_bullets(6, 15)}"
+    assert _check(tmp_path, text) == []
+    # Header prose over the callout limit is still flagged, bullets or not.
+    long_header = f"> {_words(71)}\n{_bullets(2, 5)}"
+    problems = _check(tmp_path, long_header)
+    assert len(problems) == 1 and "blockquote callout" in problems[0] and ":1:" in problems[0]
+
+
+def test_long_quoted_list_item_is_flagged(tmp_path: Path) -> None:
+    assert _check(tmp_path, f"> head\n> - {_words(50)}\n") == []
+    problems = _check(tmp_path, f"> head\n> - {_words(51)}\n")
+    assert len(problems) == 1 and "list item" in problems[0] and ":2:" in problems[0]
+    # A wrapped continuation line belongs to the item.
+    wrapped = f"> head\n> - {_words(30)}\n>   {_words(30)}\n"
+    problems = _check(tmp_path, wrapped)
+    assert len(problems) == 1 and "list item" in problems[0] and ":2:" in problems[0]
+    # A bare `>` ends the item but keeps the callout; later prose is not part of the item.
+    split = f"> - {_words(30)}\n>\n> {_words(30)}\n"
+    assert _check(tmp_path, split) == []
+
+
+def test_code_span_counts_as_one_word_in_scan_rules(tmp_path: Path) -> None:
+    spans = " ".join(f"`item{i}`" for i in range(71))
+    problems = _check(tmp_path, f"{spans}\n")
+    assert len(problems) == 1 and "long-paragraph" in problems[0] and "71" in problems[0]
+    assert _check(tmp_path, f"`{_words(200)}`\n") == []
+    # The word cap keeps its own counting, where code spans are free.
+    assert _check(tmp_path, f"{spans}\n", max_words=1, scan_rules=False) == []
+
+
+def test_task_list_marker_and_year_start_are_not_words(tmp_path: Path) -> None:
+    assert _check(tmp_path, f"- [x] {_words(50)}\n- [ ] {_words(50)}\n") == []
+    # A wrapped line that begins with a year continues the paragraph.
+    text = f"{_words(40)}\n2026. {_words(40)}\n"
+    problems = _check(tmp_path, text)
+    assert len(problems) == 1 and "paragraph has" in problems[0]
+
+
+def test_flags_reference_style_and_html_images(tmp_path: Path) -> None:
+    for text in ("![Chart][fig]\n", '<img src="a.png" alt="x">\n'):
+        problems = _check(tmp_path, text)
+        assert len(problems) == 1 and "image: use an inline ![alt](path) image" in problems[0]
+
+
+def test_data_uri_image_and_parentheses_in_names(tmp_path: Path) -> None:
+    problems = _check(tmp_path, "![A chart](data:image/png;base64,AAAA)\n")
+    assert any("image: data URI image" in p for p in problems)
+    assert not any("not found" in p for p in problems)
+    (tmp_path / "fig(1).png").write_bytes(b"x")
+    assert _check(tmp_path, "![A chart](fig(1).png)\n") == []
+
+
+@pytest.mark.parametrize("value", ["0", "-5", "x"])
+def test_cli_max_paragraph_words_must_be_positive(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], value: str
+) -> None:
+    sheet = _write(tmp_path, "| Term | M |\n|---|---|\n| DSR | x |\n", "sheet.md")
+    doc = _write(tmp_path, "Plain text.\n", "doc.md")
+    with pytest.raises(SystemExit) as info:
+        main([str(doc), "--sheet", str(sheet), "--max-paragraph-words", value])
+    assert info.value.code == 2
+    assert "--max-paragraph-words" in capsys.readouterr().err
+
+
+def test_problems_are_sorted_by_line_number(tmp_path: Path) -> None:
+    text = f"{_words(80)}\n\n![](gone.png)\n\nBad; semicolon.\n"
+    problems = _check(tmp_path, text, max_words=10)
+    numbers = [int(re.search(r"\.md:(\d+): ", p).group(1)) for p in problems]  # type: ignore[union-attr]
+    assert len(problems) >= 4
+    assert numbers == sorted(numbers)
+
+
+def test_flags_table_cell_over_limit(tmp_path: Path) -> None:
+    ok = f"| a | b |\n|---|---|\n| {_words(40)} | x |\n"
+    assert _check(tmp_path, ok) == []
+    long_row = f"| a | b |\n|---|---|\n| x | {_words(41)} |\n"
+    problems = _check(tmp_path, long_row)
+    assert len(problems) == 1 and ":3:" in problems[0]
+    assert "table-cell" in problems[0] and "41" in problems[0] and "40" in problems[0]
+    header = f"| {_words(41)} | b |\n|---|---|\n| x | y |\n"
+    assert any(":1:" in p and "table-cell" in p for p in _check(tmp_path, header))
+    assert _check(tmp_path, long_row, scan_rules=False) == []
+
+
+def test_allows_table_cells_under_limit(tmp_path: Path) -> None:
+    cells = " | ".join(_words(39) for _ in range(5))
+    table = f"| a | b | c | d | e |\n|---|---|---|---|---|\n| {cells} |\n"
+    assert _check(tmp_path, table) == []
+    # A code span counts as one word, and an escaped pipe does not split a cell.
+    span = f"| a | b |\n|---|---|\n| `{_words(100)}` {_words(30)} a \\| b | x |\n"
+    assert _check(tmp_path, span) == []
