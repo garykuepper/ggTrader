@@ -155,6 +155,8 @@ DEFAULT_ALLOW_NEW: tuple[str, ...] = (
     "audits/root-cause-2026-11-04/reference-sheet.md",
     "audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md",
     "audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md",
+    "audits/root-cause-2026-11-04/figures/*.png",
+    "audits/root-cause-2026-11-04/2026-11-05-executive-summary.md",
 )
 REWRITABLE_SUFFIX = ".md"
 

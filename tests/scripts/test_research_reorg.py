@@ -1294,6 +1294,12 @@ def test_verify_final_default_allow_new_lists_reading_documents() -> None:
     assert f"{base}/2026-11-05-direction-reviews-consolidated.md" not in DEFAULT_ALLOW_NEW
 
 
+def test_allow_new_list_contains_figures_and_summary() -> None:
+    base = "audits/root-cause-2026-11-04"
+    assert f"{base}/figures/*.png" in DEFAULT_ALLOW_NEW
+    assert f"{base}/2026-11-05-executive-summary.md" in DEFAULT_ALLOW_NEW
+
+
 def test_main_verify_final_allow_deeper_cli(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
     root, rows, ledger = _final_repo(tmp_path)
     deep = "research/allocation/century-leverage/sub/x.md"
