@@ -157,3 +157,102 @@ def test_cli_exit_codes_and_help(tmp_path: Path, capsys: pytest.CaptureFixture[s
         main(["--help"])
     assert info.value.code == 0
     assert "--sheet" in capsys.readouterr().out
+
+
+def test_number_must_not_trace_to_the_checked_file_itself(tmp_path: Path) -> None:
+    path = _write(tmp_path, "An invented 7.777 figure.\n")
+    own = {str(path): path.read_text(encoding="utf-8")}
+    problems = check_file(path, TERMS, own, root=tmp_path)
+    assert any("7.777" in p for p in problems)
+    other = {**own, "src.md": "The real figure is 7.777."}
+    assert check_file(path, TERMS, other, root=tmp_path) == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["lens 6 says", "phase 2 ran", "Lenses 2 and 6", "Gates A and B", "Lens-6 here", "Parts B"],
+)
+def test_label_rule_is_case_insensitive_and_covers_plurals(tmp_path: Path, text: str) -> None:
+    problems = _check(tmp_path, f"{text}.\n")
+    assert any("numbered-label" in p for p in problems)
+
+
+def test_label_message_is_full_and_actionable(tmp_path: Path) -> None:
+    problems = _check(tmp_path, "See Lens 10 now.\n")
+    assert len(problems) == 1
+    assert "`Lens 10`" in problems[0] and "use the reference-sheet name" in problems[0]
+    assert "code span" in problems[0]
+
+
+@pytest.mark.parametrize("text", ["part a deal", "Part of it", "Gate Check", "A partial bar"])
+def test_label_rule_ignores_ordinary_words(tmp_path: Path, text: str) -> None:
+    assert _check(tmp_path, f"{text}.\n") == []
+
+
+def test_plural_abbreviations_are_checked_by_stem(tmp_path: Path) -> None:
+    problems = _check(tmp_path, "QQQs and ETFs fell.\n")
+    assert any("`QQQ`" in p for p in problems)
+    assert any("`ETF`" in p for p in problems)
+    assert _check(tmp_path, "Many NO-GOs, As, MaxDD and A23 appear.\n") == []
+
+
+def test_year_exemption_does_not_swallow_money_or_counts(tmp_path: Path) -> None:
+    problems = _check(tmp_path, "It cost $2,000 and $1,950 across 1,994 rows or $2026.\n")
+    flagged = " ".join(problems)
+    for token in ("2000", "1950", "1994", "2026"):
+        assert token in flagged, token
+    assert _check(tmp_path, "Between 1994 and 2026 only.\n") == []
+
+
+def test_semicolon_inside_link_target_is_not_flagged(tmp_path: Path) -> None:
+    assert _check(tmp_path, "See [x](http://a/q;x) now.\n") == []
+    assert any("semicolon" in p for p in _check(tmp_path, "See [x](http://a/q) now; ok.\n"))
+
+
+def test_fence_closes_only_on_same_char_and_length(tmp_path: Path) -> None:
+    text = "````\n```\nin; fence\n```\n````\nafter; fence\n"
+    problems = _check(tmp_path, text)
+    assert [p.split(":")[1] for p in problems] == ["6"]
+
+
+@pytest.mark.parametrize("header", ["Files", "File Name", "file"])
+def test_file_column_header_variants_and_escaped_pipes(tmp_path: Path, header: str) -> None:
+    table = f"| Name | {header} |\n|---|---|\n| a \\| b | Lens 1 |\n"
+    assert _check(tmp_path, table) == []
+
+
+def test_word_cap_ignores_link_targets_and_html_comments(tmp_path: Path) -> None:
+    text = "[word](http://very/long/path/with-many/parts) here.\n<!-- hidden words\nmore -->\n"
+    assert _check(tmp_path, text, max_words=2) == []
+    assert len(_check(tmp_path, text, max_words=1)) == 1
+
+
+def test_placeholder_paths_are_skipped(tmp_path: Path) -> None:
+    assert _check(tmp_path, "Write `research/<category>/<study>/report.md` first.\n") == []
+
+
+def test_cli_default_root_is_repo_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sheet = _write(tmp_path, "| Term | M |\n|---|---|\n| DSR | x |\n", "sheet.md")
+    doc = _write(tmp_path, "See `scripts/check_reading_edition.py` here.\n", "doc.md")
+    monkeypatch.chdir(tmp_path)
+    assert main([str(doc), "--sheet", str(sheet)]) == 0
+
+
+def test_cli_missing_inputs_fail_cleanly(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    sheet = _write(tmp_path, "| Term | M |\n|---|---|\n| DSR | x |\n", "sheet.md")
+    doc = _write(tmp_path, "Plain text.\n", "doc.md")
+    assert main([str(doc), "--sheet", str(tmp_path / "nope.md")]) == 1
+    assert capsys.readouterr().out.startswith("FAIL ")
+    assert main([str(doc), "--sheet", str(sheet), "--sources", str(tmp_path / "nope.md")]) == 1
+    assert capsys.readouterr().out.startswith("FAIL ")
+    assert main([str(tmp_path / "nope.md"), "--sheet", str(sheet)]) == 1
+    assert capsys.readouterr().out.startswith("FAIL ")
+
+
+def test_us_is_ignored_and_hyphenated_tokens_check_each_part(tmp_path: Path) -> None:
+    assert _check(tmp_path, "The US market.\n") == []
+    assert _check(tmp_path, "The SPY-IEF pair.\n", terms={"SPY", "IEF"}) == []
+    problems = _check(tmp_path, "The SPY-IEF pair.\n", terms={"SPY"})
+    assert len(problems) == 1 and "`IEF`" in problems[0]
