@@ -418,8 +418,9 @@ def check_file(
         ignore_terms: Capitalised tokens that need no definition.
         root: Repository root for resolving cited paths (default: the current directory).
         max_paragraph_words: Word limit for a prose paragraph or blockquote callout (list items
-            get at most 60); `None` switches the long-paragraph rule off.
-        scan_rules: When false, skip the scan-ability rules (long paragraphs and images).
+            get at most 50); `None` switches the long-paragraph rule off.
+        scan_rules: When false, skip the scan-ability rules (long paragraphs, table cells and
+            images).
 
     Returns:
         Problem strings of the form `<path>:<line>: <rule>: <detail>`.
