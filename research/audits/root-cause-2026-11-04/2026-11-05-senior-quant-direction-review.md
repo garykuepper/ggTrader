@@ -1,4 +1,4 @@
-> Reading copy: see 2026-11-05-direction-reviews-consolidated.md
+> Reading copy (2026-11-05): see 2026-11-05-direction-reviews-consolidated.md
 
 # Senior quant direction review of the root-cause investigation
 
