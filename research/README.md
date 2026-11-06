@@ -6,7 +6,7 @@ To find a study by question, date, status or nickname (A23 = the 70/30 SPY/SSO a
 
 ## Current review
 
-The newest look at the whole record is the 2026-11-04 root-cause investigation. Start with its [reading route](audits/root-cause-2026-11-04/README.md), or go straight to the [consolidated direction review](audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md). The 29 optional re-checks (called Phase 2) proposed at the end of the first phase were deliberately not run.
+The newest look at the whole record is the 2026-11-04 root-cause investigation. Start with its [reading route](audits/root-cause-2026-11-04/README.md), or go straight to the [findings in plain English](audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md) and the [consolidated direction review](audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md), with the [reference sheet](audits/root-cause-2026-11-04/reference-sheet.md) open for the terms. The 29 optional re-checks (called Phase 2) proposed at the end of the first phase were deliberately not run.
 
 ## The folders
 
