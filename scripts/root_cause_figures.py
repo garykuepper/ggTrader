@@ -143,7 +143,7 @@ OPTIONS: tuple[OptionBlock, ...] = (
         f"{REVIEW}:221",
         "None beyond restating existing figures with their funding caveat",
         f"{REVIEW}:222",
-        "Below the 2006-2026 gap at today-like funding: no tested level reaches 2x",
+        "If 2.0x is below gap at today-like funding: no level reaches 2x",
         f"{REVIEW}:232",
     ),
     OptionBlock(
