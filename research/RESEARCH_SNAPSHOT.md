@@ -57,6 +57,10 @@ return/significance bars. Mean exposure was 9.37% stocks, 85.33% SPY and 5.30%
 cash. Source: [production-rule audit](audits/production-replica/2026-10-19-production-replica-audit-nogo.md),
 [_production_replica_results.json](audits/production-replica/_production_replica_results.json),
 `windows.primary.arms.primary.{stats,spy_stats,excess_vs_spy,mean_exposure}`.
+The root-cause investigation (accepted 2026-11-05) rates this result inconclusive
+against its own +1.0 pp/yr bar: at whole-account level it could detect about 4.2 pp/yr,
+if PARA proves immaterial. The recorded NO-GO is unchanged.
+[Executive summary](audits/root-cause-2026-11-04/2026-11-05-executive-summary.md).
 
 This is a **historical daily-bar model**, not a measured reconstruction of the
 live path. Exact historical live parity is **UNVERIFIED**: 10/32 orders matched
@@ -196,7 +200,7 @@ benchmarks. All pre-DSR-fix gate counts are void as DSR evidence.
 | Crypto web-research batch (2026-10-25) | Literature candidates in the register; the IBIT overnight split is a descriptive sanity check, not a walk-forward test or executable edge | [Register](WEB_RESEARCH_CANDIDATES.md), [IBIT check](crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json) |
 | WFO policy options and synthetic breaker study | Methods: opt-in `WfoPolicy` (defaults unchanged) and a preregistered synthetic study. Under its stated assumptions (gates passing every fold) the legacy breaker halts at least once in 87.5% of runs for a true-Sharpe-1.0 strategy; not evidence about any real strategy or gate | [Semantics](programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md), [synthetic study](programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md) |
 | Family-scope review of pending feasibility rows | Documentary, definitions only: accruals (S04) is a distinct mechanism, seven rows are undetermined, none judged covered by a closed NO-GO; no recorded verdict changed | [Review](stock-signals/feasibility/2026-11-02-family-scope-review.md), [inventory](stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md) |
-| Root-cause investigation: why the research has not doubled SPY (2026-11-04, accepted 2026-11-05) | Audit, diagnosis only; no verdict, strategy, trader or data change. Built design negative: no 2x-sized effect, and its test could have seen one (PARA's effect unmeasured). Stock picking undecided: none of 72 measured tests is reliable, none shows an edge, none rules out 1 to 4 pp/yr. Ceiling: only 2x leverage (exposure, not skill, worst fall -84.8%) and momentum before 1994 reached their window's gap. No cause's share was measured, and none of the 29 Optional Re-run List items was run | [Executive summary](audits/root-cause-2026-11-04/2026-11-05-executive-summary.md), [findings](audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md), [synthesis](audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md) |
+| Root-cause investigation: why the research has not doubled SPY (2026-11-04, accepted 2026-11-05) | Audit, diagnosis only; no verdict, strategy, trader or data change. Built design negative: no 2x-sized effect, and its test could have seen one (the effect of PARA, a stock stored with another security's prices, is unmeasured). Stock picking undecided: none of 72 measured tests is reliable, none shows an edge, none rules out 1 to 4 pp/yr. Ceiling: only 2x leverage (exposure, not skill, worst fall -84.8%) and momentum before 1994 reached their window's gap. No cause's share was measured, and none of the 29 Optional Re-run List items was run | [Executive summary](audits/root-cause-2026-11-04/2026-11-05-executive-summary.md), [findings](audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md), [synthesis](audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md) |
 | Research-process audit (2026-11-01) | Scoped documentary audit, not a trading verdict. Legitimate negative results exist, but a count of NO-GOs cannot say how many independent ideas failed: the 38 registered names include voters, variants and shared machinery. Walk-forward results can mainly measure the fallback. Original verdicts and the freeze stay in force | [Audit](audits/research-process/2026-11-01-research-process-audit.md) |
 | Accruals source feasibility (2026-11-02) | Unresolved, metadata only: published portfolio history starts 1963, but usage terms, revision behavior and a compatible benchmark and cost design are not established; no returns examined | [Feasibility review](stock-signals/feasibility/2026-11-02-accruals-feasibility.md) |
 | Paper-freeze readiness framework (2026-11-02) | Evidence framework, not a clearance: the observation window began with the 2026-09-29 deploy, earliest possible review about 2026-12-29, and an undocumented session is unknown, not clean | [Readiness](paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md) |
@@ -272,8 +276,7 @@ benchmarks. All pre-DSR-fix gate counts are void as DSR evidence.
 - **Tests that cannot tell a small effect from zero.** The built design is about
   85% SPY and 9% stocks, so it cannot stray far from SPY. At sleeve level the
   replica sees only an excess above about 45 pp/yr, so stock picking stays
-  undecided. Only 2x leverage (exposure, not skill) and pre-1994 momentum reached
-  the gap to doubling SPY. [Executive summary](audits/root-cause-2026-11-04/2026-11-05-executive-summary.md).
+  undecided. Only 2x leverage (exposure, not skill) and pre-1994 momentum reached their window's gap (against SPY, or the French market index for the long history). [Executive summary](audits/root-cause-2026-11-04/2026-11-05-executive-summary.md).
 - **Data and history limits.** Event-date joins, index leakage, reused symbols,
   sparse histories and absent PIT fundamentals can dominate plausible signals.
   Earlier failures on a shifted tape do not mathematically prove a corrected
@@ -344,8 +347,7 @@ freeze continue.
 
 **What changed this run (2026-11-05, full):** the root-cause investigation was
 accepted and recorded as an audit, and four 2026-11-01/02 documents joined the roster.
-No idea was added, dropped or re-ranked. The
-investigation's three options (paper-trader measurement, funding-honest leverage
+No idea was added, dropped or re-ranked. Three options framed from the Opus direction review (paper-trader measurement, funding-honest leverage
 figures, one pre-registered long-history stock screen) are not queued here: decisions
 3 to 13 keep their defaults, so no re-run, price-table write or live change is
 authorized. The ranked ideas remain ideas, not authorization to implement or deploy,
@@ -353,9 +355,8 @@ and none is a stock-selection candidate.
 
 *Carried from 2026-11-02:* the process audit and its follow-ups added two internal
 items (owner decision on WFO fallback semantics; validating the lot-engine library).
-Earlier: replica validation, momentum and FOMC reruns moved into closed results;
-cross-asset trend closed; A23 is an owner allocation. Any sleeve is evaluated against
-its funding leg and the current SPY benchmark with a pre-registered bar.
+Any sleeve is evaluated against its funding leg and the current SPY benchmark with a
+pre-registered bar.
 
 1. **Research-only security-identity validation.** Use available price/volume
    rows, membership dates and independent security metadata to detect reused

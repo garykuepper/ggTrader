@@ -1,6 +1,6 @@
 # Executive summary: why the research has not doubled SPY
 
-**Date:** 2026-11-05. **One-page summary of the [plain-English findings](findings/2026-11-05-findings-plain-english.md) and the [direction review](reviews/2026-11-05-direction-reviews-consolidated.md). The originals stay as the record.** The synthesis was accepted by the owner on 2026-11-05, and the originals keep the earlier status. Terms: [reference sheet](reference-sheet.md).
+**Date:** 2026-11-05. **One-page summary of the [plain-English findings](findings/2026-11-05-findings-plain-english.md) and the [direction review](reviews/2026-11-05-direction-reviews-consolidated.md). The originals stay as the record.** The owner accepted the synthesis on 2026-11-05, and the synthesis keeps its earlier status. Terms: [reference sheet](reference-sheet.md).
 
 SPY is the fund that tracks the S&P 500. 2x means twice SPY's total return (price change plus reinvested dividends). pp/yr means percentage points a year.
 
@@ -72,7 +72,7 @@ Ranked by judgement, no share measured:
 
 ### What you decide
 
-Seven of the 13. Each default holds until you answer.
+Seven of the 13. Each open default holds until you answer.
 
 | # | Decision | Default |
 |---|---|---|

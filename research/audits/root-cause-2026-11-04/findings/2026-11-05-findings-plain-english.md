@@ -268,7 +268,7 @@ Source: synthesis sections 2, 6, 7 and 9 (`research/audits/root-cause-2026-11-04
 | ✅ Recorded 2026-11-05 | The no-writes rule: the owner answered no to re-runs writing to the shared price cache, which blocks every item tagged as doing so. |
 | ✅ Recorded 2026-11-05 | The 19 rewritten symbols stay as they are, documented, with no restore. |
 | ✅ Recorded 2026-11-05 | The investigation branch has been merged. A later note in the synthesis records it, superseding the "not merged" line. |
-| ✅ Recorded 2026-11-05 | The changelog entry and the research-snapshot update wait until the owner accepts the synthesis. |
+| ✅ Recorded 2026-11-05 | The changelog entry and the research-snapshot update wait until the owner accepts the synthesis. The condition was met on 2026-11-05. |
 | ✅ Recorded 2026-11-05 | A new rule: no agent runs a script it has not read, and no script is run to see its help. |
 | ✅ Recorded 2026-11-05 | The synthesis was accepted by the owner on 2026-11-05. The originals keep the earlier status: the synthesis still lists acceptance as open, which was true when it was written. |
 | ✅ Recorded 2026-11-05 | The changelog entry and the research-snapshot update are done. `docs/next_steps.md` is not changed without the owner. |

@@ -4,7 +4,7 @@
 
 - **Owner accepted the root-cause synthesis (decision 1 of 13; no strategy, live-code, verdict or number change).**
   - The owner accepted `research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md`
-    on 2026-11-05. That unlocks decision 2, this changelog entry and the refresh of
+    on 2026-11-05. That unlocks decision 2: this changelog entry and the refresh of
     `research/RESEARCH_SNAPSHOT.md` and the two research prompt templates. The investigation is
     a diagnosis only. It changed no strategy, trader, data or verdict.
   - What it concluded (SPY is the fund that tracks the S&P 500, 2x is twice its total return,

@@ -215,8 +215,7 @@ avoiding the exact instance:
   cannot stray far from SPY. At sleeve level the replica sees only an excess above
   about 45 pp/yr. Of 72 measured tests none is reliable and none shows an edge, but
   none rules out 1 to 4 pp/yr, so a closed NO-GO is a verdict on the test, not proof
-  of no edge. Only 2x leverage (exposure, not skill) and pre-1994 momentum reached
-  the gap to doubling SPY. Before you design a stock-selection test, state the
+  of no edge. Only 2x leverage (exposure, not skill) and pre-1994 momentum reached their window's gap (against SPY, or the French market index for the long history). Before you design a stock-selection test, state the
   smallest effect it can detect (`research/audits/root-cause-2026-11-04/2026-11-05-executive-summary.md`).
 
 - **Historical point-in-time data for analyst estimates, permno-keyed

@@ -139,9 +139,8 @@ without a genuinely different mechanism:**
   S&P 500 ETF and 9% individual stocks, so it cannot stray far from the index, and
   its stock part could only detect an excess above about 45 percentage points a
   year. Of 72 earlier tests none is reliable and none shows an edge, but none rules
-  out an edge of 1 to 4 percentage points a year. Doubling the index's total return
-  is not within reach of stock selection on this evidence. Only 2x leverage (more
-  market exposure, not skill) and momentum before 1994 reached the gap. So say what
+  out an edge of 1 to 4 percentage points a year. No stock-selection test after 1994 reached the gap to doubling the index's total return. Only 2x leverage (more
+  market exposure, not skill) and momentum before 1994 reached their window's gap. So say what
   size of effect your idea claims, and whether free data over a long history could
   resolve an effect that small.
 - Four other ideas were investigated and found to require data we can't

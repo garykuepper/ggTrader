@@ -1,10 +1,9 @@
 {
-  "description": "Non-frozen Markdown files edited by the Task 9 reference rewrite and the Task 12 reading-copy pointer lines (proposed paths under research/). Read by verify --stage rewritten.",
+  "description": "Non-frozen Markdown files edited by the Task 9 reference rewrite, the Task 12 reading-copy pointer lines and the 2026-11-05 snapshot and prompt refresh (proposed paths under research/). Read by verify --stage rewritten.",
   "scope": "moved-markdown",
   "tool_replacements": 1246,
   "hand_edited": [
     "research/RESEARCH_INDEX.md",
-    "research/RESEARCH_SNAPSHOT.md",
     "research/TEMPLATE-research-report.md",
     "research/WEB_RESEARCH_CANDIDATES.md",
     "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md",
