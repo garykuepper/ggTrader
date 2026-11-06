@@ -4,32 +4,50 @@
 no new evidence) · **Status:** reading copy; the originals stay as written and are the sources of
 record.
 
-**Abbreviations.** SPY = SPDR S&P 500 ETF Trust (the benchmark). 2x = twice SPY's total return over
-the same period. pp/yr = percentage points a year. WFO = walk-forward optimization. OOS = out of
-sample. MDE = minimum detectable effect (the smallest true effect a test finds 80% of the time at its
-pass bar). t = t-statistic (an effect divided by its standard error). Holm = a correction for
-testing several ideas at once. PIT = point in time. CAGR = compound annual growth rate. TE =
-tracking error. DSR = deflated Sharpe ratio. BTC = bitcoin. SSO = ProShares Ultra S&P 500 (2x daily
-SPY). A23 = the owner's adopted 70% SPY / 30% SSO allocation. French data = Professor Kenneth
-French's free long-history US stock portfolio returns. Lens n = one of the nine checks the
-investigation ran. Part A and B0 = stages of the draft forward-paper standard
-(`research/programme/evidence-standard/2026-10-23-forward-paper-standard.md`): Part A is the
-long-history test of an idea, B0 a replay that can only kill. Gate A and Gate B = the Opus review's
-named checkpoints in its 30-day sequence. P2-nn = a numbered Phase 2 re-run item in the Phase 1
-checkpoint. vbb = the ensemble's Bollinger-band-plus-volume voter. agy = the Antigravity agent
-harness. MNST / AVB = Monster Beverage / AvalonBay. 12-1 momentum = ranking stocks on their
-12-month return, skipping the latest month. EDGAR = the US Securities and Exchange
-Commission's public filings database. "Decision 0" = whether re-runs may
-write to the shared price table (the owner answered no). Citations below are `file:line` with the
-date prefix dropped; line numbers are as committed with this report.
+**Abbreviations.** Citations below are `file:line` with the date prefix dropped; line numbers are as committed with this report.
+
+| Term | Meaning |
+|---|---|
+| SPY | SPDR S&P 500 ETF Trust (the benchmark) |
+| 2x | twice SPY's total return over the same period |
+| pp/yr | percentage points a year |
+| WFO | walk-forward optimization |
+| OOS | out of sample |
+| MDE | minimum detectable effect (the smallest true effect a test finds 80% of the time at its pass bar) |
+| t | t-statistic (an effect divided by its standard error) |
+| Holm | a correction for testing several ideas at once |
+| PIT | point in time |
+| CAGR | compound annual growth rate |
+| TE | tracking error |
+| DSR | deflated Sharpe ratio |
+| BTC | bitcoin |
+| SSO | ProShares Ultra S&P 500 (2x daily SPY) |
+| A23 | the owner's adopted 70% SPY / 30% SSO allocation |
+| French data | Professor Kenneth French's free long-history US stock portfolio returns |
+| Lens n | one of the nine checks the investigation ran |
+| Part A, B0 | stages of the draft forward-paper standard (`research/programme/evidence-standard/2026-10-23-forward-paper-standard.md`): Part A is the long-history test of an idea, B0 a replay that can only kill |
+| Gate A, Gate B | the Opus review's named checkpoints in its 30-day sequence |
+| P2-nn | a numbered Phase 2 re-run item in the Phase 1 checkpoint |
+| vbb | the ensemble's Bollinger-band-plus-volume voter |
+| agy | the Antigravity agent harness |
+| MNST / AVB | Monster Beverage / AvalonBay |
+| 12-1 momentum | ranking stocks on their 12-month return, skipping the latest month |
+| EDGAR | the US Securities and Exchange Commission's public filings database |
+| "Decision 0" | whether re-runs may write to the shared price table (the owner answered no) |
 
 ## 1. Sources and status
 
-| Short name | File | Author | Status |
-|---|---|---|---|
-| Opus review | `research/audits/root-cause-2026-11-04/2026-11-05-senior-quant-direction-review.md` | Claude Opus, single reviewer, read-only (`senior-quant-direction-review.md:258-264`) | Reliable as a single review; its own estimates are labelled "(my estimate)" and are unmeasured (`senior-quant-direction-review.md:17-18`, `senior-quant-direction-review.md:259-261`, `senior-quant-direction-review.md:70`) |
-| Argon review | `research/audits/root-cause-2026-11-04/2026-11-05-argon-synthesis-review.md` | Gemini 4 Argon via agy (`argon-review-verification.md:3`); did not read the Opus review (`argon-synthesis-review.md:165`) | **Unverified as written.** 43 of 105 citations are broken or unsupported (`argon-review-verification.md:10`); several specifics are invented (`argon-review-verification.md:13`) |
-| Verification | `research/audits/root-cause-2026-11-04/2026-11-05-argon-review-verification.md` | Claude Sonnet, did not read the Opus review (`argon-review-verification.md:3`) | States which Argon items survive (`argon-review-verification.md:90-105`) |
+**Opus review**: `research/audits/root-cause-2026-11-04/2026-11-05-senior-quant-direction-review.md`
+- Author: Claude Opus, single reviewer, read-only (`senior-quant-direction-review.md:258-264`).
+- Status: reliable as a single review; its own estimates are labelled "(my estimate)" and are unmeasured (`senior-quant-direction-review.md:17-18`, `senior-quant-direction-review.md:259-261`, `senior-quant-direction-review.md:70`).
+
+**Argon review**: `research/audits/root-cause-2026-11-04/2026-11-05-argon-synthesis-review.md`
+- Author: Gemini 4 Argon via agy (`argon-review-verification.md:3`); did not read the Opus review (`argon-synthesis-review.md:165`).
+- Status: **unverified as written.** 43 of 105 citations are broken or unsupported (`argon-review-verification.md:10`); several specifics are invented (`argon-review-verification.md:13`).
+
+**Verification**: `research/audits/root-cause-2026-11-04/2026-11-05-argon-review-verification.md`
+- Author: Claude Sonnet, did not read the Opus review (`argon-review-verification.md:3`).
+- Status: states which Argon items survive (`argon-review-verification.md:90-105`).
 
 Both reviews assess the synthesis (`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-investigation.md`)
 and its challenge (`research/audits/root-cause-2026-11-04/2026-11-04-root-cause-challenge.md`). Below, an Argon
