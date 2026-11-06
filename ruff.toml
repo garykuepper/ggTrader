@@ -2,6 +2,12 @@
 line-length = 100
 target-version = "py311"
 
+# research/ holds byte-frozen evidence (sha256 recorded in the reorg ledger). The
+# Claude ruff hook and .githooks/pre-commit pass explicit file paths, which ruff
+# lints regardless of excludes unless force-exclude is on.
+extend-exclude = ["research"]
+force-exclude = true
+
 [lint]
 # Enable Pyflakes (F) and Pycodestyle (E, W) codes by default.
 select = ["E", "F", "W", "I"]
