@@ -11,7 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from scripts.research_reorg import PINNED_PATHS, MoveRefusedError, rewrite_markdown
+from scripts.research_reorg import (
+    DEFAULT_ALLOW_NEW,
+    PINNED_PATHS,
+    MoveRefusedError,
+    rewrite_markdown,
+)
 from scripts.research_retarget import (
     MoveRow,
     apply_moves,
@@ -108,9 +113,12 @@ def test_relative_link_from_moved_file_to_unmoved_file_gains_one_level() -> None
     new_text, unresolved = rewrite_text(text, f"{S}/a.md", f"{S}/sub/a.md", SUB_MAP)
     assert new_text == "[c](../c.md) ![img](../img/x.png) [same](z.md) [top](../../README.md)\n"
     assert unresolved == []
-    # A link-looking string inside an inline code span is not a link.
-    span, _ = rewrite_text("Write `[a](a.md)` here.\n", f"{S}/a.md", f"{S}/sub/a.md", SUB_MAP)
-    assert span == "Write `[a](a.md)` here.\n"
+    # A link-looking string inside an inline code span is not a link: the same text
+    # without backticks gets recomputed, so this proves the span is what protects it.
+    plain, _ = rewrite_text("Write [c](c.md) here.\n", f"{S}/a.md", f"{S}/sub/a.md", SUB_MAP)
+    assert plain == "Write [c](../c.md) here.\n"
+    span, _ = rewrite_text("Write `[c](c.md)` here.\n", f"{S}/a.md", f"{S}/sub/a.md", SUB_MAP)
+    assert span == "Write `[c](c.md)` here.\n"
 
 
 def test_relative_link_between_two_moved_files_in_different_subfolders() -> None:
@@ -553,8 +561,17 @@ CONSOLIDATED_NEW = CONSOLIDATED.replace("root-cause-2026-11-04/", "root-cause-20
 
 
 def test_update_manifest_skips_allow_new_file_without_row(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # The pre-move allow-list entry is removed at the end of the reorganization; only the
+    # destination entry may decide the skip.
+    only_new = tuple(
+        p
+        for p in DEFAULT_ALLOW_NEW
+        if p != "audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md"
+    )
+    assert only_new != DEFAULT_ALLOW_NEW
+    monkeypatch.setattr("scripts.research_reorg.DEFAULT_ALLOW_NEW", only_new)
     manifest, ledger, rewrite = _manifest_files(tmp_path)
     rows = _rows((f"{S}/a.md", f"{S}/sub/a.md"), (CONSOLIDATED, CONSOLIDATED_NEW))
     counts = update_manifest(rows, manifest, ledger, rewrite)
@@ -674,3 +691,74 @@ def test_cli_verify_notes_allowed_frozen_path(
     ]
     assert main(argv) == 0
     assert "NOTE allowed frozen path: research/MOVED.csv" in capsys.readouterr().out
+
+
+def _mkdir_fails_second_time(monkeypatch: pytest.MonkeyPatch) -> None:
+    real_mkdir = Path.mkdir
+    calls = {"n": 0}
+
+    def fake_mkdir(self: Path, *args: object, **kwargs: object) -> None:
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise OSError("simulated disk full")
+        real_mkdir(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "mkdir", fake_mkdir)
+
+
+def test_apply_moves_undoes_completed_moves_when_mkdir_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _make_repo(tmp_path, {f"{S}/a.md": "A\n", f"{S}/b.md": "B\n"})
+    rows = _rows((f"{S}/a.md", f"{S}/sub/a.md"), (f"{S}/b.md", f"{S}/sub/b.md"))
+    _mkdir_fails_second_time(monkeypatch)
+    with pytest.raises(MoveRefusedError, match="simulated disk full") as exc:
+        apply_moves(rows, root, False, DEEPER)
+    assert "undid 1 completed moves" in str(exc.value)
+    assert _git(root, "status", "--porcelain") == ""
+    assert not (root / S / "sub").exists()
+
+
+def test_cli_move_mkdir_failure_exits_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _make_repo(tmp_path, {f"{S}/a.md": "A\n", f"{S}/b.md": "B\n"})
+    moves = _write_moves(root, [(f"{S}/a.md", f"{S}/sub/a.md"), (f"{S}/b.md", f"{S}/sub/b.md")])
+    _mkdir_fails_second_time(monkeypatch)
+    argv = ["move", "--moves", str(moves), "--root", str(root), "--allow-deeper", "audits/s"]
+    assert main(argv) == 1
+    assert capsys.readouterr().err.startswith("FAIL ")
+    assert _git(root, "status", "--porcelain") == "?? moves.csv\n"
+
+
+def test_undo_removes_created_folders_deepest_first(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _make_repo(tmp_path, {f"{S}/a.md": "A\n", f"{S}/b.md": "B\n"})
+    rows = _rows((f"{S}/a.md", f"{S}/x/y/a.md"), (f"{S}/b.md", f"{S}/sub/b.md"))
+    _failing_second_mv(monkeypatch, f"{S}/sub/b.md")
+    with pytest.raises(MoveRefusedError):
+        apply_moves(rows, root, False, (*DEEPER, "audits/s"))
+    assert not (root / S / "x").exists()
+    assert not (root / S / "sub").exists()
+
+
+def test_load_moves_rejects_short_and_long_rows(tmp_path: Path) -> None:
+    short = tmp_path / "short.csv"
+    short.write_text("old_path,new_path\nresearch/a.md\n")
+    with pytest.raises(ValueError, match=r"short\.csv: row 1 needs old_path and new_path"):
+        load_moves(short)
+    long = tmp_path / "long.csv"
+    long.write_text("old_path,new_path\na,b\nc,d,e\n")
+    with pytest.raises(ValueError, match=r"long\.csv: row 2 needs old_path and new_path"):
+        load_moves(long)
+
+
+def test_cli_short_moves_row_prints_fail_not_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _make_repo(tmp_path, {f"{S}/a.md": "A\n"})
+    short = tmp_path / "short.csv"
+    short.write_text("old_path,new_path\nresearch/a.md\n")
+    assert main(["check", "--moves", str(short), "--root", str(root)]) == 1
+    assert "FAIL" in capsys.readouterr().err

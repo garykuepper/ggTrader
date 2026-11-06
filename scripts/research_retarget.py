@@ -92,7 +92,12 @@ def load_moves(path: Path) -> list[MoveRow]:
         missing = set(MOVE_COLUMNS) - set(reader.fieldnames or [])
         if missing:
             raise ValueError(f"{path}: missing columns {sorted(missing)}")
-        rows = [MoveRow(r["old_path"].strip(), r["new_path"].strip()) for r in reader]
+        rows = []
+        for number, record in enumerate(reader, start=1):
+            # A short row leaves None fields; extra columns land under the None key.
+            if None in record or any(record[c] is None for c in MOVE_COLUMNS):
+                raise ValueError(f"{path}: row {number} needs old_path and new_path")
+            rows.append(MoveRow(record["old_path"].strip(), record["new_path"].strip()))
     for row in rows:
         if not row.old or not row.new:
             raise ValueError(f"{path}: blank path in row {row}")
@@ -198,13 +203,13 @@ def apply_moves(
     for done, (old, new) in enumerate(pairs):
         parent = (root / new).parent
         missing = [p for p in (parent, *parent.parents) if not p.exists() and root in p.parents]
-        parent.mkdir(parents=True, exist_ok=True)
-        created.extend(missing)
         try:
+            created.extend(missing)  # recorded first so a partial mkdir is still cleaned up
+            parent.mkdir(parents=True, exist_ok=True)
             subprocess.run(
                 ["git", "mv", "--", old, new], cwd=root, check=True, capture_output=True, text=True
             )
-        except subprocess.CalledProcessError as exc:
+        except (subprocess.CalledProcessError, OSError) as exc:
             undone, stuck = _undo_moves(pairs[:done], root, created)
             hint = (
                 f"undid {undone} completed moves"
@@ -214,7 +219,8 @@ def apply_moves(
             )
             message = (
                 f"git mv {old} -> {new} failed after {done} of {len(pairs)} moves "
-                f"({(exc.stderr or '').strip()}); {hint}; check `git status` before retrying"
+                f"({str(getattr(exc, 'stderr', None) or exc).strip()}); {hint}; "
+                "check `git status` before retrying"
             )
             raise MoveRefusedError(message) from exc
     return pairs
@@ -238,7 +244,7 @@ def _undo_moves(
             undone += 1
         except subprocess.CalledProcessError:
             stuck.append(f"{new} -> {old}")
-    for folder in created:
+    for folder in sorted(set(created), key=lambda p: len(p.parts), reverse=True):
         try:
             folder.rmdir()
         except OSError:
@@ -747,8 +753,8 @@ def update_manifest(
 
     Raises:
         ValueError: If a move's old path is neither the `proposed_path` of exactly one row
-            nor already the new path (a stale or conflicting row), unless both paths match the
-            first-generation allow-new list; or the header differs.
+            nor already the new path (a stale or conflicting row), unless the destination
+            matches the first-generation allow-new list; or the header differs.
     """
     mapping = {r.old: r.new for r in rows}
     with manifest.open(newline="", encoding="utf-8") as handle:
@@ -766,7 +772,7 @@ def update_manifest(
         if len(hits) > 1:
             errors.append(f"{len(hits)} manifest rows have proposed_path {move.old}")
         elif not hits and not done:
-            if _is_allow_new(move.old) and _is_allow_new(move.new):
+            if _is_allow_new(move.new):
                 # Added after the first-generation manifest, so it never had a row.
                 print(f"NOTE unlisted allow-new move: {move.old} -> {move.new}")
                 unlisted += 1
