@@ -304,3 +304,87 @@ Dated 2026-11-05, visual-reports plan Task 5 (`docs/superpowers/plans/2026-11-05
 ### 9.1 Relative links, base `7e66b5ba` against this tree
 
 Scripts: `SP/linkcheck.py` and `SP/linkdelta.py`, read before use, run with an identity move map because nothing moved. Occurrences: 2,451 at the base, 2,476 on the tree before this section and 2,481 with it. Index-matched delta (final run, with this section): 0 links broken in mutable files, 0 in frozen files, 0 newly resolving. Net dead occurrences, counted per file with directory tokens left out: 264 at the base and 264 now, and the set of dead (file, token) pairs is identical. The 25 added occurrences before this section all resolve: 8 in the summary, 8 in the visual-reports plan, 2 in the index, 2 in the folder `README.md`, 1 in the research `README.md`, 3 in the findings and 1 in the consolidated review (the last two from earlier tasks). This section adds 5 resolving occurrences to this record. It names no dead path, so the dead count does not move.
+
+## 10. Intraday branch translation
+
+Dated 2026-11-05 to 2026-11-06. Branch `translate/intraday-stage0a` (worktree `/home/flynn/.t3/worktrees/ggTrader/translate-intraday-stage0a`), plan `docs/superpowers/plans/2026-11-05-intraday-branch-translation.md`, recipe `docs/superpowers/plans/2026-11-05-research-reorg-branch-recipe.md`. The branch was made from the unmerged intraday research branch (tip `58919c09`) and `main` (`6774b4d3`) was merged into it (merge commit `fc93fa0c`, with `merge.directoryRenames=false`). Nothing is merged or pushed. In plain words: 74 intraday report files were moved from the old `docs` research folder into `research/intraday/`, every reference to them was updated, and the checks below show that nothing that must stay byte-for-byte changed.
+
+Paths used below: `BM` = `docs/superpowers/plans/2026-11-05-intraday-translation-manifest.csv`, `BL` = `docs/superpowers/plans/2026-11-05-intraday-translation-ledger.json`, `BR` = `docs/superpowers/plans/2026-11-05-intraday-translation-rewrite-manifest.json`. `PY` = `/home/flynn/ggTrader/.venv/bin/python` (the worktree has a `.venv` link that is never staged). `UM`, `UL`, `UR` = the union manifest, union ledger and union rewrite manifest (scratch files, built as the plan's Task 3 Step 5 says): `UM` is the first reorganization's 174 rows plus the 74 branch rows, `UL` is both ledgers' `files` lists joined, `UR` is the first reorganization's listed edits plus the 12 listed in `BR` (81 files).
+
+### 10.1 Decisions applied (owner chose the recipe defaults)
+
+| Ruling | What was done |
+|---|---|
+| D1 path-only code edits | Applied (nine path literals in five files, section 10.4) and recorded in `docs/changelog.md`. The recorded r8 validation (`code_sha256` `f0b85690...`) is not reusable because the hashed code changed. |
+| D2 three hash-quoted briefs pinned | `2026-10-25-intraday-feasibility-r8.md`, `2026-10-25-intraday-prospective-observation.md` and `2026-10-25-intraday-opus-verification-manifest.md` moved byte-for-byte and are in no rewrite scope. The tool already carried them as `BRANCH_PINNED_PATHS` (fifteen pinned paths with the first reorganization's twelve). |
+| D3 stale hash annotated | The 2026-10-24 feasibility brief stays as it is on `main`. `_intraday_probe.json` (frozen, moved unchanged) records its hash as `51162768...`; the brief at `research/intraday/spy-momentum-feasibility/2026-10-24-intraday-feasibility.md` hashes to `33c00494...` because the first reorganization rewrote its links. Provenance only: `intraday_probe.py` writes the hash and nothing reads it back. The Stage 0A contract is unchanged (`cbb7354a...`). Recorded here and in the changelog; the brief was not edited. |
+| D4 three new folders | `research/intraday/spy-momentum-prospective-observer` (17 files), `research/intraday/artifacts-2026-10-25-intraday-gap` (2) and `research/intraday/artifacts-2026-10-26-intraday-readiness` (25); the other 30 files went to the existing `research/intraday/spy-momentum-feasibility`. Paths follow the additions CSV's `proposed_path` column exactly. |
+
+### 10.2 The three commits
+
+| Commit | Content |
+|---|---|
+| `eeab3be3` docs: add the intraday translation manifest and ledger | 74-row manifest (kinds: 20 report, 5 brief, 22 result, 27 artifact); `manifest-check` `OK 74 rows`; ledger `OK ledger 74 files, 22 referencing files` (sha256 of all 74 before the move; 52 frozen, 3 of them pinned). |
+| `c62e6c81` refactor: move intraday research into research/ (move only) | `move --dry-run`: `DRY-RUN 74 moves planned, 0 basename changes, 0 collisions`; `move`: `MOVED 74 files, 0 basename changes`. `git show -M --name-status --format= HEAD`: 74 lines, all `R100`, nothing else. |
+| `fe3763b7` refactor: point intraday references at research/ | the reference rewrite and the hand edits (sections 10.3 and 10.4). |
+| the records commit (this one) | `research/MOVED.csv`, `research/README.md`, `research/RESEARCH_INDEX.md`, `docs/changelog.md`, this section, the recipe corrections. |
+
+### 10.3 Reference rewrite, by scope (each run with `--dry-run --report` first; every unresolved item read)
+
+| Scope | Command | Files changed | Replacements | Unresolved |
+|---|---|---|---|---|
+| moved-markdown | `rewrite --manifest $BM --also-map docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv --scope moved-markdown` | 12 (of 22 mutable moved reports; 52 frozen files skipped) | 56 | 3, all `docs/research/_intraday_momentum_results.json` (a file never written); fixed by hand |
+| fixed-markdown | `rewrite --manifest $UM --scope fixed-markdown --exclude deploy/intraday_observer` | 7: `README.md` 2, `docs/architecture.md` 3, `docs/changelog.md` 11, `docs/cli_reference.md` 8, `docs/next_steps.md` 2, two intraday plans 5 and 4 | 35 | 22 (below) |
+| code | `rewrite --manifest $UM --scope code` | 5 | 8 | 13 (below) |
+
+A first dry run of the last two scopes with the branch-only manifest gave 6 code replacements and extra "not in manifest" items; the 2026-10-24 brief and the Stage 0A contract live in the first reorganization's manifest, so those two scopes were run with the union manifest `UM`, as the recipe says. The moved-markdown run used the branch manifest plus `--also-map` of the first reorganization's manifest.
+
+Fixed-markdown unresolved (22), all read: 3 are the `README.md` and changelog sentences that describe the first move on purpose; 3 are the "Create" placeholders in `2026-09-11-paper-trading-remediation.md` and 3 more are other older plans' globs (`2026-11-02-research-followups-master.md`, `2026-11-04-root-cause-investigation.md` twice); 2 are files an older plan only planned to create (`2026-11-02-research-reliability-next-steps.md`); 8 are the meta text of this translation's own plan and the readability plan; 1 is `docs/cli_reference.md:116`, 2 are the plans' bare prose paths (all three fixed by hand, section 10.4). None is an intraday path left behind.
+
+Code unresolved (13): `scripts/intraday_momentum_research.py:20` (hand edit); `tests/lab/test_intraday_momentum_data.py:17` (`parents[2]` arithmetic, not a research path); `tests/scripts/test_driver_default_paths.py` four lines and `tests/scripts/test_research_retarget.py` seven lines, which are the first reorganization's tests and describe the old location on purpose.
+
+### 10.4 Hand edits (path only)
+
+| File | Before | After |
+|---|---|---|
+| `scripts/intraday_momentum_research.py` | `DEFAULT_VALIDATION = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility/_intraday_momentum_validation.json"` (tool output, over 100 columns) and `DEFAULT_RESULT = PROJECT_ROOT / "docs/research/_intraday_momentum_results.json"` | `STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"`, `DEFAULT_VALIDATION = STUDY_DIR / "_intraday_momentum_validation.json"`, `DEFAULT_RESULT = STUDY_DIR / "_intraday_momentum_results.json"` |
+| `src/ggTrader/lab/intraday_probe.py` | `DEFAULT_OUTPUT` and the two `DOCUMENTS` entries as long `PROJECT_ROOT / "research/..."` literals (over 100 columns) | `STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"`, `DEFAULT_OUTPUT = STUDY_DIR / "_intraday_probe.json"`, `STUDY_DIR / "2026-10-24-intraday-feasibility.md"`, `STUDY_DIR / "2026-10-25-intraday-stage0a-contract.md"` |
+| `src/ggTrader/lab/intraday_momentum.py` | `PROTOCOL_PATH` and `VENDOR_REVIEW_PATH` as long literals | `STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"`, `PROTOCOL_PATH = STUDY_DIR / "2026-10-25-intraday-feasibility-r8.md"`, `VENDOR_REVIEW_PATH = STUDY_DIR / "_intraday_r8_vendor_adjustment_review_2026-10-25.json"` |
+| `tests/lab/test_intraday_observer.py` | one 102-column line `/ "research/intraday/artifacts-2026-10-25-intraday-gap/spdr-etf-historical-distributions.xlsx"` | the same path split in two string parts (`/ "research/intraday/artifacts-2026-10-25-intraday-gap"` then `/ "spdr-etf-historical-distributions.xlsx"`) |
+| `scripts/intraday_coverage_probe.py` | `docs/research/_intraday_probe.json` | `research/intraday/spy-momentum-feasibility/_intraday_probe.json` (97 columns, tool output only) |
+| `docs/cli_reference.md:116` | `docs/research/_intraday_momentum_results.json` | `research/intraday/spy-momentum-feasibility/_intraday_momentum_results.json` |
+| `docs/superpowers/plans/2026-10-25-intraday-r8-implementation.md:11` | `**Spec:** docs/research/briefs/2026-10-25-intraday-feasibility-r8.md` | `**Spec:** research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md` |
+| `docs/superpowers/plans/2026-10-25-intraday-stage0a.md:3` | `Spec: docs/research/briefs/2026-10-25-intraday-stage0a-contract.md` | `Spec: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md` |
+| three moved reports (`...overall-plan-argon-review.md`, `...r8-implementation.md`, `...r8-validation-unresolved.md`) | `docs/research/_intraday_momentum_results.json` | `research/intraday/spy-momentum-feasibility/_intraday_momentum_results.json` |
+| `docs/changelog.md` | (the recipe's "one directory citation") | none was left: the merged changelog's only remaining old-folder mentions are the first reorganization's own entry, which describes the move on purpose. A new entry for this translation was added at the top. |
+
+`deploy/intraday_observer/OPERATOR_RUNBOOK.md` (old paths at lines 11 and 156) was excluded and not edited: the live observer runs the pinned release `280d4a0`; update the runbook when a new release is cut. `docs/next_steps.md`'s intraday item had two links rewritten (paths only); its dates and wording are stale and need an owner-facing wording pass, which this translation did not do.
+
+`_intraday_momentum_results.json` has never been written (the r8 closure report says scoring did not run). The path now names the study folder; the reports that cite it as "never created" still say so, and `scripts/check_lens_report.py --paths-only` flags it in three moved reports, exactly as it flagged the old path on the original branch.
+
+### 10.5 Gates
+
+All run in the worktree after the records were written, with `PYTHONPATH=<worktree>/src` and `GGT_TEST_PYTHON=/home/flynn/ggTrader/.venv/bin/python` (`ggTrader.__file__` was checked to point inside the worktree, not at the main checkout the editable install names).
+
+| Gate | Command | Result |
+|---|---|---|
+| nothing left in the old folder | `git ls-files docs/research` and `ls docs/research` | no tracked file; the folder does not exist |
+| moved, branch mode | `$PY scripts/research_reorg.py verify --stage moved --manifest $BM --ledger $BL --branch-mode` (run after the move commit, before the rewrite) | exit 0: `OK stage=moved 74 files byte-identical to the ledger (branch mode)` |
+| rewritten and final, branch mode | same with `--stage rewritten` and `--stage final`, plus `--rewrite-manifest $BR` (run after the rewrite commit, before the records) | exit 0: `OK stage=rewritten 74 files checked, 12 listed edits (branch mode)`; `OK stage=final 74 manifest files, 12 listed edits, 259 tracked files under research/ (branch mode)` |
+| union gate, no branch mode | `$PY scripts/research_reorg.py verify --stage final --manifest $UM --ledger $UL --rewrite-manifest $UR` with the seven `--require-new` paths (`README.md`, `MOVED.csv`, the root-cause `README.md`, `reviews/2026-11-05-direction-reviews-consolidated.md`, `reference-sheet.md`, `findings/2026-11-05-findings-plain-english.md`, `2026-11-05-executive-summary.md`) | exit 0: `OK stage=final 248 manifest files, 81 listed edits, 259 tracked files under research/`. No `--allow-new` was needed: the records step adds no new file under `research/` (it edits `README.md`, `MOVED.csv` and `RESEARCH_INDEX.md`). The pinned count is derived as 15 (12 and 3). `--stage rewritten` on the union fails by design after the records step (the root-cause reading files are "unexpected" to it), as sections 7 and 9 already say; the branch-mode `rewritten` run above was taken before the records. |
+| frozen and pinned bytes | independent Python: sha256 of each of the 74 files on disk against the ledger `BL` | 52 frozen and 3 pinned all match; 62 of 74 files match, the other 12 are exactly the 12 listed Markdown edits |
+| r8 protocol hash | `PYTHONPATH=<worktree>/src $PY -c "from ggTrader.lab import intraday_momentum as m; print(m.protocol_sha256())"` | `be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85` (the code constant is unchanged and the moved r8 brief hashes to it) |
+| focused intraday tests | `scripts/run_tests.sh tests/lab/test_intraday_probe.py tests/lab/test_intraday_momentum.py tests/lab/test_intraday_momentum_data.py tests/lab/test_intraday_observer.py -q` | 470 passed (131.9 s). Before the path edit the merge left 464 passed and 6 failed, all in `test_intraday_probe.py` (the old brief paths). |
+| scripts tests | `scripts/run_tests.sh tests/scripts -q` | 299 passed (9.2 s), run again after the last documentation edit (section 10.6) |
+| full suite, this branch | `scripts/run_tests.sh -q` | 2250 passed, 30 deselected, 1 warning, 449 s, exit 0 |
+| full suite, `main` baseline | `scripts/run_tests.sh -q` in the main checkout (`6774b4d3`) | 1770 passed, 30 deselected, 1 warning, 310 s, exit 0 |
+| tests failing only here | compare the two runs | none: zero failures in either run, so no environment-only failure (the four `.venv`/`ruff`/`run_capped` tests pass with the `.venv` link). The branch runs 480 more tests than `main` because it carries the intraday tests and the branch-mode tool tests. |
+| ruff | `ruff check .` and `ruff format --check .` | `All checks passed!`; 301 files already formatted |
+| checker | `scripts/check_lens_report.py --paths-only` on the 22 mutable moved reports | 19 exit 0; 3 exit 1, all with the same single complaint, `cited path does not exist: research/intraday/spy-momentum-feasibility/_intraday_momentum_results.json` (`...overall-plan-argon-review.md`, `...r8-implementation.md`, `...r8-validation-unresolved.md`). Pre-existing, not move-caused: on the original branch the same three files fail on `docs/research/_intraday_momentum_results.json`, a file that was never written. `research/README.md` and `research/RESEARCH_INDEX.md` exit 0; `docs/changelog.md` exits 1 with the same 48 complaint lines before and after the new entry (none mention intraday; they are older entries' unresolvable citations). |
+| original branch untouched | `git rev-parse refs/heads/research/intraday-stage0a backup/intraday-stage0a-pre-translate`; `git -C <original worktree> status --short` | both `58919c098bb5680a8ec2df4b2490a76ebfe6a4b6`; the original worktree shows only its untracked `.venv` and `data/external/intraday_momentum_r8/` |
+| live observer untouched | `ls -la --time-style=full-iso ~/.local/share/ggtrader` and the user unit files; `systemctl --user list-timers --all` | release tree and the eight unit files carry their 2026-10-26 timestamps; the four `ggtrader-intraday-observer-*` timers (recover, inputs, decide, archive) are listed and were not touched; `git diff 58919c09 HEAD -- deploy` is empty (nothing under `deploy/` differs from the original branch tip) |
+| working tree | `git status --short` | only the untracked `.venv` link |
+
+### 10.6 Scripts tests after the final edit
+
+`scripts/run_tests.sh tests/scripts -q`: 299 passed in 9.2 s, run after the recipe corrections and this record were written.

@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-11-06
+
+- **Intraday research moved into `research/intraday/` on the translation branch (no strategy, live-trader, verdict or number change).**
+  - The unmerged intraday research branch (named intraday-stage0a) was brought onto the new `research/` layout
+    on a separate branch, `translate/intraday-stage0a`. The original branch and the live observer
+    are unchanged. Nothing is merged or pushed.
+  - 74 files moved from the old `docs` research folder as git renames at 100% (bytes unchanged): 30 into
+    `research/intraday/spy-momentum-feasibility/`, 17 into the new
+    `research/intraday/spy-momentum-prospective-observer/`, and 27 into two new supporting
+    packages beside the study folders, `artifacts-2026-10-25-intraday-gap/` (2) and
+    `artifacts-2026-10-26-intraday-readiness/` (25). The index and `research/MOVED.csv`
+    (now 248 rows) list them. 52 of the 74 are frozen (JSON, workbook, binary and text
+    evidence, and the three pinned briefs) and are byte-identical to before the move.
+  - Three briefs that other files quote by hash moved byte-for-byte and were kept out of every
+    rewrite: the r8 protocol (`2026-10-25-intraday-feasibility-r8.md`), the prospective
+    observation protocol (`2026-10-25-intraday-prospective-observation.md`) and the Opus
+    verification manifest (`2026-10-25-intraday-opus-verification-manifest.md`). Their own
+    relative links therefore no longer resolve. `intraday_momentum.protocol_sha256()` still
+    returns `be395d95...`.
+  - References were rewritten in 12 moved reports (56 replacements), 7 other Markdown files
+    (35) and 5 code and test files (8). The five code and test files changed by path only:
+    `src/ggTrader/lab/intraday_probe.py`, `src/ggTrader/lab/intraday_momentum.py`,
+    `scripts/intraday_momentum_research.py`, `scripts/intraday_coverage_probe.py` and
+    `tests/lab/test_intraday_observer.py`. Two modules and the script gained a `STUDY_DIR`
+    constant so a long path stays under 100 columns. The result path in
+    `scripts/intraday_momentum_research.py` (`_intraday_momentum_results.json`, a file that has
+    never been written) now points at the study folder as well.
+  - **The recorded r8 validation run is not reusable.** `intraday_momentum.py`,
+    `intraday_probe.py` and `scripts/intraday_momentum_research.py` are part of the code the r8
+    pipeline hashes (`code_sha256`, recorded as `f0b85690...` in the validation results), and
+    editing a path changes that hash. The recorded validation stays as evidence of what
+    happened (UNRESOLVED (data)), and scoring remains unapproved. The live observer runs the
+    pinned release `280d4a0` and is unaffected; `deploy/intraday_observer/` was not edited, so
+    its operator runbook still names the old paths until a new release is cut.
+  - `_intraday_probe.json` records the hash of the 2026-10-24 feasibility brief as
+    `51162768...`. That brief now sits in the first reorganization's layout with its links
+    rewritten, so its bytes hash to `33c00494...`. The hash is provenance only (nothing reads
+    it back) and the brief was not edited.
+  - Gate results are in section 10 of
+    `docs/superpowers/plans/2026-11-05-research-reorg-verification.md`.
+    [Index](../research/RESEARCH_INDEX.md).
+
 ## 2026-11-05
 
 - **Owner accepted the root-cause synthesis (decision 1 of 13; no strategy, live-code, verdict or number change).**

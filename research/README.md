@@ -23,6 +23,8 @@ Each folder holds one subfolder per study, except `prompts/`, which holds the tw
 | [crypto/](crypto/) | Is there a crypto-specific mechanism or venue result? |
 | [prompts/](prompts/) | Which reusable prompts commission new research? |
 
+`intraday/` holds four folders: [spy-momentum-feasibility/](intraday/spy-momentum-feasibility/) (the feasibility study, the r8 protocol and its data check), [spy-momentum-prospective-observer/](intraday/spy-momentum-prospective-observer/) (the forward practice journal), and two supporting packages, [artifacts-2026-10-25-intraday-gap/](intraday/artifacts-2026-10-25-intraday-gap/) and [artifacts-2026-10-26-intraday-readiness/](intraday/artifacts-2026-10-26-intraday-readiness/). Their questions and status are in [RESEARCH_INDEX.md](RESEARCH_INDEX.md).
+
 ## Where a new document goes
 
 Take the first line that matches. A document that touches two categories gets links and index tags, never a second copy.
@@ -47,4 +49,4 @@ The `docs/` folder keeps architecture ([architecture.md](../docs/architecture.md
 
 ## Finding an old path
 
-Reports written before 2026-11-05 cite paths under the old `docs` research folder. [MOVED.csv](MOVED.csv) lists the old path and the new path of every moved file (174 rows), and marks the three briefs that gained a `-brief` ending. It is a lookup table only: it does not make a missing path exist.
+Reports written before 2026-11-05 cite paths under the old `docs` research folder. [MOVED.csv](MOVED.csv) lists the old path and the new path of every moved file (248 rows: the 174 moved by the first reorganization plus the 74 intraday files moved when the intraday branch was brought onto this layout), and marks the three briefs that gained a `-brief` ending. It is a lookup table only: it does not make a missing path exist.
