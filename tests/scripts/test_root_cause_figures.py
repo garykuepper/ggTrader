@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from scripts import root_cause_figures as rcf
-from scripts.root_cause_figures import FIGURES, OPTIONS, REPO_ROOT, main, render
+from scripts.root_cause_figures import FIGURES, OPTIONS, REPO_ROOT, Point, main, render
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 EXPECTED_NAMES = {"gap-vs-measured", "verdict-trust", "paper-shortfall", "options-at-a-glance"}
@@ -22,35 +23,92 @@ def _source_line(source: str) -> str:
     return lines[int(number) - 1]
 
 
-def _forms(value: float) -> list[str]:
-    """Text forms of a value once signs and a leading plus are normalised away."""
-    magnitude = abs(value)
-    text = f"{magnitude:.2f}"
-    forms = [text]
-    if text.endswith("0"):  # 3.50 may be written 3.5
-        forms.append(text[:-1])
-    if magnitude == int(magnitude):
-        forms.append(str(int(magnitude)))
-    return forms
+NUMBER = re.compile(r"(?<![\d.])(\d+(?:\.\d+)?)(?!\d|\.\d)")
+YEAR_SPAN = re.compile(r"\d{4}-\d{4}")
 
 
 def _appears(value: float, line: str) -> bool:
-    for form in _forms(value):
-        if re.search(rf"(?<![\d.]){re.escape(form)}(?![\d]|\.\d)", line):
+    """True when `line` states `value` with its sign (a zero matches either sign)."""
+    for match in NUMBER.finditer(line):
+        if float(match.group(1)) != abs(value):
+            continue
+        negative = line[: match.start()].endswith(("-", "\u2212"))
+        if value == 0 or negative == (value < 0):
             return True
     return False
+
+
+def _point_problems(point: Point) -> list[str]:
+    """Why a point is not traceable to its cited line, or an empty list."""
+    line = _source_line(point.source)
+    problems = []
+    if not _appears(point.value, line):
+        problems.append(f"value {point.value} not stated with its sign at {point.source}")
+    problems.extend(
+        f"window {span} in the label is not on {point.source}"
+        for span in YEAR_SPAN.findall(point.label)
+        if span not in line
+    )
+    return problems
 
 
 def test_every_point_value_appears_at_its_source_line() -> None:
     checked = 0
     for spec in FIGURES.values():
         for point in spec.points:
-            line = _source_line(point.source)
-            assert _appears(point.value, line), (
-                f"{spec.name}: {point.label} = {point.value} not found at {point.source}: {line!r}"
-            )
+            problems = _point_problems(point)
+            assert not problems, f"{spec.name}: {point.label}: {problems} {_line_of(point)!r}"
             checked += 1
-    assert checked >= 15
+    assert checked == 23
+
+
+def _line_of(point: Point) -> str:
+    return _source_line(point.source)
+
+
+def test_every_year_span_in_a_label_appears_on_its_source_line() -> None:
+    spans = 0
+    for spec in FIGURES.values():
+        for point in spec.points:
+            for span in YEAR_SPAN.findall(point.label):
+                assert span in _source_line(point.source), (point.label, point.source)
+                spans += 1
+    assert spans >= 6
+
+
+def _point(label: str) -> Point:
+    return next(p for p in FIGURES["gap-vs-measured"].points if p.label == label)
+
+
+def _mutated(point: Point, **changes: object) -> Point:
+    return replace(point, **changes)
+
+
+def test_mutation_sign_flip_on_interval_low_is_caught() -> None:
+    point = _point("momentum interval low")
+    assert not _point_problems(point)
+    assert _point_problems(_mutated(point, value=7.07))
+
+
+def test_mutation_sign_flip_on_mnst_is_caught() -> None:
+    point = next(p for p in FIGURES["paper-shortfall"].points if p.value == -0.85)
+    assert not _point_problems(point)
+    assert _point_problems(_mutated(point, value=0.85))
+
+
+def test_mutation_other_number_on_the_same_line_is_caught_by_the_window() -> None:
+    # CEILING:38 states 2.34 and 0.77 together, but its 0.77 window (1927-2026) is on the next line.
+    point = _point("gap 2x needs, 1927-2026")
+    assert not _point_problems(point)
+    on_shared_line = _mutated(point, value=2.34, source=f"{rcf.CEILING}:38")
+    assert any("1927-2026" in problem for problem in _point_problems(on_shared_line))
+    wrong_value = _mutated(point, value=2.34)
+    assert _point_problems(wrong_value)
+
+
+def test_mutation_wrong_window_is_caught() -> None:
+    point = _point("gap 2x needs, 2006-2026")
+    assert _point_problems(_mutated(point, label="gap 2x needs, 1994-2026"))
 
 
 def test_figure_specs_have_alt_caption_and_unique_names() -> None:
@@ -95,6 +153,7 @@ def test_gap_figure_has_required_values() -> None:
     assert 4.15 in values.values() and 4.37 in values.values()
     assert -7.07 in values.values() and 16.05 in values.values()
     assert -0.62 in values.values() and 0.83 in values.values()
+    assert {9.54, -84.8, -55.3, 1.64} <= set(values.values())
 
 
 def test_render_writes_png_files(tmp_path: Path) -> None:
