@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-11-05
+
+- **Research reorganization (no strategy, live-code, verdict or number change).**
+  - 174 files moved from `docs/research/` to a top-level `research/` directory as git
+    renames (history preserved), grouped into 8 category folders (`allocation`, `audits`,
+    `crypto`, `intraday`, `paper-system`, `programme`, `prompts`, `stock-signals`) with one
+    folder per study. `docs/research/` no longer exists. Three files that lived in
+    `briefs/` gained a `-brief` suffix on the way (cross-asset sleeve, static fractional
+    leverage, century leverage).
+  - New `research/README.md` (where reports live, placement test), `research/MOVED.csv`
+    (old path, new path, renamed flag for all 174 files) and study rows added to
+    `research/RESEARCH_INDEX.md`. A consolidated direction review of the two 2026-11-05
+    reviews sits in `research/audits/root-cause-2026-11-04/`; the two originals carry a
+    dated pointer line and are otherwise unchanged apart from path references.
+  - Path references were rewritten in 68 of the moved Markdown files, in `src/`,
+    `scripts/` and `tests/` (path constants, comments and strings; one string re-wrapped),
+    and in `docs/`, `README.md`, `AGENTS.md` and the project skills. Byte-frozen JSON and
+    Markdown evidence was moved without edits, so it still names the old paths it recorded.
+  - New tool `scripts/research_reorg.py` (manifest check, ledger, move, rewrite, verify).
+    `.dockerignore` now excludes `research/`, so the image content is unchanged.
+  - Checks and the open owner decisions (recorded-hash drift, rewrite-manifest
+    deviation) are in `docs/superpowers/plans/2026-11-05-research-reorg-verification.md`.
+  [Index](../research/RESEARCH_INDEX.md).
+
 ## 2026-11-02
 
 - **Research process follow-ups (no strategy, live-code or verdict change).**

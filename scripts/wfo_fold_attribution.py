@@ -101,8 +101,9 @@ def artifact_regime(rel_path: str) -> Dict[str, Any]:
     file entered Git, not which gate generated the run, so it is reported as
     ``committed_after_fix`` (see ``regime_from_ancestry``).
     """
-    # --diff-filter=r drops pure-rename commits (the 2026-11-05 move into research/), so
-    # moving a file does not count as a new commit and the regime label stays as it was.
+    # --diff-filter=r drops rename commits (the 2026-11-05 move into research/), so moving a
+    # file does not count as a new commit. It also drops a rename-with-edits commit; frozen
+    # artifacts moved as pure renames, so none is lost here.
     log = _git("log", "--format=%H", "--follow", "--diff-filter=r", "--", rel_path)
     commits = log.splitlines() if log else []
     if not commits:

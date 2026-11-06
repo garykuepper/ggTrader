@@ -19,10 +19,10 @@ Paths used below: `M` = `docs/superpowers/plans/2026-11-05-research-reorg-manife
 | Gate | Command | Result |
 |---|---|---|
 | verify final | `.venv/bin/python scripts/research_reorg.py verify --stage final --manifest $M --ledger $L --rewrite-manifest $R` | exit 0: `OK stage=final 174 manifest files, 68 listed edits, 174 tracked files under research/` |
-| verify rewritten | same with `--stage rewritten` | exit 0: `OK stage=rewritten 174 files checked, 68 listed edits` |
-| verify moved | same with `--stage moved` (no rewrite manifest) | exit 1 by design after Task 9: exactly 68 `sha256 differs from ledger` lines, one per rewritten Markdown file, followed by one `NOTE` line (the exit code is unchanged). `moved` is only valid before the rewrite. |
+| verify rewritten | same with `--stage rewritten` | exit 0 at `70d37120`: `OK stage=rewritten 174 files checked, 68 listed edits`. **Exit 1 by design after Tasks 11/12** (5 problems: it does not accept the allow-list of new files; section 7) |
+| verify moved | same with `--stage moved` (no rewrite manifest) | exit 1 by design after Task 9: 68 `sha256 differs from ledger` lines, one per rewritten Markdown file, followed by one `NOTE` line (the exit code is unchanged). After Tasks 11/12 it is **73 problems** (the 68, plus 1 count problem and 4 unexpected new files; section 7). `moved` is only valid before the rewrite. |
 | frozen digests | independent: `git show HEAD:<path>` piped to sha256 per ledger entry | 78/78 frozen match, 12/12 pinned match; 106/174 of all files match, the other 68 are exactly the 68 listed edits (174 - 106) |
-| survivors | `git grep -I -n "docs/research"` (tracked files) | 2,670 hits in 58 files before this record was written (2,679 in 59 with its first version), 0 uncategorized; shifts when this record is re-committed (section 2) |
+| survivors | `git grep -I -n "docs/research"` (tracked files) | 2,670 hits in 58 files before this record was written (2,679 in 59 with its first version), 0 uncategorized; shifts when this record is re-committed (section 2). Task 14 re-run at `138b18ea`: 2,952 hits in 62 files (section 7) |
 | guard snapshot | `scripts/guard_snapshot.sh <scratch>` vs baseline | only the `main:` line differs |
 | Docker | inspection | `research/` and `*.md` excluded, `!pyproject.toml` kept; the 174 tracked files under `research/` stay out of the image context |
 | full suite | `scripts/run_tests.sh -q` (at `70d37120`) | 1627 passed, 30 deselected, 1 warning, 294 s, no exit 137 |
@@ -141,8 +141,70 @@ Totals: 5 placeholder files (the placeholder is this reorganization's own forwar
 - The lens2 table keeps about 155 old-path mentions (Task 9's count of unresolved prose mentions; a current count is 275 mentions in 184 table lines, 276 in 185 lines file-wide) as a mirror of the frozen `_lens2_*.json`, which cannot change, so the table is deliberately left as written.
 - Argon's invented paths are retained: that review is kept as written with its unverified-claims banner.
 - Recorded gate commands, ledger entries and `briefs/` directory citations stay as written (ruling R14); the dissolved folder has no successor path.
-- `verify --stage moved` is only valid right after the move step; after the rewrite it correctly fails with the 68 listed Markdown differences.
+- `verify --stage moved` is only valid right after the move step; after the rewrite it correctly fails with the 68 listed Markdown differences (73 problems once the four Task 11/12 files exist, section 7).
 - The allow-list matches by pattern, so an unexpected file that happens to match an allowed pattern would pass; the defaults are exact paths.
 - The `ruff.toml` exclusion for frozen `.py` artifacts under `research/` was left unchanged (ruling R8d, out of spec scope); a repo-wide `ruff format .` could rewrite them. Optional owner follow-up. Today `ruff format --check .` passes (285 files already formatted).
 - Survivor counts in section 2 shift whenever this document, the tool tests or any other file with old-path text is committed; the figures are for the stated commits.
 - Results reflect commit `70d37120` (gate, tests and ruff also re-run after fix round 1); Task 14 repeats `verify --stage final` with the `--require-new` flags above once Tasks 11 and 12 have added their files, plus the survivors grep (`git grep`), the checker table and the guard diff.
+
+## 7. Task 14 re-run (HEAD 138b18ea)
+
+Re-run on the tree at `138b18ea` (Tasks 1 to 13 applied), after the whole-branch review. Every figure below was recomputed on that tree, not copied from sections 1 to 6. `M`, `L`, `R` are as defined above.
+
+### 7.1 Gate results
+
+| Gate | Command | Result |
+|---|---|---|
+| verify final | `verify --stage final --manifest $M --ledger $L --rewrite-manifest $R --require-new README.md --require-new MOVED.csv --require-new audits/root-cause-2026-11-04/README.md --require-new audits/root-cause-2026-11-04/2026-11-05-direction-reviews-consolidated.md` | exit 0: `OK stage=final 174 manifest files, 68 listed edits, 178 tracked files under research/` (174 + the 4 allow-listed new files) |
+| verify rewritten | same without `--require-new`, `--stage rewritten` | exit 1, 5 problems: `178 files under research/ (excluding 0 allowed new) but 174 manifest rows` and 4 `unexpected file under research/` (`MOVED.csv`, `README.md`, the consolidated review, the root-cause `README.md`). By design: this stage has no allow-list. It was valid only until Tasks 11/12 added files; the summary-table row above is corrected. |
+| verify moved | same with `--stage moved` (no rewrite manifest) | exit 1, 73 problems: 68 `sha256 differs from ledger` + the same 1 count problem + the same 4 unexpected files; the `NOTE` line names `--stage rewritten` or `final`. The earlier table said "exactly 68"; that held only before Tasks 11/12. |
+| checker | `scripts/check_lens_report.py --paths-only` on each of the 105 tracked `research/**/*.md` | 12 fail, the same 12 files as the table in section 5. Section 5 covered 102 files; the 3 added since (`research/README.md`, the root-cause `README.md` and the consolidated review) all pass. `README.md` at the repo root passes; `AGENTS.md` fails on one citation, the placeholder `research/<category>/<study>/` (forward-looking template text in the "Where docs live" rule; the same class as the five placeholder files in section 5). |
+| full suite | `scripts/run_tests.sh -q` | 1633 passed, 30 deselected, 1 warning, 290 s, exit 0 (section 1 recorded 1627 at `70d37120`) |
+| scripts tests | `scripts/run_tests.sh tests/scripts -q` | 152 passed (151 after fix round 1) |
+| ruff | `.venv/bin/ruff check .` and `.venv/bin/ruff format --check .` | all checks passed; 285 files already formatted |
+
+### 7.2 Survivors of `docs/research`
+
+`git grep -I -n "docs/research"` at `138b18ea`, before this section was written: **2,952 hits in 62 files**, no live survivor (none in `README.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `src/`, any driver under `scripts/` other than the tool, or any `docs/` file outside `docs/superpowers/`). It is the section 2 figure of 2,670 hits in 58 files plus:
+
+| Added | Hits | Files | Category |
+|---|---:|---:|---|
+| `research/MOVED.csv` (old path column, one row per moved file) | 174 | 1 | new category, navigation resolver: by design, it exists to map old paths to new ones |
+| `docs/superpowers/plans/2026-11-05-research-reorg-branch-additions.csv` | 82 | 1 | spec/plan text (branch translation data) |
+| `docs/superpowers/plans/2026-11-05-research-reorg-branch-recipe.md` | 16 | 1 | spec/plan text (branch translation recipe) |
+| this document | 10 | 1 | spec/plan text (counted again whenever this section is edited; it now also contains this section's own mentions) |
+| **Total added** | **282** | **4** | 2,670 + 282 = 2,952; 58 + 4 = 62 |
+
+Only `MOVED.csv` is a new category; the others fall in the existing spec/plan category. The Task 11/12 files that name the old path in prose (`research/README.md`, the investigation README, the consolidated review, `RESEARCH_INDEX.md`) contribute no `docs/research` hits.
+
+### 7.3 Relative links that stopped working in frozen files
+
+A link check over every byte-frozen `.md` file (each relative link resolved against the file's old directory at `42990c74` and its new directory at `138b18ea`; directory links count as live if any file sits under them) found **19 relative links in 4 frozen event-timing Markdown files that resolved before the move and are dead now**. By design (spec decision 9.1: frozen bytes are not edited, even to keep a link alive):
+
+| File (frozen, under `research/audits/event-timing/`) | Dead links |
+|---|---:|
+| `event-timing-audit-implementation.md` | 9 |
+| `2026-10-21-event-timing-audit.md` | 5 |
+| `2026-10-22-event-evidence-resolution-workbook.md` | 4 |
+| `2026-10-22-event-timing-source-conflict-proposal.md` | 1 |
+
+### 7.4 Other consequences of the move that are left as written
+
+- **Line numbers in the two 2026-11-05 reviews shifted by 2.** The pointer line (`> Reading copy (2026-11-05): ...`) plus one blank line were added at the top of `2026-11-05-argon-synthesis-review.md` and `2026-11-05-senior-quant-direction-review.md`. The Argon verification (`2026-11-05-argon-review-verification.md`) quotes Argon line numbers in the frame of the Argon file before its banner, so those numbers were already 5 lines low (for example the six `lens6-live-vs-backtest-parity` citations are at lines 49, 50, 51, 70, 72, 107 in the verification and at 54, 55, 56, 75, 77, 112 in the file at `42990c74`). Today they sit at 56, 57, 58, 77, 79, 114, so the **total offset is now 7 (5 banner + 2 pointer)**, not 9. The verification file was not renumbered.
+- **A historical statement now reads false.** `argon-review-verification.md` line 29 says "(there is no top-level research/ directory)" about Argon's `research/a06_production_replica.py`. At the time it was true; there is now a top-level `research/`. The file is left as is (the real file is `scripts/production_replica_audit.py`, as the same line says).
+- **`2026-11-04-investigation-inventory.md` must not be re-rendered.** Line 5 says the page is rendered from `_investigation_inventory.json` by a script ("edit the JSON, not this table"). The JSON is frozen and still holds the old `docs/research` paths, so re-rendering would write the old paths back into the page. Treat the page as hand-maintained from now on.
+- **`event_timing_audit.py` changed its own code hash.** The path edits change the sha256 of `src/ggTrader/lab/event_timing_audit.py` (old and new values in the register, 7.5), so resume checkpoints made before the move will not resume. Accepted per spec decision 9.7 and ruling R10.
+- **The tool emits no rewrite manifest.** Spec section 14.1 says the `rewrite` stage should write the manifest of edited files; `scripts/research_reorg.py` does not. The manifest `R` was hand-built from the git list of changed files and then checked by the gate (`verify_rewritten`). This is a deviation from the spec; the owner may accept it (ruling R14 parked it).
+
+### 7.5 Hash drift register
+
+A reorganization that edits file contents changes their sha256, and some frozen evidence records those hashes. Scope of the sweep (done by the whole-branch review, ruling R18, not re-run in full here): every full 64-hex token recorded in tracked files (1,099 distinct tokens) checked against the file bytes before and after, over the tracked files at `HEAD` and at `main`, branches `research/intraday-stage0a` and `research/momentum-retest`, two `t3/*` branches, and the untracked `data/external/event_timing_audit/`; plus 8, 10, 12 and 16-character prefixes and git blob SHA-1s. Mentions in the ledger and the branch recipe were excluded (they record the hashes on purpose). Three file:line facts in the first three rows were re-checked for this record against `git show 42990c74:<path> | sha256sum` and `sha256sum` of the file at `HEAD`, and by reading the cited lines.
+
+| Referent | Old -> new sha256 | Where recorded | Runtime-checked? | Handling options |
+|---|---|---|---|---|
+| `docs/superpowers/plans/2026-10-22-event-evidence-resolution.md` | `9cc5c1a4630e01d703a7241fdfd64d6f726935982212d297a49e0e5d37aa841e` -> `ef8ff7af2473a7f29725cba7262b9f8a432ea2c2bcbc45c0942cafaa8c3d7d5d` | `research/audits/event-timing/_event_evidence_resolution_workbook.json:24` (input sources) and `:8636` (`spec_hashes`); pinned, frozen file | No. Nothing in `src/`, `scripts/`, `tests/` or `.claude/` reads `spec_hashes` (`git grep` finds the key only in that JSON) | **Owner decision (R18).** Restore the pre-reorg bytes (`git show 42990c74:<path>`); the plan is closed and historical, and its 8 edited lines are navigation only, so its old-path mentions would then become spec/plan survivors. The review recommends restoring. Or annotate the drift here and leave the file. No file was changed for this item in this wave. |
+| `scripts/production_replica_audit.py` | `9d179ca40e0631c539aba409921002a3ca6edc611ecb200b8d4f6a034584b053` -> `7e0ac01fe321216b25aaa8e8a3626471941309bb438cc2dff10340990ea6eb5e` | `research/audits/event-timing/_event_audit_detector_provenance.json:6284` (`producer.sha256`); frozen | No | **Owner decision (R18).** Annotate (the review recommends this): restoring would point `DEFAULT_OUT`, `DEFAULT_CURVES` and `AMENDMENT` back at `docs/research`; the 3 changed lines are path-only, and the old bytes are recoverable from `42990c74`. No file was changed for this item in this wave. |
+| `research/intraday/spy-momentum-feasibility/2026-10-24-intraday-feasibility.md` | `51162768ea497c242f0c199baf7e2a0f79a62a85071c8f6ff85fd06b670eaec3` -> `33c00494472115c75205690d331d684050d876584f959c5dc7f0a395924ccd07` | Only on the unmerged branch `research/intraday-stage0a` (tip `58919c09`): `docs/research/_intraday_probe.json:25` (`document_hashes.strategy_brief`) | No. `src/ggTrader/lab/intraday_probe.py:499` (on that branch) only writes the hash | Decided at branch translation time (recipe decision D3). |
+| `src/ggTrader/lab/event_timing_audit.py` (its own code hash) | `d4bf67436385986ca9d03e5eb840a310b5d84edd6c8f2538192a4294d6b09622` -> `ed40ef1cd77290a1c4457e285d994389f7e6269d3f18a8d2f55b30a5bf58b48b` | Not recorded in any tracked file | Only on `--resume`: the run compares `code_sha256` with the checkpoint (`event_timing_audit.py` line 1619; the hash set is built at line 1545) | Accepted (spec decision 9.7, ruling R10). The one untracked checkpoint found (`data/external/event_timing_audit/network-smoke-5b1q16b6/smoke_progress.json`) already carried a different hash before the move, so it was not resumable either. |
+
+The path edits behind the first two rows are in the diff `42990c74..HEAD`: the plan has 8 changed lines, `production_replica_audit.py` 3, `event_timing_audit.py` 10. The register lists no other recorded hash whose referent the reorganization changed.

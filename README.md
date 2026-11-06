@@ -117,6 +117,7 @@ For a deeper dive, check out our detailed guides:
 - [**Next Steps**](docs/next_steps.md) — The current worklist. Start here if you are picking up work.
 - [**Roadmap**](docs/roadmap.md) — Goals, strategy status table, and project history.
 - [**Research Snapshot**](research/RESEARCH_SNAPSHOT.md) — Every strategy tried and its verdict.
+- [**Research**](research/README.md) — Where research reports live and how to find a study (moved from docs/research on 2026-11-05).
 - [**Installation Guide**](docs/installation.md) — How to set up Python, TimescaleDB, and Docker.
 - [**CLI Reference**](docs/cli_reference.md) — A breakdown of all commands, flags, and parameters.
 - [**Architecture Guide**](docs/architecture.md) — How the codebase is built, how data flows, and how the simulation works.
