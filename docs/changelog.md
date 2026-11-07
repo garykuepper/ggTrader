@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-07 (dependency refresh, part 2: ccxt removed)
+
+- **`ccxt` is no longer a dependency (owner decision: exchanges now ship their own CLIs and MCP servers, and the crypto arc is parked).** Nothing under `src/`, `scripts/` or `tests/` imported it. Removing it freed the ten updates it was holding back (see the held-back note in the entry below).
+  - **Updated.** yfinance 1.7.0 -> 1.8.0, curl-cffi 0.16.3 -> 0.17.0, cffi 2.0.0 -> 2.1.1, idna 3.18 -> 3.20, charset-normalizer 3.4.7 -> 3.5.2, pycparser 3.0 -> 3.12.
+  - **Dropped from `uv.lock` (only `ccxt` or its tree needed them).** ccxt, aiohttp, aiohttp-fast-zlib, aiohappyeyeballs, aiosignal, frozenlist, yarl, multidict, propcache, uvloop, winloop, zlib-ng, coincurve, cryptography, orjson. `multitasking` also left (yfinance 1.8.0 no longer needs it). The earlier note's multidict, propcache, uvloop and zlib-ng "updates" therefore did not happen: those packages are gone.
+  - **Engine stack unchanged** (vectorbt and vectorbt-rust 1.2.0, pandas 3.1.1, numpy 2.5.4, numba 0.68.1, plotly 7.1.0).
+  - **Gate.** Fast core 1,356 passed, full tier 2,466 passed (includes the real-tape core17/dsr0 oracle and live golden), study tier 772 passed; `uv lock --check` and `uv pip check` clean. No live yfinance call was made, so the 1.8.0 network behaviour is not exercised until the next real fetch.
+  - `.env.example`: the stale note naming the deleted `update_universe_ccxt.py` was trimmed.
+
 ## 2026-11-07 (dependency refresh: ruff 0.17.4, regex)
 
 - **Every Python dependency was surveyed against PyPI and the allowed ones were updated in tested groups (no `src/` change; `uv.lock`, `pyproject.toml`, `ruff.toml`, `.github/dependabot.yml`).** The lock was already current except for three things, so the refresh is small.
