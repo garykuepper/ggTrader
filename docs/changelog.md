@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-07 (dependency refresh: ruff 0.17.4, regex)
+
+- **Every Python dependency was surveyed against PyPI and the allowed ones were updated in tested groups (no `src/` change; `uv.lock`, `pyproject.toml`, `ruff.toml`, `.github/dependabot.yml`).** The lock was already current except for three things, so the refresh is small.
+  - **Moved.**
+
+    | Group | Package | From | To |
+    |---|---|---|---|
+    | tooling | ruff (exact pin, `dev` extra) | 0.15.12 | 0.17.4 |
+    | pure library | regex (transitive of dateparser) | 2026.9.29 | 2026.11.7 |
+    | data/science | none (every direct dependency was already the latest release) | | |
+    | engine stack | none (vectorbt, vectorbt-rust 1.2.0, pandas 3.1.1, numpy 2.5.4, numba 0.68.1, llvmlite 0.50.0, plotly 7.1.0 are all the latest stable releases and inside the bounds) | | |
+
+  - **ruff 0.17.4.** `ruff check` has 0 diagnostics and no Python file changed. Since 0.16, `ruff format` also formats fenced code blocks in Markdown, which would have rewritten 40 docs (some byte-frozen research reports), so `ruff.toml` now has `[format] exclude = ["*.md"]`. Verified on 0.15.12 and 0.17.4: 295 files formatted, none would change. ruff stays pinned exactly. Dependabot no longer ignores ruff; a ruff pull request that fails `ruff format --check` means "reformat in the same change".
+  - **Held back (not our pin).** `ccxt` 4.5.92 (the latest) pins its own dependencies exactly (`cffi==2.0.0`, `idna==3.18`, `charset_normalizer==3.4.7`, `multidict==6.9.1`, `propcache==0.5.2`, `pycparser==3.0`, `uvloop==0.22.1`, `zlib-ng==1.0.0`, `urllib3==2.8.0`, ...). `yfinance` 1.8.0 needs `curl_cffi>=0.17`, which needs `cffi>=2.1.1`, so yfinance (1.7.0 -> 1.8.0), curl-cffi (0.16.3 -> 0.17.0), cffi (2.0.0 -> 2.1.1), idna (3.18 -> 3.20), charset-normalizer (3.4.7 -> 3.5.2), multidict (6.9.1 -> 7.2.1), propcache (0.5.2 -> 0.5.4), pycparser (3.0 -> 3.12), uvloop (0.22.1 -> 0.23.0) and zlib-ng (1.0.0 -> 1.1.0) cannot move while `ccxt` is a dependency. Nothing under `src/`, `scripts/` or `tests/` imports `ccxt` (crypto is parked), so dropping it from `pyproject.toml` is the owner's decision. Probe, not committed: with `cffi>=2.1.1` overridden, `uv lock` resolves to yfinance 1.8.0, curl-cffi 0.17.0, cffi 2.1.1 (and drops `multitasking`), and in a scratch venv the fast tier (1,356), the full tier (2,466) and the core17/dsr0/live-golden oracle all pass unchanged. No live yfinance call was made.
+  - **Gate for each group.** Fast core 1,356 passed (about 102 s), full tier 2,466 passed (about 630 s), study tier 772 passed; `uv lock --check`, `uv pip check` and `check_vbt_engine.py --engine rust` clean; a fresh `git clone --local` passes `ruff check .` and `ruff format --check .`. Oracle (frozen tape, scratch output): `core17_ensemble_sp500` and `core17_ensemble_sp500_dsr0` are field-equal to `p5-evidence/guarded/` (OOS Sharpe 0.391 and 0.637, CAGR 3.50% and 3.41%, gates 1/17 and 17/17), both equity CSVs are `cmp`-identical, and the live golden is 120/120 sessions equal. No number moved. Docker: nothing needed here; the `Dockerfile` installs from `uv.lock` with uv 0.11.25, so the next image build takes the new lock; the base-image digest is Dependabot's.
+
 ## 2026-11-07 (S4: study scaffold)
 
 - **S4 of the study-isolation plan: the tool that creates, checks, reproduces and closes a study (new files only; no code moved, no engine, WFO or paper change).**
