@@ -48,7 +48,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           # Must match requires-python in pyproject.toml.
           python-version: '3.12'
@@ -102,7 +102,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           # Must match requires-python in pyproject.toml.
           python-version: '3.12'
@@ -141,7 +141,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           # Must match requires-python in pyproject.toml.
           python-version: '3.12'
