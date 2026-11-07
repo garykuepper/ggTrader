@@ -18,6 +18,8 @@ from ggTrader.lab.momentum_screen import (
     worst_rolling_relative,
 )
 
+pytestmark = pytest.mark.study
+
 
 def _panels() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Provide complete monthly histories with a nonconstant market."""

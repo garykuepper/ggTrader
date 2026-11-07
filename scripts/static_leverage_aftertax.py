@@ -25,7 +25,7 @@ import yfinance as yf
 
 sys.path.insert(0, "src")
 from ggTrader.lab.a23_rebalance import COST_BPS, Book, Lot, _trade_to  # noqa: E402,F401
-from ggTrader.lab.fred_data import load_fred_series, parse_fred_csv  # noqa: E402
+from ggTrader.utils.fred_data import load_fred_series, parse_fred_csv  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_JSON = ROOT / "research/allocation/static-leverage/_static_leverage_aftertax_results.json"

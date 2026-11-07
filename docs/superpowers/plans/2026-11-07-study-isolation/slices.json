@@ -1,0 +1,694 @@
+{
+ "plan": "PLAN_V2.md (same folder)",
+ "base_commit": "46d8ff75",
+ "branch": "refactor/study-isolation",
+ "worktree": "/home/flynn/ggTrader-vbt12",
+ "conventions": {
+  "GGT_SI_OUT": "export to a scratch folder outside the repo before any check (S0 writes $GGT_SI_OUT/s0/*, later slices read it, so keep one value for the whole programme).",
+  "when": "Run mechanical_checks from the repo root after the slice's commits; each command must exit 0.",
+  "sweep_scope": "-- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py'",
+  "sweep_exemptions": [
+   "src/ggTrader/paper/trader.py (comments at :81 and :1099 cite the deleted migrate script; editing touches the image)",
+   "lens2_build.py (frozen prose that renders a published lens report)",
+   "tests/scripts/test_driver_default_paths.py (historical script names resolved through CODEMOVED)",
+   "lines carrying '# history-read' (the A23 replay of commit 53b739c)",
+   "deploy/ (describes the running 280d4a0 release)",
+   "history docs (docs/changelog.md, docs/archive, docs/superpowers, research reports)"
+  ],
+  "serial": "Slices run strictly in array order, one at a time (lead call L)."
+ },
+ "oracle": {
+  "name": "O",
+  "purpose": "No engine number may move. Run in full by S0 (baseline), S2, every S5 sub-slice, S7, S8 and S9. Run from the repo root of the checkout under test, after the slice's commits, with GGT_SI_OUT exported to a scratch folder outside the repo (for example /tmp/claude-1000/-home-flynn-ggTrader/6c9c1710-29af-4adf-b77b-ad700b6fcc23/scratchpad/study-isolation/runs/<slice>). Needs the git-ignored tape data/snapshots/ohlcv_20261106.parquet; no database, no network.",
+  "route": "Driver form only: scripts/p5_wfo_validation.py --runs core17_ensemble_sp500 (and the dsr0 run). The `ggt lab --wfo` CLI route is NOT part of O: it differs from the driver in 5 fields by design (P10-completion.md:50) and tests/lab/wfo/test_cli_engine.py covers it in FULL.",
+  "reference": "research/programme/vectorbt-engine/p5-evidence/guarded/",
+  "expected": {
+   "core17_ensemble_sp500": {
+    "sharpe": 0.391,
+    "cagr_pct": 3.5,
+    "gates": "1/17"
+   },
+   "core17_ensemble_sp500_dsr0": {
+    "sharpe": 0.637,
+    "cagr_pct": 3.41,
+    "gates": "17/17"
+   },
+   "live_golden": "120/120 sessions equal"
+  },
+  "field_compare_exclusions": [
+   "provenance (whole block: git_sha, git_dirty, lock_sha256, created_utc, rust_calls, ...)",
+   "wall_seconds",
+   "diagnostics.timings_s",
+   "diagnostics.peak_rss_mb",
+   "tape.path (absolute path of the checkout)",
+   "the _p5_compare_<run>.json files are not compared (derived from the run JSON and the equity CSV)"
+  ],
+  "commands": [
+   ".venv/bin/python -c 'import pathlib, sys, ggTrader; sys.exit(0 if pathlib.Path(ggTrader.__file__).resolve().is_relative_to(pathlib.Path.cwd().resolve()) else 1)'",
+   "mkdir -p \"${GGT_SI_OUT:?set GGT_SI_OUT to a scratch folder outside the repo}/o\"",
+   "scripts/run_capped.sh .venv/bin/python scripts/p5_wfo_validation.py --runs core17_ensemble_sp500,core17_ensemble_sp500_dsr0 --out-dir \"${GGT_SI_OUT:?set GGT_SI_OUT to a scratch folder outside the repo}/o\" --force",
+   "python3 - \"$GGT_SI_OUT/o\" <<'PY'\nimport json, sys\nfrom pathlib import Path\nout = Path(sys.argv[1])\nref = Path(\"research/programme/vectorbt-engine/p5-evidence/guarded\")\nEXCLUDE = {(\"provenance\",), (\"wall_seconds\",), (\"diagnostics\", \"timings_s\"),\n           (\"diagnostics\", \"peak_rss_mb\"), (\"tape\", \"path\")}\ndef strip(node, path=()):\n    if isinstance(node, dict):\n        return {k: strip(v, path + (k,)) for k, v in node.items() if path + (k,) not in EXCLUDE}\n    if isinstance(node, list):\n        return [strip(v, path) for v in node]\n    return node\nbad = 0\nfor run in (\"core17_ensemble_sp500\", \"core17_ensemble_sp500_dsr0\"):\n    new = strip(json.loads((out / f\"_p5_{run}.json\").read_text()))\n    old = strip(json.loads((ref / f\"_p5_{run}.json\").read_text()))\n    same = json.dumps(new, sort_keys=True) == json.dumps(old, sort_keys=True)\n    m = new.get(\"diagnostics\", {}).get(\"oos_metrics\", {})\n    print(run, \"FIELD-EQUAL\" if same else \"DIFFERS\", m.get(\"sharpe\"), m.get(\"cagr_pct\"), new.get(\"gates\"))\n    if not same:\n        bad += 1\n        print(\"  differing top-level keys:\", sorted(k for k in set(new) | set(old) if new.get(k) != old.get(k)))\nsys.exit(1 if bad else 0)\nPY",
+   "for r in core17_ensemble_sp500 core17_ensemble_sp500_dsr0; do cmp \"$GGT_SI_OUT/o/${r}_oos_equity.csv\" \"research/programme/vectorbt-engine/p5-evidence/guarded/${r}_oos_equity.csv\" || exit 1; done",
+   "scripts/run_capped.sh .venv/bin/python scripts/p7_live_golden.py --out \"$GGT_SI_OUT/o/p7_live_golden.json\"",
+   "python3 -c \"import json, sys; d = json.load(open(sys.argv[1])); sys.exit(0 if d['sessions'] == d['sessions_equal'] == 120 and d['sessions_different'] == 0 else 1)\" \"$GGT_SI_OUT/o/p7_live_golden.json\"",
+   "scripts/run_tests.sh --full tests/paper/test_live_golden.py -q > \"$GGT_SI_OUT/o/golden_pytest.log\" 2>&1 && grep -qE \"(^|[^0-9])2 passed\" \"$GGT_SI_OUT/o/golden_pytest.log\" && ! grep -qiE \"skipped|SKIPPED\" \"$GGT_SI_OUT/o/golden_pytest.log\"",
+   "scripts/run_tests.sh --full -q",
+   "scripts/run_tests.sh --studies -q",
+   "R=$PWD; D=\"$GGT_SI_OUT/lintclone\"; rm -rf \"$D\"; git clone -q \"file://$R\" \"$D\" && git -C \"$D\" checkout -q \"$(git rev-parse HEAD)\" && cd \"$D\" && \"$R/.venv/bin/ruff\" check . && \"$R/.venv/bin/ruff\" format --check .",
+   "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+   "test -z \"$(git status --porcelain --untracked-files=all research data results)\""
+  ],
+  "notes": [
+   "Before S3 the --studies tier is S1's (-m study inside tests/); from S3 it is the two-invocation runner.",
+   "scripts/run_tests.sh --full includes the live golden and the real-tape oracles only when the tape is present: the -rs skip report must list no tape skip.",
+   "Stop rule: if any O command fails (or the golden is not 120/120), `git revert --no-edit` the slice's commits, stop, and report to the lead. Never re-baseline O against a new run.",
+   "F is checked against the base commit 46d8ff75; S6 is the only slice allowed to modify research/README.md.",
+   "F amendment (S0 round 2): S1's own evidence files (4 exact paths, status A, added by 50b67e4b and dda77c35) are allow-listed in F in the oracle and in every slice copy; base stays 46d8ff75 so any other research change still fails. Never widen to a glob."
+  ]
+ },
+ "slices": [
+  {
+   "id": "S0",
+   "title": "Baseline measurements and S1 exit verification (measurement only, no repo change)",
+   "depends_on": [
+    "S1"
+   ],
+   "tasks": "Read-only on the repo; writes only under `$GGT_SI_OUT/s0/` (scratch, outside the repo).\n\n1. **Verify S1's exit conditions (CORRECTIONS gap 1, 14, 18).** S1 is committed (`git status --porcelain` empty); a repo-root\n   `conftest.py` exists and holds `_no_dotenv`, `matplotlib.use(\"Agg\")`, `pytest_addoption` registering `--tier`,\n   `--update-golden` and `--golden-reason`, and `pytest_configure` calling `tests.tiers.apply_tier`; `tests/conftest.py` no\n   longer defines `pytest_addoption`; the sentinel test `tests/test_root_conftest.py` exists and passes;\n   `tests/paper/test_paper_boundary.py` still bans `ggTrader.lab.strategy`. If any is missing: STOP and hand it back to S1\n   (do not fix it in S0).\n2. **Env check (gap 8).** `ggTrader.__file__` resolves under this checkout (first O command).\n3. **O baseline.** Run every command of the oracle O. The driver run must be FIELD-EQUAL to the guarded evidence. If it is\n   not, STOP: the programme does not start from a moved baseline (L15).\n4. **Timings (gap 12).** Only when `/proc/loadavg`'s 1-min value is < 2.0: `scripts/run_tests.sh --fast --durations=25 -q`\n   and `scripts/run_tests.sh --full --durations=25 -q`, each under `/usr/bin/time -f %e`; save logs and wall seconds to\n   `$GGT_SI_OUT/s0/fast.log`, `fast_seconds`, `full.log`, `full_seconds`; save `--collect-only -q` counts for both tiers.\n   `fast_seconds` sets the FAST gate for every later slice (wall <= 1.10 x, L16). Record whether `tests/test_frozen_inputs.py`\n   takes >= 3 s (then it gets `slow` in S3).\n5. **A23 gates (NEW, item 17 and 22).** Run gate Y: `scripts/static_leverage_aftertax.py --frozen-inputs data/external/a23_inputs`\n   into scratch and compare its sha256 with `645d4ee2dad880e61bffd147cee0985842f01fab1dae3caf4508fd567ddb6be4`\n   (`research/allocation/century-leverage/_century_leverage_a23_gate.json` runs.Y). Run gate X: `scripts/century_leverage_a23_x.py`\n   must print `matches gate`. Record both outcomes and Y's actual hash in `$GGT_SI_OUT/s0/a23_gates.txt`. A mismatch at base\n   is recorded, not fixed; S2/S5d then compare with the S0 value (L20).\n6. **Baselines for later read-only checks.** The docs path-check output (S6 compares against it), sha256 of the 8 observer\n   unit files, the observer release HEAD and its clean status, and the S1-era `--studies` count.\n7. Do NOT run the old PLAN.md experiments here (they need `verify_pins.py` and move code); they live in S3, S7 step 0 and S8\n   step 0, in scratch clones (L14). Never `git worktree add`.\n",
+   "mechanical_checks": [
+    "test -z \"$(git status --porcelain)\"",
+    "test -f conftest.py && grep -q '_no_dotenv' conftest.py && grep -q 'matplotlib.use' conftest.py && grep -q -- '--tier' conftest.py && grep -q -- '--update-golden' conftest.py && grep -q 'def pytest_configure' conftest.py && ! grep -q 'def pytest_addoption' tests/conftest.py",
+    "test -f tests/test_root_conftest.py && scripts/run_tests.sh tests/test_root_conftest.py -q",
+    "grep -q '\"ggTrader.lab.strategy\"' tests/paper/test_paper_boundary.py",
+    "mkdir -p \"${GGT_SI_OUT:?}/s0\" && awk '{exit !($1 < 2.0)}' /proc/loadavg",
+    "/usr/bin/time -f %e -o \"$GGT_SI_OUT/s0/fast_seconds\" scripts/run_tests.sh --fast --durations=25 -q > \"$GGT_SI_OUT/s0/fast.log\" 2>&1",
+    "/usr/bin/time -f %e -o \"$GGT_SI_OUT/s0/full_seconds\" scripts/run_tests.sh --full --durations=25 -q > \"$GGT_SI_OUT/s0/full.log\" 2>&1",
+    "scripts/run_tests.sh --fast --collect-only -q 2>/dev/null | tail -3 > \"$GGT_SI_OUT/s0/fast_collect.txt\"",
+    "scripts/run_capped.sh .venv/bin/python scripts/static_leverage_aftertax.py --frozen-inputs data/external/a23_inputs --out \"$GGT_SI_OUT/s0/a23_y.json\" && sha256sum \"$GGT_SI_OUT/s0/a23_y.json\" | tee \"$GGT_SI_OUT/s0/a23_y.sha256\"",
+    "scripts/run_capped.sh .venv/bin/python scripts/century_leverage_a23_x.py 2>&1 | tee \"$GGT_SI_OUT/s0/a23_x.log\" | grep -q 'matches gate'",
+    "for f in AGENTS.md README.md docs/architecture.md docs/cli_reference.md docs/next_steps.md .claude/skills/*/SKILL.md; do .venv/bin/python scripts/check_lens_report.py --paths-only \"$f\" | sed \"s|^|$f: |\"; done | sort > \"$GGT_SI_OUT/s0/docpaths.txt\"",
+    "sha256sum ~/.config/systemd/user/ggtrader-intraday-observer-* > \"$GGT_SI_OUT/s0/units.sha256\"",
+    "R=/home/flynn/.local/share/ggtrader/intraday-observer/releases/280d4a0edc00f1b4b23ba7bbe8dd80432877b36f; test \"$(git -C \"$R\" rev-parse HEAD)\" = 280d4a0edc00f1b4b23ba7bbe8dd80432877b36f && test -z \"$(git -C \"$R\" status --porcelain)\"",
+    "! grep -l '/home/flynn/ggTrader' ~/.config/systemd/user/ggtrader-intraday-observer-*"
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "Any S1 exit condition missing: stop, report, hand back to S1.",
+    "O's driver run is not FIELD-EQUAL to the guarded evidence, or the golden is not 120/120: stop (no re-baselining).",
+    "Host load average >= 2.0: wait and retry the timings; do not record loaded-host timings.",
+    "ggTrader.__file__ is outside this checkout: stop (wrong venv)."
+   ],
+   "files_in_scope": [
+    "(none in the repo)",
+    "$GGT_SI_OUT/s0/**"
+   ],
+   "effort_hours": 2
+  },
+  {
+   "id": "S2",
+   "title": "Dead code, shared utils, A23 replay alias, restore the driver-path test",
+   "depends_on": [
+    "S0"
+   ],
+   "tasks": "Serial after S1 (shares `tests/test_pandas3_compat.py`). Line numbers are at `46d8ff75`; S1 may have shifted test lines,\nso locate by name.\n\n1. **Restore `tests/scripts/test_driver_default_paths.py`** (L8, CORRECTIONS C14/gap 4) if S1 deleted it:\n   `git checkout 46d8ff75 -- tests/scripts/test_driver_default_paths.py`, add `pytestmark = pytest.mark.tooling`. It must pass\n   unchanged now (nothing has moved yet). S3 makes `_script_path` resolve through CODEMOVED.\n2. **Delete** `src/ggTrader/lab/event_study.py`, `src/ggTrader/utils/returns.py`, `tests/lab/test_event_study.py`, and\n   `load_symbols_from_json` in `src/ggTrader/utils/config.py:11-32` (drop imports it alone used). In\n   `tests/test_pandas3_compat.py` remove the imports at `:17` (`ggTrader.lab.event_study`) and `:19` (`ggTrader.utils.returns`)\n   and the classes `TestPaddedPctChange` (4 tests) and `TestEventStudyStack` (2 tests); keep `TestNoBarePctChangeCalls` and\n   `TestLivePathOverlay` (3 tests). Leave the three frozen research files that import `event_study` untouched (unrunnable at base).\n3. **D6 tools** (if still present after S1): `git rm scripts/research_reorg.py scripts/research_retarget.py\n   scripts/migrate_paper_dates_20260822.py scripts/one_off/restate_mnst_snapshots_20260911.py` and, if present,\n   `tests/scripts/test_research_reorg.py`, `tests/scripts/test_research_retarget.py`. Do NOT edit the comments at\n   `src/ggTrader/paper/trader.py:81` and `:1099` (they would touch the trader image; CODEMOVED resolves them).\n4. **Move to utils.** `git mv src/ggTrader/lab/significance.py src/ggTrader/utils/significance.py`; move its\n   `from ggTrader.lab.wfo.report import curve_summary` (`:11`) inside the function that uses it (`:76`). `git mv\n   src/ggTrader/lab/fred_data.py src/ggTrader/utils/fred_data.py`; move `from ggTrader.lab.persist import get_engine` (`:16`)\n   into the three functions that use it (`:93`, `:126`, `:140`). `git mv tests/lab/test_significance.py\n   tests/utils/test_significance.py` and `tests/lab/test_fred_data.py tests/utils/test_fred_data.py`.\n   Rewrite `ggTrader.lab.significance` -> `ggTrader.utils.significance` in `src/ggTrader/lab/momentum_screen.py:9`,\n   `scripts/production_replica_audit.py:20`, `tests/utils/test_significance.py:9`, `tests/scripts/test_production_replica_audit.py:10`;\n   `ggTrader.lab.fred_data` -> `ggTrader.utils.fred_data` in `scripts/static_leverage_aftertax.py:28`,\n   `scripts/production_replica_audit.py:17`, `scripts/century_leverage_a23_x.py:19`, `tests/lab/test_century_leverage.py:18`,\n   `tests/utils/test_fred_data.py` (`:10`, `:80`, `:93`). Leave `research/programme/vectorbt-engine/legacy-scripts/audit_reruns_wfo.py:44`.\n5. **NEW: A23 replay alias.** In `scripts/century_leverage_a23_x.py`, right before `exec(compile(source, ...))` (`:47`), add\n   `import ggTrader.utils.fred_data as _moved_fred  # history-read` and\n   `sys.modules.setdefault(\"ggTrader.lab.fred_data\", _moved_fred)  # history-read: 53b739c imports the pre-move path`.\n   Append `# history-read` to the three lines naming `scripts/static_leverage_aftertax.py` (`:38`, `:45`, `:72`). The replayed\n   source is not changed. Gate X must still print `matches gate` (if it did in S0).\n6. **New helpers** (tests in `tests/utils/`, FAST unless >= 3 s): `utils/io.py` (`atomic_write_bytes`, `atomic_write_text`,\n   `json_safe` = `results._clean` made public with `_clean` kept as an alias, `write_json(strict=)`); `utils/manifest.py`\n   (`verify_frozen`, `file_record` via `hashlib.file_digest`, `canonical_hash`); `utils/binding.py` (git sha, dirty flag, diff\n   sha, `uv.lock` sha, python version; imports no vectorbt; test: same `git_sha` and `lock_sha256` as\n   `engine.provenance.provenance()`); `utils/paths.py` gains `REPO_ROOT = find_project_root()`, `EVAL_START_17 = \"2021-01-31\"`,\n   `EVAL_END_17 = \"2026-04-30\"`; `utils/study.py` with `repo_root(file)` (first ancestor holding `pyproject.toml` and `.git`),\n   `bootstrap(file) -> Path` (nearest ancestor named `code` -> prepend `<study>/code` and `<category>/_lib` if present;\n   named `_lib` -> prepend `_lib`; idempotent; returns `repo_root(file)`), `study_dir(file)`, `load_driver(path)`\n   (`spec_from_file_location`, module name `study_<category>_<study>_<stem>`); `significance.holm()` over\n   `statsmodels.stats.multitest.multipletests`.\n7. **Import-rule test** `tests/utils/test_import_rules.py` (FAST, AST): `engine`, `lab.wfo`, `lab.strategies`, `paper`, `cli`\n   never import `ggTrader.utils.{significance,fred_data,binding,study,manifest,io}`; nothing under `src/` imports\n   `ggTrader.utils.study`; `utils/significance.py` and `utils/fred_data.py` have no module-level `ggTrader.lab` import.\n8. `pyproject.toml`: drop `lab/event_study.py` from the `scipy` comment (`:39`). No dependency change (`uv.lock` untouched).\n9. CODEMOVED rows for this slice are written in S3 (backfill from git); note the commit sha in the commit message.\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data'; S='research_reorg|research_retarget|migrate_paper_dates_20260822'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' | grep -v '# history-read' | (! grep .)",
+    "test ! -e src/ggTrader/lab/event_study.py && test ! -e src/ggTrader/utils/returns.py && test ! -e src/ggTrader/lab/significance.py && test ! -e src/ggTrader/lab/fred_data.py && test ! -e tests/lab/test_event_study.py && test ! -e scripts/research_reorg.py && test ! -e scripts/research_retarget.py && test ! -e scripts/migrate_paper_dates_20260822.py && test ! -e scripts/one_off/restate_mnst_snapshots_20260911.py",
+    "test -f src/ggTrader/utils/significance.py && test -f src/ggTrader/utils/fred_data.py && test -f src/ggTrader/utils/study.py && test -f src/ggTrader/utils/io.py && test -f src/ggTrader/utils/manifest.py && test -f src/ggTrader/utils/binding.py && test -f tests/utils/test_significance.py && test -f tests/utils/test_fred_data.py && test -f tests/scripts/test_driver_default_paths.py",
+    "! grep -n 'load_symbols_from_json' src/ggTrader/utils/config.py",
+    ".venv/bin/python -c \"import sys, ggTrader.utils.significance, ggTrader.utils.fred_data; sys.exit(1 if {'ggTrader.lab.wfo.report', 'ggTrader.lab.persist'} & set(sys.modules) else 0)\"",
+    "git diff --quiet 46d8ff75 HEAD -- uv.lock",
+    "git diff --quiet 46d8ff75 HEAD -- src/ggTrader/paper/trader.py",
+    "scripts/run_tests.sh tests/scripts/test_driver_default_paths.py tests/utils tests/test_pandas3_compat.py -q",
+    "grep -q \"matches gate\" \"${GGT_SI_OUT:?}/s0/a23_x.log\" && scripts/run_capped.sh .venv/bin/python scripts/century_leverage_a23_x.py | grep -q 'matches gate' || ! grep -q 'matches gate' \"$GGT_SI_OUT/s0/a23_x.log\"",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\""
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "O moves or the golden is not 120/120: revert the S2 commits, stop, report.",
+    "Gate X reproduced in S0 but not after the alias: stop (the replay is evidence for century-leverage).",
+    "Any check fails twice after a fix attempt: stop, report.",
+    "A needed edit outside files_in_scope: stop and ask the lead."
+   ],
+   "files_in_scope": [
+    "src/ggTrader/lab/event_study.py",
+    "src/ggTrader/lab/significance.py",
+    "src/ggTrader/lab/fred_data.py",
+    "src/ggTrader/lab/momentum_screen.py",
+    "src/ggTrader/utils/**",
+    "scripts/research_reorg.py",
+    "scripts/research_retarget.py",
+    "scripts/migrate_paper_dates_20260822.py",
+    "scripts/one_off/**",
+    "scripts/production_replica_audit.py",
+    "scripts/static_leverage_aftertax.py",
+    "scripts/century_leverage_a23_x.py",
+    "tests/lab/test_event_study.py",
+    "tests/lab/test_significance.py",
+    "tests/lab/test_fred_data.py",
+    "tests/lab/test_century_leverage.py",
+    "tests/utils/**",
+    "tests/test_pandas3_compat.py",
+    "tests/scripts/test_driver_default_paths.py",
+    "tests/scripts/test_production_replica_audit.py",
+    "tests/scripts/test_research_reorg.py",
+    "tests/scripts/test_research_retarget.py",
+    "pyproject.toml"
+   ],
+   "effort_hours": 3.5
+  },
+  {
+   "id": "S3",
+   "title": "Study plumbing: CODEMOVED, verify_pins, ruff, layout/help/boundary tests, studies runner, CI job",
+   "depends_on": [
+    "S2"
+   ],
+   "tasks": "No code moves in this slice.\n\n1. **`research/CODEMOVED.csv`** with header `old_path,new_path,kind,base_commit,move_commit,sha256_before,sha256_after,do_not_edit,note`.\n   Backfill one row per path under `src/`, `scripts/`, `tests/` that existed at `46d8ff75` and was deleted or moved by S1 and S2\n   (kinds `deleted`, `moved`, `moved+edited`; `sha256_before` from `git show 46d8ff75:<old>`; `sha256_after` empty for deleted).\n   Rows are appended by every later moving slice in the same commit as the move.\n2. **`scripts/verify_pins.py`** (argparse, `main()`, guard, `--help` side-effect free): walk every `*.json` under `research/`,\n   collect `(repo path, sha256)` pairs and the canonical code maps (`_intraday_observer_activation_verification.json` `code`,\n   `_intraday_observer_rehearsal.json`, `_intraday_observer_readiness_preflight.json` `code_commit 280d4a0`, feasibility\n   `_intraday_momentum_validation*.json` `code_sha256` over `intraday_momentum.CODE_FILES`, resolving at `6e89281c`). Resolve each\n   pin: MATCH, MOVED-MATCH (via CODEMOVED `new_path`), HISTORY-MATCH (`git log --format=%H -- <old>`, skipping commits where\n   the path is absent, then `git show <c>:<old>`), else FAIL. Exit 2 with the word `shallow` when\n   `git rev-parse --is-shallow-repository` prints `true`. Options `--summary` and\n   `--expect MATCH=a,MOVED-MATCH=b,HISTORY-MATCH=c,FAIL=0`. Today: 22 pins, `MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7`, all maps resolve.\n   Test `tests/scripts/test_verify_pins.py` (FAST: parsing, resolution on a tmp git repo; the real-repo run is `slow`).\n3. **ruff.toml**: `extend-exclude = [\"research/programme/vectorbt-engine\", \"research/*/artifacts-*\"]` (keep `force-exclude = true`),\n   add `[lint.per-file-ignores] \"research/**/code/*.py\" = [\"E402\"]` with a comment (drivers call `bootstrap` before study imports).\n4. **Replace `tests/scripts/test_ruff_excludes_research.py`** with `tests/scripts/test_research_layout.py` (FAST): every tracked\n   `research/**/*.py` is under `research/*/*/code/`, `research/*/_lib/`, `research/programme/vectorbt-engine/` or\n   `research/*/artifacts-*/`; no `artifacts-` path segment below any `code/` or `_lib/`; ruff lints a code path\n   (`ruff check --stdin-filename research/<cat>/<study>/code/x.py -` on bad source exits 1) and skips an artifacts path;\n   library basenames unique across `research/*/*/code` and `research/*/_lib` (excluding `run.py`, `conftest.py`, `test_*.py`)\n   and not equal to a stdlib module (`sys.stdlib_module_names`), an installed top-level module\n   (`importlib.metadata.packages_distributions()`) or a repo-root name (`scripts`, `tests`, `data`, `src`, `docs`, `research`,\n   `conftest`, `ggt`); no study imports a module that lives in another study's `code/` (AST); research code imports\n   `ggTrader.paper` only under `PAPER_IMPORT_ALLOWED = {\"research/audits/production-replica/code\"}` (L18); no file under\n   research code calls into `src` via `sys.path` except `# root-ok` lines.\n5. **`tests/engine/test_boundary.py`**: add the research code and `_lib` folders (glob `research/*/*/code`, `research/*/_lib`)\n   to the scanned roots (no vectorbt, no `.vbt`).\n6. **`tests/scripts/test_scripts_have_help.py`**: scan `scripts/*.py` plus every `research/*/*/code/*.py` and\n   `research/*/_lib/*.py` that has an `if __name__ == \"__main__\"` guard; `DELEGATES` keyed by repo-relative path (each later\n   slice updates the four delegate entries when it moves them); add `bootstrap` to `MODULE_CALLS`; add a test that every\n   CODEMOVED row moved from `scripts/*.py` to a `.py` path is in the scanned set (count balance).\n7. **`tests/test_pandas3_compat.py::TestNoBarePctChangeCalls`**: add a test scanning `research/*/*/code` and `research/*/_lib`.\n8. **`tests/scripts/test_codemoved.py`** (FAST): CODEMOVED schema; `do_not_edit=yes` rows have `sha256(new_path) == sha256_after`;\n   no `old_path` exists in the tree (no stubs); every moved/deleted `src/ggTrader/lab|utils/X.py` or `scripts/X.py` row has no\n   remaining reference (patterns `ggTrader.lab.X`, `from ggTrader.lab import X`, `lab/X.py`, `scripts/X.py`,\n   `from scripts import X`) in the sweep scope of PLAN_V2 section 3, honouring the same exemptions and `# history-read`.\n9. **`tests/scripts/test_driver_default_paths.py`**: `_script_path` tries the live path, then CODEMOVED `new_path`, then the\n   legacy archive (L8).\n10. **Studies runner (L11).** `tests/tiers.py` gains `STUDIES_MIN_COLLECTED = 0` and `STUDY_TEST_GLOBS =\n    (\"research/*/*/code/tests\", \"research/*/_lib/tests\")`. Root `conftest.py` gains option `--min-collected` (int, default 0)\n    checked in `pytest_collection_finish` (fewer items -> `pytest.UsageError`). `scripts/run_tests.sh`: `--studies` runs\n    (1) `pytest --tier studies tests` (exit 5 accepted) then (2) `pytest --import-mode=importlib -m \"not integration\"\n    --min-collected <STUDIES_MIN_COLLECTED> <existing dirs from STUDY_TEST_GLOBS>` (skipped with a note when no dir exists\n    and the minimum is 0); `--full` runs `pytest --tier full tests` then (2); exit non-zero if either half fails; never pass\n    `research` whole. Extend `tests/test_root_conftest.py` / `tests/test_tiers.py` accordingly.\n11. **CI** (`.github/workflows/ci.yml`): new job `studies` (`actions/checkout` with `fetch-depth: 0`, same uv/python setup,\n    `python scripts/verify_pins.py --expect ...`, then the research half with explicit paths, every `pytest` line naming a\n    `tests` path) on pull requests, pushes to main, weekly, manual; no path filter (L12). `vbt-upgrade-watch.yml`: add the\n    studies step after `full.log`.\n12. Retag `tests/scripts/test_shadow_cross_asset.py` from `study` to `tooling` (L3).\n13. Addendum (append-only section) to `docs/superpowers/specs/2026-11-05-research-reorganization-and-consolidation-design.md`:\n    a study may hold `code/` and `code/tests/`; a category may hold one `_lib/` (with `tests/`); CODEMOVED.csv; F's allow-list.\n14. Shallow-clone and E402 experiments run as mechanical checks below (old PLAN experiment 3).\n",
+   "mechanical_checks": [
+    "test -f research/CODEMOVED.csv && head -1 research/CODEMOVED.csv | grep -qx 'old_path,new_path,kind,base_commit,move_commit,sha256_before,sha256_after,do_not_edit,note'",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0",
+    "D=\"${GGT_SI_OUT:?}/shallow\"; rm -rf \"$D\"; git clone -q --depth 1 \"file://$PWD\" \"$D\" && R=$PWD && cd \"$D\" && \"$R/.venv/bin/python\" scripts/verify_pins.py --summary > out.txt 2>&1; test $? -ne 0 && grep -qi shallow \"$D/out.txt\"",
+    "printf 'import os\\nx=1\\n' | .venv/bin/ruff check --stdin-filename research/allocation/static-leverage/code/zz_probe.py - >/dev/null; test $? -eq 1",
+    "printf 'import os\\nx=1\\n' | .venv/bin/ruff check --stdin-filename research/intraday/artifacts-2026-10-26-intraday-readiness/zz_probe.py -",
+    "printf 'from pathlib import Path\\n\\nX = Path(\".\")\\nimport os  # noqa: F401\\n' | .venv/bin/ruff check --stdin-filename research/allocation/static-leverage/code/zz_probe.py -",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "grep -q 'fetch-depth: 0' .github/workflows/ci.yml && grep -q 'verify_pins.py' .github/workflows/ci.yml",
+    "! grep -q 'mark.study' tests/scripts/test_shadow_cross_asset.py",
+    "test ! -e tests/scripts/test_ruff_excludes_research.py && test -f tests/scripts/test_research_layout.py",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "R=$PWD; D=\"$GGT_SI_OUT/lintclone\"; rm -rf \"$D\"; git clone -q \"file://$R\" \"$D\" && git -C \"$D\" checkout -q \"$(git rev-parse HEAD)\" && cd \"$D\" && \"$R/.venv/bin/ruff\" check . && \"$R/.venv/bin/ruff\" format --check ."
+   ],
+   "oracle": "none",
+   "stop_conditions": [
+    "verify_pins does not resolve 22/22 (15 MATCH, 7 HISTORY) at this commit: stop; the mechanism is wrong.",
+    "A shallow clone makes verify_pins exit 0: stop.",
+    "The new ruff excludes make `ruff check .` touch any file under research/programme/vectorbt-engine or an artifacts folder.",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "research/CODEMOVED.csv",
+    "scripts/verify_pins.py",
+    "scripts/run_tests.sh",
+    "ruff.toml",
+    "conftest.py",
+    "tests/tiers.py",
+    "tests/test_tiers.py",
+    "tests/test_root_conftest.py",
+    "tests/scripts/**",
+    "tests/engine/test_boundary.py",
+    "tests/test_pandas3_compat.py",
+    ".github/workflows/ci.yml",
+    ".github/workflows/vbt-upgrade-watch.yml",
+    "docs/superpowers/specs/2026-11-05-research-reorganization-and-consolidation-design.md"
+   ],
+   "effort_hours": 6
+  },
+  {
+   "id": "S4",
+   "title": "Study scaffold: scripts/study.py, TEMPLATE-brief.md",
+   "depends_on": [
+    "S3"
+   ],
+   "tasks": "Touches no moved code.\n\n1. `scripts/study.py` (argparse, `main()`, guard, `--help` side-effect free, `--repo-root` defaulting to the repo, no DB, no\n   network) with subcommands `new`, `check`, `repro`, `close` exactly as PLAN_V2 section 5. `new` validates\n   `--placement 1-9` against the table in `research/README.md` (rows 3-9 map to audits, programme, intraday, crypto,\n   allocation, paper-system, stock-signals) and slug uniqueness across categories; writes `README.md`, `study.toml`\n   (`allow_paper_imports = false`), dated brief from `research/TEMPLATE-brief.md`, `code/run.py`, `code/<slug_snake>.py`,\n   `code/tests/conftest.py` (`bootstrap(__file__)`), `code/tests/test_<slug_snake>.py`. `check` enforces naming, `study.toml`\n   schema (`tomllib`), brief fields (both eval dates, `max_leverage`, SPY benchmark, costs, family size), `run.py` AST rules\n   (no \"today\" default for `--eval-end`), boundaries incl. the cross-study import rule and the paper allow-list, unique\n   basenames, provenance block, `PIN.json` hashes, report paths (`check_lens_report --paths-only`). `repro` uses a scratch\n   `git clone` at `git_sha` (never `git worktree add`). `close` writes `PIN.json` and a report skeleton rendered from the\n   existing `research/TEMPLATE-research-report.md` (that file stays byte-identical, L19), and prints the\n   RESEARCH_INDEX row and changelog stub.\n2. `research/TEMPLATE-brief.md` (October skeleton, R6 4.5).\n3. `tests/scripts/test_study.py`: `new` + `check` pass on a tmp repo root; `check` fails each planted violation\n   (vectorbt import, cross-study import, missing eval date, `--eval-end` default today, duplicate basename, paper import).\n",
+   "mechanical_checks": [
+    ".venv/bin/python scripts/study.py --help >/dev/null",
+    "D=\"${GGT_SI_OUT:?}/s4\"; rm -rf \"$D\"; git clone -q \"file://$PWD\" \"$D/c\" && .venv/bin/python scripts/study.py --repo-root \"$D/c\" new stock-signals zz-probe --kind screen --placement 9 && .venv/bin/python scripts/study.py --repo-root \"$D/c\" check \"$D/c/research/stock-signals/zz-probe\"",
+    "test -f research/TEMPLATE-brief.md && git diff --quiet 46d8ff75 HEAD -- research/TEMPLATE-research-report.md",
+    "scripts/run_tests.sh tests/scripts/test_study.py tests/scripts/test_scripts_have_help.py -q",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\""
+   ],
+   "oracle": "none",
+   "stop_conditions": [
+    "`study new` would write inside this checkout during a check: stop (scratch only).",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "scripts/study.py",
+    "research/TEMPLATE-brief.md",
+    "tests/scripts/test_study.py"
+   ],
+   "effort_hours": 6
+  },
+  {
+   "id": "S5a",
+   "title": "Move stock-signals: _lib (french_data, momentum_screen), factor-screen, momentum, net-issuance",
+   "depends_on": [
+    "S4"
+   ],
+   "tasks": "Rules for every moving slice (S5a-S8): `git mv` first, edits second, in separate commits of the slice; append the\nCODEMOVED rows (kind `moved` only if bytes are identical, else `moved+edited`) in the move commit; create `code/tests/conftest.py`\nor `_lib/tests/conftest.py` with `from ggTrader.utils.study import bootstrap` / `bootstrap(__file__)`; rewrite imports with the\nPLAN_V2 section 3 patterns; tests load drivers with `load_driver`; replace roots with `bootstrap`/`repo_root`/`study_dir`;\nkeep each driver's argparse/`main()`/guard; update `DELEGATES` in the help test if a delegate moves; raise\n`tests/tiers.py:STUDIES_MIN_COLLECTED` to the research-half count measured at the end of the slice; run O.\n\nMoves (`git mv`):\n- `src/ggTrader/lab/french_data.py`, `src/ggTrader/lab/momentum_screen.py` -> `research/stock-signals/_lib/`\n- `src/ggTrader/lab/factor_screen.py` -> `research/stock-signals/factor-screen/code/factor_screen.py`\n- `src/ggTrader/lab/net_issuance_screen.py` -> `research/stock-signals/net-issuance/code/net_issuance_screen.py`\n- `scripts/factor_french_screen.py` -> `research/stock-signals/factor-screen/code/run.py`\n- `scripts/momentum_french_screen.py` -> `research/stock-signals/momentum/code/run.py`\n- `scripts/net_issuance_screen.py` -> `research/stock-signals/net-issuance/code/run.py`\n- `tests/lab/test_french_data.py`, `tests/lab/test_momentum_screen.py` -> `research/stock-signals/_lib/tests/`\n- `tests/lab/test_factor_screen.py` -> `research/stock-signals/factor-screen/code/tests/`\n- `tests/lab/test_net_issuance_screen.py` -> `research/stock-signals/net-issuance/code/tests/`\n\nEdits: `french_data.py:14-16` `find_project_root()` -> `repo_root(__file__)` (data stays `data/external/french`);\n`factor_screen.py:5` -> `from momentum_screen import ...`; `net_issuance_screen.py:7-8` -> `from french_data ...`,\n`from momentum_screen ...`; the three drivers: `ggTrader.lab.*` imports -> `_lib`/sibling imports after\n`ROOT = bootstrap(__file__)`, `PROJECT_ROOT = find_project_root()` -> `ROOT`. Tests: `test_factor_screen.py:11-19`,\n`test_net_issuance_screen.py:11-14`, `test_french_data.py:13`, `test_momentum_screen.py:10`. NEW (L9): move\n`test_driver_download_only_and_offline_output` (`test_momentum_screen.py:270-299`, base numbering) into\n`research/stock-signals/momentum/code/tests/test_run.py`, loading `run.py` with `load_driver`. `pyproject.toml:39` scipy\ncomment: `lab/momentum_screen.py` -> `research/stock-signals/_lib/momentum_screen.py`.\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' | grep -v '# history-read' | (! grep .)",
+    "test ! -e src/ggTrader/lab/french_data.py && test ! -e src/ggTrader/lab/momentum_screen.py && test ! -e src/ggTrader/lab/factor_screen.py && test ! -e src/ggTrader/lab/net_issuance_screen.py",
+    "test -f research/stock-signals/_lib/french_data.py && test -f research/stock-signals/_lib/momentum_screen.py && test -f research/stock-signals/factor-screen/code/run.py && test -f research/stock-signals/momentum/code/run.py && test -f research/stock-signals/net-issuance/code/run.py && test -f research/stock-signals/momentum/code/tests/test_run.py",
+    "for d in factor-screen momentum net-issuance; do .venv/bin/python research/stock-signals/$d/code/run.py --help >/dev/null || exit 1; done",
+    ".venv/bin/python -c \"import sys; sys.path.insert(0, '.'); from tests.tiers import STUDIES_MIN_COLLECTED as m; sys.exit(0 if m > 0 else 1)\"",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "git grep -nE 'parents\\[[0-9]+\\]|\\.parent\\.parent|find_project_root|sys\\.path\\.(insert|append)|sys\\.path\\[' -- ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' | grep -v '# root-ok' | (! grep .)"
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "O moves or the golden is not 120/120: revert the slice commits, stop, report.",
+    "Fewer study tests collected than moved (888-case budget split): stop.",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "src/ggTrader/lab/french_data.py",
+    "src/ggTrader/lab/momentum_screen.py",
+    "src/ggTrader/lab/factor_screen.py",
+    "src/ggTrader/lab/net_issuance_screen.py",
+    "scripts/factor_french_screen.py",
+    "scripts/momentum_french_screen.py",
+    "scripts/net_issuance_screen.py",
+    "tests/lab/test_french_data.py",
+    "tests/lab/test_momentum_screen.py",
+    "tests/lab/test_factor_screen.py",
+    "tests/lab/test_net_issuance_screen.py",
+    "tests/tiers.py",
+    "tests/scripts/test_scripts_have_help.py",
+    "research/stock-signals/_lib/**",
+    "research/stock-signals/factor-screen/code/**",
+    "research/stock-signals/momentum/code/**",
+    "research/stock-signals/net-issuance/code/**",
+    "research/CODEMOVED.csv",
+    "pyproject.toml"
+   ],
+   "effort_hours": 1.5
+  },
+  {
+   "id": "S5b",
+   "title": "Move wfo-methods (attribution, synthetic policy) and port the fold-attribution inventory test",
+   "depends_on": [
+    "S5a"
+   ],
+   "tasks": "Rules for every moving slice (S5a-S8): `git mv` first, edits second, in separate commits of the slice; append the\nCODEMOVED rows (kind `moved` only if bytes are identical, else `moved+edited`) in the move commit; create `code/tests/conftest.py`\nor `_lib/tests/conftest.py` with `from ggTrader.utils.study import bootstrap` / `bootstrap(__file__)`; rewrite imports with the\nPLAN_V2 section 3 patterns; tests load drivers with `load_driver`; replace roots with `bootstrap`/`repo_root`/`study_dir`;\nkeep each driver's argparse/`main()`/guard; update `DELEGATES` in the help test if a delegate moves; raise\n`tests/tiers.py:STUDIES_MIN_COLLECTED` to the research-half count measured at the end of the slice; run O.\n\nMoves: `src/ggTrader/lab/wfo_attribution.py`, `src/ggTrader/lab/wfo_policy_synthetic.py` ->\n`research/programme/wfo-methods/code/`; `scripts/wfo_fold_attribution.py` -> `code/run_fold_attribution.py`;\n`scripts/wfo_policy_synthetic.py` -> `code/run_policy_synthetic.py` (L4: module and driver would share a basename);\n`tests/lab/test_wfo_attribution.py`, `tests/lab/test_wfo_policy_synthetic.py` -> `code/tests/`.\nEdits: `run_fold_attribution.py:16-18` (`.parent.parent` root and `sys.path.insert`) -> `ROOT = bootstrap(__file__)`;\n`:20` -> `from wfo_attribution import ...`; `run_policy_synthetic.py:9` -> `from wfo_policy_synthetic import run_grid`,\n`:11` `ROOT` -> `bootstrap`. Tests: `test_wfo_attribution.py:3`, `test_wfo_policy_synthetic.py:14`, `:41`, `:109`, `:141`\n(`import ggTrader.lab.wfo_policy_synthetic as synthetic` -> `import wfo_policy_synthetic as synthetic`). Port\n`test_fold_attribution_sources_exist` from `tests/scripts/test_driver_default_paths.py` into\n`research/programme/wfo-methods/code/tests/test_fold_attribution_sources.py` (driver via `load_driver`) and delete it\n(and its now-unused helpers only if unused) from the tests/scripts file; the parametrised test keeps both scripts via CODEMOVED.\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen|wfo_attribution|wfo_policy_synthetic'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen|wfo_fold_attribution|wfo_policy_synthetic'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' | grep -v '# history-read' | (! grep .)",
+    "test ! -e src/ggTrader/lab/wfo_attribution.py && test ! -e src/ggTrader/lab/wfo_policy_synthetic.py",
+    "test -f research/programme/wfo-methods/code/run_fold_attribution.py && test -f research/programme/wfo-methods/code/run_policy_synthetic.py && test -f research/programme/wfo-methods/code/tests/test_fold_attribution_sources.py",
+    "! grep -n 'def test_fold_attribution_sources_exist' tests/scripts/test_driver_default_paths.py",
+    "for f in run_fold_attribution run_policy_synthetic; do .venv/bin/python research/programme/wfo-methods/code/$f.py --help >/dev/null || exit 1; done",
+    "scripts/run_tests.sh tests/scripts/test_driver_default_paths.py -q",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "git grep -nE 'parents\\[[0-9]+\\]|\\.parent\\.parent|find_project_root|sys\\.path\\.(insert|append)|sys\\.path\\[' -- ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' | grep -v '# root-ok' | (! grep .)"
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "O moves or the golden is not 120/120: revert, stop, report.",
+    "ROOT of run_fold_attribution.py resolves inside research/ (mis-rooted): stop.",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "src/ggTrader/lab/wfo_attribution.py",
+    "src/ggTrader/lab/wfo_policy_synthetic.py",
+    "scripts/wfo_fold_attribution.py",
+    "scripts/wfo_policy_synthetic.py",
+    "tests/lab/test_wfo_attribution.py",
+    "tests/lab/test_wfo_policy_synthetic.py",
+    "tests/scripts/test_driver_default_paths.py",
+    "tests/scripts/test_scripts_have_help.py",
+    "tests/tiers.py",
+    "research/programme/wfo-methods/code/**",
+    "research/CODEMOVED.csv"
+   ],
+   "effort_hours": 1
+  },
+  {
+   "id": "S5c",
+   "title": "Move the tax-lot library to its study (D2)",
+   "depends_on": [
+    "S5b"
+   ],
+   "tasks": "Rules for every moving slice (S5a-S8): `git mv` first, edits second, in separate commits of the slice; append the\nCODEMOVED rows (kind `moved` only if bytes are identical, else `moved+edited`) in the move commit; create `code/tests/conftest.py`\nor `_lib/tests/conftest.py` with `from ggTrader.utils.study import bootstrap` / `bootstrap(__file__)`; rewrite imports with the\nPLAN_V2 section 3 patterns; tests load drivers with `load_driver`; replace roots with `bootstrap`/`repo_root`/`study_dir`;\nkeep each driver's argparse/`main()`/guard; update `DELEGATES` in the help test if a delegate moves; raise\n`tests/tiers.py:STUDIES_MIN_COLLECTED` to the research-half count measured at the end of the slice; run O.\n\nMoves: `src/ggTrader/lab/tax_lots.py` -> `research/paper-system/tax-lots/code/tax_lots.py`;\n`tests/lab/test_tax_lots.py` -> `research/paper-system/tax-lots/code/tests/test_tax_lots.py`. Edit: test import `:11`\n`from ggTrader.lab.tax_lots import` -> `from tax_lots import`. The module imports nothing from ggTrader and stays\nbyte-identical (kind `moved`). If the owner reverses D2, skip this slice.\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen|wfo_attribution|wfo_policy_synthetic|tax_lots'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen|wfo_fold_attribution|wfo_policy_synthetic'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' | grep -v '# history-read' | (! grep .)",
+    "test ! -e src/ggTrader/lab/tax_lots.py && test ! -e tests/lab/test_tax_lots.py",
+    "test \"$(git show 46d8ff75:src/ggTrader/lab/tax_lots.py | sha256sum | cut -d\" \" -f1)\" = \"$(sha256sum research/paper-system/tax-lots/code/tax_lots.py | cut -d\" \" -f1)\"",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "git grep -nE 'parents\\[[0-9]+\\]|\\.parent\\.parent|find_project_root|sys\\.path\\.(insert|append)|sys\\.path\\[' -- ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' | grep -v '# root-ok' | (! grep .)"
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "O moves: revert, stop, report.",
+    "Owner reversed D2: skip the slice.",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "src/ggTrader/lab/tax_lots.py",
+    "tests/lab/test_tax_lots.py",
+    "tests/tiers.py",
+    "research/paper-system/tax-lots/code/**",
+    "research/CODEMOVED.csv"
+   ],
+   "effort_hours": 0.5
+  },
+  {
+   "id": "S5d",
+   "title": "A23 split into allocation/_lib + century-leverage + static-leverage, ONE commit, run alone",
+   "depends_on": [
+    "S5c"
+   ],
+   "tasks": "Run alone (no other slice open). Opus reviews this slice in a fresh context. Because the split must never leave\n`tests/lab/test_a23_rebalance.py` uncollectable, the moves, the split and every test edit land in **one commit** (the\n`git mv` + edit separation of the other slices is waived here; CODEMOVED kinds are `moved+edited` where bytes change).\n\n1. **Create `research/allocation/_lib/a23_backtest.py`** from `scripts/static_leverage_aftertax.py`: `load_prices` (`:47-132`),\n   `run` (`:136-226`), and every module constant either reads (at least `SSO_INCEPTION` `:33`,\n   `SSO_ER` `:34`; find the rest with an AST name scan). Import into its own namespace\n   `from ggTrader.lab.a23_rebalance import COST_BPS, Book, Lot, _trade_to` (the frozen test monkeypatches `a23._trade_to`, so\n   `run` must look `_trade_to` up in this module's globals) and `from ggTrader.utils.fred_data import load_fred_series,\n   parse_fred_csv`; keep `import yfinance as yf` there (the live path of `load_prices`). Bodies are copied verbatim.\n2. **Moves:** `scripts/static_leverage_aftertax.py` -> `research/allocation/static-leverage/code/run.py` (now imports\n   `load_prices`, `run`, constants from `a23_backtest` after `ROOT = bootstrap(__file__)`; `OUT_JSON` (`:31`) uses `ROOT`);\n   `src/ggTrader/lab/century_leverage.py` -> `research/allocation/century-leverage/code/century_leverage.py`;\n   `scripts/century_leverage.py` -> `.../century-leverage/code/run.py` (`:15-17` root and two `sys.path.insert` -> bootstrap;\n   `:19` -> `from century_leverage import`); `scripts/century_leverage_a23_x.py`, `scripts/century_leverage_calibrate.py`\n   -> `.../century-leverage/code/` (`ROOT` via bootstrap; `calibrate` `:12-16` likewise). In `century_leverage_a23_x.py` keep\n   the `git show {baseline_commit}:scripts/static_leverage_aftertax.py` read and the S2 alias (`# history-read` lines).\n3. **Tests:** split `tests/lab/test_a23_rebalance.py`: keep the 12 pure tests (`ggTrader.lab.a23_rebalance` only) in place, drop\n   `:18` `from scripts import static_leverage_aftertax as a23`; move `test_frozen_a23_shadow_rebalance_dates_and_lots_match`\n   (`:166`) and `test_frozen_marks_match_sold_and_bought_shares` (`:247`) to\n   `research/allocation/_lib/tests/test_a23_backtest_parity.py` with `import a23_backtest as a23` (L2), marked `study`,\n   frozen input path from `repo_root(__file__) / \"data/external/a23_inputs\"`. `tests/lab/test_century_leverage.py` ->\n   `.../century-leverage/code/tests/` (`:10` -> `from century_leverage import`; `:19` -> `import a23_backtest as a23`,\n   removing the cross-study edge). `tests/scripts/test_static_leverage_aftertax.py` -> `.../static-leverage/code/tests/`\n   (the five `from scripts.static_leverage_aftertax import Book|run` -> `from ggTrader.lab.a23_rebalance import Book` /\n   `from a23_backtest import run`; the cwd-relative subprocess `scripts/static_leverage_aftertax.py --help` (`:122`) ->\n   absolute path of `code/run.py`).\n4. **Gate Y:** `code/run.py --frozen-inputs data/external/a23_inputs --out <scratch>` must hash to\n   `645d4ee2dad880e61bffd147cee0985842f01fab1dae3caf4508fd567ddb6be4` if S0 reproduced it at base, else to S0's recorded hash (L20).\n   Gate X: `century_leverage_a23_x.py` prints `matches gate` if it did in S0.\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen|wfo_attribution|wfo_policy_synthetic|tax_lots|century_leverage'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen|wfo_fold_attribution|wfo_policy_synthetic|century_leverage|century_leverage_a23_x|century_leverage_calibrate|static_leverage_aftertax'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' | grep -v '# history-read' | (! grep .)",
+    "test ! -e src/ggTrader/lab/century_leverage.py && test ! -e scripts/static_leverage_aftertax.py && test ! -e scripts/century_leverage.py && test ! -e scripts/century_leverage_a23_x.py && test ! -e scripts/century_leverage_calibrate.py",
+    "test -f research/allocation/_lib/a23_backtest.py && test -f research/allocation/_lib/tests/test_a23_backtest_parity.py && test -f research/allocation/static-leverage/code/run.py && test -f research/allocation/century-leverage/code/run.py && test -f tests/lab/test_a23_rebalance.py",
+    "! grep -nE 'from scripts|import scripts' tests/lab/test_a23_rebalance.py",
+    "test \"$(grep -c '^def test_' tests/lab/test_a23_rebalance.py)\" -ge 12",
+    "! git grep -nE 'static.leverage' -- 'research/allocation/century-leverage/code/tests/*.py'",
+    "test $(git log --format=%H 46d8ff75..HEAD -- research/allocation/_lib/a23_backtest.py | wc -l) -eq 1",
+    "scripts/run_tests.sh tests/lab/test_a23_rebalance.py tests/lab/test_a23_rebalance_cli.py -q",
+    "scripts/run_capped.sh .venv/bin/python research/allocation/static-leverage/code/run.py --frozen-inputs data/external/a23_inputs --out \"${GGT_SI_OUT:?}/a23_y.json\" && test \"$(sha256sum \"$GGT_SI_OUT/a23_y.json\" | cut -d\" \" -f1)\" = \"$(cut -d\" \" -f1 \"$GGT_SI_OUT/s0/a23_y.sha256\")\"",
+    "! grep -q \"matches gate\" \"${GGT_SI_OUT:?}/s0/a23_x.log\" || scripts/run_capped.sh .venv/bin/python research/allocation/century-leverage/code/century_leverage_a23_x.py | grep -q 'matches gate'",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "git grep -nE 'parents\\[[0-9]+\\]|\\.parent\\.parent|find_project_root|sys\\.path\\.(insert|append)|sys\\.path\\[' -- ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' | grep -v '# root-ok' | (! grep .)"
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "O moves or the golden is not 120/120: revert the commit, stop, report.",
+    "Gate Y hash differs from S0's: revert, stop (the split changed the A23 numbers).",
+    "Gate X reproduced in S0 and fails now: revert, stop.",
+    "test_a23_rebalance (pure half) or test_a23_rebalance_cli fails: revert, stop (live tax advisory tests).",
+    "The work does not fit in one commit without a red intermediate state: stop and ask the lead."
+   ],
+   "files_in_scope": [
+    "scripts/static_leverage_aftertax.py",
+    "scripts/century_leverage.py",
+    "scripts/century_leverage_a23_x.py",
+    "scripts/century_leverage_calibrate.py",
+    "src/ggTrader/lab/century_leverage.py",
+    "tests/lab/test_a23_rebalance.py",
+    "tests/lab/test_century_leverage.py",
+    "tests/scripts/test_static_leverage_aftertax.py",
+    "tests/scripts/test_scripts_have_help.py",
+    "tests/tiers.py",
+    "research/allocation/_lib/**",
+    "research/allocation/century-leverage/code/**",
+    "research/allocation/static-leverage/code/**",
+    "research/CODEMOVED.csv"
+   ],
+   "effort_hours": 2.5
+  },
+  {
+   "id": "S5f",
+   "title": "Move root-cause tools and port the lens2 inventory test",
+   "depends_on": [
+    "S5d"
+   ],
+   "tasks": "Rules for every moving slice (S5a-S8): `git mv` first, edits second, in separate commits of the slice; append the\nCODEMOVED rows (kind `moved` only if bytes are identical, else `moved+edited`) in the move commit; create `code/tests/conftest.py`\nor `_lib/tests/conftest.py` with `from ggTrader.utils.study import bootstrap` / `bootstrap(__file__)`; rewrite imports with the\nPLAN_V2 section 3 patterns; tests load drivers with `load_driver`; replace roots with `bootstrap`/`repo_root`/`study_dir`;\nkeep each driver's argparse/`main()`/guard; update `DELEGATES` in the help test if a delegate moves; raise\n`tests/tiers.py:STUDIES_MIN_COLLECTED` to the research-half count measured at the end of the slice; run O.\n\nMoves: `scripts/lens2_build.py`, `scripts/root_cause_figures.py`, `scripts/guard_snapshot.sh` ->\n`research/audits/root-cause-2026-11-04/code/`; `tests/scripts/test_root_cause_figures.py` -> `code/tests/`.\nEdits: `lens2_build.py:22` `ROOT = Path(__file__).resolve().parent.parent` -> `ROOT = bootstrap(__file__)` (its prose that\nnames old paths stays: it renders a published lens; the file is exempt from the name sweep, not from the root sweep);\n`root_cause_figures.py:20` `REPO_ROOT = ...parents[1]` -> `REPO_ROOT = bootstrap(__file__)` (output default\n`REPO_ROOT / DEFAULT_OUT_DIR` unchanged); `guard_snapshot.sh` unchanged (hardcodes `REPO=/home/flynn/ggTrader`).\nTest: `test_root_cause_figures.py:11-12` (`from scripts import root_cause_figures as rcf`, `from scripts.root_cause_figures\nimport ...`) -> `rcf = load_driver(CODE / \"root_cause_figures.py\")` and attribute access. Port\n`test_lens2_resolves_every_inventory_artifact` from `tests/scripts/test_driver_default_paths.py` into\n`code/tests/test_lens2_inventory.py` (load_driver) and remove it from the tests/scripts file.\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen|wfo_attribution|wfo_policy_synthetic|tax_lots|century_leverage'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen|wfo_fold_attribution|wfo_policy_synthetic|century_leverage|century_leverage_a23_x|century_leverage_calibrate|static_leverage_aftertax|lens2_build|root_cause_figures'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/|scripts/guard_snapshot\\.sh\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' | grep -v '# history-read' | (! grep .)",
+    "test ! -e scripts/lens2_build.py && test ! -e scripts/root_cause_figures.py && test ! -e scripts/guard_snapshot.sh",
+    "test -f research/audits/root-cause-2026-11-04/code/lens2_build.py && test -f research/audits/root-cause-2026-11-04/code/tests/test_lens2_inventory.py",
+    "! grep -n 'def test_lens2_resolves_every_inventory_artifact' tests/scripts/test_driver_default_paths.py",
+    "for f in lens2_build root_cause_figures; do .venv/bin/python research/audits/root-cause-2026-11-04/code/$f.py --help >/dev/null || exit 1; done",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "git grep -nE 'parents\\[[0-9]+\\]|\\.parent\\.parent|find_project_root|sys\\.path\\.(insert|append)|sys\\.path\\[' -- ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' | grep -v '# root-ok' | (! grep .)"
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "O moves: revert, stop, report.",
+    "lens2_build ROOT resolves inside research/ (it would write lens output into the study folder): stop.",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "scripts/lens2_build.py",
+    "scripts/root_cause_figures.py",
+    "scripts/guard_snapshot.sh",
+    "tests/scripts/test_root_cause_figures.py",
+    "tests/scripts/test_driver_default_paths.py",
+    "tests/scripts/test_scripts_have_help.py",
+    "tests/tiers.py",
+    "research/audits/root-cause-2026-11-04/code/**",
+    "research/CODEMOVED.csv"
+   ],
+   "effort_hours": 1.5
+  },
+  {
+   "id": "S5g",
+   "title": "Move production-replica (allow-listed paper imports); deploy pre-flight gets --studies",
+   "depends_on": [
+    "S5f"
+   ],
+   "tasks": "Rules for every moving slice (S5a-S8): `git mv` first, edits second, in separate commits of the slice; append the\nCODEMOVED rows (kind `moved` only if bytes are identical, else `moved+edited`) in the move commit; create `code/tests/conftest.py`\nor `_lib/tests/conftest.py` with `from ggTrader.utils.study import bootstrap` / `bootstrap(__file__)`; rewrite imports with the\nPLAN_V2 section 3 patterns; tests load drivers with `load_driver`; replace roots with `bootstrap`/`repo_root`/`study_dir`;\nkeep each driver's argparse/`main()`/guard; update `DELEGATES` in the help test if a delegate moves; raise\n`tests/tiers.py:STUDIES_MIN_COLLECTED` to the research-half count measured at the end of the slice; run O.\n\nMoves: `src/ggTrader/lab/replica.py` -> `research/audits/production-replica/code/replica.py`;\n`scripts/production_replica_audit.py` -> `code/run.py`; `scripts/replica_parity_check.py` -> `code/replica_parity_check.py`;\n`tests/lab/test_replica.py`, `tests/scripts/test_production_replica_audit.py` -> `code/tests/`.\nEdits: `run.py` (old `:19` `from ggTrader.lab.replica import ...` -> `from replica import ...`; `:24` `ROOT` -> bootstrap; the\n`ggTrader.utils.significance`/`fred_data` imports from S2 stay); `replica_parity_check.py:15` -> `from replica import ...`,\n`:19` ROOT -> bootstrap. `replica.py` keeps its `ggTrader.lab.data` and `ggTrader.paper.*` imports (allowed only for this\nfolder, L18). Tests: `test_replica.py:7`, `:180`, `:202`, `:229` -> `from replica import ...`; `:203`\n`from scripts.replica_parity_check import explain_orders` -> `load_driver(CODE / \"replica_parity_check.py\").explain_orders`;\n`test_production_replica_audit.py:11` `from scripts import production_replica_audit as audit` -> `audit = load_driver(CODE / \"run.py\")`.\nThe detector pin (`_event_audit_detector_provenance.json`) stays HISTORY at `8bc365ee`.\n`.claude/skills/ggtrader-deploy/SKILL.md`: pre-flight runs `scripts/run_tests.sh --full` **and**\n`scripts/run_tests.sh --studies` (test_replica exercises `paper` internals and has left tests/; L22).\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen|wfo_attribution|wfo_policy_synthetic|tax_lots|century_leverage|replica'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen|wfo_fold_attribution|wfo_policy_synthetic|century_leverage|century_leverage_a23_x|century_leverage_calibrate|static_leverage_aftertax|lens2_build|root_cause_figures|production_replica_audit|replica_parity_check'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/|scripts/guard_snapshot\\.sh\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' | grep -v '# history-read' | (! grep .)",
+    "test ! -e src/ggTrader/lab/replica.py && test ! -e scripts/production_replica_audit.py && test ! -e scripts/replica_parity_check.py",
+    "test -f research/audits/production-replica/code/run.py && test -f research/audits/production-replica/code/tests/test_replica.py",
+    "grep -q -- '--studies' .claude/skills/ggtrader-deploy/SKILL.md",
+    "for f in run replica_parity_check; do .venv/bin/python research/audits/production-replica/code/$f.py --help >/dev/null || exit 1; done",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "git grep -nE 'parents\\[[0-9]+\\]|\\.parent\\.parent|find_project_root|sys\\.path\\.(insert|append)|sys\\.path\\[' -- ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' | grep -v '# root-ok' | (! grep .)"
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "O moves or the golden is not 120/120: revert, stop, report.",
+    "Any src/ggTrader/paper file needs an edit: stop (out of scope; touches the trader image).",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "src/ggTrader/lab/replica.py",
+    "scripts/production_replica_audit.py",
+    "scripts/replica_parity_check.py",
+    "tests/lab/test_replica.py",
+    "tests/scripts/test_production_replica_audit.py",
+    "tests/scripts/test_scripts_have_help.py",
+    "tests/scripts/test_research_layout.py",
+    "tests/tiers.py",
+    "research/audits/production-replica/code/**",
+    "research/CODEMOVED.csv",
+    ".claude/skills/ggtrader-deploy/SKILL.md"
+   ],
+   "effort_hours": 1.5
+  },
+  {
+   "id": "S7",
+   "title": "Move the event-timing audit (pinned; 4 byte-identical siblings)",
+   "depends_on": [
+    "S5g"
+   ],
+   "tasks": "Rules for every moving slice (S5a-S8): `git mv` first, edits second, in separate commits of the slice; append the\nCODEMOVED rows (kind `moved` only if bytes are identical, else `moved+edited`) in the move commit; create `code/tests/conftest.py`\nor `_lib/tests/conftest.py` with `from ggTrader.utils.study import bootstrap` / `bootstrap(__file__)`; rewrite imports with the\nPLAN_V2 section 3 patterns; tests load drivers with `load_driver`; replace roots with `bootstrap`/`repo_root`/`study_dir`;\nkeep each driver's argparse/`main()`/guard; update `DELEGATES` in the help test if a delegate moves; raise\n`tests/tiers.py:STUDIES_MIN_COLLECTED` to the research-half count measured at the end of the slice; run O.\n\n**Step 0 (old PLAN experiment 2, scratch clone, ~30 min):** `git clone file://$PWD $GGT_SI_OUT/s7exp`, apply steps 1-3 there,\nrun the 4 moved test files with `--import-mode=importlib` (repo venv, `PYTHONPATH=<clone>/src`, assert `ggTrader.__file__`\nunder the clone) and `sha256sum` the 4 siblings against `_event_evidence_resolution_workbook.json`. Proceed only if green.\n\n1. **Moves** to `research/audits/event-timing/code/`: `src/ggTrader/lab/{event_timing_audit,event_timing_sources,\n   event_timing_reconstruction,event_acceptance_diagnostic,form4_data,earnings_surprise_data}.py`;\n   `scripts/event_timing_audit.py` -> `run.py`; `scripts/insider_acceptance_diagnostic.py`, `scripts/form4_backfill.py`,\n   `scripts/earnings_surprise_backfill.py` (same names). Tests `tests/lab/test_{event_timing_audit,event_acceptance_diagnostic,\n   form4_data,earnings_surprise_data}.py` -> `code/tests/`. Audit, sources and reconstruction stay in one directory\n   (`with_name` hashing, `event_timing_audit.py:1545`).\n2. **Do-not-edit:** `event_timing_sources.py`, `event_timing_reconstruction.py`, `form4_data.py`, `earnings_surprise_data.py`\n   are moved byte-identical (no import in them points at a moved module); CODEMOVED rows `kind=moved, do_not_edit=yes`.\n3. **Edits (audit, HISTORY already):** `:26` `from ggTrader.lab.event_timing_sources import (` -> `from event_timing_sources import (`;\n   `:2169` and `:2690` `from ggTrader.lab.event_timing_reconstruction import` -> `from event_timing_reconstruction import`;\n   `:43` `ROOT = Path(__file__).resolve().parents[3]` -> `ROOT = repo_root(__file__)` (keep the name `ROOT`).\n   `event_acceptance_diagnostic.py:13` -> `from event_timing_sources import ...`, `:16` ROOT -> `repo_root(__file__)`.\n   Wrappers `run.py` / `insider_acceptance_diagnostic.py`: `bootstrap(__file__)` then `from event_timing_audit import main` /\n   `from event_acceptance_diagnostic import main`. `form4_backfill.py:20`, `:71` -> `from form4_data import ...`;\n   `earnings_surprise_backfill.py:19` -> `from earnings_surprise_data import ...`.\n4. **Tests:** `test_event_timing_audit.py`: every `from ggTrader.lab.event_timing_X import` -> `from event_timing_X import`;\n   `:834` `from ggTrader.lab import event_timing_sources as sources` -> `import event_timing_sources as sources`; local\n   imports `:1936` (`reconstruction`), `:2375`, `:2589`, `:2696`, `:3093` (`audit`) -> plain module imports; the 7 string\n   patches become object patches on an imported module: `:580`, `:603`, `:810`, `:1816` -> `monkeypatch.setattr(sources.time,\n   \"sleep\", ...)`; `:1792` -> `(sources.os, \"replace\", fail)`; `:1814` -> `(sources.time, \"monotonic\", ...)`; `:1295` ->\n   `(audit.psycopg2, \"connect\", ...)` (same objects are patched as before). `test_event_acceptance_diagnostic.py:9`,\n   `test_form4_data.py:10`, `:210`, `test_earnings_surprise_data.py:8`, `:106` -> plain imports.\n5. Help test `DELEGATES`: `research/audits/event-timing/code/run.py` -> (`.../code/event_timing_audit.py`, `main`),\n   `.../insider_acceptance_diagnostic.py` -> (`.../event_acceptance_diagnostic.py`, `main`). `pyproject.toml:23` bs4 comment\n   -> `research/audits/event-timing/code/event_timing_sources.py`.\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen|wfo_attribution|wfo_policy_synthetic|tax_lots|century_leverage|replica|event_timing_audit|event_timing_sources|event_timing_reconstruction|event_acceptance_diagnostic|form4_data|earnings_surprise_data'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen|wfo_fold_attribution|wfo_policy_synthetic|century_leverage|century_leverage_a23_x|century_leverage_calibrate|static_leverage_aftertax|lens2_build|root_cause_figures|production_replica_audit|replica_parity_check|event_timing_audit|insider_acceptance_diagnostic|form4_backfill|earnings_surprise_backfill'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/|scripts/guard_snapshot\\.sh\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' | grep -v '# history-read' | (! grep .)",
+    "for f in event_timing_sources event_timing_reconstruction form4_data earnings_surprise_data; do test \"$(git show 46d8ff75:src/ggTrader/lab/$f.py | sha256sum | cut -d' ' -f1)\" = \"$(sha256sum research/audits/event-timing/code/$f.py | cut -d' ' -f1)\" || exit 1; done",
+    "test \"$(awk -F, '$8==\"yes\"' research/CODEMOVED.csv | wc -l)\" -eq 4",
+    "! git grep -nE 'monkeypatch\\.setattr\\(\"ggTrader' -- 'research/audits/event-timing/code/tests/*.py'",
+    "scripts/run_tests.sh tests/scripts/test_recorded_hashes.py tests/scripts/test_codemoved.py -q",
+    ".venv/bin/python research/audits/event-timing/code/run.py --help >/dev/null",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=11,MOVED-MATCH=4,HISTORY-MATCH=7,FAIL=0",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "git grep -nE 'parents\\[[0-9]+\\]|\\.parent\\.parent|find_project_root|sys\\.path\\.(insert|append)|sys\\.path\\[' -- ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' | grep -v '# root-ok' | (! grep .)"
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "Step 0 is red in the scratch clone: stop before touching the branch.",
+    "Any of the 4 siblings changes a byte (sha differs from base): revert, stop.",
+    "verify_pins is not MATCH=11, MOVED-MATCH=4, HISTORY-MATCH=7, FAIL=0: revert, stop.",
+    "O moves: revert, stop, report.",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "src/ggTrader/lab/event_timing_audit.py",
+    "src/ggTrader/lab/event_timing_sources.py",
+    "src/ggTrader/lab/event_timing_reconstruction.py",
+    "src/ggTrader/lab/event_acceptance_diagnostic.py",
+    "src/ggTrader/lab/form4_data.py",
+    "src/ggTrader/lab/earnings_surprise_data.py",
+    "scripts/event_timing_audit.py",
+    "scripts/insider_acceptance_diagnostic.py",
+    "scripts/form4_backfill.py",
+    "scripts/earnings_surprise_backfill.py",
+    "tests/lab/test_event_timing_audit.py",
+    "tests/lab/test_event_acceptance_diagnostic.py",
+    "tests/lab/test_form4_data.py",
+    "tests/lab/test_earnings_surprise_data.py",
+    "tests/scripts/test_scripts_have_help.py",
+    "tests/tiers.py",
+    "research/audits/event-timing/code/**",
+    "research/CODEMOVED.csv",
+    "pyproject.toml"
+   ],
+   "effort_hours": 4
+  },
+  {
+   "id": "S8",
+   "title": "Move the intraday family (probe _lib, feasibility, observer; pinned, recorder running)",
+   "depends_on": [
+    "S7"
+   ],
+   "tasks": "Rules for every moving slice (S5a-S8): `git mv` first, edits second, in separate commits of the slice; append the\nCODEMOVED rows (kind `moved` only if bytes are identical, else `moved+edited`) in the move commit; create `code/tests/conftest.py`\nor `_lib/tests/conftest.py` with `from ggTrader.utils.study import bootstrap` / `bootstrap(__file__)`; rewrite imports with the\nPLAN_V2 section 3 patterns; tests load drivers with `load_driver`; replace roots with `bootstrap`/`repo_root`/`study_dir`;\nkeep each driver's argparse/`main()`/guard; update `DELEGATES` in the help test if a delegate moves; raise\n`tests/tiers.py:STUDIES_MIN_COLLECTED` to the research-half count measured at the end of the slice; run O.\n\nThe running recorder uses `/home/flynn/.local/share/ggtrader/intraday-observer/releases/280d4a0edc00f1b4b23ba7bbe8dd80432877b36f` with its own runtime and credentials; nothing here may touch the release, the runtime,\nthe credentials file, `~/.config/systemd/user/ggtrader-intraday-observer-*` or the timers. Checks are read-only.\n**Step 0 (old PLAN experiment 1, scratch clone, ~1 h):** apply steps 1-4 in `$GGT_SI_OUT/s8exp`, run the four intraday test\nfiles (importlib mode, clone's `src` first) and `verify_pins.py --expect MATCH=1,MOVED-MATCH=4,HISTORY-MATCH=17,FAIL=0`. Proceed\nonly if green.\n\n1. **Moves:** `src/ggTrader/lab/intraday_probe.py` -> `research/intraday/_lib/intraday_probe.py`;\n   `src/ggTrader/lab/intraday_momentum.py`, `intraday_momentum_data.py` -> `research/intraday/spy-momentum-feasibility/code/`;\n   `scripts/intraday_momentum_research.py` -> feasibility `code/run.py`; `scripts/intraday_coverage_probe.py` -> feasibility\n   `code/intraday_coverage_probe.py`; `src/ggTrader/lab/intraday_observer.py`, `scripts/intraday_observe.py`,\n   `scripts/intraday_observer_job.py` -> `research/intraday/spy-momentum-prospective-observer/code/` (same names);\n   tests: `test_intraday_probe` -> `research/intraday/_lib/tests/`; `test_intraday_momentum`, `test_intraday_momentum_data` ->\n   feasibility `code/tests/`; `test_intraday_observer` -> observer `code/tests/` (CODEMOVED row required: it is pinned).\n2. **ggTrader-free roots (L5), each line ending `# root-ok: <reason>`:** `intraday_probe.py:34` stays `parents[3]` (same depth\n   from `_lib`); `intraday_momentum.py:56` and `intraday_observer.py:46` become `parents[4]`. Imports: `intraday_observer.py:32`,\n   `intraday_momentum.py:46`, `intraday_momentum_data.py:29` -> `from intraday_probe import ...`; `intraday_momentum_data.py:28`\n   `from ggTrader.lab import intraday_momentum as core` -> `import intraday_momentum as core`.\n3. **Code bindings:** `intraday_observer.py:47-52` `CODE_FILES` -> the 3 observer `code/` paths + `research/intraday/_lib/intraday_probe.py`;\n   `intraday_momentum.py:65-70` `CODE_FILES` -> feasibility `code/intraday_momentum.py`, `code/intraday_momentum_data.py`,\n   `research/intraday/_lib/intraday_probe.py`, feasibility `code/run.py`.\n4. **Wrappers stay self-bootstrapping (gap 7):** in `intraday_observe.py` and `intraday_observer_job.py` replace `:8-9` with\n   `HERE = Path(__file__).resolve().parent  # root-ok` and `sys.path[:0] = [str(HERE), str(HERE.parents[1] / \"_lib\")]  # root-ok:\n   release venv has no ggTrader`; `:14` -> `from intraday_observer import main as run` / `job_main`. Same stdlib pattern for the\n   two feasibility drivers (`:9-10`, `:15-16`; `run.py:50`, `:57` imports).\n5. **Tests:** `test_intraday_observer.py:248` `ROOT` -> `repo_root(__file__)`; `:18` -> `import intraday_observer as obs`;\n   `test_import_is_inert` (`:283-293`): keep `python -I` and the tmp-dir-empty assert, set `sys.path[:0]` to the observer `code/`\n   and `research/intraday/_lib`, `import intraday_observer`, assert `pandas_market_calendars` and `ggTrader` are both absent\n   from `sys.modules` (L21); `:1869`, `:2298` subprocess paths -> observer `code/`; `:1891` source read -> observer\n   `code/intraday_observer.py`; `:2315` -> `\"research/intraday/spy-momentum-prospective-observer/code/intraday_observer_job.py\"`.\n   `test_intraday_momentum.py:13-14`, `test_intraday_momentum_data.py:13-15` -> plain imports, `:17` `SCRIPT` -> feasibility\n   `code/run.py`; `test_intraday_probe.py:11` -> `import intraday_probe as probe`; move its help test (`:427`, script path at `:432`) to\n   feasibility `code/tests/test_coverage_probe_help.py` (L9).\n6. Help test `DELEGATES`: observer wrappers -> (`.../code/intraday_observer.py`, `main` / `job_main`). After this slice add the\n   FAST invariant test: no file under `tests/` carries the `study` marker.\n7. `deploy/intraday_observer/OPERATOR_RUNBOOK.md`: append a section \"Releases cut after <S8 commit>\" (new wrapper paths,\n   templates' `ExecStart` must be edited at that release; owner-gated). Existing commands and the `*.service` templates stay\n   unchanged (they describe `280d4a0`, and the tests read `deploy/`).\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen|wfo_attribution|wfo_policy_synthetic|tax_lots|century_leverage|replica|event_timing_audit|event_timing_sources|event_timing_reconstruction|event_acceptance_diagnostic|form4_data|earnings_surprise_data|intraday_probe|intraday_momentum|intraday_momentum_data|intraday_observer'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen|wfo_fold_attribution|wfo_policy_synthetic|century_leverage|century_leverage_a23_x|century_leverage_calibrate|static_leverage_aftertax|lens2_build|root_cause_figures|production_replica_audit|replica_parity_check|event_timing_audit|insider_acceptance_diagnostic|form4_backfill|earnings_surprise_backfill|intraday_coverage_probe|intraday_momentum_research|intraday_observe|intraday_observer_job'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/|scripts/guard_snapshot\\.sh\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' | grep -v '# history-read' | (! grep .)",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=1,MOVED-MATCH=4,HISTORY-MATCH=17,FAIL=0",
+    "test \"$(awk -F, '$1==\"tests/lab/test_intraday_observer.py\"' research/CODEMOVED.csv | wc -l)\" -eq 1",
+    "! git grep -nE 'ggTrader' -- research/intraday/_lib/intraday_probe.py 'research/intraday/spy-momentum-prospective-observer/code/intraday_*.py'",
+    "C=research/intraday/spy-momentum-prospective-observer/code; .venv/bin/python -I -c \"import sys; sys.path[:0] = ['$C', 'research/intraday/_lib']; import intraday_observer; sys.exit(1 if {'pandas_market_calendars', 'ggTrader'} & set(sys.modules) else 0)\"",
+    "for f in intraday_observe intraday_observer_job; do .venv/bin/python -I research/intraday/spy-momentum-prospective-observer/code/$f.py --help >/dev/null || exit 1; done",
+    "git diff --quiet 46d8ff75 HEAD -- deploy/intraday_observer/'*.service'",
+    "! git grep -n 'mark.study' -- tests",
+    "test \"$(git -C /home/flynn/.local/share/ggtrader/intraday-observer/releases/280d4a0edc00f1b4b23ba7bbe8dd80432877b36f rev-parse HEAD)\" = 280d4a0edc00f1b4b23ba7bbe8dd80432877b36f && test -z \"$(git -C /home/flynn/.local/share/ggtrader/intraday-observer/releases/280d4a0edc00f1b4b23ba7bbe8dd80432877b36f status --porcelain)\"",
+    "sha256sum -c --quiet \"${GGT_SI_OUT:?}/s0/units.sha256\"",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "git grep -nE 'parents\\[[0-9]+\\]|\\.parent\\.parent|find_project_root|sys\\.path\\.(insert|append)|sys\\.path\\[' -- ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' | grep -v '# root-ok' | (! grep .)"
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "Step 0 is red in the scratch clone: stop before touching the branch.",
+    "Any read-only check of the release, unit files or timers shows a change: stop immediately and tell the owner.",
+    "verify_pins is not MATCH=1, MOVED-MATCH=4, HISTORY-MATCH=17, FAIL=0 (or a canonical map fails): revert, stop.",
+    "The rewritten test_import_is_inert is weaker than the original (fewer asserts): stop.",
+    "O moves: revert, stop, report.",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "src/ggTrader/lab/intraday_probe.py",
+    "src/ggTrader/lab/intraday_momentum.py",
+    "src/ggTrader/lab/intraday_momentum_data.py",
+    "src/ggTrader/lab/intraday_observer.py",
+    "scripts/intraday_coverage_probe.py",
+    "scripts/intraday_momentum_research.py",
+    "scripts/intraday_observe.py",
+    "scripts/intraday_observer_job.py",
+    "tests/lab/test_intraday_probe.py",
+    "tests/lab/test_intraday_momentum.py",
+    "tests/lab/test_intraday_momentum_data.py",
+    "tests/lab/test_intraday_observer.py",
+    "tests/scripts/test_scripts_have_help.py",
+    "tests/scripts/test_research_layout.py",
+    "tests/tiers.py",
+    "research/intraday/_lib/**",
+    "research/intraday/spy-momentum-feasibility/code/**",
+    "research/intraday/spy-momentum-prospective-observer/code/**",
+    "research/CODEMOVED.csv",
+    "deploy/intraday_observer/OPERATOR_RUNBOOK.md"
+   ],
+   "effort_hours": 5.5
+  },
+  {
+   "id": "S6",
+   "title": "Docs, research index and skills (after all code has moved)",
+   "depends_on": [
+    "S8"
+   ],
+   "tasks": "First rebase understanding on S1's edits to AGENTS.md, README.md, docs/architecture.md and the deploy/upgrade skills\n(they are already on the branch; edit on top, do not revert them).\n\n1. `AGENTS.md` (CLAUDE.md is a symlink): section 1 module map (lab no longer holds study modules; `utils` gains\n   significance/fred_data/io/manifest/binding/study); section 3 \"Adding a study\" (`scripts/study.py new`, `code/`, `_lib`,\n   bootstrap, CODEMOVED); 4.5 \"Core logic in src\" -> \"engine logic in src; study logic in its study's `code/`\"; 4.7 drivers\n   may live in `research/<cat>/<study>/code/`; section 5 docs placement; test tiers (`run_tests.sh` fast default, `--full`,\n   `--studies`).\n2. `docs/architecture.md` (`:125`, `:406`, `:426-427`, `:436-439`, `:453-455`, `:466` at base) and `docs/cli_reference.md`\n   (`:28-30`, `:59`, `:75-76`, `:94-95`, `:413` at base) -> new paths; `README.md`; `docs/next_steps.md` if it names moved paths.\n3. `research/README.md`: one paragraph on `code/`, `code/tests/`, `<category>/_lib/`, `CODEMOVED.csv` next to `MOVED.csv`.\n   This is the only modification to a pre-existing research file in the whole programme (F).\n4. Skills: `research-snapshot` (line 79 `STRATEGY_REGISTRY` -> `registry.discover()`/`REGISTRY`; report glob `20*-*.md`; skip\n   `code/**`, README, `study.toml`; stop reading the one-off reorg CSV); `research-prompts` (line 9 stale `next_steps` pointer;\n   Mode C emits `scripts/study.py new`); `research-report-review` (driver = `code/run.py`, `PIN.json`); `vbt-upgrade` (`--full`\n   and `--studies`); `ggtrader-deploy` (already `--full` + `--studies` from S5g; check); `trader-performance-review` and\n   `daily-trader-check` unchanged for the shadow script (it stayed, L3).\n5. `docs/changelog.md`: one new entry (what moved, why, CODEMOVED, test tiers, O unchanged). Do not rewrite old entries\n   (`:121-125` is stale about `padded_pct_change` users; the new entry says so).\n6. Path check: no new problem versus S0's baseline over AGENTS.md, README.md, architecture, cli_reference, next_steps and every\n   `.claude/skills/*/SKILL.md` (history docs excluded); cumulative name sweep including these docs.\n",
+   "mechanical_checks": [
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen|wfo_attribution|wfo_policy_synthetic|tax_lots|century_leverage|replica|event_timing_audit|event_timing_sources|event_timing_reconstruction|event_acceptance_diagnostic|form4_data|earnings_surprise_data|intraday_probe|intraday_momentum|intraday_momentum_data|intraday_observer'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen|wfo_fold_attribution|wfo_policy_synthetic|century_leverage|century_leverage_a23_x|century_leverage_calibrate|static_leverage_aftertax|lens2_build|root_cause_figures|production_replica_audit|replica_parity_check|event_timing_audit|insider_acceptance_diagnostic|form4_backfill|earnings_surprise_backfill|intraday_coverage_probe|intraday_momentum_research|intraday_observe|intraday_observer_job'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/|scripts/guard_snapshot\\.sh\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' AGENTS.md README.md docs/architecture.md docs/cli_reference.md docs/next_steps.md | grep -v '# history-read' | (! grep .)",
+    "for f in AGENTS.md README.md docs/architecture.md docs/cli_reference.md docs/next_steps.md .claude/skills/*/SKILL.md; do .venv/bin/python scripts/check_lens_report.py --paths-only \"$f\" | sed \"s|^|$f: |\"; done | sort > \"${GGT_SI_OUT:?}/docpaths_now.txt\"; test -z \"$(comm -13 \"$GGT_SI_OUT/s0/docpaths.txt\" \"$GGT_SI_OUT/docpaths_now.txt\")\"",
+    "grep -q 'CODEMOVED.csv' research/README.md",
+    "! grep -n 'STRATEGY_REGISTRY' .claude/skills/research-snapshot/SKILL.md",
+    "grep -q -- '--studies' .claude/skills/vbt-upgrade/SKILL.md",
+    "git diff --quiet 46d8ff75 HEAD -- research/TEMPLATE-research-report.md research/MOVED.csv",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=1,MOVED-MATCH=4,HISTORY-MATCH=17,FAIL=0",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\"",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49"
+   ],
+   "oracle": "none",
+   "stop_conditions": [
+    "A doc edit would modify any research file other than research/README.md: stop (F).",
+    "The path check shows a problem not in S0's baseline that cannot be fixed by a path edit: stop, report.",
+    "Any check fails twice after a fix attempt: stop, report."
+   ],
+   "files_in_scope": [
+    "AGENTS.md",
+    "README.md",
+    "docs/architecture.md",
+    "docs/cli_reference.md",
+    "docs/next_steps.md",
+    "docs/changelog.md",
+    "research/README.md",
+    ".claude/skills/**"
+   ],
+   "effort_hours": 3.5
+  },
+  {
+   "id": "S9",
+   "title": "Final review, oracle, figures, owner summary; one push only after the owner's yes",
+   "depends_on": [
+    "S6"
+   ],
+   "tasks": "1. Fresh-context Opus review of `git diff -M 46d8ff75..HEAD` with only the diff, PLAN_V2.md and CORRECTIONS.md as context\n   (not Opus reviewing its own build; state that limitation if the builder was Opus).\n2. Run O in full; FAST/FULL/STUDIES timings on an idle host (loadavg < 2.0) and compare with S0.\n3. Confirm or correct PLAN_V2's figures: src ~14,100 lines, scripts >= 4,138 (+ `study.py`, `verify_pins.py`), FAST ~1,200-1,280\n   cases at ~100-120 s, 22 pins (MATCH 1 / MOVED-MATCH 4 / HISTORY-MATCH 17), 49-script balance.\n4. Write the owner summary (plain words, no internal labels): what moved, what did not change (O numbers, golden), test times,\n   open owner decisions D1-D10.\n5. Push: only on the owner's explicit yes, once, to main. Before it the owner confirms the trader cron lines are still commented\n   out (`docker-build.yml` rebuilds `ghcr.io/garykuepper/ggtrader:latest` on every push to main with no path filter; do not pull or\n   restart the container). Never force-push.\n",
+   "mechanical_checks": [
+    "git ls-files ':(glob)src/ggTrader/**/*.py' | xargs cat | wc -l",
+    "git ls-files scripts | xargs cat | wc -l",
+    "scripts/run_tests.sh --fast --collect-only -q 2>/dev/null | tail -3",
+    ".venv/bin/python scripts/verify_pins.py --expect MATCH=1,MOVED-MATCH=4,HISTORY-MATCH=17,FAIL=0",
+    "n_live=$(git ls-files scripts | grep -cvE '^scripts/(study|verify_pins)\\.py$'); n_rows=$(awk -F, 'NR>1 && $1 ~ /^scripts\\// {print $1}' research/CODEMOVED.csv | sort -u | wc -l); test $((n_live + n_rows)) -eq 49",
+    "git grep -nE 'parents\\[[0-9]+\\]|\\.parent\\.parent|find_project_root|sys\\.path\\.(insert|append)|sys\\.path\\[' -- ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' | grep -v '# root-ok' | (! grep .)",
+    "L='event_study|significance|fred_data|french_data|momentum_screen|factor_screen|net_issuance_screen|wfo_attribution|wfo_policy_synthetic|tax_lots|century_leverage|replica|event_timing_audit|event_timing_sources|event_timing_reconstruction|event_acceptance_diagnostic|form4_data|earnings_surprise_data|intraday_probe|intraday_momentum|intraday_momentum_data|intraday_observer'; S='research_reorg|research_retarget|migrate_paper_dates_20260822|factor_french_screen|momentum_french_screen|net_issuance_screen|wfo_fold_attribution|wfo_policy_synthetic|century_leverage|century_leverage_a23_x|century_leverage_calibrate|static_leverage_aftertax|lens2_build|root_cause_figures|production_replica_audit|replica_parity_check|event_timing_audit|insider_acceptance_diagnostic|form4_backfill|earnings_surprise_backfill|intraday_coverage_probe|intraday_momentum_research|intraday_observe|intraday_observer_job'; git grep -nE \"ggTrader\\.lab\\.($L)([^a-zA-Z0-9_]|$)|from ggTrader\\.lab import ($L)([^a-zA-Z0-9_]|$)|lab/($L)\\.py|scripts/($S)\\.py|from scripts(\\.| import )($S)([^a-zA-Z0-9_]|$)|ggTrader\\.utils\\.returns|from ggTrader\\.utils import returns|utils/returns\\.py|scripts/one_off/|scripts/guard_snapshot\\.sh\" -- src scripts tests ggt.py pyproject.toml ruff.toml Dockerfile .github .claude ':(glob)research/*/*/code/**' ':(glob)research/*/_lib/**' ':(exclude)src/ggTrader/paper/trader.py' ':(exclude)scripts/lens2_build.py' ':(exclude)research/audits/root-cause-2026-11-04/code/lens2_build.py' ':(exclude)tests/scripts/test_driver_default_paths.py' AGENTS.md README.md docs/architecture.md docs/cli_reference.md docs/next_steps.md | grep -v '# history-read' | (! grep .)",
+    "scripts/run_tests.sh -q",
+    "scripts/run_tests.sh --full -q",
+    "scripts/run_tests.sh --studies -q",
+    "test -z \"$(git diff --no-renames --name-status 46d8ff75 HEAD -- research | awk '{s=$1; p=$2} !((s==\"A\" && (p ~ /^research\\/[^\\/]+\\/[^\\/]+\\/code\\// || p ~ /^research\\/[^\\/]+\\/_lib\\// || p==\"research/CODEMOVED.csv\" || p==\"research/TEMPLATE-brief.md\" || p==\"research/programme/vectorbt-engine/S1-test-cuts.md\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-oracles.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-test-counts.json\" || p==\"research/programme/vectorbt-engine/p11-evidence/S1-timing.json\")) || (s==\"M\" && p==\"research/README.md\"))')\"",
+    "test -z \"$(git status --porcelain --untracked-files=all research data results)\""
+   ],
+   "oracle": "O",
+   "stop_conditions": [
+    "O moves or the golden is not 120/120: stop, report; nothing is pushed.",
+    "The reviewer finds a correctness issue: stop, fix in a new slice, re-run S9.",
+    "No explicit owner yes: do not push."
+   ],
+   "files_in_scope": [
+    "(review only; fixes go into a new slice)"
+   ],
+   "effort_hours": 2
+  }
+ ]
+}

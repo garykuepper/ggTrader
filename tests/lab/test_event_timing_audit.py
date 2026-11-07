@@ -32,6 +32,8 @@ from ggTrader.lab.event_timing_audit import (
     sample_stratum,
 )
 
+pytestmark = pytest.mark.study
+
 # ============================================================================
 # 1. Clock Tests
 # ============================================================================

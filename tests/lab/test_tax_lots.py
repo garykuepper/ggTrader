@@ -17,6 +17,8 @@ from ggTrader.lab.tax_lots import (
     verify_events,
 )
 
+pytestmark = pytest.mark.study
+
 
 @pytest.mark.parametrize(
     ("replacement_date", "replacement_basis", "replacement_gain"),

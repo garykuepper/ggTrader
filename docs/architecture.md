@@ -312,7 +312,7 @@ ggt paper [--live]   (cron, when the owner re-enables it: scripts/paper_trade.sh
 7. notifier.send()                  -> Telegram (a read-only dry run logs instead)
 ```
 
-`paper/` reaches vectorbt only through `ggTrader.engine` (`tests/paper/test_paper_boundary.py`).
+`paper/` reaches vectorbt only through `ggTrader.engine` (`tests/engine/test_boundary.py` scans every file under `src/`; `tests/paper/test_paper_boundary.py` checks the signal path).
 
 ---
 
@@ -375,6 +375,8 @@ independent numpy references (rtol 1e-9) and the legacy formulas; L1b a defaults
 dumps vectorbt's defaults, compared with `golden/vbt_defaults.json`); L2 seeded golden panels on both
 engines; L3 dispatch probe, numba-vs-Rust parity and a `-W error` lane. Goldens are rewritten only with
 `--update-golden --golden-reason "<why>"` and the reason must appear in `docs/changelog.md`.
+
+**Test tiers.** `scripts/run_tests.sh` runs the fast core (Rust engine only; no `slow`, `numba`, `tripwire`, `study`, `tooling` or `integration` test). The merge, deploy and vectorbt-upgrade gate is the FULL run, `scripts/run_tests.sh --full`; the tiers are defined in `tests/tiers.py`.
 
 ---
 

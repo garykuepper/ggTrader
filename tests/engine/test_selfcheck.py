@@ -19,6 +19,7 @@ def test_rust_is_dispatched_when_configured() -> None:
     assert result["vectorbt"] == result["vectorbt_rust"]
 
 
+@pytest.mark.numba
 def test_numba_never_calls_rust() -> None:
     config.set_engine("numba")
     result = selfcheck.selfcheck()
@@ -26,6 +27,7 @@ def test_numba_never_calls_rust() -> None:
     assert result["rust_calls"] == 0
 
 
+@pytest.mark.numba
 def test_both_engines_simulate_the_same_value() -> None:
     config.set_engine("rust")
     rust = selfcheck.selfcheck()["final_value"]
@@ -141,6 +143,7 @@ def test_pair_check_allows_a_fixed_set_of_patch_differences(monkeypatch, pair) -
     selfcheck.check_version_pair()
 
 
+@pytest.mark.slow
 def test_module_entry_point_exits_zero_on_success() -> None:
     proc = subprocess.run(
         [sys.executable, "-m", "ggTrader.engine.selfcheck"],
@@ -152,6 +155,7 @@ def test_module_entry_point_exits_zero_on_success() -> None:
     assert "rust" in proc.stdout
 
 
+@pytest.mark.slow
 def test_module_entry_point_exits_nonzero_on_failure() -> None:
     import os
 

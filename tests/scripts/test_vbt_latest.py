@@ -8,6 +8,8 @@ import pytest
 
 from scripts import vbt_latest
 
+pytestmark = pytest.mark.tooling
+
 NOW = datetime(2026, 11, 20, 6, 0, tzinfo=UTC)
 
 

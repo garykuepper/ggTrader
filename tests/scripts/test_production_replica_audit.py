@@ -7,8 +7,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ggTrader.lab.significance import ExcessStats
+from ggTrader.utils.significance import ExcessStats
 from scripts import production_replica_audit as audit
+
+pytestmark = pytest.mark.study
 
 
 def _results(primary_pass: bool = True, holdout_pass: bool = True) -> dict:

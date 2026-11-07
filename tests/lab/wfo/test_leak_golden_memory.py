@@ -59,6 +59,7 @@ def _same_folds(a, b) -> None:
 # --- leak test through the whole WFO ---------------------------------------------------------
 
 
+@pytest.mark.slow
 def test_bars_after_eval_end_cannot_change_any_result(mini) -> None:
     bars = h.small_wfo_bars()
     last = pd.Timestamp(h.MINI["eval_end"], tz="UTC")
@@ -69,6 +70,7 @@ def test_bars_after_eval_end_cannot_change_any_result(mini) -> None:
     assert shaken.table == mini.table
 
 
+@pytest.mark.slow
 def test_bars_after_the_last_fold_cannot_change_a_fold_result() -> None:
     bars = h.small_wfo_bars()
     late_end = "2022-05-15"  # live window reaches past the last fold's test_end (2022-03-01)
@@ -79,6 +81,7 @@ def test_bars_after_the_last_fold_cannot_change_a_fold_result() -> None:
     _same_folds(base, shaken)  # only the live-parameter pick may use the later bars
 
 
+@pytest.mark.slow
 def test_the_leak_test_has_teeth_changing_a_bar_inside_the_folds_changes_the_result(mini) -> None:
     bars = h.small_wfo_bars()
     inside = pd.Timestamp("2021-06-01", tz="UTC")
@@ -140,6 +143,7 @@ def _scenario(name: str):
     )
 
 
+@pytest.mark.slow
 def test_three_fold_mini_wfo_matches_its_golden(request: pytest.FixtureRequest) -> None:
     """A change detector, not evidence: the golden was written by the code under test.
 
@@ -175,6 +179,7 @@ def test_three_fold_mini_wfo_matches_its_golden(request: pytest.FixtureRequest) 
 # --- memory budget ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 def test_a_small_budget_splits_the_simulation_without_changing_a_number(mini) -> None:
     budget = 600_000
     small = _run(h.small_wfo_bars(), max_bytes=budget)
@@ -195,6 +200,7 @@ def test_every_planned_chunk_of_the_full_17_fold_run_fits_its_budget() -> None:
     assert sorted(c for chunk in chunks for c in chunk) == list(range(n_groups))
 
 
+@pytest.mark.slow
 def test_the_peak_estimate_for_the_single_pass_is_bounded_by_the_budget_per_chunk() -> None:
     result = _run(h.small_wfo_bars(), max_bytes=2_000_000)
     d = result.diagnostics

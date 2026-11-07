@@ -3,6 +3,7 @@
 import json
 
 import numpy as np
+import pytest
 
 from ggTrader.lab.wfo.breaker import (
     WfoPolicy,
@@ -12,6 +13,8 @@ from ggTrader.lab.wfo.breaker import (
     compute_wfe,
 )
 from ggTrader.lab.wfo_policy_synthetic import run_grid, simulate_run
+
+pytestmark = pytest.mark.study
 
 
 class Draws:

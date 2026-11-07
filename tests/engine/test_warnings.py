@@ -19,6 +19,8 @@ from ggTrader.engine import stats, windows
 
 from .panels import make_panel
 
+pytestmark = pytest.mark.tripwire
+
 
 def _exercise(engine_name: str) -> None:
     panel = make_panel(seed=21, n_bars=320, n_syms=6, holes=True)

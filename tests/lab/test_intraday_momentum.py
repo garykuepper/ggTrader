@@ -13,6 +13,8 @@ import pytest
 from ggTrader.lab import intraday_momentum as core
 from ggTrader.lab.intraday_probe import atomic_checkpoint, utc_bounds
 
+pytestmark = pytest.mark.study
+
 # Distinctive synthetic prices so leakage into metadata artifacts is detectable.
 ANCHOR_CLOSE = 100.11
 HALF_CLOSE = 101.13  # 12:59 bar on the 13:00 early close
@@ -187,9 +189,19 @@ def test_zero_or_nonfinite_variance_is_unresolved(values: object) -> None:
 
 
 # OLS on an exact constant leaves float residual noise, which gave t ~ 1e15 for these.
-@pytest.mark.parametrize("n", [2, 3, 8, 20, 50, 2679])
-@pytest.mark.parametrize("level", [0.001, -0.0002, 1e-9, 0.1, 0.0])
-@pytest.mark.parametrize("lags", [0, 5, 10, 20])
+# One property, six cases that between them use every length, level and lag of the former
+# 6 x 5 x 4 = 120-case grid (each case was under 5 ms and re-proved the same guard).
+@pytest.mark.parametrize(
+    ("n", "level", "lags"),
+    [
+        (2, 0.0, 0),
+        (3, 0.001, 5),
+        (8, -0.0002, 10),
+        (20, 1e-9, 20),
+        (50, 0.1, 0),
+        (2679, 0.001, 20),
+    ],
+)
 def test_exact_constant_series_is_unresolved_at_any_length_and_level(
     n: int, level: float, lags: int
 ) -> None:

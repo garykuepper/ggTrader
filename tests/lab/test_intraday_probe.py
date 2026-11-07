@@ -10,6 +10,8 @@ import requests
 
 from ggTrader.lab import intraday_probe as probe
 
+pytestmark = pytest.mark.study
+
 
 class Clock:
     def __init__(self) -> None:

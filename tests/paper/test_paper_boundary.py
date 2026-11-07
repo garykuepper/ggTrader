@@ -1,9 +1,9 @@
-"""Boundary: the paper trader reaches vectorbt only through `ggTrader.engine` (spec 5.2 rule 5).
+"""Boundary: the live signal path is built on `ggTrader.engine` and the engine ensemble.
 
-`vectorbt` and `vectorbt_rust` are imported only under `src/ggTrader/engine/`; the `.vbt`
-accessor only in `engine/` and `lab/strategies/`; and nothing in `paper/` imports the legacy
-simulator, the legacy indicator module or the legacy ensemble (they are deleted after the
-engine rebuild, which would otherwise break `import ggTrader.paper.trader`).
+That `paper/` never imports `vectorbt` or uses the `.vbt` accessor is enforced for every file under
+`src/` by `tests/engine/test_boundary.py` (and by ruff TID251); the per-file repeats of those two
+checks were removed in S1. What only this file checks is the ban on the legacy lab modules and on
+`ggTrader.lab.strategy`, kept as ONE test over every paper file (it was 16 per-file cases).
 """
 
 from __future__ import annotations
@@ -11,12 +11,8 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-import pytest
-
-PAPER = Path(__file__).resolve().parents[2] / "src" / "ggTrader" / "paper"
-FILES = sorted(PAPER.glob("*.py"))
-
-BANNED_MODULES = ("vectorbt", "vectorbt_rust")
+#: Names `paper/` must never import: the deleted legacy simulator modules (an import of one fails
+#: at once, but this names the rule) and `lab.strategy`, the legacy config module.
 LEGACY_MODULES = (
     "ggTrader.lab.simulate",
     "ggTrader.lab.sweep",
@@ -25,8 +21,9 @@ LEGACY_MODULES = (
     "ggTrader.lab.strategies.indicators",
     "ggTrader.lab.strategy",
 )
-# The legacy ensemble module was ``ggTrader.lab.strategies.ensemble``; since the P9 flattening that
-# name is the engine ensemble, so it is no longer a banned import (the legacy file is deleted).
+
+PAPER = Path(__file__).resolve().parents[2] / "src" / "ggTrader" / "paper"
+FILES = sorted(PAPER.glob("*.py"))
 
 
 def _imports(path: Path) -> set[str]:
@@ -45,22 +42,10 @@ def test_paper_package_is_found():
     assert len(FILES) >= 10 and (PAPER / "signal_runner.py") in FILES
 
 
-@pytest.mark.parametrize("path", FILES, ids=lambda p: p.name)
-def test_paper_never_imports_vectorbt_directly(path):
-    bad = sorted(n for n in _imports(path) if n.split(".")[0] in BANNED_MODULES or n == "vectorbt")
-    assert not bad, f"{path.name} imports {bad}; go through ggTrader.engine"
-
-
-@pytest.mark.parametrize("path", FILES, ids=lambda p: p.name)
-def test_paper_never_touches_the_vbt_accessor(path):
-    attrs = {n.attr for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.Attribute)}
-    assert "vbt" not in attrs, f"{path.name} uses the .vbt accessor"
-
-
-@pytest.mark.parametrize("path", FILES, ids=lambda p: p.name)
-def test_paper_does_not_import_legacy_lab_modules(path):
-    bad = sorted(n for n in _imports(path) if n in LEGACY_MODULES)
-    assert not bad, f"{path.name} imports legacy modules {bad}"
+def test_paper_does_not_import_legacy_lab_modules():
+    bad = {f.name: sorted(n for n in _imports(f) if n in LEGACY_MODULES) for f in FILES}
+    bad = {name: modules for name, modules in bad.items() if modules}
+    assert not bad, f"paper imports legacy modules: {bad}"
 
 
 def test_signal_path_uses_the_engine_and_the_v2_ensemble():

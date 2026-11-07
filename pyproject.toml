@@ -36,7 +36,7 @@ dependencies = [
     "pytrends",
     "requests",
     "scikit-learn",
-    "scipy",  # lab/gates.py, lab/momentum_screen.py, lab/event_study.py
+    "scipy",  # lab/gates.py, lab/momentum_screen.py
     "sqlalchemy",
     # Newey-West HAC t statistic for the intraday r8 study's A1 gate.
     "statsmodels",
@@ -72,6 +72,11 @@ pythonpath = ["."]
 testpaths = ["tests"]
 markers = [
     "integration: tests that hit live external services (network, DB); run with -m integration",
+    "slow: a single test of 3 s or more, or an end-to-end test on the frozen real tape; FULL tier only",
+    "numba: runs the numba engine (JIT compile cost); the default engine is rust; FULL tier only",
+    "tripwire: only meaningful when a dependency pin moves; FULL tier only",
+    "study: tests the code of one closed research study, not the engine; STUDIES and FULL tiers",
+    "tooling: tests a repository-maintenance script or its workflow; FULL tier only",
 ]
 
 [tool.mypy]

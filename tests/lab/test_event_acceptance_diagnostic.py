@@ -8,6 +8,8 @@ import pytest
 
 from ggTrader.lab.event_acceptance_diagnostic import compare_acceptance_pair, diagnose_cache
 
+pytestmark = pytest.mark.study
+
 
 @pytest.mark.parametrize(
     ("header", "api", "filed", "offset", "consistent"),

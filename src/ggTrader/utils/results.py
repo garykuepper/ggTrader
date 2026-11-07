@@ -3,28 +3,15 @@
 from __future__ import annotations
 
 import json
-import math
-import os
-import tempfile
 from pathlib import Path
 from typing import Any
 
+from ggTrader.utils.io import atomic_write_text, json_safe
+
 PROVENANCE_KEY = "provenance"
 
-
-def _clean(obj: Any) -> Any:
-    """JSON-safe copy: NaN/inf to None, numpy/pandas scalars to Python, timestamps to ISO."""
-    if isinstance(obj, dict):
-        return {str(k): _clean(v) for k, v in obj.items()}
-    if isinstance(obj, list | tuple):
-        return [_clean(v) for v in obj]
-    if hasattr(obj, "item") and getattr(obj, "shape", None) == ():
-        return _clean(obj.item())
-    if hasattr(obj, "isoformat"):
-        return obj.isoformat()
-    if isinstance(obj, float) and not math.isfinite(obj):
-        return None
-    return obj
+#: Kept for older call sites; the function now lives in ``ggTrader.utils.io``.
+_clean = json_safe
 
 
 def write_result_json(
@@ -46,18 +33,8 @@ def write_result_json(
         from ggTrader.engine.provenance import provenance as build_provenance
 
         provenance = build_provenance()
-    out = Path(path)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    text = json.dumps({**_clean(payload), PROVENANCE_KEY: _clean(provenance)}, indent=2)
-    fd, tmp = tempfile.mkstemp(dir=out.parent, suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w") as handle:
-            handle.write(text + "\n")
-        os.replace(tmp, out)
-    except BaseException:
-        Path(tmp).unlink(missing_ok=True)
-        raise
-    return out
+    text = json.dumps({**json_safe(payload), PROVENANCE_KEY: json_safe(provenance)}, indent=2)
+    return atomic_write_text(path, text + "\n")
 
 
 def read_result_json(path: str | Path) -> dict[str, Any]:

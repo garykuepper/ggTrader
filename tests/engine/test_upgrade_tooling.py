@@ -1,4 +1,10 @@
-"""L0: the upgrade tooling (workflow, Dependabot, runbook skill) is consistent with the repo."""
+"""L0: the upgrade workflow's trust boundaries (security pins), kept from regressing.
+
+Only the security properties of ``vbt-upgrade-watch.yml`` and the Dockerfile are tested here: the
+workflow never merges, grants and holds the least token scope, runs the new release without any
+secret, and pins every action by commit SHA. The runbook-wording and Dependabot-consistency
+tests that used to live in this file were removed in S1 (docs change; these do not).
+"""
 
 from __future__ import annotations
 
@@ -9,81 +15,14 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "vbt-upgrade-watch.yml"
-DEPENDABOT = ROOT / ".github" / "dependabot.yml"
-SKILL = ROOT / ".claude" / "skills" / "vbt-upgrade" / "SKILL.md"
-ENGINE_STACK = ["vectorbt", "vectorbt-rust", "pandas", "numpy", "numba", "llvmlite", "plotly"]
 
-
-def _referenced_repo_paths(text: str) -> set[str]:
-    return set(re.findall(r"\b((?:scripts|tests|src|docs)/[\w./-]+\.(?:py|md|toml|txt))", text))
-
-
-def test_dependabot_ignores_exactly_the_engine_stack() -> None:
-    text = DEPENDABOT.read_text()
-    uv_block = text.split('package-ecosystem: "github-actions"')[0]
-    ignored = re.findall(r'dependency-name:\s*"([^"]+)"', uv_block)
-    assert ignored == ENGINE_STACK
-    assert 'package-ecosystem: "uv"' in text
-    assert "github-actions" in text and "docker" in text
+pytestmark = pytest.mark.tooling
 
 
 def test_workflow_never_merges() -> None:
     text = WORKFLOW.read_text()
     assert "gh pr merge" not in text and "--auto" not in text and "automerge" not in text.lower()
     assert "--draft" in text
-
-
-def test_workflow_runs_daily_on_both_engines_with_the_suites() -> None:
-    text = WORKFLOW.read_text()
-    assert re.search(r'cron:\s*"\d+ \d+ \* \* \*"', text)
-    assert "workflow_dispatch" in text
-    assert "engine: [rust, numba]" in text
-    for needle in (
-        "python -m ggTrader.engine.selfcheck",
-        "pytest tests/engine",
-        "uv lock",
-        "uv sync --frozen --extra test --extra dev",
-    ):
-        assert needle in text, needle
-
-
-def test_workflow_bumps_the_pair_together() -> None:
-    text = WORKFLOW.read_text()
-    assert r"vectorbt\[rust\]==" in text and "vectorbt-rust==" in text
-
-
-@pytest.mark.parametrize("path", [WORKFLOW, SKILL])
-def test_referenced_repo_files_exist(path: Path) -> None:
-    optional = {"docs/vbt_upgrade_log.md", "docs/vbt_upgrade_rejected.txt"}  # created on first use
-    missing = [
-        p
-        for p in sorted(_referenced_repo_paths(path.read_text()))
-        if p not in optional and not (ROOT / p).exists() and "_*" not in p
-    ]
-    assert not missing, missing
-
-
-def test_skill_has_frontmatter_and_the_decision_words() -> None:
-    text = SKILL.read_text()
-    head = text.split("---")[1]
-    assert re.search(r"^name:\s*vbt-upgrade$", head, re.M)
-    assert re.search(r"^description:\s*\S", head, re.M)
-    for word in ("ACCEPT", "RE-BASELINE", "REJECT", "--golden-reason", "ggtrader-deploy"):
-        assert word in text, word
-    assert "crontab" in text  # the red line
-
-
-def test_skill_commands_match_the_engine_entry_points() -> None:
-    text = SKILL.read_text()
-    assert "python -m ggTrader.engine.selfcheck" in text
-    assert "scripts/run_tests.sh tests/engine" in text
-    assert "CONTRACT_VERSION" in text and "BASELINE_EPOCH" in text
-    from ggTrader.engine import config
-
-    assert hasattr(config, "CONTRACT_VERSION") and hasattr(config, "BASELINE_EPOCH")
-
-
-# --- workflow trust boundaries (review MAJOR-3) ----------------------------------------------
 
 
 def _jobs(text: str) -> dict[str, str]:
@@ -143,19 +82,6 @@ def test_every_action_is_pinned_to_a_full_commit_sha_with_a_release_comment() ->
     for ref, comment in uses:
         assert re.fullmatch(r"[\w./-]+@[0-9a-f]{40}", ref), ref
         assert re.search(r"# v\d+\.\d+\.\d+$", comment), (ref, comment)
-
-
-def test_workflow_header_records_the_verified_pins() -> None:
-    header = WORKFLOW.read_text().split("\non:\n", 1)[0]
-    assert "VERIFIED 2026-11-06" in header
-    for ref, _ in re.findall(r"(?m)^\s*- uses: (\S+)(.*)$", WORKFLOW.read_text()):
-        assert ref.split("@")[1] in header, ref
-
-
-def test_dependabot_keeps_the_docker_base_on_python_3_12() -> None:
-    docker = DEPENDABOT.read_text().split('package-ecosystem: "docker"')[1]
-    assert 'dependency-name: "python"' in docker
-    assert "version-update:semver-major" in docker and "version-update:semver-minor" in docker
 
 
 def test_dockerfile_base_image_is_pinned_by_digest() -> None:

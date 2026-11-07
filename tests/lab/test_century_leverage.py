@@ -15,8 +15,10 @@ from ggTrader.lab.century_leverage import (
     recommendation_rule,
     simulate,
 )
-from ggTrader.lab.fred_data import parse_fred_csv
+from ggTrader.utils.fred_data import parse_fred_csv
 from scripts import static_leverage_aftertax as a23
+
+pytestmark = pytest.mark.study
 
 
 def test_a23_frozen_loader_matches_live_columns_and_values(monkeypatch) -> None:

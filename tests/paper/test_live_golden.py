@@ -26,9 +26,14 @@ TAPE = REPO / "data/snapshots/ohlcv_20261106.parquet"
 EVAL_SPAN = ("2021-01-31", "2026-04-30")
 BAR_WINDOW = ("2019-03-01", "2026-10-30")
 
-pytestmark = pytest.mark.skipif(
-    not (TAPE.exists() and GOLDEN.exists()), reason="frozen tape or live golden is absent"
-)
+pytestmark = [
+    # Not in the fast core (38 s) but required in the FULL tier before any deploy of paper/ or the
+    # signal code: it is the only check that the rebuilt live signal equals the pre-rebuild one.
+    pytest.mark.slow,
+    pytest.mark.skipif(
+        not (TAPE.exists() and GOLDEN.exists()), reason="frozen tape or live golden is absent"
+    ),
+]
 
 
 @pytest.fixture(scope="module")

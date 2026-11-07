@@ -1,10 +1,14 @@
 """Tests for classifying saved WFO fold rows by gate/anchor outcome."""
 
+import pytest
+
 from ggTrader.lab.wfo_attribution import (
     classify_fold,
     regime_from_ancestry,
     summarize_run,
 )
+
+pytestmark = pytest.mark.study
 
 
 def _row(num: int, gates: bool, anchor: bool, wfe=0.5) -> dict:

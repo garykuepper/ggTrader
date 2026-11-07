@@ -11,7 +11,7 @@ from ggTrader.lab.cli import run_lab
 from ggTrader.lab.strategy import LabConfig
 from tests.lab.wfo import helpers as h
 
-pytestmark = pytest.mark.filterwarnings("ignore")
+pytestmark = [pytest.mark.filterwarnings("ignore"), pytest.mark.slow]
 
 
 @h.needs_real

@@ -16,11 +16,14 @@ from types import ModuleType
 
 import pytest
 
+pytestmark = pytest.mark.tooling
+
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv"
 #: Closed-study drivers that need the legacy engine were archived here in P5c (they run only at
 #: git tag legacy-engine-vbt0285); their default paths are still checked.
 ARCHIVE = ROOT / "research/programme/vectorbt-engine/legacy-scripts"
+CODEMOVED = ROOT / "research/CODEMOVED.csv"
 
 #: Scripts re-pointed from docs/research/ to the per-study research/ folders (2026-11-05).
 CHANGED_SCRIPTS = (
@@ -94,10 +97,26 @@ def _in_manifest_folder(path: str, folders: set[str]) -> bool:
     return parent == "research" or parent in folders
 
 
+def _moved_to(script: str) -> Path | None:
+    """Where research/CODEMOVED.csv says a moved script now lives (``None`` if it never moved)."""
+    if not CODEMOVED.is_file():
+        return None
+    with CODEMOVED.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            if row["old_path"] == script and row["new_path"].endswith((".py", ".sh")):
+                return ROOT / row["new_path"]
+    return None
+
+
 def _script_path(script: str) -> Path:
-    """The driver in scripts/, or its archived copy once it moved to the legacy archive."""
+    """The driver where it lives now: scripts/, its CODEMOVED new path, then the legacy archive."""
     live = ROOT / script
-    return live if live.exists() else ARCHIVE / Path(script).name
+    if live.exists():
+        return live
+    moved = _moved_to(script)
+    if moved is not None and moved.exists():
+        return moved
+    return ARCHIVE / Path(script).name
 
 
 @pytest.mark.parametrize("script", CHANGED_SCRIPTS)
@@ -118,7 +137,9 @@ def test_default_paths_point_into_research_tree(script: str) -> None:
 
 def _load_script(name: str) -> ModuleType:
     """Import a script whose top level only defines constants and functions."""
-    spec = importlib.util.spec_from_file_location(f"_driver_{name}", ROOT / "scripts" / name)
+    spec = importlib.util.spec_from_file_location(
+        f"_driver_{name}", _script_path(f"scripts/{name}")
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module

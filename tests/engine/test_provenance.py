@@ -75,7 +75,7 @@ def test_engine_effective_comes_from_the_probe_not_the_setting(monkeypatch) -> N
         provenance.provenance()
 
 
-@pytest.mark.parametrize("name", ["rust", "numba"])
+@pytest.mark.parametrize("name", ["rust", pytest.param("numba", marks=pytest.mark.numba)])
 def test_requested_and_effective_engine(name: str) -> None:
     config.set_engine(name)
     p = provenance.provenance()

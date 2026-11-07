@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from scripts.check_lens_report import check_report
+
+pytestmark = pytest.mark.tooling
 
 SECTIONS = ["Falsifiers", "Steelman", "Questions and answers", "Verification", "Done checklist"]
 

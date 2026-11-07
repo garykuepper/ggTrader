@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.tooling
+
 ROOT = Path(__file__).resolve().parents[2]
 
 #: script -> (the option that sets the output, the module constant that holds its default)

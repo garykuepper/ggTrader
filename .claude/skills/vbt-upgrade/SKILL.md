@@ -36,7 +36,9 @@ fixes in `P8b-fixups.md`).
 Read `docs/next_steps.md` for any hold the owner placed. Work in a worktree or branch, not on
 the production checkout. Run everything with `GGT_PYTHON=<venv>/bin/python` and
 `scripts/run_tests.sh` (8 GB cgroup, no swap). Exit 137 means a hang or runaway, not a reason to
-raise the cap. Budget about 20 minutes of machine time (the whole suite is 10 to 12 minutes of it).
+raise the cap. Budget about 20 minutes of machine time (the FULL suite, `scripts/run_tests.sh --full`, is
+10 to 12 minutes of it). The upgrade gate is the FULL run: the default `scripts/run_tests.sh` is the fast
+core and leaves out the numba engine, the tripwire tests and the real-tape oracles.
 
 ## 1. Read the release notes for every version between the lock and the target
 
@@ -134,7 +136,7 @@ replaced, as `pandas-ta` was. A downgrade drops the packages the newer release a
 .venv/bin/python -m ggTrader.engine.selfcheck                      # Rust really dispatches
 scripts/run_tests.sh tests/engine -q                               # L0-L3, both engines inside
 GGT_VBT_ENGINE=numba scripts/run_tests.sh tests/engine -q          # numba as the default engine
-scripts/run_tests.sh                                               # whole suite
+scripts/run_tests.sh --full                                        # whole suite (the gate)
 .venv/bin/python -W error::DeprecationWarning -W error::FutureWarning -c "import ggTrader.engine"
 .venv/bin/ruff check . && .venv/bin/ruff format --check .
 ```

@@ -21,6 +21,8 @@ from ggTrader.lab.french_data import (
     verify_manifest,
 )
 
+pytestmark = pytest.mark.study
+
 SIZE_MOM_TEXT = """French library preamble
 
   Average Value Weighted Returns -- Monthly

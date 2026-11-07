@@ -9,6 +9,8 @@ from ggTrader.paper.cash_sweep import SWEEP_TRADE_REASON
 from ggTrader.paper.catastrophe_stop import CATASTROPHE_STOP_REASON
 from ggTrader.paper.risk import RiskConfig
 
+pytestmark = pytest.mark.study
+
 C4 = {s: [10.0] * 5 for s in ["DDD", "AAA", "CCC", "BBB"]}
 
 
